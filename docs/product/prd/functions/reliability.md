@@ -1,5 +1,7 @@
 # Function review: reliability, observability, capacity and recovery (REL)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `ops` | Replaces: none | Load when: reliability, observability, capacity, recovery (FR-REL).
+
 Owner: `ops` (release and operations engineer), second-wave review. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md` and `/home/claude/review/gap-agents-common.md`. Docs only: this file changes no card, runbook, workflow or code. Karma rules the card changes (section 5) in `GAP-LOG.md`; design needs (section 4) go to the area leads.
 
 I am a Claude role, not a licensed professional (not an SRE on call, not a lawyer). Legal readings say "counsel must confirm". Outside facts carry a URL and the date I read them (20 Nov 2026); anything else is marked UNVERIFIED or cites the repo file that recorded it. `operations.md` (FR-OPS-01 to 36), `privacy.md`, `finance.md` and `support.md` are done and adjacent: I point to their ids and do not repeat them.

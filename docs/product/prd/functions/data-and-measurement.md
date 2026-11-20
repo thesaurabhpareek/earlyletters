@@ -1,5 +1,7 @@
 # Function review: data and measurement (DAT)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `decision-science` | Replaces: none | Load when: analytics, metrics, measurement (FR-DAT).
+
 Owner: `decision-science` (Decision Scientist), for BL-999. Written 20 Nov 2026 to `docs/product/prd/functions/BRIEF.md`. Docs only; changes no card. Karma rules every proposal here through `GAP-LOG.md`.
 
 I am a Claude role, not a statistician of record, a lawyer or a privacy regulator. Every legal reading below is marked "counsel must confirm". Every number in this file is either read from a named source, computed from stated inputs (the arithmetic is shown), or marked PROPOSED. Nothing here is observed data: there are no users yet, and analytics is off for the whole 1.0 line (D-124 item 3, D-095).

@@ -1,5 +1,7 @@
 # NS-46 to NS-50: security and identity review
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Lens: security and identity (X2 for pictures, entitlements, local stores, Journaling Suggestions data flow, deep links from notifications, App lock, shared-device cases). Reviewer: a Claude role (security-architect lens), not counsel and not an Apple employee. 20 Nov 2026. Docs only; nothing was run on a phone or built. Reviewed file: `docs/product/prd/21-days-cultural-photos-home.md` (line numbers below are that file unless another path is given).
 
 ## 0. What I read and what I did not

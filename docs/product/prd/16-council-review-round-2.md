@@ -1,6 +1,8 @@
 # 16. Council review, round 2: the record of the debate that locked the pack
 
-Status: Locked v1.0, 20 Nov 2026. Owner: Karma (CTO role), with the CPO role.
+Status: WORKING-INPUT (record of the round 2 debate; rulings live in GAP-LOG and the cards; do not load) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: auditing the round 2 debate; otherwise do not load.
+
+Status detail: Locked v1.0, 20 Nov 2026. Owner: Karma (CTO role), with the CPO role.
 Read with: `00-product-frame.md` (the rules every card follows), `15-council-review.md` (round 1), `14-test-plan.md` (gates G0 to G6), `13-engineering-plan.md`.
 
 The founder approved the requirements on 19 Nov 2026 ("I approve all requirements.") and asked the full executive team to review, critique and give detailed feedback, and the CPO and product agents to enhance the requirements and lock them, so that engineering never needs to debate the why or the what. On 19 Nov he also delegated decisions ("Consult with exec team and make all decisions."). This file is the record of that round: who said what, where they disagreed, how each point was settled, and what changed in the cards. Every role here is a Claude role. None is a licensed lawyer, accountant or auditor, and every legal reading is marked "counsel must confirm".

@@ -1,6 +1,8 @@
 # NS-08 to NS-12: Keeping (letters survive and what we say about them is true)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: building or testing backup, let-go, new phone, Save a copy, earlier versions (NS-08 to NS-12).
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: Karma with the Chief Product Officer role (Claude sessions; not `product`'s own run). Docs only. Index and card shape: `README.md`. Rulings applied: `00-rulings-round2` of 20 Nov (T1 to T5, D1 to D13, CTO rescopes), cited on each card as "Ruled 20 Nov (Karma, council round 2)".
 Nothing here was run on a phone. Code facts were read on `develop` at `697233d35` in the files named, this session. Words in quotes that are not an existing `packages/content` key are intent for `content`, never final copy. Numbers marked PROPOSED are proposals. UNVERIFIED marks anything not read in code or a source this session. Every legal reading: counsel must confirm (counsel packet 1.5.0 numbers).
@@ -490,6 +492,8 @@ The app now waits on "Opening your book" while the account's book may be on its 
 | NS-10-R12 | Given the Wrong account route, Then the screen names the sign-in method used and never shows a full email address | P1 | `[NS-10-R12] wrong account names the method` |
 | NS-10-R13 | Given backup off and a new phone, Then the Book shows one line at the top, once, until dismissed, and no per-card warning | P1 | `[NS-10-R13] one book-level line for absent recordings` |
 | NS-10-R14 | Given old and new phones both active, When a letter is made on either, Then it appears on the other within 30 s p95 in the foreground (06-nfr freshness) | P1 | `[NS-10-R14] both phones keep receiving` (device) |
+
+CL/K ruling K15 (`GAP-LOG.md`): a phone whose account was deleted elsewhere (R9) and a suspended account are two states with two lines, and a claim after deletion is parent-driven, never done by staff; the full rule is carried in `19-from-download-to-first-letter.md` after NS-45-R18.
 
 ### 8. Non-functional budgets
 - Latency: consent or held screen within 10 s (R0); book list and children p95 10 s; one year of text p95 30 s on LTE; five years p95 60 s (06-nfr; five-year figure per r1, UNVERIFIED line).

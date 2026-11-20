@@ -1,6 +1,8 @@
 # NS-03: The family-hears-it pilot (concierge test, 8 to 10 parents, no build)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: running or reviewing the NS-03 pilot.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO lens). Rank 3 of 7 (closed X1, X2). Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T5 (no dates or build numbers in cards), D4 (consent-record retention), D5 (hand-sent measures), D13 (device evidence).
 

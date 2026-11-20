@@ -1,5 +1,7 @@
 # Function review of the requirements: AI, speech and the faithful-edit engine (AIS)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `speech` | Replaces: none | Load when: AI, speech, faithful-edit and model-tier work (FR-AIS).
+
 Owner: `speech` (Speech and Applied Science Engineer), writing for the Chief AI Officer role. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md` and `gap-agents-common.md`. Second-wave review: the first nine function reviews did not cover this area. Status: draft for Karma to rule. It changes no card, no code, no legal text and no model.
 
 I am a Claude role, not a lawyer, not a licensed professional and not a regulator. Every legal reading below is marked "counsel must confirm". Where a requirement would add a new data flow, weaken a gate, or change what a person is told, it is a question for the founder or counsel, not a ruling.

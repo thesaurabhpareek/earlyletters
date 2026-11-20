@@ -1,5 +1,7 @@
 ## Locked pack: the rest of the work (20 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Written 20 Nov 2026 by Karma with the CPO role, docs only, after the requirements were locked (founder, 19 Nov: "I approve all requirements."; record `docs/product/prd/16-council-review-round-2.md`). Every row cites the card rows it satisfies; the card is the source of truth and wins where a row and a card differ. BL-950 and BL-951 are the engineering thread's (#832 follow-ups and NS-01-R17 iCloud progress); this section starts at BL-952. Facts were read on develop `4f89d659` and the open photo and Find stacks; nothing was run on a phone. No row turns a flag on in `production`. Device rows follow ruling D13 (a test install holding only the Asha book). Words marked PROPOSED need the founder's approval before any build outside his family shows them.
 
 How the harness reads this section: a row is eligible when its Status is `ready`, or `blocked` on backlog ids that are all done, and every `Depends on` id is done (`scripts/agents/lib.mjs`). A row blocked on a counsel answer, a founder step or an unmerged PR names it in words, so the dispatcher leaves it alone until a person changes the status.

@@ -1,6 +1,8 @@
 # NS-21 to NS-31: Reading the book, and the people around the child
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: building or testing reading, family and sharing (NS-21 to NS-31).
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: Karma with the Chief Product Officer role (one Claude session), revised 20 Nov 2026 against the three round-2 executive reviews and Karma's round-2 rulings (T1 to T5, D1 to D13). Docs only. Card shape: `README.md`. Sizes, skills and order: `13-engineering-plan.md`. Tests: `14-test-plan.md`. Timing lives in the roadmap and the engineering plan; no card here states a build number or a date (ruling T5).
 
@@ -951,6 +953,7 @@ Decision record.
 - **The printed Year One with a code that plays the voice. Why it waits.** Three things that are not product work: an entity (D-004; Q47), a print partner and terms (Q11), and hosted audio for the code to point at (X2). Founder sequence: the entity, then partner quotes, then hosted audio.
 - **What would reopen it.** The entity exists; the founder approves proof-book spend; NS-28's or NS-08's server audio has its security and counsel reads.
 - **What must be true before anyone designs it.** The three conditions above, and the claims row for the file in place.
+- **Order of work for print (CL/K ruling K14, `GAP-LOG.md`).** The accountant is settled before the first order; finance owns the run-cost register and adds print rows only when a partner quote exists; print publishes no price before then (FR-PRT-23); legal drafts a one-line Terms note for the free file now and the Print Terms only when FR-PRT-34 is true. Nothing here ships in 1.0 (FR-PRT-01). Who sells (Q-PRT-2) and the money path are the founder's.
 - **Never.** No letter text, child name, picture or prompt is donated to the system (ruling D3).
 - **Claims.** Forbids "order", "printed", "hardcover" and any partner name until a printed book exists.
 - **Free or Plus.** The file is free (ruling T2). A printed book's price is a founder decision with the CBO, CFO and CLO roles.

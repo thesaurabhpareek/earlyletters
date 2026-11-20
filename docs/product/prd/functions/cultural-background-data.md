@@ -1,6 +1,8 @@
 # Function review: cultural background data (CUL)
 
-Status: draft for Karma's ruling, 20 Nov 2026. Wave 3, brief 3 (`tools/review/wave3-briefs.md`). Written by the `privacy` agent, with the `legal` and `regulatory-affairs` lenses named where they speak. Docs only: this file changes no card, no legal text, no label and no code. Not committed.
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `privacy` | Replaces: none | Load when: cultural background and days data handling (FR-CUL).
+
+Status detail: draft for Karma's ruling, 20 Nov 2026. Wave 3, brief 3 (`tools/review/wave3-briefs.md`). Written by the `privacy` agent, with the `legal` and `regulatory-affairs` lenses named where they speak. Docs only: this file changes no card, no legal text, no label and no code. Not committed.
 
 I am a Claude role, not a lawyer and not a privacy regulator. Nothing here is legal advice. Every legal reading is marked "counsel must confirm". What I could not read, I say in section 1.3. Where a requirement would collect more, keep longer or weaken a consent gate, it is a question, not a ruling.
 

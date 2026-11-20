@@ -1,5 +1,7 @@
 # NS-46 to NS-50: design systems and accessibility review
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `design-systems` lens (a Claude role, not a licensed accessibility auditor). Date: 20 Nov 2026 (UTC). Branch read: `docs/locked-pack-inputs-20nov`. Writes only this file; nothing committed.
 
 ## 0. What I read, and what I did not

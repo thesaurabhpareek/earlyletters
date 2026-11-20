@@ -1,5 +1,7 @@
 # Input: auth and sign-up security, from download to the first letter
 
+Status: WORKING-INPUT | 20 Nov 2026 | Owner: `security` | Replaces: none | Load when: building or reviewing sign-up and sign-in security (NS-38 to NS-45).
+
 Author: `security` (security engineer), for Karma (CTO). Backlog: BL-994. Written 20 Nov 2026 on branch `docs/locked-pack-inputs-20nov` at `7d0446d02`, read-only except this file. Nothing committed, pushed or posted.
 
 Purpose: give product and design one place that says what sign-up and sign-in do today, every risk control and where it lives, every validation rule with its error code, every failure state design must draw, and the gaps with a recommended default. Error codes use area E's shared vocabulary (`/home/claude/wt/E/docs/design/e2e/E-foundations-and-system-states/WORDS.md` section 4: table 4.1 envelope codes, table 4.2 `AuthErrorKind`). A code not in that file is marked PROPOSED and needs a WORDS row before design uses it.

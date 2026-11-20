@@ -1,6 +1,8 @@
 # Function review: legal (LEG)
 
-Status: draft for Karma's ruling, 20 Nov 2026. Backlog row BL-995. Author: `legal` (a Claude role drafting for counsel). Docs only.
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `legal` | Replaces: none | Load when: Terms, IP, counsel questions, contracts (FR-LEG).
+
+Status detail: draft for Karma's ruling, 20 Nov 2026. Backlog row BL-995. Author: `legal` (a Claude role drafting for counsel). Docs only.
 
 > **Not legal advice.** This file was written by a Claude session playing the legal drafting role. It is not a lawyer, holds no licence, and no attorney-client relationship exists. Every legal reading below is a question for counsel, marked "counsel must confirm". Nothing here says that anything is compliant or legal. Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0; a new question says "needs a number from legal" because this review may not edit the packet (BRIEF rule: write only your own file).
 

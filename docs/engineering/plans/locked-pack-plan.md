@@ -1,5 +1,7 @@
 # Engineering project plan for the locked pack: work mapping and sequence
 
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: sections 3 phases, 4 critical paths, 5 lanes, 6 gates restated and 7 risks; engineering order defers to 24 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
 Status: input, 20 Nov 2026. Owner: Karma (CTO role, product-side session). This is the product-side sequencing input to the engineering thread's task-level plan, `docs/product/prd/17-engineering-project-plan.md` (PR #847), which is the plan of record; where they differ, #847 wins on engineering order and the cards win on behaviour (CR-66). Design: `docs/tdd/new-scope/`. Tasks: `docs/BACKLOG.md` rows BL-922 to BL-987.
 
 This plan sets order, lanes and gates. It sets no dates: release dates and what each store build carries are the founder's. Where this plan and a card differ, the card wins and this plan is fixed.

@@ -1,6 +1,8 @@
 # NS-05: Share one letter (Level 1: the words as text, from the parent's own share sheet)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: building or testing NS-05.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO lens). Rank 5 of 7. Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Founder decision, 10 Nov 2026: build Share one letter, text first (relayed by Karma on 11 Nov; design spec 03 records it as Q0/Q1 "DECIDED by the founder"). Ruled 20 Nov (Karma, council round 2): T2 (free in 1.0.x stays free), T4 (undo and time limits), T5 (no build numbers or dates), D2, D3, D13.
 

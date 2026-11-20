@@ -1,6 +1,8 @@
 # NS-01: Photo with a letter (photo-first capture on Home, a Photos lens in the Book)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: building or testing NS-01.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO role). Rank 1 of 7 in the founder's order (photo, Find, pilot, spike, share, Firsts and sealed; `closed-questions-2026-11-11.md`, X1). Index: `README.md`. Design source: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794). Data source: ADR 0028 (PR #797, not yet on `develop`; cited as "ADR 0028 (PR #797)" until it merges). Rulings applied: round-2 rulings T2, T3, T4, T5, D1, D2, D3, D5, D13 (Karma, 20 Nov 2026, council round 2; each card line that applies one says so).
 

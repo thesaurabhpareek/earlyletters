@@ -1,5 +1,7 @@
 # A. Data and sync engineering design for the locked pack
 
+Status: WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: reading section 8, which 18-errata-after-lock.md cites; otherwise do not load.
+
 Author: `data-architect` (for Karma, CTO). Written 20 Nov 2026. Read-only: nothing committed, pushed, applied or posted.
 Basis: the lock worktree `/home/claude/wt/E` at `450bcb4a9` (develop merged at `736197dfe`), cards `00` to `16`, `docs/BACKLOG.md` (BL-922 to BL-949, BL-952 to BL-987), ADR 0028 as merged, and open PRs #835 (head `f55be7b8`), #836 (`3395e5a6`), #798 (`7f36031a`) read through `gh api` (REST). #797 is merged: `merged_at 2026-11-20T04:28:36Z`, merge commit `e9dca86c`; the ADR is at `docs/adr/0028-photo-seal-find-on-device-data.md` in the worktree.
 

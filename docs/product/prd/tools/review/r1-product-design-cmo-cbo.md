@@ -1,5 +1,7 @@
 # Executive review of the new-scope requirements (read-only, develop at fetch on 20 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 I read the four skills in full (CPO, Design, CMO, CBO), COUNCIL.md, CLAUDE.md, PRD v2 02, 03, 06 (skimmed), the design index files (IA.md and NOTIFICATIONS.md read; the rest skimmed by heading), and in full: VISION.md, prd/README.md, 00 to 12, 15 (council record, to avoid repeating its findings), the head of 14, ROADMAP-2026-12-to-2027-05.md and 20-final-stack-rank. I also checked `packages/content/test/rules.test.ts` and `BRAND.md` for banned words, and `DECISIONS.md` for D-139 and D-157 to D-160. Nothing was run on a phone. No Apple, Supabase or legal page was read this session, so every platform rule below is UNVERIFIED and counsel must confirm any legal reading. I edited nothing.
 
 Tags used: [CONFLICT] a contradiction in the record that must be fixed before lock; [AC] acceptance row to add; [SCN] scenario row; [NFR]; [KPI]; [DESIGN] state; [CONTENT] line as intent (content writes, founder approves); [CLAIM] what the card enables or forbids in public; [BIZ] Free vs Plus, cost, print; [FOUNDER] needs his decision, with recommended default. PROPOSED numbers are proposals.

@@ -1,5 +1,7 @@
 # Function review: the lifecycle of a book across builds, phones and platforms (LCY)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `sync` | Replaces: none | Load when: phone changes, claims, deletion across phones, platforms (FR-LCY).
+
 Owner: `sync` (Sync and Backend Engineer), second-wave review for an area the first wave did not cover. FR code LCY. Written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md` and the common brief. Docs only: nothing here is built, no string is live, and no decision is recorded.
 
 The person writing this is a Claude role. It is not a lawyer. Every legal reading says "counsel must confirm". Words a parent would read are quoted as intent; `content` writes them and the founder approves them. The only family named is the fictional family Asha. Nothing here asks for a feature that writes, rewrites or shapes a person's words.

@@ -1,5 +1,7 @@
 # Function review: marketing (MKT)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `marketing` | Replaces: none | Load when: listing, site, claims, launch, email (FR-MKT).
+
 Owner: `marketing` (growth and marketing lead), using the evidence rules of the Chief Marketing Officer skill (`.claude/skills/early-letters-cmo/SKILL.md`). Backlog row BL-998. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md`. Drafts only: nothing here is published, posted, emailed or sent, and no string here is final. `content` writes final words, the founder approves every public promise, and `legal` takes every claim.
 
 This is a Claude role, not a lawyer, regulator or licensed marketing professional. Every legal reading below is marked "counsel must confirm". Apple and FTC facts were read this session on 20 Nov 2026 at the URLs in section 1c; anything not read this session is marked UNVERIFIED.

@@ -1,6 +1,8 @@
 # Founder direction, 20 Nov 2026 (second round): photo library moments and pictures and videos with a letter
 
-Status: founder direction, in his words (voice, partly garbled): "make sure product agents enhance their requirement doc to include that thinking, specially Apple Journal like access to photos folder and using that data to find what letter someone should write and attach pictures or videos to the letter. And make sure all other agents have updated their requirement for all enhancements in product spec."
+Status: WORKING-INPUT (founder direction; carried by 27-photo-moments-and-media.md) | 20 Nov 2026 | Owner: founder, via Karma | Replaces: none | Load when: you need the founder's own words on photo moments and media; otherwise load 27.
+
+Status detail: founder direction, in his words (voice, partly garbled): "make sure product agents enhance their requirement doc to include that thinking, specially Apple Journal like access to photos folder and using that data to find what letter someone should write and attach pictures or videos to the letter. And make sure all other agents have updated their requirement for all enhancements in product spec."
 
 Earlier direction (20-founder-direction-20nov.md, section on pictures): "attaching pictures would become really important for us and getting access to your Photos folder would allow us to look at your photos and see what you have been doing and based on that actually create nudge, think about what Apple Journal does where you select a picture and then you write a story about it."
 

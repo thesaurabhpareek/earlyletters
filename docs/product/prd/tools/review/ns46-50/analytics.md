@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50: opt-in analytics allowlist and data map
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Lens: `analytics` (Analytics Engineer, a Claude role). Function files used: `functions/data-and-measurement.md` (DAT), `functions/research-validation.md` (RSH). Card file: `docs/product/prd/21-days-cultural-photos-home.md` (cited as "21:line"). Written 20 Nov 2026 on `docs/locked-pack-inputs-20nov`. Docs only; nothing changed in `packages/analytics`.
 
 I am a Claude role, not a statistician of record, a lawyer or a privacy regulator. Legal readings say "counsel must confirm". Every number is read from a named file, computed with the arithmetic shown, or marked PROPOSED. There is no observed data: analytics is off for the whole 1.0 line (D-095, D-124 item 3; `apps/mobile/eas.json` sets `EXPO_PUBLIC_ANALYTICS` "off" in every profile I saw, lines 18, 36, 50, 64, 80). No outside source was read this session; Apple facts in the cards stay UNVERIFIED as the cards mark them.

@@ -1,5 +1,7 @@
 # Rulings after the round-2 executive review (Karma, 20 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 The founder approved the requirements on 19 Nov ("I approve all requirements.") and on 19 Nov delegated decisions ("Consult with exec team and make all decisions."). These rulings settle the points the three review passes raised or disagreed on. Each is reversible by the founder; each card that applies one says "Ruled 20 Nov (Karma, council round 2)". Nothing here decides spend, legal text, counsel's answers, or a published promise: those stay founder or counsel items and are marked.
 
 ## Where the reviews disagreed, and the tie-break

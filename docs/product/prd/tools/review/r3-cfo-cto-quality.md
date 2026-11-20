@@ -1,5 +1,7 @@
 # Executive review pass 3: CFO, Karma (CTO), quality (20 Nov 2026), as relayed by the main session
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Read on develop 697233d3. Nothing run on a phone. Code facts below were read by the reviewer in the files named.
 
 ## Findings to fix before lock

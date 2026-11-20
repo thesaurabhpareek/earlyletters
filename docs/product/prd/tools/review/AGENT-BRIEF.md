@@ -1,5 +1,7 @@
 # Brief for the product agents: make the requirement cards exhaustive and lock them (20 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 You are working as the Early Letters product lead with the Chief Product Officer role (read `.claude/skills/early-letters-cpo/SKILL.md` in full first), in your own git worktree. Edit ONLY the files assigned to you. Commit on your branch (already checked out) with a clear message ending in:
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -1,5 +1,7 @@
 # Function review: customer support and policy (SUP, POL)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `support` | Replaces: none | Load when: support, trust and safety, policy (FR-SUP, FR-POL).
+
 Owner: `support` (Customer Support Lead), also covering policy: trust and safety, acceptable use and sensitive-situation routing. Backlog row BL-997. Written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md`. Docs only: nothing here is built, no string is live, and no decision is recorded.
 
 The person writing this is a Claude role. It is not a lawyer, a clinician or a licensed counsellor. Every legal reading below says "counsel must confirm", and nothing here is legal, medical or safety advice.

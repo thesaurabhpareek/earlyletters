@@ -1,5 +1,7 @@
 # Function review: back office and internal tooling (BKO)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `ops` (operations and support engineering role) | Replaces: none | Load when: staff tools, hands, suspension, account acts (FR-BKO).
+
 Owner: a Claude role playing operations and support engineering, second wave. Written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md`, on branch `docs/locked-pack-inputs-20nov`. Docs only: nothing here is built, no string is live, no decision is recorded.
 
 The writer is a Claude role. It is not a lawyer, an auditor or a security professional. Every legal reading says "counsel must confirm". Words a parent would read are intent only: `content` writes them and the founder approves. Every example family is the fictional family Asha.

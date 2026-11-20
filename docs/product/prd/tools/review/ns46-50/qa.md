@@ -1,5 +1,7 @@
 # NS-46 to NS-50 review: testability and traceability (qa lens)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `qa` role (a Claude session, not a licensed professional). Written 20 Nov 2026 (UTC), branch `docs/locked-pack-inputs-20nov`. Docs only. Nothing was run: no test, no simulator, no CI job. Function files used: `functions/quality.md` (FR-QAL), `functions/reliability.md` (FR-REL). Fictional family Asha only.
 
 ## 0. What I read, and what I did not

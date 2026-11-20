@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50 through the privacy lens (20 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `privacy` (Privacy Engineer, a Claude role; not counsel, not a regulator). Nothing here is legal advice; every legal or store reading is "counsel must confirm". Docs only: I changed no card, ruling, code or other file, and ran no test or device.
 
 Lens: religion, native country, pictures, child data, lock-screen text, on-device storage, deletion and export, privacy label.

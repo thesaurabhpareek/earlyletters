@@ -1,7 +1,9 @@
 # Notification catalogue and rotation: function review (wave 3, brief 2)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `content` and `mobile` | Replaces: none | Load when: the notification catalogue and rotation (FR-NTC, NS-48).
+
 FR code: NTC. Proposed card: NS-48 (outline in section 11). Agents: content, mobile. Date: 20 Nov 2026. Branch docs/locked-pack-inputs-20nov, nothing committed.
-Status: proposal for Karma to rule. It specifies section 4 of `docs/product/prd/20-founder-direction-20nov.md` and changes no locked card until NS-48 is ruled in. I am a Claude role, not counsel; nothing here is legal advice.
+Status detail: proposal for Karma to rule. It specifies section 4 of `docs/product/prd/20-founder-direction-20nov.md` and changes no locked card until NS-48 is ruled in. I am a Claude role, not counsel; nothing here is legal advice.
 
 ## 0. The short version
 

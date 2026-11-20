@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50: growth, positioning and store claims
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `marketing` (Claude role, growth lens; function files read: `functions/marketing.md` and `functions/support.md`). Date 20 Nov 2026. Docs only: nothing here is published, posted or sent, and no string here is final (`content` writes words, the founder approves every public promise, `legal` takes every claim). This is not legal advice; every legal reading is "counsel must confirm". Fictional family Asha only.
 
 Card file: `docs/product/prd/21-days-cultural-photos-home.md` (cited as `21:<line>`). Also read: `20-founder-direction-20nov.md`, `GAP-LOG.md` rulings (R-IA, N-, CB-, DL-, K1 to K10), `18-errata-after-lock.md`, `packages/content/src/store.en.ts`, `packages/content/BRAND.md`, `packages/content/VOICE.md`, `packages/brand/index.ts`.

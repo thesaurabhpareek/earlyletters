@@ -1,5 +1,7 @@
 # Function review of the requirements: finance (FIN)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: CFO role | Replaces: none | Load when: price, cost, runway or Apple commission (FR-FIN).
+
 Author: the Chief Financial Officer role (a Claude role, not an accountant, CPA, enrolled agent, lawyer or financial adviser; nothing here is tax, legal or investment advice). Backlog row BL-999. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md`. Docs only: nothing here spends, signs up, upgrades or accepts terms. Every money decision below is the founder's; each one carries a recommendation and a default, and every default is no spend.
 
 Conventions. Every price says where it was read and when. "Read 20 Nov" means read in this session from the vendor's own page at the URL given. A figure not read this session is UNVERIFIED, even when the repo has it. Labels from the CFO skill: [F] fact read in code or a record, [A] assumption, [E] estimate. Every revenue figure says gross or net of Apple's commission, before tax, and run-rate or cash. Tax and entity points end with "the accountant must confirm"; legal readings with "counsel must confirm". No real income, balance or tax figure of the founder appears here.

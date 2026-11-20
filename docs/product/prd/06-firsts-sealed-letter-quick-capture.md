@@ -1,6 +1,8 @@
 # NS-06: Firsts, the sealed letter and quick capture
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: building or testing NS-06.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO lens). Rank 6 of 7. Index: `README.md`. Earlier: Draft v1.1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T2, T4, T5, D2, D3, D6, D13. Three cards in one file; each part carries the full card shape and its own `**Label effect.**` line.
 

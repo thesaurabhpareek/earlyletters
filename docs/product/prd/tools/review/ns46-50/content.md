@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50: voice and content rules (lens: `content`)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `content` role (Claude), 20 Nov 2026. Branch docs/locked-pack-inputs-20nov, nothing committed. ASCII only.
 Nothing here is legal advice. Rulings in GAP-LOG are not reopened; conflicts are flagged.
 

@@ -1,6 +1,8 @@
 # NS-13 to NS-20: Capture (more letters kept, in the few minutes a parent has)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: building or testing capture, reminders, books, languages (NS-13 to NS-20).
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: Karma with the Chief Product Officer role (Claude sessions). Docs only. Card shape: `README.md`. Rulings applied: `00-rulings-round2` of 20 Nov (T1 to T5, D1 to D13, CTO rescopes of NS-14, NS-15, NS-16, NS-17), cited on each card as "Ruled 20 Nov (Karma, council round 2)".
 Nothing was run on a phone. Code facts were read on `develop` at `697233d35` in the files named, this session. Words in quotes that are not an existing content key are intent for `content`, never final copy. PROPOSED marks a proposal; UNVERIFIED marks anything not read in code or a source this session. Legal readings: counsel must confirm (counsel packet 1.5.0 numbers).
@@ -846,6 +848,8 @@ P4: a parent who speaks Spanish to the baby and English at work, or grandparents
 | NS-17-R8 | Given a withheld take, Then its machine output is not synced; if already pushed as a held draft, the server copy holds no words after the next push | P0 (a)(b) | `[NS-17-R8] withheld words never on the server` |
 | NS-17-R9 | Given a waiting letter in another language, Then "Type the words yourself" lets the parent type and Keep, and the typed words are never machine-edited | P1 | `[NS-17-R9] the parent can type the words` |
 | NS-17-R10 | Given a recording in a held language, Then it is never handed to the recogniser and asks for no download (regression of the built hold) | P0 (a) | `[NS-17-R10] held languages never reach the recogniser` |
+| NS-17-R11 | Given a language other than English whose distress patterns have not passed FR-LOC-18 (a), Then no screen, store line or help text implies a letter in that language is noticed for distress, and "If you are struggling" stays available in every build (CL/K ruling K17, `GAP-LOG.md`; FR-LOC-18, CC-LOC-7) | P0 (a) | `[NS-17-R11] no distress claim for an untested language` |
+| NS-17-R12 | Given a language that passed its gate on the full tier but not on the compact tier, Then a compact-tier phone does not offer it, and the parent is not shown numbers or blocked (CL/K ruling K17, `GAP-LOG.md`; FR-AIS-43) | P0 (a) | `[NS-17-R12] a compact-tier phone offers only languages that passed on it` |
 
 ### 8. Non-functional budgets
 - Latency: mark under 300 ms.

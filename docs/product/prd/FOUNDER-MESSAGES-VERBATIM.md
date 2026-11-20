@@ -1,5 +1,7 @@
 # Founder messages, verbatim (claude.ai chat 7fb938a0, turns 720 to 874)
 
+Status: CURRENT (source record) | 20 Nov 2026 | Owner: `product` (extracted from the founder chat) | Replaces: none | Load when: you need the founder's exact words or the instruction index; otherwise do not load.
+
 Source: https://claude.ai/chat/7fb938a0-419a-42db-b326-185c4e5cee71 (the "V2 product requirement document" chat). Extracted on 20 Nov 2026 from the Human turns only.
 
 Notes on how this file was made:

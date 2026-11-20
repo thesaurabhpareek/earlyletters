@@ -1,5 +1,7 @@
 # Function review: photos and suggestions (PHS), levels 1 to 3
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `mobile`, `privacy`, `security` | Replaces: none | Load when: photo suggestions, levels 1 to 3 (FR-PHS).
+
 Owner lanes: `mobile`, `privacy`, `security`. Written 20 Nov 2026 under `tools/review/wave3-briefs.md` brief 5, `gap-agents-common.md` and `docs/product/prd/functions/BRIEF.md`. Direction: `20-founder-direction-20nov.md` section 6. Status: draft for Karma to rule; changes no card, no code and no legal text.
 
 I am a Claude role, not counsel and not an Apple employee. Every legal or store reading is marked "counsel must confirm". Apple facts carry a source read on 20 Nov 2026 or the word UNVERIFIED. Nothing here was run on a phone or built.

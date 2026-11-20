@@ -2,6 +2,8 @@
 
 Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need sizes, skills, order or dependencies for NS-01 to NS-52 (cards 19, 21 and 27: section 3H).
 
+> SUPERSEDED-BY 23-dependency-map-and-plan.md sections 2 and 2.1 (parts only: section 4 Order and section 5 Dependencies in one picture; sizes in section 3 stay CURRENT) | 20 Nov 2026 | Source: 23 section 8 | Registry: REGISTRY.md
+
 Status: Locked v1.0 with the pack, 20 Nov 2026. Council round 2 rescopes (NS-13, NS-15, NS-16, NS-23, NS-25, NS-32) are applied in section 3; the cards win wherever this file and a card differ.
 
 For the harness and the engineers. The product cards say what and why; this file says how big, who, and in what order. It sets no dates: release dates are the founder's. Sizes are estimates [E] and are re-sized by the engineer who picks the work.

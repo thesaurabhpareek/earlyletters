@@ -1,6 +1,8 @@
 # NS-02: Find (search across the family's own letters, on the phone)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: building or testing NS-02.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO role). Rank 2 of 7 in the founder's order (closed X1). Index: `README.md`. Design source: `docs/design/specs/02-FIND-11nov.md` (PR #794). Data source: ADR 0028 D4 and D5 (PR #797, not yet on `develop`; cited as "ADR 0028 (PR #797)" until it merges). This card makes F09-REQ-015 shippable: it cites that row and F09 section 6.2 step 16, and records the founder question F09 Q4 as decided: Find is in scope (closed X1; research gap G3). Rulings applied: round-2 rulings T2, T5, D1, D2 (as n/a), D3, D5, D13 (Karma, 20 Nov 2026, council round 2).
 

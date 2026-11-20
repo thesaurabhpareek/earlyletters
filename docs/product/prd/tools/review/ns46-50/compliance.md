@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50: legal and compliance lens
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `regulatory-affairs` (a Claude role, not a lawyer). Date: 20 Nov 2026. Branch read: `docs/locked-pack-inputs-20nov`. Nothing committed or posted.
 Function files read for this lens: `functions/legal.md`, `functions/compliance.md`, `functions/privacy.md`, `functions/notification-catalogue.md` (plus `cultural-background-data.md` and `photos-and-suggestions.md` for the counsel questions they hold).
 All legal readings below are "engineering reading, confirm with counsel". Card line numbers are in `docs/product/prd/21-days-cultural-photos-home.md`.

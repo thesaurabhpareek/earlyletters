@@ -1,6 +1,8 @@
 # NS-04: Hands-free capture (a time-boxed research spike, not a feature)
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: running the NS-04 spike.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO lens). Rank 4 of 7 (closed X1: after the family pilot is under way). Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T5 (no dates or build numbers), D3 (no system intelligence donation), D13 (device evidence on an Asha-only install).
 

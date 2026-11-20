@@ -1,5 +1,7 @@
 # Feature opportunities: what the app is not yet doing (OPP)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `product` and `user-research` | Replaces: none | Load when: weighing a feature not in the cards (FR-OPP).
+
 Owners: `product` and `user-research` (wave 3, brief 6). Written 20 Nov 2026 (UTC) on branch `docs/locked-pack-inputs-20nov`. Docs only: nothing here is built, no recruiting has started, no decision is recorded. Karma rules every proposal through `GAP-LOG.md`; the founder decides section 9.
 
 I am a Claude role, not a licensed researcher, lawyer or engineer. I did not talk to any parent. Nothing here is observed data from our own families (`docs/research/USER_RESEARCH.md` line 3; `functions/research-validation.md` line 5). Every score below is a judgement and is labelled so. Example family: the fictional Asha.

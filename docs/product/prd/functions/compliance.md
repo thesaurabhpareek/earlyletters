@@ -1,6 +1,8 @@
 # Function review: compliance (CMP)
 
-Status: draft for Karma's ruling, 20 Nov 2026. Backlog row BL-995. Author: `legal` with the compliance lens (a Claude role drafting for counsel). Docs only.
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `legal` (compliance lens) | Replaces: none | Load when: store rules, age assurance, evidence per build (FR-CMP).
+
+Status detail: draft for Karma's ruling, 20 Nov 2026. Backlog row BL-995. Author: `legal` with the compliance lens (a Claude role drafting for counsel). Docs only.
 
 > **Not legal advice.** Written by a Claude session. It is not a lawyer or a compliance professional, holds no licence, and no attorney-client relationship exists. Every reading of a law or an Apple rule is "engineering reading, counsel must confirm". Nothing here says that a build or a text is compliant. Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0; new questions "need a number from legal".
 

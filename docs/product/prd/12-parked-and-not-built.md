@@ -1,6 +1,8 @@
 # Parked and not built: what we said no to, and what would change our mind
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: someone proposes a parked item, or you need what would change our mind.
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: Karma with the Chief Product Officer role, revised 20 Nov 2026 against the round-2 executive reviews and Karma's round-2 rulings. Scope is mostly saying no. Each row is a short decision record: who it would serve, the decision and why it waits or is refused, the evidence or gate that would reopen it, and what must be true before anyone designs it. Designers do not draw these. No row states a build number or a date (ruling T5).
 

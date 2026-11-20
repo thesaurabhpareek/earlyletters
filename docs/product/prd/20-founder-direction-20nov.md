@@ -1,6 +1,10 @@
 # Founder direction, 20 Nov: days we mark, notification catalogue, one Home, photos first
 
-Status: proposal for the founder, from Karma (product). Not locked. It reopens three parked items, so the founder's decision is needed (section 7). The locked cards 00 to 16 and the errata (18) stay as they are until a card below is ruled in. Date facts here are marked VERIFIED (read this session), REPO (read in the repo) or UNVERIFIED.
+Status: SUPERSEDED-BY 21-days-cultural-photos-home.md, 22-final-holistic-spec.md section 7 and 27-photo-moments-and-media.md | 20 Nov 2026 | Owner: Karma (product) | Replaces: none | Load when: you need the founder's first-round direction in context; otherwise do not load.
+
+> SUPERSEDED-BY 21-days-cultural-photos-home.md (days, catalogue, pictures, Home today), 22-final-holistic-spec.md section 7 (the eight founder answers, 20 Nov) and 27-photo-moments-and-media.md (level 3 reversal) | 20 Nov 2026 | Kept as the first-round record; do not load | Registry: REGISTRY.md
+
+Status detail: proposal for the founder, from Karma (product). Not locked. It reopens three parked items, so the founder's decision is needed (section 7). The locked cards 00 to 16 and the errata (18) stay as they are until a card below is ruled in. Date facts here are marked VERIFIED (read this session), REPO (read in the repo) or UNVERIFIED.
 
 ## 1. What the founder asked
 

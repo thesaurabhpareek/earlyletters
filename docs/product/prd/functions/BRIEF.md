@@ -1,5 +1,7 @@
 # Function reviews of the requirements: brief (20 Nov 2026)
 
+Status: CURRENT (LOCKED rev 2) (brief) | 20 Nov 2026 | Owner: Karma | Replaces: none | Load when: writing or refreshing a function review.
+
 Owner: Karma (CTO role, product side). The founder asked on 20 Nov that legal, compliance, policy, privacy, marketing, risk, customer support, operations and the other functions review the requirements and write the requirements they need that are missing, so that every function's needs are linked to the product requirements and design accounts for them.
 
 ## Sources (CR-66 order)

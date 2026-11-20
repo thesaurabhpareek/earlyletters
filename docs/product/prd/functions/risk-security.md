@@ -1,5 +1,7 @@
 # Function review: risk and security (RSK, SEC)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `security-architect` | Replaces: none | Load when: threats, keys, enterprise risk (FR-SEC, FR-RSK).
+
 Owner: `security-architect` (identity and security steward), also covering enterprise risk. Backlog row BL-999. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md`.
 
 Who wrote this: a Claude session playing the security and risk role. It is not a licensed auditor, penetration tester or lawyer. Every legal reading below says "counsel must confirm". Nothing here was run on a phone or against a live service. All test families in this file use the fictional family Asha.

@@ -1,5 +1,7 @@
 # B. Mobile client engineering design for the locked pack
 
+Status: WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: reading section 8, which 18-errata-after-lock.md cites; otherwise do not load.
+
 Author: `mobile` (Mobile Engineer, iOS first, Expo), for Karma (CTO). Date: 20 Nov 2026.
 Base read: the lock branch worktree at `450bcb4a9` (develop `4f89d659` merged in), plus the open PRs #834 (merged), #841, #842, #835 to #840, #798, #758 and #721 read through the GitHub REST API on 20 Nov.
 Scope: every locked card in `docs/product/prd/01` to `12`, the frame `00`, plan `13`, test plan `14`, council record `16`, and backlog rows BL-922 to BL-987 whose owner is `mobile engineer`, `export owner` or `reminders owner`.

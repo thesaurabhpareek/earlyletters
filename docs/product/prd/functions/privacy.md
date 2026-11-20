@@ -1,5 +1,7 @@
 # Function review of the requirements: privacy (PRV)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `privacy` | Replaces: none | Load when: consent, retention, deletion, data rights, the privacy label (FR-PRV).
+
 Owner: `privacy` (Privacy Engineer agent), backlog row BL-996 (grouped under BL-999). Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md`. Status: draft for Karma to rule; changes no card, no legal text and no code.
 
 I am a Claude role, not a lawyer and not a privacy regulator. Nothing here is legal advice. Every legal reading below is marked "counsel must confirm". Where a requirement would collect more, keep longer, weaken a consent gate or change a public sentence, it is written as a question for the founder or counsel, not as a ruling. Signed at the end as the skill asks.

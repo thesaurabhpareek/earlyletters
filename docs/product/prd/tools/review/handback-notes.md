@@ -1,4 +1,7 @@
 ## Group A (NS-01, NS-02) merged baeb86d6d
+
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 - Corrected CTO pass: pause keys are killSwitches.photos / killSwitches.bookSearch; error codes are the stack's real ones; Find index is letter_search + letter_search_rows + searchable_letters view (seal clause plugs there); no sidecar, no migration for index.
 - Code gaps recorded as unmet rows: NS-01-R37a/c size caps (native 4,096 px q0.9, upright JPEG uncapped); R38b dead Undo after 10 s; R17b no iCloud progress; R39 thumbnail grows at large text; R40 Smart Invert; R42 crop; R45 free-space check; R48 lens buttons in tablist; R53 lens decodes full copies; R54 three length counters disagree; R43 kill before Review loses picture; no export of pictures (BL-933), no list/page copies (BL-932); no eas profile sets EXPO_PUBLIC_PHOTOS. NS-02-R35 rebuild one transaction; R37 failed view not announced; no debounce; reconcileSearch per sync tx; no profile sets EXPO_PUBLIC_BOOK_SEARCH.
 - Open: O-1 upright JPEG keep pixels vs re-encode (default keep); D2 RN switch (mobile); thumbnail at large text (design-systems); founder: cross-book search (no), index From name (no), word approvals; counsel Q43 label read; content: pages.en.ts:240, where-it-lives keys, "yet" wording; product: BL-847 vs BL-931.

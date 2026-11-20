@@ -1,6 +1,8 @@
 # 22. The pack in one reading: what the product does, where days, background, reminders, pictures and Home today fit, and what the founder decides
 
-Status: LOCKED 20 Nov 2026 (requirements rev 2; see section 10). Written by `product` for a human reader (the founder, Karma, a new designer or engineer). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. This file cites; it never changes a requirement. Where it and a card differ, the card wins (and the card's own order of precedence: `GAP-LOG.md` rulings, the founder direction, the function reviews). Nothing is legal advice; every legal or store reading is "counsel must confirm". No dates: cards state order and gates only (ruling T5).
+Status: CURRENT (LOCKED rev 2) (entry point) | 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: FIRST for every role: the whole pack in one reading, the eight founder answers (section 7), the file map (section 8) and the lock (section 10).
+
+Status detail: LOCKED 20 Nov 2026 (requirements rev 2; see section 10). Written by `product` for a human reader (the founder, Karma, a new designer or engineer). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. This file cites; it never changes a requirement. Where it and a card differ, the card wins (and the card's own order of precedence: `GAP-LOG.md` rulings, the founder direction, the function reviews). Nothing is legal advice; every legal or store reading is "counsel must confirm". No dates: cards state order and gates only (ruling T5).
 
 Facts about the screens come from the information architecture audit (`docs/design/e2e/IA-AUDIT.md` on branch `docs/e2e-ux-20nov`, head `ed44fe899`; design judgement and code reading, not observed users). Facts about code come from the ten reviews of NS-46 to NS-50 (`tools/review/ns46-50/`). Anything either could not check is marked UNVERIFIED in the card.
 
@@ -126,7 +128,7 @@ Founder hands (decisions made; these are actions pending his hands, not question
 - Money: counsel engagement, accountant for tax and payment points, the pen test.
 - People: tell the alpha families first.
 
-Karma's items (parent-visible, not founder items): the conflicts list of card 21, RV-1 to RV-24 and K11 to K17 in `GAP-LOG.md`. K12 and K14 to K17 are ruled but not yet carried into a card (CL-112).
+Karma's items (parent-visible, not founder items): the conflicts list of card 21, RV-1 to RV-24 and K11 to K17 in `GAP-LOG.md`. K12 and K14 to K17 are carried into the cards in place as of 20 Nov (CL-112: K12 in NS-48-R34, K14 in NS-30, K15 after NS-45-R18 and NS-10-R14, K16 in `14-test-plan.md` section 7, K17 as NS-17-R11 and R12); no errata row, because no locked statement changed.
 
 ## 8. Where everything is (every card and function file)
 
@@ -162,6 +164,6 @@ Remains execution-side (nothing here is a requirement question):
 - Devices: every P0 device row, J-CUL-01, NTC-T24, phones to borrow.
 - Counsel: the F6 batch; accountant for tax and payment points.
 - Accounts: the founder hands list in section 7.
-- Build gates: G0 (a backlog row for every P0 row, `BACKLOG-GAPS.md`) to G6; propagation of K12 and K14 to K17 into cards; code-side items (`kill-switches.ts`, ADR 0029, `WORDS.md`, `budget.ts`).
+- Build gates: G0 (a backlog row for every P0 row, `BACKLOG-GAPS.md`) to G6; code-side items (`kill-switches.ts`, ADR 0029, `WORDS.md`, `budget.ts`).
 - Informing the harness and the engineering architecture leads: not done by this edit pass; the coordinator relays it.
 

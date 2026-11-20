@@ -1,6 +1,8 @@
 # NS-07: Remaining rows of the capability map (NX-42): quiet days (C5), the printable book (C28), the label guard (G11), and what is cited or parked
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Replaces: none | Load when: building or testing NS-07 (C5, C28, G11).
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (CPO lens). Rank 7 of 7. Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T2, T3 (stored copy), T4, T5, D2, D3, D13.
 

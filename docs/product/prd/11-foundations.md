@@ -1,6 +1,8 @@
 # NS-32 to NS-37: Foundations a parent feels without seeing
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: building or testing foundations: plan notices, accessibility, data rules (NS-32 to NS-37).
+
+Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 Author: Karma with the Chief Product Officer role, revised 20 Nov 2026 against the three round-2 executive reviews and Karma's round-2 rulings. Docs only. These are not features. Each one protects a promise a parent relies on: it starts fast, it works with large text and VoiceOver, it never nags, only Home starts a letter, and nothing they made is lost or shown where it should not be. Every other card leans on them, so each carries full acceptance rows and budgets.
 

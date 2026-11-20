@@ -1,5 +1,7 @@
 # Function review: operations (OPS)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `ops` | Replaces: none | Load when: runbooks, releases, data requests (FR-OPS).
+
 Owner: `ops` (release and operations engineer), backlog row BL-999. Written 20 Nov 2026 under `docs/product/prd/functions/BRIEF.md`. Docs only: this file changes no card, no runbook, no workflow and no code. Karma rules the card changes (section 5) in `GAP-LOG.md`; the design needs (section 4) go to the area E lead.
 
 I am a Claude role, not a licensed professional (not an SRE on call, not a lawyer). Every legal reading below is marked "counsel must confirm". Outside facts carry their URL and the date I read them (20 Nov 2026); anything else is marked UNVERIFIED or cites the repo file that recorded it.

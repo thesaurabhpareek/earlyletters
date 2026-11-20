@@ -1,5 +1,7 @@
 # Final stack rank, sizing and first work packages (19 Nov 2026)
 
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: section 2 In flight and the rank order for waves) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
 Owner: Karma (CTO role), with the Chief Product Officer role. Docs only. Read against develop `09a104da` (19 Nov, after #764 merged) and the open PRs listed in section 2, at 22:15 UTC.
 
 Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the order of work and each item's size and gate (rank 1 to 54, plus section 4b for cards added 20 Nov).

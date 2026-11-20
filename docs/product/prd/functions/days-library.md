@@ -1,5 +1,7 @@
 # Function review: the library of days (DAY)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `content` with `regulatory-affairs` | Replaces: none | Load when: building or reviewing the library of days (FR-DAY).
+
 Owner: `content` with `regulatory-affairs`. FR code DAY. Wave 3, brief 1 (`docs/product/prd/tools/review/wave3-briefs.md`), answering `docs/product/prd/20-founder-direction-20nov.md` sections 1 (items 1 and 2), 3 and 4. Written 20 Nov 2026 (UTC). Docs only: nothing here is built, no string is live, no date has been entered in code, and no decision is recorded. Not committed.
 
 The writers are Claude roles. We are not lawyers and not a religious or cultural authority. Every legal reading says "counsel must confirm". Every date below is a date another party published, read this session, and is marked with where it came from. Where a date could not be read, the cell says `n/r` (not read) and no date is written from memory.

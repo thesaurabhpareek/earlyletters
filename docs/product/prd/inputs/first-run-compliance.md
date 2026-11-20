@@ -1,6 +1,8 @@
 # First run: compliance and risk-check input (download to first letter)
 
-Status: input for design and the locked pack, 20 Nov 2026. Author: `regulatory-affairs` (engineering reading, confirm with counsel). Reviewed by: nobody yet; the CCO role signs any change to a fenced path. Not legal advice. Every legal reading below is "counsel must confirm". Counsel numbers are COUNSEL_PACKET 1.5.0 (`docs/legal/COUNSEL_PACKET.md`, dated 2026-11-01); a new question is marked "new, needs a number from legal".
+Status: WORKING-INPUT | 20 Nov 2026 | Owner: `regulatory-affairs` | Replaces: none | Load when: a compliance or risk check of the first run (NS-38 to NS-45).
+
+Status detail: input for design and the locked pack, 20 Nov 2026. Author: `regulatory-affairs` (engineering reading, confirm with counsel). Reviewed by: nobody yet; the CCO role signs any change to a fenced path. Not legal advice. Every legal reading below is "counsel must confirm". Counsel numbers are COUNSEL_PACKET 1.5.0 (`docs/legal/COUNSEL_PACKET.md`, dated 2026-11-01); a new question is marked "new, needs a number from legal".
 
 Repo read: `/home/claude/earlyletters`, branch `docs/locked-pack-inputs-20nov` at 543516611. "Built" means present on that branch. Whether a migration is applied to the production project (`scribe-prod`) is not recorded in the repo: `.github/migrations-applied.txt` lists only files 1 and 2 for the older `early-letters` project, so every server control below is "in code, production apply UNVERIFIED" unless stated.
 

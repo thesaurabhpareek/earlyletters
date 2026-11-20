@@ -1,6 +1,8 @@
 # NS-38 to NS-45: from App Store download to the first kept letter
 
-Status: Locked v1.0 candidate, 20 Nov 2026 (needs Karma's ruling on open items). Changes after lock need a PR that lists every changed id.
+Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (PM role, with the CPO role) | Replaces: none | Load when: building or testing sign-up, consent, first letter or account life (NS-38 to NS-45).
+
+Status detail: Locked v1.0 candidate, 20 Nov 2026 (needs Karma's ruling on open items). Changes after lock need a PR that lists every changed id.
 
 Author: `product` (PM role, with the CPO role; a Claude session, not a scheduled `product` run), for Karma (CTO). Backlog row BL-994. Docs only: nothing here is built by this file, no string is live, no decision is recorded in `DECISIONS.md`. Founder request of 20 Nov 2026 (relayed by Karma): the PRD covers everything from app download and the first interaction through sign-up and sign-in, risk checks, required validation, information collection and verification, so design can draw the whole path end to end.
 
@@ -1571,6 +1573,8 @@ Leaving must be as clear as joining. Sign-out keeps the book on the phone, becau
 | NS-45-R16 | Given servers off in the build, Then no Account, Sign out or Delete account row shows, and Erase everything and export work | P0 (b) | `[NS-45-R16] servers-off has no account rows` |
 | NS-45-R17 | Given a deletion request and a cancel, Then the account address receives one plain email for each (no content; O-17) | P1 | `[NS-45-R17] deletion and cancel are confirmed by email` |
 | NS-45-R18 | Given VoiceOver and AX5 on SE 3, Then the sign-out sheet, both deletion steps, the scheduled screen and the update line are fully reachable and read in order | P0 (b) | `[NS-45-R18] leaving works with VoiceOver and at AX5` |
+
+CL/K ruling K15 (`GAP-LOG.md`; lifecycle against back-office on deletion, claim and hand acts), one home for the three rules: (1) a sole parent's book is exported only by the account holder's own phone, or by a counsel-read process that hands over the Save a copy file the person already holds; no staff tool exports a book (FR-LCY-27); (2) a deleted-elsewhere phone (FR-LCY-19) and a suspended account (FR-BKO-26) get two lines and two states; (3) a claim after deletion (FR-LCY-11) is parent-driven and never done by staff. Counsel confirms the death runbook (RUFADAA, none read). Only Q-BKO-1 (default: no hand merge) is the founder's.
 
 ### 8. Non-functional budgets
 - Latency: sign-out on the phone within 1 s when nothing is queued; deletion request p95 1.5 s on LTE (PROPOSED).

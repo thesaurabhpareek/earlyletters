@@ -1,8 +1,10 @@
 # C. Cross-cutting platform, quality and delivery design for the locked pack
 
+Status: WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: reading section 8, which 18-errata-after-lock.md cites; otherwise do not load.
+
 Author: `principal-architect`, for Karma (CTO). Written 20 Nov 2026 against the lock worktree `/home/claude/wt/E` at `450bcb4a9` (committed 2026-11-20T05:07Z), read-only. Nothing here was committed, pushed or posted.
 
-Status: design proposal. It makes no product decision and sets no date. Where it proposes a rule change to a steward chapter, that is an RFC for the other stewards; where it proposes a workflow or roster change, that is for Karma and the founder.
+Status detail: design proposal. It makes no product decision and sets no date. Where it proposes a rule change to a steward chapter, that is an RFC for the other stewards; where it proposes a workflow or roster change, that is for Karma and the founder.
 
 How facts are marked:
 - `path:line` is a fact read in the worktree this session.

@@ -1,5 +1,7 @@
 # Function review: quality and test coverage (QAL)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `qa` | Replaces: none | Load when: test coverage, device rows, regression (FR-QAL).
+
 Owner: `qa` (Quality Engineer), second-wave review. Written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md` and `/home/claude/review/gap-agents-common.md`. Docs only: nothing here is built, no test was written or run, and no decision is recorded. The person writing this is a Claude role, not a licensed professional; where a legal or store reading appears it says "counsel must confirm".
 
 Fictional family Asha only. Words quoted from the product are intent for `content`, never final copy.

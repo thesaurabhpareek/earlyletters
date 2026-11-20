@@ -1,5 +1,7 @@
 # Wave 3 briefs (20 Nov). Run when the usage limit resets (11:00 UTC).
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Common: follow tools/review/gap-agents-common.md (read it; it says branch, no commits, ASCII, Asha only, source rules). First read docs/product/prd/20-founder-direction-20nov.md in full; it is the direction. Constitution and content rules bind every output: no emoji, no fear or guilt or loss language, no streaks or counts of gaps, never imply AI writes, `{child}` never gendered. Local notifications only; one budgeted notification a day (NS-32); the library of days reuses typed days (NS-18).
 
 1. DAYS LIBRARY (agents: content, regulatory-affairs). Output functions/days-library.md, FR code DAY. Build the data: for each layer in section 3.2 of the direction, the list of days with name, rule or date for 2026 to 2030, the source URL read this session, and the uncertainty (moon sighting etc). Religion-agnostic US and world days first; then top world traditions by size (read a source for sizes) each with major days. Lock-screen neutral title rule; wording that never presumes the family's make-up; an exclusion list with reasons. Proposed card NS-46 (Days we mark) with the 23 sections in outline.

@@ -1,5 +1,7 @@
 # Executive council review: Early Letters requirements pack (VISION, 00 to 14), cards NS-01 to NS-37
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 All six reviewers below are Claude roles, not lawyers, auditors or regulators. This was a read-only review. I edited, committed and pushed nothing.
 
 ## What I read, and what I did not

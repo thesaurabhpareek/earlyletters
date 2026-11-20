@@ -1,5 +1,7 @@
 # Review of NS-46 to NS-50 from mobile engineering (Expo SDK 57, iOS 17 target)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
 Reviewer: `mobile` agent (a Claude role, not a lawyer). Date: 20 Nov 2026 (UTC). Branch `docs/locked-pack-inputs-20nov`, head `69607775e`. Docs only; no code changed, no branch switched, nothing committed.
 Card reviewed: `docs/product/prd/21-days-cultural-photos-home.md`. Function files read for this lens: `functions/lifecycle-and-platforms.md` (FR-LCY-15, 16, 31), `functions/reliability.md` (FR-REL-31, 32, 35, 54, 56, 57), `functions/messaging-and-entry-points.md` (FR-MSG-16, 18, 19, 21, 23). GAP-LOG rulings (R-IA, N, CB, DL) and errata E13, E16, E18, E20, E21 are treated as binding; conflicts are flagged, not reopened.
 

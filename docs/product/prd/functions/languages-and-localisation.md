@@ -1,5 +1,7 @@
 # Function review: languages and localisation (LOC)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `speech` and `content` | Replaces: none | Load when: languages, locale, calendar pins, right-to-left (FR-LOC).
+
 Owner: `speech` and `content` for the work, Karma for the rulings. Second-wave review, written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md`, branch `docs/locked-pack-inputs-20nov`, head `3eb8a9d02`. Docs only: nothing here is built, no string is live, no decision is recorded.
 
 The person writing this is a Claude role. It is not a lawyer, a linguist or a licensed translator. Every legal reading says "counsel must confirm". No sentence here is product copy; words a parent would read are quoted as intent, `content` writes them and the founder approves them. The fictional family Asha is the only family named.

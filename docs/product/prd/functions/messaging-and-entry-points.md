@@ -1,5 +1,7 @@
 # Function review: messaging and entry points (MSG)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `product` (second wave) | Replaces: none | Load when: notifications, deep links, widgets and entry points (FR-MSG).
+
 Second-wave review, written 20 Nov 2026 (UTC) under `docs/product/prd/functions/BRIEF.md` and the common gap-agent brief. Branch `docs/locked-pack-inputs-20nov`, working tree head `736a1cf1c`. Docs only: nothing here is built, no string is live, and no decision is recorded. Karma rules the card changes.
 
 The author is a Claude role, not a lawyer. Every legal reading says "counsel must confirm". Words a parent would read are quoted as intent only; `content` writes them and the founder approves them. The only example family is the fictional family Asha.

@@ -1,5 +1,7 @@
 # Function review: user research and validation plan (RSH)
 
+Status: CURRENT (LOCKED rev 2) (function review) | 20 Nov 2026 | Owner: `user-research` | Replaces: none | Load when: research and validation plan (FR-RSH).
+
 Owner: `user-research` (second-wave function review; the first nine are done). Written 20 Nov 2026 (UTC) to `docs/product/prd/functions/BRIEF.md` on branch `docs/locked-pack-inputs-20nov`. Docs only: nothing here is built, no recruiting has started, no spend is committed, no decision is recorded. Karma rules every proposal through `GAP-LOG.md`.
 
 I am a Claude role, not a licensed researcher, lawyer, clinician or tax adviser. I do not talk to participants: the founder or a human researcher runs sessions from a guide I prepare, and I plan and synthesise. Every legal reading says "counsel must confirm". Every number is read from a named source, computed with the arithmetic shown, or marked PROPOSED. Nothing here is observed data: no parent has been studied by this team yet (frame line 16; `docs/research/USER_RESEARCH.md` line 3: "desk research ... No primary interviews yet").
