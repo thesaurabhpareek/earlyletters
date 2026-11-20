@@ -15,6 +15,7 @@
  * consent is granted, so before a yes no PostHog code runs and nothing can be
  * sent, queued or written to disk.
  */
+import { CRASH_REPORTING, errorTrackingOptions } from './crash';
 import type { AnalyticsProvider } from './provider';
 import { sanitizeOutgoing, type OutgoingEvent, type Violation } from './validate';
 
@@ -164,12 +165,13 @@ export const REQUIRED_POSTHOG_OPTIONS = {
   /** Nothing leaves the device until `optIn()` (LEGAL-REQ-003). Default true. */
   defaultOptIn: false,
   /**
-   * Events, ids and flags live in memory only: nothing is written to disk by
-   * the SDK, even after consent, and withdrawal leaves no file behind.
-   * Default 'file'. Cost: events not yet flushed are lost if the app is
-   * killed; our client flushes every 60 s and on background.
+   * Founder decision, 20 Nov 2026: persistence on file, so a yes survives a kill
+   * and queued events are not lost. The SDK is constructed only after a yes, so
+   * no file exists before consent. Withdrawal does optOut, reset and an emptied
+   * queue (createPostHogAdapter / createLazyPostHogAdapter), so the random id
+   * and queue are cleared, and a later yes starts a new id.
    */
-  persistence: 'memory',
+  persistence: 'file',
   /** Replay would capture letter text on screen (ADR 0008). Default false. */
   enableSessionReplay: false,
   /** We send our own app_opened / app_backgrounded. Default true. */
@@ -186,8 +188,6 @@ export const REQUIRED_POSTHOG_OPTIONS = {
   sendFeatureFlagEvent: false,
   /** Default false. Surveys would render PostHog UI in the app. */
   disableSurveys: true,
-  /** Exceptions can quote letter text in messages; crash reports are Sentry's job (scrubbed). */
-  errorTracking: { autocapture: false, exceptionSteps: { enabled: false } },
   /** Both default true and need the native plugin, which we do not install. Off regardless. */
   capturePushNotificationSubscriptions: false,
   capturePushNotificationOpened: false,
@@ -243,12 +243,26 @@ export function keepAllowedAppProperties(props: KeptAppProperties): KeptAppPrope
  * removes `$set` / `$set_once` (PostHog re-attaches a top-level `$set` unless
  * the hook removes it).
  */
-export function posthogBeforeSend<E extends OutgoingEvent = OutgoingEvent>(onViolation?: (v: Violation) => void) {
-  return (evt: E | null): E | null => (evt ? sanitizeOutgoing(evt, onViolation) : null);
+export function posthogBeforeSend<E extends OutgoingEvent = OutgoingEvent>(
+  onViolation?: (v: Violation) => void,
+  options: { crashEnabled?: boolean } = {},
+) {
+  return (evt: E | null): E | null => (evt ? sanitizeOutgoing(evt, onViolation, options) : null);
+}
+
+/** PostHog Cloud ingestion hosts. The region is chosen once at project set-up (US is the default; EU if counsel says so). */
+export const POSTHOG_HOSTS = { us: 'https://us.i.posthog.com', eu: 'https://eu.i.posthog.com' } as const;
+export type PostHogRegion = keyof typeof POSTHOG_HOSTS;
+
+/** `EXPO_PUBLIC_POSTHOG_REGION` (`us` or `eu`) to a host. Anything else is US, never an arbitrary URL from the environment. */
+export function posthogHostFor(region: string | undefined): string {
+  return region?.trim().toLowerCase() === 'eu' ? POSTHOG_HOSTS.eu : POSTHOG_HOSTS.us;
 }
 
 export interface PostHogConfig {
   host: string;
+  /** Crash capture switch. Defaults to CRASH_REPORTING.enabled (crash.ts); tests set it. */
+  crashEnabled?: boolean;
   /** This consent period's random analytics id (bootstrapped, so no $identify is sent). */
   distinctId: string;
   onViolation?: (v: Violation) => void;
@@ -262,9 +276,11 @@ export function buildPostHogOptions(cfg: PostHogConfig) {
   return {
     host: cfg.host,
     bootstrap: { distinctId: cfg.distinctId, isIdentifiedId: true },
-    before_send: posthogBeforeSend(cfg.onViolation),
+    before_send: posthogBeforeSend(cfg.onViolation, { crashEnabled: cfg.crashEnabled }),
     customAppProperties: keepAllowedAppProperties,
     ...REQUIRED_POSTHOG_OPTIONS,
+    // Exception autocapture is one config block (crash.ts). Off until the founder flips it.
+    errorTracking: errorTrackingOptions(cfg.crashEnabled ?? CRASH_REPORTING.enabled),
   };
 }
 

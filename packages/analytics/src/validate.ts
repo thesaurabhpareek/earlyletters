@@ -19,7 +19,9 @@
  * Violation reports never include the offending value, because the value is
  * exactly what must not leave the device (or reach a dev log).
  */
-import { EVENTS, GLOBAL_PROPS, type EventName } from './catalog';
+import { GLOBAL_PROPS } from './catalog';
+import { CRASH_REPORTING, reduceExceptionEvent } from './crash';
+import { REGISTRY, type RegistryName } from './registry';
 import type { PropSpec } from './schema';
 
 export const MAX_STRING_LENGTH = 40;
@@ -55,7 +57,7 @@ export interface SanitizeResult {
  * (`{ [childName]: true }`), so it is reported as '<unlisted>'.
  */
 const KNOWN_KEYS: ReadonlySet<string> = new Set([
-  ...Object.values(EVENTS).flatMap((e) => Object.keys(e.props)),
+  ...Object.values(REGISTRY).flatMap((e) => Object.keys(e.props)),
   ...Object.keys(GLOBAL_PROPS),
 ]);
 
@@ -68,25 +70,8 @@ function safeEvent(name: string): string {
   return isKnownEvent(name) ? name : '<unlisted>';
 }
 
-const PII_PATTERNS: readonly RegExp[] = [
-  /[^\s@]+@[^\s@]+\.[^\s@]+/, // email
-  /(?:\+?\d[\s().-]?){7,}/, // phone-like digit run
-  /\bhttps?:\/\//i, // URL
-  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i, // uuid
-  /\b\d{4}-\d{2}-\d{2}\b/, // ISO date (birthdays, due dates)
-  /\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b/, // other dates
-  /eyJ[A-Za-z0-9_-]{10,}/, // JWT
-  /\b[A-Za-z0-9_-]{32,}\b/, // long token-like blob
-];
-
-/**
- * True for strings that look like contact details, ids, tokens, dates or
- * prose. Enum values are snake_case, so anything with whitespace or capitals
- * is treated as free text by the caller before this runs.
- */
-export function isPiiLike(value: string): boolean {
-  return PII_PATTERNS.some((re) => re.test(value));
-}
+export { isPiiLike } from './pii';
+import { isPiiLike } from './pii';
 
 /** Enum values are lower snake_case words or bucket labels like `2_4`. */
 const ENUM_SHAPE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
@@ -116,8 +101,12 @@ function checkValue(spec: PropSpec, value: unknown): Check {
   return { ok: false, kind: 'invalid_value', dropEvent: false };
 }
 
-export function isKnownEvent(name: string): name is EventName {
-  return Object.prototype.hasOwnProperty.call(EVENTS, name);
+/**
+ * True only for a name in the registry (registry.ts). A typed-but-held name from catalog.ts is NOT known:
+ * registry-driven sending is the only path (founder, 20 Nov 2026).
+ */
+export function isKnownEvent(name: string): name is RegistryName {
+  return Object.prototype.hasOwnProperty.call(REGISTRY, name);
 }
 
 /**
@@ -130,7 +119,7 @@ export function sanitizeEvent(name: string, input: unknown): SanitizeResult {
     violations.push({ kind: 'unknown_event', event: safeEvent(name) });
     return { props: null, violations };
   }
-  const specs: Record<string, PropSpec> = { ...EVENTS[name].props, ...GLOBAL_PROPS };
+  const specs: Record<string, PropSpec> = { ...REGISTRY[name].props, ...GLOBAL_PROPS };
   const out: Props = {};
   const record = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
   let invalidRequired = false;
@@ -202,6 +191,9 @@ export const ALLOWED_SDK_PROPERTIES: readonly string[] = [
 /** SDK-internal events we let through (no properties beyond the above). */
 export const ALLOWED_SDK_EVENTS: readonly string[] = ['$identify'];
 
+/** The one SDK event that carries a crash. Allowed only while CRASH_REPORTING.enabled, and only after reduceExceptionEvent. */
+export const EXCEPTION_EVENT = '$exception';
+
 /**
  * Shape of the event PostHog's `before_send` receives (@posthog/core 1.55.3
  * `CaptureEvent`: uuid, event, properties, $set, $set_once, timestamp).
@@ -219,7 +211,19 @@ export interface OutgoingEvent {
  * (person properties) are always removed: PostHog copies a top-level `$set`
  * back into the payload unless the hook omits it.
  */
-export function sanitizeOutgoing<E extends OutgoingEvent>(evt: E, onViolation?: (v: Violation) => void): E | null {
+export function sanitizeOutgoing<E extends OutgoingEvent>(
+  evt: E,
+  onViolation?: (v: Violation) => void,
+  options: { crashEnabled?: boolean } = {},
+): E | null {
+  if (evt.event === EXCEPTION_EVENT) {
+    // Crash capture is off until the founder flips CRASH_REPORTING.enabled (crash.ts); then only the reduced shape leaves.
+    if (!(options.crashEnabled ?? CRASH_REPORTING.enabled)) {
+      onViolation?.({ kind: 'unknown_event', event: '<unlisted>' });
+      return null;
+    }
+    return reduceExceptionEvent(evt, ALLOWED_SDK_PROPERTIES) as E | null;
+  }
   const sdkEvent = ALLOWED_SDK_EVENTS.includes(evt.event);
   if (!sdkEvent && !isKnownEvent(evt.event)) {
     onViolation?.({ kind: 'unknown_event', event: safeEvent(evt.event) });
