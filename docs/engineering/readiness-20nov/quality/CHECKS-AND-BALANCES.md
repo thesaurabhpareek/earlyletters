@@ -7,7 +7,9 @@ Tags: [V] verified (file and line, sha or command output), [E] estimate with its
 
 Engineers (mostly agents) build to the rows in the four `TEST-CASE-CATALOGUE-*.md` files. Reviewers use this file to tell a test that proves a row from a test that cannot fail. The founder needs one sentence: a green build means a row is proven only when its test went red on the old code, died to its mutant, and says so in the PR body.
 
-Where we start (trace on develop `16e61549`, run with `node scripts/trace.mjs --register <14-test-plan.md>`): 296 P0 rows; 39 tested, 13 named only as a device row, 244 untested; 269 with no backlog row [V, command output, 20 Nov]. The cites that exist are not yet checked against C-01; see section 9.
+Card revision covered: locked pack v1.0 at `450bcb4a`; the newer inputs branch (`40c6eb4a`, cards 19, 21, 27 locked rev 2, PRs #934 and #935) is not reconciled.
+
+Where we start (to reproduce: check out develop `16e61549`, put the cards from `450bcb4a` and its `14-test-plan.md` in one folder, run `node scripts/trace.mjs --no-write --register <folder>/14-test-plan.md --out <file>`; its NS section prints the 296 / 39 / 13 / 244 / 269 counts. The baseline of 8 files and 73 tests comes from the #835 to #838 reviews' full `apps/mobile` runs; I did not re-run it [U]): 296 P0 rows; 39 tested, 13 named only as a device row, 244 untested; 269 with no backlog row [V, command output, 20 Nov]. The cites that exist are not yet checked against C-01; see section 9.
 
 ## 1. The six facts that shaped these rules
 
@@ -44,7 +46,7 @@ Not accepted: "the test is new, so it failed before the code existed" (a missing
 
 **C-04 Every added call has a test that dies without it.** For each call, branch or guard a PR adds, there is a mutant that deletes it and a test that goes red (F4). A screen that needs five calls on leave paths moves them into one tested function, for example `leaveCapture()`, so a test pins one thing (reviewer suggestion at #838, Must fix 1 [V]).
 
-**C-05 Mutation check by hand (all P0 rows, now).** The catalogue gives at least one mutant per row. The author applies each mutant alone, runs only the named test files, sees red, restores, and pastes a table. Minimum per row: one mutant per assertion clause; for a number or ceiling, one mutant on each side (`140`, `141`, `139`); for a flag, the switch check removed while every other guard stands (F1). Table form in the PR body (it is the form the reviewers already use):
+**C-05 Mutation check by hand (all P0 rows, now).** The catalogue gives one starting mutant per row, not one per clause. The author applies each mutant alone, runs only the named test files, sees red, restores, and pastes a table. Minimum per row: the catalogue's mutant plus one more for every further clause the row has (the author adds them; the reviewer checks the count against the card row); for a number or ceiling, one mutant on each side (`140`, `141`, `139`); for a flag, the switch check removed while every other guard stands (F1). Table form in the PR body (it is the form the reviewers already use):
 ```
 | Row | Mutant (file:line, what changed) | Files run | Result (red at <file>:<line>) |
 ```
