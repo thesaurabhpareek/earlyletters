@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Area A. Capture: motion prototype</title>
 <style>
-/* Token values copied from packages/design-tokens/src/tokens.ts (colors light and dark, radius, motion). */
+/* Colour and radius values copied from packages/design-tokens/src/tokens.ts (light and dark). Motion values: tokens.motion
+   with the design system v2 changes (docs/design/system/MOTION.md 13a): spring.standard 0.30 s, keep.* 600 ms. */
 :root {
   --bg: #FBF8F3; --surface: #F5EFE7; --raised: #FFFFFF; --text: #2B2722; --muted: #6B645B;
   --accent: #8A5A3B; --accentSoft: #F1E6DC; --onAccent: #FFFFFF; --line: #E6DED3; --focus: #2F6F8F;
   --recording: #B5473A; --success: #3F7A55; --scrim: #2B272252;
   --lampCore: rgba(255, 226, 168, 0.78); --lampTail: rgba(243, 201, 139, 0.35);
+  --glassTint: 255, 255, 255; --glassText: #2B2722;
   --page: #ECE7DF; --pageText: #2B2722; --panel: #FFFFFF;
 }
 body.dark {
@@ -18,6 +20,7 @@ body.dark {
   --accent: #D9A47E; --accentSoft: #3A2E25; --onAccent: #1E1612; --line: #33302C; --focus: #8CC4DE;
   --recording: #F08C7C; --success: #8CC9A0; --scrim: #0000008C;
   --lampCore: rgba(255, 226, 168, 0.16); --lampTail: rgba(243, 201, 139, 0.18);
+  --glassTint: 44, 40, 36; --glassText: #F2ECE4;
   --page: #0E0D0C; --pageText: #F2ECE4; --panel: #1B1917;
 }
 * { box-sizing: border-box; }
@@ -46,7 +49,7 @@ ol.log li.a11y { color: var(--focus); }
 .hapbadge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--recording); color: var(--onAccent); font-size: 12px; opacity: 0; transition: opacity 120ms; }
 .hapbadge.on { opacity: 1; }
 
-/* The phone: 320 x 600 pt crop of the 375 pt screen, drawn 1 pt = 1 px. Simplified, not the layout (DESIGN.md owns layout). */
+/* The phone: a 320 x 600 pt crop of the 375 pt screen, 1 pt = 1 px. Simplified: layout belongs to PROTOTYPE.html. */
 .phone { position: relative; width: 320px; height: 600px; border-radius: 34px; border: 8px solid #1d1b19; background: var(--bg); color: var(--text); overflow: hidden; flex: none; }
 .layer { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .lamp { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 120% 70% at 50% -10%, var(--lampCore) 0%, var(--lampTail) 38%, transparent 70%); }
@@ -58,7 +61,7 @@ ol.log li.a11y { color: var(--focus); }
 .prompt { font: 21px/1.35 Georgia, serif; margin-top: 18px; min-height: 58px; }
 .quietbtn { align-self: center; background: none; border: 0; color: var(--muted); font: inherit; min-height: 44px; padding: 0 12px; cursor: pointer; }
 .twins { display: flex; gap: 8px; }
-.btn { flex: 1; min-height: 56px; border-radius: 16px; border: 0; background: var(--accent); color: var(--onAccent); font: 600 16px/1 inherit; font-family: inherit; cursor: pointer; }
+.btn { flex: 1; min-height: 56px; border-radius: 999px; border: 0; background: var(--accent); color: var(--onAccent); font: 600 16px/1 inherit; font-family: inherit; cursor: pointer; }
 .btn.cap { min-height: 64px; }
 .btn.sec { background: var(--raised); color: var(--text); border: 1px solid var(--line); }
 .btn[disabled] { opacity: 0.4; cursor: default; }
@@ -66,12 +69,12 @@ ol.log li.a11y { color: var(--focus); }
 .card { background: var(--raised); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-top: 10px; font-size: 14px; }
 .card .t { font-size: 12px; color: var(--muted); }
 .mv { transform: translateY(calc(var(--y, 0) * 1px)) scale(var(--s, 1)); }
-.toast { position: absolute; left: 12px; right: 12px; bottom: 20px; min-height: 56px; border-radius: 20px; background: var(--text); color: var(--bg); display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 16px; font-size: 14px; }
+.toast { position: absolute; left: 12px; right: 12px; bottom: 20px; min-height: 56px; border-radius: 999px; color: var(--glassText); display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 18px; font-size: 14px;
+  background: rgba(var(--glassTint), calc(var(--g, 0) * 0.62)); backdrop-filter: blur(calc(var(--g, 0) * 18px)) saturate(calc(1 + var(--g, 0) * 0.6)); -webkit-backdrop-filter: blur(calc(var(--g, 0) * 18px)); box-shadow: 0 6px 24px rgba(0,0,0, calc(var(--g, 0) * 0.14)); border: 1px solid rgba(255,255,255, calc(var(--g, 0) * 0.35)); }
 .toast .msg { flex: 1; }
-.toast button { min-height: 44px; min-width: 44px; border-radius: 12px; border: 0; background: var(--raised); color: var(--text); font: 600 14px/1 inherit; font-family: inherit; padding: 0 12px; cursor: pointer; }
-.toast button.x { background: transparent; color: var(--bg); font-size: 18px; }
+.toast button { min-height: 44px; min-width: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--glassText); font: 600 15px/1 inherit; font-family: inherit; padding: 0 14px; cursor: pointer; }
 .qline { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 15px; min-height: 44px; }
-.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--raised); border-radius: 20px 20px 0 0; padding: 18px; box-shadow: 0 -4px 20px rgba(0,0,0,0.12); }
+.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; background: var(--raised); border-radius: 28px; padding: 18px; box-shadow: 0 -4px 20px rgba(0,0,0,0.12); }
 .scrim { position: absolute; inset: 0; background: var(--scrim); }
 .radio { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .radio .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--muted); display: inline-flex; align-items: center; justify-content: center; }
@@ -79,7 +82,7 @@ ol.log li.a11y { color: var(--focus); }
 .radio.sel .dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
 .radio .sub { font-size: 12px; color: var(--muted); }
 .switcher { background: none; border: 0; color: var(--text); font: 600 14px/1 inherit; font-family: inherit; min-height: 44px; padding: 0; cursor: pointer; }
-.close { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 22px; border: 0; background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; z-index: 3; }
+.close { position: absolute; top: 10px; right: 10px; min-width: 44px; height: 44px; border-radius: 22px; border: 0; background: var(--surface); color: var(--text); font: 600 14px/1 inherit; font-family: inherit; padding: 0 12px; cursor: pointer; z-index: 3; }
 .lhead { text-align: center; padding-top: 52px; }
 .lhead .h { font-weight: 600; font-size: 17px; }
 .lhead .aud { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -88,17 +91,16 @@ ol.log li.a11y { color: var(--focus); }
 .aura { position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
 .glow { position: absolute; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, var(--recording) 0%, color-mix(in srgb, var(--recording) 55%, transparent) 50%, transparent 72%); opacity: 0; }
 .ring { position: absolute; width: 144px; height: 144px; border-radius: 50%; border: 2px solid var(--recording); opacity: 0; }
-.disc { position: relative; width: 120px; height: 120px; border-radius: 50%; background: var(--recording); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 0; }
-.disc .fill { position: absolute; inset: 0; border-radius: 50%; background: var(--recording); }
-.disc .outline { position: absolute; inset: 0; border-radius: 50%; background: var(--raised); border: 2px solid var(--recording); opacity: 0; }
-.mic { position: relative; color: var(--onAccent); }
-.disc.paused .mic { color: var(--recording); }
-.clock { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; font-size: 17px; min-height: 24px; opacity: 0; }
+.disc { position: relative; width: 120px; height: 120px; border-radius: 50%; background: var(--recording); color: var(--onAccent); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 0; }
+.disc.paused { background: var(--raised); color: var(--recording); box-shadow: inset 0 0 0 2px var(--recording); }
+.disc .recdot { display: none; width: 26px; height: 26px; border-radius: 50%; background: var(--onAccent); }
+.disc.rec .mic { display: none; } .disc.rec .recdot { display: block; }
+.disc.paused .recdot { background: transparent; box-shadow: inset 0 0 0 3px var(--recording); }
+.clock { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; font-size: 17px; min-height: 24px; visibility: hidden; }
 .line { min-height: 22px; font-size: 15px; text-align: center; }
 .review .words { font: 17px/1.5 Georgia, serif; }
 .mark { text-decoration: line-through; text-decoration-color: var(--accent); cursor: pointer; border-bottom: 1.5px dotted var(--accent); }
-.wash { border-radius: 4px; }
-.inline { background: var(--surface); border-radius: 16px; padding: 12px; margin: 10px 0; overflow: hidden; font-size: 14px; }
+.inline { background: var(--surface); border-radius: 16px; padding: 0 12px; margin: 10px 0; overflow: hidden; font-size: 14px; }
 .small { font-size: 13px; color: var(--muted); }
 .thumb { margin: 0 auto; width: 100%; height: 160px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); position: relative; overflow: hidden; }
 .thumb .pic { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
@@ -115,12 +117,11 @@ body.dark .alert { background: rgba(44,44,46,0.97); color: #EEE; }
 .alert button { display: block; width: 100%; min-height: 44px; border: 0; border-top: 1px solid rgba(128,128,128,0.3); background: none; font: 16px/1 inherit; font-family: inherit; color: #0A64D8; cursor: pointer; }
 .alert button.d { color: #D7372B; }
 .alert button.def { font-weight: 600; }
-.chip { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: var(--accentSoft); border: 1px solid rgba(243,201,139,0.4); font-size: 16px; }
 .state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 28px; gap: 10px; }
-.state .g { width: 64px; height: 64px; border-radius: 32px; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--muted); }
-.black { position: absolute; inset: 0; background: #000; }
+.state .g { width: 64px; height: 64px; border-radius: 32px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--muted); }
 .widget { position: absolute; left: 22px; top: 60px; width: 150px; height: 150px; border-radius: 22px; background: #2c2c2e; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; font-size: 14px; cursor: pointer; border: 0; text-align: left; }
 .home-os { position: absolute; inset: 0; background: linear-gradient(160deg, #47506b, #1f2433); }
+.stand { position: absolute; top: 6px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; }
 </style>
 </head>
 <body>
@@ -130,22 +131,24 @@ body.dark .alert { background: rgba(44,44,46,0.97); color: #EEE; }
   <label><input type="checkbox" id="dark"> Dark</label>
   <label><input type="checkbox" id="slow"> Slow (x4, to watch)</label>
 </div>
-<p class="intro">Each section plays one moment from <code>MOTION.md</code> on demand, keyed to the screen ids in <code>DESIGN.md</code>. The phones are simplified crops; layout belongs to <code>PROTOTYPE.html</code>. Timings are the tokens in <code>packages/design-tokens</code>; springs are integrated from their stiffness, damping and mass. The log beside each phone shows the timeline in token milliseconds and every haptic (red) and screen reader event (blue); nothing in the log is shown to a parent. Fictional family only: Asha. Pictures are drawn shapes.</p>
+<p class="intro">Each section plays one moment of <code>MOTION.md</code> on demand, keyed to the screen and state ids in <code>DESIGN.md</code> and to the design system v2 primitives (<code>m.*</code>, <code>T-*</code>) in <code>docs/design/system/MOTION.md</code>. The phones are simplified crops; layout and words belong to <code>PROTOTYPE.html</code> and <code>WORDS.md</code>. System surfaces (Apple's picker, native sheets and confirmations) are drawn as labelled stand-ins: their motion is Apple's, not ours. Glass is approximated with CSS blur; it materialises by its blur and tint, never by the element's opacity. The log beside each phone shows the timeline in milliseconds and every haptic (red) and screen reader event (blue); nothing in the log is shown to a parent. Fictional family only: Asha. Pictures are drawn shapes.</p>
 <nav class="toc" id="toc"></nav>
 <main id="main"></main>
 
 <script>
 'use strict';
-/* ---------------- Tokens (copied from tokens.motion) ---------------- */
+/* ---------------- Motion values (tokens.motion, with the v2 changes) ---------------- */
 const T = {
-  fadeMs: 200, exitMs: 160, enter: { dy: 8, ms: 280 }, staggerMs: 30, staggerMax: 6, swapMs: 150,
-  dissolveMs: 280, lamp: { arriveMs: 1200, leaveMs: 160, returnMs: 280, dimTo: 0.7 },
-  press: { scale: 0.97, opacity: 0.9 },
-  snappy: { k: 520, c: 46, m: 1 }, standard: { k: 260, c: 30, m: 1 }, gentle: { k: 90, c: 18, m: 1 },
-  breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400, scaleMax: 0.18, opacityMin: 0.18, opacityMax: 0.40, idleAfterMs: 600, idleScale: 0.05 },
-  breathIdleMs: 7500, pausedOpacity: 0.12,
-  file: { chipAtMs: 250, moveAtMs: 550, dy: 24, scale: 0.9 }, sequenceMaxMs: 900, newMarkMs: 1600,
-  easing: [0.2, 0, 0, 1], radius: { sm: 8, md: 14, xl: 28 },
+  fadeMs: 200, exitMs: 160, swapMs: 150, handOff: 0.35,
+  enter: { dy: 8, ms: 280, staggerMs: 30, staggerMax: 6 },
+  cover: { dissolveMs: 280 },
+  lamp: { arriveMs: 1200, leaveMs: 160, returnMs: 280, dimTo: 0.7 },
+  tap: { scale: 0.97, rmOpacity: 0.9, rmMs: 90 },
+  snappy: { k: 520, c: 46, m: 1 }, standard: { k: 439, c: 38.5, m: 1 },
+  glass: { styleMs: 250 },
+  signal: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400, scaleMax: 0.18, opacityMin: 0.18, opacityMax: 0.40, idleAfterMs: 600, idleScale: 0.05, idleMs: 7500, pausedOpacity: 0.12 },
+  keep: { lineAtMs: 0, moveAtMs: 120, dy: 24, leaveAtMs: 400, bookAtMs: 600 },
+  markMs: 1600,
 };
 let RM = false, SLOW = 1;
 
@@ -161,11 +164,11 @@ function bezier(x1, y1, x2, y2) {
     return Y(t);
   };
 }
-const EASE = bezier(...T.easing);
+const EASE = bezier(0.2, 0, 0, 1);       // easing.standard
+const EASE_EXIT = bezier(0.3, 0, 1, 1);  // easing.exit (v2; value UNVERIFIED there)
 const LINEAR = (t) => t;
 const dead = (run) => !run || run.dead || (run.parent && dead(run.parent));
 const later = (run, ms, fn) => setTimeout(() => { if (!dead(run)) fn(); }, ms * SLOW);
-const sleep = (run, ms) => new Promise((res) => later(run, ms, res));
 
 /* A timed tween: set(p) gets the eased progress 0..1. */
 function tween(run, { ms, delay = 0, ease = EASE, set }) {
@@ -185,7 +188,7 @@ function tween(run, { ms, delay = 0, ease = EASE, set }) {
     if (delay > 0) setTimeout(go, delay * SLOW); else go();
   });
 }
-/* A spring on a 0..1 progress, from the token's stiffness, damping and mass. */
+/* A spring on a 0..1 progress, from stiffness, damping and mass. */
 function spring(run, { cfg, delay = 0, set }) {
   return new Promise((res) => {
     let x = 0, v = 0, last = null;
@@ -212,44 +215,74 @@ function fade(run, el, to, ms, delay = 0, ease = EASE) {
   let from;
   return tween(run, { ms, delay, ease, set: (p) => { if (from === undefined) from = op(el); el.style.opacity = String(from + (to - from) * p); } });
 }
-function enterEl(run, el, delay = 0) {
+/* m.enter: opacity 0 to 1, y +8 to 0, 280 ms (RM: fade 200). */
+function mEnter(run, el, delay = 0) {
   el.style.opacity = '0';
   if (RM) return fade(run, el, 1, T.fadeMs, delay);
   el.style.setProperty('--y', T.enter.dy);
   return tween(run, { ms: T.enter.ms, delay, set: (p) => { el.style.opacity = String(p); el.style.setProperty('--y', T.enter.dy * (1 - p)); } });
 }
-function leaveUp(run, el, delay = 0) {
-  if (RM) return fade(run, el, 0, T.exitMs, delay);
-  return tween(run, { ms: T.exitMs, delay, set: (p) => { el.style.opacity = String(1 - p); el.style.setProperty('--y', -T.enter.dy * p); } });
+/* m.exit: opacity 1 to 0, y 0 to dy, 160 ms, easing.exit (RM: fade 160). */
+function mExit(run, el, dy = -T.enter.dy, delay = 0) {
+  if (RM) return fade(run, el, 0, T.exitMs, delay, EASE_EXIT);
+  return tween(run, { ms: T.exitMs, delay, ease: EASE_EXIT, set: (p) => { el.style.opacity = String(1 - p); el.style.setProperty('--y', dy * p); } });
 }
-/* Height change on `standard` (Reduce Motion: at once). */
-function grow(run, el, toPx) {
+/* m.move: a height change on spring.standard (RM: final on the next frame). */
+function mMove(run, el, toPx) {
   const from = el.getBoundingClientRect().height;
   el.style.overflow = 'hidden';
   if (RM) { el.style.height = toPx + 'px'; return Promise.resolve(); }
   return spring(run, { cfg: T.standard, set: (p) => { el.style.height = (from + (toPx - from) * p) + 'px'; } });
 }
-/* Press feedback: 0.97 on snappy; Reduce Motion: opacity 0.9, no scale. */
-function press(run, el) {
+/* m.tap on a content control: 0.97 on snappy; RM: opacity dip to 0.9 over 90 ms. Glass controls: the system's (m.tap.glass). */
+function mTap(run, el) {
   el.classList.add('mv');
-  if (RM) { el.style.opacity = String(T.press.opacity); later(run, 120, () => { el.style.opacity = '1'; }); return; }
-  spring(run, { cfg: T.snappy, set: (p) => el.style.setProperty('--s', 1 - (1 - T.press.scale) * p) }).then(() =>
-    spring(run, { cfg: T.snappy, set: (p) => el.style.setProperty('--s', T.press.scale + (1 - T.press.scale) * p) }));
+  if (RM) { fade(run, el, T.tap.rmOpacity, T.tap.rmMs, 0, LINEAR).then(() => fade(run, el, 1, T.tap.rmMs, 0, LINEAR)); return; }
+  spring(run, { cfg: T.snappy, set: (p) => el.style.setProperty('--s', 1 - (1 - T.tap.scale) * p) }).then(() =>
+    spring(run, { cfg: T.snappy, set: (p) => el.style.setProperty('--s', T.tap.scale + (1 - T.tap.scale) * p) }));
 }
-function crossfadeText(run, el, text, ms = T.swapMs) {
-  return fade(run, el, 0, ms / 2, 0, LINEAR).then(() => { if (dead(run)) return; el.textContent = text; return fade(run, el, 1, ms / 2, 0, LINEAR); });
+/* m.swap: words replaced in place, a true 150 ms cross-fade in the same box (same in RM). */
+function mSwap(run, el, html) {
+  const host = el.offsetParent || el.parentNode;
+  const clone = el.cloneNode(false);
+  clone.removeAttribute('data-el');
+  clone.innerHTML = html;
+  Object.assign(clone.style, { position: 'absolute', left: el.offsetLeft + 'px', top: el.offsetTop + 'px', width: el.offsetWidth + 'px', margin: '0', opacity: '0' });
+  host.appendChild(clone);
+  fade(run, el, 0, T.swapMs, 0, EASE);
+  return fade(run, clone, 1, T.swapMs, 0, EASE).then(() => { if (dead(run)) return; el.innerHTML = html; el.style.opacity = '1'; clone.remove(); });
 }
-/* Dissolve between two layers (route.dissolveMs; Reduce Motion fadeMs). */
-function dissolve(run, from, to) {
-  const ms = RM ? T.fadeMs : T.dissolveMs;
-  to.style.display = 'flex';
-  to.style.opacity = '0';
-  to.style.zIndex = '5';
-  return Promise.all([fade(run, to, 1, ms, 0, LINEAR)]).then(() => { if (!dead(run)) { from.style.display = 'none'; to.style.zIndex = ''; } });
+/* m.fade hand-off between two elements of words: outgoing gone by 35 percent, incoming from half of that, 200 ms linear. */
+function mHandOff(run, out, inn) {
+  const total = T.fadeMs, outMs = total * T.handOff, inAt = outMs / 2;
+  inn.style.opacity = '0';
+  fade(run, out, 0, outMs, 0, LINEAR);
+  return fade(run, inn, 1, total - inAt, inAt, LINEAR);
+}
+/* m.cover: full-screen dissolve 280 (RM 200). */
+function mCover(run, from, to) {
+  const ms = RM ? T.fadeMs : T.cover.dissolveMs;
+  to.style.display = 'flex'; to.style.opacity = '0'; to.style.zIndex = '5';
+  return fade(run, to, 1, ms, 0, LINEAR).then(() => { if (!dead(run)) { from.style.display = 'none'; to.style.zIndex = ''; } });
 }
 function lampTo(run, lampEl, to, ms) {
   if (RM) { lampEl.style.opacity = String(to); return Promise.resolve(); }
   return fade(run, lampEl, to, ms, 0, EASE);
+}
+/* Stand-in for a system sheet (T-SHEET): drawn here only to show where Apple's motion happens. */
+function systemSheet(run, phone, html) {
+  const scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.style.opacity = '0';
+  const sh = document.createElement('div'); sh.className = 'sheet mv';
+  sh.innerHTML = '<div class="stand">system sheet (stand-in): Apple\'s motion</div>' + html;
+  phone.appendChild(scrim); phone.appendChild(sh);
+  fade(run, scrim, 1, 250, 0, LINEAR);
+  if (RM) { sh.style.opacity = '0'; fade(run, sh, 1, T.fadeMs, 0, LINEAR); }
+  else { sh.style.setProperty('--y', 300); tween(run, { ms: 350, set: (p) => sh.style.setProperty('--y', 300 * (1 - p)) }); }
+  const close = (delay = 0) => {
+    fade(run, scrim, 0, 250, delay, LINEAR).then(() => scrim.remove());
+    return (RM ? fade(run, sh, 0, T.fadeMs, delay, LINEAR) : tween(run, { ms: 300, delay, set: (p) => sh.style.setProperty('--y', 300 * p) })).then(() => sh.remove());
+  };
+  return { sh, close };
 }
 
 /* ---------------- Moments ---------------- */
@@ -263,7 +296,6 @@ function makeCtx(sec, phone, def) {
   const ctx = {
     def, sec, phone, run: { dead: false, t0: performance.now() },
     q: (s) => phone.querySelector(s),
-    qa: (s) => Array.from(phone.querySelectorAll(s)),
     opt: (name) => { const el = sec.querySelector(`[data-opt="${name}"]`); return el ? el.checked : false; },
     t: () => Math.round((performance.now() - ctx.run.t0) / SLOW),
     log(text, cls) { const li = document.createElement('li'); li.textContent = `+${ctx.t()} ms  ${text}`; if (cls) li.className = cls; logEl.appendChild(li); logEl.scrollTop = logEl.scrollHeight; },
@@ -306,42 +338,42 @@ function render() {
       if (ctx) { ctx.run.dead = true; if (ctx.cleanup) ctx.cleanup(); }
       phone.innerHTML = def.html();
       sec.querySelector('ol.log').innerHTML = '';
+      const ro = sec.querySelector('.readout'); if (ro) ro.textContent = '';
       ctx = makeCtx(sec, phone, def);
       if (def.setup) def.setup(ctx);
     };
     sec.querySelector('[data-act="reset"]').onclick = reset;
     sec.querySelector('[data-act="play"]').onclick = () => { reset(); ctx.log(RM ? 'Reduce Motion on' : 'Reduce Motion off'); def.play(ctx); };
-    sec._reset = reset;
     reset();
   });
 }
 
 /* ---------------- Shared drawings ---------------- */
 const homeHTML = (o = {}) => `
-  <div class="layer home">
+  <div class="layer home" ${o.hidden ? 'style="display:none"' : ''}>
     <div class="lamp" style="opacity:${o.lampOff ? 0 : 1}"></div>
     <div class="pad">
       ${o.switcher ? '<button class="switcher" data-el="sw">For Asha &#9662;</button>' : ''}
       <div class="dl mv" data-el="dl">Asha, 7 months</div>
       <div class="greet mv" data-el="gr">Good evening. <span>Asha is asleep.</span></div>
-      <div class="prompt mv" data-el="pr">What made {child} laugh today?</div>
+      <div class="prompt mv" data-el="pr">What made Asha laugh today?</div>
       <button class="link" data-el="another">Another thought</button>
-      ${o.cards ? '<div class="card mv" data-el="c1"><div class="t">Waiting to be kept</div>Tuesday evening, 1 min</div><div class="card mv" data-el="c2"><div class="t">A month ago</div>The first time you held the spoon</div>' : ''}
+      ${o.cards ? '<div class="mv" data-el="cards"><div class="card mv" data-el="c1"><div class="t">Waiting to be kept</div>Tuesday evening, 1 min</div></div><div class="card mv" data-el="c2"><div class="t">A month ago</div>The first time you held the spoon</div>' : ''}
     </div>
     <div class="foot">
       <div class="twins"><button class="btn cap" data-el="speak">Speak</button><button class="btn cap" data-el="type">Type</button></div>
-      ${o.photo ? '<button class="btn sec" data-el="photo" style="min-height:48px">Start from a photo</button>' : ''}
-      <div data-el="quietslot" style="min-height:44px;position:relative"><button class="quietbtn" data-el="quiet" style="position:absolute;left:0;right:0">Not much today</button></div>
+      ${o.photo ? '<button class="btn sec" data-el="photo" style="min-height:48px;align-self:center;padding:0 18px;flex:none">Start from a photo</button>' : ''}
+      <div data-el="quietslot" style="min-height:44px;position:relative;display:flex;justify-content:center"><button class="quietbtn" data-el="quiet">Not much today</button></div>
     </div>
   </div>`;
-const fill = (s) => s.replace('{child}', 'Asha');
+const MIC = '<svg class="mic" width="44" height="44" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
 const listenHTML = (o = {}) => `
   <div class="layer listen" ${o.hidden ? 'style="display:none"' : ''}>
-    <button class="close" data-el="close" aria-label="Close">&#10005;</button>
-    <div class="lhead mv" data-el="lhead"><div class="h">To Asha</div><div class="aud">Only you can read this until you share it.</div>${o.prompt === false ? '' : '<div class="pr">What made Asha laugh today?</div>'}</div>
+    <button class="close" data-el="close">Close</button>
+    <div class="lhead" data-el="lhead"><div class="h">To Asha</div><div class="aud">Only you can read this until you share it.</div><div class="pr">What made Asha laugh today?</div></div>
     <div class="stagewrap">
       <div class="aura"><div class="glow mv" data-el="glow"></div><div class="ring" data-el="ring"></div>
-        <button class="disc mv" data-el="disc" aria-label="Start recording"><span class="outline" data-el="outline"></span><svg class="mic" width="44" height="44" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button></div>
+        <button class="disc" data-el="disc" aria-label="Start recording">${MIC}<span class="recdot"></span></button></div>
       <div class="clock" data-el="clock">0:00</div>
       <div class="line" data-el="line" style="color:var(--muted)">Tap the red circle and talk.</div>
     </div>
@@ -354,7 +386,7 @@ const reviewHTML = (inner, o = {}) => `
   <div class="layer review" ${o.hidden ? 'style="display:none"' : ''}>
     <div class="pad" data-el="rpad">
       <div class="dl">Tuesday, Month 7</div>
-      <div class="h" style="font-weight:600;font-size:20px;margin:6px 0 10px" data-el="rtitle">Your letter to Asha</div>
+      <div style="font-weight:600;font-size:20px;margin:6px 0 10px" data-el="rtitle">Your letter to Asha</div>
       ${inner}
     </div>
     <div class="foot" data-el="rfoot">
@@ -368,7 +400,7 @@ const bookHTML = () => `
     <div class="pad">
       <div class="dl">Book</div>
       <div class="greet" style="font-size:22px">Month 7</div>
-      <div class="card" data-el="newcard" style="position:relative"><div class="wash" data-el="wash" style="position:absolute;inset:0;border-radius:14px;background:var(--accentSoft);opacity:0"></div><div style="position:relative"><div class="t">Tuesday, from Papa</div>We went to the park and you laughed at the ducks.</div></div>
+      <div class="card" style="position:relative"><div data-el="wash" style="position:absolute;inset:0;border-radius:14px;background:var(--accentSoft);opacity:0"></div><div style="position:relative"><div class="t">Tuesday, from Papa</div>We went to the park and you laughed at the ducks.</div></div>
       <div class="card"><div class="t">Sunday, from Mama</div>Your hands found my face today.</div>
     </div>
   </div>`;
@@ -381,50 +413,33 @@ const PICS = [
 /* ---------------- MA-01 Home, cold launch ---------------- */
 moment({
   id: 'MA-01', title: 'Home: cold launch arrival',
-  keys: 'A-S01.default, after a cold launch or recovery to Home (E-S19). Tokens: enter (8 pt, 280 ms), staggerMs 30, staggerMax 6, lamp.arriveMs (exception E-c).',
-  notes: '<b>Controls never animate in:</b> Speak, Type, Start from a photo and Not much today are opaque from frame 1. <b>Reduce Motion:</b> one 200 ms fade; the lamp at its level at once. Haptic: none.',
+  keys: 'A-S01.default, A-S01.waiting (cold launch, or recovery to Home, E-S19). v2: T-LAUNCH, m.enter.group (430 ms to the last line, a named exception). Lamp arrival 1200 ms only if the lamp is kept (v2 section 10).',
+  notes: '<b>Controls never animate in:</b> Speak, Type, Start from a photo and Not much today are there from frame 1. <b>Reduce Motion:</b> one 200 ms fade, no stagger; lamp at its level. Haptic: none.',
   html: () => homeHTML({ cards: true, photo: true, lampOff: true }),
   play(c) {
     const lamp = c.q('.lamp');
     const items = ['dl', 'gr', 'pr', 'c1', 'c2'].map((k) => c.q(`[data-el="${k}"]`));
     items.forEach((el) => { el.style.opacity = '0'; });
-    c.log('first frame: capture cluster at full strength');
-    lampTo(c.run, lamp, 1, T.lamp.arriveMs).then(() => c.log('lamp arrived'));
+    c.log('first frame: the capture cluster at full strength');
+    lampTo(c.run, lamp, 1, T.lamp.arriveMs).then(() => c.log('lamp arrived (if kept)'));
     if (RM) { items.forEach((el) => fade(c.run, el, 1, T.fadeMs)); later(c.run, T.fadeMs, () => c.log('content in (one fade)')); return; }
-    items.forEach((el, i) => enterEl(c.run, el, Math.min(i, T.staggerMax - 1) * T.staggerMs));
-    later(c.run, (items.length - 1) * T.staggerMs + T.enter.ms, () => c.log('last line settled'));
+    items.forEach((el, i) => mEnter(c.run, el, Math.min(i, T.enter.staggerMax - 1) * T.enter.staggerMs));
+    later(c.run, (items.length - 1) * T.enter.staggerMs + T.enter.ms, () => c.log('last line settled'));
   },
 });
 
 /* ---------------- MA-03 Another thought ---------------- */
-const PROMPTS = ['What made {child} laugh today?', 'What do you want {child} to know about this week?', 'Where did {child} fall asleep tonight?', 'What sound does {child} make when happy?'];
+const PROMPTS = ['What made Asha laugh today?', 'What do you want Asha to know about this week?', 'Where did Asha fall asleep tonight?', 'What sound does Asha make when happy?'];
 moment({
   id: 'MA-03', title: 'Home: Another thought',
-  keys: 'A-S01.default. Tokens: exitMs 160, fadeMs 200, enter.dy 8. Proposed total 280 ms (built 360 ms, EG-7).',
-  notes: 'Old prompt up 8 pt and out over 160 ms; new one rises 8 pt and fades in over 200 ms from 80 ms. <b>Reduce Motion:</b> fades only. Haptic: tap. VoiceOver: the new line is read once; focus stays on the button.',
+  keys: 'A-S01.default. v2: m.swap (150 ms cross-fade in place), then m.move if the height changes. Built today: exit then enter, 360 ms (EG-7).',
+  notes: 'The new prompt cross-fades over the old in the same place. <b>Reduce Motion:</b> the same cross-fade (it carries no travel). Haptic: tap (as built; proposal P-4). VoiceOver: the new line is read once; focus stays on the button.',
   html: () => homeHTML({}),
-  setup(c) {
-    c.i = 0;
-    c.q('[data-el="pr"]').textContent = fill(PROMPTS[0]);
-    c.q('[data-el="another"]').onclick = () => this.swap(c);
-  },
+  setup(c) { c.i = 0; c.q('[data-el="another"]').onclick = () => this.swap(c); },
   swap(c) {
-    const old = c.q('[data-el="pr"]');
     c.haptic('tap');
     c.i = (c.i + 1) % PROMPTS.length;
-    const nu = old.cloneNode(false);
-    nu.textContent = fill(PROMPTS[c.i]);
-    nu.style.position = 'absolute'; nu.style.left = '18px'; nu.style.right = '18px'; nu.style.top = old.offsetTop + 'px'; nu.style.marginTop = '0';
-    nu.style.opacity = '0';
-    old.parentNode.appendChild(nu);
-    leaveUp(c.run, old).then(() => { old.remove(); });
-    const run = c.run;
-    tween(run, { ms: T.fadeMs, delay: T.exitMs / 2, set: (p) => { nu.style.opacity = String(p); if (!RM) nu.style.setProperty('--y', T.enter.dy * (1 - p)); } }).then(() => {
-      if (dead(run)) return;
-      nu.style.position = ''; nu.style.top = ''; nu.style.marginTop = ''; nu.dataset.el = 'pr';
-      c.log('new prompt settled'); c.a11y('reads the new prompt once');
-    });
-    nu.dataset.el = 'pr-next';
+    mSwap(c.run, c.q('[data-el="pr"]'), PROMPTS[c.i]).then(() => { c.log('new prompt in place (150 ms)'); c.a11y('reads the new prompt once'); });
   },
   play(c) { this.swap(c); },
 });
@@ -432,101 +447,80 @@ moment({
 /* ---------------- MA-04 / MA-05 Not much today ---------------- */
 moment({
   id: 'MA-04', title: 'Home: Not much today, and its Undo (MA-05)',
-  keys: 'A-S01.default to A-S01.quietKept and back. NS-07 C5 3.4 step 2 (within 100 ms). Tokens: exitMs, fadeMs, lamp.dimTo 0.7 over 1.2 s (evening only, exception E-c).',
-  notes: 'The link fades out (160 ms); "A quiet day, kept." with Undo fades in from 80 ms (200 ms). Undo reverses it. The quiet Undo has no stated seconds, so no timer (not a T4 window). <b>Reduce Motion:</b> the same fades; the lamp jumps. Haptic: soft on the mark, tap on Undo.',
+  keys: 'A-S01.default to A-S01.quietKept and back. NS-07 C5 3.4 (within 100 ms). v2: m.swap. Lamp dim to 0.7 over 280 ms (proposal P-3; built 1200), evening only, if the lamp is kept.',
+  notes: 'The link\'s place swaps to "A quiet day, kept." with Undo; Undo swaps it back. This Undo has no stated seconds, so it never closes on a timer: it stays while Home stays (CG-9). <b>Reduce Motion:</b> the same swap; the lamp at its level. Haptic: soft on the mark, tap on Undo.',
   html: () => homeHTML({}),
-  setup(c) {
-    c.q('[data-el="quiet"]').onclick = () => this.keep(c);
-  },
+  setup(c) { c.q('[data-el="quiet"]').onclick = () => this.keep(c); },
   keep(c) {
     const slot = c.q('[data-el="quietslot"]');
-    const link = c.q('[data-el="quiet"]');
     c.haptic('soft');
     c.a11y('"A quiet day, kept."');
-    const line = document.createElement('div');
-    line.className = 'qline';
-    line.style.position = 'absolute'; line.style.left = '0'; line.style.right = '0'; line.style.opacity = '0';
-    line.innerHTML = '<span>A quiet day, kept.</span><button class="link" data-el="qundo">Undo</button>';
-    slot.appendChild(line);
-    link.style.pointerEvents = 'none';
-    fade(c.run, link, 0, T.exitMs, 0, LINEAR).then(() => link.remove());
-    fade(c.run, line, 1, T.fadeMs, T.exitMs / 2, LINEAR).then(() => c.log('kept line in place'));
-    lampTo(c.run, c.q('.lamp'), T.lamp.dimTo, T.lamp.arriveMs).then(() => c.log('evening light at 70 percent'));
-    line.querySelector('button').onclick = () => {
-      c.haptic('tap');
-      line.style.pointerEvents = 'none';
-      const back = document.createElement('button');
-      back.className = 'quietbtn'; back.dataset.el = 'quiet'; back.textContent = 'Not much today';
-      back.style.position = 'absolute'; back.style.left = '0'; back.style.right = '0'; back.style.opacity = '0';
-      slot.appendChild(back);
-      back.onclick = () => this.keep(c);
-      fade(c.run, line, 0, T.exitMs, 0, LINEAR).then(() => line.remove());
-      fade(c.run, back, 1, T.fadeMs, T.exitMs / 2, LINEAR);
-      lampTo(c.run, c.q('.lamp'), 1, T.lamp.arriveMs);
-      c.a11y('"Undone." (WORDS.md owns the line)');
-    };
+    mSwap(c.run, slot, '<div class="qline"><span>A quiet day, kept.</span><button class="link" data-el="qundo">Undo</button></div>').then(() => {
+      c.log('kept line in place (150 ms)');
+      c.q('[data-el="qundo"]').onclick = () => this.undo(c);
+    });
+    lampTo(c.run, c.q('.lamp'), T.lamp.dimTo, T.lamp.returnMs).then(() => c.log('evening light at 70 percent (280 ms)'));
   },
-  play(c) { this.keep(c); },
+  undo(c) {
+    const slot = c.q('[data-el="quietslot"]');
+    c.haptic('tap');
+    mSwap(c.run, slot, '<button class="quietbtn" data-el="quiet">Not much today</button>').then(() => { c.q('[data-el="quiet"]').onclick = () => this.keep(c); });
+    lampTo(c.run, c.q('.lamp'), 1, T.lamp.returnMs);
+    c.a11y('the outcome, once (WORDS.md owns the line)');
+  },
+  play(c) { this.keep(c); later(c.run, 1600, () => this.undo(c)); },
 });
 
 /* ---------------- MA-06 / MA-07 Whose book ---------------- */
 moment({
-  id: 'MA-06', title: 'Home: whose book (sheet, then the in-place swap, MA-07)',
-  keys: 'A-S01.default, A-S02.open (NS-14; BL-941). Tokens: standard spring (sheet), fadeMs (scrim), swapMs 150 (in-place cross-fade).',
-  notes: 'The sheet rises on standard; a choice shows in one frame; on close the switcher label, dateline, prompt and waiting card cross-fade in place. No stagger, no slide; Speak and Type never move. <b>Reduce Motion:</b> sheet and scrim fade 200 ms, no travel. Haptic: tap on the choice only. Second book uses the built nameless label.',
+  id: 'MA-06', title: 'Home: whose book (system sheet), then the in-place change (MA-07)',
+  keys: 'A-S01.twoBooks, A-S02.default (NS-14; BL-941). v2: T-SHEET m.sheet (system), m.select, m.swap for the label, dateline and prompt, m.fade hand-off for the waiting cards.',
+  notes: 'The sheet is the system\'s (stand-in). The radio mark moves on the next frame; on close the switcher label, dateline and prompt cross-fade in place and the waiting cards hand off. No stagger, no slide; Speak and Type never move. <b>Reduce Motion:</b> the system\'s reduced sheet; the same fades. Haptic: tap on the choice only.',
   html: () => homeHTML({ switcher: true, cards: true }),
   setup(c) { c.q('[data-el="sw"]').onclick = () => this.open(c); },
   open(c) {
-    const ph = c.phone;
-    const scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.style.opacity = '0';
-    const sh = document.createElement('div'); sh.className = 'sheet mv';
-    sh.innerHTML = '<div style="font-weight:600;margin-bottom:8px">Whose book</div>' +
+    const { sh, close } = systemSheet(c.run, c.phone,
+      '<div style="font-weight:600;margin:10px 0 8px">Whose book</div>' +
       '<div class="radio sel" data-k="a"><span class="dot"></span><div>Asha<div class="sub">7 months</div></div></div>' +
-      '<div class="radio" data-k="b"><span class="dot"></span><div>Your child<div class="sub">Before You, due 3 March</div></div></div>';
-    ph.appendChild(scrim); ph.appendChild(sh);
-    const hpx = 220;
-    const run = c.run;
-    fade(run, scrim, 1, T.fadeMs, 0, LINEAR);
-    if (RM) { sh.style.opacity = '0'; fade(run, sh, 1, T.fadeMs, 0, LINEAR); }
-    else { sh.style.setProperty('--y', hpx); spring(run, { cfg: T.standard, set: (p) => sh.style.setProperty('--y', hpx * (1 - p)) }); }
-    c.log('sheet opens (no haptic)');
-    sh.querySelectorAll('.radio').forEach((r) => { r.onclick = () => this.choose(c, r.dataset.k, sh, scrim); });
-    c.pending = () => this.choose(c, 'b', sh, scrim);
+      '<div class="radio" data-k="b"><span class="dot"></span><div>Kiran<div class="sub">Before You</div></div></div>');
+    c.log('sheet opens (no haptic: opening is navigation)');
+    const choose = (k) => {
+      sh.querySelectorAll('.radio').forEach((r) => r.classList.toggle('sel', r.dataset.k === k));
+      c.haptic('tap');
+      close(120).then(() => {
+        const run = c.run; if (dead(run)) return;
+        const b = k === 'b';
+        mSwap(run, c.q('[data-el="sw"]'), b ? 'For Kiran &#9662;' : 'For Asha &#9662;');
+        mSwap(run, c.q('[data-el="dl"]'), b ? 'Kiran, Before You' : 'Asha, 7 months');
+        mSwap(run, c.q('[data-el="pr"]'), b ? 'What are you getting ready for?' : 'What made Asha laugh today?');
+        const old = c.q('[data-el="c1"]');
+        const nu = old.cloneNode(false); nu.removeAttribute('data-el');
+        nu.innerHTML = b ? '<div class="t">A month ago</div>The day we painted the room' : '<div class="t">Waiting to be kept</div>Tuesday evening, 1 min';
+        Object.assign(nu.style, { position: 'absolute', left: old.offsetLeft + 'px', top: old.offsetTop + 'px', width: old.offsetWidth + 'px', margin: '0' });
+        old.offsetParent.appendChild(nu);
+        mHandOff(run, old, nu).then(() => { old.innerHTML = nu.innerHTML; old.style.opacity = '1'; nu.remove(); c.log('in-place change done'); c.a11y('focus back on the switcher, which reads the new name'); });
+      });
+    };
+    sh.querySelectorAll('.radio').forEach((r) => { r.onclick = () => choose(r.dataset.k); });
+    c.pending = () => choose('b');
   },
-  choose(c, k, sh, scrim) {
-    const run = c.run;
-    sh.querySelectorAll('.radio').forEach((r) => r.classList.toggle('sel', r.dataset.k === k));
-    c.haptic('tap');
-    const close = RM ? fade(run, sh, 0, T.fadeMs, 120, LINEAR) : spring(run, { cfg: T.standard, delay: 120, set: (p) => sh.style.setProperty('--y', 220 * p) });
-    fade(run, scrim, 0, T.fadeMs, 120, LINEAR);
-    close.then(() => {
-      if (dead(run)) return;
-      sh.remove(); scrim.remove();
-      const b = k === 'b';
-      crossfadeText(run, c.q('[data-el="sw"]'), b ? 'For your child \u25BE' : 'For Asha \u25BE');
-      crossfadeText(run, c.q('[data-el="dl"]'), b ? 'Your child, Before You' : 'Asha, 7 months');
-      crossfadeText(run, c.q('[data-el="pr"]'), b ? 'What are you getting ready for?' : 'What made Asha laugh today?');
-      crossfadeText(run, c.q('[data-el="c1"]'), b ? 'Nothing waiting for this book' : 'Waiting to be kept: Tuesday evening, 1 min');
-      later(run, T.swapMs, () => { c.log('in-place swap done'); c.a11y('focus back on the switcher: "For your child"'); });
-    });
-  },
-  play(c) { this.open(c); later(c.run, 700, () => c.pending && c.pending()); },
+  play(c) { this.open(c); later(c.run, 800, () => c.pending && c.pending()); },
 });
 
 /* ---------------- MA-14p photo pick to thumbnail ---------------- */
 moment({
-  id: 'MA-14p', title: 'Photo pick to thumbnail on Ready (with Change MA-14c and the failure line MA-14f)',
-  keys: 'A-S01 to A-S03 to A-S04.withPicture; A-S04.photoFailed. NS-01 sections 4, 15; R20d, R39, R42. Tokens: route.dissolveMs, fadeMs, swapMs.',
+  id: 'MA-14p', title: 'A picture picked to Ready (with Change photo MA-14c and the could-not-open line MA-14f)',
+  keys: 'A-S01 to A-S03.open to A-S04.readyPhoto; A-S04.photoCouldNotOpen. NS-01 sections 4, 15; R20d, R39, R42. v2: T-COVER, m.fade, m.swap; nothing decodes while recording (section 12 rule 7).',
   opts: '<label><input type="checkbox" data-opt="fail"> The next pick cannot be opened</label><label><input type="checkbox" data-opt="pano"> Pick the panorama (fits, uncropped)</label>',
-  notes: 'The picker is Apple\'s (drawn here only as a stand-in; its motion is the system\'s). The thumbnail box is in place from Ready\'s first frame, so Speak, Type and Change never move; the picture fades into it when decoded (simulated 500 ms). Change cross-fades in the same box. <b>Reduce Motion:</b> 200 ms dissolve and fades (NS-01-R20d). Haptic: none. No zoom, no blur-up.',
+  notes: 'The picker is Apple\'s (stand-in). The thumbnail box is in place from Ready\'s first frame, so Speak, Type and Change photo never move; the picture fades into it when decoded (simulated 500 ms), and Speak waits for it. Change photo cross-fades in the same box. <b>Reduce Motion:</b> 200 ms dissolve and fades (NS-01-R20d). Haptic: none. No zoom, no blur-up.',
   html: () => homeHTML({ photo: true }) + `
     <div class="layer ready" style="display:none">
-      <button class="close" aria-label="Close">&#10005;</button>
+      <button class="close">Close</button>
       <div class="pad" style="padding-top:60px">
         <div class="thumb" data-el="thumb"><div class="pic" data-el="pic"></div><div class="failline" data-el="fail">That photo could not be opened. You can still speak or type.</div></div>
         <div class="prompt" style="font-size:18px;text-align:center">What made Asha laugh today?</div>
       </div>
-      <div class="foot"><div class="twins"><button class="btn cap">Speak</button><button class="btn cap">Type</button></div><button class="link" data-el="change">Change</button></div>
+      <div class="foot"><div class="twins"><button class="btn cap" data-el="rspeak" disabled>Speak</button><button class="btn cap">Type</button></div><button class="link" data-el="change">Change photo</button></div>
     </div>`,
   setup(c) {
     c.q('[data-el="photo"]').onclick = () => this.pick(c, true);
@@ -534,15 +528,14 @@ moment({
   },
   pick(c, first) {
     const run = c.run;
-    const ph = c.phone;
     const pk = document.createElement('div');
     pk.className = 'picker mv';
     pk.innerHTML = '<div style="display:flex;justify-content:space-between"><button class="link" data-x>Cancel</button><b>Photos</b><span style="width:60px"></span></div><div class="grid">' +
-      PICS.map((p, i) => `<button class="tile" data-i="${i}" aria-label="Picture ${i + 1}">${p}</button>`).join('') + '</div><div class="sys">Apple\'s picker: system motion, not ours</div>';
-    ph.appendChild(pk);
+      PICS.map((p, i) => `<button class="tile" data-i="${i}" aria-label="Picture ${i + 1}">${p}</button>`).join('') + '</div><div class="sys">Apple\'s picker (stand-in): system motion, not ours</div>';
+    c.phone.appendChild(pk);
     const h = 560;
     if (RM) { pk.style.opacity = '0'; fade(run, pk, 1, T.fadeMs); } else { pk.style.setProperty('--y', h); tween(run, { ms: 350, set: (p) => pk.style.setProperty('--y', h * (1 - p)) }); }
-    c.log('system picker opens (Home keeps its light, its breath pauses)');
+    c.log('system picker opens');
     const dismiss = () => (RM ? fade(run, pk, 0, T.fadeMs) : tween(run, { ms: 300, set: (p) => pk.style.setProperty('--y', h * p) })).then(() => pk.remove());
     pk.querySelector('[data-x]').onclick = () => { c.log('Cancel: nothing written, nothing moves'); dismiss(); };
     pk.querySelectorAll('.tile').forEach((t) => { t.onclick = () => this.chosen(c, +t.dataset.i, first, dismiss); });
@@ -555,43 +548,47 @@ moment({
     const ready = c.q('.ready');
     const pic = c.q('[data-el="pic"]');
     const failEl = c.q('[data-el="fail"]');
+    const speak = c.q('[data-el="rspeak"]');
     const showPic = () => {
       if (c.opt('fail')) {
-        c.log('decode failed: the calm line, no buzz, no sound');
-        fade(run, pic, 0, T.swapMs / 2, 0, LINEAR); fade(run, failEl, 1, T.swapMs, 0, LINEAR);
+        c.log('could not open: the calm line swaps in (150 ms); no buzz, no sound');
+        fade(run, pic, 0, T.swapMs, 0, EASE); fade(run, failEl, 1, T.swapMs, 0, EASE);
+        speak.disabled = false;
         c.a11y('reads the line once, politely');
         return;
       }
       failEl.style.opacity = '0';
       if (first) {
         pic.innerHTML = PICS[i];
-        fade(run, pic, 1, T.fadeMs, 0, LINEAR).then(() => c.log('picture in (fade, no scale)'));
+        fade(run, pic, 1, T.fadeMs, 0, LINEAR).then(() => c.log('picture in (m.fade 200, no scale)'));
       } else {
         const nu = pic.cloneNode(false); nu.innerHTML = PICS[i]; nu.style.opacity = '0'; pic.parentNode.insertBefore(nu, failEl);
-        fade(run, nu, 1, T.swapMs, 0, LINEAR); fade(run, pic, 0, T.swapMs, 0, LINEAR).then(() => { pic.remove(); nu.dataset.el = 'pic'; c.log('Change: cross-fade in the same box'); });
+        fade(run, nu, 1, T.fadeMs, 0, LINEAR); fade(run, pic, 0, T.fadeMs, 0, LINEAR).then(() => { pic.remove(); nu.dataset.el = 'pic'; c.log('Change photo: cross-fade in the same box (200)'); });
       }
+      speak.disabled = false;
+      c.log('decoded: Speak can start the take (nothing decodes while recording)');
     };
     if (first) {
-      later(run, 120, () => { dissolve(run, c.q('.home'), ready).then(() => c.log('Ready: box in place, Speak and Type static')); });
-      c.a11y('focus: the picture, then the prompt, Speak, Type, Change (NS-01-R20b)');
-      later(run, 500, () => { c.log('decoded (budget p95 1,000 ms)'); showPic(); });
+      later(run, 120, () => { mCover(run, c.q('.home'), ready).then(() => c.log('Ready: box in place; Speak waits for the picture')); });
+      c.a11y('order: the picture, the prompt, Speak, Type, Change photo (NS-01-R20b)');
+      later(run, 500, () => { c.log('decode ended (budget p95 1,000 ms)'); showPic(); });
     } else {
-      later(run, 320, () => { c.log('decoded'); showPic(); });
+      later(run, 320, () => showPic());
     }
   },
   play(c) {
     this.pick(c, true);
     later(c.run, 600, () => c.auto(0));
-    later(c.run, 2200, () => { c.log('parent taps Change'); this.pick(c, false); later(c.run, 600, () => c.auto(1)); });
+    later(c.run, 2200, () => { c.log('parent taps Change photo'); this.pick(c, false); later(c.run, 600, () => c.auto(1)); });
   },
 });
 
-/* ---------------- MA-12 Home to Listen ---------------- */
+/* ---------------- MA-12 Home to Listen, MA-13 doorway ---------------- */
 moment({
   id: 'MA-12', title: 'Home to Listen (Speak), and the doorway arrival (MA-13)',
-  keys: 'A-S01 to A-S04 / A-S05; A-S14 to A-S04.fromDoorway. Tokens: press (0.97, snappy), route.dissolveMs 280, lamp.leaveMs 160, enter.',
+  keys: 'A-S01 to A-S05.recording; A-S14 to A-S04.doorway. v2: m.tap.glass (Speak is glass), T-COVER m.cover 280; doorway cold: T-LAUNCH m.instant. Lamp leave 160 if kept.',
   opts: '<label><input type="checkbox" data-opt="door"> Arrive from a doorway instead (cold launch)</label>',
-  notes: 'Speak presses, plays the start tick (press), the room dissolves in over 280 ms while Home\'s lamp leaves over 160 ms; Listen\'s heading block enters once. Pause, Finish and the Let it go slot are in place from frame 1. A doorway arrival on a cold launch shows Ready complete on its first frame: no move, no tick. <b>Reduce Motion:</b> 200 ms dissolve, no rise, lamp jumps.',
+  notes: 'Speak plays the start tick; Listen dissolves in over 280 ms with everything already in place, while Home\'s lamp leaves over 160 ms. Never a morph from the Home cluster into the record control. A doorway on a cold launch shows Ready complete on its first frame: no move, no tick. <b>Reduce Motion:</b> 200 ms dissolve; lamp at its level.',
   html: () => homeHTML({}) + listenHTML({ hidden: true }),
   play(c) {
     const run = c.run;
@@ -604,36 +601,32 @@ moment({
         c.log('widget tapped; unlock is the system\'s');
         later(run, 300, () => {
           b.remove(); w.remove(); c.q('.home').style.display = 'none'; listen.style.display = 'flex';
-          c.log('first frame: Ready complete, no tick, no lamp (unlit room)'); c.a11y('focus on "To Asha"');
+          c.log('first frame: Ready complete; no tick; no lamp (unlit room)'); c.a11y('focus on "To Asha"');
         });
       });
       return;
     }
-    const speak = c.q('[data-el="speak"]');
-    press(run, speak);
-    c.haptic('press (start tick, Speak)');
-    lampTo(run, c.q('.home .lamp'), 0, T.lamp.leaveMs).then(() => c.log('Home lamp gone'));
-    const head = c.q('[data-el="lhead"]');
-    head.style.opacity = '0';
-    dissolve(run, c.q('.home'), listen).then(() => c.log('Listen in'));
-    enterEl(run, head, 0).then(() => c.log('heading settled'));
+    c.log('Speak pressed: glass press is the system\'s (m.tap.glass)');
+    c.haptic('press (the take\'s one start tick)');
+    lampTo(run, c.q('.home .lamp'), 0, T.lamp.leaveMs).then(() => c.log('Home lamp gone (160)'));
+    mCover(run, c.q('.home'), listen).then(() => c.log('Listen in (280); nothing enters on its own'));
   },
 });
 
-/* ---------------- MA-18 to MA-24 Listen: start, voice, pause, stop ---------------- */
+/* ---------------- MA-18 to MA-24 Listen ---------------- */
 moment({
-  id: 'MA-18', title: 'Listen: record start, the voice glow, Still here, pause and resume, record stop (MA-18 to MA-24)',
-  keys: 'A-S04.ready to A-S05.recording, A-S05.stillHere, A-S05.paused, to A-S07. MOTION 5b; NS-33-R12; NS-34 (loops opacity only). Tokens: breath, breathIdleMs, fadeMs, swapMs, exitMs, route.dissolveMs.',
-  opts: '<label><input type="checkbox" data-opt="voice" checked> Someone is speaking (untick for silence: idle breath, then "Still here." after 8 s)</label><label><input type="checkbox" data-opt="builtIdle"> Compare: built idle breath (scales to 1.05)</label>',
+  id: 'MA-18', title: 'Listen: record start, the voice aura, Still here, pause and resume, record stop (MA-18 to MA-24)',
+  keys: 'A-S04.ready to A-S05.recording, Still here, paused, A-S05.finishing to A-S07. v2: recording state m.instant (section 5); the aura m.signal; T-COVER to Review. NS-33-R12; NS-34 (loops opacity only).',
+  opts: '<label><input type="checkbox" data-opt="voice" checked> Someone is speaking (untick for silence: the idle breath, then "Still here." after 8 s)</label><label><input type="checkbox" data-opt="builtIdle"> Compare: built and v2 idle breath (scales to 1.05)</label>',
   readout: true,
-  notes: 'Tap the red circle (or Play). The tick plays before the microphone opens; Close and the hint fade out; when the microphone is live (simulated 300 ms) the clock, "Listening." and the glow fade in; Pause and Finish enable in one frame; Let it go appears at full strength. <b>Proposed:</b> the idle breath moves opacity only. Pause: disc to outline (150 ms), glow to its dim (200 ms), no haptic. Finish: glow releases over 400 ms, the stop tick after the recorder stops, Review dissolves in. <b>Reduce Motion:</b> no glow; the static 2 pt ring, opacity stepping 0.2 / 0.3 / 0.4 at most once per 400 ms, 200 ms fades.',
+  notes: 'Tap the red circle (or Play). The tick plays before the microphone opens. When it is live (simulated 300 ms) everything changes on one frame: the control shows recording, the time and "Listening." appear, Pause and Finish enable, Close goes, Let it go shows. Only the aura eases, and only with the voice. <b>Proposed (P-1):</b> the idle breath moves opacity only. Pause and resume are instant too, with no haptic. Finish: the aura releases over 400 ms, the stop tick plays after the recorder stops, Review dissolves in. <b>Reduce Motion:</b> no glow; the static 2 pt ring, stepping 0.2 / 0.3 / 0.4 at most once per 400 ms.',
   html: () => listenHTML({}) + reviewHTML('<div class="words">We went to the park and you laughed at the ducks.</div>', { hidden: true }),
   setup(c) {
-    const st = { phase: 'ready', s: 0, w: 0, quiet: 0, t: 0, clockMs: 0, lastStep: 0, ringOp: 0.2, glowGate: 0, glowBuiltScale: 1 };
+    const st = { phase: 'ready', s: 0, w: 0, quiet: 0, t: 0, clockMs: 0, lastStep: 0, ringOp: 0.2 };
     c.st = st;
     const glow = c.q('[data-el="glow"]'), ring = c.q('[data-el="ring"]');
     const line = c.q('[data-el="line"]'), clock = c.q('[data-el="clock"]');
-    const B = T.breath;
+    const B = T.signal;
     let last = performance.now(), raf = 0, speakT = 0;
     const voiceDb = (ms) => {
       if (!c.opt('voice')) return -160;
@@ -648,36 +641,31 @@ moment({
       const dt = Math.min(64, now - last) / SLOW; last = now;
       if (st.phase === 'recording') { st.clockMs += dt; speakT += dt; }
       const db = st.phase === 'recording' ? voiceDb(speakT) : -160;
-      const a = Math.pow(Math.min(1, Math.max(0, (db - B.dbFloor) / (B.dbCeil - B.dbFloor))), B.gamma);
+      const lv = Math.min(1, Math.max(0, (db - B.dbFloor) / (B.dbCeil - B.dbFloor)));
       if (st.phase === 'recording') {
-        const tau = a > st.s ? B.attackMs : B.releaseMs;
-        st.s += (a - st.s) * (1 - Math.exp(-dt / tau));
+        const a = Math.pow(lv, B.gamma);
+        st.s += (a - st.s) * (1 - Math.exp(-dt / (a > st.s ? B.attackMs : B.releaseMs)));
         st.quiet = st.s < 0.05 ? st.quiet + dt : 0;
-        const wT = st.quiet > B.idleAfterMs ? 1 : 0;
-        st.w += (wT - st.w) * Math.min(1, dt / 600);
+        st.w += ((st.quiet > B.idleAfterMs ? 1 : 0) - st.w) * Math.min(1, dt / 600);
         st.t += dt;
-        const b = 0.5 - 0.5 * Math.cos((2 * Math.PI * st.t) / T.breathIdleMs);
-        const built = c.opt('builtIdle');
-        const scale = built ? Math.max(1 + B.scaleMax * st.s, 1 + B.idleScale * st.w * b) : 1 + B.scaleMax * st.s;
+        const b = 0.5 - 0.5 * Math.cos((2 * Math.PI * st.t) / B.idleMs);
+        const scale = c.opt('builtIdle') ? Math.max(1 + B.scaleMax * st.s, 1 + B.idleScale * st.w * b) : 1 + B.scaleMax * st.s;
         const opacity = B.opacityMin + (B.opacityMax - B.opacityMin) * Math.max(st.s, 0.4 * st.w * b);
-        if (!RM) { glow.style.setProperty('--s', scale.toFixed(4)); glow.style.opacity = String(opacity * st.glowGate); }
+        if (!RM) { glow.style.setProperty('--s', scale.toFixed(4)); glow.style.opacity = String(opacity); ring.style.opacity = '0'; }
         else {
           glow.style.opacity = '0';
-          const lv = Math.min(1, Math.max(0, (db - B.dbFloor) / (B.dbCeil - B.dbFloor)));
           const step = lv > 0.5 ? 0.4 : lv > 0.15 ? 0.3 : 0.2;
-          if (step !== st.ringOp && now - st.lastStep > 400 * SLOW) { st.lastStep = now; st.ringOp = step; fade(c.run, ring, step * st.glowGate, T.fadeMs, 0, LINEAR); }
+          if (step !== st.ringOp && now - st.lastStep > 400 * SLOW) { st.lastStep = now; st.ringOp = step; fade(c.run, ring, step, T.fadeMs, 0, LINEAR); }
         }
         const sec = Math.floor(st.clockMs / 1000);
         const txt = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
         if (clock.textContent !== txt) clock.textContent = txt;
-        const wantStill = db < -50 && st.quiet > 8000 && st.clockMs > 8000;
-        const want = wantStill ? 'Still here.' : 'Listening.';
-        if (line.dataset.want !== want) { line.dataset.want = want; crossfadeText(c.run, line, want); c.log(`line: ${want} (swapMs, no pulse)`); }
-        c.readout(`level s=${st.s.toFixed(2)}  idle w=${st.w.toFixed(2)}  scale=${(RM ? 1 : (glow.style.getPropertyValue('--s') || 1))}  opacity=${RM ? 'ring ' + st.ringOp : (+glow.style.opacity).toFixed(2)}`);
-      } else if (st.phase === 'processing') {
+        const want = db < -50 && st.quiet > 8000 ? 'Still here.' : 'Listening.';
+        if (line.textContent !== want) { line.textContent = want; c.log(`line: ${want} (m.instant)`); }
+        c.readout(RM ? `level ${lv.toFixed(2)}  ring opacity ${st.ringOp}` : `level s=${st.s.toFixed(2)}  idle w=${st.w.toFixed(2)}  scale=${scale.toFixed(3)}  opacity=${opacity.toFixed(2)}`);
+      } else if (st.phase === 'processing' && !RM) {
         const k = Math.exp(-dt / B.releaseMs);
-        const sc = 1 + ((+glow.style.getPropertyValue('--s') || 1) - 1) * k;
-        glow.style.setProperty('--s', sc.toFixed(4));
+        glow.style.setProperty('--s', (1 + ((+glow.style.getPropertyValue('--s') || 1) - 1) * k).toFixed(4));
         glow.style.opacity = String(B.opacityMin + ((+glow.style.opacity) - B.opacityMin) * k);
       }
       raf = requestAnimationFrame(frame);
@@ -690,63 +678,53 @@ moment({
   },
   start(c) {
     const run = c.run, st = c.st;
-    st.phase = 'asking';
-    press(run, c.q('[data-el="disc"]'));
+    st.phase = 'starting';
+    c.log('record control pressed (glass: the system\'s press)');
     c.haptic('press (before the audio session switches)');
-    const close = c.q('[data-el="close"]'); close.style.pointerEvents = 'none';
-    fade(run, close, 0, T.exitMs, 0, LINEAR);
-    fade(run, c.q('[data-el="line"]'), 0, T.exitMs, 0, LINEAR);
-    c.log('asking: nothing to tap, no hint');
+    c.q('[data-el="close"]').style.pointerEvents = 'none';
+    c.log('starting: label stays, nothing animates');
     later(run, 300, () => {
       st.phase = 'recording';
-      c.log('microphone live (budget p95 500 ms from the tap)');
-      c.a11y('nothing spoken into the take (B2-21); see CG-2');
-      const line = c.q('[data-el="line"]'); line.style.color = 'var(--text)'; line.textContent = 'Listening.'; line.dataset.want = 'Listening.';
-      fade(run, line, 1, T.swapMs, 0, LINEAR);
-      fade(run, c.q('[data-el="clock"]'), 1, T.fadeMs, 0, LINEAR);
-      tween(run, { ms: T.fadeMs, ease: LINEAR, set: (p) => { st.glowGate = p; } });
-      if (RM) fade(run, c.q('[data-el="ring"]'), 0.2, T.fadeMs, 0, LINEAR);
+      c.log('microphone live (p95 500 ms from the tap): one frame');
+      c.q('[data-el="disc"]').classList.add('rec');
+      c.q('[data-el="close"]').style.visibility = 'hidden';
+      const line = c.q('[data-el="line"]'); line.style.color = 'var(--text)'; line.textContent = 'Listening.';
+      c.q('[data-el="clock"]').style.visibility = 'visible';
+      if (RM) c.q('[data-el="ring"]').style.opacity = '0.2';
       c.q('[data-el="pause"]').disabled = false; c.q('[data-el="finish"]').disabled = false;
       c.q('[data-el="letgo"]').style.visibility = 'visible';
-      c.log('Pause, Finish enabled and Let it go shown in one frame (controls never animate in)');
+      c.log('control, time, line, Pause, Finish, Let it go: all on this frame; the aura rises with the voice');
+      c.a11y('nothing spoken into the take (B2-21); see CG-2');
     });
   },
   togglePause(c) {
-    const run = c.run, st = c.st;
-    const disc = c.q('[data-el="disc"]'), outline = c.q('[data-el="outline"]'), glow = c.q('[data-el="glow"]'), line = c.q('[data-el="line"]');
-    const btn = c.q('[data-el="pause"]');
+    const st = c.st;
+    const disc = c.q('[data-el="disc"]'), glow = c.q('[data-el="glow"]'), line = c.q('[data-el="line"]'), btn = c.q('[data-el="pause"]');
     if (st.phase === 'recording') {
       st.phase = 'paused';
-      btn.textContent = 'Keep talking';
-      disc.classList.add('paused');
-      fade(run, outline, 1, T.swapMs, 0, LINEAR);
-      if (!RM) { fade(run, glow, T.pausedOpacity, T.fadeMs, 0, LINEAR); tween(run, { ms: T.fadeMs, set: (p) => glow.style.setProperty('--s', (1 + ((+glow.style.getPropertyValue('--s') || 1) - 1) * (1 - p)).toFixed(4)) }); }
-      else fade(run, c.q('[data-el="ring"]'), 0.12, T.fadeMs, 0, LINEAR);
-      crossfadeText(run, line, 'Paused.'); line.dataset.want = 'Paused.';
-      c.log('paused: outline disc + "Paused." (shape and text, not colour); no haptic');
+      btn.textContent = 'Resume'; disc.classList.add('paused'); line.textContent = 'Paused.';
+      if (!RM) { glow.style.setProperty('--s', '1'); glow.style.opacity = String(T.signal.pausedOpacity); } else { c.q('[data-el="ring"]').style.opacity = '0.12'; }
+      c.log('paused on one frame: hollow dot + "Paused." (shape and words, not colour); no haptic');
     } else if (st.phase === 'paused') {
       st.phase = 'recording'; st.s = 0; st.w = 0; st.quiet = 0;
-      btn.textContent = 'Pause';
-      disc.classList.remove('paused');
-      fade(run, outline, 0, T.swapMs, 0, LINEAR);
-      c.log('resumed: the glow follows the voice again; no haptic');
+      btn.textContent = 'Pause'; disc.classList.remove('paused'); line.textContent = 'Listening.';
+      c.log('resumed on one frame; the aura follows the voice again; no haptic');
     }
   },
   finish(c) {
     const run = c.run, st = c.st;
     if (st.phase !== 'recording' && st.phase !== 'paused') return;
-    press(run, c.q('[data-el="finish"]'));
     st.phase = 'processing';
     c.q('[data-el="pause"]').disabled = true; c.q('[data-el="finish"]').disabled = true;
     c.q('[data-el="letgo"]').style.visibility = 'hidden';
-    c.log('finishing: controls off, Let it go gone at once; glow releases over 400 ms');
-    if (RM) fade(run, c.q('[data-el="ring"]'), 0, T.fadeMs, 0, LINEAR);
+    c.log('finishing on one frame: controls off, Let it go gone; the aura releases over 400 ms');
+    if (RM) c.q('[data-el="ring"]').style.opacity = '0';
     later(run, 180, () => {
       c.log('recorder stopped');
       c.haptic('press (stop tick, after the session ends)');
-      dissolve(run, c.q('.listen'), c.q('.review')).then(() => {
+      mCover(run, c.q('.listen'), c.q('.review')).then(() => {
         c.log('Review in (hand-off budget 900 ms)');
-        later(run, T.dissolveMs, () => c.a11y('Review title announced and focused'));
+        later(run, T.cover.dissolveMs, () => c.a11y('Review title announced and focused'));
       });
     });
   },
@@ -760,48 +738,44 @@ moment({
 
 /* ---------------- MA-16 blockers ---------------- */
 moment({
-  id: 'MA-16', title: 'Listen: a start meets a blocker (microphone off)',
-  keys: 'A-S04.ready to A-S04.micOff (also .primer, .micBusy, .full). Built: instant swap (EG-8). Proposed: hand-off, room out 140 ms, state in 120 ms from 80 ms.',
-  notes: 'No error buzz and no sound. Try again plays the start tick, as a new start. <b>Reduce Motion:</b> the same (fades only). VoiceOver: focus moves to the state\'s heading.',
+  id: 'MA-16', title: 'Listen: a start meets a blocker (the microphone is off)',
+  keys: 'A-S04.ready to A-S04.denied (also .primer, .busy, .full). v2: m.fade hand-off (outgoing gone by 35 percent, incoming from half of that, 200 ms, linear). Built: a one-frame swap (EG-8).',
+  notes: 'No error haptic and no sound. Try again plays the start tick, as a new start. <b>Reduce Motion:</b> the same (fades only). VoiceOver: focus moves to the state\'s heading.',
   html: () => listenHTML({}) + `
     <div class="layer stateL" style="display:none">
-      <button class="close" aria-label="Close">&#10005;</button>
-      <div class="state"><div class="g">&#127908;</div><div style="font-weight:600;font-size:20px">The microphone is off</div><div class="small">You can turn it on in Settings, or type this letter instead.</div></div>
-      <div class="foot"><button class="btn" data-el="type2">Type instead</button><button class="quietbtn" data-el="retry">Try again</button></div>
+      <button class="close">Close</button>
+      <div class="state"><div class="g">${MIC}</div><div style="font-weight:600;font-size:20px">The microphone is off</div><div class="small">You can turn it on in Settings, or type this letter instead.</div></div>
+      <div class="foot"><button class="btn">Type instead</button><button class="quietbtn" data-el="retry">Try again</button></div>
     </div>`,
   play(c) {
     const run = c.run;
-    press(run, c.q('[data-el="disc"]'));
+    c.log('record control pressed');
     c.haptic('press');
     later(run, 250, () => {
       c.log('iOS says the microphone is off');
       const room = c.q('.listen'), st = c.q('.stateL');
-      st.style.display = 'flex'; st.style.opacity = '0'; st.style.zIndex = '5';
-      fade(run, room, 0, 140, 0, LINEAR);
-      fade(run, st, 1, 120, 80, LINEAR).then(() => { c.log('state screen settled (200 ms)'); c.a11y('focus: "The microphone is off"'); });
+      st.style.display = 'flex'; st.style.zIndex = '5';
+      mHandOff(run, room, st).then(() => { c.log('state screen settled (200 ms)'); c.a11y('focus: "The microphone is off"'); });
       c.q('[data-el="retry"]').onclick = () => c.haptic('press (a new start)');
     });
   },
 });
 
-/* ---------------- MA-31w, MA-33, MA-34 Review words, mark, put it back ---------------- */
+/* ---------------- MA-30, MA-31w, MA-33, MA-34 Review ---------------- */
 moment({
-  id: 'MA-31w', title: 'Review: words arrive, a mark opens (MA-33), Put it back (MA-34)',
-  keys: 'A-S07.wordsWaiting to A-S07.default, A-S07.markOpen, A-S07.putBack. MOTION 5c, 5d. Tokens: swapMs, standard, 80 + 160 ms, out 120 / in 160, newMarkMs 1600 (exception E-d).',
-  notes: 'Progress is honest text that changes in place: no spinner, shimmer or skeleton. The words arrive whole (never typed out). A mark opens a card under the line; Put it back swaps the words and washes the restored span for 1.6 s; "Put back. Undo" persists (no stated seconds). <b>Reduce Motion:</b> heights at once, 200 ms fades, the wash static then fading. Haptic: tap on opening a mark, on Put it back and on its Undo.',
-  html: () => reviewHTML('<div data-el="wbox" style="overflow:hidden;height:30px"><div class="small" data-el="prog">Writing down your words. Part 1 of 4</div><div class="words" data-el="words" style="opacity:0;display:none">We went to the park and <span class="mark" data-el="mk">um,</span> you laughed at the ducks.</div></div><div data-el="cardslot"></div>'),
+  id: 'MA-31w', title: 'Review: words arrive (MA-30, MA-31w), a fix mark opens (MA-33), Put it back (MA-34)',
+  keys: 'A-S07.writing to A-S07.default, A-S07.markOpen, A-S07.putBack. v2: m.swap (progress words), m.fade hand-off and m.move (words arrive as one block), m.move + m.enter (mark card), m.swap + m.mark 1600 (Put it back).',
+  notes: 'Progress is honest words swapped in place: no spinner, shimmer or skeleton. The words arrive whole, never typed out. A mark opens a card under the line; Put it back swaps the said words in and tints the restored span for 1.6 s; "Put back. Undo" has no timer. <b>Reduce Motion:</b> heights at once, fades only, the tint static then fading. Haptic: tap on opening a mark, on Put it back and on its Undo.',
+  html: () => reviewHTML('<div data-el="wbox" style="position:relative;overflow:hidden;height:22px"><div class="small" data-el="prog">Writing down your words. Part 1 of 4</div><div class="words" data-el="words" style="opacity:0;position:absolute;left:0;right:0;top:0">We went to the park and <span class="mark" data-el="mk">um,</span> you laughed at the ducks.</div></div><div data-el="cardslot"></div>'),
   play(c) {
     const run = c.run;
     const prog = c.q('[data-el="prog"]');
-    [2, 3, 4].forEach((n, i) => later(run, 450 * (i + 1), () => { prog.textContent = `Writing down your words. Part ${n} of 4`; c.log(`progress text: Part ${n} of 4 (no animation)`); }));
-    later(run, 1800, () => {
+    [2, 3, 4].forEach((n, i) => later(run, 450 * (i + 1), () => { mSwap(run, prog, `Writing down your words. Part ${n} of 4`); c.log(`progress words swap: Part ${n} of 4`); }));
+    later(run, 1900, () => {
       const words = c.q('[data-el="words"]'), box = c.q('[data-el="wbox"]');
-      prog.style.display = 'none';
-      words.style.display = 'block';
-      fade(run, words, 1, T.swapMs, 0, LINEAR);
-      const h = words.getBoundingClientRect().height;
-      grow(run, box, h).then(() => { box.style.height = 'auto'; c.log('words in place'); });
-      c.a11y('"Your words are here." (WORDS.md)');
+      mHandOff(run, prog, words).then(() => { prog.remove(); words.style.position = 'relative'; c.log('words in place as one block'); });
+      mMove(run, box, words.getBoundingClientRect().height).then(() => { box.style.height = 'auto'; });
+      c.a11y('announces that the words are here (WORDS.md)');
       c.q('[data-el="mk"]').onclick = () => this.openMark(c);
       later(run, 900, () => this.openMark(c));
     });
@@ -811,13 +785,12 @@ moment({
     if (c.q('.inline')) return;
     c.haptic('tap');
     const slot = c.q('[data-el="cardslot"]');
-    const card = document.createElement('div'); card.className = 'inline'; card.style.height = '0px'; card.style.padding = '0 12px';
-    card.innerHTML = '<div data-el="cin" style="opacity:0;padding:12px 0"><div class="small">You said</div><div>"um,"</div><div class="small" style="margin-top:6px">Now it reads</div><div>(left out: a pause word)</div><button class="btn sec" data-el="pb" style="margin-top:10px;min-height:44px">Put it back</button></div>';
+    const card = document.createElement('div'); card.className = 'inline'; card.style.height = '0px';
+    card.innerHTML = '<div class="mv" data-el="cin" style="opacity:0;padding:12px 0"><div class="small">You said</div><div>"um,"</div><div class="small" style="margin-top:6px">Now it reads</div><div>(left out: a pause word)</div><button class="btn sec" data-el="pb" style="margin-top:10px;min-height:44px;width:100%">Put it back</button></div>';
     slot.appendChild(card);
     const inner = card.querySelector('[data-el="cin"]');
-    const h = inner.getBoundingClientRect().height;
-    grow(run, card, h).then(() => { card.style.height = 'auto'; });
-    fade(run, inner, 1, RM ? T.fadeMs : 160, RM ? 0 : 80, LINEAR).then(() => c.log('mark card open'));
+    mMove(run, card, inner.getBoundingClientRect().height).then(() => { card.style.height = 'auto'; });
+    mEnter(run, inner).then(() => c.log('mark card open (m.move + m.enter)'));
     card.querySelector('[data-el="pb"]').onclick = () => this.putBack(c, card);
     later(run, 1300, () => { if (card.isConnected) this.putBack(c, card); });
   },
@@ -826,20 +799,16 @@ moment({
     if (c.done) return; c.done = true;
     c.haptic('tap');
     const mk = c.q('[data-el="mk"]');
-    fade(run, mk, 0, RM ? T.fadeMs : 120, 0, LINEAR).then(() => {
-      if (dead(run)) return;
-      mk.className = 'wash'; mk.style.textDecoration = 'none'; mk.style.borderBottom = '0';
-      mk.style.background = 'var(--accentSoft)';
-      fade(run, mk, 1, RM ? T.fadeMs : 160, 0, LINEAR);
-      tween(run, { ms: T.newMarkMs, ease: LINEAR, set: (p) => { mk.style.background = `color-mix(in srgb, var(--accentSoft) ${Math.round(100 * (1 - p))}%, transparent)`; } }).then(() => c.log('wash gone (1.6 s)'));
-    });
+    mk.className = ''; mk.style.position = 'relative';
+    mk.innerHTML = '<span style="position:absolute;inset:-1px -2px;border-radius:4px;background:var(--accentSoft)" data-el="tint"></span><span style="position:relative">um,</span>';
+    const tint = mk.querySelector('[data-el="tint"]');
+    tint.style.opacity = '0';
+    fade(run, tint, 1, T.swapMs, 0, EASE).then(() => fade(run, tint, 0, T.markMs, 0, EASE).then(() => c.log('m.mark tint gone (1600)')));
+    c.log('the said words swap in (150); the paragraph reflows (m.move)');
     const cin = card.querySelector('[data-el="cin"]');
-    fade(run, cin, 0, T.exitMs, 0, LINEAR).then(() => {
-      cin.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between"><span class="small">Put back.</span><button class="link">Undo</button></div>';
-      fade(run, cin, 1, T.fadeMs, 0, LINEAR);
-      const h = cin.getBoundingClientRect().height;
-      grow(run, card, h);
-      c.log('"Put back. Undo" persists until dismissed (not a T4 timer)');
+    mSwap(run, cin, '<div style="display:flex;align-items:center;justify-content:space-between"><span class="small">Put back.</span><button class="link">Undo</button></div>').then(() => {
+      mMove(run, card, cin.getBoundingClientRect().height);
+      c.log('"Put back. Undo" stays until dismissed (no timer)');
     });
   },
 });
@@ -847,76 +816,64 @@ moment({
 /* ---------------- MA-39a Another language ---------------- */
 moment({
   id: 'MA-39a', title: 'Review: "This was in another language"',
-  keys: 'A-S07.default to A-S10.wordsWaiting (NS-17, D10). Tokens: exitMs, fadeMs, standard.',
-  notes: 'The words fade out (no travel); the waiting line fades in from 80 ms; the block resizes on standard; the player does not move. VoiceOver focus moves to the waiting line and it is read once. <b>Reduce Motion:</b> fades, height at once. Haptic: tap.',
-  html: () => reviewHTML('<div class="card" style="margin:0 0 10px;display:flex;align-items:center;gap:10px"><button class="btn sec" style="flex:none;width:44px;min-height:44px">&#9654;</button><span class="small">1 min 12 s</span></div><div data-el="wb" style="overflow:hidden"><div class="words" data-el="words">Hi sweetheart, we went to the market and you held the orange the whole way home.</div></div><button class="link" data-el="lang" style="margin-top:8px">This was in another language</button>'),
+  keys: 'A-S07.anotherLanguageOffer to A-S10.withheld (NS-17, D10). v2: m.fade hand-off, m.move. Its Undo (A-S10.withheldUndo) is the F1 window of MA-44.',
+  notes: 'The words block hands off to the waiting line; the block takes its height; the player does not move. VoiceOver focus moves to the waiting line and it is read once. <b>Reduce Motion:</b> fades, height at once. Haptic: tap.',
+  html: () => reviewHTML('<div class="card" style="margin:0 0 10px;display:flex;align-items:center;gap:10px"><button class="btn sec" style="flex:none;width:44px;min-height:44px">&#9654;</button><span class="small">1 min 12 s</span></div><div data-el="wb" style="position:relative;overflow:hidden"><div class="words" data-el="words">Hi sweetheart, we went to the market and you held the orange the whole way home.</div></div><button class="link" data-el="lang" style="margin-top:8px">This was in another language</button>'),
   play(c) {
     const run = c.run;
     const words = c.q('[data-el="words"]'), wb = c.q('[data-el="wb"]'), lang = c.q('[data-el="lang"]');
     c.haptic('tap');
-    wb.style.position = 'relative';
     wb.style.height = wb.getBoundingClientRect().height + 'px';
     const wait = document.createElement('div');
-    wait.style.position = 'absolute'; wait.style.left = '0'; wait.style.right = '0'; wait.style.top = '0'; wait.style.opacity = '0';
-    wait.innerHTML = '<div class="small" style="font-size:15px">The recording is kept. Its words are waiting until this language can be written down.</div><button class="link" style="padding-left:0">Type the words yourself</button>';
+    Object.assign(wait.style, { position: 'absolute', left: '0', right: '0', top: '0' });
+    wait.innerHTML = '<div class="small" style="font-size:15px">The recording is kept. Its words are waiting.</div><button class="link" style="padding-left:0">Write the words</button>';
     wb.appendChild(wait);
-    fade(run, words, 0, T.exitMs, 0, LINEAR).then(() => { if (!dead(run)) words.remove(); });
-    fade(run, lang, 0, T.exitMs, 0, LINEAR);
-    fade(run, wait, 1, T.fadeMs, T.exitMs / 2, LINEAR).then(() => { c.log('waiting line in (hand-off: from 80 ms, 200 ms)'); c.a11y('focus moves to the waiting line; read once'); });
-    later(run, T.exitMs / 2, () => grow(run, wb, wait.getBoundingClientRect().height));
+    mHandOff(run, words, wait).then(() => { words.remove(); c.log('waiting line in (m.fade 200)'); c.a11y('focus moves to the waiting line; read once'); });
+    fade(run, lang, 0, T.fadeMs * T.handOff, 0, LINEAR);
+    mMove(run, wb, wait.getBoundingClientRect().height);
   },
 });
 
 /* ---------------- MA-39 Keep ---------------- */
 moment({
-  id: 'MA-39', title: 'Keep: the kept moment and the hand-off to the Book',
-  keys: 'A-S07 to A-S13.kept to the Book (area B draws the arrival). MOTION 5e; NS-34 (Review to the Book within 900 ms, visible hand-off within 2,000 ms: exception E-b). Tokens: file (scale 0.9, chipAt 250, moveAt 550, dy 24), gentle, sequenceMaxMs 900, fadeMs, newMarkMs.',
-  opts: '<label><input type="checkbox" data-opt="vo"> VoiceOver on (hold until the sentence is said: at least 3 s)</label>',
-  notes: 'Commit first, then the success haptic, then the moment. Tap the phone during the moment to skip to the Book. No check mark drawing, no count, no burst, no flying envelope. <b>Reduce Motion:</b> the chip and line fade in at 0 (200 ms), nothing scales or travels, Review fades at 900 ms; the Book\'s wash fades without moving.',
-  html: () => bookHTML() + reviewHTML('<div class="card mv" data-el="sheetcard" style="margin:0;padding:16px;border-radius:28px 28px 14px 14px"><div class="t">Tuesday, Month 7, from Papa</div><div class="words" style="margin-top:6px">We went to the park and you laughed at the ducks. I want you to know how loud it was.</div></div><div data-el="chipwrap" style="text-align:center;margin-top:24px;opacity:0"><span class="chip">Kept in Month 7</span></div>'),
+  id: 'MA-39', title: 'Keep: m.keep to the letter in its month',
+  keys: 'A-S07 to A-S13.saved to the Book (area B draws the arrival). v2: T-KEEP m.keep (600 ms to the Book, a named exception), m.mark 1600. NS-34: Review to the Book within 900 ms.',
+  opts: '<label><input type="checkbox" data-opt="vo"> VoiceOver on (the Book waits until the sentence is said: at least 3 s; proposal P-2)</label>',
+  notes: 'Commit first, then the success haptic, then the move: the line enters at 0, the card moves down 24 pt and leaves at 120, Review fades at 400, the Book is on the new letter at 600 and its tint fades. Tap the phone to land on the Book at once. No check mark, stamp, card scale-down, count, burst or flying letter. <b>Reduce Motion:</b> the line fades in, nothing travels, Review fades at 400, the tint is static then fades.',
+  html: () => bookHTML() + reviewHTML('<div class="card mv" data-el="sheetcard" style="margin:0;padding:16px;border-radius:20px"><div class="t">Tuesday, Month 7, from Papa</div><div class="words" style="margin-top:6px">We went to the park and you laughed at the ducks. I want you to know how loud it was.</div></div><div class="mv" data-el="keptline" style="text-align:center;margin-top:24px;opacity:0;font-size:16px">Kept in Month 7</div>'),
   play(c) {
     const run = c.run;
-    const keep = c.q('[data-el="keep"]');
-    press(run, keep);
-    c.log('Keep tapped; the gate decides first (D-082); no gate here');
+    mTap(run, c.q('[data-el="keep"]'));
+    c.log('Keep tapped; the Keep gate decides first (D-082); no gate here');
     const seq = c.sub();
-    const review = c.q('.review'), book = c.q('.book'), card = c.q('[data-el="sheetcard"]'), chip = c.q('[data-el="chipwrap"]');
-    const toBook = () => {
-      book.style.display = 'flex';
-      return fade(seq, review, 0, T.fadeMs, 0, LINEAR).then(() => {
-        if (dead(seq)) return;
-        review.style.display = 'none';
-        c.log('on the Book, on the new letter');
-        lampTo(run, c.q('[data-el="booklamp"]'), 1, T.lamp.returnMs);
-        const wash = c.q('[data-el="wash"]'); wash.style.opacity = '1';
-        fade(run, wash, 0, T.newMarkMs, 0, LINEAR).then(() => c.log('arrival wash gone (area B)'));
-      });
+    const review = c.q('.review'), book = c.q('.book'), card = c.q('[data-el="sheetcard"]'), line = c.q('[data-el="keptline"]');
+    const showBook = () => {
+      c.q('[data-el="booklamp"]').style.opacity = '1';
+      const wash = c.q('[data-el="wash"]'); wash.style.opacity = '1';
+      fade(run, wash, 0, T.markMs, 0, EASE).then(() => c.log('m.mark tint gone (area B)'));
     };
     const skip = () => {
       if (seq.dead) return;
-      seq.dead = true; c.log('tap: skip to the end');
-      review.style.display = 'none'; book.style.display = 'flex';
-      c.q('[data-el="booklamp"]').style.opacity = '1';
-      const wash = c.q('[data-el="wash"]'); wash.style.opacity = '1'; fade(run, wash, 0, T.newMarkMs, 0, LINEAR);
+      seq.dead = true; c.log('tap: lands on the Book at once');
+      review.style.display = 'none'; book.style.display = 'flex'; showBook();
     };
     later(run, 120, () => {
       c.log('local commit done (p95 200 ms)');
       c.haptic('success (after the commit, before any frame moves)');
-      c.a11y('"Kept in Month 7." (card hidden from VoiceOver)');
+      c.a11y('"Kept in Month 7." (the card is hidden from VoiceOver)');
       review.onclick = skip;
       c.run.t0 = performance.now();
-      c.log('moment clock starts at 0');
-      if (RM) {
-        fade(seq, chip, 1, T.fadeMs, 0, LINEAR);
-      } else {
-        spring(seq, { cfg: T.gentle, set: (p) => { card.style.setProperty('--s', 1 - (1 - T.file.scale) * p); const r = T.radius.xl + (T.radius.md - T.radius.xl) * p; card.style.borderRadius = `${r}px ${r}px 14px 14px`; } });
-        fade(seq, chip, 1, T.fadeMs, T.file.chipAtMs, EASE).then(() => c.log('chip in'));
-        const leave = T.sequenceMaxMs - T.file.moveAtMs;
-        tween(seq, { ms: leave, delay: T.file.moveAtMs, set: (p) => { card.style.setProperty('--y', T.file.dy * p); card.style.opacity = String(1 - p); } }).then(() => c.log('card gone'));
-      }
-      const hold = c.opt('vo') ? Math.max(3000, 2400) : T.sequenceMaxMs;
-      if (c.opt('vo')) c.log('VoiceOver: holds until the sentence is finished, at least 3 s');
-      later(seq, hold, () => toBook());
+      c.log('m.keep clock at 0');
+      const vo = c.opt('vo');
+      if (RM) fade(seq, line, 1, T.fadeMs, 0, LINEAR); else mEnter(seq, line, T.keep.lineAtMs);
+      if (!RM) later(seq, T.keep.moveAtMs, () => { c.log('card moves down 24 and leaves (m.exit, easing.exit)'); tween(seq, { ms: T.exitMs, ease: EASE_EXIT, set: (p) => { card.style.setProperty('--y', T.keep.dy * p); card.style.opacity = String(1 - p); } }); });
+      const leaveAt = vo ? 3000 : T.keep.leaveAtMs;
+      if (vo) c.log('VoiceOver: Review holds until the sentence is said (at least 3 s)');
+      later(seq, leaveAt, () => {
+        book.style.display = 'flex';
+        c.log('Review leaves (m.fade 200) over the Book');
+        fade(seq, review, 0, T.fadeMs, 0, LINEAR).then(() => { if (dead(seq)) return; review.style.display = 'none'; c.log('on the Book, on the new letter'); showBook(); });
+      });
     });
   },
 });
@@ -924,144 +881,144 @@ moment({
 /* ---------------- MA-40 Let it go ---------------- */
 moment({
   id: 'MA-40', title: 'Let it go (from Review; Listen behaves the same)',
-  keys: 'A-S07 or A-S05 to A-S11.confirm to A-S01; A-S07.notRemoved (NS-09-R4a). NS-09 steps 1 to 5, R9; section 6 Reduce Motion. Tokens: route.dissolveMs, fadeMs, standard.',
+  keys: 'A-S11.confirm (and .confirmListen, .confirmPhoto) to A-S01; A-S11.notRemoved (NS-09-R4a). v2: T-ALERT (system), T-COVER back, T-RESUME (nothing moves on Home); the not-removed line m.enter + m.move.',
   opts: '<label><input type="checkbox" data-opt="fails"> The file cannot be removed yet (NS-09-R4a)</label><label><input type="checkbox" data-opt="cancel"> The parent chooses Keep it</label>',
-  notes: 'The confirmation is the system\'s (drawn here as a stand-in); its default is Keep it. Confirm: delete, then the warning haptic, then the room dissolves back to Home, where nothing moves: no toast, no line, no card falling away. No sound. <b>Reduce Motion:</b> the system\'s reduced alert; 200 ms dissolve.',
-  html: () => homeHTML({}) .replace('class="layer home"', 'class="layer home" style="display:none"') + reviewHTML('<div class="words" data-el="w">Tuesday, a cough and a false start.</div><div data-el="nr" style="overflow:hidden;height:0"></div>'),
+  notes: 'The confirmation is the system\'s (stand-in); its default is Keep it. Confirm: delete, then the warning haptic, then the room dissolves back to Home, where nothing moves: no toast, no line, no card falling away. No sound. <b>Reduce Motion:</b> the system\'s reduced confirmation; 200 ms dissolve.',
+  html: () => homeHTML({ hidden: true }) + reviewHTML('<div class="words">Tuesday, a cough and a false start.</div><div data-el="nr" style="overflow:hidden;height:0"></div>'),
   play(c) {
     const run = c.run;
     c.log('Let it go tapped (no haptic on opening)');
     const al = document.createElement('div'); al.className = 'alert mv';
-    al.innerHTML = '<div class="b"><b>Let this recording go?</b>It cannot be brought back.</div><button class="def" data-k>Keep it</button><button class="d" data-l>Let it go</button>';
+    al.innerHTML = '<div class="stand" style="position:static;margin-top:6px">system confirmation (stand-in)</div><div class="b"><b>Let this recording go?</b>It cannot be brought back.</div><button class="def" data-k>Keep it</button><button class="d" data-l>Let it go</button>';
     c.phone.appendChild(al);
-    if (RM) { al.style.opacity = '0'; fade(run, al, 1, T.fadeMs, 0, LINEAR); }
-    else { al.style.opacity = '0'; al.style.setProperty('--s', 1.08); tween(run, { ms: 250, set: (p) => { al.style.opacity = String(p); al.style.setProperty('--s', 1.08 - 0.08 * p); } }); }
+    al.style.opacity = '0';
+    if (RM) fade(run, al, 1, T.fadeMs, 0, LINEAR);
+    else { al.style.setProperty('--s', 1.08); tween(run, { ms: 250, set: (p) => { al.style.opacity = String(p); al.style.setProperty('--s', 1.08 - 0.08 * p); } }); }
     c.a11y('reads the consequence: "It cannot be brought back."');
     const closeAlert = () => fade(run, al, 0, T.fadeMs, 0, LINEAR).then(() => al.remove());
     al.querySelector('[data-k]').onclick = () => { closeAlert(); c.log('Keep it: nothing else moves'); };
     al.querySelector('[data-l]').onclick = () => this.confirm(c, closeAlert);
-    later(run, 1200, () => { if (!al.isConnected) return; if (c.opt('cancel')) al.querySelector('[data-k]').click(); else al.querySelector('[data-l]').click(); });
+    later(run, 1200, () => { if (!al.isConnected) return; al.querySelector(c.opt('cancel') ? '[data-k]' : '[data-l]').click(); });
   },
   confirm(c, closeAlert) {
     const run = c.run;
     closeAlert();
-    c.log('marked discarding; file delete tried; then the row');
+    c.log('marked; file delete tried; then the row');
+    c.haptic('warning (after the delete; the session has stopped)');
     if (c.opt('fails')) {
-      c.haptic('warning');
-      c.log('delete threw: Review stays (CG-7), Let it go is gone');
+      c.log('delete threw: Review stays (CG-7); Let it go gone on one frame');
       c.q('[data-el="letgo"]').style.visibility = 'hidden';
       const nr = c.q('[data-el="nr"]');
-      nr.innerHTML = '<div class="small" style="padding-top:12px;opacity:0" data-el="nrl">That recording is still on this phone. We will finish removing it.</div>';
+      nr.innerHTML = '<div class="small mv" style="padding-top:12px" data-el="nrl">That recording is still on this phone. We will finish removing it.</div>';
       const l = nr.querySelector('[data-el="nrl"]');
-      grow(run, nr, l.getBoundingClientRect().height + 12);
-      fade(run, l, 1, T.fadeMs, 0, LINEAR).then(() => c.a11y('announced after the screen settles (NS-09-R4b)'));
+      mMove(run, nr, l.getBoundingClientRect().height + 12);
+      mEnter(run, l).then(() => c.a11y('announced after the screen settles (NS-09-R4b)'));
       return;
     }
-    later(run, 60, () => {
-      c.haptic('warning (after the delete, session stopped)');
-      dissolve(run, c.q('.review'), c.q('.home')).then(() => c.log('Home: nothing moves, nothing shown (NS-09 step 5)'));
-    });
+    later(run, 60, () => mCover(run, c.q('.review'), c.q('.home')).then(() => c.log('Home: nothing moves, nothing shown (NS-09 step 5)')));
   },
 });
 
 /* ---------------- MA-44 Undo window (T4) ---------------- */
 moment({
-  id: 'MA-44', title: 'The undo window (ruling T4): replace or take off a picture on Review',
-  keys: 'A-S12.confirm, A-S12.undo, A-S07.withPicture. NS-01-R38a to R38c; NS-33-R15; BL-954. Tokens: enter 280, swapMs, exitMs, standard.',
+  id: 'MA-44', title: 'The undo window (ruling T4; F1 Undo toast, m.toast): replace or take off a picture on Review',
+  keys: 'A-S12.confirm, A-S12.undo, A-S07.photoUndo (and A-S10.withheldUndo). NS-01-R38a to R38c; NS-33-R15; BL-954. v2: T-ALERT, m.fade, m.toast (glass materialises by style, rises 8 pt on spring.snappy; out: words m.exit, glass to none).',
   opts: '<label><input type="checkbox" data-opt="vo"> VoiceOver on (simulated: the line takes 4 s to read)</label><label><input type="checkbox" data-opt="sc"> Switch Control on (closes only when the parent moves on)</label><label><input type="checkbox" data-opt="short" checked> Demo window 3 s (the card says 10 s)</label><div class="ctl"><button data-act2="leave">Parent leaves the screen</button></div>',
   readout: true,
-  notes: 'Nothing moves while the window is open: no countdown bar, ring or number (a counter hurries the parent). The window\'s state is shown only in the readout here. When it closes the line leaves over 160 ms and Undo keeps working until it is fully gone, so no frame shows a dead Undo (R38b). <b>Reduce Motion:</b> 200 ms fade in, 160 ms fade out. Haptic: tap on Undo only.',
-  html: () => reviewHTML('<div class="words" style="font-size:15px">We went to the park and you laughed at the ducks.</div><div data-el="tbox" style="margin-top:12px;height:160px;overflow:hidden"><div class="thumb" style="height:160px"><div class="pic" data-el="pic" style="opacity:1">' + PICS[0] + '</div></div></div><div style="display:flex;gap:8px;margin-top:8px"><button class="link" data-el="chg">Change photo</button><button class="link" data-el="off">Take the photo off</button><button class="link" data-el="other">Play</button></div>'),
+  notes: 'Nothing moves while the window is open: no countdown bar, ring or number. The window\'s state shows only in the readout here. When it closes the words leave and the glass dematerialises; Undo keeps working until the toast is gone, so no frame shows a dead Undo (R38b). F1 has no Close glyph. <b>Reduce Motion:</b> no rise; the glass style change and word fades only. Haptic: tap on Undo only.',
+  html: () => reviewHTML('<div class="words" style="font-size:15px">We went to the park and you laughed at the ducks.</div><div data-el="tbox" style="margin-top:12px;height:160px;overflow:hidden"><div class="thumb" style="height:160px"><div class="pic" data-el="pic" style="opacity:1">' + PICS[0] + '</div></div></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"><button class="link" data-el="chg">Change photo</button><button class="link" data-el="off">Take the photo off</button><button class="link" data-el="other">Play</button></div>'),
   setup(c) {
     c.q('[data-el="chg"]').onclick = () => this.confirmReplace(c);
     c.q('[data-el="off"]').onclick = () => this.takeOff(c);
-    c.q('[data-el="other"]').onclick = () => { c.log('another control activated'); if (c.win) this.movedOn(c, 'another control'); };
-    c.sec.querySelector('[data-act2="leave"]').onclick = () => { if (c.win) this.movedOn(c, 'left the screen'); };
+    c.q('[data-el="other"]').onclick = () => { c.log('another control activated: focus leaves the toast'); if (c.win) this.close(c, 'moved on: focus left the toast'); };
+    c.sec.querySelector('[data-act2="leave"]').onclick = () => { if (c.win) this.close(c, 'moved on: the screen changed'); };
   },
   confirmReplace(c) {
     const run = c.run;
-    const scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.style.opacity = '0';
-    const sh = document.createElement('div'); sh.className = 'sheet mv';
-    sh.innerHTML = '<div style="font-weight:600;margin-bottom:6px">Use this photo instead?</div><div class="small" style="margin-bottom:12px">The first one stays until you choose.</div><button class="btn" data-k style="width:100%;margin-bottom:8px">Keep the first</button><button class="btn sec" data-u style="width:100%">Use this one</button>';
-    c.phone.appendChild(scrim); c.phone.appendChild(sh);
-    fade(run, scrim, 1, T.fadeMs, 0, LINEAR);
-    if (RM) { sh.style.opacity = '0'; fade(run, sh, 1, T.fadeMs, 0, LINEAR); } else { sh.style.setProperty('--y', 240); spring(run, { cfg: T.standard, set: (p) => sh.style.setProperty('--y', 240 * (1 - p)) }); }
-    c.log('picker returned a second picture; the replace sheet rises');
-    const close = () => { fade(run, scrim, 0, T.fadeMs, 0, LINEAR).then(() => scrim.remove()); return (RM ? fade(run, sh, 0, T.fadeMs, 0, LINEAR) : spring(run, { cfg: T.standard, set: (p) => sh.style.setProperty('--y', 240 * p) })).then(() => sh.remove()); };
-    sh.querySelector('[data-k]').onclick = () => { close(); c.log('Keep the first: nothing else moves'); };
-    sh.querySelector('[data-u]').onclick = () => {
+    const al = document.createElement('div'); al.className = 'alert';
+    al.innerHTML = '<div class="stand" style="position:static;margin-top:6px">system confirmation (stand-in)</div><div class="b"><b>Use this photo instead?</b>The first one stays until you choose.</div><button class="def" data-k>Keep the first</button><button data-u>Use this one</button>';
+    c.phone.appendChild(al);
+    al.style.opacity = '0'; fade(run, al, 1, T.fadeMs, 0, LINEAR);
+    c.log('the picker returned a second picture; the native confirmation opens');
+    const close = () => fade(run, al, 0, T.fadeMs, 0, LINEAR).then(() => al.remove());
+    al.querySelector('[data-k]').onclick = () => { close(); c.log('Keep the first: nothing else moves'); };
+    al.querySelector('[data-u]').onclick = () => {
       close().then(() => {
         const pic = c.q('[data-el="pic"]');
         const nu = pic.cloneNode(false); nu.innerHTML = PICS[1]; nu.style.opacity = '0'; pic.parentNode.appendChild(nu);
-        fade(run, nu, 1, T.swapMs, 0, LINEAR); fade(run, pic, 0, T.swapMs, 0, LINEAR).then(() => { pic.remove(); nu.dataset.el = 'pic'; });
-        c.prev = 0;
+        fade(run, nu, 1, T.fadeMs, 0, LINEAR); fade(run, pic, 0, T.fadeMs, 0, LINEAR).then(() => { pic.remove(); nu.dataset.el = 'pic'; });
+        c.log('the new picture cross-fades over the first (m.fade 200)');
         this.openWindow(c, 'Photo changed.', () => {
           const p2 = c.q('[data-el="pic"]'); const back = p2.cloneNode(false); back.innerHTML = PICS[0]; back.style.opacity = '0'; p2.parentNode.appendChild(back);
-          fade(run, back, 1, T.swapMs, 0, LINEAR); fade(run, p2, 0, T.swapMs, 0, LINEAR).then(() => { p2.remove(); back.dataset.el = 'pic'; });
+          fade(run, back, 1, T.fadeMs, 0, LINEAR); fade(run, p2, 0, T.fadeMs, 0, LINEAR).then(() => { p2.remove(); back.dataset.el = 'pic'; });
         });
       });
     };
-    c.autoUse = () => sh.querySelector('[data-u]').click();
+    c.autoUse = () => al.querySelector('[data-u]').click();
   },
   takeOff(c) {
     const run = c.run;
     const box = c.q('[data-el="tbox"]');
-    fade(run, box.firstElementChild, 0, T.exitMs, 0, LINEAR);
-    grow(run, box, 0);
-    c.log('picture fades out, the box closes (file kept until the window closes)');
+    fade(run, box.firstElementChild, 0, T.exitMs, 0, EASE_EXIT);
+    mMove(run, box, 0);
+    c.log('the picture leaves (m.exit), the box closes (m.move); the file stays until the window closes');
     this.openWindow(c, 'Photo taken off.', () => {
-      box.firstElementChild.style.opacity = '0';
-      grow(run, box, 160).then(() => fade(run, box.firstElementChild, 1, T.fadeMs, 0, LINEAR));
+      mMove(run, box, 160).then(() => fade(run, box.firstElementChild, 1, T.fadeMs, 0, LINEAR));
     });
   },
   openWindow(c, msg, onUndo) {
     const run = c.run;
     const N = (c.opt('short') ? 3 : 10) * 1000;
     const toast = document.createElement('div'); toast.className = 'toast mv';
-    toast.innerHTML = `<span class="msg">${msg}</span><button data-u>Undo</button><button class="x" aria-label="Close">&#10005;</button>`;
+    toast.innerHTML = `<span class="msg mv" style="opacity:0">${msg}</span><button data-u style="opacity:1">Undo</button>`;
     c.phone.appendChild(toast);
-    const w = { state: 'entering', openedAt: 0, voDone: null, closeAt: null, valid: true };
+    const words = toast.querySelector('.msg');
+    const w = { state: 'entering', openedAt: 0, voDone: null, valid: true, toast };
     c.win = w;
-    const enterP = RM ? (toast.style.opacity = '0', fade(run, toast, 1, T.fadeMs, 0, LINEAR)) : enterEl(run, toast, 0);
+    tween(run, { ms: T.glass.styleMs, ease: EASE, set: (p) => toast.style.setProperty('--g', p) });
+    if (!RM) { toast.style.setProperty('--y', 8); spring(run, { cfg: T.snappy, set: (p) => toast.style.setProperty('--y', 8 * (1 - p)) }); }
+    const wordsIn = mEnter(run, words);
+    c.log('glass materialises by style (250), rises 8 pt; words m.enter; Undo is there from the first frame');
     c.a11y(`"${msg} Undo." (focus not moved)`);
-    enterP.then(() => {
+    Promise.all([wordsIn]).then(() => {
       if (dead(run) || w.state !== 'entering') return;
       w.state = 'open'; w.openedAt = performance.now();
-      c.log(`line on screen; ${N / 1000} s begins`);
+      c.log(`toast in place; ${N / 1000} s begins (nothing moves while open)`);
       if (c.opt('vo')) later(run, 4000, () => { w.voDone = performance.now(); c.a11y('finished reading the undo line (announcementFinished)'); });
     });
     const tick = setInterval(() => {
       if (dead(run) || w.state === 'gone') { clearInterval(tick); return; }
       if (w.state !== 'open') return;
-      const vo = c.opt('vo'), sc = c.opt('sc');
       const now = performance.now();
       let closeAt = w.openedAt + N * SLOW;
-      if (vo) closeAt = w.voDone === null ? Infinity : Math.max(closeAt, w.voDone + N * SLOW);
-      if (sc) closeAt = Infinity;
-      const left = closeAt === Infinity ? (sc ? 'open until the parent moves on (Switch Control)' : 'waiting for VoiceOver to finish the line') : `closes in ${((closeAt - now) / 1000 / SLOW).toFixed(1)} s`;
+      if (c.opt('vo')) closeAt = w.voDone === null ? Infinity : Math.max(closeAt, w.voDone + N * SLOW);
+      if (c.opt('sc')) closeAt = Infinity;
+      const left = closeAt === Infinity ? (c.opt('sc') ? 'open until the parent moves on (Switch Control)' : 'waiting for VoiceOver to finish the line') : `closes in ${((closeAt - now) / 1000 / SLOW).toFixed(1)} s`;
       c.readout(`window: open, ${left}\n(shown here only; nothing in the phone counts down)`);
       if (now >= closeAt) this.close(c, 'time');
     }, 100);
     toast.querySelector('[data-u]').onclick = () => {
-      if (!w.valid) return;
-      c.haptic('tap'); w.valid = false; w.state = 'closing';
-      onUndo(); c.a11y('"Undone." once');
-      this.exitToast(c, toast, w);
+      if (!w.valid || w.undone) return;
+      const leaving = w.state === 'closing';
+      w.undone = true; c.haptic('tap'); w.state = 'closing';
+      onUndo(); c.a11y('the outcome, once');
+      if (leaving) { c.log('Undo pressed while the toast was leaving: it still works'); return; }
+      mSwap(run, words, 'Put back.').then(() => this.leave(c, w));
     };
-    toast.querySelector('.x').onclick = () => this.close(c, 'Close');
-    w.toast = toast;
   },
   close(c, why) {
     const w = c.win; if (!w || (w.state !== 'open' && w.state !== 'entering')) return;
     w.state = 'closing';
-    c.log(`window closes (${why}); Undo still works until the line is gone`);
-    this.exitToast(c, w.toast, w);
+    c.log(`window closes (${why}); Undo still works until the toast is gone`);
+    this.leave(c, w);
   },
-  movedOn(c, why) { this.close(c, `moved on: ${why}`); },
-  exitToast(c, toast, w) {
+  leave(c, w) {
     const run = c.run;
-    const p = RM ? fade(run, toast, 0, T.exitMs, 0, LINEAR) : tween(run, { ms: T.exitMs, set: (q) => { toast.style.opacity = String(1 - q); toast.style.setProperty('--y', 8 * q); } });
-    p.then(() => { toast.remove(); w.valid = false; w.state = 'gone'; c.log('line gone; Undo expired at the same instant (R38b)'); c.readout('window: closed'); c.win = null; });
+    const words = w.toast.querySelector('.msg');
+    mExit(run, words).then(() => tween(run, { ms: T.glass.styleMs, ease: EASE, set: (p) => w.toast.style.setProperty('--g', 1 - p) })).then(() => {
+      w.toast.remove(); w.valid = false; w.state = 'gone'; c.win = null;
+      c.log('toast gone; Undo expired in the same frame (R38b)'); c.readout('window: closed');
+    });
   },
   play(c) {
     this.confirmReplace(c);
