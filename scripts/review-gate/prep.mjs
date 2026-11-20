@@ -21,7 +21,8 @@
 // reading as scripts/agents/merge-queue.mjs: the FIRST LINE of a comment must be exactly
 // `## Review A|B at <40 lowercase hex>: PASS` (or `PASS WITH NOTES`, CR-63), the comment must
 // come from an OWNER, MEMBER or COLLABORATOR, the sha must equal the head in all 40 characters,
-// and a `Must fix:` line that names something takes a pass away. The newest verdict per lens
+// a `Must fix:` line that names something takes a pass away, and a PASS WITH NOTES also needs a
+// "Must fix: none" line or one of the CR-63 phrasings (copied from merge-queue.mjs, not imported). The newest verdict per lens
 // at the head decides. When #559 merges, swap the local parser for its export in a new PR.
 import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -32,22 +33,34 @@ export const FULL_SHA = /^[0-9a-f]{40}$/;
 const TRUSTED = ["OWNER", "MEMBER", "COLLABORATOR"];
 const FIRST_LINE = /^## Review ([AB]) at ([0-9a-f]{40}): (\S.*?)[ \t]*$/;
 const MUST_FIX = /^[ \t>*_#-]*must[ -]fix(?:es)?[ \t*_]*:[ \t*_]*(.*)$/gim;
+// Copied from merge-queue.mjs (see effectiveVerdict below): other ways reviews say "Must fix: none".
+const NO_MUST_FIX = /\b(no\s+musts?\b|there\s+is\s+no\s+must[ -]?fix|no\s+must[ -]?fix(es)?\b|nothing\s+(must|has\s+to)\s+be\s+fixed)/i;
 const NOISE_FILES = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|\.snap$|\/fixtures\//;
 
 /** Strip ANSI escapes and control characters from anything printed (PR text is data). */
 export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
+
+/**
+ * CR-63 rule, copied from effectiveVerdict in scripts/agents/merge-queue.mjs (origin/develop on 20 Nov 2026).
+ * It is a copy, not an import, because the two layouts may differ between branches. If you change one, change
+ * the other: scripts/review-gate/fixtures/parser-cases.mjs holds the 21 cases both must agree on.
+ * A pass stays a pass only if no "Must fix:" line names anything, and a PASS WITH NOTES also says it has no must-fix.
+ */
+function effectiveVerdict(word, body) {
+  if (word !== "PASS" && word !== "PASS WITH NOTES") return word;
+  const text = String(body ?? "").replace(/\r/g, "");
+  const rests = [...text.matchAll(MUST_FIX)].map((x) => x[1].trim());
+  if (rests.some((r) => !/^none\b/i.test(r))) return `${word} (open Must fix)`;
+  if (word === "PASS WITH NOTES" && rests.length === 0 && !NO_MUST_FIX.test(text)) return `${word} (no "Must fix: none" line)`;
+  return word;
+}
 
 /** First line strict. Returns { lens, sha, stated, word } or null. `word` is the verdict after the Must fix check. */
 export function parseReview(body) {
   const text = String(body ?? "").replace(/\r/g, "");
   const m = FIRST_LINE.exec(text.split("\n", 1)[0]);
   if (!m) return null;
-  let word = m[3];
-  if (word === "PASS" || word === "PASS WITH NOTES") {
-    const rests = [...text.matchAll(MUST_FIX)].map((x) => x[1].trim());
-    if (rests.some((r) => !/^none\b/i.test(r))) word = `${word} (open Must fix)`;
-  }
-  return { lens: m[1], sha: m[2], stated: m[3], word };
+  return { lens: m[1], sha: m[2], stated: m[3], word: effectiveVerdict(m[3], text) };
 }
 const isPass = (w) => w === "PASS" || w === "PASS WITH NOTES";
 
@@ -161,7 +174,10 @@ export async function prep({ api, pr, repo = DEFAULT_REPO }) {
   if (again?.head?.sha !== head) {
     return { exitCode: 1, lines: [...lines, `HEAD MOVED while this ran (now ${clean(again?.head?.sha)}). Run it again. No ask printed.`] };
   }
-  if (reviews.A && reviews.B && ciOk) {
+  if (pull.draft) {
+    lines.push("");
+    lines.push(`No founder ask: draft: mark ready first. The merge queue skips drafts.`);
+  } else if (reviews.A && reviews.B && ciOk) {
     lines.push("");
     lines.push("Founder ask (paste this):");
     lines.push(`Merge #${pr} at ${head}`);

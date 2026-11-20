@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { prep, parseReview, reviewState, ciState, parseArgs, FULL_SHA } from "./prep.mjs";
+import { CASES, PWN_ACCEPTED, SHA } from "./fixtures/parser-cases.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -16,12 +17,12 @@ const FILES = [
   { filename: "docs/asha-notes.md", additions: 4, deletions: 1 },
 ];
 
-function fake({ sha = HEAD, movedTo = null, comments = [], runs = green, protection = PROT, calls = [] } = {}) {
+function fake({ draft = false, sha = HEAD, movedTo = null, comments = [], runs = green, protection = PROT, calls = [] } = {}) {
   let pullReads = 0;
   return async (path) => {
     calls.push(path);
     const p = path.split("?")[0];
-    if (p.endsWith("/pulls/9")) return { title: "feat: Asha fixture", draft: true, mergeable_state: "clean", base: { ref: "develop" }, changed_files: 3, head: { sha: ++pullReads > 1 && movedTo ? movedTo : sha } };
+    if (p.endsWith("/pulls/9")) return { title: "feat: Asha fixture", draft, mergeable_state: "clean", base: { ref: "develop" }, changed_files: 3, head: { sha: ++pullReads > 1 && movedTo ? movedTo : sha } };
     if (p.endsWith("/branches/develop/protection")) { if (!protection) throw new Error("403"); return protection; }
     if (p.endsWith(`/commits/${sha}/check-runs`)) return { check_runs: runs };
     if (p.endsWith("/pulls/9/files")) return FILES;
@@ -112,4 +113,38 @@ test("parseArgs", () => {
   assert.throws(() => parseArgs([]));
   assert.throws(() => parseArgs(["12", "--repo", "../x"]));
   assert.throws(() => parseArgs(["abc"]));
+});
+
+test("CR-63: a PASS WITH NOTES with no Must fix line is not counted, and no ask is printed", async () => {
+  const { lines } = await go({ comments: [rev("A", HEAD, "PASS WITH NOTES", "Looks fine."), rev("B", HEAD, "PASS", "", "MEMBER", 2)] });
+  const out = lines.join("\n");
+  assert.match(out, /A NOT a pass/);
+  assert.ok(!out.includes("Merge #9 at"));
+  assert.match(out, /No founder ask yet: Review A not counted/);
+});
+
+test("CR-63: the forms merge-queue accepts on a PASS WITH NOTES are counted here too", async () => {
+  for (const x of PWN_ACCEPTED) {
+    assert.equal(reviewState([rev("A", HEAD, "PASS WITH NOTES", x)], HEAD).A, true, x);
+    const { lines } = await go({ comments: [rev("A", HEAD, "PASS WITH NOTES", x), rev("B", HEAD, "PASS", "", "MEMBER", 2)] });
+    assert.match(lines.join("\n"), new RegExp(`^Merge #9 at ${HEAD}$`, "m"), x);
+  }
+});
+
+test("a draft PR gets no Merge ask, only 'draft: mark ready first'", async () => {
+  const { lines, exitCode } = await go({ draft: true, comments: [rev("A", HEAD), rev("B", HEAD, "PASS", "", "MEMBER", 2)] });
+  const out = lines.join("\n");
+  assert.equal(exitCode, 0);
+  assert.match(out, /draft: mark ready first/);
+  assert.ok(!out.includes("Merge #9 at"));
+});
+
+test("parser agreement: the 21-case table gives the same counted answer as merge-queue.mjs", () => {
+  assert.equal(CASES.length, 21);
+  for (const c of CASES) {
+    const r = parseReview(c.body);
+    const counted = !!r && (r.word === "PASS" || r.word === "PASS WITH NOTES");
+    assert.equal(counted, c.counted, c.name);
+    assert.equal(reviewState([{ id: 1, body: c.body, author_association: "MEMBER" }], SHA)[r?.lens ?? "A"], c.counted && (r?.lens === "A" || r?.lens === "B") && r.sha === SHA, `state: ${c.name}`);
+  }
 });
