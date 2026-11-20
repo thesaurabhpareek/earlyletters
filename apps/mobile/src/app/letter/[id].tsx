@@ -216,7 +216,8 @@ function OpeningBlock({
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
-      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} testID={focusRef ? 'letter.dateline' : undefined}>
+      {/* NS-33-R1: the dateline is the page's level 1 heading, and its first. The carried copies stay hidden from VoiceOver. */}
+      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
