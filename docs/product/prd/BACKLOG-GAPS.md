@@ -6,9 +6,9 @@ Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a ba
 
 ## 1. Result in one paragraph
 
-1,048 P0 rows were read (`p0.py`, 20 Nov, regenerated after the tooling fixes described below): 534 acceptance rows in cards 01 to 12, 19, 21 and 27 (NS-01 to NS-52 with P0 rows; card 27 holds 27 in NS-51 and 26 in NS-52) and 514 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block (all NS rows). 81 more cite an existing `BL-nnn` in the row's own text (6 NS rows, 75 FR rows). **781 have no row-level backlog row**: 737 with no backlog mention at all (298 NS rows, 439 FR rows), and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 781 (about eleven times E30's): 590 from the locked cards, cards 19 and 21 and the first function reviews (groups G01 to G35: 588 at the first run, plus NS-17-R11 and NS-17-R12, which the K17 ruling added to card 09 later on 20 Nov), 51 from NS-51 and NS-52 (G36, G37) and 140 FR rows added to the function files by the 20 Nov addenda (G38). Cards 19, 21 and 27 (96, 87 and 53 P0 rows) and the function reviews have no backlog rows by design: each card says "new rows needed (no id invented)". The first run of 20 Nov moved the totals from 826 / 565 to 850 / 588 after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4).
+1,050 P0 rows were read (`p0.py`, 20 Nov, run after the 20 Nov rulings E43 to E60 added NS-42-R17 and NS-42-R18): 536 acceptance rows in cards 01 to 12, 19, 21 and 27 (NS-01 to NS-52 with P0 rows; card 27 holds 27 in NS-51 and 26 in NS-52) and 514 P0 FR rows in `functions/*.md`. 198 are named by a row-level id or range in a backlog block (all NS rows). 81 more cite an existing `BL-nnn` in the row's own text (6 NS rows, 75 FR rows). **771 have no row-level backlog row**: 727 with no backlog mention at all (288 NS rows, 439 FR rows), and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. Every figure in this file is the output of `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` (and `--groups`, `--md`); if they differ, the script is right and this file is regenerated. One rule decides what counts as cover: the script excludes only backlog rows whose status starts `proposed (docs/product/prd/backlog-gaps`; the rows proposed from engineering's readiness files (`proposed (docs/engineering/readiness-20nov/...)`: BL-129, BL-132, BL-138, BL-168, BL-327 and others) do count as cover. That is why the earlier 186 / 737 / 781 became 196 / 727 / 771 before the two new rows, and 198 / 727 / 771 now (NS-03, NS-09, NS-17, NS-34 gained cover; NS-40-R6 and R7 are named by BL-577 since E50; NS-42 gained two P0 rows with no backlog row). **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 771 (about eleven times E30's): 580 from the locked cards, cards 19 and 21 and the first function reviews (groups G01 to G35), 51 from NS-51 and NS-52 (G36, G37) and 140 FR rows added to the function files by the 20 Nov addenda (G38). Cards 19, 21 and 27 (96, 87 and 53 P0 rows) and the function reviews have no backlog rows by design: each card says "new rows needed (no id invented)". The first run of 20 Nov moved the totals from 826 / 565 to 850 / 588 after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4).
 
-**Update, 20 Nov (regenerated; the pack tooling was repaired).** `p0.py` now reads cards 00 to 27 and `functions/*.md` (cards 22 to 26 hold no P0 acceptance row; card 27 adds 53). It does not count the 38 rows filed from this file (their status starts `proposed (docs/product/prd/BACKLOG-GAPS.md`) as cover, so `--gaps` and `--groups` keep listing the gaps those rows propose to close; once Karma or the founder sets a row to `ready` it counts as cover like any other row. `--groups` no longer stops with `StopIteration` at FR-AIS-57 and later: FR rows from the first id of each file's 20 Nov addendum on are group G38 (table `ADDENDUM_FROM` in the script), NS-51 is G36 and NS-52 is G37. The group counts in 5.1 are the output of `p0.py --groups` and sum to 781. Per-card counts in section 3 are the output of `p0.py --gaps`; NS-01 to NS-50 are unchanged from the first run except NS-17 (9 to 11 rows: NS-17-R11 and NS-17-R12, both gaps, so G05 is 28 and `BL-182` named 26 until the final audit, which added both: it now names 28). **Two of the 53 rows of card 27 are cite-covered, not gaps:** NS-51-R24 cites BL-961 and NS-52-R18 cites BL-933. BL-045 listed 27 rows and BL-046 listed 26 (the table parse of the 53) while `p0.py` counts 26 and 25 gap rows; the final audit corrected `docs/BACKLOG.md`: BL-045 now names 26 (NS-51-R24 left out, cite-covered by BL-961) and BL-046 names 25 (NS-52-R18 left out, cite-covered by BL-933). Every other one of the 38 proposed rows (BL-182 apart) names the same number of rows, and the same ids, as `p0.py` (NS ids compared through the script's own parser; FR ranges expanded by hand-written code that is not kept in the repo). Sections 3, 5, 5.1 and 8 are refreshed. Section 7 was regenerated in the final audit and lists all 781 rows (G01 to G38).
+**Update, 20 Nov (regenerated; the pack tooling was repaired).** `p0.py` now reads cards 00 to 27 and `functions/*.md` (cards 22 to 26 hold no P0 acceptance row; card 27 adds 53). It does not count the 38 rows filed from this file (their status starts `proposed (docs/product/prd/BACKLOG-GAPS.md`) as cover, so `--gaps` and `--groups` keep listing the gaps those rows propose to close; once Karma or the founder sets a row to `ready` it counts as cover like any other row. `--groups` no longer stops with `StopIteration` at FR-AIS-57 and later: FR rows from the first id of each file's 20 Nov addendum on are group G38 (table `ADDENDUM_FROM` in the script), NS-51 is G36 and NS-52 is G37. The group counts in 5.1 are the output of `p0.py --groups` and sum to 771. Per-card counts in section 3 are the output of `p0.py --gaps`; NS-01 to NS-50 are unchanged from the first run except NS-17 (9 to 11 rows: NS-17-R11 and NS-17-R12, both gaps, so G05 is 28 and `BL-182` named 26 until the final audit, which added both: it now names 28). **Two of the 53 rows of card 27 are cite-covered, not gaps:** NS-51-R24 cites BL-961 and NS-52-R18 cites BL-933. BL-045 listed 27 rows and BL-046 listed 26 (the table parse of the 53) while `p0.py` counts 26 and 25 gap rows; the final audit corrected `docs/BACKLOG.md`: BL-045 now names 26 (NS-51-R24 left out, cite-covered by BL-961) and BL-046 names 25 (NS-52-R18 left out, cite-covered by BL-933). Every other one of the 38 proposed rows (BL-182 apart) names the same number of rows, and the same ids, as `p0.py` (NS ids compared through the script's own parser; FR ranges expanded by hand-written code that is not kept in the repo). Sections 3, 5, 5.1 and 8 are refreshed. Section 7 was regenerated in the final audit and lists all 781 rows (G01 to G38).
 
 Card 20 (`20-founder-direction-20nov.md`), 00, 13, 12 hold no P0 acceptance rows. `14-test-plan.md` holds the P0 register (a copy), `15`, `16`, `18` are review records: none is read as a row source.
 
@@ -31,13 +31,13 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 |---|---|---|---|---|---|
 | NS-01 | 37 | 10 | 1 | 26 | 0 |
 | NS-02 | 18 | 18 | 0 | 0 | 0 |
-| NS-03 | 7 | 0 | 0 | 0 | 7 |
+| NS-03 | 7 | 6 | 0 | 0 | 1 |
 | NS-04 | 6 | 6 | 0 | 0 | 0 |
 | NS-05 | 17 | 2 | 0 | 15 | 0 |
 | NS-06 | 31 | 31 | 0 | 0 | 0 |
 | NS-07 | 14 | 14 | 0 | 0 | 0 |
 | NS-08 | 13 | 5 | 0 | 0 | 8 |
-| NS-09 | 13 | 6 | 0 | 0 | 7 |
+| NS-09 | 13 | 7 | 0 | 0 | 6 |
 | NS-10 | 9 | 9 | 0 | 0 | 0 |
 | NS-11 | 5 | 2 | 0 | 3 | 0 |
 | NS-12 | 5 | 5 | 0 | 0 | 0 |
@@ -45,7 +45,7 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | NS-14 | 4 | 2 | 0 | 0 | 2 |
 | NS-15 | 4 | 4 | 0 | 0 | 0 |
 | NS-16 | 8 | 8 | 0 | 0 | 0 |
-| NS-17 | 11 | 0 | 0 | 0 | 11 |
+| NS-17 | 11 | 1 | 0 | 0 | 10 |
 | NS-18 | 3 | 3 | 0 | 0 | 0 |
 | NS-19 | 2 | 0 | 0 | 0 | 2 |
 | NS-21 | 5 | 2 | 0 | 0 | 3 |
@@ -55,15 +55,15 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | NS-25 | 13 | 13 | 0 | 0 | 0 |
 | NS-32 | 8 | 8 | 0 | 0 | 0 |
 | NS-33 | 13 | 6 | 0 | 0 | 7 |
-| NS-34 | 3 | 0 | 0 | 0 | 3 |
+| NS-34 | 3 | 2 | 0 | 0 | 1 |
 | NS-35 | 4 | 1 | 0 | 0 | 3 |
 | NS-36 | 14 | 2 | 0 | 0 | 12 |
 | NS-37 | 3 | 2 | 0 | 0 | 1 |
 | NS-38 | 8 | 0 | 0 | 0 | 8 |
 | NS-39 | 10 | 0 | 0 | 0 | 10 |
-| NS-40 | 11 | 0 | 0 | 0 | 11 |
+| NS-40 | 11 | 2 | 0 | 0 | 9 |
 | NS-41 | 18 | 0 | 1 | 0 | 17 |
-| NS-42 | 13 | 0 | 1 | 0 | 12 |
+| NS-42 | 15 | 0 | 1 | 0 | 14 |
 | NS-43 | 11 | 0 | 0 | 0 | 11 |
 | NS-44 | 10 | 0 | 0 | 0 | 10 |
 | NS-45 | 15 | 0 | 0 | 0 | 15 |
@@ -99,7 +99,7 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | FR-RSK | 4 | 0 | 0 | 0 | 4 |
 | FR-SEC | 18 | 0 | 4 | 0 | 14 |
 | FR-SUP | 20 | 0 | 4 | 0 | 16 |
-| TOTAL | 1048 | 186 | 81 | 44 | 737 |
+| TOTAL | 1050 | 198 | 81 | 44 | 727 |
 
 ## 4. Free ids
 
@@ -124,19 +124,19 @@ Rules used: one group is one deliverable or one reviewable stack; rows stay in t
 | Group | Title (as a heading would read) | Covers P0 rows | Rows | Depends on | Size | Backlog id (filed in docs/BACKLOG.md, 5.1) |
 |---|---|---|---|---|---|---|
 | G01 | Name the card rows in the rows that already carry them (no new work, edit `Satisfies:` lines) | NS-01 (26 rows: R4, R8, R9a, R9b, R13a, R13b, R15, R16a-c, R17a, R17c, R18, R21b, R22, R25, R26, R27, R31, R33, R35, R36, R51, R52, R55, R62); NS-05 (15); NS-11 R10, R12, R23 | 44 | BL-931, BL-939, BL-963 (the rows edited) | S | BL-126 |
-| G02 | Pilot privacy and consent handling (NS-03) | NS-03-R1 to R5, R7, R8 | 7 | BL-935 (ready; it holds only the kit and names the card file, not these rows) | S | BL-127 |
+| G02 | Pilot privacy and consent handling (NS-03) | NS-03-R1 to R5, R7, R8 | 1 | BL-935 (ready; it holds only the kit and names the card file, not these rows) | S | BL-127 |
 | G03 | Recording backup flip rows (NS-08 R10 to R19) | NS-08-R10, R11, R13, R14, R16, R17, R18, R19 | 8 | BL-976 (blocked, PR #622); waits for the founder's flip decision, as BL-976 says | L | BL-128 |
-| G04 | Let it go and child switcher: the rows BL-923 to BL-926 do not name | NS-09-R1 to R4b, R7, R8; NS-14-R8, R11 | 9 | BL-925, BL-926, BL-977, BL-941. BL-923 and BL-924 are `done (#832)` and probably already satisfy NS-09-R1 to R3 in code: add the ids, then test | M | BL-181 |
-| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10 to R12; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 28 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-182 |
+| G04 | Let it go and child switcher: the rows BL-923 to BL-926 do not name | NS-09-R1 to R4b, R7, R8; NS-14-R8, R11 | 8 | BL-925, BL-926, BL-977, BL-941. BL-923 and BL-924 are `done (#832)` and probably already satisfy NS-09-R1 to R3 in code: add the ids, then test | M | BL-181 |
+| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10 to R12; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 27 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-182 |
 | G06 | Capture and reading stragglers of the 20 Nov lock | NS-19-R1, R4; NS-21-R9, R11, R13; NS-24-R10; NS-35-R1, R3, R4; NS-37-R2 | 10 | BL-931, BL-952, BL-947 | M | BL-183 |
 | G07 | Accessibility floor rows (NS-33 R1 to R8) | NS-33-R1, R2, R4 to R8 | 7 | BL-927, BL-928, BL-984. BL-927 to BL-928 satisfy LEGAL-REQ-051, not these ids: the fix may be Satisfies lines | S | BL-184 |
-| G08 | Quality gates: test plan rows, trace ratchet for backlog rows (NS-34, FR-QAL) | NS-34-R2, R5, R6; FR-QAL-01, 03, 05, 06, 11, 12, 15, 16, 17, 20 to 23 | 16 | BL-929, BL-948, BL-964 (trace sees NS ids). Proposed new check: `p0.py` as a CI step (`docs/ops/proposed/` patch, qa cannot edit workflows) | M | BL-185 |
+| G08 | Quality gates: test plan rows, trace ratchet for backlog rows (NS-34, FR-QAL) | NS-34-R2, R5, R6; FR-QAL-01, 03, 05, 06, 11, 12, 15, 16, 17, 20 to 23 | 14 | BL-929, BL-948, BL-964 (trace sees NS ids). Proposed new check: `p0.py` as a CI step (`docs/ops/proposed/` patch, qa cannot edit workflows) | M | BL-185 |
 | G09 | Data follows the letter (NS-36) | NS-36-R1a to R1d, R2, R3, R5, R7, R8, R10, R11, R12 | 12 | BL-933 (blocked), BL-959 (blocked), BL-960, BL-952 | M | BL-186 |
 | G10 | Store candidate gate evidence and App Store record (NS-38, FR-CMP) | NS-38-R1 to R5, R7 to R9; FR-CMP-01, 03 to 07, 11 to 13, 15 to 20 | 23 | BL-958, BL-965, BL-975. Founder steps for the store record are not agent work | M | BL-187 |
 | G11 | First launch: age first, no prompt, offline (NS-39) | NS-39-R1 to R6, R10, R11, R12, R14 | 10 | BL-965, BL-958 | M | BL-188 |
-| G12 | The age gate and the country hook (NS-40) | NS-40-R1 to R3, R5 to R10, R12, R13 | 11 | BL-965; D-131 counsel path | M | BL-198 |
+| G12 | The age gate and the country hook (NS-40) | NS-40-R1 to R3, R5 to R10, R12, R13 | 9 | BL-965; D-131 counsel path | M | BL-198 |
 | G13 | Sign in: Apple, email code, link, session (NS-41) | NS-41-R1 to R5, R7, R9, R10, R11, R13, R14, R16, R18 to R20, R22, R23 | 17 | BL-053 (needs-founder FT-07/12/13), BL-961; split into three PRs (screens, server limits, Apple) | L | BL-208 |
-| G14 | Agree to the Terms and the sensitive-data question (NS-42) | NS-42-R1 to R6, R9, R10, R11, R13, R15, R16 | 12 | BL-577, BL-579 (both deferred), G13. NS-42-R7 is cite-covered by BL-577 | M | BL-291 |
+| G14 | Agree to the Terms and the sensitive-data question (NS-42) | NS-42-R1 to R6, R9, R10, R11, R13, R15, R16 | 14 | BL-577, BL-579 (both deferred), G13. NS-42-R7 is cite-covered by BL-577 | M | BL-291 |
 | G15 | The first book: name, birthday, signs-as (NS-43) | NS-43-R1 to R4, R6, R7, R8, R10, R11, R13, R14 | 11 | G12, G14 | M | BL-292 |
 | G16 | The first Keep and the allowance gate (NS-44) | NS-44-R1 to R4, R6 to R10, R12 | 10 | G15, BL-965 | M | BL-293 |
 | G17 | Sign out and Delete account on the phone (NS-45) | NS-45-R1 to R3, R5 to R13, R15, R16, R18 | 15 | BL-237 (done in part), BL-961, G13 | L | BL-294 |
@@ -168,19 +168,19 @@ If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this
 | Group | Backlog id | Owner (backlog name) | Agent handle | Size | Rows |
 |---|---|---|---|---|---|
 | G01 | BL-126 | founder (done by product) | product | S | 44 |
-| G02 | BL-127 | user researcher | user-research | S | 7 |
+| G02 | BL-127 | user researcher | user-research | S | 1 |
 | G03 | BL-128 | sync owner | sync | L | 8 |
-| G04 | BL-181 | mobile engineer | mobile | M | 9 |
-| G05 | BL-182 | content, speech engineer | content | L | 28 |
+| G04 | BL-181 | mobile engineer | mobile | M | 8 |
+| G05 | BL-182 | content, speech engineer | content | L | 27 |
 | G06 | BL-183 | mobile engineer | mobile | M | 10 |
 | G07 | BL-184 | mobile engineer, design systems | mobile | S | 7 |
-| G08 | BL-185 | qa engineer | qa | M | 16 |
+| G08 | BL-185 | qa engineer | qa | M | 14 |
 | G09 | BL-186 | export owner, mobile engineer | mobile | M | 12 |
 | G10 | BL-187 | platform, content | ops | M | 23 |
 | G11 | BL-188 | mobile engineer | mobile | M | 10 |
-| G12 | BL-198 | mobile engineer, privacy engineer | mobile | M | 11 |
+| G12 | BL-198 | mobile engineer, privacy engineer | mobile | M | 9 |
 | G13 | BL-208 | auth owner | security | L | 17 |
-| G14 | BL-291 | privacy engineer, mobile engineer | privacy | M | 12 |
+| G14 | BL-291 | privacy engineer, mobile engineer | privacy | M | 14 |
 | G15 | BL-292 | mobile engineer | mobile | M | 11 |
 | G16 | BL-293 | mobile engineer, payments engineer | mobile | M | 10 |
 | G17 | BL-294 | mobile engineer, privacy engineer | mobile | L | 15 |
@@ -205,9 +205,9 @@ If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this
 | G36 | BL-045 | mobile engineer, privacy engineer | mobile | L | 26 |
 | G37 | BL-046 | mobile engineer, privacy engineer | mobile | L | 25 |
 | G38 | BL-047 | founder (done by product) | product | M | 140 |
-| Total | | | | | 781 |
+| Total | | | | | 771 |
 
-Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS-17-R12), 51 in G36 and G37 (26 and 25; BL-045 and BL-046 name the same numbers since the final audit: NS-51-R24 and NS-52-R18 are cite-covered, see section 1), 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
+Check: 580 rows in G01 to G35 (the `Rows` column is the current `p0.py --groups` count; a group's original size is in the backlog row it was filed as, and the rows that readiness-proposed rows now cover are no longer counted here), 51 in G36 and G37 (26 and 25; NS-51-R24 and NS-52-R18 are cite-covered, see section 1), 140 in G38 (771). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
 
 ## 6. Coarse plan if only four ids are allowed (Tier A, BL-826 to BL-829)
 
@@ -220,9 +220,9 @@ Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS
 
 Check: 139 + 109 + 144 + 196 = 588. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
 
-## 7. Full gap list (781 rows)
+## 7. Full gap list (771 rows)
 
-Regenerated 20 Nov 2026 (final audit) with `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --md`: all 781 rows with no row-level backlog row, groups G01 to G38 (590 + 51 + 140), including NS-17-R11 and NS-17-R12 (G05) and the 51 rows of card 27 (G36, G37). The "of N P0 rows" figures in the headings are the current per-card counts of section 3.
+Regenerated 20 Nov 2026 (after errata E43 to E60) with `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --md`: all 771 rows with no row-level backlog row, groups G01 to G38 (580 + 51 + 140), including NS-17-R11 and NS-17-R12 (G05), NS-42-R17 and NS-42-R18 (G14) and the 51 rows of card 27 (G36, G37). The "of N P0 rows" figures in the headings are the current per-card counts of section 3.
 
 Band `none` means nothing in the backlog names the row or its card. Band `card-level only` means a backlog row names the whole card. Group is the proposed row of section 5. One-line text is the first 100 characters of the Given, When, Then cell (FR rows start with the rule's title); `(cut)` marks a shortened line.
 
@@ -257,17 +257,11 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-01-R55 | Given a letter with a picture erased on another phone of the same author, When this phone pulls (cut) | 01-photo-with-a-letter.md | card-level only: BL-931, BL-933 +2 | G01 |
 | NS-01-R62 | Given each device row of this card, Then it runs on a separate install signed in to a test account (cut) | 01-photo-with-a-letter.md | card-level only: BL-931, BL-933 +2 | G01 |
 
-### NS-03 (7 of 7 P0 rows)
+### NS-03 (1 of 7 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
-| NS-03-R1 | Given the pilot file, When any parent is contacted, Then a dated counsel read of the consent and (cut) | 03-family-hears-it-pilot.md | none | G02 |
-| NS-03-R2 | Given any parent assigned to Arm V, Then both the security read and counsel's voice read are dated (cut) | 03-family-hears-it-pilot.md | none | G02 |
 | NS-03-R3 | Given the read-out file in the repo, Then it holds counts and the outcome only: 0 quotes, 0 (cut) | 03-family-hears-it-pilot.md | none | G02 |
-| NS-03-R4 | Given the private pilot log, Then raw notes and contact details are deleted 30 days after the (cut) | 03-family-hears-it-pilot.md | none | G02 |
-| NS-03-R5 | Given a withdrawal, Then that parent's notes and contact details are deleted within 2 working days (cut) | 03-family-hears-it-pilot.md | none | G02 |
-| NS-03-R7 | Given any participant, Then 0 offer codes, payments or gifts are given before the read-out; any (cut) | 03-family-hears-it-pilot.md | none | G02 |
-| NS-03-R8 | Given any agent session, Then it never reads the private pilot log; only the read-out counts reach the repo | 03-family-hears-it-pilot.md | none | G02 |
 
 ### NS-05 (15 of 17 P0 rows)
 
@@ -302,7 +296,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-08-R18 | (Flip build) Given the storage quota is reached on our side, Then capture and Keep still work and (cut) | 08-keeping-and-trust.md | none | G03 |
 | NS-08-R19 | (Flip build) Given the parent stops backup, Then uploads stop at once and server copies are deleted (cut) | 08-keeping-and-trust.md | none | G03 |
 
-### NS-09 (7 of 13 P0 rows)
+### NS-09 (6 of 13 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -310,7 +304,6 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-09-R2 | Given a discarding draft whose delete throws, When the sweep runs, Then the row remains marked (cut) | 08-keeping-and-trust.md | none | G04 |
 | NS-09-R3 | Given Discard on Listen and a delete that throws, Then the draft row remains, marked discarding | 08-keeping-and-trust.md | none | G04 |
 | NS-09-R4a | Given Let it go in Review and a delete that fails, Then the line is shown once for that take, on (cut) | 08-keeping-and-trust.md | none | G04 |
-| NS-09-R4b | Given the line is shown, Then VoiceOver announces it after the screen settles | 08-keeping-and-trust.md | none | G04 |
 | NS-09-R7 | Given a let-go of a synced held draft, Then the discard is queued and stays queued until the server (cut) | 08-keeping-and-trust.md | none | G04 |
 | NS-09-R8 | Given the discard is applied on a second phone, Then that phone holds neither the row nor the audio (cut) | 08-keeping-and-trust.md | none | G04 |
 
@@ -329,12 +322,11 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-14-R8 | Given Listen is open, Then no switcher is on screen | 09-capture.md | none | G04 |
 | NS-14-R11 | Given A's selection and B signs in on the same phone, Then the selection resets and no name of A's shows | 09-capture.md | none | G04 |
 
-### NS-17 (11 of 11 P0 rows)
+### NS-17 (10 of 11 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
 | NS-17-R1 | Given a language without a signed gate, Then it is absent from every picker in a store build | 09-capture.md | none | G05 |
-| NS-17-R2 | Given fixture recordings in each unoffered language, Then the English pipeline's output is measured (cut) | 09-capture.md | none | G05 |
 | NS-17-R3 | Given any letter, Then no surface offers or performs translation or transliteration | 09-capture.md | none | G05 |
 | NS-17-R4 | Given a language that ships, Then the store listing names it and no language that has not shipped | 09-capture.md | none | G05 |
 | NS-17-R5 | Given an English-only build and a take, Then Review offers in one tap to mark it as another (cut) | 09-capture.md | none | G05 |
@@ -378,13 +370,11 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-33-R7 | Given the largest text size with Bold Text, Then Home, Review, the Book and the letter page pass (cut) | 11-foundations.md | none | G07 |
 | NS-33-R8 | Given Increase Contrast, Then every text colour on those four screens holds at least 4.5:1 (token (cut) | 11-foundations.md | none | G07 |
 
-### NS-34 (3 of 3 P0 rows)
+### NS-34 (1 of 3 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
-| NS-34-R2 | Given a miss, Then the feature behind it is held from a store build until fixed or the target is (cut) | 11-foundations.md | none | G08 |
 | NS-34-R5 | Given any device run, Then it uses the Asha test install, and no run sheet, trace or screenshot (cut) | 11-foundations.md | none | G08 |
-| NS-34-R6 | Given perf markers, Then they carry no letter text, child name or path (PRIV-R10) | 11-foundations.md | none | G08 |
 
 ### NS-35 (3 of 4 P0 rows)
 
@@ -445,7 +435,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-39-R12 | Given a store build, Then the first-run path shows no story card, no "coming soon" line and no Plus (cut) | 19-from-download-to-first-letter.md | none | G11 |
 | NS-39-R14 | Given an invite or email link opened before the age answer, When the answer is No, Then the held (cut) | 19-from-download-to-first-letter.md | none | G11 |
 
-### NS-40 (11 of 11 P0 rows)
+### NS-40 (9 of 11 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -453,9 +443,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-40-R2 | Given Yes and a tick, Then the phone stores ageGate.passed = '1' and no age, birth date, range or (cut) | 19-from-download-to-first-letter.md | none | G12 |
 | NS-40-R3 | Given No, Then the stop shows, exactly one row ageGate.stoppedAt exists, a held invite or link (cut) | 19-from-download-to-first-letter.md | none | G12 |
 | NS-40-R5 | Given iOS 26.2 or later and an eligible account (when the module ships), When the system answers (cut) | 19-from-download-to-first-letter.md | none | G12 |
-| NS-40-R6 | Given any system age answer, Then a test spying on the settings store, the Keychain, the logger and (cut) | 19-from-download-to-first-letter.md | none | G12 |
-| NS-40-R7 | Given a new account's Terms record, Then it carries age_attested: true and no age_signal value, (cut) | 19-from-download-to-first-letter.md | none | G12 |
-| NS-40-R8 | Given No on the consent sheet's age step, Then the session ends locally, the 18+ gate closes, and (cut) | 19-from-download-to-first-letter.md | none | G12 |
+| NS-40-R8 | Given No on the consent sheet's age step, Then the session ends locally, the 18+ gate closes, (cut) | 19-from-download-to-first-letter.md | none | G12 |
 | NS-40-R9 | Given D-131's hook on, When a sign-up comes from a refused country, Then the app shows the neutral (cut) | 19-from-download-to-first-letter.md | none | G12 |
 | NS-40-R10 | Given D-131's hook on, When Apple, Google (if on) and email sign-ups are each made from a test (cut) | 19-from-download-to-first-letter.md | none | G12 |
 | NS-40-R12 | Given the hook's daily counts, Then they hold counts by result and the country code for refusals (cut) | 19-from-download-to-first-letter.md | none | G12 |
@@ -483,7 +471,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-41-R22 | Given VoiceOver, Then each sign-in screen's heading takes focus, the code field reads as one field (cut) | 19-from-download-to-first-letter.md | none | G13 |
 | NS-41-R23 | Given a password set on an account through the API (staging), When password sign-in is tried, Then (cut) | 19-from-download-to-first-letter.md | none | G13 |
 
-### NS-42 (12 of 13 P0 rows)
+### NS-42 (14 of 15 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -499,6 +487,8 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-42-R13 | Given any store build, Then no agreement, notice or privacy line names an invitation, "the people (cut) | 19-from-download-to-first-letter.md | none | G14 |
 | NS-42-R15 | Given AX5 on SE 3, Then the agreement line and links are fully visible above the buttons they (cut) | 19-from-download-to-first-letter.md | none | G14 |
 | NS-42-R16 | Given "Not now" on the Terms step, Then nothing is recorded, nothing syncs, and the book on the (cut) | 19-from-download-to-first-letter.md | none | G14 |
+| NS-42-R17 | Given the sensitive-data consent was agreed, Then Me, Privacy has a withdrawal control; When the (cut) | 19-from-download-to-first-letter.md | none | G14 |
+| NS-42-R18 | Given the Welcome and the Terms step, Then two plain sentences at the point of collection say what (cut) | 19-from-download-to-first-letter.md | none | G14 |
 
 ### NS-43 (11 of 11 P0 rows)
 
@@ -703,7 +693,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-52-R5 | Given a picked video, Then it is copied into the app's Caches, validated by bytes, re-encoded to (cut) | 27-photo-moments-and-media.md | none | G37 |
 | NS-52-R6 | Given a video with sound, Then the sound stays in the file and is never transcribed, analysed or (cut) | 27-photo-moments-and-media.md | none | G37 |
 | NS-52-R8 | Given a corrupt, truncated, wrong-type, zero-byte, symlinked or oversized file, Then it is refused: (cut) | 27-photo-moments-and-media.md | none | G37 |
-| NS-52-R10 | Given free space below twice the video's bytes plus a margin, Then the copy never starts, one calm (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R10 | Given free space below 200 MB before the copy, or, once the size is known, below twice the smaller (cut) | 27-photo-moments-and-media.md | none | G37 |
 | NS-52-R11 | Given any failure of any media item, Then the words, the audio take and the other items are intact (cut) | 27-photo-moments-and-media.md | none | G37 |
 | NS-52-R15 | Given Remove on one item, Then it leaves the letter with Undo for the NS-01 window, and after the (cut) | 27-photo-moments-and-media.md | none | G37 |
 | NS-52-R16 | Given a deleted letter, Let it go, Erase now or Erase everything, Then every picture and video of (cut) | 27-photo-moments-and-media.md | none | G37 |
@@ -862,7 +852,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-DAT-32 | Targets with no 1.0 source are marked "not measurable in 1.0" wherever they appear (frame, (cut) | functions/data-and-measurement.md | none | G29 |
 | FR-DAT-35 | Server-side counts named by cards (NS-40 refusals by country code, NS-41 sign-in success per (cut) | functions/data-and-measurement.md | none | G29 |
 | FR-DAT-36 | Allowlist rule, for when analytics returns. Given any event schema change for NS-51 or NS-52, When (cut) | functions/data-and-measurement.md | none | G38 |
-| FR-DAT-37 | No measurement in 1.0 for the two cards. Given a build with EXPO_PUBLIC_PHOTO_MOMENTS or the (cut) | functions/data-and-measurement.md | none | G38 |
+| FR-DAT-37 | No measurement in 1.0 for the two cards. Given a build with EXPO_PUBLIC_PHOTO_MOMENTS or (cut) | functions/data-and-measurement.md | none | G38 |
 | FR-DAT-38 | Never an event, in any version, for these cards: a moment shown, tapped, dismissed or empty; an (cut) | functions/data-and-measurement.md | none | G38 |
 | FR-DAT-39 | Derived signals live on the phone only. Given NS-51 builds an on-device index of moments (dates, (cut) | functions/data-and-measurement.md | none | G38 |
 | FR-DAT-40 | Guardrails added to FR-DAT-09 (one report trips each; same-day to the founder): (a) a picture or (cut) | functions/data-and-measurement.md | none | G38 |
@@ -1381,7 +1371,7 @@ FR-SUP-23 BL-100,BL-367
 - Open pull requests (first run). `node scripts/agents/next-id.mjs` and `id-collisions.mjs` call the GitHub API; the first printed `BL-1000` here but I cannot say whether the API calls succeeded (they are allowed to fail silently), so ids held by open PRs (for example BL-790 and BL-882 to BL-889 appear in cards but not in `docs/BACKLOG.md`) are not excluded from the free-id tiers. Ask Karma to run `node scripts/agents/id-collisions.mjs` before allocating.
 - Update 20 Nov (tooling): the split of FR rows into G38 uses the first id number of each file's addendum (`ADDENDUM_FROM` in `p0.py`, read from the function files on this branch); an FR row added later below that number would be grouped by its file with G05 to G35. The 38 proposed rows are left out of the cover count by their `proposed (docs/product/prd/BACKLOG-GAPS.md` status text only. The two cite-covered rows of card 27 (NS-51-R24, NS-52-R18) were not checked against the rows they cite (BL-961, BL-933).
 - Whether a gap is real work. A row with no backlog row may already be built and tested (NS-09-R1 to R3 look done through #832; the NS-01 to NS-02 rows may be built in the stacked PRs #833 and later). I read no code and ran no test for this file; "gap" means no backlog row, not no implementation.
-- Whether each of the 186 row-covered rows is satisfied by the row that names it. A range such as `NS-13-R1 to NS-13-R33` is taken at its word; I did not read the 186 covering rows' scope against each Given/When/Then.
+- Whether each of the 198 row-covered rows is satisfied by the row that names it. A range such as `NS-13-R1 to NS-13-R33` is taken at its word; I did not read the 198 covering rows' scope against each Given/When/Then.
 - Ids used in other repos, other branches that were not fetched, or deleted PR titles: only the local clone's `git log --all` and `git branch -a` were searched.
 - Statuses of dependencies were read on this branch only; `main` and `develop` may differ.
 - The script's parser reads Priority from the table header. A P0 row in a table with no `Priority` header, or a P0 written outside a table (for example the 18-errata mention in E5 "NS-36-R5 (P0)"), is not seen. The row-count cross-checks in section 2 (221, 96, 371) support completeness for the tables it reads, but not for prose.

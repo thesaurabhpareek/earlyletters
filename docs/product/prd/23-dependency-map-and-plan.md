@@ -15,7 +15,7 @@ Docs only. Nothing here is built, no decision is recorded, no date is set. This 
 | State of 43 named PRs | `gh api repos/thesaurabhpareek/earlyletters/pulls/<n>` | 17:10 |
 | `develop` head `51aa84b2e` (16:45 UTC) and what merged after the pack branch's merge-base `4f89d659b` | `git fetch origin develop`, `git log 4f89d659b..origin/develop` | about 17:20 |
 | Rows on `develop` versus this branch | `git show origin/develop:docs/BACKLOG.md` against `docs/BACKLOG.md` | 17:20 |
-| Counts of P0 rows | `python3 -I docs/product/prd/tools/review/p0.py . --json` (850 rows at 17:15; 1,048 rows on the regenerated run, `BACKLOG-GAPS.md` section 1) | 17:15 |
+| Counts of P0 rows | `python3 -I docs/product/prd/tools/review/p0.py . --json` (850 rows at 17:15; 1,050 rows on the run after E43 to E60, `BACKLOG-GAPS.md` section 1) | 17:15 |
 | Repository variable `AGENTS_ENABLED`, workflow runs | `gh api .../actions/variables/...` returned 403 ("not permitted through this proxy") | UNVERIFIED |
 
 Two traps in the sources, found while checking:
@@ -45,7 +45,7 @@ Columns. Owner: the agent handle in `agents/roster.json` that takes the row (the
 
 ### 1b. First-run cards NS-38 to NS-45 (card 19)
 
-Card 19 is Drop D (ruled 20 Nov, E43; founder-only release content, default stands, in the founder digest): its own stack after wave 1 and Drop A, in the order of engineering's first-run plan section 2, and before any family outside the founder's signs in. The path is one chain, so I treat it as one release unit for gates G10 to G17 (groups in `BACKLOG-GAPS.md`). No row exists for any of them except the requirement row BL-994 (in progress, "queued behind the agent limit"). P0 rows: 96, of which 94 have no backlog row (`p0.py`).
+Card 19 is Drop D (ruled 20 Nov, E43; founder-only release content, default stands, in the founder digest): its own stack after wave 1 and Drop A, in the order of engineering's first-run plan section 2, and before any family outside the founder's signs in. The path is one chain, so I treat it as one release unit for gates G10 to G17 (groups in `BACKLOG-GAPS.md`). No row exists for any of them except the requirement row BL-994 (in progress, "queued behind the agent limit"). P0 rows: 98 (NS-42-R17 and R18 added by E46 and E51), of which 94 have no backlog row (`p0.py`).
 
 | Id | Card | Owner | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|
@@ -84,7 +84,7 @@ P0 rows by drop (from the card 21 table, intersected with `p0.py`): NS-46 22 (B 
 
 ### 1e. Pictures and videos from the library (file 26, card 27)
 
-Card 27 (`27-photo-moments-and-media.md`, CURRENT, 20 Nov) holds NS-51 (42 rows) and NS-52 (44 rows). Counting table rows marked P0: NS-51 27, NS-52 26, total 53, all drop C ("C, spike first"). `p0.py` now reads cards 00 to 27, so the 53 are in its 1,048: 26 and 25 gap rows, and NS-51-R24 and NS-52-R18, which cite BL-961 and BL-933 (script run 20 Nov, `BACKLOG-GAPS.md` section 1). Prerequisites are the card's section 22 lines; I cite them and do not restate them. Ids M01 to M03 and sizes are mine, PROPOSED.
+Card 27 (`27-photo-moments-and-media.md`, CURRENT, 20 Nov) holds NS-51 (42 rows) and NS-52 (44 rows). Counting table rows marked P0: NS-51 27, NS-52 26, total 53, all drop C ("C, spike first"). `p0.py` now reads cards 00 to 27, so the 53 are in its 1,050: 26 and 25 gap rows, and NS-51-R24 and NS-52-R18, which cite BL-961 and BL-933 (script run 20 Nov, `BACKLOG-GAPS.md` section 1). Prerequisites are the card's section 22 lines; I cite them and do not restate them. Ids M01 to M03 and sizes are mine, PROPOSED.
 
 | Id | Workstream | Owner | Drop | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|---|
@@ -188,7 +188,7 @@ No date below is invented. A gate opens "after" an event. Gate meanings are in `
 
 | Gate | Opens after | Evidence the record needs | Date |
 |---|---|---|---|
-| G0 trace and a row per P0 | P01, P02, and the 781 gap rows (590 + 51 + 140) each named by a row (or a `Satisfies:` edit, G01) | `scripts/trace.mjs` ratchet on; `p0.py --gaps` shows 0 | none; "after P02" for new ids |
+| G0 trace and a row per P0 | P01, P02, and the 771 rows without a row-level backlog row (580 + 51 + 140) each named by a row (or a `Satisfies:` edit, G01) | `scripts/trace.mjs` ratchet on; `p0.py --gaps` shows 0 | none; "after P02" for new ids |
 | G1 on-device data rules, export schema | BL-933 (blocked on BL-868 and BL-931). ADR 0028 (#797) is merged | export 1.7.0 merged | none |
 | G2 counsel reads | founder sends packets (#872; Q-numbers in section 4); answers from counsel | dated answers or a written founder risk acceptance | none; counsel time is not known |
 | G3 words | BL-965 packet #870 and BL-925 #866 reviewed | founder's yes per key set | none |

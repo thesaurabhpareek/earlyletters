@@ -199,7 +199,7 @@ Added 20 Nov 2026 (index only; the cards own every row; ranks above are unchange
 | NS-51 | Photo moments (level 3, reverses "level 3 closed") | 27 (`27-photo-moments-and-media.md`; direction in `26-founder-direction-photos-library-and-media.md`) | 27 | C, spike first | C Reading and keepsakes |
 | NS-52 | Pictures and videos with a letter (limits proposed, founder confirms) | 27 | 26 | C, spike first | C Reading and keepsakes |
 
-All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7) plus NS-17-R11 and NS-17-R12 from K17 (298), and NS-51 and NS-52 add 53 (27 + 26). P0 rows in the pack by `p0.py` on 20 Nov: 1,048, of which 534 in NS-01 to NS-52 (298 + 96 + 87 + 53) and 514 in `functions/*.md`; 781 have no row-level backlog row (`BACKLOG-GAPS.md` section 1). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
+All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7) plus NS-17-R11 and NS-17-R12 from K17 (298), and NS-51 and NS-52 add 53 (27 + 26). P0 rows in the pack by `p0.py` on 20 Nov: 1,050, of which 536 in NS-01 to NS-52 (298 + 98 + 87 + 53) and 514 in `functions/*.md`; 771 have no row-level backlog row (`BACKLOG-GAPS.md` section 1). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
 
 ## 10. Council review
 

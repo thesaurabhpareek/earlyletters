@@ -16,7 +16,7 @@ Done, in place on this branch:
 - Registry and load order: `REGISTRY.md` (every file, with layer, status, owner, load-when, lines) and `LOAD-ORDER.md` (the least each role reads). Status headers are on every pack file except `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md`; superseded files carry a SUPERSEDED-BY banner (list in `REGISTRY.md`).
 
 Still to do:
-- Done in the final audit (`25-instruction-coverage-audit.md`): headers on `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md`; P0 counts re-run with `p0.py` (1,048 rows; 781 without a row-level backlog row); `tools/review/p0-table.md` and BACKLOG-GAPS section 7 regenerated; errata E33.
+- Done in the final audit (`25-instruction-coverage-audit.md`): headers on `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md`; P0 counts re-run with `p0.py` (1,048 rows; 781 without a row-level backlog row at that time, now 1,050 and 771 after E43 to E60); `tools/review/p0-table.md` and BACKLOG-GAPS section 7 regenerated; errata E33.
 - The Project doc `claude/Karma-requirements-locked-2026-11-20.md`: update in place (status, rev 2 LOCKED, file map by `REGISTRY.md` pointer, the eight answers by pointer to `22` section 7, stale counts removed). Needs a session with the Projects tool; not done from the repo session.
 - The PDF: build with `python3 -I docs/product/prd/tools/pdf/build.py` (writes `/tmp/pdf/early-letters-requirements-rev2.pdf`; not committed). Upload to Drive: not done (the coordinator).
 - Inform the harness and engineering architecture leads: the lock was posted on the readiness-folders claim at 18:27 UTC with the plan question (founder items 34 to 38); no engineering reply at 18:40 UTC. Engineering findings are triaged in `25` section 3.
