@@ -404,3 +404,151 @@ From the verified and carried dates in the file (a script over the CSV, single-d
 | 16 Apr 2028 | Western Easter and Orthodox Easter (the same day: one note, two names) |
 
 Not clashes but worth a test: Hanukkah's first candle on 24 Dec 2027, the eve of Christmas; Juneteenth on a Saturday in 2027 (federal day off Fri 18 Jun, S1); Veterans Day on a Saturday in 2028 (day off Fri 10 Nov, S1). The library uses the calendar date in all three.
+
+---
+
+## 6. The regional layer
+
+### 6.1 What this layer is for
+
+Some days belong to a place: a state holiday, a regional season, a festival a city holds. A parent in Hawaii may want King Kamehameha I Day; a parent in Louisiana may want Mardi Gras; a parent anywhere may want neither. The layer exists so those days can be found and ticked. It never exists so the app can learn where a family lives.
+
+### 6.2 How a region could be known: every candidate, and the verdict
+
+| Candidate source | Verdict | Why |
+|---|---|---|
+| **A place the parent picks in Browse**, held in memory until the sheet closes, only ticked days stored | The only allowed source. **New**: NS-47 has traditions and, later, countries, but no place picker. Needs a ruling (Q-EV-2) | Same pattern as NS-47-R2. Only the tick is stored; a tick of a Hawaii day is L4 like every tick (NS-47-R1) |
+| **Typed free text** (a city or a ZIP) | No | Finer than any day needs; a postal code is more identifying than a state; it invites a lookup |
+| **The sign-up region hook** (File 28, NS-40-R9, E47, E72) | **No. Never reuse.** | It is a country lookup at sign-up to refuse some countries. It stores nothing on the phone and "never asks where the person is" (NS-40-R9). It fails open and stays off until counsel answers (E47, E72). Using it for events would repurpose a compliance check and put a location signal in the days module. Part 3 section 12 rule 4 says the same |
+| **Device locale, storefront, time zone, language** | No. Never prefill | NS-47-R20: "device locale, the storefront and the time zone never prefill either list". The time zone only shows the right local date of an astronomical day (NS-46-R11) |
+| **Location services, IP, Wi-Fi, a map** | No. No permission is requested | The direction rules out location services (DAY 3.4; NS-46 "Not in scope: location") |
+| **The child's birth place, hospital, a place in a photo** | No | Not a field the days module may read (NS-47-R11); NS-49-R10 reads no place from a picture |
+| **A ticked regional day** (Mardi Gras ticked) | Yes, as a tick only | The tick is the record. The app never says "we see you are in Louisiana" and never adds a second regional day because of it |
+| **The language the parent speaks or records in** | No | It is a proxy for ethnicity (`data-policy.md:46`, quoted in CUL section 0) |
+
+### 6.3 The shape of a place list, if the founder rules yes
+
+- One flat alphabetical list: the 50 states, the District of Columbia and the territories. Equal weight, no map, no "near you", no default, nothing selected. The only list of territories I read is NIST's note that American Samoa, Guam, Puerto Rico and the U.S. Virgin Islands do not observe daylight saving time (S16); the full list of territories to offer is UNVERIFIED.
+- Several places may be chosen (a family can have ties to more than one).
+- "Not now" is a complete answer and writes nothing, as in NS-47.
+- No tribal nation, reservation or region name is offered as a place. A tribal nation is not a state; a family adds its own day in its own words. The app never asks about tribal affiliation.
+- No census region (Northeast, South and so on). I read no source for them and they flatten differences inside a region.
+- Metros: none. Metro and local festivals are community events with their own organisers, their dates change every year, and the library holds no list of them.
+
+### 6.4 Rows tied to a place (layer `regional`)
+
+| Row | Place | Rule | Verified this session | Offered | Note |
+|---|---|---|---|---|---|
+| `mardi_gras` | Louisiana (legal state holiday); Mobile and Baldwin Counties in Alabama (S18) | 47 days before Western Easter | 9 Feb 2027 (S18); 29 Feb 2028 computed | region_picked | Not a faith question; also the eve of Lent for some families. No beads or party imagery |
+| `cesar_chavez_day` | California (state holiday); Colorado and Texas (optional); parts of several other states (S11) | Mar 31 | Yes | region_picked | Name only. Not shown because of a name or a language |
+| `kuhio_day`, `kamehameha_day`, `hawaii_statehood_day` | Hawaii (state holidays, S17) | Mar 26; Jun 11; 3rd Friday in Aug (2027: 20 Aug) | 2027 read; 2028 by the fixed-date rule only | region_picked | Hawaiian names carry diacritics. Cultural read before any spelling is chosen |
+| `lei_day` | Hawaii | May 1 | No: U | not offered until read | Named in a search result only |
+| `patriots_day` | Maine, Massachusetts | 3rd Monday in April | No: U | excluded | State-only (DAY 6) |
+| `cherry_blossom` | Washington, D.C. | None: weather. Peak bloom has fallen between 15 Mar and 18 Apr; forecast about 10 days out (S19) | Yes (the rule is "no rule") | not offered | Not schedulable a year ahead, so no reminder. A typed day |
+| `powwow` | Anywhere; held by communities | None (S20) | Yes (the rule is "no rule") | not offered | Community events with their own hosts; see 11.3 |
+| `metro_festivals` | Cities | None | n/a | not offered | Never listed |
+| `diwali_state` | CA and PA legal holiday; CT and NC observance (carried from DAY) | Same as `diwali` | C | not offered | A state's recognition never makes the app suggest Diwali to a family in that state |
+| School start | Districts | Set by each district | None read | typed day only | No national date and no source read. Never from a school calendar, never from a place |
+
+### 6.5 When the region is unknown (the default, and the most common case)
+
+1. Nothing regional is shown first. Browse shows the national groups; the "Places" group is the last group, alphabetical by place, each row with its place on a second line.
+2. No Home line, slip or reminder mentions a place. The ask slip never mentions one.
+3. A regional day can still be ticked by name from Browse all. The tick is the only record.
+4. An unknown region is not a missing field and never becomes a prompt. There is no "tell us where you live" screen, no count of days not shown, no "complete your places".
+5. Default for the first drop: no regional rows ship (Q-FD-17 defers regional and sub-community days until a tradition review exists). Regional rows join with the first drop that has a recorded reviewer for each (Q-FD-9).
+
+### 6.6 What a place may never do
+
+- Suggest a tradition, a language, an ethnicity or a heritage month. Hawaii does not suggest Kamehameha Day and also never suggests a tradition; Texas does not suggest Cesar Chavez Day.
+- Be inferred from a tradition or a country, or the reverse.
+- Appear in a key, an analytics property, a log, a URL, a notification identifier or a support link. `FORBIDDEN_KEY` already rejects the stems `region`, `place` and `location` (NS-47-R34).
+- Order anything by "what is popular near you".
+
+### 6.7 The seasons and the clock
+
+- Hemisphere is the only place-like setting in the first release, and it is not a place: a segmented control, nothing selected by default, never inferred from the time zone or locale (NS-46-R26). It decides whether "First day of spring" shows the March or the September equinox.
+- Daylight saving needs no data for reminders: the 09:00 reminder follows the phone's own clock (S16). Hawaii, most of Arizona and four territories do not observe it, which changes nothing here. The two rows are excluded from the library (DAY 6) and are in the file only so the exclusion is auditable.
+
+---
+
+## 7. The religion and background layer
+
+### 7.1 The principle, checked against what is ruled
+
+The founder's wording ("only if the parent chooses to say so, off by default, never inferred, never implied for the child, removable, no marketing use, phone-only") is checked below against the cards. "Ruled" means a row in a locked or errata-ruled card. None of it is built yet.
+
+| Principle | Ruled where | Verified | Gap |
+|---|---|---|---|
+| Only if the parent chooses | NS-47-R19 (one ask, a later sitting, Not now is final for Home, retires after two unanswered showings R31); NS-47-R18 (nothing in first run); NS-47-R30 (optional pattern, decline of the same weight) | Yes | None |
+| Off by default | Nothing is ticked or preselected: NS-46-R2, NS-47-R30; `preTicked` false in every row | Yes | None |
+| Never inferred | NS-47-R20: device locale, storefront and time zone never prefill; a country does not suggest a tradition or the reverse | Yes | This file adds: not from a name, a language, a place, a child's data or a prior tick (7.5) |
+| Never implied for the child | NS-47-R3: no value on a child, book, letter or share; no "your child is" | Yes | This file adds: no day name is captioned onto a letter, a book page or a print (section 11) |
+| Removable | NS-47-R21 (untick one, Clear all); R15 (sign-out clears); R16 (Erase); R17 (Delete account) | Yes | None |
+| No marketing use | NS-46-R47, Q-FD-28, E75 (no marketing email at 1.0), NS-47-R9 (no analytics) | Yes | The same rule applies to every row in this file |
+| Phone only | NS-47-R1, R4, R6, R7, R10, R11; E73 (adopted only at the claim step by the same person) | **Ruled, not built, and not yet true of the words.** The call-out may say "The days you choose stay on this phone" only while R4 and R6 hold (NS-47-R22). Whether the store stays out of the iPhone backup is a device-transfer test (R6). Counsel has not answered CUL-Q6 (does a special-category rule reach data that never leaves the phone) | The flag stays off until counsel answers (Q-FD "COUNSEL" row). No public line yet |
+| Stored as a field? | CUL-Q2, Q-FD-5, CL-013: **no**, only ticked days | Yes | See 7.2 |
+
+### 7.2 What "based on religion" can and cannot mean
+
+Because only ticked days are stored (Q-FD-5), the app holds no religion and no region at any time after the sheet closes. So the logic can use exactly two things:
+
+1. **The order of the Browse list.** While the parent is picking, the traditions they pick show first. Afterwards the order follows the days already ticked (NS-46-R20; part 3 section 11.4).
+2. **The days the parent ticked.** The scheduler resolves each ticked id to its next date, every year, from the table.
+
+Everything else is ruled out by design. The app cannot: add a new observance to a family's list because they chose a tradition earlier; suggest next year's days from this year's ticks; show "days coming up for you" on Home; say anything on a lock screen or in an email that depends on a tradition; or draw a library "gap" (NS-46-R19). If the founder wants any of these it is a new ruling and a counsel question, and it changes the label answer (NS-47-R23). My recommendation: do not.
+
+### 7.3 Two gates: what is listed, and what is scheduled
+
+| Gate | What it decides | Who opens it |
+|---|---|---|
+| **1. Visibility** (`offered_when`) | Whether a row appears in Browse, and where | Row data plus what the parent picks in the sheet |
+| **2. Schedule** | Whether anything is ever sent | Only the parent's tick (NS-46-R2) |
+
+| `offered_when` | Gate 1 behaviour | Examples |
+|---|---|---|
+| `always` | Listed in Browse for any parent, in its group, alphabetical. Never first because of any signal | Seasons, civic days, family days, heritage months, culture-led days (Lunar New Year, Kwanzaa, Mid-Autumn and Chuseok) |
+| `background_picked` | Listed first after the parent picks that tradition in the sheet. Also listed under "Browse all" if the parent opens it, since a household can tick across traditions (DAY 3.8). Never suggested on Home or by a note | Religious days |
+| `region_picked` | Listed first after the parent picks that place. Also in the "Places" group of Browse all | State holidays |
+| `ticked_day` | Never listed. The parent's own typed day | Quinceanera, a naming day, a baptism |
+| `not_offered*` | Not in the library. A family adds its own typed day | Excluded days, candidates not yet read, deferred rows |
+
+A neutral library day is always the fallback: if nothing is picked the parent sees the national groups and nothing else, and can still add any day by hand. The app never shows a guess.
+
+Culture-led days (`always`) follow Q-FD-1: Lunar New Year, Mid-Autumn and Chuseok, Kwanzaa and Nowruz (once its date is read) are offered without a question. Counsel and the cultural reads in section 12 may move any of them to `background_picked`.
+
+### 7.4 The options list: shape, not final words
+
+All items alphabetical, equal weight, multi-select, nothing selected. The question's words, the headings and every item are for `content` to finish after the cultural reads, which decide each name.
+
+| Group in Browse | Items (alphabetical; names are working labels) |
+|---|---|
+| Seasons | First day of spring, summer, fall, winter; the hemisphere control |
+| Family | Father's Day, Grandparents' Day, Mother's Day, Siblings Day, Valentine's Day |
+| National days | Independence Day, Juneteenth, Labor Day, Martin Luther King Jr. Day, Memorial Day, New Year's Day, Presidents' Day, Thanksgiving, Veterans Day |
+| Heritage months (proposed layer) | Black History Month, Hispanic Heritage Month, Jewish American Heritage Month, Native American Heritage Month, Women's History Month, and the AANHPI month (name per the cultural read) |
+| Cultural days | Dragon Boat Festival, Kwanzaa, Lantern Festival, Lunar New Year, Mid-Autumn Festival or Chuseok (Nowruz when read) |
+| Traditions (the picker) | Baha'i; Buddhist; Christian, Orthodox calendars; Christian, Western calendar; Hindu; Jain; Jewish; Muslim; Parsi (Zoroastrian); Sikh; **Another tradition** (the parent adds a day and a date in their own words); **Not now** |
+| Places (only after a ruling) | Alphabetical list of states and DC (6.3) |
+
+Shapes the founder asked for, and where they land:
+
+- **"Prefer not to say"** is not a stored value. It is the same as "Not now" (NS-47 Not in scope). The button is "Not now".
+- **"None" or no faith:** the parent ticks nothing in Traditions. Seasons, family, national and cultural days need no question. There is no "I have no religion" row, because a negative answer is still an answer about a belief.
+- **"We mark some days without a faith":** this is the default path. Cultural, seasonal, civic and family days are in Browse for everyone, and a tradition's day can be ticked from Browse all without picking the tradition.
+- **Several traditions, and interfaith households:** several may be picked and ticks work across them (DAY 3.8). The picker never asks which is "main" and never orders them.
+- **Heritage and ethnicity** are not options and not a question anywhere. A heritage month is a national observance a parent may tick, not a statement about the family.
+- No row says "Eastern", "other", "minority" or "ethnic". There is no "Indigenous" or "Native" tradition option: ceremonial life belongs to each nation, and the only offer is the national heritage month (11.3).
+
+### 7.5 Never inferred: the full list
+
+The app never infers a tradition, a heritage, a place or a language of the parent or the child from any of: the parent's name, the child's name or birth date, the email address or its domain, the language of a recording, the language of the app, the device locale, the storefront, the time zone, the sign-up country check, a tick in another group, a day typed in Add a day (that text is the parent's words and is never classified, NS-46-R19), a photo, a place in a photo, or a purchase. A test over the days module's inputs should fail on any new reader (NS-47-R11).
+
+### 7.6 Door lines for the picker (CR-47, COORDINATION section 10)
+
+This repeats NS-47 section 12 for the picker and adds only what this file introduces (the place group and the cultural-days group).
+
+- **Shown:** the call-out first in reading order, static, never collapsed (NS-47-R29), by key `culture.callout`; the short form under the question on the ask slip. The allowed claim is "The days you choose stay on this phone." (NS-47-R22). Not allowed: "never", "nobody can tell", "private", "invisible", "we never store your religion". The place group, if it ships, adds a header key `culture.picker.place.header` and no other words about place.
+- **Records:** nothing on our servers. On the phone, the ticked days and `culture.asked` (no tradition, no place). No `record_policy_act` row (NS-47 Door lines). If counsel's answer to CUL-Q6 is yes, this line changes.
+- **Never:** a pre-ticked day; a second ask after Not now; a tradition, place or country on the child; any of them in analytics, logs, crash reports, URLs, notification identifiers, the Save a copy file, a backup, support mail, links or email; an inference from a name, locale, place or language; "Prefer not to say" stored as a value.
+- **Decline and withdraw:** Not now is a full answer of equal weight; the app is unchanged; Days stays one tap away in Me; untick, Clear all, sign-out, Erase and Delete account clear it; export and deletion still work.
