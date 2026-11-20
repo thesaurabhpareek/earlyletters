@@ -4,18 +4,17 @@
  * rights (the sweep, Erase now, Erase everything) work with the switch off (NS-01-R19).
  */
 import * as Crypto from 'expo-crypto';
-import { File } from 'expo-file-system';
 import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
-import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory, pickerDestination } from './files';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, pickerDestination, storedPhotoFile } from './files';
 import { photosBuildEnabled } from './flag';
 import { sweepPhotos } from './housekeeping';
 import { PendingPhoto } from './pending';
 import { createPhotoPicker } from './picker';
 import { registerPending, registerPhotoPicker } from './registry';
-import { photoPath, type PhotoDeps, type PickedFiles, type StoredPhoto } from './types';
+import type { PhotoDeps, PickedFiles, StoredPhoto } from './types';
 
 const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 
@@ -50,8 +49,11 @@ export function photoDeps(): PhotoDeps {
   return cached;
 }
 
-/** Where a stored picture can be drawn from. */
-export const photoUri = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => new File(photosDirectory(), photoPath(p)).uri;
+/**
+ * Where a stored picture can be drawn from, through the stored-name guard (review N3 on #841). An id that cannot make a
+ * stored name gives no uri, and the frame shows the picture as missing.
+ */
+export const photoUri = (p: Pick<StoredPhoto, 'mediaId'>): string => storedPhotoFile(p.mediaId)?.uri ?? '';
 
 /**
  * Registers Apple's system picker (scribe-photo's pickOne) and the pending picture, only when the photos switch is on
@@ -64,8 +66,15 @@ export function registerPhotoDevice(): void {
   registered = true;
   const native = nativePhoto();
   if (!native) return;
-  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7())));
+  const picked = pickedFilesPort();
+  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7()), { discard: (uri) => picked.remove(uri), locked: appLocked }));
   registerPending(new PendingPhoto(pickedFilesPort()));
+}
+
+/** The app lock is up. Read only when a pick lands, so this file loads no lock code before then. */
+function appLocked(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;
 }
 
 /** Launch: empties Caches/ImagePicker, removes strays, finishes interrupted purges. Never awaited by launch. */
@@ -85,8 +94,8 @@ export function erasePictureOf(entryId: string): void {
   const db = localSqlDb();
   const rows = db.all<{ id: string }>('SELECT id FROM entry_media WHERE COALESCE(entry_id, draft_id) = ?', entryId);
   for (const r of rows) {
-    const f = new File(photosDirectory(), photoPath({ mediaId: r.id, ext: 'jpg' }));
-    if (f.exists) f.delete();
+    const f = storedPhotoFile(r.id); // null: no stored picture can have that name
+    if (f?.exists) f.delete();
     db.run('DELETE FROM entry_media WHERE id = ?', r.id);
   }
 }

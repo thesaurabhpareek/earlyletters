@@ -4,29 +4,66 @@
  * No picker package is used: this is the one file that calls pickOne:
  * - the native side copies the picked still into the destination built here (Caches/ImagePicker), and the result is
  *   cut down to `{ uri }`;
- * - Cancel is `cancelled`; a failure crosses as the closed code `failed` and the native error text is dropped;
+ * - Cancel is `cancelled` (so is the picker going away by navigation, which scribe-photo answers with null); a failure
+ *   crosses as the closed code `failed` and the native error text is dropped;
  * - an answer naming any file but that destination is a failure, never read.
- * A Live Photo gives its still. An iCloud-only picture downloads inside Apple's own sheet, which shows the wait, so
- * `onProgress` is never called and `cancel` only stops the app waiting.
+ * One pick at a time: a second `open` while one runs answers `cancelled` at once and opens nothing. `cancel` ends the
+ * wait at once (NS-01-R17). The native copy may still land afterwards (an iCloud-only picture keeps downloading), and
+ * such a copy is removed, as is one that lands while the app lock is up: the parent picks again once it is open.
+ * scribe-photo reports no download progress yet, so `onProgress` is never called.
  */
 import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import type { PhotoPicker, PickOutcome } from './types';
 
-export function createPhotoPicker(native: Pick<ScribePhotoNative, 'pickOne'>, destination: () => string): PhotoPicker {
+export interface PickerHooks {
+  /** Removes a picked copy nobody will read. Never throws. */
+  discard(uri: string): Promise<void>;
+  /** The app lock is up. A check that throws counts as locked. */
+  locked(): boolean;
+}
+
+export function createPhotoPicker(native: Pick<ScribePhotoNative, 'pickOne'>, destination: () => string, hooks: PickerHooks): PhotoPicker {
+  let busy = false;
   return {
     open() {
-      let stopped = false;
-      const done = (async (): Promise<PickOutcome> => {
+      if (busy) return { done: Promise.resolve<PickOutcome>({ status: 'cancelled' }), cancel: () => {} };
+      busy = true;
+      let answer!: (o: PickOutcome) => void;
+      const done = new Promise<PickOutcome>((resolve) => (answer = resolve));
+      let answered = false;
+      const settle = (o: PickOutcome): boolean => {
+        if (answered) return false;
+        answered = true;
+        busy = false;
+        answer(o);
+        return true;
+      };
+      void (async () => {
+        let out: string;
+        let uri: string | null;
         try {
-          const out = destination();
-          const uri = await native.pickOne(out);
-          if (stopped || uri === null) return { status: 'cancelled' };
-          return uri === out ? { status: 'picked', asset: { uri } } : { status: 'failed' };
+          out = destination();
+          uri = await native.pickOne(out);
         } catch {
-          return { status: 'failed' };
+          settle({ status: 'failed' });
+          return;
+        }
+        if (uri === null) settle({ status: 'cancelled' });
+        else if (uri !== out) settle({ status: 'failed' });
+        else if (lockedNow(hooks) || !settle({ status: 'picked', asset: { uri } })) {
+          settle({ status: 'cancelled' });
+          await hooks.discard(uri);
         }
       })();
-      return { done, cancel: () => void (stopped = true) };
+      return { done, cancel: () => void settle({ status: 'cancelled' }) };
     },
   };
+}
+
+function lockedNow(hooks: PickerHooks): boolean {
+  try {
+    return hooks.locked();
+  } catch {
+    return true;
+  }
 }
