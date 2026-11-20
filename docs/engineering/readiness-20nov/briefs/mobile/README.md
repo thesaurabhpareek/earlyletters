@@ -25,7 +25,7 @@ Order is within a lane (1 first). Size S about 300 lines or less, M one or two P
 | P8 | `BRIEF-P1-icloud-progress-and-cancel.md` | photo | BL-931, BL-953 (wave 2), BL-878, row 33-3 (`progress-bar.tsx` is not on develop) | S | principal-architect / security-architect | 2 (plan 2.4) | founder (word), an id, design-systems (33-3) |
 | P9 | `BRIEF-BL957-one-length-rule.md` | photo | #839 (field limits live in components/photos/*); reuses `splitsCluster` (`packages/core/src/text.ts:78`) and `graphemes()` (`book-cover.logic.ts:104`) | S | principal-architect / data-steward | 2 | #839 |
 | P10 | `BRIEF-P5-pictures-follow-the-letter-tests.md` | photo | #835 | S, tests | data-steward / compliance-engineer | 2 | #835 |
-| P11 | `BRIEF-BL954-undo-windows.md` (rewritten to CR-67 AX-11: one clock, `createUndo` is row 33-3 and design-systems') | photo | row 33-3, BL-931 | S, PR 1 about 120 lines then caller batches of at most 8 files | design-systems / principal-architect | 2 | 33-3, product (R38a/R38c wording) |
+| P11 | `BRIEF-BL954-undo-windows.md` (timed windows, one clock owned by the toast, per CL-116 C-02 and AX-11; `createUndo` is row 33-3 and design-systems') | photo | row 33-3, BL-931 | S, PR 1 about 120 lines then caller batches of at most 8 files | design-systems / principal-architect | 2 | 33-3 |
 | P12 | `BRIEF-BL955-picture-survives-kill.md` | photo | BL-931 | S | principal-architect / data-steward | 2 | Karma (E2) |
 | P13 | `BRIEF-BL932-list-copies.md` | photo | BL-931, BL-953 | M, 3 PRs | principal-architect / security-architect, data-steward | 2 | product (NS-52 shape) |
 | P14 | `BRIEF-BL956-pictures-large-text-invert-fit.md` | photo | BL-932 | M, 2 PRs | design-systems / principal-architect | 2 | design-systems (88 pt), product |
