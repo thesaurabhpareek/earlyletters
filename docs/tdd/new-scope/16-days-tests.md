@@ -19,117 +19,120 @@ Legend: U unit (Node, vitest), I integration (real store on `node:sqlite`, fake 
 
 ## 2. Catalogue E: the 87 P0 rows
 
-Mutant column: a change that must turn the test red. `(code not built yet)` is implicit for every row.
+Columns: Lvl (U unit, I integration, S scan, J journey, D device, P process); Run (SB sandbox, CI, DV device, DOC document check); W is drop A, B or C and the wave (W1 first); Lane is the owner; Status is DESIGNED (a check that can turn a build red exists on paper) or GAP (a half that only a person, counsel or a device can close; the owner is named, as the quality catalogue does). Mutants are designs, not runs, and `(code not built yet)` is implicit. Six rows have a GAP half: NS-46-R23, NS-47-R23, NS-49-R16, R27, R35 (process: licence, label, counsel) and NS-49-R28 (device); each also has a CI half that can fail a build.
+Added tests (review A and B): `[NS-47-R15]` first sign-in on a never-signed-in phone adopts the `'local'` file and B then reads nothing; `[NS-47-R6]` write order with a call-order fake; `[NS-47-R1]` `dismissedOn` is in the file, not in `settings`. Test files that do not exist on develop and are new: `test/photos-notes.test.ts`, `test/first-run-fields.test.ts`, `packages/content/test/store-claims.test.ts`, `test/app.config.test.ts`. The delete-account row extends the existing `test/delete-account.test.ts` (there is no `delete-account.test.ts`). The migration lint of NS-47-R4 is two halves: the `supabase/migrations` half is a `data-architect` PR (B6b), the settings-key and local-column half is `test/days-migration-lint.test.ts` in B6a.
 
-### 2.1 NS-46 (22 P0)
-| Row | Exact title | Lvl | File | Mutant |
-|---|---|---|---|---|
-| NS-46-R2 | `[NS-46-R2] nothing is ticked for the parent` | U, S | `packages/content/test/days.data.test.ts`, `test/days-store.test.ts` | Set `preTicked: true` on one row; open Browse and the ask: a tick appears |
-| NS-46-R4 | `[NS-46-R4] a ticked day adds no class` | U | `test/reminders-budget.test.ts` | Add `libraryDay` to `PlannedClass`; use `days.<id>` as the identifier |
-| NS-46-R5 | `[NS-46-R5] a typed day does not recur` | U | `test/typed-days.test.ts` | Keep a delivered typed day one more year |
-| NS-46-R7 | `[NS-46-R7] birthday beats a library day` | U | `test/reminders-budget.test.ts` | Swap ranks 2 and 3 |
-| NS-46-R8 | `[NS-46-R8] two days one date one note` | U | `test/reminders-budget.test.ts`, `test/days-lockscreen.test.ts` | Schedule both, or move one day to the next date |
-| NS-46-R14 | `[NS-46-R14] a moving day says around and can be moved` | U | `packages/content/test/days.data.test.ts`, `test/days-store.test.ts` | Drop `precision: about`; ignore an `always` move next year |
-| NS-46-R16 | `[NS-46-R16] quiet days stay quiet` | U, S | `days.copy.test.ts`, `days-lockscreen.test.ts` | A question mark in a quiet landing; `tone` made editable |
-| NS-46-R17 | `[NS-46-R17] days copy passes the voice rules` | S | `packages/content/test/rules.test.ts` (extended) | "Happy" in a landing key; a `{child}` in a names-off lock string. Each new pattern has a positive and a negative self-test |
-| NS-46-R19 | `[NS-46-R19] the app never says a day is missing` | S, U | `days.copy.test.ts`, `test/days-page.logic.test.ts` | A "not in the list?" line; a count of ticked days in a label |
-| NS-46-R22 | `[NS-46-R22] no look-back and no count` | S | `days.copy.test.ts` | "last year" in a landing body |
-| NS-46-R23 | `[NS-46-R23] tradition review and source licence on record` | P | `packages/content/test/days.review.test.ts` (checklist) | Ship a tradition with no review record |
-| NS-46-R25 | `[NS-46-R25] quiet book adds nothing` | U | `test/days-planner.test.ts` | Ignore `quiet`; ignore `remindersOn` off; ignore every-book-quiet |
-| NS-46-R26 | `[NS-46-R26] Days page works with assistive settings` | U, D | `test/days-a11y.logic.test.ts`, DV-6 | A row label with a count; a 40 pt target; `numberOfLines` on a name |
-| NS-46-R27 | `[NS-46-R27] a day note never sells` | S | `days.copy.test.ts` | "Plus" in a body; an entitlement check in `lib/days` |
-| NS-46-R30 | `[NS-46-R30] one chooser, one rule` | U property | `test/reminders-budget.test.ts` | Add a second path that schedules (the cap of 4 in `plan-reminders.ts` as a template) |
-| NS-46-R31 | `[NS-46-R31] day reminders do not need evening reminders on` | U, I | `test/days-planner.test.ts`, `test/days-permission.test.ts` | Gate day sources on `prefs.enabled`; ask iOS twice |
-| NS-46-R32 | `[NS-46-R32] a day reminder opens Home and carries no day` | U, S | `test/days-tap.test.ts` | Route to `/book`; put the id in `data` or `userInfo` |
-| NS-46-R34 | `[NS-46-R34] day notes are never observed` | U | `packages/analytics/test/observe.test.ts` | `notificationOpenedEvent` returns an event for `libraryDay` |
-| NS-46-R35 | `[NS-46-R35] consent line and opt-out are in the UI` | U, S | `test/days-consent.logic.test.ts`, `days.copy.test.ts` | Tick without the line; "new days" in a landing |
-| NS-46-R36 | `[NS-46-R36] public titles are an allowlist` | U, S | `days.data.test.ts`, `days-lockscreen.test.ts` | Derive `publicTitleOk` from layer; allow Christmas Day; title named with App lock on |
-| NS-46-R46 | `[NS-46-R46] no public line misstates the day reminder time` | S | `packages/content/test/store-claims.test.ts` | Leave "You pick the days and the time" in `store.en.ts` |
-| NS-46-R48 | `[NS-46-R48] the library fetch does not vary with the store` | U | `test/days-refresh.test.ts` | Add a query derived from ticks; the two request logs differ |
+### 2.1 NS-46
 
-### 2.2 NS-47 (27 P0)
-| Row | Exact title | Lvl | File | Mutant |
-|---|---|---|---|---|
-| NS-47-R1 | `[NS-47-R1] the whole store is L4 and registered` | S, P | `supabase/tests/classification.test.mjs` pattern; `test/days-registry.test.ts` | Omit the registry row; class the file L3 |
-| NS-47-R2 | `[NS-47-R2] picks are a filter; only ticks are stored` | U | `test/days-store.test.ts` | Persist the tradition in `setSetting` or a route param |
-| NS-47-R3 | `[NS-47-R3] nothing is attached to the child` | S | `test/days-migration-lint.test.ts` | A `tradition` column on children |
-| NS-47-R4 | `[NS-47-R4] no request carries a day key` | U, S | `test/days-network.test.ts` | A fetch with a day id; a migration named `faith` |
-| NS-47-R5 | `[NS-47-R5] a day note leaves no trace in the synced row` | I | `test/days-synced-row.test.ts` | Pass a day id as `prompt_key` |
-| NS-47-R6 | `[NS-47-R6] the store is out of the backup and fails closed` | U, D | `test/days-store.test.ts`, DV-1 | Skip exclusion; write bytes before the empty-file read-back; rename then read back only; leave the `.tmp` after a kill; write to Caches |
-| NS-47-R7 | `[NS-47-R7] claim and new phone move nothing` | I | `test/days-claim.test.ts` | Upload at the claim step |
-| NS-47-R8 | `[NS-47-R8] canary finds nothing` | U | `test/days-canary.test.ts` | Log the day id in a failure path |
-| NS-47-R9 | `[NS-47-R9] analytics allowlist rejects day data` | U | `packages/analytics/test/catalog.test.ts` | Add `tradition_picked` |
-| NS-47-R10 | `[NS-47-R10] the export holds none of it` | U | `test/days-export.test.ts` | Read the days file in the export builder |
-| NS-47-R11 | `[NS-47-R11] one reader` | S | `test/days-boundary.test.ts` | Import the store from `analytics` |
-| NS-47-R12 | `[NS-47-R12] one neutral body; the name only behind its switch` | U | `test/days-lockscreen.test.ts` | Stored switch survives App lock on; name in a body |
-| NS-47-R13 | `[NS-47-R13] public days may name themselves; others need the switch` | U | `test/days-lockscreen.test.ts` | Skip one combination; title named for a family day |
-| NS-47-R15 | `[NS-47-R15] sign-out clears and B sees nothing` | I | `test/days-session.test.ts` | Leave the file on sign-out; skip delivered dismissal; clear on A's id only; run `forgetReminders()` before deleting the file; drop the owner check so a queued re-plan schedules A's days for B; skip adopting the `'local'` file at first sign-in |
-| NS-47-R16 | `[NS-47-R16] erase scan finds nothing` | I | `test/erase-all.test.ts` (extended) | Omit the folder or the Caches suggestion folder; no resume after a kill; leave `dismissedOn` in `settings` |
-| NS-47-R17 | `[NS-47-R17] delete account line and clear` | U, I | `test/days-session.test.ts`, `test/delete-account.logic.test.ts` | The line claims an offline phone cleared |
-| NS-47-R18 | `[NS-47-R18] first run has no such field` | S | `test/first-run-fields.test.ts` | Add a tradition field to E-S08 |
-| NS-47-R21 | `[NS-47-R21] untick and clear all` | U, I | `test/days-store.test.ts`, `days-session.test.ts` | Clear all leaves a pending note |
-| NS-47-R22 | `[NS-47-R22] call-out claims are true` | S, P | `days.copy.test.ts`, claims inventory | "Nobody can tell" in the call-out |
-| NS-47-R23 | `[NS-47-R23] label re-run for the days store` | P | release checklist (`privacy`) | A new host or analytics property naming the store |
-| NS-47-R24 | `[NS-47-R24] days are never shared` | U | `test/days-family.test.ts` | Show the other parent's count on Family |
-| NS-47-R25 | `[NS-47-R25] the ask and lists work with assistive settings` | U, D | `test/days-a11y.logic.test.ts`, DV-6 | "Not now" smaller than "Choose days" |
-| NS-47-R26 | `[NS-47-R26] unlocked only; blank snapshot` | U, D | `test/blank-on-background.test.ts`, DV-5 | No blank for C-S24 |
-| NS-47-R29 | `[NS-47-R29] call-out visible, static and first` | U | `test/days-a11y.logic.test.ts` | DoorNote collapsible or after the first control |
-| NS-47-R34 | `[NS-47-R34] analytics allowlist rejects day vocabulary` | U | `packages/analytics/test/catalog.test.ts` | Add the stem `holiday` to an enum |
-| NS-47-R36 | `[NS-47-R36] no category shows a title with previews hidden` | U | `test/reminders-categories.test.ts` | `hiddenPreviewsShowTitle: true` |
-| NS-47-R38 | `[NS-47-R38] no day name beside a child name on a lock screen` | U | `test/days-lockscreen.test.ts` | Named title with a `{child}` body, names on |
+| Row | Exact title | Lvl | Arrange, act, assert | File | Run | W | Lane | Mutant that must turn it red | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| NS-46-R2 | `[NS-46-R2] nothing is ticked for the parent` | U, S | Open Days, Browse and the ask on an empty store; assert 0 ticked and 0 planned; scan rows for `preTicked` | `packages/content/test/days.data.test.ts`, `test/days-store.test.ts` | SB | B W3 | mobile | Set `preTicked: true` on one row; open Browse and the ask: a tick appears | DESIGNED |
+| NS-46-R4 | `[NS-46-R4] a ticked day adds no class` | U | Plan with one ticked day; assert kind `libraryDay`, group `typedDay`, id `el.day.<date>`, `PlannedClass` unchanged | `test/reminders-budget.test.ts` | SB | B W1 | mobile | Add `libraryDay` to `PlannedClass`; use `days.<id>` as the identifier | DESIGNED |
+| NS-46-R5 | `[NS-46-R5] a typed day does not recur` | U | Deliver a typed day on an injected clock; assert deleted next day and absent a year later | `test/typed-days.test.ts` | SB | B W3 | mobile | Keep a delivered typed day one more year | DESIGNED |
+| NS-46-R7 | `[NS-46-R7] birthday beats a library day` | U | Ticked day and a birthday on one date for one child; assert only the birthday is kept | `test/reminders-budget.test.ts` | SB | B W1 | mobile | Swap ranks 2 and 3 | DESIGNED |
+| NS-46-R8 | `[NS-46-R8] two days one date one note` | U | Two synthetic days on one date; assert 1 note, neutral title, both names after the tap, no day moved | `test/reminders-budget.test.ts`, `test/days-lockscreen.test.ts` | SB | B W1 | mobile | Schedule both, or move one day to the next date | DESIGNED |
+| NS-46-R14 | `[NS-46-R14] a moving day says around and can be moved` | U | Moving day with two authorities; assert `around`, the which-date row, an `always` move survives next year | `packages/content/test/days.data.test.ts`, `test/days-store.test.ts` | SB | C W4 | content | Drop `precision: about`; ignore an `always` move next year | DESIGNED |
+| NS-46-R16 | `[NS-46-R16] quiet days stay quiet` | U, S | Every `quiet` row; assert no question mark, no prompt key, tone not editable | `days.copy.test.ts`, `days-lockscreen.test.ts` | SB | B,C W3 | content | A question mark in a quiet landing; `tone` made editable | DESIGNED |
+| NS-46-R17 | `[NS-46-R17] days copy passes the voice rules` | S | Run the rules test over every `days.landing.*`, `lock`, `picker`, `nextYear`, `door` key; assert 0 hits, each pattern has a positive and negative self-test | `packages/content/test/rules.test.ts` (extended) | SB | B W3 | content | "Happy" in a landing key; a `{child}` in a names-off lock string. Each new pattern has a positive and a negative self-test | DESIGNED |
+| NS-46-R19 | `[NS-46-R19] the app never says a day is missing` | S, U | Render the Days page and Browse keys; assert no missing-day line, no count, no complete-your-list | `days.copy.test.ts`, `test/days-page.logic.test.ts` | SB | B W3 | content | A "not in the list?" line; a count of ticked days in a label | DESIGNED |
+| NS-46-R22 | `[NS-46-R22] no look-back and no count` | S | Scan day keys for last year, again, another, a count; assert 0 hits | `days.copy.test.ts` | SB | B W3 | content | "last year" in a landing body | DESIGNED |
+| NS-46-R23 | `[NS-46-R23] tradition review and source licence on record` | P | CI half: a tradition id reachable from Browse only if `REVIEWS.md` holds its reviewer record. Process half (licence): GAP, owner content with counsel (L-8) | `packages/content/test/days.review.test.ts` (checklist) | SB / DOC | B,C W3 | content | Add a tradition id with no review record to the picker data | GAP (licence half) |
+| NS-46-R25 | `[NS-46-R25] quiet book adds nothing` | U | Quiet, hidden, reminders-off, all-quiet and paused-member books; assert 0 library notes each | `test/days-planner.test.ts` | SB | B W3 | mobile | Ignore `quiet`; ignore `remindersOn` off; ignore every-book-quiet | DESIGNED |
+| NS-46-R26 | `[NS-46-R26] Days page works with assistive settings` | U, D | Assert labels, 44 pt targets, no count in any label, untick by tap, swipe and custom action; device AX5 row DV-6 | `test/days-a11y.logic.test.ts`, DV-6 | SB / DV | B W3 | mobile | A row label with a count; a 40 pt target; `numberOfLines` on a name | DESIGNED |
+| NS-46-R27 | `[NS-46-R27] a day note never sells` | S | Scan day keys and `lib/days` for Plus, price, allowance, entitlement | `days.copy.test.ts` | SB | B W3 | content | "Plus" in a body; an entitlement check in `lib/days` | DESIGNED |
+| NS-46-R30 | `[NS-46-R30] one chooser, one rule` | U property | 500 seeded random plans over five sources and 0 to 4 plan notices; assert one kept per date and the order | `test/reminders-budget.test.ts` | SB | B W1 | mobile | Add a second path that schedules (the cap of 4 in `plan-reminders.ts` as a template) | DESIGNED |
+| NS-46-R31 | `[NS-46-R31] day reminders do not need evening reminders on` | U, I | Reminders off with permission granted; assert day notes planned, evening not; undetermined permission asks iOS once after a tick; denied hides the ask | `test/days-planner.test.ts`, `test/days-permission.test.ts` | SB | B W3 | mobile | Gate day sources on `prefs.enabled`; ask iOS twice | DESIGNED |
+| NS-46-R32 | `[NS-46-R32] a day reminder opens Home and carries no day` | U, S | Tap a fake library-day response; assert route Home, payload `{source, kind}` only, identifier `el.day.<date>`, a later date opens plain Home | `test/days-tap.test.ts` | SB | B W3 | mobile | Route to `/book`; put the id in `data` or `userInfo` | DESIGNED |
+| NS-46-R34 | `[NS-46-R34] day notes are never observed` | U | Deliver and open `libraryDay` and `typedDay` with consent on; assert no event produced | `packages/analytics/test/observe.test.ts` | SB | B W3 | analytics | `notificationOpenedEvent` returns an event for `libraryDay` | DESIGNED |
+| NS-46-R35 | `[NS-46-R35] consent line and opt-out are in the UI` | U, S | Tick the first day; assert the consent line was shown first; Reminders off shows the calm line | `test/days-consent.logic.test.ts`, `days.copy.test.ts` | SB | B W3 | mobile | Tick without the line; "new days" in a landing | DESIGNED |
+| NS-46-R36 | `[NS-46-R36] public titles are an allowlist` | U, S | List every `publicTitleOk` true row against the allowlist; assert App lock on gives the neutral title for all | `days.data.test.ts`, `days-lockscreen.test.ts` | SB | B W3 | content | Derive `publicTitleOk` from layer; allow Christmas Day; title named with App lock on | DESIGNED |
+| NS-46-R46 | `[NS-46-R46] no public line misstates the day reminder time` | S | Scan `store.en.ts`, site and support copy; assert no line says the parent picks a day reminder's time | `packages/content/test/store-claims.test.ts` | SB | B W3 | content | Leave "You pick the days and the time" in `store.en.ts` | DESIGNED |
+| NS-46-R48 | `[NS-46-R48] the library fetch does not vary with the store` | U | Run the library read with an empty store and with every day ticked; assert requests byte-identical (0 requests while bundled) | `test/days-refresh.test.ts` | SB | B W3 | mobile | Add a query derived from ticks; the two request logs differ | DESIGNED |
 
-Added tests (review A on #970): `[NS-47-R15]` first sign-in on a never-signed-in phone: a `'local'` file is adopted by A (owner re-keyed, ticks kept, nothing uploaded) and B then reads nothing (`test/days-session.test.ts`); `[NS-47-R6]` write order: a fake `ScribeFiles` records call order and asserts exclusion set and read back on an empty temp before any byte is written, a read-back on every open, and a swept temp (`test/days-store.test.ts`); `[NS-47-R1]` `dismissedOn` is in the file, not in `settings` (`test/days-store.test.ts`).
-New test files that do not exist on develop (not extensions): `test/photos-notes.test.ts`, `test/first-run-fields.test.ts`, `test/delete-account.logic.test.ts`, `packages/content/test/store-claims.test.ts`, `test/app.config.test.ts`. The migration lint of NS-47-R4 is two halves: the `supabase/migrations` half is a `data-architect` PR (`supabase/tests/`), the settings-key and local-column half stays in `test/days-migration-lint.test.ts`.
+### 2.2 NS-47
 
-### 2.3 NS-48 (13 P0)
-| Row | Exact title | Lvl | File | Mutant |
-|---|---|---|---|---|
-| NS-48-R1 | `[NS-48-R1] same inputs same key; every key exists` | U | `packages/core/test/notification-key.test.ts` | Use `Math.random`; orphan key in content |
-| NS-48-R2 | `[NS-48-R2] volume is unchanged` | U property | `test/reminders-select-seam.test.ts` | Let the selector add a note |
-| NS-48-R3 | `[NS-48-R3] recency is computed at plan time` | U | `notification-key.test.ts` | Read the clock at delivery; use `occurredOn` |
-| NS-48-R4 | `[NS-48-R4] no gap in the words` | S | `packages/content/test/rules.test.ts` | "It has been a while" in an r4 line |
-| NS-48-R5 | `[NS-48-R5] the kind may shape the body, never the title` | U, S | `notification-key.test.ts`, `rules.test.ts` | "voice" in a title; read letter text |
-| NS-48-R9 | `[NS-48-R9] the catalogue honours the lock-screen rules` | U | `days-lockscreen.test.ts` | Catalogue overrides the neutral body |
-| NS-48-R10 | `[NS-48-R10] every variant passes the rules test` | S | `rules.test.ts` | An exclamation mark; a 41-character title |
-| NS-48-R11 | `[NS-48-R11] no child name by default` | S | `rules.test.ts` | A `{child}` in a new title |
-| NS-48-R21 | `[NS-48-R21] a quiet book adds nothing to a key` | U | `notification-key.test.ts` | Read `quiet` after the key is built |
-| NS-48-R26 | `[NS-48-R26] the one-a-day budget has one enforced place` | U property | `reminders-budget.test.ts` | A second `schedule` call outside the chooser |
-| NS-48-R28 | `[NS-48-R28] every notification key is under the notification rules` | S | `rules.test.ts` | A `days` family not in `ALL` |
-| NS-48-R30 | `[NS-48-R30] no age norm in a reminder` | S | `rules.test.ts` | "already" in a toddler line |
-| NS-48-R36 | `[NS-48-R36] no pregnancy words on a lock screen` | U, S | `notification-key.test.ts` | "before birth" in the lock rendering |
+| Row | Exact title | Lvl | Arrange, act, assert | File | Run | W | Lane | Mutant that must turn it red | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| NS-47-R1 | `[NS-47-R1] the whole store is L4 and registered` | S, P | Assert the registry holds the days-file row at L4 with scope, sign-out, Erase, backup, export, sync | `supabase/tests/classification.test.mjs` pattern; `test/days-registry.test.ts` | SB | B W3 | privacy | Omit the registry row; class the file L3 | DESIGNED |
+| NS-47-R2 | `[NS-47-R2] picks are a filter; only ticks are stored` | U | Pick a tradition then close; assert only ticks and `culture.asked` written, no route param, no setting | `test/days-store.test.ts` | SB | B W3 | mobile | Persist the tradition in `setSetting` or a route param | DESIGNED |
+| NS-47-R3 | `[NS-47-R3] nothing is attached to the child` | S | Scan children, entries, books and shares for tradition or country columns and labels | `test/days-migration-lint.test.ts` | SB | B W3 | data-architect | A `tradition` column on children | DESIGNED |
+| NS-47-R4 | `[NS-47-R4] no request carries a day key` | U, S | Network fake through ask, tick, clear, claim, re-plan; assert 0 requests with a day key; lint migration names | `test/days-network.test.ts` | SB | B W3 | mobile | A fetch with a day id; a migration named `faith` | DESIGNED |
+| NS-47-R5 | `[NS-47-R5] a day note leaves no trace in the synced row` | I | Save a letter from each library day; compare the synced row to a control letter | `test/days-synced-row.test.ts` | SB | B W3 | mobile | Pass a day id as `prompt_key` | DESIGNED |
+| NS-47-R6 | `[NS-47-R6] the store is out of the backup and fails closed` | U, D | Fake `ScribeFiles` records call order; assert empty-file exclusion first, bytes after, read-back on open, 0 bytes on a false read-back, `.tmp` swept | `test/days-store.test.ts`, DV-1 | SB / DV | B W3 | mobile | Skip exclusion; write bytes before the empty-file read-back; rename then read back only; leave the `.tmp` after a kill; write to Caches | DESIGNED |
+| NS-47-R7 | `[NS-47-R7] claim and new phone move nothing` | I | Claim step and new-phone fixtures; assert store re-keyed unchanged, 0 uploads, empty on a new phone | `test/days-claim.test.ts` | SB | B W3 | mobile | Upload at the claim step | DESIGNED |
+| NS-47-R8 | `[NS-47-R8] canary finds nothing` | U | Run synthetic strings through every step; assert 0 hits in the sinks listed in section 1 item 4 | `test/days-canary.test.ts` | SB | B W3 | qa | Log the day id in a failure path | DESIGNED |
+| NS-47-R9 | `[NS-47-R9] analytics allowlist rejects day data` | U | Add a day-vocabulary event or enum value; assert the catalogue test rejects it | `packages/analytics/test/catalog.test.ts` | SB | B W3 | analytics | Add `tradition_picked` | DESIGNED |
+| NS-47-R10 | `[NS-47-R10] the export holds none of it` | U | Build Save a copy with every key set and a full days file; grep bytes | `test/days-export.test.ts` | SB | B W3 | mobile | Read the days file in the export builder | DESIGNED |
+| NS-47-R11 | `[NS-47-R11] one reader` | S | Walk the import graph; assert only `lib/days` imports the store file; positive-control importer fails | `test/days-boundary.test.ts` | SB | B W3 | mobile | Import the store from `analytics` | DESIGNED |
+| NS-47-R12 | `[NS-47-R12] one neutral body; the name only behind its switch` | U | All combinations of switch, App lock and tone; assert neutral body, name only behind the switch, stored value off after App lock on | `test/days-lockscreen.test.ts` | SB | B W3 | mobile | Stored switch survives App lock on; name in a body | DESIGNED |
+| NS-47-R13 | `[NS-47-R13] public days may name themselves; others need the switch` | U | Enumerate every `days.*` key by switch, App lock, names; assert title and body | `test/days-lockscreen.test.ts` | SB | B W3 | mobile | Skip one combination; title named for a family day | DESIGNED |
+| NS-47-R15 | `[NS-47-R15] sign-out clears and B sees nothing` | I | A signs out, B signs in; assert file gone before the first await, delivered notes dismissed, B asked afresh; first-sign-in local adopt; owner mismatch plans nothing | `test/days-session.test.ts` | SB | B W3 | mobile | Leave the file on sign-out; skip delivered dismissal; clear on A's id only; run `forgetReminders()` before deleting the file; drop the owner check so a queued re-plan schedules A's days for B; skip adopting the `'local'` file at first sign-in | DESIGNED |
+| NS-47-R16 | `[NS-47-R16] erase scan finds nothing` | I | Erase with days, settings and suggestion copies; assert nothing remains; kill mid-erase resumes | `test/erase-all.test.ts` (extended) | SB | B W3 | mobile | Omit the folder or the Caches suggestion folder; no resume after a kill; leave `dismissedOn` in `settings` | DESIGNED |
+| NS-47-R17 | `[NS-47-R17] delete account line and clear` | U, I | Delete account fixture; assert store cleared on this phone and the line does not claim other phones cleared | `test/days-session.test.ts`, `test/delete-account.test.ts` | SB | B W3 | mobile | The line claims an offline phone cleared | DESIGNED |
+| NS-47-R18 | `[NS-47-R18] first run has no such field` | S | Scan first-run screens and the field inventory for tradition, faith or country fields | `test/first-run-fields.test.ts` | SB | B W3 | mobile | Add a tradition field to E-S08 | DESIGNED |
+| NS-47-R21 | `[NS-47-R21] untick and clear all` | U, I | Untick, Clear all; assert store empty, pending cancelled, delivered dismissed | `test/days-store.test.ts`, `days-session.test.ts` | SB | B W3 | mobile | Clear all leaves a pending note | DESIGNED |
+| NS-47-R22 | `[NS-47-R22] call-out claims are true` | S, P | Scan call-out keys for forbidden claims; every sentence has a claims row | `days.copy.test.ts`, claims inventory | SB / DOC | B W3 | content | "Nobody can tell" in the call-out | DESIGNED |
+| NS-47-R23 | `[NS-47-R23] label re-run for the days store` | P | CI half: scan `lib/days` for network and analytics imports. Process half (label re-run per build): GAP, owner privacy | release checklist (`privacy`) | SB / DOC | B W3 | privacy | Import a fetch client in `lib/days` | GAP (label half) |
+| NS-47-R24 | `[NS-47-R24] days are never shared` | U | Two-parent fixture; assert Family and invite sheets show no day, count or hint | `test/days-family.test.ts` | SB | B W3 | mobile | Show the other parent's count on Family | DESIGNED |
+| NS-47-R25 | `[NS-47-R25] the ask and lists work with assistive settings` | U, D | Assert ask, lists, call-out sizes, labels and equal weight; device AX5 row DV-6 | `test/days-a11y.logic.test.ts`, DV-6 | SB / DV | C W4 | mobile | "Not now" smaller than "Choose days" | DESIGNED |
+| NS-47-R26 | `[NS-47-R26] unlocked only; blank snapshot` | U, D | Assert cover raised on inactive for the day routes with and without App lock; device DV-5 | `test/blank-on-background.test.ts`, DV-5 | SB / DV | B W3 | mobile | No blank for C-S24 | DESIGNED |
+| NS-47-R29 | `[NS-47-R29] call-out visible, static and first` | U | Assert DoorNote is static, first in reading order, never collapsed or dismissible | `test/days-a11y.logic.test.ts` | SB | B W3 | mobile | DoorNote collapsible or after the first control | DESIGNED |
+| NS-47-R34 | `[NS-47-R34] analytics allowlist rejects day vocabulary` | U | Add each forbidden stem as property, enum or event; assert rejection; no `insights` column matches | `packages/analytics/test/catalog.test.ts` | SB | B W3 | analytics | Add the stem `holiday` to an enum | DESIGNED |
+| NS-47-R36 | `[NS-47-R36] no category shows a title with previews hidden` | U | Read every registered category's options; assert no `hiddenPreviewsShowTitle`, placeholder set | `test/reminders-categories.test.ts` | SB | B W3 | mobile | `hiddenPreviewsShowTitle: true` | DESIGNED |
+| NS-47-R38 | `[NS-47-R38] no day name beside a child name on a lock screen` | U | Enumerate every title and body; assert no string holds a day name and a child name | `test/days-lockscreen.test.ts` | SB | B W3 | mobile | Named title with a `{child}` body, names on | DESIGNED |
 
-### 2.4 NS-49 (21 P0; level 1 rows R3, R25 are drop B, the rest C)
-| Row | Exact title | Lvl | File | Mutant |
-|---|---|---|---|---|
-| NS-49-R3 | `[NS-49-R3] no note about the picture` | U, S | `test/photos-notes.test.ts` | A body "from your photo"; picture field on `PlanInput` |
-| NS-49-R6 | `[NS-49-R6] no permission, no library call` | S, P | `test/photos-device.test.ts` (extended), preflight, binary strings | A usage string; a `PHPhotoLibrary` call |
-| NS-49-R7 | `[NS-49-R7] a suggestion becomes one stored picture` | I | `test/suggestions-flow.test.ts (stand-in)` | Delete the source URL; store two |
-| NS-49-R9 | `[NS-49-R9] the phone's title is never stored unless the parent takes it` | U | `suggestions-flow.test.ts (stand-in)` | Copy the title at Keep |
-| NS-49-R10 | `[NS-49-R10] only photos are read; the suggestion is not retained` | S, U | `test/suggestions-scan.test.ts`, Swift unit | Read a location item; keep the object |
-| NS-49-R11 | `[NS-49-R11] cancel and empty write nothing` | I | `suggestions-flow.test.ts (stand-in)` | Create a draft on cancel |
-| NS-49-R12 | `[NS-49-R12] a locked return is discarded` | I | `suggestions-flow.test.ts (stand-in)` | Accept a result while locked |
-| NS-49-R13 | `[NS-49-R13] a suggestion leaves no mark` | I | `suggestions-flow.test.ts (stand-in)` | Write the title into Exif or a column |
-| NS-49-R15 | `[NS-49-R15] entitlement only when the flag is on; security read` | S, P | preflight, `app.config.test.ts` | Entitlement without the flag |
-| NS-49-R16 | `[NS-49-R16] the recent-days lines are true and read by counsel` | P | claims inventory | A sentence with no row |
-| NS-49-R17 | `[NS-49-R17] assistive settings work` | U, D | `suggestions-a11y.logic.test.ts`, DV-6 | A 40 pt choice |
-| NS-49-R19 | `[NS-49-R19] the suggestion file is validated` | U | `suggestions.logic.test.ts (stand-in)`; DV-9 | Follow a symlink; second open by path |
-| NS-49-R21 | `[NS-49-R21] the suggestion id is never kept` | S | `days-canary.test.ts` | Log the id |
-| NS-49-R23 | `[NS-49-R23] no detection of faces or scenes` | S | `photos-device.test.ts` | Import a Vision module |
-| NS-49-R24 | `[NS-49-R24] canary finds nothing` | U | `days-canary.test.ts` | Log the title |
-| NS-49-R25 | `[NS-49-R25] level 3 stays closed` | S, P | `photos-device.test.ts` allowlist (zero entries), preflight | A `NSPhotoLibraryUsageDescription` |
-| NS-49-R26 | `[NS-49-R26] a spike produces a decision, not a feature` | P, S | release profile check | Enable the spike flag in a release profile |
-| NS-49-R27 | `[NS-49-R27] label, review notes and the license read` | P | release checklist | No Notes for Review entry |
-| NS-49-R28 | `[NS-49-R28] no launch crash below 17.2` | D | DV-8 | Strong-link the framework |
-| NS-49-R33 | `[NS-49-R33] the suggestion flow makes no request` | U | `suggestions-flow.test.ts (stand-in)` | A fetch in the module |
-| NS-49-R35 | `[NS-49-R35] the journaling purpose is evident and read by counsel` | P | counsel packet | Store listing omits the recent-days picker |
+### 2.3 NS-48
 
-### 2.5 NS-50 (4 P0)
-| Row | Exact title | Lvl | File | Mutant |
-|---|---|---|---|---|
-| NS-50-R2 | `[NS-50-R2] only today, never a list or a count` | U | `test/home-slips.test.ts` | Show tomorrow; "no days today" line |
-| NS-50-R3 | `[NS-50-R3] the slip uses the landing words` | U | `home-slips.test.ts`, `days-lockscreen.test.ts` | A quiet day with a question |
-| NS-50-R8 | `[NS-50-R8] a quiet book shows no day slip` | U | `home-slips.test.ts` | Ignore `quiet` |
-| NS-50-R11 | `[NS-50-R11] Home is not a feed` | U, S | `home-slips.test.ts`, `test/home-feed-scan.test.ts` | Two slips; a count in a label |
+| Row | Exact title | Lvl | Arrange, act, assert | File | Run | W | Lane | Mutant that must turn it red | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| NS-48-R1 | `[NS-48-R1] same inputs same key; every key exists` | U | Same cell and ordinal twice; assert same key; every key exists in content and no orphan | `packages/core/test/notification-key.test.ts` | SB | A W1 | mobile | Use `Math.random`; orphan key in content | DESIGNED |
+| NS-48-R2 | `[NS-48-R2] volume is unchanged` | U property | Plan with the catalogue and with the floor selector across cadences and zones; assert identical (id, date, time, class) sets | `test/reminders-select-seam.test.ts` | SB | A W1 | mobile | Let the selector add a note | DESIGNED |
+| NS-48-R3 | `[NS-48-R3] recency is computed at plan time` | U | Anchor and fire dates at band edges with injected clocks; assert bands r1 to r4, anchor never after plan date | `notification-key.test.ts` | SB | C W4 | mobile | Read the clock at delivery; use `occurredOn` | DESIGNED |
+| NS-48-R4 | `[NS-48-R4] no gap in the words` | S | Scan r1 to r4 lines for gap, count or comparison words | `packages/content/test/rules.test.ts` | SB | C W4 | content | "It has been a while" in an r4 line | DESIGNED |
+| NS-48-R5 | `[NS-48-R5] the kind may shape the body, never the title` | U, S | Each last-letter kind; assert body only, title from the generic pool, no letter text imported | `notification-key.test.ts`, `rules.test.ts` | SB | C W4 | mobile | "voice" in a title; read letter text | DESIGNED |
+| NS-48-R9 | `[NS-48-R9] the catalogue honours the lock-screen rules` | U | Family, tradition, national day or names off; assert the neutral strings are returned | `days-lockscreen.test.ts` | SB | B W3 | mobile | Catalogue overrides the neutral body | DESIGNED |
+| NS-48-R10 | `[NS-48-R10] every variant passes the rules test` | S | Run every variant in both renderings through limits and forbidden marks | `rules.test.ts` | SB | A W1 | content | An exclamation mark; a 41-character title | DESIGNED |
+| NS-48-R11 | `[NS-48-R11] no child name by default` | S | Render neutral form of every title; assert no child name and no `{child}` in a new title | `rules.test.ts` | SB | A W1 | content | A `{child}` in a new title | DESIGNED |
+| NS-48-R21 | `[NS-48-R21] a quiet book adds nothing to a key` | U | Quiet, hidden, not-included books; assert no age band, name or kind enters the cell | `notification-key.test.ts` | SB | B W3 | mobile | Read `quiet` after the key is built | DESIGNED |
+| NS-48-R26 | `[NS-48-R26] the one-a-day budget has one enforced place` | U property | Property test over all sources; assert no date has two budgeted notes | `reminders-budget.test.ts` | SB | B W1 | mobile | A second `schedule` call outside the chooser | DESIGNED |
+| NS-48-R28 | `[NS-48-R28] every notification key is under the notification rules` | S | Add an unexported key family; assert the drift test fails; all notification keys are in the notification scope | `rules.test.ts` | SB | A W1 | content | A `days` family not in `ALL` | DESIGNED |
+| NS-48-R30 | `[NS-48-R30] no age norm in a reminder` | S | Scan kind and age-band lines for yet, already, still, should and milestone verbs | `rules.test.ts` | SB | C W4 | content | "already" in a toddler line | DESIGNED |
+| NS-48-R36 | `[NS-48-R36] no pregnancy words on a lock screen` | U, S | Due date and no birth date; assert both renderings name no pregnancy and the lock rendering is the neutral evening line | `notification-key.test.ts` | SB | A W1 | mobile | "before birth" in the lock rendering | DESIGNED |
+
+### 2.4 NS-49
+
+| Row | Exact title | Lvl | Arrange, act, assert | File | Run | W | Lane | Mutant that must turn it red | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| NS-49-R3 | `[NS-49-R3] no note about the picture` | U, S | Scan keys and `PlanInput` type for any picture field or line | `test/photos-notes.test.ts` | SB | B W3 | content | A body "from your photo"; picture field on `PlanInput` | DESIGNED |
+| NS-49-R6 | `[NS-49-R6] no permission, no library call` | S, P | Scan source, `package.json`, resolved plist and entitlements per profile for library strings and calls; binary strings read for the candidate | `test/photos-device.test.ts` (extended), preflight, binary strings | SB / CI | C W5 | security | A usage string; a `PHPhotoLibrary` call | DESIGNED |
+| NS-49-R7 | `[NS-49-R7] a suggestion becomes one stored picture` | I | Stand-in JPEG, HEIC, Live Photo; assert one stored copy and only the app's own copy deleted | `test/suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | Delete the source URL; store two | DESIGNED |
+| NS-49-R9 | `[NS-49-R9] the phone's title is never stored unless the parent takes it` | U | Stand-in suggestion with a title; keep without a tap; assert no title stored; tap Use this; assert `photo_text` only then | `suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | Copy the title at Keep | DESIGNED |
+| NS-49-R10 | `[NS-49-R10] only photos are read; the suggestion is not retained` | S, U | Source scan for forbidden suggestion types; Swift unit with a fake holding a location, workout, contact | `test/suggestions-scan.test.ts`, Swift unit | SB / CI | C W5 | mobile | Read a location item; keep the object | DESIGNED |
+| NS-49-R11 | `[NS-49-R11] cancel and empty write nothing` | I | Cancel, decline, empty; assert no draft, 0 files, no message | `suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | Create a draft on cancel | DESIGNED |
+| NS-49-R12 | `[NS-49-R12] a locked return is discarded` | I | Return a result while locked; assert discarded with 0 files | `suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | Accept a result while locked | DESIGNED |
+| NS-49-R13 | `[NS-49-R13] a suggestion leaves no mark` | I | Level 1 and level 2 stand-ins with the same image and injected id and time; assert file, row and export bytes identical | `suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | Write the title into Exif or a column | DESIGNED |
+| NS-49-R15 | `[NS-49-R15] entitlement only when the flag is on; security read` | S, P | Resolve the plist per profile; assert the entitlement appears only where the flag is on; `security` reads the delta before production (process) | preflight, `app.config.test.ts` | SB / DOC | C W5 | security | Entitlement without the flag | DESIGNED |
+| NS-49-R16 | `[NS-49-R16] the recent-days lines are true and read by counsel` | P | CI half: every `features.photos.suggestions.door` sentence has a claims-inventory row id. Process half (counsel read): GAP, owner legal | claims inventory | SB / DOC | C W5 | legal | Add a door sentence with no claims row | GAP (counsel half) |
+| NS-49-R17 | `[NS-49-R17] assistive settings work` | U, D | Assert labels, 44 pt, reachable order for the menu and sheet; device DV-6 | `suggestions-a11y.logic.test.ts`, DV-6 | SB / DV | C W5 | mobile | A 40 pt choice | DESIGNED |
+| NS-49-R19 | `[NS-49-R19] the suggestion file is validated` | U | Stand-in fixtures: symlink, directory, 0 byte, outside container, odd type; assert refused; device row DV-9 for Apple's real container | `suggestions.logic.test.ts (stand-in)`; DV-9 | SB / DV | C W5 | mobile | Follow a symlink; second open by path | DESIGNED |
+| NS-49-R21 | `[NS-49-R21] the suggestion id is never kept` | S | Canary id through the notification path; assert not logged or stored | `days-canary.test.ts` | SB | C W5 | qa | Log the id | DESIGNED |
+| NS-49-R23 | `[NS-49-R23] no detection of faces or scenes` | S | Scan the module and photos folders for Vision, face or scene imports | `photos-device.test.ts` | SB | C W5 | security | Import a Vision module | DESIGNED |
+| NS-49-R24 | `[NS-49-R24] canary finds nothing` | U | Canary title, place, workout through the module; assert 0 hits | `days-canary.test.ts` | SB | C W5 | qa | Log the title | DESIGNED |
+| NS-49-R25 | `[NS-49-R25] level 3 stays closed` | S, P | Scan every folder except an allowlist with zero entries; resolve the plist per profile | `photos-device.test.ts` allowlist (zero entries), preflight | SB / CI | B W3 | security | A `NSPhotoLibraryUsageDescription` | DESIGNED |
+| NS-49-R26 | `[NS-49-R26] a spike produces a decision, not a feature` | P, S | Assert no release profile enables the spike flag and the spike output is a document | release profile check | SB / DOC | B W3 | security | Enable the spike flag in a release profile | DESIGNED |
+| NS-49-R27 | `[NS-49-R27] label, review notes and the license read` | P | CI half: `docs/legal/review-notes` holds the entitlement and picker sections when the flag is on. Process half (label, 3.3.3(H), 5.1.3): GAP, owner privacy and legal | release checklist | SB / DOC | C W5 | privacy | Remove the entitlement section from the review notes | GAP (label half) |
+| NS-49-R28 | `[NS-49-R28] no launch crash below 17.2` | D | CI half: scan podspec for `weak_frameworks` and platform 17.0 and Swift for `#available(iOS 17.2, *)`. Launch run on iOS 17.0, 17.1, 17.2, 26 and iPad: GAP device row DV-8, owner qa with the founder | DV-8 | SB / DV | C W5 | qa | Strong-link the framework in the podspec | GAP (device half) |
+| NS-49-R33 | `[NS-49-R33] the suggestion flow makes no request` | U | Network fake across open, pick, cancel, keep, erase; assert 0 requests and no share call | `suggestions-flow.test.ts (stand-in)` | SB | C W5 | mobile | A fetch in the module | DESIGNED |
+| NS-49-R35 | `[NS-49-R35] the journaling purpose is evident and read by counsel` | P | CI half: store listing text names the recent-days picker when the flag is on. Process half (counsel on the store name and button words): GAP, owner legal | counsel packet | SB / DOC | C W5 | legal | Remove the recent-days line from the store listing | GAP (counsel half) |
+
+### 2.5 NS-50
+
+| Row | Exact title | Lvl | Arrange, act, assert | File | Run | W | Lane | Mutant that must turn it red | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| NS-50-R2 | `[NS-50-R2] only today, never a list or a count` | U | Ticked day today, tomorrow and none; assert slip only today, never a list or count | `test/home-slips.test.ts` | SB | B W3 | mobile | Show tomorrow; "no days today" line | DESIGNED |
+| NS-50-R3 | `[NS-50-R3] the slip uses the landing words` | U | Bright, quiet and two-day cases; assert the landing keys and the quiet line | `home-slips.test.ts`, `days-lockscreen.test.ts` | SB | B W3 | mobile | A quiet day with a question | DESIGNED |
+| NS-50-R8 | `[NS-50-R8] a quiet book shows no day slip` | U | Quiet, hidden and not-included active book; assert no day slip | `home-slips.test.ts` | SB | B W3 | mobile | Ignore `quiet` | DESIGNED |
+| NS-50-R11 | `[NS-50-R11] Home is not a feed` | U, S | Every slip combination; assert at most one slip and no count in any label | `home-slips.test.ts`, `test/home-feed-scan.test.ts` | SB | B W3 | mobile | Two slips; a count in a label | DESIGNED |
 
 ## 3. P1 and P2 rows (95) and the standing journeys
 Titles stay the cards' (`[NS-nn-Rn] ...`); each P1 row goes in the same test file as its neighbour above. Files: `days-planner.test.ts` (R9, R10, R11, R13, R15, R29, R33, R38 of NS-46), `days-timezones.test.ts` (NS-46-R10, R11, DST sweep), `days-page.logic.test.ts` (R3, R20, R40, R41, R43), `days-ask.test.ts` (NS-47-R19, R20, R30 to R33, R35), `home-slips.test.ts` (NS-50-R1, R4 to R7, R9, R10, R12, R14 to R17), `reminders-select-seam.test.ts` (NS-48 R6, R7, R8, R12 to R20, R22 to R25, R27, R29, R31 to R35, R37 to R39), `suggestions-menu.test.ts` (NS-49-R1, R2, R4, R5, R8, R14, R18, R22, R29 to R32, R34, R36, R37). P2 rows are listed, not blocking. NS-46-R44, R45, R47 and NS-50-R13, R18, NS-47-R27 are process rows (support macros, marketing scan, research) with a P-level check each.
