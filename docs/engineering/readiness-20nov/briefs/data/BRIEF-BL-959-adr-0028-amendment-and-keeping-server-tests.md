@@ -11,6 +11,7 @@ Blocked until: nothing for PR 1 and PR 2. PR 3's `[NS-10-R10]` cell needs the la
      [NS-09-R14] a let-go held draft is purged on the server     supabase/tests/sync_v1_server.test.mjs; mutant: keep the row and only blank its text. The two named exceptions (words changed after the base, legal hold) get their own cells titled with R14 once Karma rules K2 (08-keeping OQ-7, default as built).
      [NS-10-R4a] deletion works without agreeing                 server cell: request_account_deletion succeeds for a caller with a stale or no terms acceptance (PRIV-R09); mutant: require acceptance first
      [NS-10-R10] a lapsed plan still brings the book             lapsed-plan caller pulls 5 Asha letters; mutant: gate sync_pull rows on plan state
+   [NS-10-R10] fixture: subscription_status.test.mjs tests the status report only and holds no lapsed-plan fixture (checked). The cell inserts an expired subscription_status row for the caller through sys (re-open the table definition for columns) and asserts the pull returns the same rows as without it; the server has no plan check, so the cell pins that none is added.
    Red on develop: the R14 purge is covered (held.discard cells at sync_v1_server.test.mjs:336-391) but under no NS title, so the trace skips it; R4a and R10 have no server cell.
 
 3. FILES: TOUCH / DO NOT TOUCH

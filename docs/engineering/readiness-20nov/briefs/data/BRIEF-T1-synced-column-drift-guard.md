@@ -11,6 +11,7 @@ Blocked until: nothing. OQ-P3 (privacy: should `language` and `words_reviewed_at
      [NS-36-R11] trigger tuple and view          packages/api/test/contract-drift.test.ts; mutant: add a column to FIELD_GROUP_COLUMNS only
      [NS-01-R15] sync carries no picture key     ENTRY_DATA_KEYS and the outbox payload never hold photo_path, photo_text, place or photo; mutant: add `photo_text` to ENTRY_DATA_KEYS
    Exemptions (named list, reason each): in_book (own clause, 20261015030000:184), language and words_reviewed_at (until OQ-P3).
+   Positive control on the parser (required): feed the migration parser a synthetic migration text whose entries_family_rules tuple lacks a column and assert the check reports it; and one whose view lists it and assert it passes. Without this the parser could return an empty list and every column would pass.
    Red on develop: no test reads the tuple at all (eval A found no generic guard).
 
 3. FILES: TOUCH / DO NOT TOUCH
