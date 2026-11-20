@@ -38,7 +38,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Alert: event to queued row | p95 under 200 ms inside the same database call that caused it | Rec [E]: same bar as the local save commit (DATA-REQ-048) because it rides the same transaction; no network call in it |
 | Alert: queued row to provider accepted | p95 under 60 s, p99 under 10 min; a miss pages `ops` | Rec [E]: a takeover warning is only useful soon; the purge worker already runs every 15 minutes (`purge-worker/alerts.ts` header), so alerts get their own 1-minute drain or a database webhook |
 | Sign-in mail | p90 under 30 s | `docs/emails/SECURITY.md` finding on `A-NFR-004` (as read in 3.4) |
-| Rate limits | 5 capped-kind (A2) alert mails per account per 24 h (A1, A3 to A9 exempt); sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
+| Rate limits | 5 capped-kind (A2) alert mails (Rec [E], our number) per account per 24 h (A1, A3 to A9 exempt); sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
 
 ## 3. What could not be verified
 
@@ -69,7 +69,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Id | Question | Default engineering builds |
 |---|---|---|
 | Q-COM-1 | Which security alert emails exist at v1: new sign-in on a new device (A1), recovery (A3), sign-out of all devices (A6)? | Only the ones Supabase already sends (A5, A7) plus the built deletion and recovery key mail. A1 and A6 are built after launch-blocking items, email only |
-| Q-COM-2 | Does a parent get a control to sign out every device, and does it sit in Me, Account? | No new control in v1. Support and the founder use the runbook lever; I5 tells each phone |
+| Q-COM-2 | A control "Sign out other devices" already exists in Me, Account (`account.tsx:181-251`; it ends the other phones, keeps this one). Should using it send a confirmation email (A6), and should a "sign out everywhere including this phone" exist? (Correction: the question first posted on the PR said no control existed; that premise was wrong.) | Keep the control as built. Build the A6 confirmation email after launch-blocking items; no second control; I5 tells each signed-out phone |
 | Q-COM-3 | Are security alerts sent between 21:30 and 07:00? | Yes (exempt), like sign-in mail |
 | Q-COM-4 | In the email-changed notice to the old address, is the new address shown in full or masked? | Masked (first letter and domain) |
 | Q-COM-5 | Does anyone get an email after repeated wrong codes (A2)? | No email. The phone pause line only. A server count per address and a paging job stay an open question for `security-architect` until it is confirmed what Supabase gives (07.2 section 5, gap 2) |

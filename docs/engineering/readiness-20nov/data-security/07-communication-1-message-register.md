@@ -48,7 +48,7 @@ If remote push is ever decided (the founder's call, not made here; BL-546, NS-26
 
 ## 4. Email (from our servers, Resend, and Supabase Auth)
 
-Sender is always `Early Letters <hello@earlyletters.com>` and never `no-reply@` (`CATALOG.md:16`). Three senders exist as code today [V by reading `supabase/functions`: `renderForResend` appears only in `purge-worker/emails.ts`; `escrow` mails through its own `mail.ts`, 20 Nov]: Supabase Auth (six templates, `supabase/templates/`), `purge-worker` (three deletion receipts, `purge-worker/emails.ts:50, 58, 63`) and `escrow` (three recovery key emails, `escrow/restore.ts`, `rotate.ts`). Of the 43 template files in `packages/emails/src/templates`, only these 12 have a sender; the rest have none yet [V].
+Sender is always `Early Letters <hello@earlyletters.com>` and never `no-reply@` (`CATALOG.md:16`). Three senders exist as code today [V by reading `supabase/functions`: `renderForResend` appears only in `purge-worker/emails.ts`; `escrow` mails through its own `mail.ts`, 20 Nov]: Supabase Auth (six templates, `supabase/templates/`), `purge-worker` (three deletion receipts, `purge-worker/emails.ts:50, 58, 63`) and `escrow` (three recovery key emails, `escrow/restore.ts`, `rotate.ts`). Of the 43 template files in `packages/emails/src/templates`, only 12 files (13 template ids, because the purge worker and escrow files cover more than one id) have a sender; the rest have none yet [V].
 
 | ID | Message (template id) | Sender and status | Trigger | Data used (level) | Consent and opt-out | Frequency and cap | Quiet hours | Test |
 |---|---|---|---|---|---|---|---|---|
@@ -77,7 +77,7 @@ Global rules (`CATALOG.md:133-139`): at most one non-auth email per address a da
 | I2 | Notifications off line and Open Settings | Me, Reminders | iOS says no | Permission state (L2) | n/a | While true; nothing nags (FR-MSG-20) |
 | I3 | Plan date line | Me, Plan | Notifications not allowed | Plan period end (L3) | n/a | While true (NS-32-R4) |
 | I4 | Update line (E-S16) | Me only | Build below `minSupportedVersion` | Version (L2) | n/a | One line, nothing on Home (FR-LCY-17) |
-| I5 | Signed out for your safety | Sign-in screen | `forceReauthEpoch` raised or session ended on another phone | None | n/a | Once per event; letters kept (`reauth.logic.ts:2`) |
+| I5 | Signed out for your safety | Sign-in screen | `forceReauthEpoch` raised, or the parent used "Sign out other devices" on another phone | None | n/a | Once per event; letters kept (`reauth.logic.ts:2`) |
 | I6 | Deletion status and the "other phone" line | Me, Account | Deletion requested here or on another phone | Dates (L2) | Cancel within 30 days | Until done (FR-LCY-19) |
 | I7 | "We could not reach {email}" row | Me, Account | Hard bounce | Address (L3) | n/a | While true; copy needed (FR-MSG-07) |
 | I8 | Wrong code pause line | Code step | 5 wrong codes in 15 minutes (`errors.logic.ts:79-94` [V]) | None | n/a | While paused |
