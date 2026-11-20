@@ -12,12 +12,12 @@ Agent: ops   Lane: Pack 10   Build: 13   Wave: 1
    profile, a flag on in a store profile outside its allowed list, the label guard failing, and an unlisted size growth, before the build step is reachable.
 
 2. CARD ROWS and TEST TITLES: [NS-08-R5] backup off in store profiles (existing test, apps/mobile/test/preflight-keepsafe.test.ts), BL-958 flags
-   (apps/mobile/test/store-flags.test.ts), G5 and G6 of 14:96. Tests: the patch is a YAML file; add `scripts/release/release-checks.test.mjs`
+   (apps/mobile/test/store-flags.test.ts), G5 and G6 of 14:96. Tests: the patch is a YAML file; add `apps/mobile/test/release-checks-proposal.test.ts`
    (new) that parses `docs/ops/proposed/workflows/release-ios.checks.patch.yml` and fails if any of steps (a) to (d) below is missing.
    Red on old code: the test fails today because the proposal file does not exist; the real proof is the dry run on a release branch.
 
 3. FILES
-   Touch: docs/ops/proposed/workflows/release-ios.checks.patch.yml (new; steps to paste into job `checks`), scripts/release/release-checks.test.mjs (new),
+   Touch: docs/ops/proposed/workflows/release-ios.checks.patch.yml (new; steps to paste into job `checks`), apps/mobile/test/release-checks-proposal.test.ts (new),
           docs/ops/RELEASE.md (section 3.4 one line), docs/agents/checkins/ops-rd-h3-b13checks.md
    Never: .github/workflows/release-ios.yml itself; the `build` and `metadata` jobs; scripts/agents/**; eas.json.
    Shared file rule: BRIEF CI-PIN also touches the `uses:` lines of release-ios.yml (already pinned there [V]); no overlap.
@@ -46,11 +46,11 @@ Agent: ops   Lane: Pack 10   Build: 13   Wave: 1
 
 10. PR BREAKDOWN: PR 1 | ~110 lines, 4 files | base develop | no flag; nothing runs until the founder pastes it.
 
-11. LENSES: A security-architect, B principal-architect.
+11. LENSES: A security-architect, B principal-architect; mobile also reads (a test under apps/mobile/**). Wiring: the test is a vitest file under apps/mobile/test, so the existing `unit` job already runs it through `npm test` (workspaces); no workflow change is needed for the test, only for the paste itself (founder).
 
 12. ORDER: after BL-976-WIRE (so (b) is one tested call). Before B13-CUT's dry run. Blocked by the founder for the paste.
 
-13. DONE: [ ] `node --test scripts/release/release-checks.test.mjs`; [ ] `npm test` baseline only; [ ] ASCII only; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE: [ ] `npx vitest run apps/mobile/test/release-checks-proposal.test.ts`; [ ] `npm test` baseline only; [ ] ASCII only; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY A PHONE (or the founder) CAN PROVE: the dispatched `job=checks` run on a release branch passes after the paste.
 

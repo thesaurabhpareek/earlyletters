@@ -44,7 +44,7 @@ Agent: ops   Lane: Pack 10 (+ Pack 5 backup)   Build: 13   Wave: 1   (BL-976 fol
 
 10. PR BREAKDOWN: PR 1 | ~90 lines, 4 files | base develop | flag-off proof: with eas.json as it is today both scripts print the same results as before plus `backup-off` PASS lines.
 
-11. LENSES: A security-architect, B principal-architect (script duplication).
+11. LENSES: A security-architect, B principal-architect (script duplication); mobile reads (apps/mobile/scripts and test).
 
 12. ORDER: before BRIEF B13-CHECKS step (b). After nothing. Blocked by nothing.
 

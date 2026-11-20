@@ -58,7 +58,7 @@ Agent: ops   Lane: Pack 10   Build: 13   Wave: 1
 
 12. ORDER: after F4, P-7, 830, BRIEF B13-CHECKS and BL-976-WIRE (so the checks are complete). Before the device sheet. Blocked by the founder (Q1, version, go).
 
-13. DONE: [ ] ASCII only; [ ] cites re-opened; [ ] dry-run output pasted; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE (the dry run is a `workflow_dispatch`: an agent may not be allowed to dispatch [U]; if refused, the founder dispatches and pastes the run URL, and the brief is done on that): [ ] ASCII only; [ ] cites re-opened; [ ] dry-run output pasted; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY A PHONE CAN PROVE: the whole device sheet (plan 6.1: J-N1, J-N2/S1-204, NS-10-R3, NS-13-R14, J-N21, J-N24, J-N27, BL-928 row, BL-929);
     ITMS-90683 upload result; the iPad row. The checklist links them; it does not replace them.
