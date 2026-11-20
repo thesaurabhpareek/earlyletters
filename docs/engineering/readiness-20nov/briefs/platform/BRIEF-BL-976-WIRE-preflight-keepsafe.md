@@ -1,6 +1,6 @@
 # BRIEF BL-976-WIRE: run the keep-safe preflight inside the TestFlight and production preflights (NS-08-R5)
 
-Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#934 rev 2 (88f3a975; #846 closed), unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
+Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (rev 2 is #934 at 88f3a975, now on develop, and #846 is closed; read the old pack with `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
 
 **Blocked until: nothing. This is code under `apps/mobile/scripts` and its test; no workflow edit, no secret, no spend. A founder decision that turns recording backup on is a separate PR that changes the same files (header of preflight-keepsafe.mjs lines 14-16).**
 

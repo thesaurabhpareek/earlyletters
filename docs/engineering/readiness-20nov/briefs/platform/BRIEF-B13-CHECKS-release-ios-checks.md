@@ -1,6 +1,6 @@
 # BRIEF B13-CHECKS: what `release-ios.yml` checks, and what it should also check (patch for the founder)
 
-Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#934 rev 2 (88f3a975; #846 closed), unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
+Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (rev 2 is #934 at 88f3a975, now on develop, and #846 is closed; read the old pack with `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
 
 **Blocked until: nothing for the proposal file; the founder applies the patch (the Claude GitHub App cannot edit `.github/workflows/`; FR-OPS-34). A change to `release-ios.yml` is a workflow edit that needs two reviews (security-architect `.github/**`) and the founder.** Founder-only: copying the patch to `.github/workflows/release-ios.yml`, the `app-store` environment. The agent writes `docs/ops/proposed/` files and tests only.
 

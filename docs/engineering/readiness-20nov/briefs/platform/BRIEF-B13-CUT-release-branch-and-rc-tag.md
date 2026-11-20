@@ -1,6 +1,6 @@
 # BRIEF B13-CUT: the release branch and RC tag cut checklist for Build 13
 
-Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#934 rev 2 (88f3a975; #846 closed), unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
+Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (rev 2 is #934 at 88f3a975, now on develop, and #846 is closed; read the old pack with `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
 
 **Blocked until: BRIEFs F4, P-7 and 830 are done; the founder answers Q1 (which P0 rows the cut meets; the plan's recommendation (5.3), not a default, holds the cut for BL-922, BL-925/926, BL-928, BL-961, NS-09-R6) and names the cut go; he picks the marketing version (1.0.0 or 1.0.1: plan 3a "Not verified" says Build 12 may not be submitted).** Founder-only: the go, the version, pushing the tag if he keeps it (RELEASE.md 1.2 says coordinator only), approving the `app-store` environment, submitting. The agent writes the checklist file and dry-runs the checks; it never tags, builds or submits.
 
