@@ -704,6 +704,8 @@ function checkRepeat(e: Edit, raw: string, R: LanguageRules): RejectReason | nul
 
   if (removed.every((w) => R.isNegation(w))) return 'removes_negation';
   if (R.moodMarks(e.original) || /[¿¡]/.test(e.original)) return 'changes_sentence_type';
+  // Engine 9: a counted or answered thing said twice is meant ("5, 5 times", "I do. I do.").
+  if (hasNumber(removed)) return 'repeat_is_emphasis';
   if (removed.length === 1) return R.repeat.verifierRepeatable.has(removed[0]) ? null : 'repeat_is_emphasis';
 
   // A phrase said twice: a restart ("like a like a little") or function-word
@@ -728,7 +730,14 @@ function checkFalseStart(e: Edit, raw: string, R: LanguageRules): RejectReason |
   if (R.moodMarks(e.original) || /[¿¡]/.test(e.original)) return 'changes_sentence_type';
   // A restart leads somewhere: "she was, she was so happy". A complete phrase
   // said twice and then ended is meant: "I love you, I love you."
-  return continuesAfter(raw, again.end, R) ? null : 'false_start_complete_phrase';
+  if (!continuesAfter(raw, again.end, R)) return 'false_start_complete_phrase';
+  // Engine 9: the same rules checkRepeat has. A content word said twice with a comma is emphasis, a call
+  // or a count ("very, very", "Daddy, Daddy", "one, one"); a phrase of content words is meant unless it
+  // ends on a word that needs what follows. Only a stumble on function words is a restart.
+  if (hasNumber(removed)) return 'repeat_is_emphasis';
+  if (removed.length === 1) return R.repeat.verifierRepeatable.has(removed[0]) ? null : 'repeat_is_emphasis';
+  if (!removed.every((w) => R.isFunctionWord(w) || R.isNegation(w) || R.isProtectedWord(w)) && !R.repeat.dangling.has(removed[removed.length - 1])) return 'repeat_is_emphasis';
+  return null;
 }
 
 /** True if `word` is (part of) a dictionary term, compared the language's strict way. */
@@ -839,6 +848,53 @@ function checkOpeners(e: Edit, ctx: VerifyContext, R: LanguageRules): RejectReas
   return null;
 }
 
+
+/* ---------- engine 9: marks that change what a parent said (11 Nov 2026 attack run, J3) ---------- */
+
+/** Symbols that are never punctuation: emoji and the small-form variants of ? and ! (U+FE50 to U+FE6F). */
+const SYMBOL_MARKS = /[\p{Extended_Pictographic}\u{FE50}-\u{FE6F}]/u;
+/** What sits between two words once spaces are ignored: the marks and line breaks the parent's speech carries. */
+const gapKey = (gap: string): string => gap.replace(/[ \t]+/g, '');
+const SENTENCE_END_GAP = /[.!?…\n।。！？؟]/;
+
+/**
+ * Punctuation and paragraph edits keep the words and change only what sits between them. Between some words
+ * that is meaning: after a negation ("did not want" is not "did not. Want"), between two numbers ("3, 4 hours"
+ * is not "3 4 hours"), before a name said to someone ("eat, Nani" is not "eat Nani"). Also never a symbol,
+ * an ellipsis the parent did not say, or a mark with no word before it.
+ */
+function changesMeaningBetweenWords(e: Edit, raw: string, R: LanguageRules): RejectReason | null {
+  if (SYMBOL_MARKS.test(e.replacement)) return 'changes_sentence_type';
+  const dots = (t: string) => count(t, '…') + (t.match(/\.{3,}/g)?.length ?? 0);
+  if (dots(e.replacement) > dots(e.original)) return 'changes_sentence_type';
+
+  const edited = raw.slice(0, e.start) + e.replacement + raw.slice(e.end);
+  const a = R.tokens(raw);
+  const b = R.tokens(edited);
+  if (a.length !== b.length || a.length === 0) return null; // a changed word is refused by the checks around this one
+  const gapAfter = (text: string, toks: Token[], i: number): string => text.slice(toks[i].end, toks[i + 1].start);
+  // A mark appearing before the first word.
+  if (gapKey(edited.slice(0, b[0].start)) !== gapKey(raw.slice(0, a[0].start)) && /[.,;:!?…]/.test(edited.slice(0, b[0].start))) return 'changes_word';
+  for (let i = 0; i + 1 < a.length; i++) {
+    const ga = gapKey(gapAfter(raw, a, i));
+    const gb = gapKey(gapAfter(edited, b, i));
+    if (ga === gb) continue;
+    const w = a[i].word;
+    const startsSentence = i === 0 || SENTENCE_END_GAP.test(gapAfter(raw, a, i - 1)) || SENTENCE_END_GAP.test(gapAfter(edited, b, i - 1));
+    const firstEnd = (g: string): string => g.match(SENTENCE_END_GAP)?.[0] ?? '';
+    // A later duplicate mark behind an end mark that stays ("no.\u201D." -> "no.\u201D") does not touch the negation's own break.
+    const sameBreak = firstEnd(ga) !== '' && firstEnd(ga) === firstEnd(gb);
+    if (R.isNegation(w) && !startsSentence && !sameBreak) return 'changes_sentence_type';
+    if (/\d/.test(w) && /\d/.test(a[i + 1].word)) return 'changes_number';
+    const next = a[i + 1].word;
+    if (ga.includes(',') && !gb.includes(',') && (R.isKinship(next) || /^\p{Lu}/u.test(next))) return 'changes_word';
+  }
+  return null;
+}
+
+/** The words a repeat or false start would remove must not be numbers: "5, 5 times" is a count. */
+const hasNumber = (words: string[]): boolean => words.some((w) => /\d/.test(w));
+
 function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   const R = rulesOf(ctx);
   // A character converted to the author's chosen script (發 -> 发) keeps the letter, like a case change.
@@ -865,6 +921,8 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
     if (opener) return opener;
   }
   if (R.quoteMarkCount(e.original) !== R.quoteMarkCount(e.replacement)) return 'changes_quotes';
+  const between = changesMeaningBetweenWords(e, ctx.raw, R); // engine 9
+  if (between) return between;
   return checkCase(e, ctx);
 }
 
@@ -969,10 +1027,13 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       break;
     case 'paragraph':
       if (e.original.trim() !== '' || e.replacement.trim() !== '') reason = 'paragraph_not_whitespace';
+      else reason = changesMeaningBetweenWords(e, raw, R); // engine 9: not after "not", not between numbers
       break;
   }
   if (reason) return reason;
   if (REMOVAL_TYPES.has(e.type) && removalChangesSentenceEnd(raw, e, R)) return 'changes_sentence_type';
+  // Engine 9: a sentence said twice ("I do. I do.") is an answer, not a stumble.
+  if (e.type === 'repeat' && /[.!?\u2026\u0964\u3002]/.test(e.original.trim())) return 'repeat_is_emphasis';
   if (e.type !== 'punctuation' && movesFirstMark(raw, e, R)) return 'changes_sentence_type';
   // Whatever its label, no edit leaves two end marks touching that the raw kept apart: a filler
   // removal of " um" alone out of "She said no. um." would ("no.."); the rules take " um." with its
@@ -1055,6 +1116,29 @@ function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, R: Langu
  * Verify a list of edits. Rule edits should be passed first: on overlap,
  * the earlier accepted edit wins.
  */
+
+/**
+ * Engine 9: a repeat or false start is removed because its twin stays. Where two edits remove both twins
+ * ("the the" with one edit on each), the words are gone, not repaired. Returns the spans of the twin the
+ * edit relies on (before it, after it), for verifyEdits to check against the other accepted edits.
+ */
+function twinSpans(e: Edit, raw: string, R: LanguageRules): Array<[number, number]> {
+  const removed = R.words(e.original).map((w) => R.norm(w)).filter((w) => e.type !== 'false_start' || !R.isFiller(w));
+  if (removed.length === 0) return [];
+  const spans: Array<[number, number]> = [];
+  const beforeToks = R.tokens(raw.slice(0, e.start));
+  const beforeTake = beforeToks.slice(-removed.length);
+  if (beforeTake.length === removed.length && beforeTake.every((t, i) => R.norm(t.word) === removed[i])) {
+    spans.push([beforeTake[0].start, beforeTake[beforeTake.length - 1].end]);
+  }
+  const afterToks = R.tokens(raw.slice(e.end)).filter((t) => e.type !== 'false_start' || !R.isFiller(t.word));
+  const afterTake = afterToks.slice(0, removed.length);
+  if (afterTake.length === removed.length && afterTake.every((t, i) => R.norm(t.word) === removed[i])) {
+    spans.push([e.end + afterTake[0].start, e.end + afterTake[afterTake.length - 1].end]);
+  }
+  return spans;
+}
+
 export function verifyEdits(edits: Edit[], ctx: VerifyContext): VerifyResult {
   const R = rulesOf(ctx);
   let accepted: Edit[] = [];
@@ -1083,6 +1167,26 @@ export function verifyEdits(edits: Edit[], ctx: VerifyContext): VerifyResult {
       agreementPerSentence.set(s, n + 1);
     }
     accepted.push(e);
+  }
+
+  // Engine 9: no repeat or false start may rest on a twin that another accepted edit removes ("the the dog"
+  // to "dog"). The later edit loses; the earlier one has its twin.
+  const removes = (o: Edit, t: [number, number]) => o.replacement === '' && o.start < t[1] && o.end > t[0];
+  for (const e of [...accepted].sort(byStart)) {
+    if (!accepted.includes(e) || (e.type !== 'repeat' && e.type !== 'false_start')) continue;
+    const twins = twinSpans(e, ctx.raw, R);
+    const survives = (x: Edit, t: [number, number]) => !accepted.some((o) => o !== x && removes(o, t));
+    if (twins.length === 0 || twins.some((t) => survives(e, t))) continue;
+    // Every twin is being removed. That is fine in a run of three ("a a a"), where the edit removing the twin
+    // keeps a twin of its own; it is not fine when the two edits remove each other's last copy.
+    const removers = accepted.filter((o) => o !== e && twins.some((t) => removes(o, t)));
+    const chainOk = removers.some(
+      (o) => (o.type === 'repeat' || o.type === 'false_start') && twinSpans(o, ctx.raw, R).some((t) => survives(o, t)),
+    );
+    if (!chainOk) {
+      rejected.push({ edit: e, reason: 'not_a_repeat' });
+      accepted = accepted.filter((a) => a !== e);
+    }
   }
 
   // Change ceiling, applied to model edits as a whole: if the model touched

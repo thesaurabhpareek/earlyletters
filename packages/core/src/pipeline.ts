@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 8;
+export const ENGINE_VERSION = 9;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -191,6 +191,18 @@ export const ENGINE_VERSION = 8;
 //     into "Usha, she came over.", nor a family term "Um" turn "She was, um,
 //     tired." into "She was, Um, tired." (round 2).
 //   Golden corpus: every engine 7 case reads the same; six cases added.
+// 9 (2026-11-20): refusals only, from the 11 Nov 2026 attack run on the verifier. Every
+//   change refuses more; engine 9 accepts no single edit engine 8 refused.
+//   - A punctuation or paragraph edit may not remove or add a break or comma after a
+//     negation that does not start a sentence ("did not. Eat" to "did not eat"), put a
+//     comma-free vocative against a kinship or capitalised word, split or join digits,
+//     or add a symbol, emoji or ellipsis.
+//   - A repeat or false start may not remove a number ("5, 5 times"), a repeat that ends
+//     a sentence ("I do. I do."), or an emphasis word or phrase of content words. A
+//     phrase restart must be function words, negations or modals, or end on a word that
+//     needs what follows.
+//   - Two accepted removals may not take every twin of one repeated word ("the the").
+//   Golden corpus: every engine 8 case reads the same.
 
 export interface CleanOptions {
   level: EditLevel;

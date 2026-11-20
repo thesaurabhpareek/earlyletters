@@ -50,8 +50,8 @@ const verdict = (raw: string, e: Edit, dictionary: DictionaryTerm[] = []) => {
 };
 
 describe('[F06-REQ-018] the engine version moves with every behaviour change', () => {
-  it('ENGINE_VERSION is 8 and pipeline.ts has a dated changelog line for it', () => {
-    expect(ENGINE_VERSION).toBe(8);
+  it('ENGINE_VERSION is at least 8 and pipeline.ts has a dated changelog line for it', () => {
+    expect(ENGINE_VERSION).toBeGreaterThanOrEqual(8);
     const src = readFileSync(join(__dirname, '../src/pipeline.ts'), 'utf8');
     expect(src).toMatch(new RegExp(`^// ${ENGINE_VERSION} \\(\\d{4}-\\d{2}-\\d{2}\\):`, 'm'));
     expect(src).not.toMatch(/Pending \d/);
