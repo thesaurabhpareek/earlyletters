@@ -15,6 +15,7 @@ Agent: mobile (markers) with ops (profile and guards)   Lane: Pack 8 + Pack 10  
      [NS-34-R6] markers content-free         (the union of events is closed; a canary string passed through any marker path never appears in the ring; a scan finds no `mark(` argument that is not a literal or a number)
    apps/mobile/test/store-flags.test.ts gains `EXPO_PUBLIC_PERF` as a flag allowed only on the `perf` profile: `[FR-OPS-22] the perf flag is off in every other profile`.
    .github/scripts/seam-guard.test.mjs gains: `[NS-34-R6] a store bundle does not contain the marker module` (positive control: the perf export does).
+     [FR-OPS-22] the perf profile is not a store profile, is named in no `submit` entry of eas.json and in no workflow (`grep -rn perf .github/workflows` finds no `--profile perf`)
    Red on develop: `git grep EXPO_PUBLIC_PERF` -> 0 hits [V]; no `perf` profile (eas.json profiles: development, preview, production, testflight [V]).
 
 3. FILES
@@ -30,9 +31,9 @@ Agent: mobile (markers) with ops (profile and guards)   Lane: Pack 8 + Pack 10  
    scripts/release/store-flags.mjs:20-22  STORE_FLAGS rows (PHOTOS, BOOK_SEARCH) with `allowedOn`; `isStoreProfile` :38 reading distribution "store" or none
    .github/scripts/seam-guard.mjs:80      BUNDLE_PATHS; the script exports each store profile and searches it for the e2e seam: extend, do not add a second export
    apps/mobile/src/lib/resilience/global-errors.ts:49  the only `console` call in app source: markers must not use console
-   OPEN DECISION: a profile with distribution "store" is a store profile to every guard (the perf profile would need `allowedOn` entries); "internal" (ad hoc) needs registered devices. Default per MEASUREMENT-PLAN H1: store, clone of testflight. Stop and ask before choosing.
+   DECISION (review B): the default is `distribution: "internal"` (ad hoc, registered devices, like `development`). A `store` profile is a store profile to every guard (`isStoreProfile`, store-flags.mjs:38) and cannot honestly be called "no marker code in a store build". The founder may still choose store (TestFlight) later; that is his call and needs `allowedOn` entries.
 
-6. DATA AND SECURITY: Data classes: L1 timing only. Marker = event name from a closed list plus one number; never a letter, name, path, id, query, date of birth, file name or picture dimension. Export: a dev-only button writes `perf-<run>.json` and opens the iOS share sheet to the founder's own Mac; never uploaded, logged or sent to analytics. Boundary: no content in logs (CLAUDE.md privacy rules).
+6. DATA AND SECURITY: Data classes: L1 timing only. Marker = event name from a closed list plus one number; never a letter, name, path, id, query, date of birth, file name or picture dimension. Export: a dev-only button writes `perf-<run>.json`, where <run> is the UTC start time as `YYYYMMDDTHHMMSSZ` plus a counter (`-1`), never a name, id or path and opens the iOS share sheet to the founder's own Mac; never uploaded, logged or sent to analytics. Boundary: no content in logs (CLAUDE.md privacy rules).
    Read: security-architect (eas.json, seam guard), privacy. Fail closed: if the flag is not literally "on", `mark` does nothing and is removed from store bundles.
 
 7. LIBRARIES: none. `performance.now()` on Hermes [U resolution on SE 3]; frame hitches come from Instruments, not markers.
