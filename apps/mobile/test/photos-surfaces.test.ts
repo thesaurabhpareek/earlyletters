@@ -35,6 +35,34 @@ const rel = (f: string) => relative(SRC, f);
 const APP = walk(join(SRC, 'app'));
 const HOME = join(SRC, 'app', '(tabs)', 'index.tsx');
 
+describe('[NS-01-R4][NS-01-R52] leaving without the letter takes the picked picture with it; Keep stores it', () => {
+  // Each test reads only the handler that must make the call, so removing that one line fails it.
+  const body = (file: string, from: string, to: string) => {
+    const src = readFileSync(join(SRC, file), 'utf8');
+    const start = src.indexOf(from);
+    expect(start, from).toBeGreaterThan(-1);
+    return src.slice(start, src.indexOf(to, start + from.length));
+  };
+  it('[NS-01-R4][NS-01-R52] Listen\'s Close discards the pending picture before it leaves', () => {
+    const close = body('app/listen.tsx', 'const close = () => {', '\n  };');
+    expect(close).toMatch(/discardPendingPhoto\(\);[^\n]*\n\s*if \(router\.canGoBack\(\)\) router\.back\(\);/);
+  });
+  it('[NS-01-R4][NS-01-R52] Listen\'s confirmed Let it go discards the pending picture after the take is let go', () => {
+    const discard = body('app/listen.tsx', 'const discard = () => {', 'const typeInstead =');
+    expect(discard).toMatch(/if \(id\) letItGo\([^\n]*\n\s*discardPendingPhoto\(\);[^\n]*\n\s*router\.back\(\);/);
+  });
+  it('[NS-01-R4][NS-01-R52] Home, on coming back into focus, discards a picture left behind', () => {
+    const start = body('lib/photos/use-photo-start.ts', 'useFocusEffect(', '\n  );');
+    expect(start).toMatch(/useCallback\(\(\) => \{\s*void getPending\(\)\?\.discard\(\);\s*\}, \[\]\)/);
+  });
+  it('[NS-01-R5][NS-01-R17] Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
+    const save = body('app/review.tsx', 'const save = async (inBook: boolean) => {', 'const keepRecordingOnly =');
+    const kept = save.indexOf('saveLetterFromDraft(');
+    const stored = save.indexOf('await commitPendingPhoto(draft.id, finalText);');
+    expect([kept > -1, stored > kept, stored < save.indexOf('finishSave(inBook, firstLetter);')]).toEqual([true, true, true]);
+  });
+});
+
 describe('[NS-01-R1] only Home registers a photo start', () => {
   it('[NS-01-R1] exactly 1 photo start exists in the app, in Home, inside the capture cluster beside Speak and Type', () => {
     const renders: { file: string; node: ts.Node }[] = [];

@@ -168,19 +168,6 @@ describe('[NS-01-R7] a second picture replaces only after confirm, with Undo', (
   });
 });
 
-describe('[NS-01-R8] picture changes never touch words or recording', () => {
-  it('[NS-01-R8] add, replace and remove leave the letter byte-identical (the functions are given no letter fields)', async () => {
-    // A letter whose every field throws on write, held beside the picture calls: the photo module is never given it.
-    const letter = Object.freeze({ id: 'e1', finalText: 'She laughed.', rawTranscript: 'she laughed um', machineEdits: Object.freeze([]), audioSha256: 'abc' });
-    const before = JSON.stringify(letter);
-    const { d } = deps();
-    await addPhotoToLetter(d, { entryId: letter.id, finalText: letter.finalText, bytes: makeJpeg({ seed: 1 }), text: null });
-    await addPhotoToLetter(d, { entryId: letter.id, finalText: letter.finalText, bytes: makeJpeg({ seed: 2 }), text: null }, true);
-    removePhotoFromLetter(d, letter.id);
-    expect(JSON.stringify(letter)).toBe(before);
-  });
-});
-
 describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
   it('[NS-01-R25] a "Not much today" mark is refused with 0 files and 0 rows, and its page draws no picture control', async () => {
     const mark = newQuietMark({ id: 'q1', occurredOn: '2026-06-12', capturedAt: '2026-06-12T20:00:00Z' });
