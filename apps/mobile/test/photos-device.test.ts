@@ -1,6 +1,6 @@
 /// <reference types="node" />
-// Device-side pieces of Photo with a letter that run in Node: the picker adapter (C5, C6), the temporary originals
-// (C7), the entry_media table (ADR 0028 D1) and the housekeeping sweep. The native parts are device checks in the PR.
+// Device-side pieces of Photo with a letter that run in Node: the orientation baker (C7), and the scribe-photo Swift
+// module read as source (C8). What only a phone can show is listed as device checks in the PR.
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
