@@ -10,7 +10,7 @@ import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { adoptPending } from '../src/lib/photos/adopt';
-import { editPhotoWords } from '../src/lib/photos/attach';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, undoPhotoChange, type UndoTicket } from '../src/lib/photos/attach';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
 import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-media';
 import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
@@ -386,6 +386,29 @@ const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string
      VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, 'x', '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
     id, deleted,
   );
+
+describe('[NS-01-R8] picture changes never touch words or recording', () => {
+  it('[NS-01-R8] add, replace, Undo, remove and editing the words about the picture leave the letter\'s entries row as it was, against the real store', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    db.run(
+      "UPDATE entries SET capture_mode = 'spoken', raw_transcript = 'she laughed um', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
+    );
+    const row = () => db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', 'e1');
+    const before = row();
+    const d = { ...deps().d, store: entryMediaStore(db) };
+    const one = { entryId: 'e1', finalText: 'She laughed.', text: 'Rain boots', place: 'the back step' };
+    expect((await addPhotoToLetter(d, { ...one, bytes: makeJpeg({ seed: 1 }) })).status).toBe('added');
+    const replaced = await addPhotoToLetter(d, { ...one, bytes: makeJpeg({ seed: 2 }) }, true);
+    expect(replaced.status).toBe('replaced');
+    expect(await undoPhotoChange(d, (replaced as { ticket: UndoTicket }).ticket)).toBe(true);
+    expect(editPhotoWords(d, 'e1', { text: 'Asha in the rain', place: 'the park' })).toBe(true);
+    expect(removePhotoFromLetter(d, 'e1')).not.toBeNull();
+    expect(row()).toEqual(before);
+    expect(before).toMatchObject({ final_text: 'She laughed.', raw_transcript: 'she laughed um', audio_sha256: 'abc', audio_bytes: 24000 });
+  });
+});
 
 describe('[ADR 0028 D1] entry_media: local migration 11', () => {
   it('[D1] the migration adds the table and its three indexes only, and the newest version is 11', () => {
