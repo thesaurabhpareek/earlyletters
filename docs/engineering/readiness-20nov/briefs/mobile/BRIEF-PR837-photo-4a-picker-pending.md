@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `404ca293`, 20 Nov 19:00 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `404ca293`, 20 Nov 19:04 UTC).
 Blocked until: #836 merged (base `feat/mobile-photo-3b-stored-copy`); the founder's size exception at the new size (718 added, 14 removed, 15 files; reviewers counted 732, 33 over the 699 the exception covered) [V]; #854 merged. Open on the card: NS-01-R17b (progress and native Cancel) is NOT in this slice; it is brief P-1 (BL-950 or BL-951).
 
 ```
-BRIEF PR-837 (BL-931 slice 4a)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:00 UTC
+BRIEF PR-837 (BL-931 slice 4a)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When the photo start is built behind its switch, the system picker is the only source, it returns one still,
@@ -40,7 +40,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
    Owner of the read: security-architect (posted lens B). Native code change: none in this PR.
    Privacy line: no PhotoKit call; the picker is PHPicker (no permission).
 
-7. LIBRARIES: none. LD-07 AVOID expo-image-picker (CR-65, ruled), LD-08 OWN extend scribe-photo (PR #919). Podspec says iOS 16.4
+7. LIBRARIES: none. LD-07 OWN the single pick and AVOID expo-image-picker (CR-65, ruled; PR #919). Podspec says iOS 16.4
    (`ScribePhoto.podspec:9`), the app targets 17.0 (`app.config.ts:44`): do not assume an API from the podspec.
 
 8. BUDGETS (PR #928): C-03 thumbnail p95 1,000 ms from picker close (device, HOLD the flag); L-03 no work added before first frame
