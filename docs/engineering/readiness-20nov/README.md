@@ -31,7 +31,7 @@ Not merged yet [V at 21:10 UTC]:
 2. The constitution holds: the machine may remove and repair, never add meaning; no content in logs, analytics or crash reports.
 3. Words a parent reads are PROPOSED content keys only; the founder approves them.
 4. Merge gate D-132: two independent counted reviews at the exact head, green `required` CI; app code also needs the green macOS store-profile launch. Reviews are posted only after the reviewer hands back and the head is at least 10 minutes old.
-5. Founder-only: legal and docs merges, applying hosted migrations, accounts, secrets, money, dependencies, size exceptions, workflow patches, dates.
+5. Founder-only: legal merges (docs/legal only, D-132), applying hosted migrations, accounts, secrets, money, dependencies, size exceptions, workflow patches, dates.
 6. Claim the work on `docs/agents/BOARD.md` before starting, one brief per agent, one concern per PR, at most 400 changed lines.
 7. Numbers: migration numbers come from merge order, never from a design (CR-69 A11); ids from `scripts/agents/next-id.mjs`.
 
@@ -39,9 +39,9 @@ Not merged yet [V at 21:10 UTC]:
 
 Source: plan 17 and 17b, the three brief READMEs (`briefs/*/README.md`). Waves and sizes there are [E].
 
-1. Start-now work with no founder step: the data briefs T1 (synced-column drift guard), T3 (phone-class label check) and BL-959; the CI and platform briefs that need no workflow paste; the photo stack reviews (#835 to #840).
+1. Start-now work with no founder step: the data briefs T1 (synced-column drift guard), T3 (phone-class label check) and BL-959; the CI and platform briefs that need no workflow paste; the photo stack reviews (#835 to #840; merging them needs the founder's size exceptions).
 2. Wave 1 fixes: second-account book (BL-922, BL-961), consent retry, quiet books, held screen. These come before any new field group.
-3. Drop A with the next build: days stack A, kill-switch PR (CR-69 A5), notification budget registry (BL-966, `TOTAL_MAX = 60`, plan notices first).
+3. Early work the plan places before the first-run drop: days stack A, the one kill-switch PR (CR-69 A5) and the notification budget registry (BL-966, `TOTAL_MAX = 60`, plan notices first). Which build each ships in is the plan's drop table (17b), a recommendation until you confirm.
 4. First-run Drop D (NS-38 to NS-45, 21 PRs [E]) ships before any family outside the founder's signs in (E43). Consent order (CR-69 A6): founder applies migration `20261108000000`; builder ships with its release blocked until the APPLY.md file 29 check is shown; measured gate (zero null `app_build` sheet acts for 14 days, engineering default); then the founder sets `app.consent_fields_required`.
 5. Drop B (days B stack) only if its gates close before the 1.0 freeze; Drop C and NS-52 after 1.0 is approved; NS-51 is a spike in Build 13 and ships in 1.1 after counsel and device rows (E32; the plan states this as a default, the founder confirms).
 6. Platform: label guard activation, SHA pins, secret scan, PR size and coverage jobs, lint introduction; each needs a founder workflow paste or dependency approval first.
@@ -54,7 +54,7 @@ Source: plan 17 and 17b, the three brief READMEs (`briefs/*/README.md`). Waves a
 - [x] Briefs merged except #946 and #952 [V].
 - [ ] Amendments #994 to #996 merged.
 - [ ] Plan #847 reviewed; founder size exception.
-- [ ] Product and design open questions answered (Q-P1 to Q-P24, Q-D1 to Q-D13 on #934 and #935).
+- [ ] Product and design open questions answered: my 24 product and 13 design question rows are PR comments starting `<!-- req-question:<row id> -->` on #934 (merged) and #935 (closed, superseded by #978); product was asked on 20 Nov to close them in one errata round.
 - [ ] Founder decisions in section 5.
 
 ## 5. Founder decisions, with my recommendation (none are decided here)
