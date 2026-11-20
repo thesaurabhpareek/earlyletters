@@ -236,3 +236,147 @@ Checks I ran on this table: every new name is 60 characters or fewer, has one co
 | V16, V17 | V17 pins the SDK options of section 3.4 and the error options of section 4.2 |
 | V18 (new) | One module: only `packages/analytics/src/posthog.ts` imports `posthog-react-native` or `@posthog/react-native-plugin`; no file calls `.capture(`, `.captureException(`, `.identify(`, `.screen(`, `.captureLog` or a survey API outside it; no `PostHogProvider` anywhere. A lint rule plus a test (PostHog's handbook: "let nothing else call `posthog.capture`" and block it with a lint rule [V]) |
 
+## 3. How we use PostHog here
+
+### 3.1 One module, typed events
+
+- `packages/analytics/src/posthog.ts` is the only file that imports the SDK (V18). Everything else calls typed helpers generated from the registry (`trackScreen`, `tap`, `impress`, `perf`, and the domain trackers). A helper takes a registered id or typed properties and cannot take a free string.
+- Order inside the module for every event: consent gate (V15), registry check (V11), property check (V12, V13), sampling, then the SDK. `before_send` is the last gate (3.5).
+- If section 2.8's test shows PostHog mishandles colons, the adapter swaps `:` for `__` on the way out and back in the read-back tests; the registry name does not change.
+
+### 3.2 One project, one environment property
+
+- The free plan has one project [V posthog.com/pricing]. Production, test and our own phones share it, so we separate them by data, not by project.
+- Only the `production` build profile ever sends (`analytics.md` section 1a); other profiles do not construct the SDK. Two global properties let us filter what remains (both enums or bools on every event, added to the globals list of `00-event-standard.md` section 6): `build_kind` (`store, testflight, preview, dev`) and `is_internal` (bool, true on the founder's and testers' phones, set by one local switch that is off in a store install).
+- In PostHog, project settings, "Filter out internal and test users": `is_internal` is not true. Turn the toggle on in every saved insight [V best-practices describes the setting and the per-insight toggle]. The page's other filters (email, host, IP) do not fit us: we have no email, no host, and IP is dropped.
+
+### 3.3 Identity: anonymous only, and what that costs us
+
+- Distinct id: the random id made at consent (`consent.ts`), lowercase uuid, same format everywhere (PostHog: use one id format on every platform, `user-456` and `USER-456` are two people [V best-practices]). Never an email, account id, Supabase user id, device id or `appAccountToken`.
+- We never call `identify` with an account id, an email or anything that could be joined to one. We call `identify` zero times: PostHog's mobile default is identified-only, which means events are anonymous unless a profile already exists [V posthog.com/docs/data/anonymous-vs-identified-events]; `personProfiles` is set in `posthog.ts` per `data-steward.md` section 7 [V from #1037].
+- On withdrawal: `optOut()` then `reset()`, retire the id, clear the queue (`00-event-standard.md` section 11). A later yes makes a new id. We never reuse an old or deleted id (PostHog: avoid reusing a deleted distinct id; deletion is asynchronous and reuse gives unexpected results [V posthog.com/docs/privacy/data-storage]).
+- Servers do not send to PostHog at all, so PostHog's warning about catch-all ids like `system` or `backend` [V best-practices] cannot apply. If that ever changes, those events must be sent with person processing off, not with a made-up id.
+
+What anonymous-only costs us, from PostHog's own page [V anonymous-vs-identified-events]:
+
+| We lose | We keep | Matters to us? |
+|---|---|---|
+| Person properties, cohorts by person property, group analytics, Lifecycle insights, the persons table | Event properties, trends, funnels, SQL insights | No: we want no person properties; Lifecycle is not on our list |
+| Retention on anonymous events: the page does not say [UNVERIFIED] | | Yes: test it in the section 2.8 throwaway project before `decision-science` relies on retention |
+| One person across two consent periods | Each yes is a new id, so a person who toggles twice counts twice. That is the design (`00` section 11), and it biases unique-person counts up | Read-outs must say so |
+| Easy deletion: events with no person profile cannot be removed by person deletion until a profile is created with a `$set` event [V data-storage] | | Yes: this is F-2. The drill IN-DS-06 decides. If it fails, the fallback is the consent id as an identified id (never an account id), which PostHog says can cost up to about 4x per event [V anonymous-vs-identified-events]; the first 1,000,000 events a month are free either way [V same page], so at our volume the cost is zero until the cap. That is a founder, `privacy` and counsel decision, not mine |
+
+### 3.4 SDK options: every default that matters, and our value
+
+Options and defaults are from the React Native library page [V posthog.com/docs/libraries/react-native]. We run `posthog-react-native` 4.78.4 [V `analytics.md`, read earlier from `posthog.ts`]. V17 pins every row with "our value".
+
+| Option | PostHog default | Our value | Why |
+|---|---|---|---|
+| `defaultOptIn` | `true` | `false` | nothing tracked until `optIn()`; belt and braces, since the SDK is also constructed only after a yes (V15) |
+| `disabled` | `false` | `true` in every profile except `production` | no data from dev, e2e, preview |
+| `captureAppLifecycleEvents` | `true` (since 4.39.0) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
+| `sendFeatureFlagEvent` | `true` | `false` | flags are off; it would send `$feature_flag_called` |
+| `preloadFeatureFlags` | `true` | `false` | no flag requests |
+| `disableRemoteFeatureFlags` | `false` (4.49.0+) | `true` | experiments use our own exposure event (3.10) |
+| `disableGeoip` | `false` | `true` | no location from IP |
+| `enableSessionReplay` | `false` | `false` (never) | replay records screens; never |
+| `persistence` | `file` | `memory` | nothing on disk; cost: a queue is lost if the app is killed [V data-steward section 4] |
+| `flushAt` | 20 | 20 | default is fine |
+| `flushInterval` | 10000 ms | 10000 ms | default; we also flush on background |
+| `maxBatchSize` | 100 | 100 | must be higher than `flushAt` [V] |
+| `maxQueueSize` | 1000 | 100 [E: memory-only queue, bounded; a phone offline for a day sends far fewer than 100 of our events] | bound memory, bound a retry storm |
+| `errorTracking.autocapture` | not stated | section 4.2 | |
+| `before_send` | `undefined` | our allowlist function (3.5) | returning `null` drops the event [V] |
+| `host` | `https://us.i.posthog.com` | our proxy host (3.7) | EU Cloud is `https://eu.i.posthog.com` [V]; region is counsel's |
+
+Autocapture, logs and surveys:
+- Autocapture comes from `PostHogProvider` (`captureScreens`, `captureTouches`) [V from the page as read in the brief; the options table I re-read did not list them, so the provider options are UNVERIFIED this session]. We do not use `PostHogProvider` at all (V18), so there is nothing to switch off by option.
+- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
+- The Expo config plugin `posthog-react-native/expo` and what needs a development build (session replay, native crash capture): the page I re-read only shows install commands; the plugin and source map settings are on the source maps page (section 4.5) [V], and the "needs a development build" statement from the brief is UNVERIFIED.
+
+### 3.5 `before_send`: the last gate
+
+`before_send(event)` receives every outgoing event and may change it or return `null` to drop it [V]. Ours (`posthogBeforeSend`, which exists for the normal events [V TRACKING_PLAN 3.2]) does, in order: drop if consent is not granted; drop if the name is not in the registry; rebuild `properties` from the registry list for that name plus the ten `$` keys (never delete known-bad keys, copy known-good ones, so a new SDK field is dropped by default); drop on any V13 pattern or string over 40 characters; for `$exception` use the reduction in 4.4. A dropped event is counted on the phone by reason code only, never by value. The canary test (V14) pushes the Asha strings through every helper and through `before_send` and fails on any hit.
+
+### 3.6 Offline, flush and retry
+
+- Events are queued in memory (`persistence: 'memory'`), flushed at 20 events or every 10 seconds, and on going to the background. Capture time is the SDK's, so late sends still land in the right hour.
+- PostHog says not to assume event ordering [V best-practices]. No funnel step may depend on two events that could arrive together within a second unless the funnel is ordered by the SDK timestamp; V9 funnels use steps that are separate user actions.
+- How the React Native SDK retries after being offline, and whether it drops the oldest event at `maxQueueSize`, is not written on the pages I read [UNVERIFIED]. QA step in 6.3: airplane mode, send 150 events, restore the network, count.
+- A single distinct id sending about 5,000 events a minute hits a rate limit and loses ordering [V best-practices]. Ours sends about 300 a month per parent, so only a bug can reach it. The client caps itself at 60 events a minute [E: my proposal] and drops the rest, counted by reason.
+
+### 3.7 Reverse proxy: default yes
+
+PostHog recommends routing events through your own domain [V best-practices]. Its managed reverse proxy is free for PostHog Cloud users, handles SSL and routing, runs through Cloudflare, and removes the `Cookie` header before forwarding [V posthog.com/docs/advanced/proxy]. Default: use the managed proxy on a domain of ours, so the host in the app is ours and can be changed without an app update. Costs and risks:
+- It adds Cloudflare to the path: a subprocessor question for counsel [UNVERIFIED how counsel reads it].
+- The page says nothing about client IP forwarding or stripping [V]. IP stays a risk until the project setting that discards client IP data is on: best-practices mentions that setting exists [V], where the toggle is I did not read [UNVERIFIED]. It is on in our project, and `disableGeoip` is already true.
+- A DNS record on our domain is a founder step. If the founder declines, the app talks to PostHog directly and the host option is the Cloud host.
+
+### 3.8 Free-plan cap, billing limit and alerts
+
+- Free plan: no card, 1 project, 1-year retention [V pricing]; 1,000,000 product-analytics events a month and 100,000 exceptions a month, billed separately [V pricing: "1,000,000 free Product analytics events and 100,000 free exceptions"].
+- PostHog emails the organisation owner at 80 and 100 percent of the free allotment, and of any billing limit; data over a set billing limit is lost for good [V posthog.com/docs/billing/limits-alerts]. The pages do not say what happens to events over the free allowance with no card and no limit set [UNVERIFIED]; plan as if they are dropped.
+- Rules: never add a card; set the billing limit if the free plan allows one [UNVERIFIED whether it does without a card]; the founder reads the 80 percent email as a release gate for sampling (TRACKING_PLAN 5.3); `ops` puts the monthly count in the weekly read-out. Our own budget is section 6.5.
+
+### 3.9 Internal and test traffic
+
+Section 3.2 (`is_internal`, one switch). Test builds that never construct the SDK send nothing. The canary and the throwaway project use fake Asha data and a different project token; the production token is in no test. PostHog's web call `setInternalOrTestUser()` is for a browser SDK [V best-practices]; I did not find a React Native equivalent [UNVERIFIED], which is why we use our own property.
+
+### 3.10 Experiments: our own exposure event, flags off
+
+Feature flags and PostHog Experiments stay off (V17). An arm is drawn on the phone from a registered closed list and kept on the phone. We send `system:experiment_exposure_view` with `experiment` and `arm` (id-ref enums), and analyse with funnels on that event (`00-event-standard.md` section 11). The cost: no PostHog experiment statistics screen and no remote rollout; we read funnels by hand. FR-DAT-42 already says a 15 to 25 family beta supports no effect claim.
+
+## 4. Crash reporting: PostHog Error Tracking, no second vendor
+
+### 4.1 What it is and what it costs
+
+Error Tracking captures `$exception` events. The first 100,000 exceptions a month are free, billed on `$exception` events and separate from the 1,000,000 events [V posthog.com/error-tracking/pricing, posthog.com/pricing]. Our crash tool is therefore the same SDK, the same consent switch and the same module; `analytics.md` section 2's Sentry and GlitchTip rows are closed.
+
+### 4.2 Options (installation page [V posthog.com/docs/error-tracking/installation/react-native])
+
+`errorTracking.autocapture` has four options. The page states no defaults, so we set all four:
+
+| Option | What it does | Our value |
+|---|---|---|
+| `uncaughtExceptions` | global handler for uncaught JS errors | `true` |
+| `unhandledRejections` | unhandled promise rejections | `true` |
+| `console` | captures console logs as errors by level | `[]` (empty). Console output can carry anything a developer printed, including a name or a sentence; the page itself says to use `console: []` when an error boundary double-captures. We use it for the privacy reason |
+| `nativeCrashes` | iOS and Android native crashes | `false` until the founder approves the dependency in 4.3 |
+
+### 4.3 Native crashes: a founder decision
+
+Native crash capture needs the optional package `@posthog/react-native-plugin` (installed with `npx expo install @posthog/react-native-plugin@2`), the "Enable exception autocapture" project setting, and native debug symbols uploaded at build time; without the package, native capture does nothing and JS capture still works [V]. For the iOS Swift Package Manager path the page asks for plugin 2.4.0 or later, Xcode 16 or later and an iOS 15.1 or later target [V]. A new dependency is the founder's (`package.json`, ADOPTION-RULES, never an agent). Until the founder says yes: `nativeCrashes: false`, and Apple's crash reports are the native baseline (4.7).
+
+### 4.4 What an exception may carry: the `before_send` reduction
+
+PostHog's docs do not describe redacting exception messages [V: the installation page has nothing on `before_send` for `$exception` or on personal data in stack traces]. So we do it, and we rebuild rather than clean:
+
+- Keep: the event name `$exception`; the distinct id; the error class (`type`), only if it is a built-in JavaScript error name or one of our closed fault codes, otherwise the string `other`; the stack frames (function name, bundle-relative file, line, column, `in_app`); `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type`; `build_kind`, `is_internal`.
+- Drop: the message text (`value`) of every exception and of every chained cause; any property a caller attached to the capture; breadcrumbs or console lines; any URL, path outside the bundle, or header. Our code never needs the text: the closed code is the class.
+- The exact `$exception` property names (I believe an `$exception_list` of entries with a type, a value and a stack trace) are UNVERIFIED: I did not read an `$exception` payload. The allowlist is written from one real payload captured in the throwaway project (6.3). Until then the rule is "copy only the fields above; drop everything else".
+- `captureException` with free text is banned: no typed helper accepts a string message. The only way in is the global handlers of 4.2 and a helper `reportFault(code)` that takes a closed fault code (`ops` list, #1044) and builds the error itself.
+- Same gate as every event: no consent, no SDK, so a crash in the first run before a yes is not captured by us (the Apple baseline covers it).
+- Crash loops: a client cap of 5 exceptions per foreground session and one per error class and top frame [E: my proposal], so a loop cannot burn the 100,000 a month.
+
+### 4.5 Source maps and native symbols: a build step [V posthog.com/docs/error-tracking/upload-source-maps/react-native]
+
+- Tool: `posthog-cli` (minimum 0.7.8): `npm install -g @posthog/cli`, then `posthog-cli login`.
+- JavaScript (Hermes) source maps: `npx expo export --dump-sourcemap`, then `posthog-cli hermes upload --directory dist`. For EAS Update, source maps are NOT uploaded automatically; run the upload after `eas update`.
+- Environment: `POSTHOG_CLI_HOST` (default `https://us.posthog.com`), `POSTHOG_CLI_PROJECT_ID`, `POSTHOG_CLI_API_KEY`, which is a personal API key with error tracking write and organisation read scopes. That key is a founder-held secret in the build service's secrets, never in the repo, never in a log. Where EAS stores it I did not read [UNVERIFIED].
+- Expo: in `metro.config.js`, `getPostHogExpoConfig(__dirname)` from `posthog-react-native/metro`; in `app.json`, the plugin `posthog-react-native/expo` with `uploadNativeSymbols` (true, or `{ "includeSource": true }`). Ours: `uploadNativeSymbols: true`, `includeSource` off (it uploads native source files; we have no need and do not want to widen what leaves the build).
+- iOS dSYM: a Run Script phase last in the app target calling `upload-symbols.sh`; Release setting `DEBUG_INFORMATION_FORMAT` to "DWARF with dSYM File". The Expo plugin wires this.
+- How a build is matched to its maps (release and version identifiers) is not described on the page [V: "not described"]; QA test in 6.3 with a deliberate crash on a test build.
+- This is an `ops` and founder step. I name the commands; I do not add them to `eas.json`.
+
+### 4.6 First fix: the three date-bearing throws
+
+`age.ts:15`, `child.ts:28` and `child.ts:33` put a date into an error message (carried from OBSERVABILITY-WITHOUT-CONTENT section 3, per `analytics.md` risk 5; I did not read the code, so this is UNVERIFIED by me). A child's date is L4. The reduction in 4.4 drops messages anyway, but the fix does not depend on it: make each message a static string, with the closed code as the class. This is backlog row IN-09 and a dependency of the production flip (IN-08), as `privacy` asked in review B.
+
+### 4.7 Apple Xcode Organizer: the no-SDK baseline
+
+Apple's crash reports, from people who share diagnostics with developers, arrive in Xcode Organizer and App Store Connect with no SDK and no change to the label (`data-steward.md` section 3.3: crashes, opt-in, no join to our data [V from #1037]). They stay on regardless of what PostHog does. They are the only crash source for a first run before consent and for people who say no to us. Crash-free sessions in 1.0 stay Apple's number (`analytics.md` section 8).
+
+### 4.8 Label and consent
+
+Crash and performance data move the App Store privacy label from usage data alone to usage data plus diagnostics (`analytics.md` section 1a). The consent sheet must name crashes in its Shown line (`data-steward.md` section 6; PRIV-R21 lines Shown, Records, Never, Decline). One switch covers usage and crash (FD-3 default). Wording, label and counsel are the founder's.
+
