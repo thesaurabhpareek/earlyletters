@@ -10,7 +10,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (the photo and BL-952 stacks a
 
 1. GOAL: When a pull request changes more than 400 lines or 20 files (lockfile, generated files, fixtures, golden corpora and doc images excluded), the check prints the two numbers and fails unless the founder's exception proof is present.
 
-2. CARD ROWS and TEST TITLES: CODE-R02 (docs/engineering/01-code-and-change.md:31, a MUST), CODE-G1 (ENFORCEMENT.md:16, :66), AIE-R13 (:231). No NS row.
+2. CARD ROWS and TEST TITLES: CODE-R02 (docs/engineering/01-code-and-change.md:31, a MUST), CODE-G1 (ENFORCEMENT.md:16 is the CODE-R02 row, :66 the CODE-G1 definition [V]), AIE-R13 (:231). No NS row.
    Tests: scripts/guards/pr-size.test.mjs [no root runner lists scripts/guards tests today: grep package.json and workflows, 0 hits V, so wire it into root `test` (package.json:11) in the same PR]:
      [CODE-R02] 401 changed lines fails            [CODE-R02] 21 files fails            [CODE-R02] a lockfile-only change of 3,000 lines passes
      [CODE-R02] an exception line without the founder's proof still fails
@@ -40,7 +40,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (the photo and BL-952 stacks a
 
 10. PR BREAKDOWN: PR 1 script + tests ~140 lines, 3 files; PR 2 workflow proposal ~60 lines, 2 files | base develop | advisory until the founder pastes it.
 
-11. LENSES: A principal-architect (`scripts/*.mjs`), B qa.
+11. LENSES: A principal-architect (`scripts/*.mjs`), B qa. Wiring: scripts/guards tests are in no CI list [V], so the test goes in the root `node --test` list (package.json:11, compliance-engineer reads `package.json`). The base-branch fetch the label check and diff need is the single `unit` step in BRIEF CI-PIN section 10.
 
 12. ORDER: any time. Before the Build 14 stacks start (they are the PRs it will measure). Blocked by the founder's proof choice.
 

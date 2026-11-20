@@ -42,7 +42,7 @@ Agent: ops (config), principal-architect reviews   Lane: Pack 10   Build: any   
 10. PR BREAKDOWN: PR 1 config + rules + fixes for the first findings ~300 lines (config 60, test 60, cleanup 180) | PR 2 workflow proposal + ENFORCEMENT row ~70 lines | base develop | the job is advisory until the founder makes it required.
     If findings exceed 400 lines: land rules as warnings with a baseline file that only shrinks (docs/ops/lint-baseline.json), then raise them.
 
-11. LENSES: A principal-architect, B security-architect (dependency).
+11. LENSES: A principal-architect, B security-architect (dependency); mobile reads (the 49 disables and the test sit under apps/mobile/** and packages).
 
 12. ORDER: after BRIEF CI-PIN and CI-SECRET (one founder paste session); before BRIEF CI-PRSIZE only by taste. Blocked by the founder for deps and paste.
 

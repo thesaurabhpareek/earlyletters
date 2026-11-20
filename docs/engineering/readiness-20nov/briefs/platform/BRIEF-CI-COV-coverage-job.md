@@ -38,7 +38,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 2
 
 10. PR BREAKDOWN: PR 1 proposal refresh + test ~100 lines, 3 files | PR 2 floors after the first CI measure ~40 lines | base develop | job not running until pasted.
 
-11. LENSES: A qa, B principal-architect.
+11. LENSES: A qa, B principal-architect; mobile reads (the test and the coverage floors under apps/mobile/**).
 
 12. ORDER: after the founder pastes (one sitting with CI-PIN, CI-LINT). Blocking only after a week green. Blocked by the founder.
 
