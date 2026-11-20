@@ -14,7 +14,7 @@ How the numbers were made: case counts are machine-counted from the tables in fi
 | P0 rows with no row-level backlog row | 729 to 771 (docs disagree; regenerate) | BACKLOG-GAPS.md |
 | NS-01 to NS-37 P0 rows the trace reads | 299: 41 tested, 14 device, 244 untested | trace.mjs |
 | NS-38 to NS-52 P0 rows the trace reads | 0 of 238 (card 19: 98, card 21: 87, card 27: 53). CARD_FILE matches cards 00 to 12 only | trace.mjs:532 |
-| New cases written today (files 01 to 07) | 664 case ids across files 01 to 07 (priority split UNVERIFIED: authors reported P0 555, Review A recounted P0 556; the case tables are the record, and file 01 lists 102 rows against a 116 header) | this folder |
+| New cases written today (files 01 to 07) | 664 case ids across files 01 to 07 (priority split UNVERIFIED: authors reported P0 555, Review A recounted P0 556; the case tables are the record; file 01 has 116 rows, and its header status line is P0 only) | this folder |
 | Their status | BUILT 40 (25 cite an id, 15 test the behaviour with no id), PARTIAL 163, GAP 324, DEVICE 82, DOC 34, UNVERIFIED 20, COUNSEL 1 | this folder |
 | New cases with a citing or behaviour-matching test found in the repo | 40 of 664, about 6 percent (not run today) | derived |
 | Device rows run | none for Build 13 (S1-204, S1-205, S1-135 and the backup drill were still owed at the last record) | 14-test-plan.md section 8 |
@@ -91,7 +91,7 @@ Each pair is a contradiction found in the sources, not a guess. A test written t
 
 | Conflict | Files | Owner |
 |---|---|---|
-| FR-PRV-20 "no content rows without consent" vs S-1 "serve own rows, omit others'" | 07 | security-architect, Karma |
+| FR-PRV-20 "no content rows without consent" vs S-1 "serve own rows, omit others'" (T7-22 asserts the gate; T7-23 asserts export and deletion work without current consent. Write T7-23 first, it cannot weaken deletion; write T7-22 only after the ruling) | 07 | security-architect, Karma |
 | Missing file: NS-01-R56 deletes the row at the next sweep; NS-52-R40 keeps the row with a plain box (E48 changed only R36) | 03 | product |
 | NS-52-R38 forbids third-party media packages; media TDD adopts `expo-video` | 03 | product, principal-architect |
 | FR-PHS-69 checks byte caps before copy; E44 and the media TDD say a video's size is known only after | 03 | product |
@@ -102,7 +102,7 @@ Each pair is a contradiction found in the sources, not a guess. A test written t
 | `docs/tdd/new-scope/16-days-tests.md` "first sign-in adopts local days file" vs E73 | 02 | principal-architect |
 | `store.en.ts:79` "You pick the days and the time" vs NS-46-R46 for day reminders | 02 | content |
 | FR-NTC-08 is P0 but its carrier NS-48-R8 is P1 (not upgraded) | 02 | product |
-| DSR-R03 says "deletion UI not built"; screens and tests exist | 07 | privacy |
+| DSR-R03 says "deletion UI not built"; screens and tests exist (compliance-engineer fixes the rule in its own PR; no plan change) | 07 | privacy |
 | FR-SEC-24 is an opinion, not a testable row | 07 | security |
 | NS-08 "P0 at flip" rows: do they block Build 13? | 07 | product, Karma |
 | Card 19 line 16 says trace ignores NS ids; `trace.mjs:529` matches them (card range is the gap) | 01, 04 | qa |
@@ -115,6 +115,7 @@ Each pair is a contradiction found in the sources, not a guess. A test written t
 - File 06 did not read in full: `13`, `17`, `17b`, `18-errata`, TDD files 08 to 16, `docs/ARCHITECTURE.md`. File 07 did not read `18-errata`. File 02 did not open the four quality catalogues, so its row format may differ slightly.
 - Which phones the founder owns (14-test-plan section 5). Without 17.0 or 17.1 phones the NS-49 rows stay "not run" and G4 does not pass.
 - Full `npm test`, `npm run test:db`, `test:functions` on current develop.
+- Follow-ups, not done in this PR (each needs a new case id and so a recount of 664): (a) microphone denied at start, microphone revoked mid-take (take kept), notification permission revoked after reminders were planned (no planned notes left, no error); photos denied or limited is already N-04, N-14, T2-079. (b) The ARCH-P-01 to 05 constitution cases (`verifyEdits`, `raw_transcript`, `EditType`) are PROPOSED and live only in file 06 C01 to C05; the twenty-risk table has no constitution row yet. (c) The ARCH-P proposed ids are not repo ids; mark each GAP in the case tables. (d) T7-25 stays P0 and is not passing on a row-state test alone, since consent withdrawal has no control in code (risk 9). (e) Files 03 and 04 use a column layout different from 01 and 02 (no Drop column in 03); align before any single parser reads them. (f) Re-read the plan against current develop (base line is stale; Review B at 43318ef used c4ee026f).
 - Whether develop's compliance-fence failure on the push run is a push-only artifact (unread).
 
 ## 8. Files in this folder
