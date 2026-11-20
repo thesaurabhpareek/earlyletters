@@ -444,3 +444,17 @@ Karma
 - FOUNDER (defaults): CUL-Q2 store only the ticked days and treat tradition and country as a browse filter forgotten when the sheet closes (recommended; if the founder wants stored fields every rule in the file still applies); CUL-Q4 keep this store out of the iPhone backup so "only on this phone" is true (else a longer call-out); CUL-Q10 when to ask; Q-FD-1 meaning of "East East".
 - COUNSEL (need numbers from legal): export (Q5), GDPR Article 9 and US state rules for device-only data (Q6), Apple label answer (Q7), whether 4.5.4 applies to local notifications (Q11). App Review's view of an optional faith or origin question (5.1.1(iii)) found no source; fallback is a plain browse-and-tick list with no question.
 Karma
+
+## Days library rulings (20 Nov, from functions/days-library.md)
+- DL-1 (R-FD-3): Memorial Day and Veterans Day are offered with the quiet tone, name only, never pre-ticked.
+- DL-2 (Q-DAY-5): a birthday wins over a library day on the same date (amends the NS-32 priority list: birthday, then library day, then month, then evening; a typed day the parent typed still ranks first). Two ticked library days on one date give one note naming both after the tap.
+- DL-3: authorities disagree on the same festival (Eid al-Fitr 2026: 20 or 21 Mar; Diwali 2027: 28 or 29 Oct; Buddha's birthday 2026 has four dates), so the data carries one row per authority and the parent picks or moves the date. Years no authority has published are not shipped; the picker says so calmly. No date is written from memory.
+- DL-4: rule-based dates are computed on the phone, not copied from third-party tables; astronomical days are stored as a UTC instant and shown in local time, with Southern Hemisphere season names. Source licences: counsel must confirm before any table ships (FR-DAY-23).
+- DL-5 (amends N-1): 4 variants per day and 3 per season (a day recurs once a year).
+- DL-6 (Q-DAY-3): 09:00 local for a library day; one budgeted note a day still holds.
+- DL-7 (Q-DAY-4): US-only national days at first, others when the founder names a country field in scope (founder).
+- DL-8 (Q-DAY-9): a member of each tradition reviews its rows before ship.
+- DL-9 (Q-DAY-12): "East East" may mean East Asian, a culture or origin group, not a religion; the founder confirms (Q-FD-1). The library offers Lunar New Year, Mid-Autumn and Norooz as culture-led days.
+- DL-10 (Q-DAY-6): a tradition day's name on the lock screen only with its own names switch on (CB-5); privacy and counsel decide beyond that.
+- Process note: the days agent's WebFetch was not approved, so it read sources with curl through the session proxy. The sources are public statutes, observatories and calendars, and no restricted site was bypassed, but the founder is told so he can say if he wants that route closed.
+Karma
