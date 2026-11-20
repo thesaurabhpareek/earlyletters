@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkPage, loadRulingIds, parsePage, FUNCTIONS, MAX_WORDS } from "./go-no-go-check.mjs";
+import { checkPage, loadRulingIds, parsePage, isShipCall, NO_SHIP_CALL_SENTENCE, FUNCTIONS, MAX_WORDS } from "./go-no-go-check.mjs";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 const NOW = "2026-11-20T12:00:00Z";
@@ -73,7 +73,7 @@ test("n/a needs a reason", () => {
 });
 
 test("ruling ids must have a known shape and exist on this checkout", () => {
-  assert.deepEqual(run(page({ Legal: { ruling: "CLO-3", status: "pass" } })), []);
+  assert.deepEqual(run(page({ Legal: { ruling: "CLO-3", status: "pass", source: "docs/agents/exec/RULINGS.md#CLO-3" } })), []);
   assert.deepEqual(run(page({ QA: { ruling: "CR-44, D-107" } })), []);
   assert.ok(has(run(page({ QA: { ruling: "CR-99" } })), "not in the rulings or decisions logs"));
   assert.ok(has(run(page({ QA: { ruling: "ruling 3" } })), "not a known shape"));
@@ -118,4 +118,41 @@ test("ruling ids load from the three logs, and a missing log is reported", () =>
   const empty = mkdtempSync(join(tmpdir(), "gonogo-empty-"));
   assert.equal(loadRulingIds(empty).missing.length, 3);
   assert.ok(has(run(page({ QA: { ruling: "CR-44" } }), { root: empty, rulings: undefined }), "cannot check ruling ids"));
+});
+
+test("ship-call guard catches decision phrasing in any case and any layout", () => {
+  const calls = ["Go: yes", "go: YES", "Decision - go", "Decision -- go", "Recommendation: ship", "We recommend ship", "Recommend a go", "**Overall:** go", "- Ship: yes", "Release: approved", "Approved", "GO", "No-go.", "Verdict = no go", "Result: pass", "Approve: yes", "Ship yes"];
+  for (const l of calls) {
+    assert.ok(isShipCall(l), l);
+    assert.ok(has(run(page({}, l)), "ship-call line"), `page: ${l}`);
+  }
+  // inside a table note it is caught too
+  assert.ok(has(run(page({ QA: { note: "Go: yes" } })), "ship-call line"));
+});
+
+test("ship-call guard leaves ordinary text and paths alone", () => {
+  for (const l of ["Build record: none", "Source: docs/release/go-no-go/2026-11-20-build-12.md", "Release notes were read on 2026-11-19.", "The go-no-go page lists nine rows.", "Filled by: a session", "Ruling id: CLO-3"]) {
+    assert.ok(!isShipCall(l), l);
+  }
+  assert.deepEqual(run(page({ QA: { source: "docs/qa/ALPHA_GO_NO_GO.md", note: "release build checked" } })), []);
+});
+
+test("the template's own no-ship-call sentence is the one exemption, and only that sentence", () => {
+  assert.ok(NO_SHIP_CALL_SENTENCE.includes("no ship call"));
+  assert.deepEqual(run(page({}, NO_SHIP_CALL_SENTENCE)), []);
+  assert.ok(has(run(page({}, `${NO_SHIP_CALL_SENTENCE} Go: yes`)), "ship-call line"));
+  assert.ok(has(run(page({}, `${NO_SHIP_CALL_SENTENCE}\n${NO_SHIP_CALL_SENTENCE}\nShip: yes`)), "ship-call line"));
+  const here = dirname(fileURLToPath(import.meta.url));
+  const tpl = readFileSync(join(here, "../../docs/release/go-no-go/TEMPLATE.md"), "utf8");
+  assert.ok(tpl.includes(NO_SHIP_CALL_SENTENCE), "the template carries the exempt sentence");
+});
+
+test("a Legal, Compliance or Finance pass must cite the ruling id in the Source cell, not only the Ruling id cell", () => {
+  const noCite = run(page({ Legal: { status: "pass", ruling: "CLO-3" } }));
+  assert.ok(has(noCite, "to appear in the Source cell"), "id only in the ruling column");
+  assert.ok(has(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md" } })), "Source cell"));
+  assert.ok(has(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md#CLO-33" } })), "Source cell"), "CLO-33 is not CLO-3");
+  assert.deepEqual(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md; CLO-3" } })), []);
+  assert.deepEqual(run(page({ Compliance: { status: "pass", ruling: "CCO-1", source: "docs/agents/exec/RULINGS.md#CCO-1" } })), []);
+  assert.deepEqual(run(page({ Legal: { status: "open", ruling: "CLO-3" } })), [], "open needs no source cite");
 });

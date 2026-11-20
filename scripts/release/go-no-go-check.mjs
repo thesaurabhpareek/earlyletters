@@ -10,8 +10,8 @@
 // a date, a status and ruling ids that exist on this checkout. It does not mean the build is ready,
 // and it cannot tell whether a source says what the row claims. A person reads the page.
 //
-// The page never holds the ship call. The founder makes it in chat. A line that looks like one
-// ("Decision:", "Verdict:", "Overall:", "Ship:") is an error.
+// The page never holds the ship call. The founder makes it in chat. Any line that states a decision
+// ("Decision:", "Go: yes", "Decision - go", "Recommendation: ship", "Approved") is an error; see isShipCall.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,7 +29,21 @@ export const MAX_WORDS = 900;
 export const MAX_LINES = 60;
 
 const ID = /^(?:(?:CTO|CPO|CDesO|CMO|CBO|CFO|CLO|CCO|CPrivO|CISO|CDO|CAIO)-\d+|CR-\d+|D-\d+)$/;
-const SHIP_CALL = /^\s*(?:[-*]\s*)?\**(decision|verdict|overall|ship|go\/no-go|result)\**\s*:/i;
+// A line that states a decision: a decision word followed by a colon or a spaced dash ("Go: yes",
+// "Decision - go", "**Overall:** go", "Recommendation: ship"), a decision word then yes or no at the
+// end of the line, a bare "Go" or "Ship" line, or "recommend" next to a decision word. Case-insensitive.
+// It runs on every line of the body, table rows included. The page's own explanatory sentence is the one exemption.
+const DW = "(?:decision|verdict|overall|result|go\\/no-go|no-go|no\\s+go|go|ship|approv(?:e|ed|al)|release|recommend(?:ation|ed|s)?)";
+const SHIP_CALLS = [
+  new RegExp(`\\b${DW}\\b[\\s*_]*(?::|=|\\s-{1,2}\\s)`, "i"),
+  new RegExp(`\\b${DW}\\b[\\s*_]+(?:yes|no)[\\s*_]*[.!]?\\s*$`, "i"),
+  /^[\s>*_#-]*(?:go|no-go|no go|ship|approved?)[\s*_]*[.!]?\s*$/i,
+  /\brecommend(?:ation|ed|s)?\b[^|\n]{0,20}\b(?:go|no-go|ship|approve|release)\b/i,
+];
+export const isShipCall = (line) => SHIP_CALLS.some((re) => re.test(line));
+// The one sentence the template uses to say the page makes no ship call. It is removed (once) before the guard runs,
+// so quoting it is safe and nothing else around it is: "Go: yes" on the same line still fails.
+export const NO_SHIP_CALL_SENTENCE = "This page holds no ship call. The founder makes it in chat.";
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
 const placeholder = (s) => /<[^>]*>/.test(s) || s === "";
 
@@ -77,6 +91,7 @@ function sourceProblems(source, root) {
   const parts = source.split(";").map((s) => s.trim().replace(/^`|`$/g, "")).filter(Boolean);
   if (parts.length === 0) return ["source is empty"];
   for (const p of parts) {
+    if (ID.test(p)) continue; // a ruling id cited as a source part (checked against the logs in the Ruling id column)
     if (/^https:\/\/\S+$/.test(p)) continue;
     if (/^[a-z]+:\/\//i.test(p)) { out.push(`source "${p}" must be https or a repo path`); continue; }
     const path = p.replace(/[#:].*$/, "");
@@ -107,7 +122,11 @@ export function checkPage(text, opts = {}) {
   const nonBlank = page.lines.filter((l) => l.trim() !== "").length;
   if (words > MAX_WORDS) err(1, `page has ${words} words; the cap is ${MAX_WORDS} (about 5 minutes of reading)`);
   if (nonBlank > MAX_LINES) err(1, `page has ${nonBlank} non-blank lines; the cap is ${MAX_LINES}`);
-  page.lines.forEach((l, i) => { if (SHIP_CALL.test(l)) err(i + 1, "a ship-call line: the go or no-go call is the founder's, made in chat, and does not go on this page"); });
+  let exempted = false;
+  page.lines.forEach((l, i) => {
+    if (!exempted && l.includes(NO_SHIP_CALL_SENTENCE)) { l = l.replace(NO_SHIP_CALL_SENTENCE, ""); exempted = true; }
+    if (isShipCall(l)) err(i + 1, "a ship-call line: the go or no-go call is the founder's, made in chat, and does not go on this page");
+  });
 
   if (!template) {
     if (!/^[0-9a-f]{40}$/.test(page.commit ?? "")) err(1, "Commit must be the full 40-character lowercase sha");
@@ -153,8 +172,12 @@ export function checkPage(text, opts = {}) {
     }
     if (rulings.missing.length && idsCited.length) err(r.line, `${fn}: cannot check ruling ids, missing ${rulings.missing.join(", ")}`);
     const need = RULING_PREFIX_FOR_PASS[fn];
-    if (need && status === "pass" && !idsCited.some((id) => id.startsWith(need))) {
-      err(r.line, `${fn}: pass needs a ${need}n ruling id (a Claude role's reading of a source is not counsel's advice)`);
+    if (need && status === "pass") {
+      const ofRole = idsCited.filter((id) => id.startsWith(need));
+      if (ofRole.length === 0) err(r.line, `${fn}: pass needs a ${need}n ruling id (a Claude role's reading of a source is not counsel's advice)`);
+      else if (!ofRole.some((id) => new RegExp(`(^|[^A-Za-z0-9-])${id}($|[^0-9])`).test(source))) {
+        err(r.line, `${fn}: pass needs the ${need}n id to appear in the Source cell too (for example docs/agents/exec/RULINGS.md#${ofRole[0]}), so the row cites the ruling it relies on`);
+      }
     }
   }
   for (const fn of FUNCTIONS) if (!seen.has(fn)) err(header.line, `missing row for ${fn}`);
