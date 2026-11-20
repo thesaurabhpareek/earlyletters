@@ -8,13 +8,13 @@ Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) w
 - Close the gaps in chapter 09: AIE-G2 first (`apps/web/AGENTS.md` breaks AIE-R02; AIE-G7 was closed by #39); then AIE-G4 (`Done when:` on agent tasks; BL-923 to BL-949 all have one).
 
 ## New scope audit (20 Nov 2026)
-- `merge-queue.mjs` counts a review only if line 1 is `## Review A|B at <40 hex>: PASS` (lines 19-24, 72). CR-63: `PASS`, or `PASS WITH NOTES` with `Must fix: none`, counts; CHANGES, FAIL, BLOCKED do not. #828, #829, #831 and #832 merged on two `PASS WITH NOTES`; `docs/DECISIONS.md:878` records two at #306's held head f54b6f2, and #306 merged at 8604b5c on a `PASS` and a red-team `ship` (verified 2026-11-20).
+- CR-63 (merged, #845): `merge-queue.mjs` counts line 1 `## Review A|B at <40 hex>: PASS`, or `PASS WITH NOTES` with `Must fix: none`, and reads the body only for a `Must fix:` line (`scripts/agents/merge-queue.mjs:20-25, 75-90` on `develop` d5d12178); CHANGES, FAIL, BLOCKED do not count. #828, #829, #831 and #832 merged on two `PASS WITH NOTES`; `docs/DECISIONS.md:878` records two at #306's held head f54b6f2, and #306 merged at 8604b5c on a `PASS` and a red-team `ship` (verified 2026-11-20).
 - A marker first line (`OPERATING_MODEL.md` section 4, the red-team and steward charters) makes a review uncounted by `merge-queue.mjs`, and `isFounderComment` reads an unmarked lens review as the founder's: handoff #851 (`needs:founder`) (verified 2026-11-20).
 - The dispatcher's queue is backlog file order (`queueFor`, `scripts/agents/lib.mjs:147`), so older `ready` rows come before BL-923 to BL-949 (verified 2026-11-20).
 - Roster `review_paths`: `security-architect` lacks `apps/mobile/modules/**`; `data-steward` names `docs/legal/data-map.yaml`, which does not exist, and not `docs/legal/DATA_CLASSIFICATION.md` or `docs/adr/**`; my `docs/agents/**` matches every PR's `docs/agents/BOARD.md` row (verified 2026-11-20).
 - `user-research` and `regulatory-affairs` have `daily_runs` 0 while BL-935 and BL-949 name them (`agents/roster.json`, verified 2026-11-20).
-- BL-931 is the nine-PR photo stack: #834 (merged), #841, #842, #835 to #840 (verified 2026-11-20).
-- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker` (CR-65, pending; ITMS-90683) (verified 2026-11-20).
+- BL-931 is the nine-PR photo stack: #834 (merged), #841 (merged, 1513b265), #842, #835 to #840 (verified 2026-11-20).
+- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker` (CR-65 (#852); #833 comment 7026600796; ITMS-90683) (verified 2026-11-20).
 - Default branch is `develop` (repos API), not `main` as the 28 Oct box in `docs/agents/HARNESS.md` says (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)

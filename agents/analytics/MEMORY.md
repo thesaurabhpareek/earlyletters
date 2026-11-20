@@ -14,8 +14,8 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` lines 11 and 17); `AGENTS_ENABLED` not verified (verified 2026-11-20).
 - Opt-in analytics is off through 1.0 (D-124; `docs/product/prd/README.md` ground rules) (verified 2026-11-20).
 - `capture_started` is sent only by `startCapture`, with `source: 'tonight'`, never the control (`apps/mobile/src/lib/capture/start-capture.ts:7-8, 28-30`); the catalog's capture area has eight events (`packages/analytics/src/catalog.ts:444-528`) (verified 2026-11-20).
-- BL-931 is the nine-PR photo stack: #834 (merged), #841, #842, #835 to #840 (verified 2026-11-20).
-- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (CR-65, pending) (verified 2026-11-20).
+- BL-931 is the nine-PR photo stack: #834 (merged), #841 (merged, 1513b265), #842, #835 to #840 (verified 2026-11-20).
+- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (CR-65 (#852); #833 comment 7026600796) (verified 2026-11-20).
 - A counted review has line 1 `## Review A|B at <40-hex head sha>: PASS`, or `: PASS WITH NOTES` with `Must fix: none` in the body; CHANGES, FAIL and BLOCKED do not count (CR-63). Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
