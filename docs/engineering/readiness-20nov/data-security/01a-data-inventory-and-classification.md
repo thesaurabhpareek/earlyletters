@@ -89,7 +89,7 @@ Also worth a reader's time: no function is executable by `PUBLIC` or `anon` (0 o
 | C-7 | D-021 (12 months for key-unwrap logs) against 24 months built (`20261023000000:1602`) | counsel Q51 (already open) |
 | C-8 | CLOSED. Media text ceilings: `data-and-sync.md` L11 was amended on develop to 2240 and 960 (as built; 1120 and 480 superseded), which matches `14-media-library-video.md` F1. Only [U] remains: #835's head was not read | none |
 | C-9 | NS-51-R6 "in the phone database" against R23 "excluded from backup" | resolved by CR-69 A4 (a file); product to confirm on #934 |
-| C-10 | Gate of the new-device email. E78 / NS-08-R21 gate the new-device email before the backup flip; the founder decided (`DECISIONS-20nov.md` section 8 item 7, on develop since #1013 merged; section 10) before the first outside family. The founder's date is earlier and so stricter: building the email before the first outside family satisfies both. Cards win on wording (CR-66), so product records the founder's decision in an erratum; engineering builds to the stricter gate (02i S10) | product (erratum), engineering |
+| C-10 | Gate of the new-device email. E78 / NS-08-R21 gated it before the backup flip; the founder decided (`DECISIONS-20nov.md` section 8 item 7) before the first outside family. Resolved by E83 (CL-158): "The new-device sign-in email is built, tested and read by `security-architect` before the first family outside the founder's own signs in." It still gates the backup flip too, the earlier gate first. The privacy read of the device table comes first and decides its retention, class and label (02i S10) | closed by E83; engineering builds to the stricter gate |
 
 ## 7. Gaps (each has a default; none needs a decision today)
 
@@ -188,10 +188,10 @@ This closes the reviewer note that the pack's ids did not line up with the legal
 - B4 (device backup of `scribe.db`, recordings, pictures): COUNSEL and FOUNDER. Recommendation: accept for 1.0. One part is open and is `mobile`'s to answer: whether the safety tiers sit inside `scribe.db`, and so inside the backup, before any screen says they "stay on this phone" (CDO return, B4).
 - Q-5 below: plan state is labelled L3 as built; the conflict with ADR 0013 and the legal document goes to `privacy` and counsel (C-2).
 
-### 8.9 Errata E74 to E82 (`docs/product/prd/18-errata-after-lock.md`, develop `df2c3502`)
+### 8.9 Errata E1 to E83, CL-001 to CL-158 (`docs/product/prd/18-errata-after-lock.md`, develop `55574906c`; E74 to E83 change this pack)
 
 - E74 (audit rows): no screen. A person's own `audit_events` and `deletion_requests` rows go in `account.json` in Save a copy only. "Own" is actor or account owner; another member shows as "another member", with no name, email or id; a test on the export file checks that no letter words, recording or child name are in it. A definer function returns only the caller's rows (data-architect, 02i S12, design only); no API role gets a grant on the table. This keeps G-13's key allowlist as a condition for the producing function and C-4's sentence fix.
-- E78 (new-device email): not built for 1.0. It needs a new server sender, a device table and a stop page; the device table is designed, not built (02i S10, design only), gated by NS-08-R21 before the backup flip. Conflict C-10 below (resolved: build to the founder's stricter gate).
+- E78 (new-device email): not built for 1.0. It needs a new server sender, a device table and a stop page; the device table is designed, not built (02i S10, design only), gated by NS-08-R21. E83 (CL-158) moves the timing to before the first outside family signs in, and it still gates the backup flip. Conflict C-10 is resolved by E83. The privacy read of the device table comes first.
 - E79 (push): no APNs key, no push token table, no push entitlement in 1.0. 01b P-1 holds; 02i adds no token table.
 - E80 (dictionary): phone only, never synced, copied or put in a server export; G-4 is closed as by design above. Where on the phone it is stored (schema 10 has no table) is open to `mobile` and data-architect [U].
 - E81 (alert cap): nothing built for 1.0. Any alert sender needs cap state (02i S11, design only): first 5 in an hour one by one, the rest folded into one summary, a ceiling of 20 alert emails per account per day (engineering's number, [E]).
