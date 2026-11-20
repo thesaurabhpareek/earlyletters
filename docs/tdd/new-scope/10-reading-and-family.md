@@ -96,6 +96,7 @@ The P1 rows are unit-tested on the model: R1, R2, R3b, R6a, R6b and R10. R3a is 
 ### 1.12 Dependencies, risks, open questions
 Dependencies: BL-928 (wave 1) and #839 merged before PR 3 and PR 4; PR 2's words approved by the founder before PR 3 merges (no flag); BL-948 carries R5, R8, R14 and the R4 rotor row (founder, Asha-only install, D13).
 - **Risk**: every new-scope card edits `app/letter/[id].tsx`, so the file collides across PRs. Way back: the row model makes each later card a predicate plus one row component; a collision is reverted per PR.
+- **Conflict** (C12): NS-21-R4 (P0, LEGAL-REQ-051) asks for heading levels; React Native 0.86.3 on iOS sets only the header trait, with no level (as `11-foundations.md` P7 records for NS-33-R1). The build ships the trait and the order, and the level is proven on web only, until product or `compliance-engineer` rules.
 - **Risk**: LEGAL-REQ-051 asks for heading levels, but iOS may only carry a header trait. Way back: the web assertion plus the device rotor walk; `compliance-engineer` reads whether trait and order meet the duty (OQ-21b).
 - **OQ-21a** (Karma): a dark flag for PR 3, so it can merge before the words are approved? Default: no flag; PR 3 waits for PR 2.
 - **OQ-21b** (`compliance-engineer` with `design-systems`): does a header trait in the right order meet LEGAL-REQ-051 on iOS without levels? Default: yes, with the web level test as proof of intent.
@@ -197,6 +198,7 @@ For product (card gaps):
 - C9 NS-05-R6a versus design spec 03 SH-R11 (file name).
 - C11 NS-06 B17 versus CR-62 item 1, ADR 0028 Q6 and #847 Q3 (seals not built until Q6).
 - NS-22 s2 and s10 name `children.quiet`; the column is `child_member_prefs.quiet_at`.
+- C12 NS-21-R4 (P0, LEGAL-REQ-051) heading levels versus React Native on iOS, which sets the header trait with no level (section 1.3; `11-foundations.md` P7). Rec: trait plus order on iOS, levels proven on web; `compliance-engineer` reads whether that meets LEGAL-REQ-051.
 
 For Karma (engineering decisions):
 - C5 BL-937 "no new words" versus the card's new title and values (OQ-21a).
