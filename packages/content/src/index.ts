@@ -9,7 +9,7 @@ export { permissions } from './permissions.en';
 export { pages } from './pages.en';
 export type { PageCopy, PageSection, PageId } from './pages.en';
 export * from './emails';
-export { onboardingStories, STORY_VISUALS } from './stories.en';
+export { onboardingStories, firstRunStories, STORY_VISUALS } from './stories.en';
 export type { StoryCard, StoryVisual } from './stories.en';
 export * from './features';
 export { testflightCopy } from './release/testflight.en';

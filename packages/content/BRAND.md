@@ -101,6 +101,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |
 | Quiet-day action | Not much today (in quotes when named in prose) | skip, check in, log | |
+| Intro button | Skip (only on the first-run story cards; Get started on the last) | "Skip" for the quiet-day action, "Skip for now" | The quiet-day action stays "Not much today". The intro's Skip asks nothing and records nothing. |
 | Who signed it | "From {signsAs}" | author, contributor, poster | "author" allowed only in legal text. |
 | Second parent (v1.0) | co-parent in settings and buttons; "{child}'s other parent" in prose | partner, spouse, coparent, member | The only family role at v1.0. |
 | Other family (v1.1) | family; "Nani", "Papa" as the family uses them | contributor, user, member, senior, elderly | Not in any v1.0 public copy; in-app keys marked v1.1. |
