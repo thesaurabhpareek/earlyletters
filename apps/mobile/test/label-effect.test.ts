@@ -227,4 +227,21 @@ describe('the command line', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('[NS-07-G11-2] reads the cards at the head, and a card it cannot read stops the guard', () => {
+    const { dir, git, put, commit, run } = scratchRepo();
+    try {
+      git('checkout', '-q', '-b', 'card');
+      put('docs/product/prd/98-bad.md', '# NS-98: No line\n');
+      commit('a card with no label line');
+      const r = run(['--base', 'base']);
+      expect(r.status).toBe(1);
+      expect(r.stdout).toMatch(/^FAIL G11-2 docs\/product\/prd\/98-bad\.md:1 NS-98 /m);
+      git('update-index', '--add', '--cacheinfo', `160000,${'1'.repeat(40)},docs/product/prd/99-unreadable.md`);
+      git('commit', '-q', '-m', 'an entry git cannot show');
+      expect(run(['--base', 'base']).status).toBe(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
