@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Stale in the design: it says "`prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`" and that nothing reads `quiet`. On develop #901 fixed it: `plannerChildren` is at `prefs.ts:127` and passes `quiet`, and `planner.ts:25-26,78-79` honour it; NS-32-R14 has tests (`reminders-quiet-books.test.ts:75`).
-Blocked until: BL-966 (a) merged; Karma's Q-E1 ruling; product's answer on R4b (64 against 60); founder Q8 (the cap). NS-32-R1b still fails today (two notifications can land on one day).
+Blocked until: BL-966 (a) merged; Karma's Q-E1 ruling; founder Q8 (the cap). NS-32-R1b still fails today (two notifications can land on one day).
 
 ```
 BRIEF BL-966b (planner: one a day, priority, ceiling) Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
@@ -37,7 +37,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixe
 
 7. LIBRARIES: none. Intl and `lib/reminders/tz.ts` for local dates (LD-18 USE; no date-fns, no temporal polyfill; PR #920).
 
-8. BUDGETS (PR #928): B-03 (92-day property test, BLOCK); L-09 under 50 ms for 3 children (Node, median of 5; BLOCK at 3x); L-04 re-plan under 50 ms at launch, never awaited
+8. BUDGETS (PR #928): B-03 (92-day property test: at most 60 in total, plan notices first; today the planner allows 64, so this lowers it; BLOCK); L-09 under 50 ms for 3 children (Node, median of 5; BLOCK at 3x); L-04 re-plan under 50 ms at launch, never awaited
    (`scheduler.ts` first re-plan stays `void`). Checked here by Node timing; the phone by the NS-34 run sheet.
 
 9. ACCEPTANCE  Experience: D-S06 states backedOff, lateClamp; D-S10 lock screen hidden, named, neutral (PR #921); EX-15 nothing a person said in a notification preview. Test cases above.
@@ -47,7 +47,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixe
 
 11. LENSES: A principal-architect, B compliance-engineer; add security-architect for R12.
 
-12. ORDER: after BL-966 (a); before BL-966 (c), BL-943. Blocked by: 966a, Q-E1, product (R4b), founder (Q8).
+12. ORDER: after BL-966 (a); before BL-966 (c), BL-943. Blocked by: 966a, Q-E1, founder (Q8).
 
 13. DEFINITION OF DONE
     [ ] tests red on old code and mutants; `npm test -w apps/mobile`: only the 8 baseline files red; `npx tsc --noEmit` apps/mobile: only the 5 known errors; `npm test -w packages/content` if a key is added
@@ -55,7 +55,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixe
 
 14. ONLY A PHONE CAN PROVE: J-N4 spot check of the pending list, J-N24 lock screen over a week, J-N27 (JOURNEYS rows 3.11 and 4.11, PR #925; BL-948).
 
-15. STOP AND ASK: the cap is not one a day; two classes tie and the card does not say who wins; a plan notice must change (payments); R4b is ruled at 64.
+15. STOP AND ASK: the cap is not one a day; two classes tie and the card does not say who wins; a plan notice must change (payments); the ceiling is anything but 60 in total.
 
 16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl966b agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl966b.md`. Branch feat/mobile-bl-966b-planner. Comments start `<!-- agent:mobile -->`.
