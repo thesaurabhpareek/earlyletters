@@ -25,7 +25,7 @@ Agent: ops (config), principal-architect reviews   Lane: Pack 10   Build: any   
 5. CODE ENTRY POINTS (verified at 16e61549)
    apps/mobile/package.json:82   `"lint": "expo lint"`; no eslint, typescript-eslint or eslint-config-expo in package-lock.json (only prettier 3.9.9 as a transitive) [V python read of the lockfile]
    `console.*` in app source: one call, apps/mobile/src/lib/resilience/global-errors.ts:49, the warn sink [V grep per CODE-QUALITY-GATES.md G13]
-   49 `eslint-disable` lines in 32 files for a linter that never runs [V recount 49]
+   49 `eslint-disable` lines in 28 files for a linter that never runs [V recount 49]
    no `lint` job in any workflow [V]
 
 6. DATA AND SECURITY: no data class. A new devDependency runs on CI and laptops: install scripts, maintainers, last release within 12 months (06-security-engineering.md:105), licence permissive. Boundary: supply chain.
@@ -40,7 +40,7 @@ Agent: ops (config), principal-architect reviews   Lane: Pack 10   Build: any   
    `eqeqeq`, `no-restricted-syntax` for template-literal Error in packages/core. Done also means red on a mutant per rule (add the forbidden line to a fixture) and 49 stale disables removed or justified.
 
 10. PR BREAKDOWN: PR 1 config + rules + fixes for the first findings ~300 lines (config 60, test 60, cleanup 180) | PR 2 workflow proposal + ENFORCEMENT row ~70 lines | base develop | the job is advisory until the founder makes it required.
-    If findings exceed 400 lines: land rules as warnings with a baseline file that only shrinks (docs/ops/lint-baseline.json), then raise them.
+    If findings exceed 400 lines: land rules as warnings with a baseline file that only shrinks (docs/ops/lint-baseline.json), then raise them. The "only shrinks" compare against the base branch follows the one rule in BRIEF CI-PIN section 10 (per event, switch file `docs/ops/ratchet-base-fetch.txt`); until the founder's fetch step exists the reviewer runs the compare by hand.
 
 11. LENSES: A principal-architect, B security-architect (dependency); mobile reads (the 49 disables and the test sit under apps/mobile/** and packages).
 
