@@ -447,3 +447,53 @@ DESIGN.md's G-01 to G-21 stand; these are the word-side gaps, numbered W to keep
 | The low-space and mid-recording space lines are not traced to code | BL-958 |
 | A `doorways` group in `packages/content` and its SURFACES row | BL-971 |
 | Every P and C key above lands in one content PR, with the founder's word approvals listed | BL-965 |
+
+## 20. Final-pack additions (20 Nov, second pass): Home today, the Days ask, recent days
+
+Keyed to DESIGN.md sections 3 (A-S01, A-S03, A-S04, A-S16) and 12. Every line is PROPOSED (status P) or REUSE; the founder approves words (G3 in card 22). Rules applied: "reminder" for anything the app sends, never "note"; "slip" and "strip" are design words and never reach a parent; zero exclamation marks (N-5); no "again", "another" (as a count), "last year", count or comparison on a day line (NS-46-R17, R22); no "memory", "moment", "album", "caption", "AI", "smart", "suggested for you", "Journaling Suggestions" or "Apple Journal" in public or in-app copy (NS-49 section 16); "photo", one word, through the whole recent-days flow (content review F12).
+
+### 20.1 The day slip (A-S01.dayToday, .dayTodayTwo, .dayTodayQuiet, .dayDismissed)
+| Key | St | Text | Shows on | VoiceOver | Voice Control | Card |
+|---|---|---|---|---|---|---|
+| `days.landing.bright` | P (NS-46) | "{day}. Anything you would like {child} to hear about today?" | A-S01.dayToday | one element "{day}. Anything you would like {child} to hear about today?"; custom action "Not today" | n/a | NS-50-R3, R14 |
+| `days.landing.season` | P (NS-46) | "{season}. What does today look like?" | A-S01.dayToday (seasonal day) | same pattern | n/a | NS-50-R3 |
+| `days.landing.quiet` | P (NS-46) | "{day}. The book is open if you want it." | A-S01.dayTodayQuiet | same pattern; no question mark | n/a | NS-50-R3, R15; NS-46-R16 |
+| `days.landing.twoDays` | P | "{a} and {b}. Anything you would like {child} to hear about today?" (three or more: names joined by an English list format, never in code) | A-S01.dayTodayTwo | same pattern | n/a | NS-50 section 5; NS-46-R31 |
+| `days.slip.close` | P | "Not today" | the button on every day slip | "Not today, button" / hint "Hides this until tomorrow" | "Not today" | NS-50-R7 (its own key, not `en.common.notNowButton`) |
+{day} is the day's name as the library gives it; no "your" before it, no greeting (Happy, Merry, Blessed), no relationship word (NS-46-R17). The landing never names Plus, a price or a Keep step (NS-46-R27).
+
+### 20.2 The Days ask (A-S01.daysAsk, .daysAskBelow)
+| Key | St | Text | Shows on | VoiceOver | Voice Control | Card |
+|---|---|---|---|---|---|---|
+| `culture.ask.question` | P | "Would you like a reminder on the days that matter to your family?" | A-S01.daysAsk | read first | n/a | NS-47-R19; review F6 ("reminder", not "note") |
+| `culture.callout.short` | P | "The days you choose stay on this phone." (the allowed claim of NS-47-R22; not final until `mobile` confirms the backup exclusion; if the store is in the iPhone backup the line adds "and in your own iPhone backup") | A-S01.daysAsk, in the `DoorNote` under the question | read second, as static text; the lock glyph is hidden | n/a | NS-47-R22, R29 |
+| `culture.ask.choose` | P | "Choose days" | the first `bordered` button | "Choose days, button" | "Choose days" | NS-47-R32 |
+| `culture.ask.notNow` | R (`en.common.notNowButton`) | "Not now" | the second `bordered` button, same size and style | "Not now, button" / hint "Closes this question. You can still choose days in Me." | "Not now" | NS-47-R25, R32 |
+The ask never names a feature, "new", a count or a price (NS-50-R16), never says "religion", "tradition" or "faith" (NS-46-R38), and holds no field. Nothing is preselected.
+
+### 20.3 Start from a photo, and recent days (A-S01.photoMenu, A-S03, A-S04, A-S16)
+| Key | St | Text | Shows on | VoiceOver | Voice Control | Card |
+|---|---|---|---|---|---|---|
+| `features.photos.capture.startButton` | EP | "Start from a photo" | A-S01.default, .photoMenu | "Start from a photo, button" / hint "Opens your photos" with level 1 only, "Opens choices" with level 2 | "Start from a photo" | NS-01-R1; NS-49-R29 |
+| `features.photos.suggestions.pickInstead` | P | "Choose a photo" | menu item 1 | same | "Choose a photo" | NS-49 section 16 |
+| `features.photos.suggestions.start` | P | "Pick from recent days" | menu item 2 | same | "Pick from recent days" | NS-49-R29 |
+| `features.photos.suggestions.door` | P | "The phone makes the list. Only the suggestion you choose goes to the app, and the app uses only its picture." Absent until counsel clears it; it must not say "only the picture reaches the app" (RV-12) | a menu item subtitle, or the first line of the sheet fallback | static text | n/a | NS-49 section 12; R16 |
+| `features.photos.suggestions.choose.title` | P | "Choose one photo" | A-S16 title | heading | n/a | NS-49-R30 |
+| `features.photos.suggestions.picture` | P | "Picture {n} of {count}" | each thumbnail in A-S16 | same; a picture is never described | "Picture {n}" | NS-49-R30 |
+| `features.photos.suggestions.label.fromPhone` | P | "From your phone: {label}" ({label} is the phone's text, shown as given, any script) | A-S04.suggestionLabel | same | n/a | NS-49-R9 |
+| `features.photos.suggestions.use` | P | "Use this" | A-S04.suggestionLabel | "Use this, button" / hint "Keeps this as the words for the photo" | "Use this" | NS-49-R9 |
+| `features.photos.suggestions.clear` | P | "Clear" | A-S04.suggestionLabel (44 pt) | "Clear, button" | "Clear" | NS-49-R9 |
+| `features.photos.suggestions.taken` | P | "Kept as the words for the photo. You can change them on the next page." | A-S04.suggestionTaken | static text | n/a | NS-49-R9 |
+| `features.photos.suggestions.noPhoto` | P | "That one had no photo in it." | A-S04.suggestionNoPhoto (one calm line, no icon, polite announce once) | static text | n/a | NS-49-R10 |
+| `features.photos.suggestions.journalNote` | P | One calm line under the reminders list (area D, D-S06) that the phone's own journal suggestions are separate and can be turned off in Settings | D-S06 | static | n/a | NS-49-R22 |
+Cancel, empty and declined produce no string at all (NS-49-R11). The word "journal" appears only in that D-S06 line, where Apple's own feature is named (Q-FD-34 keeps the BRAND.md ban elsewhere).
+
+### 20.4 A-S01 VoiceOver labels
+| State | Label order |
+|---|---|
+| dayToday | switcher > dateline > greeting > "{day}. {line}" > "Not today" > prompt > Another thought > Speak > Type > Start from a photo > Not much today |
+| dayTodayQuiet | switcher > dateline > greeting > "{day}. The book is open if you want it." > "Not today" > Speak > Type > Start from a photo > Not much today |
+| daysAsk | switcher > dateline > greeting > question > call-out > Choose days > Not now > prompt > ... |
+
+### 20.5 Round 2 (NS-51, NS-52), intent only, by name
+No string is written for photos access or for several pictures and videos. Intent for `content`: a primer for Photos access with two equal ways ("Allow", "Not now") that says in plain words the app looks at dates and counts on the phone and nothing leaves it (claims wait for counsel); a menu item "From your pictures"; a day row with a date and nothing else; one calm line when a letter holds all it can; one calm line for a video that is too long or too big; per-item words field "A few words about this one, if you like"; Remove; "Add a photo or video". Banned in these: "memories", "moments", "best", "we found", a count ("12 photos"), any description of what a picture shows, any "unwritten days" or gap line. The lock-screen reminder for a photo moment is area D's and is neutral ("Some pictures from the weekend are here" is the founder's example; content decides, and it may not name what the pictures show).

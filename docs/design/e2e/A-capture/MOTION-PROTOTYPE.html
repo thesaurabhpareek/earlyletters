@@ -356,6 +356,7 @@ const homeHTML = (o = {}) => `
       ${o.switcher ? '<button class="switcher" data-el="sw">For Asha &#9662;</button>' : ''}
       <div class="dl mv" data-el="dl">Asha, 7 months</div>
       <div class="greet mv" data-el="gr">Good evening. <span>Asha is asleep.</span></div>
+      ${o.slip ? '<div data-el="slipwrap" style="margin:12px 0"><div class="card mv" data-el="slip"><div><b>Thanksgiving.</b> Anything you would like Asha to hear about today?</div><div style="text-align:right"><button class="link" data-el="slipclose">Not today</button></div></div></div>' : ''}
       <div class="prompt mv" data-el="pr">What made Asha laugh today?</div>
       <button class="link" data-el="another">Another thought</button>
       ${o.cards ? '<div class="mv" data-el="cards"><div class="card mv" data-el="c1"><div class="t">Waiting to be kept</div>Tuesday evening, 1 min</div></div><div class="card mv" data-el="c2"><div class="t">A month ago</div>The first time you held the spoon</div>' : ''}
@@ -442,6 +443,29 @@ moment({
     mSwap(c.run, c.q('[data-el="pr"]'), PROMPTS[c.i]).then(() => { c.log('new prompt in place (150 ms)'); c.a11y('reads the new prompt once'); });
   },
   play(c) { this.swap(c); },
+});
+
+/* ---------------- MA-48 Day slip (T-SLIP) ---------------- */
+moment({
+  id: 'MA-48', title: 'Home: the day slip arrives and is dismissed (T-SLIP)',
+  keys: 'A-S01.dayToday to A-S01.dayDismissed. NS-50-R12, R7. v2: m.enter.group on cold launch (third item), m.list.remove on "Not today", m.move for the gap. No haptic.',
+  notes: 'Cold launch: the slip is the third block after dateline and greeting. A later visit: already in place. "Not today": the card fades out (160 ms, opacity only) and the prompt closes the gap with m.move; Speak and Type never move. No haptic, no Undo, nothing counts. <b>Reduce Motion:</b> a 200 ms fade in and out; the gap closes on the next frame.',
+  html: () => homeHTML({ slip: true, photo: true, lampOff: true }),
+  setup(c) { c.q('[data-el="slipclose"]').onclick = () => this.dismiss(c); },
+  play(c) {
+    const items = ['dl', 'gr', 'slip', 'pr'].map((k) => c.q(`[data-el="${k}"]`));
+    items.forEach((el) => { el.style.opacity = '0'; });
+    c.log('first frame: the capture cluster at full strength');
+    if (RM) { items.forEach((el) => fade(c.run, el, 1, T.fadeMs)); later(c.run, T.fadeMs, () => c.log('content in (one fade)')); }
+    else { items.forEach((el, i) => mEnter(c.run, el, Math.min(i, T.enter.staggerMax - 1) * T.enter.staggerMs)); }
+    c.a11y('reads the slip as one element: name, then line, then the button');
+    later(c.run, 1800, () => this.dismiss(c));
+  },
+  dismiss(c) {
+    const card = c.q('[data-el="slip"]'), wrap = c.q('[data-el="slipwrap"]');
+    c.log('Not today pressed (no haptic)');
+    mExit(c.run, card, 0).then(() => { c.log('card gone (160 ms)'); return mMove(c.run, wrap, 0); }).then(() => { c.log('gap closed; focus moves to the prompt'); c.a11y('reads the prompt once'); });
+  },
 });
 
 /* ---------------- MA-04 / MA-05 Not much today ---------------- */
