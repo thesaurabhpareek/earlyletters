@@ -12,7 +12,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (before Build 14: the first bu
    and `docs/ops/SECRETS.md` says where each secret lives, who rotates it and what breaks if it leaks.
 
 2. CARD ROWS and TEST TITLES: SEC-R02, SEC-R03 (06-security-engineering.md:35; ENFORCEMENT.md:157 "gitleaks pending PR #30"), FR-OPS secret rows [U ids], security F-12 (SECURITY-OPEN-QUESTIONS.md:32, #915).
-   Tests: extend scripts/packs/secret-scan.test.ts (exists [V]) with `[SEC-R03] a service_role token in a tracked file is found`, `[SEC-R03] a private key block is found`, `[SEC-R03] the finding names file and line, never the value`.
+   Tests: scripts/packs/secret-scan.test.ts exists [V] but NO npm test or workflow runs it (root `test` runs workspaces plus a fixed `node --test` list, package.json:11; scripts/ is no workspace). So put the SEC-R03 tests in `apps/mobile/test/secret-scan.test.ts` (vitest, runs in `unit`; imports `scanText` from the scanner), titled `[SEC-R03] a service_role token in a tracked file is found`, `[SEC-R03] a private key block is found`, `[SEC-R03] the finding names file and line, never the value`.
    Each red on develop (the patterns do not cover them: today it targets "a signing key or an R2 secret" per PACKS_HOSTING.md:61 [V]). Positive control: a planted fixture string built at run time, never stored whole in the repo.
 
 3. FILES
@@ -43,11 +43,11 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (before Build 14: the first bu
 
 10. PR BREAKDOWN: PR 1 scanner + tests ~150 lines, 3 files; PR 2 SECRETS.md + the proposed step ~120 lines, 3 files | base develop | no flag.
 
-11. LENSES: A security-architect, B compliance-engineer (SECRETS.md names accounts).
+11. LENSES: A security-architect, B compliance-engineer (SECRETS.md names accounts); mobile reads the test under apps/mobile/**.
 
 12. ORDER: any time; before BRIEF B13-CHECKS gains it. Blocked by the founder's A or B choice for the workflow step only.
 
-13. DONE: [ ] `npm test` (scripts/packs test runs there [U: confirm it is in the root test list]); [ ] ASCII; [ ] no real secret anywhere (run the scanner on the PR); [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE: [ ] `npm test -w apps/mobile` (the new test runs there; the old scripts/packs test is run by hand: `npx vitest run scripts/packs/secret-scan.test.ts` [U runner]); [ ] ASCII; [ ] no real secret anywhere (run the scanner on the PR); [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY THE FOUNDER CAN PROVE: GitHub secret scanning and push protection are enabled on the repository (`node scripts/founder/check.mjs` reports it; needs his token).
 
