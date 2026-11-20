@@ -56,7 +56,7 @@ test("words like failure, unless, until in the first 15 lines do not change the 
   const noise = Array.from({ length: 15 }, (_, i) => `line ${i}: no failure unless fixed until later`).join("\n");
   const r = await verdict({ comments: [review("A", HEAD, noise), review("B", HEAD, noise)] });
   assert.equal(r.verdict, "READY");
-  assert.deepEqual(parseReview(`## Review A at ${HEAD}: PASS\r\nfailure`), { lens: "A", sha: HEAD, word: "PASS" });
+  assert.deepEqual(parseReview(`## Review A at ${HEAD}: PASS\r\nfailure`), { lens: "A", sha: HEAD, word: "PASS", stated: "PASS" });
   assert.equal(parseReview(`intro\n## Review A at ${HEAD}: PASS`), null, "must be the first line");
   assert.equal(parseReview(`## Review A at ${HEAD}: FAIL`).word, "FAIL");
   assert.equal(parseReview(`## Review A at ${HEAD.toUpperCase()}: PASS`), null);
@@ -191,9 +191,28 @@ test("veto: newest trusted verdict per lens at head decides", async () => {
   assert.equal((await verdict({ comments: [review("A", HEAD), review("B", HEAD), { body: `## Review A at ${HEAD}: BLOCKED`, author_association: "OWNER" }] })).verdict, "BLOCKED-REVIEW");
 });
 
-test("PASS WITH NOTES and PASS. are not met (chosen: only the exact word PASS)", async () => {
-  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS", 2)] })).verdict, "BLOCKED-REVIEW");
-  assert.equal(reviewState([v("A", "PASS.", 1)], HEAD).A, false);
+test("PASS WITH NOTES meets a lens (CR-63) only with a Must fix: none line; PASS. and near misses do not", async () => {
+  const pwn = (lens, n, extra = "Must fix: none.") => ({ body: `## Review ${lens} at ${HEAD}: PASS WITH NOTES\n\n${extra}\nNotes: a later cleanup.`, author_association: "MEMBER", ...at(n) });
+  assert.equal((await verdict({ comments: [pwn("A", 1), v("B", "PASS", 2)] })).verdict, "READY");
+  assert.equal((await verdict({ comments: [pwn("A", 1), pwn("B", 2, "**Must fix:** none")] })).verdict, "READY");
+  for (const word of ["PASS.", "pass", "PASS WITH NOTE", "pass with notes", "PASS WITH NOTES.", "PASSWITH NOTES"]) {
+    assert.equal(reviewState([v("A", word, 1)], HEAD).A, false, word);
+  }
+  // the other ways reviews have said it also count
+  for (const said of ["No Must.", "- There is no must-fix.", "Nothing must be fixed before merge."]) assert.equal(reviewState([pwn("A", 1, said)], HEAD).A, true, said);
+  // no "Must fix: none" line: not met, and the reason shows
+  const bare = reviewState([pwn("A", 1, "Notes only.")], HEAD);
+  assert.equal(bare.A, false);
+  assert.match(bare.blocked.A, /no "Must fix: none" line/);
+  // a Must fix line that names something takes the pass away, even next to a "none" line, and for plain PASS too
+  assert.equal(reviewState([pwn("A", 1, "Must fix: none.\n- Must fix: the remove() guard")], HEAD).A, false);
+  assert.equal(reviewState([{ body: `## Review A at ${HEAD}: PASS\nMust fix: 1. the guard`, author_association: "MEMBER", ...at(1) }], HEAD).A, false);
+  // plain PASS with no Must fix line still counts
+  assert.equal(reviewState([v("A", "PASS", 1)], HEAD).A, true);
+  // a later CHANGES at head still blocks a lens that had PASS WITH NOTES
+  assert.equal((await verdict({ comments: [pwn("A", 1), v("B", "PASS", 2), v("A", "CHANGES", 3)] })).verdict, "BLOCKED-REVIEW");
+  // PASS WITH NOTES at an older sha is stale, not a pass
+  assert.deepEqual(reviewState([{ ...review("A", OLD), body: `## Review A at ${OLD}: PASS WITH NOTES\nMust fix: none.`, ...at(1) }], HEAD).staleLenses, ["A"]);
 });
 
 test("an untrusted BLOCKED does not veto a trusted PASS", async () => {
