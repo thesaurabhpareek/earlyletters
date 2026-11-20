@@ -369,3 +369,13 @@ Karma
 - D-motion 5: engineering rows for BL-943 (reminder ask into `ui/sheet.tsx`, cold-start notification response), BL-966 (plan notice cold start, tap while Listen/Review/Write open), BL-974 (quiet-day timing readable by 100 ms), `progress.sweepMs` token.
 
 Karma
+
+## Area A motion rulings (20 Nov)
+- A-motion 1 (CG-1, P-1): the idle breath changes opacity only, no scale (NS-34 wins over the built 1.05x). Engineering row with the lamp token work.
+- A-motion 2 (CG-2): the record start tick is the start cue and VoiceOver's "Recording" announcement is made before the microphone opens; the stop is announced after it closes. Nothing is spoken while recording (NS-33-R6 read as before and after).
+- A-motion 3 (CG-9): quiet-day Undo stays while Home stays (card C5 wins over the 10 s window in the standard). The standard's line is amended in the next MOTION pass.
+- A-motion 4 (CG-6): a failed photo is silent, no sound and no error haptic; SOUND.md is amended.
+- A-motion 5 (P-2 to P-5): accepted: name the VoiceOver wait in Keep; quiet-day lamp dim 280 ms (`lamp.returnMs`); list the remaining selection haptics; no glass morph from Home's buttons into the record control.
+- Engineering rows: undo toast window (BL-954), Switch Control read (unverified in React Native, spike first), Low Power Mode read (ENG-M8), Another thought 360 ms to 150 ms cross-fade, microphone-blocked screens 200 ms fade, Listen's picture loads before a take can start.
+
+Karma
