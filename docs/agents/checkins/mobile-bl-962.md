@@ -1,1 +1,2 @@
 06:02 (20 Nov) mobile | done: [X6-R1] rules, plist and dependency scans added to no-system-indexing.test.ts per Karma AX-8 ruling; D2 checked in node_modules (no switch) | next: full suite, PR, journal | blocked/needs: none
+11:12 (20 Nov) mobile | done: PR #868 open; full suite under load timed out the dependency scan at 5 s, given 60 s like the profile introspections | next: rerun failed files alone, journal | blocked/needs: none

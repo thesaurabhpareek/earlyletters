@@ -374,5 +374,5 @@ describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing abou
     const { hits, files } = dependencyHits(packages);
     expect(files).toBeGreaterThan(500); // the walk really reached react-native, expo and the rest
     expect(hits).toEqual(REVIEWED_DEPENDENCY_CODE);
-  });
+  }, 60_000); // reads about 3,700 files: 2 to 5 s alone, more on a busy runner
 });
