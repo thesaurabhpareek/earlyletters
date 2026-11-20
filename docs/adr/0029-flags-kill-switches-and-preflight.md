@@ -2,7 +2,7 @@
 
 - **Status:** Proposed, 20 Nov 2026. Decisions marked [CR-69] are ruled in `docs/agents/cto/RULINGS.md` CR-69 (A5, A12) and `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`; they are two-way until the code ships. Marked [E] they are ruled in `docs/product/prd/18-errata-after-lock.md` (E20, E21). Docs only: no code, no migration.
 - **Author:** `mobile` with `sync` (drafted from `docs/product/prd/24-engineering-handoff.md` section 2, draft A1). Reviewers asked: `principal-architect`, `security-architect`, `privacy`.
-- **Number:** the next free id from `node scripts/agents/next-id.mjs` on 20 Nov 2026 was 0029, and no file or open PR holds it. Cards and GAP-LOG cite "ADR 0029" as if it existed; this is that record. `docs/engineering/plans/inputs/C-platform-quality-delivery.md` section 1.4 reserved other numbers for sibling ADRs (0030 to 0039); this series takes ids in the order `next-id.mjs` gives them (CR-69 A11), so a card that cites a reserved number is read through the table in the PR description.
+- **Number:** the next free id from `node scripts/agents/next-id.mjs` on 20 Nov 2026 was 0029, and no file or open PR holds it. Cards and GAP-LOG cite "ADR 0029" as if it existed; this is that record. `docs/engineering/plans/inputs/C-platform-quality-delivery.md` section 1.4 reserved other numbers for sibling ADRs (0030 to 0039); this series takes ids in the order `next-id.mjs` gives them (CR-69 A11), so a card that cites a reserved number is read through `docs/adr/CROSSWALK-new-scope.md`.
 - **Amends:** ADR 0016 section 5.3 (`docs/adr/0016-lean-app-and-server-driven-content.md:127-129`), which says kill switches only stop server-dependent features.
 
 ## Context
@@ -29,4 +29,4 @@
 
 ## Not decided here
 
-Which drop a first-run card ships in, and the flag for the Days ask (CR-69 A13, filed on #934 and #935).
+Nothing in this ADR waits on those two CR-69 A13 items, which are now closed in `docs/product/prd/18-errata-after-lock.md`: the first-run cards ship as Drop D, after wave 1 and Drop A (E43; founder-only release content, default stands), and the Days ask has no flag of its own, riding on `EXPO_PUBLIC_DAYS` (E57).

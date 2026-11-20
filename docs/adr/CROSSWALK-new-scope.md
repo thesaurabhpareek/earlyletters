@@ -11,6 +11,6 @@ Status: Proposed, 20 Nov 2026, filed with ADRs 0029 to 0035. The ids 0029 to 003
 | ADR 0033 | Home slip registry | 0031 | Proposed |
 | ADR 0034 | Seal publication | none | CR-67 AX-2 rules no ADR 0034: it is an ADR 0028 amendment |
 | ADR 0035 | Undo windows (CR-67 AX-11) | none | Not filed |
-| ADR 0036 to 0039 | Typed-word length, printable PDF, export minor, words out of system intelligence | none | Not filed |
+| ADR 0036 to 0039 | Typed-word length, printable PDF, export minor, words out of system intelligence | none | Cited but not reserved: CR-67 AX-1 cites 0039 and AX-3 cites 0038. `next-id.mjs` hands out 0036 next, so the clash repeats for each of these unless the filer takes the cited number on purpose |
 
 Filed ids that no earlier citation used for them: 0032 is the on-device sensitive store, 0033 notification privacy, 0034 pure notification selection, 0035 one age function in core. Anyone who reads "ADR 0031", "0032", "0033", "0034" or "0035" in a document dated before 20 Nov 2026 evening opens this table first.

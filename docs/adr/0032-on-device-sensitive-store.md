@@ -16,7 +16,7 @@
 2. **Write order:** create the empty file, set the backup exclusion, read it back, write bytes only after, read back again after the rename and on every open. A false read-back deletes the file and the store refuses to write. Leftover temp files are swept at launch.
 3. **Clear order on sign-out and Erase:** delete the file first, before `forgetReminders` and any await. Every read checks the owner key and fails closed on a mismatch.
 4. **File protection** no weaker than `scribe.db` (complete until first user authentication).
-5. **A `'local'` file is adopted only at the claim step** (NS-47-R7, E-S24) by the same person. Any other first sign-in finds a local file, deletes it and starts empty. Wider adoption waits for product on #934.
+5. **A `'local'` file is adopted only at the claim step** (NS-47-R7, E-S24) by the same person. Any other first sign-in finds a local file, deletes it and starts empty. The claim step is the only adoption (errata E73).
 6. **Derived dates** such as `dismissedOn` live inside the days file, not in `settings`.
 7. **Single reader behind an import-boundary test:** only the days module reads the days file; the planner gets opaque slots. [NS-47-R11; handoff section 1.5.]
 8. **`culture.asked` stays in `settings`** (per account, in the backup) so it survives sign-out while the store is cleared. [Proposal: handoff draft B; errata E37 note, `docs/product/prd/18-errata-after-lock.md:45`; not in CR-69 A4.]

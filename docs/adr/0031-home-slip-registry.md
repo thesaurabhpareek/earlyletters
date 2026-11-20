@@ -6,7 +6,7 @@
 
 ## Context
 
-- `apps/mobile/src/app/(tabs)/index.tsx:305-325` renders every waiting draft as a `DraftCard` (or one `HeldRow`), else one resurfaced card. No `SlipCard` or `FRAME-SLIP` exists in code (grep, 20 Nov 2026: docs only).
+- `apps/mobile/src/app/(tabs)/index.tsx:317-330` renders every waiting draft as a `DraftCard` (or one `HeldRow`), else the resurfaced card (the `resurfaced(...)` call is at `:210`). No `SlipCard` or `FRAME-SLIP` exists in code (grep, 20 Nov 2026: docs only).
 - Cards 08 and 10 list four slips; NS-50-R5 and the frame list six, with ranks 2b (a day the parent chose, today) and 3b (the Days ask).
 
 ## Decision
@@ -22,4 +22,4 @@
 ## Consequences
 
 - The registry is the one place Home order lives; a new slip is one registry row and one test.
-- Whether a library moment (NS-51) is a slip rank, a capture-cluster item or both is Karma's ruling under Q-E11; this ADR adds no row for it.
+- Whether a library moment (NS-51) is a slip rank, a capture-cluster item or both is open. [Proposal, not ruled] CR-69 A12 says E36 fixes the slip ranks, and E36 has no library-moment row, so this ADR adds none; handoff Q-E11 recommends one rank, shown once, never a strip, for Karma to rule.
