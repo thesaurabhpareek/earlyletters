@@ -79,7 +79,7 @@ body.dk #notes, body.dk #log { background: rgba(255,255,255,0.06); }
 .lcard .w { font-family: Georgia, "Times New Roman", serif; font-size: 17px; line-height: 1.4; }
 .slip { background: var(--accentSoft); border-radius: 14px; padding: 14px 16px; margin: 6px 0 14px; display: flex; gap: 10px; align-items: flex-start; }
 .slip .x { margin-left: auto; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; }
-.bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 10px 0 14px; }
+.bar { height: 4px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 10px 0 14px; }
 .fill { height: 100%; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); }
 .stack { display: grid; }
 .stack > * { grid-area: 1 / 1; }
@@ -150,7 +150,7 @@ const M = {
   press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
   emptyBreathMs: 8000,
   lamp: { arriveMs: 1200, leaveMs: 160, returnMs: 280 },
-  handOff: { outMs: 140, inFrom: 80, inMs: 120 },
+  handOff: { outMs: 70, inFrom: 35, inMs: 165 }, // v2 m.fade: the leaving block gone by 35 percent of 200 ms, the arriving from half of that
   toastMs: 4000
 };
 const HAPTIC = {
@@ -229,13 +229,13 @@ function exitEl(el) {
   if (RM) return fadeOut(el, M.fadeMs);
   return A(el, [{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(8px)" }], M.exitMs);
 }
-/* The 200 ms hand-off (MOTION 5f): leaving over its first 140 ms, arriving over the last 120 ms from 80 ms. Both straight lines. */
+/* m.fade (design system v2): 200 ms; the leaving block is gone by 35 percent, the arriving one starts at half of that. Straight lines. */
 async function handOff(outEl, inEl) {
   inEl.style.opacity = 0;
   outEl.setAttribute("aria-hidden", "true");
   const p1 = A(outEl, [{ opacity: 1 }, { opacity: 0 }], M.handOff.outMs, { easing: "linear" });
   const p2 = A(inEl, [{ opacity: 0 }, { opacity: 1 }], M.handOff.inMs, { delay: M.handOff.inFrom, easing: "linear" });
-  setTimeout(() => log("focus moves to the arriving block's heading (at its mount, 80 ms)"), T(M.handOff.inFrom));
+  setTimeout(() => log("m.fade 200 ms; focus moves to the arriving block's heading at its mount"), T(M.handOff.inFrom));
   await Promise.all([p1, p2]);
   inEl.style.opacity = 1;
   outEl.remove();
@@ -251,9 +251,9 @@ async function swapText(holder, text) {
 async function collapse(row) {
   row.setAttribute("aria-hidden", "true");
   const h = row.offsetHeight; row.style.overflow = "hidden";
-  if (RM) { await fadeOut(row, M.fadeMs); row.remove(); log("row gone; rows below close at once (Reduce Motion)"); return; }
+  if (RM) { await fadeOut(row, M.exitMs); row.remove(); log("m.list.remove: row faded 160 ms; gap closes on the next frame (Reduce Motion)"); return; }
   await fadeOut(row, M.exitMs);
-  log("rows below close up (standard spring)");
+  log("m.list.remove: row m.exit 160 ms (opacity only), then rows below m.move up (standard spring)");
   await springA(row, h, 0, M.standard, (v) => ({ height: Math.max(0, v) + "px", minHeight: "0px", paddingTop: "0px", paddingBottom: "0px", opacity: 0 }));
   row.remove();
 }
@@ -264,9 +264,8 @@ async function press(el, card) {
   await springA(el, s, 1, M.snappy, (v) => ({ transform: "scale(" + v + ")" }));
 }
 function breathe(el) {
-  if (RM) { log("drawing is still (Reduce Motion)"); return; }
-  el.animate([{ opacity: 1 }, { opacity: 0.85 }, { opacity: 1 }], { duration: T(M.emptyBreathMs), iterations: Infinity, easing: "ease-in-out" });
-  log("drawing breathes: opacity 0.85 to 1 over 8 s, while focused");
+  // Design system v2 retires Breathe (MP-17): area C has no loop. The built StateScreen breathes today (E7).
+  log("drawing complete and still (v2 retires Breathe; no loop in area C)");
 }
 function lamp(op, ms, label) {
   const l = $(".lamp", screenEl); if (!l) return Promise.resolve();
@@ -327,25 +326,28 @@ function sheet(inner, opts = {}) {
     }
   };
 }
-function systemAlert(title, body, buttons) {
+/* F6 simple: a native action sheet from the bottom (T-ALERT; the platform's, approximated). */
+let actionPick = null;
+function actionSheet(title, choices) {
   const scrim = mk('<div class="scrim"></div>');
-  const box = mk('<div class="alertbox" role="alertdialog"><div class="at"></div><div class="ab"></div></div>');
-  $(".at", box).textContent = title; $(".ab", box).textContent = body;
+  const box = mk('<div class="sheet" role="alertdialog" style="background:transparent;padding:0 8px 30px"><div class="alertbox" style="position:static;margin-bottom:8px"><div class="ab" style="padding-top:14px"></div></div><div class="alertbox" style="position:static"></div></div>');
+  $(".ab", box).textContent = title;
+  const grp = box.children[0], cancel = box.children[1];
   screenEl.append(scrim, box);
-  log("system alert (the platform's; approximated)");
-  if (RM) { fadeIn(scrim); fadeIn(box); } else { fadeIn(scrim, 250); A(box, [{ opacity: 0, transform: "scale(1.15)" }, { opacity: 1, transform: "scale(1)" }], 250); }
+  log("F6 simple: native action sheet (system; approximated); the safe choice is the default");
+  if (RM) { fadeIn(scrim); fadeIn(box); } else { fadeIn(scrim, 250); A(box, [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }], 350, { easing: "cubic-bezier(0.25, 1, 0.5, 1)" }); }
   return new Promise((res) => {
-    buttons.forEach((b) => {
-      const e = mk('<div class="abtn"></div>'); e.textContent = b.text;
-      if (b.style === "destructive") e.classList.add("d");
-      if (b.style === "cancel") e.classList.add("c");
-      e.onclick = async () => { await Promise.all([fadeOut(scrim, 200), fadeOut(box, 200)]); scrim.remove(); box.remove(); res(b.value); };
-      box.appendChild(e);
-      b.el = e;
+    const done = async (v) => { actionPick = null; await Promise.all([fadeOut(scrim, 200), RM ? fadeOut(box, 200) : A(box, [{ transform: "translateY(0)" }, { transform: "translateY(100%)" }], 250)]); scrim.remove(); box.remove(); res(v); };
+    choices.forEach((ch) => {
+      const e = mk('<div class="abtn"></div>'); e.textContent = ch.text;
+      if (ch.style === "destructive") e.classList.add("d");
+      if (ch.style === "cancel") { e.classList.add("c"); e.style.borderTop = "none"; cancel.appendChild(e); } else grp.appendChild(e);
+      e.onclick = () => done(ch.value);
     });
-    box._buttons = buttons;
+    actionPick = done;
   });
 }
+function actionChoose(v) { if (actionPick) actionPick(v); }
 
 /* ---------- Toast and the T4 undo window ---------- */
 let toastState = null;
@@ -363,7 +365,7 @@ function showToast(message, action, opts = {}) {
   $(".msg span", el).textContent = message;
   screenEl.appendChild(el);
   enter(el);
-  log("toast enters" + (RM ? " (fade 200 ms)" : " (y 8 to 0 and fade, 280 ms)") + "; its action is hittable from the first frame");
+  log("m.toast enters" + (RM ? " (no rise)" : " (rises 8 pt; words m.enter)") + "; on iOS the glass materialises by style, never opacity (web shows the solid fallback); its action is hittable from the first frame");
   const st = {
     el, timer: null, revTimer: null,
     setAction(action, opts) {
@@ -371,7 +373,13 @@ function showToast(message, action, opts = {}) {
       clearTimeout(st.timer); clearInterval(st.revTimer); revReset();
       if (action) {
         const b = mk('<div class="act" role="button" tabindex="0"></div>'); b.textContent = action.label;
-        b.onclick = () => { if (b.getAttribute("aria-disabled") === "true") return; haptic("tap"); log(action.label + " tapped"); st.hide(); action.onPress && action.onPress(); };
+        b.onclick = () => {
+          if (b.getAttribute("aria-disabled") === "true") return;
+          haptic("tap"); log(action.label + " tapped: the outcome reverses first");
+          action.onPress && action.onPress();
+          if (action.label === "Undo") { st.closeAction("used"); swapText($(".msg", el), action.result || "Put back."); log("words m.swap to the result line (F1)"); announce(action.result || "Put back."); st.setAction(null, {}); }
+          else st.hide();
+        };
         el.appendChild(b);
         if (opts.windowS) st.window(opts.windowS, message, action);
         else log("action carries no timer: the toast stays until " + action.label + ", Close, a swipe down or the screen changes (T4 met)");
@@ -473,7 +481,7 @@ const PG = {
     '<div class="t2">Erase everything on this phone</div><p class="body">Every book, letter, recording and picture on this phone is erased. Your account is not.</p><div class="card"><div style="font-weight:600;margin-bottom:8px">Save a copy first</div><button class="btn secondary">Save a copy</button></div><button class="btn destructive full" id="erase">Erase everything</button></div>',
   del: (step) => {
     const head = '<div class="page" data-s="C-S20"><div class="navbar"><span class="back">&lt; Account</span>Delete account</div><div class="tag">C-S20.' + step + "</div>";
-    if (step === "whatHappens") return head + '<div class="t2">What happens</div><p class="body">Asha\'s book is deleted with your account, sealed letters too.</p><div class="card"><div style="font-weight:600;margin-bottom:8px">Save a copy first</div><button class="btn secondary">Save a copy</button></div><button class="btn primary full lg" id="cont">Continue</button></div>';
+    if (step === "what") return head + '<div class="t2">What happens</div><p class="body">Asha\'s book is deleted with your account, sealed letters too.</p><div class="card"><div style="font-weight:600;margin-bottom:8px">Save a copy first</div><button class="btn secondary">Save a copy</button></div><button class="btn primary full lg" id="cont">Continue</button></div>';
     if (step === "confirm") return head + '<div class="t2" id="ch">Delete your account?</div><p class="body">Type delete to confirm.</p><input class="field" id="typed" aria-label="Type delete" autocomplete="off"><div id="errslot"></div><button class="btn waiting full lg" id="delb" disabled>Delete account</button><button class="btn quiet full" id="keep">Keep my account</button></div>';
     if (step === "scheduled") return head + '<div class="t2">Deleting on 20 December</div><p class="body">Until then your book is here. Sealed letters are deleted with the account.</p><button class="btn secondary full" id="canceld">Cancel deletion</button><button class="btn quiet full">Sign out of this phone</button></div>';
     return head + '<div class="state">' + PAGEART + '<div class="t2">Getting things ready</div></div></div>';
@@ -501,29 +509,39 @@ item("M-C03", "C-S01", "Return to Me after a row left", N("Return to Me", "Nothi
   setScreen(PG.me()); $('[data-r="second"]', screenEl).remove(); log("Me renders without the row; nothing slides on return");
 });
 
+item("M-C68", "C-S01", "Me in its other states", N("Me while local only, signed out, under the kill switch, or a second account", "Nothing animates a state of Me", "m.instant", "same", "none"), async () => {
+  setScreen(PG.me()); log("C-S01.local, .signedout, .killswitch, .second-account: in place on the first frame");
+});
+
 // C-S02, C-S03
-item("M-C04", "C-S03", "Sign-out sheet rises", N("Tap Sign out", "Our Sheet rises; scrim fades in", "standard spring", "sheet and scrim fade, no travel, 200 ms", "none"), async (c) => {
+item("M-C04", "C-S03", "Sign-out sheet rises", N("Tap Sign out", "The F6 explained sheet rises; Stay signed in is the default", "m.sheet (system); here m.sheet.own: standard rise", "system reduced; here fade 200 ms, no travel", "none"), async (c) => {
   setScreen(PG.account()); await c.w(500); const s = sheet(signOutSheet()); await c.k(s.opened);
 });
-function signOutSheet() { return '<div class="tag">C-S03 Sign-out sheet</div><div class="t2">Sign out?</div><p class="body">Your letters and recordings stay on this phone. Anyone who opens the app here can read them. Use Erase everything to remove them.</p><button class="btn primary full lg" id="soc">Sign out</button><button class="btn quiet full" id="sox">Cancel</button>'; }
-item("M-C05", "C-S03", "Confirm sign-out: signed-out block fades in", N("Confirm Sign out", "Sheet falls; the signed-out block fades in in place. Nothing flies away, no cover closes", "sheet standard; block 200 ms (built PAGE_IN)", "fades", "none"), async (c) => {
+function signOutSheet() { return '<div class="tag">C-S03 Sign-out sheet (F6 explained)</div><div class="t2">Sign out?</div><p class="body">Your letters and recordings stay on this phone. Anyone who opens the app here can read them. Use Erase everything to remove them.</p><button class="btn primary full lg" id="sox">Stay signed in</button><button class="btn quiet full" id="soc">Sign out</button><button class="btn quiet full" id="soe" style="color:var(--destructive)">Sign out and erase this phone</button>'; }
+item("M-C05", "C-S03", "Sign out: back on Me, signed out", N("Tap Sign out", "The sheet leaves; Me shows its signed-out card (C-S01.signedout). Nothing flies away, no cover closes", "sheet system; card m.fade 200 ms", "fades", "none"), async (c) => {
   setScreen(PG.account()); await c.w(300); const s = sheet(signOutSheet()); await c.k(s.opened); await c.w(500);
-  log("Sign out confirmed (local scope, D1)"); await c.k(s.close());
-  const box = $("#acct", screenEl); const n = mk('<div><div class="list"><div class="row">Signed out. Your book is still on this phone.</div><div class="row" style="color:var(--accent)">Sign in</div></div></div>');
-  box.firstElementChild.remove(); box.appendChild(n); await c.k(fadeIn(n, M.fadeMs)); log("signed-out block in (200 ms)");
+  log("Sign out (local scope, D1)"); await c.k(s.close());
+  const me = mk(PG.me()); const card = mk('<div class="card"><div style="font-weight:600">Signed out</div><p class="sub" style="margin:4px 0 8px">Your book is still on this phone.</p><button class="btn secondary">Sign in</button></div>');
+  me.insertBefore(card, me.children[2]); card.style.opacity = 0; screenEl.appendChild(me); $(".page", screenEl).remove();
+  await c.k(fadeIn(card, M.fadeMs)); log("C-S01.signedout: the parent is on Me; the signed-out card arrives by m.fade 200 ms; nothing flies away");
 });
-item("M-C06", "C-S02", "Sign-out waiting: a static line, no spinner", N("Sign out while letters are still sending", "The waiting row's words only", "static", "static", "none"), async (c) => {
-  setScreen(PG.account()); const b = $("#signedin .list", screenEl); b.appendChild(mk('<div class="row" aria-busy="true">Finishing sending your letters, then signing out</div>'));
-  log("static line with accessibilityState.busy; the built ActivityIndicator is removed (E2, NS-33-R5)");
+item("M-C06", "C-S02", "Sign-out waiting: a static line, no spinner", N("Sign out while letters are still sending", "The waiting line replaces the Sign out row; static after that", "m.swap 150 ms", "same", "none"), async (c) => {
+  setScreen(PG.account()); await c.w(600); const so = $("#so", screenEl); so.style.color = "var(--text)"; so.innerHTML = '<span class="stack" id="sow"><span>Sign out</span></span>'; so.setAttribute("aria-busy", "true");
+  await c.k(swapText($("#sow", screenEl), "Finishing sending your letters, then signing out")); log("C-S02.waiting: m.swap 150 ms, then a static line with accessibilityState.busy; no indicator (area C choice; E2)");
 });
-item("M-C07", "C-S03", "Cancel sign-out", N("Cancel or swipe down", "Sheet falls", "standard", "200 ms fade", "none"), async (c) => {
-  setScreen(PG.account()); const s = sheet(signOutSheet()); await c.k(s.opened); await c.w(600); log("Cancel: still signed in"); await c.k(s.close());
+item("M-C07", "C-S03", "Stay signed in", N("Stay signed in, or swipe down", "The sheet leaves", "system (here m.sheet.own)", "system reduced (here fade)", "none"), async (c) => {
+  setScreen(PG.account()); const s = sheet(signOutSheet()); await c.k(s.opened); await c.w(600); log("Stay signed in: still signed in (D1 decline)"); await c.k(s.close());
+});
+
+item("M-C69", "C-S03", "Sign out and erase this phone", N("The sign-out sheet's third choice", "The sign-out sheet leaves; once it is gone, C-S19's confirmation sheet rises (never two sheets at once)", "system, in sequence", "system reduced", "none here; H-warning only on C-S19's confirm"), async (c) => {
+  setScreen(PG.account()); await c.w(300); const s1 = sheet(signOutSheet()); await c.k(s1.opened); await c.w(800); log("Sign out and erase this phone"); await c.k(s1.close());
+  const s2 = eraseSheet(); await c.k(s2.opened);
 });
 
 // C-S04 and C-S05
 async function startCopy(c, o = {}) {
   const go = $("#go", screenEl); await c.k(press(go)); const tap = performance.now();
-  haptic("press");
+  log("no haptic at start (v2 ENG-M10; built plays press)");
   const idle = $("#idle", screenEl); const act = $("#act", screenEl);
   const blk = mk('<div id="run"><div class="stack" id="phase" style="font-size:17px" aria-live="polite"><span>' + (o.printable ? "Getting the printable book ready" : "Getting your copy ready") + '</span></div>' +
     '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>' +
@@ -541,7 +559,7 @@ async function setFill(v) {
   const f = $("#fill", screenEl); if (!f) return; const from = fillVal; v = Math.max(v, from); fillVal = v;
   $(".bar", screenEl).setAttribute("aria-valuenow", Math.round(v * 100));
   if (RM) { f.style.transform = "scaleX(" + v + ")"; return; }
-  await A(f, [{ transform: "scaleX(" + from + ")" }, { transform: "scaleX(" + v + ")" }], M.fadeMs);
+  await A(f, [{ transform: "scaleX(" + from + ")" }, { transform: "scaleX(" + v + ")" }], M.fadeMs, { easing: "linear" });
   f.style.transform = "scaleX(" + v + ")";
 }
 async function runProgress(c, to, steps, o = {}) {
@@ -551,7 +569,7 @@ async function runProgress(c, to, steps, o = {}) {
     await c.w(250 + Math.random() * 450);
     v = Math.min(to, v + (to - fillVal) / (steps - i) + Math.random() * 0.02);
     for (const [at, t] of phases) { if (v >= at && !runProgress[t + c.id]) { runProgress[t + c.id] = 1; swapText($("#phase", screenEl), t); log("phase words cross-fade in place (" + M.swapMs + " ms)"); } }
-    log("progress " + (RM ? "steps" : "eases (scaleX, 200 ms)") + " to " + Math.round(Math.min(v, to) * 100) + " (value for VoiceOver only; never shown as a number)");
+    log("m.progress " + (RM ? "jumps" : "eases (scaleX, 200 ms linear)") + " to " + Math.round(Math.min(v, to) * 100) + " (value for VoiceOver only; never shown as a number)");
     await setFill(Math.min(v, to));
   }
 }
@@ -562,10 +580,10 @@ async function ready(c, o = {}) {
   haptic("success"); log("ready: hand-off; the check glyph is static (never draws on); no confetti, no sound, no wash");
   await c.k(handOff(run, rd)); announce(o.printable ? "The printable book is ready." : "Your copy is ready.");
 }
-item("M-C08", "C-S04", "Save a copy: progress within 500 ms", N("Tap Save a copy (after the app-lock check, if on)", "The action area is replaced in the same frame by the phase line, the empty bar and Stop", "0 ms (first frame after the tap)", "same", "press"), async (c) => {
+item("M-C08", "C-S04", "Save a copy: progress within 500 ms", N("Tap Save a copy (after the app-lock check, if on)", "The action area is replaced in the same frame by the phase line, the empty bar and Stop", "m.instant: first frame after the tap", "same", "none (v2 ENG-M10; built plays press)"), async (c) => {
   fillVal = 0; setScreen(PG.copy()); await c.w(600); await startCopy(c); await runProgress(c, 0.3, 3); log("continues: see M-C09");
 });
-item("M-C09", "C-S04", "Progress advances, then ready", N("Each progress update; then complete", "The bar's fill (scaleX from the left), never backwards; no shimmer, no percentage, no time left; then the hand-off to ready", "fill 200 ms M3 standard; hand-off 200 ms", "fill steps with no easing; hand-off is already a fade", "success at ready"), async (c) => {
+item("M-C09", "C-S04", "Progress advances, then ready", N("Each progress update; then complete", "m.progress: the fill (scaleX from the left), never backwards; no shimmer, no percentage, no time left; then m.fade to ready", "200 ms linear per reading; m.fade 200 ms", "the fill jumps to each value; the fade stays", "H-success at ready"), async (c) => {
   fillVal = 0; setScreen(PG.copy()); await c.w(400); await startCopy(c); await runProgress(c, 1, 7); await c.w(300); await ready(c);
 });
 item("M-C10", "C-S04", "Phase words swap in place", N("Phase changes", "Phase line cross-fades", "swapMs 150 ms", "same", "none"), async (c) => {
@@ -577,10 +595,10 @@ item("M-C11", "C-S04", "Low Power Mode line", N("Running with Low Power Mode on"
 item("M-C12", "C-S04", "Ready: the hand-off", N("The file is complete", "Progress block out, ready block in; static check, heading, Share", "hand-off 200 ms", "same", "success"), async (c) => {
   fillVal = 0; setScreen(PG.copy()); await c.w(300); await startCopy(c); await setFill(0.95); await c.w(500); await setFill(1); await c.w(150); await ready(c);
 });
-item("M-C13", "C-S04", "Share sheet, then the shared line", N("Tap Share; the system sheet completes or is cancelled", "System sheet; then the ready block hands off to the shared line", "system; hand-off 200 ms", "system; fade", "none"), async (c) => {
+item("M-C13", "C-S04", "Share sheet, then the shared line", N("Save or share; the system sheet completes or is cancelled", "The system share sheet; then the ready block becomes C-S04.saved (or .cancelled)", "system; m.fade 200 ms", "system; fade", "none"), async (c) => {
   fillVal = 0; setScreen(PG.copy()); await c.w(200); await startCopy(c); await setFill(1); await ready(c); await c.w(700);
-  log("tap Share: the system share sheet (approximated)"); const s = sheet('<div class="sub">System share sheet</div><div class="list"><div class="row">Save to Files</div><div class="row">AirDrop</div></div>'); await c.k(s.opened); await c.w(900); log("saved to Files (the destination is never learned)"); await c.k(s.close());
-  const rd = $("#ready", screenEl); const sh = mk('<div><div class="t2">Your copy is where you put it.</div><p class="sub">As private as where you keep it.</p></div>'); rd.parentNode.appendChild(sh); await c.k(handOff(rd, sh));
+  log("Save or share: the system share sheet (approximated)"); const s = sheet('<div class="sub">System share sheet</div><div class="list"><div class="row">Save to Files</div><div class="row">AirDrop</div></div>'); await c.k(s.opened); await c.w(900); log("saved to Files (the destination is never learned)"); await c.k(s.close());
+  const rd = $("#ready", screenEl); const sh = mk('<div><div class="t2">Your copy is where you put it.</div><p class="sub">As private as where you keep it.</p></div>'); rd.parentNode.appendChild(sh); await c.k(handOff(rd, sh)); log("C-S04.saved");
 });
 item("M-C14", "C-S04", "Stop", N("Tap Stop", "Hand-off to the stopped line and Start again", "200 ms", "same", "tap"), async (c) => {
   fillVal = 0; setScreen(PG.copy()); await c.w(300); await startCopy(c); await runProgress(c, 0.4, 2); await c.k(press($("#stop", screenEl))); haptic("tap");
@@ -595,7 +613,7 @@ item("M-C16", "C-S04", "Back from the background", N("Return to the app mid-copy
   fillVal = 0; setScreen(PG.copy()); await c.w(200); await startCopy(c); await runProgress(c, 0.35, 2);
   const cov = mk('<div class="bgcover">App in the background</div>'); screenEl.appendChild(cov); log("app goes to the background"); await c.w(1200); cov.remove(); log("back: the block is simply there, still running; no re-entry"); await runProgress(c, 0.5, 1);
 });
-item("M-C17", "C-S05", "Making the printable book", N("Tap Make the printable book and choose a book", "Same component as Save a copy; may run up to 60 s; Cancel keeps no file", "as M-C08 to M-C12", "as M-C08 to M-C12", "press, success"), async (c) => {
+item("M-C17", "C-S05", "Making the printable book", N("Tap Make the printable book and choose a book", "Same component as Save a copy; may run up to 60 s; Cancel keeps no file", "as M-C08 to M-C12", "as M-C08 to M-C12", "H-success at ready only"), async (c) => {
   fillVal = 0; setScreen(PG.copy({ printable: true })); await c.w(500); await startCopy(c, { printable: true }); await runProgress(c, 1, 10, { printable: true }); await ready(c, { printable: true });
 });
 item("M-C18", "C-S04", "Empty: nothing to copy", N("Open with no kept letters", "Nothing; the state is in place on the first frame", "0 ms", "same", "none"), async () => { setScreen(PG.copy({ empty: true })); log("static; the printable option is absent"); });
@@ -611,13 +629,13 @@ item("M-C19", "C-S06", "Slip on a cold launch", N("Home on a cold launch in the 
 item("M-C20", "C-S06", "Press the slip", N("Press the slip", "Card press 0.98 on snappy, then native push to Save a copy", "snappy", "opacity 0.9 instead of scale", "none"), async (c) => {
   setScreen(PG.home()); $(".lamp", screenEl).style.opacity = 0.6; await c.w(500); await c.k(press($("#slip", screenEl), true)); await push(PG.copy());
 });
-item("M-C21", "C-S06", "Dismiss the slip", N("Tap the slip's dismiss", "Slip fades; the space closes; content below moves up. No next slip slides in this visit", "exit 160 ms; close-up standard", "fade 200 ms; close at once", "none"), async (c) => {
+item("M-C21", "C-S06", "Dismiss the slip", N("Not now on the slip", "m.list.remove: the slip leaves; Home closes the gap. No next slip slides in this visit", "m.exit 160 ms, then m.move", "fade 160 ms; gap next frame", "none"), async (c) => {
   setScreen(PG.home()); $(".lamp", screenEl).style.opacity = 0.6; await c.w(700); await c.k(collapse($("#slip", screenEl))); log("VoiceOver focus moves to the next element in Home's order; the next slip waits for the next visit (card gap 3)");
 });
-item("M-C22", "C-S07", "Twins: which book", N("Tap the twins slip", "Our Sheet rises with two choices", "standard", "200 ms fade", "none on open; tap on a choice"), async (c) => {
+item("M-C22", "C-S07", "Twins: which book", N("Tap the twins slip", "The chooser sheet (m.sheet); it leaves before Save a copy is pushed", "system (here m.sheet.own)", "system reduced (here fade 200 ms)", "none"), async (c) => {
   setScreen(PG.home({ twins: true })); $(".lamp", screenEl).style.opacity = 0.6; await c.w(500); await c.k(press($("#slip", screenEl), true));
   const s = sheet('<div class="tag">C-S07 Which book</div><div class="t2">Which book?</div><div class="list"><div class="row" id="ca">Asha</div><div class="row">Second book</div></div>'); await c.k(s.opened); await c.w(700);
-  haptic("tap"); $("#ca", screenEl).classList.add("hl"); await c.w(150); await c.k(s.close()); await push(PG.copy());
+  $("#ca", screenEl).classList.add("hl"); await c.w(150); await c.k(s.close()); await push(PG.copy());
 });
 
 // C-S08, C-S09
@@ -631,11 +649,11 @@ item("M-C24", "C-S09", "Where the recording is: states change with no motion", N
 });
 
 // C-S10, C-S11, C-S12
-item("M-C25", "C-S10", "Opening your book", N("Sign-in on a new phone while the book is on its way", "StateScreen arrives; the moon breathes. No spinner, bar or count", "block 200 ms; breath 8 s loop", "block fade; moon still", "none"), async (c) => {
+item("M-C25", "C-S10", "Opening your book", N("Sign-in on a new phone while the book is on its way", "The C8 loading block arrives (C-S10.opening); the moon is complete and still. No spinner, bar or count", "m.fade 200 ms", "same", "none"), async (c) => {
   setScreen(PG.held("loading")); const pg = $(".page", screenEl); await c.k(fadeIn($(".state", pg))); breathe($(".drw", pg));
 });
 function bookCards(n, start = 0) { const out = []; for (let i = 0; i < n; i++) { const d = 20 - ((i + start) % 19); out.push(mk('<div class="lcard"><div class="d">' + d + ' October. Month 3</div><div class="w">Letter ' + (i + start + 1) + ": the rain on the window and your hand on mine.</div></div>")); } return out; }
-item("M-C26", "C-S10", "Held screen to the Book", N("The first letters arrived, or 10 s passed", "Hand-off; the Book's first view: header settles (gentle), first 6 cards stagger, lamp arrives. The C-S12 line is in place with the header", "hand-off 200 ms; enter 280 ms + 5 x 30 ms; lamp 1.2 s", "one 200 ms fade; lamp at level", "none"), async (c) => {
+item("M-C26", "C-S10", "Held screen to the Book", N("The first letters arrived, or 10 s passed", "m.fade to the Book's first view: the first 6 cards m.enter.group; the header band does not move; the lamp (if kept) arrives. The C-S12 line is in place with the header", "m.fade 200 ms; 280 ms + 5 x 30 ms; lamp 1.2 s", "one 200 ms fade; lamp at level", "none"), async (c) => {
   setScreen(PG.held("loading")); const held = $(".page", screenEl); breathe($(".drw", held)); await c.w(1200);
   const tmp = document.createElement("div"); tmp.innerHTML = PG.book(); const lampEl = tmp.querySelector(".lamp"); const bp = tmp.querySelector(".page"); const tb = tmp.querySelector(".tabbar");
   screenEl.insertBefore(lampEl, held); screenEl.appendChild(bp); screenEl.appendChild(tb);
@@ -643,11 +661,9 @@ item("M-C26", "C-S10", "Held screen to the Book", N("The first letters arrived, 
   const head = bp.querySelector("[data-h]"); [head, ...cards.slice(0, 6)].forEach((e) => (e.style.opacity = 0));
   await c.k(handOff(held, bp));
   lamp(0.6, M.lamp.arriveMs, "arrives (first lit room of the session)");
-  if (RM) { await c.k(Promise.all([head, ...cards.slice(0, 6)].map((e) => fadeIn(e)))); }
-  else {
-    log("header settles on gentle: opacity 0.6 to 1, y 6 to 0");
-    await c.k(Promise.all([springA(head, 0, 1, M.gentle, (v) => ({ opacity: 0.6 + 0.4 * Math.min(1, v), transform: "translateY(" + (6 * (1 - v)) + "px)" })), ...cards.slice(0, 6).map((e, i) => enter(e, i * M.staggerMs))]));
-  }
+  head.style.opacity = 1; log("the header band does not move (v2 retires the Book Settle); the C-S12 line is in place with it");
+  if (RM) { await c.k(Promise.all(cards.slice(0, 6).map((e) => fadeIn(e)))); }
+  else { log("first 6 cards: m.enter.group (280 ms, 30 ms apart)"); await c.k(Promise.all(cards.slice(0, 6).map((e, i) => enter(e, i * M.staggerMs)))); }
   [head, ...cards].forEach((e) => (e.style.opacity = 1));
 });
 item("M-C27", "C-S12", "Letters arrive while reading: anchored", N("More letters arrive by sync", "New cards appear in place with no entrance, stagger or wash; the scroll stays on the card being read; no count", "0 ms", "same", "none"), async (c) => {
@@ -670,10 +686,10 @@ item("M-C28", "C-S12", "All arrived: the line's words swap", N("The last letter 
 item("M-C29", "C-S12", "Dismiss the Book-level line", N("Tap dismiss", "Line fades; the list moves up into its space; never returns", "exit 160 ms; close-up standard", "fade 200 ms; close at once", "none"), async (c) => {
   setScreen(PG.book()); $(".lamp", screenEl).style.opacity = 0.6; bookCards(4).forEach((x) => $("#cards", screenEl).appendChild(x)); await c.w(800); await c.k(collapse($("#npline", screenEl)));
 });
-item("M-C30", "C-S10", "Held screen: offline", N("The pull cannot go on", "StateScreen replaced by hand-off; drawing complete and still", "200 ms", "same", "none"), async (c) => {
+item("M-C30", "C-S10", "Held screen: offline", N("The pull cannot go on, needs a choice, or ends", "The C8 block is replaced (C-S10.offline here; also .held, .noBook, .wrongAccount, .deletedElsewhere); drawing still", "m.fade 200 ms", "same", "none"), async (c) => {
   setScreen(PG.held("loading")); breathe($(".drw", screenEl)); await c.w(1100); const n = mk(PG.held("offline")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n));
 });
-item("M-C31", "C-S10", "Try again", N("Tap Try again", "Hand-off back to loading; the moon breathes again", "200 ms", "fade; still moon", "none"), async (c) => {
+item("M-C31", "C-S10", "Try again", N("Tap Try again", "Back to C-S10.opening", "m.fade 200 ms", "same", "none"), async (c) => {
   setScreen(PG.held("offline")); await c.w(700); await c.k(press($("#retry", screenEl))); const n = mk(PG.held("loading")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); breathe($(".drw", n));
 });
 item("M-C32", "C-S11", "Returning consent sheet", N("A Terms version is outstanding", "Our Sheet rises; not dismissible by swipe; after Agree it falls and the loading screen continues under it", "standard", "200 ms fade", "none (an agreement is recorded, not celebrated)"), async (c) => {
@@ -685,149 +701,171 @@ item("M-C33", "C-S11", "Decline: the declined screen", N("Tap Not now", "Sheet f
   await c.k(s.close()); const n = mk(PG.held("declined")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); log("Save a copy and Delete account are plain buttons: no emphasis motion");
 });
 
-// C-S13, C-S14
-item("M-C34", "C-S13", "Earlier versions load", N("Open the list", "Quiet loading line (still drawing) replaced by the list; rows do not stagger", "hand-off 200 ms", "same", "none"), async (c) => {
-  setScreen(PG.versions()); await c.w(900); const box = $("#vbox", screenEl); const n = mk(PG.vlist(2)); box.appendChild(n); await c.k(handOff($("#vload", screenEl), n));
+item("M-C72", "C-S10", "Kill switch at sign-in", N("serverFeaturesEnabled() off at sign-in", "The held screen never shows (R8): the local book opens as in M-C26", "as M-C26", "as M-C26", "none"), async (c) => {
+  setScreen(PG.book()); const cards = bookCards(6); cards.forEach((x) => { x.style.opacity = 0; $("#cards", screenEl).appendChild(x); });
+  log("C-S10.killswitch: no held screen; the local book"); await c.k(Promise.all(cards.map((e, i) => RM ? fadeIn(e) : enter(e, i * M.staggerMs)))); cards.forEach((e) => (e.style.opacity = 1));
 });
-item("M-C35", "C-S13", "Show all", N("Tap Show all", "Older rows appear at full opacity, no entrance; focus to the first new row", "0 ms", "same", "none"), async (c) => {
+
+// C-S13, C-S14
+item("M-C34", "C-S13", "Earlier versions load", N("Open the list when the fetch takes over 1 s", "Nothing for 1 s; then the quiet line; then the list replaces it; rows never stagger", "line m.fade after 1 s; list m.fade 200 ms", "same", "none"), async (c) => {
+  setScreen(PG.versions()); const ld = $("#vload", screenEl); ld.style.opacity = 0; log("nothing for the first second"); await c.w(1000);
+  await c.k(fadeIn(ld)); ld.style.opacity = 1; log("C-S13.loading: the quiet line arrives by m.fade (no indicator)"); await c.w(1000);
+  const box = $("#vbox", screenEl); const n = mk(PG.vlist(2)); box.appendChild(n); await c.k(handOff(ld, n));
+});
+item("M-C70", "C-S13", "Earlier versions: could not get them", N("The fetch fails, or the phone is offline", "The plain line replaces the loading line", "m.fade 200 ms", "same", "none"), async (c) => {
+  setScreen(PG.versions()); await c.w(1200); const box = $("#vbox", screenEl); const n = mk('<div class="sub">The earlier versions need a connection. This letter\'s words are as they were.</div>'); box.appendChild(n); await c.k(handOff($("#vload", screenEl), n)); log("C-S13.offline");
+});
+item("M-C35", "C-S13", "Show all", N("Tap Show all", "Older rows appear at full opacity, no entrance; focus to the first new row", "m.instant", "same", "none"), async (c) => {
   setScreen(PG.versions()); const box = $("#vbox", screenEl); $("#vload", box).remove(); box.appendChild(mk(PG.vlist(2))); await c.w(800);
   $("#vl", screenEl).appendChild(mk('<div class="row">3 November<span class="chev">&gt;</span></div>')); $("#showall", screenEl).remove(); log("older rows in place; VoiceOver focus to the first one; no count");
 });
-item("M-C36", "C-S14", "An earlier version (read-only)", N("Tap a version", "Native push; the page is still", "system", "system", "none"), async (c) => {
+item("M-C36", "C-S14", "An earlier version (read-only)", N("Tap a version", "m.push; the page is still", "system", "system", "none"), async (c) => {
   setScreen(PG.versions()); const box = $("#vbox", screenEl); $("#vload", box).remove(); box.appendChild(mk(PG.vlist(3))); await c.w(500); await push(PG.version());
 });
-item("M-C37", "C-S14", "Restore", N("Tap Restore", "Commit; pop back to the letter; its words cross-fade in place; a toast with no action. No wash, no badge, no Undo", "pop system; words 150 ms; toast 280 ms", "pop reduced; fades", "tap"), async (c) => {
+item("M-C37", "C-S14", "Restore", N("Tap Restore (no confirm)", "Commit; back to the letter; its words swap as one block; a toast with no action. No tint, no badge, no Undo", "pop system; words m.swap 150 ms; m.toast", "pop reduced; fades", "H-select"), async (c) => {
   setScreen(PG.version()); await c.w(700); await c.k(press($("#restore", screenEl))); haptic("tap"); log("new version committed first; nothing deleted");
   await pop(PG.letter()); const w = $("#words", screenEl); w.innerHTML = '<span class="stack" id="ws"><span>You found your toes today and would not let them go.</span></span>';
-  await c.k(swapText($("#ws", screenEl), "You found your toes today.")); showToast("These words are back.");
+  await c.k(swapText($("#ws", screenEl), "You found your toes today.")); log("the words swap as one block, never per word"); showToast("These words are back. The words before are in Earlier versions.");
 });
-item("M-C38", "C-S14", "Remove an earlier version", N("Tap Remove; confirm (default Cancel)", "Sheet; pop to the list; the row fades and rows close up", "sheet standard; row 160 ms; close-up standard", "fades; close at once", "warning on the confirming tap"), async (c) => {
-  setScreen(PG.version()); await c.w(500); const s = sheet('<div class="t2">Remove this version?</div><p class="body">It is removed from this phone and your account. The words as heard stay.</p><button class="btn destructive full lg" id="rm1">Remove</button><button class="btn quiet full">Cancel</button>'); await c.k(s.opened); await c.w(700);
-  haptic("warning"); await c.k(s.close());
-  const tmp = mk(PG.versions()); await pop(tmp.outerHTML); const box = $("#vbox", screenEl); $("#vload", box).remove(); box.appendChild(mk(PG.vlist(3))); await c.w(250);
+item("M-C38", "C-S14", "Remove an earlier version", N("Tap Remove, then the destructive choice", "F6 simple: native action sheet (Keep it the default); back to the list; the row leaves", "T-ALERT (system); m.list.remove", "system; row fades 160 ms, gap next frame", "H-warning after the choice"), async (c) => {
+  setScreen(PG.version()); await c.w(500); await c.k(press($("#remove", screenEl)));
+  const p = actionSheet("Remove this version? The words as heard stay.", [{ text: "Remove version", style: "destructive", value: 1 }, { text: "Keep it", style: "cancel", value: 0 }]);
+  await c.w(1000); actionChoose(1); await c.k(p); haptic("warning");
+  await pop(PG.versions()); const box = $("#vbox", screenEl); $("#vload", box).remove(); box.appendChild(mk(PG.vlist(3))); await c.w(250);
   await c.k(collapse($("#vl .row:nth-child(2)", screenEl)));
 });
 
 // C-S15, C-S16
-item("M-C39", "C-S15", "Quiet this book", N("Turn Quiet on or off", "The switch thumb (system); the explaining line swaps in place; nothing dims the name", "switch system (snappy here); line 150 ms", "switch system; line same", "tap"), async (c) => {
+item("M-C39", "C-S15", "Quiet this book", N("Turn Quiet on or off (I5 Toggle)", "The system switch; the explaining line's words. Nothing dims the book name", "switch system (snappy here); line m.swap 150 ms", "switch system; line same", "the system switch's own, none of ours"), async (c) => {
   setScreen(PG.bookset()); await c.w(700); const sw = $("#qsw", screenEl); const k = $(".k", sw);
   for (const on of [true, false]) {
-    haptic("tap"); sw.classList.toggle("on", on);
+    log("switch " + (on ? "on" : "off") + ": the system plays its own haptic; we add none"); sw.classList.toggle("on", on);
     if (RM) k.style.transform = "translateX(" + (on ? 20 : 0) + "px)"; else await springA(k, on ? 0 : 20, on ? 20 : 0, M.snappy, (v) => ({ transform: "translateX(" + v + "px)" }));
     await c.k(swapText($("#qline", screenEl), on ? "No reminders or Home slips for Asha until you turn this off." : "Reminders and Home slips for Asha are on.")); await c.w(1200);
   }
 });
-item("M-C40", "C-S15", "Hide this book", N("Hide, then confirm in the system alert", "Alert; native pop to Me; the book's row fades and rows close up", "alert system; row 160 ms; close-up standard", "row fade 200 ms; close at once", "none (built)"), async (c) => {
-  setScreen(PG.bookset()); await c.w(500); const p = systemAlert("Hide this book", "Asha's book is hidden on this phone. Nothing is deleted.", [{ text: "Cancel", style: "cancel", value: 0 }, { text: "Hide this book", value: 1 }]);
-  await c.w(900); $(".alertbox .abtn:last-child", screenEl).click(); await c.k(p); await pop(PG.me()); await c.w(120); await c.k(collapse($('[data-r="asha"]', screenEl)));
+item("M-C40", "C-S15", "Hide this book", N("Hide this book, then confirm (F6 simple)", "Native action sheet; back to Me; the book's row leaves", "T-ALERT; m.push back; m.list.remove", "system; row fades 160 ms, gap next frame", "none (nothing is deleted)"), async (c) => {
+  setScreen(PG.bookset()); await c.w(500); const p = actionSheet("Asha's book is hidden on this phone. Nothing is deleted.", [{ text: "Hide this book", value: 1 }, { text: "Cancel", style: "cancel", value: 0 }]);
+  await c.w(1000); actionChoose(1); await c.k(p); await pop(PG.me()); await c.w(120); await c.k(collapse($('[data-r="asha"]', screenEl)));
 });
-item("M-C41", "C-S16", "Show a hidden book again", N("Show again", "Row fades and closes up; when none are left the empty state arrives by hand-off", "160 ms, standard; empty 200 ms", "fade 200 ms", "success (built)"), async (c) => {
-  setScreen(PG.hidden()); await c.w(700); haptic("success"); const box = $("#hbox", screenEl); const old = box.firstElementChild; const row = $("#hl .row", screenEl);
+item("M-C71", "C-S15", "A book setting could not be saved", N("A setting fails to save", "One line arrives beside the control", "m.enter 280 ms", "fade 200 ms", "none"), async (c) => {
+  setScreen(PG.bookset()); await c.w(600); const e = mk('<div class="err"><span class="ic"></span><span>That did not save. Nothing has changed.</span></div>'); const lists = screenEl.querySelectorAll(".list"); lists[1].after(e); await c.k(enter(e)); log("C-S15.error: no shake, no red");
+});
+item("M-C41", "C-S16", "Show a hidden book again", N("Show again", "The row leaves; when none are left the empty state replaces the list", "m.list.remove; m.fade 200 ms", "row fade 160 ms", "none (v2 ENG-M10 removes the built success)"), async (c) => {
+  setScreen(PG.hidden()); await c.w(700); log("no haptic (built plays success: E8)"); const box = $("#hbox", screenEl); const old = box.firstElementChild; const row = $("#hl .row", screenEl);
   const pr = collapse(row); const e = mk('<div class="state" style="padding-top:60px">' + ENVELOPE + '<p class="sub">No hidden books.</p></div>'); await c.w(80); box.appendChild(e); await c.k(Promise.all([pr, handOff(old, e)]));
 });
 
 // C-S17
 function rowOf(i) { return $("#rl", screenEl).children[i]; }
-item("M-C42", "C-S17", "Restore", N("Tap Restore", "Row fades; rows close up; toast with Open (no timer)", "row 160 ms; close-up standard; toast 280 ms", "row fade 200 ms; no spring", "tap"), async (c) => {
-  setScreen(PG.recent(3)); await c.w(700); haptic("tap"); await c.k(collapse(rowOf(0))); showToast("Back in Asha's book.", { label: "Open" }); log("back in the Book with no wash");
+item("M-C42", "C-S17", "Restore", N("Tap Restore", "The row leaves; rows close up; toast with Open (no timer)", "m.list.remove; m.toast", "row fade; gap next frame", "H-select"), async (c) => {
+  setScreen(PG.recent(3)); await c.w(700); haptic("tap"); await c.k(collapse(rowOf(0))); showToast("Back in Asha's book.", { label: "Open" }); log("back in the Book with no tint");
 });
-item("M-C43", "C-S17", "Erase now", N("Tap Erase now; confirm (default Keep)", "Sheet; row fades and closes up; toast without action, 4 s, never while VoiceOver runs", "sheet standard; row 160 ms; close-up standard", "fades; close at once", "warning on the confirming tap"), async (c) => {
-  setScreen(PG.recent(3)); await c.w(500); const s = sheet('<div class="t2">Erase this letter now?</div><p class="body">It cannot be brought back.</p><button class="btn destructive full lg">Erase now</button><button class="btn quiet full">Keep it</button>'); await c.k(s.opened); await c.w(800);
-  haptic("warning"); await c.k(s.close()); await c.k(collapse(rowOf(1))); showToast("Letter erased.");
+item("M-C43", "C-S17", "Erase now", N("Tap Erase now, then the destructive choice (F6 simple)", "Native action sheet; the row leaves; toast without action (4 s, never while VoiceOver runs)", "T-ALERT; m.list.remove; m.toast", "system; row fade; toast no rise", "H-warning after the choice"), async (c) => {
+  setScreen(PG.recent(3)); await c.w(500); log("no haptic at the ask (built plays warning here: E6)");
+  const p = actionSheet("Erase this letter now? It cannot be brought back.", [{ text: "Erase now", style: "destructive", value: 1 }, { text: "Keep it", style: "cancel", value: 0 }]);
+  await c.w(1000); actionChoose(1); await c.k(p); haptic("warning"); await c.k(collapse(rowOf(1))); showToast("Letter erased.");
 });
-item("M-C44", "C-S17", "Erase now could not finish", N("The recording file could not be removed", "Nothing leaves; the row stays; a toast says so", "toast 280 ms", "toast fade", "none"), async (c) => {
-  setScreen(PG.recent(3)); await c.w(400); const s = sheet('<div class="t2">Erase this letter now?</div><button class="btn destructive full lg">Erase now</button><button class="btn quiet full">Keep it</button>'); await c.k(s.opened); await c.w(600);
-  haptic("warning"); await c.k(s.close()); log("the row does not move"); showToast("The letter was not erased. It is still here.");
+item("M-C44", "C-S17", "Erase now could not finish", N("The recording file could not be removed", "Nothing leaves; the row stays; a toast says so", "m.toast", "no rise", "H-warning was for the choice; none for the failure"), async (c) => {
+  setScreen(PG.recent(3)); await c.w(400); const p = actionSheet("Erase this letter now?", [{ text: "Erase now", style: "destructive", value: 1 }, { text: "Keep it", style: "cancel", value: 0 }]);
+  await c.w(900); actionChoose(1); await c.k(p); haptic("warning"); log("C-S17.error-erase_failed: the row does not move"); showToast("The letter was not erased. It is still here.");
 });
-item("M-C45", "C-S17", "A sealed letter's row", N("Restore or Erase now on a sealed letter", "Same as M-C42 and M-C43; no envelope or seal imagery animates", "same", "same", "same"), async (c) => {
+item("M-C45", "C-S17", "A sealed letter's row", N("Restore or Erase now on a sealed letter", "As M-C42 and M-C43; no envelope or seal imagery moves", "same", "same", "same"), async (c) => {
   setScreen(PG.recent(2, true)); await c.w(700); haptic("tap"); await c.k(collapse(rowOf(0))); showToast("Back in Asha's book.", { label: "Open" });
 });
-item("M-C46", "C-S17", "The 30 days end", N("Purge while open (rare)", "Nothing animates a purge; the row is absent at the next render", "0 ms", "same", "none"), async (c) => {
+item("M-C46", "C-S17", "The 30 days end", N("Purge while open (rare)", "Nothing animates a purge; the row is absent at the next render", "m.instant", "same", "none"), async (c) => {
   setScreen(PG.recent(3)); await c.w(1000); rowOf(2).remove(); log("row absent at the next render; a purge is never a moment");
 });
-item("M-C47", "C-S17", "Last row leaves: empty", N("The last row leaves", "Empty state arrives by hand-off as the row fades; drawing still (no breath on a deletion page)", "done by about 280 ms", "200 ms fade after the row's fade", "tap (from Restore)"), async (c) => {
+item("M-C47", "C-S17", "Last row leaves: empty", N("The last row leaves", "The C8 empty state replaces the list as the row fades; drawing still", "m.fade 200 ms with the row's exit", "row fade, then 200 ms fade", "as the act that emptied it"), async (c) => {
   setScreen(PG.recent(1)); await c.w(700); haptic("tap"); const box = $("#rbox", screenEl); const old = box.firstElementChild;
   const e = mk('<div class="state" style="padding-top:60px">' + ENVELOPE + '<p class="sub">Nothing here. Letters you delete stay here for 30 days.</p></div>');
-  if (RM) { await c.k(fadeOut(old)); box.appendChild(e); await c.k(fadeIn(e)); old.remove(); } else { box.appendChild(e); await c.k(handOff(old, e)); }
+  if (RM) { await c.k(fadeOut(old, M.exitMs)); box.appendChild(e); await c.k(fadeIn(e)); old.remove(); } else { box.appendChild(e); await c.k(handOff(old, e)); }
 });
 
 // C-S18
-item("M-C48", "C-S18", "Remove now", N("Tap Remove now; removal succeeds", "Row fades; rows close up; no second confirmation", "160 ms; standard", "fade 200 ms; close at once", "tap"), async (c) => {
+item("M-C48", "C-S18", "Remove now", N("Tap Remove now; removal succeeds", "The row leaves; no second confirmation; no toast", "m.list.remove", "row fades 160 ms", "H-select"), async (c) => {
   setScreen(PG.storage()); await c.w(700); await c.k(press($("#rnow", screenEl))); haptic("tap"); await c.k(collapse($("#stuck", screenEl)));
 });
-item("M-C49", "C-S18", "Remove now fails again", N("Remove now fails", "Nothing moves; VoiceOver re-reads the line (card gap 5)", "0 ms", "same", "none"), async (c) => {
-  setScreen(PG.storage()); await c.w(700); await c.k(press($("#rnow", screenEl))); log("removal failed again: the line stays as it was"); announce("One recording is still on this phone.");
+item("M-C49", "C-S18", "Remove now fails again", N("Remove now fails", "Nothing moves (C-S18.stuckAgain); VoiceOver re-reads the line (card gap 5)", "m.instant", "same", "none"), async (c) => {
+  setScreen(PG.storage()); await c.w(700); await c.k(press($("#rnow", screenEl))); log("C-S18.stuckAgain: the line stays as it was"); announce("One recording is still on this phone.");
 });
 
 // C-S19
-item("M-C50", "C-S19", "Erase everything: the page", N("Open", "Nothing; the destructive button never pulses, glows or shakes", "0 ms", "same", "none"), async (c) => { setScreen(PG.me()); await c.w(300); await push(PG.erase()); });
-item("M-C51", "C-S19", "The confirmation", N("Tap Erase everything", "The system alert", "system", "system", "none at the ask; warning on the confirming Erase"), async (c) => {
-  setScreen(PG.erase()); await c.w(600); await c.k(press($("#erase", screenEl)));
-  const p = systemAlert("Erase everything on this phone?", "This cannot be brought back.", [{ text: "Keep everything", style: "cancel", value: 0 }, { text: "Erase", style: "destructive", value: 1 }]);
-  log("no haptic at the ask (built plays warning here: E6)"); await c.w(1200); haptic("warning"); $(".alertbox .abtn:last-child", screenEl).click(); await c.k(p);
+function eraseSheet() { return sheet('<div class="tag">C-S19.confirm (F6 explained)</div><div class="t2">Erase everything on this phone?</div><p class="body">This cannot be undone. Your account is not deleted.</p><button class="btn primary full lg">Keep everything</button><button class="btn quiet full" style="color:var(--destructive)">Erase</button>'); }
+item("M-C50", "C-S19", "Erase everything: the page", N("Open", "Nothing; the destructive button never pulses, glows or shakes", "m.push then still", "system", "none"), async (c) => { setScreen(PG.me()); await c.w(300); await push(PG.erase()); });
+item("M-C51", "C-S19", "The confirmation", N("Tap Erase everything", "F6 explained sheet: Keep everything first and default, Erase destructive", "m.sheet (system); here m.sheet.own", "system reduced; here fade 200 ms", "none at the ask; H-warning after Erase"), async (c) => {
+  setScreen(PG.erase()); await c.w(600); await c.k(press($("#erase", screenEl))); log("no haptic at the ask (built plays warning here: E6)");
+  const s = eraseSheet(); await c.k(s.opened); await c.w(1100); log("Erase chosen"); haptic("warning"); await c.k(s.close());
 });
-item("M-C52", "C-S19", "Erasing", N("Confirm", "Hand-off to the Erasing StateScreen; the drawing breathes. No bar, no count, nothing disappearing one by one", "200 ms; breath 8 s", "fade; still drawing", "none (warning already played)"), async (c) => {
-  setScreen(PG.erase()); await c.w(400); const n = mk('<div class="page"><div class="tag">C-S19.erasing</div><div class="state"><div class="drw">' + PAGEART + '</div><div class="t2">Erasing</div></div></div>'); screenEl.appendChild(n);
+item("M-C52", "C-S19", "Erasing", N("Erase confirmed", "The sheet leaves; the C8 loading block replaces the page; drawing still; no bar, no count", "sheet system; m.fade 200 ms", "same", "none (H-warning already played)"), async (c) => {
+  setScreen(PG.erase()); await c.w(300); const s = eraseSheet(); await c.k(s.opened); await c.w(600); haptic("warning"); await c.k(s.close());
+  const n = mk('<div class="page"><div class="tag">C-S19.erasing</div><div class="state"><div class="drw">' + PAGEART + '</div><div class="t2">Erasing</div></div></div>'); screenEl.appendChild(n);
   await c.k(handOff($(".page", screenEl), n)); breathe($(".drw", n)); log("back, swipe and Android back are held");
 });
-item("M-C53", "C-S19", "Erase done: the age question", N("The erase ends", "Hand-off to the age question; the lamp returns (280 ms), never a 1.2 s dawn", "200 ms; lamp 280 ms (H1)", "one 200 ms fade; lamp at level", "none"), async (c) => {
-  setScreen('<div class="page"><div class="state"><div class="drw">' + PAGEART + '</div><div class="t2">Erasing</div></div></div>'); breathe($(".drw", screenEl)); await c.w(1400);
+item("M-C53", "C-S19", "Erase done: the age question", N("The erase ends", "m.fade to the age question; the lamp (if kept) returns over 280 ms, never a 1.2 s dawn", "m.fade 200 ms; lamp 280 ms (H1)", "one 200 ms fade; lamp at level", "none"), async (c) => {
+  setScreen('<div class="page"><div class="state"><div class="drw">' + PAGEART + '</div><div class="t2">Erasing</div></div></div>'); await c.w(1400);
   const old = $(".page", screenEl); const tmp = document.createElement("div"); tmp.innerHTML = PG.agegate(); const l = tmp.querySelector(".lamp"); const n = tmp.querySelector(".page");
   screenEl.insertBefore(l, old); screenEl.appendChild(n); await c.k(handOff(old, n)); await lamp(0.6, M.lamp.returnMs, "returns (not arrives)"); announce("Everything on this phone is erased.");
 });
-item("M-C54", "C-S19", "Erase did not finish", N("The erase failed", "The page returns at its top with the failure line first; no shake", "200 ms", "same", "none"), async (c) => {
+item("M-C54", "C-S19", "Erase did not finish", N("The erase failed", "The page returns at its top with the failure line first; no shake", "m.fade 200 ms", "same", "none"), async (c) => {
   setScreen('<div class="page"><div class="state"><div class="drw">' + PAGEART + '</div><div class="t2">Erasing</div></div></div>'); await c.w(1000);
-  const n = mk(PG.erase(true)); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); log("failure line first in VoiceOver order");
+  const n = mk(PG.erase(true)); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); log("C-S19.error-failed: the failure line is first in VoiceOver order");
 });
 
 // C-S20
-item("M-C55", "C-S20", "Delete account loads", N("Open while the per-book lines load", "Still loading state, then hand-off to step 1. No spinner (E2)", "200 ms", "same", "none"), async (c) => {
-  setScreen(PG.del("loading")); await c.w(900); const n = mk(PG.del("whatHappens")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n));
+item("M-C55", "C-S20", "Delete account loads", N("Open while the per-book lines load", "A still line, then step 1 replaces it; no spinner (E2)", "m.fade 200 ms", "same", "none"), async (c) => {
+  setScreen(PG.del("loading")); await c.w(900); const n = mk(PG.del("what")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n));
 });
-item("M-C56", "C-S20", "Step 1 to step 2", N("Continue", "Hand-off in place; focus to step 2's heading", "200 ms", "same", "none"), async (c) => {
-  setScreen(PG.del("whatHappens")); await c.w(700); await c.k(press($("#cont", screenEl))); const n = mk(PG.del("confirm")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n));
+item("M-C56", "C-S20", "Step 1 to step 2", N("Continue", "m.step (T-STEP): the words leave, the next words arrive; focus to step 2's heading", "160 ms then 280 ms", "fade out 200, fade in 200", "none"), async (c) => {
+  setScreen(PG.del("what")); await c.w(700); await c.k(press($("#cont", screenEl)));
+  const old = $(".page", screenEl); const words = [...old.querySelectorAll(".t2,.body,.card")];
+  log("m.step: words m.exit" + (RM ? " (fade 200)" : " (160 ms, y 0 to -8)"));
+  await c.k(Promise.all(words.map((w) => RM ? fadeOut(w, M.fadeMs) : A(w, [{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(-8px)" }], M.exitMs))));
+  const n = mk(PG.del("confirm")); const nw = [...n.querySelectorAll(".t2,.body,.field")]; nw.forEach((w) => (w.style.opacity = 0)); screenEl.appendChild(n); old.remove();
+  log("next words m.enter" + (RM ? " (fade 200)" : " (280 ms)") + "; VoiceOver focus to the heading"); await c.k(Promise.all(nw.map((w) => enter(w)))); nw.forEach((w) => (w.style.opacity = 1));
 });
 async function typeDelete(c) {
   const f = $("#typed", screenEl); const b = $("#delb", screenEl);
   for (const ch of "delete") { f.value += ch; await c.w(160); }
-  b.disabled = false; b.className = "btn destructive full lg"; log("the word matches: the button fills at once (no glow, pulse or colour tween)");
+  b.disabled = false; b.className = "btn destructive full lg"; b.innerHTML = '<span class="stack" id="dlw"><span>' + b.textContent + "</span></span>"; log("the word matches: the button fills on that frame (no glow, pulse or colour tween)");
 }
-item("M-C57", "C-S20", "Typing enables the button", N("Typing the word", "The button changes from outline to filled at once", "0 ms", "same", "none while typing"), async (c) => { setScreen(PG.del("confirm")); await c.w(500); await typeDelete(c); });
-item("M-C58", "C-S20", "Sending", N("Tap Delete account", "The button holds its place; a static busy label, no spinner", "0 ms", "same", "warning (built)"), async (c) => {
-  setScreen(PG.del("confirm")); await c.w(300); await typeDelete(c); await c.w(400); const b = $("#delb", screenEl); haptic("warning"); b.textContent = "Sending"; b.setAttribute("aria-busy", "true"); $("#keep", screenEl).disabled = true; log("busy: static label, accessibilityState.busy; Keep my account disabled while sending");
+item("M-C57", "C-S20", "Typing enables the button", N("Typing the word", "The button becomes filled on the frame the word matches", "m.instant", "same", "none while typing"), async (c) => { setScreen(PG.del("confirm")); await c.w(500); await typeDelete(c); });
+item("M-C58", "C-S20", "Sending", N("Tap Delete account", "The button keeps its place; its label swaps to a static busy word; Keep my account disabled", "label m.swap 150 ms", "same", "H-warning (built, on the press)"), async (c) => {
+  setScreen(PG.del("confirm")); await c.w(300); await typeDelete(c); await c.w(400); haptic("warning"); $("#delb", screenEl).setAttribute("aria-busy", "true"); $("#keep", screenEl).disabled = true;
+  await c.k(swapText($("#dlw", screenEl), "Sending")); log("C-S20.sending: static busy label with accessibilityState.busy; no indicator (area C choice; E2)");
 });
-item("M-C59", "C-S20", "Scheduled", N("The request is accepted", "Hand-off to the scheduled page (date, D6 line). Nothing closes or fades to black", "200 ms", "same", "none"), async (c) => {
-  setScreen(PG.del("confirm")); await c.w(200); await typeDelete(c); await c.w(300); haptic("warning"); $("#delb", screenEl).textContent = "Sending"; await c.w(900);
+item("M-C59", "C-S20", "Scheduled", N("The request is accepted", "The scheduled page replaces the step (date, D6 line). Nothing closes or fades to black", "m.fade 200 ms", "same", "none"), async (c) => {
+  setScreen(PG.del("confirm")); await c.w(200); await typeDelete(c); await c.w(300); haptic("warning"); await c.k(swapText($("#dlw", screenEl), "Sending")); await c.w(900);
   const n = mk(PG.del("scheduled")); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n));
 });
-item("M-C60", "C-S20", "Cancel deletion", N("Cancel deletion", "Hand-off back; toast with the result line", "200 ms; toast 280 ms", "fades", "success (built)"), async (c) => {
-  setScreen(PG.del("scheduled")); await c.w(700); await c.k(press($("#canceld", screenEl))); haptic("success");
-  const n = mk('<div class="page"><div class="navbar"><span class="back">&lt; Me</span>Account</div><div class="list"><div class="row">Signed in with Apple</div><div class="row" style="color:var(--destructive)">Delete account</div></div></div>'); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); showToast("Your account is staying.");
+item("M-C60", "C-S20", "Cancel deletion", N("Cancel deletion", "The cancelled state replaces scheduled; a toast with the result line", "m.fade 200 ms; m.toast", "fades", "none (v2 ENG-M10 removes the built success)"), async (c) => {
+  setScreen(PG.del("scheduled")); await c.w(700); await c.k(press($("#canceld", screenEl))); log("no haptic (built plays success: E8)");
+  const n = mk('<div class="page"><div class="navbar"><span class="back">&lt; Account</span>Delete account</div><div class="tag">C-S20.cancelled</div><p class="body">Your account is staying. Nothing was deleted.</p></div>'); screenEl.appendChild(n); await c.k(handOff($(".page", screenEl), n)); showToast("Your account is staying.");
 });
-item("M-C61", "C-S20", "The request fails", N("The request fails", "One failure line fades in beside the button; nothing else moves", "200 ms", "same", "none"), async (c) => {
+item("M-C61", "C-S20", "The request fails", N("The request fails or the phone is offline", "One failure line arrives beside the button; nothing else moves", "m.enter 280 ms", "fade 200 ms", "none"), async (c) => {
   setScreen(PG.del("confirm")); await c.w(200); await typeDelete(c); await c.w(300); haptic("warning"); await c.w(700);
-  const e = mk('<div class="err"><span class="ic"></span><span>That did not go through. Nothing has changed.</span></div>'); $("#errslot", screenEl).appendChild(e); await c.k(fadeIn(e)); log("no shake; Try again is the same button");
+  const e = mk('<div class="err"><span class="ic"></span><span>That did not go through. Nothing has changed.</span></div>'); $("#errslot", screenEl).appendChild(e); await c.k(enter(e)); log("C-S20.error-failed: no shake; Try again is the same button");
 });
-item("M-C62", "C-S20", "Executing and other states", N("Executing, signed out, kill switch", "Arrive by the 200 ms fade", "200 ms", "same", "none"), async (c) => {
-  setScreen('<div class="page"><div class="state">' + PAGEART + '<div class="t2">Your account is being deleted</div></div></div>'); await c.k(fadeIn($(".state", screenEl)));
+item("M-C62", "C-S20", "Executing and other states", N("Executing, signed out, not configured", "The state is in place or replaces another by a fade", "m.fade 200 ms", "same", "none"), async (c) => {
+  setScreen('<div class="page"><div class="tag">C-S20.executing</div><div class="state">' + PAGEART + '<div class="t2">Your account is being deleted</div></div></div>'); await c.k(fadeIn($(".state", screenEl)));
 });
 
 // C-S21 flip only
-item("M-C63", "C-S21", "Backup consent sheet (flip only)", N("After the first kept spoken letter (flip build only)", "Our Sheet rises; today absent", "standard", "200 ms fade", "none"), async (c) => {
-  setScreen(PG.letter()); await c.w(400); const s = sheet('<div class="tag">C-S21.consent (flip only)</div><div class="t2">Back up your recordings?</div><p class="body">Placeholder: the door lines of NS-08 section 12.</p><button class="btn primary full lg">Yes</button><button class="btn quiet full">Not now</button>'); await c.k(s.opened);
+item("M-C63", "C-S21", "Backup consent sheet (flip only)", N("After the first kept spoken letter (flip build only)", "The consent sheet; today C-S21.absent", "m.sheet", "system reduced", "none"), async (c) => {
+  setScreen(PG.letter()); await c.w(400); const s = sheet('<div class="tag">C-S21.consent (flip only)</div><div class="t2">Back up your recordings?</div><p class="body">Placeholder: the door lines of NS-08 section 12.</p><button class="btn primary full lg">Not now</button><button class="btn quiet full">Yes, back them up</button>'); await c.k(s.opened);
 });
-item("M-C64", "C-S21", "Uploads: nothing on screen", N("Any upload (flip)", "Nothing; no indicator, badge or progress", "0 ms", "same", "none"), async () => { setScreen(PG.letter()); log("an upload runs; the screen does not change; the provenance row is the only signal (M-C24)"); });
-item("M-C65", "C-S21", "Stop backup (flip)", N("Confirm Stop backup", "Confirmation sheet; then the row's words swap", "standard; 150 ms", "fades", "warning on the confirm"), async (c) => {
-  setScreen('<div class="page"><div class="navbar"><span class="back">&lt; Me</span>Recording backup</div><div class="list"><div class="row"><span class="stack" id="bk"><span>Backup is on.</span></span></div><div class="row" style="color:var(--destructive)">Stop backup</div></div></div>'); await c.w(500);
-  const s = sheet('<div class="t2">Stop backup?</div><p class="body">Recordings stay on this phone. Copies with us are deleted on the published clock.</p><button class="btn destructive full lg">Stop backup</button><button class="btn quiet full">Cancel</button>'); await c.k(s.opened); await c.w(700);
-  haptic("warning"); await c.k(s.close()); await c.k(swapText($("#bk", screenEl), "Backup is off. Recordings are on this phone."));
+item("M-C64", "C-S21", "Uploads: nothing on screen", N("Any upload (flip)", "Nothing; no indicator, badge or progress", "none", "none", "none"), async () => { setScreen(PG.letter()); log("an upload runs; the screen does not change; C-S09 is the only signal (M-C24)"); });
+item("M-C65", "C-S21", "Stop backup (flip)", N("Stop backup, then the destructive choice", "F6 confirmation; then the row's words", "system; m.swap 150 ms", "system; same", "H-warning after the choice"), async (c) => {
+  setScreen('<div class="page"><div class="navbar"><span class="back">&lt; Me</span>Recording backup</div><div class="tag">C-S21.on (flip only)</div><div class="list"><div class="row"><span class="stack" id="bk"><span>Backup is on.</span></span></div><div class="row" style="color:var(--destructive)">Stop backup</div></div></div>'); await c.w(500);
+  const p = actionSheet("Stop backup? Recordings stay on this phone. Copies with us are deleted on the published clock.", [{ text: "Stop backup", style: "destructive", value: 1 }, { text: "Cancel", style: "cancel", value: 0 }]);
+  await c.w(1100); actionChoose(1); await c.k(p); haptic("warning"); await c.k(swapText($("#bk", screenEl), "Backup is off. Recordings are on this phone."));
 });
 
 // C-S22
-item("M-C66", "C-S22", "Delete this book: typed word", N("Typing the word", "As M-C57", "0 ms", "same", "none"), async (c) => {
+item("M-C66", "C-S22", "Delete this book: typed word", N("Typing the word (F6 typed)", "As M-C57", "m.instant", "same", "none"), async (c) => {
   setScreen(PG.del("confirm").replace("C-S20.confirm", "C-S22.confirm").replace("Delete your account?", "Delete Asha's book?").replace(/Delete account</g, "Delete this book<")); await c.w(400); await typeDelete(c);
 });
-item("M-C67", "C-S22", "Book deleted: back to Me", N("Confirm", "dismissTo Me (native); the row is already gone on arrival; toast without action", "native; toast 280 ms", "native reduced; toast fade", "warning (built)"), async (c) => {
+item("M-C67", "C-S22", "Book deleted: back to Me", N("Confirm", "Back to Me (native); the row is already gone on arrival; a toast without action", "system; m.toast", "system reduced; toast no rise", "H-warning (built, on the confirm)"), async (c) => {
   setScreen(PG.del("confirm").replace("Delete your account?", "Delete Asha's book?")); await c.w(200); await typeDelete(c); await c.w(300); haptic("warning");
   const me = mk(PG.me()); $('[data-r="asha"]', me).remove(); await pop(me.outerHTML); showToast("Asha's book is in Recently deleted for 30 days."); log("no closing-cover animation");
 });
@@ -840,7 +878,7 @@ item("UNDO-A", "T4", "Area default: Undo with no timer", N("An Undo the area sho
 });
 item("UNDO-B", "T4", "Timed window (N = 10 s): VoiceOver and Switch Control", N("A timed Undo, if the design lead names one", "No countdown of any kind. Closes at max(shown + N, VoiceOver read done + N); with Switch Control, only when the parent moves on. At close the Undo is disabled in the same frame, then the toast leaves", "N = 10 s real time (not slowed); exit 160 ms", "exit fade 200 ms", "tap on Undo"), async (c) => {
   undoScene(); await c.w(400); const row = rowOf(1); await c.k(collapse(row));
-  showToast("Letter moved to Recently deleted.", { label: "Undo", onPress: () => log("restored in place") }, { windowS: 10 });
+  showToast("Letter deleted.", { label: "Undo", onPress: () => log("restored in place") }, { windowS: 10 });
   log("toggle VoiceOver or Switch Control and play again to compare; the bar under the phone is a reviewer aid only");
 });
 item("UNDO-C", "T4", "A second toast replaces the first", N("Another act while a toast is up", "Words cross-fade in place, never stacked; the first toast's Undo closes with it", "swapMs 150 ms", "same", "none"), async (c) => {
