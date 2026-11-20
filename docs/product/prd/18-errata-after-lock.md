@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E83) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E84) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -134,6 +134,7 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E81 | none for 1.0 (no alert sender is built); the alert cap binds NS-08-R21 and any later sender | `functions/risk-security.md` FR-SEC-36 | sync, security-architect |
 | E82 | BL-966 and the reminder copy PR add the names-off test; content swaps the birthday body when names are off | NS-13-R24, NS-32-R12 | mobile, content, design-systems |
 | E83 | the new-device sign-in email is built and read before the first outside family signs in (it also still gates the backup flip); the E78 proposed row changes its gate | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content, mobile |
+| E84 | NS-48-R20 is reworded to what ships: name rotation keeps its eligible-pool count from 17:00 (identical to develop); no change to the named rotation | NS-48-R20 (card 21 section on NS-48 rows, `21-days-cultural-photos-home.md`); PR #1032 | mobile, product |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
@@ -348,3 +349,15 @@ Ruling: the founder's answer holds, and it replaces the timing in E78 and CL-155
 Edited in place: NS-08-R21 (08-keeping-and-trust.md), FR-SEC-36 (functions/risk-security.md), the E78 line of the founder digest (22-final-holistic-spec.md section 7). Plan delta: the sender, the device table, the stop page and the one-session sign-out lever move from "gated before the flip" to "gated before the first outside family"; the one proposed backlog row from E78 changes its gate; any scheduling is engineering's and the dates are the founder's; sync, security-architect, content, mobile.
 
 Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E83 changes the timing of the E78 line to the founder's own answer (CL-158); E78 was also CR-71 D1 (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
+
+## Seventh round, E84 (20 Nov, Karma with product, from the NS-48 phase 1 reviews on #1032)
+
+### E84: NS-48-R20 says ordinal modulo the included books; the shipped rotation counts the eligible pool (20 Nov, Karma with product; NS-48-R20, NS-48-R23; PR #1032)
+
+Question: NS-48-R20 says name rotation picks the subject child "by ordinal modulo the included books, independent of how many name-bearing variants a pool holds". The planner on develop counts name-bearing variants in the pool, and the day-part filter (NS-48-R12) shrinks the pool before 17:00. Following R20 literally would change named rotation at the default 20:30 and break NS-48-R23 (built 8 and the schedule stay identical from 17:00) and would reschedule every family. Which holds?
+
+Ruling: R23 holds. The shipped behaviour stays: from 17:00 the rotation is develop's behaviour exactly, and the count runs over the eligible pool. R20 is reworded to what ships: "name rotation alternates the subject child across the included books by slot ordinal, counted over the eligible pool, and from 17:00 equals the rotation on develop". The test `[NS-48-R20]` proves alternation only (an equal split within one), and says so. Any rotation independent of the pool is a later row with its own reschedule plan.
+
+Edited in place: none (the card text in `21-days-cultural-photos-home.md` keeps its locked wording; this erratum is the rule that reads over it, as for E1 to E83). Plan delta: none. Evidence: PR #1032 compared the old and new planner on 6156 and 7680 input cells from 17:00 with zero differences in plan and `planSignature`; mobile, product.
+
+Founder note: none; nothing here is counsel-only and no default is added to the digest.
