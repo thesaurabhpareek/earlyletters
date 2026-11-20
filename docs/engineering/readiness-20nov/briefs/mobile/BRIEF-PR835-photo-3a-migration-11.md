@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and the PR head named below, 20 Nov 18:50 UTC).
-Blocked until (the code is done; the merge is not ours): (1) the founder's size exception at the new size, 775 added and 8 removed lines in 15 files [V `gh api pulls/835`]; (2) #854 merged (legal rows for pictures, D-125, founder merges `docs/legal`); (3) Karma's ruling on Q-E12: amend migration 11 before it merges (several items per letter, video) or add migration 12 later (PACK-DELTA-3 sections 3.2 and 5.3, PR #932). Default until ruled: land as built, because the locked card says one picture per letter (NS-01-R21a) and CR-66 puts the lock first. Do not decide Q-E12 here.
+Blocked until (the code is done; the merge is not ours): (1) the founder's size exception at the new size, 775 added and 8 removed lines in 15 files [V `gh api pulls/835`]; (2) #854 merged (legal rows for pictures, D-125, founder merges `docs/legal`); (3) nothing from Karma: Q-E12 is answered NO (erratum E35, CR-64): #835 merges as it is, and NS-52 lands in a NEW local migration after it, after 1.0, behind its own flags. NS-01-R15, R21a and R22 are true as written until NS-52 ships (E34: scope, not repeal).
 
 ```
 BRIEF PR-835 (BL-931 slice 3a)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 18:50 UTC
@@ -57,7 +57,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2 defau
 
 11. LENSES: plan: A data-steward, B security-architect. Posted at 39cf30d3: A data-steward 14:49, B principal-architect 15:03 UTC, both PASS WITH NOTES. Native/lockfile: none.
 
-12. ORDER: after #842 (merged); before #836. Blocked by: founder (size exception, #854 merge), Karma (Q-E12).
+12. ORDER: after #842 (merged); before #836. Blocked by: founder (size exception, #854 merge), founder only (size, #854).
     Not mine: dl01 and dl02 "1 of 1 (5 runs)" show failure on this head [V check-runs]; re-run once and read the log before claiming flake [U cause].
 
 13. DEFINITION OF DONE
@@ -70,7 +70,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2 defau
 14. ONLY A PHONE CAN PROVE: upgrade from a real v10 database; kill during the sweep (J-N9 row 4.1, JOURNEYS-AND-DEVICE-SHEETS, PR #925);
     folder protection class and backup flag (#841 rows). Name each as "Not verified" in the PR body.
 
-15. STOP AND ASK: Q-E12 gets ruled the other way (migration changes shape); a ceiling other than 2240 and 960 is wanted;
+15. STOP AND ASK: a ceiling other than 2240 and 960 is wanted;
     a file outside the globs must change; the base moves under you; two failed attempts at the same fix.
 
 16. HARNESS: claim row held by Karma on BOARD. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-pr835 agent:mobile -->`.
