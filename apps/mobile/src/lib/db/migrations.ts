@@ -435,10 +435,10 @@ export const MIGRATIONS: Migration[] = [
       // `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere; the media id, no entry id
       // in the name); the row decides who owns it.
       //   id          L2  media id (UUIDv7 made on the phone)
-      //   entry_id    L2  the kept letter; null while only a draft owns it
-      //   draft_id    L2  the draft; null once kept
-      //   kind, ext   L1  'photo' and 'jpg' only (no video in Build 13)
-      //   bytes       L1  size of the stripped copy
+      //   entry_id    L3  the kept letter (a letter id, as entries.id); null while only a draft owns it
+      //   draft_id    L3  the draft (as drafts.id); null once kept
+      //   kind, ext   L2  'photo' and 'jpg' only (no video in Build 13); enums, as entries.kind
+      //   bytes       L2  size of the stripped copy (as audio_bytes)
       //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
       //   width, height L2
       //   photo_text  L4  the parent's own words about the picture, at most 140
