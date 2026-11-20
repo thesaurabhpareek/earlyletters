@@ -62,7 +62,12 @@ Gates: G13 = before the Build 13 cut; GF = before the first family outside the f
 ## 7. What changed in the pack because of the council
 Amendments to the merged pack (docs only, one PR per file group) are listed in `data-security/00-README.md` section 5.
 
-## 8. Questions only you can answer (short list, each with a default)
+## 8. Questions only you can answer, and the founder's answer
+Founder answer, 20 Nov 2026, in chat after the list was shown: "I approve all you asked me." Recorded here as approval of each recommendation and default below. It approves nothing the list does not name, does not approve any PROPOSED word, and does not replace counsel. Acts that only the founder can do (buying, applying, pasting, enrolling) are approved, not yet done. A D-entry for `docs/DECISIONS.md` is the founder's to paste; text is in section 10.
+
+Recorded answers: 1 servers off for Build 13. 2 `scribe-staging` first; agents prepare the apply plan and never apply. 3 buy Pro before the first outside family (founder act, open). 4 no custodian named yet (default stands; the question stays open for him). 5 no SQLCipher before 1.0. 6 allowance per phone. 7 new-device sign-in email before the first outside family. 8 enrol in the Apple Small Business Program and find an accountant (founder acts, open); publisher type goes to counsel. 9 size exceptions F1, test dependencies F2 (jest-expo and React Native Testing Library only) and the workflow pastes F3 in the stated order (the founder pastes; agents only prepare proposals under `docs/ops/proposed/`). 10 the PROPOSED-words sitting and the counsel packet are scheduled and still open: no word is approved yet.
+
+Original questions follow.
 1. Is Build 13 a servers-off store build (D-121), or does it need the database deployed? Default: servers off; gates C, D1 and B5 apply to the first outside family.
 2. Which hosted project is production, and may agents prepare (not apply) the staging apply plan? Default: `scribe-staging` first.
 3. Buy the Supabase Pro plan before the first outside family (A1)? Default: yes.
@@ -76,3 +81,6 @@ Amendments to the merged pack (docs only, one PR per file group) are listed in `
 
 ## 9. Not verified
 Hosted settings and plan limits, device behaviour, Apple's hidden-preview behaviour, WCAG 1.4.11, CAN-SPAM, current D-121. Supabase and FTC sites were not readable from the session.
+
+## 10. Proposed D-entry (the founder pastes; Karma does not edit `docs/DECISIONS.md`)
+D-xxx (20 Nov 2026): the founder approved the executive-aligned recommendations in `docs/engineering/readiness-20nov/DECISIONS-20nov.md` section 8 at their defaults: Build 13 servers off; staging first; Supabase Pro before the first outside family; no SQLCipher before 1.0; free-letters allowance per phone; new-device sign-in email before the first outside family; Apple Small Business Program and an accountant; size exceptions F1; jest-expo and React Native Testing Library approved, other new dependencies deferred; workflow pastes in order. Not approved: any PROPOSED word, any retention period, anything counsel must confirm.
