@@ -2,7 +2,7 @@
 
 Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U].
 
-**Blocked until: BRIEF CI-Q1 has a result (it says which of Q2 or Q3 is worth building), and the founder applies each workflow patch (`ios-compile.yml` edit; two reviews; security-architect reads `.github/**`). Q5 (a larger macOS runner or a self-hosted Mac) costs money or hardware: founder only; not briefed. Q3 and Q4 weaken or move what the launch check proves: the founder accepts that, in writing, per option.** Founder-only: choosing among Q2, Q3, Q4, Q6; every paste; Q5.
+**Blocked until: BRIEF CI-Q1 has a result (it says which of Q2 or Q3 is worth building), and the founder applies each workflow patch (`ios-compile.yml` edit; two reviews; security-architect reads `.github/**`). Q5 (a larger macOS runner or a self-hosted Mac) costs money or hardware: founder only; not briefed. Q3 and Q4 weaken or move what the launch check proves: the founder accepts that, in writing, per option.** Founder-only: choosing among Q2, Q3, Q4; every paste; Q5.
 
 ```
 BRIEF CI-Q2                                       Filled by: ops (RD-H3) 20 Nov 2026 18:50 UTC
@@ -33,7 +33,7 @@ Agent: ops   Lane: Pack 10   Build: none (CI speed)   Wave: 2
    Cached artifacts are not secrets, but a cache written by a PR is readable only by that PR (header :20-23) so a PR cannot poison develop's cache [V per the header; GitHub docs not fetched: U]. Boundary: CI integrity (security-architect).
 
 7. LIBRARIES: none new (`@expo/fingerprint` is already installed).
-8. BUDGETS: T-01 CI path under 10 minutes; per-option targets from MEASUREMENT-PLAN 6: Q2 xcodebuild 16 to under 6 minutes [E, unproven]; Q3 22 to about 8 [E]; Q4 and Q6 not briefed; Q4 cuts starts, not time [E, unknown share].
+8. BUDGETS: T-01 CI path under 10 minutes; per-option targets from MEASUREMENT-PLAN 6: Q2 xcodebuild 16 to under 6 minutes [E, unproven]; Q3 22 to about 8 [E]; Q4 and Q4 cuts starts, not time [E, unknown share].
 
 9. ACCEPTANCE (in order of Rec): Q2 save the Release DerivedData from `launch` on develop (needs a `push: branches: [develop]` trigger or a scheduled dispatch, plus restore+save `actions/cache@` and no `--clean` when an exact hit exists);
    Q3 build the Release `.app` once per native fingerprint on develop, then on a PR with the same fingerprint only bundle the JS and swap it in; Q4 skip drafts: run `launch` on `ready_for_review` and on label, keep cancel-in-progress (the founder's rule stays: green on the head sha at merge);
