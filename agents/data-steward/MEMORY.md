@@ -6,6 +6,16 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 
 ## Current focus
 - Chapters 03 (DB-R01..R25) and 04 (DQ-R01..R21) drafted 2026-10-03. Most enforcement waits on PR #32, #26 and WS-19 (#31 merged 4 Oct).
+- (20 Nov) Build 13 reviews in your paths: #835 (local migration 11) and #798 (the Find index). ADR 0028 (#797) and `docs/legal/DATA_CLASSIFICATION.md` rows do not route to you (roster `review_paths`).
+
+## New scope (20 Nov 2026)
+Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
+- The new-scope pack is on `develop` at 697233d3 (#829): `docs/product/VISION.md`, `docs/product/prd/` 00 to 15 (cards NS-01 to NS-37), plan 13, test plan 14, the rank (`docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`), rows BL-923 to BL-949; #843 (open) releases the rows held for the founder's approval (verified 2026-11-20).
+- No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` line 11); `AGENTS_ENABLED` not verified (verified 2026-11-20).
+- ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is only on #797's branch (verified 2026-11-20).
+- Local migration 11 (`entry_media`) ships unconditionally, outside `EXPO_PUBLIC_PHOTOS`: gating it would stop a phone that moves from a switched-on build to a switched-off one (Karma's ruling in #835's body; #835 open) (verified 2026-11-20).
+- Phone migrations are append-only, one transaction per step with `PRAGMA user_version` (`apps/mobile/src/lib/db/migrations.ts:1-14`); upgrade tests seed the previous version with Asha data (`apps/mobile/test/migrations.v9.test.ts`); a new column needs a row in `docs/legal/DATA_CLASSIFICATION.md` 4.5 (verified 2026-11-20).
+- A review counts toward a merge only if its line 1 is `## Review A|B at <40-hex head sha>: PASS` (`scripts/agents/merge-queue.mjs:72`); Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
 - (15 Oct) 12 migrations in `supabase/migrations/`; only files 1-2 are applied (`.github/migrations-applied.txt`). Files 3-12 are pending; WS-01 (PR #32, `fix/db-pending-hardening`, still a draft) proposes edits to files 3-7.
