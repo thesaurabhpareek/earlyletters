@@ -21,7 +21,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | T-01 to T-20 | The twenty tests named in the last column of 07.3 section 2 (LR-01 to LR-20) | LR-01 to LR-20 |
 | T-21 | Given an alert kind and an event, When the sender is called twice with the same key, Then Resend receives one send and the second call returns the first result | 07.2 rule 5; R5 |
 | T-22 | Given Resend times out, When the job retries, Then the key is reused and at most one mail arrives; given a 4xx, Then no retry and an `alert_failed` kind is recorded with no address | 07.2 rule 5 |
-| T-23 | Given 6 low-risk alerts (A2, A7, A8, A9) to one account in 24 hours, Then 5 send and one summary is queued for the next day; given 5 of them already sent, Then a new A1, A3 or A6 still sends at once and is never in a summary; A4 and A5 are never held | 07.2 rule 6 |
+| T-23 | Given 6 capped-kind alerts (A2, enabled in a test) to one account in 24 hours, Then 5 send and one summary is queued for the next day; given 5 of them already sent, Then a new A1, A3, A6, A7 or A8 still sends at once and is never in a summary; A4 and A5 are never held | 07.2 rule 6 |
 | T-24 | Given any alert render with the Asha fixture, Then the subject has no placeholder and equals the content key, and the body has no IP, place, user agent, token or link that signs in | 07.2 rules 1 to 3 |
 | T-25 | Given a client token (anon or user) calls the alert function URL, Then it answers 401 and writes nothing | 07.2 rule 7 |
 | T-26 | Given a new device id at sign-in for an account that has one earlier device, Then exactly one A1 row is queued; for the first device none; the same device again none | A1 |
@@ -38,7 +38,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Alert: event to queued row | p95 under 200 ms inside the same database call that caused it | Rec [E]: same bar as the local save commit (DATA-REQ-048) because it rides the same transaction; no network call in it |
 | Alert: queued row to provider accepted | p95 under 60 s, p99 under 10 min; a miss pages `ops` | Rec [E]: a takeover warning is only useful soon; the purge worker already runs every 15 minutes (`purge-worker/alerts.ts` header), so alerts get their own 1-minute drain or a database webhook |
 | Sign-in mail | p90 under 30 s | `docs/emails/SECURITY.md` finding on `A-NFR-004` (as read in 3.4) |
-| Rate limits | 5 low-risk alert mails per account per 24 h (A1, A3, A4 to A7 exempt); sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
+| Rate limits | 5 capped-kind (A2) alert mails per account per 24 h (A1, A3 to A9 exempt); sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
 
 ## 3. What could not be verified
 
