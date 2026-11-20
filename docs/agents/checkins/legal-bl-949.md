@@ -1,0 +1,1 @@
+05:54 (20 Nov) legal | done: read HARNESS-RUN, packet 1.5.0, cards 08 to 16 at 450bcb4a, designs privacy, security, 08, 09, 10, data-and-sync; Q58 to Q106 claimed by #598, BL-780, #760, so new ids start at Q107 | next: draft packet 1.7.0 section 7 | blocked/needs: none
