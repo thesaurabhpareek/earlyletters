@@ -114,7 +114,7 @@ Paths [V `DELETION_AND_EXPORT_SPEC.md` 2.6.3 table; chapter 08 request matrix]:
 | Turns analytics off | revoke retires the id; `analytics-forget` asks PostHog to delete the retired and current ids | count-only log |
 
 Rules that never bend:
-1. A purged id must never return: a stale phone must not resurrect a deleted letter (DB-02, DSR-R09). Today it is enforced for 60 days only: entry and book ids are refused while their `purge_ledger` row exists (`20261004100000_sync_engine.sql:119`, `20261016000000_sync_v1_server.sql:400, 420`, `20261003010000:271`, `20261004000000:52`, `20261023000000_backup_server.sql:883`). What is missing is the permanent guard after day 60 (`SCPRG`, which appears in no migration or test under `supabase/`); do not rebuild the 60-day check; finding 9.
+1. A purged id must never return: a stale phone must not resurrect a deleted letter (DB-02, DSR-R09). Today it is enforced for 60 days only: entry and book ids are refused while their `purge_ledger` row exists (`20261004100000_sync_engine.sql:119`, `20261016000000_sync_v1_server.sql:400, 420`, `20261003010000:271`, `20261004000000:52`, `20261023000000_backup_server.sql:883`). What is missing is the permanent purged-id guard after day 60 (error code `SCPRG`, not built; it appears in no migration or test under `supabase/`; PROPOSED table `purged_letter_fingerprints`, PR #1021); do not rebuild the 60-day check; finding 9.
 2. A held scope is skipped by purge and by account deletion until the hold is released (`legal_holds`, `purge_due`; DATA-REQ-035) [V `20261108020000:130-133, 160`].
 3. No request deletes, edits or hides another author's letter (DSR-R04).
 4. Deleting from the Supabase dashboard is forbidden: it cascades letters and skips every step (DB-17).
@@ -184,7 +184,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 6. Letter-level "withdraw consent" has no decided effect on server rows already held (PQ-1) [V].
 7. Unconfirmed sign-up rows have no purge (FR-PRV-05, not built); an address kept without a purpose [V row text].
 8. Nothing proves the 31, 38 and 45 day clocks end to end; the monitoring query is not built (DSR-R13) [V chapter 08].
-9. The permanent purged-id guard (`SCPRG`) is not in the database: a stale phone's outbox could re-insert a letter purged more than 60 days ago [E basis: `purge_ledger` is deleted at 60 days, `20261108020000:217`; `ops-ledger` bucket 60 days; no migration holds `SCPRG`]. Highest-priority data-architect item in this file.
+9. The permanent purged-id guard (error code `SCPRG`, not built) is not in the database: a stale phone's outbox could re-insert a letter purged more than 60 days ago [E basis: `purge_ledger` is deleted at 60 days, `20261108020000:217`; `ops-ledger` bucket 60 days; no migration holds the code `SCPRG`]. Design (data-architect, PR #1021, PROPOSED, design only): a table `purged_letter_fingerprints` holding a keyed hash, never a raw id; the key is a database secret held by the founder (Vault [U], or a no-grant one-row `sync_private` config table; CR-71 C5). Highest-priority data-architect item in this file.
 
 ## 11. Conflicts (written, not silently resolved)
 
@@ -194,7 +194,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 | C06-2 | `data-policy.md:224` vs code | `support_access` audit event is not written (finding 1) | `legal`, `data-architect` |
 | C06-3 | D-021 (12 months for key-unwrap logs) vs DC 4.3.1 (24 months) | open as COUNSEL_PACKET Q51; Rec 12 months, section 14.1 | counsel |
 | C06-4 | `subprocessors.md` vs FR-PRV-08 | GitHub holds an encrypted dump; not named (PQ-3) | `legal` |
-| C06-5 | chapter 08 DSR-R09 says `SCPRG` is `pending PR #32`; no file in `supabase/` mentions it | the purged-id guard is not in the repo; finding 9 | `data-architect`, `compliance-engineer` |
+| C06-5 | chapter 08 DSR-R09 names `SCPRG` as the guard `pending PR #32`; `SCPRG` is only the unused error-code name (like `SCDEL`) and no file in `supabase/` mentions it | the purged-id guard is not in the repo; finding 9 | `data-architect`, `compliance-engineer` |
 | C06-6 | `DELETION_AND_EXPORT_SPEC.md` 2.6.3 (steps `powersync_verify` and `appstore_mapping` retired) vs `log.ts:67-73` and chapter 08 open question 6 | `STEP_NAMES` still lists `revenuecat` and `powersync_verify`; the `deletion_request_steps.step` check still lists `revenuecat` | `data-architect` |
 
 ## 12. Questions for the council (default in brackets)
@@ -212,7 +212,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 
 ## 13. How I checked this file
 
-Cites sampled: 24 (read this session). Held: 22. Two did not hold as written in their source: the 7-day Pro backup sentence against production (C06-1) and the `SCPRG` guard that chapter 08 names (C06-5). Sampled: `20261108020000:128-218`; `20261004200000:363-400`; `20261016001000:133-148`; `supabase/migrations/20261023060000_explicit_grants.sql:49-56`; `posthog.ts:163-171`; `log.ts:67-73, 141-198`; `runbook.ts:1-29`; `APPLY.md:48`; `privacy-policy.md:72, 82-84`; `data-policy.md:147-160, 175-232`; `DELETION_AND_EXPORT_SPEC.md` DATA-REQ-035, -050 to -056, 2.6.3; `ENGINEERING_REQUIREMENTS.md:168-173, 479-483`; `docs/ops/runbooks/data-requests-by-email.md` section 0; `subprocessors.md`; DC 1, 2, 4.1 to 4.9; chapter 08 rules and matrix; chapter 10 OBS rules; FR-BKO-02, -04, -05, -16, FR-PRV-03, -05, -08, -12, -26, -31, FR-DAT-01, -05, -28, FR-REL-26 text rows. Not verified: any live vendor console; Deno and database test runs; the `preflight-production` check for FR-PRV-31; whether the underage runbook says what I summarised beyond its existence.
+Cites sampled: 24 (read this session). Held: 22. Two did not hold as written in their source: the 7-day Pro backup sentence against production (C06-1) and the purged-id guard (error code `SCPRG`, not built) that chapter 08 names (C06-5). Sampled: `20261108020000:128-218`; `20261004200000:363-400`; `20261016001000:133-148`; `supabase/migrations/20261023060000_explicit_grants.sql:49-56`; `posthog.ts:163-171`; `log.ts:67-73, 141-198`; `runbook.ts:1-29`; `APPLY.md:48`; `privacy-policy.md:72, 82-84`; `data-policy.md:147-160, 175-232`; `DELETION_AND_EXPORT_SPEC.md` DATA-REQ-035, -050 to -056, 2.6.3; `ENGINEERING_REQUIREMENTS.md:168-173, 479-483`; `docs/ops/runbooks/data-requests-by-email.md` section 0; `subprocessors.md`; DC 1, 2, 4.1 to 4.9; chapter 08 rules and matrix; chapter 10 OBS rules; FR-BKO-02, -04, -05, -16, FR-PRV-03, -05, -08, -12, -26, -31, FR-DAT-01, -05, -28, FR-REL-26 text rows. Not verified: any live vendor console; Deno and database test runs; the `preflight-production` check for FR-PRV-31; whether the underage runbook says what I summarised beyond its existence.
 
 ## 14. Council amendments (20 Nov 2026)
 
