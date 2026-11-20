@@ -53,7 +53,7 @@ describe('[F13-REQ-023, C-REQ-001 Rev] the first letter: the reminder card, befo
     expect(nextAsk(facts({ firstLetter: false, lettersSaved: 3, signInOffered: false, session: S2 }))).toBeNull();
   });
 
-  it('the cap: at most 2 primes ever; after "No reminders" twice, never a third (C-REQ-001 Rev)', () => {
+  it('[NS-13-R31] the cap: at most 2 primes ever; after "No reminders" twice, never a third (C-REQ-001 Rev)', () => {
     expect(MAX_REMINDER_PRIMES).toBe(2);
     expect(primeAllowed(0)).toBe(true);
     expect(primeAllowed(1)).toBe(true);
