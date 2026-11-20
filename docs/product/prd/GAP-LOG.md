@@ -388,3 +388,12 @@ Karma
 - B-motion 5: `letter/[id].tsx` changeDate `haptic('tap')` removed (engineering row E9).
 
 Karma
+
+## Area C motion rulings (20 Nov)
+- C-motion 1: system MOTION v2 accepted for area C: the breathing moon and Erasing drawings become still; the Book header does not settle; no haptic on starting an export, on Show again or on cancelling deletion.
+- C-motion 2: busy states use a static label and never a spinner, in every area (stricter than v2; matches round 2 ruling "busy words at every setting"). v2 COMPONENTS drops the in-button system spinner.
+- C-motion 3: card gaps accepted with their defaults: an undo window does not close while VoiceOver focus is on Undo; after the parent dismisses the Save a copy slip the next one waits for the next Home visit; letters arriving on a new phone appear in place with the scroll anchored; "Remove now fails again" gives a visible sign the tap landed (the line changes its words).
+- C-motion 4: NS-10 wins over the 10 Nov new-phone spec: land on the Book with one line that more are on the way.
+- Engineering rows: E2 spinners not stopped by Reduce Motion (account.tsx:264, delete-account.tsx:115; BL-984), E1 undo helper reads VoiceOver finish and Switch Control (BL-954, native read to be spiked), E5 Book keeps the reader's place while letters arrive (BL-978), E6 warning haptic after the choice, not on open (erase.tsx:78, recently-deleted.tsx:82 and :104).
+
+Karma
