@@ -5,6 +5,7 @@
  */
 import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
+import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
@@ -19,8 +20,11 @@ let picked: PickedFiles | null = null;
 
 export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles());
 
-/** The native ImageIO step, when this build has it. Loaded on first use so a build or test without it is unaffected. */
-function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null {
+/**
+ * The native module (the picker and ImageIO), when this build has it. Loaded on first use, so a build or a test without
+ * it is unaffected.
+ */
+function nativePhoto(): ScribePhotoNative | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
@@ -29,14 +33,14 @@ function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null
   }
 }
 
-/** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. No native re-encode is registered yet. */
+/** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. The re-encode is absent without the native module. */
 export function photoDeps(): PhotoDeps {
   cached ??= {
     store: entryMediaStore(localSqlDb(), notifyStoreChanged),
     files: expoPhotoFiles(),
     newId: () => uuidv7(),
     now: () => new Date(),
-    orientation: createOrientationBaker(nativeBaker(), expoBakedFiles()),
+    orientation: createOrientationBaker(nativePhoto(), expoBakedFiles(() => uuidv7())),
     sha256: async (bytes) => hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as Uint8Array<ArrayBuffer>)),
   };
   return cached;

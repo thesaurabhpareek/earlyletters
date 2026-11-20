@@ -49,17 +49,17 @@ export const photoPath = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => `$
 /**
  * The native re-encode that turns a picture's pixels upright (ImageIO). Exif is dropped from the stored copy, so a
  * picture whose orientation tag is not 1 is only kept if the pixels are turned first. Returns a JPEG whose pixels are
- * upright and that carries no orientation tag, or null when it cannot. No JavaScript implementation exists, and the
- * device adapter is not written yet (it needs a device run): until one is registered, such a picture is reported as
- * `needs_rotation` and nothing is stored.
+ * upright and that carries no orientation tag, or null when it cannot. The only implementation is native: baker.ts
+ * over modules/scribe-photo. Where that module is absent (Expo Go, web, Android), there is no baker, such a picture is
+ * reported as `needs_rotation` and nothing is stored.
  */
 export interface OrientationBaker {
   bake(original: Uint8Array, source?: { uri?: string }): Promise<Uint8Array | null>;
 }
 
 /**
- * The picker's temporary files (Caches/ImagePicker). The package keeps a copy of the ORIGINAL there, with its location,
- * and never deletes it (review C7). The app reads it once, then removes it; a sweep at launch empties the folder.
+ * The picker's temporary files (Caches/ImagePicker). scribe-photo's picker copies the ORIGINAL there, with its
+ * location (review C7). The app reads it once, then removes it; a sweep at launch empties the folder.
  */
 export interface PickedFiles {
   read(uri: string): Promise<Uint8Array>;
