@@ -68,7 +68,7 @@ Source column says where the candidate came from: F = founder (direction 6.4), K
 | OPP-13 | Letters to open later, Firsts | F | Carded NS-06 |
 | OPP-14 | A printed book | F | Parked NS-30 |
 | OPP-15 | Apple Watch quick capture | F | Parked |
-| OPP-16 | Video clips beside voice (Remento records voice or video) | C | New; not recommended |
+| OPP-16 | Video clips beside voice (Remento records voice or video) | C | Reversed 20 Nov by founder direction, see NS-52 (was: new; not recommended) |
 | OPP-17 | A past-letter Home Screen widget | K | Parked C-30 |
 | OPP-18 | Streaks, insights, goals (Apple Journal's insights view and streak widget) | C | Refused |
 | OPP-19 | Machine-written entries, captions, summaries (Remento Speech-to-Story, Day One Gold, FirstChapter) | C | Refused |
@@ -104,7 +104,7 @@ Rules applied (CLAUDE.md; direction section 2): the machine may remove and repai
 | OPP-09 | Fails the spirit of the rules unless the parent chose it | A prompt after Keep is a second ask in the most emotional moment; do not draw it before the study says parents want it |
 | OPP-10, 11, 12, 13 | Pass | Already carded and locked |
 | OPP-14, 15, 17 | Pass, parked | As in `12-parked...` |
-| OPP-16 | Not recommended | Video of a child is the heaviest data we could hold; storage, label and counsel all change; no evidence parents ask |
+| OPP-16 | Reversed 20 Nov by founder direction, see NS-52 | Earlier reasoning kept: video of a child is the heaviest data we could hold; storage, label and counsel all change; no evidence parents ask. Those costs are now NS-52's gates, not a reason to refuse |
 | OPP-18 | Refused | Streaks and goals are banned; Apple Journal's insights view is exactly what we do not copy |
 | OPP-19 | Refused | Writes a person's words |
 
@@ -141,7 +141,7 @@ Research rules that apply to all five tests (from `research-validation.md`): adu
 ### 6.1 OPP-01 Picture-first start and suggestions (proposed card NS-49, owned in detail by agent 5)
 
 - Who and when. A parent who has just taken a picture of Asha and wants to say what it was.
-- What. Level 1: "Start from a photo" becomes a first-class start on Home (today a quiet 44 pt link, A-S01). Level 2: Apple's suggestions picker; the parent picks one, the app receives only that. One picture per letter stays for 1.0 (NS-01).
+- What. Level 1: "Start from a photo" becomes a first-class start on Home (today a quiet 44 pt link, A-S01). Level 2: Apple's suggestions picker; the parent picks one, the app receives only that. One picture per letter stays for 1.0 (NS-01). Superseded in part by NS-52 on 20 Nov (several pictures and videos).
 - Not in scope. Reading the library, scenes, faces, any machine caption or title, a nudge made from a picture, several pictures per letter, anything from level 3.
 - Happy path. Home, Start from a photo, Apple's picker or the suggestions list, the parent chooses, Ready appears with the thumbnail, the parent speaks, Review, Keep.
 - Label effect. None for level 1; level 2 to be confirmed by agent 5 and compliance (Apple says no permission is needed, direction 6.1).
@@ -194,7 +194,7 @@ Common to all five: no prototype work beyond what S1 and S2 already plan; no spe
 
 ## 7. Not recommended, and why
 
-- Video (OPP-16): heaviest data on the phone, changes the label, no evidence anyone asks.
+- Video (OPP-16): Reversed 20 Nov by founder direction, see NS-52. Old reasoning kept: heaviest data on the phone, changes the label, no evidence anyone asks.
 - Streaks, goals, insights (OPP-18): banned, and the one thing in Apple Journal we copy none of.
 - Anything that writes, titles, captions or summarises (OPP-19): the constitution.
 - Growth and health tracking: out of the job (direction 6.4).
@@ -210,7 +210,7 @@ Priority: P0 with RR-4 reason (a) a promise, (b) a legal or store duty, (c) the 
 |---|---|---|---|---|---|
 | FR-OPP-01 | Given an opportunity is proposed, When it is written up, Then it passes the constitution filter in section 4 first, names the card or parked row it reopens, the reopen test already written there, and the cheapest test; an item that fails the filter is recorded as refused, not scored | `12-parked...`; NS-35-R3; new card row needed | P1 | `product` | Section 4; `12-parked...` standing lines |
 | FR-OPP-02 | Given OPP-01 is ruled in, Then picture-first start is a first-class start on Home with Speak and Type kept as equal twins, and no more than one slip shows (frame slip rule) | NS-01-R1, R19, R20a; A-S01, A-S03; BL-931 | P1 | `mobile`, `design-systems` | A-S01 lines 213 to 223; direction 6.1 |
-| FR-OPP-03 | Given a suggestion or picture is chosen, Then only the chosen item reaches the app, anything beyond the picture is shown to the parent, kept only if kept, and never used to choose a nudge | NS-01; NS-32; A-S03; new row needed | P0 (a) | `mobile`, `privacy` | Direction 6.3; NS-01 "never" line |
+| FR-OPP-03 | Superseded in part by NS-51 and FR-OPP-14 on 20 Nov (level 3 reads the library on the phone). Given a suggestion or picture is chosen, Then only the chosen item reaches the app, anything beyond the picture is shown to the parent, kept only if kept, and never used to choose a nudge | NS-01; NS-32; A-S03; new row needed | P0 (a) | `mobile`, `privacy` | Direction 6.3; NS-01 "never" line |
 | FR-OPP-04 | Given OPP-03 is ruled in, When Home chooses a prompt, Then it picks by prompt id and date only, never reads, quotes or paraphrases an earlier answer, never shows two slips, excludes hard-day prompts, and has no count or comparison wording | NS-23 (rules block); A-S01 states; new row needed | P1 | `content`, `mobile` | NS-23 lines 354 to 372 |
 | FR-OPP-05 | Given a doorway is added after the spike (OPP-02), When the control is used on a locked phone, Then it authenticates first, opens Ready only, starts and keeps nothing, and shows no letter words or child name while locked | NS-35-R3, R4, R7; NS-04 exit; NS-06 C; A-S14; new row needed | P0 (a) | `mobile`, `security-architect` | `12-parked...` line 14; Apple controls doc, VERIFIED |
 | FR-OPP-06 | Given a doorway control exists, When the NS-04 exit has not passed on that phone and iOS version, Then no control is offered | NS-04; A-S14; new row needed | P0 (a) | `mobile` | `12-parked...` line 14 |
@@ -275,8 +275,77 @@ All "new row needed", in the style of `docs/BACKLOG.md` (Status, Mode, Owner, Mi
 
 ## 13. Summary and what I did not verify
 
-- 19 candidates listed: 9 new or reopened (OPP-01 to 09, of which OPP-09 is held and OPP-08 is design work), 4 carded and locked (OPP-10 to 13), 3 parked (OPP-14, 15, 17), 3 refused or not recommended (OPP-16, 18, 19). Top five new opportunities by score: OPP-01, 03, 02, 04, 05 (OPP-06 and 07 are parked or low-scoring).
+- 19 candidates listed: 9 new or reopened (OPP-01 to 09, of which OPP-09 is held and OPP-08 is design work), 4 carded and locked (OPP-10 to 13), 3 parked (OPP-14, 15, 17), 2 refused (OPP-18, 19) and 1 reversed on 20 Nov (OPP-16, now NS-52). Top five new opportunities by score: OPP-01, 03, 02, 04, 05 (OPP-06 and 07 are parked or low-scoring).
 - One finding that changes the plan: "On this day" and "read the year back" are already cards (NS-23, NS-24), so the founder's list has less that is new than it appears; the real additions are suggestions (OPP-01), the same question again (OPP-03), and a design target for Review (OPP-08).
 - Not verified: iOS minimum for controls and for Journaling Suggestions; whether Apple's suggestion notifications open third-party apps; any limit of a share-sheet receiver; whether NS-16's From control can name the child; NX-27's state on `develop`; every competitor fact except those on the four pages read this session. Dearest and Tinybeans were not read first-hand. All ranks are my judgement and must be tested.
 
 Signed: `product` and `user-research` (Claude roles, not licensed researchers, lawyers or engineers).
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `../26-founder-direction-photos-library-and-media.md`. Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (by name; `../27-photo-moments-and-media.md` absent when written). Method as section 5 (score = 2 x value - effort - risk, a judgement, not data). Evidence tags: REPO, VERIFIED (read today, URL), UNVERIFIED, HYPOTHESIS (no parent evidence). I did not talk to any parent.
+
+Read today: Apple Journal page https://apps.apple.com/app/journal/id6447391597 (suggestions "created using on-device intelligence"; the user chooses what to enable for suggestions; the page does not say whether suggestion data ever leaves the device). Remento Baby Book page https://landing.remento.co/babybook/ ("Upload a new photo each week"; a memory can be recorded as video or voice; QR codes appear only in a customer testimonial there). I could not read Apple's PhotoKit limited-library page (JavaScript only); limited access is UNVERIFIED. The earlier claim in section 3 that Remento has "unlimited collaborators" was not on the page I read today: treat it as UNVERIFIED.
+
+### Already covered (do not count twice)
+| Founder idea | Where it already lives |
+|---|---|
+| Picture-first start, Apple Journal-like moments | OPP-01 and NS-49 (levels 1, 2), NS-51 (level 3) |
+| Several pictures and videos on a letter | NS-52 |
+| Same question a year on | OPP-03 (prompt only) |
+| A year read back | NS-24 |
+| A relative adds | OPP-06, parked |
+
+### New candidates
+
+| Id | Candidate | Value | Effort | Risk | Score | Verdict |
+|---|---|---|---|---|---|---|
+| OPP-20 | Same question a year on, with pictures: OPP-03's prompt appears on the day; if the parent wants, last year's letter (NS-23) shows with its own pictures as kept; no new machine pairing, no side-by-side layout | 4 | 2 | 2 | 4 | Recommended, as a rule in NS-23 and OPP-03, not a new card. HYPOTHESIS that parents want it |
+| OPP-21 | Voice over several pictures: while recording, the parent taps a picture to mark which one the words are about; marks are the parent's own act, never machine-timed | 4 | 4 | 3 | 1 | Not recommended now. First ship the plain several-pictures letter (NS-52); reopen if parents with 3 or more pictures say they want to say different things about each. Remento's page shows one photo with one recording (VERIFIED today), so this would not be copying a read competitor |
+| OPP-22 | Family contributions of pictures and videos: a relative sends a picture for the parent to accept into a letter | 4 | 5 | 5 | -2 | Not recommended now. Needs the NS-03 pilot, counsel on another adult's media and a child's picture (Q45, Q48 as cited), and Q-PM-3. Reopen after those |
+| OPP-23 | A year in pictures: the Save a copy and printable book include each letter's own pictures in date order; no machine selection, no "best of", no cover chosen by the app | 4 | 3 | 2 | 3 | Recommended, as a change to NS-24 and NS-07 C28 rows. "Highlights" and "your year in review" stay forbidden (marketing Appendix A) |
+| OPP-24 | A chosen frame as the cover of a video: the parent scrubs and picks; never an automatic "best frame" | 3 | 2 | 2 | 2 | Recommended, inside NS-52 (print and cover) if the founder keeps video |
+| OPP-25 | A video's own sound as the letter: the sound of a child is the recording; transcription off by default (Q-PM-4) | 3 | 4 | 5 | -3 | Not recommended until Q-PM-4 and counsel on a child's voice (Q45 as cited) |
+| OPP-26 | Side-by-side then and now (two pictures of the child a year apart on one screen) | 3 | 3 | 4 | -1 | Not recommended: reads as comparison and tracking, against the no-comparison rule (FR-OPP-04); the parent can still view each letter on its own day |
+
+Sensitivity: if Q-PM-3 is phone-only, OPP-23's file size grows on the phone and the 1.0 print row stays parked; if video is cut back by the founder, OPP-24 and OPP-25 drop out.
+
+### Cheapest tests (past behaviour only, Asha fixture, adults, "x of n", no real pictures in the room)
+- OPP-20: add to the S1 sitting: "The last time you looked at an old picture of {child}, what did you do next?" Pass 3 of 5 say they wanted to say something and did not.
+- OPP-21: "When you took several pictures of one outing, was there one you wanted to talk about more?" Pass 3 of 5.
+- OPP-23: "If you could hold the year in one file, what would you want in it?" Count "pictures" without prompting. Pass 3 of 5.
+
+### New requirements
+
+| Id | Requirement | Links | Priority | Owner | Source |
+|---|---|---|---|---|---|
+| FR-OPP-13 | Given OPP-16 is reversed, Then its old reasoning stays recorded here and its costs (storage, label, counsel, heaviest data) become NS-52 gates; no marketing or opportunity line says "video is recommended" until NS-52's gates pass | NS-52; marketing FR-MKT-35 | P1 | product | `../26-founder-direction-photos-library-and-media.md` s1 |
+| FR-OPP-14 | Given any opportunity touches pictures or videos, Then no machine selects, ranks, crops, captions, titles, pairs, orders by quality, or labels a picture or video (constitution; no "best"); the parent chooses every item and every cover; an opportunity that needs a classifier or face matching is refused, not scored | NS-51, NS-52; FR-OPP-01, 03 | P0 (a) | product | `CLAUDE.md` constitution; direction s1 |
+| FR-OPP-15 | Given OPP-20 is ruled in, Then the earlier letter shows exactly as kept, including its pictures, only on the same day and only as NS-23's one slip; no comparison wording and no count | NS-23; OPP-03; FR-OPP-04 | P1 | content, mobile | FR-OPP-04 |
+| FR-OPP-16 | Given OPP-23 is ruled in, Then included pictures are only those attached to included letters, in date order, with no selection by the app; the file's size and what leaves the phone follow NS-52's rules | NS-24, NS-07 C28, NS-52 | P1 | product, mobile | NS-52 |
+| FR-OPP-17 | Given a test of any opportunity here, Then no real picture, video or child appears in the room (Asha only), and a participant who says the app feels like it is watching their pictures stops the session and the idea (FR-OPP-10) | `research-validation.md` FR-RSH-01 to 03, 21 | P1 | user-research | FR-OPP-10 |
+
+### Links
+NS-23, NS-24, NS-07 C28, NS-49, NS-51, NS-52; OPP-01, 03, 06, 16; FR-OPP-01, 03, 04, 10.
+
+### Design needs
+- A-S01: the "same question again" state with no old words (existing need) gains a version where last year's letter's picture is shown only on the NS-23 slip.
+- Review and the Book: a video's cover-frame chooser (new screen needed).
+
+### Engineering needs (new rows needed)
+- A pure rule for the same-day prompt (extends the OPP-03 row); tests that no pairing or ranking code touches media (a source scan like NS-01-R22 inverted).
+
+### Questions (default, who)
+| Id | Question | Default | Who |
+|---|---|---|---|
+| OQ-7 | Which of OPP-20, 23, 24 go to cards first | OPP-20 (cheap) and OPP-23 as row changes; OPP-24 with NS-52 | Karma, founder |
+| OQ-8 | Keep OPP-21 and OPP-22 parked | Yes | Founder |
+| OQ-9 | Is a year-in-pictures file (OPP-23) a printed-book decision (NS-30) | No; the file only, print stays parked | Founder |
+
+### Cannot assess yet
+- Any competitor's pictures or video behaviour beyond the two pages named above; Tinybeans, Dearest, Storyworth, Qeepsake and Day One are UNVERIFIED for this topic.
+- Whether parents want any of these; every score is a judgement with no data of our own.
+- iOS and entitlement limits for level 3; Apple documentation not read.
+- Storage and egress cost per family, which decides OPP-23 and any video feature.

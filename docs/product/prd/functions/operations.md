@@ -209,3 +209,55 @@ Priority follows RR-4: P0 only with reason (a) a promise, (b) a legal or store d
 | 9 | Notification clocks for the new data kinds in a leak (From name of another adult, first labels, seal dates) | Treat each as the letter's own class (L4) until counsel says otherwise | needs a number from legal; counsel must confirm |
 | 10 | Re-enable `agents.yml` | Keep it disabled until open agent PRs are under `max_open_agent_prs` (66 against 10 today) or the cap is raised by the founder; ops changes nothing | founder |
 | 11 | Which test phones exist | The founder lists them before the first run sheet of the pack; missing rows are waivers in the build record | founder |
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md` section 3; NS-51 (Photo moments, level 3) and NS-52 (Pictures and videos with a letter) by name (`27-photo-moments-and-media.md` did not exist when written; align ids when it lands). Lens: `ops` role, a Claude role, not an SRE or lawyer; legal readings are "counsel must confirm". Outside facts: Supabase pricing and Storage limits read 20 Nov 2026 (https://supabase.com/pricing , https://supabase.com/docs/guides/storage/uploads/file-limits): Free 1 GB storage, 5 GB egress, 50 MB max file, no backups, no spend cap line; Pro daily backups kept 7 days, spend cap on by default. Costs are in `finance.md` addendum (FR-FIN-25 to 34); not repeated.
+
+### O1. Existing rows touched
+
+| Existing | Effect |
+|---|---|
+| FR-OPS-01, 02 (kill switch and pause keys) | Gain two keys (FR-OPS-39) |
+| FR-OPS-04, 05 (leak runbook, data requests by kind) | Gain media rows (FR-OPS-41, 42). FR-OPS-05 already says pictures and the Find index are on the phone only; true only while Q-PM-3 is no. Superseded by FR-OPS-41 on 20 Nov if media is hosted |
+| FR-OPS-12, 13, 14 (limits job, over-quota, restricted project) | Extended to a media bucket (FR-OPS-37, 38) |
+| FR-OPS-15, 16 (backup flip) | Media backup is a separate decision (FR-OPS-40); D-111 stays: backup is never Plus |
+| FR-OPS-22 (flag matrix) | Gains two flags (FR-OPS-39) |
+| FR-OPS-26 (rollback with no pause key) | Applies to a build that has the Photos permission string; a wrong permission string is a binary, not a flag |
+| FR-OPS-31 (device evidence on Asha only) | Extended to media fixtures (FR-OPS-43) |
+
+### O2. New requirements
+
+Hosted-media rows (FR-OPS-37 to 42) apply only if Q-PM-3 is answered yes; default is phone only, and then FR-OPS-39, 43 and 44 are the whole addendum.
+
+| Id | Requirement (Given, When, Then where testable) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-OPS-37 | Buckets and quotas. Given hosted media, Then: one private bucket `entry-media` separate from `entry-audio` (never mixed, so each has its own file limit, type allowlist and purge path); per-bucket file size limit set under the global limit (Free 50 MB; Pro up to 500 GB, so the cap is ours: PROPOSED equals the card's video size cap); allowed types restricted at the bucket (picture and video types only); no public read; object path keyed by book and opaque media id, never a filename or album; a per-account byte cap enforced server-side before accept; the weekly limits job (FR-OPS-12) reports the bucket's bytes and egress as totals and fails on NOT CHECKED; no hosted media on Free at all | NS-52; FR-OPS-12; FR-FIN-28; BL new row needed | P1 | ops, data-architect, security | Supabase pages read 20 Nov (limits above) |
+| FR-OPS-38 | Cost alarms and over-quota behaviour. Given any media quota passes 60% or 80% of the plan's included amount, Then the founder question and alert open as in FR-OPS-13, with totals only; Given the project goes read-only or the spend cap is hit, When an upload is refused, Then the app shows the calm outage path (FR-OPS-14), the media stays queued on the phone and nothing is deleted or retried in a storm (backoff, FR-REL media rows); a restricted project never looks like a lost picture | NS-52; FR-OPS-13, 14; FR-FIN-27, 28 | P1 | ops | FR-OPS-13, 14 |
+| FR-OPS-39 | Kill switches and flags, servers-off builds included. Given NS-51 and NS-52 each have a local flag (names PROPOSED: `EXPO_PUBLIC_PHOTO_MOMENTS`, `EXPO_PUBLIC_MEDIA_ATTACH`; the existing `EXPO_PUBLIC_PHOTOS` stays NS-01's) and a remote pause key (PROPOSED `killSwitches.photoMoments`, `killSwitches.mediaAttach`), Then: the gate is the local flag and `getRemoteConfig().killSwitches.x !== true`, fail-open, not `mayRun`, because `mayRun` returns false in every servers-off build (TestFlight, errata E20) and would silently hide the feature there (mobile review M-09); the pause hides new surfaces and stops new analysis or uploads, and never deletes, never blocks Save a copy, export or deletion (NS-09-R17 style); the key ships in a build before it is needed (FR-OPS-02); the pause drill is run once per key in a servers-off build and a servers-on build and recorded; the matrix FR-OPS-22 lists both flags with owner and rollback | NS-51, NS-52; FR-OPS-01, 02, 22, 26; `tools/review/ns46-50/mobile.md` M-09; E20 | P0 (a): a promise that a bad feature can be stopped | ops, mobile | M-09; FR-OPS-01 |
+| FR-OPS-40 | Backups for media. Given hosted media, Then Supabase Free has no backups and Pro keeps daily backups for 7 days (pages read), and Storage objects are not in the database dump (reliability file, FR-REL-12), so media needs its own written decision: which of (a) no server copy beyond the object (the parent's phone is the other copy), (b) a copy job to a second store with a monthly restore check (as the seventh flip condition for audio, FR-OPS-15), is chosen, before the flag leaves the founder; D-111 (backup free, never Plus) is checked against any media-backup option. Default: no hosted media, so no job | NS-52; FR-OPS-15, 16; FR-REL-12; D-111 | P1 | ops, security, founder | Pages read 20 Nov |
+| FR-OPS-41 | Media runbooks, each in the FR-BKO-25 card shape, content-free: (1) a parent reports a picture or video missing (first answer: it is on the phone that added it, Save a copy; the ladder is in the reliability file); (2) over-quota or restricted project (FR-OPS-14); (3) a signed URL or link leaked (rotate, shorten lifetime, list what could be read by id counts only, no staff opens the media); (4) a media purge fails or a restore replays a deleted item (the purge ledger covers media objects: FR-REL-12); (5) malicious or oversized upload (reject and quarantine by type and size, no staff viewing); (6) an abuse or child-safety report about media (route is FR-BKO-12 to 14 and counsel; whether a legal reporting duty applies to a provider that hosts user pictures is UNVERIFIED and for counsel). The leak runbook (FR-OPS-04) step "what could be read" gains the media bucket | NS-52; FR-OPS-04, 14, 17; FR-BKO-12, 14, 25; FR-REL-12 | P1 | ops, security, legal | Counsel must confirm item 6 |
+| FR-OPS-42 | Data requests for media. Given an access, export or deletion request, Then the card says where each media kind is: the phone only (nothing to give or delete on our side; Save a copy is the export), or hosted (the bucket prefix: deleted by the purge path and verified by an object count of zero by prefix, never by looking at an object); the reply never attaches or asks for a picture | NS-52; FR-OPS-05; FR-BKO-09, 11 | P0 (b): data rights | support, ops | FR-OPS-05 |
+| FR-OPS-43 | Device evidence for media. Given NS-51 or NS-52 is run on a device row, Then the test install's library holds only fictional Asha media made for the purpose (still, HEIC, Live Photo, a short video, an iCloud-optimised item), no real family picture, no screenshot of a real library, evidence lines hold counts, codes and times only (FR-OPS-17, 31); the run sheet adds the cases in the reliability file | NS-51, NS-52; FR-OPS-31; FR-REL media rows | P0 (a): private by design | qa, ops | FR-OPS-31 |
+| FR-OPS-44 | Release gates for the two cards. Given the native Photos permission strings, the picker and transcoding are in a build, Then: the strings are reviewed with the copy before the build (a changed string is a new build, no over-the-air path); the build counts against D-092 and is batched (FR-FIN-34); the preflight (BL-958) checks both new flags are off in every profile except where the founder ruled; the privacy label and the strings match the shipped behaviour in the same release (counsel and privacy own the text); level 3 does not enter a store build until the spike file and counsel gates close (26 section 1) | NS-51, NS-52; BL-958; FR-OPS-22 | P0 (b): store rule | release, ops | 26 section 1; FR-OPS-26 |
+
+### O3. Design needs
+Strings only: the calm queued-and-waiting line for refused uploads (E-area outage path, FR-OPS-14; new string needed), and the limit line. No in-app status line (FR-OPS-19). No new ops screen.
+
+### O4. Engineering needs
+New rows needed: (1) `free-limits.ts` media bucket totals (shared with FR-FIN-28); (2) bucket creation migration with limits, allowed types and grants in `supabase/tests/grants.mjs` (CLAUDE.md branch rules) if hosted; (3) the two pause keys in `KILL_SWITCH_KEYS` and the remote document, with a servers-off test; (4) preflight check for the two flags (BL-958); (5) the six runbook cards.
+
+### O5. Questions, with defaults
+| Id | Question | Default | Who answers |
+|---|---|---|---|
+| Q-OPS-P1 | Media backup beyond the object (FR-OPS-40) | None; hosted media does not ship until decided | Founder with security |
+| Q-OPS-P2 | Is a per-key pause drill required before the flag leaves the founder? | Yes, once per key (FR-OPS-39) | Karma |
+| Q-OPS-P3 | Does a provider-side reporting duty apply to hosted pictures of children? | Unknown; blocks hosted media | Counsel (needs a number from legal) |
+
+### O6. Cannot assess yet
+- Real upload sizes, failure rates and egress: no usage; all sizing is in `finance.md` [A].
+- Whether Supabase Storage supports the resumable upload size and the access model we need on Pro: the limits page did not mention resumable chunking; UNVERIFIED.
+- Whether Supabase Free would pause or throttle a project with media: not read; moot because media is not allowed on Free.
+- Counsel's reading on reporting duties and the label for hosted children's pictures.

@@ -271,7 +271,7 @@ Format per `BRIEF.md` section 3. Card rows are `NS-nn-Rn` where the row exists i
 | FR-NTC-02 | Given the catalogue is on or off, When a plan is built from the same inputs, Then the set of (id, date, time, class) is identical, so the catalogue never raises volume | NS-32-R1, NS-32-R7, NS-13-R19; new row needed | P0 (a) no nagging | mobile | Section 5; NTC-T08 |
 | FR-NTC-03 | Given a plan for any future date, Then every input is computable at plan time: recency is `fireDate - anchorDate` and never a clock read at delivery | NS-13 3a, NS-13-R18; new row needed | P0 (a) no nagging | mobile | Section 3.3; NS-13 section 2 (r3 F14) |
 | FR-NTC-04 | Given recency r1 to r4, Then copy is a question or an invitation that gets shorter and more open as the gap grows and never mentions the gap, a count, a comparison or a judgement | NS-13-R14 (never a count of a gap), NS-32; VOICE.md no-guilt rule; new row needed | P0 (a) no guilt, no counts | content | `VOICE.md` lines 54 to 56, 64 to 74; `rules.test.ts:297` |
-| FR-NTC-05 | Given the last letter's kind (spoke, typed, picture, first, small), When it is within 6 days, Then the question follows from it and never summarises it or repeats the parent's words; the app does not read the letter's text for this | NS-48, constitution; new row needed | P0 (a) the machine never adds words | content, mobile | Direction 4.2; `repos/types.ts:12 to 13` |
+| FR-NTC-05 | Given the last letter's kind (spoke, typed, picture, first, small), When it is within 6 days, Then the question follows from it and never summarises it or repeats the parent's words; the app does not read the letter's text for this | NS-48, constitution; new row needed | P0 (a) the machine never adds words | content, mobile | Direction 4.2; `repos/types.ts:12 to 13` Superseded in part by NS-48-R5 (picture is not a kind) and FR-NTC-29 on 20 Nov. |
 | FR-NTC-06 | Given the weekday, Then it changes tone only (lighter Friday, slower Sunday, small Monday) and never the number or timing of notifications | NS-13, NS-32-R1; new row needed | P1 | content | Direction 4.2 |
 | FR-NTC-07 | Given a child's age band on the fire date, Then it changes only the subject of the question; with names off and two or more included books, age bands are not used (the grid runs) | NS-48; NS-32 scenario "Two books"; new row needed | P1 | core, content | Section 3.4 layer 2; Q-NTC-4 |
 | FR-NTC-08 | Given a parent-chosen day or ticked season, Then it takes the one budgeted slot as a typedDay, ignores recency, survives back-off, and the app never infers a day or season the parent did not tick | NS-18-R3, NS-32-R3, NS-32-R9; NS-46 (proposed) | P0 (c) core loop, and promise | mobile, content | Direction 3.1; NS-32 section 3 |
@@ -330,7 +330,7 @@ No counsel question is raised by this file on its own; the religion on the lock 
 |---|---|---|
 | Q-NTC-1 | Variants per grid cell: the founder's 8 to 12, or 6 | 6; revisit after the first tester sheet |
 | Q-NTC-2 | Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes) | Public only; family and faith need names on |
-| Q-NTC-3 | May a visible body mention the kind of the last letter ("a picture with it?") | Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on |
+| Q-NTC-3 | May a visible body mention the kind of the last letter ("a picture with it?") | Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on Superseded by NS-48-R5 on 20 Nov: no "a picture with it?" body. |
 | Q-NTC-4 | Mixed-age siblings with names off | No age questions; the grid runs |
 | Q-NTC-5 | Do more variants reduce turn-off? | Hypothesis, test with the tester sheet; ship the floor, measure, then fill |
 | Q-NTC-6 | Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch | One names switch (fewer settings); mine the 87 rows for wording |
@@ -341,3 +341,62 @@ No counsel question is raised by this file on its own; the religion on the lock 
 ## 14. What I did not verify
 
 No Apple documentation was read for this brief; nothing here depends on an Apple rule except one point I did not check: that the title of a local notification still shows when the body is hidden by "Show Previews" (this is how NS-32 R13 and research note 3 describe it; I did not read research note 3). No law is cited. Every claim about the repo is from the files and lines in section 1. The sample variants have not been read by a native editor of the VOICE.md voice or by counsel; they pass my scratch lint only. I am a Claude role, not counsel.
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `../26-founder-direction-photos-library-and-media.md` section 2 (a nudge is "one of the existing budgeted classes (NS-32), not a new class"; lock screen never describes pictures). Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (by name; `../27-photo-moments-and-media.md` absent when written). Registry facts from `../11-foundations.md` NS-32-R1 to R5, R14, R15 and `../21-days-cultural-photos-home.md` NS-48-R5 and NS-49-R3, R25, R26. No Apple documentation read for this addendum.
+
+### New requirements
+
+| Id | Requirement | Links | Priority | Owner | Source |
+|---|---|---|---|---|---|
+| FR-NTC-22 | Given a photo-moment nudge, Then it is not a new class: it is a variant pool inside the existing `evening` class (lowest priority) and takes that class's slot on a day a moment exists; `typedDay`, `birthday`, `monthAge` still win the day by NS-32-R3; the registry test (NS-32-R2, R5, R15) stays green with no `photo` class. Default needs Karma's ruling (Q-NTC-10) | NS-32-R1, R2, R3, R5, R15; NS-51 | P0 (a) no nagging | mobile, content | `../11-foundations.md` |
+| FR-NTC-23 | Given a day with any two of: a ticked day, a birthday or month note, an evening reminder, a photo-moment nudge, Then exactly one budgeted notification is delivered (the highest priority) and a moment shows only inside the app; given the pending ceiling of 60 and the plan group of 4, adding moment nudges raises neither | NS-32-R1, R7, R15; NS-13 3a | P0 (a) | mobile | Section 5 of this file |
+| FR-NTC-24 | Given recency and back-off, Then a photo-moment nudge does not reset or extend the anchor, is not a made letter, is silenced by day 35 like every evening nudge, and is not revived by new pictures while the parent has not opened the app; default cap of one moment nudge in any 7 days even when moments exist (Q-NTC-11) | NS-13-R18, R19; FR-NTC-03, 04 | P0 (a) | mobile | Section 4.1 recency axis |
+| FR-NTC-25 | Given any moment variant, Then title is at most 40 and body at most 110 characters, no exclamation mark, no count of pictures, videos or days, no description of what a picture shows (no place, person, event, scene, season word that is derived from the image), no judgement of importance ("best", "special", "favourite", "highlights", "memories", "found", "noticed", "we saw"), no "your", no emoji, dash, curly quote or ellipsis character, and no machine-writing word. A day-of-week or "the weekend" may appear because it comes from the date alone | FR-NTC-10; NS-51; `rules.test.ts` as cited in FR-NTC-10 | P0 (a) | content | FR-NTC-10 |
+| FR-NTC-26 | Given names off (default) or App lock on, Then the lock-screen title is neutral ("Something for the book today" family) and no child name, place, album name or media type appears in title or body; with names on, only the child name may appear, never a place, album, person or count. The category keeps its neutral hidden-preview placeholder and the level stays `active` | FR-NTC-09, 11, 16; NS-32-R10, R12, R13 | P0 (a) | content, mobile | FR-NTC-11 |
+| FR-NTC-27 | Given a moment nudge is tapped, Then it opens the capture area's moments view, never a prompt or a letter; the tap payload carries only `{ source, kind }` with no asset id, date list, count or album; nothing about the library is logged (breadcrumb, error text, notification identifier) | NS-51; NS-13 R9; `scheduler.ts` payload as cited in section 8 | P0 (a)(b) | mobile, privacy | Section 8 of this file |
+| FR-NTC-28 | Given a book that is quieted, a hard-day tier, Reminders off, Photo moments off, or the library permission revoked or narrowed, Then no moment nudge is planned and pending ones are cancelled at the next re-plan; a quieted book adds nothing (NS-32-R14); turning Photo moments off cancels them at once | NS-32-R14; NS-51; FR-NTC-08 | P0 (a) | mobile | NS-32-R14 |
+| FR-NTC-29 | Given the last-letter layer (section 4.2), Then a letter that has pictures or videos is not a kind and shapes no later word; the grid and kinds spoke, typed, first, small are unchanged (confirms NS-48-R5 and NS-49-R3) | NS-48-R5; NS-49-R3 | P0 (a) | content, mobile | `../21-days-cultural-photos-home.md` |
+| FR-NTC-30 | Given the iOS scheduling reality (local notifications are scheduled ahead; NS-49-R25 forbids background modes in 1.x), Then moment nudges are planned only at a re-plan from what the app knew at its last open; a nudge may therefore arrive after the parent has already written that day, and the planner cancels it at the next re-plan, not at delivery. The card must say so plainly and no copy may promise "new pictures" or timeliness | NS-13 3a; NS-49-R25; NS-51 | P1 (a) | mobile, product | Section 3.3 of this file; background behaviour UNVERIFIED |
+| FR-NTC-31 | Given the tester sheet (analytics off), Then a moment variant is retired when testers turn reminders or Photo moments off within a day of seeing it; no event, log or aggregate counts library items, moments or nudges shown | FR-NTC-17; `CLAUDE.md` privacy rules | P1 | content, research | FR-NTC-17 |
+
+### Sample variant intents (not live; `content` writes final words; a native editor has not read them)
+Keys `ntc.pm.01` to `05`, title "Something for the book" or the neutral title:
+1. "Some pictures are here if you want them."
+2. "A few pictures from the weekend are here."
+3. "Pictures from a day this week are here. Say a few words if you like."
+4. "A day with pictures is here whenever you want it."
+5. "Pick a picture and say what it was."
+Check: no count, no description, no exclamation mark, no importance. Variant 2 and 3 use a date word only.
+
+### Changes to existing rows
+FR-NTC-05 and Q-NTC-3: Superseded in part by NS-48-R5 and FR-NTC-29. Section 11 "Not in scope: the photo suggestion nudge (NS-49)" now reads NS-51 owns the nudge; this file owns only its words and budget (FR-NTC-22 to 31).
+
+### Links
+NS-32, NS-13, NS-48, NS-49, NS-51, NS-52; FR-NTC-01, 02, 03, 08, 09, 10, 11, 16, 17.
+
+### Design needs
+- Me, Reminders: no new switch here; the Photo moments switch lives with NS-51's settings, and Me, Reminders "Next:" preview must show a moment nudge's neutral wording through the same selection.
+- Capture area: a moments view that a tap lands on, with an empty state that never says "nothing found" or counts.
+
+### Engineering needs (new rows needed)
+- `selectNotificationKey` pool for `ntc.pm.*` under `evening`; planner input `momentsKnown` as a boolean per date with no asset data; planner tests for FR-NTC-23, 24, 28.
+- Rules-test forbidden-word list additions for FR-NTC-25.
+- Cancel-on-switch-off and on-permission-change hooks (extends sign-out `forgetReminders`).
+
+### Questions (default, who)
+| Id | Question | Default | Who |
+|---|---|---|---|
+| Q-NTC-10 | Which existing class carries the moment nudge? | `evening` variant pool, lowest priority | Karma |
+| Q-NTC-11 | Cap on moment nudges | One in 7 days | Founder, Karma |
+| Q-NTC-12 | May a body say "pictures" at all on a lock screen with names off? | Yes, generic only; if privacy objects, use the neutral title with a body that does not say it | Privacy, counsel (needs a number from legal) |
+| Q-NTC-13 | May a moment nudge be allowed after day 35? | No | Karma |
+
+### Cannot assess yet
+- Whether any background mechanism is allowed (changes FR-NTC-30 entirely); not read.
+- Whether moment nudges reduce or raise turn-off; hypothesis, tester sheet only.
+- Whether "pictures" in a title is a privacy issue for shared devices.
+- Message wording quality; no native editor has read the samples.

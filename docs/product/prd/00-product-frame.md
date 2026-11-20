@@ -1,8 +1,10 @@
 # The product frame: how every requirement is chosen, designed, measured and kept cheap
 
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the principles, the three-tab IA, or the index of every card (NS-01 to NS-52).
+
 Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id. Author: Karma with the Chief Product Officer role; reviewed by all twelve council roles in two rounds (section 10). Approved by the founder on 19 Nov 2026: "I approve all requirements." Docs only.
 
-Read in this order: `docs/product/VISION.md` (why and for whom), this file (how we choose and what we optimise), the cards in `docs/product/prd/` (what to build), `13-engineering-plan.md` (size, skills, order), `14-test-plan.md` (how we prove it).
+Read in this order: `docs/product/VISION.md` (why and for whom), this file (how we choose and what we optimise), the cards in `docs/product/prd/` (what to build), `13-engineering-plan.md` (size, skills, order), `14-test-plan.md` (how we prove it). Added 20 Nov: card 19 (NS-38 to NS-45), card 21 (NS-46 to NS-50), the one-reading spec `22-final-holistic-spec.md`, and (being written) `23-dependency-map-and-plan.md` and `24-engineering-handoff.md`; cards NS-51 and NS-52 are being written from `26-founder-direction-photos-library-and-media.md`.
 
 ## 1. The people, in one line each
 
@@ -26,6 +28,7 @@ The opportunity tree in one view:
 | | "I want to go back to it" | NS-01 photo, NS-02 Find, NS-21 letter page, NS-22 calm header, NS-23 one past letter, NS-24 read the year back, NS-06 firsts and seals |
 | | "I want them to hear it too" | NS-03 pilot, NS-05 share one letter, NS-25 the other parent, NS-16 someone else speaks |
 | | "I want something to hold" | NS-07 print-ready file, NS-30 |
+| Families get to the first kept letter, and a day that matters is not missed | "I do not know where to start"; "I want to mark Mother's Day"; "I have a picture" | NS-38 to NS-45 first run (card 19), NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first, NS-50 Home today (card 21), NS-51 photo moments and NS-52 pictures and videos with a letter (card 27, being written) |
 
 ## 3. What we optimise, and how we will know
 
@@ -58,13 +61,15 @@ Three tabs, one verb each. Only Home starts a letter. Elsewhere you can only add
 
 | Tab | Verb | What lives there (this pack) |
 |---|---|---|
-| Home | Say | The prompt; speak, type, not much today; whose book (NS-14); one slip at a time: a waiting draft, Save a copy (NS-11), one past letter (NS-23); a picture first (NS-01) |
+| Home | Say | The prompt; speak, type, not much today; whose book (NS-14); one slip at a time: a waiting draft, a day the parent chose, today (NS-50), Save a copy (NS-11), one past letter (NS-23); a picture first (NS-01, NS-49) |
 | Book | Read | Month chapters; the calm header (NS-22) with Read together, the lens choice, Find (NS-02), Go to a month; the letter page as one list (NS-21) with Share (NS-05), a first, a picture, a seal, the day it is about, earlier versions; read the year back (NS-24) |
-| Me | Look after | Account, plan, reminders (NS-13, NS-18), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
+| Me | Look after | Account, plan, reminders (NS-13, NS-18), Days (NS-46, NS-47), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
 
-Never a tab: Family, Library, Share.
+Never a tab: Family, Library, Share. Cards NS-38 to NS-52 add no tab: Home Say, Book Read, Me Look after stand (`22-final-holistic-spec.md` section 1).
 
-Home shows at most one slip, in this fixed order: (1) the existing waiting cards, in their existing order ("Waiting to be kept.", "Recorded before the app closed.", "A recording is ready to read back."); (2) the seal-opened line, on its opening day only (NS-06 B4); (3) Save a copy, in the birthday week (NS-11); (4) one past letter (NS-23, which replaces the built "A month ago" card). The reminder ask sheet and the Plus line (F14-REQ-040) are not slips and keep their own rules. The photo start belongs to the capture cluster and is never a slip. Test `[FRAME-SLIP]` loads a registry of every slip type, and the build fails when an unregistered type renders. Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
+No-duplication rule (IA-AUDIT, `docs/design/e2e/IA-AUDIT.md` on branch `docs/e2e-ux-20nov`; applied in `22` section 3): one owner per fact. A second door to a function is a link to the first, never a second list (Days page: R-IA-2; Home is one slip, not a strip: R-IA-3; the Me regroup waits for tree test T1: R-IA-4). Ownership: age math in `packages/core` (R-IA-1); the one-a-day reminder rule in `lib/reminders/budget.ts` (R-IA-6, X6).
+
+Home shows at most one slip, in this fixed order: (1) the existing waiting cards, in their existing order ("Waiting to be kept.", "Recorded before the app closed.", "A recording is ready to read back."); (2) the seal-opened line, on its opening day only (NS-06 B4); (2b) a day the parent chose, today (NS-50); (3) Save a copy, in the birthday week (NS-11); (3b) the Days ask, once, retired after two unanswered showings (NS-47, Q-FD-23); (4) one past letter (NS-23, which replaces the built "A month ago" card). Superseded: this list had ranks 1 to 4 only -> 2b and 3b added (`22-final-holistic-spec.md` section 3; `21-days-cultural-photos-home.md` NS-50). The reminder ask sheet and the Plus line (F14-REQ-040) are not slips and keep their own rules. The photo start belongs to the capture cluster and is never a slip. Test `[FRAME-SLIP]` loads a registry of every slip type, and the build fails when an unregistered type renders. Superseded: any reading that the slip host and registry exist -> not built, the registry is BL-963 (`tools/review/ns46-50/mobile.md` M-13). Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
 
 ## 5. Standing inputs for design
 
@@ -179,8 +184,25 @@ Rank and size come from `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.
 | 53 | C-35 | Gifts and lifetime | parked or refused | 12 | - | - | - | G Parked |
 | 54 | C-37 | A Share tab | parked or refused | 12 | - | - | - | G Parked |
 
+Added 20 Nov 2026 (index only; the cards own every row; ranks above are unchanged and these cards carry no rank in `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` until the founder rules, see its section 4b). Counts are P0 rows from `tools/review/p0.py` register mode. Drops are card 21 "Release line and cut" (A next build, B 1.0 only if every gate closes before freeze otherwise 1.1, C after 1.0 approval; founder decides, Q-FD-7).
+
+| Card | Item | File | P0 rows | Drop | Bucket |
+|---|---|---|---|---|---|
+| NS-38 to NS-45 (card 19) | From App Store page to first kept letter: store page, first launch, age and region, sign-in, agreements, first book, first letter and allowance, account life | 19 | 96 (8, 10, 11, 18, 13, 11, 10, 15) | none in the card; Karma to rule | H First run |
+| NS-46 | Days we mark | 21 | 22 | B (R14, R20 in C) | B Capture |
+| NS-47 | Cultural background | 21 | 27 | B store rules, C ask and traditions | B Capture |
+| NS-48 | Notification catalogue and rotation | 21 | 13 | A phase 1, B, C | B Capture |
+| NS-49 | Picture-first start and Journaling Suggestions | 21 | 21 | A level 1, C level 2 | B Capture |
+| NS-50 | Home today | 21 | 4 | B (R13 in A, R6 and R16 in C) | B Capture |
+| NS-51 | Photo moments (level 3, reverses "level 3 closed") | card 27, being written (`26-founder-direction-photos-library-and-media.md`) | not yet | not yet | C Reading and keepsakes |
+| NS-52 | Pictures and videos with a letter (limits proposed, founder confirms) | card 27, being written | not yet | not yet | C Reading and keepsakes |
+
+All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
+
 ## 10. Council review
 
 Round 1 (19 Nov 2026): two passes covering the CPO, Chief Design Officer and CMO, then the Chief Privacy Officer, CCO, CLO, CFO, CTO and quality (`15-council-review.md`).
 
 Round 2 (20 Nov 2026, after the founder approved the requirements): three passes covering all twelve roles: CPO, Chief Design Officer, CMO and CBO; Chief Privacy Officer, CCO, CLO, CISO, CDO and CAIO; CFO, CTO and quality. About 90 findings per pass were debated, ruled on where roles disagreed, and applied by the product agents card by card (`16-council-review-round-2.md`). Each pass was a separate Claude session playing the roles from their skills. Independence is of method only (one account, one model family). No outside legal source was read by the reviewers; the Apple rules the cards rely on were read on 20 Nov by the main session and are recorded in section 16 of the round-2 record.
+
+Cards 19 and 21 (added 20 Nov): no council round covers them. Card 21 had ten function reviews (`tools/review/ns46-50/`: analytics, compliance, content, design-systems, marketing, mobile, privacy, product, qa, security), recorded in `GAP-LOG.md` RV-1 to RV-17; card 19 has the two inputs under `inputs/`. Both are "Locked v1.0 candidate" pending Karma's rulings (`25-instruction-coverage-audit.md` row 1a). The founder's approval of 19 Nov covers the locked cards 01 to 18, not these.

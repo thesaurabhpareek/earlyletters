@@ -282,3 +282,64 @@ All enums, booleans or bounded integers; L2; one requirement each; added to the 
 Blind spot that remains: every 1.0 number comes from 15 to 25 families who know the founder and chose to help. None of it says how strangers will behave, and none of it is a rate.
 
 Decision Scientist (`decision-science`, Claude role)
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md` section 3; cards NS-51 (Photo moments, level 3) and NS-52 (Pictures and videos with a letter) by name, because `27-photo-moments-and-media.md` did not exist when this was written (ids to align when it lands). Lens: `analytics` and `decision-science` roles, Claude roles, not statisticians of record or lawyers; legal readings are "counsel must confirm". No outside source was needed; all numbers below are read from this file's section 3.2 or are PROPOSED. Nothing here is observed: analytics stays off in the whole 1.0 line (FR-DAT-01).
+
+### A1. Existing rows touched
+
+| Existing | Effect | How |
+|---|---|---|
+| FR-DAT-01, 02, 03 | Unchanged, extended to the new surfaces | NS-51 and NS-52 add no event, counter, survey control or count shown to a parent (FR-DAT-37) |
+| FR-DAT-04, 13, 27 | Extended | FR-DAT-37 to 39 add to their "Never" lists; FR-DAT-13 gains `counts.videos` once the export carries videos (export schema is NS-52's) |
+| FR-DAT-09, 32 | Extended | FR-DAT-40 adds zero-target guardrails and a fidelity question |
+| Section 6.2 row NS-01 `media_added{source, kind}` | Extended, not superseded | `kind` may be `picture` or `video`; `source` gains `moment` and `attach_picker`; no count of items, bytes, seconds or letters. Still not in `catalog.ts` v8 |
+| Section 6.2 candidate `capture_started.source` `photo`, `suggestion` | Extended | A moment start may be `moment` (candidate only; closed list of start sources, NS-35-R4) |
+| FR-DAT-21 (Q-NS-1) | Unchanged | NS-51 is not read against the North Star in 1.x (FR-DAT-43) |
+
+Nothing is superseded; no old FR text edited.
+
+### A2. New requirements
+
+| Id | Requirement (Given, When, Then where testable) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-DAT-36 | Allowlist rule, for when analytics returns. Given any event schema change for NS-51 or NS-52, When `catalog.ts` is edited, Then a test fails if a property is free text, a filename, album name, place, date of a moment or picture, an id from the photo library, a count or size of library items, a byte count, a video duration, a count of pictures or videos on a letter, or the state of Photos permission (full, limited, denied). Only enums and bools already allowed by `schema.ts` pass | NS-51, NS-52; `schema.ts`, `validate.ts`; new row needed (BL for test) | P0 (a): content-free promise | analytics, privacy | FR-DAT-27; TRACKING_PLAN section 0 promise 2; 26 section 1 (no derived signal leaves the phone) |
+| FR-DAT-37 | No measurement in 1.0 for the two cards. Given a build with `EXPO_PUBLIC_PHOTO_MOMENTS` or the media flag on (names PROPOSED, `mobile` decides), When any screen of NS-51 or NS-52 is used, Then nothing is sent, queued or logged for us, no control asks a research question, and no screen shows a count made for measurement ("12 moments", "3 of 6 pictures used", "pictures this month"). A fact a parent looks up, such as the size of what is kept in C-S18 Storage, stays allowed | NS-51, NS-52; FR-DAT-01, 03; C-S18 | P0 (a) | analytics, design-systems | FR-DAT-03; 26 section 1 ("nothing counts or scolds") |
+| FR-DAT-38 | Never an event, in any version, for these cards: a moment shown, tapped, dismissed or empty; an album picked or excluded; the moment index built, paused or removed; a suggestion start (beyond the closed `source` value above); the number of pictures or videos on a letter; a video's length or size; transcription of a video's sound (if ever ruled in, Q-PM-4); anything that names whether a picture came from the library or the picker per letter beyond the closed `source` enum; any timing at a moment's date (a day's pictures point at a day, the same leak as a birthday, TRACKING_PLAN 6.4) | NS-51, NS-52; FR-DAT-27 | P0 (a) | analytics, privacy | TRACKING_PLAN 6.2, 6.4; 26 section 1 |
+| FR-DAT-39 | Derived signals live on the phone only. Given NS-51 builds an on-device index of moments (dates, clusters, counts) and a later analytics or insights loop exists, Then: the index is not an input to any event, `insights.*` aggregate or server column; it is not in the export or the manifest; turning NS-51 off, revoking Photos permission or erasing the app deletes the index in the same session (test reads the store after each); no copy is made for research, support or a tester sheet. A tester never sends the index, a screenshot of a moments surface, an album name or a picture | NS-51 section on off and removal; FR-DAT-04; FR-PRV (privacy file owns the classification and Erase scan) | P0 (a) | analytics, mobile, privacy | 26 section 2 ("on-phone index is removed"); section 1 |
+| FR-DAT-40 | Guardrails added to FR-DAT-09 (one report trips each; same-day to the founder): (a) a picture or video missing from a kept letter, from a Save a copy, or from the Book after a restore (counts as a lost-media report; severity 1 like a lost letter); (b) "the app wrote or suggested words about a picture", extending Q-FID-1 to read "Did the app ever show a word in a letter, or about a picture, that you did not say or type? (yes / no)" (one yes is a constitution incident); (c) a nudge or moment felt like being watched or like a count of what was left unwritten (a surveillance or gap-count report; retires that nudge wording); (d) a parent saw a picture they did not choose or another member's library item (a privacy incident) | NS-51, NS-52; FR-DAT-09, 32; support tally (FR-DAT-17 gains `media lost`, `felt watched`) | P0 (a) | user-research, support, founder | FR-DAT-09; constitution in `CLAUDE.md`; 26 section 1 |
+| FR-DAT-41 | Research without real photos. Given a usability study or device round for NS-51 or NS-52, Then it runs on a test install whose library holds only fictional Asha media made for the purpose (fixture rule FR-DAT-30, D13) labelled "stand-in"; a tester is never asked to open their own library on screen share or send media; questions are fixed-answer and ask about the surface (Did you understand what the app was offering? yes / no; Did it feel like the app was looking at your pictures? yes / no / not sure), never about what was in their pictures. Stop lines, not pass lines: one report of (b), (c) or (d) in FR-DAT-40 stops the study and the founder decides | NS-51, NS-52; FR-DAT-10, 11, 30, 40; qa and research-validation files | P1 | user-research, qa | Section 3.2 (five parents find usability problems, they do not estimate a rate); RV-16 |
+| FR-DAT-42 | What five parents cannot tell us. Given NS-51 asks "does a moment make a parent write more", Then no read-out claims an effect: with a 50% against 70% difference a two-arm test needs 93 families per arm and 4% against 6% needs 1,863 (section 3.2), and the beta has 15 to 25 families. NS-51 and NS-52 ship with no randomised arms, no A/B of nudge wording, and no claim in the store, the site or the pack of "more letters", "finds your best moments" or any rate | NS-51, NS-52; FR-DAT-11, 20; marketing files | P1 | decision-science, marketing | Section 3.2 tables |
+| FR-DAT-43 | Metric tree placement. NS-52 sits under "I want to go back" (reading a letter with its pictures; guardrail 3.4 row for NS-01 stays) and under "Something to hold" (keeping, export); NS-51 sits under "I have two minutes" as an adoption leaf read only by one fixed tester question ("Did you start a letter from a suggestion of your own pictures? yes / no / not offered") and under Foundations as the guardrail leaves in FR-DAT-40(c) and (d). Per FR-DAT-22, neither card asks a question until its row exists in section 3.4; rows A3 below. The cards do not move a number readable in 1.0 and say so | NS-51, NS-52; FR-DAT-22 | P1 | product, user-research | Section 3.1 tree |
+| FR-DAT-44 | If media syncs (Q-PM-3 answered yes), cost and abuse need server-side numbers that are not product analytics. Given hosted media, Then: bytes stored and egress are read by the weekly ops job as totals (FR-OPS-12, FR-FIN-03 and FR-OPS-37 in the operations file), never per-family in the repo; a per-account over-quota flag may exist as an ops row with no content and no media counts; no aggregate below k = 10 reaches `insights.*`; no read-out states "n families store pictures". Default: this row does not apply, because default is phone only | NS-52; Q-PM-3; FR-DAT-28; FR-OPS-37 | P1 | ops, data-architect | TRACKING_PLAN section 4 (k = 10) |
+
+### A3. Decision rules added to section 3.4 (what number changes what decision)
+
+| Reading | Before | Stop or change line | Decision | Owner |
+|---|---|---|---|---|
+| NS-52 study (5 parents, Asha fixture): add, view, remove a picture and a video | NS-52 flag leaves the founder's phone | Any one parent loses media, or cannot tell what is kept on the phone and what is sent (if Q-PM-3 is yes); under 4 of 5 add a picture unaided | Design change to the attach surface, rerun once | Product |
+| NS-51 study (5 parents, Asha fixture): the moments surface | NS-51 flag leaves the founder's phone | One or more says it felt like being watched, or reads a line as a count of gaps; one or more thinks pictures left the phone when they did not | Wording or default change (for example limited access only), rerun once; two reports retire the surface | Product, privacy |
+| Level 3 spike result | Before any build of NS-51 | Spike measures are on the device (reliability file); no measure here | Gate is the spike file, not a number | Founder |
+
+### A4. Design needs
+New screen needed for NS-51 settings (album choice, pause, off) and NS-52 attach surface: neither may show a count, a streak, "unwritten" language or progress toward a limit; a limit is stated once at the moment it is reached ("up to {n} pictures"), not as a meter. C-S18 Storage may show the size of what is kept, in bytes, as a fact. The tester guide (outside the app) gains the FR-DAT-41 questions; no in-app survey.
+
+### A5. Engineering needs
+New rows needed: (1) `catalog.test.ts` case for FR-DAT-36 (a deny-list of property names and shapes); (2) a test that no analytics call site is reachable from the moments, picker or attach modules while any profile has analytics off (import-boundary, like the days store rule); (3) a store-read test after "off", permission revoked and Erase (FR-DAT-39); (4) export manifest `counts.videos` with NS-52's export version (FR-DAT-13).
+
+### A6. Questions, with defaults
+| Id | Question | Default | Who answers |
+|---|---|---|---|
+| Q-DAT-P1 | May an opt-in analytics event ever carry the Photos permission state (full, limited, denied)? | No, never (FR-DAT-36); permission state is read by a tester question only | Founder with privacy; counsel must confirm that the state is not itself sensitive |
+| Q-DAT-P2 | Do tester rounds ask "did the picture suggestion feel like being watched"? | Yes, one fixed question, stop line (FR-DAT-41) | Karma with `user-research` |
+| Q-DAT-P3 | Does the founder want hosted-media cost totals in a monthly read-out if media syncs? | Totals only, via ops (FR-DAT-44) | Founder |
+
+### A7. Cannot assess yet
+- Whether moments are useful, liked or disliked: no card text for NS-51 or NS-52 was available to me, no prototype, no users; every line above is a stop line or a guardrail, not a forecast.
+- How large a library or a letter's media is in real use: no data; finance and operations use stated assumptions (see their addenda).
+- Whether Photos permission state is sensitive under any law: counsel must confirm; not read.
+- Whether any 1.x server aggregate could safely count media: not designed; default is none.
+- Ids FR-DAT-36 to 44 and rows in A3 are not yet in `FUNCTION-TRACE.md`; Karma links them. Align with `27-photo-moments-and-media.md` when it exists.

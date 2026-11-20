@@ -1,5 +1,7 @@
 # Engineering plan: size, skills, order and dependencies (Karma, 19 Nov 2026)
 
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need sizes, skills, order or dependencies for NS-01 to NS-52 (cards 19, 21 and 27: section 3H).
+
 Status: Locked v1.0 with the pack, 20 Nov 2026. Council round 2 rescopes (NS-13, NS-15, NS-16, NS-23, NS-25, NS-32) are applied in section 3; the cards win wherever this file and a card differ.
 
 For the harness and the engineers. The product cards say what and why; this file says how big, who, and in what order. It sets no dates: release dates are the founder's. Sizes are estimates [E] and are re-sized by the engineer who picks the work.
@@ -99,6 +101,27 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | Doc and code drift list, copied into the repo and fixed | S | product, mobile |
 | Low Power Mode guard for loops | S to M | mobile |
 
+### H. Added 20 Nov 2026 (cards 19, 21 and 27)
+
+Sizes, per-row build order and the hand-off to the harness are in `24-engineering-handoff.md` (being written); the full dependency map and plan are in `23-dependency-map-and-plan.md` (being written). This section only names the rows and prerequisites so the two stay the one source; if they differ, 23 and 24 win.
+
+| Card | Skills | Hard prerequisites (not built unless stated) | Gate |
+|---|---|---|---|
+| NS-38 to NS-45 first run (card 19) | mobile, content, qa, privacy, legal | NS-10 and NS-35 (built); area E design; BL-994 | Karma's rulings on card 19's open items; counsel on agreements and age |
+| NS-46 Days we mark | mobile, content, privacy | `lib/reminders/budget.ts` (the one-a-day chooser; does not exist); BL-966; BL-982 typed days; BL-985 quiet reader (`Child.quiet` has no reader, errata E16); BL-963 slip registry; planner gate split so day sources do not need evening reminders on; `dateOfAge` moved to `packages/core` (R-IA-1) | Counsel on any copied table licence; tradition-member review |
+| NS-47 Cultural background | mobile, privacy, security-architect | Days store (L4, excluded from backup, registered and Erase-scanned: BL-961); NS-46 is one release unit with it | Counsel CUL-Q5 to Q7 and Q11; J-CUL-01 device walk |
+| NS-48 Notification catalogue | mobile, content | Phase 1 none; recency needs the NS-13 anchor and back-off; selection a pure function of cell and slot ordinal (no stored "last key") | Content owns the words; rules-test coverage (NS-48-R28) |
+| NS-49 Picture-first and Suggestions | mobile (Swift), security-architect, privacy | Level 1 needs NS-01 on `testflight` (the `photo` start is reserved in `start-capture.logic.ts:20`); level 2 needs the journaling entitlement, a weak-linked module guarded for iOS 17.2 (floor is 17.0) | Security read; counsel; launch run on iOS 17.0 to 17.2 and 26 |
+| NS-50 Home today | mobile, design-systems | The slip host and registry (BL-963); NS-46 days store | Tree test T3 before any strip |
+| NS-51, NS-52 (card 27, being written) | to be set in 24 | Direction in `26-founder-direction-photos-library-and-media.md`; reverses level 3 closed, no video, one picture per letter | Founder confirms limits; counsel and security; no card yet |
+
+Superseded corrections, each from `tools/review/ns46-50/mobile.md` (code read, nothing run on a device):
+- Superseded: "one note a day across books" (NS-13 row, NS-32 row) read as built -> not enforced anywhere; the planner can send two notes on one date and `plan-reminders.ts` is a second scheduler with its own cap of 4 (M-01); `budget.ts` is a hard prerequisite of NS-46 and NS-48.
+- Superseded: the 35-day horizon (NS-13 row, "back-off pre-scheduled") as an iOS rule -> NS-13's own policy; library days plan on their own horizon (M-06; card 21 RV-4).
+- Superseded: "60 budgeted plus 4 plan notices" -> 60 pending in total with plan notices first (errata E13; M-07).
+- Superseded: `[FRAME-SLIP]` and a Home slip registry as existing -> not built; BL-963 (M-13).
+- Superseded: a quiet book is skipped by reminders -> `setChildQuiet` has no planner reader (M-01 evidence; BL-985).
+
 ## 4. Order
 
 The harness picks any row whose dependencies are done. This is the order of preference when several are free.
@@ -126,6 +149,7 @@ NS-32 -> NS-13, NS-18
 NS-05 Level 1 shipped + five-parent study -> NS-06
 co-parent rows + counsel -> NS-25 -> NS-26, NS-27
 security read + counsel (X2) -> NS-28, pictures leaving the phone
+BL-966 -> BL-963 + BL-985 -> budget.ts + BL-982 -> NS-46 -> NS-48 key function -> NS-50 ranks -> NS-49 level 2 (card 21 build order; full map in 23)
 ```
 
 ## 6. What the harness needs from each row

@@ -114,7 +114,7 @@ The fictional family is Asha. No real family, name, letter, picture or voice app
 | FR-MKT-09 | Given a release that turns a card's `production` flag on, When What's New is written, Then it names that feature using only the card's enabled claim, names nothing whose flag is off, says nothing is "coming soon", never says "beta", "early access" or "preview", and gives no count. Intent lines per feature are in section 3a | Every card s19, s22; NS-45 (app update) when written; E-S16 | P0 (b) | content, marketing | A1 2.3.12, 2.2; D-060; D-161 |
 | FR-MKT-10 | Given a listed feature is hidden by its remote pause or kill switch in `production`, Then within one working day the promotional text stops mentioning it, and the next submitted version's description and What's New drop it unless the pause has ended; a pause longer than 14 days is raised to the founder as a listing change | Each card's flag and pause key (s10); E21 errata (a switch hides, never turns on); E-S27 | P1 (b) | marketing, release | A1 2.3 ("keep them up-to-date"); A2 (promotional text changes without a version) |
 | FR-MKT-11 | Given the keyword field (100 characters), Then it holds only words true of the submitted build: no "kids", "milestone", "tracker", "photo book", "album", "smart", "AI", "share", "grandparents", "backup", competitor or other-app names, prices, or a language name before that language ships; no keyword is added for NS-01, NS-02 or NS-05 at their release without a written reason in the claims inventory | NS-01 s19, NS-02 s19, NS-05 s18, NS-06 A18, NS-17-R4; E-S27 | P0 (b) | marketing (draft), content (field), founder (as submitted) | A1 2.3.7, 2.3.8; A2 keywords; D-004 |
-| FR-MKT-12 | Given any store screenshot, preview or website image of the app, Then it is captured from the build being submitted (or the build that site copy describes), shows only the fictional Asha book on a separate install (D13), and shows no real person, child, name, letter, picture or voice. A picture inside a letter (NS-01) is an illustration or licensed photography with a model release kept on file in `docs/store/art/`, never a family's own photo, and never an AI-generated photo of a child (recommended default; founder may reverse) | NS-01 s19 (licensed or illustrated Asha images only), NS-01-R62; D13; A-S03, B-S04, B-S11, E-S27 | P0 (b) | design-systems (frames), marketing (storyboard), founder (spend if licensed) | A1 2.3.3, 2.3.8; CLAUDE.md privacy rules |
+| FR-MKT-12 | Given any store screenshot, preview or website image of the app, Then it is captured from the build being submitted (or the build that site copy describes), shows only the fictional Asha book on a separate install (D13), and shows no real person, child, name, letter, picture or voice. A picture inside a letter (NS-01) is an illustration or licensed photography with a model release kept on file in `docs/store/art/`, never a family's own photo, and never an AI-generated photo of a child (recommended default; founder may reverse) | NS-01 s19 (licensed or illustrated Asha images only), NS-01-R62; D13; A-S03, B-S04, B-S11, E-S27 | P0 (b) | design-systems (frames), marketing (storyboard), founder (spend if licensed) | A1 2.3.3, 2.3.8; CLAUDE.md privacy rules. Superseded in part by FR-MKT-37 on 20 Nov (video, several pictures) |
 | FR-MKT-13 | Given a marketing frame (screenshot, preview, website scene), Then no count, streak, progress figure or gap is legible: the Book's month rows either show no letter count in the frame or the frame is cropped above them; Find shows no result count; Firsts shows no number | B G-07 (facts allowed in-app where a parent looks, never as progress); NS-02-R11; NS-06 A18; B-S01, B-S05, B-S06 | P1 (a) | design-systems, marketing | CLAUDE.md content rules; frame guardrails |
 | FR-MKT-14 | Given a frame for Share one letter, Then it shows our preview sheet (D-S02) with the words row and the version line, not the iOS share sheet with third-party app icons; the picture toggle is off and no child picture is shown while counsel Q45 is open; no frame shows a recipient's view | NS-05-R4b, R5b, R16a, R16b, R19; D-S01, D-S02, D-S03 | P1 (b) | design-systems, marketing | A1 2.3.10 (other platforms' imagery; third-party app icons are a trademark risk, counsel must confirm); counsel Q45 |
 | FR-MKT-15 | Given the app preview video, Then it is re-captured on device from the submitted build after D-161 (Home, Book, Me; no Family tab), with the Asha book only, and shows no feature whose flag is off; `docs/store/preview/CAPTURE_GUIDE.md` is updated (it still says "Tonight", "Settings" and refers to the D-126 Family tab check) | D-161; E-S27; every card whose feature appears | P0 (b) | marketing (storyboard), founder (capture) | A1 2.3.4; A2 previews ("captured on the device") |
@@ -277,3 +277,55 @@ For the FR-MKT-02 scan; `content` owns the final list. Case-insensitive.
 - Standing (CLAUDE.md, VOICE.md, CMO skill s12): beta, early access, kids, for children, AI (as writer), end-to-end, 100% private, military-grade, free forever, exactly as you said it (store, held by D-125 item 9).
 
 Growth and Marketing Lead (Claude role)
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `../26-founder-direction-photos-library-and-media.md` (binding). Cards: NS-51 Photo moments (level 3) and NS-52 Pictures and videos with a letter (by name; `../27-photo-moments-and-media.md` did not exist when this was written, so align ids when it lands). Outside facts: Apple "App privacy details" read 20 Nov this session (https://developer.apple.com/app-store/app-privacy-details/): data processed only on device is not "collected", and "If you derive anything from that data and send it off device, the resulting data should be considered separately." Apple Journal page read 20 Nov (https://apps.apple.com/app/journal/id6447391597): suggestions are "created using on-device intelligence", the user chooses what to enable. Guideline text (2.3, 2.3.4, 5.1.1) is carried from section 1c, not re-read today. Every legal reading: counsel must confirm.
+
+### New requirements
+
+| Id | Requirement | Links | Priority | Owner | Source |
+|---|---|---|---|---|---|
+| FR-MKT-35 | Given any public line about pictures, videos or photo moments, Then it says only what the code does: the parent picks, the parent talks. Forbidden (added to Appendix A): "we find your best moments", "your best photos", "highlights", "we notice", "we know what matters", "smart", "suggested for you", "memories" as a product word, "AI" near pictures, "we write", "caption", "we pick", "automatic", "unlimited photos", "unlimited videos", "video diary". Allowed once the flag is on: "Choose a picture and say what you want to say." For NS-51 only while true: "Your phone looks at your pictures so you can choose one to talk about", and never a line that says the pictures are private or never leave the phone unless Q-PM-3 and the label say so | NS-51, NS-52; FR-MKT-01, 02; new row needed | P0 (a)(b) promise and store accuracy | marketing, content, legal | A1 2.3 (carried); constitution in `CLAUDE.md` |
+| FR-MKT-36 | Given the label effect of NS-51 and NS-52 (Photos or Videos collected if any picture or video leaves the phone; not collected if none does), When the release flag goes on, Then the label, the Photos permission strings, the description's privacy paragraph, screenshot subline, `site.ts` s09, /support and the Notes for Review change together (extends FR-MKT-16); a public "stays on this phone" line about library analysis holds only while no derived signal leaves the phone | NS-51, NS-52; C-S08, C-S21; new row needed | P0 (b) | marketing, privacy, compliance | App privacy details (above); counsel Q54 as cited in section 3b |
+| FR-MKT-37 | Given store screenshots, previews and site images that show a picture or video in a letter or a moment list, Then they come from a separate install with a synthetic library made only of illustrations or licensed images with releases on file (extends FR-MKT-12); no frame shows a real or AI-made child's face; a video frame uses a licensed or illustrated clip; no capture of Apple's Photos permission sheet or Apple's picker over a real library; the preview video shows no media feature whose flag is off | NS-51, NS-52; A-S03, B-S04, E-S27; FR-MKT-12, 15 | P0 (b) | design-systems, marketing | A1 2.3.3, 2.3.4 (carried) |
+| FR-MKT-38 | Given any marketing or social material, Then it asks no customer for a picture or video, shows no customer media (no user-generated gallery, testimonial photo or "share your moment" campaign), uses no child-directed imagery or voice, and never uses a picture a family kept; no store art or paid placement targets by what a library holds | FR-MKT-12, 25, 32; NS-46-R33 (as cited in section 5) | P1 (a) | marketing | A1 2.3.8 (carried); `CLAUDE.md` privacy rules |
+| FR-MKT-39 | Given NS-51 and NS-52 have separate production flags, When What's New is written, Then each names only its own enabled claim, says nothing is "coming soon", never says "beta", and gives no counts or limits as a headline until the founder fixes them (Q-PM-2) | FR-MKT-09, 10; NS-51, NS-52 | P0 (b) | content, marketing | A1 2.3.12 (carried) |
+| FR-MKT-40 | Given the Notes for Review, Then the Photos purpose, limited-access behaviour and a reviewer path on a synthetic library are written in the same words as the usage string and the in-app explainer, owned by compliance, checked by marketing against the listing | NS-51; compliance function file; new row needed | P0 (b) | compliance, marketing | 5.1.1 (carried, not re-read) |
+| FR-MKT-41 | Given plan limits for pictures and videos (default 6 pictures, 2 videos, 60 seconds), Then no public line states a limit, a storage amount, a price or a Plus benefit until Q-PM-2 and finance rule; descriptions stay price-free (FR-MKT-30) | NS-52; E-S11; counsel Q37, Q41 as cited | P0 (a) | founder, finance, marketing | MQ-4 |
+| FR-MKT-42 | Given the rating request (FR-MKT-23), Then it is never requested during or right after the picker, a moment invitation, an upload, a failed upload, a storage-full or permission-denied state, or the sitting a Photos permission was asked | FR-MKT-23; NS-51, NS-52 | P1 (b) | mobile, marketing | A1 5.6.1 (carried) |
+| FR-MKT-43 | Given the website, welcome email and /support, Then no section or email describes photo moments or video at launch; one line under Pictures after the flag is on (FR-MKT-31), and none says "photo book", "album" or "memories" | FR-MKT-31; section 3c | P1 (a) | web owner, content | CMO skill s7 (carried) |
+
+### Changes to existing rows
+- FR-MKT-12: Superseded in part by FR-MKT-37 on 20 Nov (video, several pictures per letter).
+- NS-01 "one picture per letter" and "no video": the claims inventory rows built from them (section 3a) are re-read when NS-52 ships; "a picture in a letter" stays, any "one" wording goes.
+- MQ-6 stands and extends to video: illustration by default, no AI-made child likeness.
+- Appendix A gains the phrases in FR-MKT-35.
+
+### Links
+NS-51, NS-52; FR-MKT-01, 02, 09, 10, 12, 15, 16, 23, 30, 31.
+
+### Design needs
+- Store frames: if a media frame is wanted, one Ready or Review frame with an illustrated picture; none for photo moments (permission and moment list are the parent's own library, hard to show honestly).
+- Explainer and permission copy must be read by marketing for claim drift (key set to `content`).
+- A synthetic-library install for captures (design-systems, qa).
+
+### Engineering needs (new rows needed, no ids invented)
+- Extend the public-surface forbidden-phrase scan (FR-MKT-02) with FR-MKT-35 phrases.
+- Keyword-field test: no "photo", "video", "album", "memories" (FR-MKT-11 stands).
+- Per-flag What's New and listing lines gated by flag status in release checklist (FR-MKT-10).
+
+### Questions (default, who)
+| Id | Question | Default | Who |
+|---|---|---|---|
+| MQ-13 | May the listing mention pictures from the library at all at the first release of NS-51? | No; mention NS-52 only, and NS-51 on its own flag after the label is settled | Founder, counsel |
+| MQ-14 | Plus line about video limits | None until Q-PM-2 | Founder, finance |
+| MQ-15 | Does naming "Photos" (Apple's app) in permission copy need care? | Say "your pictures"; counsel confirms any use of Apple's names | Counsel (needs a number from legal) |
+
+### Cannot assess yet
+- Whether the label becomes Photos or Videos collected (depends on Q-PM-3); every privacy line is held until then.
+- Whether Apple reads the library permission as core functionality (5.1.1(iii)); not re-read today.
+- Which video limits and Plus split ship; any public claim about them.
+- No keyword volume or competitor listing data read; no claim about what competitors do with pictures beyond the two pages named above.

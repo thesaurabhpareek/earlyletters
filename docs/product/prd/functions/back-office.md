@@ -311,3 +311,56 @@ Top findings:
 6. The 45-day clock has follow-ups in the runbook but no weekly rhythm, and the rehearsal has never been run; both should gate any outside sign-in (BKO-09, BKO-10).
 
 What needs a ruling (Karma): the card changes in section 8 (NS-25, NS-45, NS-41, NS-10, frame section 3); whether BKO-02 and BKO-21 are P0 gates for the first outside sign-in (I recommend yes); and the grouping of the section 9 rows into the engineering thread. For the founder: Q-BKO-1 to Q-BKO-8, above all Q-BKO-2, Q-BKO-3 and Q-BKO-7. For counsel (through the founder): Q-BKO-3 and Q-BKO-4, and that no speed is promised for safety reports.
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md` section 3; NS-51 (Photo moments, level 3) and NS-52 (Pictures and videos with a letter) by name (`27-photo-moments-and-media.md` did not exist when written; align ids when it lands). Lens: back-office and support-tooling role, a Claude role, not a lawyer; legal readings are "counsel must confirm". No outside source was read for this addendum (Supabase facts are cited in `operations.md` and `finance.md` addenda). Existing rows are FR-BKO-01 to 27; ids here continue.
+
+### B1. Existing rows touched
+
+| Existing | Effect |
+|---|---|
+| FR-BKO-01 (access page sentence "no staff tool shows entry text, audio, pictures or child names"), section 4 row "recordings, pictures, seals, safety tiers: phone only" | The sentence gains "videos" and the media bucket; the section 4 row is true only while Q-PM-3 is no. If media is hosted, superseded by FR-BKO-28 on 20 Nov (the row moves to "hosted, no staff read path") |
+| FR-BKO-02 (support lookup) | Returns at most a media state, not media counts or bytes (FR-BKO-29) |
+| FR-BKO-03 (dashboard rules) | Already forbids Storage in the Table Editor; extended to the media bucket and to the SQL Editor (FR-BKO-28) |
+| FR-BKO-09, 11 (data requests) | Media rows (FR-OPS-42 in operations file); no new rule here |
+| FR-BKO-12 to 16 (reports, safety, limited person, legal letters) | Applied to media (FR-BKO-31, 32) |
+| FR-BKO-17 to 19 (kill switch) | The two new pause keys join the state check (FR-BKO-34) |
+| FR-BKO-20 (secrets register) | Gains media keys if hosted (FR-BKO-33) |
+
+### B2. New requirements
+
+Rows 28 to 33 matter only if Q-PM-3 is yes (hosted media); rows 34 to 36 apply always (default is phone only).
+
+| Id | Requirement (Given, When, Then where testable) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-BKO-28 | No staff read path to family media. Given hosted pictures or videos, Then no role, console, dashboard view, SQL statement printed in a runbook, support function or agent can list, fetch, preview or sign a URL for an object in the media bucket for a person; the service role key is the only key that could, and runbook cards never use it for that; a test asserts that no function in `supabase/functions` or `scripts/ops` signs a media URL for a staff request; `docs/ops/ACCESS.md` says so in one sentence; verification of deletion is by an object count by prefix, never by opening an object | NS-52; FR-BKO-01, 03, 20, 21; BL new row needed | P0 (a): private by design | security, ops | FR-BKO-01; `privacy-policy.md:55` as quoted in section 4 |
+| FR-BKO-29 | Support lookup shows media state only. Given the support summary (FR-BKO-02), When a parent writes "my pictures are missing", Then the function may return whether hosted media is on for the account, whether the account is over its media quota (yes or no), and the date of the last media sync; it never returns counts of items, bytes, file names, album names or dates of media, because a count of a child's pictures or a date is content metadata (L4). The first answer is from the phone side (Save a copy, the picture's slot on its original phone), per the support file | NS-52; FR-BKO-02; support file | P0 (a) | support, ops | FR-BKO-02 |
+| FR-BKO-30 | Deletion and what staff may do. Given a parent deletes a picture, a letter or the account, Then the object is purged by the same path and ledger as audio (FR-REL-12), no staff step is needed, and a failed purge opens an ops row (id and time only) fixed by the purge runbook, not by opening media. A staff-initiated removal of media happens only as a limit on the account or book (FR-BKO-15), never by looking | NS-52; FR-BKO-15; FR-REL-12; NS-09 | P0 (a): deletion promise | ops, sync | FR-REL-12 |
+| FR-BKO-31 | Legal hold on media. Given a lawyer, court or police letter asks to preserve a family's media, Then the route is FR-BKO-16 (no action, no disclosure, no reply until counsel says so); there is no "hold" feature, no flag that suspends a parent's own deletion, and no staff export of media, by default, because the product cannot read the media and promises deletion; if counsel rules that a hold is required, it is one account-level flag set by the founder with an audit row (FR-BKO-05), written by a migration, that pauses only the server purge and never touches what is on a parent's phone, and the parent-facing line is counsel's. Needs a number from legal (preservation duty and the deletion promise). Default: no hold built | NS-52; FR-BKO-16; counsel packet (new number needed) | P0 (b): legal process | founder, legal | Counsel must confirm |
+| FR-BKO-32 | Abuse and child-safety reports about media. Given a report says a person is adding harmful pictures or videos, or a co-parent is misusing a shared book, Then FR-BKO-12 to 14 apply unchanged: triage the same day, no content, the founder cannot view the media to judge it, so the options are a limit on the account (FR-BKO-15) and counsel; the reply is the neutral first reply; no staff member asks the reporter to send the picture to us. Whether a duty to report applies to a service that hosts, but cannot read, pictures of children is UNVERIFIED and counsel's; the question blocks hosted media (FR-OPS Q-OPS-P3) | NS-52; FR-BKO-12 to 16; FR-OPS-41 | P0 (b) | founder, counsel | Counsel must confirm |
+| FR-BKO-33 | Keys. Given hosted media is encrypted at rest by a key beyond the storage vendor's default, or signed URLs use a signing secret, Then each secret is in the register (FR-BKO-20) with who can read it, rotation, and the effect of loss (media unreadable versus media exposed); an agent never holds it (FR-BKO-21). Whether app-level encryption is used is a security decision (FR-SEC in the risk file); if vendor-managed only, the access page says that the vendor can in principle read stored objects, in plain words and the same words as the privacy policy | NS-52; FR-BKO-20, 21 | P1 | security, ciso | FR-BKO-20 |
+| FR-BKO-34 | Pause state check. Given the two new pause keys (FR-OPS-39), Then the FR-BKO-19 state check lists them in the three places a pause may live, and the runbook says a pause stops new analysis and uploads and never deletes or blocks export or deletion | NS-51, NS-52; FR-BKO-19; FR-OPS-39 | P1 | ops | FR-BKO-19 |
+| FR-BKO-35 | Support tooling limits. Given any support macro, template, help article or mailbox rule, Then: no macro asks a parent for a picture, a video, a screenshot showing a picture, an album name or their Photos settings screen (print damage in FR-PRT-29 is the single stated exception, one photo of the damaged page and never of the letters); an attachment received anyway is not opened beyond what the parent needs, is deleted after the ticket closes, and a reply tells the parent not to send more; macros for "my pictures are missing", "I lost my pictures after a new phone", "can you see my pictures" and "why does the app ask to see my photos" are written (copy is `content` and `support`'s; they state the facts: pictures stay on the phone that added them unless hosted; Limited access is the parent's choice; we cannot see your pictures); no ticket field holds a picture count, album or date; the support tally gains `media lost` and `felt watched` (FR-DAT-40) | NS-51, NS-52; FR-SUP macros; FR-DAT-17, 40; FR-PRT-29 | P0 (a) | support, content | FR-SUP files; FR-BKO-13 |
+| FR-BKO-36 | The photo-library permission is never a back-office matter. Given a parent asks staff to "turn on" or "turn off" Photos access or reset the moment index, Then staff cannot (it is local to the phone), the reply is the in-app path (Me, settings for NS-51, or the iOS Settings route), and the account recovery runbook (FR-BKO-07) lists the index as "rebuilt on the new phone, nothing to recover" | NS-51; FR-BKO-07 | P1 | support, ops | 26 section 2 |
+
+### B3. Design needs
+Parent-visible effects only: a neutral line when a limited person's media stops syncing (extends FR-BKO-15's line; new string, no count); the account and Delete account screens (C-S02, C-S20) state what deleting does to pictures and videos, in the same words as the privacy policy (new copy, `content` and `privacy` own it). No staff screen.
+
+### B4. Engineering needs
+New rows needed: (1) a test that no staff or support function signs or reads a media object (FR-BKO-28); (2) `ops.audit_log` runbook values for `media_limit` and, if counsel requires, `legal_hold` (FR-BKO-05 pattern); (3) the object-count-by-prefix function for deletion checks (service-role only, returns an integer); (4) the macros and runbook cards in FR-BKO-35 and FR-OPS-41.
+
+### B5. Questions, with defaults
+| Id | Question | Default | Who answers |
+|---|---|---|---|
+| Q-BKO-P1 | Is a legal hold on hosted media ever built? | No | Counsel (needs a number from legal), then founder |
+| Q-BKO-P2 | May the support summary say that an account is over its media quota? | Yes, as a yes or no | Founder with privacy |
+| Q-BKO-P3 | Duty to report on hosted pictures that staff cannot read | Unknown; hosted media waits | Counsel |
+
+### B6. Cannot assess yet
+- Whether staff truly cannot read media: depends on the storage design and keys (security), not designed.
+- Counsel's readings on preservation, reporting and the deletion promise: none read.
+- How often parents will contact support about media: no data; macros are written before the first ticket.
+- Whether existing macros already ask for screenshots: I did not re-read the support file's macro list for this addendum (UNVERIFIED); support reconciles.

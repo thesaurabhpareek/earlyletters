@@ -648,3 +648,48 @@ Candidate: C-xx, "Days we mark". Kind: Attractive. Area: B Capture, in Me. Depen
 - I did not read `docs/legal/in-app-disclosures.md` or `compliance-register.md` for this file, the engineering chapters, `prefs.ts`, `scheduler.ts`, or the COUNSEL_PACKET. I did not read App Review or privacy-label text (brief 3 owns it).
 - No planner, content or database test was run; nothing was built. The sample lines were not run through `rules.test.ts`.
 - I am a Claude role, not counsel, not a clinician, and not a member of any tradition named above. A member of each tradition should read its rows before ship (Q-DAY-9).
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `../26-founder-direction-photos-library-and-media.md`. Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (by name; `../27-photo-moments-and-media.md` absent when written). Rules relied on: NS-50-R1 (one slip slot), NS-32-R1 to R3 (one budgeted notification a day), FR-DAY-02, 07, 09, 11 here. No outside fact used. Counsel must confirm every legal reading.
+
+### New requirements
+
+| Id | Requirement | Links | Priority | Owner | Source |
+|---|---|---|---|---|---|
+| FR-DAY-26 | Given a date that is both a ticked day (library or typed) and has a photo moment, Then the parent gets one invitation, not two: one notification, the day's `typedDay` with its neutral or named title per FR-DAY-09; the moment never produces a second notification or a second Home slip; the moment is reachable inside the capture area only | NS-32-R1, R3; NS-50-R1; NS-51; FR-DAY-03, 07 | P0 (a) no nagging | mobile, content | FR-DAY-07 |
+| FR-DAY-27 | Given the Home slip slot on that date, Then the day's landing (`days.landing.*`) holds it and it carries the day's one prompt; it never mentions pictures; the moment is offered by the capture area's own start, not a second row or a count | NS-50-R1, R2; FR-DAY-16; A-S01 | P0 (a) | mobile, design-systems | NS-50 |
+| FR-DAY-28 | Given a `quiet` day (Memorial Day, Veterans Day, Good Friday, Yom Kippur, a national day naming a loss), Then no moment nudge is planned for that date and the capture area shows no moment invitation tied to it; the landing stays "The book is open if you want it." with no picture invitation | FR-DAY-11; NS-51 | P0 (a) no fear, guilt or loss language | content, mobile | FR-DAY-11 |
+| FR-DAY-29 | Given pictures dated on a day, Then the library never learns from them: no day is suggested, ticked, pre-ticked or reordered because pictures exist on its date, no tradition is inferred, and a cluster is never labelled with a day's name; a cluster is labelled by date only | FR-DAY-02, 17; NS-51; FR-CUL-28 | P0 (a)(b) nothing ticked for a parent; no inference of belief | mobile, privacy | FR-DAY-02 |
+| FR-DAY-30 | Given a day whose date the parent moved or whose precision is `about`, Then any link between the day and a moment uses only the parent's effective date for the year, and an `about` day is linked only when the parent has fixed the date; with no fixed date nothing links | FR-DAY-06, 12; NS-46-R8 as cited | P1 | mobile | FR-DAY-06 |
+| FR-DAY-31 | Given a birthday or month note on the same date as a moment or a ticked day, Then the existing priority holds (birthday over library day, Q-DAY-5) and the moment shows only inside the app | FR-DAY-07; NS-32-R3 | P1 | mobile | Q-DAY-5 |
+| FR-DAY-32 | Given the on-phone moment index and the ticked-days store, Then neither holds a field from the other; the join between a day and a moment is computed in memory when a screen renders and is not stored, logged or sent; an import-boundary test fails if the moments module reads the days store or the reverse (FR-CUL-11 pattern) | FR-DAY-04, 20; FR-CUL-29 | P0 (a)(b) | mobile, privacy | FR-CUL-11 |
+| FR-DAY-33 | Given the day's landing and a letter begun from a picture on that day, Then the letter carries no day id, prompt of the day or tradition in any synced field (FR-CUL-05 unchanged) | FR-CUL-05; NS-01 | P0 (a) | mobile | FR-CUL-05 |
+
+### Changes to existing rows
+None superseded. FR-DAY-07 is extended by FR-DAY-26 and FR-DAY-31; FR-DAY-11 by FR-DAY-28.
+
+### Links
+NS-46, NS-50, NS-32, NS-51, NS-52; FR-DAY-02, 03, 07, 09, 11, 16, 17, 20.
+
+### Design needs
+- A-S01 Home on a ticked day: one slot, the day's landing, Start from a picture stays in its usual place; a state with a moment present and a state on a `quiet` day (new states needed).
+- Capture area moments view: a day with a ticked day shows no day name beside the cluster (label by date only).
+
+### Engineering needs (new rows needed)
+- Planner test: day plus moment on one date gives one notification; quiet-day test; `about`-date test.
+- Import-boundary test between the days module and the moments module.
+- Fixture: a synthetic library with clusters on a Christmas, Eid, Diwali and Thanksgiving date (Asha only), expecting no suggestion and no store write (shared with FR-CUL-35).
+
+### Questions (default, who)
+| Id | Question | Default | Who |
+|---|---|---|---|
+| Q-DAY-13 | On a ticked day with pictures, may the capture area show a quiet line "pictures from today are here"? | No line; the parent's own Start from a picture is enough | Karma, design |
+| Q-DAY-14 | May a moment cluster be labelled "Thanksgiving" because the parent ticked it? | No; date label only | Karma, privacy |
+
+### Cannot assess yet
+- How moments are clustered (date, count, time of day) and whether a day's pictures can sit across midnight or time zones; the NS-51 spike decides.
+- Whether a ticked day plus pictures raises the sensitivity of the ticked-days list (Q-DAY-11); counsel must confirm.
+- Behaviour on a parent's moved-date year with a library that changes.

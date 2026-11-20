@@ -288,3 +288,48 @@ Everything else outside the repo is UNVERIFIED in this file: other US state acts
 - To `mobile`: section 7.
 
 Chief Privacy Officer (Claude role, not counsel), as the `privacy` agent
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `../26-founder-direction-photos-library-and-media.md` (no face recognition or person matching; analysis on the phone only; no content classification by default, Q-PM-5 and Q-PM-6). Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (by name; `../27-photo-moments-and-media.md` absent when written). Biometric laws (for example Illinois and Texas) are not read: UNVERIFIED, and no feature here needs them because faces are not matched. Counsel must confirm every legal reading.
+
+### New requirements
+
+| Id | Requirement | Links | Priority | Owner | Source |
+|---|---|---|---|---|---|
+| FR-CUL-28 | Given photo moments and any analysis of pictures, videos or library metadata, Then cultural data is never an input: no tradition, country, ticked day, or browse choice is read by the moments module, and no picture, album name, place, caption, language or date from the library is written to or compared with the culture store; no signal about belief, origin, ethnicity, dress, food, place of worship or language is derived from any picture or video, by any method | FR-CUL-02, 11; NS-51; `../26-founder-direction-photos-library-and-media.md` s1 | P0 (a)(b) promise and sensitive-data risk | mobile, privacy | FR-CUL-11 |
+| FR-CUL-29 | Given the module boundary of FR-CUL-11, Then the import test also fails if the moments module imports the days module or store, and fails if the days module imports a library, picker or media package; one test, both directions | FR-CUL-11; FR-DAY-32; NS-51 | P0 (a) | mobile, qa | FR-CUL-11 |
+| FR-CUL-30 | Given place names in moment suggestions (Q-PM-5), Then the default stays off; if the founder turns them on, a place name is class L4 and a place of worship, a cultural centre or a place whose name implies a faith or origin is never shown; the card must say how that is known without classifying images (it needs a place-category read the founder has not approved; so default: place names stay off) | NS-51; FR-CUL-01 | P0 (a)(b) | privacy, product | Q-PM-5 |
+| FR-CUL-31 | Given a cluster on or near a day a tradition keeps, Then the cluster looks and reads exactly like any other: no label, ordering, emphasis or invitation differs by date, and no tradition names a cluster | FR-DAY-29; FR-CUL-20 | P0 (a) | mobile, content | FR-DAY-29 |
+| FR-CUL-32 | Given the ask card (FR-CUL-19), the reminder ask and a Photos permission ask, Then the Photos ask is never in the same sitting as the Days ask, the reminder ask or the Keep gate, and it is asked from the capture area when the parent opens the moments view, not as a Home card; the library permission copy mentions no tradition, family background or day | FR-CUL-19; NS-51; NS-13 | P1 (a) | product, design-systems | FR-CUL-19 |
+| FR-CUL-33 | Given sign-out, Erase everything and Delete account, Then the on-phone moment index and the culture store are cleared by the same path, and neither survives in the other's file (FR-CUL-15 to 17 extended) | FR-CUL-15, 16, 17; NS-36 | P0 (a) | mobile, qa | FR-CUL-15 |
+| FR-CUL-34 | Given the log canary (FR-CUL-08), Then it runs with synthetic album names and place names that contain tradition words ("Diwali party", "Eid") through the moments paths, and none appears in any log, URL, notification, analytics or crash report | FR-CUL-08; FR-PRV-10 | P0 (a)(b) | qa, mobile | FR-CUL-08 |
+| FR-CUL-35 | Given a test library (Asha, fictional), Then it holds 40 pictures dated on Christmas Day, an Eid, a Diwali, a Lunar New Year and a Thanksgiving, and the tests assert: no day suggested, no culture-store write, no label from the dates, no change to which days Browse shows first; no real family media in any fixture | FR-DAY-29, 32; `CLAUDE.md` privacy rules | P0 (a)(b) | qa | FR-CUL-27 |
+| FR-CUL-36 | Given research on moments, Then the tester sheet never asks a tester about the religion, origin or traditions their pictures show, never records one, and uses reaction questions only (extends FR-CUL-27) | FR-CUL-27 | P1 | user-research | FR-CUL-27 |
+
+### Changes to existing rows
+None superseded. FR-CUL-11 and FR-CUL-27 are extended by FR-CUL-29 and FR-CUL-36.
+
+### Links
+NS-47, NS-51, NS-52, NS-36; FR-CUL-01, 02, 08, 11, 15 to 17, 19, 20, 27; FR-DAY-29, 32.
+
+### Design needs
+- Permission explainer for the library (new screen needed) with no cultural wording; checked by this lens before design signs off.
+- Moments view: clusters labelled by date only, one visual treatment for every date.
+
+### Engineering needs (new rows needed)
+- The two-way import-boundary test; the canary additions; the synthetic Asha library fixture; extend the migration lint (FR-CUL-04) so no setting key for the moment index matches tradition, religion, country or culture words.
+
+### Questions (default, who)
+| Id | Question | Default | Who |
+|---|---|---|---|
+| CUL-Q13 | Place names in suggestions (Q-PM-5) | Off | Founder |
+| CUL-Q14 | Does the moment index (dates, counts, clusters) itself count as sensitive data in a family context, and does a date cluster plus the ticked days list amount to inference? | Keep both on the phone, never joined in storage; counsel must confirm | Counsel (needs a number from legal) |
+| CUL-Q15 | Any on-device image analysis beyond metadata (Q-PM-6) | No; and never for belief or origin even if later allowed | Founder, counsel |
+
+### Cannot assess yet
+- Whether limited or full library access changes what dates the phone shows; not read.
+- Whether biometric or children's data laws reach a metadata-only on-phone index; none read.
+- Whether App Review reads Photos access plus a faith-days feature as too sensitive together; no Apple text read.

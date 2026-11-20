@@ -1,5 +1,7 @@
 # Test plan for the new scope (with the quality role)
 
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need journeys, the device matrix, the G0 to G6 gates or the P0 register for NS-01 to NS-52.
+
 Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
 For `qa` and every engineer. Each card's acceptance rows are its unit and integration tests; this file adds what sits above them: the journeys a parent takes, the order we test in, what blocks a store build, the device matrix and the P0 register. Test titles carry the requirement id in brackets, for example `[NS-09-R1]`.
@@ -75,6 +77,10 @@ Journeys that would need weeks of real time (J-N4: reminders slow then stop) run
 | J-N26 | A child with only a due date and reminders on: no notification or prompt mentions the due date or counts days | NS-13 | P0 | no |
 | J-N27 | A trial ending and a reminder due the same day: the plan notice arrives on time | NS-32 | P0 | yes |
 | J-N18 | Canary text through every new path (Find query, typed day, typed name, picture text): never in logs, crash reports, URLs or notifications | NS-02, NS-16, NS-18, NS-01 | P0 | no |
+| J-N28 to J-N36 | First run and account life: fresh install to first kept letter, age No, sign-in kinds, offline start, consent outstanding, second account, kill at each step, third Keep gate and plan lapse, sign out and delete. One line each is in `functions/quality.md` FR-QAL-05 (not copied here) | NS-38 to NS-45 | P0 (c) | per FR-QAL-05 |
+| J-N37 (J-CUL-01) | Lock-screen walk for a chosen day: Notification Center, Notification Summary, Apple Watch mirror, CarPlay, Focus summary, Show Previews Never, App lock on and off, names switch on and off; a tapped day note lands on Home (`21` NS-47-R36, NS-46-R13). Gate: the flag does not ship on a simulator's word | NS-46, NS-47, NS-50 | P0 (a) | yes |
+| J-N38 (NTC-T24) | One week of reminders on a real phone: no name on the lock screen, Sunday slower than Friday, no note mentions an absence; stat is "x of n" | NS-48 | P0 (a) | yes |
+| J-N39 | Picture-first and Suggestions on iOS 17.0, 17.1 (choice absent, app launches), 17.2 and 26 (picker works, Use this keeps only the picture), iPhone app on iPad | NS-49 | P0 (c) | yes (rows in section 5) |
 
 ## 5. Device matrix
 
@@ -82,7 +88,9 @@ Journeys that would need weeks of real time (J-N4: reminders slow then stop) run
 |---|---|
 | Which phones the founder holds is not recorded. Before the first run sheet, he says which he has; buying one is his decision | |
 | iPhone SE (3rd generation) on the newest iOS it takes | the smallest screen and the slowest chip we support |
-| A phone on iOS 17 | our lowest supported iOS (an SE 3 on the newest iOS does not cover it) |
+| A phone on iOS 17.0 or 17.1 | our lowest supported iOS (`IOS_DEPLOYMENT_TARGET = '17.0'`); the Journaling Suggestions picker needs 17.2, so this row proves the app launches with the choice absent (NS-49, `tools/review/ns46-50/qa.md` F-06). An SE 3 on the newest iOS does not cover it. Without such a phone the row is "not run" and G4 does not pass |
+| A phone on iOS 17.2 | the first system with the picker; one real suggestion's file passes the validator (the Simulator SDK lacks the framework, UNVERIFIED as Apple text) |
+| A phone on iOS 26 | the newest system: journal suggestion notifications of Apple's own, glass fallback by system version |
 | A current large iPhone, latest iOS | the largest layout and newest system behaviour |
 | A second phone on the same account | sync, new phone, seals, let it go on a second phone |
 | An iPad | App Review runs the iPhone app on iPad (DEVICE_TEST_PLAN) |
@@ -93,13 +101,13 @@ Settings on every device walk: the largest accessibility text size with Bold Tex
 
 ## 6. What blocks a store build
 
-Gates, in order: G0 trace sees NS ids and every P0 has a test and a backlog row; G1 the on-device data rules (ADR 0028, PR #797) and the export schema they need are merged; G2 the counsel reads each card names; G3 the founder has approved the words; G4 every P0 device row passes on the candidate; G5 the privacy label and claims inventory match what the build sends; G6 no `production` flag is on while its card has an open P0.
+Gates, in order: G0 trace sees NS ids (NS-01 to NS-50, and NS-51 and NS-52 when written) and every P0 has a test and a backlog row (565 P0 rows have no backlog row: `BACKLOG-GAPS.md`); G1 the on-device data rules (ADR 0028, PR #797) and the export schema they need are merged; G2 the counsel reads each card names; G3 the founder has approved the words; G4 every P0 device row passes on the candidate, including J-N37 to J-N39 and the iOS 17.0, 17.1, 17.2 and 26 rows; G5 the privacy label and claims inventory match what the build sends; G6 no `production` flag is on while its card has an open P0, proved by a flag-off production build check (a node test over each EAS `production` profile's resolved config: `EXPO_PUBLIC_DAYS`, `EXPO_PUBLIC_SUGGESTIONS` (PROPOSED) and every card flag are off, and no photo-library usage string, PhotoKit call or journaling entitlement is present: NS-49-R15, R25, R26). Until that check exists G6 is checked by hand (`qa.md` section 3, F-13).
 
 Every P0 unit, source and journey test green; every P0 device row run on the candidate. A P0 device row may be waived by the founder in writing only when no suitable phone was available, and never for a lost letter or recording, a leak off the phone, a name or letter words on a lock screen, or a guilt or count line; each waiver is recorded in the build record; the privacy label and claims match what the build sends off the phone; no flag on in `production` whose card has an open P0.
 
 ## 7. The P0 register
 
-Rebuilt 20 Nov 2026 from the Priority column of every locked card (`01` to `12`): 296 P0 rows. The card is the source of truth; this register is its index. A row is P0 only if its card says so, with an RR-4 reason: (a) a promise in `03-goals-and-principles.md` section 1, (b) a legal or store duty, (c) the core loop. Every other acceptance row is P1 unless its card says P2. When a card changes a row's priority, the same PR regenerates this table (`python3` over the cards' acceptance tables, matching rows whose Priority cell starts `P0`).
+Rebuilt 20 Nov 2026 from the Priority column of every locked card (`01` to `12`): 296 P0 rows (NS-01 to NS-37, table below). Added 20 Nov, counted by `python3 -I tools/review/p0.py <repo-root>` (register mode, ids per card): card 19 NS-38 to NS-45 96 rows (8, 10, 11, 18, 13, 11, 10, 15); card 21 NS-46 to NS-50 87 rows (22, 27, 13, 21, 4); function files 398; NS-51 and NS-52 not yet. NS-01 to NS-50 total 479 P0 rows (was 296). Superseded: "296 P0 rows" as the pack total -> 479 for NS-01 to NS-50 (p0.py, 20 Nov). The tables for NS-38 to NS-50 are not copied here; the script is the register. The card is the source of truth; this register is its index. A row is P0 only if its card says so, with an RR-4 reason: (a) a promise in `03-goals-and-principles.md` section 1, (b) a legal or store duty, (c) the core loop. Every other acceptance row is P1 unless its card says P2. When a card changes a row's priority, the same PR regenerates this table (`python3` over the cards' acceptance tables, matching rows whose Priority cell starts `P0`).
 
 | Card | P0 rows | Reasons |
 |---|---|---|
@@ -135,6 +143,8 @@ Rebuilt 20 Nov 2026 from the Priority column of every locked card (`01` to `12`)
 | NS-37 | NS-37-R2, NS-37-R4, NS-37-R5 | (a) (b) (c) |
 
 Cross-cutting P0 tests that every card cites: `[X4-R1]` (a second account never sees, claims or uploads the first account's local letters), `[X6-R1]` (no letter text, child name, picture or prompt donated to system intelligence), `[FRAME-SLIP]` (an unregistered Home slip fails). Every P0 row needs a test and a backlog row before its card's flag turns on in any build outside the founder's family (RR-3). Until gate G0 passes (`scripts/trace.mjs` sees NS ids), traceability of these rows is checked by hand at each candidate.
+
+Test ids the QA review asked for, by card 21 (not repeated: see `tools/review/ns46-50/qa.md` section 4): `[NS-48-R28]` drift test (a content key family in `packages/content/src` that `rules.test.ts` does not read fails the build; today `index.ts` exports no `days`, `culture` or `ntc` family, F-01); FR-CUL rows (`functions/cultural-background-data.md`) and FR-NTC rows (`functions/notification-catalogue.md`) are traced like any FR row; the weak-link launch row for NS-49 (F-06); the quiet-book fixture shared by NS-46-R25, NS-48-R21 and NS-50-R8, blocked by BL-985 (F-05); `[FRAME-SLIP]` stays unbuilt until BL-963 (F-19). Tree test T1 and slip test T3 are research, labelled P, not tests.
 
 ## 8. Tests owed today
 

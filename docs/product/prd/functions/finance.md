@@ -270,3 +270,92 @@ Accountant (the accountant must confirm each; the founder sends this list; real 
 New questions that need a number from legal: none.
 
 Chief Financial Officer (Claude role)
+
+---
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md` section 3; NS-51 (Photo moments, level 3) and NS-52 (Pictures and videos with a letter) by name (`27-photo-moments-and-media.md` did not exist when written; align ids when it lands). Lens: CFO role, a Claude role, not an accountant, CPA, lawyer or adviser; nothing here is tax or legal advice; pricing is the founder's, so plans below are options only.
+
+Prices read this session, 20 Nov 2026 (cited by id; V1 and V3 re-read, same rows as section 1): **V1** Supabase pricing https://supabase.com/pricing : Free 1 GB file storage, 5 GB egress, max upload 50 MB; Pro 100 GB storage then $0.0213 per GB, 250 GB egress then $0.09 per GB, 250 GB cached egress then $0.03 per GB, max upload 500 GB, daily backups kept 7 days, "Spend caps are on by default on the Pro Plan", image transformations "$5 per 1,000 origin images" after 100. **V1b** Supabase Storage limits https://supabase.com/docs/guides/storage/uploads/file-limits : global file size limit 50 MB on Free, up to 500 GB on Pro. **V3** Cloudflare R2 https://developers.cloudflare.com/r2/pricing/ : Standard $0.015 per GB-month, Class A $4.50 per million, Class B $0.36 per million, egress free, free each month 10 GB, 1 million Class A, 10 million Class B. Not read: any video transcoding price (the Supabase page lists none: UNVERIFIED that none exists), Apple Photos or iCloud storage prices (UNVERIFIED).
+
+### F1. Existing rows touched
+
+| Existing | Effect |
+|---|---|
+| Section 2 NS-01 row ("$0 server cost, on the phone") | True only while pictures stay on the phone. If Q-PM-3 is answered yes, superseded by FR-FIN-25 to 27. Superseded by FR-FIN-25 on 20 Nov (for the hosted case only) |
+| Section 3.1 run-cost table (Storage and egress rows) | Extended by the media rows in F2; its Free-limit reading (database is the binding limit) stays true while media is phone-only |
+| FR-FIN-02, 03, 05, 17 | Applied to NS-52 hosted media (FR-FIN-26 to 29) |
+| Principle 6 (ruling T2, section 3.2 last bullets) | Binds: what ships free in 1.0.x never becomes paid. One picture per letter on the phone is free (NS-01) and stays free; new, costly parts (hosted copies, more items, video) are the only candidates for a limit or Plus (FR-FIN-30) |
+
+### F2. Cost model: hosted pictures and videos per family per year (only if media syncs; default is phone only, cost $0)
+
+Assumptions, all [A] (no usage data exists): letters per year 52; stored picture 2 MB (NS-01 T3 stored copy: JPEG, metadata stripped, at most 4,032 px long side; 2 MB is my estimate for that size); video 60 s at 4 Mbps (720p) = 30 MB (4 x 60 / 8); each stored byte downloaded 2 times a year (new phone, co-parent's phone) [A]; limits are the card's proposed defaults, up to 6 pictures and 2 videos per letter, not confirmed by the founder (Q-PM-2).
+
+| Family type | Per year | Stored at end of year 1 | Year 1 storage cost per family (average stock x $0.0213 x 12) | Download per year (2x) |
+|---|---|---|---|---|
+| Light: 24 pictures, 0 videos | 48 MB | 0.05 GB | $0.006 | 0.1 GB |
+| Mid: 120 pictures, 6 videos | 240 + 180 = 420 MB | 0.42 GB | $0.054 | 0.84 GB |
+| Heavy, at the proposed caps every letter: 312 pictures + 104 videos | 624 + 3,120 = 3,744 MB | 3.74 GB | $0.478 | 7.5 GB |
+
+Fleet reading, Supabase Pro (V1), end of year 1, base $25 a month before media:
+
+| Families | Mid stock | Pro storage over 100 GB, per month | Heavy stock | Pro storage over 100 GB, per month | Heavy egress per month (7.5 GB x families / 12 minus 250 GB at $0.09) |
+|---|---|---|---|---|---|
+| 300 | 126 GB | 26 GB x $0.0213 = $0.55 | 1,123 GB | 1,023 x $0.0213 = $21.8 | 187 GB, within the 250 GB included: $0 |
+| 1,000 | 420 GB | 320 x $0.0213 = $6.82 | 3,744 GB | 3,644 x $0.0213 = $77.6 | 624 GB, 374 over: $33.7 |
+
+Same heavy stock at 1,000 families on R2 (V3): (3,744 minus 10) x $0.015 = $56.0 a month, egress $0; Class A writes about 416 per family-year (8 items x 52), 416,000 at 1,000 families, inside the free 1 million (Class B reads not modelled). R2 needs its own access design and key custody (security), is a second vendor, and whether a payment method is needed is not stated on the page (UNVERIFIED).
+
+Readings: (1) media never fits Supabase Free: 1 GB holds about 2.4 mid families (1 / 0.42) and a 30 MB video is near the 50 MB file limit, so hosted media means Pro ($25 a month plus the above). (2) Storage is cheap per family and compounds: a heavy family reaches about 18.7 GB at year 5 (3.74 x 5), $0.40 a month at the marginal rate. (3) The risk is the tail, not the average: one heavy family costs about 9 times a mid family; a per-account cap is the control. (4) Egress, not storage, is the larger line for heavy families and for restores: a new phone pulls the whole stock (about 2.1 GB at year 5 for mid, 18.7 GB for heavy, $1.68 at $0.09 per GB past the included pool). (5) iCloud backup of the parent's phone (the stored copy is in the backup, NS-01-R27) grows with videos; that is the parent's storage, not our cost, but it may surprise them (Q-FIN-P4).
+
+### F3. Requirements
+
+| Id | Requirement (Given, When, Then where testable) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-FIN-25 | Default cost line. Given pictures and videos stay on the phone (Q-PM-3 default), Then run cost for NS-51 and NS-52 is $0 per family and the register (FR-FIN-01) says so with the date; no hosted-media spend, bucket, Pro upgrade or R2 account is created. If Q-PM-3 is answered yes, FR-FIN-26 to 29 apply before any build | NS-51, NS-52; FR-FIN-01; BL new row needed | P1 | finance, founder | Section 2 NS-01 row; 26 Q-PM-3 |
+| FR-FIN-26 | Sizing note before any media hosting. Given Q-PM-3 yes, When `data-architect` measures a mid and a heavy Asha fixture (FR-FIN-04), Then a note prices storage and egress from the vendor pages read that day, shows per family per year and totals at 300 and 1,000 families for 12 months and for year 5, states the assumptions of F2 with measured values replacing [A], and the founder approves the spend (default: no spend) | NS-52; FR-FIN-02, 04, 05, 17 | P1 | finance, data-architect | F2 above (UNVERIFIED usage) |
+| FR-FIN-27 | Hosted media needs Pro, spend cap decided. Given Free's 1 GB and 50 MB limits (V1, V1b), When media hosting is proposed, Then the plan is Pro ($25 a month, V1), the spend cap stays on (V1: on by default) and the founder rules what happens at the cap (uploads queue and the parent is told calmly, never data loss: FR-REL media rows) or raises it with a stated monthly ceiling | NS-52; FR-FIN-17; FR-OPS-13 | P1 | founder, finance | V1; FR-FIN-03 |
+| FR-FIN-28 | Per-family hosted cap and alarms. Given hosted media, Then a per-account byte cap exists (value is a plan decision, FR-FIN-30, options in F4), the weekly limits job reads Storage bytes and egress (FR-OPS-12) and alerts at 60% (founder spend question) and 80% of the plan's included storage and egress, and a separate alarm fires when growth in a week exceeds a stated multiple of the median (value PROPOSED by finance after the sizing note); alarms carry totals and ids only, never content or file names | NS-52; FR-FIN-03; FR-OPS-12, 37 | P1 | ops, finance | FR-FIN-03 pattern |
+| FR-FIN-29 | Video transcoding cost. Given a video is reduced to the limits, Then it happens on the phone (no per-minute vendor line), and any proposal to transcode on a server states a vendor price read that day; none was read (V1 lists image transformations only) | NS-52; FR-REL media rows | P1 | finance, mobile | V1 |
+| FR-FIN-30 | Plan limits and Plus: options only, the price and the allowance are the founder's (FR-FIN-10). Given Q-PM-2, When the founder decides, Then the options in F4 are the menu, each is checked against principle 6 (nothing free in 1.0.x becomes paid), the Keep gate promise ("Plus holds one paid act, keeping beyond the allowance", section 3.2) and D-111 (backup free, never Plus), and no strings, store lines, site lines or screens name a media allowance, price or "storage" before the decision and the plan table exist in `packages/content` (FR-FIN-09, 10) | NS-52; Q-PM-2; FR-FIN-09, 10; E-S10 to E-S12 | P0 (a): principle 6 | founder, finance, cpo | T2; D-111; section 3.2 |
+| FR-FIN-31 | Run-cost register rows. Given NS-52 hosted, Then the register gains: media storage (GB, per month), media egress (GB), restore pulls, R2 or Supabase Class A and B if R2 is chosen, and an iCloud-backup line marked "parent's cost, not ours"; each with the date its price was read | FR-FIN-01 | P1 | finance | FR-FIN-01 |
+| FR-FIN-32 | Accountant timing. Given any of: a paid plan that holds storage or media, a hosted-media vendor bill, or a published media allowance, When the earliest of these is planned, Then the accountant (FR-FIN-22) is already engaged and has the brief addition A10 (F5) in writing, because how revenue tied to a storage allowance is reported is for the accountant to confirm; Apple's "minus applicable taxes" wording (V7) is not tax advice. Default: engage before the first Plus change that mentions storage and in any case before the first payout (FR-FIN-22) | FR-FIN-22; F13 | P0 (b): tax and payout | founder | CR-120; V7 |
+| FR-FIN-33 | NS-51 costs. Given NS-51 analyses the library on the phone only, Then its server run cost is $0, the cost is engineering and review (F6), and any proposal that moves analysis to a server is a new finance decision, not an option inside this card | NS-51; 26 section 1 | P1 | finance | 26 section 1 |
+| FR-FIN-34 | Build cost. Given the Photos permission string, the picker and video transcoding are native work, When builds are planned, Then they are batched into one candidate per milestone (section 3.4 rule; 15 iOS builds a month, D-092) and the review load of NS-51 and NS-52 is added to section 3.4 once the card row counts exist | section 3.4; FR-FIN-18 | P2 | finance, release | Section 3.4 |
+
+### F4. Plan options for the founder (no recommendation on price; cost exposure from F2 at $0.0213 per GB-month marginal, V1)
+
+| Option | What it means | Worst-case hosted cost per family if the allowance is fully used |
+|---|---|---|
+| A. Phone only (default) | Pictures and videos stay on the phone; limits are about phone space and label, not cost | $0 |
+| B. Hosted, one free allowance for everyone | Allowance of N GB per family for all plans | 5 GB: $0.107 a month, $1.28 a year; 10 GB: $0.213 a month, $2.56 a year; 50 GB: $1.07 a month, $12.78 a year (plus egress) |
+| C. Free allowance plus a larger Plus allowance | Hosted media is the second paid thing in Plus, besides keeping beyond the allowance | The Plus line from F4 B for the larger N; Plus net revenue is in section 3.2, not repeated here |
+| D. Hosted media only in Plus | Free families keep pictures on the phone | Cost only for paying families; breaks nothing free in 1.0.x only if no hosted copy ships free first |
+
+Cross-checks for the founder: any option that restricts something that ships free in 1.0.x (more than one picture on the phone, video on the phone) conflicts with T2 and needs a ruling; limits that are about phone space and parent safety (a size cap per video) are not prices.
+
+### F5. Accountant brief addition (for FR-FIN-22 section 7)
+A10: how does revenue from a plan that includes hosted storage get described in the books and for the Small Business Program; are there sales or digital-services tax effects of offering storage in a subscription; where does hosting cost sit for a one-person company. The accountant decides; finance records the answer.
+
+### F6. Design needs
+Keep the no-price, no-count rule on every Keep and Plan screen (E-S10 to E-S12): no storage meter, no "x of y" on Home or Me. C-S18 Storage states sizes as facts only. Any limit appears once at its edge in plain words. A "plan limit" string is new copy; it passes the content rules and FR-FIN-09.
+
+### F7. Engineering needs
+New rows needed: (1) `free-limits.ts` Storage and egress reading (FR-OPS-12) extended with a media bucket line; (2) per-account byte cap check in the upload function; (3) a sizing script over the Asha mid and heavy fixtures (FR-FIN-04); (4) register rows in FR-FIN-31.
+
+### F8. Questions, with defaults
+| Id | Question | Default | Who answers |
+|---|---|---|---|
+| Q-FIN-P1 | Q-PM-3 as money: host pictures and videos or not? | Not hosted; $0 | Founder, with counsel (X2) |
+| Q-FIN-P2 | If hosted: option A to D and the allowance N | Option A until the sizing note and counsel gate close | Founder |
+| Q-FIN-P3 | Spend cap behaviour at the cap on Pro | Cap on; uploads wait, nothing lost | Founder |
+| Q-FIN-P4 | Tell parents that videos grow their own iCloud backup? | Yes, one plain line on the attach surface if videos are allowed | Founder with design and content |
+| Q-FIN-P5 | Accountant addition A10 timing | Before any storage-linked Plus change (FR-FIN-32) | Founder |
+
+### F9. Cannot assess yet
+- Actual picture and video sizes, letters per year and share of letters with media: all [A]; no data, no prototype.
+- Video transcoding cost on a server and the encoder settings that meet a 60 s and size cap: no vendor price read; default on the phone.
+- Apple and iCloud effects on a parent's storage bill: no source read.
+- Whether R2 needs a card on file and how it would sit with Supabase access rules: not on the page read.
+- Plus price, allowance and demand: the founder's; no willingness-to-pay evidence; no figure here is a forecast.

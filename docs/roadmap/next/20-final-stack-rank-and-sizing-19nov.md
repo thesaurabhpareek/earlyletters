@@ -2,6 +2,8 @@
 
 Owner: Karma (CTO role), with the Chief Product Officer role. Docs only. Read against develop `09a104da` (19 Nov, after #764 merged) and the open PRs listed in section 2, at 22:15 UTC.
 
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the order of work and each item's size and gate (rank 1 to 54, plus section 4b for cards added 20 Nov).
+
 Status: Locked v1.0, 20 Nov 2026 (council round 2). Rescoped items marked "Rescoped 20 Nov". Changes after lock need a PR that lists every changed id.
 
 What this is: the 55 candidates of the 19 Nov scope round (C-01 to C-42, N-01 to N-13), looked at again by the CPO against what develop holds now, debated with the owning roles, given a final order, sized by the CTO, and broken into backlog rows BL-923 to BL-941 for the first two waves.
@@ -123,6 +125,23 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 52 | 53 | C-41 | Paper sounds | 1 | M |  |  |
 | 53 | 54 | C-35 | Gifts and lifetime | 1 | L | Payments; banned word |  |
 | 54 | 55 | C-37 | A Share tab | 1 | M | Fails the founder's tab test |  |
+
+## 4b. Cards added 20 Nov 2026, proposed order (not ranks 55 and up: the founder rules, Q-FD-7)
+
+Source: `docs/product/prd/21-days-cultural-photos-home.md` "Release line and cut" for NS-46 to NS-50; `19-from-download-to-first-letter.md` for NS-38 to NS-45; `26-founder-direction-photos-library-and-media.md` for NS-51 and NS-52 (card 27, being written). Sizes and the build order are in `24-engineering-handoff.md` and `23-dependency-map-and-plan.md` (both being written); this table does not repeat them. No dates (ruling T5).
+
+| Order | Card | Item | Drop | First gate | Value and size |
+|---|---|---|---|---|---|
+| 1 | NS-48 phase 1 | Notification catalogue: day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage (NS-48-R28) | A | NS-01 on `testflight`; no planner change beyond words | not scored; card 21 |
+| 2 | NS-49 level 1 | Picture-first start (Apple's picker) as a first-class start | A | The A-S01 re-draw passes its AX5 test (NS-49-R1) | not scored |
+| 3 | NS-46 | Days we mark, US only, plain browse-and-tick list in Me | B | BL-966, BL-982, BL-963, BL-985; `budget.ts`; days store registered and Erase-scanned; counsel | not scored |
+| 4 | NS-47 | Cultural background, store rules only | B | Same as NS-46 (one release unit); counsel CUL-Q5 to Q7 and Q11 for the ask | not scored |
+| 5 | NS-50 | Home today, rank 2b in the slip | B | BL-963 slip registry (not built) | not scored |
+| 6 | NS-47, NS-48, NS-49 | Ask slip and traditions; recency and last-letter layers; Suggestions picker (level 2) | C | After 1.0 approval; J-CUL-01; weak-link launch run on iOS 17.0 to 17.2 and 26 | not scored |
+| 7 | NS-38 to NS-45 | First run: store page to account life (card 19; P0 96 rows) | founder rules (card 19 has no cut) | Karma's rulings on its open items | not scored |
+| 8 | NS-51, NS-52 | Photo moments (level 3); pictures and videos with a letter | not yet | Cards not written; the founder direction reverses three earlier rulings (level 3 closed, no video, one picture per letter) | not scored |
+
+Why the order is only proposed: the reviews found no single cut in the pack, and it stands on planner work that is unbuilt (`budget.ts`, the quiet reader BL-985, the slip registry BL-963; `tools/review/ns46-50/mobile.md` M-01, M-13). Superseded: "one note a day is enforced" (rank 5, C-05, and N-09 rank 23 read as if it were) -> enforced nowhere, `budget.ts` is the prerequisite (`mobile.md` M-01).
 
 Dropped from the rank: **C-22** (co-parent caption and sheet in store builds), on the founder's answer of 19 Nov. See section 6.
 
