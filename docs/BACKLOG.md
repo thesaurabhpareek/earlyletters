@@ -3524,7 +3524,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-949 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
 
 #### BL-923 The launch sweep finishes a draft left `discarding` (N-07)
-- Status: in-review (PR #832). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: done (#832, 5dc025d338f76c788d4f666b68ee6025e47c277b). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: F04-REQ-009 (Let it go, confirmed).
 - Problem: `store.ts` marks a draft `discarding` and then removes it (around lines 1267 and 1290). If the app stops between the two steps, or the file delete fails (#824), the draft stays `discarding`: hidden, with its audio still on the phone. `apps/mobile/src/lib/capture/sweep.logic.ts` and `sweep.ts` do not mention `discarding` at all, though comments in `store.ts`, `let-it-go.logic.ts` and `sync/merge.ts` say a launch sweep finishes it.
 - Scope: at launch, for each draft marked `discarding`, delete the file if present, then finish the discard. A file that still cannot be deleted leaves the row for the next launch. Correct the comments that claim this already exists. No new words on screen.
@@ -3533,7 +3533,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Plan: no install; no founder step.
 
 #### BL-924 Discard on Listen keeps the draft when the recording cannot be deleted (N-07)
-- Status: in-review (PR #832). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: done (#832, 5dc025d338f76c788d4f666b68ee6025e47c277b). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: F04-REQ-009. Also cited: #824 (the same fix in Review).
 - Problem: `apps/mobile/src/app/listen.tsx` lines 433 to 438 delete the file inside an empty `catch` and then delete the draft row. A failed delete leaves audio on the phone with no row pointing at it.
 - Scope: route Discard on Listen through `letItGo` (`lib/capture/let-it-go.logic.ts`), as Review does: mark, delete, finish; a real delete failure keeps the row marked `discarding` for BL-923. A missing file still finishes.
@@ -3582,14 +3582,13 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Scope: in `docs/prd/v2/06-nfr.md`, row 42 becomes: a transition starts within 100 ms, controls are usable by 350 ms, no frame is over 16.7 ms, the named hand-offs are bounded by `sequenceMaxMs` (900 ms) and the save hand-off by `hardCeilingMs` (2000 ms). Row 216 becomes: loops change opacity only, run only on the focused screen, and do not run under Reduce Motion. Each keeps a device and a test line.
 - Done when: the rows are merged and BL-929 cites them.
 
-#### BL-931 Split #796 (Photo with a letter) into five reviewable PRs (N-11)
-- Status: in-progress (Karma, photo split; #796 at 8a026397; slice 1 on `feat/mobile-photo-1-picker-pin`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
-- Satisfies: NS-01 (PRD `docs/product/prd/01-photo-with-a-letter.md`); CODE-R02 (review size limit).
-- Problem: #796 is 64 files and 3,747 added lines at `39efe1ac`, against a limit of 400 lines and 20 files. It has had no counted review since 11 Nov.
-- Scope: five PRs, each behind `EXPO_PUBLIC_PHOTOS` (default off), in this order: (1) the `expo-image-picker` pin, the licences list and the preflight change (release tooling: CTO plus two reviews); (2) the native `scribe-photo` module (security-architect review); (3) local migration 11, the `entry_media` store and the photo sweep (after ADR 0028 is accepted); (4) photo-first capture on Home through `startCapture` (after #828); (5) the Photos lens as letter cards, with the lens control using radio semantics (`ChoiceGroup` segmented or `ChipGroup`), not Buttons in a tab list (NS-33-R3). #796 closes when the fifth is open. If a slice still exceeds the limit, say why in its body.
-- Done when: five PRs are open with green CI, each inside the limit or with a stated exception, and #796 is closed with pointers.
-- Plan: no new install beyond #796's; device checks listed in #796 stay open.
-
+#### BL-931 Photo with a letter, as small reviewable PRs (N-11, NS-01)
+- Status: in-progress (Karma; #796 closed; eight stacked PRs #833 to #840). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L.
+- Satisfies: NS-01 (PRD `docs/product/prd/01-photo-with-a-letter.md`, on develop since #795); CODE-R02 (review size limit). Wave 1 as a whole, with no founder hold: Photo is rank 12 and its requirement is already approved scope (closed question X1).
+- Problem: #796 was 64 files and 3,747 added lines against a limit of 400 lines and 20 files, with no counted review since 11 Nov.
+- Scope: eight stacked PRs, each behind `EXPO_PUBLIC_PHOTOS` (default off): slice 1 (#833) release tooling and preflight (CTO plus two reviews); slice 2 (#834) the native `scribe-photo` module (security-architect review); slice 3 (#835, #836) local migration 11, the `entry_media` store, the stored copy; slice 4 (#837 to #839) the picker, photo-first capture on Home through `startCapture`, the photo on Review and the letter page; slice 5 (#840) the Photos lens as letter cards, with the lens control using radio semantics (`ChoiceGroup` segmented or `ChipGroup`), not Buttons in a tab list (NS-33-R3). The picker is Apple's PHPickerViewController presented from our own `scribe-photo` module, not a third-party package, so the binary carries no camera or photo-library permission calls (Karma ruling, 20 Nov, after #833's privacy review).
+- Done when: every slice is merged with green CI and two counted reviews, each inside the limit or with a stated exception.
+- Plan: device checks for the picker, HEIC and rotated images, and AX5 stay open until the founder's run sheet.
 #### BL-932 The Book list stays light with photos: two derivatives (N-06)
 - Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-931 slice 2). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931.
 - Satisfies: NS-01-R11 (the Photos lens is letter cards with a thumbnail).
@@ -3625,18 +3624,20 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 
 #### BL-937 The letter page as one "This letter" list (N-03)
 - Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-928). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-928.
+- Satisfies: NS-21-R1 to NS-21-R5 (`docs/product/prd/10-reading-and-family.md`).
 - Scope: in `apps/mobile/src/app/letter/[id].tsx`, the rows for a letter (privacy, date, and later photo, a first, a seal) sit in one `ListSection` titled as a level 2 heading; Share is a button on its own row; Delete is last. Rows are at least 56 pt and grow with text size. No new words beyond keys that exist.
 - Fails on old code: a source check for the order (Share alone, Delete last) and the heading level.
 - Done when: the check passes and the BL-928 device row covers the page.
 
 #### BL-938 Book header calm: one bar for Find, the lens row and the month jump (N-04)
 - Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then PR #798 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: NS-22-R1 to NS-22-R4 (`docs/product/prd/10-reading-and-family.md`).
 - Who: `design-systems` writes the one-page delta first; `mobile` builds.
 - Scope: the header order at every text size is title, age, switcher, Read together, lens row, Find, Go to a month; the gear leaves the Book header; nothing is added. Every control is 44 pt or more at AX5.
 - Done when: a layout test at AX5 passes and the device row for the Book is updated.
 
 #### BL-939 Share one letter, Level 1 (text only), behind `EXPO_PUBLIC_SHARE_LETTER` (C-18)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-937.
+- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-937.
 - Satisfies: NS-05, the Level 1 rows of `docs/product/prd/05-share-one-letter.md`; design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md`.
 - Scope: from the letter page, the parent sends one letter's kept words through the phone's own share sheet. The text sent equals the kept words exactly, with no footer, brand name or link (NS-05-R16). No recording row and no recording path (X2). No Share tab. If Level 1 is more than one PR, split it here first.
 - Fails on old code: a test that the shared text is byte-equal to the kept words.
@@ -3650,18 +3651,18 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: the rows are merged with a device and a test each.
 
 #### BL-941 Child switcher on Home (C-14)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-14-R1 to NS-14-R7 (`docs/product/prd/09-capture.md`).
 - Scope: reuse `ChildSwitcher` (already used by `book.tsx`) on Home, above the dateline; it stacks at AX5 and names whose book the letter goes to for VoiceOver.
 - Fails on old code: a test that Home with two books renders the switcher, and with one book does not.
 - Done when: the tests pass.
 
 #### BL-942 Save a copy of the year: the Me action and the birthday slip (NS-11)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none (it lives in Me and on Home).
+- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none (it lives in Me and on Home).
 - Satisfies: NS-11-R1 to NS-11-R9, including NS-11-R8 (no slip for a quieted or hidden book, P0 journey J-N19) (`docs/product/prd/08-keeping-and-trust.md`).
 - Scope: the Save a copy screen reached from Me in 2 taps, using the existing export path; the Home slip in the birthday week, once a year per book, sharing the single Home slip; a local row for shown and dismissed. The row adds a flag, `EXPO_PUBLIC_SAVE_A_COPY` (name proposed; follow `capabilities.ts` house style), off in `production`. Words are PROPOSED keys written by `content` from NS-11; the flag stays off in every build outside the founder's family until he approves them. No notification.
 - Fails on old code: `[NS-11-R2]` and `[NS-11-R6]` fail (no slip, no screen).
-- Done when: R1 to R7 pass; journey J-N8 is in the device run sheet.
+- Done when: R1 to R9 pass, including the P0 row R8; journey J-N8 is in the device run sheet.
 
 #### BL-943 Reminders proven on a phone, with back-off and stop (NS-13)
 - Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M.
@@ -3682,17 +3683,17 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Satisfies: NS-15-R1 to NS-15-R11, including NS-15-R11 (the about-day is removed with the letter on erase or account deletion).
 - Scope: a tappable dateline on Review and on the author's letter page; the Book files by the about-day; both days shown; export carries both; only the author can change it; no future day.
 - Fails on old code: `[NS-15-R2]` and `[NS-15-R4]`.
-- Done when: R1 to R7 pass; J-N7 runs in CI.
+- Done when: R1 to R11 pass, including the P0 row R11; J-N7 runs in CI.
 
 #### BL-946 One past letter on Home (NS-23)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-937.
+- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-937.
 - Satisfies: NS-23-R1a to NS-23-R8, including NS-23-R8 (no letter from a quieted or hidden book, P0 journey J-N19) (`docs/product/prd/10-reading-and-family.md`).
 - Scope: choose at most one letter from the same day of an earlier month or year, never sealed, hidden or the other parent's private letter; show it in the single Home slip; a switch in Me turns past letters off.
 - Fails on old code: `[NS-23-R4]` and `[NS-23-R5]`.
-- Done when: R1 to R6 pass and the switch label is approved by the founder.
+- Done when: R1a to R8 pass, including the P0 row R8, and the switch label is approved by the founder.
 
 #### BL-947 Read the year back (NS-24)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then wave 3, after photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then wave 4, after photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-24-R1 to NS-24-R3.
 - Scope: from the Book, start Read together at the first letter of a chosen year of {child}'s life and end at its last; skip the other parent's private letters; no summary or count page.
 - Fails on old code: `[NS-24-R1]`.

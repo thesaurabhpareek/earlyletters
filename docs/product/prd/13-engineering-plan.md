@@ -62,7 +62,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | NS-21 Letter page list | S | mobile, design-systems | NS-33 (same files) | none |
 | NS-22 Calm header | M | design-systems, mobile | NS-02 landed | none |
 | NS-01 Photo | L in total, split into five slices | mobile, security-architect, data-architect, privacy | slices 1 and 2: none; slice 3: NS-36; slice 4: NS-35; slice 5: NS-37; fills an NS-21 row | label line read by counsel for store builds |
-| NS-02 Find | M (built; in review) | mobile, privacy | NS-36 | device row |
+| NS-02 Find | M (built; a draft, #798) | mobile, privacy | NS-36 | device row |
 | NS-23 One past letter | S | mobile, content | NS-21 | none |
 | NS-24 Read the year back | S to M | mobile | none | none |
 | NS-06 Firsts and seals | M (Firsts), L (seals) | mobile, sync, data-architect, legal | NS-05 Level 1 shipped; five-parent study; NS-36 seal clock (Part B); fills NS-21 rows | counsel on seals |
@@ -87,7 +87,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | NS-35 One start | done (#828, `5f5dfaf4`) | mobile | none | none |
 | NS-36 Data follows the letter | S to M | data-architect, privacy, mobile | ADR 0028 accepted | data inventory rows |
 | NS-37 Book stays fast | M | mobile | NS-01 slice 2 (the native module) | device row |
-| NS-32 Notification budget | S (in review) | mobile | none | none |
+| NS-32 Notification budget | S (a draft, #758) | mobile | none | none |
 
 ### E. Engineering only (no card)
 
@@ -103,10 +103,10 @@ The harness picks any row whose dependencies are done. This is the order of pref
 
 | Wave | Work | Why first |
 |---|---|---|
-| 1 | NS-09 (in review, #832), NS-34 run sheet, NS-33, NS-10, NS-32 (#758, a draft since 10 Nov), NS-03 kit, the photo split (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
-| 2 | NS-13 device proof, NS-21, NS-02 lands, NS-01 slices 3 and 4, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
+| 1 | NS-09 (#832 merged; BL-926 left), NS-34 run sheet, NS-33, NS-10, NS-32 (#758, a draft since 10 Nov), NS-03 kit, NS-01 photo as eight PRs, all slices (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
+| 2 | NS-13 device proof, NS-21, NS-02 lands, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
 | 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find: the rest of the reading and capture items, ordered by rank where dependencies allow |
-| 4 | NS-04 spike (first: X1 puts it before Share and Firsts; it starts the Monday after the Build 13 cut), NS-24, NS-07, NS-06 Part A, NS-18 | Reading back and the keepsake |
+| 4 | NS-04 spike (first in this wave; X1 puts the spike after the pilot and leaves Share unordered, and the rank puts Share ahead; the spike starts the Monday after the Build 13 cut), NS-24, NS-07, NS-06 Part A, NS-18 | Reading back and the keepsake |
 | 5 | NS-06 Part B, NS-25, NS-16, NS-17 | Each behind a counsel or founder gate |
 
 Parallel lanes that never wait on each other: words (`content`), research (`user-research`), legal drafts (`legal`), test plans (`qa`). Engineers never wait on words: they build behind a flag with the PROPOSED key and the founder approves the words before the flag turns on.
