@@ -106,7 +106,7 @@ export const authEmails = {
       // The privacy promise, word for word (D-061, VOICE.md "How we talk about privacy": the welcome email says it once).
       en.trust.promise,
       "Only you, and your co-parent if you invite them, can read them in the app. Our staff look only in the rare cases our Privacy Policy describes.",
-      "Ideas are welcome too. Just reply.",
+      "Ideas are welcome too. Reply to this email.",
     ],
     cta: { label: `Open ${brand.name}`, urlVar: "{appUrl}" },
     fallback: FALLBACK,
