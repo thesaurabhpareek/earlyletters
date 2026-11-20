@@ -3590,14 +3590,14 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: every slice is merged with green CI and two counted reviews, each inside the limit or with a stated exception.
 - Plan: device checks for the picker, HEIC and rotated images, and AX5 stay open until the founder's run sheet.
 #### BL-932 The Book list stays light with photos: two derivatives (N-06)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-931 slice 2). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931.
+- Status: blocked (BL-931 slice 2). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931.
 - Satisfies: NS-01-R11 (the Photos lens is letter cards with a thumbnail).
 - Scope: two stored derivatives per photo, about 512 px and about 1280 px on the long edge; the original is read only for export. The Book list query selects no full-size path. No image is decoded while a take is recording.
 - Fails on old code: a test that the list query returns only the small derivative path, and one that the capture path imports no decoder.
 - Done when: the tests pass and BL-929's sheet has a Book scroll row with photos. Device numbers are not known yet.
 
 #### BL-933 Export schema 1.7.0 carries photo files (N-08)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-868 and BL-931 slice 3). Mode: agent. Owner: export owner. Milestone: M15. Size: M. Depends on: BL-868, BL-931 (slice 3).
+- Status: blocked (BL-868 and BL-931 slice 3). Mode: agent. Owner: export owner. Milestone: M15. Size: M. Depends on: BL-868, BL-931 (slice 3).
 - Satisfies: NS-01 export rows; ADR 0028, accepted under CR-62 (export path `photos/<entry_id>/<media_id>.<ext>`). Also cited: BL-868.
 - Scope: the export ZIP includes each kept photo at the ADR's path, the schema version becomes 1.7.0, the README in the export names the folder, and the golden fixture for the family Asha gains one photo.
 - Fails on old code: the golden export test expects the photo file and version 1.7.0.
@@ -3623,21 +3623,21 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: merged by Fri 27 Nov 2026. Dates in it are proposals until the founder sets them.
 
 #### BL-937 The letter page as one "This letter" list (N-03)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-928). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-928.
+- Status: blocked (BL-928). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-928.
 - Satisfies: NS-21-R1 to NS-21-R5 (`docs/product/prd/10-reading-and-family.md`).
 - Scope: in `apps/mobile/src/app/letter/[id].tsx`, the rows for a letter (privacy, date, and later photo, a first, a seal) sit in one `ListSection` titled as a level 2 heading; Share is a button on its own row; Delete is last. Rows are at least 56 pt and grow with text size. No new words beyond keys that exist.
 - Fails on old code: a source check for the order (Share alone, Delete last) and the heading level.
 - Done when: the check passes and the BL-928 device row covers the page.
 
 #### BL-938 Book header calm: one bar for Find, the lens row and the month jump (N-04)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then PR #798 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Status: blocked (PR #798 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
 - Satisfies: NS-22-R1 to NS-22-R4 (`docs/product/prd/10-reading-and-family.md`).
 - Who: `design-systems` writes the one-page delta first; `mobile` builds.
 - Scope: the header order at every text size is title, age, switcher, Read together, lens row, Find, Go to a month; the gear leaves the Book header; nothing is added. Every control is 44 pt or more at AX5.
 - Done when: a layout test at AX5 passes and the device row for the Book is updated.
 
 #### BL-939 Share one letter, Level 1 (text only), behind `EXPO_PUBLIC_SHARE_LETTER` (C-18)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-937.
+- Status: blocked (photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-937.
 - Satisfies: NS-05, the Level 1 rows of `docs/product/prd/05-share-one-letter.md`; design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md`.
 - Scope: from the letter page, the parent sends one letter's kept words through the phone's own share sheet. The text sent equals the kept words exactly, with no footer, brand name or link (NS-05-R16). No recording row and no recording path (X2). No Share tab. If Level 1 is more than one PR, split it here first.
 - Fails on old code: a test that the shared text is byte-equal to the kept words.
@@ -3651,56 +3651,56 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: the rows are merged with a device and a test each.
 
 #### BL-941 Child switcher on Home (C-14)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: blocked (photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-14-R1 to NS-14-R7 (`docs/product/prd/09-capture.md`).
 - Scope: reuse `ChildSwitcher` (already used by `book.tsx`) on Home, above the dateline; it stacks at AX5 and names whose book the letter goes to for VoiceOver.
 - Fails on old code: a test that Home with two books renders the switcher, and with one book does not.
 - Done when: the tests pass.
 
 #### BL-942 Save a copy of the year: the Me action and the birthday slip (NS-11)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none (it lives in Me and on Home).
+- Status: blocked (photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none (it lives in Me and on Home).
 - Satisfies: NS-11-R1 to NS-11-R9, including NS-11-R8 (no slip for a quieted or hidden book, P0 journey J-N19) (`docs/product/prd/08-keeping-and-trust.md`).
 - Scope: the Save a copy screen reached from Me in 2 taps, using the existing export path; the Home slip in the birthday week, once a year per book, sharing the single Home slip; a local row for shown and dismissed. The row adds a flag, `EXPO_PUBLIC_SAVE_A_COPY` (name proposed; follow `capabilities.ts` house style), off in `production`. Words are PROPOSED keys written by `content` from NS-11; the flag stays off in every build outside the founder's family until he approves them. No notification.
 - Fails on old code: `[NS-11-R2]` and `[NS-11-R6]` fail (no slip, no screen).
 - Done when: R1 to R9 pass, including the P0 row R8; journey J-N8 is in the device run sheet.
 
 #### BL-943 Reminders proven on a phone, with back-off and stop (NS-13)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M.
+- Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: M.
 - Satisfies: NS-13-R1 to NS-13-R17, including NS-13-R11 (no reminder names Plus, a price or the Keep step) and NS-13-R12 (no reminder for a quieted or hidden book, P0 journey J-N19) (`docs/product/prd/09-capture.md`). Also cited: #680, BL-770 (repeat), S1-135.
 - Scope: back-off after 7 unanswered days to weekly and stop after 4 more unanswered weeks (both numbers in one constant, PROPOSED); cancel today's reminder after a letter is made (saved in any state, kept or waiting at Keep); the hour follows the phone's time zone and never fires in skipped hours; no name or letter text by default. Fold in or supersede the repeat work already open rather than duplicate it.
 - Fails on old code: `[NS-13-R3]`, `[NS-13-R4]` and `[NS-13-R8]`.
 - Done when: unit rows pass; journeys J-N3, J-N4 and J-N5 are rows in the device run sheet.
 
 #### BL-944 Requirement rows and data inventory for a letter's about-day (NS-15)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then wave 3, after photo slices 3 and 4 and Find land, closed question X1). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
+- Status: blocked (wave 3, after photo slices 3 and 4 and Find land, closed question X1). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
 - Who: an interactive session as `product` with `privacy` and `data-architect`.
 - Satisfies: NS-15 (`docs/product/prd/09-capture.md`).
 - Scope: name the field, its sync and export shape, its data inventory row and its class (same as the letter's date), and confirm the rule that no date is ever read from the words.
 - Done when: the rows and the inventory draft are merged; BL-945 can be built without a question.
 
 #### BL-945 A letter for another day (NS-15)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-944). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-944.
+- Status: blocked (BL-944). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-944.
 - Satisfies: NS-15-R1 to NS-15-R11, including NS-15-R11 (the about-day is removed with the letter on erase or account deletion).
 - Scope: a tappable dateline on Review and on the author's letter page; the Book files by the about-day; both days shown; export carries both; only the author can change it; no future day.
 - Fails on old code: `[NS-15-R2]` and `[NS-15-R4]`.
 - Done when: R1 to R11 pass, including the P0 row R11; J-N7 runs in CI.
 
 #### BL-946 One past letter on Home (NS-23)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-937.
+- Status: blocked (photo slices 3 and 4 and Find land, closed question X1; then BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-937.
 - Satisfies: NS-23-R1a to NS-23-R8, including NS-23-R8 (no letter from a quieted or hidden book, P0 journey J-N19) (`docs/product/prd/10-reading-and-family.md`).
 - Scope: choose at most one letter from the same day of an earlier month or year, never sealed, hidden or the other parent's private letter; show it in the single Home slip; a switch in Me turns past letters off.
 - Fails on old code: `[NS-23-R4]` and `[NS-23-R5]`.
 - Done when: R1a to R8 pass, including the P0 row R8, and the switch label is approved by the founder.
 
 #### BL-947 Read the year back (NS-24)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then wave 4, after photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: blocked (wave 4, after photo slices 3 and 4 and Find land, closed question X1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-24-R1 to NS-24-R3.
 - Scope: from the Book, start Read together at the first letter of a chosen year of {child}'s life and end at its last; skip the other parent's private letters; no summary or count page.
 - Fails on old code: `[NS-24-R1]`.
 - Done when: R1 to R3 pass.
 
 #### BL-948 Speed and accessibility rows in the device run sheet for every new card (NS-33, NS-34)
-- Status: blocked (founder read: waits for the founder to approve the requirements of PR #829 in chat; then BL-929). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-929.
+- Status: blocked (BL-929). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-929.
 - Satisfies: `docs/product/prd/14-test-plan.md` sections 4 and 5.
 - Scope: one device row per journey J-N1 to J-N27 that needs a phone (including the P0 device journeys J-N19, J-N21, J-N23, J-N24 and J-N27), P0 rows first, with the settings in section 5.
 - Done when: the rows exist in `docs/qa/DEVICE_TEST_PLAN.md` and each names its card id.
