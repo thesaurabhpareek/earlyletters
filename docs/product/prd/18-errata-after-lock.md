@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E60 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E61 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Five are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59. The closure rows are CL-117 to CL-134 in `GAP-LOG.md`, one per row E43 to E60 in order (CL-117 is E43).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Five are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59. The closure rows are CL-117 to CL-135 in `GAP-LOG.md`, one per row E43 to E60 in order (CL-117 is E43).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|

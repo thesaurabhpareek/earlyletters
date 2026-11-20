@@ -172,7 +172,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E60); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E61); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).

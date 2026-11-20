@@ -137,7 +137,7 @@ Merged: Q-FD-2 with CUL-Q10; Q-FD-5 with CUL-Q2; the packed Q-PHS and Q-NTC cell
 | NS-01 section 3, section 12 (Shown), NS-01-R22 | One line: a picture may also come from the phone's recent-days list (NS-49); R22 "only source" wording names both out-of-process pickers; level 3 and NX-39 R27 stay closed until NS-51 ships (E34) | PHS section 10 |
 | NS-11 section 3 | One line: the list of days is not in Save a copy | CB-4 |
 | NS-36 erase and registry rows | The days store is a registry row (L4, per account, excluded from backup, cleared at sign-out and Erase) | FR-CUL-01, 16 |
-| NS-45 (when written in `19`) | Carries the sign-out clear and the Delete account line (NS-47-R15, R17) | CB-4 |
+| NS-45 (card 19, written) | Carries the sign-out clear and the Delete account line (NS-47-R15, R17) | CB-4 |
 | `00-product-frame.md` slip order and `[FRAME-SLIP]` | Registry gains rank 2b (a day we mark today) and 3b (the Days ask), order as NS-50-R5 | R-IA-3, R-IA-5 |
 | `VOICE.md` line 70 | Corrected to match line 160 and the checker (zero exclamation marks in notifications) | N-5 |
 | NS-18-R3 | Words of any typed day, including one added through "Add a day", show on a lock screen only behind `notifications.dayNames` | NS-47-R37, RV-8 (E45) |

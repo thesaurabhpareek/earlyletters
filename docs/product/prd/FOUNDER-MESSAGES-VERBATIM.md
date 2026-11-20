@@ -118,7 +118,7 @@ Make sure you read some inputs I gave on what new features we are not thinking o
 ### Turn after 874 (relayed by the coordinator on 20 Nov; the chat turn number is not in this export)
 Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture
 
-## Part 1b. Founder messages relayed by the coordinator, 20 Nov 2026 (items 34 to 38; no turn numbers; wording exactly as relayed, typos included)
+## Part 1b. Founder messages relayed by the coordinator, 20 Nov 2026 (items 34 to 40; no turn numbers; wording exactly as relayed, typos included)
 
 ### Item 34
 Great. Finalize all requirements and lock because engg is working in parallel now for their plan. Listen to their feedback and fix gaps too.
@@ -147,7 +147,7 @@ Turns 724, 726, 729, 732, 734, 736, 738, 740, 744. Each shows "Human:" followed 
 
 ## Instruction index
 
-Every distinct instruction or constraint, one line each (items 34 to 38 are the 20 Nov messages relayed by the coordinator, in Part 1b), with the turn numbers that carry it. "Superseded" marks items a later message replaces, narrows or repeats.
+Every distinct instruction or constraint, one line each (items 34 to 40 are the 20 Nov messages relayed by the coordinator, in Part 1b), with the turn numbers that carry it. "Superseded" marks items a later message replaces, narrows or repeats.
 
 1. Produce a very detailed scope document of new features and enhancements, debated as a team, stack ranked on value with the why, and redesign IA and navigation; use a senior team of product, architecture, design and animation together. (720)
 2. Verify that a full backlog, exhaustive feature evaluation and a 3 to 6 month future vision exist. (747)
@@ -188,7 +188,7 @@ Every distinct instruction or constraint, one line each (items 34 to 38 are the 
 37. Update the harness accordingly and inform the harness thread: complete these backlog enhancements and run as a smart, self-healing harness with a strong feedback and self-improvement loop. (37; Part 1b)
 38. Align the harness backlog for CTO review, take CTO feedback and improve, execute after CTO approval, and inform all agents of what changed and their new operating style. (38; Part 1b)
 39. Merge the product and design packs (#934, #935); he approves; lock all requirements; tell engineering to lock their plans now. (39; Part 1b)
-40. Answers to the close list: 1 approved, merge and close, 2 to 5 go with the executive team recommendation. (40; Part 1b)
+40. Answers to the close list: 1 approved; 2 merge and close; 3, 4 and 5 go with the executive team recommendation. (40; Part 1b)
 
 ### Item 40
 
