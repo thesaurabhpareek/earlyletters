@@ -89,7 +89,7 @@ Applied without an E number (class A answers or B1 clarifications that change no
 
 ## Plan delta summary, E43 to E82 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-157 in `GAP-LOG.md`, one per row E43 to E82 in order (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-157 in `GAP-LOG.md`, one per row E43 to E82 in order, plus CL-155 for CR-71 D1, which is E78 confirmed (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -324,7 +324,7 @@ Source: CR-71 (#1018) and the decisions record (#1013), the three items it left 
 
 Question: engineering's decision record asks for a limit on security-alert email (PRD V2 says the first 5 an hour go one by one and later ones fold into one summary).
 
-Ruling: at 1.0 the question does not arise, because E76 builds no new alert email and E77 sends none after wrong codes or "Sign out other devices". The limit is written now so no later sender can skip it: any alert sender added after 1.0 sends the first 5 in an hour one by one, folds the rest into one summary within minutes, and stops at 20 alert emails per account per day. The 20 is engineering's number, a safety ceiling and not a promise to a parent. Alerts stay out of quiet hours (E76). A parent is told nothing about the limit. Nothing here is a founder line.
+Ruling: at 1.0 the question does not arise, because E76 builds no new alert email and E77 sends none after wrong codes or "Sign out other devices". The limit is written now so no later sender can skip it: any alert sender added after 1.0 sends the first 5 in an hour one by one, folds the rest into one summary within minutes, and stops at 20 alert emails per account per day. The cap never applies to sign-in codes, so it cannot lock a parent out; a folded summary counts as one; an alert stopped by the cap still shows as an in-app line on next open. The 20 is engineering's number, a safety ceiling and not a promise to a parent. Alerts stay out of quiet hours (E76). A parent is told nothing about the limit. Nothing here is a founder line.
 
 Edited in place: FR-SEC-36. Plan delta: none for 1.0 (no alert sender is built); the cap is a requirement on NS-08-R21's sender and on any later one; sync, security-architect.
 
