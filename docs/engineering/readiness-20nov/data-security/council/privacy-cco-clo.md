@@ -19,7 +19,7 @@ B3 variant B media sync: AGREE, with NEEDS EVIDENCE on photo paths already live 
 B4 iPhone device backup: AGREE default for 1.0, NEEDS COUNSEL on the claim wording (Q17) and the label reading
 B5 backup-file exclusion: AGREE, CHANGE to add a test and existing-install handling
 B6 region hook: AGREE fail-open with conditions; NEEDS COUNSEL (Q57e)
-B7a Q51 key-unwrap log 12 vs 24: CHANGE (build 12 to match D-021 before apply); NEEDS COUNSEL
+B7a Q51 key-unwrap log 12 vs 24: recommend 12 to match D-021; build keeps 24 as built until counsel answers; NEEDS COUNSEL and NEEDS FOUNDER
 B7b released legal holds: AGREE as built, with conditions
 B7c GitHub as processor (PQ-3): AGREE (name it); NEEDS COUNSEL; NEEDS EVIDENCE on how "7 days" is enforced
 B7d audit rows in an access request (PQ-5): AGREE (in account.json), NEEDS COUNSEL
@@ -160,20 +160,20 @@ B7g. Everything else as built (unconfirmed sign-up row 7 days proposed, support 
 A1. Supabase Pro.
 - Verdict: CHANGE, NEEDS FOUNDER (money; CFO). Recommend Pro before the first build that reaches anyone outside the founder's family, not "stay Free".
 - Retention and notice impact: on Free, platform logs last 1 day and Supabase keeps no backups (doc 05 [V as read, U on the dashboard]). Consequences: (1) data-policy.md line 211 describes Pro daily backups (C06-1), so on Free the policy text is false and must not be published; (2) after an incident a 1-day log may not let us count affected people (the register wants that within 24 hours: CR-111, LEGAL-REQ-039); (3) the 31, 38 and 45 day deletion promises depend on the 7-day dump and need Pro's windows written in first if Pro or PITR is bought (DSR-R13). The 24-hour deletion-return limit under Free (restore from dump can bring back a deletion made in the last day) is true and must be stated: I agree with the default of stating it in the incident notice and I add it to counsel's list (CQ12) as the wording is theirs.
-- Proposed record line: "A1 closed: plan decided by the founder; the retention and backup sentences in data-policy.md match the plan; the 24-hour limit is stated where counsel says."
+- Proposed record line: "A1 proposed: plan decided by the founder; the retention and backup sentences in data-policy.md match the plan; the 24-hour limit is stated where counsel says."
 
 A2. Apply the 29 unapplied migrations and deploy the deletion worker.
 - Verdict: AGREE the default (founder applies per APPLY.md in file order after the consent-order step).
 - Conditions: (1) until applied and the sole-parent drill passes, no parent-facing sentence about deletion, retention or audit is published (the pack already says so); Apple 5.1.1(v) needs working in-app deletion in any store build; (2) before any outside family, check that the live database no longer holds the core migration's safety_events table or, if it does, that it is empty and dropped; CLAUDE.md says safety tiers have no server table (see G1); (3) after applying, run the access matrix and grants tests against the live project and record the date.
-- Proposed record line: "A2 closed: migrations applied in order on [date], worker deployed, drill passed [date], safety_events absent from the live project."
+- Proposed record line: "A2 proposed: migrations applied in order on [date], worker deployed, drill passed [date], safety_events absent from the live project."
 
 A3. app.consent_fields_required after the measured gate.
 - Verdict: AGREE, CHANGE: add a floor. "Zero null app_build sheet acts for 14 days" is trivially true with one family testing. Require it AND at least a stated minimum count of consent acts (our number, to be set by data-architect, [E]) across more than one device. Consent records are the proof for the register's consent rows (CR-019 and the state consumer-health rows).
-- Proposed record line: "A3 closed: gate measured over at least N acts, zero nulls for 14 days, then the setting turned on [date]."
+- Proposed record line: "A3 proposed: gate measured over at least N acts, zero nulls for 14 days, then the setting turned on [date]."
 
 A4. Crash SDK or PostHog.
 - Verdict: AGREE: not in 1.0.x. Notice impact: privacy policy and subprocessors.md say "no analytics or crash reporting" and are true; Apple 5.1.1(ii) (read today) needs consent for usage data "even if such data is considered to be anonymous" and an easy way to withdraw. Any later adoption moves the label first and goes through counsel Q7.
-- Proposed record line: "A4 closed: none in 1.0.x; any later SDK needs a vendor decision, policy, label and consent first."
+- Proposed record line: "A4 proposed: none in 1.0.x; any later SDK needs a vendor decision, policy, label and consent first."
 
 ## 5. E2 words a parent reads
 - Verdict: NEEDS FOUNDER (one sitting). I did not read the proposed strings themselves; I read only the keys named in readiness README line 69 and card text for NS-42-R18. My legal conditions for that sitting:
@@ -185,7 +185,7 @@ A4. Crash SDK or PostHog.
   6. Character-limit line: no privacy touch.
   7. Alert wording: fixed subjects and bodies (07.2 s.3); no fear or guilt language (house rule); never "AI" implied; no link that signs in; masked new address (Q-COM-4 default, I agree).
   Every word is written by a person and linted by rules.test.ts; I propose no wording.
-- Proposed record line: "E2 closed [date]: founder approved keys [list] in one sitting; keys that are promises read by counsel first."
+- Proposed record line: "E2 proposed [date]: founder approved keys [list] in one sitting; keys that are promises read by counsel first."
 
 ## 6. F items that touch legal or privacy
 - F1 size exceptions: no legal view on line counts. CHANGE for the photo slices (#835 to #840): they touch L4 pictures. Merge only with (a) the S1 migration closing the live upload policies (C4), (b) a written statement of what leaves the phone in that slice (ties to B3), (c) the label and policy unchanged because nothing leaves, or changed first.
