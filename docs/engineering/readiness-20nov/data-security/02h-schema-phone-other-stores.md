@@ -86,7 +86,7 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 | scribe.family.pendingInvite | L4 | same | invite token waiting for sign-in |
 | earlyletters.letters.keptEver | L2 | after first unlock, this device only (`billing/letter-ledger.keychain.ts`) | free-limit ledger |
 | book keys (one per child, author, version) | L4 | synchronizable Keychain, so Apple's iCloud Keychain carries them to the person's other Apple devices (`backup/keys.ts:4-6`) | the key that opens recording backups; Apple is a processor for this item |
-| X25519 private key | L4 | this device | restore enrolment key (`backup/escrow-keys.ts`) [U: item name not read] |
+| X25519 private key | L4 | this device | restore enrolment key; a grep of `backup/*.ts` finds no item name [U]. `modules/scribe-keys/ios/ScribeKeysModule.swift:94` excludes its keys folder from the device backup (the only exclusion that touches key material) |
 
 ## 5. Files outside the database
 
@@ -101,10 +101,10 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 
 ## Gaps found in this file
 
-- G-11 `backup-<profile id>.db` is in no inventory row, is not excluded from the device backup, is copied by the recovery export (`resilience/recovery-export.ts:30-43` lists the whole SQLite directory), and no code path was found that deletes it on Erase.
-- G-21 Fifteen setting keys in code are absent from `DATA_CLASSIFICATION.md` 4.5 (section 3, marked new).
+- G-11 `backup-<profile id>.db` is in no inventory row, is not excluded from the device backup, is not copied by the recovery export (`resilience/recovery-export.logic.ts:33-42` keeps only `scribe.db` and its `-wal`, `-shm`, `-journal` files), and no code path was found that deletes it on Erase.
+- G-21 Seventeen setting keys or key families in code are absent from `DATA_CLASSIFICATION.md` 4.5 (section 3, marked new).
 
 ## Questions for the council
 
-- Q-h1 (CISO, CPO-privacy) Keep `upload_url` and `upload_token` in a file inside the iPhone backup? Default: move them to the Keychain item class of `scribe.auth` or stop persisting them, decided by `security-architect` and `sync`; until then flag stays off.
-- Q-h2 (CPO-privacy) Add `backup-<id>.db` to the recovery export exclusions and to Erase. Default: yes, a `mobile` change; not done here.
+- Q-h1 (CISO, CPO-privacy) Keep `upload_url` and `upload_token` in a file inside the iPhone backup? Default: move them to the Keychain item class of `scribe.auth` or stop persisting them, decided by `security-architect` and `sync`; until then the flag is off today and stays the founder's call.
+- Q-h2 (CPO-privacy) Exclude `backup-<id>.db` from the iPhone backup and delete it on Erase. Default: yes, a `mobile` change; not done here.
