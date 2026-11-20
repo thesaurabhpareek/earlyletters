@@ -165,7 +165,7 @@ The rule (closed X2; `00-product-frame.md:85`): no copy of a child's voice or pi
 **Security read for pictures in Export, Save a copy and the PDF.** Yes, if:
 - **E1.** Only stored copies leave (never a picker copy), and BL-933 and the PDF build run the NS-01-R6 scan over the bytes they write.
 - **E2.** The ZIP and the PDF temp follow NSC-08 (NS-11-R23, NS-07-C28-12); file names follow NS-11-R11.
-- **E3.** No path sends a picture to our server (NSC-11). A sealed letter's picture stays out until it opens (NS-06-B2).
+- **E3.** No path sends a picture to our server (NSC-11). A sealed letter's picture stays out of the NS-07 PDF and out of any export other than the author's own until it opens; the author's own Export and Save a copy carry a sealed letter whole, picture included (NS-06-B2 exception, NS-06-B5, ADR 0028 D2).
 
 **Security read for NS-03 Arm V (sections 3, 4 and 15 of the card).** Yes, if V1 to V4 hold:
 - **V1.** One recording only, taken from Export's `audio/` folder. The parent never sends the ZIP. The instruction tells the parent to delete the export ZIP from Files after sending and never to put it on a shared drive.
