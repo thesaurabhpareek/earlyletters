@@ -15,7 +15,7 @@ The locked cards name their trust boundaries well, and most card threat rows map
 |---|---|---|---|
 | 1 | The harness treats a counted review (`## Review A/B at <sha>`) from the owner account as a founder instruction. That would put the author agent into maintain mode, and `brief.mjs` would quote the review (PR text and diff excerpts included) under the founder's name. Untrusted text then reaches an agent in the founder's voice (A10) | Fact: `scripts/agents/lib.mjs:250-254`; `dispatch.mjs:130,133`; `brief.mjs:74-75`; #851. My own reviews on #834 and #842 carry no marker line | Keep the lane off (`agents.yml` is `disabled_manually`; #847 Q6 default) until NSC-12 merges (section 5) |
 | 2 | Native code bypasses the security lens. `apps/mobile/modules/**` is not in my `review_paths` (Fact: `agents/roster.json:237-253`), so #834 was routed elsewhere (#847 section 9). The name scan in `photos-device.test.ts` is beaten by shadowing and run-time names (#842 N-B3d): one Swift line can copy the location-bearing picker copy into Documents | NS-01, P-1, NS-04, NS-06 Part C | NSC-01 (routing plus a hash pin of reviewed native sources). Until then, Karma routes every module PR to me by hand |
-| 3 | A second account on one phone may see the first account's letters. Sign-out keeps the book (ruling D1). On a mismatch, sync stops and "the letters stay" (Fact: `apps/mobile/src/lib/auth/account-claim.logic.ts:15-16`). No code or test shows the Book, Find, the lens or seals scoped to the owner. Unverified: what B's screens render | NS-01-R29, NS-02-R24, NS-05-R27, NS-06-B17, NS-25-R19 | NSC-03 test first; the fix goes in the same PR if it fails |
+| 3 | A second account on one phone may see the first account's letters. Sign-out keeps the book (ruling D1). On a mismatch, sync stops and "the letters stay" (Fact: `apps/mobile/src/lib/auth/account-claim.logic.ts:15-16`). The first-run gate opens Tonight for any session with a local book (Fact: `apps/mobile/src/lib/first-run/gate.logic.ts:122-125`). No code or test scopes the Book, Find, the lens, seals or reminders to the owner, so a reminder planned under A can name A's child to B | NS-10-R3, NS-32-R12, NS-01-R29, NS-02-R24, NS-05-R27, NS-06-B17, NS-25-R19 | NSC-03 test first; the fix goes in the same PR if it fails |
 | 4 | RLS does not protect versions or seals. Security-definer RPCs run past RLS, and `entry_versions` and `book_entries` have had no client grant since `20261023060000_explicit_grants.sql:49-51,99`. So the NS-12 RPCs and the seal pull clause are the whole access control. NS-06 B10 step 4 copies a block that re-grants `book_entries` (Conflict K-3) | NS-12, NS-06 Part B | NSC-10 checklist plus access-matrix deny cells, in the same PR |
 | 5 | The phone's own services act on letter text (A11). React Native 0.86.3 exposes no Writing Tools switch (Fact: no `writingTools` in `node_modules/react-native` or `apps/mobile`, grep of 20 Nov). Rows NS-01-R50 and the other D2 rows are P0, so gate G6 keeps photos off in `production` until they pass. Unverified: whether Writing Tools sends text off the phone (Private Cloud Compute, an extension) | Review editor, photo words, place, From, Firsts label | NSC-05: a small native setting, reviewed under NSC-01 |
 
@@ -30,14 +30,18 @@ Adversaries: A1 to A9 as in `docs/tdd/04-security-identity.md:110-118`. Two are 
 | Id | Boundary | Crossed by |
 |---|---|---|
 | B1 | JavaScript to the app's own Swift modules | NS-01 `scribe-photo`; P-1; NS-04 and NS-06 Part C (later targets); NSC-05 |
-| B2 | App sandbox to iOS services | NS-01 picker and iCloud backup; NS-02 (backup of `scribe.db`); NS-05 share sheet; NS-04 and NS-06 C; every text field (A11) |
+| B2 | App sandbox to iOS services, including the lock screen and Notification Center | NS-01 picker and iCloud backup; NS-02 (backup of `scribe.db`); NS-05 share sheet; NS-04 and NS-06 C; NS-13, NS-18, NS-32 (notifications); every text field (A11) |
 | B3 | Phone to our server (sync, RPC, Storage) | NS-06 A and B, NS-08 flip, NS-12, NS-16, NS-25, BL-870 |
 | B4 | Member to member in one book (RLS, `book_entries`, `sync_pull`) | NS-06 B, NS-12, NS-16, NS-25 |
 | B5 | Account to account on one phone | every card (`[X4-R1]`) |
 | B6 | Phone to the parent's own messages and the recipient | NS-05, NS-03, NS-11, NS-07, the NS-25 invite message |
 | B7 | Repository to agents | #851, review routing, the agent lane |
+| B8 | Repository and CI to the production build (eval C TB6; CR-67 AX-17) | every flag: G6, preflight (NSC-02) |
+| B9 | Real family to tests and evidence (eval C TB7) | every device row: D13, `no-real-family-data.test.ts` |
+| B10 | Phone to logs and crash reports (eval C TB8) | every new path: NSC-06, J-N18 |
+| B11 | Our server to the escrow project and any second storage provider | the NS-08 flip only (NS-08-R9; 3.4) |
 
-No STRIDE table here (no new boundary of ours; the section 2 controls still apply): NS-09, NS-10, NS-13 to NS-15, NS-18, NS-21 to NS-24, NS-32 to NS-37. NS-07 and NS-11 cross B6 exactly as Export does today, under NSC-08.
+No STRIDE table here (no new boundary of ours; the section 2 controls still apply): NS-09, NS-10, NS-14, NS-15, NS-21 to NS-24, NS-33 to NS-37. NS-13, NS-18 and NS-32 cross B2 at the lock screen (3.11). NS-07 and NS-11 cross B6 as Export does, and carry pictures (3.5).
 
 ## 2. Cross-cutting controls (every design cites these by id)
 
@@ -45,8 +49,8 @@ No STRIDE table here (no new boundary of ours; the section 2 controls still appl
 |---|---|---|---|---|
 | NSC-01 | Native gate. Every PR touching `apps/mobile/modules/**` routes to `security-architect` (section 6). A SHA-256 manifest of each reviewed native source (`apps/mobile/modules/REVIEWED.sha256`, with the reviewed head named in it) fails CI on any edit until the manifest changes in a PR I review. The name scan stays as a second line. Folds BL-878 | new `apps/mobile/test/native-sources.test.ts` (fails on old code: no manifest) | not yet | `mobile`; before P-1 |
 | NSC-02 | Plist and entitlement allowlist. Preflight already refuses `UIBackgroundModes` (Fact: `apps/mobile/scripts/preflight-testflight.mjs:589-590`). Extend it to refuse app groups, `NSUserActivityTypes`, photo-library and camera usage strings, any `NSAppTransportSecurity` key (SEC-R16 "not yet"), and any entitlement not on the list. A change to the list needs my read (NS-04 EX-3, NS-06-C3) | preflight plus `apps/mobile/test/config.test.ts` | partly (background modes only) | `ops` (BL-864) |
-| NSC-03 | Second account. When the signed-in user is not `sync.owner`, every local read for display (Book, Find, Photos lens, share, seals, the versions cache, the names list) returns 0 rows of the owner's book, and nothing is claimed or uploaded | `[X4-R1]`: one test over every surface (Asha as A, a second fixture account as B) | not yet: no test cites X4 | `mobile` |
-| NSC-04 | No donation to the system (D3). `apps/mobile/test/no-system-indexing.test.ts:1-15` already scans `src`, `modules`, config and dependencies. Add `[X6-R1]` to its titles, and add `AppEntity` and `AppShortcutsProvider` parameters that carry text | that file | enforced, under another id | `qa` (P-8 style retitle) |
+| NSC-03 | Second account. When the signed-in user is not `sync.owner`, every local read for display (Book, Find, Photos lens, share, seals, the versions cache, the names list) returns 0 rows of the owner's book; no notification planned for A's book is still scheduled or planned while B is signed in; nothing is claimed or uploaded. A cover over A's screens sets `accessibilityViewIsModal` (as `app-lock-layer.tsx:80`), since screens under it stay mounted | `[X4-R1]`: one test over every surface and the reminder planner (Asha as A, a second fixture account as B); it cannot pass while a reminder names A's child (NS-10-R3, NS-32-R12) | not yet: no test cites X4 | `mobile` |
+| NSC-04 | No donation to the system (D3). `apps/mobile/test/no-system-indexing.test.ts:1-15` already scans `src`, `modules`, config and dependencies. Add `[X6-R1]` to its titles, and ban by presence (an allowlist I approve for NS-04 and NS-06 C): `AppIntent`, `AppEntity`, `IndexedEntity`, `IntentDonationManager`, `AppShortcutsProvider`, `INVocabulary`, `INRelevantShortcut`, `RelevantIntentManager`, `UIApplicationShortcutItem`, `AssistantIntent`, `AssistantEntity`; also scan `apps/mobile/shims` and plugins inlined in `app.config.ts` | that file | partly enforced (no App Intents era tokens), under another id | `qa` (P-8 style retitle) |
 | NSC-05 | Writing Tools off on every field whose text becomes a letter's words (D2). React Native has no prop (Fact, risk 5), so this needs a native setting on the text views. The fields set autocorrect off only where the card says (NS-02-R14). Keyboards: OQ-S3 | a source pin and a device row per field | not yet | `mobile`, under NSC-01 |
 | NSC-06 | Content-free logs and errors (PRIV-R10). The J-N18 canary, plus closed error-code sets: an error carries a code, never a path, name, hash or text | the canary harness (BL-862, #759) | partly | `qa`; the field list is in `privacy.md` |
 | NSC-07 | Snapshot and App lock. Pictures blank on inactive (NS-01-R13a). The share preview is blank in the switcher (NS-05-R14). Nothing new draws before unlock (NS-01-R13b) | those rows | built for pictures (#838) | `mobile` |
@@ -136,7 +140,7 @@ The readiness reads are wave 1 (#847 P-6; lens A is mine). The flip is a voice l
 - (g) `killSwitches.backupUploads` and `escrow` stop work with no dangling row (NS-08-R14).
 - (h) The restore drill runs on a scratch project with Asha data only (D13).
 
-Flip STRIDE, in short:
+Flip STRIDE (boundary B11), in short:
 - S: a second account (R11).
 - T: object overwrite (idempotent key, R13).
 - R: unwrap log.
@@ -144,16 +148,24 @@ Flip STRIDE, in short:
 - D: quota (R18).
 - E: the escrow role.
 
-### 3.5 X2: a child's voice leaving the phone
+### 3.5 X2: a child's voice or picture leaving the phone
 
-The rule (closed X2; 00 section 7): no copy of a child's voice leaves the phone without my read and counsel's on record. Status of each path:
+The rule (closed X2; `00-product-frame.md:85`): no copy of a child's voice or picture leaves the phone without my read and counsel's on record. Status of each path:
 
 | Path | Wave | Read |
 |---|---|---|
+| NS-05 Level 1 optional picture | 3 | Mine in 3.3 (P1 to P4); counsel Q45 owed |
+| Export 1.7.0 with `photos/` (BL-933), sent by Export or NS-11 Save a copy | 2 and 3 | Mine below (E1 to E3); counsel Q45 default: the same act as Export (the parent's own share sheet; export never gated, PRIV-R09) |
+| NS-07 printable PDF with stored copies (NS-07-C28-2) | 4 | Mine below (E1 to E3); same counsel default |
 | NS-03 Arm V (pilot) | 1 | Mine is below; counsel's voice read is still owed |
 | NS-05 Level 2 and 3 | not scheduled | Owed after the NS-03 read-out (3.3 lists the preconditions) |
 | NS-28 family link | parked | Owed (3.9) |
 | NS-08 flip | founder decision | Owed (3.4) |
+
+**Security read for pictures in Export, Save a copy and the PDF.** Yes, if:
+- **E1.** Only stored copies leave (never a picker copy), and BL-933 and the PDF build run the NS-01-R6 scan over the bytes they write.
+- **E2.** The ZIP and the PDF temp follow NSC-08 (NS-11-R23, NS-07-C28-12); file names follow NS-11-R11.
+- **E3.** No path sends a picture to our server (NSC-11). A sealed letter's picture stays out until it opens (NS-06-B2).
 
 **Security read for NS-03 Arm V (sections 3, 4 and 15 of the card).** Yes, if V1 to V4 hold:
 - **V1.** One recording only, taken from Export's `audio/` folder. The parent never sends the ZIP. The instruction tells the parent to delete the export ZIP from Files after sending and never to put it on a shared drive.
@@ -238,21 +250,31 @@ Before the store build turns co-parent on, IAM-R12 ("Sign out other devices", no
 
 It runs on a separate bundle id with an Asha-only account (NS-04-R6). My EX-3 read covers the plist, entitlement and label delta of each trigger. Default: no app group and no background mode, or a founder decision (OQ-3 of the card). Siri receives the spoken phrase, so no "nothing leaves your phone" line appears near a Siri trigger.
 
+### 3.11 Notifications: NS-13, NS-18 and NS-32 (lock screen, B2)
+
+| STRIDE | Threat | Control | Test |
+|---|---|---|---|
+| I | The lock screen or Notification Center shows a child name, letter words or typed-day words to anyone holding the phone (A3) | Names and typed words off by default (D-025, NS-18); `hiddenPreviewsBodyPlaceholder` on the category; plan notices carry no name, count or price | NS-32-R12, R13; J-N24 |
+| I | A reminder planned under account A names A's child after B signs in (B5) | Sign-out and an account change cancel and re-plan from the signed-in owner's books only (NSC-03) | `[X4-R1]` reminder case; NS-10-R3 |
+| I | A notification payload or identifier carries an id, name or text into logs (B10) | Identifiers are opaque; NSC-06 | J-N18 |
+
+S, T, R, D and E: not applicable. Notifications are local, with no push service and no server sender (NS-26 parked).
+
 ## 4. Controls each parallel design must include (for Karma's cross-check)
 
 | Design | Must cite and carry |
 |---|---|
 | Mobile: capture, Home and Review | NSC-01 for any Swift (P-1, Writing Tools); NSC-05 on the Review editor, photo words, place, From and the Firsts label; NSC-07; NSC-08; NS-01 open items N-B1r, N-B2, N-P3 (3.1); the D1 sign-out sheet with NSC-03 |
 | Mobile: Book, Find, letter page and share | NSC-03 across Book, Find, lens, share and versions; NSC-09 and the seal clause in the same PR; the 3.2 query cap and WAL checkpoint; 3.3 P1 to P4 and the sha256 equality test; NSC-04; NSC-06 for queries and snippets |
-| Mobile: Me, keeping and settings | The NSC-03 claim and mismatch behaviour; NSC-08 for the export temp (NS-11-R23); the NS-08-R6 test before the cut; NSC-02 for any new permission |
+| Mobile: Me, keeping and settings | The NSC-03 claim and mismatch behaviour, including the reminder planner (NS-13, NS-18, NS-32 with NSC-03 and 3.11); E1 to E3 for Save a copy; NSC-08 for the export temp (NS-11-R23); the NS-08-R6 test before the cut; NSC-02 for any new permission |
 | Data and sync | NSC-10 on every RPC and view (no `book_entries` re-grant, K-3); NSC-11; the NS-12 author check inside the definer (3.7); F12 tuple and view in the same migration; option (b) seal pull with the forged-window test; NS-08 items (a), (b) and (g) |
-| `architecture.md` | Boundaries B1 to B7 and adversaries A10 and A11; review routing (section 6); no new network host or SDK without PRIV-R12 |
+| `architecture.md` | Boundaries B1 to B11 (B8 to B10 are eval C TB6 to TB8, CR-67 AX-17) and adversaries A10 and A11; review routing (section 6); no new network host or SDK without PRIV-R12 |
 | `privacy.md` | Owns inventory, DPIA, consent and label rows. Security depends on: the J-N18 field list (NSC-06), the X2 rows (3.5) and the NS-12 retention |
 
 ## 5. Open security handoffs and the agent lane
 
 - **#851, my answer to item 3.** I confirm the identity reading.
-  - Why the classifier fails: it is a deny-list on the first line (`lib.mjs:252`), so any new post format from the owner account fails open to "founder". The product thread's approval record on #834 (issue comment 7030095860) already starts with plain text. My #834 and #842 reviews carry no marker.
+  - Why the classifier fails: it is a deny-list on the first line (`lib.mjs:253`), so any new post format from the owner account fails open to "founder". The product thread's approval record on #834 (issue comment 7030095860) already starts with plain text. My #834 and #842 reviews carry no marker.
   - Better test (NSC-12): treat a post as machine when its first line matches `^## Review [AB] at [0-9a-f]{40}:` or when it carries the session footer.
   - Brief hygiene: `brief.mjs` quotes reviews as data in a fenced block, never under "From <founder>".
   - Long term: SEC-R20. Agent posts move to the agents App identity, so authorship decides and content does not.
@@ -336,12 +358,12 @@ Capacity: `wip_limit` 1 and 2 runs a day (#847 risk 4). NSC-01 keeps the load sm
 **For Karma:**
 - **K-6.** The charter's review paths and `roster.json` disagree (section 6).
 - **K-7.** SEC-R10's enforcement line says `agents.yml` is unpinned, but it is pinned. I fix this in S-8.
-- **K-8.** The counted header (`merge-queue.mjs:75`) and the steward marker of `OPERATING_MODEL.md:83` and the charters disagree (#851).
+- **K-8.** The counted header (`merge-queue.mjs:75`) disagrees with the agent marker of `OPERATING_MODEL.md:58`, the red-team marker of `:83` and the steward marker in the charters (#851).
 - **K-9.** SEC-R01 names `security` as owner of a file that does not exist on develop, while #342 has held one open since 28 Oct (OQ-S11).
 
 ## 11. Not verified
 
-- Whether B's screens show A's local book after a mismatch (K-2).
+- Whether B's screens show A's local book after a mismatch (K-2). `gate.logic.ts:122-125` opens Tonight for any session with a local book; no screen reads `sync.owner`.
 - Writing Tools:
   - whether iOS applies it to React Native text views by default;
   - whether it sends text off the phone;
