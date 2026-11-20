@@ -1,0 +1,30 @@
+@page { size: Letter; margin: 0.8in 0.75in 0.85in 0.75in;
+  @bottom-center { content: counter(page); font: 9pt "DejaVu Sans"; color: #777; } }
+html { font-family: "DejaVu Serif", Georgia, serif; font-size: 11pt; color: #222; line-height: 1.45; }
+h1, h2, h3, h4 { font-family: "DejaVu Sans", Helvetica, sans-serif; color: #3d3427; line-height: 1.25; }
+h1 { font-size: 22pt; border-bottom: 2px solid #b08a5a; padding-bottom: 6px; margin-top: 0; page-break-before: always; }
+h1.first { page-break-before: avoid; }
+h2 { font-size: 15pt; margin-top: 22px; }
+h3 { font-size: 12.5pt; margin-top: 18px; }
+h4 { font-size: 11pt; }
+p, li { orphans: 3; widows: 3; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 14px; font-family: "DejaVu Sans", sans-serif; font-size: 8.6pt; line-height: 1.35; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+th { background: #efe8da; text-align: left; font-weight: bold; }
+th, td { border: 1px solid #d6cdbb; padding: 4px 6px; vertical-align: top; }
+tr:nth-child(even) td { background: #faf8f3; }
+code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.6pt; background: #f3efe6; padding: 0 2px; word-break: break-word; }
+pre { background: #f5f2ea; padding: 8px; font-size: 8pt; white-space: pre-wrap; }
+blockquote { border-left: 3px solid #b08a5a; margin-left: 0; padding-left: 12px; color: #555; }
+img { max-width: 100%; max-height: 228mm; object-fit: contain; display: block; margin: 0 auto; }
+.cover { height: 9in; page-break-after: always; display: flex; flex-direction: column; justify-content: center; }
+.cover h1 { border: none; font-size: 34pt; page-break-before: avoid; }
+.cover .sub { font-family: "DejaVu Sans"; font-size: 14pt; color: #6b5a42; }
+.cover .meta { margin-top: 40px; font-family: "DejaVu Sans"; font-size: 10pt; color: #555; }
+nav#TOC { page-break-after: always; font-family: "DejaVu Sans"; font-size: 10pt; }
+nav#TOC ul { list-style: none; padding-left: 14px; }
+nav#TOC > ul > li { margin-top: 6px; font-weight: bold; }
+nav#TOC > ul > li li { font-weight: normal; }
+a { color: #6b4f2a; text-decoration: none; }
+.appendix-card h1 { font-size: 18pt; }
+td.rid { white-space: nowrap; font-size: 0.92em; }
