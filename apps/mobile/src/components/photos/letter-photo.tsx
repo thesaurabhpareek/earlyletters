@@ -14,7 +14,6 @@ import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
 import { clearPhotoNotSaved } from '@/lib/photos/failures';
 import { usePhotoNotSaved } from '@/lib/photos/hooks';
-import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from '@/lib/photos/types';
 import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange, type UndoTicket } from '@/lib/photos/attach';
 import { photos } from '@/lib/photos/copy';
 import { photoDeps, photoUri, pickedFilesPort } from '@/lib/photos/device';
@@ -103,8 +102,9 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
       )}
       {editing && own ? (
         <View className="gap-3" testID="letter.photo.edit">
-          <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} maxLength={PHOTO_TEXT_MAX} multiline onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { text: t })} testID="letter.photo.text" />
-          <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} maxLength={PHOTO_PLACE_MAX} onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { place: t })} testID="letter.photo.place" />
+          {/* No length cap on the fields: a native cap counts UTF-16 units and could cut a character in half; editPhotoWords keeps 140 and 60 characters a person sees (BL-957). */}
+          <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} multiline onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { text: t })} testID="letter.photo.text" />
+          <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { place: t })} testID="letter.photo.place" />
           <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="letter.photo.editDone" />
         </View>
       ) : (

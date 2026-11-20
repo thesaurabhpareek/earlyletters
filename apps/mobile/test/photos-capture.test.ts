@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { newQuietMark } from '../src/components/book/quiet-day.logic';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
-import { addPhotoToLetter, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
 import { canKeepWithPhoto, commitPhoto, PHOTO_FREE_MARGIN_BYTES, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
@@ -195,6 +195,16 @@ describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
 });
 
 describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
+  it('[NS-01-R21][BL-957] the letter page keeps 140 and 60 characters a person sees: no maxLength on its fields (UTF-16 units), and editing caps by characters', async () => {
+    const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).not.toMatch(/maxLength/);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const ki = '\u0915\u093F';
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
+    expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
+  });
   it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
