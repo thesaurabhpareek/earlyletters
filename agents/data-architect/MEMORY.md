@@ -31,7 +31,7 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - The constitution: the machine may remove and repair, never add meaning (`CLAUDE.md`).
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
-- D-041: migrations only from CI on a tag; supabase PRs need red-team review and the founder's `approve-migration` label.
+- D-041: migrations only from CI on a tag; supabase PRs need red-team review; the `approve-migration` label is retired and no workflow reads it (D-117, `docs/DECISIONS.md:843`) (verified 2026-11-20).
 - Applied migrations are listed in `.github/migrations-applied.txt` and are never edited.
 
 ## Open threads

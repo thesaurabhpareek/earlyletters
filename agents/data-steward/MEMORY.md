@@ -38,7 +38,7 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - (15 Oct) Merged since 3 Oct: #25 repo-hygiene, #27 mobile-config, #28 unicode, #29 mobile-store-sqldb, #31 analytics-enums. Still open: #26 db-harness (draft), #30 ci/hardening (founder merge), #32 db-pending-hardening (draft).
 
 ## Decisions and constraints I must respect
-- D-041: migrations only from CI on a tag; `approve-migration` label is founder-only.
+- D-041: migrations only from CI on a tag; the `approve-migration` label is retired and no workflow reads it (D-117, `docs/DECISIONS.md:843`) (verified 2026-11-20).
 - (15 Oct) D-023 (sync engine: outbox push plus cursor pull) is decided by the founder (`docs/DECISIONS.md`, "D-023 (update)"); `20261004100000_sync_engine.sql` is pending, not applied. D-024 `book_access` is approved but not built.
 - (15 Oct) Brief decision 3 and D-053: server entitlement tables are removed by `20261004000000_plus_on_device_only.sql` (pending, not applied).
 - Fixtures use the Asha family only.
