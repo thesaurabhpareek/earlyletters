@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area B, Book and reading: motion prototype</title>
+<!--
+  Self-contained motion prototype for area B (Book and reading). No network, no framework.
+  Every value is copied from packages/design-tokens/src/tokens.ts (tokens.motion and the colours).
+  Moment ids (B-Mnn) and screen ids (B-Snn) match MOTION.md and DESIGN.md in this folder.
+  Words on screen are placeholders: WORDS.md owns every string. Fictional family only (Asha).
+  Pictures are drawn shapes, never photos of people.
+-->
+<style>
+:root{
+  --bg:#FBF8F3; --surface:#F5EFE7; --raised:#FFFFFF; --text:#2B2722; --muted:#6B645B; --accent:#8A5A3B;
+  --accentSoft:#F1E6DC; --onAccent:#FFFFFF; --line:#E6DED3; --controlBorder:#8A8175; --focus:#2F6F8F;
+  --destructive:#B5473A; --scrim:rgba(43,39,34,0.32); --lampCore:rgba(255,226,168,0.55); --lampTail:rgba(243,201,139,0);
+  --dusk:rgba(184,129,175,0.14); --glassRGB:255,255,255;
+}
+.dark{
+  --bg:#161412; --surface:#1B1917; --raised:#201D1A; --text:#F2ECE4; --muted:#B3AA9E; --accent:#D9A47E;
+  --accentSoft:#3A2E25; --onAccent:#1E1612; --line:#33302C; --controlBorder:#857C70; --focus:#8CC4DE;
+  --destructive:#F08C7C; --scrim:rgba(0,0,0,0.55); --lampCore:rgba(255,226,168,0.16); --lampTail:rgba(243,201,139,0);
+  --dusk:rgba(128,118,226,0.30); --glassRGB:44,40,36;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#E9E4DC;color:#2B2722}
+body.darkPage{background:#0d0c0b;color:#F2ECE4}
+.app{display:flex;gap:24px;padding:20px;align-items:flex-start;flex-wrap:wrap}
+aside{width:330px;flex:none}
+aside h1{font-size:18px;margin:0 0 6px}
+aside p.sub{font-size:13px;margin:0 0 12px;opacity:.8;line-height:1.4}
+.toggles{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;padding:10px;border:1px solid rgba(128,128,128,.4);border-radius:10px}
+.toggles label{font-size:14px;display:flex;gap:8px;align-items:center;min-height:32px}
+nav .grp{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin:14px 0 4px}
+nav button{display:block;width:100%;text-align:left;font:inherit;font-size:13px;padding:8px 10px;margin:2px 0;border-radius:8px;border:1px solid transparent;background:transparent;color:inherit;cursor:pointer;min-height:36px}
+nav button:hover{border-color:rgba(128,128,128,.5)}
+nav button.on{background:rgba(138,90,59,.15);border-color:rgba(138,90,59,.6)}
+main{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.phoneWrap{position:relative}
+.phone{width:375px;height:812px;border-radius:48px;border:10px solid #1d1b19;box-sizing:content-box;overflow:hidden;position:relative;background:var(--bg)}
+#screen{position:absolute;inset:0;overflow:hidden;background:var(--bg);color:var(--text)}
+.demoTag{position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-size:12px;padding:4px 10px;border-radius:999px;background:#2F6F8F;color:#fff;opacity:0;pointer-events:none;white-space:nowrap;z-index:9}
+.side2{width:400px;max-width:100%}
+#controls{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+#controls button{font:inherit;font-size:14px;padding:9px 14px;border-radius:999px;border:1px solid #8A8175;background:#fff;color:#2B2722;cursor:pointer;min-height:44px}
+body.darkPage #controls button{background:#201D1A;color:#F2ECE4;border-color:#857C70}
+#info{font-size:13px;line-height:1.45;border:1px solid rgba(128,128,128,.4);border-radius:12px;padding:12px 14px}
+#info h2{font-size:16px;margin:0 0 6px}
+#info dt{font-weight:600;margin-top:8px}
+#info dd{margin:2px 0 0 0}
+#caption{font-size:13px;min-height:40px;margin:10px 0;padding:8px 10px;border-left:3px solid #2F6F8F;background:rgba(47,111,143,.08)}
+
+/* ---------- phone UI ---------- */
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:15px;font-weight:600}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:83px;border-top:1px solid var(--line);background:var(--bg);transform-origin:50% 100%;display:flex;justify-content:space-around;padding-top:8px;font-size:11px;color:var(--muted);z-index:3}
+.tabbar span{min-width:60px;text-align:center}
+.tabbar span.on{color:var(--accent);font-weight:600}
+.lamp{position:absolute;left:-20%;right:-20%;top:-30%;height:80%;background:radial-gradient(ellipse at 50% 30%,var(--lampCore),var(--lampTail) 65%);pointer-events:none;z-index:0}
+.scroll{position:absolute;left:0;right:0;top:0;bottom:83px;overflow-y:auto;overflow-x:hidden;z-index:1;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.band{padding:4px 20px 8px}
+.title{font-family:Georgia,"Times New Roman",serif;font-size:32px;line-height:38px;margin:4px 0 0;font-weight:600}
+.age{font-size:16px;color:var(--muted);margin:2px 0 12px}
+.btn{font:inherit;font-size:16px;border-radius:999px;border:1px solid var(--controlBorder);background:transparent;color:var(--text);min-height:44px;padding:0 16px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.btn.tint{background:var(--accentSoft);border-color:transparent}
+.btn.full{width:100%}
+.btn.quiet{border-color:transparent;padding:0 8px;color:var(--accent)}
+.btn.danger{color:var(--destructive);border-color:var(--controlBorder)}
+.iconbtn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--text);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.barrow{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.radio{position:relative;display:inline-flex;border:1px solid var(--controlBorder);border-radius:999px;padding:2px;gap:2px}
+.radio button{position:relative;font:inherit;font-size:14px;min-height:40px;min-width:44px;padding:0 12px;border-radius:999px;border:1.5px solid transparent;background:transparent;color:var(--text);cursor:pointer}
+.radio button .fill{position:absolute;inset:-1.5px;border-radius:999px;background:var(--accentSoft);border:1.5px solid var(--accent);opacity:0;z-index:0}
+.radio button span{position:relative;z-index:1}
+.radio button.sel span{font-weight:600}
+.opener{font-family:Georgia,"Times New Roman",serif;font-size:22px;margin:22px 20px 8px;font-weight:600}
+.row{padding:0 20px 12px;overflow:hidden}
+.card{background:var(--raised);border-radius:14px;padding:14px 16px;border:1px solid var(--line);position:relative;cursor:pointer;transform-origin:50% 50%}
+.dark .card{border-color:var(--line)}
+.card .wash{position:absolute;inset:0;border-radius:14px;background:var(--accentSoft);opacity:0;pointer-events:none}
+.ctext{position:relative}
+.dateline{font-size:13px;color:var(--muted);letter-spacing:.02em;margin-bottom:4px}
+.words{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:26px}
+.meta{font-size:13px;color:var(--muted);margin-top:8px;font-style:italic;position:relative}
+.thumb{height:130px;border-radius:8px;background:var(--surface);margin-bottom:10px;overflow:hidden;position:relative}
+.thumb svg{position:absolute;inset:0;width:100%;height:100%}
+.hiddenrow{margin:0 20px 12px;padding:12px 16px;border-radius:14px;border:1px dashed var(--controlBorder);font-size:15px;color:var(--text);min-height:48px;display:flex;align-items:center;gap:10px}
+.endmark{text-align:center;font-family:Georgia,serif;font-size:28px;color:var(--muted);padding:20px 0 40px}
+.inlinebar{position:absolute;left:0;right:0;top:0;padding:47px 20px 6px;z-index:2;pointer-events:none;border-radius:0}
+.inlinebar .r{display:flex;align-items:center;gap:6px;min-height:44px}
+.inlinebar .t{flex:1;font-weight:600;font-size:17px}
+.inlinebar .m{font-size:14px;color:var(--muted)}
+.veil{position:absolute;inset:0;background:var(--bg);opacity:0;z-index:50;pointer-events:none}
+.paper{position:absolute;z-index:51;background:var(--raised);pointer-events:none}
+.carried{position:absolute;z-index:53;pointer-events:none;margin:0}
+.page{position:absolute;inset:0;z-index:52;overflow-y:auto;scrollbar-width:none}
+.page::-webkit-scrollbar{display:none}
+.page.solid{background:var(--bg)}
+.pagehead{height:91px;display:flex;align-items:flex-end;padding:0 12px 4px;gap:4px}
+.pagebody{padding:8px 36px 40px}
+.pagebody .opening .dateline{font-size:13px}
+.pagebody .words{font-size:17px;line-height:26px}
+.list{margin:22px 0 0;border-radius:14px;background:var(--raised);border:1px solid var(--line);overflow:hidden}
+.listtitle{font-weight:600;font-size:17px;margin:24px 0 0}
+.lrow{min-height:56px;padding:10px 14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;cursor:pointer;position:relative;background:var(--raised)}
+.lrow:first-child{border-top:0}
+.lrow .lt{flex:1;font-size:15px}
+.lrow .lv{font-size:15px;color:var(--muted);position:relative;min-width:90px;text-align:right}
+.lrow .lv span{position:absolute;right:0;top:50%;transform:translateY(-50%);white-space:nowrap}
+.switch{width:51px;height:31px;border-radius:999px;background:var(--controlBorder);position:relative;flex:none}
+.switch i{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch.on{background:#3F7A55}
+.field{border:1px solid var(--controlBorder);border-radius:8px;min-height:44px;padding:10px 12px;font-size:15px;color:var(--muted);background:var(--bg)}
+.toast{position:absolute;left:16px;right:16px;bottom:96px;z-index:70;color:var(--text);border-radius:18px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:10px;font-size:15px;min-height:52px}
+.toast button{font:inherit;font-weight:600;background:transparent;border:0;color:var(--accent);min-height:44px;padding:0 8px;cursor:pointer;text-decoration:underline}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:60;opacity:0}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:61;background:var(--raised);border-radius:28px 28px 0 0;padding:10px 20px 34px;}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.sheet h3{margin:0 0 8px;font-size:18px}
+.sheet .opt{min-height:48px;display:flex;align-items:center;border-top:1px solid var(--line);font-size:16px;cursor:pointer}
+.sheet p{font-size:15px;color:var(--muted);margin:0 0 12px;line-height:1.4}
+.menu{position:absolute;z-index:62;right:16px;width:240px;background:var(--raised);border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.18);transform-origin:90% 0}
+.menu div{min-height:48px;display:flex;align-items:center;padding:0 16px;border-top:1px solid var(--line);font-size:16px;cursor:pointer}
+.menu div:first-child{border-top:0}
+.find{position:absolute;inset:0;background:var(--bg);z-index:12;opacity:0}
+.findbar{padding:51px 16px 8px;display:flex;gap:8px;align-items:center}
+.findfield{flex:1;min-height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;padding:0 12px;gap:8px;font-size:17px}
+.findfield .caret{width:2px;height:22px;background:var(--focus)}
+.frow{padding:12px 20px;border-bottom:1px solid var(--line);cursor:pointer;min-height:56px}
+.frow .s{font-family:Georgia,serif;font-size:16px;line-height:24px}
+.frow u{text-decoration-thickness:2px;font-weight:600}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:291px;background:#D1D3D9;z-index:13;transform:translateY(100%)}
+.dark .kbd{background:#2c2c2e}
+.kbd .k{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:10px 4px}
+.kbd .k i{height:42px;border-radius:5px;background:rgba(255,255,255,.85)}
+.dark .kbd .k i{background:#5b5b5e}
+.rt{position:absolute;inset:0;z-index:15;background:var(--bg);opacity:0}
+.rt .pool{position:absolute;left:-30%;right:-30%;bottom:-25%;height:60%;background:radial-gradient(ellipse at 50% 80%,var(--dusk),transparent 70%);opacity:0;pointer-events:none}
+.rthead{height:91px;display:flex;align-items:flex-end;padding:0 8px 4px}
+.hair{height:2px;margin:0 20px;background:var(--line);position:relative}
+.hair i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.4}
+.stage{position:absolute;left:0;right:0;top:100px;bottom:120px;overflow:hidden;touch-action:pan-y}
+.rpage{position:absolute;inset:0;padding:28px 28px}
+.rpage .dl{font-size:15px;color:var(--muted);margin-bottom:12px}
+.rpage .w{font-family:Georgia,serif;font-size:24px;line-height:36px}
+.rtbtns{position:absolute;left:16px;right:16px;bottom:34px;display:flex;gap:10px;z-index:2}
+.rtbtns .btn{flex:1;min-height:56px}
+.home .dl{font-size:13px;color:var(--muted);padding:0 20px;margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+.home .gr{font-family:Georgia,serif;font-size:30px;padding:0 20px;margin:6px 0 16px}
+.prompt{margin:0 20px;padding:18px;border-radius:20px;background:var(--raised);border:1px solid var(--line);font-family:Georgia,serif;font-size:21px;line-height:30px}
+.slip{margin:14px 20px 0;padding:14px 16px;border-radius:14px;background:var(--raised);border:1px solid var(--line)}
+.slip .k{font-size:13px;color:var(--muted)}
+.slip .f{font-family:Georgia,serif;font-size:17px;line-height:26px;margin-top:4px}
+.slip .nt{margin-top:6px}
+.capture{position:absolute;left:20px;right:20px;bottom:100px;display:flex;gap:12px;z-index:2}
+.capture .btn{flex:1;min-height:64px;font-size:18px}
+.pic{height:180px;border-radius:8px;overflow:hidden;position:relative;background:var(--surface);margin:0 0 14px}
+.pic svg{position:absolute;inset:0;width:100%;height:100%}
+.moon path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round}
+.sr{position:absolute;left:-9999px}
+/* Glass (v2 m.glass): shown by its style, never by opacity. --ga is the style amount (0 = 'none', 1 = 'regular'). */
+.glass{background:rgba(var(--glassRGB),calc(var(--ga,0)*0.62));-webkit-backdrop-filter:blur(calc(var(--gb,0)*1px)) saturate(calc(1 + var(--ga,0)*0.6));backdrop-filter:blur(calc(var(--gb,0)*1px)) saturate(calc(1 + var(--ga,0)*0.6));box-shadow:0 0 0 1px rgba(128,128,128,calc(var(--ga,0)*0.28)),0 4px 18px rgba(0,0,0,calc(var(--ga,0)*0.10))}
+.rtx .glass{background:var(--raised);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px var(--controlBorder)}
+.cluster{display:inline-flex;align-items:center;border-radius:999px;padding:0 4px}
+.ind{position:absolute;top:2px;bottom:2px;left:0;width:0;border-radius:999px;background:var(--accentSoft);border:1.5px solid var(--accent);z-index:0}
+.lsub{display:block;font-size:14px;color:var(--muted);margin-top:2px}
+.sealcard{margin:0 20px 12px;padding:12px 16px;border-radius:14px;border:1px solid var(--controlBorder);background:var(--surface);min-height:56px;cursor:pointer}
+.sealcard .l2{display:flex;gap:8px;align-items:center;font-size:15px}
+.viewer{position:absolute;inset:0;z-index:80;background:#000;opacity:0}
+.viewer .vpic{position:absolute;left:0;right:0;top:220px;height:300px}
+.viewer .vpic svg{width:100%;height:100%}
+.viewer .dim{position:absolute;inset:0;background:rgba(0,0,0,0.35);pointer-events:none}
+.viewer .vbtn{position:absolute;color:#fff;border:0;font:inherit;font-size:15px;min-height:44px;padding:0 14px;border-radius:999px;cursor:pointer;--glassRGB:255,255,255}
+.findpaper{position:absolute;inset:0;background:var(--bg);z-index:12;opacity:0}
+.findbarG{position:absolute;left:12px;right:12px;top:51px;z-index:14;display:flex;gap:6px;align-items:center;border-radius:22px;padding:4px}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Area B: Book and reading. Motion</h1>
+    <p class="sub">Pick a moment, then use the buttons under the phone to play it. Ids match MOTION.md. Every number comes from <code>tokens.motion</code> (and the v2 proposals, where marked). Each moment names its v2 primitive (<code>m.*</code>) and transition row (<code>T-*</code>). Words are placeholders for WORDS.md.</p>
+    <div class="toggles">
+      <label><input type="checkbox" id="rm"> Reduce Motion</label>
+      <label><input type="checkbox" id="rt"> Reduce Transparency (glass becomes solid)</label>
+      <label><input type="checkbox" id="dark"> Dark</label>
+      <label><input type="checkbox" id="v2spring"> v2 standard spring (0.30 s, proposed; off = today's 0.40 s)</label>
+      <label><input type="checkbox" id="slow"> Slow (x4, to study a move; not a real setting)</label>
+    </div>
+    <nav id="list"></nav>
+  </aside>
+  <main>
+    <div class="phoneWrap">
+      <div class="demoTag" id="tag"></div>
+      <div class="phone" id="phone"><div id="screen"></div></div>
+    </div>
+    <div class="side2">
+      <div id="controls"></div>
+      <div id="caption" aria-live="polite"></div>
+      <div id="info"></div>
+    </div>
+  </main>
+</div>
+<script>
+'use strict';
+/* ---------------- tokens (copied from packages/design-tokens/src/tokens.ts) ---------------- */
+var M = {
+  fadeMs: 200, exitMs: 160, swapMs: 150, enter: { dy: 8, ms: 280 }, staggerMs: 30, staggerMax: 6,
+  snappy: { k: 520, c: 46, m: 1 }, standard: { k: 260, c: 30, m: 1 }, standardToday: { k: 260, c: 30, m: 1 }, standardV2: { k: 439, c: 38.5, m: 1 }, glassMs: 250,
+  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24, homePt: 4 }, pageTurn: { dx: 24 },
+  lamp: { leaveMs: 160, returnMs: 280, arriveMs: 1200 }, dissolveMs: 280, newMarkMs: 1600, drawMs: 1200,
+  press: { card: 0.98 }, handOff: { leaveMs: 140, arriveFromMs: 80, arriveMs: 120 }, HAND_OFF: 0.35
+};
+var RM = false, RTX = false, SLOW = 1, gen = 0;
+var screen = document.getElementById('screen');
+
+/* ---------------- motion engine ---------------- */
+function bezier(x1, y1, x2, y2) {
+  function cx(t) { return 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t; }
+  function cy(t) { return 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t; }
+  return function (x) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    var lo = 0, hi = 1, t = x;
+    for (var i = 0; i < 24; i++) { t = (lo + hi) / 2; if (cx(t) < x) lo = t; else hi = t; }
+    return cy(t);
+  };
+}
+var EASE = bezier(0.2, 0, 0, 1);
+var EASE_EXIT = bezier(0.3, 0, 1, 1); /* v2 easing.exit (UNVERIFIED in v2) */
+function lin(x) { return x; }
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function tween(ms, f, o) {
+  o = o || {}; var g = gen, ease = o.ease || lin, d = (o.delay || 0) * SLOW, dur = Math.max(1, ms * SLOW);
+  return new Promise(function (res) {
+    var t0 = performance.now();
+    function fr() {
+      if (g !== gen) return res(false);
+      var t = performance.now() - t0 - d;
+      if (t < 0) { requestAnimationFrame(fr); return; }
+      var p = Math.min(1, t / dur); f(ease(p), p);
+      if (p < 1) requestAnimationFrame(fr); else res(true);
+    }
+    if (d === 0) f(ease(0), 0);
+    requestAnimationFrame(fr);
+  });
+}
+function spring(cfg, f, o) {
+  o = o || {}; var g = gen, from = o.from == null ? 0 : o.from, to = o.to == null ? 1 : o.to, x = from, v = o.v || 0, d = (o.delay || 0) * SLOW;
+  return new Promise(function (res) {
+    var t0 = performance.now(), last = null;
+    function fr() {
+      if (g !== gen) return res(false);
+      var nowT = performance.now(), t = nowT - t0 - d;
+      if (t < 0) { requestAnimationFrame(fr); return; }
+      var dt = last == null ? 0 : (nowT - last) / 1000 / SLOW; last = nowT; dt = Math.min(dt, 1 / 30);
+      var n = Math.max(1, Math.ceil(dt / 0.002)), h = dt / n;
+      for (var i = 0; i < n; i++) { var a = (-cfg.k * (x - to) - cfg.c * v) / cfg.m; v += a * h; x += v * h; }
+      f(x);
+      var range = Math.abs(to - from) || 1;
+      if (dt > 0 && Math.abs(x - to) < range * 0.002 && Math.abs(v) < range * 0.05) { f(to); res(true); }
+      else requestAnimationFrame(fr);
+    }
+    f(from); requestAnimationFrame(fr);
+  });
+}
+function wait(ms) { var g = gen; return new Promise(function (r) { setTimeout(function () { r(g === gen); }, ms * SLOW); }); }
+function fade(el, from, to, ms, o) { return tween(ms, function (p) { el.style.opacity = from + (to - from) * p; }, o); }
+/* v2 m.glass: animate the glass style ('none' <-> 'regular') over 0.25 s; children (.gc) swap in. Under Reduce
+   Transparency the surface is solid, so it uses m.fade (opacity of a solid surface is allowed). */
+function glassSet(el, v) { el.style.setProperty('--ga', v); el.style.setProperty('--gb', 18 * v); }
+function glassInit(el, on) {
+  var kids = qa('.gc', el);
+  if (RTX) { el.style.opacity = on ? 1 : 0; kids.forEach(function (k) { k.style.opacity = 1; }); glassSet(el, 1); }
+  else { el.style.opacity = 1; glassSet(el, on ? 1 : 0); kids.forEach(function (k) { k.style.opacity = on ? 1 : 0; }); }
+}
+function glassTo(el, on) {
+  var kids = qa('.gc', el);
+  if (RTX) { kids.forEach(function (k) { k.style.opacity = 1; }); return fade(el, on ? 0 : 1, on ? 1 : 0, M.fadeMs); }
+  el.style.opacity = 1;
+  kids.forEach(function (k) { fade(k, on ? 0 : 1, on ? 1 : 0, M.swapMs, { ease: EASE }); });
+  var from = parseFloat(el.style.getPropertyValue('--ga') || '0') || 0, to = on ? 1 : 0;
+  return tween(M.glassMs, function (p) { glassSet(el, from + (to - from) * p); }, { ease: EASE });
+}
+/* v2 m.exit: opacity 1 to 0 (and 8 pt of travel where a block leaves going on), 160 ms, easing.exit. */
+function mExit(el, travel) { return tween(M.exitMs, function (p) { el.style.opacity = 1 - p; if (travel && !RM) el.style.transform = 'translateY(' + (-8 * p) + 'px)'; }, { ease: EASE_EXIT }); }
+/* v2 m.enter: opacity 0 to 1, y 8 to 0, 280 ms, easing.standard; Reduce Motion: a 200 ms fade. */
+function mEnter(el, o) { o = o || {}; el.style.opacity = 0; if (RM) return fade(el, 0, 1, M.fadeMs, o); return tween(M.enter.ms, function (p) { el.style.opacity = p; el.style.transform = 'translateY(' + (M.enter.dy * (1 - p)) + 'px)'; }, Object.assign({ ease: EASE }, o)); }
+
+/* ---------------- demo helpers ---------------- */
+var tagT = null;
+function haptic(name) {
+  var t = document.getElementById('tag');
+  t.textContent = 'Haptic: ' + name; t.style.opacity = 1; t.style.transition = 'none';
+  clearTimeout(tagT); tagT = setTimeout(function () { t.style.transition = 'opacity .4s'; t.style.opacity = 0; }, 900);
+}
+function caption(s) { document.getElementById('caption').textContent = s || ''; }
+function h(html) { var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+function q(sel, root) { return (root || screen).querySelector(sel); }
+function qa(sel, root) { return Array.prototype.slice.call((root || screen).querySelectorAll(sel)); }
+function rel(el) { var s = screen.getBoundingClientRect(), r = el.getBoundingClientRect(); return { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height }; }
+function hex(c) { c = c.trim(); if (c[0] === '#') { var n = parseInt(c.slice(1, 7), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; } return [255, 255, 255]; }
+function cssVar(n) { return getComputedStyle(screen).getPropertyValue(n); }
+function mix(a, b, p) { return 'rgb(' + [0, 1, 2].map(function (i) { return Math.round(a[i] + (b[i] - a[i]) * p); }).join(',') + ')'; }
+
+/* ---------------- drawn content (fictional family: Asha) ---------------- */
+var PIC = '<svg viewBox="0 0 300 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="300" height="130" fill="#E9D9C4"/><circle cx="230" cy="38" r="18" fill="#F3C98B"/><path d="M0 100 Q60 60 120 95 T240 85 T300 90 V130 H0Z" fill="#9DB08A"/><path d="M0 115 Q80 90 160 112 T300 108 V130 H0Z" fill="#7C9270"/></svg>';
+var PIC2 = '<svg viewBox="0 0 300 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="300" height="130" fill="#D6E2E8"/><rect x="40" y="60" width="80" height="50" rx="6" fill="#8AA6B5"/><path d="M40 60 L80 32 L120 60Z" fill="#B5473A" opacity=".7"/><circle cx="210" cy="80" r="26" fill="#F3C98B" opacity=".8"/></svg>';
+var LETTERS = [
+  { id: 'a1', month: 'Month 7', date: 'Tuesday 12 March', from: 'From Mama', words: 'Asha, today you found the blue boat in the bath and would not let it go.', rest: 'You told it a long story with your hands. Papa sang the boat song twice, and you laughed harder at the second one.', photo: PIC },
+  { id: 'a2', month: 'Month 7', date: 'Sunday 10 March', from: 'From Papa', words: 'We walked to the park in the rain and you kept your hand out to catch it.', rest: 'Your sleeve was wet up to the elbow and you did not mind at all.' },
+  { id: 'a3', month: 'Month 7', date: 'Friday 8 March', from: 'From Mama', words: 'Nani called and you said something that sounded a lot like her name.', rest: 'She has decided it was her name.', first: 'said Nani' },
+  { id: 'a4', month: 'Month 6', date: 'Saturday 24 February', from: 'From Papa', words: 'You sat on your own for a whole song today, swaying a little.', rest: 'Then you tipped over into the cushions and looked very pleased.', photo: PIC2 },
+  { id: 'a5', month: 'Month 6', date: 'Monday 12 February', from: 'From Mama', words: 'The first snow. You watched it from the window for a long time.', rest: 'Every flake got its own small sound from you.' },
+  { id: 'a6', month: 'Month 6', date: 'Thursday 1 February', from: 'From Papa', words: 'You grabbed my glasses and studied them like a very serious scientist.', rest: 'They are a little bent now. Worth it.' },
+  { id: 'a7', month: 'Month 3', date: 'Wednesday 15 November', from: 'From Mama', words: 'You laughed out loud for the first time, at the cat.', rest: 'The cat was not impressed.', first: 'laughed out loud' },
+  { id: 'a8', month: 'Month 3', date: 'Sunday 5 November', from: 'From Papa', words: 'A long walk with you asleep on my chest the whole way.', rest: 'I took the long way home on purpose.' }
+];
+function byId(id) { for (var i = 0; i < LETTERS.length; i++) if (LETTERS[i].id === id) return LETTERS[i]; }
+var ICON_FIND = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21" stroke-linecap="round"/></svg>';
+var ICON_MORE = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>';
+var ICON_BACK = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5 L8 12 L15 19" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var ICON_CLOSE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18" stroke-linecap="round"/></svg>';
+
+function cardHTML(L, o) {
+  o = o || {};
+  var thumb = L.photo && o.thumbs ? '<div class="thumb">' + (o.thumbPending ? '' : L.photo) + '</div>' : '';
+  var lead = o.firstsLens && L.first ? '<div class="words" style="font-weight:600">' + L.first + '</div>' : '';
+  return '<div class="row" data-id="' + L.id + '"><div class="card" data-id="' + L.id + '"><div class="wash"></div>' + thumb +
+    '<div class="ctext">' + lead + '<div class="dateline">' + L.date + '</div><div class="words">' + L.words + '</div></div>' +
+    '<div class="meta">' + L.from + '</div></div></div>';
+}
+function listHTML(lens, o) {
+  o = o || {};
+  var out = '', month = null;
+  LETTERS.forEach(function (L) {
+    if (lens === 'photos' && !L.photo) return;
+    if (lens === 'firsts' && !L.first) return;
+    if (o.sealed && L.id === o.sealed) {
+      if (L.month !== month) { month = L.month; out += '<h3 class="opener" data-month="' + month + '">' + month + '</h3>'; }
+      out += '<div class="sealcard" data-id="' + L.id + '" role="button" tabindex="0" aria-label="' + L.date + '. Hidden until 12 March 2027. Opens the letter."><div class="dateline">' + L.date + '</div><div class="l2"><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><rect x="1" y="1" width="16" height="12" rx="2" fill="none" stroke="currentColor"/><path d="M1 2 L9 8 L17 2" fill="none" stroke="currentColor"/></svg>Hidden until 12 March 2027</div></div>';
+      return;
+    }
+    if (L.month !== month) { month = L.month; out += '<h3 class="opener" data-month="' + month + '">' + month + '</h3>'; }
+    out += cardHTML(L, { thumbs: lens !== 'months' || o.thumbs, thumbPending: o.thumbPending, firstsLens: lens === 'firsts' });
+  });
+  return out + '<div class="endmark" aria-hidden="true">" "</div>';
+}
+function bandHTML(o) {
+  o = o || {};
+  var lenses = o.lenses || ['months', 'photos', 'firsts'];
+  var radio = lenses.length > 1 ? '<div class="radio" role="radiogroup" aria-label="Show"><i class="ind" aria-hidden="true"></i>' + lenses.map(function (l) {
+    var lab = { months: 'Months', photos: 'Photos', firsts: 'Firsts' }[l];
+    var sel = (o.lens || 'months') === l;
+    return '<button role="radio" aria-checked="' + sel + '" data-lens="' + l + '" class="' + (sel ? 'sel' : '') + '"><span>' + lab + '</span></button>';
+  }).join('') + '</div>' : '';
+  return '<div class="band"><div class="title">' + (o.title || 'Asha\'s book') + '</div><div class="age">' + (o.age || '7 months') + '</div>' +
+    (o.switcher ? '<div style="margin:-4px 0 10px"><button class="btn tint" data-act="switch">' + (o.title === 'Little one\'s book' ? 'Asha\'s book' : 'Little one\'s book') + '</button></div>' : '') +
+    '<button class="btn tint full" data-act="read">Read together</button>' +
+    '<div class="barrow">' + radio + '</div><div class="barrow"><span style="flex:1"></span><div class="glass cluster" id="cluster" style="--ga:1;--gb:18"><button class="iconbtn gc" aria-label="Find" data-act="find">' + ICON_FIND + '</button>' +
+    '<button class="btn quiet gc" data-act="months">Go to a month</button><button class="iconbtn gc" aria-label="More for this book" data-act="more">' + ICON_MORE + '</button></div></div></div>';
+}
+function bookHTML(o) {
+  o = o || {};
+  return '<div class="book" style="position:absolute;inset:0">' + '<div class="lamp" id="lamp" style="opacity:' + (o.lampOff ? 0 : 1) + '"></div>' +
+    '<div class="scroll" id="bookScroll"><div class="status">9:41<span></span></div><div id="head">' + bandHTML(o) + '</div><div id="listWrap">' + listHTML(o.lens || 'months', o) + '</div></div>' +
+    '<div class="inlinebar glass" id="inlinebar"><div class="r"><span class="t gc">' + (o.title || 'Asha\'s book') + '</span><button class="iconbtn gc" aria-label="Find">' + ICON_FIND + '</button><button class="btn quiet gc">Go to a month</button><button class="iconbtn gc" aria-label="More for this book">' + ICON_MORE + '</button></div><div class="m gc" id="compact">Month 7</div></div>' +
+    '<div class="tabbar"><span>Home</span><span class="on">Book</span><span>Me</span></div></div>';
+}
+function pageHTML(L, o) {
+  o = o || {};
+  var rows = [];
+  rows.push('<div class="lrow" data-row="day"><span class="lt">The day it is about</span><span class="lv"><span>' + (o.day || L.date) + '</span></span></div>');
+  if (o.firstRow !== false) rows.push('<div class="lrow" data-row="first"><span class="lt">This was a first' + (o.first ? '<span class="lsub">' + o.first + '</span>' : '') + '</span><span class="switch' + (o.first ? ' on' : '') + '" role="switch" aria-checked="' + !!o.first + '"><i style="transform:translateX(' + (o.first ? 20 : 0) + 'px)"></i></span></div>');
+  rows.push('<div class="lrow" data-row="picture"><span class="lt">' + (o.pic ? 'Picture' : 'Add a picture') + '</span><span class="lv"><span></span></span></div>');
+  if (o.sealed) rows.push('<div class="lrow" data-row="sealed"><span class="lt">Hidden until</span><span class="lv"><span>12 March 2027</span></span></div>');
+  else if (o.sealRow !== false) rows.push('<div class="lrow" data-row="seal"><span class="lt">Hide until a day</span><span class="lv"><span></span></span></div>');
+  rows.push('<div class="lrow" data-row="who"><span class="lt">Who can read it</span><span class="lv"><span>In the book</span></span></div>');
+  rows.push('<div class="lrow" data-row="rec"><span class="lt">Where the recording is</span><span class="lv"><span>On this phone</span></span></div>');
+  return '<div class="page' + (o.solid ? ' solid' : '') + '" id="page"><div class="pagehead"><button class="iconbtn glass" style="--ga:1;--gb:18;border-radius:999px" aria-label="Back" data-act="back">' + ICON_BACK + '</button><span style="flex:1"></span><button class="btn quiet glass" style="--ga:1;--gb:18;color:var(--text)" data-act="size">Aa</button></div>' +
+    '<div class="pagebody">' + (o.pic ? '<div class="pic" id="pic">' + (L.photo || PIC) + '</div>' : '') +
+    '<div class="opening" id="opening"><div class="dateline" role="heading" aria-level="1">' + L.date + '</div><div class="words">' + L.words + '</div></div>' +
+    '<div class="rest" id="rest"><div class="words" style="margin-top:0">' + L.rest + '</div><div class="meta">' + L.from + '</div>' +
+    '<div style="margin-top:20px"><button class="btn primary full">Play</button></div>' +
+    '<div style="margin-top:12px"><button class="btn full">Share</button></div>' +
+    '<div class="listtitle" role="heading" aria-level="2">This letter</div><div class="list" id="rows">' + rows.join('') + '</div>' +
+    '<div style="margin-top:22px"><button class="btn danger full" data-act="delete">Delete</button></div></div></div></div>';
+}
+
+/* ---------------- shared pieces: sheets, toasts, menus ---------------- */
+async function openSheet(inner) {
+  var scrim = h('<div class="scrim"></div>'), sheet = h('<div class="sheet" role="dialog"><div class="grab"></div>' + inner + '</div>');
+  screen.appendChild(scrim); screen.appendChild(sheet);
+  var H = sheet.offsetHeight;
+  if (RM) { sheet.style.opacity = 0; fade(scrim, 0, 1, M.fadeMs); await fade(sheet, 0, 1, M.fadeMs); }
+  else { fade(scrim, 0, 1, M.fadeMs); await spring(M.standard, function (p) { sheet.style.transform = 'translateY(' + (H * (1 - p)) + 'px)'; }); }
+  return { scrim: scrim, sheet: sheet };
+}
+async function closeSheet(s) {
+  if (!s) return;
+  var H = s.sheet.offsetHeight;
+  if (RM) { fade(s.scrim, 1, 0, M.fadeMs); await fade(s.sheet, 1, 0, M.fadeMs); }
+  else { fade(s.scrim, 1, 0, M.fadeMs); await spring(M.standard, function (p) { s.sheet.style.transform = 'translateY(' + (H * p) + 'px)'; }); }
+  s.scrim.remove(); s.sheet.remove();
+}
+var toastEl = null;
+/* v2 m.toast: the glass materialises (style, never opacity) while the toast rises 8 pt on snappy; a toast over a
+   toast keeps its glass and swaps its words. Reduce Motion: no rise. Reduce Transparency: a solid toast fades. */
+async function toast(msg, action) {
+  if (toastEl) {
+    var t0 = toastEl, w = t0.querySelector('.tw');
+    await fade(w, 1, 0, M.swapMs / 2, { ease: EASE }); w.textContent = msg;
+    var ob = t0.querySelector('button'); if (ob) ob.remove();
+    if (action) { var nb = h('<button>' + action.label + '</button>'); nb.onclick = action.run; t0.appendChild(nb); }
+    fade(w, 0, 1, M.swapMs / 2, { ease: EASE }); return t0;
+  }
+  var t = h('<div class="toast glass" role="status"><span class="tw gc" style="flex:1">' + msg + '</span>' + (action ? '<button class="gc">' + action.label + '</button>' : '') + '</div>');
+  if (action) t.querySelector('button').onclick = action.run;
+  screen.appendChild(t); toastEl = t;
+  glassInit(t, false);
+  if (RTX) { await glassTo(t, true); return t; }
+  var parts = [glassTo(t, true)];
+  if (!RM) parts.push(spring(M.snappy, function (p) { t.style.transform = 'translateY(' + (8 * (1 - p)) + 'px)'; }));
+  await Promise.all(parts); return t;
+}
+async function hideToast() {
+  if (!toastEl) return; var t = toastEl; toastEl = null;
+  if (RTX) { await glassTo(t, false); t.remove(); return; }
+  qa('.gc', t).forEach(function (k) { mExit(k, false); });
+  await wait(M.exitMs); await glassTo(t, false); t.remove();
+}
+function swapValue(rowEl, text) {
+  var lv = rowEl.querySelector('.lv'); var old = lv.querySelector('span'); var nu = h('<span>' + text + '</span>');
+  nu.style.opacity = 0; lv.appendChild(nu);
+  fade(old, 1, 0, M.swapMs).then(function () { old.remove(); });
+  return fade(nu, 0, 1, M.swapMs);
+}
+/* FLIP: run a layout change, then move the elements that shifted from where they were, on `standard` (Reduce Motion: at once). */
+async function flip(els, change) {
+  var before = els.map(function (e) { return e.getBoundingClientRect().top; });
+  change();
+  if (RM) return;
+  var deltas = els.map(function (e, i) { return before[i] - e.getBoundingClientRect().top; });
+  await spring(M.standard, function (p) { els.forEach(function (e, i) { e.style.transform = 'translateY(' + (deltas[i] * (1 - p)) + 'px)'; }); });
+  els.forEach(function (e) { e.style.transform = ''; });
+}
+function followingSiblings(el) { var out = []; var n = el.nextElementSibling; while (n) { out.push(n); n = n.nextElementSibling; } return out; }
+
+/* ---------------- card to page (MOTION 5f) ---------------- */
+var open = null;
+async function cardToPage(card, L, o) {
+  o = o || {};
+  var carry = !RM && !o.noColumn;
+  var textEl = card.querySelector('.ctext');
+  var page = h(pageHTML(L, o.page || {}));
+  page.style.opacity = 0; screen.appendChild(page);
+  var veil = h('<div class="veil"></div>'); screen.insertBefore(veil, page);
+  var opening = page.querySelector('#opening'), rest = page.querySelector('#rest');
+  var state = { card: card, L: L, page: page, veil: veil, carry: carry };
+  open = state;
+  if (!carry) {
+    page.classList.add('solid');
+    tween(M.handOff.leaveMs, function (p) { veil.style.opacity = p; });
+    await fade(page, 0, 1, M.handOff.arriveMs, { delay: M.handOff.arriveFromMs });
+    caption('Hand-off: the leaving screen fades over 140 ms, the page over its last 120 ms from 80 ms. Nothing moves. Focus lands on the dateline.');
+    return state;
+  }
+  var cr = rel(card), tr = rel(textEl);
+  var or = rel(opening);
+  state.cr = cr; state.tr = tr; state.or = or;
+  // press held through the hold
+  spring(M.snappy, function (p) { card.style.transform = 'scale(' + (1 - (1 - M.press.card) * p) + ')'; });
+  tween(M.lamp.leaveMs, function (p) { veil.style.opacity = p; });
+  if (!(await wait(M.cardToPage.holdMs))) return state;
+  var paper = h('<div class="paper"></div>'); screen.insertBefore(paper, page);
+  var carried = textEl.cloneNode(true); carried.classList.add('carried'); carried.style.left = tr.x + 'px'; carried.style.top = tr.y + 'px'; carried.style.width = tr.w + 'px';
+  screen.appendChild(carried);
+  state.paper = paper; state.carried = carried;
+  opening.style.visibility = 'hidden'; page.style.opacity = 1; rest.style.opacity = 0; page.style.background = 'transparent';
+  var raised = hex(cssVar('--raised')), bg = hex(cssVar('--bg'));
+  var W = screen.clientWidth, Hh = screen.clientHeight, home = false;
+  var toneFrom = M.cardToPage.contentFrom + (1 - M.cardToPage.contentFrom) / 2;
+  await spring(M.standard, function (p) {
+    var x = cr.x * (1 - p), y = cr.y * (1 - p), w = cr.w + (W - cr.w) * p, hh = cr.h + (Hh - cr.h) * p;
+    paper.style.left = x + 'px'; paper.style.top = y + 'px'; paper.style.width = w + 'px'; paper.style.height = hh + 'px';
+    paper.style.borderRadius = (14 * (1 - clamp(p, 0, 1))) + 'px';
+    paper.style.background = mix(raised, bg, clamp((p - toneFrom) / (1 - toneFrom), 0, 1));
+    carried.style.top = (tr.y + (or.y - tr.y) * clamp(p, 0, 1.02)) + 'px';
+    page.style.clipPath = 'inset(' + y + 'px ' + (W - x - w) + 'px ' + (Hh - y - hh) + 'px ' + x + 'px round ' + (14 * (1 - clamp(p, 0, 1))) + 'px)';
+    if (!home && Math.abs((or.y - tr.y) * (1 - p)) <= M.cardToPage.homePt) { home = true; mEnter(rest); } /* v2 T-ZOOM: the rest arrives with m.enter */
+  });
+  page.style.clipPath = ''; page.classList.add('solid'); page.style.background = '';
+  opening.style.visibility = ''; carried.remove(); paper.remove(); card.style.transform = '';
+  state.carried = null; state.paper = null;
+  caption('Carried: the words never leave; the paper grows on standard; the rest of the page came in when the words were home. Focus lands on the dateline (a level 1 heading).');
+  return state;
+}
+async function pageBack(st) {
+  st = st || open; if (!st) return;
+  var page = st.page, veil = st.veil, card = st.card;
+  if (!st.carry || RM) {
+    page.classList.add('solid');
+    fade(page, 1, 0, M.handOff.leaveMs);
+    await tween(M.handOff.arriveMs, function (p) { veil.style.opacity = 1 - p; }, { delay: M.handOff.arriveFromMs });
+    page.remove(); veil.remove(); open = null; return;
+  }
+  var rest = page.querySelector('#rest'), opening = page.querySelector('#opening');
+  page.scrollTop = 0;
+  await fade(rest, 1, 0, 120);
+  var cr = rel(card), tr = rel(card.querySelector('.ctext')), or = rel(opening);
+  var paper = h('<div class="paper"></div>'); screen.insertBefore(paper, page);
+  var carried = opening.cloneNode(true); carried.classList.add('carried'); carried.style.left = or.x + 'px'; carried.style.top = or.y + 'px'; carried.style.width = or.w + 'px';
+  screen.appendChild(carried); page.style.opacity = 0;
+  var raised = hex(cssVar('--raised')), bg = hex(cssVar('--bg'));
+  var W = screen.clientWidth, Hh = screen.clientHeight, lifted = false;
+  var toneFrom = M.cardToPage.contentFrom + (1 - M.cardToPage.contentFrom) / 2;
+  await spring(M.standard, function (p) {
+    var x = cr.x * (1 - p), y = cr.y * (1 - p), w = cr.w + (W - cr.w) * p, hh = cr.h + (Hh - cr.h) * p;
+    paper.style.left = x + 'px'; paper.style.top = y + 'px'; paper.style.width = w + 'px'; paper.style.height = hh + 'px';
+    paper.style.borderRadius = (14 * (1 - clamp(p, 0, 1))) + 'px';
+    paper.style.background = mix(raised, bg, clamp((p - toneFrom) / (1 - toneFrom), 0, 1));
+    carried.style.top = (tr.y + (or.y - tr.y) * p) + 'px';
+    if (!lifted && Math.abs(y - cr.y) <= M.cardToPage.clearPt) { lifted = true; tween(M.lamp.returnMs, function (q) { veil.style.opacity = 1 - q; }); }
+  }, { from: 1, to: 0 });
+  await wait(M.lamp.returnMs);
+  paper.remove(); carried.remove(); page.remove(); veil.remove(); open = null;
+}
+
+/* ---------------- Book helpers ---------------- */
+function mountBook(o) {
+  screen.innerHTML = bookHTML(o);
+  var sc = q('#bookScroll'), bar = q('#inlinebar'), cl = q('#cluster'), tab = q('.tabbar');
+  glassInit(bar, false); if (cl) glassInit(cl, true);
+  placeInd(q('.radio button.sel'), false);
+  /* P5: one threshold, where the band's control cluster has scrolled under the bar (never two clusters). */
+  var th = cl ? Math.max(40, cl.offsetTop + cl.offsetHeight - 111) : 96;
+  var up = false, lastY = 0, mini = false;
+  sc.addEventListener('scroll', function () {
+    var y = sc.scrollTop, nowUp = y > th;
+    if (nowUp !== up) { up = nowUp; glassTo(bar, up); if (cl) glassTo(cl, !up); bar.style.pointerEvents = up ? 'auto' : 'none'; }
+    var down = y > lastY + 2, back = y < lastY - 2; lastY = y;
+    if (down && !mini && y > 40) { mini = true; tabMin(tab, true); } else if (back && mini) { mini = false; tabMin(tab, false); }
+    var top = 'Month 7'; qa('.opener').forEach(function (e) { if (rel(e).y < 140) top = e.getAttribute('data-month'); });
+    q('#compact').textContent = top;
+  });
+  return sc;
+}
+/* T-MIN (system; approximated): the tab bar minimises on scroll down and re-expands on scroll up. */
+function tabMin(tab, on) {
+  if (RM) { tab.style.transform = on ? 'scale(0.86) translateY(10px)' : ''; return; }
+  tween(250, function (p) { var v = on ? p : 1 - p; tab.style.transform = 'scale(' + (1 - 0.14 * v) + ') translateY(' + (10 * v) + 'px)'; }, { ease: EASE });
+}
+function bindCards(handler) {
+  qa('.card').forEach(function (c) {
+    c.onclick = function () { handler(c, byId(c.getAttribute('data-id'))); };
+  });
+}
+/* ---------------- Read together ---------------- */
+var RT = { i: 0, list: [], busy: false };
+function rtPage(i) {
+  if (i >= RT.list.length) return '<div class="rpage" data-k="end" style="text-align:center"><svg class="moon" width="140" height="140" viewBox="0 0 140 140" aria-hidden="true"><path id="moonPath" d="M92 22 A52 52 0 1 0 118 98 A40 40 0 1 1 92 22 Z"/></svg><div class="w" style="font-size:22px;margin-top:12px">That was the last letter.</div></div>';
+  var L = RT.list[i];
+  return '<div class="rpage" data-k="' + L.id + '"><div class="dl">' + L.month + ', from ' + L.from.slice(5) + '</div><div class="w">' + L.words + ' ' + L.rest + '</div></div>';
+}
+function rtHTML(night) {
+  return '<div class="rt" id="rt"><div class="pool" id="pool"></div><div class="rthead"><button class="iconbtn glass" style="--ga:1;--gb:18;border-radius:999px" aria-label="Close" data-act="close">' + ICON_CLOSE + '</button></div>' +
+    '<div class="hair" role="text" aria-label="Letter 1 of ' + RT.list.length + '"><i id="hair"></i></div><div class="stage" id="stage">' + rtPage(RT.i) + '</div>' +
+    '<div class="rtbtns glass" style="--ga:1;--gb:18;border-radius:32px;padding:6px"><button class="btn" data-act="prev">Back one</button><button class="btn primary" data-act="next">Next letter</button></div></div>';
+}
+function setHair() { var hEl = q('#hair'); if (hEl) hEl.style.width = (Math.min(RT.i + 1, RT.list.length) / RT.list.length * 100) + '%'; }
+async function rtOpen(list, startIdx) {
+  RT.list = list; RT.i = startIdx || 0;
+  var rt = h(rtHTML()); screen.appendChild(rt); setHair();
+  var lamp = q('#lamp');
+  if (lamp) fade(lamp, 1, 0, RM ? 1 : M.lamp.leaveMs);
+  if (RM) { await fade(rt, 0, 1, M.fadeMs); q('#pool').style.opacity = 1; }
+  else { tween(M.lamp.returnMs, function (p) { q('#pool').style.opacity = p; }, { ease: EASE }); await fade(rt, 0, 1, M.dissolveMs); } /* P3: the pool comes up with the room */
+  bindRT();
+}
+function bindRT() {
+  q('[data-act=next]').onclick = function () { turn('next'); };
+  q('[data-act=prev]').onclick = function () { turn('back'); };
+  q('[data-act=close]').onclick = rtClose;
+  var stage = q('#stage'), x0 = null, t0 = 0, lastX = 0, lastT = 0, cur = null;
+  stage.onpointerdown = function (e) { if (RT.busy) return; x0 = e.clientX; t0 = lastT = performance.now(); lastX = e.clientX; cur = stage.querySelector('.rpage:last-child'); stage.setPointerCapture(e.pointerId); };
+  stage.onpointermove = function (e) {
+    if (x0 == null || RM) return; var dx = e.clientX - x0;
+    var atEdge = (dx < 0 && RT.i >= RT.list.length) || (dx > 0 && RT.i === 0);
+    cur.style.transform = 'translateX(' + (atEdge ? dx * 0.25 : dx) + 'px)'; lastX = e.clientX; lastT = performance.now();
+  };
+  stage.onpointerup = function (e) {
+    if (x0 == null) return; var dx = e.clientX - x0, dt = Math.max(1, performance.now() - lastT), vx = (e.clientX - lastX) / dt * 1000; x0 = null;
+    var W = stage.clientWidth, dir = null;
+    if (dx <= -W * 0.25 || vx <= -600) dir = 'next'; else if (dx >= W * 0.25 || vx >= 600) dir = 'back';
+    var can = dir === 'next' ? RT.i < RT.list.length : dir === 'back' ? RT.i > 0 : false;
+    if (RM) { if (dir && can) turn(dir); return; }
+    if (dir && can) turn(dir, dx);
+    else { var from = dx * ((dir && !can) ? 0.25 : 1); var c = cur; spring(M.snappy, function (p) { c.style.transform = 'translateX(' + (from * (1 - p)) + 'px)'; }); }
+  };
+}
+async function turn(dir, fromDx) {
+  if (RT.busy) return;
+  var ni = dir === 'next' ? RT.i + 1 : RT.i - 1;
+  if (ni < 0 || ni > RT.list.length) return;
+  RT.busy = true;
+  var stage = q('#stage'), leaving = stage.querySelector('.rpage:last-child');
+  leaving.setAttribute('aria-hidden', 'true'); leaving.style.pointerEvents = 'none';
+  RT.i = ni; var next = h(rtPage(ni)); stage.appendChild(next); setHair();
+  var sign = dir === 'next' ? -1 : 1, x0 = fromDx || 0;
+  if (RM) {
+    next.style.opacity = 0; fade(leaving, 1, 0, M.fadeMs); await fade(next, 0, 1, M.fadeMs);
+  } else {
+    var fadeOut = Math.round(M.exitMs * (1 - M.HAND_OFF));
+    tween(M.exitMs, function (p) { leaving.style.transform = 'translateX(' + (x0 + (sign * M.pageTurn.dx - x0 * 0) * p) + 'px)'; }, { ease: EASE });
+    fade(leaving, 1, 0, fadeOut);
+    next.style.opacity = 0; next.style.transform = 'translateX(' + (-sign * M.pageTurn.dx) + 'px)';
+    var delay = Math.round(fadeOut / 2);
+    fade(next, 0, 1, M.fadeMs, { delay: delay });
+    await spring(M.standard, function (p) { next.style.transform = 'translateX(' + (-sign * M.pageTurn.dx * (1 - p)) + 'px)'; }, { delay: delay });
+  }
+  leaving.remove(); RT.busy = false;
+  caption(ni >= RT.list.length ? 'End of the book: buttons are there from frame 1. VoiceOver heard the position in words; the screen shows no count.' : 'VoiceOver: "Letter ' + (ni + 1) + ' of ' + RT.list.length + '". The hairline stepped with no animation.');
+  if (ni >= RT.list.length) endOfBook();
+}
+async function endOfBook() {
+  /* v2 retires m.draw outside first run: the moon is drawn complete. P3: the pool dims to half over lamp.returnMs. */
+  var path = q('#moonPath'); if (!path) return; var pool = q('#pool');
+  if (RM) { pool.style.opacity = 0.5; return; }
+  await tween(M.lamp.returnMs, function (p) { pool.style.opacity = 1 - 0.5 * p; }, { ease: EASE });
+}
+async function rtClose() {
+  var rt = q('#rt'); if (!rt) return; var lamp = q('#lamp');
+  await fade(rt, 1, 0, RM ? M.fadeMs : M.dissolveMs);
+  rt.remove();
+  if (lamp) { if (RM) lamp.style.opacity = 1; else await fade(lamp, 0, 1, M.lamp.returnMs); }
+  caption('Back on the Book: nothing re-entered, and the list is where it was.');
+}
+
+/* ---------------- Home ---------------- */
+function homeHTML(o) {
+  o = o || {};
+  var slip = o.slip === 'past' ? '<div class="slip" id="slip" role="button" tabindex="0" aria-label="12 March 2026. Asha, today you found the blue boat"><div class="k">Tuesday 12 March 2026</div><div class="f">Asha, today you found the blue boat in the bath and would not</div><div class="nt"><button class="btn quiet" style="padding:0;min-height:44px" data-act="nottoday">Not today</button></div></div>'
+    : o.slip === 'seal' ? '<div class="slip" id="slip" role="button" tabindex="0"><div class="f" style="font-family:inherit;font-size:16px">A letter hidden until today can be read now.</div></div>' : '';
+  return '<div class="home" style="position:absolute;inset:0"><div class="lamp" id="lamp"></div><div class="scroll"><div class="status">9:41<span></span></div>' +
+    '<div class="dl" id="h0">Tuesday 12 March</div><div class="gr" id="h1">Good evening</div><div id="h2"><div class="prompt">What made Asha laugh today?</div><div style="padding:0 20px"><button class="btn quiet" style="padding:0">Another thought</button></div></div>' + slip + '<div id="below" style="margin:14px 20px;color:var(--muted);font-size:14px">&nbsp;</div></div>' +
+    '<div class="capture"><button class="btn primary">Speak</button><button class="btn">Type</button></div>' +
+    '<div class="tabbar"><span class="on">Home</span><span>Book</span><span>Me</span></div></div>';
+}
+
+/* ---------------- scenes ---------------- */
+var S = [];
+function scene(o) { S.push(o); }
+var G1 = 'The Book (B-S01 to B-S07)', G2 = 'Find (B-S06)', G3 = 'The letter page (B-S08 to B-S16)', G4 = 'Home slips (B-S17, B-S18)', G5 = 'Read together (B-S19, B-S20)', G6 = 'Not built (decision record)';
+
+scene({ grp: G1, id: 'B-M01', title: 'First Book view this session', screen: 'B-S01.default (first show; alias .firstView)', v2: 'm.enter.group',
+  trigger: 'The Book is first shown this session.', moves: 'The header renders complete. The first 6 cards enter: opacity 0 to 1, y 8 to 0, 280 ms, easing.standard, 30 ms apart.',
+  rm: 'One 200 ms fade of the first cards; no travel, no stagger.', haptic: 'none', never: 'The header does not settle (v2 retires the gentle settle). Controls are hittable from frame 1.',
+  setup: function () { mountBook(); }, actions: [{ label: 'Play first view', run: async function () {
+    mountBook(); var rows = qa('.row').slice(0, M.staggerMax);
+    rows.forEach(function (r, i) { mEnter(r, { delay: RM ? 0 : i * M.staggerMs }); });
+  } }, { label: 'Return to the Book (B-M02)', run: async function () { mountBook(); var l = q('#lamp'); if (RM) l.style.opacity = 1; else fade(l, 0.7, 1, M.lamp.returnMs); caption('B-M02 (T-RESUME): nothing re-enters; only the lamp settles over 280 ms.'); } }] });
+
+scene({ grp: G1, id: 'B-M03', title: 'Scrolling: tab bar minimise; the bar takes the controls', screen: 'B-S01.default, .many', v2: 'T-MIN, m.glass, m.swap (P5)',
+  trigger: 'The parent scrolls.', moves: 'The list under the finger. The tab bar minimises on scroll down and re-expands on scroll up (system; approximated here). When the band\'s glass control cluster scrolls under the top, the cluster goes to glass style none and the inline bar to regular in one m.glass (0.25 s); its words swap in (150 ms).',
+  rm: 'Glass style change kept, no travel. Reduce Transparency: the solid bar fades over 200 ms at the same point.', haptic: 'none', never: 'No scroll-linked opacity on glass; never two control clusters at once; no parallax.',
+  setup: function () { mountBook(); caption('Scroll the phone screen with your mouse or trackpad, down and back up.'); }, actions: [{ label: 'Scroll down for me', run: async function () {
+    var sc = q('#bookScroll'); await tween(1400, function (p) { sc.scrollTop = 320 * p; sc.dispatchEvent(new Event('scroll')); }, { ease: EASE });
+  } }, { label: 'Scroll back up', run: async function () { var sc = q('#bookScroll'), y0 = sc.scrollTop; await tween(1000, function (p) { sc.scrollTop = y0 * (1 - p); sc.dispatchEvent(new Event('scroll')); }, { ease: EASE }); } }] });
+
+scene({ grp: G1, id: 'B-M04', title: 'Thumbnail arrives after its decode', screen: 'B-S04.default; B-M05 for .thumbMissing', v2: 'm.fade',
+  trigger: 'A list copy finishes decoding after its card is on screen.', moves: 'The thumbnail only: opacity 0 to 1, 200 ms. A copy decoded before mount shows at once. The box is reserved.',
+  rm: 'Shows at once (NS-37).', haptic: 'none', never: 'No shimmer, blur-up, spinner or pulse. A regenerated copy waits for the next mount (B-M05).',
+  setup: function () { mountBook({ lens: 'photos', thumbPending: true }); }, actions: [{ label: 'Decodes finish', run: async function () {
+    mountBook({ lens: 'photos', thumbPending: true });
+    qa('.thumb').forEach(function (t, i) {
+      setTimeout(function () { var s = h(PIC.replace('<svg', '<svg style="opacity:0"')); t.appendChild(s); if (RM) s.style.opacity = 1; else fade(s, 0, 1, M.fadeMs, { ease: EASE }); }, (120 + i * 90) * SLOW);
+    });
+  } }, { label: 'Decoded before mount', run: function () { mountBook({ lens: 'photos' }); caption('Shown at once, no fade.'); } }] });
+
+scene({ grp: G1, id: 'B-M06', title: 'A kept letter lands (the tint)', screen: 'B-S01.default after Keep (alias .arrived); B-M07 the other parent', v2: 'T-KEEP, m.mark',
+  trigger: 'T-KEEP lands on the Book; or the other parent\'s letter is shown here for the first time (B-M07).', moves: 'The Book is already on the letter; the accentSoft tint behind its words fades over 1600 ms.',
+  rm: 'Tint shown static, then the same fade.', haptic: 'none here (H-success played at commit in Review)', never: 'No badge, no count, no scroll animation.',
+  setup: function () { mountBook(); }, actions: [{ label: 'Land on the new letter', run: async function () { mountBook(); var w = q('.card[data-id=a1] .wash'); await fade(w, 1, 0, M.newMarkMs, { ease: EASE }); } }] });
+
+scene({ grp: G1, id: 'B-M08', title: 'Switching books', screen: 'B-S01.twoBooks', v2: 'm.fade',
+  trigger: 'The switcher picks the other book.', moves: 'The Book\'s content cross-fades to the other book (200 ms).', rm: 'The same fade.', haptic: 'none as built', never: 'No slide between books.',
+  setup: function () { mountBook({ switcher: true }); bindSwitch(); }, actions: [{ label: 'Switch book', run: function () { var b = q('[data-act=switch]'); if (b) b.click(); } }] });
+function bindSwitch() {
+  var b = q('[data-act=switch]'); if (!b) return;
+  b.onclick = async function () {
+    var other = q('.title').textContent === 'Asha\'s book' ? 'Little one\'s book' : 'Asha\'s book';
+    var book = q('.book'); await fade(book, 1, 0, M.fadeMs / 2);
+    mountBook({ switcher: true, title: other, age: other === 'Asha\'s book' ? '7 months' : 'Before You' }); bindSwitch();
+    await fade(q('.book'), 0, 1, M.fadeMs / 2);
+  };
+}
+
+scene({ grp: G1, id: 'B-M09', title: 'More for this book; Quiet this book (B-M10)', screen: 'B-S02.default, .quieted', v2: 'T-MENU target; interim T-SHEET (m.sheet.own); m.toast',
+  trigger: 'More for this book; Quiet this book or Turn Quiet off.', moves: 'Interim (DESIGN B-S02): the sheet rises, scrim fades. Target: the native menu pops out of the glass button. On Quiet: the sheet closes, nothing in the Book moves, the toast materialises and rises 8 pt.',
+  rm: 'Sheet: no travel, 200 ms fade. Toast: glass style only, no rise.', haptic: 'none (a setting; v2 section 9)', never: 'No dimming, no change of light, nothing marks the book as different.',
+  setup: function () { mountBook(); quietState = false; bindMore(); }, actions: [{ label: 'Open More for this book', run: function () { q('[data-act=more]').click(); } }] });
+var quietState = false;
+function bindMore() {
+  q('[data-act=more]').onclick = async function () {
+    var s = await openSheet('<h3>More for this book</h3><div class="opt" data-m="quiet">' + (quietState ? 'Turn Quiet off' : 'Quiet this book') + '</div><div class="opt" data-m="hide">Hide this book</div>');
+    s.sheet.querySelector('[data-m=quiet]').onclick = async function () {
+      quietState = !quietState;
+      await closeSheet(s);
+      toast(quietState ? 'This book is quiet.' : 'Quiet is off for this book.');
+      caption('No haptic: a setting. The Book did not move or dim. Placeholder words; WORDS.md owns them.');
+    };
+    s.sheet.querySelector('[data-m=hide]').onclick = async function () { await closeSheet(s); caption('Hide: a confirmation (T-ALERT), then B-M11: the 200 ms fade to the next book, as in Switching books.'); };
+  };
+}
+
+scene({ grp: G1, id: 'B-M12', title: 'Lens switch: Months, Photos, Firsts', screen: 'B-S03.threeOptions; B-S04; B-S05', v2: 'm.select + m.list.swap (P1)',
+  trigger: 'A lens is picked.', moves: 'The selection indicator springs to the new option (snappy); the list fades out over 100 ms, is replaced (Months at its place this session; Photos and Firsts at their top), fades in over 100 ms. The header does not move.',
+  rm: 'The indicator jumps; the list fades the same.', haptic: 'H-select (tap), from ChoiceGroup', never: 'No horizontal slide of the list; no count on any option.',
+  setup: function () { mountBook(); bindLens(); caption('Tap Months, Photos or Firsts on the phone.'); }, actions: [{ label: 'Photos', run: function () { q('[data-lens=photos]').click(); } }, { label: 'Firsts', run: function () { q('[data-lens=firsts]').click(); } }, { label: 'Months', run: function () { q('[data-lens=months]').click(); } }] });
+var lensNow = 'months', monthsPlace = 0;
+function placeInd(btn, animate) {
+  var ind = q('.radio .ind'); if (!ind || !btn) return;
+  var toL = btn.offsetLeft, toW = btn.offsetWidth;
+  var fromL = parseFloat(ind.style.left) || toL, fromW = parseFloat(ind.style.width) || toW;
+  if (!animate || RM) { ind.style.left = toL + 'px'; ind.style.width = toW + 'px'; return; }
+  spring(M.snappy, function (p) { ind.style.left = (fromL + (toL - fromL) * p) + 'px'; ind.style.width = (fromW + (toW - fromW) * p) + 'px'; });
+}
+function bindLens() {
+  lensNow = q('.radio button.sel') ? q('.radio button.sel').getAttribute('data-lens') : 'months';
+  placeInd(q('.radio button.sel'), false);
+  qa('.radio button').forEach(function (b) {
+    b.onclick = async function () {
+      var to = b.getAttribute('data-lens'); if (to === lensNow) return;
+      haptic('tap (H-select)');
+      var prev = q('.radio button.sel'); if (prev) { prev.classList.remove('sel'); prev.setAttribute('aria-checked', 'false'); }
+      b.classList.add('sel'); b.setAttribute('aria-checked', 'true'); placeInd(b, true);
+      var sc = q('#bookScroll'), headH = q('#head').offsetHeight + 47;
+      if (lensNow === 'months') monthsPlace = sc.scrollTop;
+      var from = lensNow; lensNow = to;
+      await listSwap(function () { q('#listWrap').innerHTML = listHTML(to); sc.scrollTop = to === 'months' ? monthsPlace : Math.min(sc.scrollTop, Math.max(0, headH - 140)); });
+      caption('From ' + from + ' to ' + to + ': m.select, then m.list.swap (100 ms out, replaced at once, 100 ms in).');
+    };
+  });
+}
+
+scene({ grp: G1, id: 'B-M13', title: 'A lens goes while it is showing', screen: 'B-S03.twoOptions to .absent (alias .lensGoes)', v2: 'm.instant + m.list.swap',
+  trigger: 'The last picture is taken off elsewhere while the Photos lens shows.', moves: 'On the next render the lens choice is gone (no animation) and the list goes to Months with m.list.swap.',
+  rm: 'The same.', haptic: 'none', never: 'The control never animates out; no message.',
+  setup: function () { mountBook({ lens: 'photos', lenses: ['months', 'photos'] }); placeInd(q('.radio button.sel'), false); }, actions: [{ label: 'Last picture taken off; the Book renders', run: async function () {
+    mountBook({ lens: 'photos', lenses: ['months', 'photos'] }); placeInd(q('.radio button.sel'), false);
+    if (!(await wait(400))) return; var r = q('.radio'); if (r) r.remove();
+    await listSwap(function () { q('#listWrap').innerHTML = listHTML('months'); });
+  } }] });
+
+scene({ grp: G1, id: 'B-M15', title: 'Go to a month', screen: 'B-S07.default to B-S01', v2: 'T-SHEET + m.list.swap',
+  trigger: 'A month row.', moves: 'The sheet goes down (system; drawn here on standard); at the same moment the list fades out (100 ms), moves at once to the month, fades in (100 ms).',
+  rm: 'Sheet: no travel, 200 ms fade; the list the same.', haptic: 'none', never: 'Never an animated scroll through months.',
+  setup: function () { mountBook(); }, actions: [{ label: 'Open the sheet, pick Month 3', run: async function () {
+    mountBook();
+    var s = await openSheet('<h3>Go to a month</h3><div class="opt">Asha\'s first year</div><div class="opt">Month 7</div><div class="opt">Month 6</div><div class="opt" style="font-weight:600">Month 3</div>');
+    if (!(await wait(700))) return;
+    var c = closeSheet(s), sc = q('#bookScroll');
+    await listSwap(function () { var op = qa('.opener').filter(function (e) { return e.getAttribute('data-month') === 'Month 3'; })[0]; sc.scrollTop = op.offsetTop - 120; sc.dispatchEvent(new Event('scroll')); });
+    await c;
+  } }] });
+
+scene({ grp: G1, id: 'B-M16', title: 'A year opens Read together', screen: 'B-S07.withYears to B-S19.year', v2: 'T-SHEET then T-COVER (m.cover)',
+  trigger: 'Read a year together, a year row.', moves: 'The sheet goes down and Read together dissolves in over it at the same moment: one hand-off (280 ms).',
+  rm: 'One 200 ms fade.', haptic: 'none', never: 'No title card, banner, count or recap.',
+  setup: function () { mountBook(); }, actions: [{ label: 'Open the sheet, pick the year', run: async function () {
+    mountBook();
+    var s = await openSheet('<h3>Go to a month</h3><div class="opt" style="font-weight:600">Asha\'s first year</div><div class="opt">Before You</div><div class="opt">Month 7</div>');
+    if (!(await wait(700))) return;
+    closeSheet(s); await rtOpen(LETTERS.slice().reverse().slice(0, 4), 0);
+  } }] });
+
+/* ---------- Find ---------- */
+scene({ grp: G2, id: 'B-M17', title: 'Find: open, type, no match, fail, cancel', screen: 'B-S06.idle, .results, .noMatch, .failed', v2: 'm.glass + m.swap; m.instant for rows (B-M17 to B-M23)',
+  trigger: 'Find; typing; Cancel.', moves: 'The header cluster gives way to the Find bar (glass, 0.25 s); the paper over the Book cross-fades in (150 ms); the keyboard is the system\'s. Rows replace in one frame from the third character. Cancel reverses it.',
+  rm: 'The paper appears and goes at once (NS-02-R21); glass style kept.', haptic: 'none', never: 'No bar growing by scale, no blur of the Book, no row enter or stagger, no spinner, no count, no shake.',
+  setup: function () { mountBook(); }, actions: [
+    { label: 'Open Find', run: async function () { mountBook(); await findOpen(); } },
+    { label: 'Type "boat"', run: async function () { if (!q('#findpaper')) await findOpen(); await typeQuery('boat', true); } },
+    { label: 'Type a word with no match', run: async function () { if (!q('#findpaper')) await findOpen(); await typeQuery('kite', false); } },
+    { label: 'The search fails', run: async function () { if (!q('#findpaper')) await findOpen(); setQuery('boat'); q('#fres').innerHTML = '<div style="padding:16px 20px;font-size:16px">Find could not look just now.</div><div style="padding:0 20px"><button class="btn">Try again</button></div>'; caption('Failed: in one frame, announced once. No sound, no haptic.'); } },
+    { label: 'Cancel', run: findClose }] });
+async function findOpen() {
+  var paper = h('<div class="findpaper" id="findpaper"><div style="height:112px"></div><div id="fres"></div></div>');
+  var bar = h('<div class="findbarG glass" id="findbar"><div class="findfield gc">' + ICON_FIND + '<span id="fq" style="color:var(--muted)">Find a letter in Asha\'s book</span><span class="caret"></span></div><button class="btn quiet gc" data-act="cancel">Cancel</button></div>');
+  var k = h('<div class="kbd"><div class="k">' + new Array(31).join('<i></i>') + '</div></div>');
+  screen.appendChild(paper); screen.appendChild(bar); screen.appendChild(k);
+  glassInit(bar, false);
+  bar.querySelector('[data-act=cancel]').onclick = findClose;
+  var cl = q('#cluster'); if (cl) glassTo(cl, false);
+  glassTo(bar, true);
+  if (RM) paper.style.opacity = 1; else fade(paper, 0, 1, M.swapMs, { ease: EASE });
+  await tween(250, function (p) { k.style.transform = 'translateY(' + (100 * (1 - p)) + '%)'; }, { ease: EASE });
+  caption('The Book stays mounted and still under the paper. The field has focus from frame 1; the keyboard is the system\'s.');
+}
+function setQuery(s) { var fq = q('#fq'); fq.textContent = s; fq.style.color = 'var(--text)'; }
+async function typeQuery(word, match) {
+  q('#fres').innerHTML = '';
+  for (var i = 1; i <= word.length; i++) {
+    if (!(await wait(170))) return;
+    setQuery(word.slice(0, i));
+    if (i >= 3) { q('#fres').innerHTML = match ? findRows(word.slice(0, i)) : '<div style="padding:16px 20px;font-size:16px">No letter has those words.</div>'; if (match) bindFindRows(); }
+  }
+  caption(match ? 'VoiceOver, once: "Letters found" (no number). Rows were replaced in one frame each keystroke. Tap a row (B-M20).' : 'No match: one calm line, in one frame.');
+}
+function findRows(qs) {
+  return LETTERS.filter(function (L) { return (L.words + ' ' + L.rest).toLowerCase().indexOf(qs) >= 0; }).map(function (L) {
+    var s = (L.words + ' ' + L.rest); var sent = s.split('. ').filter(function (x) { return x.toLowerCase().indexOf(qs) >= 0; })[0] || s;
+    var re = new RegExp('(' + qs + '\\w*)', 'i');
+    return '<div class="frow" data-id="' + L.id + '" role="button" tabindex="0"><div class="dateline">' + L.date + '</div><div class="s">' + sent.replace(re, '<u>$1</u>') + '</div></div>';
+  }).join('');
+}
+function bindFindRows() { qa('.frow').forEach(function (r) { r.onclick = async function () { var st = await cardToPage(r, byId(r.getAttribute('data-id')), { noColumn: true }); bindPage(st); }; }); }
+async function findClose() {
+  var paper = q('#findpaper'), bar = q('#findbar'), k = q('.kbd'); if (!paper) return;
+  if (k) tween(250, function (p) { k.style.transform = 'translateY(' + (100 * p) + '%)'; }, { ease: EASE }).then(function () { k.remove(); });
+  var cl = q('#cluster'); if (cl) glassTo(cl, true);
+  if (bar) glassTo(bar, false).then(function () { bar.remove(); });
+  if (RM) paper.remove(); else { await fade(paper, 1, 0, M.swapMs, { ease: EASE }); paper.remove(); }
+  caption('The Book is exactly where it was.');
+}
+scene({ grp: G2, id: 'B-M20', title: 'Find result to the letter page, and back', screen: 'B-S06.results to B-S08 (alias .faded)', v2: 'T-ZOOM fallback: m.fade',
+  trigger: 'A result row; Back.', moves: 'The hand-off: Find under the veil over 140 ms, the page in over its last 120 ms from 80 ms. Back the same; query and place unchanged.',
+  rm: 'The same.', haptic: 'none', never: 'No carried words from a row that would reflow.',
+  setup: function () { mountBook(); }, actions: [{ label: 'Open Find with results', run: async function () { mountBook(); await findOpen(); await typeQuery('boat', true); } }] });
+
+/* ---------- the letter page ---------- */
+scene({ grp: G3, id: 'B-M24', title: 'Card to page, and back', screen: 'B-S01 card to B-S08.ownSpoken (alias .carried)', v2: 'T-ZOOM, m.zoom',
+  trigger: 'A letter card whose text column matches the page\'s; Back.', moves: 'm.tap holds 0.98; the veil comes up over 160 ms while the card holds 136 ms; the paper grows on spring.standard, corner 14 to 0; the words are carried whole, unscaled; the rest of the page arrives with m.enter once the words are home. Back: the words go back into the card; the veil lifts over 280 ms once the paper is within 24 pt.',
+  rm: 'The m.fade hand-off both ways; nothing moves.', haptic: 'none', never: 'No scaled text, no blur, no dim on the veil; no lamp or loop on the page.',
+  setup: function () { mountBook(); bindCards(async function (c, L) { var st = await cardToPage(c, L); bindPage(st); }); caption('Tap the second card. Try the v2 spring switch and Slow.'); },
+  actions: [{ label: 'Open the second card', run: function () { q('.card[data-id=a2]').click(); } }, { label: 'Back', run: function () { pageBack(); } }] });
+function bindPage(st) { var b = q('#page [data-act=back]'); if (b) b.onclick = function () { pageBack(st); }; }
+
+scene({ grp: G3, id: 'B-M25', title: 'Page from a card whose column differs', screen: 'B-S08 (alias .faded): Photos lens cards, the hidden card, Home slips, Find rows', v2: 'T-ZOOM fallback: m.fade',
+  trigger: 'A Photos lens card (thumbnail beside the words), the hidden card, a Home slip, a Find row, another Reading Size, a deep link.', moves: 'The 200 ms hand-off in every setting. Paper and words arrive together.',
+  rm: 'The same.', haptic: 'none', never: 'Paper alone never shows.',
+  setup: function () { mountBook({ lens: 'photos' }); bindCards(async function (c, L) { var st = await cardToPage(c, L, { noColumn: true }); bindPage(st); }); },
+  actions: [{ label: 'Open a Photos lens card', run: function () { q('.card').click(); } }, { label: 'Back', run: function () { pageBack(); } }] });
+
+function mountPage(L, o) { screen.innerHTML = bookHTML(); screen.appendChild(h(pageHTML(L, Object.assign({ solid: true }, o || {})))); }
+
+scene({ grp: G3, id: 'B-M28', title: 'A fact changed through its sheet', screen: 'B-S09.default, B-S10.default to B-S08', v2: 'T-SHEET, m.swap, m.toast',
+  trigger: 'Save a new day; a choice in Who can read it.', moves: 'The sheet rises (B-M27). On save it closes; the value is replaced in place (150 ms); the dateline too if it changed; the toast materialises.',
+  rm: 'Sheet without travel; swap 150; toast glass only.', haptic: 'Day: none (the system date picker ticks itself). Who can read it: H-select (a choice).', never: 'No flash, slide or highlight on the row; no scroll to it.',
+  setup: function () { mountPage(byId('a2')); }, actions: [
+    { label: 'Change the day', run: async function () {
+      mountPage(byId('a2')); q('#page').scrollTop = 330;
+      var s = await openSheet('<h3>The day it is about</h3><p>(The system date picker sits here.)</p><div class="opt">Sunday 10 March</div><div class="opt" style="font-weight:600">Saturday 9 March</div><div style="margin-top:12px"><button class="btn primary full">Save</button></div>');
+      if (!(await wait(700))) return;
+      await closeSheet(s);
+      swapValue(q('[data-row=day]'), 'Saturday 9 March');
+      var dl = q('#opening .dateline'); fade(dl, 1, 0, M.swapMs / 2).then(function () { dl.textContent = 'Saturday 9 March'; fade(dl, 0, 1, M.swapMs / 2); });
+      toast('Moved to Saturday 9 March.');
+    } },
+    { label: 'Who can read it: Only you', run: async function () {
+      mountPage(byId('a2')); q('#page').scrollTop = 330;
+      var s = await openSheet('<h3>Who can read it</h3><div class="opt" id="only">Only you</div><div class="opt" style="font-weight:600">In the book</div>');
+      if (!(await wait(600))) return;
+      haptic('tap (H-select)'); q('#only').style.fontWeight = 600;
+      if (!(await wait(250))) return;
+      await closeSheet(s); swapValue(q('[data-row=who]'), 'Only you');
+    } }] });
+
+scene({ grp: G3, id: 'B-M29', title: 'Mark a first: toggle, label sheet, unmark, Undo', screen: 'B-S12.labelSheet, .marked, .undo', v2: 'system toggle, T-SHEET, m.swap, m.move, m.toast',
+  trigger: 'This was a first on; Done; off; Undo.', moves: 'On: the system toggle moves, the label sheet rises. Done: the label arrives as the row\'s second line (m.swap) and rows below m.move. Off: the line goes, rows close up (m.move), the Undo toast materialises (T4). Undo: back as it was.',
+  rm: 'Toggle is the system\'s; rows take their places at once; toast glass only.', haptic: 'none from us on the toggle (it plays its own); H-select on Undo', never: 'No celebration, stamp, star, glow or confetti; nothing on the card in the Book.',
+  setup: function () { mountPage(byId('a2')); q('#page').scrollTop = 330; firstOn = false; q('[data-row=first]').onclick = function () { if (firstOn) firstOff(); else firstOnFlow(); }; caption('Tap the "This was a first" row on the phone.'); },
+  actions: [{ label: 'Toggle', run: function () { q('[data-row=first]').click(); } }] });
+var firstOn = false;
+function moveThumb(on) { var sw = q('[data-row=first] .switch'), th = sw.querySelector('i'); sw.classList.toggle('on', on); sw.setAttribute('aria-checked', on); return tween(250, function (p) { th.style.transform = 'translateX(' + (on ? 20 * p : 20 * (1 - p)) + 'px)'; }, { ease: EASE }); }
+async function setLabel(text) {
+  var row = q('[data-row=first]'), lt = row.querySelector('.lt'), below = followingSiblings(row);
+  var old = lt.querySelector('.lsub');
+  await flip(below, function () { if (old) old.remove(); if (text) { var sub = h('<span class="lsub" style="opacity:0">' + text + '</span>'); lt.appendChild(sub); fade(sub, 0, 1, M.swapMs, { ease: EASE }); } });
+}
+async function firstOnFlow() {
+  firstOn = true; moveThumb(true);
+  var s = await openSheet('<h3>This was a first</h3><p>In your words, if you like (no placeholder in the real field)</p><div class="field" style="color:var(--text)">laughed at the rain</div><div style="margin-top:12px"><button class="btn primary full">Done</button></div>');
+  if (!(await wait(900))) return;
+  await closeSheet(s); await setLabel('laughed at the rain');
+}
+async function firstOff() {
+  firstOn = false; moveThumb(false); await setLabel(null);
+  toast('No longer marked as a first.', { label: 'Undo', run: async function () { haptic('tap (H-select)'); hideToast(); firstOn = true; moveThumb(true); await setLabel('laughed at the rain'); } });
+}
+
+scene({ grp: G3, id: 'B-M30', title: 'A picture: added, taken off, Undo; the viewer (B-M49)', screen: 'B-S08.withPicture, B-S11.undo, B-S11.viewer', v2: 'm.enter, m.move, m.exit, m.toast; viewer T-COVER (P2)',
+  trigger: 'Added from the system picker; Take the photo off; Undo; tap the picture.', moves: 'Added: the words take their new place (m.move) and the picture arrives with m.enter. Taken off: the picture leaves with m.exit (opacity only), then the words close up (m.move); the Undo toast materialises. Viewer: dissolves in (280 ms) with its clear-glass controls over a 35 percent dim.',
+  rm: 'Enter as a 200 ms fade; exit 160; words move at once; viewer 200 ms fade.', haptic: 'none on add, change or take off; H-select on Undo', never: 'No zoom from the thumbnail, no Ken Burns, no parallax, no blur-up.',
+  setup: function () { mountPage(byId('a2')); }, actions: [
+    { label: 'Add a picture', run: async function () { mountPage(byId('a2')); await addPic(); } },
+    { label: 'Take the photo off', run: async function () { if (!q('#pic')) mountPage(byId('a2'), { pic: true }); await takePicOff(); } },
+    { label: 'Open the viewer', run: async function () { if (!q('#pic')) mountPage(byId('a2'), { pic: true }); await openViewer(); } }] });
+async function addPic() {
+  var body = q('.pagebody'), opening = q('#opening'), rest = q('#rest');
+  var pic = h('<div class="pic" id="pic" style="opacity:0"></div>');
+  await flip([opening, rest], function () { body.insertBefore(pic, opening); });
+  pic.innerHTML = PIC; pic.onclick = openViewer; await mEnter(pic);
+}
+async function takePicOff() {
+  var pic = q('#pic'), opening = q('#opening'), rest = q('#rest');
+  await mExit(pic, false);
+  await flip([opening, rest], function () { pic.remove(); });
+  toast('Photo taken off.', { label: 'Undo', run: async function () { haptic('tap (H-select)'); hideToast(); await addPic(); } });
+}
+async function openViewer() {
+  var v = h('<div class="viewer" role="dialog" aria-label="Photo"><div class="vpic">' + PIC + '</div><div class="dim"></div><button class="vbtn glass" style="--ga:0.55;--gb:18;right:16px;top:56px" data-v="close">Close</button><button class="vbtn glass" style="--ga:0.55;--gb:18;left:16px;bottom:40px">Change</button><button class="vbtn glass" style="--ga:0.55;--gb:18;right:16px;bottom:40px">Take the photo off</button></div>');
+  screen.appendChild(v);
+  v.querySelector('[data-v=close]').onclick = async function () { await fade(v, 1, 0, RM ? M.fadeMs : M.dissolveMs); v.remove(); };
+  await fade(v, 0, 1, RM ? M.fadeMs : M.dissolveMs);
+  caption('The viewer is a full-screen cover (T-COVER). Tap Close on the phone.');
+}
+
+scene({ grp: G3, id: 'B-M31', title: 'Hide until a day; the hidden card (B-M32); Open now (B-M33)', screen: 'B-S13.daySelected, B-S16.default, B-S14.confirm', v2: 'T-SHEET + m.swap; m.instant; T-ALERT + m.list.remove',
+  trigger: 'Hide it; the Book; Open now confirmed.', moves: 'Hide it: the sheet goes; the row reads "Hidden until" with the day (m.swap). Book: the hidden card is static. Open now: the row leaves (m.exit, opacity only), then the rows below close up (m.move). The words were already on the author\'s page.',
+  rm: 'Fades only; the close-up at once.', haptic: 'none (the date picker ticks itself; Open now is not destructive)', never: 'No envelope closing, lock, wax seal, fold, blur, countdown or reveal; no sealed sound.',
+  setup: function () { mountPage(byId('a3')); }, actions: [
+    { label: 'Hide until a day', run: async function () {
+      mountPage(byId('a3')); q('#page').scrollTop = 330;
+      var s = await openSheet('<h3>Hide until a day</h3><p>Only you can see it until that day. (Placeholder; WORDS.md holds the honest limits.)</p><div class="opt" style="font-weight:600">12 March 2027</div><div style="margin-top:12px"><button class="btn primary full">Hide it</button></div>');
+      if (!(await wait(800))) return;
+      await closeSheet(s);
+      var row = q('[data-row=seal]'), lt = row.querySelector('.lt'); fade(lt, 1, 0, M.swapMs / 2).then(function () { lt.textContent = 'Hidden until'; fade(lt, 0, 1, M.swapMs / 2); });
+      swapValue(row, '12 March 2027');
+      caption('The author\'s words did not change or dim.');
+    } },
+    { label: 'See the Book (hidden card)', run: function () { mountBook({ sealed: 'a3' }); caption('B-M32: static. A tap opens the page with the hand-off (B-M25).'); var c = q('.sealcard'); c.onclick = async function () { var st = await cardToPage(c, byId('a3'), { noColumn: true, page: { sealed: true } }); bindPage(st); }; } },
+    { label: 'Open now', run: async function () {
+      mountPage(byId('a3'), { sealed: true }); q('#page').scrollTop = 330;
+      if (!(await wait(400))) return;
+      var s = await openSheet('<h3>Open this letter now?</h3><p>It cannot be hidden again.</p><div style="display:flex;gap:10px"><button class="btn full" style="flex:1;font-weight:600">Cancel</button><button class="btn full" style="flex:1">Open now</button></div>');
+      if (!(await wait(900))) return;
+      await closeSheet(s);
+      await listRemove(q('[data-row=sealed]'));
+      caption('The row left; nothing revealed.');
+    } }] });
+
+scene({ grp: G3, id: 'B-M34', title: 'Delete, and Undo', screen: 'B-S15.confirm, B-S01.undoDeleted', v2: 'T-ALERT, T-ZOOM back, m.list.remove, m.toast, m.list.insert, m.mark',
+  trigger: 'Delete letter (Keep it is the default); Undo.', moves: 'The confirmation closes; the page goes back into its card; the card leaves (m.exit, opacity only), then the rows below close up (m.move); "Letter deleted." with Undo materialises and stays (no timer). Undo: the rows make room, the card enters, the tint fades over 1600 ms.',
+  rm: 'Hand-off back; card fades 160; gap closes at once; toast glass only; tint static then fades.', haptic: 'H-warning at confirm (commit first); H-select on Undo', never: 'No crumple, slide to a bin or shake.',
+  setup: function () { mountBook(); bindCards(async function (c, L) { var st = await cardToPage(c, L); bindPage(st); }); },
+  actions: [{ label: 'Open the second card', run: function () { q('.card[data-id=a2]').click(); } }, { label: 'Delete', run: async function () {
+    if (!open) { q('.card[data-id=a2]').click(); if (!(await wait(900))) return; }
+    var st = open; var pg = q('#page'); pg.scrollTop = pg.scrollHeight;
+    var s = await openSheet('<h3>Delete this letter?</h3><p>It waits in Recently deleted for 30 days.</p><div style="display:flex;gap:10px"><button class="btn full" style="flex:1">Delete letter</button><button class="btn full" style="flex:1;font-weight:600">Keep it</button></div>');
+    if (!(await wait(900))) return;
+    haptic('warning (H-warning)'); await closeSheet(s);
+    await pageBack(st);
+    var row = q('.row[data-id=a2]'), next = row.nextElementSibling, parent = row.parentNode;
+    await listRemove(row);
+    toast('Letter deleted.', { label: 'Undo', run: async function () {
+      haptic('tap (H-select)'); hideToast();
+      var nr = h(cardHTML(byId('a2'))); nr.style.opacity = 0;
+      await flip(followingSiblings(q('.row[data-id=a1]')), function () { parent.insertBefore(nr, next); });
+      await mEnter(nr); fade(nr.querySelector('.wash'), 1, 0, M.newMarkMs, { ease: EASE });
+      bindCards(async function (c, L) { var st2 = await cardToPage(c, L); bindPage(st2); });
+    } });
+  } }] });
+
+scene({ grp: G3, id: 'B-M35', title: 'Reading Size', screen: 'B-S08.ownSpoken', v2: 'm.swap',
+  trigger: 'A Reading Size step.', moves: 'The words cross-fade at the new size (150 ms); the scroll stays anchored.', rm: 'The same.', haptic: 'H-select per step', never: 'Font size never animates.',
+  setup: function () { mountPage(byId('a1')); readSize = 17; }, actions: [{ label: 'Larger', run: function () { stepSize(3); } }, { label: 'Smaller', run: function () { stepSize(-3); } }] });
+var readSize = 17;
+function stepSize(d) {
+  readSize = clamp(readSize + d, 14, 32); haptic('tap (H-select)');
+  qa('#page .words').forEach(function (w) { w.style.fontSize = readSize + 'px'; w.style.lineHeight = Math.round(readSize * 1.53) + 'px'; fade(w, 0, 1, M.swapMs, { ease: EASE }); });
+}
+
+/* ---------- Home slips ---------- */
+scene({ grp: G4, id: 'B-M37', title: 'One past letter on Home (B-M37 to B-M39)', screen: 'B-S17.default (alias .present), .dismissed', v2: 'm.enter.group (Home); T-ZOOM fallback; m.list.remove',
+  trigger: 'Home on a cold launch; a tap; Not today.', moves: 'The card is one item of Home\'s first content, after the prompt. Tap: the hand-off to the page. Not today: m.exit (opacity only), then what is below closes up (m.move); focus to the next element.',
+  rm: 'Rendered complete, no enter (NS-23); Not today: fade 160, close-up at once.', haptic: 'none', never: 'Speak and Type never move; no stamp, ribbon or count.',
+  setup: function () { screen.innerHTML = homeHTML({ slip: 'past' }); bindSlip(); }, actions: [
+    { label: 'Cold launch', run: async function () {
+      screen.innerHTML = homeHTML({ slip: 'past' }); bindSlip();
+      ['#h0', '#h1', '#h2', '#slip'].map(function (s) { return q(s); }).forEach(function (p, i) {
+        if (RM && p.id === 'slip') { p.style.opacity = 1; return; }
+        mEnter(p, { delay: RM ? 0 : i * M.staggerMs });
+      });
+    } },
+    { label: 'Not today', run: function () { var b = q('[data-act=nottoday]'); if (b) b.click(); } },
+    { label: 'Tap the card', run: function () { var s = q('#slip'); if (s) s.click(); } }] });
+function bindSlip() {
+  var s = q('#slip'); if (!s) return;
+  s.onclick = async function (e) {
+    if (e.target.closest('[data-act=nottoday]')) return;
+    var st = await cardToPage(s, byId('a1'), { noColumn: true });
+    var b = q('#page [data-act=back]'); if (b) b.onclick = function () { pageBack(st); };
+  };
+  var nt = q('[data-act=nottoday]');
+  if (nt) nt.onclick = async function (e) { e.stopPropagation(); await listRemove(s); caption('Gone until tomorrow. Focus moved to the next element. Speak and Type never moved.'); };
+}
+
+scene({ grp: G4, id: 'B-M41', title: 'A seal opens on its day', screen: 'B-S16.afterOpening; B-S18.default', v2: 'm.instant',
+  trigger: 'The instant passes.', moves: 'Nothing animates. No timer: the letter is open at the next render cause, in one frame, with no tint. On Home the seal-opened line renders complete, exempt from Home\'s enter.',
+  rm: 'The same.', haptic: 'none', never: 'No reveal, unblur, envelope, tint, sound, badge, notification, count or confetti.',
+  setup: function () { mountBook({ sealed: 'a3' }); }, actions: [
+    { label: 'The clock passes the instant', run: function () { caption('Nothing happens now. There is no timer at the instant.'); } },
+    { label: 'The Book renders again (focus)', run: function () { var sc = q('#bookScroll'), y = sc ? sc.scrollTop : 0; mountBook(); q('#bookScroll').scrollTop = y; caption('The hidden card became the letter card in one frame. No fade, no tint.'); } },
+    { label: 'Home on that day (cold launch)', run: async function () {
+      screen.innerHTML = homeHTML({ slip: 'seal' });
+      ['#h0', '#h1', '#h2'].map(function (s) { return q(s); }).forEach(function (p, i) { mEnter(p, { delay: RM ? 0 : i * M.staggerMs }); });
+      q('#slip').onclick = async function () { mountBook(); var st = await cardToPage(q('.card[data-id=a3]'), byId('a3'), { noColumn: true }); bindPage(st); };
+      caption('Home\'s content entered; the seal-opened line was complete from frame 1. Its words show only on a tap (hand-off).');
+    } }] });
+
+/* ---------- Read together ---------- */
+scene({ grp: G5, id: 'B-M43', title: 'Into Read together, and back (B-M47)', screen: 'B-S01 to B-S19.default', v2: 'T-COVER (m.cover); lamp per P3',
+  trigger: 'Read together; Close.', moves: 'A 280 ms cross-dissolve; the top bar and turn buttons are glass from frame 1. The Book\'s lamp leaves (160 ms); at night the dusk pool comes up with the room over 280 ms (P3). Close dissolves back; the Book\'s lamp returns; nothing re-enters.',
+  rm: 'm.fade 200; lamp and pool at their levels.', haptic: 'none', never: 'No title card, banner or count.',
+  setup: function () { mountBook(); q('[data-act=read]').onclick = function () { rtOpen(LETTERS.slice().reverse(), 0); }; }, actions: [{ label: 'Read together', run: function () { mountBook(); rtOpen(LETTERS.slice().reverse(), 0); } }, { label: 'Close', run: rtClose }] });
+
+scene({ grp: G5, id: 'B-M44', title: 'Page turn (buttons and swipe)', screen: 'B-S19.default (alias .turning), .year', v2: 'T-PAGE, m.pageTurn',
+  trigger: 'Next letter, Back one, or a sideways swipe.', moves: 'Next: the page moves 24 pt left over 160 ms, its words gone by 104 ms; the next comes from 24 pt right on spring.standard, fading in over 200 ms from 52 ms. A swipe follows the finger; a quarter of the width or a fling turns it, otherwise it settles back on snappy. Soft edge at the ends. The hairline steps.',
+  rm: 'm.fade 200; the page does not follow the finger.', haptic: 'none (Paper sounds page_turn only if on and nothing plays)', never: 'No curl, shadow or count on screen; the hairline never animates.',
+  setup: function () { mountBook(); RT.list = LETTERS.slice().reverse(); RT.i = 0; var rt = h(rtHTML()); rt.style.opacity = 1; screen.appendChild(rt); q('#pool').style.opacity = 1; setHair(); bindRT(); caption('Use the buttons on the phone, or drag the page sideways.'); },
+  actions: [{ label: 'Next letter', run: function () { turn('next'); } }, { label: 'Back one', run: function () { turn('back'); } }] });
+
+scene({ grp: G5, id: 'B-M46', title: 'End of the year or the book', screen: 'B-S20.endOfBook, .endOfYear', v2: 'T-PAGE, then still',
+  trigger: 'The page after the last letter.', moves: 'The end page arrives by the page turn. The moon is drawn complete (v2 retires m.draw outside first run). The dusk pool dims to half over 280 ms (P3). Then nothing moves.',
+  rm: 'm.fade 200; the pool at half at once.', haptic: 'none', never: 'No summary, count, recap or fireworks.',
+  setup: function () { mountBook(); RT.list = LETTERS.slice(0, 2); RT.i = 1; var rt = h(rtHTML()); rt.style.opacity = 1; screen.appendChild(rt); q('#pool').style.opacity = 1; setHair(); bindRT(); },
+  actions: [{ label: 'Turn to the end', run: function () { turn('next'); } }] });
+
+scene({ grp: G6, id: 'B-M48', title: 'Read-along (NS-29, parked)', screen: 'B-S23', v2: 'm.follow (kept for a future build)',
+  trigger: 'Not built.', moves: 'Nothing in this area.', rm: 'n/a', haptic: 'none', never: 'Not drawn as a working feature.',
+  setup: function () { screen.innerHTML = '<div style="padding:120px 28px;font-size:16px;color:var(--muted)">Read-along is parked (NS-29). Nothing here moves with a voice.</div>'; }, actions: [] });
+
+/* v2 m.list.remove: the row leaves with m.exit (opacity only), then the rows below close up with m.move. */
+async function listRemove(row) {
+  var below = followingSiblings(row);
+  await mExit(row, false);
+  var hgt = row.offsetHeight;
+  await flip(below, function () { row.remove(); });
+  return hgt;
+}
+/* P1 m.list.swap: the list fades out over half of fadeMs, is replaced at once, and fades in over the other half. */
+async function listSwap(change) {
+  var w = q('#listWrap');
+  await fade(w, 1, 0, M.fadeMs / 2);
+  change();
+  await fade(w, 0, 1, M.fadeMs / 2);
+}
+
+/* ---------------- shell ---------------- */
+var current = null;
+function renderList() {
+  var nav = document.getElementById('list'), grp = null, html = '';
+  S.forEach(function (s, i) {
+    if (s.grp !== grp) { grp = s.grp; html += '<div class="grp">' + grp + '</div>'; }
+    html += '<button data-i="' + i + '">' + s.id + ' ' + s.title + '</button>';
+  });
+  nav.innerHTML = html;
+  Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) { b.onclick = function () { select(+b.getAttribute('data-i')); }; });
+}
+function select(i) {
+  gen++; toastEl = null; open = null; RT.busy = false;
+  current = S[i];
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === i); });
+  caption('');
+  current.setup();
+  var c = document.getElementById('controls'); c.innerHTML = '';
+  current.actions.forEach(function (a) {
+    var b = document.createElement('button'); b.textContent = a.label;
+    b.onclick = function () { gen++; RT.busy = false; a.run(); };
+    c.appendChild(b);
+  });
+  var r = document.createElement('button'); r.textContent = 'Reset'; r.onclick = function () { select(i); }; c.appendChild(r);
+  document.getElementById('info').innerHTML = '<h2>' + current.id + ': ' + current.title + '</h2><dl>' +
+    '<dt>Screen and state (DESIGN.md)</dt><dd>' + current.screen + '</dd><dt>v2 primitive and transition</dt><dd>' + (current.v2 || '') + '</dd><dt>Trigger</dt><dd>' + current.trigger + '</dd><dt>What moves</dt><dd>' + current.moves + '</dd>' +
+    '<dt>Reduce Motion</dt><dd>' + current.rm + '</dd><dt>Haptic</dt><dd>' + current.haptic + '</dd><dt>Never</dt><dd>' + current.never + '</dd></dl>';
+}
+document.getElementById('rm').onchange = function (e) { RM = e.target.checked; if (current) select(S.indexOf(current)); };
+document.getElementById('rt').onchange = function (e) { RTX = e.target.checked; screen.classList.toggle('rtx', RTX); if (current) select(S.indexOf(current)); };
+document.getElementById('v2spring').onchange = function (e) { M.standard = e.target.checked ? M.standardV2 : M.standardToday; };
+document.getElementById('slow').onchange = function (e) { SLOW = e.target.checked ? 4 : 1; };
+document.getElementById('dark').onchange = function (e) { document.getElementById('phone').classList.toggle('dark', e.target.checked); screen.classList.toggle('dark', e.target.checked); document.body.classList.toggle('darkPage', e.target.checked); };
+renderList(); select(0);
+</script>
+</body>
+</html>

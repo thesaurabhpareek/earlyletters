@@ -676,6 +676,21 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: a new ruling naming the AX or D line it replaces.
 - Revisit when: a card changes one of these behaviours, or a design PR's review finds a fact behind a line wrong. Karma
 
+### CR-68 Harness rows HV2-B61 to B87 for the requirements feedback loop: approved as a role review, with nine must-fixes applied (Fri 20 Nov 2026, Karma (session earlyletters-hfl), on the harness backlog PR)
+- Question: the founder asked (relayed, not verbatim) for the harness to follow the requirements feedback loop, with a CTO review before any row goes to the harness lane. Which rows go, in what form?
+- Tier and type: T2 for B61, B62, B80, B82, B84, B85, B86 (the dispatcher, the rules every agent reads, a workflow proposal, a content test module); T1 for the rest; T3 for B87 (an unattended schedule); complicated, with the cadence and thresholds complex.
+- Options considered: build the ten proposals P1 to P10 as written; build only the read-only measures and detectors first; do nothing and keep the loop manual; edit all 26 charters and memory files as the founder's words suggest.
+- Ruling:
+  - Rows B61 to B75, B78, B80 and B82 to B86 may go to the harness lane, each as its own draft PR the founder merges. B87 needs the founder. B76 and B79 are cut and B77 is deferred (trigger: eight class E items in one week). B81 is unused.
+  - Order: B65, B72, B78, B63, B66, B67, B64, B84, B85, B61, B69, B68, the detectors, B86, B80, B83, B82; B62 last.
+  - Detectors flag and route; none edits another owner's file. The triage lint never picks a class. Ledger, metrics and digest carry ids, handles, classes and counts only.
+  - This is a role review of method (CR-32). It merges nothing and does not replace the founder's merge.
+- Why: `docs/agents/harness-v2/REVIEW-FEEDBACK-LOOP-KARMA-20nov.md` has the findings MF-1 to MF-9 and SF-1 to SF-7, the pre-mortems and the second pass. Risk and return: the read-only rows return the most for the least risk; the dispatcher row is the only one that touches every assignment, so it goes last. Framework: pre-mortem and one-way versus two-way doors.
+- Debate: self-challenged only. The strongest objection is that the loop already works by hand and these rows add machinery before there is data. Answer: the first rows measure and search, which is how we get the data, and the schedule and the lint of questions that have no volume are deferred or cut.
+- Door: two-way; every row names its own way back.
+- Way back: a new ruling that supersedes this one; each row is reverted by reverting its PR.
+- Revisit when: the first four-week baseline from B67 exists, or the agent lane is switched on. Karma
+
 ### CR-69 Architecture decisions for requirements rev 2: the engineering-owned questions closed so no builder waits (Fri 20 Nov 2026, Karma (session earlyletters-61), on the founder's instruction not to delay requirement closure or architectural decisions)
 - Question: the engineering designs for NS-38 to NS-52 (`docs/tdd/new-scope/12` to `17`, PRs #964 to #976) and the agent briefs (#937 to #963) leave engineering-owned questions open (budget.ts shape, media migration, module, flags, consent rollout order, libraries, merge-queue rule). The rev 2 pack is locked (inputs branch 84bcf961); errata E13 and E34 to E42 and closures CL-111 and CL-115 already answer several. Product and design questions are not decided here: they are filed one per row id on #934 and #935 and answered in errata by product with the Chief Product Officer and the Chief Design Officer.
 - Tier and type: T2 (data, sync contract and native code choices); complicated. Each line is two-way until the code it governs ships.
