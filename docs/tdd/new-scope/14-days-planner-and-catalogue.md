@@ -5,7 +5,7 @@ Status: Proposed, 20 Nov 2026. Author: `mobile` (Claude session) for Karma, task
 ## 1. Planner kinds, the registry and the one-a-day chooser (NS-46-R4, R7 to R10, R29 to R33; NS-48-R2, R24, R26)
 
 ### 1.1 What is built
-- **Fact** `PlannedKind = 'evening' | 'monthAge' | 'birthday'` (`planner.ts:111`); ids `el.<kind>.<date>` (`ID_PREFIX = 'el.'`, `planner.ts:131, 334, 365`); the evening loop skips a date only if a month or birthday note holds it (`planner.ts:357`), which is the whole of today's "one a day"; the final cut is `sort(fireAt).slice(0, max)` with `max` 60 (`planner.ts:295, 378`) [V].
+- **Fact** `PlannedKind = 'evening' | 'monthAge' | 'birthday'` (`planner.ts:111`); ids `el.month.<date>`, `el.birthday.<date>` and `el.evening.<date>` (`ID_PREFIX = 'el.'`, `planner.ts:131, 334, 365`; a `monthAge` note is written as `el.month.`, not `el.monthAge.`); the evening loop skips a date only if a month or birthday note holds it (`planner.ts:357`), which is the whole of today's "one a day"; the final cut is `sort(fireAt).slice(0, max)` with `max` 60 (`planner.ts:295, 378`) [V].
 - **Fact** Plan notices are a second scheduler (`apps/mobile/src/lib/billing/`): ids `plan.` (`lib/billing/plan-reminders.logic.ts:50`), cap 4 (`:48`), no shared budget. Our scheduler cancels only its own (`scheduler.ts:148`) [V]. So "one a day is enforced nowhere" (`21:343`); the property test NS-46-R30 fails on `develop` today for a birthday in book A and a month day in book B (`11-foundations.md:75`, R1b).
 - **Fact** A tap routes `evening` to Home and everything else to the Book (`scheduler.ts:257`); the payload is `{ source, kind }` (`scheduler.ts:159`) [V].
 - **Fact** Birthday time is 09:00 (`BIRTHDAY_TIME`, `planner.ts:139`); the window is 07:00 to 21:30 (`planner.ts:135`, `clampReminderTime` `:177`) [V].
@@ -26,13 +26,14 @@ The order is the DL-2 order (a day the parent typed, birthday, library day, mont
 
 ### 1.3 `chooseOnePerDay` (the only place the rule lives)
 ```
-chooseOnePerDay(candidates: Candidate[], planPending: number, max = 60): { kept: Candidate[]; dropped: number }
+chooseOnePerDay(candidates: Candidate[], planPending: number): { kept: Candidate[]; dropped: number }
+const BUDGETED_MAX = 60, TOTAL_MAX = 64   // locked NS-32-R4b; product may rule TOTAL_MAX = 60 (file 13 Conflict C-2)
 Candidate = { source, date: 'YYYY-MM-DD', fireAt, payload }   // payload opaque to budget.ts
 ```
 1. Group by local `date`. Keep the candidate with the lowest rank. Merge same-source candidates for one date into one with a list (two children's month day: `monthNoteCopy` today does this by key `kind:date`, `planner.ts:319-322`; two library days: one note, neutral title, both names after the tap, NS-46-R8; three or more joined by the content layer's list format, NS-46-R39).
 2. A birthday and a month note for different children on one date become one note, birthday wins (`11-foundations.md:75`).
-3. Sort by `fireAt`, then id. Cut to `max - planPending`, nearest first; later ones return at the next re-plan (Q-QA-4, CL-045; `21:270`). `planPending` is never cut: plan notices are first within 60 (E13).
-4. Pure: no clock, no store, no Notifications import. A fast-check style property test (file 16 section 1 item 3) over random plans asserts no date holds two kept candidates and `kept.length + planPending <= 60`.
+3. Sort by `fireAt`, then id. Cut to `min(BUDGETED_MAX, TOTAL_MAX - planPending)`, nearest first (60 under the default, since `planPending <= 4`); later ones return at the next re-plan (Q-QA-4, CL-045; `21:270`). Day notes count inside the 60 budgeted. `planPending` is never cut. If product rules 60 in total (E13), only `TOTAL_MAX` changes.
+4. Pure: no clock, no store, no Notifications import. A fast-check style property test (file 16 section 1 item 3) over random plans asserts no date holds two kept candidates and `kept.length <= 60` and `kept.length + planPending <= TOTAL_MAX`. The planner is wired to this function by NS-32 PR (b), amended; B1 delivers `budget.ts` and its tests only, and B8 builds on PR (b) (file 17).
 `planReminders` becomes: gates, then candidates from each source, then `chooseOnePerDay`, then copy. The evening loop stops skipping `noteDays` (`planner.ts:357`); the chooser does it. The planner gets `PlanInput.planPending` and `PlanInput.days: DaySlot[]` (below).
 
 ### 1.4 Day sources, gates and identifiers
@@ -43,7 +44,7 @@ Candidate = { source, date: 'YYYY-MM-DD', fireAt, payload }   // payload opaque 
 - Subject child of `{child}` in a neutral body: the active book's first included, not quiet child; an expecting-only book uses the nameless line (as typed days do, `21:252`).
 
 ### 1.5 Horizon and the ceiling (NS-46-R10, R9; Conflict C-2)
-Library days plan 366 days ahead inside the 60 cut (CL-027); a parent who does not open the app for a year may have far days not pending, said plainly on C-S24 (content key `days.farDays.line`, PROPOSED). The 35-day horizon is NS-13's evening policy and does not apply (RV-4). **Rec** `planPending` is read in the scheduler from `getAllScheduledNotificationsAsync` (`scheduler.ts:146`) by counting identifiers that start `plan.` (`PLAN_ID_PREFIX` in `lib/billing/plan-reminders.logic.ts`), and the plan-notice scheduler asks for a re-plan after it schedules (a one-line hook, owner `payments`; Risk R-2 in file 17). Between the two events at most 60 + 4 = 64 stay pending, which is why 60 total leaves the race harmless.
+Library days plan 366 days ahead inside the 60 budgeted cut (CL-027); a parent who does not open the app for a year may have far days not pending, said plainly on C-S24 (content key `days.farDays.line`, PROPOSED). The 35-day horizon is NS-13's evening policy and does not apply (RV-4). **Rec** `planPending` is read in the scheduler from `getAllScheduledNotificationsAsync` (`scheduler.ts:146`) by counting identifiers that start `plan.` (`PLAN_ID_PREFIX` in `lib/billing/plan-reminders.logic.ts`), and the plan-notice scheduler asks for a re-plan after it schedules (a one-line hook, owner `payments`; Risk R-2 in file 17). Under the default the ceiling is 60 budgeted plus at most 4 plan notices, 64 in all, by construction, so the two schedulers cannot race past it; the hook only keeps the count in the property test exact. Under a product ruling of 60 in total the hook becomes necessary, because a plan notice added between two re-plans would take the total over 60.
 
 ### 1.6 Tap, landing and re-plan
 - Routing: `scheduler.ts:257` becomes a lookup: `evening`, `libraryDay`, `typedDay` to Home; `monthAge`, `birthday` to the Book (NS-46-R32, NS-13-R9). A cold-start tap behaves like a warm tap: the `landing.ts` hook of `09-capture.md:57` reads `getLastNotificationResponse()` once; on a library-day tap it routes Home and clears it. No route parameter holds a day. Home finds the day by the phone's local date against the store (NS-46-R32); a later date or an unreadable store opens plain Home, no line, no message.
@@ -136,10 +137,10 @@ There is no flag or pause for NS-48 (variety is not a setting, `21:753`) and non
 Local error code: `days_store_unavailable` only (`21:340`); modules return `{ ok: false, code }` (AP-9, `architecture.md:131`); the UX suffix is `<screen>.error-days_store_unavailable`.
 
 ## 6. Performance and budgets
-- Plan a year of ticked days: under 50 ms on an SE 3 (ASSUMED, `21:313`); Node proxy 0.8 to 1.9 ms per plan was measured by the mobile review (`21:240`); no CI wall-time assertion; a `human` device-check row in the NS-34 run sheet times `apply()` in a development build (numbers only).
+- Plan a year of ticked days: under 50 ms on an SE 3 (ASSUMED, `21:313`); Node proxy 0.8 to 1.9 ms per plan was measured by the mobile review (`21:240`); no CI wall-time assertion (CI asserts operation counts, for example one pass over the candidates, and a generous bound such as 200 ms, never the 50 ms figure); a `human` device-check row in the NS-34 run sheet times `apply()` in a development build (numbers only).
 - Cold start p50 1.2 s, p90 2.0 s, warm p50 400 ms: nothing here is awaited at launch. The days table and store are read only inside the re-plan (`scheduler.ts:263` stays `void`) and by Home after first frame (file 15). Checked by a Node test that `lib/days` is not in the launch import graph (file 16 section 1 item 8, PX-2); measured on a phone by the NS-34 run sheet.
 - Browse sheet opens in under 300 ms (06-nfr default; device row); tap to Home within 2 s on an SE 3 (NS-46-R13, NS-13-R9; device row).
-- Catalogue selection adds no I/O (NS-48 section 8): a micro-benchmark of 366 selections under 5 ms [E].
+- Catalogue selection adds no I/O (NS-48 section 8): a local micro-benchmark of 366 selections (a few ms [E]); CI asserts the call count and a generous bound, not a tight time.
 
 ## 7. Open questions (this file)
 - OQ-P1 Typed-day identifier shared with `el.day.<date>`. `mobile` with NS-18 owner; default shared.
