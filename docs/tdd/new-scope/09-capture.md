@@ -29,7 +29,7 @@ All rows NS-13-R1 to R33 (card section 7); back-off exactly as card section 3a; 
 ### 1.2 What is built (only what the design changes)
 - **Fact** The planner has no back-off (`planner.ts:26-27`); evening horizon 21 days, notes 92 (`planner.ts:86-89, 288-289`); notes keyed `${kind}:${date}` (`planner.ts:313`), so two kinds on one date are two notes.
 - **Fact** Smart quiet reads only own entries' `captured_at` (`prefs.ts:120-131`); drafts never count. `not_much` marks do count (they are entries; `quiet-day.logic.ts:13, 19`).
-- **Fact** `plannerChildren` maps only `remindersOn` (`prefs.ts:115-117`). `Child.quiet` exists (`db/repos/children.ts:47`) and `store.ts:386-389` says "The planner reads `Child.quiet`"; nothing in `lib/reminders` reads it (grep). A quieted book still gets month and birthday notes: NS-32-R14 (P0) and J-N19 fail today.
+- **Fact** `plannerChildren` maps only `remindersOn` (`prefs.ts:115-117`). `Child.quiet` exists (`db/repos/children.ts:47`) and `store.ts:386-389` says "The planner reads `Child.quiet`"; nothing in `lib/reminders` reads it (grep). A quieted book still gets month and birthday notes: NS-32-R14 (P0) and J-N19 fail today. [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]: the planner drops quiet books and `test/reminders-quiet-books.test.ts` exists, so read this Fact as history.
 - **Fact** Sign-out never calls `forgetReminders`; only Erase everything does (`erase-everything.ts:84`). The session ends on three paths: local finish (`session-provider.tsx:293-308`), the under-18 stop (`:311-326`), and a Supabase `SIGNED_OUT` (`:218-222`). Account deletion on the phone ends in `auth.signOut` (`use-account-deletion.ts:118`).
 - **Fact** Scheduled content sets no `categoryIdentifier` and no `interruptionLevel` (`scheduler.ts:153-164`). expo-notifications 57.0.21 (`apps/mobile/package.json:40`) types both (`node_modules/expo-notifications/build/Notifications.types.d.ts:580, 694`) and `getLastNotificationResponse` (`NotificationsEmitter.d.ts:83`).
 - **Fact** A tap on a month or birthday note on a cold start lands on Home, not the Book (`scheduler.ts:256-260`, "the app opens on Tonight anyway"). NS-13-R9 wants the Book.
@@ -50,7 +50,7 @@ All rows NS-13-R1 to R33 (card section 7); back-off exactly as card section 3a; 
 
 **`reminders.onSince`.** `turnOnReminders()` (`scheduler.ts:293-310`) writes today's local date with `enabled`. Upgrade: an install with reminders on and no key gets one once at `startReminders` per OQ-13.4.
 
-**Quiet books (NS-13-R12, NS-32-R14).** `included: c.remindersOn && !c.quiet` in `plannerChildren`. Hidden books are already absent (`listChildren` is `listVisible`, `store.ts:311-313`).
+**Quiet books (NS-13-R12, NS-32-R14).** `included: c.remindersOn && !c.quiet` in `plannerChildren`. Hidden books are already absent (`listChildren` is `listVisible`, `store.ts:311-313`). [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]; the filter is in the planner, keep the test as a guard.
 
 **The session ends, reminders end (NS-13-R13, R14, R15).** New `lib/reminders/session.ts` `endReminderSession()`: deletes `reminders.*`, `reminders.onSince` and `notifications.lockScreenNames` (`prefs.ts:42-51`; `deleteSetting`, `store.ts:281`), and a list of setting prefixes that NS-18 (`typedDay.`) and NS-16 (`signAs.recent`) extend when they land; then awaits `forgetReminders()` (`scheduler.ts:322-348`, which also dismisses presented notes). Settings go first so a debounced re-plan plans nothing. One effect in `session-provider.tsx` fires when the signed-in user id goes from a value to none, so all three paths and the deletion sign-out are covered; a phone that never signed in is untouched. It does not touch `activeChildId` (NS-14 state table: kept at sign-out, D1) or plan notices (`plan.` ids, `plan-reminders.logic.ts:50`). **Unverified** that a purged account's session ends with `SIGNED_OUT` on a phone that never taps Sign out; Rec: the first-run gate's "account gone" branch also calls `endReminderSession()`.
 
@@ -96,7 +96,7 @@ P1 device rows (R1, R7, R9, R16, R25, the daylight-saving row, a date-line row):
 | # | PR | Rows | Main files | Est. | Owner | Reviews |
 |---|---|---|---|---|---|---|
 | 1 | test: the reminder never-list | R5, R6a, R6b, R10, R11, R24; retitles R30, R31 | 3 test files | 180 lines, 3 files | mobile | compliance-engineer / qa |
-| 2 | fix: reminders end with the session; quiet books get none | R13, R14, R15, R12; NS-32-R14 | `session.ts`, `session-provider.tsx`, `prefs.ts`, `index.ts`, 2 tests | 220, 6 | mobile | security-architect / compliance-engineer |
+| 2 | fix: reminders end with the session; quiet books get none (the quiet half is built, `planner.ts:303`) | R13, R14, R15, R12; NS-32-R14 | `session.ts`, `session-provider.tsx`, `prefs.ts`, `index.ts`, 2 tests | 220, 6 | mobile | security-architect / compliance-engineer |
 | P-3 | NS-32 one a day (designed with NS-32) | NS-32-R1, R1b, R3, R4; NS-13-R19, R28 titles | `budget.ts`, `planner.ts` | S | mobile | principal-architect / compliance-engineer |
 | 3 | feat: the anchor counts a made letter | R27, R8 | `repos/entries.ts`, `repos/drafts.ts`, `store.ts`, `prefs.ts`, `scheduler.ts`, inventory row, test | 260, 7 | mobile | data-steward / principal-architect |
 | 4 | feat: pre-scheduled back-off | R3, R4, R18, R32, R23, R2 (fold #680) | `backoff.ts`, `planner.ts`, test | 330, 3 | mobile | principal-architect / compliance-engineer |
@@ -194,7 +194,7 @@ For product (card gaps):
 - **P4** NS-13 3a item 1 starts nudges on day 1; the built planner can nudge the evening reminders are turned on.
 - **P5** NS-32 section 3 counts the back-off "from the last made letter"; NS-13 3a adds `reminders.onSince`. Default: NS-13 (more specific).
 - **P6** The same placeholder is NS-13-R33 (P2) and NS-32-R13 (P1).
-- **P7** NS-13-R12 names hidden books and "Include in my reminders"; NS-32-R14 and J-N19 also name a quieted book, which the code ignores (`prefs.ts:115-117` against `store.ts:386-389`).
+- **P7** NS-13-R12 names hidden books and "Include in my reminders"; NS-32-R14 and J-N19 also name a quieted book, which the code ignores (`prefs.ts:115-117` against `store.ts:386-389`). [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]: no longer true, the planner honours it.
 - **P8** NS-17-R8 wants no words on the server after the next push; `held_drafts.raw_transcript` is immutable once non-empty (`sync.ts:294`).
 
 For Karma (engineering):

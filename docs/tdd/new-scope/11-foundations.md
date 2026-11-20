@@ -10,7 +10,7 @@ Status: Proposed, 20 Nov 2026. Author: `design-systems`, for Karma, who assemble
 
 | Card | Wave | Depth here | State |
 |---|---|---|---|
-| NS-32 notification budget | 1 | full | Not built. #758 is a draft with an `occasion` class; P0 row R14 (quiet book) is unmet on develop |
+| NS-32 notification budget | 1 | full | Not built. #758 is a draft with an `occasion` class; P0 row R14 (quiet book) was unmet [Amended 17-A13: closed on develop, `planner.ts:303`] |
 | NS-33 accessibility floor | 1 | full | Partly built; letter page heading, Me title, Smart Invert, Bold Text, lens control and the audit harness are missing |
 | NS-34 speed baseline | 1 | full (a run sheet, no code) | No sheet, no `perf` profile, no marker harness, no 1,000-letter phone fixture |
 | NS-35 one start | done | record | Built in #828 (`5f5dfaf4`); R6 checks wait for modules |
@@ -25,7 +25,7 @@ The decisions that matter most:
 2. **One undo clock: the toast's own dismissal.** Action toasts keep never timing out, and no feature keeps a second deadline. That makes NS-01-R38b true by construction and needs no Switch Control read. Eval B s4.3 designs a timed window instead (Conflict E1).
 3. **NS-32-R14 is a one-line fix with a P0 test**: `prefs.ts:116` ignores `quiet` (eval B s2.6 item 3 and s8 item 8 found the same). It must land before the Quiet control (BL-985). [Amended 17-A13, by extension; verified: the planner drops quiet books at `planner.ts:303` and `prefs.ts:127` passes `quiet`; `test/reminders-quiet-books.test.ts` exists. The R14 gap is closed on develop; keep the test as a guard.]
 4. **The budget keeps the total at 60**: plan notices first, budgeted notes fill what they leave, through one `chooseOnePerDay(candidates, planPending)` both schedulers call (eval B s2.6, s7.2 item 8; [Amended 17-A5] `allocate` is superseded, CR-69 A1). That satisfies NS-32-R4b and R7 and NS-13 3a item 7 (Conflict P1).
-**5. NS-37's copies are written in place by `scribe-photo`**, because expo-file-system 57.0.7 has no backup-exclusion API (`ScribeFiles.setExcludedFromBackup` does, `modules/scribe-files/index.ts:10-11`, so `makeCopy` may call it instead of writing in place [Amended 16-A-5]). The sweep and the eraser learn the copy names in the same slice (NS-37-R5, P0). Names follow eval B s1.3: `makeCopy`, `derivatives.logic.ts`, `regen.ts`.
+5. **NS-37's copies are written in place by `scribe-photo`**, because expo-file-system 57.0.7 has no backup-exclusion API (`ScribeFiles.setExcludedFromBackup` does, `modules/scribe-files/index.ts:10-11`, so `makeCopy` may call it instead of writing in place [Amended 16-A-5]). The sweep and the eraser learn the copy names in the same slice (NS-37-R5, P0). Names follow eval B s1.3: `makeCopy`, `derivatives.logic.ts`, `regen.ts`.
 6. **NS-01-R17b needs `scribe-photo` to keep the `Progress` it discards** (`ScribePhotoModule.swift:167`), send it as an event, and add a native `cancelPick`. Eval B does not cover it.
 7. **The account layer is designed once, in eval B s2.8**, and BL-961 owns its PR. These cards only consume the scope (6.1).
 8. **NS-34 says what one person can measure by hand.** Rows that need markers say "not measured" until the `perf` profile exists, and a missed or unmeasured row names the flag it holds.
@@ -73,7 +73,7 @@ The decisions that matter most:
 
 **Performance.** Under 50 ms for 3 children, by Node timing on the fixture (eval B s4.1).
 
-**Tests for each P0 row** (`reminders-budget.test.ts`, eval B s6.1). R1: a 92-day property test (prefs, 1 to 3 children, 2 books). R1b: a birthday in book A and a month-day in book B give 1 (fails today). R4, R4b: a full budget with 4 plan notices due still plans all 4, and the total is 60 or fewer, plan notices first [Amended 17-A5]. R8: an injected clock gives no `evening` after day 35. R11: a scan shows bodies come from content imports. R12: with names off over Asha, no name; a plan notice has no digit run or currency. R14: a quiet book gives 0 (fails today). Device: J-N4 (spot), J-N24 and J-N27 (BL-948).
+**Tests for each P0 row** (`reminders-budget.test.ts`, eval B s6.1). R1: a 92-day property test (prefs, 1 to 3 children, 2 books). R1b: a birthday in book A and a month-day in book B give 1 (fails today). R4, R4b: a full budget with 4 plan notices due still plans all 4, and the total is 60 or fewer, plan notices first [Amended 17-A5]. R8: an injected clock gives no `evening` after day 35. R11: a scan shows bodies come from content imports. R12: with names off over Asha, no name; a plan notice has no digit run or currency. R14: a quiet book gives 0 (passes on develop today, [Amended 17-A13]; kept as a guard). Device: J-N4 (spot), J-N24 and J-N27 (BL-948).
 
 **PRs** (BL-966 slices as eval B s5.2; owner `mobile`; lenses `principal-architect` / `compliance-engineer`):
 - (a) `budget.ts` and `chooseOnePerDay`, superseding #758; about 300 lines, 3 files [Amended 17-A5; was `allocate`, about 250].
@@ -343,7 +343,7 @@ The parked rows need no design.
 **Open questions for the founder or counsel, with defaults.** Founder: which accessibility features to declare (none until the walk passes); who runs NS-34 (the founder, on the Asha install); which phones he holds (he says so before the first sheet; buying is his); the notification cap (1 a day); stand-in sample counts (Speak 200; others 20, marked stand-in, until markers); the CI cost of the R16 audit (nightly only); the BL-868 merge, which gates BL-933; proof-book spend and page size (no spend; 8.5 by 8.5, provisional); Tiro under Bold Text (the system Devanagari face under Bold Text only). Counsel: Q41, the plan windows. CLO: font embedding. CCO: re-read Apple 4.5.4 before submission.
 
 **Conflicts for product (card gaps).**
-- P1: NS-32-R4b and R7 (60 plus 4) against NS-13 3a item 7 (60 total). The design keeps 60 total; reword R4b's Given (eval B s8 item 1 agrees).
+- P1: NS-32-R4b and R7 (60 plus 4) against NS-13 3a item 7 (60 total). CLOSED by E13 and CL-115 [Amended 17-A5]. The design keeps 60 total; reword R4b's Given (eval B s8 item 1 agrees).
 - P2: NS-36-R5 and ADR 0028 D2 put seals at 1.8.0, and BL-968 puts Firsts at 1.8.0. Use merge order (eval A s3).
 - P3: NS-01-R41's "line colour" is 1.40:1 in dark mode. Use `mediaFrame`.
 - P4: NS-33-R14: Tiro has only Regular (eval B s8 item 9 agrees).
@@ -365,6 +365,6 @@ The parked rows need no design.
 - E3: `FlatList` against `SectionList` for the lens (7).
 - E4: the Bold Text hook path. Eval B s1.3 puts it in a new `lib/a11y/bold-text.ts`, while `lib/a11y.ts` exists and `@/lib/a11y` resolves to it; a folder beside the file splits one module. Rec: add the hook to `lib/a11y.ts`.
 
-**Adopted from eval B:** `allocate()`, category `reminder` and `app.lastPlannedVersion` (s2.6, s2.1); `makeCopy`, `derivatives.logic.ts` and `regen.ts`, and the BL-932, BL-933, BL-928, BL-984 and BL-974 slices (s1.3, s5.2); `captureBusy()` (s2.3); `visibilitySql` for Find (s1.2, s2.4); the account scope, with BL-961 as owner (s2.8); the seeding profile (s6.4); the test file names (s6.1); the local flags (s3.1); `useLowPowerMode` (s7.2).
+**Adopted from eval B:** `allocate()` (superseded by `chooseOnePerDay`, CR-69 A1 [Amended 17-A5]), category `reminder` and `app.lastPlannedVersion` (s2.6, s2.1); `makeCopy`, `derivatives.logic.ts` and `regen.ts`, and the BL-932, BL-933, BL-928, BL-984 and BL-974 slices (s1.3, s5.2); `captureBusy()` (s2.3); `visibilitySql` for Find (s1.2, s2.4); the account scope, with BL-961 as owner (s2.8); the seeding profile (s6.4); the test file names (s6.1); the local flags (s3.1); `useLowPowerMode` (s7.2).
 
 **Unverified:** that `active` needs no entitlement; iOS behaviour beyond 64 pending; that `previewPlaceholder` maps to `hiddenPreviewsBodyPlaceholder`; heading levels through React Native; React Native `Image` decode and cache; `Progress.fractionCompleted` and `cancel()` for iCloud loads; Instruments on TestFlight builds; the microphone indicator as a timing proxy; `XCUIApplication` by bundle id, and the content-size argument; a heavier Tiro, and the iOS 17 system Devanagari face; VoiceOver reading a `radiogroup` label on Fabric. Nothing was run on a phone.
