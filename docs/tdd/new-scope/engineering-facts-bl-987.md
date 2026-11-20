@@ -17,7 +17,9 @@ Answered 20 Nov 2026 (code read; production not verified).
   - writes a `discarded` marker of ids and times, which the author's other phones read on their next pull.
 - Tests: `sync_v1_server.test.mjs:339-350` (stale base kept, newest base removed, ledgered, marker served) and `:390-392` (legal hold kept).
 - The phone sends held ops only after a pull shows that the server holds held drafts (`apps/mobile/src/lib/sync/outbox.ts:778`, `merge.ts:829`).
-- Open for product: NS-09-R14 says no row survives the acknowledgement, but the two exceptions above keep it, and the phone then shows the draft again as keepable (`merge.ts:584-596`). This is K2 in the 08-keeping design (#861). Karma or the CPO role rules on it.
+- NS-09-R14 says no row survives the acknowledgement, but the two exceptions above keep it, and the phone then shows the draft again as keepable (`merge.ts:584-596`). This is K2 in the 08-keeping design (#861), and the two exceptions go to different owners:
+  - the later-edit exception (`:782-783`) is a product rule: Karma or the CPO role rules on it;
+  - the legal-hold exception (`:782`, `sync_private.held_on_hold` at `:633`) is a legal duty, so `legal` and the founder rule on it, not product.
 - Unverified (OQ-11 in #861): does production run this file with `app.held_sync` on? `.github/migrations-applied.txt` lists only `20260930000000` and `20261001000000`. No agent can read a hosted project, so the founder confirms it during the F4 re-run and P-7 (`data-and-sync` design, #860, section 6). Until then, treat the server half of NS-09-R7, R8 and R14 as tested only against the local database.
 
 ### S2. Does `sync_pull` serve rows while consent is outstanding? (NS-10)
@@ -28,7 +30,8 @@ Answered 20 Nov 2026 (code read).
   - `canSync` is false unless the gate says sync is on (`machine.logic.ts:237-241`);
   - the engine stops when sync is not allowed (`sync/index.ts:204-205`);
   - the first-run gate relies on this (`first-run/gate.logic.ts:183-190`).
-- No server test pins this. Adding a consent check to `sync_pull` would be a contract change (a `data-architect` migration), not a fix, because the pull serves a person their own letters.
+- What the pull serves: the caller's own letters, and also other members' letters in each book the caller belongs to, read through `book_entries` (`20261016000000_sync_v1_server.sql:1498, 1542, 1553, 1563`). So a session with consent outstanding can read other people's letters, not only its own.
+- No server test pins this. Whether the server should gate reads on consent is gap G1 below. This file proposes no fix.
 
 ### S3. Does the pull parser tolerate an unknown response key? (NS-06 B10.1)
 Answered 20 Nov 2026 (code read, and run in a throwaway local test).
@@ -36,6 +39,9 @@ Answered 20 Nov 2026 (code read, and run in a throwaway local test).
 - In the contract package, yes. `parsePullResponse` (`packages/api/src/server/sync.ts:925-928`) uses `v.object` for the page, books and rows (`:785, :666, :583`). In valibot 1.5.0, `object` copies only the keys it declares (`node_modules/valibot/dist/index.mjs:5655, 5668-5669`), so it drops an unknown key and the page still parses.
 - Run 20 Nov 2026 in a vitest case that was deleted afterwards: a page with one unknown key at each of the three levels parsed `ok`, with those keys gone, and `applyPullPage` stored the letter.
 - Gap: no committed test proves this for the pull. The push has one (`packages/api/test/server-contracts.test.ts:113`). Rec: `sync` adds `[NS-06-B10.1]` cases to `server-contracts.test.ts` and to a phone merge test in its next PR. This only covers new keys: a known key whose type changes is a different question.
+
+## Gaps found while answering (no fix in this PR)
+- G1, owner `security-architect`: the server does not gate reads on consent. `sync_pull` checks only `require_user()` (`:1306`), and that is enough to serve other members' letters through `book_entries` (`:1498, 1542, 1553, 1563`). Today the phone is the only control: it does not pull until `canSync` is true. A client that skips that check reads the book before Terms, age or sensitive-data consent. `security-architect` decides whether a server gate is needed. If it is, the gate is a `data-architect` migration and a contract change, because old app builds call `sync_pull` too.
 
 ## data-architect (open)
 - D1. The B10.1 choice (default b): open. The `data-and-sync` design (#860, sections 0 and 5) proposes option (b) with eval A's four corrections and CK10. `data-architect` confirms it on the card.
