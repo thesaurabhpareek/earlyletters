@@ -1,17 +1,17 @@
 # Engineering project plan: new scope, Builds 13 to 15 (Karma, 20 Nov 2026)
 
-Status: v1, 20 Nov 2026. Docs only. Author: Karma (CTO role), with a Claude session. The cards, 13, 14, README, 00 and the backlog are keyed to #846 at `450bcb4a`: the locked requirements pack v1.0 (the 217-page PDF of 20 Nov, built from branch `docs/prd-lock-v1-20nov`). The founder named it the source of truth in a message Karma relayed in this session; that naming is not yet in a record (section 1). State lines (PR heads, reviews, CI, merges) are as of the commit date of this file, 20 Nov 2026; they go stale, and the re-sync rule in section 1 refreshes them.
+Status: v2, refreshed 20 Nov 2026 at about 18:20 UTC from GitHub (v1 was written at head `774d3e13`, state as of about 05:00 to 11:00 UTC). Docs only. Author: Karma (CTO role); this refresh by the `product` agent for Karma. The cards, 13, 14, README, 00 and the backlog are keyed to #846 at `450bcb4a`: the locked requirements pack v1.0 (the 217-page PDF of 20 Nov, built from branch `docs/prd-lock-v1-20nov`). #846 is still a draft and its head has not moved since `450bcb4a` (read at 18:20 UTC) [V]. The founder named the pack the source of truth in a message Karma relayed; CR-66 (develop, merged in #856) now records it as Karma's ruling on the founder's instruction, and no founder-signed record exists (section 1). State lines (PR heads, reviews, CI, merges) are as of 18:20 UTC, 20 Nov 2026; they go stale, and the re-sync rule in section 1 refreshes them.
 
 Line numbers: every `file:line` cite is at `450bcb4a` unless another commit is named. On develop, before #846 merges, the cards, 13, 14 and README read differently; cites to `docs/BACKLOG.md` lines 1 to 3714, RULINGS, ROADMAP and VISION:45 and :51 are the same on both (VISION:49 differs). On develop this PR inserts 2 lines at `13:3` and 1 row at `README:24`. #846 puts its own status line at `13:3`, so whichever merges second resolves a one-line conflict.
 
 What it is: one level below `docs/product/prd/13-engineering-plan.md`. One row per backlog row and per in-flight PR, the order they merge in, who builds and reviews each, and what each waits for.
 
-What it is not: a calendar, or a decision on what is in a release. Release dates and release content are the founder's (ROADMAP:3). Where this plan needs one of those, it asks him in section 5.3. Time is given as weeks from a start (W0), and every number of weeks is an estimate.
+What it is not: a calendar, or a decision on what is in a release. Release dates and release content are the founder's (ROADMAP:3). Where this plan needs one of those, it asks him in section 5.3. Time is given as weeks from a start (W0), and every number of weeks is an estimate. Section 11 lists what the plan does not cover.
 
 Tags used below:
-- [V] Read in the file at `450bcb4a` (the lock) or on develop (`e9dca86c`, now `20553b18`), or through GitHub REST on 20 Nov 2026.
+- [V] Read in the file at `450bcb4a` (the lock) or on develop (`16e61549` at 18:20 UTC, 20 Nov 2026), or through GitHub REST (merged_at, heads, comments, workflow jobs) on 20 Nov 2026.
 - [E] An estimate or a reading, with its basis stated.
-- [U] Not verified. Nothing was run on a phone.
+- [U] Not verified. Nothing was run on a phone. A number Karma relayed and this refresh did not recount is marked "relayed".
 
 ---
 
@@ -19,15 +19,16 @@ Tags used below:
 
 | Item | Value |
 |---|---|
-| Requirements source | #846 (draft) at `450bcb4a`, branch `docs/prd-lock-v1-20nov`: the locked pack v1.0. It merged develop at `4f89d659`. This plan maps #846's head and re-syncs once more when #846 merges [V]. The founder's naming of it as the source of truth is relayed (Founder record, below) |
+| Requirements source | #846 (draft) at `450bcb4a`, branch `docs/prd-lock-v1-20nov`: the locked pack v1.0. It merged develop at `4f89d659`. Its head was unchanged at 18:20 UTC [V]. This plan maps #846's head and re-syncs once more when #846 merges. CR-66 (develop, #856) records the founder's naming of it as the source of truth and the order in which documents win (cards, then 14, then 13 and the designs, then backlog rows) |
 | Before the lock | The first version of this plan mapped develop `697233d3` (#829). Section 1.1 lists the ids the lock renamed or removed |
-| This file's branch | Cut from develop `e9dca86c`; develop is now `20553b18` (#841, #848 and #852 merged). Develop holds no card change since `697233d3`; every card change is in #846 [V] |
-| Files mapped (at `450bcb4a`) | `docs/product/prd/README.md`, `00` to `16` (`16-council-review-round-2.md` is council round 2); `docs/BACKLOG.md` lines 3522 to 3971 (BL-923 to BL-949, then BL-952 to BL-987) and the older rows in section 2.8; `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`; `docs/roadmap/ROADMAP-2026-12-to-2027-05.md`; `docs/product/VISION.md`; `docs/agents/cto/RULINGS.md` to CR-62; `agents/roster.json` |
+| This file's branch | Cut from develop `e9dca86c`; develop is now `16e61549` (merged into this branch at the refresh). Develop holds no card change since `697233d3`; every card change is in #846 [V]. Develop now also holds `docs/tdd/new-scope/` (eight designs, section 10) and CR-66 and CR-67 |
+| Files mapped (at `450bcb4a`) | `docs/product/prd/README.md`, `00` to `16` (`16-council-review-round-2.md` is council round 2); `docs/BACKLOG.md` lines 3522 to 3971 (BL-923 to BL-949, then BL-952 to BL-987) and the older rows in section 2.8; `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`; `docs/roadmap/ROADMAP-2026-12-to-2027-05.md`; `docs/product/VISION.md`; `docs/agents/cto/RULINGS.md` to CR-67; `agents/roster.json`; the eight designs under `docs/tdd/new-scope/` |
 | Cards | NS-01 to NS-37: 637 row ids at the lock (256 at `697233d3`). P0 register: 296 rows (14:104 to 135) |
-| Gates and rulings | G0 to G6 (14:96). Council findings F1 to F17, tie-breaks T1 to T5 and founder-class defaults D1 to D13 (`16-council-review-round-2.md`) |
-| Mapped from the council | F1 to G0 and BL-964; F6 and F7 to the photo stack and BL-952; F8 to BL-966 before BL-943; F9 to sections 4.4 and 9; F12 to the seal and Firsts rows (BL-968, BL-969); F13 to BL-969 (seal sync, card section B10.1, default a pull clause); T3 to BL-953; T4 to BL-954; T5 to Q2; D1 to BL-961; D2 and D3 to BL-962; D7 to BL-977; D13 to section 6 |
-| Open PRs | 172 open at 04:54 UTC, 20 Nov [V]; the ones this plan tracks are in section 2, each with its head on 20 Nov |
-| Founder record used | 19 Nov: "I approve all requirements." (product thread, cited on #843). 19 Nov delegation, quoted at README:65: "Consult with exec team and make all decisions."; the defaults there were taken on 20 Nov under it. 20 Nov: the founder's "Yes, all three" (recorded on #827, #797, #798 and each photo PR) covers the photo size exceptions, #827 and the Ready clicks on #797 and #798. These three are [V]. 20 Nov: he named the locked pack v1.0 the source of truth, in a message Karma relayed in this session ("take this doc as source of truth ... Use the latest product spec doc of 217 pages"). It is not in a record yet; product's draft CR-66 on #846 would record it [U] |
+| Gates and rulings | G0 to G6 (14:96). Council findings F1 to F17, tie-breaks T1 to T5 and founder-class defaults D1 to D13 (`16-council-review-round-2.md`). CR-67 rules the 17 conflicts between the designs (AX-1 to AX-17) |
+| Mapped from the council | F1 to G0 and BL-964; F6 and F7 to the photo stack and BL-952; F8 to BL-966 before BL-943; F9 to sections 4.4 and 9; F12 to the seal and Firsts rows (BL-968, BL-969); F13 to BL-969 (seal sync, card section B10.1, default a pull clause; CR-67 AX-2 rules the pull clause); T3 to BL-953; T4 to BL-954; T5 to Q2; D1 to BL-961; D2 and D3 to BL-962; D7 to BL-977; D13 to section 6 |
+| Open PRs | 177 open at 18:20 UTC, 20 Nov (172 at 04:54): 102 drafts, 75 carrying an `agent:` label [V]. The ones this plan tracks are in section 2, each with its head on 20 Nov |
+| Merged today | 51 PRs into develop between 00:00 and 17:35 UTC on 20 Nov, 58 since 13 Nov (section 4.1). Section 2 lists each against its row [V] |
+| Founder record used | 19 Nov: "I approve all requirements." (product thread, cited on #843). 19 Nov delegation, quoted at README:65: "Consult with exec team and make all decisions."; the defaults there were taken on 20 Nov under it. 20 Nov: the founder's "Yes, all three" (recorded on #827, #797, #798 and each photo PR) covers the photo size exceptions at the sizes then, #827 and the Ready clicks on #797 and #798. These are [V]. 20 Nov: he named the locked pack v1.0 the source of truth, relayed by Karma; CR-66 records it as Karma's ruling, not as his own words [V that CR-66 is on develop; U that he has seen the text] |
 | Founder questions | Q1 to Q8 in section 5.3. Q4 and Q5 (size exceptions) carry a recommendation and block their merges until he answers; the others carry a default |
 
 ### 1.1 Ids the lock renamed or removed
@@ -54,12 +55,13 @@ Every other id at `697233d3` is still defined at the lock. 395 ids are new (637 
 
 ### Re-sync rule
 
-1. This plan maps one commit of the requirements: today #846's head. It changes when that head moves, when #846 merges (one more re-sync, to develop), or when develop later changes under `docs/product/prd/`, `docs/roadmap/` or the new-scope sections of `docs/BACKLOG.md`.
+1. This plan maps one commit of the requirements: today #846's head (`450bcb4a`). It changes when that head moves, when #846 merges (one more re-sync, to develop), or when develop later changes under `docs/product/prd/`, `docs/roadmap/`, `docs/tdd/new-scope/` or the new-scope sections of `docs/BACKLOG.md`.
 2. Karma re-syncs within one working day. Run `git diff <old>..<new>` over those paths and list every card or row id that was added, removed or reworded. Product lists changed ids in each card PR body (agreed on #843).
 3. For each changed id: a reworded row keeps its work row and re-checks its test title; a removed row holds its work row by status (never deleted) until product re-points it; a new row gets a work row or a "no work" line.
-4. Re-read the head of every open PR in section 2. A head that moved after its counted reviews needs a review at the new head (D-132).
+4. Re-read the head of every open PR in section 2. A head that moved after its counted reviews needs a review at the new head (D-132). The refresh of 20 Nov 18:20 UTC read every head against its reviews: the six photo PRs, #894, #895, #871, #879 and the open docs PRs each had a pair of PASS WITH NOTES at their current head, except #846 (CHANGES at its head, one reply) and #798, #799, #843, #830 (no counted review) [V].
 5. Redo sections 3 and 4 only when a dependency, a size or a wave changed.
 6. Change the commit in this header and write "re-synced to <sha>; ids changed: ...". Re-sync from develop, or from #846's head while the founder names it the source of truth; never from any other open branch.
+7. Last re-sync: 20 Nov 18:20 UTC, to `450bcb4a` (unchanged); ids changed: none. State refreshed: 51 merges, the designs, the open heads.
 
 ---
 
@@ -68,149 +70,159 @@ Every other id at `697233d3` is still defined at the lock. 395 ids are new (637 
 How to read the tables:
 - **Owner** is one roster handle, the one that builds it. Other lanes a row needs are named in Depends on or Gate. Interactive sessions build the photo stack and Find; they still use the `mobile` lane.
 - **Reviewers** are two lenses, A then B. Lens A is correctness and tests that fail on the old code. Lens B is the domain. Names are the stewards whose `review_paths` the change touches, or the agent whose domain it is. The dispatcher may substitute by path.
-- **Size** follows 13 section 1 (S, M, L). Open PRs show the measured diff. "PR breakdown: see design" marks rows whose PR count will come from the engineering designs (section 10).
+- **Size** follows 13 section 1 (S, M, L). Open PRs show the measured diff (additions plus deletions, from REST at 18:20 UTC). "Design: n PRs" gives the PR count from the merged engineering designs (section 10), with the design's own line estimates; a count is the design's, not a measure.
 - **Wave** follows 13 section 4. Rows the lock added are placed by this plan [E].
 - **Build**: "13 dark" means merged before the Build 13 cut with its flag off in `production`. "14 on" means the flag turns on in `production` in Build 14. Both rest on Q2's default (section 5.3). "Holds the cut" rests on Q1's default.
 - **Gate**: F founder, C counsel, D device, W words.
-- **Status** is the row's status at `450bcb4a`. The lock removed the founder hold from the held rows; on develop the hold stays until #843 or #846 merges.
+- **Status** is the row's state at 18:20 UTC on 20 Nov, from GitHub: merged (with merged_at, UTC), open (head, size, counted reviews at that head), or not written. "A and B PASS WITH NOTES at the head" means both lenses posted that verdict on the head sha shown [V]. The lock removed the founder hold from the held rows; on develop the hold stays until #843 or #846 merges.
 - Rows marked P-n are missing at the lock. Section 2.9 lists them; product numbers them.
+- "Merged" rows stay in the tables for one refresh so a reader can follow the count; the next re-sync may drop them.
 
 ### 2.1 Photo with a letter (NS-01, BL-931): nine PRs, in merge order
 
-All nine: owner `mobile`, wave 1, build 13 dark if merged by the cut, 14 on (Q2). #834 and #841 have merged; seven are open. Everything is behind `EXPO_PUBLIC_PHOTOS`, off in every profile [V PR bodies]. Each slice targets the one below; when the one below merges it is retargeted to `develop`, `develop` is merged in, and it needs two counted reviews at that final head plus green CI and the macOS store-profile Release launch [V PR bodies]. The PR bodies cite pre-lock ids (section 1.1).
+All nine: owner `mobile`, wave 1, build 13 dark if merged by the cut, 14 on (Q2). #834, #841 and #842 have merged; six are open. Everything is behind `EXPO_PUBLIC_PHOTOS`, off in every profile [V PR bodies], and #896 (merged 14:28) guards that the flag stays off in every store profile [V]. Each slice targets the one below; when the one below merges it is retargeted to `develop`, `develop` is merged in, and it needs two counted reviews at that final head plus green CI and the macOS store-profile Release launch [V PR bodies]. The PR bodies cite pre-lock ids (section 1.1).
 
-| # | PR | Slice | Card rows (as the PR cites them) | Reviewers A / B | Size | Depends on | Gate | Status today |
+| # | PR | Slice | Card rows (as the PR cites them) | Reviewers A / B | Size | Depends on | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|
-| 1 | #834 | 2: the `scribe-photo` native module | NS-01-R2, R17, R22; NX-39-R50, R53 | principal-architect / security-architect | 835 lines, 9 files; exception covered (20 Nov) | develop | D: picker and re-encode checks (section 6) | Merged 20 Nov as `76a4a5d7` [V] |
-| 2 | #841 | 2b: the photo file layer | ADR 0028 D1; NX-39-R53 | principal-architect / security-architect | 350 lines, 5 files | #834 | D: folder protection class, backup flag | Merged 20 Nov at 05:15 as `1513b265`, after its confirm round [V] |
-| 3 | #842 | 2c: module hardening from #834 round 4 | NS-01-R2, R17, R22; NX-39-R50 | principal-architect / security-architect | 88 lines, 4 files | #841 (merged) | D: dismissal paths | Retargeted to develop. Head `d178068c`. A and B PASS WITH NOTES at the head (05:23). CI re-running when read; it merges next once CI is green [V] |
-| 4 | #835 | 3a: local migration 11, `entry_media` store, photo sweep | NS-01-R16, R19; ADR 0028 D1, D5 | data-steward / security-architect | 680 lines, 14 files; exception covered (20 Nov) | #842; NS-36 rule (ADR 0028, CR-62) | D: upgrade from a v10 database; kill during the sweep | Head `f55be7b8`. A and B PASS WITH NOTES at the head. The Debug iOS simulator build is red for a develop-wide reason (3a); #853 fixes it. Needs a review at its final head after retarget [V] |
-| 5 | #836 | 3b: the stored copy (strip, commit) | NS-01-R2, R4, R5, R6, R15, R17, R21; NX-39-R8, R33 | principal-architect / compliance-engineer | +961 / -34 in 16 files (995 lines; 704 when the exception was covered) | #835 | D: ten fixtures through ImageIO | Head `3395e5a6`. A and B PASS WITH NOTES were at `4596b3c1`, not at the head. CI queued. The size grew after the exception: worth naming to the founder with Q4 and Q5 [V] |
-| 6 | #837 | 4a: picker adapter, pending picture | NS-01-R2, R17, R19, R22 | principal-architect / security-architect | 699 lines, 15 files; exception covered (20 Nov) | #836 | D: no prompt, Cancel, iCloud wait, Live Photo, lock over the picker | Head `7122da97`. 0 reviews. CI running. Says NS-01-R17 progress and native Cancel (now R17b) are still open [V] |
-| 7 | #838 | 4b: photo-first on Home through `startCapture` | NS-01-R1, R2, R3, R9, R13, R18, R19, R20, R22, R24 | principal-architect / design-systems | 573 lines, 25 files; exception covered (20 Nov) | #837; NS-35 (#828, merged) | W: 5 keys; D: VoiceOver, AX5, Reduce Motion | Head `190d0f66`. 0 reviews. CI running [V] |
-| 8 | #839 | 4c: the photo on Review and the letter page | NS-01-R7, R8, R9, R16, R17, R19, R21, R25 | principal-architect / design-systems | 523 lines, 17 files; exception covered (20 Nov) | #838 | W: 13 keys plus `text.*`; D: Undo toast, VoiceOver, AX5 | Head `279ba898`. 0 reviews. CI running [V] |
-| 9 | #840 | 5: the Book's Photos lens | NS-01-R9 to R12, R19, R23; NS-33-R3 | design-systems / principal-architect | 269 lines, 11 files | #839. NS-37 (BL-932) before the flag turns on | W: 2 keys; D: AX5, dark mode | Head `f811c9a6`. 0 reviews. CI running. The lens row is still a `tablist` of Buttons (line 25), which NS-33-R3 (11:264) rules out (M3) [V] |
-| 10 | P-1 | `scribe-photo` progress event and native Cancel | NS-01-R17b | principal-architect / security-architect | S [E] | #842 | D: an iCloud-only picture | Not written. Engineering's own id: the lock reserves BL-950 and BL-951 for "#832 follow-ups and NS-01-R17 iCloud progress" (BACKLOG:3717) [V] |
+| 1 | #834 | 2: the `scribe-photo` native module | NS-01-R2, R17, R22; NX-39-R50, R53 | principal-architect / security-architect | 835 lines, 9 files; exception covered (20 Nov) | develop | D: picker and re-encode checks (section 6) | Merged 20 Nov 04:25 UTC [V] |
+| 2 | #841 | 2b: the photo file layer | ADR 0028 D1; NX-39-R53 | principal-architect / security-architect | 350 lines, 5 files | #834 | D: folder protection class, backup flag | Merged 20 Nov 05:15 UTC [V] |
+| 3 | #842 | 2c: module hardening from #834 round 4 | NS-01-R2, R17, R22; NX-39-R50 | principal-architect / security-architect | 88 lines, 4 files | #841 | D: dismissal paths | Merged 20 Nov 06:08 UTC (head `d178068c`) [V] |
+| 4 | #835 | 3a: local migration 11, `entry_media` store, photo sweep | NS-01-R16, R19; ADR 0028 D1, D5 | data-steward / security-architect | 783 lines, 15 files | develop (#842 merged); NS-36 rule (ADR 0028, CR-62) | D: upgrade from a v10 database; kill during the sweep. F: size exception at the new size | Head `39cf30d3`. A and B PASS WITH NOTES at the head. Caption and place ceilings are now 2240 and 960 code points (16 per character; `migrations.ts:462-463` at the head; CR-64 context: migration 11 is unshipped) [V]. Waits on the founder's size exceptions, #854's legal rows, and the PROPOSED words below |
+| 5 | #836 | 3b: the stored copy (strip, commit) | NS-01-R2, R4, R5, R6, R15, R17, R21; NX-39-R8, R33 | principal-architect / compliance-engineer | 1,015 lines, 16 files | #835 | D: ten fixtures through ImageIO. F: size exception | Head `6e613591`. A and B PASS WITH NOTES at the head [V]. The exception covered 704 lines when given; the slice is now 1,015 (section 8, M29) |
+| 6 | #837 | 4a: picker adapter, pending picture | NS-01-R2, R17, R19, R22 | principal-architect / security-architect | 732 lines, 15 files | #836 | D: no prompt, Cancel, iCloud wait, Live Photo, lock over the picker. F: size exception | Head `404ca293`. A and B PASS WITH NOTES at the head. Progress and native Cancel (R17b) are still open (P-1) [V] |
+| 7 | #838 | 4b: photo-first on Home through `startCapture` | NS-01-R1, R2, R3, R9, R13, R18, R19, R20, R22, R24 | principal-architect / design-systems | 629 lines, 25 files | #837; NS-35 (#828, merged) | W: 5 keys; D: VoiceOver, AX5, Reduce Motion. F: size exception | Head `03704c71`. A and B PASS WITH NOTES at the head [V]. R20b's VoiceOver order (Change last) needs a reading-order override; this is a card conflict for product: keep Change under the picture and amend R20b (section 8, M30) |
+| 8 | #839 | 4c: the photo on Review and the letter page | NS-01-R7, R8, R9, R16, R17, R19, R21, R25 | principal-architect / design-systems | 603 lines, 17 files | #838 | W: 13 keys plus `text.*`, among them `features.photos.review.notStored` (PROPOSED); D: Undo toast, VoiceOver, AX5. F: size exception | Head `f3b21698`. A and B PASS WITH NOTES at the head [V] |
+| 9 | #840 | 5: the Book's Photos lens | NS-01-R9 to R12, R19, R23; NS-33-R3 | design-systems / principal-architect | 342 lines, 12 files | #839. NS-37 (BL-932) before the flag turns on | W: `book.lens.monthsButton` (PROPOSED); D: AX5, dark mode | Head `91eef422`. A and B PASS WITH NOTES at the head. Inside CODE-R02. The lens is now one radio `ChoiceGroup`, and the test is titled `[NS-33-R3]` (`photos-lens.tsx:10-28`, `photos-surfaces.test.ts:317-318`), which closes M3 [V] |
+| 10 | P-1 | `scribe-photo` progress event and native Cancel | NS-01-R17b | principal-architect / security-architect | S [E] (11-foundations 8.4: one PR) | #842 (merged); S-4, the BL-878 manifest, first (security design) | D: an iCloud-only picture | Not written. Engineering's own id: the lock reserves BL-950 and BL-951 for "#832 follow-ups and NS-01-R17 iCloud progress" (BACKLOG:3717) [V] |
 
-BL-931 is done when every slice merges with green CI and two counted reviews (BACKLOG:3590). Today a `mobile` session is putting the caption and place ceilings in code points across #835 to #840 and cascading them up the stack (claimed in #855). At the lock, rows for photo that follow BL-931 are BL-953 to BL-958 (section 2.4). NS-01-R14 (export) is BL-933, not a slice.
+What the six open slices wait for, in one list [V Karma, relayed; heads and sizes counted here]: the founder's size exceptions at the new sizes (five are over CODE-R02: 783, 1,015, 732, 629, 603; #840 at 342 is not); #854's legal rows merged first (D-125, founder); the two PROPOSED words above; and a character-limit line (words, founder). The slices then merge in order, each needing a final-head review pair and a macOS launch of about 75 minutes (section 4.1). BL-931 is done when every slice merges with green CI and two counted reviews (BACKLOG:3590). The caption and place ceilings in code points, claimed on #855, are in code at #835's head. At the lock, rows for photo that follow BL-931 are BL-953 to BL-958 (section 2.4). NS-01-R14 (export) is BL-933, not a slice.
 
 ### 2.2 Find and the data rules (NS-02, NS-36, NS-37)
 
-| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
+| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|---|
-| BL-952 | NS-02-R1 to R50, P0 rows first; NS-35-R7 | mobile | principal-architect / compliance-engineer | L: #798 split into at most six PRs | 1 review, 2 lands | ADR 0028 D4, D5 (merged) | 13 dark; 14 on | W: Find keys; D: S1-205; C: through #799 and BL-960. No founder step for the split: each PR is inside CODE-R02 and merges under D-132 | ready; a `mobile` agent started the split today (claimed in #855). Adds three locked rows #798 misses: R35 (rebuild in batches), R37 (failed view announced) and a debounce [V] |
-| #798 Find | NS-02-R1 to R23 (pre-lock) | mobile | principal-architect / compliance-engineer | +2,511 / -12 in 37 files, one PR | 1 | as above | 13 dark | F: only if he wants it kept as one PR (Q4); W: 12 keys, PROPOSED behind `EXPO_PUBLIC_BOOK_SEARCH` | Marked ready 20 Nov. Head `7f36031a`. A PASS and B PASS WITH NOTES were at `e7d399b3`, not at the head. CI green. BL-952 splits it [V] |
-| #799 | NS-02 inventory row; NS-36-R6 | mobile | compliance-engineer / regulatory-affairs | 1 line | 1 | BL-952 | before 14 on | C: retention wording; F: merges `docs/legal` (D-125) | Open. Head `1fac1c6f`. 0 reviews. BL-960 brings the whole inventory section up to date [V] |
-| #854 | Pictures kept with letters and `entry_media` in the data inventory (ADR 0028 D1; NS-36-R6) | privacy | compliance-engineer / regulatory-affairs | +18 / -2 in 2 files | 1 | none | before 14 on | F: merges (D-125) | Open. Head `47c1467f`. BL-960 stacks on it [V] |
-| #797 ADR 0028 | NS-36-R4 | data-architect | data-steward / compliance-engineer | 1 file, +269 | 1 | none | docs | F: Ready click (covered 20 Nov) | Merged 20 Nov as `e9dca86c`. Accepted under CR-62 [V] |
-| BL-959 | NS-36-R4; council X10 | data-architect | data-steward / security-architect | S (PR breakdown: see design) | 1 | #797 (merged) | before 14 on | none | blocked (PR #797 merged on develop): the condition is met (M28). In progress today (#855) [V] |
-| BL-960 | NS-36-R6; council X2 | privacy | compliance-engineer / data-steward | S (PR breakdown: see design) | 1 | #854; `data-architect` pairs | before 14 on | F: merges `docs/legal` (D-125) | ready; in progress today, stacked on #854 (#855) [V] |
-| BL-868 | NS-01-R14; NX-39-R32 | data-architect | compliance-engineer / data-steward | S | 2 | #797 (merged) | before BL-933 | F: merges the `docs/legal` edit (D-125; CR-62 item 3); legal and content draft the words | ready [V] |
-| BL-933 | NS-36-R5 (pictures); NS-01-R14 | mobile (export owner) | data-steward / compliance-engineer | M (PR breakdown: see design) | 2 | BL-868; BL-931 | 14 on | F: BL-868 merged first | blocked (BL-868, BL-931) [V] |
-| BL-932 | NS-37-R1, R2; NS-01-R11 | mobile | principal-architect / data-steward | M (PR breakdown: see design) | 2 | BL-931 | gates 14 on | D: J-N13 | blocked (BL-931) [V] |
-| P-5 | NS-36-R1a to R1d, R2 for pictures | mobile | data-steward / compliance-engineer | S [E] (PR breakdown: see design) | 2 | #835 | before 14 on | none | Not written: no row at the lock cites them (M6) |
+| BL-952 | NS-02-R1 to R50, P0 rows first; NS-35-R7 | mobile | principal-architect / compliance-engineer | L: eight PRs (Karma's ruling; the locked row says at most six, M31) | 1 review, 2 lands | ADR 0028 D4, D5 (merged) | 13 dark; 14 on | W: Find keys; D: S1-205; C: through #799 and BL-960 | Five of eight merged 20 Nov: 1/8 #881 (15:56 UTC), 2/8 #882 (16:21), 3/8 #883 (16:45), 4/8 #884 (17:13), 5/8 #885 (17:35). 6/8 #894 and 7/8 #895 open (below). 8/8 not opened [V]. The locked rows #798 missed (R35, R37, the debounce) are in 4/8, 5/8 and 7/8 [V] |
+| #894 (6/8) | NS-02-R1, R3, R11, R13, R22, R23, R39, R41 | mobile | principal-architect / compliance-engineer | 2,081 lines, 27 files | 1 | develop | 13 dark | F: reads the twelve PROPOSED Find lines; size [U] | Head `1fb48f4e`, base develop; A and B PASS WITH NOTES at the head; GitHub reports it conflicts with develop (`dirty`) [V]. Over 400 lines and 20 files as counted; whether test and fixture lines bring it inside CODE-R02 was not computed [U]. Label `needs:founder` |
+| #895 (7/8) | NS-02-R16a to R16d, R18, R33, R35, R43; S1-205 | mobile | principal-architect / compliance-engineer | 348 lines, 12 files | 1 | #894 (its base) | 13 dark | D: S1-205 | Head `92e37929`; A and B PASS WITH NOTES at the head [V]. "Not yet" in its body: after #879 merges, `ensureFindIndex()` and `findLetters()` check `bookVisibleNow()` (the account seam) |
+| #798 Find | NS-02-R1 to R23 (pre-lock) | mobile | principal-architect / compliance-engineer | +2,511 / -12 in 37 files, one PR | 1 | superseded by the split | 13 dark | F: Q4 now only if he wants it kept whole | Open, head `7f36031a`, no review at the head. Its code is carried by #881 to #885, #894, #895; what happens to #798 itself is for Karma [U] |
+| #799 | NS-02 inventory row; NS-36-R6 | mobile | compliance-engineer / regulatory-affairs | 1 line | 1 | BL-952 | before 14 on | C: retention wording; F: merges `docs/legal` (D-125) | Open. Head `1fac1c6f`. 0 counted reviews. BL-960 (#873) brings the whole inventory section up to date [V] |
+| #854 | Pictures kept with letters and `entry_media` in the data inventory (ADR 0028 D1; NS-36-R6) | privacy | compliance-engineer / regulatory-affairs | 20 lines, 2 files | 1 | none | before 14 on | F: merges (D-125); the photo slices wait on it | Open. Head `47c1467f`. A and B PASS WITH NOTES at the head. BL-960 stacks on it [V] |
+| #797 ADR 0028 | NS-36-R4 | data-architect | data-steward / compliance-engineer | 1 file, +269 | 1 | none | docs | F: Ready click (covered 20 Nov) | Merged 20 Nov 04:28 UTC. Accepted under CR-62 [V] |
+| BL-959 | NS-36-R4; council X10 | data-architect | data-steward / security-architect | S, design 1 PR (data-and-sync 3.6 PR 1) | 1 | #797 (merged) | before 14 on | none | ids at L3 merged as #865 (11:14 UTC). The ADR 0028 amendment for the seal pull clause (CR-67 AX-2) and export minors (AX-3) is the same design PR: not seen merged [U] |
+| BL-960 | NS-36-R6; council X2 | privacy | compliance-engineer / data-steward | S, design: one inventory PR (privacy 4; data-and-sync I1) | 1 | #854; `data-architect` pairs | before 14 on | F: merges `docs/legal` (D-125) | #873 open: head `6f1d9fa0`, 183 lines, 3 files, base `docs/photo-inventory-rows`; A and B PASS WITH NOTES at the head; `needs:founder` [V] |
+| BL-868 | NS-01-R14; NX-39-R32 | data-architect | compliance-engineer / data-steward | S | 2 | #797 (merged) | before BL-933 | F: merges the `docs/legal` edit (D-125; CR-62 item 3); legal and content draft the words | ready; not written [V] |
+| BL-933 | NS-36-R5 (pictures); NS-01-R14 | mobile (export owner) | data-steward / compliance-engineer | M, design 2 PRs (11-foundations 8.3: schema 1.7.0, then the golden) | 2 | BL-868; BL-931 | 14 on | F: BL-868 merged first | blocked (BL-868, BL-931) [V] |
+| BL-932 | NS-37-R1, R2; NS-01-R11 | mobile | principal-architect / data-steward | M, design 3 PRs ((a) native `makeCopy`, (b) writer, eraser, sweep, (c) readers) | 2 | BL-931; after #840 and BL-953 (same Swift file) | gates 14 on | D: J-N13 | blocked (BL-931) [V] |
+| P-5 | NS-36-R1a to R1d, R2 for pictures | mobile | data-steward / compliance-engineer | S [E]; design 36-3 (one PR) and 36-4, 36-5 (two more tests) | 2 | #835 | before 14 on | none | Not written: no row at the lock cites them (M6) |
+| BL-870 | NS-36-R1d (photo bucket accepts no writes) | sync | red-team / security-architect | design 36-6: about 280 lines, 5 files, a migration | 2 | none; founder's `approve-migration` | before 14 on | F: `approve-migration` | ready; not written [V] |
 
 ### 2.3 Wave 1: keeping, the floor and the cross-cutting P0 rows
 
-"In progress today" means a session claimed the row on 20 Nov (board PR #855).
+Merged today are marked with the PR and its merged_at (UTC). Open rows show the head, size and counted reviews at the head.
 
-| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
+| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|---|
-| BL-923 | NS-09-R1, R2 | mobile | done | S | 1 | none | 13 | none | done, #832 `5dc025d3`. Test titles cite BL ids, not NS ids [V] |
-| BL-924 | NS-09-R3 | mobile | done | S | 1 | none | 13 | none | done, #832 [V] |
-| BL-925 | NS-09-R4a, R4b (the line) | content | design-systems / compliance-engineer | S (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1) | W: founder | needs-decision; `content` is drafting it with BL-965 today [V] |
-| BL-926 | NS-09-R4a, R4b | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 1 | BL-925 | 13; holds the cut (Q1) | W | blocked (BL-925) [V] |
-| BL-977 | NS-09-R9 to R17; ruling D7 | mobile | principal-architect / data-steward | S (PR breakdown: see design) | 1 | BL-925, BL-926; `sync` reports the server side | 13: founder decides (Q1) | none | blocked (BL-925, BL-926) [V] |
-| P-4 | NS-09-R6; NS-titled tests for R7, R8 | mobile | principal-architect / data-steward | M [E] (PR breakdown: see design) | 1 | #832 | 13: R6 holds the cut (P1, 14:14); R7, R8 tests before the cut (recommended, Q1) | D: two phones (R8) | Not written. The 08-keeping design reads R7 and R8 as built in code with no NS-titled test; R6 is missing (M8) |
-| BL-922 | NS-10-R0 (the row cites NX-36-S17) | mobile | principal-architect / security-architect | M (PR breakdown: see design) | 1 | #764 (merged) | 13; holds the cut (Q1) | D: S1-204 on two phones | ready; in progress today with BL-961 and BL-978 (the held screen of the 08-keeping design) [V] |
-| BL-961 | [X4-R1]; D1; NS-01-R29, R30; NS-02-R24; NS-10 second-account rows. NS-10-R3 fails today: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125` on develop; the 08-keeping design) | mobile | security-architect / compliance-engineer | M (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1 recommendation: a known P0 defect) | none | ready; in progress today (#855) [V] |
-| BL-978 | NS-10-R0 to R14 (R4 withdrawn). R3 fails today (as BL-961). R7 fails today: each consent answer mints a new idempotency key, so a retry writes a second row (`consent.ts:117`; the 08-keeping design). R7 is P1, and 14:14 says a P1 failure blocks a store build | mobile | principal-architect / security-architect | M (PR breakdown: see design) | 1 | BL-922 (the lock's row builds on it) | 13; its R7 fix holds the cut (P1 blocks a store build); its other P0 rows: founder decides (Q1) | D: S1-204 | ready; in progress today with BL-961 (#855) [V] |
-| BL-962 | [X6-R1]; D2, D3; NS-01-R49, R50; NS-02-R26; NS-06-A22; NS-21-R12 | mobile | security-architect / compliance-engineer | S (PR breakdown: see design) | 1 | none | 13; its [X6-R1] test holds the cut under Q1's stricter default | none | ready; in progress today (#855) [V] |
-| BL-967 | NS-13-R14 (sign-out ends reminders). Fails today: sign-out never calls `forgetReminders` (09:152 at the lock; the 09-capture design). Also carries P-9 | mobile (reminders owner) | principal-architect / compliance-engineer | S (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1 recommendation: a known P0 defect) | none | ready. In progress today after the quiet-book and consent-key fixes in the same lane (#855) [V] |
-| P-9 | Tests for NS-13-R5, R6a, R6b before the cut | mobile (BL-967 lane) | principal-architect / compliance-engineer | S [E] (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1) | none | Not written. Test-only, ahead of BL-943 |
-| BL-927 | NS-33-R1, R2, R4 (the row cites LEGAL-REQ-051) | design-systems | qa / compliance-engineer | S (PR breakdown: see design) | 1 | none | 13; holds the cut through BL-928 | none | ready; in progress today (#855) [V] |
-| BL-928 | NS-33-R1, R2, R4 | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 1 | BL-927; stays off the Book header while Find is in review | 13; holds the cut (Q1) | D: VoiceOver and AX5 walk | blocked (BL-927) [V] |
-| BL-930 | NS-34 targets (NFR rows 42, 216) | qa (product writes it) | design-systems / principal-architect | S | 1 | none | 13 | none | ready (pair); in progress today after BL-964 (#855) [V] |
-| BL-929 | NS-34-R1; NS-09-R5 | qa | design-systems / principal-architect | S | 1 | BL-930 | sheet for 13 | F: phone and time | ready [V] |
-| BL-966 | NS-32-R1 to R16. NS-32-R1b (and NS-13-R19) fail today: two notifications can land on one day (#846 body; the 09-capture design) | mobile (reminders owner) | principal-architect / compliance-engineer | M (PR breakdown: see design) | 1 | reworks #758 without Memory Library classes | 13: NS-32-R12 tested before the cut; R1b fixed before the cut or shipped as a known defect by written decision (Q1) | C: plan-notice windows (Q41, BL-949); F: the cap (Q8) | ready [V] |
-| #758 (BL-869) | NS-32-R2; part of R4 | mobile | principal-architect / compliance-engineer | 262 lines, 3 files | 1 | folds into BL-966 | n/a | none | Draft. Head `4b108df4`. Conflicts with develop. 0 reviews. Last push 10 Nov [V] |
-| BL-976 | NS-08-R1 to R9 | sync | security-architect / compliance-engineer | M (PR breakdown: see design) | 1 | none; `security-architect`, `privacy` and `ops` write the reads | 13: the `[NS-08-R6]` test holds the cut (Q1); R5 has its preflight check; R7 its per-candidate claims check | F: the flip (R10 to R19), later | blocked (PR #622 merged): #622 merged 10 Nov, so the condition is met (M27). In progress today, then BL-987 (#855) [V] |
-| BL-964 | gate G0; council F1 | qa | principal-architect / ai-eng-lead | S | 1 | reworks or replaces #819 | gate tooling | none | ready; in progress today (#855) [V] |
-| BL-958 | NS-01-R45; the flag rows of NS-01 and NS-02 | ops (platform) | security-architect / principal-architect | S | 1 | none | 13 | none | ready; in progress today with BL-975 (#855) [V] |
-| BL-975 | NS-07-G11-1a to G11-5; council X8, F11 | ops (platform) | compliance-engineer / security-architect | S | 1 | none | 13 (gate G5) | none | ready; in progress today (#855) [V] |
-| BL-987 | engineering facts the cards wait on | sync | data-steward / principal-architect | S | 1 | after BL-976; `data-architect` and `mobile` answer their lines | none | none | ready (pair) [V] |
-| BL-935 | NS-03 | user-research | compliance-engineer / regulatory-affairs | S | 1 | none | none | C: consent texts and scripts, P plus 5 working days (03:73 at the lock; 20:85 still says 27 Nov); F: principle (taken 20 Nov, README:71) | ready. `user-research` has `daily_runs` 0, so an interactive session must run it [V] |
-| BL-936 | the roadmap | content (product writes it, pair) | red-team / qa | M | 1 | none | none | F: dates | The draft merged in #829; the row still says in-review (M16) [V] |
-| BL-949 | 15 "not fully closed" (NS-16, NS-12, NS-32, NS-18 questions) | legal | regulatory-affairs / compliance-engineer | S | 1 | none | none | F: sends the packet | ready; in progress today with the design questions (#855) [V] |
-| BL-934, BL-940, BL-944 | NS-11, NS-14 requirements; NS-15 inventory | n/a | n/a | n/a | n/a | n/a | n/a | n/a | superseded (BL-944 because NS-15 now uses the existing `occurred_on`). No work [V] |
+| BL-923, BL-924 | NS-09-R1, R2, R3 | mobile | done | S | 1 | none | 13 | none | done, #832. P-8's retitle PR #888 (12:55) makes the sweep tests cite the NS-09 rows [V] |
+| BL-925 (the line) | NS-09-R4a, R4b | content | design-systems / compliance-engineer | S, design 1 PR (about 40 lines) | 1 | none | 13; holds the cut (Q1) | W: founder | #866 open: head `b981114e`, 83 lines, 3 files; A and B PASS WITH NOTES at the head; PROPOSED words; `needs:founder` [V] |
+| BL-926 | NS-09-R4a, R4b | mobile | principal-architect / design-systems | S, design 1 PR (about 200 lines, 5 files) | 1 | BL-925 | 13; holds the cut (Q1) | W | blocked (BL-925, the founder's words) [V] |
+| BL-977 | NS-09-R9 to R17; ruling D7 | mobile | principal-architect / data-steward | S, design P-4b (about 300 lines, tests) | 1 | BL-925, BL-926; `sync` reports the server side (#876 merged) | 13: founder decides (Q1) | none | blocked (BL-925, BL-926) [V] |
+| P-4 | NS-09-R6; NS-titled tests for R7, R8 | mobile | principal-architect / data-steward | M [E]; design 2 PRs: P-4a (R6, R15 to R17; about 320 lines, 8 files), P-4b (above) | 1 | #832 | 13: R6 holds the cut (P1, 14:14); R7, R8 tests before the cut (recommended, Q1) | D: two phones (R8) | Not written. The design reads R7 and R8 as built with no NS-titled test; R6's Storage line conflicts with `storage.tsx:24-28` (08-keeping K3, product rules the card side) |
+| BL-922 | NS-10-R0 (the row cites NX-36-S17) | mobile | principal-architect / security-architect | M, design 2 PRs: 922a the held screen (about 350 lines, 9 files), 922b one account reader | 1 | #764 (merged) | 13; holds the cut (Q1) | D: S1-204 on two phones | 922b is #869 (BL-961 1 of 3), merged 12:23. 922a not written: no open PR names it [V on titles; U otherwise] |
+| BL-961 | [X4-R1]; D1; NS-01-R29, R30; NS-02-R24; NS-10 second-account rows. NS-10-R3 still fails on develop: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125`) | mobile | security-architect / compliance-engineer | M, 3 PRs (CR-67 AX-12: cover half and data half) | 1 | none | 13; holds the cut (Q1 recommendation: a known P0 defect) | W: the held screen's words | 1 of 3 #869 (reader `bookVisibleTo`) merged 12:23. 2 of 3 #871 open: head `4879ff5c`, 395 lines, 11 files, A and B PASS WITH NOTES, `needs:founder`. 3 of 3 #879 open: head `e27d104e`, 365 lines, 9 files, base #871's branch, A and B PASS WITH NOTES [V]. Handoffs #908 (planner guard) and #911 (Delete account under a second account) are follow-ups [V] |
+| BL-978 | NS-10-R0 to R14 (R4 withdrawn). R7 fixed: #903 (merged 14:29) makes a consent retry reuse one key, with `[NS-10-R7]` tests (`consent-retry-one-key.test.ts:79, 168`) | mobile | principal-architect / security-architect | M, design 2 PRs: 978a (R7, R11, R12; R8 and R10 titles; about 300 lines), 978b (Book-level line, after BL-965 words) | 1 | BL-922 | 13; R7 is closed; its other P0 rows: founder decides (Q1) | D: S1-204 | 978a part done (#903); the rest of 978a and 978b not written. 978b waits on the founder's words (#870) [V] |
+| BL-962 | [X6-R1]; D2, D3; NS-01-R49, R50; NS-02-R26; NS-06-A22; NS-21-R12 | mobile | security-architect / compliance-engineer | S | 1 | none | 13 | none | #868 merged 14:41. The `[X6-R1]` scan is `no-system-indexing.test.ts` [V] |
+| BL-967 | NS-13-R14 (sign-out ends reminders) | mobile (reminders owner) | principal-architect / compliance-engineer | S, design PR 2 | 1 | none | 13 | none | #904 merged 14:15 (tests in `reminders-session.test.ts`). Follow-ups: #910 (end reminders on account gone and on the upgrade path), #907 (legal: classify `reminders.session`) [V]. The quiet-book fixes are #901 (NS-32-R14, NS-13-R12; 12:58) and #902 (NS-23-R8, J-N19; 14:28); the consent-key fix is #903 |
+| P-9 | Tests for NS-13-R5, R6a, R6b before the cut | mobile (BL-967 lane) | principal-architect / compliance-engineer | S | 1 | none | 13 | none | #905 merged 14:05 (`reminders-never-list.test.ts`) [V] |
+| BL-927 | NS-33-R1, R2, R4 (the row cites LEGAL-REQ-051) | design-systems | qa / compliance-engineer | S, design 33-1 | 1 | none | 13 | none | #867 (floor spec, 12:13) and #877 (the toast stacks its words, 13:36) merged [V] |
+| BL-928 | NS-33-R1, R2, R4 | mobile | principal-architect / design-systems | S, design (a), (b) | 1 | BL-927; stays off the Book header while Find is in review | 13; holds the cut (Q1) | D: VoiceOver and AX5 walk | #892 (dateline and Me bar title are level 1 headings, 14:00) and #893 (Review's fix row shows the words whole at large sizes, 13:42) merged. Whether the Book-header part is done: [U]; Find is no longer in review for 1/8 to 5/8 but #894 and #895 are open |
+| BL-930 | NS-34 targets (NFR rows 42, 216) | qa (product writes it) | design-systems / principal-architect | S | 1 | none | 13 | none | #880 open: head `c3d71b1b`, 76 lines, 2 files; A and B PASS WITH NOTES at the head; PROPOSED wording; `needs:founder` [V] |
+| BL-929 | NS-34-R1; NS-09-R5 | qa | design-systems / principal-architect | S | 1 | BL-930 | sheet for 13 | F: phone and time | ready; not written [V] |
+| BL-966 | NS-32-R1 to R16. NS-32-R1b (and NS-13-R19) still fail: two notifications can land on one day (#846 body; the 09-capture design) | mobile (reminders owner) | principal-architect / compliance-engineer | M, design 3 PRs ((a) `budget.ts`, about 250 lines; (b) the planner, about 350; (c) categories, about 150) | 1 | supersedes #758 | 13: NS-32-R12 tested before the cut; R1b fixed before the cut or shipped as a known defect by written decision (Q1) | C: plan-notice windows (Q41, BL-949); F: the cap (Q8) | Not written. NS-32-R14 is fixed (#901) [V] |
+| #758 (BL-869) | NS-32-R2; part of R4 | mobile | principal-architect / compliance-engineer | 262 lines, 3 files | 1 | superseded by BL-966 (a) | n/a | none | Draft. Head `4b108df4`. Conflicts with develop. 0 reviews. Last push 10 Nov [V] |
+| BL-976 | NS-08-R1 to R9 | sync | security-architect / compliance-engineer | M, design 4 PRs (P-6a, P-6b, P-6c, notes) | 1 | none | 13: the `[NS-08-R6]` test holds the cut (Q1); R5 has its preflight check; R7 its per-candidate claims check | F: the flip (R10 to R19), later | #874 (the `[NS-08-R6]` test, 13:00) and #875 (keep-safe preflight, backup off in every store profile, 12:23) merged. P-6b (claim patterns), P-6c (the R8 line, after BL-965 words) and the notes remain [V] |
+| BL-964 | gate G0; council F1 | qa | principal-architect / ai-eng-lead | S | 1 | none | gate tooling | none | #878 merged 11:54 (trace reports each NS P0 row). #819 closed unmerged at 11:54. The ratchet is a second PR, not opened [V] |
+| BL-958 | NS-01-R45; the flag rows of NS-01 and NS-02 | ops (platform) | security-architect / principal-architect | S | 1 | none | 13 | none | #896 merged 14:28 [V] |
+| BL-975 | NS-07-G11-1a to G11-5; council X8, F11 | ops (platform) | compliance-engineer / security-architect | S | 1 | none | 13 (gate G5) | none | #897 (part 1, 12:41), #898 (part 2, 12:55) and #906 (the guard reads cards at the head, 13:09) merged [V]. Whether the row's done line is met: [U] |
+| BL-987 | engineering facts the cards wait on | sync | data-steward / principal-architect | S | 1 | none | none | none | #876 merged 13:01 (`engineering-facts-bl-987.md`) [V] |
+| BL-935 | NS-03 | user-research | compliance-engineer / regulatory-affairs | S | 1 | none | none | C: consent texts and scripts, P plus 5 working days (03:73 at the lock; 20:85 still says 27 Nov); F: principle (taken 20 Nov, README:71) | ready; not written. `user-research` has `daily_runs` 0, so an interactive session must run it [V] |
+| BL-936 | the roadmap | content (product writes it, pair) | red-team / qa | M | 1 | none | none | F: dates | The draft merged in #829 (20 Nov 04:01); the row still says in-review (M16) [V] |
+| BL-949 | 15 "not fully closed" (NS-16, NS-12, NS-32, NS-18 questions) | legal | regulatory-affairs / compliance-engineer | S | 1 | none | none | F: sends the packet | #872 open: head `e66b3436`, 261 lines, 2 files; A and B PASS WITH NOTES at the head; `needs:founder` [V] |
+| BL-965 | words for the locked pack | content | design-systems / compliance-engineer | M | lane | none | each flag | F: approves the words | #870 open: head `985c42df`, 228 lines, 1 file; A and B PASS WITH NOTES at the head; `needs:founder` [V] |
+| P-8 | NS ids in the #832 and #828 test titles | qa | principal-architect / qa | S | 1 | BL-964 | 13 | none | #888 (NS-09 rows), #889 (NS-17-R10) and #890 (NS-25-R2, R4) merged 12:55 to 13:05. Whether NS-35-R1's retitle is among them: [U] |
+| BL-934, BL-940, BL-944 | NS-11, NS-14 requirements; NS-15 inventory | n/a | n/a | n/a | n/a | n/a | n/a | n/a | superseded (BL-944 because NS-15 now uses the existing `occurred_on`; the 09-capture design K1 agrees). No work [V] |
 
 ### 2.4 Wave 2
 
-| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
+| Id or PR | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|---|
-| BL-937 | NS-21-R1 to R5 | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 2 | BL-928 | 14 | D: BL-928's row covers the page | blocked (BL-928) [V] |
-| BL-943 | NS-13-R1 to R33 | mobile (reminders owner) | principal-architect / compliance-engineer | M (PR breakdown: see design) | 2 | BL-966, BL-967; fold #680 | 14. P-9 lands its R5, R6a and R6b tests before the Build 13 cut | D: time-zone change; J-N3, J-N4, J-N5, J-N24 | blocked (BL-966) [V] |
-| #680 | NS-13 repeat rule; device row S1-135 | mobile | principal-architect / compliance-engineer | 43 lines, 2 files | 2 | fold into BL-943 | 14 | D: S1-135 | Draft. Head `68cdb4db`. Conflicts with develop [V] |
-| BL-984 | NS-33-R9 to R16 | mobile | design-systems / principal-architect | M (PR breakdown: see design) | 2 | BL-928 | 14; if NS-33-R9 or R10 fails on the Build 13 candidate, its fix holds the cut or ships by written decision (Q1) | D: Voice Control, Switch Control | blocked (BL-928) [V] |
-| BL-963 | [FRAME-SLIP]; NS-23-R6, R18; NS-11 slip rows | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 2 | none | before BL-942 and BL-946 | none | ready [V] |
+| BL-937 | NS-21-R1 to R5 (the card has R1 to R14; M32) | mobile | principal-architect / design-systems | S, design 5 PRs: row model (about 250 lines), keys (about 60), screen (about 330), picture row (about 200), web `titleLevel` (about 10) | 2 | BL-928; #839 merged before design PR 3 and 4 | 14 | D: BL-928's row covers the page. W: its keys first | blocked (#839; the keys PR first) [V] |
+| BL-943 | NS-13-R1 to R33 | mobile (reminders owner) | principal-architect / compliance-engineer | M, design 4 PRs left: anchor (about 260), back-off (about 330, folds #680), placeholder and cold start (about 250), device rows (docs) | 2 | BL-966 (a) to (c); #680 folded in. Design PR 1 (the never-list tests) and PR 2 (reminders end with the session, quiet books) are merged as #905, #904, #901 | 14 | D: time-zone change; J-N3, J-N4, J-N5, J-N24 | blocked (BL-966) [V] |
+| #680 | NS-13 repeat rule; device row S1-135 | mobile | principal-architect / compliance-engineer | 43 lines, 2 files | 2 | fold into BL-943 | 14 | D: S1-135 | Draft. Head `68cdb4db`. Conflicts with develop. Its device row id is S1-133 in the PR and S1-135 at the lock (09-capture K5) [V] |
+| BL-984 | NS-33-R9 to R16 | mobile | design-systems / principal-architect | M, design 3 PRs plus 33-4 tokens and 33-6 audit project | 2 | BL-928; 33-4 and the device check | 14; if NS-33-R9 or R10 fails on the Build 13 candidate, its fix holds the cut or ships by written decision (Q1) | D: Voice Control, Switch Control | blocked (33-4, the device check) [V] |
+| BL-963 | [FRAME-SLIP]; NS-23-R6, R18; NS-11 slip rows | mobile | principal-architect / design-systems | S, design 1 PR (about 200 lines: quiet guard, slip registry) | 2 | none | before BL-942 and BL-946 | none | ready; not written [V] |
 | BL-953 | NS-01-R37a to R37c; T3 | mobile | principal-architect / security-architect | S | 2 | BL-931 | 14 on | none | blocked (BL-931) [V] |
-| BL-954 | NS-01-R38a to R38c, NS-06-A2b, NS-33-R15; T4 | mobile | design-systems / principal-architect | S | 2 | BL-931 | 14 on | none | blocked (BL-931) [V] |
+| BL-954 | NS-01-R38a to R38c, NS-06-A2b, NS-33-R15; T4 | mobile | design-systems / principal-architect | S, design 33-3 (about 300 lines; `createUndo`) | 2 | BL-931 | 14 on | none | blocked (BL-931) [V] |
 | BL-955 | NS-01-R43 | mobile | principal-architect / data-steward | S | 2 | BL-931 | 14 on | none | blocked (BL-931) [V] |
-| BL-956 | NS-01-R39, R40, R42, R48, R53; NS-37-R3 to R8 | mobile | design-systems / principal-architect | M | 2 | BL-931, BL-932 | 14 on | D: AX5, Smart Invert | blocked (BL-931, BL-932) [V] |
+| BL-956 | NS-01-R39, R40, R42, R48, R53; NS-37-R3 to R8 | mobile | design-systems / principal-architect | M, design 2 PRs ((a), (b)) | 2 | BL-931, BL-932 | 14 on | D: AX5, Smart Invert | blocked (BL-931, BL-932) [V] |
 | BL-957 | NS-01-R54; NS-06-A label; NS-16-R1, R6 | mobile | principal-architect / data-steward | S | 2 | none; `data-architect` pairs | 14 on | none | ready [V] |
 
-Also wave 2: BL-932, BL-933, BL-868 and P-5 (section 2.2), and P-1 (section 2.1).
+Also wave 2: BL-932, BL-933, BL-868, BL-870 and P-5 (section 2.2), P-1 (section 2.1), the data side tests T1, T2 and T3 (data-and-sync 3.6 PRs 3 to 5), and S-4, the BL-878 native-module manifest (security 7), which comes before P-1.
 
 ### 2.5 Wave 3
 
-| Id | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
+| Id | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|---|
-| BL-938 | NS-22-R1 to R4 | mobile | design-systems / principal-architect | M (PR breakdown: see design) | 3 | BL-952; `design-systems` writes the one-page delta first | 15 | D: Book row at AX5 | blocked (BL-952) [V] |
-| BL-985 | F12-REQ-011; NS-22-R5 to R7 | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 3 | none | 15 | none | ready [V] |
-| BL-939 | NS-05 Level 1 rows | mobile | principal-architect / compliance-engineer | M | 3 | BL-931, BL-952, BL-937 | 14 earliest (README:73, taken 20 Nov); see Q2 | W: founder; the share verb; C: Q45 gates the `production` flag (README:57) | blocked (BL-931, BL-952, BL-937) [V] |
-| BL-941 | NS-14-R1 to R7 | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 3 | BL-931, BL-952 | 15 | none | blocked [V] |
-| BL-942 | NS-11-R1 to R9 | mobile | principal-architect / compliance-engineer | S (PR breakdown: see design) | 3 | BL-931, BL-952, BL-963 | 15 | W: founder | blocked [V] |
-| BL-945 | NS-15-R1 to R18 | mobile | data-steward / principal-architect | S (PR breakdown: see design) | 3 | BL-931, BL-952 | 15 | none (the lock removed the inventory gate) | blocked [V] |
-| BL-946 | NS-23-R1a to R18 | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 3 | BL-931, BL-952, BL-937, BL-963; reconcile #721 | 15 | F: switch label | blocked [V] |
+| BL-938 | NS-22-R1 to R4 | mobile | design-systems / principal-architect | M, design 2 PRs (header model about 200; band, bar and end menu about 300) | 3 | BL-952 (8/8); `design-systems` writes the one-page delta first | 15 | D: Book row at AX5 | blocked (BL-952) [V] |
+| BL-985 | F12-REQ-011; NS-22-R5 to R7 | mobile | principal-architect / design-systems | S, design 1 PR [E] | 3 | none. NS-32-R14, the condition 11-foundations set for the Quiet control, is fixed (#901) | 15 | none | ready [V] |
+| BL-939 | NS-05 Level 1 rows | mobile | principal-architect / compliance-engineer | M, design 3 PRs (payload about 300; preview sheet about 350; the picture about 300) | 3 | BL-931, BL-952, BL-937 | 14 earliest (README:73, taken 20 Nov); see Q2 | W: founder; the share verb; C: Q45 gates the `production` flag (README:57). AX-9 sets one Caches folder per feature | blocked (BL-931, BL-952, BL-937) [V] |
+| BL-941 | NS-14-R1 to R7 | mobile | principal-architect / design-systems | S, design 2 PRs (about 200 and 80) | 3 | BL-931, BL-952; `[X4-R1]` before B | 15 | none | blocked [V] |
+| BL-942 | NS-11-R1 to R9 | mobile | principal-architect / compliance-engineer | S, design 2 PRs after BL-963 (942a slip logic; 942b the screen, after words) | 3 | BL-931, BL-952, BL-963 | 15 | W: founder | blocked [V] |
+| BL-945 | NS-15-R1 to R18 | mobile | data-steward / principal-architect | S, design 2 PRs (set the day on Review about 250; the letter page line about 150) | 3 | BL-931, BL-952 | 15 | none (the lock removed the inventory gate) | blocked [V] |
+| BL-946 | NS-23-R1a to R18 | mobile | principal-architect / design-systems | S, design 3 PRs (about 200, 350, 300; BL-963 counts as the first) | 3 | BL-931, BL-952, BL-937, BL-963; reconcile #721 | 15 | F: switch label | blocked [V] |
 | BL-974 | NS-07-C5-1 to C5-13 | mobile | principal-architect / compliance-engineer | S | 3 [E] | none | 15 | none | ready [V] |
 | BL-948 | 14 sections 4 and 5 (every device journey) | qa | design-systems / principal-architect | S | 3 (per 20) | BL-929 | every build | none | blocked (BL-929) [V] |
 
-The X1 rule moved with the lock. Wave-3 rows now wait for BL-931 and BL-952 to be done: every photo slice, including #840, and all of Find. Before the lock they waited for photo slices 3 and 4 and Find.
+The X1 rule moved with the lock. Wave-3 rows now wait for BL-931 and BL-952 to be done: every photo slice, including #840, and all eight Find PRs. Before the lock they waited for photo slices 3 and 4 and Find.
 
 ### 2.6 Waves 4 and 5
 
+The designs give waves 4 and 5 one paragraph each and no PR list (section 10); sizes below are the plan's [E].
+
 | Id or card | Card rows | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| BL-947 | NS-24-R1 to R3 (the card has R1 to R10; R10 is P0) | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 4 | BL-931, BL-952 | 15 | none | blocked [V] |
+| BL-947 | NS-24-R1 to R3 (the card has R1 to R10; R10 is P0) | mobile | principal-architect / design-systems | S [E] | 4 | BL-931, BL-952 | 15 | none | blocked [V] |
 | BL-972 | NS-04-R1 to R9; exit lines EX-1 to EX-5 | speech | security-architect / principal-architect | M, time-boxed; branch `exp/hands-free-spike`, never merged | 4, first | BL-935 (the lock); 13:58 says NS-35 | none | F: engineer and week (taken 20 Nov, README:72) | blocked (BL-935). Start: see M25 [V] |
 | BL-973 | NS-07-C28-1 to C28-19 | mobile (export owner) | data-steward / compliance-engineer | M | 4 | BL-933 | 15 or later | F: proof-book spend (no spend, taken 20 Nov) | blocked (BL-933) [V] |
 | BL-968 | NS-06-A1 to A25 | mobile | principal-architect / design-systems | M | 4 | BL-939, BL-981; F12 for the synced first fields | 15 earliest | W: founder; the study | blocked (BL-939, BL-981) [V] |
-| BL-982 | NS-18-R1 to R8 | mobile (reminders owner) | principal-architect / compliance-engineer | S (PR breakdown: see design) | 4 | BL-966, BL-943 | 15 or later | C: typed-day retention (BL-949 Q5) | blocked [V] |
-| BL-969 | NS-06-B1 to B26; ADR 0028 D3, D3a | data-architect | data-steward / security-architect; red-team for `supabase/**` (D-041) | L | 5 | BL-968, BL-959; F12; F13 (card section B10.1, default a pull clause) | Q3 | C: Q6; F | blocked [V] |
+| BL-982 | NS-18-R1 to R8 | mobile (reminders owner) | principal-architect / compliance-engineer | S [E] | 4 | BL-966, BL-943 | 15 or later | C: typed-day retention (BL-949 Q5) | blocked [V] |
+| BL-969 | NS-06-B1 to B26; ADR 0028 D3, D3a | data-architect | data-steward / security-architect; red-team for `supabase/**` (D-041) | L | 5 | BL-968, BL-959; F12; CR-67 AX-2 (pull clause) and AX-14 (error code `SCSEL`) | Q3 | C: Q6; F | blocked [V] |
 | BL-970 | NS-06 Part B phone rows (B4, B11) | mobile | principal-architect / design-systems | M | 5 | BL-969 | Q3 | C: Q6 | blocked [V] |
 | BL-971 | NS-06-C1 to C11 | mobile | security-architect / principal-architect | M | 5 | BL-972 | after the spike | security-architect plist read | blocked [V] |
-| BL-983 | NS-25-R1 to R19; D11 | sync (family owner) | security-architect / data-steward | L (PR breakdown: see design) | 5 | #827 (merged) and #767 | gated | C: Q48, Q49, Q53; F | blocked [V] |
-| BL-980 | NS-16-R1 to R18; D9 | mobile | compliance-engineer / data-steward | S (PR breakdown: see design) | 5 | none | gated | C: Q45, Q46, Q48, Q54 | blocked [V] |
-| BL-979 | NS-12-R1 to R8; D8 | data-architect | data-steward / compliance-engineer | L (PR breakdown: see design) | 5 | none; `mobile` builds the phone part | gated | C: Q51, Q32, Q48 | blocked [V] |
-| NS-17 | NS-17-R1 to R10 | speech | ai-eng-lead / qa | L per language (PR breakdown: see design) | 5 | none | gated | a native reviewer; F | No row at the lock |
+| BL-983 | NS-25-R1 to R19; D11 | sync (family owner) | security-architect / data-steward | L [E] | 5 | #827 (merged) and #767 | gated | C: Q48, Q49, Q53; F | blocked [V] |
+| BL-980 | NS-16-R1 to R18; D9 | mobile | compliance-engineer / data-steward | S [E] | 5 | none | gated | C: Q45, Q46, Q48, Q54 | blocked [V] |
+| BL-979 | NS-12-R1 to R8; D8 | data-architect | data-steward / compliance-engineer | L [E] | 5 | none; `mobile` builds the phone part; AX-10 (founder) and AX-4 | gated | C: Q51, Q32, Q48 | blocked [V] |
+| NS-17 | NS-17-R1 to R10 | speech | ai-eng-lead / qa | L per language [E] | 5 | none; AX-5 (a flagged take is not pushed until it has typed words) | gated | a native reviewer; F | No row at the lock |
 | BL-986 | NS-29 decision record | speech | n/a | M | none | NS-29 is parked | none | none | deferred [V] |
 | NS-19, NS-20, NS-26 to NS-31 | their cards | product (no row yet) | n/a | L | none in 13 section 4 | see 13 section 3 | none | see cards | Not scheduled |
+| H1 | the sync hooks refactor (data-and-sync OQ-K1; CR-67 D9) | data-architect with `sync` | red-team / principal-architect | 3 restatements (`sync_push`, `sync_pull`, `entries_family_rules`) | before the first new field group | none | seals and Firsts | F: one size exception (CODE-R02) or each is split | Not written; a new row from the designs |
 
 ### 2.7 Release, process and lane rows
 
-| PR or id | What | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status |
+| PR or id | What | Owner | Reviewers A / B | Size | Wave | Depends on | Build | Gate | Status at 18:20 UTC |
 |---|---|---|---|---|---|---|---|---|---|
-| #846 | The locked pack, and BL-952 to BL-987 | product | red-team / qa | +6,777 / -1,379 in 20 files (vs its base) | n/a | none | none | F | Draft. Head `450bcb4a`. Also removes the founder hold from the held rows, which is what #843 does; whichever merges second drops the overlap. Its merge is a re-sync [V] |
-| #843 | Lifts the founder hold on 13 held rows | product | ai-eng-lead / qa | 14 lines, 2 files | 1 | #829 (merged) | none | none | Open. Head `8fe135f4`. 0 counted reviews. Overlaps #846 [V] |
-| #827, #844, #845, #848, #852 | D-161 and D-162; iOS linker errors printed; `merge-queue.mjs` counts PASS WITH NOTES (CR-63); three agent skills (review-gate, stacked-prs, expo-native-module); CR-64 (migration 11 ships unconditionally) and CR-65 (the photo picker) | n/a (merged) | n/a | n/a | 1 | n/a | n/a | n/a | Merged 20 Nov as `d5a2676b`, `d5d12178`, `4f89d659`, `8343d119` and `20553b18` [V] |
-| #853 | The iOS Debug compile links React Native's prebuilt core in its Debug flavour | ops | security-architect / principal-architect | +38 / -2 in 1 file | 1 | none | fixes the red Debug builds on the photo slices and develop | none | Open. Head `86b85ac5` [V] |
-| #855 | Board claims for the new-scope design and the wave 1 workstreams | n/a (Karma) | ai-eng-lead / qa | +14 in 1 file | 1 | none | none | none | Open. Head `25495d0b` [V] |
-| #819 | Trace reads NS ids; nameless child in reminders | qa | principal-architect / ai-eng-lead | 318 lines, 4 files | 1 | none | gate tooling (G0) | none | Draft. Head `a37ff876`. 0 reviews. BL-964 reworks or replaces it (M14) [V] |
-| #830 | develop snapshot into `main` | ops | security-architect / data-steward | about 894 files | Build 13 path | none | 13 | F: names it with the full sha | Draft. Its head ref is `develop` itself, so its head is develop's tip (`20553b18`, 894 files, when read). Conflicts with `main`. Website `/support` is 404 until it lands [V] |
-| P-7 | Record the applied migrations after F4 | ops | data-steward / security-architect | S | Build 13 path | F4 and the deploy | 13 | F: applies | Not written |
-| P-8 | NS ids in the #832 and #828 test titles | qa | principal-architect / qa | S | 1 | BL-964 | 13 | none | Not written; it feeds BL-964's ratchet |
-| BL-965 | Words for the locked pack | content | design-systems / compliance-engineer | M | lane | none | each flag | F: approves the words | ready [V] |
+| #846 | The locked pack, and BL-952 to BL-987 | product | red-team / qa | +6,777 / -1,379 in 20 files (vs its base) | n/a | none | none | F | Draft. Head `450bcb4a` (unchanged). Review A and B posted CHANGES at that head; product replied at 11:36 and no review at a new head exists [V]. Also removes the founder hold from the held rows, which is what #843 does; whichever merges second drops the overlap. Its merge is a re-sync (section 11 lists what waits on it) |
+| #843 | Lifts the founder hold on 13 held rows | product | ai-eng-lead / qa | 28 lines, 2 files | 1 | #829 (merged) | none | none | Open, no counted review, conflicts with develop (`dirty`). Head `8fe135f4`. Overlaps #846 [V] |
+| #847 | This plan | product | ai-eng-lead / qa | 768 lines before this refresh, 3 files | 1 | #846 | none | F: Q5 (size) | Open. A and B PASS WITH NOTES at `774d3e13`; this refresh moves the head, so it needs a pair at the new head (D-132) [V] |
+| #827, #844, #845, #848, #852, #842 | D-161 and D-162; iOS linker errors printed; `merge-queue.mjs` counts PASS WITH NOTES (CR-63); three agent skills; CR-64 (migration 11 ships unconditionally) and CR-65 (the photo picker); the #834 round 4 hardening | n/a (merged) | n/a | n/a | 1 | n/a | n/a | n/a | Merged 20 Nov between 04:27 and 06:08 UTC [V] |
+| #853, #855, #856 | the iOS Debug link fix; board claims for the new-scope design and wave 1; CR-66 and CR-67 | ops, Karma | n/a | n/a | 1 | n/a | n/a | n/a | Merged 20 Nov 11:41, 11:41 and 11:30 UTC [V]. #899 (12:41: the Pods cache comment says what #853 showed) merged too |
+| #857 to #864 | The eight new-scope engineering designs (architecture, security, privacy, data-and-sync, 08-keeping, 09-capture, 10-reading-and-family, 11-foundations) | Karma and agents | per file (`docs/tdd/new-scope/README.md`) | docs | 1 | #856 | none | none | Merged 20 Nov between 11:12 and 11:42 UTC, each after two counted reviews [V]. Section 10 links them |
+| #849, #850 | Engineering charters read the new-scope pack; engineering agents' memories record the decisions (PRs B and C of three) | ai-eng-lead | per PR | 44 and 285 lines | 1 | #848 (merged) for C | none | F: charters and memories need his own approval | Open. Heads `0cf7f414`, `99350f8c`. A and B PASS WITH NOTES at both heads. `needs:founder` (#850 also `from:agent`) [V] |
+| #830 | develop snapshot into `main` | ops | security-architect / data-steward | 963 files (76,197 added, 7,588 removed) | Build 13 path | none | 13 | F: names it with the full sha | Draft. Its head ref is `develop` itself, so its head is develop's tip (`16e61549`). Conflicts with `main` (`dirty`). No counted review. Website `/support` is 404 until it lands [V] |
+| P-7 | Record the applied migrations after F4 | ops | data-steward / security-architect | S (data-and-sync 3.6 PR 10) | Build 13 path | F4 and the deploy | 13 | F: applies | Not written |
+| #912 | Dispatcher parses 3 and 4 digit backlog ids (BL-1000 and above) | n/a | n/a | n/a | n/a | none | none | none | Draft, opened today; not on this plan's paths [V] |
 | BL-981 | Five-parent studies: photo, Find, share, Firsts | user-research | compliance-engineer / qa | M | lane | BL-931, BL-952 | none | F: runs the sessions | blocked (BL-931, BL-952). Interactive session [V] |
+
+Handoffs filed today, all open [V]: #907 (legal: classify `reminders.session` in DATA_CLASSIFICATION), #908 (mobile: the `bookVisibleNow` guard in the reminder planner after #879), #909 (security-architect: `sync_pull` does not gate reads on consent, G1), #910 (mobile: end reminders on account gone and on the upgrade path), #911 (mobile: Delete account under a second account can erase the owner's deletion note).
 
 ### 2.8 Older rows with Build 13 or later in scope
 
@@ -246,37 +258,37 @@ Filter: rows tagged Milestone M15 or naming Build 13 or later that are not done 
 
 The lock's backlog header gives engineering BL-950 and BL-951 (the #832 follow-ups and NS-01-R17 iCloud progress) and starts product at BL-952 (BACKLOG:3717). P-1 is engineering's; every other P row stays a proposal for product to number. Each names the one handle that builds it.
 
-| P-n | Scope | Card rows | Builds | At the lock |
+| P-n | Scope | Card rows | Builds | State at 18:20 UTC |
 |---|---|---|---|---|
 | P-1 | `scribe-photo` progress event and `Progress.cancel` on the item-provider load; the scan allows the new export | NS-01-R17b | mobile | Engineering's BL-950 or BL-951, not written yet |
-| P-4 | Stuck delete shown in Storage (R6); NS-titled tests for the discard reaching the server (R7) and the second phone (R8), which the 08-keeping design reads as built | NS-09-R6, R7, R8 (R5 is a BL-929 run-sheet row) | mobile | No row; BL-977 covers R9 to R17 |
-| P-5 | Pictures follow delete, restore and purge, and never reach the server, titled with NS-36 ids | NS-36-R1a to R1d, R2 | mobile | No row; BL-959 and BL-960 cover R4 and R6 |
+| P-4 | Stuck delete shown in Storage (R6); NS-titled tests for the discard reaching the server (R7) and the second phone (R8), which the 08-keeping design reads as built | NS-09-R6, R7, R8 (R5 is a BL-929 run-sheet row) | mobile | No row; design PRs P-4a and P-4b, not written. BL-977 covers R9 to R17 |
+| P-5 | Pictures follow delete, restore and purge, and never reach the server, titled with NS-36 ids | NS-36-R1a to R1d, R2 | mobile | No row; BL-959 and BL-960 cover R4 and R6; design 36-3 |
 | P-7 | Record the applied production migrations in `.github/migrations-applied.txt` and `supabase/APPLY.md` | release gate G8 | ops | No row; engineering has no id left after BL-950 and BL-951, so product numbers it |
-| P-8 | Retitle tests from #832 and #828 with NS ids so trace finds them | NS-09-R1 to R3, NS-35-R1 | qa | No row; feeds BL-964 |
-| P-9 | Tests for NS-13-R5, R6a and R6b that hold the Build 13 cut (Q1), ahead of BL-943 | NS-13-R5, R6a, R6b | mobile (BL-967 lane) | No row; product numbers it or folds it into BL-967 |
+| P-8 | Retitle tests from #832 and #828 with NS ids so trace finds them | NS-09-R1 to R3, NS-35-R1 | qa | Merged as #888, #889, #890 (NS-09, NS-17-R10, NS-25 rows); NS-35-R1 [U] |
+| P-9 | Tests for NS-13-R5, R6a and R6b that hold the Build 13 cut (Q1), ahead of BL-943 | NS-13-R5, R6a, R6b | mobile (BL-967 lane) | Merged as #905 |
 
-Folded into lock rows, so no longer proposed: P-3 is BL-966 (NS-32) and P-6 is BL-976 (NS-08).
+Folded into lock rows, so no longer proposed: P-3 is BL-966 (NS-32) and P-6 is BL-976 (NS-08). The designs add rows with no backlog id: H1 (section 2.6), S-4 to S-8 (security 7), T1 to T3 and 36-4 to 36-6 (data-and-sync, 11-foundations), and 33-4, 33-6.
 
 ### 2.10 Where this plan differs from 13, and why
 
 | # | 13 says (at `450bcb4a`) | This plan | Why |
 |---|---|---|---|
-| D1 | Photo is five slices (13:66) and eight PRs (13:108) | Nine PRs (#834 and #841 merged) plus P-1 | #833 closed under the 20 Nov ruling; 2b and 2c split out for size and for #834's round-4 notes [V] |
+| D1 | Photo is five slices (13:66) and eight PRs (13:108) | Nine PRs (#834, #841, #842 merged) plus P-1 | #833 closed under the 20 Nov ruling; 2b and 2c split out for size and for #834's round-4 notes [V] |
 | D2 | NS-37 comes before slice 5 (13:66, 13:123); slice 5 is wave 3 (13:110) | #840 merges dark in wave 1; BL-932 gates the flag, not the merge | #840 is built and stacked; the flag is off in every profile, so no parent sees full-size thumbnails before BL-932 |
 | D3 | NS-08 has no wave (13:106 to 112) | NS-08 reads in wave 1 (BL-976) | Rank 1 (20:72); P0 rows NS-08-R4 to R7, R9; ROADMAP:14 puts it in December |
-| D4 | NS-32 is S to M with "no backlog row yet" (13:92) | BL-966, M, wave 1 | The lock has BL-966 (M5) |
-| D5 | NS-02 is M, "built; a draft, #798" (13:67) | BL-952: L, at most six PRs | The lock splits #798 (Q4) |
+| D4 | NS-32 is S to M with "no backlog row yet" (13:92) | BL-966, M, wave 1, three PRs | The lock has BL-966 (M5); 11-foundations splits it |
+| D5 | NS-02 is M, "built; a draft, #798" (13:67) | BL-952: L, eight PRs, five merged | The lock splits #798 (at most six); the split as built is eight (M31) |
 | D6 | BL-933 has no wave | Wave 2 | 20:134 puts it there; it needs BL-868 and BL-931 |
 | D7 | Cards carry no build numbers (T5; README:3, 53, 54) | Founder question Q2. Default: photo and Find merge dark, the Build 13 cut does not wait, and Build 14 turns them on after the counsel read on the photo label | No file on develop or at the lock says the cut does not wait. Release content is the founder's |
-| D8 | Wave 1 is 18 to 22 PRs (20:133) | About 54 PRs left on 20 Nov | This count adds docs, release, the P rows and the lock's wave-1 rows |
-| D9 | Nothing on which P0 rows hold a cut | Founder question Q1. Recommendation and default: BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 hold the Build 13 cut, with BL-978's NS-10-R7 fix, P-4's NS-09-R6 and tests for the never-list rows; the founder decides the rest of 3a's table | 14:98 needs every P0 test green and has no waiver for a missing test; 14 does not say which rows a given build meets (M23) |
+| D8 | Wave 1 is 18 to 22 PRs (20:133) | About 45 PRs left at 18:20 UTC on 20 Nov (about 54 at 05:00; 51 merged in between, and the designs added rows) | This count adds docs, release, the P rows and the lock's wave-1 rows; section 4.3 lists them |
+| D9 | Nothing on which P0 rows hold a cut | Founder question Q1. Recommendation and default: BL-922, BL-925, BL-926, BL-928, BL-961 hold the Build 13 cut, with P-4's NS-09-R6, BL-966's NS-32-R12 test and the NS-titled tests in BL-978; BL-967, BL-962, P-9 and BL-976's NS-08-R6 test have merged; the founder decides the rest of 3a's table | 14:98 needs every P0 test green and has no waiver for a missing test; 14 does not say which rows a given build meets (M23) |
 | D10 | The spike depends on NS-35 (13:58) | BL-972 depends on BL-935 (the lock) | The lock's row; 13 and the row disagree (M25) |
 
 ---
 
 ## 3. Dependency graph and critical paths
 
-Solid arrows are hard dependencies. The solid arrows into the cut are Q1's default; under it the cut waits for those rows. Arrows marked "test or decision" need a passing test before the cut, or the founder's written decision to ship them untested. Dotted arrows ride if merged and do not hold the cut; photo and Find ride under Q2's default.
+Redrawn at 18:20 UTC on 20 Nov from the rows still open. Merged work is left out; where a merged PR still matters it is a node marked "merged". Solid arrows are hard dependencies. The solid arrows into the cut are Q1's default; under it the cut waits for those rows. Arrows marked "test or decision" need a passing test before the cut, or the founder's written decision to ship them untested. Dotted arrows ride if merged and do not hold the cut; photo and Find ride under Q2's default.
 
 ```mermaid
 flowchart TD
@@ -284,44 +296,41 @@ flowchart TD
     F4["F4: founder fixes the production database secret"] --> DBD["re-run the db-v0.1.0 deploy: dry run, then push"]
     DBD --> P7["P-7: record the applied migrations"]
     P7 --> CUT["release PR, release branch cut from main"]
-    PR830["PR 830: develop snapshot into main"] --> CUT
+    PR830["PR 830: develop snapshot into main, conflicts"] --> CUT
     CUT --> RC["RC tag, release-ios.yml checks, EAS production build"]
     RC --> DEV13["Build 13 device sheet: P0 rows on the candidate"]
     DEV13 --> G13["store-build gate, then the founder submits"]
   end
-  BL925["BL-925 words"] --> BL926["BL-926 Review says Let it go did not finish"]
+  W925["PR 866 BL-925 words, founder"] --> BL926["BL-926 Review says Let it go did not finish"]
   BL926 --> CUT
   BL926 --> BL977["BL-977 NS-09 R9 to R17"]
-  BL925 --> BL977
   BL977 -. test or decision .-> CUT
-  BL922["BL-922 needsConsent hold"] --> CUT
-  BL922 --> BL978["BL-978 NS-10 R0 to R14"]
-  BL978 -- "NS-10-R7 fix, P1" --> CUT
-  BL927["BL-927 a11y note"] --> BL928["BL-928 a11y fixes"]
-  BL928 --> CUT
-  BL930["BL-930 NFR rows"] --> BL929["BL-929 SE 3 run sheet"]
+  P4["P-4a NS-09-R6 stuck delete, P1"] -- "R6 fix or ruling" --> CUT
+  BL922A["BL-922a held screen, not written"] --> CUT
+  PR869["PR 869 account reader, merged"] --> PR871["PR 871 cover half, founder words"]
+  PR871 --> PR879["PR 879 store reads, stacked on 871"]
+  PR871 --> CUT
+  PR879 --> CUT
+  W870["PR 870 BL-965 words, founder"] --> BL978B["BL-978b Book-level line"]
+  BL922A --> BL978B
+  BL978B -. test or decision .-> CUT
+  BL928["BL-928 rest: Book header part, unverified"] --> CUT
+  PR880["PR 880 BL-930 NFR targets, founder words"] --> BL929["BL-929 SE 3 run sheet, not written"]
   BL929 --> DEV13
-  PR758["PR 758 budget registry"] --> BL966["BL-966 NS-32 budget"]
-  BL966 -- "NS-32-R12 test" --> CUT
-  BL976["BL-976 NS-08 readiness"] -- "NS-08-R6 test" --> CUT
-  P9["P-9 NS-13 R5 R6a R6b tests, BL-967 lane"] --> CUT
-  BL967["BL-967 sign-out ends reminders"] --> CUT
-  P4["P-4 NS-09 R6 R7 R8"] -- "NS-09-R6 fix, P1" --> CUT
-  BL961["BL-961 second account, NS-10-R3"] --> CUT
-  BL962["BL-962 system intelligence"] --> CUT
-  BL966 -. "NS-32-R1b fix or decision" .-> CUT
-  BL964["BL-964 trace sees NS ids, G0"] --> DEV13
-  PR819["PR 819 trace draft"] --> BL964
+  BL966["BL-966 a to c: one a day, NS-32-R12 test, R1b"] -- "test; R1b fix or decision" --> CUT
+  BL964R["BL-964 ratchet, second PR, not opened"] --> DEV13
   subgraph PH["Photo stack in merge order"]
-    PR834["PR 834 slice 2, merged"] --> PR841["PR 841 slice 2b, merged"] --> PR842["PR 842 slice 2c"] --> PR835["PR 835 slice 3a"] --> PR836["PR 836 slice 3b"] --> PR837["PR 837 slice 4a"] --> PR838["PR 838 slice 4b"] --> PR839["PR 839 slice 4c"] --> PR840["PR 840 slice 5"]
+    PR835["PR 835 slice 3a"] --> PR836["PR 836 3b"] --> PR837["PR 837 4a"] --> PR838["PR 838 4b"] --> PR839["PR 839 4c"] --> PR840["PR 840 slice 5"]
   end
+  FSZ["founder: size exceptions at new sizes, words, character-limit line"] --> PR835
+  PR854["PR 854 legal rows, founder merge"] --> PR835
+  PR842["PR 842, merged"] --> PR835
   PR840 --> BL931["BL-931 done"]
   PR840 -.-> CUT
-  PR797["PR 797 ADR 0028, merged"] --> PR835
-  PR797 --> BL959["BL-959 ids are L3"]
   PR828["PR 828 one start, merged"] --> PR838
-  PR842 --> P1["P-1 NS-01-R17b progress and Cancel"]
-  BL931 --> BL932["BL-932 two smaller copies, NS-37"]
+  R20B["R20b conflict: product amends the card"] --> PR838
+  PR842 --> S4["S-4 BL-878 manifest"] --> P1["P-1 NS-01-R17b progress and Cancel"]
+  BL931 --> BL932["BL-932 a to c, NS-37"]
   BL931 --> BL953["BL-953 stored copy, T3"]
   BL931 --> BL954["BL-954 undo windows, T4"]
   BL931 --> BL955["BL-955 pick survives a close"]
@@ -329,34 +338,38 @@ flowchart TD
   BL868["BL-868 export spec edit, founder merges"] --> BL933["BL-933 export 1.7.0"]
   BL931 --> BL933
   PR835 --> P5["P-5 NS-36 rows for pictures"]
+  S1M["36-6 BL-870 photo bucket write-deny migration, founder approve-migration"] --> PHON
   BL932 --> PHON["Photo on in production"]
   BL933 --> PHON
   BL953 --> PHON
   BL954 --> PHON
   BL955 --> PHON
-  BL958["BL-958 flags in build profiles"] --> PHON
   P1 --> PHON
   P5 --> PHON
-  BL960["BL-960 data inventory"] --> PHON
+  PR873["PR 873 BL-960 inventory, founder merge"] --> PHON
   LGL["counsel NX-33 label; BL-850; BL-865; BL-858; photo words"] --> PHON
-  PR798["PR 798 Find, one PR"] --> BL952["BL-952 Find in at most six PRs"]
+  FND5["Find 1/8 to 5/8, merged"] --> PR894["PR 894 6/8 words and pause, founder reads"]
+  PR894 --> PR895["PR 895 7/8 wired into the store and sync"]
+  PR879 --> FND8["Find 8/8 account seam, not opened"]
+  PR895 --> FND8
+  FND8 --> BL952["BL-952 done"]
   BL952 --> FDON["Find on in production"]
   PR799["PR 799 inventory row"] --> FDON
-  BL960 --> FDON
+  PR873 --> FDON
   FW["Find words; S1-205"] --> FDON
   BL952 -.-> CUT
   BL931 --> X1{{"X1 at the lock: BL-931 and BL-952 done"}}
   BL952 --> X1
   BL928 --> BL937["BL-937 letter page list, NS-21"]
+  PR839 --> BL937
   BL928 --> BL984["BL-984 NS-33 R9 to R16"]
   BL937 --> BL939["BL-939 Share Level 1"]
   X1 --> BL939
   BL939 --> SH14["Share Level 1 on: words and counsel Q45"]
   BL966 --> BL943["BL-943 reminders proven, NS-13"]
-  BL967 --> BL943
   PR680["PR 680 repeat rule and S1-135"] --> BL943
-  PR843["PR 843 or PR 846 lifts the founder hold"] --> BL937
-  PR843 --> BL943
+  PR846["PR 846 or PR 843 lifts the founder hold"] --> BL937
+  PR846 --> BL943
   BL952 --> BL938["BL-938 Book header calm"]
   X1 --> BL941["BL-941 child switcher"]
   X1 --> BL942["BL-942 Save a copy"]
@@ -373,7 +386,6 @@ flowchart TD
   BL939 --> BL968["BL-968 Firsts"]
   BL981 --> BL968
   BL968 --> BL969["BL-969 seals on the server"]
-  BL959 --> BL969
   BL969 --> BL970["BL-970 seals on the phone"]
   BL935["BL-935 pilot kit"] --> BL972["BL-972 hands-free spike"]
   BL972 --> BL971["BL-971 quick capture"]
@@ -381,22 +393,24 @@ flowchart TD
   BL943 --> BL982
 ```
 
+Gone from the first version's graph because they merged: PR 834, 841, 842 (kept as a node), 797, 827, 828 (kept), 832; BL-959; BL-961's reader; BL-962; BL-967; P-9; BL-976's test and preflight; BL-927; P-8; BL-958; BL-975; BL-987; the PR 819 draft (closed). Find slices 1 to 5 are one node.
+
 ### 3a. Critical path to a Build 13 store candidate
 
 Release path: F4 secret fixed (founder) -> re-run the db-v0.1.0 deploy: dry run, then push (founder approves) -> P-7 records the applied migrations -> #830 conflict resolved and named by the founder with its full sha -> release PR and release branch cut from `main` -> RC tag -> `release-ios.yml` checks and EAS production build (founder approves the `app-store` environment) -> Build 13 device sheet, P0 rows first, on the candidate (founder; he names his phones first) -> store-build gate (14 section 6) -> founder submits.
 
-Before the cut, under Q1's default (this plan's recommendation; any change to 14:98's gate is the founder's):
-- These rows hold the cut: BL-922, BL-925 then BL-926, BL-927 then BL-928, BL-961 (NS-10-R3) and BL-967 (NS-13-R14). BL-961 and BL-967 are there because their rows fail today.
-- BL-978's NS-10-R7 fix holds the cut too: R7 fails today and is P1, and 14:14 says a P1 failure blocks a store build. The fix itself is built first in the quiet-books and consent-key lane (claimed on #855); BL-978 carries its NS-titled test.
-- P-4's NS-09-R6 holds the cut for the same reason: it is P1 and not built (M8). Its Storage line is in conflict with `storage.tsx:24-28`, which says recordings never appear there (08-keeping design K3); product rules the card side, and the cut waits for either the row or that ruling.
-- A passing test exists for each never-list row whose behaviour is live:
-  - NS-08-R6 (BL-976);
-  - NS-13-R5, R6a and R6b (P-9, in the BL-967 lane);
-  - NS-32-R12 (BL-966);
-  - under the stricter reading, which is the default until the founder says otherwise: NS-10-R5 with the upload part of [X4-R1] (BL-961 and BL-978), and [X6-R1] with NS-21-R13 (BL-962).
-- The founder decides the rest of the table below:
-  - for rows that fail today, "fixed before the cut" (recommended) or "ship a known defect by his written decision";
-  - for rows that are only untested, "a passing test before the cut" (recommended) or "ship untested by his written decision".
+What no longer holds the cut, because it merged today under Q1's default [V]: BL-927 (#867, #877); BL-962's `[X6-R1]` test (#868); BL-967 and NS-13-R14 (#904); P-9's NS-13-R5, R6a, R6b tests (#905); BL-976's `[NS-08-R6]` test and preflight (#874, #875); the NS-10-R7 fix (#903, with `[NS-10-R7]` tests); the quiet-book fixes for NS-32-R14 and NS-13-R12 (#901, #902); BL-958 (#896); BL-975 (#897, #898, #906); BL-964's trace report (#878); P-8 (#888 to #890). BL-928's two slices (#892, #893) merged; its remainder is [U].
+
+What still holds the cut (Q1's default, any change is the founder's):
+- F4 and the deploy re-run, P-7 and the #830 conflict, the release PR and the cut: all founder or ops steps; none is written or started [V].
+- BL-925's words (#866, the founder) then BL-926. BL-926 is not written.
+- BL-922 (NS-10-R0): the held screen 922a is not written.
+- BL-961 (NS-10-R3 and the upload half of [X4-R1]): #871 (cover half) and #879 (store reads), both open with a passing pair at their heads, both `needs:founder` or stacked on one that does (the held screen's words). NS-10-R3 still fails on develop until both merge (`gate.logic.ts:123-125` unchanged at `16e61549`) [V].
+- P-4's NS-09-R6 (P1, 14:14): not written; its Storage line conflicts with `storage.tsx:24-28` (08-keeping K3), and the cut waits for the row or for product's ruling.
+- BL-966's NS-32-R12 test (never-list) and the R1b decision (two notifications on one day): not written.
+- BL-978's NS-titled tests for its other P0 rows, and BL-928's Book-header remainder, if the founder keeps them under Q1; the live never-list rows have tests.
+- The Build 13 device sheet (section 6.1), which needs BL-929 (not written) and BL-930 (#880, open), and BL-964's ratchet for G0.
+- The cut go: the founder's call, and the `app-store` environment approval.
 
 Which P0 rows the gate covers:
 - 14:98 asks for every P0 unit, source and journey test green, and every P0 device row run on the candidate. G0 (14:96) adds "every P0 has a test and a backlog row" over the 296 P0 rows.
@@ -405,46 +419,47 @@ Which P0 rows the gate covers:
 - 14 does not say which P0 rows a given build must meet (M23). This plan does not settle it; it is founder question Q1 (section 5.3).
 - P0 rows of features that ship dark (photo, Find, Share, Firsts, seals) gate their flags turning on (G6; the last clause of 14:98), not the cut.
 
-P0 rows (14:104 to 135) whose behaviour is live in Build 13 and that have no NS-titled test, or that fail today. "Fails today" is read in code on develop or recorded at the lock, not run on a phone. The design drafts named are not yet in the repo (section 10).
+P0 rows (14:104 to 135) whose behaviour is live in Build 13 and that have no NS-titled test, or that fail today. "Today" is read in code on develop (`16e61549`) or recorded at the lock, not run on a phone. The designs named are merged (section 10).
 
 | Card | P0 rows | Today | Work row | In the never-list? | Under Q1's default |
 |---|---|---|---|---|---|
-| NS-10 | R3 (a second account never sees the first) | Fails: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125`; 08-keeping design) | BL-961, BL-978 | no | fixed before the cut (BL-961 holds it) |
-| NS-13 | R14 (sign-out ends every reminder) | Fails: sign-out never calls `forgetReminders` (09:152 at the lock; 09-capture design). With names on, a name may reach the lock screen after sign-out (Review B on #847) | BL-967 | possibly, through names on; treated as never-list (the stricter reading) until the founder says otherwise | fixed before the cut (BL-967 holds it) |
-| NS-13 and NS-32 | NS-13-R19, NS-32-R1b (one notification a day across books) | Fails: notes keyed by kind and date allow two on one day (#846 body; 09-capture design) | BL-966 | no | the founder decides: fixed before the cut (recommended), or ship a known defect by written decision |
-| NS-10 (P1) | R7 (a consent retry writes one row) | Fails: a new idempotency key on every call (`consent.ts:117`; 08-keeping design) | BL-978 | no; P1, which blocks a store build (14:14) | fixed before the cut |
-| NS-08 | R6 (sign out never removes a recording) | Untested (the card marks it UNVERIFIED) | BL-976 | yes: a lost recording | a passing test before the cut |
-| NS-08 | R4, R9 (readiness documents); R5 (has its preflight check); R7 (the per-candidate claims check its row names) | Partly checked | BL-976 | no | R5 and R7 have their checks; R4 and R9 are BL-976's documents; the founder decides |
-| NS-13 | R5 (no count or guilt word); R6a and R6b (by default no name or letter words in a notification) | Untested | P-9 (BL-967 lane) | yes: a count line; a name or letter words on a lock screen | a passing test before the cut |
-| NS-13 | R3, R4, R10 to R13, R15, R18, R23, R24, R27, R30, R31 | Untested | BL-943 | no | the founder decides |
+| NS-10 | R3 (a second account never sees the first) | Still fails on develop: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125`). Fix in two halves under CR-67 AX-12: cover (#871), store reads (#879), with the reader (#869) merged | BL-961, BL-978 | no | fixed before the cut (BL-961 holds it) |
+| NS-13 | R14 (sign-out ends every reminder) | Fixed: #904 (merged 14:15) ends reminders on sign-out, tested in `reminders-session.test.ts`. Gaps for account gone and the upgrade path: handoff #910 | BL-967 | possibly, through names on; treated as never-list (the stricter reading) until the founder says otherwise | closed on develop; follow-up #910 |
+| NS-13 and NS-32 | NS-13-R19, NS-32-R1b (one notification a day across books) | Still fails: notes keyed by kind and date allow two on one day (#846 body; the 09-capture design) | BL-966 | no | the founder decides: fixed before the cut (recommended), or ship a known defect by written decision |
+| NS-10 (P1) | R7 (a consent retry writes one row) | Fixed: #903 (merged 14:29), `[NS-10-R7]` tests | BL-978 | no; P1, which blocks a store build (14:14) | closed on develop |
+| NS-08 | R6 (sign out never removes a recording) | Tested: `[NS-08-R6]` in `ns08-sign-out-keeps-recordings.test.ts` (#874) | BL-976 | yes: a lost recording | closed on develop |
+| NS-08 | R4, R9 (readiness documents); R5 (preflight, #875); R7 (the per-candidate claims check) | R5 has its check on develop; R7's patterns are P-6b | BL-976 | no | R4 and R9 are BL-976's notes; the founder decides |
+| NS-13 | R5 (no count or guilt word); R6a and R6b (by default no name or letter words in a notification) | Tested: `reminders-never-list.test.ts` (#905) | P-9 | yes: a count line; a name or letter words on a lock screen | closed on develop |
+| NS-13 | R3, R4, R10 to R13, R15, R18, R23, R24, R27, R30, R31 | R12 and R13 to R15 now tested (#901, #904); the rest untested | BL-943 | no | the founder decides |
 | NS-32 | R12 (no letter words or child name in a notification by default) | Untested | BL-966 | yes: a name or letter words on a lock screen | a passing test before the cut |
-| NS-32 | R1, R4, R4b, R8, R11, R14 | Untested | BL-966 | no | the founder decides |
-| NS-09 | R7, R8 | Built, per the 08-keeping design; no NS-titled test | P-4 | no | the founder decides |
-| NS-09 | R9 to R12, R14, R15 | R10 to R12 and R14 built, per the 08-keeping design; R9 wording and R15 missing | BL-977 | no | the founder decides |
+| NS-32 | R1, R4, R4b, R8, R11 | Untested; R14 now tested (#901) | BL-966 | no | the founder decides |
+| NS-09 | R7, R8 | Built, per the 08-keeping design; no NS-titled test | P-4b | no | the founder decides |
+| NS-09 | R9 to R12, R14, R15 | R10 to R12 and R14 built, per the design; R9 wording and R15 missing | BL-977 | no | the founder decides |
 | NS-10 | R1 (device), R4a, R4b, R6, R8, R10 | Untested | BL-978 | no | the founder decides |
-| NS-10 and cross-cutting | NS-10-R5; the upload part of [X4-R1] (a second account never uploads the first's letters) | Untested | BL-961, BL-978 | by this plan's stricter reading, yes: a leak off the phone. The founder's call | a passing test before the cut, until he says otherwise |
-| Cross-cutting | [X6-R1], NS-21-R13 (nothing donated to system intelligence) | Untested | BL-962 | by this plan's stricter reading, yes: D3 calls donation an uncontrolled exit. The founder's call | a passing test before the cut, until he says otherwise |
+| NS-10 and cross-cutting | NS-10-R5; the upload part of [X4-R1] (a second account never uploads the first's letters) | Untested; #879 gates store reads | BL-961, BL-978 | by this plan's stricter reading, yes: a leak off the phone. The founder's call | a passing test before the cut, until he says otherwise |
+| Cross-cutting | [X6-R1], NS-21-R13 (nothing donated to system intelligence) | `[X6-R1]` tested (#868); NS-21-R13 [U] | BL-962 | by this plan's stricter reading, yes. The founder's call | `[X6-R1]` closed on develop |
 | NS-33 | R9, R10 (Voice Control, Switch Control; device) | Run on the candidate (6.1) | BL-984 (wave 2) | no | if either fails, its fix holds the cut or ships by written decision |
 | NS-33 | R5 to R8 (device), R12, R15, R16 | Untested | BL-984 (R9 to R16); BL-954 (R15) | no | device rows run on the candidate; the founder decides the tests |
 | NS-35 | R3, R4, R7 | Untested by NS id | BL-952 carries R7 for Find only | no | the founder decides |
-| NS-21 | R9, R11 | Untested | none (BL-937 covers R1 to R5) | no | the founder decides |
+| NS-21 | R9, R11 | Untested | none (BL-937 covers R1 to R5; M32) | no | the founder decides |
 | NS-14 | R3, R4, R8, R11 | Untested | BL-941 (wave 3) | no | the founder decides [U whether live] |
-| NS-17 | R1 to R8, R10 | Untested | none | no | the founder decides [U whether live] |
+| NS-17 | R1 to R8, R10 | R10 retitled (#889); the rest untested | none | no | the founder decides [U whether live] |
 
 Notes on the table:
 - Reminders are live today, which is why the NS-13 and NS-32 rows are here although their rows are later.
-- Some of the untested rows may already have tests under older ids, for example the planner's names-on and names-off cases in `first-run-child-name.test.ts`. A test counts once it is mapped to its NS id (P-8, BL-964) [U].
-- NS-35-R1 is tested by #828's navigation test under its own N ids, and NS-09-R1 to R3 by #832 under BL ids (P-8).
-- 14:14 makes any failing P1 row block a store build too. This plan lists the P1 failures the designs found: NS-10-R7 (BL-978) and NS-09-R6 (P-4, not built). P1 rows the designs did not check may fail too; the BL-964 trace report lists every P1 row without a test, and each one found failing joins this list.
+- Some of the untested rows may already have tests under older ids, for example the planner's names-on and names-off cases in `first-run-child-name.test.ts`. A test counts once it is mapped to its NS id (BL-964's trace report, #878, lists the P0 rows without a test) [U].
+- 14:14 makes any failing P1 row block a store build too. This plan lists the P1 failures the designs found: NS-10-R7 (fixed, #903) and NS-09-R6 (P-4a, not built). P1 rows the designs did not check may fail too; the trace report lists every P1 row without a test, and each one found failing joins this list.
 
 Facts behind the release path [V]:
 - `deploy-db.yml` run 42973935354 on tag `db-v0.1.0` (11 Nov) passed "Tag must point at a commit on main" and "Check the secret exists", then failed at "Dry run". Push was skipped. The log, read at about 04:20 UTC 20 Nov, said "failed to parse connection string"; the log has since expired.
 - `.github/migrations-applied.txt` lists 2 migrations. The tag, `main` and develop all hold the same 31 files. So the fix plus a re-run applies 29 migrations to production at once, and no new tag is needed.
 - `main` is at `6863f996` (10 Nov). The store lane cuts `release/<major>.<minor>` from `main` (RELEASE.md 1.1). #830 brings develop to `main` and has conflicts today.
 - No `ios-v*` tag exists. `release-ios.yml` has one run, a dispatched run on 19 Nov, green; its inputs were not read. `apps/mobile/version.json` says 1.0.0.
-- #844 (merged as `d5d12178`) makes the iOS job print linker and tool errors. Its job 136080246356 showed why the Debug iOS simulator build is red on the photo slices and on develop alike: React Native debug-only symbols are undefined at link (Karma's comments on #835 and #842, 04:54 UTC). #853 (open) fixes it. The check is not a required one, and the store-profile Release launch the photo slices wait on passes.
+- #844 (merged as `d5d12178`) makes the iOS job print linker and tool errors. Its job 136080246356 showed why the Debug iOS simulator build is red on the photo slices and on develop alike: React Native debug-only symbols are undefined at link (Karma's comments on #835 and #842, 04:54 UTC). #853 (merged 20 Nov 11:41 UTC) fixes it. The check is not a required one, and the store-profile Release launch the photo slices wait on passes.
 
-What rides if merged by the cut: #758 (BL-966 reworks it), BL-929 and BL-930 (sheets), BL-935, BL-949, BL-958, BL-959, BL-960, BL-964, BL-975, BL-987, P-8, and, under Q2's default, the photo stack and Find, dark.
+- At 18:20 UTC `main` is still `6863f996`, develop and `main` still hold 31 migration files each, `.github/migrations-applied.txt` still lists 2, and no `ios-v*` tag exists (`git ls-tree`, `git ls-remote`) [V]. `deploy-db.yml` ran green on each of today's develop pushes; what those runs do on a branch push was not read [U].
+
+What rides if merged by the cut: #758 (superseded by BL-966 (a)), BL-929, BL-930 (#880), BL-935, BL-949 (#872), BL-964's ratchet, BL-959's amendment, BL-960 (#873), P-7, and, under Q2's default, the photo stack and Find, dark. The founder-merged docs rows (#854, #799, #873, #872) ride only if he merges them.
 
 Not verified: whether Build 12 is already submitted. If it is not, F4 blocks Build 12 too, and Build 13 may be 1.0.0 rather than 1.0.1 [U].
 
@@ -452,26 +467,28 @@ Not verified: whether Build 12 is already submitted. If it is not, F4 blocks Bui
 
 Under Q2's default (photo and Find dark in 13; on in 14 after the counsel read on the photo label):
 
-#842 -> #835 -> #836 -> #837 -> #838 -> #839 -> #840 with the NS-33-R3 fix (BL-931 done) and BL-952 done (X1 at the lock) -> BL-939 Share Level 1 (after BL-927 -> BL-928 -> BL-937) -> share words approved (founder) and counsel Q45 (README:57) -> Build 14 device sheet -> store-build gate.
+#835 -> #836 -> #837 -> #838 -> #839 -> #840 (BL-931 done; #842 already merged) with the NS-33-R3 fix already in #840, and BL-952 done: #894 -> #895 -> Find 8/8, which waits for #879 (the account seam) (X1 at the lock) -> BL-939 Share Level 1 (after BL-928 and BL-937, which waits for #839) -> share words approved (founder) and counsel Q45 (README:57) -> Build 14 device sheet -> store-build gate.
+
+The photo chain is serial and each hop waits for a macOS store-profile launch (about 75 minutes; section 4.1): six hops are about 7.5 hours of CI at the least [E], plus review of each retargeted head. The photo chain waits first for the founder (size exceptions, legal rows, words), not for review.
 
 Parallel paths that must also finish for "14 on":
-- Photo on: BL-932, BL-953, BL-954, BL-955 (and BL-956 for the lens), P-1 (after #842), BL-868 (founder merges) then BL-933, P-5, BL-958, BL-959, BL-960, BL-850, BL-858, BL-865 and BL-867, the counsel read of the NX-33 label, photo words (BL-965), ADR Q4 decided.
-- Find on: BL-952's six PRs, which merge under D-132 with no founder step (or #798 as one PR, only if he chooses that under Q4); BL-960, #799 and #854 (counsel read, founder merge); Find words; S1-205 on a phone.
-- Reminders: BL-966 (BL-967 and P-9 are already in Build 13 under Q1), then BL-943 (with #680 folded in), then a device run with a time-zone change.
+- Photo on: BL-932 (three PRs), BL-953, BL-954, BL-955 (and BL-956 for the lens), S-4 then P-1 (after #842, merged), BL-868 (founder merges) then BL-933 (two PRs), P-5, BL-870 (36-6, `approve-migration`), BL-960 (#873), BL-850, BL-858, BL-865 and BL-867, the counsel read of the NX-33 label, photo words (BL-965, #870, and the PR keys), ADR Q4 decided.
+- Find on: #894 and #895 (each with a passing pair), Find 8/8, BL-960 (#873), #799 and #854 (counsel read, founder merge); Find words (the founder reads the twelve lines in #894); S1-205 on a phone. The split needs no founder step for size if each PR is inside CODE-R02; #894 is measured at 2,081 lines in 27 files and its size is [U].
+- Reminders: BL-966 (three PRs; BL-967 and P-9 have merged), then BL-943 (four PRs, with #680 folded in), then a device run with a time-zone change.
 
 If the counsel read on the photo label is late, one option is Build 14 with Find and Share on and photo dark. Under the lock that option cannot happen as written: Share (BL-939) now waits for all of BL-931, so Share cannot ship before the photo code has merged. It could still ship with the photo flag off. It is an option under Q2 for the founder, not part of this plan.
 
-Where the keeping rows land: under Q1's default BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 are in Build 13, with BL-978's R7 fix, P-4's NS-09-R6 and tests for the never-list rows. Any P0 row the founder decides to ship untested or with a known defect in 13 gets its fix or test first in wave 2 and gates Build 14.
+Where the keeping rows land: under Q1's default BL-922, BL-925, BL-926, BL-928 and BL-961 are in Build 13, with P-4a's NS-09-R6 and BL-966's NS-32-R12 test; BL-967, BL-962, P-9, the NS-10-R7 fix and BL-976's test already are. Any P0 row the founder decides to ship untested or with a known defect in 13 gets its fix or test first in wave 2 and gates Build 14.
 
-Founder gates on the Build 14 paths: Q4 only if he wants #798 kept as one PR; Find words; photo words; share words and the share verb; counsel Q45 for Share; the BL-868, BL-960 and #854 legal merges; #799 merge; the counsel NX-33 label read and the policy lines (BL-865); ADR Q4; the device sheet.
+Founder gates on the Build 14 paths: size exceptions on the photo slices at their new sizes (and #894's if it is over); Find words; photo words (the two PROPOSED keys, the character-limit line); share words and the share verb; counsel Q45 for Share; the BL-868, BL-960 (#873) and #854 legal merges; #799 merge; the counsel NX-33 label read and the policy lines (BL-865); ADR Q4; the device sheet.
 
-The binding constraint is likely the counsel reads and the founder's words, not engineering [E].
+The binding constraint is likely the counsel reads and the founder's words, then the macOS launch queue, not review [E]. Section 4 gives the basis.
 
 ### 3c. Critical path to Build 15
 
 Share Level 1 ships in Build 14 -> BL-981 five-parent studies (share, then Firsts; user-research with the founder) -> BL-968 Firsts (M) -> Firsts words (founder) -> Build 15 device sheet -> store-build gate.
 
-If the founder holds Firsts, the binding path is the wave-3 rows behind X1 and BL-963: BL-942 and BL-946 (each needs the slip registry), BL-938 (after BL-952), BL-945 (now S, no new field), BL-941, BL-947.
+If the founder holds Firsts, the binding path is the wave-3 rows behind X1 and BL-963: BL-942 and BL-946 (each needs the slip registry), BL-938 (after BL-952), BL-945 (S, no new field; 09-capture K1), BL-941, BL-947, and BL-985, which is free now that NS-32-R14 is fixed.
 
 Founder gates on the Build 15 paths: Share shipping in 14; study hours; Firsts words; Save a copy words (BL-942); the past-letter switch label (BL-946); the spike engineer and week (BL-972, taken 20 Nov).
 
@@ -479,66 +496,66 @@ Founder gates on the Build 15 paths: Share shipping in 14; study hours; Firsts w
 
 ## 4. Capacity
 
-Review is the limit (13 section 1). Every PR needs two counted reviews of different lenses on its head and green CI (D-132).
+Review is the limit (13 section 1). Every PR needs two counted reviews of different lenses on its head and green CI (D-132). This section was rebuilt on 20 Nov at 18:20 UTC from GitHub counts. Read it with one caution: one day is evidence, not a trend. 278 of the 324 review passes below, and 51 of the 58 merges, fall on 20 Nov.
 
-### 4.1 What was observed (last 7 days, 13 Nov 04:10 to 20 Nov 04:10 UTC) [V]
+### 4.1 What was counted (13 Nov 00:00 to 20 Nov 17:35 UTC, read at 18:20 UTC) [V]
 
 | Measure | Value | How counted |
 |---|---|---|
-| PRs merged into develop | 9: #737, #720, #826, #738, #764, #828, #831, #832, #829 | REST closed PRs with `merged_at` in the window |
-| Counted review passes posted | 66 on 14 PRs: 38 PASS or PASS WITH NOTES, 28 CHANGES | Issue comments whose first line is "Review A at <sha>" or "Review B at <sha>" |
-| Passes by day | 13 Nov: 4; 14: 2; 15: 2; 16: 0; 17: 8; 18: 0; 19: 30; 20 (to 04:10): 20 | Same |
-| Rounds to merge (heads reviewed, whole life) | 1, 1, 2, 2, 3, 3, 4, 6, 9. Median 3, mean 3.4 | Same, for the 9 merged PRs |
-| Photo stack rounds | #834: 4 rounds, 8 passes, lens A asked for changes 3 times. #841: 2 rounds, then a confirm round. #833: 1 round, then closed by the 20 Nov ruling | Same |
-| CI per head on a photo slice | About 22 minutes for the store-profile Release launch, 17 for the iOS simulator build | Check runs at `44dd950e` |
+| PRs merged into develop | 58. By day: 13 Nov 2; 14 to 16: 0; 17: 1; 18: 0; 19: 4; 20 (to 17:35): 51 | REST closed PRs with `merged_at` in the window, base `develop` |
+| Counted review passes posted | 324 on 80 PRs: 5 PASS, 229 PASS WITH NOTES, 90 CHANGES. By day: 13: 4; 14: 2; 15: 2; 16: 0; 17: 8; 18: 0; 19: 30; 20: 278 | Issue comments whose first line is "## Review A at <sha>" or "## Review B at <sha>" (author notes that quote a review are not counted). The same method gives 66 passes to 20 Nov 04:10, the figure in v1, so the two counts are comparable. Since 04:10 on 20 Nov: 258 |
+| Shape of 20 Nov | 65 passes in the 11:00 hour and 91 in the 12:00 hour (UTC); 16 at 04:00 and 36 at 05:00 | Same. The 156 passes in two hours came from several sessions reviewing at once |
+| Rounds to merge, the 51 PRs merged on 20 Nov (heads reviewed, whole life) | 1 round: 16 PRs; 2 rounds: 21; 3 rounds: 7; 4 rounds: 7. Median 2, mean 2.1 (v1: median 3, mean 3.4 for 9 PRs) | Distinct head shas in the review comments of each merged PR |
+| Passes per merged PR, by size | 16 PRs of 100 lines or fewer: median 3.5 passes, median 1.5 hours open to merge. 33 PRs of 101 to 400 lines: median 3, mean 3.7, 3.8 hours. 2 PRs over 400 lines (#834, #829): 8 passes each, median 5.0 hours | Diff size from REST (additions plus deletions), passes as above. Hours are elapsed from open to merge, not effort |
+| Photo stack rounds (still open) | Each open slice has 3 or 4 heads reviewed and 5 to 7 passes; #834 took 4 rounds and 8 passes | Same |
+| macOS store-profile Release launch (the CI job every photo head waits for) | 57 completed jobs (56 passed, 1 failed), created 05:17 to 17:13 UTC. Queue wait: median 31 minutes, mean 49, 90th percentile 128, longest 196. Run: median 24.5 minutes, mean 25, 90th percentile 31. 43 more launch jobs were cancelled before finishing (a newer push or a closed PR; the cause was not read). By hour of creation: 05:00 to 11:00, 9 jobs, mean queue 18 minutes; 11:00 to 14:00, 38 jobs, mean 62 (median 46); 14:00 to 18:00, 10 jobs, mean 26. So the queue grows with load: it matches Karma's relayed reading, "queued about 55 minutes, ran 20 to 25", in the busy hours and not outside them | Jobs of the newest 100 `iOS compile` runs on 20 Nov (runs before 05:17 are not in the sample); queue = `started_at` less `created_at`. The Debug "iOS simulator build" job completed in only 2 of the 100 runs; it is not a required check [V] |
 
-The pace is uneven. 50 of the 66 passes came in the last 28 hours. After the window, #834, #827, #797, #845, #844, #841, #848 and #852 merged on 20 Nov.
+The pace was very uneven. Before 20 Nov 04:10 the pace was 66 passes in 7 days. The mid band below averages the whole window, so it is mostly one day.
 
 ### 4.2 Model [E]
 
-- Cost of a PR = rounds x 2 passes. A code PR is taken at 3 rounds (6 passes), the median. A docs PR at 2 rounds (4 passes).
-- Each photo slice still to merge adds one delta round (2 passes) at its retargeted head.
-- Three throughput bands, all observed, none proven to hold:
-  - Low: 19 passes a week (the 13 to 18 Nov pace: 16 passes in 6 days).
-  - Mid: 66 passes a week (the 7-day total).
-  - High: 150 passes a week (19 Nov's 30 passes a day on 5 days a week; shown for one day only).
-- Cross-check by merges: 9 merged PRs a week (the 7-day total).
-- The lock added rows in every wave. Counts below include them; rows marked "PR breakdown: see design" may change when the designs land (section 10).
+- Cost of a PR in passes = rounds x 2. This refresh uses the counted mean for today's merges: 4 passes (2 rounds) for a PR not yet opened or with no counted review. v1 used 6 (3 rounds). A PR already open with a passing pair at its head costs 0 more, or 2 if it is retargeted (a delta review at its final head). #846 and #843 cost 4. At 6 passes per new PR the wave totals below rise by about a third.
+- Size classes in passes (observed, small samples): S or M code or docs PR within CODE-R02, 4; a slice over the limit under a founder exception, 8 (n = 2).
+- Three bands, all observed, none proven to hold:
+  - Low: 46 passes and 7 merges a week (13 to 19 Nov, before the 20 Nov flood).
+  - Mid: about 290 passes and 53 merges a week (the 324 passes and 58 merges averaged over the 7.7 days of the window).
+  - High: 1,390 passes and 255 merges a week (20 Nov's 278 passes and 51 merges, five days a week). Shown only to bracket the range; it is one day repeated and this plan does not rely on it.
+- Weeks for a wave = the larger of passes divided by the passes rate and PRs divided by the merge rate.
+- Effort sizing is given in review passes only. An engineer-hours equivalent is left out on purpose: no time log of agent or session work was read, the open-to-merge hours above are elapsed time, not effort, and several PRs were built by parallel sessions. Without a basis the number would be invented.
+- The lock and the designs added rows in every wave. Counts below include them.
 
 ### 4.3 Weeks per wave [E]
 
-| Wave | PRs | Passes | Weeks at low / mid / high | Weeks at 9 merges a week | Notes |
+PR counts are the rows still open at 18:20 UTC (section 2), using each design's PR list where the row says "design: n PRs".
+
+| Wave | PRs | Passes | Weeks by passes, low / mid / high | Weeks by merges, low / mid / high | Notes |
 |---|---|---|---|---|---|
-| 1 | about 54: 7 photo slices (#842 merge-ready); BL-952 x6; #799; #843; #853; #854; #855; BL-964; #830; P-7; BL-922 x2; BL-925 to BL-930 (6); BL-935; BL-949; BL-966 x3; BL-967; P-9; BL-976 x2; BL-977; BL-978 x3; BL-958; BL-959; BL-960; BL-961 x3; BL-962; BL-975; BL-987; P-4 x2; P-8 | about 286 | 15.1 / 4.3 / 1.9 | 6.0 | The photo stack is serial: 7 more merges, each with about 25 minutes of CI and a delta round, so 2 to 4 working days at best |
-| 2 | about 22: BL-932 x2, BL-933 x2, BL-868, BL-937, BL-943 x3, P-1, BL-953, BL-954, BL-955, BL-956 x3, BL-957, BL-963, BL-984 x3, P-5 | about 136 | 7.2 / 2.1 / 0.9 | 2.4 | BL-933 waits on a founder legal merge |
-| 3 | about 16: BL-938 x3, BL-939 x2, BL-941, BL-942 x2, BL-945, BL-946, BL-948, BL-974, BL-985, 3 word PRs | about 86 | 4.5 / 1.3 / 0.6 | 1.8 | All behind X1 (BL-931 and BL-952 done) |
-| 4 | about 9: BL-972 report, BL-947, BL-973 x3, BL-968 x3, BL-982 | about 52 | 2.7 / 0.8 / 0.3 | 1.0 | BL-968 waits on Share and the studies |
-| 5 | 25 or more: BL-969, BL-970, BL-971, BL-979, BL-980, BL-983, NS-17 | 160 or more | not estimated | not estimated | Each waits on counsel or the founder |
+| 1 | about 45: photo 6; Find 3 (#894, #895, 8/8); #871, #879; open docs and words 13 (#846, #847, #843, #830, #799, #854, #866, #870, #872, #873, #880, #849, #850); BL-926, BL-922a, BL-978 x2, P-4 x2, BL-976 x3, BL-966 x3, BL-929, BL-964 ratchet, BL-935, P-7, BL-959 amendment, four handoff PRs (#907 to #911 less #909) | about 126 | 2.7 / 0.4 / 0.1 | 6.4 / 0.9 / 0.2 | The photo stack is serial: 6 merges, each with about 75 minutes of macOS launch and a delta round, so at least about 7.5 hours, and it waits on the founder before it starts |
+| 2 | about 37: BL-932 x3, BL-933 x2, BL-868, BL-937 x5, BL-943 x4, BL-953 to BL-957 (6), BL-963, BL-984 x3, 33-4, 33-6, P-1, S-4, P-5, 36-4 to 36-6, T1 to T3 | about 148 | 3.2 / 0.5 / 0.1 | 5.3 / 0.7 / 0.2 | BL-933 waits on a founder legal merge; 36-6 needs `approve-migration` |
+| 3 | about 19: BL-938 x2, BL-939 x3, BL-941 x2, BL-942 x2, BL-945 x2, BL-946 x2, BL-974, BL-985, BL-948, 3 word PRs | about 76 | 1.7 / 0.3 / 0.1 | 2.7 / 0.4 / 0.1 | All behind X1 (BL-931 and BL-952 done) |
+| 4 | about 9: BL-972 report, BL-947, BL-973 x3, BL-968 x3, BL-982 | about 36 | 0.8 / 0.1 / 0.0 | 1.3 / 0.2 / 0.0 | BL-968 waits on Share and the studies. The designs give no PR list for these rows |
+| 5 | 25 or more: BL-969, BL-970, BL-971, BL-979, BL-980, BL-983, NS-17, H1 | not estimated | not estimated | not estimated | Each waits on counsel or the founder. Not sized (section 11) |
 
-Cumulative, mid band, from W0 (the week this plan is adopted), with waves overlapping where dependencies allow:
-- Wave 1 done: about W5 (range W4.3 to W6.0).
-- Wave 2 done: about W7.5 (range W6.4 to W8.4).
-- Wave 3 done: about W9 (range W7.7 to W10.2).
-- Wave 4 done: about W10 (range W8.5 to W11.2).
-- At the low band, wave 1 alone takes about 15 weeks and wave 4 ends near W30. At the high band, wave 4 ends near W4.
+Waves 1 to 4 added up (no overlap): low about 16 weeks, mid about 2 weeks, high under 1 week. Waves overlap where dependencies allow, so these are upper bounds on review time. They are not the plan's duration: they leave out the founder's gates, which now bind first (F4 and the deploy; size exceptions; words; the `docs/legal` merges; device sheets), counsel turnaround, and the macOS launch queue. v1's mid band put wave 1 at about 5 weeks and wave 4 at W10; the new mid band is shorter only because 20 Nov's pace is averaged in.
 
-What the estimate leaves out: the founder's device time per build, counsel turnaround, and the founder's word approvals. Each can be longer than the review time.
+What the bands mean: if 20 Nov was a one-day effect of many sessions reviewing in parallel, the low band is the pace and review is about 16 weeks of work; if it can be repeated, review is about 2 weeks and the founder's queue (section 5.2) is the schedule. One more week of counts separates the two readings. This plan does not choose.
 
 ### 4.4 Reviewer limits that bite [V roster]
 
-- `security-architect`: `wip_limit` 1, `daily_runs` 2. It is lens B on #842, #835, #837, P-1, BL-922, BL-953, BL-959 and BL-969, lens A on BL-961, BL-962, BL-976 and BL-983, and owns the pilot's security read (P plus 5 working days, 03:73 at the lock). As an agent it covers about 2 passes a day. Interactive Review B sessions have carried it so far.
-- `data-steward`: `wip_limit` 1, `daily_runs` 2. Lens A or B on #835, BL-932, BL-933, BL-945, BL-955, BL-959, BL-969, BL-977, P-4, P-5, P-7.
+- `security-architect`: `wip_limit` 1, `daily_runs` 2. It is lens B on #835, #837, P-1, S-4, BL-922, BL-953, BL-933's PRs and BL-969, lens A on BL-961 (#871, #879), BL-976 and BL-983, and owns the pilot's security read (P plus 5 working days, 03:73 at the lock). As an agent it covers about 2 passes a day. Interactive Review B sessions have carried it so far.
+- `data-steward`: `wip_limit` 1, `daily_runs` 2. Lens A or B on #835, BL-932, BL-933, BL-945, BL-955, BL-977, P-4, P-5, P-7, the data-side tests T1 to T3 and 36-3 to 36-6.
 - `user-research` and `regulatory-affairs` have `daily_runs` 0. Their rows need interactive sessions.
 - `legal` has `daily_runs` 1 and a `paused_reason` that is still set, though its pause date has passed.
-- `max_open_agent_prs` is 10. The dispatcher counts open PRs with an `agent:` label, drafts included (`scripts/agents/dispatch.mjs:235`, `agentOfPR` in `scripts/agents/lib.mjs`). 66 such PRs are open, 45 of them drafts, so the cap is used about 6.6 times over. The photo slices carry no agent label. If the lane ran today it could only review until about 56 of those close.
+- `max_open_agent_prs` is 10. The dispatcher counts open PRs with an `agent:` label, drafts included (`scripts/agents/dispatch.mjs:235`, `agentOfPR` in `scripts/agents/lib.mjs`). 75 such PRs are open, 44 of them drafts (66 and 45 in v1), so the cap is used about 7.5 times over. The photo slices carry no agent label. If the lane ran today it could only review until about 65 of those close.
+- The macOS runner is a shared queue: about 57 launch jobs completed in 12 hours on 20 Nov (about 5 an hour). A PR whose head moves queues another launch. Retargeting a stacked PR moves its head.
 
 ### 4.5 When reviewers are scarce
 
 Keeping and floor rows are reviewed before the photo slices and Find (20's ranks 12 and 13). That means 20's ranks 1 to 11, plus NS-32, which 20:94 builds before C-05:
-- reviewable now: BL-922, BL-925, BL-926, BL-927, BL-928, BL-929, BL-930, BL-868, #799 and #854 (rank 7), BL-976 (rank 1), BL-977, BL-978, BL-966, BL-967 and P-9, BL-959, BL-960, BL-961, BL-962, BL-964, P-4;
+- reviewable now: #871 and #879 (BL-961), #866 (BL-925), #880 (BL-930), #872 (BL-949), #873 and #854 (BL-960, rank 7), #799, BL-966, BL-929, BL-964's ratchet, the NS-08 notes, P-4a and P-4b (when written);
 - held rows that go first once their blockers clear: BL-943 and #680 (rank 5), BL-933 (rank 7), BL-932 (rank 10).
 
-Rank 9 is the photo split itself. Under Q1's default the keeping rows also hold the Build 13 cut.
+Rank 9 is the photo split itself, now two-thirds merged or reviewed. Under Q1's default the keeping rows also hold the Build 13 cut.
 
 ---
 
@@ -550,10 +567,10 @@ These run beside the build and never hold an engineer. Engineers build behind a 
 
 | Lane | Handle | Work now (waves 1 and 2) | Work later |
 |---|---|---|---|
-| Content | `content` | BL-965 (words for the locked pack); BL-925 line; photo keys in #838 to #840; Find keys; BRAND.md internal-terms rows (README:103); the pictures-in-backup lines (CR-62 item 4) | Share words and verb; Save a copy; past-letter switch label; the seal-limit line (CR-62 item 5); Firsts words |
+| Content | `content` | BL-965 (#870) and BL-925 (#866), both open and waiting for him; photo keys in #838 to #840; Find keys (#894); BRAND.md internal-terms rows (README:103); the pictures-in-backup lines (CR-62 item 4) | Share words and verb; Save a copy; past-letter switch label; the seal-limit line (CR-62 item 5); Firsts words |
 | Research | `user-research` (interactive only) | BL-935 pilot kit; BL-857 study plan | BL-981 five-parent studies: photo (trigger: photos on in TestFlight), Find, share (Build 14 in TestFlight), Firsts and seal (after Share ships) |
-| Legal | `legal`, `regulatory-affairs` | BL-949 counsel questions; BL-841 media brief; BL-867 claims rows; BL-868 edit with `data-architect`; #799 and BL-960 notes for counsel; CR-62 items 1 to 5 into the packet | BL-865 policy lines; Q45 (Share); Q45, Q46, Q48, Q54 (NS-16); Q6 (seals); Q48, Q49, Q53 (NS-25); Q51, Q32, Q48 (NS-12) |
-| QA | `qa` | BL-930, BL-929; BL-964 (G0); the Build 13 run sheet (section 6); re-home S1-205 and S1-135; P-8 | BL-948 device rows for every journey; Build 14 and 15 sheets |
+| Legal | `legal`, `regulatory-affairs` | BL-949 counsel questions (#872); #907 (classify `reminders.session`); BL-841 media brief; BL-867 claims rows; BL-868 edit with `data-architect`; #799 and BL-960 notes for counsel; CR-62 items 1 to 5 into the packet | BL-865 policy lines; Q45 (Share); Q45, Q46, Q48, Q54 (NS-16); Q6 (seals); Q48, Q49, Q53 (NS-25); Q51, Q32, Q48 (NS-12) |
+| QA | `qa` | BL-930 (#880), BL-929; BL-964's ratchet (G0; the trace report merged as #878); the Build 13 run sheet (section 6); re-home S1-205 and S1-135 | BL-948 device rows for every journey; Build 14 and 15 sheets |
 
 Product, not a lane here, writes the Firsts journey in 14 with the NS-06 Part A rows (M21).
 
@@ -564,7 +581,7 @@ Product, not a lane here, writes the Firsts journey in 14 with the NS-06 Part A 
 | 1 | Fix the production database connection secret (F4), then approve the deploy re-run | Every servers-on build reaching a person | Build 13, now |
 | 2 | Say which phones he holds (14 section 5: an SE 3 on the newest iOS, a phone on iOS 17, a large iPhone, a second phone, an iPad) | The first run sheet | Build 13 |
 | 3 | Q1: which P0 rows the Build 13 cut meets (or let the default stand) | The cut | Build 13 |
-| 4 | Approve BL-925's line | BL-926 (P0 NS-09-R4a, R4b) | Build 13 |
+| 4 | Approve BL-925's line (#866) | BL-926 (P0 NS-09-R4a, R4b) | Build 13 |
 | 5 | His written decision, if he chooses it over fixing or testing first, to ship named P0 rows untested, or with a known defect, in Build 13 (3a's table). The plan recommends he does not do so for the never-list rows | The cut, under Q1's default | Build 13 |
 | 6 | Nothing for the README asks (README:67 to 75): the defaults were taken on 20 Nov under his 19 Nov delegation and stay reversible by him (README:65) | n/a | n/a |
 | 7 | ADR Q4: whether the owner backup carries pictures (default no) | CR-62 item 6 | Build 13 freeze |
@@ -574,8 +591,11 @@ Product, not a lane here, writes the Firsts journey in 14 with the NS-06 Part A 
 | 11 | Pilot: send consent texts and scripts to counsel (the principle was taken 20 Nov) | BL-935; the pilot (counsel's read is due P plus 5 working days, 03:73 at the lock) | Wave 1 |
 | 12 | Send the BL-949 packet to counsel | NS-16, NS-12, NS-32, NS-18 gates | Wave 1 |
 | 13 | Q8: the notification cap | BL-966, BL-943, BL-982 | Wave 1 |
-| 14 | Q4, only if he wants #798 kept as one PR: its size exception. The BL-952 split needs no founder step | #798 alone | Wave 1 to 2 |
-| 15 | Find words | Find on | Build 14 |
+| 14 | Q4, only if he wants #798 kept as one PR: its size exception. The BL-952 split needs no founder step if each PR is inside CODE-R02; #894 is measured at 2,081 lines in 27 files and is [U] | #798 alone; #894 if over | Wave 1 to 2 |
+| 14a | Size exceptions at the new sizes for the photo slices: #835 783, #836 1,015, #837 732, #838 629, #839 603 (the 20 Nov "Yes, all three" covered the sizes then; #840 at 342 is inside the limit) | The photo stack (section 2.1) | Wave 1 |
+| 14b | Read and approve or change the PROPOSED words in open PRs: #866, #870, #871 and #879 (the held screen), #880, the photo keys `features.photos.review.notStored` and `book.lens.monthsButton`, and a character-limit line | The PRs behind each; BL-926, BL-978b | Wave 1 |
+| 14c | His own approval of the charter and memory changes in #849 and #850 | Agent readiness (section 9) | Any time |
+| 15 | Find words: the twelve PROPOSED lines in #894 | Find on | Build 14 |
 | 16 | Merge #854, #799 and BL-960 after counsel reads them | Find and photo on (NS-36-R6) | Build 14 |
 | 17 | Merge the BL-868 export-spec edit | BL-933 | Build 14 |
 | 18 | Counsel read of the NX-33 photo label; the policy lines for pictures (BL-865) | Photo on in `production` | Build 14 |
@@ -589,25 +609,24 @@ Product, not a lane here, writes the Firsts journey in 14 with the NS-06 Part A 
 
 Already given and recorded [V]: "I approve all requirements." (19 Nov). The 19 Nov delegation (README:65). The founder's "Yes, all three" (recorded on #827, #797, #798 and each photo PR) covers the photo size exceptions, #827 and the Ready clicks on #797 and #798.
 
-Relayed, not yet recorded [U]: his naming of the locked pack v1.0 as the source of truth (20 Nov; relayed by Karma in this session). Product's draft CR-66 on #846 would record it; one line in a record would close it.
+Recorded by Karma, not by him: his naming of the locked pack v1.0 as the source of truth (20 Nov), in CR-66 on develop (#856, merged 11:30 UTC) [V]. A founder-signed line would close it.
 
 ### 5.3 Founder questions, each with a default or a recommendation
 
-For Q1 to Q3 and Q6 to Q8, the default holds until he answers. Q4 and Q5 are different: a size exception is his to accept (CODE-R02, `docs/engineering/01-code-and-change.md:31`, a MUST). For those the plan gives a recommendation only: #798 as one PR, and this file, do not merge until he answers. A split that keeps every PR inside the limit needs no exception, so BL-952's split PRs merge under D-132 with no founder step. Release content and dates are his (ROADMAP:3).
+For Q1 to Q3 and Q6 to Q8, the default holds until he answers. Q4 and Q5 are different: a size exception is his to accept (CODE-R02, `docs/engineering/01-code-and-change.md:31`, a MUST). For those the plan gives a recommendation only: #798 as one PR, and this file, do not merge until he answers. The photo slices' new sizes (14a in 5.2) are the same kind of ask. A split that keeps every PR inside the limit needs no exception, so BL-952's split PRs merge under D-132 with no founder step. Release content and dates are his (ROADMAP:3).
 
 | Q | Question | Default (or recommendation, for Q4 and Q5) | Why it is his |
 |---|---|---|---|
-| Q1 | Which P0 rows must the Build 13 store candidate meet (14:98; G0 at 14:96)? | This plan's recommendation, taken as the default. The cut waits for: BL-922 (NS-10-R0); BL-925 and BL-926 (NS-09-R4a, R4b); BL-928 (NS-33-R1, R2, R4); BL-961 (NS-10-R3) and BL-967 (NS-13-R14), whose rows fail today; BL-978's NS-10-R7 fix and P-4's NS-09-R6 (both P1, which blocks a store build, 14:14). The live never-list rows get a passing test before the cut: NS-08-R6, NS-13-R5, R6a, R6b and NS-32-R12. Under the stricter reading, which is the default until he says otherwise, so do NS-10-R5 with the upload part of [X4-R1], and [X6-R1] with NS-21-R13. For the other rows in 3a's table he decides: a fix or a test before the cut (recommended), or shipping a known defect or an untested row by his written decision. Any such decision is a change to 14:98, which as written lets no P0 row ship untested; it is not a 14:98 waiver, which covers only device rows with no phone. P0 rows of features that ship dark gate their flags, not the cut. If he does not answer, 3a's table as recommended holds the cut | What is in a release is his, and so is any change to 14:98's gate and whether a row is a leak. Product and compliance advise |
+| Q1 | Which P0 rows must the Build 13 store candidate meet (14:98; G0 at 14:96)? | This plan's recommendation, taken as the default. The cut waits for: BL-922 (NS-10-R0); BL-925 and BL-926 (NS-09-R4a, R4b); BL-928 (NS-33-R1, R2, R4; two slices merged); BL-961 (NS-10-R3, whose row still fails; #871 and #879 open); and P-4's NS-09-R6 (P1, which blocks a store build, 14:14). Merged today and so no longer waited for: BL-967 (NS-13-R14, #904), BL-978's NS-10-R7 fix (#903), and the never-list tests for NS-08-R6 (#874), NS-13-R5, R6a, R6b (#905) and [X6-R1] (#868). Still waited for: a passing test for NS-32-R12, and, under the stricter reading, which is the default until he says otherwise, NS-10-R5 with the upload part of [X4-R1], and NS-21-R13. For the other rows in 3a's table he decides: a fix or a test before the cut (recommended), or shipping a known defect or an untested row by his written decision. Any such decision is a change to 14:98, which as written lets no P0 row ship untested; it is not a 14:98 waiver, which covers only device rows with no phone. P0 rows of features that ship dark gate their flags, not the cut. If he does not answer, 3a's table as recommended holds the cut | What is in a release is his, and so is any change to 14:98's gate and whether a row is a leak. Product and compliance advise |
 | Q2 | Does the Build 13 cut wait for photo and Find? | No. Photo and Find ship dark, flags off in `production`; the Build 13 cut does not wait for them; Build 14 turns them on after the counsel read on the photo label. An option, not the default: if that read is late, Build 14 turns on Find and Share with photo dark (Share's code still waits for BL-931 at the lock) | The cards carry no build numbers (T5), and no file says the cut does not wait. Release content is his |
 | Q3 | Seals: in scope and not cancelled (README:58, 61; VISION:51; BL-969, BL-970 at the lock), or "not built" (CR-62 item 1, RULINGS:585)? | In scope; no seal code is written until counsel answers Q6 | Scope, and a counsel gate |
-| Q4 | Does he want #798 kept as one PR (+2,511 lines in 37 files), with a size exception, instead of the split the locked BL-952 sets? | Recommendation: no; split, as BL-952 says. A `mobile` agent started the split today, and its PRs merge under D-132 with no founder step. Council F7 counted #798 at about six PRs at the limit, and BL-952 adds three locked rows #798 misses. Only #798 kept as one PR waits for his acceptance | CODE-R02: the founder accepts or refuses an exception |
-| Q5 | This file's size exception (one plan document) | Recommendation: accept. No merge until he answers | CODE-R02: the founder accepts or refuses |
+| Q4 | Does he want #798 kept as one PR (+2,511 lines in 37 files), with a size exception, instead of the split the locked BL-952 sets? | Recommendation: no; split, as BL-952 says. The split is under way: five of eight PRs merged today (#881 to #885), and they merged under D-132 with no founder step. Council F7 counted #798 at about six PRs at the limit, and BL-952 adds three locked rows #798 misses. Only #798 kept as one PR waits for his acceptance | CODE-R02: the founder accepts or refuses an exception |
+| Q5 | This file's size exception (one plan document, about 850 lines after this refresh) | Recommendation: accept. No merge until he answers | CODE-R02: the founder accepts or refuses |
 | Q6 | Switch on the autonomous agent lane? | Off for waves 1 and 2; interactive sessions run the agents (section 9) | Secrets, the agents App and spend |
 | Q7 | The daily run cap (the agents ask for 50 runs a day against a cap of 30) | Unchanged at 30 while the lane is off | Spend |
 | Q8 | The notification cap: how many budgeted notifications a day | One a day across all books, as the locked NS-32 states (11:33), with plan notices outside it. NX-39 F6 (NX-39-memory-library.md:295) makes the cap number his (M26) | NX-39 F6 lists it as a founder decision |
 
 ---
-
 ## 6. Device batches: one run sheet per build
 
 Phones (14 section 5, at the lock): an iPhone SE (3rd generation) on the newest iOS it takes; a phone on iOS 17, our lowest; a current large iPhone on the latest iOS; a second phone on the same account; an iPad, because App Review runs the iPhone app there. Which phones the founder holds is not recorded. Settings on every walk: the largest accessibility text size with Bold Text, VoiceOver, Voice Control, Switch Control, Reduce Motion, Increase Contrast, Smart Invert, dark mode, Low Power Mode, and airplane mode where the row says so.
@@ -637,7 +656,7 @@ Part A, the store candidate (required). Under Q1's default BL-922, BL-928, BL-96
 
 Part B, only if the photo stack or Find merged by the cut: a preview build with the flag on. Under Q2's default it does not gate the store candidate.
 - Photo, from the PR bodies: the picker (Cancel, swipe-down, a second tap while open, dismissal by navigation, a Live Photo, an iCloud-only picture); the sheet looks like the system picker and keeps its Cancel; the 2 s watchdog; `isBeingDismissed` or `presentingViewController == nil` when react-native-screens dismisses by code; the first-run embedded-picker notice then an immediate pick; an abandoned swipe; the re-encode (HEIC, multi-image HEIC, 48 MP, a PNG over 150 MP); which formats `.current` hands over (ProRAW, GIF, WebP, TIFF are refused); the copy's protection class and the photos folder's backup flag; `/var` against `/private/var` path checks; a truncated file reads as incomplete; upgrade from a v10 database and a kill during the sweep; the ten metadata fixtures through ImageIO; no permission prompt; Cancel during an iCloud download; the lock coming up over an open picker; VoiceOver, AX5 and Reduce Motion on Home, Listen and Write; the switcher snapshot; the 10 s Undo toast; the lens cards at AX5 and in dark mode; HEIC and rotated images (BL-931 plan line).
-- Find, S1-205 steps (a) to (j) from #798: the action absent on an empty book and present after one letter; the nameless placeholder; R2 p95 under 300 ms with 1,000 letters on an SE 3 (20 runs of 20 queries); R20 peak memory and index size; R21 VoiceOver order, "Letters found" once with no number, a row read once, AX5, Reduce Motion, Voice Control; R12 Back keeps the query, R14 a tab switch, Cancel and a relaunch clear it; R19 FTS5 present on a real build and the scan path; the failed view; the match mark in both themes; a deleted book is not searched; airplane mode (R22).
+- Find, S1-205 steps (a) to (j) from #798, plus step (k) from #895 (R35: frame rate while the index rebuilds, no rebuild while a take records): the action absent on an empty book and present after one letter; the nameless placeholder; R2 p95 under 300 ms with 1,000 letters on an SE 3 (20 runs of 20 queries); R20 peak memory and index size; R21 VoiceOver order, "Letters found" once with no number, a row read once, AX5, Reduce Motion, Voice Control; R12 Back keeps the query, R14 a tab switch, Cancel and a relaunch clear it; R19 FTS5 present on a real build and the scan path; the failed view; the match mark in both themes; a deleted book is not searched; airplane mode (R22).
 
 ### 6.2 Build 14 sheet
 
@@ -670,39 +689,40 @@ Not on these sheets unless their gates clear: J-N14 seals (BL-969, counsel Q6), 
 
 ---
 
-## 7. Risks (top 8)
+## 7. Risks (top 9)
 
 | # | Risk | Likelihood | Impact | How we see it | Way back |
 |---|---|---|---|---|---|
-| 1 | Review loops cost twice the plan. The photo stack needed 2 to 4 rounds a slice (#834: 4 rounds, 8 passes); merged PRs took a median of 3 and up to 9 (#737). Each retarget adds one more round | High | Wave 1 moves from about 4.5 weeks to 9 or more | Rounds per PR in the weekly count; any PR past 3 rounds is named in the board | Fix notes in the next slice, as #842 did for #834; review only the delta after a retarget; a pre-review checklist built from the stack's must-fix notes; split before review, not after (BL-952) |
+| 1 | Review loops cost more than the plan. The photo stack needed 3 to 4 rounds a slice (#834: 4 rounds, 8 passes); of the 51 PRs merged on 20 Nov, 14 took 3 or 4 rounds and the median was 2 (section 4.1). Each retarget adds one more round | Medium | Wave 1 moves from under a week (mid) to 6 weeks (low) | Rounds per PR in the weekly count; any PR past 3 rounds is named in the board | Fix notes in the next slice, as #842 did for #834; review only the delta after a retarget; split before review, not after (BL-952 did) |
 | 2 | F4 and the first production apply. 29 migrations go to production in one push, and the dry run has failed once already | Medium | Every servers-on build is blocked | The "Dry run" step of `deploy-db.yml` | Dry run first; the nightly backup and restore drill (D-159); migrations are forward-only, so a fault is fixed by a new migration |
-| 3 | The founder is one serial queue: Q1 to Q8, words, `docs/legal` merges, counsel hand-offs, device runs, release approvals | High | Each build waits on the slowest ask | Age of each item in 5.2 and 5.3 | Every question carries a default or a recommendation; one batched ask per wave; one run sheet per build; flags let code merge ahead of words |
+| 3 | The founder is one serial queue: Q1 to Q8, size exceptions at new sizes (14a), words in six open PRs (14b), `docs/legal` merges, counsel hand-offs, device runs, release approvals | High | Each build waits on the slowest ask; with review faster, this is now the schedule | Age of each item in 5.2 and 5.3 | Every question carries a default or a recommendation; one batched ask per wave; one run sheet per build; flags let code merge ahead of words |
 | 4 | Steward capacity: `security-architect` and `data-steward` each have `wip_limit` 1 and 2 runs a day, and sit on most photo slices and on the new cross-cutting rows | High | Review passes queue behind two agents | Passes waiting per steward | Section 4.5's order; interactive Review A and B sessions (as now); move lens B to `compliance-engineer` where the path allows |
-| 5 | Counsel reads arrive late (NX-33 label, Q45 for Share, pilot consent at P plus 5 working days, Q6) | Medium | Photo or Share stays dark in `production`; the pilot does not start | The counsel packet log | Ship dark; flag on only in TestFlight |
-| 6 | Live P0 rows that fail today (NS-10-R3, NS-13-R14, NS-13-R19 and NS-32-R1b) or have no test (3a's table), and trace cannot see NS ids until G0 | High | Under Q1's default the failing rows and the never-list tests hold the Build 13 cut; the rest ship only by the founder's written decision | BL-964's ratchet once it lands; section 8 | BL-961, BL-967 and P-9 first; product numbers P-4, P-5, P-8, P-9; #840 fixed before it merges (still a `tablist` at `f811c9a6`) |
+| 5 | Counsel reads arrive late (NX-33 label, Q45 for Share, pilot consent at P plus 5 working days, Q6) | Medium | Photo or Share stays dark in `production`; the pilot does not start | The counsel packet log (#872) | Ship dark; flag on only in TestFlight |
+| 6 | Live P0 rows that still fail (NS-10-R3 until #871 and #879 merge; NS-13-R19 and NS-32-R1b) or have no test (3a's table), and a second account could read the first's book until then | High | Under Q1's default the failing rows and the missing never-list test hold the Build 13 cut; the rest ship only by the founder's written decision | BL-964's trace report (#878) now lists every P0 row without a test; section 8 | BL-961's two open PRs first; BL-966 for R1b and R12; product numbers P-4, P-5 |
 | 7 | Device numbers are unknown, and the lens thumbnails read the stored copy until BL-932 | Medium | A slow Book once photo turns on; NS-34-R2 holds the feature | BL-929 baseline; J-N13 | Photo stays dark until BL-932 and J-N13 pass; the remote pause |
-| 8 | The plan follows an unmerged branch: #846 may move or change before it merges, and the lock grew every wave (wave 1 from about 31 to about 54 PRs) | High | Rows re-pointed; the Build 13 scope argued again | #846's head; its merge | The re-sync rule in section 1; Q1 decides what the cut needs; build behind flags with PROPOSED keys |
+| 8 | The plan follows an unmerged branch: #846 may move or change before it merges, and the lock grew every wave (wave 1 from about 31 to about 54 PRs; about 45 left today) | High | Rows re-pointed; the Build 13 scope argued again | #846's head; its merge | The re-sync rule in section 1; Q1 decides what the cut needs; build behind flags with PROPOSED keys |
+| 9 | The macOS store-profile launch queue (about 75 minutes a head on average, 87 in the busy hours) stretches the serial photo stack and every retarget | Medium | A hop takes more than an hour of waiting even with reviews done | Queue time per job (section 4.1) | Review at the final head while the launch runs; retarget and merge the stack in one sitting; keep the Debug simulator build out of the required checks |
 
 ---
 
 ## 8. Mismatches found
 
-Owner: P is product (cards, 14, backlog rows and their statuses, the rank, the roadmap, README, VISION). E is engineering (Karma: 13, this file, rulings such as CR-62, PRs). Where a fix touches both, the row names each part, so two do not both do it. Cites are at `450bcb4a`. Resolved by the lock and dropped from this list: the old M7 (NS-36-R5 now puts pictures in 1.7.0 and seals in 1.8.0, 11:679), M12 (the register now lists NS-01, NS-02, NS-05 and NS-06 rows, 14:106 to 111) and the card half of M20 (11:9 and 11:784 now say "stored copy").
+Owner: P is product (cards, 14, backlog rows and their statuses, the rank, the roadmap, README, VISION). E is engineering (Karma: 13, this file, rulings such as CR-62, PRs). Where a fix touches both, the row names each part, so two do not both do it. Cites are at `450bcb4a`. Rows closed since v1 are marked and listed in 8.1; new rows are M29 onward. Resolved by the lock and dropped from this list: the old M7 (NS-36-R5 now puts pictures in 1.7.0 and seals in 1.8.0, 11:679), M12 (the register now lists NS-01, NS-02, NS-05 and NS-06 rows, 14:106 to 111) and the card half of M20 (11:9 and 11:784 now say "stored copy").
 
 | # | Where | What disagrees | Proposed fix | Owner |
 |---|---|---|---|---|
-| M1 | 13:66, 13:98, 13:108; 20:28, 20:80; BACKLOG:3586, 3589 | Photo is "five slices", "eight PRs #833 to #840". REST: #833 closed unmerged; the stack is nine PRs, two merged (#834, #841) | BL-931 status and scope list the nine PRs and the merge order; 13 renumbers the slices; 20's two lines follow | E (13); P (BL-931, 20) |
+| M1 | 13:66, 13:98, 13:108; 20:28, 20:80; BACKLOG:3586, 3589 | Photo is "five slices", "eight PRs #833 to #840". REST: #833 closed unmerged; the stack is nine PRs, three merged (#834, #841, #842) | BL-931 status and scope list the nine PRs and the merge order; 13 renumbers the slices; 20's two lines follow | E (13); P (BL-931, 20) |
 | M2 | 13:66, 13:110, 13:123 | NS-37 before slice 5, and slice 5 in wave 3. #840 (slice 5) is open on #839, with thumbnails from the stored copy; BL-932 waits for BL-931 | 13 says #840 merges dark and NS-37 gates the flag | E |
-| M3 | BACKLOG:3562 (BL-927) and 3589 (BL-931); 11:264; #840 `apps/mobile/src/components/photos/photos-lens.tsx` line 25 at `cc94d0d3` and `f811c9a6` | Both rows hand the lens fix to slice 5 with radio semantics, not Buttons in a tab list. #840's `LensRow` is `accessibilityRole="tablist"` with two Buttons. NS-33-R3 is P0 (14:131) | #840 uses `ChoiceGroup` or `ChipGroup` with radio semantics and a test titled `[NS-33-R3]` before it merges | E |
+| M3 (closed 20 Nov) | #840 `apps/mobile/src/components/photos/photos-lens.tsx:10-28` at `91eef422`; `photos-surfaces.test.ts:317-318` | Closed: the lens is now one radio `ChoiceGroup`, and the test is titled `[NS-33-R3]`. Was: `tablist` of Buttons against NS-33-R3 (11:264) | None; #840 merges in its place in the stack | none |
 | M4 | 01:136 (NS-01-R17b); BACKLOG:3590, 3717; #837 body | R17b asks for iCloud progress and Cancel. #837 says both need a `scribe-photo` change no slice has; BL-931 is done when the slices merge | P-1 is engineering's BL-950 or BL-951, which the lock reserves for NS-01-R17 iCloud progress; write it | E |
 | M5 | 13:92; 20:94; BACKLOG:3406 | 13 says NS-32 has "no backlog row yet" and 20 says it "needs a backlog row", but the lock has BL-966. #758 (BL-869) is still open and conflicts with develop | 13 and 20 cite BL-966; #758 folds into BL-966 or closes | E (13, #758); P (20) |
 | M6 | 14:134; BACKLOG section from 3715 | NS-36-R1a to R1d and R2 are P0 and no row at the lock cites them; BL-959 and BL-960 cover R4 and R6 | Rows for R1a to R1d and R2 (P-5), titled with NS-36 ids | P |
 | M8 | 08:306 to 308; 14:114; BL-977 (R9 to R17) | NS-09-R6, R7 and R8 have no backlog row; R7 and R8 are P0 | Rows for R6 to R8 (P-4) | P |
 | M9 | 13:42, 13:106 to 112; 20:72; ROADMAP:14 | NS-08 is rank 1 with P0 rows R4 to R7 and R9, and has BL-976 at the lock, but no wave in 13 | 13 puts NS-08 reads (BL-976) in wave 1 | E |
 | M10 | BACKLOG:3140, 3141; BL-978 | BL-922 says "after build 13" and cites NX-36-S17, while 20:133 and 13:108 put it in wave 1. BL-978 (ready) also satisfies NS-10-R0 | Place BL-922 in wave 1, cite NS-10-R0, and say which of BL-922 and BL-978 owns R0 (BL-978 builds on BL-922) | P |
-| M11 | 13:67; 20:84; BL-952 | 13 and 20 call Find "M" and "a draft, #798". The lock's BL-952 is L and splits #798 into at most six PRs | 13 and 20 cite BL-952; the founder answers Q4 | E (13); P (20) |
+| M11 | 13:67; 20:84; BL-952 | 13 and 20 call Find "M" and "a draft, #798". The lock's BL-952 is L and splits #798 into at most six PRs; the split as built is eight (see M31) | 13 and 20 cite BL-952; the founder answers Q4 only if he wants #798 whole | E (13); P (20) |
 | M13 | README:69 to 75; README:65; ROADMAP:15 | The cards no longer carry build numbers (T5), but the taken defaults in README's asks table still say Build 13, 14 and 15, and README:65 says the roadmap supersedes their timing words. The roadmap puts photo and Find in January | The founder decides Q2; product then aligns README's table and the roadmap | P (after Q2) |
-| M14 | #819 body; BL-964 | #819 reads NS ids only from `docs/roadmap/next/03-requirements`. BL-964 at the lock reworks or replaces it. Since #834 merged, `photos-device.test.ts` cites `[NS-01-R2]` and `[NS-01-R22]`, but NS-09-R1 to R3 (#832) and NS-35-R1 (#828) still read as untested | BL-964 lands G0; P-8 retitles the tests | E (#819, BL-964 build); P (the P-8 row) |
+| M14 (mostly closed 20 Nov) | #819 body; BL-964 | #819 was closed unmerged at 11:54 and replaced by #878 (the trace report, merged 11:54). P-8 merged as #888 to #890 (NS-09, NS-17-R10, NS-25 rows). The ratchet is a second BL-964 PR, not opened. NS-35-R1's retitle is [U] | BL-964's ratchet lands G0; confirm NS-35-R1 | E (BL-964 build); P (the P-8 row) |
 | M15 | BACKLOG:3669 (BL-943); 20:30, 20:76; 14:141; 13:80; BL-983 | BL-770 is cited but lives only on draft #684. S1-135 lives only on #680's branch (conflicts). BL-882 to BL-889 live only on draft #767, which BL-983 waits for | BL-943 folds #680 and drops BL-770, or #684 merges; 13 and 20 cite #767 until it merges | P (BL-943, 20); E (13) |
 | M16 | BACKLOG:3620 | BL-936 says "in-review (first draft ... in this PR)". #829 merged it, which meets its done line (3623) | Status `done (#829, 697233d3)` | P |
 | M17 | BACKLOG:3198, 3207, 3306 | BL-846 (local schema for media) and BL-847 (P0 one photo) are what #835 to #840 build; BL-858 depends on BL-847 | Mark BL-846 and BL-847 superseded by BL-931; re-point BL-858 to BL-931 | P |
@@ -715,21 +735,47 @@ Owner: P is product (cards, 14, backlog rows and their statuses, the rank, the r
 | M24 | README:58, 61; VISION.md:51; RULINGS:585 (CR-62 item 1); BL-969, BL-970 | The requirements keep the sealed letter in scope and "not cancelled", and the lock schedules BL-969 and BL-970. CR-62 item 1 gives its default as "not built" until counsel answers Q6 | The founder answers Q3 (default: in scope, no seal code until Q6); CR-62 then says the same | E (CR-62) |
 | M25 | README:72, 157; ROADMAP:17; 13:58, 13:111; BL-972 | The spike starts "the Monday after Build 13 is cut" (README, a taken default), while the roadmap puts NS-04 in April to May and 13 says "set in the roadmap". 13 says NS-04 depends on NS-35; the lock's BL-972 is blocked on BL-935 (the pilot kit) | Product picks one start and one dependency; README, the roadmap and BL-972 cite them; 13 follows | P (README, roadmap, BL-972); E (13) |
 | M26 | 11:33; NX-39-memory-library.md:295 (NX-39 F6); #758 body | The locked NS-32 sets one budgeted notification a day. NX-39 F6 makes "the one shared notification cap number" a founder decision with a different default (the parent's chosen cadence), and #758 says "the founder sets the number" | The founder answers Q8; NS-32 then cites F6 and the answer | P |
-| M27 | BACKLOG at the lock, BL-976 | BL-976 is "blocked (PR #622 merged)", and #622 merged on 10 Nov | Status `ready` | P |
-| M28 | BACKLOG at the lock, BL-959 | BL-959 is "blocked (PR #797 merged on develop)", and #797 merged on 20 Nov as `e9dca86c` | Status `ready` | P |
+| M27 | BACKLOG at the lock, BL-976 | BL-976 is "blocked (PR #622 merged)", and #622 merged on 10 Nov. Its test and preflight have merged today (#874, #875) | Status `in progress` with those PRs | P |
+| M28 | BACKLOG at the lock, BL-959 | BL-959 is "blocked (PR #797 merged on develop)", and #797 merged on 20 Nov; its ids at L3 merged as #865 | Status `in progress`; the amendment (AX-2, AX-3) is the rest | P |
+| M29 | #835 to #839 heads; the 20 Nov "Yes, all three" (#827, #797, #798, each photo PR) | The exception covered the slices at their sizes then (680, 704, 699, 573 and 523 lines). They are now 783, 1,015, 732, 629 and 603 after the ceiling and review fixes, so the covered sizes no longer match | The founder accepts or refuses at the new sizes (14a); or the slices are trimmed | F (the founder); E (names it) |
+| M30 | NS-01-R20b (01 at the lock); #838 `pending-photo-thumb.tsx:4`, `listen.tsx:572` | R20b asks VoiceOver to reach Change last. #838 says that needs a reading-order override and flags it. This is a card conflict, not a code defect | Keep Change under the picture and amend R20b to say so (product's call); #838 then follows the card | P (NS-01) |
+| M31 | BACKLOG BL-952 (lock); #894 and #895 bodies; 10 and 11 designs | BL-952 says "at most six PRs"; the split Karma ruled is eight (#798 is about 2,516 lines), and five of eight have merged | BL-952 says eight PRs and lists them (#881 to #885, #894, #895, 8/8) | P |
+| M32 | 10-reading-and-family.md:206 (C10) | BL-937 covers NS-21 R1 to R5 and the card has R1 to R14, with P0 R9, R11, R12, R13; BL-939 covers R1 to R17 (card to R27); BL-946 covers R1a to R8 (card to R18, P0 R11, R15, R17); BL-947 likewise. The P0 rows beyond the backlog rows have no work row | Widen each row's Satisfies to the card's P0 rows, or add rows | P |
+| M33 | CR-67 "For product"; AX-9; `10-reading-and-family.md` | NS-05-R10a to R10c name a folder the platform does not have. AX-9 rules one Caches folder per feature, swept at launch and by Erase everything; R10c's file protection and backup exclusion stay | Product rewords R10a to R10c; whether Caches is outside the iPhone backup goes on the Build 14 device sheet [U] | P |
+| M34 | CR-67 AX-5; 09-capture.md P8; `sync.ts:294` | NS-17 section 10 and NS-17-R8 want no words on the server after the next push, while `held_drafts.raw_transcript` is immutable once non-empty. AX-5: a flagged take is not pushed until it has typed words; the server-side null waits for the founder's reading of the constitution | Product amends NS-17 section 10; the founder reads the constitution question | P; F |
+| M35 | CR-67 AX-3 and AX-4; 11-foundations.md P2; ADR 0028 D2 | NS-36-R5 fixes the seal minor at 1.8.0 and BL-968 puts Firsts at 1.8.0; NS-12 names `flags.versions`; five cards cite the kill-switch header that AX-4 changes (`packages/api/src/kill-switches.ts:1-5`) | Minors by merge order (ADR 0038); NS-12 and the five cards cite the amended header | P (cards); `principal-architect` (header PR) |
+| M36 | 11-foundations.md:343 and :345 (P1, P3) | NS-32-R4b and R7 (60 plus 4) against NS-13 3a item 7 (60 total); NS-01-R41's "line colour" is 1.40:1 in dark mode, so it cannot also meet 3:1 | The design keeps 60 total and uses `mediaFrame`; product rewords R4b's Given and R41 | P |
+| M37 | 09-capture.md:188 to :198 (P1 to P8) | Eight card gaps: NS-04 section 3 against NS-35-R3 on where a doorway lands; NS-18's typed words on Home against the Home slip order; NS-16-R2, R10 against `held_drafts` having no name column; NS-13 3a item 1 against the built planner; NS-32 against NS-13 on the back-off start; the one placeholder in NS-13-R33 (P2) and NS-32-R13 (P1); NS-13-R12 and NS-32-R14 on quiet books (code fixed, #901) | Product rules each; the design's defaults hold until then | P |
+| M38 | CR-66; `docs/product/prd/` at `450bcb4a` | CR-66 says errata after the lock are recorded in `docs/product/prd/18-errata-after-lock.md`. No such file exists at the lock or on develop [V] | Product creates it when the first erratum exists, or CR-66 drops the name | P (file); E (CR-66) |
+
+### 8.1 Code findings the designs recorded, and where each stands
+
+From the table in `docs/tdd/new-scope/README.md`, read against develop `16e61549` [V]:
+
+| Finding | Card row | Was | Now |
+|---|---|---|---|
+| A second signed-in account sees the first account's book | NS-10-R3, [X4-R1] | one fix, two designs | Ruled (CR-67 AX-12): two halves under ADR 0031, owner BL-961. Reader #869 merged; cover half #871 and store half #879 open; `gate.logic.ts:123-125` still opens the book on develop. Not closed in code |
+| A consent retry writes a second acceptance row | NS-10-R7 | Fails | Closed: #903, `[NS-10-R7]` tests |
+| Reminders still come for a quieted book | NS-32-R14, NS-13-R12 | Fails | Closed: #901, tests in `reminders-quiet-books.test.ts` |
+| "A month ago" ignores Quiet this book | NS-23-R8, J-N19 | Fails | Code closed: #902. The device row J-N19 stays on the Build 15 sheet |
+| Sign-out leaves reminders planned | NS-13-R14 | Fails | Closed: #904. Account gone and the upgrade path: handoff #910 |
+| The reminder never-list has no test | NS-13-R5, R6a, R6b | Untested | Closed: #905 |
+| Sign out never removes a recording has no test | NS-08-R6 | Untested | Closed: #874 |
+| Caption and place ceilings count characters, not code points | NS-01 caps, BL-957 | Mismatch | Closed in code at #835's head: 2240 and 960 code points, 16 per character (`migrations.ts:462-463`); merges with #835 |
+| No switch for the system writing tools on a text field | ruling D2 | Open | CR-67 AX-1: one native setting once, under ADR 0039; flags for new letter-word fields stay off in `production` until it lands. Open; reported to the founder, not decided |
 
 ---
 
 ## 9. Agent readiness
 
-Source: `ai-eng-lead`'s report for Karma of 20 Nov 2026 (branch `chore/agents-ready-new-scope-20nov`, head `711dd857`). It lands as three PRs to follow: skills, charters, memories. This file changes none of the items below.
+Source: `ai-eng-lead`'s report for Karma of 20 Nov 2026 (branch `chore/agents-ready-new-scope-20nov`, head `711dd857`). It lands as three PRs: skills (#848, merged 05:30 UTC), charters (#849, open) and memories (#850, open); #849 and #850 need the founder's own approval. This file changes none of the items below.
 
-- Queue order: the dispatcher picks rows in backlog file order (`queueFor`, `scripts/agents/lib.mjs:147`), so wave-1 rows come last. BL-922 is 46th of 50 eligible `mobile` rows, BL-929 20th of 20 for `qa`, BL-927 16th of 16 for `design-systems`. The lock's rows (from BACKLOG:3715) come later still.
+- Queue order: the dispatcher picks rows in backlog file order (`queueFor`, `scripts/agents/lib.mjs:147`), so wave-1 rows come last. At the report, BL-922 was 46th of 50 eligible `mobile` rows, BL-929 20th of 20 for `qa`, BL-927 16th of 16 for `design-systems`. The lock's rows (from BACKLOG:3715) come later still. The 20 Nov merges were made by interactive sessions, not by this queue.
 - Routing: `security-architect`'s `review_paths` miss `apps/mobile/modules/**`, so #834 (the Swift module) was routed to `principal-architect` and `ai-eng-lead`, not to it.
-- Caps: the agents ask for 50 runs a day against `max_runs_per_day_total` 30. The open-PR limit of 10 is already used: 66 open PRs carry an `agent:` label (45 drafts). The photo slices carry none (section 4.4).
+- Caps: the agents ask for 50 runs a day against `max_runs_per_day_total` 30. The open-PR limit of 10 is already used: 75 open PRs carry an `agent:` label, 44 of them drafts (section 4.4). The photo slices carry none.
 - `user-research` and `regulatory-affairs` have `daily_runs` 0, so BL-935 and BL-981 are never dispatched and BL-949 has no lane reviewer.
 - The device run sheet (`docs/qa/DEVICE_TEST_PLAN.md`) has no owner in any charter, though 13 section 2 gives device run sheets to `qa`.
-- Review format: `merge-queue.mjs` counted only `PASS` on the first line, while #828, #829, #831 and #832 merged on `PASS WITH NOTES`. Karma rules that `PASS WITH NOTES` counts (CR-63), and #845 (merged as `4f89d659`) makes `merge-queue.mjs` count it.
+- Review format: `merge-queue.mjs` counted only `PASS` on the first line, while #828, #829, #831 and #832 merged on `PASS WITH NOTES`. Karma rules that `PASS WITH NOTES` counts (CR-63), and #845 (merged 05:00 UTC) makes `merge-queue.mjs` count it. 229 of the 324 passes in 4.1 are PASS WITH NOTES.
 
 Lane decision: the autonomous lane stays off for waves 1 and 2, and interactive sessions run the agents. Switching it on is the founder's call, because it needs secrets, the agents App and spend (Q6).
 
@@ -737,18 +783,41 @@ Lane decision: the autonomous lane stays off for waves 1 and 2, and interactive 
 
 ## 10. Engineering design
 
-The PR breakdown per card comes from the engineering designs in `docs/tdd/new-scope/`, being written in parallel. Drafts exist in the design session, but none was on develop or at `450bcb4a` at this commit [V]. The 08-keeping and 09-capture drafts are the source of the failing-row findings in 3a (NS-10-R3, NS-10-R7, NS-13-R14, NS-13-R19 and NS-32-R1b), each read in code and not run.
+The eight designs are on develop under `docs/tdd/new-scope/`, merged 20 Nov between 11:12 and 11:42 UTC, each after two counted reviews [V]. CR-66 puts the cards first and the designs below them; CR-67 rules the 17 conflicts between them (AX-1 to AX-17) and 11 decisions. A design that finds a card wrong writes a Conflict line for product (section 8). Sections 2 and 4.3 take their PR counts from the files below. Where the plan and a design differ on a size, the design's line is an estimate from before the code was written [E].
 
-| Design file | Covers | Rows marked "PR breakdown: see design" |
-|---|---|---|
-| `08-keeping` | NS-08 to NS-12 | BL-922, BL-925, BL-926, BL-976, BL-977, BL-978, BL-942, BL-979, P-4 |
-| `09-capture` | NS-13 to NS-20 | BL-943, BL-967, BL-941, BL-945, BL-980, BL-982, NS-17 |
-| `10-reading-and-family` | NS-21 to NS-31 | BL-937, BL-938, BL-946, BL-947, BL-983, BL-985 |
-| `11-foundations` | NS-32 to NS-37 | BL-966, BL-927, BL-928, BL-984, BL-932, BL-963 |
-| `data-and-sync` | data rules and sync across cards (NS-36, ADR 0028, F12, F13) | BL-933, BL-959, BL-960, P-5 |
-| `security-and-privacy` | second account, system intelligence, notification privacy, the inventory | BL-961, BL-962 |
+| Design (PR, merged UTC) | Covers | PR list in the design | Rows that take their PR count from it |
+|---|---|---|---|
+| `architecture.md` (#857, 11:30) | System view, patterns AP-n, sequencing, AX-1 to AX-17, the eleven decisions | none (feeds CR-67) | CR-67 AX rulings cited in section 2 |
+| `security.md` (#858, 11:42) | Boundaries B1 to B7, controls NSC-n, lane conditions | section 7: S-1 to S-8 (docs, test, preflight, charters) | S-4 (before P-1), BL-961, BL-962 (merged), BL-864 |
+| `privacy.md` (#859, 11:24) | DPIA rows, the App Store label per card, level rulings | section 4: one inventory PR per wave (BL-960) | BL-960, BL-850 |
+| `data-and-sync.md` (#860, 11:14) | Schema in order (L11 to L15, S1 to S5, H1), F4 checklist | 3.6: ten PRs (BL-959, #835 and #836 ceilings, T1 to T3, S1 migration, BL-868, BL-960, BL-933 with P-5, P-7); H1a to H1c | BL-959, BL-960, BL-933, BL-870, P-5, P-7, H1 |
+| `08-keeping.md` (#861, 11:14) | NS-08 to NS-12 | 2.6: five PRs (BL-925, BL-926, P-4a, P-4b, P-8); 3.6: six (BL-922a, 922b, BL-961, BL-978a, 978b, S1-204 (k)); 4.3: four (P-6a to P-6c, notes); NS-11: three | BL-925, BL-926, BL-977, P-4, BL-922, BL-961, BL-978, BL-976, BL-942 |
+| `09-capture.md` (#862, 11:12) | NS-13 to NS-20, NS-04 | 1.9: six PRs (the never-list tests, session end and quiet books, P-3, anchor, back-off, placeholder, device rows); NS-14: two; NS-15: two; waves 4 and 5: a paragraph each | BL-943, BL-967, P-9, BL-941, BL-945, BL-980, BL-982, NS-17 |
+| `10-reading-and-family.md` (#863, 11:27) | NS-21 to NS-31, NS-05, NS-06 | 1.11: five PRs for NS-21; NS-22: two; NS-23: three; NS-05: three; waves 4 and 5: a paragraph each | BL-937, BL-938, BL-946, BL-939, BL-947, BL-983, BL-985 |
+| `11-foundations.md` (#864, 11:27) | NS-32 to NS-37, NS-07 and the open rows of NS-01, NS-02 | per card: BL-966 three; NS-33 (33-1, BL-928 x2, 33-3, 33-4, BL-984 x3, 33-6); NS-36 (36-1 to 36-6); BL-932 three; BL-956 two; BL-933 two; P-1 one; merge order in section 11 | BL-966, BL-927, BL-928, BL-984, BL-932, BL-956, BL-963, BL-954, P-1 |
+| `engineering-facts-bl-987.md` (#876, 13:01) | The engineering facts the cards waited on | answers, with gaps | BL-987 |
 
-Until a design lands, its rows keep the sizes and PR counts shown here. When it lands, its PR list replaces those sizes and the 4.3 counts at the next re-sync. The photo stack (BL-931), Find (BL-952), Share (BL-939), Firsts and seals (BL-968 to BL-971) and the print file (BL-973) keep their own PR plans.
+The photo stack (BL-931), Find (BL-952), and the print file (BL-973) keep their own PR plans. The code findings the designs recorded are in 8.1. Waves 4 and 5 have no PR lists, so their sizes in 4.3 are the plan's.
+
+---
+
+## 11. What this plan does not cover, and what waits for #846
+
+Not covered, by design:
+- Wave 5 is not estimated. It is 25 or more PRs, each behind counsel or the founder (NS-06 Part B seals, NS-12, NS-16, NS-17, NS-25, H1), and the designs give each one paragraph and no PR list.
+- Counsel and founder time. Counsel turnaround (the NX-33 label read, Q6, Q45, Q46, Q48 to Q54, the pilot consent at P plus 5 working days) and the founder's hours for words, device sheets, legal merges and studies are not estimated. They bind before review does (section 4.3).
+- Dates. There are none by design: release dates and release content are the founder's (ROADMAP:3), and every duration here is weeks from W0.
+- Engineer-hours. Not estimated; there is no time log to base them on (section 4.2).
+- Waves 4 and 5 sizes, Build 13 scope beyond the Q1 default, rows that no card cites (P-n), and any card the plan marks "Not scheduled" (NS-19, NS-20, NS-26 to NS-31).
+- Anything run on a phone or on production. Nothing was.
+
+What depends on #846 merging (it is a draft at `450bcb4a`, with CHANGES at its head and one product reply, 18:20 UTC):
+- The cards, 13, 14 and the README on develop still read as before the lock. Every `file:line` cite to them in this plan is to `450bcb4a`; on develop the lines differ. This plan's two lines in 13 and one README row apply to develop and move with #846's.
+- The re-sync (section 1, step 7): one more re-sync to develop, a diff of ids, and a check of every open PR head.
+- The founder hold on the 13 held rows: #846 lifts it (so does #843, which is open, unreviewed and in conflict). Until one merges, BL-937 and BL-943 stay held on develop.
+- The new rows BL-952 to BL-987 exist in `docs/BACKLOG.md` only on #846's branch. Harness rows that cite card ids work from the lock branch until then, per CR-66.
+- The P0 register (14:104 to 135) and G0 to G6: BL-964's trace report (#878) cites the lock at `450bcb4a` as its source [V on its body]; #906's label guard reads cards at the head of the branch it runs on.
+- Whether the founder's naming of the pack stays as CR-66 records it: if #846 changes, CR-66's order of documents is unchanged but the cites above move.
 
 ---
 
@@ -756,13 +825,16 @@ Until a design lands, its rows keep the sizes and PR counts shown here. When it 
 
 - Whether Build 12 is submitted or released, and so whether Build 13 is 1.0.0 or 1.0.1.
 - What the malformed secret is. The dry-run log said only "failed to parse connection string", and it has since expired.
-- What `release-ios.yml` run 44630835277 ran: its event, date and result were read, not its inputs.
-- That the Debug link failure comes from a Release-flavour prebuilt React framework. Karma's comments on #835 and #842 quote the linker error from #844's job 136080246356 (React Native debug-only symbols undefined, on develop too); ops is confirming the cause.
+- What `release-ios.yml` run 44630835277 ran: its event, date and result were read, not its inputs. Also what `deploy-db.yml` does on a develop push (green today).
+- That the Debug link failure comes from a Release-flavour prebuilt React framework. #853 merged with a fix; ops confirms the cause.
 - Which live P0 rows in 3a's table already have tests under older ids, and whether the NS-14 and NS-17 rows describe live behaviour.
-- The failing-row findings (NS-10-R3, NS-10-R7, NS-13-R14, NS-13-R19, NS-32-R1b), and the 08-keeping reading that NS-09-R7, R8, R10 to R12 and R14 are built. All are read in code, not run.
-- That the founder named the locked pack the source of truth: relayed by Karma, not yet in a record.
+- The failing-row findings still open (NS-10-R3, NS-13-R19, NS-32-R1b), and the 08-keeping reading that NS-09-R7, R8, R10 to R12 and R14 are built. All are read in code, not run. The fixed ones (NS-10-R7, NS-13-R14, NS-32-R14) are verified by test titles on develop, not run here.
+- That BL-928 and BL-975 are done, whether #894 is inside CODE-R02 once test lines are excluded, whether NS-35-R1's retitle landed, and what becomes of #798.
+- Review counts: the counted passes use the first line "## Review A or B at <sha>"; a review in another format is not counted, and a pass on a head that later moved is counted once per comment.
+- The macOS queue figures come from the newest 100 `iOS compile` runs of 20 Nov; earlier runs and other days are not in the sample. Karma's 55 minutes is relayed.
+- That the founder named the locked pack the source of truth: relayed by Karma and recorded in CR-66 by Karma, not signed by him.
 - Rows the lock rewrote under the same id (section 1.1).
 - Every device row. No phone was run.
-- That the review bands hold. They are seven days of data, and the pace was uneven.
+- That the review bands hold. They are eight days of data and 20 Nov is 86 percent of the passes.
 - Counsel turnaround and the founder's hours, which this plan does not estimate.
 - That the mermaid graph renders.
