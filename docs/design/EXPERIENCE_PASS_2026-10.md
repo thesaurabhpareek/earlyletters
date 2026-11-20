@@ -424,7 +424,7 @@ Copy:
 | `tonight.draft.openButton` | Open | NEW (waiting for words) |
 | `tonight.draft.keepButton` | Keep it | NEW (held for Plus; opens Review, then the gate) |
 | `tonight.resurfaced.kicker` | A month ago | NEW |
-| `tonight.resurfaced.a11y` | A letter from {date}. Opens the letter. | NEW |
+| `tonight.resurfaced.a11y` | A letter from {date}. (the hint "Opens the letter." is read once, as the hint, not in the label) | NEW |
 
 Visual:
 - Lamp `tonight` scene: anchor top, tone from the greeting's daypart (section 5.2), breathing per MOTION 5k.
