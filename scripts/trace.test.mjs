@@ -439,3 +439,25 @@ test('[BL-964] the NS report is report mode: it renders, logs, and never fails -
   fs.rmSync(path.join(repo, 'docs/product'), { recursive: true });
   assert.equal(main(['--no-write', '--repo', repo, 'docs/prd'], (l) => out.push(l)), 0);
 });
+
+test('[BL-964] cards 19, 21 and 27 are read; other cards above 12 are not', () => {
+  const repo = nsRepo();
+  const head = '| Id | Given, When, Then | Priority | Test title |\n|---|---|---|---|\n';
+  const row = (id, p) => `| ${id} | Given Asha, Then it holds | ${p} | \`[${id}] title\` |\n`;
+  const w = (p, t) => fs.writeFileSync(path.join(repo, 'docs/product/prd', p), t);
+  w('19-first-letter.md', `# NS-91\n\n${head}${row('NS-91-R1', 'P0 (a)')}${row('NS-91-R2', 'P1')}`);
+  w('21-days.md', `# NS-92\n\n${head}${row('NS-92-R1', 'P0 (a)')}`);
+  w('27-media.md', `# NS-93\n\n${head}${row('NS-93-R1', 'P0 (a)')}`);
+  w('22-final.md', `${head}${row('NS-94-R1', 'P0 (a)')}`);
+  fs.mkdirSync(path.join(repo, 'apps/mobile/test'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/b.test.ts'), "it('[NS-91-R1] found', () => {});\nit('[NS-92-R1] found', () => {});\n");
+  const ns = collectNs({ repo, register: path.join(repo, 'docs/product/prd/14-test-plan.md') });
+  const by = Object.fromEntries(ns.p0.map((r) => [r.id, r.status]));
+  assert.equal(by['NS-91-R1'], 'tested');
+  assert.equal(by['NS-92-R1'], 'tested');
+  assert.equal(by['NS-93-R1'], 'untested');
+  assert.equal('NS-91-R2' in by, false, 'P1 row is not in the P0 list');
+  assert.equal('NS-94-R1' in by, false, 'card 22 is not an acceptance card');
+  assert.equal('NS-90-R50' in by, false, 'card 15 is still not read');
+  assert.equal(summarizeNs(ns).cards, 4);
+});
