@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area D prototype: family, sharing and reminders</title>
+<!--
+  Area D end-to-end prototype (design lead, 20 Nov 2026). Self-contained: no network, no framework.
+  Token values copied from packages/design-tokens/src/tokens.ts (light, dark, highContrast, radius, space, target).
+  Material policy: docs/design/system/BRIEF.md section 3 (glass only on navigation and control layer; solid under
+  Reduce Transparency). Screen ids match DESIGN.md. Fictional family only (Asha). Words are intent; WORDS.md owns them.
+  ASCII only.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--raised:#FFFFFF;--text:#2B2722;--muted:#6B645B;--accent:#8A5A3B;--accentSoft:#F1E6DC;
+  --onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--caution:#94661A;--success:#3F7A55;--control:#8A8175;
+  --destructive:#B5473A;--scrim:rgba(43,39,34,.32);
+  --glass:rgba(255,255,255,.62);--glassEdge:rgba(255,255,255,.7);
+  --k:1;
+}
+body.dark{
+  --bg:#161412;--surface:#1B1917;--raised:#201D1A;--text:#F2ECE4;--muted:#B3AA9E;--accent:#D9A47E;--accentSoft:#3A2E25;
+  --onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--caution:#E3B866;--success:#8CC9A0;--control:#857C70;
+  --destructive:#F08C7C;--scrim:rgba(0,0,0,.55);--glass:rgba(40,36,32,.6);--glassEdge:rgba(255,255,255,.12);
+}
+body.hc{--muted:#524B43;--accent:#6E4529;--line:#6B645B;--control:#2B2722}
+body.dark.hc{--muted:#D6CEC3;--accent:#E8BC9A;--line:#B3AA9E;--control:#F2ECE4}
+body.ax5{--k:2.1}
+*{box-sizing:border-box}
+html,body{margin:0;font-family:-apple-system,"Mukta","Helvetica Neue",Arial,sans-serif;background:#ddd6cc;color:#2B2722}
+body.dark{background:#0b0a09}
+.app{display:flex;gap:20px;padding:16px;align-items:flex-start;flex-wrap:wrap}
+.panel{width:340px;background:#fff;border-radius:12px;padding:12px;font-size:13px;color:#2B2722;max-height:calc(100vh - 32px);overflow:auto}
+body.dark .panel{background:#26221e;color:#F2ECE4}
+.panel h2{font-size:14px;margin:12px 0 6px}
+.panel button,.panel select{font:inherit;margin:2px 0;min-height:32px}
+.panel .tog{display:flex;flex-wrap:wrap;gap:6px}
+.panel .tog label{display:flex;gap:4px;align-items:center;border:1px solid #bbb;border-radius:6px;padding:3px 6px}
+.panel .states button{margin:2px;border-radius:6px;border:1px solid #aaa;background:#f6f3ee;padding:2px 6px;cursor:pointer}
+body.dark .panel .states button{background:#3a342e;color:#F2ECE4}
+.panel .states button.on{background:#8A5A3B;color:#fff}
+.note{background:#f5efe7;border-left:3px solid #8A5A3B;padding:6px 8px;margin:6px 0;white-space:pre-wrap}
+body.dark .note{background:#33302c}
+.phone{width:375px;height:812px;border-radius:48px;border:10px solid #1c1a18;background:var(--bg);position:relative;overflow:hidden;color:var(--text);flex:none}
+.status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 24px;font-size:14px;font-weight:600}
+.screen{position:absolute;top:44px;left:0;right:0;bottom:0;overflow:auto}
+.idtag{position:absolute;top:6px;left:50%;transform:translateX(-50%);font:600 10px monospace;background:#1c1a18;color:#fff;padding:2px 8px;border-radius:8px;z-index:20}
+/* type, scaled by --k for AX5 */
+.t-title1{font:500 calc(28px*min(var(--k),1.8))/1.2 Georgia,"Literata",serif}
+.t-title2{font:500 calc(22px*min(var(--k),2))/1.25 Georgia,"Literata",serif;margin:0}
+.t-headline{font-weight:600;font-size:calc(18px*var(--k));line-height:1.28}
+.t-body{font-size:calc(18px*var(--k));line-height:1.34}
+.t-callout{font-size:calc(17px*var(--k));line-height:1.3}
+.t-sub{font-size:calc(16px*var(--k));line-height:1.32}
+.t-foot{font-size:calc(14px*var(--k));line-height:1.36;color:var(--muted)}
+.t-cap{font-size:calc(13px*var(--k));letter-spacing:.6px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.t-letter{font:400 calc(20px*var(--k))/1.6 Georgia,"Literata",serif}
+.t-sig{font:italic 400 calc(20px*var(--k))/1.6 Georgia,serif;text-align:right}
+.t-date{font-size:calc(14px*min(var(--k),2.4));letter-spacing:.6px;font-weight:500;color:var(--muted);text-transform:uppercase}
+.muted{color:var(--muted)}
+.pad{padding:0 16px}.padR{padding:0 20px}
+.gap>*+*{margin-top:12px}
+/* buttons: 56 pt lg, 44 pt min */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;border-radius:9999px;border:1px solid var(--control);
+  background:var(--surface);color:var(--text);font-weight:500;font-size:calc(18px*var(--k));padding:8px 16px;cursor:pointer;text-align:center;font-family:inherit}
+.btn.primary{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--accent);min-height:44px}
+.btn.sm{min-height:44px;width:auto;font-size:calc(16px*var(--k))}
+.btn.destructive{color:var(--destructive);background:transparent;border-color:transparent}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.pair{display:flex;gap:12px}.pair>.btn{flex:1}
+body.ax5 .pair{flex-direction:column}
+.stack>.btn+.btn{margin-top:12px}
+/* list (content layer, system grouped style) */
+.sec{margin:20px 16px 0}
+.sec .hd{margin:0 16px 6px}
+.list{background:var(--raised);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 16px;border-top:1px solid var(--line);cursor:default}
+.row:first-child{border-top:none}
+.row.tap{cursor:pointer}
+.row .grow{flex:1;min-width:0}
+body.ax5 .row{flex-wrap:wrap}
+body.ax5 .row .grow{flex-basis:100%}
+.chev:after{content:">";color:var(--muted);font-size:calc(16px*var(--k))}
+.sw{width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;flex:none;border:1px solid var(--control);cursor:pointer}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:var(--success);border-color:var(--success)}.sw.on:after{left:22px}
+.sw.dis{opacity:.45}
+.sw .lbl{position:absolute;left:-9999px}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px}
+.chip{min-height:44px;min-width:44px;padding:0 12px;border-radius:9999px;border:1px solid var(--control);display:flex;align-items:center;justify-content:center;font-size:calc(16px*var(--k));font-weight:500}
+.chip.sel{background:var(--accentSoft);border:1.5px solid var(--accent)}
+.chip.sel:before{content:"\2713";margin-right:4px}
+.warn{display:flex;gap:8px;align-items:flex-start}
+.warn:before{content:"!";flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--caution);color:var(--caution);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;min-height:48px}
+.gbtn{min-height:44px;min-width:44px;padding:0 14px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:calc(16px*var(--k));cursor:pointer;color:var(--text)}
+/* glass: navigation and control layer only */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--glassEdge);box-shadow:0 8px 24px rgba(43,39,34,.14)}
+body.rt .glass{background:var(--raised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:5}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:28px;z-index:6;display:flex;flex-direction:column;max-height:calc(100% - 24px)}
+.sheet.full{top:12px;left:0;right:0;bottom:0;border-radius:28px 28px 0 0}
+.sheet.full.glass{background:var(--raised)}
+body.ax5 .sheet{top:12px;left:0;right:0;bottom:0;border-radius:28px 28px 0 0}
+.sheet .body{padding:24px 20px 12px;overflow:auto;flex:1}
+.sheet .foot{padding:12px 20px 28px;border-top:1px solid transparent}
+.sheet .foot.ruled{border-top-color:var(--line)}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--control);margin:8px auto 0;opacity:.5}
+.toast{position:absolute;left:16px;right:16px;bottom:100px;border-radius:9999px;padding:10px 12px 10px 20px;display:flex;align-items:center;gap:8px;z-index:7}
+body.ax5 .toast{border-radius:24px;flex-wrap:wrap}
+.tabbar{position:absolute;left:24px;right:24px;bottom:20px;height:62px;border-radius:9999px;display:flex;justify-content:space-around;align-items:center;z-index:4}
+.tab{font-size:12px;text-align:center;min-width:64px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tab.on{color:var(--accent);font-weight:600}
+.thumb{width:64px;height:64px;border-radius:8px;border:1px solid var(--line);background:linear-gradient(135deg,#d9c3a8,#b48c66);position:relative;overflow:hidden;margin-top:8px}
+.thumb:after{content:"";position:absolute;left:14px;top:30px;width:36px;height:22px;border-radius:50% 50% 0 0;background:#8a6a4a}
+/* lock screen */
+.lock{position:absolute;inset:0;background:linear-gradient(160deg,#3b4a5c,#1f2630);color:#fff;padding-top:44px}
+.lock .clock{font:200 80px/1 -apple-system,Arial;text-align:center;margin-top:10px}
+.lock .day{text-align:center;font-size:18px;margin-top:6px}
+.notif{margin:12px 10px 0;border-radius:22px;padding:12px 14px;background:rgba(255,255,255,.28);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);color:#fff}
+body.rt .notif{background:#4a5563}
+.notif .hdr{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.85}
+.notif .ico{width:20px;height:20px;border-radius:5px;background:linear-gradient(#9A613C,#7F4F30)}
+.notif .tt{font-weight:600;font-size:15px;margin-top:4px}
+.notif .bd{font-size:15px}
+.bubble{margin:10px 16px;max-width:290px;padding:10px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);font-size:calc(15px*var(--k))}
+.bubble.me{margin-left:auto;background:var(--accentSoft)}
+.web{background:#fff;color:#2B2722;min-height:100%;padding:24px}
+body.dark .web{background:#161412;color:#F2ECE4}
+.flag{font:600 10px monospace;color:var(--caution)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel" id="panel">
+    <b>Area D prototype</b>: family, sharing, reminders. Ids match DESIGN.md.
+    <h2>Display</h2>
+    <div class="tog">
+      <label><input type="checkbox" id="tDark"> Dark</label>
+      <label><input type="checkbox" id="tAx5"> AX5 text</label>
+      <label><input type="checkbox" id="tRT"> Reduce Transparency</label>
+      <label><input type="checkbox" id="tHC"> Increase Contrast</label>
+    </div>
+    <h2>Journey</h2>
+    <select id="jSel" style="width:100%"></select>
+    <div style="display:flex;gap:6px"><button id="jPrev">Prev step</button><button id="jNext">Next step</button><span id="jPos"></span></div>
+    <div class="note" id="jNote"></div>
+    <h2>Screen</h2>
+    <select id="sSel" style="width:100%"></select>
+    <h2>State</h2>
+    <div class="states" id="stBtns"></div>
+    <div class="note" id="sNote"></div>
+  </div>
+  <div class="phone" id="phone">
+    <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+    <div class="idtag" id="idtag"></div>
+    <div class="screen" id="scr"></div>
+  </div>
+</div>
+<script>
+"use strict";
+var cur={s:"D-S02",st:"default"};
+function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function btn(l,k,go,extra){return '<button class="btn '+(k||"")+'" '+(go?'onclick="go(\''+go[0]+'\',\''+go[1]+'\')"':'')+' aria-label="'+esc(l)+'" '+(extra||"")+'>'+esc(l)+'</button>'}
+function sw(on,label,dis,go){return '<span class="sw'+(on?' on':'')+(dis?' dis':'')+'" role="switch" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(label)+'" '+(dis?'aria-disabled="true"':'')+(go&&!dis?' onclick="go(\''+go[0]+'\',\''+go[1]+'\')"':'')+'></span>'}
+function row(title,sub,right,go){return '<div class="row'+(go?' tap':'')+'" '+(go?'role="button" onclick="go(\''+go[0]+'\',\''+go[1]+'\')"':'')+'><div class="grow"><div class="t-body">'+title+'</div>'+(sub?'<div class="t-foot">'+sub+'</div>':'')+'</div>'+(right||"")+'</div>'}
+function sec(h,inner,foot){return '<div class="sec">'+(h?'<div class="hd t-cap" role="heading">'+h+'</div>':'')+'<div class="list">'+inner+'</div>'+(foot?'<div class="t-foot" style="margin:6px 16px 0">'+foot+'</div>':'')+'</div>'}
+function nav(back,title){return '<div class="navbar"><span class="gbtn glass" role="button">&lt; '+back+'</span><span class="t-headline">'+title+'</span><span style="width:60px"></span></div>'}
+function sheet(body,foot,opts){opts=opts||{};return '<div class="scrim"></div><div class="sheet glass'+(opts.full?' full':'')+'" role="dialog" aria-modal="true"><div class="grab"></div><div class="body">'+body+'</div>'+(foot?'<div class="foot'+(opts.ruled?' ruled':'')+'">'+foot+'</div>':'')+'</div>'}
+function toast(msg,action){return '<div class="toast glass" role="status"><span class="t-sub" style="flex:1">'+msg+'</span>'+(action?'<button class="btn quiet sm">'+action+'</button>':'')+'</div>'}
+function tabbar(on){var t=["Home","Book","Me"];return '<div class="tabbar glass" role="tablist">'+t.map(function(x){return '<div class="tab'+(x===on?' on':'')+'" role="tab">'+x+'</div>'}).join("")+'</div>'}
+function warn(t){return '<div class="warn t-sub">'+t+'</div>'}
+
+/* ---------- shared backgrounds ---------- */
+function letterPage(withShare){
+  return nav("Book","")+'<div class="padR gap" style="padding-top:8px;padding-bottom:120px">'+
+  '<div class="t-date" role="heading" aria-level="1">Saturday 14 March 2026</div>'+
+  '<div class="t-letter">We went to the park and Asha laughed at the ducks. Every time one came close, a new laugh.</div>'+
+  '<div class="t-sig">From Mama</div>'+
+  '<div class="card" style="display:flex;align-items:center;gap:12px;border-radius:9999px"><span style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:inline-block"></span><span class="t-sub">Hear Mama</span></div>'+
+  (withShare?btn("Share this letter","",["D-S02","pictureOff"]):"")+
+  '<div class="t-cap" role="heading" aria-level="2" style="margin-top:20px">This letter</div>'+
+  '<div class="list">'+row("Make private","","<span class='chev'></span>")+row("The day it is about","Saturday 14 March","<span class='chev'></span>")+'</div>'+
+  '<div class="list">'+row('<span style="color:var(--destructive)">Delete</span>')+'</div></div>';
+}
+function homeBg(extra,kept){
+  return '<div class="pad" style="padding-top:20px"><div class="t-date">Saturday 14 March</div><div class="t-foot" style="margin-top:4px">For Asha</div>'+
+  (extra||"")+
+  '<div class="t-title1" style="margin-top:16px">What made Asha laugh today?</div>'+
+  '<div class="btn quiet sm" style="justify-content:flex-start;padding-left:0">Another thought</div></div>'+
+  '<div class="glass" style="position:absolute;left:16px;right:16px;bottom:100px;border-radius:32px;padding:12px">'+
+  '<div class="pair"><button class="btn primary" style="min-height:64px">Speak</button><button class="btn" style="min-height:64px">Type</button></div>'+
+  (kept?'<div class="t-sub" style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap" role="status">A quiet day, kept. <button class="btn quiet sm" onclick="go(\'D-S21\',\'default\')">Undo</button></div>':
+  '<button class="btn quiet sm" style="width:100%;margin-top:6px" onclick="go(\'D-S21\',\'kept\')" aria-label="Not much today">Not much today</button>')+
+  '</div>'+tabbar("Home");
+}
+function bookBg(){return '<div class="pad" style="padding-top:12px"><div class="t-title1">Asha\'s book</div><div class="t-cap" style="margin-top:16px">This month</div>'+
+  '<div class="card t-letter" style="margin-top:8px;font-size:calc(17px*var(--k))">We went to the park and Asha laughed...</div></div>'+tabbar("Book")}
+
+/* ---------- screens ---------- */
+var S={};
+S["D-S01"]={t:"Letter page: Share control",states:{
+  "default":"Own, kept, open letter with words: Share sits after Play and before the 'This letter' list. Content layer: a solid button, not glass.",
+  "absent":"Other parent's letter, sealed, quiet mark, no words, not kept, or flag off: no control and no gap."},
+  r:function(st){return letterPage(st!=="absent")}};
+S["D-S02"]={t:"Share preview sheet",states:{
+  "pictureOff":"Words only; the letter has a stored picture so the toggle shows, off. Sheet is glass; preview card and buttons are content (no glass on glass).",
+  "wordsOnly":"No stored copy on this phone: toggle row absent, not greyed (R5b).",
+  "pictureOn":"Toggle on: 64 pt thumbnail with hairline inside the preview card; ignores Smart Invert.",
+  "error-share_temp_write_failed":"Temp copy failed: caution line with icon (shape, not colour alone); toggle back to off; next Continue sends words only.",
+  "versionExact":"Version line when the Book shows 'Exactly as said'.",
+  "long":"1,000 words: card scrolls; Continue and Not now pinned in the footer (R13b). Full height: the sheet turns opaque.",
+  "rtl":"Right-to-left words; date and signature lines keep their order (isolates in the payload)."},
+  r:function(st){
+    var words=st==="rtl"?'<div dir="rtl" class="t-letter" style="text-align:right">\u0630\u0647\u0628\u0646\u0627 \u0625\u0644\u0649 \u0627\u0644\u062d\u062f\u064a\u0642\u0629 \u0648\u0636\u062d\u0643\u062a \u0622\u0634\u0627.</div>':
+      '<div class="t-letter">We went to the park and Asha laughed at the ducks. Every time one came close, a new laugh.'+(st==="long"?' '+Array(14).join("Then the swings, and the long walk home past the bakery, and the way the light came through the trees. "):'')+'</div>';
+    var pic=st==="pictureOn"?'<div class="thumb" role="img" aria-label="The picture, included"></div>':"";
+    var err=st==="error-share_temp_write_failed"?'<div style="margin-top:8px">'+warn("The picture could not be added. The words will still go.")+'</div>':"";
+    var tog=st==="wordsOnly"?"":row("Include the picture","",sw(st==="pictureOn","Include the picture",false,["D-S02",st==="pictureOn"?"pictureOff":"pictureOn"]));
+    var body='<h2 class="t-title2" id="sh">This will be sent</h2>'+
+      '<div class="card" style="margin-top:16px;'+(st==="long"?'max-height:300px;overflow:auto':'')+'" role="group" aria-label="What will be sent">'+
+      '<div class="t-date">Saturday 14 March 2026</div><div style="height:8px"></div>'+words+'<div style="height:8px"></div><div class="t-sig">From Mama</div>'+pic+err+'</div>'+
+      '<div class="list" style="margin-top:16px">'+row("&#10003; The words always go")+tog+'</div>'+
+      '<p class="t-foot" style="margin-top:12px">'+(st==="versionExact"?"Sent exactly as said.":"Sent as it reads in the book, with small fixes.")+'</p>'+
+      '<p class="t-foot">It goes only where you send it. Once sent, it cannot be taken back.</p>';
+    var foot='<div class="pair">'+btn("Continue","",["D-S03",st==="pictureOn"?"textAndPicture":"text"])+btn("Not now","",["D-S01","default"])+'</div>';
+    return letterPage(true)+sheet(body,foot,{full:st==="long",ruled:st==="long"});
+  }};
+S["D-S03"]={t:"iOS share sheet (system)",states:{
+  "text":"System sheet with the text only. We pass no subject or title (R21).",
+  "textAndPicture":"Text plus one file letter-photo.jpg, no metadata.",
+  "completed":"Any completion (sent, cancelled, failed) returns here identically: preview closed, no toast, nothing recorded (R3b, R12, R22)."},
+  r:function(st){
+    if(st==="completed")return letterPage(true);
+    return letterPage(true)+'<div class="scrim"></div><div class="sheet glass" style="z-index:6"><div class="grab"></div><div class="body">'+
+      '<div class="card" style="display:flex;gap:10px;align-items:center">'+(st==="textAndPicture"?'<div class="thumb" style="margin:0;width:44px;height:44px"></div>':'')+
+      '<div class="t-sub">Saturday 14 March 2026<br><span class="muted">Text'+(st==="textAndPicture"?' and letter-photo.jpg':'')+'</span></div></div>'+
+      '<div style="display:flex;gap:14px;margin:18px 0;overflow:hidden">'+["Messages","Mail","WhatsApp","Notes"].map(function(a){return '<div style="text-align:center;font-size:12px"><div style="width:56px;height:56px;border-radius:14px;background:var(--surface);border:1px solid var(--line)"></div>'+a+'</div>'}).join("")+'</div>'+
+      '<div class="list">'+row("Copy")+row("Save to Files")+'</div>'+
+      '<p class="t-foot" style="margin-top:12px">System UI. Drawn here only to place the hand-off.</p></div>'+
+      '<div class="foot">'+btn("Close (iOS)","",["D-S03","completed"])+'</div></div>';
+  }};
+S["D-S04"]={t:"Reminder ask",states:{
+  "default":"After the first kept letter, over the Book. Two equal answers (NS-13 door line). 'Change the time' is a control, not an answer. No Close, no swipe.",
+  "pickTime":"System compact time picker in place: 7:00 AM to 9:30 PM in 15-minute steps.",
+  "after-yes":"After Yes and iOS Allow: undo-toast surface (glass) with Change.",
+  "after-yes-denied":"After Yes and iOS Don't Allow: toast with Open Settings. No second ask from us.",
+  "after-no":"No reminders: no iOS prompt; one line. The card may show once more (cap of 2 ever).","after-yes-failed":"iOS refused the schedule: toast with Try again."},
+  r:function(st){
+    if(st==="after-yes")return bookBg()+toast("Reminders are on. Next: Tuesday at 8:30 PM.","Change");
+    if(st==="after-yes-denied")return bookBg()+toast("Not sending yet.","Open Settings");
+    if(st==="after-yes-failed")return bookBg()+toast("Could not set reminders just now.","Try again");
+    if(st==="after-no")return bookBg()+toast("You can turn reminders on in Me whenever you like.");
+    var rhythm=st==="pickTime"?'<div class="row" style="padding:8px 0"><span class="grow t-sub">Remind me at</span><span class="chip sel" role="button" aria-label="Reminder time, 8:30 PM">8:30 PM</span></div>':
+      '<div class="t-sub muted" style="margin-top:16px">A few times a week, Tuesday and Saturday, 8:30 PM</div><button class="btn quiet sm" style="padding-left:0" onclick="go(\'D-S04\',\'pickTime\')">Change the time</button>';
+    var body='<div style="width:56px;height:56px;border-radius:50%;background:var(--surface);display:'+(document.body.classList.contains("ax5")?'none':'flex')+';align-items:center;justify-content:center;color:var(--accent);font-size:26px" aria-hidden="true">&#9834;</div>'+
+      '<h2 class="t-title2" style="margin-top:12px">A gentle nudge, now and then?</h2><p class="t-body">A couple of evenings a week, at a time you pick, to add to Asha\'s book. Never late at night.</p>'+rhythm;
+    var foot='<div class="stack">'+btn("Yes, evenings","",["D-S05","shown"])+btn("No reminders","",["D-S04","after-no"])+'</div>';
+    return bookBg()+sheet(body,foot);
+  }};
+S["D-S05"]={t:"iOS permission alert (system)",states:{"shown":"Once per install, only after a yes. iOS carries no app sentence here; D-S04 and D-S06 give the context first."},
+  r:function(){return bookBg()+'<div class="scrim"></div><div class="glass" style="position:absolute;left:52px;right:52px;top:280px;border-radius:16px;z-index:6;text-align:center;padding-top:16px">'+
+    '<div class="t-headline" style="padding:0 16px">"{app}" Would Like to Send You Notifications</div><p class="t-foot" style="padding:0 16px">Notifications may include alerts, sounds and icon badges.</p>'+
+    '<div style="display:flex;border-top:1px solid var(--line)"><button class="btn quiet" style="border-radius:0" onclick="go(\'D-S04\',\'after-yes-denied\')">Don\'t Allow</button><button class="btn quiet" style="border-radius:0;font-weight:700" onclick="go(\'D-S04\',\'after-yes\')">Allow</button></div></div>'}};
+S["D-S06"]={t:"Me, Reminders",states:{
+  "on":"Built page plus 'Days to remember' (NS-18). Content layer: grouped list. Nav bar buttons are glass.",
+  "named":"Names in notifications on: preview uses the named variant.",
+  "appLock":"App lock on: names off and disabled, with the reason.",
+  "off":"Switch off, no typed days: switch and footer only.",
+  "typedDays-remindersOff":"Switch off but typed days exist: the section stays; they still deliver if notifications are allowed.",
+  "denied":"iOS says no: card with Open Settings; choices stay editable. No nag elsewhere.",
+  "error-schedule_failed":"iOS refused the schedule: failure line and Try again.",
+  "quietDelivery":"Deliver Quietly or Provisional: one footnote.",
+  "lateClamp":"A late stored time clamped: 'Late nights stay quiet.'","noBirthDate":"No included book has a birth date yet.",
+  "backedOff":"After day 35 with no letter: no Next line at all (no line about absence).",
+  "typedDays-empty":"Typed days flag on, none added."},
+  r:function(st){
+    var on=["off","typedDays-remindersOff"].indexOf(st)<0;
+    var named=st==="named";
+    var h=nav("Me","Reminders")+'<div style="padding-bottom:120px">';
+    h+=sec("",row("Reminders","",sw(on,"Reminders",false,["D-S06",on?"off":"on"])),"Notifications never show what you write. Names stay off the lock screen unless you turn them on. Only in the evenings you pick, and never late at night.");
+    if(st==="denied")h+='<div class="sec card gap" style="background:var(--surface)">'+warn('<b>Notifications are off</b>')+'<div class="t-sub">Turn them on in Settings to get these reminders.</div><button class="btn sm">Open Settings</button></div>';
+    if(st==="error-schedule_failed")h+='<div class="sec card gap" style="background:var(--surface)">'+warn("Could not set reminders just now.")+'<button class="btn sm" onclick="go(\'D-S06\',\'on\')">Try again</button></div>';
+    if(on){
+      h+='<div class="sec"><div class="hd t-cap">How it will look</div><div class="card" role="group" aria-label="How it will look"><div class="t-headline">A letter tonight?</div><div class="t-sub">'+(named?'What made Asha smile today? Say it out loud and keep it.':'What made you smile today? Say it out loud and keep it.')+'</div></div>'+
+        (st==="backedOff"?'':'<div class="t-sub" style="margin:8px 16px 0">Next: Tuesday at 8:30 PM.</div>')+
+        (st==="quietDelivery"?'<div class="t-foot" style="margin:4px 16px">iPhone delivers these quietly, to Notification Center only.</div>':'')+'</div>';
+      h+=sec("How often",row("Weekly","","")+row("A few times a week","","<span aria-label='selected'>&#10003;</span>")+row("Every evening","",""));
+      h+='<div class="sec"><div class="hd t-cap">Which evenings</div><div class="list"><div class="chips">'+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(function(d){return '<span class="chip'+(d==="Tue"||d==="Sat"?' sel':'')+'" role="checkbox">'+d+'</span>'}).join("")+'</div></div></div>';
+      h+=sec("Time",row("Reminder time","",'<span class="chip" role="button" onclick="go(\'D-S07\',\'default\')">8:30 PM</span>')+(st==="lateClamp"?'<div class="row t-foot">Late nights stay quiet.</div>':''),"Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written.");
+      h+=sec("",row("Month and birthday messages",st==="noBirthDate"?"Starts once a birth date is added.":"A short message on the day a new month begins in each book, and on birthdays.",sw(true,"Month and birthday messages"))+
+        row("Names in notifications",st==="appLock"?"Names stay hidden while App lock is on.":(named?"Notifications can show names on the lock screen.":'Notifications say "your little one" and show no names on the lock screen.'),sw(named,"Names in notifications",st==="appLock",["D-S06",named?"on":"named"])));
+    }
+    if(st!=="off"){
+      var days=st==="typedDays-empty"?"":row("Saturday 14 March","Nursery starts","<span class='chev'></span>",["D-S09","default"]);
+      h+=sec("Days to remember",days+row('<span style="color:var(--accent)">+ Add a day</span>',"","<span class='chev'></span>",["D-S08","default"]),"A day you add gets one message on that day. Your words stay on this phone.");
+    }
+    return h+'</div>'+tabbar("Me");
+  }};
+S["D-S07"]={t:"Time picker (system compact)",states:{"default":"System picker, 15-minute steps, 7:00 AM to 9:30 PM. AX5: label above the time."},
+  r:function(){return S["D-S06"].r("on")+'<div class="glass" style="position:absolute;right:16px;top:420px;width:220px;border-radius:16px;z-index:6;padding:10px;text-align:center">'+
+    ["7:45 PM","8:00 PM","8:15 PM","<b>8:30 PM</b>","8:45 PM","9:00 PM","9:15 PM","9:30 PM"].map(function(t){return '<div class="t-sub" style="min-height:30px">'+t+'</div>'}).join("")+'</div>'}};
+S["D-S08"]={t:"Add a day",states:{
+  "default":"Date from today (today only while its reminder time is ahead); words field (writing tools off).","error-typed_day_empty":"Save with no words: one line; nothing saved.",
+  "filled":"Words typed; preview shows the fixed line (words hidden by default).",
+  "showWords":"Switch on: preview shows the parent's words unchanged.",
+  "error-typed_day_too_long":"Over 80 (a paste): every character kept; Save waits; one line, no counter.","error-typed_day_past":"The day has passed (or today after its time): one line.",
+  "notAllowed":"Notifications not allowed: saving still works; one line says when it will be sent.",
+  "error-schedule_failed":"iOS refused: built failure line, Try again."},
+  r:function(st){
+    var filled=["default","error-typed_day_empty"].indexOf(st)<0;
+    var body='<div style="display:flex;justify-content:space-between;align-items:center"><h2 class="t-title2">Add a day</h2><button class="btn quiet sm" onclick="go(\'D-S06\',\'on\')">Cancel</button></div>'+
+      '<div class="t-cap" style="margin-top:16px">Date</div><div class="card t-body" role="button">Saturday 14 March 2026</div>'+
+      '<div class="t-cap" style="margin-top:16px">Your words</div><div class="card t-body" style="min-height:52px;border-color:var(--control)" role="textbox" aria-label="Your words">'+(filled?(st==="error-typed_day_too_long"?"Nursery starts, and Nani arrives on the early train with the blue suitcase.":"Nursery starts"):'<span class="muted">Nursery starts</span>')+'</div>'+
+      (st==="error-typed_day_too_long"?warn("That is longer than fits here. A short line works best."):st==="error-typed_day_empty"?warn("Add a few words about the day."):st==="error-typed_day_past"?warn("Choose a day that is still to come."):'')+
+      '<div class="list" style="margin-top:16px">'+row("Show my words in the notification","",sw(st==="showWords","Show my words in the notification",false,["D-S08",st==="showWords"?"filled":"showWords"]))+'</div>'+
+      '<div class="t-cap" style="margin-top:16px">How it will look</div><div class="card"><div class="t-sub">'+(st==="showWords"?"Nursery starts":"A day you wanted to remember")+'</div></div>'+
+      (st==="notAllowed"?'<p style="margin-top:12px">'+warn("Notifications are off. This day is saved and will be sent once they are allowed.")+'</p>':'')+
+      (st==="error-schedule_failed"?'<p style="margin-top:12px">'+warn("Could not set reminders just now.")+'</p>':'');
+    var foot=btn(st==="error-schedule_failed"?"Try again":"Save","primary",st==="default"?["D-S08","error-typed_day_empty"]:["D-S06","on"]);
+    return S["D-S06"].r("on")+sheet(body,foot,{ruled:true});
+  }};
+S["D-S09"]={t:"A typed day: detail and Delete",states:{"default":"The day and the words; Delete this day.","confirm":"ConfirmSheet: safe default Keep it; Delete this day quiet and red. Deleting cancels its notification."},
+  r:function(st){if(st==="default")return S["D-S06"].r("on")+sheet('<div class="t-headline">Saturday 14 March</div><p class="t-body">Nursery starts</p><p class="t-foot">Words hidden in the notification.</p>',btn("Delete this day","destructive",["D-S09","confirm"]));
+    return S["D-S06"].r("on")+sheet('<div class="t-headline">Delete this day?</div><p class="t-body">Its message will not come.</p>','<div class="stack">'+btn("Keep it","primary",["D-S06","on"])+btn("Delete this day","destructive",["D-S06","typedDays-empty"])+'</div>')}};
+/* lock screen */
+var CLS={
+  evening:{t:"A letter tonight?",b:"What made you smile today? Say it out loud and keep it.",n:"What made Asha smile today? Say it out loud and keep it.",to:["D-S11","home"]},
+  monthAge:{t:"Month 4 begins",b:"A new month in the book is open.",n:"A new month in Asha's book is open.",to:["D-S11","book"]},
+  together:{t:"A new month begins",b:"A new month is open in each book.",n:"A new month is open for Asha.",to:["D-S11","book"]},
+  birthday:{t:"A birthday today",b:"A year of letters. Want to read them together today?",n:"Asha's birthday today. A year of letters. Want to read them together today?",to:["D-S11","book"]},
+  typedDay:{t:"",b:"A day you wanted to remember",w:"Nursery starts",to:["D-S11","typedDay"]},
+  plan:{t:"Plus",b:"Plus is free until 21 March, then it renews unless you cancel. You can change this in Settings, Plan.",to:["D-S11","plan"]}
+};
+function notif(c,mode,when){
+  var x=CLS[c],tt=x.t,bd=x.b;
+  if(mode==="named"&&x.n)bd=x.n;
+  if(mode==="words"&&x.w)bd=x.w;
+  if(mode==="hidden"){tt="";bd=(c==="plan"?"A reminder about your plan.":"Something for the book, whenever you have a minute.");}
+  return '<div class="notif" role="button" onclick="go(\''+x.to[0]+'\',\''+x.to[1]+'\')"><div class="hdr"><span class="ico"></span><span>{app}</span><span style="margin-left:auto">'+(when||"now")+'</span></div>'+(tt?'<div class="tt">'+tt+'</div>':'')+'<div class="bd">'+esc(bd)+'</div></div>';
+}
+var LS={};
+["evening","monthAge","together","birthday","typedDay","plan"].forEach(function(c){
+  LS[c]="Class "+c+", Show Previews Always, defaults (names off, words off). No child name, no letter words.";
+  LS[c+"-hidden"]="Class "+c+", Show Previews When Unlocked, phone locked: our per-category placeholder only (NS-32-R13). Today no placeholder is set (iOS shows 'Notification'): engineering gap E-D02.";
+});
+LS["evening-named"]="Names in notifications on (opt-in): named variant. Forced off while App lock is on.";
+LS["birthday-named"]="Names on: the birthday copy names the child.";
+LS["typedDay-words"]="Show my words on: the parent's words unchanged. Hidden again when previews are hidden.";
+LS["oneDay"]="14 March: a trial notice at 10:00 (outside the budget) and the typed day at 8:30 PM. At most two in a day (NS-32).";
+LS["quiet"]="Deliver Quietly or Provisional: nothing on the lock screen; Notification Centre only.";
+LS["focus"]="A Focus is on: held (no class is time-sensitive).";
+S["D-S10"]={t:"Lock screen: every class",states:LS,r:function(st){
+  var h='<div class="lock"><div class="day">Saturday 14 March</div><div class="clock">'+(st==="oneDay"?"20:31":"20:30")+'</div>';
+  if(st==="oneDay")h+=notif("typedDay","shown","now")+notif("plan","shown","10:00");
+  else if(st==="quiet"||st==="focus")h+='<p style="text-align:center;opacity:.7;margin-top:60px">'+(st==="quiet"?"Nothing here. In Notification Centre only.":"Focus: Sleep. Notifications held.")+'</p>';
+  else{var p=st.split("-");var mode=p[1]||"shown";h+=notif(p[0],mode);}
+  return h+'<p style="position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:12px;opacity:.7">System rendering. Tap a notification to see where it lands.</p></div>';}};
+S["D-S11"]={t:"Notification landing",states:{
+  "home":"Home with its current prompt. One more tap on Speak starts a letter; the tap never started recording (NS-35-R3).",
+  "typedDay":"Home with the parent's words above the prompt (TypedDayLine). Not a slip. Shown all that local day.",
+  "book":"The Book (month and birthday notes).",
+  "plan":"Settings, Plan, where the plan note waits (E-S11)."},
+  r:function(st){
+    if(st==="book")return bookBg();
+    if(st==="plan")return nav("Me","Plan")+sec("",row("Plus Annual","Plus is free until 21 March.")+row("Manage subscription","","<span class='chev'></span>"),"A reminder about Plus. Cancel by 20 March and you pay nothing.")+tabbar("Me");
+    return homeBg(st==="typedDay"?'<div class="t-callout muted" style="margin-top:16px">Nursery starts</div>':'');
+  }};
+S["D-S12"]={t:"Me, book page: Write this book together",states:{
+  "store":"Store build before NS-25 gates, or outside the D-162 door rule: no row, no 'coming soon'.","killswitch":"serverFeaturesEnabled() off: no row.",
+  "one-parent":"Opens the invite sheet.","consent-needed":"Account not set up: one line.","invited":"Value 'Invited'.","two-parents":"Value is the co-parent's sign-off; opens the family page."},
+  r:function(st){
+    var fam=(st==="store"||st==="killswitch")?"":st==="consent-needed"?sec("",row("Write this book together","Finish setting up your account to invite someone.","")):sec("",row("Write this book together","",(st==="invited"?'<span class="muted t-sub">Invited</span>':st==="two-parents"?'<span class="muted t-sub">Papa</span>':'')+"<span class='chev'></span>",st==="two-parents"?["D-S18","undo-open"]:st==="invited"?["D-S18","pending"]:["D-S13","default"]));
+    return nav("Me","Asha's book")+sec("",row("Name","",'<span class="muted t-sub">Asha</span>')+row("Birthday","",'<span class="muted t-sub">2 Jan 2026</span>')+row("Include Asha in my reminders","",sw(true,"Include Asha in my reminders")))+fam+
+      sec("",row("Quiet this book","","")+row("Hide this book","",""))+tabbar("Me");}};
+var INVERR={"paused":"Invites are paused for now. Please try again a little later.","offline":"This phone is offline. Try again once it is back online.",
+  "error-rate_limited":"No more invites can go out today. You can send one tomorrow.","error-consent_needed":"Finish setting up your account first.","error-unknown":"That did not go through. Try again."};
+S["D-S13"]={t:"Invite sheet",states:{"default":"R16 scope line before sending, at full text contrast. Equal stacked buttons.","working":"Getting the link ready.","sent":"Back on the family page; toast.",
+  "full":"Book already has two parents.","paused":"killSwitches.invites (SCKIL): nothing sent.","offline":"No connection: one line.","error-rate_limited":"Built line.","error-consent_needed":"SCCON.","error-unknown":"Try again."},
+  r:function(st){
+    if(st==="sent")return S["D-S18"].r("pending")+toast("The invite waits until they join.");
+    var body='<h2 class="t-title2">Invite Asha\'s co-parent</h2><p class="t-body">They can write to Asha and read the whole book, from their own phone.</p>'+
+      '<p class="t-callout" style="font-weight:500">They will be able to read every letter in this book that is not private, including the ones already there.</p>'+
+      '<div class="t-cap">What does Asha call them? (optional)</div><div class="card t-body muted" style="border-color:var(--control)">Mama, Papa, Amma, Baba</div><p class="t-foot">It signs their letters.</p>'+
+      '<p class="t-foot">This invite is for Asha\'s book only.</p><p class="t-foot">The link works once, for 7 days. You can cancel it any time.</p>'+
+      (INVERR[st]?'<div style="margin-top:8px">'+warn(INVERR[st])+'</div>':'');
+    var foot=st==="full"?'<p class="t-body">Asha\'s book has two parents.</p>'+btn("Close","",["D-S12","two-parents"]):
+      '<div class="stack">'+btn(st==="working"?"Getting the link ready":(INVERR[st]&&st!=="error-rate_limited"?"Try again":"Share invite link"),"",["D-S13","sent"])+btn("Not now","",["D-S12","one-parent"])+'</div>';
+    return S["D-S12"].r("one-parent")+sheet(body,foot);}};
+S["D-S14"]={t:"Invite link page (web)",states:{"iphone":"No child or inviter name. App Store line added (E-D11).","other-device":"Computer or Android.","missing-token":"The in-app browser dropped the fragment.","copied":"After Copy."},
+  r:function(st){return '<div class="web"><p class="t-foot">earlyletters.com/j</p><h1 class="t-title2">Someone invited you to share a book.</h1><p class="t-body">This invite opens in {app} on an iPhone.</p>'+
+    (st==="missing-token"?warn("This page opened without its invite. Open the message again and copy the link from there."):
+    '<ol class="t-sub"><li>Tap "Copy the invite".</li><li>Open {app} and tap "I was invited".</li><li>Paste the invite.</li></ol>'+btn(st==="copied"?"Copied":"Copy the invite","primary",["D-S14","copied"])+
+    (st==="copied"?'<p class="t-sub" role="status">Copied. Now open {app} and tap "I was invited".</p>':''))+
+    '<p class="t-sub" style="margin-top:16px"><u>Get {app} on the App Store</u></p>'+
+    (st==="other-device"?'<p class="t-sub"><b>{app} works on iPhone.</b> On a computer? Open this link on the iPhone that has {app}.</p>':'<p class="t-foot">On a computer? Open this link on the iPhone that has {app}.</p>')+
+    '<p class="t-foot">If you were not expecting an invite, you can ignore it. Nothing changes.</p></div>';}};
+var PEEKERR={"error-expired":"This invite has expired. Ask for a new one.","error-used":"This invite has already been used. Ask for a new one if that wasn't you.","error-revoked":"This invite was cancelled. Ask for a new one.",
+  "error-not_found":"That link does not open an invite. Check it and try again.","error-signed_out":"Sign in again to continue.","paused":"Invites are paused for now. Please try again a little later.","offline":"This phone is offline. Try again once it is back online."};
+var JOINERR={"error-already_member":"You're already part of this book.","error-book_full":"This book already has two parents. Ask the person who invited you.","error-book_deleted":"This book isn't available.",
+  "error-consent_needed":"Finish setting up your account first.","error-family_share_consent":"Sharing a book now asks for one more agreement. Update the app to see it, then try again.",
+  "error-join_failed":"Joining did not finish. Nothing has changed. Try again.","paused":"Invites are paused for now. Please try again a little later.","offline":"This phone is offline. Try again once it is back online.","needs-sync":"To join, choose Agree and sync in Settings, Account."};
+function joinSheet(err){
+  var body='<h2 class="t-title2">Join this book as a parent?</h2><div class="t-headline" style="margin-top:12px">Invited by Mama</div><div class="t-foot">Parent</div>'+
+    '<p class="t-body">You will both read every letter in the book that is not private. Join only if you know who sent you this link.</p>'+
+    '<div class="list">'+row("Terms of Service","Version 1.4","<span class='chev'></span>")+row("Privacy Policy","Version 1.6","<span class='chev'></span>")+row("Consumer Health Data Privacy Policy","Version 1.2","<span class='chev'></span>")+'</div>'+
+    (err?'<div style="margin-top:12px">'+warn(err)+'</div>':'');
+  return body;
+}
+S["D-S15"]={t:"Join ask: peek",states:(function(){var o={"signed-out":"Nothing about the invite is known yet.","loading":"Opening the invite.","default":"Top of the one join sheet: sign-off and role only; no child name, no letter (R2). Continues as D-S16 in the same sheet.","no-signoff":"Inviter set no sign-off."};for(var k in PEEKERR)o[k]="Line: "+PEEKERR[k];return o})(),
+  r:function(st){
+    var body,foot;
+    if(st==="signed-out"){body='<h2 class="t-title2">You were invited to a book</h2><p class="t-body">You each write from your own phone, in the same book.</p>';foot='<div class="stack">'+btn("Sign in","",["D-S15","loading"])+btn("Not now","")+'</div>';}
+    else if(st==="loading"){body='<p class="t-body" role="status">Opening the invite</p><div style="height:3px;background:var(--line);border-radius:2px;margin-top:12px"><div style="width:40%;height:3px;background:var(--accent)"></div></div>';foot="";}
+    else if(PEEKERR[st]){body='<h2 class="t-title2">Join a book</h2><div style="margin-top:12px">'+warn(PEEKERR[st])+'</div>';
+      foot=/paused|offline/.test(st)?'<div class="stack">'+btn("Try again","",["D-S15","default"])+btn("Close","")+'</div>':'<div class="stack">'+btn("Paste another link","")+btn("Close","")+'</div>';}
+    else{body=joinSheet();if(st==="no-signoff")body=body.replace("Invited by Mama","You were invited to write a book together.");
+      foot='<div class="stack">'+btn("Join the book","",["D-S16","joining"])+btn("Not now","")+'</div>';}
+    return '<div style="padding:40px 20px" class="t-foot">(new phone, signed in)</div>'+sheet(body,foot,{ruled:true});}};
+S["D-S16"]={t:"Accept: the agreement (same sheet as D-S15)",states:(function(){var o={"default":"PRIV-R21 door: versioned links; Join the book and Not now, equal. Records invite_accept. No sign-off field here (it would name the child before agreement; it moves to D-S17).","joining":"Joining the book; one transaction."};for(var k in JOINERR)o[k]="Line: "+JOINERR[k];return o})(),
+  r:function(st){
+    var foot;
+    if(st==="joining")foot='<p class="t-body" role="status">Joining the book</p>'+btn("(continue)","",["D-S17","arriving"]);
+    else if(st==="error-already_member")foot=btn("Open the book","",["D-S11","book"]);
+    else if(st==="error-book_full"||st==="error-book_deleted")foot=btn("Close","");
+    else foot='<div class="stack">'+btn(JOINERR[st]?"Try again":"Join the book","",["D-S16","joining"])+btn("Not now","",["D-S15","default"])+'</div>';
+    return '<div style="padding:40px 20px" class="t-foot">(new phone)</div>'+sheet(joinSheet(JOINERR[st]),foot,{ruled:true});}};
+S["D-S17"]={t:"Joined: arrival",states:{"arriving":"Thin bar, no count.","slow":"Try again.","joined":"Sign-off field (the child is named only now, after agreement), Open the book.","twobooks":"P2 already had a book: now two in the switcher."},
+  r:function(st){
+    var body='<div style="height:120px;border-radius:14px;background:var(--accentSoft);display:flex;align-items:center;justify-content:center" class="t-title2">Asha</div>'+
+      '<h2 class="t-title2" style="margin-top:16px">You\'re in Asha\'s book</h2><p class="t-body">Your letters and Mama\'s sit side by side, each signed.</p>';
+    if(st==="arriving")body+='<p class="t-sub" role="status">Asha\'s book is on its way to this phone.</p><div style="height:3px;background:var(--line)"><div style="width:55%;height:3px;background:var(--accent)"></div></div>';
+    if(st==="slow")body+=warn("Asha's book has not reached this phone yet.");
+    if(st==="joined"||st==="twobooks")body+='<div class="t-cap" style="margin-top:12px">What does Asha call you?</div><div class="card t-body">Papa</div><p class="t-foot">It signs your letters in this book.</p>'+(st==="twobooks"?'<p class="t-foot">This is your second book. Switch books from Home or the Book.</p>':'');
+    var foot=st==="arriving"?"":st==="slow"?btn("Try again","",["D-S17","joined"]):btn("Open the book","primary",["D-S11","book"]);
+    return '<div style="padding:40px 20px" class="t-foot">(new phone)</div>'+sheet(body,foot,{full:true});}};
+S["D-S18"]={t:"Family page",states:{"one-parent":"You alone; invite card.","pending":"Pending invite with Share again, Cancel invite.","undo-open":"Within 72 h, inviter only: deadline line and Undo join (solid button).","undo-closed":"After 72 h: no control (R13).","left":"The other parent left or deleted their account: one neutral note, once.","paused":"Share again paused; Cancel still works.","expired":"An expired invite listed for 14 days with Share again."},
+  r:function(st){
+    var h='<div class="navbar"><span></span><span class="gbtn glass" role="button" onclick="go(\'D-S12\',\'two-parents\')">Close</span></div><div class="pad"><div class="t-date">Saturday 14 March</div><div class="t-title1" style="margin-top:8px">Who writes to Asha</div></div>';
+    var rows='<div class="row"><div class="grow"><div class="t-sig" style="text-align:left">From Mama</div><div class="t-foot">You</div></div></div>';
+    if(/undo/.test(st))rows+='<div class="row"><div class="grow"><div class="t-sig" style="text-align:left">From Papa</div><div class="t-foot">Co-parent</div>'+
+      (st==="undo-open"?'<div class="t-foot">You can undo this until Sunday 15 March at 6:40 PM.</div><button class="btn sm" style="margin-top:8px" onclick="go(\'D-S19\',\'default\')">Undo Papa\'s join</button>':'')+'</div></div>';
+    if(st==="pending"||st==="paused"||st==="expired")rows+='<div class="row"><div class="grow"><div class="t-body">Your co-parent</div><div class="t-foot">'+(st==="expired"?"Invite expired":"Invited, open until Friday 20 March")+'</div>'+
+      (st==="paused"?warn("Invites are paused for now. Please try again a little later."):'')+'<div class="pair" style="margin-top:8px"><button class="btn sm">Share again</button><button class="btn sm">Cancel invite</button></div></div></div>';
+    h+='<div class="sec"><div class="list">'+rows+'</div></div>';
+    if(st==="one-parent")h+='<div class="sec card gap"><div class="t-headline">Write this book together</div><div class="t-sub">Invite Asha\'s other parent. They write from their own phone, and you both read the whole book.</div>'+btn("Invite a co-parent","",["D-S13","default"])+'</div>';
+    if(st==="left")h+='<div class="sec card t-sub">Your co-parent has left Asha\'s book.</div>';
+    return h;}};
+S["D-S19"]={t:"Undo join confirm",states:{"default":"Safe default keeps them. Records member_join_undone and a PRIV-R21 row.","working":"One call.","done":"Row leaves; toast.","error-SCPAR":"Past 72 h (stale screen): family.errors.not_allowed.","error-network":"Offline: one line.","error-unknown":"Undo did not finish; nothing changed."},
+  r:function(st){
+    if(st==="done")return S["D-S18"].r("one-parent")+toast("Join undone.");
+    var body='<h2 class="t-title2">Undo the join?</h2><p class="t-body">Their letters leave the book and stay theirs. Their phone stops receiving this book.</p>'+
+      (st==="error-SCPAR"?warn("That isn't possible from here."):st==="error-network"?warn("This phone is offline. Try again once it is back online."):st==="error-unknown"?warn("The undo did not finish. Nothing has changed. Try again."):'');
+    var foot=st==="error-SCPAR"?btn("Close","",["D-S18","undo-closed"]):st==="working"?'<p class="t-body" role="status">Undoing</p>':'<div class="stack">'+btn("Keep them in the book","primary",["D-S18","undo-open"])+btn("Undo join","destructive",["D-S19","done"])+'</div>';
+    return S["D-S18"].r("undo-open")+sheet(body,foot);}};
+S["D-S20"]={t:"Other parent's phone after an undo",states:{"default":"One neutral line in the Book, once. No reason, no name."},
+  r:function(){return '<div class="pad" style="padding-top:12px"><div class="t-title1">Your letters</div><div class="card t-sub" style="margin-top:12px;background:var(--surface)">This book is no longer shared with you. Your letters stay yours, to read, export or delete.</div>'+
+    '<div class="card t-letter" style="margin-top:12px;font-size:calc(17px*var(--k))">Asha fell asleep on my shoulder...</div><div class="t-foot">Private</div></div>'+tabbar("Book")}};
+S["D-S21"]={t:"Home: Not much today",states:{"default":"The quiet link in the capture cluster.","kept":"Line with Undo in place; no timer (T4 met).","error-save_failed":"Save error in place; Home stays."},
+  r:function(st){if(st==="error-save_failed")return homeBg()+toast("Today's mark did not save. Try again.","Try again");return homeBg("",st==="kept")}};
+S["D-S22"]={t:"Book: quiet-day row",states:{"default":"Unsigned row with the date.","consecutive":"Each day its own row: no run line, no group.","menu":"Built: Remove this mark.","removed":"Built toast: Mark removed."},
+  r:function(st){var q='<div class="card" style="margin-top:8px;background:var(--surface)"><div class="t-date">Friday 13 March</div><div class="t-sub muted">A quiet day</div></div>';
+    if(st==="consecutive")q+=q.replace("Friday 13","Thursday 12");
+    return '<div class="pad" style="padding-top:12px"><div class="t-title1">Asha\'s book</div><div class="t-cap" style="margin-top:16px">This month</div>'+q+'</div>'+tabbar("Book")}};
+var PIL={recruit:"Hi. We are trying out a small idea and would value your help. If you are willing, you would send one of your letters to a grandparent or another relative, in your own message, and tell us a week later how it went. We would not see the letter. It takes about ten minutes in all. Would you like to hear more?",
+  consentW:"We are testing one idea: a parent sends one letter from {app} to a relative, using your own messages, and we ask how it went. You choose the letter and the person. We do not see the letter, the recording, the picture or your child's name. We only ask you a few questions, one week apart, and write short notes. You can stop at any time. If you stop, we delete your notes. Your book and your letters are not affected either way. Do you agree? Yes, or No thanks.",
+  instructionW:"Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as the PDF of that one letter (or, if the app cannot make that, a screenshot of that one page). Say anything you like to them. Please do not send anything to us, and please send only the letter. We will check in on day 3 and day 7.",
+  scriptA:"Did you send it? Yes, or not yet. Did anything get in the way? In a few words. Anything you would rather we did not ask?",
+  close:"Thank you. We will delete your notes if you ask, any time. We will let you know what we decide."};
+S["D-S23"]={t:"Pilot artefacts (not in the app)",states:{recruit:"Recruit message.",consentW:"Consent, version W.",instructionW:"Instruction W.",scriptA:"Day 3.",close:"Close."},
+  r:function(st){return '<div class="pad" style="padding-top:8px"><div class="t-foot" style="text-align:center">Message (not in the app). Texts are NS-03 intent; counsel reads them.</div></div><div class="bubble">'+esc(PIL[st])+'</div>'+(st==="consentW"?'<div class="bubble me">Yes</div>':'')}};
+S["D-S24"]={t:"Me, Plan: plan date line",states:{"denied":"Built line and Allow notifications."},
+  r:function(){return nav("Me","Plan")+sec("",row("Plus Annual","Plus renews on 2 January 2027."),"")+'<div class="sec card gap" style="background:var(--surface)"><div class="t-sub">Notifications are off for {app}, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.</div><button class="btn sm">Allow notifications</button></div>'+tabbar("Me")}};
+
+/* ---------- journeys ---------- */
+var J=[
+ ["J-D01 Share, words only",[["D-S01","default","Open own kept letter."],["D-S02","wordsOnly","Tap Share: preview names what leaves."],["D-S03","text","Continue: system share sheet."],["D-S03","completed","Completed: back on the page. No toast."]]],
+ ["J-D02 Share with the picture",[["D-S02","pictureOff","Toggle shows, off by default."],["D-S02","pictureOn","Turn it on."],["D-S03","textAndPicture","Text and letter-photo.jpg."],["D-S03","completed","Temp file deleted."]]],
+ ["J-D03 Picture could not be added",[["D-S02","pictureOn","Continue with the picture."],["D-S02","error-share_temp_write_failed","Line shows; toggle off."],["D-S03","text","Continue again: words only."]]],
+ ["J-D04 No Share control",[["D-S01","absent","Other parent's, sealed, quiet, no words, not kept, or flag off."]]],
+ ["J-D06 Long and RTL",[["D-S02","long","Buttons pinned."],["D-S02","rtl","Order kept."]]],
+ ["J-D10 Reminder ask",[["D-S04","default","After the first kept letter."],["D-S04","pickTime","Change the time."],["D-S05","shown","Yes: iOS asks once."],["D-S04","after-yes","Allowed."],["D-S04","after-yes-denied","Or not allowed."],["D-S04","after-no","Or No reminders."],["D-S04","after-yes-failed","Or iOS refused."]]],
+ ["J-D11 Reminder, tap, Home (J-N3)",[["D-S10","evening","8:30 PM, neutral."],["D-S11","home","Lands on Home. One more tap speaks."]]],
+ ["J-D12 A week of silence (J-N4)",[["D-S06","on","Days 1 to 7 on the cadence."],["D-S06","backedOff","After day 35: no Next line. Nothing says it slowed."]]],
+ ["J-D13 Change reminders",[["D-S06","on","Me, Reminders."],["D-S07","default","Time picker."],["D-S06","lateClamp","Clamp line."],["D-S06","named","Names on."],["D-S06","appLock","App lock forces names off."]]],
+ ["J-D14 Not allowed",[["D-S06","denied","Open Settings."],["D-S24","denied","Plan date in Settings, Plan."]]],
+ ["J-D15 Schedule refused",[["D-S06","error-schedule_failed","Try again."],["D-S06","on","Recovered."]]],
+ ["J-D20 Typed day",[["D-S06","typedDays-empty","Days to remember."],["D-S08","default","Add a day."],["D-S08","filled","Words hidden by default."],["D-S08","showWords","Or shown."],["D-S06","on","Saved."],["D-S10","typedDay","On the day: fixed line."],["D-S11","typedDay","Home shows the words."]]],
+ ["J-D21 Typed day edges",[["D-S08","error-typed_day_too_long","A paste over 80."],["D-S08","error-typed_day_empty","No words yet."],["D-S08","notAllowed","Saves anyway."],["D-S06","typedDays-remindersOff","Reminders off, days stay."],["D-S09","default","Delete."],["D-S09","confirm",""]]],
+ ["J-D22 Lock screen walk (J-N24, J-N27)",[["D-S10","evening",""],["D-S10","evening-hidden",""],["D-S10","evening-named",""],["D-S10","monthAge",""],["D-S10","together",""],["D-S10","birthday",""],["D-S10","birthday-named",""],["D-S10","typedDay",""],["D-S10","typedDay-words",""],["D-S10","typedDay-hidden",""],["D-S10","plan",""],["D-S10","plan-hidden",""],["D-S10","oneDay","At most two in one day."],["D-S10","quiet",""],["D-S10","focus",""]]],
+ ["J-D30 Invite (P1)",[["D-S12","one-parent","Me, the book's page."],["D-S13","default","Scope line before sending."],["D-S13","working",""],["D-S13","sent","Waiting for them."]]],
+ ["J-D31 Join (P2)",[["D-S14","iphone","Link page."],["D-S15","signed-out","Sign in first."],["D-S15","loading",""],["D-S15","default","Sign-off and role only."],["D-S16","default","Agreement, same sheet."],["D-S17","arriving",""],["D-S17","joined","Open the book."]]],
+ ["J-D32 Invite and join, unhappy",[["D-S14","other-device",""],["D-S15","error-expired",""],["D-S15","error-revoked",""],["D-S15","error-used",""],["D-S16","error-already_member",""],["D-S16","error-book_full","Third adult."],["D-S13","full",""],["D-S15","paused",""],["D-S13","offline",""],["D-S16","offline","Nothing half-joins."],["D-S16","error-join_failed",""],["D-S16","needs-sync",""],["D-S15","error-not_found",""]]],
+ ["J-D33 Undo join within 72 h",[["D-S18","undo-open","Deadline, not a countdown."],["D-S19","default",""],["D-S19","done",""],["D-S20","default","P2's phone."],["D-S18","undo-closed","After 72 h: no control."],["D-S19","error-SCPAR","Stale screen."]]],
+ ["J-D40 Quiet day",[["D-S21","default","Not much today."],["D-S21","kept","Kept, Undo, no timer."],["D-S22","default","Book row."],["D-S22","consecutive","Never a run."]]],
+ ["J-D50 Pilot artefacts",[["D-S23","recruit",""],["D-S23","consentW",""],["D-S23","instructionW",""],["D-S23","scriptA",""],["D-S23","close",""]]]
+];
+var ji=0,js=0;
+
+/* ---------- wiring ---------- */
+function render(){
+  var s=S[cur.s];if(!s.states[cur.st])cur.st=Object.keys(s.states)[0];
+  document.getElementById("scr").innerHTML=s.r(cur.st);
+  document.getElementById("idtag").textContent=cur.s+"."+cur.st;
+  document.getElementById("sSel").value=cur.s;
+  document.getElementById("stBtns").innerHTML=Object.keys(s.states).map(function(k){return '<button class="'+(k===cur.st?'on':'')+'" onclick="go(\''+cur.s+'\',\''+k+'\')">'+k+'</button>'}).join("");
+  document.getElementById("sNote").textContent=s.t+": "+s.states[cur.st];
+}
+function go(s,st){cur={s:s,st:st};render();}
+window.go=go;
+function showStep(){var j=J[ji][1];js=Math.max(0,Math.min(js,j.length-1));var x=j[js];document.getElementById("jPos").textContent=(js+1)+" of "+j.length;document.getElementById("jNote").textContent=J[ji][0]+"\nStep "+(js+1)+": "+(x[2]||x[0]+"."+x[1]);go(x[0],x[1]);}
+(function init(){
+  var ss=document.getElementById("sSel");Object.keys(S).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=k+" "+S[k].t;ss.appendChild(o)});
+  ss.onchange=function(){go(ss.value,Object.keys(S[ss.value].states)[0])};
+  var jsel=document.getElementById("jSel");J.forEach(function(j,i){var o=document.createElement("option");o.value=i;o.textContent=j[0];jsel.appendChild(o)});
+  jsel.onchange=function(){ji=+jsel.value;js=0;showStep()};
+  document.getElementById("jPrev").onclick=function(){js--;showStep()};
+  document.getElementById("jNext").onclick=function(){js++;showStep()};
+  [["tDark","dark"],["tAx5","ax5"],["tRT","rt"],["tHC","hc"]].forEach(function(p){document.getElementById(p[0]).onchange=function(e){document.body.classList.toggle(p[1],e.target.checked);render()}});
+  showStep();
+})();
+</script>
+</body>
+</html>

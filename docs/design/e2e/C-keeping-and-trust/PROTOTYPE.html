@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Area C. Keeping and trust: clickable prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Self-contained: no network, no framework, inline CSS and JS.
+  Token values copied from packages/design-tokens/src/tokens.ts (light, dark, highContrast, space, radius, type, target).
+  Material policy: docs/design/system/BRIEF.md section 3 and COMPONENTS.md (N3 toolbar, N7 sheet, F1 toast, F3 progress, F6 confirmation sheet) (glass only on navigation and control layer; settings lists are
+  content layer, system grouped list; no glass on glass; solid with hairline under Reduce Transparency).
+  Fictional family only: the Asha book (and a second fictional book, Dev). Pictures are drawn shapes.
+  Words are intent or existing keys; WORDS.md owns the final PROPOSED keys.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--surfaceRaised:#FFFFFF;--text:#2B2722;--textMuted:#6B645B;--accent:#8A5A3B;
+  --accentSoft:#F1E6DC;--onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--success:#3F7A55;--caution:#94661A;
+  --controlBorder:#8A8175;--destructive:#B5473A;--onDestructive:#FFFFFF;--scrim:#2B272252;
+  --glassFill:rgba(255,255,255,0.62);--glassEdge:rgba(255,255,255,0.75);--glassShade:rgba(43,39,34,0.10);
+  --k:1;
+}
+body.dark{
+  --bg:#161412;--surface:#1B1917;--surfaceRaised:#201D1A;--text:#F2ECE4;--textMuted:#B3AA9E;--accent:#D9A47E;
+  --accentSoft:#3A2E25;--onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--success:#8CC9A0;--caution:#E3B866;
+  --controlBorder:#857C70;--destructive:#F08C7C;--onDestructive:#1E1612;--scrim:#0000008C;
+  --glassFill:rgba(40,36,32,0.58);--glassEdge:rgba(255,255,255,0.14);--glassShade:rgba(0,0,0,0.35);
+}
+body.hc{--textMuted:#524B43;--accent:#6E4529;--line:#6B645B;--controlBorder:#2B2722}
+body.dark.hc{--textMuted:#D6CEC3;--accent:#E8BC9A;--line:#B3AA9E;--controlBorder:#F2ECE4}
+body.ax5{--k:2.6}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:-apple-system,"Mukta",system-ui,sans-serif;background:#d9d3ca;color:#222;display:flex;gap:20px;padding:16px;min-height:100vh}
+body.dark{background:#0b0a09;color:#ddd}
+#panel{width:340px;flex:none;font-size:13px;line-height:1.4}
+#panel h1{font-size:16px;margin:0 0 6px}
+#panel h2{font-size:13px;margin:14px 0 4px;text-transform:none}
+#panel select,#panel button{font:inherit;margin:2px 0}
+#panel .toggles label{display:block;margin:2px 0}
+#panel .jsteps{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+#panel .jsteps button{padding:2px 6px;border:1px solid #8a8175;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
+#panel .jsteps button.on{background:#8A5A3B;color:#fff}
+#panel .note{opacity:.8;font-size:12px}
+#panel .jlist button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid rgba(128,128,128,.3);padding:4px 2px;color:inherit;cursor:pointer}
+#panel .jlist button.on{font-weight:700}
+#idline{font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-top:8px;word-break:break-all}
+
+/* Phone */
+.phone{width:375px;height:812px;flex:none;border-radius:48px;background:var(--bg);color:var(--text);position:relative;overflow:hidden;
+  box-shadow:0 0 0 10px #1c1b1a,0 20px 60px rgba(0,0,0,.35);font-family:"Mukta",-apple-system,system-ui,sans-serif}
+.status{height:47px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 28px 6px;font-size:15px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:5}
+.scroll{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding-top:47px;padding-bottom:110px}
+.scroll.notabs{padding-bottom:40px}
+.scroll.withfooter{padding-bottom:150px}
+
+/* Type (sizes from tokens.type; AX5 multiplies, titles capped by maxScale) */
+.t-title1{font-family:Georgia,"Literata",serif;font-weight:500;font-size:calc(28px * min(var(--k),1.8));line-height:1.2;margin:0}
+.t-title2{font-family:Georgia,"Literata",serif;font-weight:500;font-size:calc(22px * min(var(--k),2));line-height:1.27;margin:0}
+.t-headline{font-weight:600;font-size:calc(18px * var(--k));line-height:1.28}
+.t-body{font-size:calc(18px * var(--k));line-height:1.33}
+.t-callout{font-size:calc(17px * var(--k));line-height:1.3}
+.t-subhead{font-size:calc(16px * var(--k));line-height:1.31}
+.t-footnote{font-size:calc(14px * var(--k));line-height:1.36}
+.t-label{font-weight:500;font-size:calc(18px * var(--k));line-height:1.22}
+.t-letter{font-family:Georgia,"Literata",serif;font-size:calc(20px * var(--k));line-height:1.6}
+.muted{color:var(--textMuted)}
+.pad{padding:0 20px}
+.gap{height:28px}
+.gap-s{height:12px}
+
+/* Glass layer (navigation and controls). Regular variant. Solid with hairline under Reduce Transparency. */
+.glass{background:var(--glassFill);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);
+  border:0.5px solid var(--glassEdge);box-shadow:0 8px 28px var(--glassShade)}
+body.rt .glass{background:var(--surfaceRaised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+body.hc .glass{border:1px solid var(--controlBorder)}
+
+.navbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 12px;min-height:52px}
+.navbtn{min-width:44px;min-height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;padding:0 12px;color:var(--text);cursor:pointer;font-size:calc(17px * min(var(--k),1.6))}
+.navtitle{flex:1;text-align:center;font-weight:600;font-size:calc(17px * min(var(--k),1.4));padding-right:44px;overflow-wrap:anywhere}
+.largetitle{padding:8px 20px 4px}
+
+/* Tab bar: system native tabs, glass */
+.tabbar{position:absolute;left:16px;right:16px;bottom:22px;height:62px;border-radius:31px;display:flex;justify-content:space-around;align-items:center;z-index:6}
+.tab{display:flex;flex-direction:column;align-items:center;font-size:13px;font-weight:500;color:var(--textMuted);min-width:72px;min-height:44px;justify-content:center;cursor:pointer}
+.tab.on{color:var(--accent)}
+.tab svg{width:25px;height:25px}
+
+/* Content layer: system grouped list (inset grouped). Never glass. */
+.sec{margin:0 16px}
+.sechead{padding:0 16px 6px;color:var(--textMuted);font-size:calc(16px * var(--k));line-height:1.3}
+.secfoot{padding:6px 16px 0;color:var(--textMuted);font-size:calc(14px * var(--k));line-height:1.36}
+.group{background:var(--surfaceRaised);border-radius:20px;overflow:hidden}
+body.dark .group{border:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;padding:12px 16px;border-top:0.5px solid var(--line);cursor:default}
+.row:first-child{border-top:0}
+.row.tap{cursor:pointer}
+.row .rt{flex:1;min-width:0}
+.row .rtitle{font-weight:500;font-size:calc(18px * var(--k));line-height:1.22;overflow-wrap:anywhere}
+.row .rsub{color:var(--textMuted);font-size:calc(16px * var(--k));line-height:1.31;margin-top:2px}
+.row .rval{color:var(--textMuted);font-size:calc(17px * var(--k));text-align:right}
+.row .chev{color:var(--textMuted);flex:none}
+.row.destr .rtitle{color:var(--destructive)}
+body.ax5 .row{flex-wrap:wrap}
+body.ax5 .row .rt{flex-basis:calc(100% - 40px)}
+body.ax5 .row .rval{order:3;flex-basis:100%;text-align:left}
+.row .ico{width:22px;height:22px;flex:none;color:var(--textMuted)}
+
+/* Switch */
+.sw{width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;flex:none;border:1px solid var(--controlBorder);cursor:pointer}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--success);border-color:var(--success)}
+.sw.on::after{left:22px}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;text-align:center;border-radius:9999px;min-height:44px;padding:10px 20px;font-weight:500;font-size:calc(18px * var(--k));line-height:1.22;cursor:pointer;border:1px solid transparent;width:100%;color:var(--text);background:transparent}
+.btn.lg{min-height:56px}
+.btn.primary{background:var(--accent);color:var(--onAccent)}
+.btn.secondary{border-color:var(--controlBorder)}
+.btn.quiet{color:var(--accent)}
+.btn.destr{color:var(--destructive);border-color:var(--destructive)}
+.btn.destrFill{background:var(--destructive);color:var(--onDestructive)}
+.btn.dim{opacity:.55}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+/* Sticky action footer: bottom toolbar on the glass layer, one container */
+.footer{position:absolute;left:12px;right:12px;bottom:24px;border-radius:32px;padding:10px;z-index:6}
+.footer .btn.primary{box-shadow:none}
+
+/* N3 at AX3 and above: sentence labels leave the toolbar and pin in content as A1 lg (solid, no glass) */
+body.ax5 .footer{left:0;right:0;bottom:0;border-radius:0;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-top:1px solid var(--line);box-shadow:none;padding:12px 16px 30px}
+.btn.destrText{color:var(--destructive)}
+
+/* Cards and notes (content layer) */
+.card{background:var(--surfaceRaised);border-radius:14px;padding:16px;margin:0 16px}
+body.dark .card{border:1px solid var(--line)}
+.fail{background:var(--surface);border-radius:14px;padding:16px;margin:0 16px}
+.fail .h{display:flex;gap:8px;align-items:flex-start}
+.fail svg{color:var(--caution);flex:none;width:22px;height:22px;margin-top:2px}
+.slip{background:var(--surfaceRaised);border-radius:14px;padding:16px;margin:0 16px;cursor:pointer;border:1px solid var(--line)}
+.slipfoot{display:flex;justify-content:flex-end;margin-top:6px}
+body.ax5 .slipfoot{justify-content:flex-start}
+.inline{display:flex;gap:8px;align-items:flex-start;padding:0 20px}
+.inline .x{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--textMuted);cursor:pointer}
+.bar{height:4px;border-radius:9999px;background:var(--line);overflow:hidden}
+.bar>div{height:100%;background:var(--accent)}
+.cover{width:96px;height:124px;border-radius:6px 10px 10px 6px;background:var(--accent);margin:8px auto;position:relative;box-shadow:inset 6px 0 0 rgba(0,0,0,.15)}
+.cover span{position:absolute;bottom:14px;left:12px;right:8px;color:var(--onAccent);font-family:Georgia,serif;font-size:14px}
+.drawing{width:120px;height:80px;margin:0 auto}
+.letter{background:var(--surfaceRaised);border-radius:14px;padding:20px;margin:0 16px}
+.dateline{font-weight:500;font-size:calc(14px * min(var(--k),2.4));letter-spacing:.6px;color:var(--textMuted);text-transform:uppercase}
+.center{text-align:center}
+.statescreen{display:flex;flex-direction:column;justify-content:center;min-height:620px;padding:0 20px;gap:12px;text-align:center}
+
+/* Sheets: glass layer. Half sheet inset from the edges; scrim behind. */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:8}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:36px;padding:22px 20px 20px;z-index:9;max-height:760px;overflow-y:auto}
+.sheet.full{top:56px;left:0;right:0;bottom:0;border-radius:36px 36px 0 0}
+body.rt .sheet{background:var(--surfaceRaised)}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:-10px auto 14px}
+.toast{position:absolute;left:16px;right:16px;bottom:100px;border-radius:24px;padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:7}
+.toast .btn{width:auto}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;border:1px solid var(--controlBorder);color:var(--textMuted);margin-left:6px;vertical-align:middle}
+.vo{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+.voorder{position:absolute;left:8px;right:8px;top:52px;z-index:20;background:var(--surfaceRaised);border:2px solid var(--focus);border-radius:14px;padding:10px 12px;font-size:13px;color:var(--text)}
+.voorder ol{margin:4px 0 0 18px;padding:0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Area C. Keeping and trust</h1>
+  <div class="note">Prototype for DESIGN.md (ids C-S01 to C-S22). Click inside the phone to move; use journeys to walk every flow, or pick any screen and state.</div>
+
+  <h2>Display</h2>
+  <div class="toggles">
+    <label><input type="checkbox" id="tDark"> Dark</label>
+    <label><input type="checkbox" id="tAx5"> Text size AX5 (on 375 pt)</label>
+    <label><input type="checkbox" id="tRt"> Reduce Transparency (glass becomes solid)</label>
+    <label><input type="checkbox" id="tHc"> Increase Contrast</label>
+    <label><input type="checkbox" id="tVo"> VoiceOver order overlay</label>
+  </div>
+
+  <h2>Screen and state</h2>
+  <select id="selScreen"></select>
+  <select id="selState"></select>
+  <div id="idline"></div>
+
+  <h2>Journeys</h2>
+  <div class="jlist" id="jlist"></div>
+  <div class="jsteps" id="jsteps"></div>
+  <div style="margin-top:6px"><button id="prev">Previous step</button> <button id="next">Next step</button></div>
+  <div class="note" id="jnote" style="margin-top:6px"></div>
+</div>
+
+<div class="phone" id="phone"></div>
+
+<script>
+"use strict";
+/* ---------- icons (inline SVG, decorative, aria-hidden) ---------- */
+const I = {
+  chev:'<svg class="chev" width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  back:'<svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2L2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 7v6M12 16.5v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  check:'<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--accent)"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="var(--onAccent)" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  x:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  home:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 4a7 7 0 1 0 3 12 8 8 0 0 1-3-12z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  book:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  me:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  doc:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  mic:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  img:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 16l5-5 5 5 3-3 5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  bk:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  db:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  moon:'<svg class="drawing" viewBox="0 0 120 80" aria-hidden="true"><path d="M70 12a28 28 0 1 0 22 44 32 32 0 0 1-22-44z" fill="none" stroke="var(--textMuted)" stroke-width="1.6"/><circle cx="30" cy="20" r="1.5" fill="var(--textMuted)"/><circle cx="96" cy="16" r="1.5" fill="var(--textMuted)"/></svg>'
+};
+
+/* ---------- builders ---------- */
+const esc = (s) => String(s);
+function nav(title, back, opts){ opts = opts||{};
+  return '<div class="navbar"><div class="navbtn glass" data-go="'+(back||'')+'" role="button" aria-label="Back">'+I.back+'</div>'+
+    '<div class="navtitle">'+(opts.hideTitle?'':esc(title))+'</div></div>';
+}
+function large(t){ return '<div class="largetitle"><h1 class="t-title1">'+t+'</h1></div>'; }
+function row(title, o){ o=o||{};
+  const go = o.go ? ' tap" data-go="'+o.go : '';
+  return '<div class="row'+(o.destr?' destr':'')+go+'" role="'+(o.go?'button':'text')+'">'+(o.icon||'')+
+    '<div class="rt"><div class="rtitle">'+title+'</div>'+(o.sub?'<div class="rsub">'+o.sub+'</div>':'')+'</div>'+
+    (o.value?'<div class="rval">'+o.value+'</div>':'')+(o.sw!==undefined?'<div class="sw'+(o.sw?' on':'')+'" role="switch" aria-checked="'+o.sw+'"'+(o.swgo?' data-go="'+o.swgo+'"':'')+'></div>':'')+
+    (o.btn||'')+(o.go&&!o.nochev?I.chev:'')+'</div>';
+}
+function section(head, rows, foot){
+  return (head?'<div class="sechead" role="heading">'+head+'</div>':'')+'<div class="sec"><div class="group">'+rows.join('')+'</div></div>'+(foot?'<div class="secfoot">'+foot+'</div>':'')+'<div class="gap"></div>';
+}
+function btn(label, kind, go, extra){ return '<div class="btn '+(kind||'')+'" role="button"'+(go?' data-go="'+go+'"':'')+(extra||'')+'>'+label+'</div>'; }
+function tabbar(on){
+  const t=(k,l,ic,go)=>'<div class="tab'+(on===k?' on':'')+'" data-go="'+go+'" role="tab" aria-selected="'+(on===k)+'">'+ic+'<span>'+l+'</span></div>';
+  return '<div class="tabbar glass" role="tablist">'+t('home','Home',I.home,'HOME:default')+t('book','Book',I.book,'BOOK:default')+t('me','Me',I.me,'C-S01:default')+'</div>';
+}
+function footer(inner){ return '<div class="footer glass"><div class="stack">'+inner+'</div></div>'; }
+function failCard(title, body){ return '<div class="fail" role="alert">'+'<div class="h">'+I.warn+'<div><div class="t-headline">'+title+'</div>'+(body?'<div class="t-subhead">'+body+'</div>':'')+'</div></div></div><div class="gap-s"></div>'; }
+function sheet(inner, full){ return '<div class="scrim" data-go=""></div><div class="sheet glass'+(full?' full':'')+'" role="dialog"><div class="grab"></div>'+inner+'</div>'; }
+function toast(text, action){ return '<div class="toast glass" role="status"><div class="t-callout" style="flex:1">'+text+'</div>'+(action?btn(action,'quiet'):'')+'</div>'; }
+function p(text, cls){ return '<div class="pad '+(cls||'t-body')+'">'+text+'</div>'; }
+function frame(body, o){ o=o||{};
+  return '<div class="status"><span>9:41</span><span>'+(o.offline?'No service':'')+'</span></div>'+
+    '<div class="scroll'+(o.tabs?'':' notabs')+(o.footer?' withfooter':'')+'">'+body+'</div>'+
+    (o.tabs?tabbar(o.tabs):'')+(o.footer||'')+(o.overlay||'');
+}
+
+/* ---------- screens ---------- */
+const SCREENS = {};
+function def(id, name, states, render, vo){ SCREENS[id]={name, states, render, vo}; }
+
+/* Home and Book stand-ins (areas A and B own them; drawn only so journeys can pass through) */
+def('HOME','Home (area A, stand-in for the slip)',['default','slip','slipTwins','slipGone'],(s)=>{
+  let b = large('Home')+p('Thursday evening','t-footnote muted')+'<div class="gap-s"></div>'+
+    p('<span class="t-letter">What did Asha do today that you want to remember?</span>','')+'<div class="gap"></div>';
+  if(s==='slip') b += slipCard("Save a copy of Asha's year, yours to keep.");
+  if(s==='slipTwins') b += slipCard('Save a copy of the year for Asha and Dev, yours to keep.');
+  b += '<div class="gap"></div><div class="pad stack">'+btn('Speak','primary lg')+btn('Type','secondary')+'</div>';
+  return frame(b,{tabs:'home'});
+},()=>['Home heading','Prompt','Slip (one element; custom action Not now)','Speak','Type']);
+function slipCard(text){
+  return '<div class="slip" data-go="C-S04:default" role="button" aria-label="'+text+'">'+
+    '<div class="t-callout">'+text+'</div><div class="slipfoot"><div class="btn quiet" style="width:auto" data-go="HOME:slipGone" role="button">Not now</div></div></div>';
+}
+def('BOOK','Book (area B, stand-in for the new phone line)',['default','newPhone','arriving'],(s)=>{
+  let b = large("Asha's book")+p('1 year, 7 months','t-footnote muted')+'<div class="gap-s"></div>';
+  if(s==='newPhone') b += inlineNote('The words of your letters are here. Recordings and pictures are kept on the phone that made them.', true);
+  if(s==='arriving') b += inlineNote('More letters are on their way.', false);
+  b += '<div class="gap-s"></div>'+letterCard('NOVEMBER 12', 'You laughed so hard at the dog sneezing that you fell over, and then you did it again on purpose.','C-S09:notHere');
+  b += '<div class="gap-s"></div>'+letterCard('NOVEMBER 9', 'Today you said water for the first time, and pointed at the bath.','C-S09:notHere');
+  return frame(b,{tabs:'book'});
+},(s)=>['Book heading', s==='default'?'Letters':'New phone line (read once)','Close (if shown)','Letters']);
+function inlineNote(text, closable){
+  return '<div class="inline" role="text"><div class="t-callout muted" style="flex:1">'+text+'</div>'+(closable?'<div class="x" role="button" aria-label="Close" data-go="BOOK:default">'+I.x+'</div>':'')+'</div>';
+}
+function letterCard(date, words, go){
+  return '<div class="letter" data-go="'+go+'" role="button" style="cursor:pointer"><div class="dateline">'+date+'</div><div class="gap-s"></div><div class="t-letter">'+words+'</div></div>';
+}
+
+/* C-S01 Me */
+def('C-S01','Me (Look after)',['default','signedout','local','second-account','killswitch','lapsed','oneHidden'],(s)=>{
+  let b = large('Me');
+  const signedIn = (s==='default'||s==='lapsed'||s==='oneHidden'||s==='second-account');
+  if(signedIn) b += section('',[row(s==='second-account'?'Signed in with email':'Signed in with Apple',{go:'C-S02:default'}), row('Plan',{value:'Free',sub:s==='lapsed'?'Your first two letters are free. Plus lets you keep adding letters.':'',go:''})]);
+  else if(s==='signedout') b += '<div class="card"><div class="t-headline">Not signed in</div><div class="t-subhead muted">Your letters are on this phone.</div><div class="gap-s"></div>'+btn('Sign in','secondary')+'</div><div class="gap-s"></div>'+section('',[row('Plan',{value:'Free'})]);
+  else b += section('',[row('On this phone'),row('Plan',{value:'Free'})]);
+  const books = s==='second-account' ? [row("Dev's book",{go:'C-S15:default'})] : [row("Asha's book",{go:'C-S15:default'})];
+  books.push(row('Add a book',{go:''}));
+  if(s==='oneHidden') books.push(row('Hidden books',{go:'C-S16:default'}));
+  b += section('Books', books);
+  b += section('Writing',[row('Spoken language',{go:''}),row('Your words',{go:''}),row('Reminders',{value:'Weekly',go:''}),row('Past letters on Home',{sw:true}),row('Appearance',{value:'System',go:''})]);
+  b += section('Keeping your book',[row('Save a copy',{sub:'Every letter, recording and picture, free, any time.',go:'C-S04:default'}),row('Where your letters live',{go:'C-S08:default'})]);
+  const yl=[row('Recently deleted',{sub:'Letters you delete wait here for 30 days.',go:'C-S17:default'}),row('Storage',{sub:'Languages and space on this phone.',go:'C-S18:default'})];
+  if(!signedIn) yl.push(row('Erase everything on this phone',{destr:true,go:s==='signedout'?'C-S19:signedoutSynced':'C-S19:default'}));
+  b += section('Your letters', yl);
+  b += section('Privacy and security',[row('App lock',{value:'Off',go:''}),row('Privacy',{go:''})]);
+  if(signedIn && s!=='killswitch') b += section('',[row('Delete account',{destr:true,go:'C-S20:what'})]);
+  b += section('Help and legal',[row('Help',{value:'Write to us'}),row('If you are struggling',{go:''}),row('Legal',{go:''})]);
+  b += section('About',[row('Version',{value:'1.1.0 (14)'})]);
+  return frame(b,{tabs:'me'});
+},(s)=>['Me, heading','Account card or Not signed in card','Plan','Books, heading','Each book row','Writing, heading and rows','Keeping your book, heading','Save a copy','Where your letters live','Your letters, heading and rows','Privacy and security','Delete account (signed in)','Help and legal','About','Tab bar: Home, Book, Me (selected)']);
+
+/* C-S02 Account */
+def('C-S02','Account',['default','waiting','offline','signedOutEarly'],(s)=>{
+  let b = nav('Account','C-S01:default')+'<div class="gap-s"></div>';
+  b += section('',[row('Signed in with Apple'),row('Sync across your phones',{value:'On'})]);
+  b += section('Devices',[row('Sign out other devices',{sub:s==='offline'?'Needs a connection.':''})],'Other phones signed in to this account will need to sign in again.');
+  if(s==='waiting') b += section('',[row('Your newest letters are still on their way. This phone signs out once they are sent.'),row('Sign out now',{go:'C-S01:signedout'})]);
+  else b += section('',[row('<span style="color:var(--accent)">Sign out</span>',{go:'C-S03:default',nochev:true})]);
+  if(s==='signedOutEarly') b = nav('Account','C-S01:signedout')+p('Your newest letters are kept on this phone. They are sent the next time you sign in to this account.');
+  return frame(b,{offline:s==='offline'});
+},(s)=>['Back','Account, title','Signed in with Apple','Sync','Devices, heading','Sign out other devices', s==='waiting'?'Waiting line, then Sign out now':'Sign out']);
+
+/* C-S03 Sign-out sheet */
+def('C-S03','Sign-out sheet (D1)',['default','photos'],(s)=>{
+  const base = SCREENS['C-S02'].render('default');
+  const what = s==='photos'?'Your letters and recordings stay on this phone. So do the pictures you added.':'Your letters and recordings stay on this phone.';
+  const inner = '<h2 class="t-title2">Sign out on this phone?</h2><div class="gap-s"></div><div class="t-body">'+what+' Anyone who can open the app here can read them. Use Erase everything to remove them.</div><div class="gap"></div>'+
+    '<div class="stack">'+btn('Stay signed in','primary lg','C-S02:default')+btn('Sign out','quiet','C-S01:signedout')+btn('Sign out and erase this phone','destrText','C-S19:confirm')+'</div>';
+  return base + sheet(inner);
+},()=>['Sheet heading: Sign out on this phone?','The D1 sentences','Stay signed in (filled, default; escape gesture)','Sign out','Sign out and erase this phone (destructive text)']);
+
+/* C-S04 Save a copy */
+const INSIDE = (photos, newPhone)=>[
+  row('Every letter, as text',{icon:I.doc}),
+  row('Every recording on this phone',{icon:I.mic}),
+  ...(photos?[row("Every picture's stored copy",{icon:I.img})]:[]),
+  row('The book to read on screen, by month',{icon:I.bk}),
+  row('A data file with your words as heard and every small fix',{icon:I.db})
+];
+def('C-S04','Save a copy',['default','running','ready','saved','cancelled','stopped','stopped-by-close','lowPower','empty','nothingHere','newPhone','error-lowSpace','error-tooBig','error-other','twoBooks','printOff'],(s)=>{
+  let b = nav('Save a copy','C-S01:default')+'<div class="cover"><span>Asha</span></div><div class="gap-s"></div>';
+  if(s==='nothingHere'){
+    b += p('There is nothing on this phone to copy yet. Your letters are in your account, and recordings and pictures are on the phone that made them.')+'<div class="gap"></div>';
+    return frame(b,{footer:footer(btn('Save a copy','primary lg dim',''))});
+  }
+  b += p('A copy of your book, yours to keep. It is made on this phone and goes only where you send it. It is as private as where you put it.','t-body')+'<div class="gap"></div>';
+  if(s==='running'){
+    b += p('Packing your letters','t-body')+'<div class="gap-s"></div><div class="pad"><div class="bar" role="progressbar" aria-valuenow="42" aria-label="Copy progress"><div style="width:42%"></div></div></div><div class="gap"></div>';
+    return frame(b,{footer:footer(btn('Stop','secondary','C-S04:stopped'))});
+  }
+  if(s==='ready'){
+    b += '<div class="pad" style="display:flex;gap:8px;align-items:center">'+I.check+'<h2 class="t-headline" style="margin:0">Your copy is ready.</h2></div><div class="gap-s"></div>'+
+      p('This file holds your letters and recordings, unlocked. Keep it somewhere private.','t-subhead muted')+'<div class="gap"></div>';
+    return frame(b,{footer:footer(btn('Save or share','primary lg','SHARE:zip'))});
+  }
+  const lines = {saved:'Saved. The copy on this phone has been cleared away.',cancelled:'Not saved. You can make the copy again any time.',stopped:'Stopped. No copy was made.','stopped-by-close':'The last copy stopped when the app closed. No copy was made.',lowPower:'This may take a little longer while Low Power Mode is on.',empty:'You can save a copy once the book has a letter.'};
+  if(lines[s]) b += p(lines[s],'t-subhead muted')+'<div class="gap-s"></div>';
+  if(s==='error-lowSpace') b += failCard('This phone needs more free space first.','This needs about 240 MB of free space on this phone.');
+  if(s==='error-tooBig') b += failCard('This book is too big for one file',null);
+  if(s==='error-other') b += failCard('The copy did not finish','Your letters and recordings are all still here. Please try again.');
+  b += section('What is inside', INSIDE(true, s==='newPhone'));
+  if(s!=='printOff' && s!=='empty') b += section('Printable book (PDF)', s==='twoBooks' ? [row('Printable book (PDF)',{go:'C-S07:default'})] : [row("Asha's book",{go:'C-S05:making'})]);
+  b += p('Last prepared November 3','t-footnote muted')+'<div class="gap"></div>';
+  let f;
+  if(s==='error-tooBig') f = btn('Write to us','primary lg');
+  else if(s==='error-lowSpace') f = btn('Try again','primary lg','C-S04:running')+btn('Open Storage','secondary','C-S18:default');
+  else if(s==='empty') f = btn('Save a copy','primary lg dim','');
+  else f = btn('Save a copy','primary lg','C-S04:running');
+  return frame(b,{footer:footer(f)});
+},(s)=>['Back','Save a copy, heading','Book cover (image, Asha)','What the copy holds','Status or error line (announced)','What is inside, heading and rows','Printable book (PDF), heading and rows','Last prepared','Primary action in the toolbar']);
+
+def('SHARE','iOS share sheet (system)',['zip','pdf'],(s)=>{
+  const base = s==='pdf'?SCREENS['C-S05'].render('ready'):SCREENS['C-S04'].render('ready');
+  const inner = '<div class="t-headline">'+(s==='pdf'?"Asha's book (printable).pdf":'Letters to Asha.zip')+'</div><div class="gap-s"></div>'+
+    section('',[row('Save to Files',{go:s==='pdf'?'C-S04:default':'C-S04:saved'}),row('AirDrop',{go:s==='pdf'?'C-S04:default':'C-S04:saved'}),row('iCloud Drive (full)',{go:'C-S04:cancelled'})])+
+    btn('Cancel','secondary',s==='pdf'?'C-S04:default':'C-S04:cancelled');
+  return base + sheet(inner);
+},()=>['System share sheet: the file','Destinations','Cancel']);
+
+/* C-S05 Printable book */
+def('C-S05','Making the printable book (PDF)',['making','lowPower','ready','error-print_pdf_disk_full','error-print_pdf_failed','error-share_failed'],(s)=>{
+  let b = nav('Printable book','C-S04:default')+'<div class="cover"><span>Asha</span></div><div class="gap-s"></div>';
+  if(s==='making'||s==='lowPower'){
+    b += '<div class="pad"><h2 class="t-title2">Making your book</h2></div><div class="gap-s"></div><div class="pad"><div class="bar" role="progressbar" aria-valuenow="30"><div style="width:30%"></div></div></div><div class="gap-s"></div>';
+    if(s==='lowPower') b += p('This may take a little longer while Low Power Mode is on.','t-subhead muted');
+    return frame(b,{footer:footer(btn('Stop','secondary','C-S04:default'))});
+  }
+  if(s==='ready'||s==='error-share_failed'){
+    b += '<div class="pad" style="display:flex;gap:8px;align-items:center">'+I.check+'<h2 class="t-headline" style="margin:0">Your printable book is ready.</h2></div><div class="gap"></div>';
+    if(s==='error-share_failed') b += failCard('That did not go through.','Save or share again.');
+    return frame(b,{footer:footer(btn('Save or share','primary lg','SHARE:pdf'))});
+  }
+  if(s==='error-print_pdf_disk_full') b += failCard('This phone needs about 180 MB more free space to make the book.',null);
+  if(s==='error-print_pdf_failed') b += failCard('The book could not be made this time.',null);
+  return frame(b,{footer:footer(btn('Try again','primary lg','C-S05:making')+(s==='error-print_pdf_disk_full'?btn('Open Storage','secondary','C-S18:default'):''))});
+},()=>['Back','Making your book (heading)','Progress, value as text','Low Power line if on','Stop or the action']);
+
+/* C-S06 slip: rendered on HOME; alias for the switcher */
+def('C-S06','Home slip: Save a copy (on Home)',['default','twins','dismissed'],(s)=>SCREENS['HOME'].render(s==='twins'?'slipTwins':s==='dismissed'?'slipGone':'slip'),()=>['Home heading','Prompt','Slip: one element, label is its line, hint Opens Save a copy, custom action Not now','Speak','Type']);
+
+/* C-S07 Which book */
+def('C-S07','Which book (chooser sheet)',['default'],()=>{
+  const base = SCREENS['C-S04'].render('twoBooks');
+  const inner = '<div style="display:flex;align-items:center"><div class="btn quiet" style="width:auto" data-go="C-S04:twoBooks">Cancel</div><h2 class="t-headline" style="flex:1;text-align:center;margin:0;padding-right:70px">Which book?</h2></div><div class="gap-s"></div>'+
+    section('',[row("Asha's book",{go:'C-S05:making'}),row("Dev's book",{go:'C-S05:making'})]);
+  return base + sheet(inner);
+},()=>['Cancel','Which book? (heading)',"Asha's book","Dev's book"]);
+
+/* C-S08 Where your letters live */
+def('C-S08','Where your letters live',['default','local','signedout','flip'],(s)=>{
+  let b = nav('Where your letters live','C-S01:default')+'<div class="gap-s"></div>';
+  const on = s==='local'||s==='signedout' ? 'Your letters and recordings are kept on this iPhone.' : 'Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.';
+  b += section('On this phone',[row(on)]);
+  const rows=[row('iPhone backup',{sub:'Includes your recordings, if iCloud Backup is on.',value:'How to check',go:''}),row('Save a copy',{sub:'Last prepared November 3',go:'C-S04:default'})];
+  if(s==='flip') rows.push(row('Back up my recordings',{value:'On',go:'C-S21:on'}));
+  b += section('If you get a new phone', rows, 'Two copies of your recordings are in your hands: one you make with Save a copy, and your iPhone\'s own iCloud Backup, if it is on.');
+  return frame(b);
+},()=>['Back','Where your letters live','On this phone, heading and line','If you get a new phone, heading','iPhone backup (link)','Save a copy','The keep-safe line']);
+
+/* C-S09 Provenance on the letter page */
+def('C-S09','Letter page: where the recording is',['onPhone','notHere','otherParent','typed','backedUp','arriving'],(s)=>{
+  const lines={onPhone:'Spoken, with small fixes. Recording kept on this phone.',notHere:'Spoken, with small fixes. Recording not on this phone.',otherParent:'Spoken. Recording kept on Papa\'s phone.',typed:'Typed.',backedUp:'Spoken, with small fixes. Recording kept on this phone and backed up.',arriving:'Spoken, with small fixes. Recording on its way to this phone.'};
+  let b = nav('','BOOK:default',{hideTitle:true})+'<div class="pad"><div class="dateline">THURSDAY, NOVEMBER 12</div></div><div class="gap-s"></div>'+
+    '<div class="pad t-letter">You laughed so hard at the dog sneezing that you fell over, and then you did it again on purpose.</div><div class="gap-s"></div>'+
+    '<div class="pad t-letter" style="font-style:italic">From Mama</div><div class="gap"></div>';
+  if(s==='onPhone'||s==='backedUp') b += '<div class="pad">'+btn('Play','secondary')+'</div><div class="gap-s"></div>';
+  b += p(lines[s],'t-footnote muted')+'<div class="gap"></div>';
+  b += section('This letter',[row('Earlier versions',{go:'C-S13:default'}),row('Delete',{destr:true,go:''})]);
+  return frame(b);
+},(s)=>['Back','Dateline (heading level 1)','Letter words','Signature',(s==='onPhone'||s==='backedUp')?'Play':'(no Play)','Provenance line, one phrase','This letter list']);
+
+/* C-S10 Opening your book */
+def('C-S10','Opening your book (new phone)',['opening','held','offline','noBook','wrongAccount','deletedElsewhere'],(s)=>{
+  const t={
+    opening:['Opening your book.','Your letters are coming across.',''],
+    held:['Finish setting up to open your book here.','',btn('Finish setup','primary lg','C-S11:default')+btn('Try another way','quiet','C-S10:wrongAccount')],
+    offline:['Opening your book needs a connection.','Connect to the internet, then tap Try again.',btn('Try again','primary lg','C-S10:opening')],
+    noBook:['No book here yet','Did you use a different way to sign in last time?',btn('Try another way','primary lg','C-S10:wrongAccount')+btn('Start a book','quiet')],
+    wrongAccount:['You signed in with email.','Is this the account you used before? If not, try another way.',btn('Sign out and try another way','primary lg')+btn('Start a book here','quiet')],
+    deletedElsewhere:['This account was deleted on another phone.','',btn('Back to start','primary lg')]
+  }[s];
+  const b = '<div class="statescreen">'+I.moon+'<h1 class="t-title2" role="heading">'+t[0]+'</h1>'+(t[1]?'<div class="t-body">'+t[1]+'</div>':'')+'<div class="gap-s"></div><div class="stack">'+t[2]+'</div>'+(s==='opening'?'<div class="t-footnote muted" style="margin-top:20px"><span class="tag">prototype</span> <span data-go="BOOK:newPhone" style="text-decoration:underline;cursor:pointer">arrive</span> or <span data-go="BOOK:arriving" style="text-decoration:underline;cursor:pointer">10 s pass</span></div>':'')+'</div>';
+  return frame(b,{offline:s==='offline'});
+},()=>['Drawing (hidden)','Heading (announced once, politely)','Sentence','Primary action','Quiet action']);
+
+/* C-S11 consent and declined */
+def('C-S11','Returning consent sheet and not agreed',['default','declined'],(s)=>{
+  if(s==='declined'){
+    const b = large('Your book stays in your account')+p('Nothing comes to this phone until you agree. You can still save a copy or delete your account here.')+'<div class="gap"></div>';
+    return frame(b,{footer:footer(btn('Read and agree','primary lg','C-S11:default')+btn('Save a copy','secondary','C-S04:nothingHere')+btn('Delete account','quiet','C-S20:what')+btn('Sign out','quiet'))});
+  }
+  const base = '<div class="statescreen">'+I.moon+'</div>';
+  const inner = '<h2 class="t-title2">Before you go on</h2><div class="gap-s"></div><div class="t-body">The Terms of Service have changed. Read what changed, then agree to keep using your account on this phone.</div><div class="gap-s"></div>'+
+    section('',[row('Terms of Service (version 1.4)',{go:''}),row('Privacy Policy (version 1.3)',{go:''})])+
+    '<div class="stack">'+btn('Agree','primary lg','C-S10:opening')+btn('Not now','secondary','C-S11:declined')+'</div>';
+  return frame(base) + sheet(inner, true);
+},(s)=>s==='declined'?['Heading','Sentence','Read and agree','Save a copy','Delete account','Sign out']:['Heading','What changed','Terms link','Privacy Policy link','Agree','Not now']);
+
+/* C-S12 alias */
+def('C-S12','Book-level new phone line (on the Book)',['default','arriving','dismissed'],(s)=>SCREENS['BOOK'].render(s==='arriving'?'arriving':s==='dismissed'?'default':'newPhone'),()=>['Book heading','The line, read once','Close','Letters']);
+
+/* C-S13 Earlier versions */
+def('C-S13','Earlier versions (list)',['default','many','loading','offline','offlineNone','error-fetch_failed','removed'],(s)=>{
+  let b = nav('Earlier versions','C-S09:onPhone')+'<div class="gap-s"></div>'+p('Earlier versions of your words are kept until you remove them. Exactly what you said stays with the letter either way.','t-subhead muted')+'<div class="gap"></div>';
+  if(s==='loading'){ b += p('Finding earlier versions','t-subhead muted'); return frame(b); }
+  if(s==='offlineNone'){ b += p('Earlier versions show when this phone is online.','t-subhead muted'); return frame(b,{offline:true}); }
+  if(s==='error-fetch_failed'){ b += failCard('Earlier versions did not open.','The letter\'s words have not changed.')+'<div class="pad">'+btn('Try again','secondary','C-S13:default')+'</div>'; return frame(b); }
+  const r=[row('November 12, 9:14 PM',{go:'C-S14:default'}),row('November 12, 8:51 PM',{go:'C-S14:default'})];
+  if(s!=='removed') r.push(row('November 10, 10:02 PM',{go:'C-S14:default'}));
+  if(s==='many') r.push(row('Show all',{go:''}));
+  b += section('',r);
+  return frame(b,{offline:s==='offline', overlay:s==='removed'?toast('Version removed.'):''});
+},()=>['Back','Earlier versions, title','Kept-until-removed line','Each date row, newest first','Show all (after 20)']);
+
+/* C-S14 An earlier version */
+def('C-S14','An earlier version',['default','confirmRemove','restored'],(s)=>{
+  if(s==='restored'){
+    return SCREENS['C-S09'].render('onPhone') + toast('These words are back. The words before are in Earlier versions.');
+  }
+  let b = nav('','C-S13:default',{hideTitle:true})+'<div class="pad"><h1 class="t-title2">Words from November 10, 10:02 PM</h1></div><div class="gap-s"></div>'+
+    '<div class="letter"><div class="t-letter">You laughed at the dog sneezing so hard you fell over, then you did it again.</div></div><div class="gap"></div>';
+  const f = footer(btn('Use these words','primary lg','C-S14:restored')+btn('Remove this version','quiet','C-S14:confirmRemove').replace('btn quiet','btn quiet" style="color:var(--destructive)'));
+  if(s==='confirmRemove'){
+    const inner='<h2 class="t-title2">Remove this version?</h2><div class="gap-s"></div><div class="t-body">It is removed here and from your account. The letter keeps the words it has now. This cannot be undone.</div><div class="gap"></div><div class="stack">'+btn('Keep it','primary lg','C-S14:default')+btn('Remove','destrText','C-S13:removed')+'</div>';
+    return frame(b,{footer:f}) + sheet(inner);
+  }
+  return frame(b,{footer:f});
+},(s)=>s==='confirmRemove'?['Remove this version? (heading)','Consequence','Keep it (default, escape)','Remove']:['Back','Date (heading)','The words','Use these words: hint says the words now become an earlier version','Remove this version: hint says it is removed for good']);
+
+/* C-S15 A book in Me */
+def('C-S15','A book in Me',['default','quiet','error-quiet_write_failed','oneBook','local','confirmHide'],(s)=>{
+  let b = nav("Asha's book",'C-S01:default')+'<div class="gap-s"></div>';
+  b += section('Details',[row('Name',{value:'Asha',go:''}),row('Birthday',{value:'April 12, 2025',go:''}),row('Sign my letters to Asha as',{value:'Mama',go:''})]);
+  b += section('',[row('Reminders for Asha',{sw:true})]);
+  const q = s==='quiet'?true:false;
+  const rows=[row('Quiet this book',{sw:q,swgo:q?'C-S15:default':'C-S15:quiet'})];
+  if(s!=='oneBook') rows.push(row('Hide this book',{go:'C-S15:confirmHide',nochev:true}));
+  b += section('', rows, (s==='error-quiet_write_failed'?'<span style="color:var(--caution)">That did not change. Asha\'s book is as it was.</span><br>':'')+"No reminders, messages or Home cards for Asha's book until you turn this off. Nothing in the book changes.");
+  if(s==='local') b += section('',[row('Delete this book',{destr:true,go:'C-S22:exportFirst'})]);
+  const ov = s==='confirmHide' ? sheet('<h2 class="t-title2">Hide this book</h2><div class="gap-s"></div><div class="t-body">Hiding Asha\'s book quiets every reminder and message about Asha. Nothing is deleted.</div><div class="gap"></div><div class="stack">'+btn('Cancel','primary lg','C-S15:default')+btn('Hide this book','quiet','C-S01:oneHidden')+'</div>') : '';
+  return frame(b)+ov;
+},()=>['Back',"Asha's book, title",'Details rows','Reminders for Asha','Quiet this book (switch)','Hide this book','Footer line','Delete this book (local only)']);
+
+/* C-S16 Hidden books */
+def('C-S16','Hidden books',['default'],()=>{
+  const b = nav('Hidden books','C-S01:oneHidden')+'<div class="gap-s"></div>'+section('',[row("Dev's book",{btn:'<div class="btn quiet" style="width:auto" data-go="C-S01:default" role="button">Show this book again</div>'})]);
+  return frame(b);
+},()=>['Back','Hidden books','Dev\'s book','Show this book again']);
+
+/* C-S17 Recently deleted */
+def('C-S17','Recently deleted',['default','empty','sealed','book','synced','restored','confirmErase','error-erase_failed'],(s)=>{
+  let b = nav('Recently deleted','C-S01:default')+'<div class="gap-s"></div>'+p('Letters you delete wait here for 30 days.','t-subhead muted')+'<div class="gap"></div>';
+  if(s==='empty'){ b += p('No deleted letters.','t-body muted'); return frame(b); }
+  if(s==='book') b += '<div class="card"><div class="t-headline">Dev\'s book</div><div class="t-footnote muted">Deleted November 2. Kept here until December 2.</div><div class="gap-s"></div>'+btn('Restore the book','secondary')+'</div><div class="gap-s"></div>';
+  if(s==='sealed') b += '<div class="card"><div class="t-headline">A letter hidden until April 12, 2027</div><div class="t-footnote muted">From Mama. Deleted November 14. Kept here until December 14.</div><div class="gap-s"></div><div class="stack">'+btn('Restore','secondary')+btn('Erase now','quiet','C-S17:confirmErase')+'</div></div><div class="gap-s"></div>';
+  b += '<div class="card"><div class="t-letter" style="max-height:3.2em;overflow:hidden">Today you said water for the first time, and pointed at the bath.</div><div class="t-footnote muted">From Mama. Deleted November 13. Kept here until December 13.</div><div class="gap-s"></div><div class="stack">'+btn('Restore','secondary','C-S17:restored')+(s==='synced'?'':btn('Erase now','quiet','C-S17:confirmErase'))+'</div></div>';
+  let ov='';
+  if(s==='restored') ov = toast("Back in Asha's book.","Open");
+  if(s==='error-erase_failed') ov = toast('The letter was not erased. It is still in Recently deleted.');
+  if(s==='confirmErase') ov = sheet('<h2 class="t-title2">Erase this letter now?</h2><div class="gap-s"></div><div class="t-body">The letter and its recording are erased for good.</div><div class="gap"></div><div class="stack">'+btn('Keep it','primary lg','C-S17:default')+btn('Erase now','destrText','C-S17:empty')+'</div>');
+  return frame(b,{overlay:ov});
+},()=>['Back','Recently deleted','Help line','Each card: words (full in label), from, dates','Restore','Erase now']);
+
+/* C-S18 Storage */
+def('C-S18','Storage',['default','stuck','stuckAgain','lowSpace'],(s)=>{
+  let b = nav('Storage','C-S01:default')+'<div class="gap-s"></div>';
+  if(s==='lowSpace') b += failCard('This iPhone is almost full.','New recordings need space. Remove something below or in iPhone Storage.');
+  if(s!=='default') b += section('Recordings',[row('One recording is still on this phone.',{btn:'<div class="btn secondary" style="width:auto;min-width:120px" data-go="'+(s==='stuck'?'C-S18:default':'C-S18:stuckAgain')+'" role="button">Remove now</div>'})]);
+  b += section('Spoken language',[row('English',{value:'Ready'})],'Speech is written down on this phone.');
+  b += section('Downloaded',[row('Total',{value:'312 MB'}),row('English speech model',{sub:'298 MB'})],'Letters and recordings are kept separately and are never removed here.');
+  b += section('',[row('Use cellular data',{sw:false})]);
+  return frame(b);
+},()=>['Back','Storage','Recordings, heading (only with a stuck file)','One recording is still on this phone','Remove now','Languages and downloads']);
+
+/* C-S19 Erase everything */
+def('C-S19','Erase everything on this phone',['default','signedoutSynced','confirm','erasing','error-failed','signedin'],(s)=>{
+  if(s==='erasing') return frame('<div class="statescreen">'+I.moon+'<h1 class="t-title2">Erasing</h1></div>');
+  if(s==='signedin') return frame(nav('Erase everything','C-S01:default')+'<div class="gap-s"></div>'+p('This phone is signed in. Sign out first, or delete your account in Me.'));
+  let b = nav('Erase everything','C-S01:signedout')+'<div class="gap-s"></div><div class="pad"><h2 class="t-title2">What is erased</h2></div><div class="gap-s"></div>';
+  b += p(s==='signedoutSynced'?'This removes every book, letter, recording and picture from this iPhone, and your settings. Letters saved to an account stay in that account until the account is deleted.':'This removes every book, letter, recording and picture from this iPhone, and your settings.')+'<div class="gap-s"></div>';
+  b += p('This happens on this phone only. Nothing is sent anywhere.<br>Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.<br>Your spoken language stays ready, because it holds nothing of yours.','t-subhead muted')+'<div class="gap"></div>';
+  if(s==='error-failed') b += failCard('Erasing did not finish.','Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.');
+  b += '<div class="card"><div class="t-headline">Save a copy first?</div><div class="gap-s"></div>'+btn('Save a copy','secondary','C-S04:default')+'</div><div class="gap"></div>';
+  b += '<div class="pad">'+btn('Erase everything','destr','C-S19:confirm')+'</div>';
+  const ov = s==='confirm' ? sheet('<h2 class="t-title2">Erase everything on this phone?</h2><div class="gap-s"></div><div class="t-body">This cannot be undone.</div><div class="gap"></div><div class="stack">'+btn('Keep everything','primary lg','C-S19:default')+btn('Erase','destrText','C-S19:erasing')+'</div>') : '';
+  return frame(b)+ov;
+},()=>['Back','What is erased (heading)','Body','Notes','Save a copy first? and its button','Erase everything']);
+
+/* C-S20 Delete account */
+def('C-S20','Delete account',['loading','what','confirm','armed','sending','scheduled','executing','signedout','notConfigured','error-offline','error-failed','cancelled'],(s)=>{
+  let b = nav('Delete account','C-S01:default')+'<div class="gap-s"></div>';
+  if(s==='loading') return frame(b+p('One moment.','t-subhead muted'));
+  if(s==='what'){
+    b += '<div class="pad"><h2 class="t-title2">What happens</h2></div><div class="gap-s"></div>'+p('Deleting your account removes your letters and books from our servers. You have 30 days to change your mind.')+'<div class="gap-s"></div>';
+    b += section('',[row("Asha's book will be deleted, with your letters in it.",{icon:I.bk})]);
+    b += p('Letters you hid until a day are deleted too, even if their day has not come. They will not open for anyone.<br>Your recordings and pictures are on the phone that made them, not in your account. After you sign out, Erase everything on this phone removes them.<br>A copy you exported stays wherever you saved it.','t-subhead muted')+'<div class="gap"></div>';
+    b += '<div class="card"><div class="t-headline">Save a copy first</div><div class="t-subhead muted">Save a copy of everything, free: your letters, your recordings and your pictures.</div><div class="gap-s"></div>'+btn('Save a copy','secondary','C-S04:default')+'</div><div class="gap"></div>';
+    return frame(b,{footer:footer(btn('Continue','primary lg','C-S20:confirm'))});
+  }
+  if(s==='confirm'||s==='armed'||s==='sending'||s==='error-offline'||s==='error-failed'){
+    b += '<div class="pad"><h1 class="t-title2">Delete your account?</h1></div><div class="gap-s"></div>'+p('Your account will be deleted on December 20. Until then, sign in and cancel, and everything comes back as it was.')+'<div class="gap"></div>';
+    b += '<div class="pad"><div class="t-footnote muted">Type delete to confirm</div><div class="row" style="border:1px solid var(--controlBorder);border-radius:8px;background:var(--surfaceRaised)">'+(s==='confirm'?'':'delete')+'</div></div><div class="gap"></div>';
+    if(s==='error-offline') b += failCard('Nothing has changed.','Deleting an account needs a connection.');
+    if(s==='error-failed') b += failCard('That did not go through.','Nothing has changed.');
+    return frame(b,{footer:footer(btn('Keep my account','secondary lg','C-S01:default')+btn(s==='sending'?'Deleting':'Delete account', s==='confirm'?'destr dim':'destrFill', s==='confirm'?'C-S20:armed':s==='sending'?'C-S20:scheduled':'C-S20:sending', s==='sending'?' aria-busy="true"':''))});
+  }
+  const one = {scheduled:['Deletion scheduled','Your account will be deleted on December 20. You can cancel any time before then, here or by signing in again.'],executing:['Deletion in progress','Your account is being deleted now. This can take up to a day.'],signedout:['Delete account','Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app.'],notConfigured:['Delete account','Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to us.'],cancelled:['Delete account','']}[s];
+  b += '<div class="pad"><h1 class="t-title2">'+one[0]+'</h1></div><div class="gap-s"></div>'+p(one[1]);
+  let f='';
+  if(s==='scheduled') f=footer(btn('Cancel deletion','secondary lg','C-S20:cancelled')+btn('Sign out of this phone','quiet','C-S01:signedout'));
+  if(s==='signedout') f=footer(btn('Sign in','primary lg'));
+  return frame(b,{footer:f,overlay:s==='cancelled'?toast('Deletion cancelled. Your letters and books are back, just as they were.'):''});
+},(s)=>['Back','Heading','Body','Lines or field','Actions (safe one first)']);
+
+/* C-S21 Backup (flip only) */
+def('C-S21','Recording backup (flip only; absent today)',['absent','consent','on','queued','retrying','quota','killswitch','withdraw'],(s)=>{
+  if(s==='absent') return SCREENS['C-S08'].render('default');
+  if(s==='consent'){
+    const inner='<h2 class="t-title2">Back up your recordings</h2><div class="gap-s"></div><div class="t-body">Your recordings are encrypted on this phone and copied to our servers, so they can come back on a new phone. We hold a key; each use is logged and emailed to you.</div><div class="gap-s"></div>'+section('',[row('Privacy Policy, section 4',{go:''})])+'<div class="stack">'+btn('Back up my recordings','primary lg','C-S21:on')+btn('Not now','secondary lg','C-S08:default')+'</div>';
+    return SCREENS['C-S08'].render('default')+sheet(inner);
+  }
+  const lines={on:'Backed up November 12',queued:'Backs up on Wi-Fi',retrying:'This recording is on this phone only for now.',quota:'New recordings are not being backed up. Write to us and we will help.',killswitch:'Backup will carry on later.',withdraw:''};
+  let b = nav('Back up my recordings','C-S08:flip')+'<div class="gap-s"></div>'+section('',[row('Status',{value:lines[s]||'Backed up November 12'})])+section('',[row('Use cellular data',{sw:false})],'When this is off, recordings back up on Wi-Fi.')+section('',[row('Stop backing up',{destr:true,go:'C-S21:withdraw',nochev:true})]);
+  const ov = s==='withdraw' ? sheet('<h2 class="t-title2">Stop backing up?</h2><div class="gap-s"></div><div class="t-body">New recordings stop backing up. The copies on our servers are deleted within 45 days. Your recordings stay on this phone.</div><div class="gap"></div><div class="stack">'+btn('Keep backing up','primary lg','C-S21:on')+btn('Stop backing up','destrText','C-S08:default')+'</div>') : '';
+  return frame(b)+ov;
+},()=>['Back','Status','Cellular','Stop backing up']);
+
+/* C-S22 Delete this book */
+def('C-S22','Delete this book (never-signed-in phone)',['exportFirst','confirm'],(s)=>{
+  let b = nav('Delete this book','C-S15:local')+'<div class="gap-s"></div>';
+  if(s==='exportFirst'){
+    b += '<div class="pad"><h2 class="t-title2">Delete the whole book?</h2></div><div class="gap-s"></div>'+p("Every letter and recording in Asha's book will be removed from this phone.")+'<div class="gap-s"></div>'+p('You have 30 days to change your mind. After that, it cannot be restored.','t-subhead muted')+'<div class="gap"></div>';
+    b += '<div class="card"><div class="t-subhead">You can save a copy first, free.</div><div class="gap-s"></div>'+btn('Save a copy','secondary','C-S04:default')+'</div>';
+    return frame(b,{footer:footer(btn('Keep the book','secondary lg','C-S15:local')+btn('Continue','quiet','C-S22:confirm'))});
+  }
+  b += p('Type delete to confirm','t-footnote muted')+'<div class="pad"><div class="row" style="border:1px solid var(--controlBorder);border-radius:8px;background:var(--surfaceRaised)">delete</div></div>';
+  return frame(b,{footer:footer(btn('Keep the book','secondary lg','C-S15:local')+btn('Delete the book','destrFill','C-S17:book'))});
+},()=>['Back','Heading','Body','Save a copy','Keep the book (default)','Continue or Delete the book']);
+
+/* ---------- journeys (DESIGN.md section 2) ---------- */
+const J = [
+  ['J-C01 Save a copy from Me',['C-S01:default','C-S04:default','C-S04:running','C-S04:ready','SHARE:zip','C-S04:saved'],'Unhappy: C-S04 cancelled, stopped, stopped-by-close, lowPower, empty, newPhone, error-lowSpace, error-tooBig, error-other.'],
+  ['J-C01 unhappy states',['C-S04:cancelled','C-S04:stopped','C-S04:stopped-by-close','C-S04:lowPower','C-S04:error-lowSpace','C-S04:error-tooBig','C-S04:error-other','C-S04:empty','C-S04:newPhone'],'Each state keeps the screen; nothing marked done unless the share sheet completed.'],
+  ['J-C02 Birthday-week slip',['C-S06:default','C-S04:default','C-S04:running','C-S04:ready','SHARE:zip','C-S04:saved','C-S06:dismissed'],'Not now: the slip leaves for the year. Twins: C-S06 twins. No slip for quiet, hidden or due-date-only books.'],
+  ['J-C03 Printable book',['C-S04:default','C-S05:making','C-S05:ready','SHARE:pdf','C-S04:default'],'Two books: C-S04 twoBooks then C-S07. Errors: C-S05 disk full, failed, share failed; Low Power line.'],
+  ['J-C03 two books and errors',['C-S04:twoBooks','C-S07:default','C-S05:lowPower','C-S05:error-print_pdf_disk_full','C-S05:error-print_pdf_failed','C-S05:error-share_failed'],''],
+  ['J-C04 Sign out (D1)',['C-S01:default','C-S02:default','C-S03:default','C-S01:signedout'],'Pending letters: C-S02 waiting. Photos on: C-S03 photos.'],
+  ['J-C04 waiting and photos',['C-S03:photos','C-S02:waiting','C-S02:signedOutEarly','C-S02:offline'],''],
+  ['J-C05 Second account',['C-S01:signedout','C-S01:second-account'],'B sees only B\'s book; nothing names A\'s.'],
+  ['J-C06 New phone',['C-S11:default','C-S10:opening','C-S12:default','C-S09:notHere','C-S12:dismissed'],'Slow: BOOK arriving. Every unhappy state in the next journey.'],
+  ['J-C06 unhappy states',['C-S10:held','C-S11:declined','C-S04:nothingHere','C-S10:offline','BOOK:arriving','C-S10:noBook','C-S10:wrongAccount','C-S10:deletedElsewhere'],'Kill switch at sign-in: the local book only (no held screen).'],
+  ['J-C07 Erase everything',['C-S01:signedout','C-S19:signedoutSynced','C-S19:confirm','C-S19:erasing'],'Failed: C-S19 error-failed. Signed in: C-S19 signedin.'],
+  ['J-C08 Delete account',['C-S01:default','C-S20:loading','C-S20:what','C-S20:confirm','C-S20:armed','C-S20:sending','C-S20:scheduled','C-S20:cancelled'],'Errors: offline, failed. Also executing, signedout, notConfigured.'],
+  ['J-C08 unhappy states',['C-S20:error-offline','C-S20:error-failed','C-S20:executing','C-S20:signedout','C-S20:notConfigured'],''],
+  ['J-C09 Earlier versions',['C-S09:onPhone','C-S13:default','C-S14:default','C-S14:restored','C-S13:default','C-S14:confirmRemove','C-S13:removed'],'Offline, loading, fetch failed, many: C-S13 states.'],
+  ['J-C09 unhappy states',['C-S13:loading','C-S13:offline','C-S13:offlineNone','C-S13:error-fetch_failed','C-S13:many'],''],
+  ['J-C10 Quiet and Hide',['C-S01:default','C-S15:default','C-S15:quiet','C-S15:error-quiet_write_failed','C-S15:confirmHide','C-S01:oneHidden','C-S16:default'],'One book: C-S15 oneBook (Hide absent).'],
+  ['J-C11 Recently deleted',['C-S17:default','C-S17:restored','C-S17:confirmErase','C-S17:empty','C-S17:sealed','C-S17:book','C-S17:synced','C-S17:error-erase_failed'],'Toast actions follow T4.'],
+  ['J-C12 Stuck recording',['C-S18:stuck','C-S18:stuckAgain','C-S18:default','C-S18:lowSpace'],''],
+  ['J-C13 Where letters live and provenance',['C-S08:default','C-S08:local','C-S09:onPhone','C-S09:notHere','C-S09:otherParent','C-S09:typed'],''],
+  ['J-C14 Backup at the flip (not today)',['C-S21:absent','C-S21:consent','C-S21:on','C-S21:queued','C-S21:retrying','C-S21:quota','C-S21:killswitch','C-S21:withdraw','C-S09:backedUp','C-S09:arriving'],'Today the row, screen and lines are absent.'],
+  ['J-C15 Delete this book',['C-S15:local','C-S22:exportFirst','C-S22:confirm','C-S17:book'],'Never-signed-in phone only.']
+];
+
+/* ---------- app ---------- */
+const st = { screen:'C-S01', state:'default', j:-1, step:0 };
+const $ = (id)=>document.getElementById(id);
+function render(){
+  const sc = SCREENS[st.screen];
+  if(!sc.states.includes(st.state)) st.state = sc.states[0];
+  const ph = $('phone');
+  ph.innerHTML = sc.render(st.state);
+  if($('tVo').checked && sc.vo){
+    const list = sc.vo(st.state);
+    ph.insertAdjacentHTML('beforeend','<div class="voorder"><b>VoiceOver order</b><ol>'+list.map(x=>'<li>'+x+'</li>').join('')+'</ol></div>');
+  }
+  $('selScreen').value = st.screen;
+  $('selState').innerHTML = sc.states.map(x=>'<option'+(x===st.state?' selected':'')+'>'+x+'</option>').join('');
+  $('idline').textContent = st.screen + '.' + st.state + '   ' + sc.name;
+  ph.querySelectorAll('[data-go]').forEach(el=>{
+    el.addEventListener('click',(e)=>{ e.stopPropagation(); const g=el.getAttribute('data-go'); if(!g) return; go(g); });
+  });
+  renderJ();
+}
+function go(target){ const [a,b]=target.split(':'); if(!SCREENS[a]) return; st.screen=a; st.state=b||SCREENS[a].states[0]; render(); }
+function renderJ(){
+  $('jlist').innerHTML = J.map((j,i)=>'<button data-j="'+i+'" class="'+(i===st.j?'on':'')+'">'+j[0]+'</button>').join('');
+  $('jlist').querySelectorAll('button').forEach(b=>b.onclick=()=>{ st.j=+b.dataset.j; st.step=0; go(J[st.j][1][0]); });
+  if(st.j<0){ $('jsteps').innerHTML=''; $('jnote').textContent=''; return; }
+  const steps=J[st.j][1];
+  $('jsteps').innerHTML = steps.map((s,i)=>'<button class="'+(i===st.step?'on':'')+'" data-s="'+i+'">'+(i+1)+'. '+s.replace(':','.')+'</button>').join('');
+  $('jsteps').querySelectorAll('button').forEach(b=>b.onclick=()=>{ st.step=+b.dataset.s; go(steps[st.step]); });
+  $('jnote').textContent = J[st.j][2];
+}
+$('selScreen').innerHTML = Object.keys(SCREENS).map(k=>'<option value="'+k+'">'+k+' '+SCREENS[k].name+'</option>').join('');
+$('selScreen').onchange=(e)=>{ st.screen=e.target.value; st.state=SCREENS[st.screen].states[0]; render(); };
+$('selState').onchange=(e)=>{ st.state=e.target.value; render(); };
+$('prev').onclick=()=>{ if(st.j<0) return; st.step=Math.max(0,st.step-1); go(J[st.j][1][st.step]); };
+$('next').onclick=()=>{ if(st.j<0) return; st.step=Math.min(J[st.j][1].length-1,st.step+1); go(J[st.j][1][st.step]); };
+[['tDark','dark'],['tAx5','ax5'],['tRt','rt'],['tHc','hc']].forEach(([id,c])=>$(id).onchange=(e)=>{ document.body.classList.toggle(c,e.target.checked); render(); });
+$('tVo').onchange=render;
+render();
+</script>
+</body>
+</html>

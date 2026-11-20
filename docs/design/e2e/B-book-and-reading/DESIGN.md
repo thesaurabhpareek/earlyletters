@@ -91,11 +91,11 @@ Unhappy: row absent while the book has one adult and the letter is in the book (
 4. Undo -> the letter, its picture, first, seal and Find row come back together (NS-36-R1b).
 Unhappy: Keep it -> nothing changes. A sealed letter -> same confirm with the seal line (B-S15.confirmSealed); in Recently deleted it shows the day and no words (B-S22). Opened from Home's past letter -> the toast shows over Home (built). Offline -> local tombstone; syncs later.
 
-### B-J05 Quiet this book, Unquiet, Hide (NS-22 HP 3; R3, R7)
+### B-J05 Quiet this book, Turn Quiet off, Hide (NS-22 HP 3; R3, R7)
 1. B-S01.default: tap the end control "More for this book" (last in the bar).
 2. B-S02.default: "Quiet this book", "Hide this book" (and "Go to a month" at AX3 and above).
-3. Quiet -> sheet closes; one quiet line states it ("Quiet for now." intent; words in WORDS.md); no reminders, Save a copy slip or past letter for this book (J-N19). The bar is otherwise the same.
-4. Again: B-S02.quieted offers "Unquiet this book" (R7).
+3. Quiet -> sheet closes; a toast states it ("{child}'s book is quiet for you.", WORDS R3); no reminders, Save a copy slip or past letter for this book (J-N19). The bar is otherwise the same.
+4. Again: B-S02.quieted offers "Turn Quiet off" (R7; WORDS R2).
 5. Hide -> the built Hide confirm (C-S15's body copy `hideBody`) -> Book shows the next book, or the empty Book when none.
 Unhappy: failed Quiet write -> B-S02.failed: old state kept, one line. Interrupted: menu closes with the app; nothing changes. Hidden book opened from Hidden books (C-S16) -> B-S01.hiddenReadOnly; the menu offers only "Show this book again". Two parents: Quiet and Hide are per person; nothing is shown to the other parent.
 
@@ -135,7 +135,7 @@ Unhappy: label at 40 graphemes -> field stops, nothing said (B-S12.atLimit). Fai
 
 ### B-J10 Hide a letter until a day, wait, open (NS-06 B HP; J-N14)
 1. B-S08.ownSpoken (or Review, A-S07): row 4 "Hide until a day".
-2. B-S13.default: the system date picker bounded tomorrow to the 25th birthday (B11); the sentence "Only you can see it until that day."; the honest limits (west of here it opens the evening before; a clock set forward opens it early on that phone; hidden in the app, not locked).
+2. B-S13.default: the system date picker bounded tomorrow to the 25th birthday (B11); the sentence "Only you can see it until that day."; the three honest limits (time zone, clock, stored like every letter).
 3. Hide -> the pair is written; the sheet closes; the row reads "Hidden until 10 January 2027".
 4. B-S01.sealedCard: the Book shows the `sealed` card: date line, "Hidden until 10 January 2027", no words, no picture, no first label. Find, lenses, Read together and the past letter skip it.
 5. The author can open the page (they are not hidden from): B-S08.sealedAuthor shows the words and the row "Hidden until 10 January 2027"; tapping it offers Open now.
@@ -152,7 +152,7 @@ Unhappy: no match -> nothing, no placeholder. Higher slip due -> not shown (R6).
 
 ### B-J12 Read the year back (NS-24 HP)
 1. B-S01: "Go to a month" (or B-S02 at AX3 and above).
-2. B-S07.withYears: a "Read a year" group above the months: one row per year that has letters ("{child}'s first year", "Before You"), no counts.
+2. B-S07.withYears: a "Read a year together" group above the months: one row per year that has letters ("{child}'s first year", "Before You"), no counts.
 3. Tap the year just ended -> B-S19.year: Read together opens at that year's first letter, Large print, oldest first.
 4. Turn pages; the last page is the year's last letter -> B-S20.endOfYear -> Close the book -> B-S01.
 Unhappy: year with no letters -> no row. Due-date-only -> only Before You. Private, sealed, waiting, hidden -> skipped. Recording not here -> words with "Read this one aloud together" (built line). A call mid-page -> B-S19.interrupted: paused, same page on return (R8). Back mid-year -> B-S01; next start is the year's first letter. Killed -> Home. Flag off -> no year rows. Lapsed plan -> reads in full (R10).
@@ -183,7 +183,7 @@ Each screen: purpose, layout at default size (375 pt wide), layout at AX5 with B
 Purpose: read and hear what is kept. One bar in a fixed order (NS-22).
 
 Layout, default. The cover band (built `CoverBand`, the one lit object, `book` lamp scene):
-- Row 1: title "Asha's book" (`display`, level 1 heading) with, on the right, the trailing controls in this order: Find (magnifier `IconButton`, 44 pt; NS-02-R1), Go to a month (`Button` quiet small, "Months" label as built), More for this book (`IconButton`, DotsThree glyph, 44 pt). The gear leaves (NS-22-R3, R6).
+- Row 1: title "Asha's book" (`display`, level 1 heading) with, on the right, the trailing controls in this order: Find (magnifier `IconButton`, 44 pt; NS-02-R1), Go to a month (`Button` quiet small; label renamed from the built "Months" to "Go to a month", WORDS R1, so it never shares a name with the Months lens), More for this book (`IconButton`, DotsThree glyph, 44 pt). The gear leaves (NS-22-R3, R6).
 - Row 2: age line (`callout`).
 - Row 3 (two books only): the built `ChildSwitcher`.
 - Row 4: Read together (`Button` secondary, full width, as built).
@@ -201,7 +201,7 @@ States:
 - `.many`: unchanged bar; list virtualised; list copies only (NS-37).
 - `.lensPhotos`, `.lensFirsts`, `.lensBoth`: the lens choice shows the options that exist.
 - `.sealedCard`: B-S16 inside the list.
-- `.quieted`: the bar is the same; B-S02 offers Unquiet.
+- `.quieted`: the bar is the same; B-S02 offers Turn Quiet off.
 - `.hiddenReadOnly`: opened from Hidden books (C-S16): a pushed page, title, age, Read together, no lens, no Find; letter pages read-only; B-S02 offers only "Show this book again". (Engineering gap E-05: no route today.)
 - `.twoBooks`: switcher present.
 - `.findOff` (flag off or `killSwitches.bookSearch`): no magnifier; nothing else moves.
@@ -230,10 +230,10 @@ Integration map:
 
 Purpose: Quiet this book and Hide this book within 2 taps of the Book (F12-REQ-011 P0, NS-22-R3).
 
-Layout, default: a fit-to-contents `Sheet` titled "More for this book" (header role) with `ListRow`s: "Quiet this book" (Moon glyph), "Hide this book" (EyeSlash glyph); at AX3 and above, "Go to a month" first. Each row 56 pt. No destructive styling (Hide deletes nothing). A one-line footnote under Quiet says what it does (intent: "No reminders or past letters for this book, only on this phone." WORDS.md decides).
+Layout, default: a fit-to-contents `Sheet` titled "More for this book" (header role) with `ListRow`s: "Quiet this book" (Moon glyph), "Hide this book" (EyeSlash glyph); at AX3 and above, "Go to a month" first. Each row 56 pt. No destructive styling (Hide deletes nothing). The Quiet row's subtitle says what it does (`en.children.quiet.help`).
 Layout, AX5: rows grow, titles wrap, footnote wraps; the sheet scrolls.
 VoiceOver: sheet title, then rows in order, each a button with its hint.
-States: `.default`; `.quieted` ("Unquiet this book" replaces Quiet; nothing else changes, R7); `.hiddenReadOnly` (only "Show this book again"); `.ax3` (Go to a month folded in); `.failed` (sheet closes, one toast line "That did not change. Try again." intent; old state kept); `.twoParents` (no extra line: per person; the other parent sees no change).
+States: `.default`; `.quieted` ("Turn Quiet off" replaces Quiet; nothing else changes, R7); `.hiddenReadOnly` (only "Show this book again"); `.ax3` (Go to a month folded in); `.failed` (sheet closes, one toast line "That did not save. {child}'s book is as it was."; old state kept); `.twoParents` (no extra line: per person; the other parent sees no change).
 Components: `Sheet`, `ListRow`, `Toast`; Hide reuses C-S15's confirm and words (`children.settings.hideBody`).
 Why a sheet and not the system menu: NS-22 names "the system menu", but no `platform/action-menu` exists on develop [F] (COMPONENTS 2.5 names it; `components/platform` holds only blur and toggle). A sheet of `ListRow`s is existing, wraps at AX5, and keeps 2 taps. Card gap G-03.
 Integration: NS-22-R3, R7; F12-REQ-011; F09-REQ-016; BL-985 and BL-938 (see engineering gap E-01); data `Child.quiet` via `setChildQuiet` (`lib/store.ts:390`), `hideChild`; no flag; no kill switch; no error code beyond the generic save line.
@@ -253,7 +253,7 @@ Integration: NS-01-R10a to R10c, R12, R48; NS-06-A3; NS-33-R3; BL-956; flags as 
 Purpose: the letters that have a picture (NS-01-R11). Reads only.
 Layout, default: the Book's own month openers and `LetterCard`s with a 72 pt list-copy thumbnail on the left (fit, uncropped, `radius.sm`, hairline frame in dark), newest first by the letter's date. No add control, no count, no empty state.
 Layout, AX5: the thumbnail stacks above the words (as #840), at the card's width up to 160 pt tall; words wrap; nothing truncates.
-VoiceOver: each card one element: the date, the opening words, "Has a photo" (fixed phrase, or the parent's photo words when present, R21c), "Opens the letter."
+VoiceOver: each card one element: the date, the opening words, "Photo with this letter" (fixed phrase, or the parent's photo words when present, R21c), "Opens the letter."
 States: `.default`, `.one`, `.many` (300 pictures, virtualised, list copies only, R53, NS-37-R1), `.thumbMissing` (card without thumbnail; no error; NS-37-R3), `.ax5`, `.dark`, `.backgrounded` (every picture an opaque `surface` box, R13a), `.locked` (no picture draws before App lock is passed, R13b).
 Components: `LetterCard` with `photo` (built in #840), `MonthOpener`, `PhotoFrame` (fit, never cover; R42).
 Integration: NS-01-R10b, R11, R12, R13a, R13b, R23b, R40, R41, R53; NS-37-R1, R3, R6 to R8; BL-956, BL-932; `EXPO_PUBLIC_PHOTOS`; `killSwitches.photos`; error codes: `derivative_failed` (proposed, eng input 4.2) is silent; reads `entry_media`, `photos/<media_id>-512.jpg`.
@@ -280,7 +280,7 @@ States:
 - `.results`: rows.
 - `.noMatch`: one line, centred under the field: the reworded `book.empty.searchTitle` without "yet" (R13, R39). Nothing else.
 - `.failed`: one line "Find could not look just now." and Try again (`Button` secondary); announced once (R37).
-- `.failedGettingReady`: the failed view plus a footnote "Still getting ready." only while the index builds (R38).
+- `.failedGettingReady`: the failed view plus a footnote "Find is getting ready on this phone." only while the index builds (R38; NS-02 s16 bans "still").
 - `.rtlRow`: an Arabic sentence shown right to left inside the left-to-right list (R28).
 - `.cjk`: one Han character starts a search (R3).
 - `.afterBack`: query and scroll position restored (R12).
@@ -300,9 +300,9 @@ Integration:
 ### B-S07 Go to a month, with year rows
 
 Purpose: jump to a month (built), and start Read the year back (NS-24).
-Layout, default: the built `MonthsSheet` ("Go to a month"). PROPOSED for NS-24: a first group titled "Read a year" (section header, `caption` caps) with one `ListRow` per year of life that has letters, newest first: "{child}'s first year", "{child}'s second year", "Before You"; trailing a BookOpenText glyph, no subtitle, no count. Then the group "Go to a month" with the built rows (their existing subtitles stay; see card gap G-07).
+Layout, default: the built `MonthsSheet` ("Go to a month"). PROPOSED for NS-24: a first group titled "Read a year together" (section header, `caption` caps) with one `ListRow` per year of life that has letters, newest first: "{child}'s first year", "{child}'s second year", "Before You"; trailing a BookOpenText glyph, no subtitle, no count. Then the group "Go to a month" with the built rows (their existing subtitles stay; see card gap G-07).
 Layout, AX5: rows wrap; the sheet scrolls (built `BottomSheetScrollView`).
-VoiceOver: sheet title, "Read a year" header, year rows ("Asha's first year. Reads this year's letters together."), "Go to a month" header, month rows.
+VoiceOver: sheet title, "Read a year together" header, year rows ("Asha's first year. Opens Read together at the first letter of this year."), "Go to a month" header, month rows.
 States: `.default` (months only: one year or flag off), `.withYears`, `.expectingOnly` (Before You only, R6), `.ax5`, `.dark`.
 Components: `Sheet`, `ListRow`, section headers as in `ListSection`. No new component.
 Integration: NS-22 (Go to a month), NS-24-R1, R4 to R7; BL-947 (extend: R4 to R10, engineering gap E-06); `EXPO_PUBLIC_READ_THE_YEAR` (proposed); no kill switch (local); no errors; reads `occurred_on`, `Child.birthday`, `Child.dueDate`; `packages/core` `ageOn`.
@@ -322,7 +322,7 @@ Layout, default (top to bottom, the card's text column, no lamp):
 9. "This letter" (`ListSection` title, level 2 heading) with rows in the fixed order, each a `ListRow` at least 56 pt with a leading glyph and a trailing value or chevron; a row absent when it does not apply:
    1. The day: "About 3 March" and, when different, a second line "Said on 9 June" (NS-15-R3). Author: opens B-S09. Other parent: read-only text row.
    2. A first: "This was a first" switch (author); when on, its label as a second line; tapping the text opens B-S12. Other parent: read-only "A first: {label}" only when marked.
-   3. A picture: "Add a photo" (none) or "Photo" with value "Change" (has one). Author only for controls.
+   3. A picture: "Add a photo" (none) or "Photo" with the parent's photo words as its value (has one; Change photo lives in B-S11.actions, WORDS R10). Author only for controls.
    4. Hidden until: "Hide until a day" (author, no seal) or "Hidden until 10 January 2027" (sealed, before the day). Absent once open.
    5. Who can read it: "Only you" or "In the book" (rules in B-J03).
    6. Earlier versions (NS-12, area C, C-S13).
@@ -335,7 +335,7 @@ Layout, AX5 plus Bold Text on SE 3: one column. The picture's page copy fits the
 VoiceOver order (R14): dateline (heading 1), picture (if any), words, Play, Share, "This letter" (heading 2), rows in order, Delete. The built waiting and Read it back cards sit between Play and Share in reading order.
 
 States:
-- `.ownSpoken` (all rows that apply), `.ownTyped` (no Play, no recording row), `.otherParent` (read-only: day, first, picture, recording; no Who can read it, Hidden until, Earlier versions, Delete; NS-21-R11), `.oneRow` (only the day applies: still a titled list), `.waiting` (only the day and recording rows, R10), `.readItBack` (built card), `.ownPrivate` (row 5 shows "Only you" even with one adult, R9), `.recordingElsewhere` (no Play; row 7 says where), `.withPicture`, `.ownNoPicture`, `.photoNotStored` (one line under the words: "The photo did not come along. Your words are kept." with "Add a photo"; R58), `.photoMissing` ("Not on this phone any more" in the picture slot, with Remove for the author; R56), `.sealedAuthor` (row 4 "Hidden until {day}"; words shown to the author; a quiet `AppNote` under the dateline "Only you can see this until 10 January 2027." PROPOSED, card gap G-01), `.firstMarked`, `.notFound` (built S37), `.failed` (a row's write failed: one toast line, old fact kept), `.ax5`, `.voiceOver`, `.dark`, `.increaseContrast`, `.backgrounded` (picture blanked), `.signedOut` (every row works locally), `.planLapsed` (every row works), `.killSwitch` (every row works locally; nothing syncs), `.newPhone` (no picture slot; recording row says where).
+- `.ownSpoken` (all rows that apply), `.ownTyped` (no Play, no recording row), `.otherParent` (read-only: day, first, picture, recording; no Who can read it, Hidden until, Earlier versions, Delete; NS-21-R11), `.oneRow` (only the day applies: still a titled list), `.waiting` (only the day and recording rows, R10), `.readItBack` (built card), `.ownPrivate` (row 5 shows "Only you" even with one adult, R9), `.recordingElsewhere` (no Play; row 7 says where), `.withPicture`, `.ownNoPicture`, `.photoNotStored` (one line under the words: built `photos.book.letter.notSaved` "The photo did not come along with this letter. Your words are kept, and you can add it again." with "Add a photo"; R58), `.photoMissing` ("Not on this phone any more" in the picture slot, with Remove for the author; R56), `.sealedAuthor` (row 4 "Hidden until {day}"; words shown to the author; a quiet `AppNote` under the dateline "Only you can see this until 10 January 2027." PROPOSED, card gap G-01), `.firstMarked`, `.notFound` (built S37), `.failed` (a row's write failed: one toast line, old fact kept), `.ax5`, `.voiceOver`, `.dark`, `.increaseContrast`, `.backgrounded` (picture blanked), `.signedOut` (every row works locally), `.planLapsed` (every row works), `.killSwitch` (every row works locally; nothing syncs), `.newPhone` (no picture slot; recording row says where).
 Components: `ListSection`, `ListRow`, `Button`, `ConfirmSheet`, `DateSheet`, `Sheet`, `ChoiceGroup` (B-S10), `Toggle` (row 2), `PhotoFrame`, `AudioPlayer`, `AppNote`, `Toast`. No new component (NS-21 design inputs).
 Integration:
 | Item | Value |
@@ -367,8 +367,12 @@ Surfaces: the picture slot in B-S08; the actions sheet; the replace confirm; the
 - `.actions`: `Sheet` with `ListRow`s "Change photo", "Words about this photo", "Take the photo off" (Take off is not red: it is undoable).
 - `.replaceConfirm`: the shared confirm (A-S12): "Use this photo instead?" with "Keep the first" as the default (R7).
 - `.undo`: the toast "Photo taken off." or "Photo changed." with Undo, under the T4 window helper; when the window closes the toast and its Undo leave together (R38b). With Switch Control, the toast stays until the parent leaves the page (R38c).
-- `.words`: `Sheet` with two `TextField`s: "A few words about this photo, if you like" (140 graphemes), "Where, if you like" (60), Done. No placeholder examples. Writing tools, autocorrect and suggestions off (R50, D2).
+- `.words`: `Sheet` with two `TextField`s: "Words about this photo" (optional, 140 graphemes), "Where was this?" (optional, 60), Done (built `photos.text.*` keys on #840, WORDS R11). No placeholder examples. Writing tools, autocorrect and suggestions off (R50, D2).
+- `.viewer`: tapping the picture opens the stored-copy viewer (design system v2 C4): the picture fitted on black, Close top right, Change and Take the photo off in a bottom bar; controls are clear glass over a local 35 percent dim; the picture is content. Other parent: Close only.
 - `.notStored`, `.missing`: as B-S08 states.
+- `.pickFailed`: the picked file could not be opened: one line ("That photo could not be opened. Choose another."), nothing written (R17a).
+- `.iCloudDownloading`: an iCloud-only picture downloading with the system progress trait and Cancel (R17b; not met in #837).
+- `.iCloudOffline`: iCloud-only and offline: one calm line; the letter unchanged (R46).
 - `.ax5`: fields full width, labels above, Done full width.
 Integration: NS-01-R7, R8, R9a to R9c, R21a to R21c, R38a to R38c, R50, R54, R56, R58; #839, BL-954, BL-957; `EXPO_PUBLIC_PHOTOS`, `killSwitches.photos`; error codes as B-S08; writes `entry_media` (photo_text, place) on the phone only, never synced (R26).
 
@@ -384,7 +388,7 @@ Integration: NS-06-A1 to A25 (screen: A1, A2a, A2b, A5, A6, A11, A13, A14, A22);
 
 ### B-S13 Hide until a day
 
-Layout: `Sheet` titled "Hide until a day" (intent). Body in order: the sentence "Only you can see it until that day." (`body`); the system date picker (inline calendar style, bounded tomorrow to the child's 25th birthday, B11); the honest limits as three short `footnote` lines (west of here it opens the evening before the day shown; a clock set forward opens it early on that phone; it is hidden in the app, not locked); "Hide it" (`Button` primary, full width, disabled until a day is chosen: the picker starts with no day selected [A]); "Not now" (quiet).
+Layout: `Sheet` titled "Hide until a day" (intent). Body in order: the sentence "Only you can see it until that day." (`body`); the system date picker (inline calendar style, bounded tomorrow to the child's 25th birthday, B11); the honest limits as three short `footnote` lines (`seal.limitZone`: west of here it can open the evening before; `seal.limitClock`: a clock set ahead opens it early on that phone; `seal.limitStored`: hiding keeps it out of sight and it is stored like every other letter, which says "not locked" without the banned word, WORDS G6); "Hide it" (`Button` primary, full width, disabled until a day is chosen: the picker starts with no day selected [A]); "Not now" (quiet).
 AX5: the picker in its own row, full width; lines wrap; buttons full width.
 VoiceOver: title, sentence, date picker, the three lines, Hide it, Not now.
 States: `.default`, `.daySelected`, `.expecting` (latest day due date plus 25 years), `.noDates` (25 years from today), `.ax5`, `.dark`.
@@ -393,7 +397,7 @@ Integration: NS-06-B1, B1b, B10, B11, B12 Shown line; BL-969, BL-970; `EXPO_PUBL
 
 ### B-S14 Open now
 
-`ConfirmSheet` (built shape): title "Open this letter now?", body "It cannot be hidden again.", actions "Open it now" and "Cancel", Cancel the default and first (B3). After: the row 4 disappears for good; the letter reads normally; a toast is not needed (the page changes in place) [A]. States: `.default`, `.offline` (opens here at once; others later, B13), `.ax5`. Integration: NS-06-B3, B13, B14; BL-970 (engineering gap E-04 on "nulls both columns"); writes the clear request; server stamps `seal_cleared_at`.
+`ConfirmSheet` (built shape): title "Open this letter now?", body "It cannot be hidden again.", actions "Open now" and "Cancel", Cancel the default and first (B3). After: the row 4 disappears for good; the letter reads normally; a toast is not needed (the page changes in place) [A]. States: `.confirm` (the only drawn state; Cancel default), `.offline` (opens here at once; others later, B13), `.ax5`. Integration: NS-06-B3, B13, B14; BL-970 (engineering gap E-04 on "nulls both columns"); writes the clear request; server stamps `seal_cleared_at`.
 
 ### B-S15 Delete and Undo
 
@@ -422,7 +426,7 @@ Integration: NS-23-R1a to R18; BL-946, BL-963 (slip registry), #721 reconcile; `
 
 ### B-S18 Seal-opened line on Home (slip 2)
 
-Layout: in A-S01's slip slot on the opening day only, at most once: a quiet card in the same shape as B-S17, kicker the letter's own date, one line "Opened today: the letter you kept for today." (intent; WORDS.md) and no words of the letter; tap opens the letter (words shown only when the parent taps, B4). No glyph that celebrates, no motion beyond the existing enter.
+Layout: in A-S01's slip slot on the opening day only, at most once: a quiet card in the same shape as B-S17, kicker the letter's own date, one line "A letter you hid until today is open now." (`seal.homeOpened`) and no words of the letter; tap opens the letter (words shown only when the parent taps, B4). No glyph that celebrates, no motion beyond the existing enter.
 States: `.default`, `.absent` (after it has shown once, or after the day), `.ax5`.
 Integration: NS-06-B4, B24; BL-963, BL-970; slip registry `seal.homeOpened`.
 
@@ -441,7 +445,7 @@ Integration: NS-24-R1 to R10; built D-082, D-083; BL-947; `EXPO_PUBLIC_READ_THE_
 
 ### B-S21 Me: Past letters on Home
 
-A `Toggle` row in C-S01 (Me), with the footer "One letter you made on this day, now and then." (intent). Default on (NS-23 OQ-2). States: `.on`, `.off`, `.ax5`. Records: on the phone only; no PRIV-R21 row (a setting). Integration: NS-23-R4; BL-946; `home.pastLetters`.
+A `Toggle` row in C-S01 (Me), with the footer "When today's date matches a letter from an earlier month or year, Home can show it." (`en.settings.pastLetters.help`; replaces the card's intent, which used "on this day", WORDS G4). Default on (NS-23 OQ-2). States: `.on`, `.off`, `.ax5`. Records: on the phone only; no PRIV-R21 row (a setting). Integration: NS-23-R4; BL-946; `home.pastLetters`.
 
 ### B-S22 Recently deleted: a hidden letter
 
@@ -486,7 +490,7 @@ Existing first. No new component is required by this area. Three variants of exi
 | `LetterCard` | New variant `sealed` (flat, no words, a date line and one line) | B2 needs a row with no words; reuse beats a new `SealedRow` (spec 04 B5 superseded) | NS-06-B2, B15 |
 | `LetterCard` | First-line slot for a Firsts label | A4 step 4 | NS-06-A3 |
 | `ResurfacedCard` | Kicker becomes the letter's date; gains a quiet "Not today" button | NS-23 content and design inputs | NS-23 |
-| `MonthsSheet` | A "Read a year" group above the months | NS-24 entry | NS-24 |
+| `MonthsSheet` | A "Read a year together" group above the months | NS-24 entry | NS-24 |
 | `ListRow` | A `stacked` layout at accessibility sizes where the value moves under the title (it exists for subtitles; extend to trailing values) | NS-21-R5, no truncation | NS-21 |
 
 Built in open PRs, not on develop, reused as is: `FindMode`, `FindResultRow` (#798), `PhotosLens`, `LetterPhoto`, `PhotoFrame` fit (#839, #840).
@@ -499,14 +503,15 @@ Not built and not proposed: a system action menu (`platform/action-menu`): B-S02
 | Code or outcome | Source | What the parent sees | Screen state |
 |---|---|---|---|
 | Search `failed` (scan cannot read) | NS-02 section 10 | "Find could not look just now." and Try again, announced once | B-S06.failed |
-| Index not ready, alongside `failed` | NS-02-R38 | "Still getting ready." footnote only while true | B-S06.failedGettingReady |
+| Index not ready, alongside `failed` | NS-02-R38 | "Find is getting ready on this phone." only while true | B-S06.failedGettingReady |
 | `fts_unavailable`, `index_corrupt`, `rebuild_batch_failed`, `find_index_rowid`, degraded | NS-02 section 10; eng 4.2 | Nothing; the scan answers | n/a |
 | `killed` (Find) | eng 4.2 | No magnifier | B-S01.findOff |
-| `photo_pick_failed`, `photo_reencode_failed`, `photo_bake_timeout`, commit `unreadable` (`not_jpeg`, `corrupt`, `needs_rotation`), `no_space`, `failed` | NS-01 section 10 | Once, this session: "The photo did not come along. Your words are kept." with Add a photo | B-S08.photoNotStored |
+| `photo_pick_failed` (pick outcome `failed`) | NS-01 section 10 | "That photo could not be opened. Choose another." | B-S11.pickFailed |
+| `photo_reencode_failed`, `photo_bake_timeout`, commit `unreadable` (`not_jpeg`, `corrupt`, `needs_rotation`), `no_space`, `failed` | NS-01 section 10 | Once, this session: `photos.book.letter.notSaved` with Add a photo | B-S08.photoNotStored |
 | `photo_path_refused`, `photo_temp_name_refused`, `picked_file_outside_picker_folder`, `baked_file_outside_folder`, `photos_folder_unknown` | NS-01 section 10 | The same R58 line (0 files, 0 rows) | B-S08.photoNotStored |
 | Pick `cancelled` | NS-01 | Nothing | n/a |
 | Stored file missing | NS-01-R56 | "Not on this phone any more" and Remove | B-S08.photoMissing |
-| iCloud-only picture offline | NS-01-R46 | A-S03's line; the page unchanged | A-S03 |
+| iCloud-only picture offline | NS-01-R46 | "This photo is in iCloud and needs a connection." | B-S11.iCloudOffline (A-S03 on the Home path) |
 | `derivative_failed` (list or page copy) | NS-37; eng 4.2 | Nothing; card without thumbnail | B-S04.thumbMissing |
 | `killSwitches.photos` | NS-01-R19 | Picture surfaces absent; letters read whole | B-S01.photosOff |
 | Local write failed (day, who can read it, first, Quiet) | NS-21, NS-22, NS-06 A6 | One line; the old fact kept | `.failed` on B-S09, B-S10, B-S12, B-S02 |
@@ -527,7 +532,7 @@ Not built and not proposed: a system action menu (`platform/action-menu`): B-S02
 |---|---|---|---|---|---|
 | Heading | title h1 | n/a (overlay; field first) | dateline h1, list h2 | none (card on Home) | year or "Read together" |
 | AX5 SE 3, Bold Text | stacked band, lens rows | Cancel wraps | rows stack, 56 pt | inline actions first | stacked controls |
-| Voice Control names | "Find", "Months", "More for this book", "Read together", lens names | "Cancel", "Try again" | each row's visible title; "Share"; "Delete" | the date; "Not today" | "Next letter", "Back one" |
+| Voice Control names | "Find", "Go to a month", "More for this book", "Read together", lens names | "Cancel", "Try again" | each row's visible title; "Share"; "Delete" | the date; "Not today" | "Next letter", "Back one" |
 | Switch Control | all in band order | rows scannable | rows in order | card then Not today | as built |
 | Reduce Motion | header settle off; cross-fades only | no overlay fade | 200 ms fade card-to-page | no enter | page turn becomes a 200 ms fade |
 | Colour not alone | lens selection: check plus edge | match: underline plus weight | private: words, not chip colour | accent rule is a shape | progress is a hairline plus VoiceOver |
@@ -571,6 +576,53 @@ Not built and not proposed: a system action menu (`platform/action-menu`): B-S02
 | E-12 | `ListRow` has no stacked trailing-value layout at AX sizes | BL-937 (with `design-systems`) |
 | E-13 | Writing tools switch for the words sheet, Firsts label, photo words and place may not exist in React Native | BL-962 |
 
-## 10. Reconciliation with MOTION.md and WORDS.md
+## 10. Reconciliation with MOTION.md, WORDS.md and design system v2
 
-See section 11 (written after reading both files).
+Pass 1, 20 Nov, after reading `MOTION.md` (sections 1 to 13) and `WORDS.md` (sections 1 to 23) in this folder.
+
+**Words.** Every word in this file and the prototype now follows `WORDS.md`: its items R1 to R15 are adopted as written (Go to a month; Turn Quiet off; the Quiet toast and failure lines; "Show letters by"; "Photo with this letter"; "Find is getting ready on this phone."; the Find row label template; "Read a year together" with its hint; the photo words as the picture row's value; the built `photos.text.*` labels; the built `notSaved` line; "Hide it"). Where this file still quotes a line, `WORDS.md` holds the key of record.
+
+**States added from the siblings.** B-S11.pickFailed, B-S11.iCloudDownloading, B-S11.iCloudOffline (WORDS section 23) are now in B-S11, the error table and the prototype. B-S14's one state is renamed `.confirm` (both siblings use it).
+
+**State names the siblings use for moments of a drawn state** (aliases, no new screen; the prototype shows them under each state):
+
+| Sibling name | DESIGN.md state | Note |
+|---|---|---|
+| B-S01.firstView, B-S01.arrived | B-S01.default | header settle on first view; the new-phone arrival (C-S12) |
+| B-S01.undoDelete | B-S01.undoDeleted | same state |
+| B-S01.hiddenBook | B-S01.hiddenReadOnly | same state |
+| B-S02.ax | B-S02.ax3 | same state |
+| B-S03.default, .withPhotos, .withFirsts, .lensAppears, .lensGoes | B-S03.absent, .twoOptions, .threeOptions | lensAppears and lensGoes are the moments between absent and two options (MOTION B-M12, B-M13) |
+| B-S04.thumbPending | B-S04.thumbMissing | the box is reserved; the copy arrives at the next mount (MOTION G3) |
+| B-S08.default, .carried, .faded | B-S08.ownSpoken | card-to-page moments (MOTION B-M24) |
+| B-S08.wordsUnreviewed | B-S08.readItBack | same state |
+| B-S12.off | B-S08.ownSpoken row 2 | the switch off |
+| B-S17.present, B-S18.present | B-S17.default, B-S18.default | same state |
+| B-S19.turning | B-S19.default | the page-turn moment |
+| B-S19.newPhone | B-S19.recordingElsewhere | same words, same state |
+| B-S20.end, B-S20.month | B-S20.endOfBook; no month end in this area | `endOfMonth` is a built key not reached by any journey here |
+
+**Motion decisions adopted.** MOTION G1, G2 (the seal opens in one frame at the next render; the seal-opened slip is exempt from Home's enter), G3, G4 (the lens swap is the month jump's 200 ms out-and-in fade; Months keeps its place), G5 (no haptic on the lens choice; engineering gap E-14 below), G6, G7 (under Reduce Motion the past letter renders complete, no fade), G8, G9, G10 (the Quiet toast is the visible change that pairs with the `tap`), G11 (unmark uses an Undo toast).
+
+**Words gaps adopted.** WORDS G4: the Me footer no longer says "on this day". WORDS G5: the built end-of-book line holds "so far" and "still"; the year end uses its own line (`en.readTogether.endOfYear`), and the whole-book end stays as built until `content` rewords it. WORDS G6: the seal sheet's third limit line no longer says "locked" ("Hiding keeps it out of sight. It is stored like every other letter.").
+
+**Design system v2.** `docs/design/system/BRIEF.md` section 3 is applied (section 4a). On 20 Nov at the time of this pass, `COMPONENTS.md`, `FOUNDATIONS.md`, `tokens.v2.json` and `MOTION.md` were not yet in `docs/design/system/`, so this file uses the brief's names (`GlassView` regular and clear, `GlassContainer`) and the current components; Karma maps them to the v2 component names when those files land. The prototype renders glass as a translucent blurred surface and the Reduce Transparency toggle shows the solid fallback.
+
+**Engineering gaps added from the siblings.**
+
+| Id | Gap | Row |
+|---|---|---|
+| E-14 | `ChoiceGroup` needs a no-haptic option for the lens choice (MOTION E2) | BL-938, BL-956 |
+| E-15 | One list-swap helper for lenses and the month jump, with Months' place saved per session (MOTION E1) | BL-938 |
+| E-16 | `features/firsts.en.ts`, `features/seal.en.ts` and the appendix A scan named in NS-06-A5, A12, B9 are not in `rules.test.ts` (WORDS section 22) | BL-968, BL-970, BL-965 |
+| E-17 | Year names need an ordinal lookup, not a sentence built in code (WORDS) | BL-947 |
+
+**Design system v2 COMPONENTS.md (read 20 Nov, late in this pass).** Mapping: B-S01 header = N5 (band content, controls glass); B-S06 = N4 Find bar; B-S02 = N6 menu; sheets B-S07, B-S09, B-S10, B-S13 to B-S15 = N7; cards = C1 (`sealed` and `past letter` are named variants there, matching section 5); letter page list = C2; picture viewer = C4 (added as B-S11.viewer and drawn); toasts = F1; Day sheet = I3; lens choice = I4; first toggle = I5; switcher = I6. Adopted: B-S02 becomes the system menu (`Stack.Toolbar.Menu`, N6) once the Book tab hosts a Stack (v2 engineering row R3); until then the sheet drawn here is the fallback, so card gap G-03 stays open only for that interim. Conflicts where the locked card wins, for Karma to reconcile in v2:
+
+| v2 item | Card row | Conflict | This file keeps |
+|---|---|---|---|
+| F1 Undo toast: every Undo, including "Letter deleted.", follows the T4 window and then goes | NS-21 section 5 and R7b: the Book offers Undo "by tap, never a timer" | a timer on the delete Undo | delete Undo by tap, no timer; T4 for picture and first Undo (G-13) |
+| C2 lists Share and From as rows inside "This letter" | NS-21-R3a: Share is a separate button above the list; section 3 row order has no From row | Share inside the list | Share apart, above the list; the From name (NS-16, area A) shows in the dateline, not as a row |
+| C1 at AX5: excerpt two lines | NS-23-R10: past-letter fragment up to 4 lines at accessibility sizes (OQ-3 default 4) | 2 versus 4 | 4 on the past letter; Book cards follow v2 |
+| C2 row min height 52 | NS-21-R5: at least 56 pt at AX5 with Bold Text | the default-size value is v2's; the AX5 floor is the card's | 56 pt at AX5 |
+

@@ -70,6 +70,19 @@ Easing for every timed move: `easing` = cubic-bezier(0.2, 0, 0, 1) (M3 standard)
 | MP-25 | Follow the finger | swipe to dismiss a toast, page turn, story swipe | element follows the finger; past the threshold it goes, else settles | settle `snappy`; thresholds `SWIPE` (0.25 width, 600 pt/s) for pages; toast 40 pt or 600 pt/s (hardcoded, gap G-E4) | no follow; a swipe past the threshold triggers the fade form; every gesture has a button | none | `swipeOutcome()`, toast pan | a gesture with no button |
 | MP-26 | Scheme change | light, dark, Increase Contrast, Bold Text, text size | nothing animates; the next frame is in the new scheme; the lamp re-renders at its level with no arrival | 0 | same | `tap` on the Appearance choice | `useTheme()` | cross-fade a whole screen; animate font size (MOTION 5i: text cross-fades `swapMs` only for Reading Size) |
 
+### 2b. Key to the system primitive names
+
+Filled at the final pass from `docs/design/system/MOTION.md`. Until then each `MP-nn` stands for the system primitive that does the same job; a row marked "pending" has no system name yet.
+
+| Working id | System primitive name | Glass note |
+|---|---|---|
+| MP-01, MP-02 | pending | glass buttons: the system's own press (interactive glass) replaces the scale where the control is a `GlassView` with `isInteractive` |
+| MP-03, MP-04, MP-05, MP-06, MP-07 | pending | MP-05 on the glass toast: `glassEffectStyle` to `none`, never opacity 0 |
+| MP-08, MP-09, MP-11, MP-12 | pending | system transitions |
+| MP-10 | pending | glass sheet; under RM animate `glassEffectStyle`, fade only content and scrim |
+| MP-13 to MP-21, MP-23 to MP-26 | pending | content layer, no glass |
+| MP-22 | MOTION.md 5b to 5m (house) | area A and B |
+
 ### MP-H. Haptics (shared, from `lib/haptics.shared.ts` and MOTION.md 6)
 
 A haptic marks an outcome the person caused, never a navigation and never a system state. Five intents only:
@@ -155,7 +168,7 @@ The `(auth)` group is a system modal (MP-11). Its screens have no entrance of th
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M30 | `E-S10.default`, `.lapsed` | Keep in Review when the allowance is used (`keepSheetFor`) | the Keep sheet rises over Review (MP-10: `SlideInDown` springified with `standard`), scrim fades in; the held letter card MP-03 at index 0 with its static -2 deg tilt (0 deg at accessibility sizes, `heldCardTilt`); title, words and both buttons static from frame 1 | `standard`; 280 | sheet, scrim and card fade `fadeMs`, no travel | none (opening is navigation) | no lamp, no lockup animation, no price or trial animation, no pulsing See Plus, no count of what is left |
+| E-M30 | `E-S10.default`, `.lapsed` | Keep in Review when the allowance is used (`keepSheetFor`) | the Keep sheet (glass layer, v2 brief section 3) rises over Review (MP-10: `SlideInDown` springified with `standard`), scrim fades in; the held letter card (content layer, on the sheet) MP-03 at index 0 with its static -2 deg tilt (0 deg at accessibility sizes, `heldCardTilt`); title, words and both buttons static from frame 1 | `standard`; 280 | no travel: glass `glassEffectStyle` none to regular over `fadeMs` (never opacity on the glass), scrim and card fade `fadeMs`; Reduce Transparency: solid sheet fades | none (opening is navigation) | no lamp, no lockup animation, no price or trial animation, no pulsing See Plus, no count of what is left |
 | E-M31 | `E-S10` See Plus | tap | Apple's subscription sheet (MP-11) over the Keep sheet | platform | platform | none | |
 | E-M32 | `E-S10.offline` | See Plus with no connection | Apple's sheet is not opened; the offline note swaps in under the buttons (MP-06), read in order | 150 | same | none | the note is never red |
 | E-M33 | `E-S10` Plus on | purchase returns active | `success` (as built); Apple's sheet closes; `/plus/confirmed` rises (MP-11); on Done the Keep sheet is gone and Review is as it was; the person taps Keep and the save runs MOTION 5e | platform; then 5e | as 5e RM | `success` once | no confetti; the letter is not kept for them (they tap Keep) |
@@ -206,7 +219,7 @@ One line, one at a time, in its slot in place (the design lead places it). It ne
 
 | Id | Trigger | What moves | Timing | RM | Haptic | Never |
 |---|---|---|---|---|---|---|
-| E-M80 | tap Home, Book or Me | the native swap with no animation (JS tabs today, `app/(tabs)/_layout.tsx`); the arriving tab's lamp starts at the light the last tab left and settles to its own over `lamp.returnMs` (`persistKey="tabs"`); Me has no lamp (it fades the light out over `lamp.leaveMs`) | 0; 280 | lamp jumps to level | none | content re-entering, a tab badge, a bounce on the icon, a sliding indicator |
+| E-M80 | tap Home, Book or Me | the native swap with no animation (JS tabs today, `app/(tabs)/_layout.tsx`; on native tabs with Liquid Glass the bar's selection and minimise-on-scroll are the system's, v2 brief section 3); the arriving tab's lamp starts at the light the last tab left and settles to its own over `lamp.returnMs` (`persistKey="tabs"`); Me has no lamp (it fades the light out over `lamp.leaveMs`) | 0; 280 | lamp jumps to level | none | content re-entering, a tab badge, a bounce on the icon, a sliding indicator |
 | E-M81 | tap the tab already selected | the platform's scroll to top | platform | platform (UNVERIFIED that JS tabs honour RM here; check on a phone) | none | |
 | E-M82 | first Book view per session | MOTION 5a: cover settles opacity 0.6 to 1, y 6 to 0 on `gentle` (area B owns) | `gentle` | one fade 200 | none | |
 
@@ -237,7 +250,9 @@ Rows to add to the device walk (BL-948, BL-984) and the SE 3 run sheet (BL-929):
 8. NS-34 timing: a screen change starts within 100 ms; controls usable by 350 ms; named hand-offs under `sequenceMaxMs`; the save hand-off under `hardCeilingMs`; no frame over 16.7 ms during E-M02, E-M09, E-M30 and E-M80.
 9. Warm resume after a call during first run: same step, same light, no re-entry; after a kill: lands on the step's heading (first run) or Home's heading.
 
-## 7. Proposed token additions (design-tokens, with tests; none changes an existing value)
+## 7. Proposed token additions (input to `docs/design/system/MOTION.md` and `tokens.v2.json`; none changes an existing value)
+
+The system file decides the names; these are area E's needs.
 
 ```ts
 motion: { ...existing,
