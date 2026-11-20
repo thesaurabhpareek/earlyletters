@@ -231,7 +231,7 @@ const E3 = id7();
 await push(A, [op('entry.upsert', E3, letter(E3, { text: 'Mama\'s letter.' }))]);
 const other = (await push(B, [op('entry.erase', E3)])).results[0];
 const none = (await push(B, [op('entry.erase', id7())])).results[0];
-check('[NS-25-R3][F16-REQ-024] another person\'s letter answers missing, exactly as no letter at all, and nothing changes',
+check('[F16-REQ-024] another person\'s letter answers missing, exactly as no letter at all, and nothing changes',
   other.ok && other.missing === true && JSON.stringify(Object.keys(other).sort()) === JSON.stringify(Object.keys(none).sort())
   && none.missing === true && (await entry(E3))?.deleted_at === null);
 await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('entry', $1, 'other', 'T-17', 'ops', '2027-01-01')`, [E3]);

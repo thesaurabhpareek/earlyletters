@@ -133,7 +133,7 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
     && (await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK, C]))) === '22023');
   const res = (await one(C, `select public.undo_parent_join($1, $2) r`, [BK, N])).r;
   const letters = (await sys(`select bool_or(in_book) any_in, bool_and(deleted_at is null) live from entries where author_id = $1 and child_id = $2`, [N, BK])).rows[0];
-  // NS-25-R4 is proven by this set together, each citing it: v1_gate_coparent.test.mjs:137 (the undo inside 72 hours ends the membership), v1_gate_coparent.test.mjs:139 (their letters leave the book, live and theirs), sync_engine.test.mjs:301 (a non-member's next pull reports the book gone).
+  // NS-25-R4 is proven by this set together, each citing it: v1_gate_coparent.test.mjs:137 (the undo inside 72 hours ends the membership), v1_gate_coparent.test.mjs:139 (their letters leave the book, live and theirs), sync_engine.test.mjs:300 (a non-member's next pull reports the book gone).
   check('[NS-25-R4][F11-REQ-008] within 72 hours the inviting parent undoes the join: the membership is gone',
     res === 'undone' && (await roleOf(BK, N)) === null);
   check('[NS-25-R4][F11-REQ-008] the removed person\'s letters are private and not deleted', letters.any_in === false && letters.live === true);

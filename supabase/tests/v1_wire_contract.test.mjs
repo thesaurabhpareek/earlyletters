@@ -52,7 +52,7 @@ check('[F06-REQ-033] the other parent never receives the author layer, the pack 
 for (const col of ['author_edits', 'locked_spans', 'pack_ref', 'language']) {
   check(`[PRD-REQ-004 Rev] book_entries has no ${col}`, (await codeOf(() => as(B, `select ${col} from book_entries`))) === '42703');
 }
-check('[NS-25-R3] the other parent cannot read the row from entries', (await as(B, `select 1 from entries where id = $1`, [full])).rows.length === 0);
+check('the other parent cannot read the row from entries', (await as(B, `select 1 from entries where id = $1`, [full])).rows.length === 0);
 
 // ── An older app sends none of them ──────────────────────────────────────
 const old = uuid7();
