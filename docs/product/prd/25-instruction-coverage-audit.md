@@ -52,7 +52,7 @@ Counted: 13 COVERED (items 1, 2, 3, 6, 7, 8, 9, 10, 12, 13, 15, 16, 17), 5 PARTI
 | 31 | End to end check, plan, dependency map, partner with engineering, tell me when ready | PARTIAL | this audit; `23`, `24`; engineering reply pending (item 11 above) |
 | 34 | Finalize and lock, listen to engineering and fix gaps | COVERED | lock; engineering findings triaged in section 3 below; errata E33 |
 | 35 | Ask engineering for their plan and what help they need | PARTIAL (action pending) | asked in two PR comments of 20 Nov 18:27 UTC; no reply yet; owner engineering architecture leads |
-| 36 | Continuous feedback loop, non sequential, product reactive | COVERED (pack side) | `FEEDBACK-LOOP.md` (quotes items 34 to 38); harness automation is proposal only |
+| 36 | Continuous feedback loop, non sequential, product reactive | COVERED (pack side) | `FEEDBACK-LOOP.md` (quotes items 34 to 40); harness automation is proposal only |
 | 37, 38 | Update the harness; backlog for CTO review; inform all agents | PARTIAL (action pending) | proposals P1 to P10 in `docs/ops/proposed/requirements-feedback-loop.md`; agents do not edit `scripts/`, `.github/`, `agents/roster.json`; owner Karma (CTO) |
 
 ## 3. Engineering findings since 18:30 UTC, triaged (`FEEDBACK-LOOP.md` section 3)
