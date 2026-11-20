@@ -68,7 +68,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | NS-23 One past letter | S (changes the built resurfaced card; reconcile open #721) | mobile, content | NS-21 | none |
 | NS-24 Read the year back | S to M | mobile | none | none |
 | NS-06 Firsts and seals | M (Firsts), L (seals) | mobile, sync, data-architect, legal | NS-05 Level 1 shipped; five-parent study; NS-36 seal clock (Part B); fills NS-21 rows | counsel on seals |
-| NS-07 Print-ready file | M | mobile | NS-36 export rule | proof-book spend for layout numbers |
+| NS-07 Printable book (PDF) | M | mobile | NS-36 export rule | proof-book spend for layout numbers |
 | NS-29 Read-along | L | speech, mobile | engine keeps word timings | none |
 
 ### D. Family
