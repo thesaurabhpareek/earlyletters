@@ -1,0 +1,1 @@
+11:14 (20 Nov) mobile | done: 3a ceilings 1120/480 (3b1df635, pushed 447611c2); 3b merged 3a, caps now count graphemes with a code-point backstop, test red on old code | next: 3b checks, push, cascade 4a to 5, bodies | blocked/needs: journal post and PR labels refused by the session's permission check

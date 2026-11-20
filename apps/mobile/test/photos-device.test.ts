@@ -19,6 +19,7 @@ import { sweepPhotos } from '../src/lib/photos/housekeeping';
 import { PendingPhoto } from '../src/lib/photos/pending';
 import { createPhotoPicker } from '../src/lib/photos/picker';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
+import { normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -421,9 +422,11 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
     expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
     expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
-    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(141) })).toThrow();
-    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(61) })).toThrow();
-    ins('m9', 'e4', null, { text: 'x'.repeat(140), place: 'y'.repeat(60) });
+    // The CHECKs are ceilings in code points, 8 per character a person sees, never the product limit (BL-957): they
+    // admit the longest words and place the app keeps, and refuse one code point more.
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(1121) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(481) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(1120), place: 'y'.repeat(480) });
   });
   it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
     const { db } = nodeDb();
@@ -442,34 +445,35 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
-  it('[NS-01-R21][DQ-R05] the caps count code points as the column CHECK does and cut only between whole characters, with or without Intl.Segmenter, against the real store (#836 review A N1)', async () => {
+  it('[NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
     const d = { ...deps().d, store: entryMediaStore(db) };
-    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'; // one family emoji, five code points
-    const cases = [
-      '\u0915\u093F'.repeat(140), // Devanagari "ki": a consonant and its vowel sign
-      'a' + '\u0915\u094D\u0937'.repeat(60), // a conjunct across a virama
-      'e\u0301'.repeat(100), // an accent written as two code points
-      family.repeat(30),
-      'x'.repeat(137) + family,
-    ];
+    const kinds: Record<string, string> = {
+      'a Devanagari conjunct': '\u0915\u094D\u0937',
+      'Devanagari ki': '\u0915\u093F',
+      'a decomposed accent': 'e\u0301',
+      'an emoji ZWJ family': '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}',
+      'a flag': '\u{1F1EE}\u{1F1F3}',
+    };
     const intl = Intl as { Segmenter?: unknown };
     const seg = intl.Segmenter;
     for (const engine of ['with Segmenter', 'as on Hermes']) {
       if (engine === 'as on Hermes') delete intl.Segmenter;
       try {
-        for (const typed of cases) {
-          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: typed, place: typed })).status, engine).toBe('stored');
-          const kept = entryMediaStore(db).get('e1')!;
-          for (const [v, max] of [[kept.text!, 140], [kept.place!, 60]] as const) {
-            expect(Array.from(v).length, engine).toBeLessThanOrEqual(max);
-            expect(typed.startsWith(v), engine).toBe(true);
-            // whole characters: nothing that joins the one before (a mark, a ZWJ, a skin tone) starts what was cut
-            expect(/^[\p{M}\u200D\u{1F3FB}-\u{1F3FF}]/u.test(typed.slice(v.length)) || /[\u200D\u094D]$/u.test(v), engine).toBe(false);
-          }
+        for (const [kind, g] of Object.entries(kinds)) {
+          const at = `${engine}, ${kind}`;
+          expect([normalizePhotoText(g.repeat(140)), normalizePhotoText(g.repeat(141))], at).toEqual([g.repeat(140), g.repeat(140)]);
+          expect([normalizePhotoPlace(g.repeat(60)), normalizePhotoPlace(g.repeat(61))], at).toEqual([g.repeat(60), g.repeat(60)]);
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
         }
+        // A character longer than 8 code points (a family with skin tones, 11): the cut stops at the column's ceiling,
+        // so the store never refuses what the app kept.
+        const big = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
+        expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: big.repeat(140), place: big.repeat(60) })).status, engine).toBe('stored');
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([big.repeat(101), big.repeat(43)]);
       } finally {
         intl.Segmenter = seg;
       }
