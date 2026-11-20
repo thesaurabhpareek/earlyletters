@@ -1,0 +1,46 @@
+# PROPOSED WORKFLOW TEXT. NOT ACTIVE: GitHub does not run files under docs/ops/proposed/. See docs/ops/proposed/pr-size.md.
+# Gate G8 (CODE-QUALITY-GATES.md), rule CODE-R02: a PR over 400 changed lines or 20 files fails unless the repository
+# owner applied the `size:accepted` label and the body has a `Size exception: <reason>` line.
+# Safety: trigger is pull_request (never pull_request_target); read-only permissions; no secrets; the PR body reaches the
+# script only through an environment variable; the script that runs is the BASE branch copy, never code from the PR.
+# Fork PRs get a read-only token that cannot read issue events, so forks are not checked (agent PRs are same-repo).
+name: PR size
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+
+concurrency:
+  group: pr-size-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  pr-size:
+    name: pr size
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (same sha as ci.yml and agents.yml)
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The script as it is on the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git worktree add --detach "$RUNNER_TEMP/base" "origin/$BASE_REF"
+      - name: PR size (CODE-R02)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.base_ref }}
+          OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node "$RUNNER_TEMP/base/scripts/guards/pr-size.mjs" --base "origin/$BASE_REF" --head "$HEAD_SHA"
