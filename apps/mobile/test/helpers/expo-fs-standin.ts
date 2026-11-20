@@ -10,7 +10,8 @@
  *   instances, and throws when the folder does not exist;
  * - a File for a missing path says exists false; delete() of a missing file throws;
  * - a folder in `unreadable` exists but its list() throws, as a read error would on iOS; one in
- *   `listsAsEmpty` lists as empty, as an unreadable folder does on Android.
+ *   `listsAsEmpty` lists as empty, as an unreadable folder does on Android; a file in `undeletable` stays
+ *   when delete() throws.
  *
  * Where expo-audio 57 puts a take (`directory: 'document'`): iOS `<Documents>/ExpoAudio/recording-<UUID>.m4a`
  * (ios/AudioUtils.swift createRecordingUrl), Android `<files>/Audio/recording-<UUID>.m4a`
@@ -37,6 +38,8 @@ export interface Disk {
    * (JavaFile.listFilesAsUnified) gives an empty list when java.io.File.listFiles() returns null.
    */
   listsAsEmpty: Set<string>;
+  /** Files whose delete() fails while they stay on disk, as a permission or IO error would (BL-923, BL-924). */
+  undeletable: Set<string>;
 }
 
 export interface Container {
@@ -71,7 +74,7 @@ function joinParts(parts: (string | { uri: string })[]): string {
 }
 
 export function createDisk(c: Container): Disk {
-  const disk: Disk = { files: new Map(), dirs: new Set(), documents: c.documents, caches: c.caches, os: c.os, unreadable: new Set(), listsAsEmpty: new Set() };
+  const disk: Disk = { files: new Map(), dirs: new Set(), documents: c.documents, caches: c.caches, os: c.os, unreadable: new Set(), listsAsEmpty: new Set(), undeletable: new Set() };
   mkdirp(disk, c.documents);
   mkdirp(disk, c.caches);
   return disk;
@@ -188,6 +191,7 @@ export function expoFileSystem(current: () => Disk) {
       put(disk, this.uri, data, old?.createdMs ?? Date.now());
     }
     delete(): void {
+      if (current().undeletable.has(this.uri)) throw new Error('EPERM');
       if (!current().files.delete(this.uri)) throw new Error('ERR_FILE_NOT_FOUND');
     }
     open(_mode: string) {
