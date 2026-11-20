@@ -18,3 +18,12 @@ One file per function: `docs/product/prd/functions/<function>.md`. ASCII only, t
 7. Founder or counsel questions, each with a recommended default (counsel numbers from `docs/legal/COUNSEL_PACKET.md` 1.5.0; new ones "needs a number from legal").
 
 Rules: every outside fact (law, Apple rule, vendor term) needs a source read this session with URL and date, otherwise UNVERIFIED; every legal reading "counsel must confirm"; Claude roles are not licensed professionals and say so. Write only your own file. Do not commit, push, post, or edit any other file. Karma integrates: function requirements are linked from the cards, logged in `GAP-LOG.md`, and handed to the design leads.
+
+## How each function's requirements get linked (added 20 Nov)
+
+1. Every `FR-<CODE>-nn` row names at least one link in each of three columns where one exists: card rows (`NS-nn-Rn`, or "new card row needed"), e2e screen and state ids (`A-S04.withPhoto`, or "new screen needed"), backlog rows (`BL-nnn`, or "new row needed").
+2. Karma builds `docs/product/prd/FUNCTION-TRACE.md` from all function files: one table `FR id | function | card rows | e2e ids | backlog rows | ruling`, plus the reverse view per card (every function requirement that touches NS-nn).
+3. Each card gains a "Function requirements" line listing the FR ids that touch it (applied with the errata after #846 merges; until then the trace file is the link).
+4. Card changes a function proposes are ruled in `GAP-LOG.md` like design gaps.
+5. Design needs are handed to the e2e area that owns the screen; the area's design, motion and content leads account for each one in a reconciliation pass and record it as "Function needs accounted for" with the FR id.
+6. Engineering needs go to the engineering thread on #846 with the FR id.
