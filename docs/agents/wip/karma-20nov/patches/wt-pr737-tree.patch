@@ -1,0 +1,841 @@
+diff --git a/apps/mobile/src/app/(auth)/sign-in/consent.tsx b/apps/mobile/src/app/(auth)/sign-in/consent.tsx
+index 1a78b0c5..257ebdeb 100644
+--- a/apps/mobile/src/app/(auth)/sign-in/consent.tsx
++++ b/apps/mobile/src/app/(auth)/sign-in/consent.tsx
+@@ -49,11 +49,12 @@ import { AgeAnswers } from '@/components/gate/age-gate-screen';
+ import { Button } from '@/components/ui/button';
+ import { ListRow, ListSection } from '@/components/ui/list-row';
+ import { Text } from '@/components/ui/text';
+-import { accountHasBooks } from '@/lib/auth/consent';
+ import { authCopy } from '@/lib/auth/copy';
+ import type { ConsentStep } from '@/lib/auth/machine.logic';
+ import { getSignInTrigger } from '@/lib/auth/pending';
+ import { authErrorMessage } from '@/lib/auth/messages';
++import { afterConsent, claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
++import { readAccountBooks } from '@/lib/first-run/account-books';
+ import { consentHandoff } from '@/lib/first-run/handoff.logic';
+ import { useAuth } from '@/lib/auth/session-provider';
+ import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
+@@ -94,6 +95,8 @@ export default function ConsentSteps() {
+   // Set before the first await, so a second tap in the same frame (Agree, then Keep) records nothing more.
+   const inFlight = useRef(false);
+   const [noBook, setNoBook] = useState(false);
++  // What `sync_books` says about the account while the claim screen is up; null until it answers or times out.
++  const [claimKind, setClaimKind] = useState<AccountKind | null>(null);
+   const switching = useRef(false);
+   const s = auth.state;
+   const k = authCopy.consent;
+@@ -125,14 +128,14 @@ export default function ConsentSteps() {
+       close();
+       return;
+     }
++    // New account (first_run_open, no book): on to the promise step and the child step. Returning with no book, or any
++    // failure or a wait past ACCOUNT_BOOKS_WAIT_MS: "No book here yet" (account-books.logic.ts; the fail-safe direction).
+     let alive = true;
+-    void accountHasBooks(auth.client, s.userId)
+-      .then((has) => {
+-        if (!alive) return;
+-        if (has) close();
+-        else setNoBook(true);
+-      })
+-      .catch(() => alive && close());
++    void readAccountBooks(auth.client).then((kind) => {
++      if (!alive) return;
++      if (afterConsent(kind) === 'close') close();
++      else setNoBook(true);
++    });
+     return () => {
+       alive = false;
+     };
+@@ -140,6 +143,19 @@ export default function ConsentSteps() {
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [s.status, claiming, syncMode]);
+ 
++  // The claim screen says so when the account already has a book. Bounded; an unreadable answer keeps today's words.
++  useEffect(() => {
++    if (!claiming || !auth.client) return;
++    let alive = true;
++    setClaimKind(null);
++    void readAccountBooks(auth.client).then((kind) => alive && setClaimKind(kind));
++    return () => {
++      alive = false;
++    };
++    // One look per time the claim screen appears.
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [claiming]);
++
+   const answer: Answer = async (step, accepted) => {
+     if (inFlight.current) return;
+     inFlight.current = true;
+@@ -204,6 +220,8 @@ export default function ConsentSteps() {
+   if (claiming) {
+     const c = authCopy.claim;
+     const masked = auth.account.maskedEmail;
++    const hasBook = claimWords(claimKind) === 'accountHasBook';
++    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
+     return (
+       <StepFade step="claim">
+         <SheetFrame
+@@ -213,6 +231,8 @@ export default function ConsentSteps() {
+                 size="lg"
+                 fullWidth
+                 label={c.keep}
++                loading={!keepEnabled(claimKind) && !!auth.client}
++                accessibilityHint={claimWords(claimKind) === 'accountHasBook' ? c.keepHint : undefined}
+                 onPress={() => {
+                   haptic('tap');
+                   auth.keepLettersHere();
+@@ -228,7 +248,19 @@ export default function ConsentSteps() {
+             </>
+           }>
+           <SheetTitle>{c.title}</SheetTitle>
+-          <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
++          {hasBook ? (
++            <>
++              <SheetBody>{c.bodyHasBook}</SheetBody>
++              {signedIn ? (
++                <Text variant="footnote" tone="muted" accessibilityLabel={signedIn.label}>
++                  {signedIn.text}
++                </Text>
++              ) : null}
++              <SheetBody muted>{c.recordingsNote}</SheetBody>
++            </>
++          ) : (
++            <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
++          )}
+           <SheetBody muted>{c.help}</SheetBody>
+         </SheetFrame>
+       </StepFade>
+diff --git a/apps/mobile/src/app/+native-intent.tsx b/apps/mobile/src/app/+native-intent.tsx
+index 71c617b9..64ccd056 100644
+--- a/apps/mobile/src/app/+native-intent.tsx
++++ b/apps/mobile/src/app/+native-intent.tsx
+@@ -30,6 +30,7 @@ import { setPendingAuthLink } from '@/lib/auth/pending';
+ import { serverFeaturesEnabled } from '@/lib/capabilities';
+ import { planIncomingLink } from '@/lib/family/entry.logic';
+ import { savePendingInvite } from '@/lib/family/pending-invite';
++import { inviteScreensHidden } from '@/lib/family/surfaces';
+ import { isCaptureRoute, TONIGHT_HREF } from '@/lib/resilience/not-found.logic';
+ import { getSetting } from '@/lib/store';
+ 
+@@ -47,7 +48,7 @@ export async function redirectSystemPath({ path }: { path: string; initial: bool
+   try {
+     if (isCaptureRoute(path)) return TONIGHT_HREF;
+     const link = classifyIncomingUrl(path, { origin: brand.web.origin, scheme: brand.scheme });
+-    const plan = planIncomingLink(link, { serverFeatures: serverFeaturesEnabled(), gateStopped: link.kind === 'invite' && gateStopped(), path });
++    const plan = planIncomingLink(link, { serverFeatures: serverFeaturesEnabled(), gateStopped: link.kind === 'invite' && gateStopped(), path, familySurfaces: !inviteScreensHidden() });
+     if (plan.keepAuthLink && link.kind === 'auth-link') setPendingAuthLink({ tokenHash: link.tokenHash, type: link.type });
+     if (plan.keepInviteToken && link.kind === 'invite') await savePendingInvite(link.token);
+     return plan.route;
+diff --git a/apps/mobile/src/app/invite/_layout.tsx b/apps/mobile/src/app/invite/_layout.tsx
+index ed85338d..3089708b 100644
+--- a/apps/mobile/src/app/invite/_layout.tsx
++++ b/apps/mobile/src/app/invite/_layout.tsx
+@@ -3,10 +3,13 @@
+  * Invite flows, one modal: joining a co-parent's book (index) and inviting a
+  * co-parent (new). PRD A F7, PRD B F5.
+  */
+-import { Stack } from 'expo-router';
++import { Redirect, Stack } from 'expo-router';
+ import { useTheme } from '@/lib/a11y';
++import { inviteScreensHidden } from '@/lib/family/surfaces';
+ 
+ export default function InviteLayout() {
+   const c = useTheme().c;
++  // A servers-on store build has no invite or join screen (NX-38-R5, familySurfacesShown): any way here lands on Tonight.
++  if (inviteScreensHidden()) return <Redirect href="/" />;
+   return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />;
+ }
+diff --git a/apps/mobile/src/app/onboarding.tsx b/apps/mobile/src/app/onboarding.tsx
+index 5f244ccd..dd2a2c7f 100644
+--- a/apps/mobile/src/app/onboarding.tsx
++++ b/apps/mobile/src/app/onboarding.tsx
+@@ -65,6 +65,7 @@ import { TextField } from '@/components/ui/text-field';
+ import { ListRow, ListSection } from '@/components/ui/list-row';
+ import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
+ import { useAuth } from '@/lib/auth/session-provider';
++import { SignedInNote } from '@/components/onboarding/signed-in-note';
+ import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+ import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+ import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
+@@ -128,7 +129,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
+   // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
+   // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
+   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
+-  const { state: authState, configured } = useAuth();
++  const { state: authState, configured, account, signOut } = useAuth();
+   const [start] = useState<Step>(() =>
+     firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
+   );
+@@ -471,6 +472,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
+                       </View>
+                     </Animated.View>
+                   ) : null}
++                  {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
++                  {accountFirst && hasSessionState(authState) ? (
++                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={() => void signOut()} />
++                  ) : null}
+                 </>
+               )}
+ 
+diff --git a/apps/mobile/src/components/onboarding/signed-in-note.tsx b/apps/mobile/src/components/onboarding/signed-in-note.tsx
+new file mode 100644
+index 00000000..16eed358
+--- /dev/null
++++ b/apps/mobile/src/components/onboarding/signed-in-note.tsx
+@@ -0,0 +1,29 @@
++// android: same
++/**
++ * The quiet identity line under the child step's date field, and its one quiet button (account-first slice 4a; exec
++ * council 9 Nov 2026, A; RW-01, RW-03 to RW-05). It exists so a person who picked the wrong sign-in method (a different
++ * Apple Account or email is a different user, which the server reads as new) can notice and start again. Plain footnote
++ * text with the masked address, read aloud as "a, hidden, at example.com"; the button signs out and returns to the Welcome.
++ * Nothing is deleted: no book exists yet. It sits after the fields, off the heading and the first focus stop.
++ */
++import { View } from 'react-native';
++import { Button } from '@/components/ui/button';
++import { Text } from '@/components/ui/text';
++import { signedInLine } from '@/lib/first-run/account-books.logic';
++import { authCopy } from '@/lib/auth/copy';
++import { copy } from '@/lib/copy';
++
++export function SignedInNote({ maskedEmail, provider, onUseAnother }: { maskedEmail: string | null; provider: string | null; onUseAnother: () => void }) {
++  const c = copy.onboarding.child;
++  const line = signedInLine({ maskedEmail, provider }, { signedInAs: c.signedInAs, signedInAsLabel: c.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
++  return (
++    <View className="gap-1" testID="onboarding.signedIn">
++      {line ? (
++        <Text variant="footnote" tone="muted" accessibilityLabel={line.label}>
++          {line.text}
++        </Text>
++      ) : null}
++      <Button variant="quiet" size="sm" label={c.useAnother} accessibilityHint={c.useAnotherHint} className="-ml-4 self-start" onPress={onUseAnother} testID="onboarding.useAnother" />
++    </View>
++  );
++}
+diff --git a/apps/mobile/src/lib/family/entry.logic.ts b/apps/mobile/src/lib/family/entry.logic.ts
+index aeff042c..93b52cf2 100644
+--- a/apps/mobile/src/lib/family/entry.logic.ts
++++ b/apps/mobile/src/lib/family/entry.logic.ts
+@@ -89,6 +89,16 @@ export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }
+   return input.alpha || input.coParent;
+ }
+ 
++/**
++ * The invite screens and the `/j` join route are blocked only where a flow would otherwise open: servers on, and a build with
++ * no co-parent flow (a store build before CO_PARENT_IN_STORE_BUILD flips). With servers off they already answer "coming soon"
++ * and an invite link keeps no token, so that build is unchanged (NX-38-R5). `surfacesShown` is the join-door rule
++ * (`visibleCoParentDoors(...).joinButton`), the one rule, not a second `familySurfacesShown`.
++ */
++export function inviteScreensBlocked(input: { serverFeatures: boolean; surfacesShown: boolean }): boolean {
++  return input.serverFeatures && !input.surfacesShown;
++}
++
+ /**
+  * The only paths an outside link may open (D-087, LEGAL-REQ-011). Anything else, including a screen that
+  * starts something (listen, review, read-together), a destructive one (delete account, leave a book), a
+@@ -120,7 +130,10 @@ export interface IncomingLinkPlan {
+  * invite link opens the coming-soon presentation and its token is dropped (it could never be redeemed
+  * by this build, and it expires on its own).
+  */
+-export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boolean; gateStopped: boolean; path: string }): IncomingLinkPlan {
++export function planIncomingLink(
++  link: IncomingLink,
++  opts: { serverFeatures: boolean; gateStopped: boolean; path: string; /** False in a servers-on store build (surfaces.logic.ts): an invite link opens Tonight and keeps no token. Default true. */ familySurfaces?: boolean },
++): IncomingLinkPlan {
+   const none = { keepInviteToken: false, keepAuthLink: false };
+   switch (link.kind) {
+     case 'auth-link':
+@@ -128,7 +141,7 @@ export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boo
+     case 'auth-code':
+       return { route: opts.serverFeatures ? '/sign-in/code' : '/', ...none };
+     case 'invite':
+-      if (opts.gateStopped) return { route: '/', ...none };
++      if (opts.gateStopped || opts.familySurfaces === false) return { route: '/', ...none };
+       return { route: '/invite', keepInviteToken: inviteDestination('invite_link', opts.serverFeatures) === 'flow', keepAuthLink: false };
+     case 'provider-redirect':
+       return { route: null, ...none };
+diff --git a/apps/mobile/src/lib/family/pending-invite-watcher.tsx b/apps/mobile/src/lib/family/pending-invite-watcher.tsx
+index 2e7d3ed2..3ea44136 100644
+--- a/apps/mobile/src/lib/family/pending-invite-watcher.tsx
++++ b/apps/mobile/src/lib/family/pending-invite-watcher.tsx
+@@ -7,6 +7,7 @@ import { router, usePathname, useRootNavigationState } from 'expo-router';
+ import { useEffect, useRef } from 'react';
+ import { serverFeaturesEnabled } from '../capabilities';
+ import { readPendingInvite } from './pending-invite';
++import { inviteScreensHidden } from './surfaces';
+ 
+ export function PendingInviteWatcher() {
+   const nav = useRootNavigationState();
+@@ -19,6 +20,8 @@ export function PendingInviteWatcher() {
+     checked.current = true;
+     // v1.0 keeps no invite tokens (lib/family/entry.logic.ts), so there is nothing to look for.
+     if (!serverFeaturesEnabled()) return;
++    // A servers-on store build hides the join flow (NX-38-R5): a token left by an earlier build opens nothing.
++    if (inviteScreensHidden()) return;
+     if (pathname.startsWith('/invite')) return;
+     void readPendingInvite().then((p) => {
+       if (p) router.push('/invite');
+diff --git a/apps/mobile/src/lib/family/surfaces.ts b/apps/mobile/src/lib/family/surfaces.ts
+new file mode 100644
+index 00000000..f2aa03c6
+--- /dev/null
++++ b/apps/mobile/src/lib/family/surfaces.ts
+@@ -0,0 +1,14 @@
++/** The build's answer to "are the co-parent surfaces shown" (entry.logic.ts visibleCoParentDoors). Reads the capability list and the alpha flag. */
++import { PLUS_ALPHA } from '@/lib/billing/alpha';
++import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
++import { inviteScreensBlocked, visibleCoParentDoors } from './entry.logic';
++
++/** The join-door rule (B12-5): servers on and an alpha build, or a store build after CO_PARENT_IN_STORE_BUILD flips. */
++export function familySurfacesOn(): boolean {
++  return visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA).joinButton;
++}
++
++/** True only in a servers-on store build. A servers-off build keeps its "coming soon" invite screens exactly as before. */
++export function inviteScreensHidden(): boolean {
++  return inviteScreensBlocked({ serverFeatures: serverFeaturesEnabled(), surfacesShown: familySurfacesOn() });
++}
+diff --git a/apps/mobile/src/lib/first-run/account-books.logic.ts b/apps/mobile/src/lib/first-run/account-books.logic.ts
+new file mode 100644
+index 00000000..75ce209a
+--- /dev/null
++++ b/apps/mobile/src/lib/first-run/account-books.logic.ts
+@@ -0,0 +1,165 @@
++/**
++ * New account, or returning with no book, or already has a book (account-first slice 4a; exec council 9 Nov 2026, A and D;
++ * NX-31 R12; NX-36 S6, S17). Pure, no React Native, tested in Node (test/first-run-new-account.test.ts). Reads nothing,
++ * sends nothing, records nothing; `account-books.ts` makes the one call.
++ *
++ * The signal is `sync_books()` (supabase/migrations/20261015000000, section 5):
++ *   { epoch, first_run_open, books[] }
++ *   - `first_run_open` is `profiles.first_run_closed_at is null` (true when there is no profile row yet). The server sets
++ *     `first_run_closed_at` when a book is made and never clears it (the `profiles_guard` trigger refuses client writes).
++ *   - So `first_run_open` true with no books is a person who never made a book (NEW), and `first_run_open` false with no
++ *     books is a person who had one that is gone (RETURNING, no book).
++ * The call needs a signed-in, non-anonymous user and a rate-limit slot; it does not check the content gate, so it answers
++ * before the consent steps. It is read defensively here (not the strict contract): an answer that cannot be read as
++ * `books` plus a true or false `first_run_open` is `unknown`, never `new`.
++ *
++ * The fail-safe direction (council A): anything but a clear "new" shows today's "No book here yet" screen. Showing it to a
++ * new person costs one tap ("Start a book"); treating a returning person as new would make a second, empty account book.
++ */
++
++/** How long the screen waits for the answer: the session gate's own timeout (session-provider GATE_TIMEOUT_MS). */
++export const ACCOUNT_BOOKS_WAIT_MS = 10_000;
++
++export type AccountKind = 'new' | 'returningNoBook' | 'hasBook' | 'unknown';
++
++/** What a `sync_books` answer says about this account. Anything unreadable is `unknown`. */
++export function classifyAccountBooks(data: unknown): AccountKind {
++  if (!data || typeof data !== 'object') return 'unknown';
++  const r = data as { first_run_open?: unknown; books?: unknown };
++  if (!Array.isArray(r.books)) return 'unknown';
++  if (r.books.length > 0) return 'hasBook';
++  if (r.first_run_open === true) return 'new';
++  if (r.first_run_open === false) return 'returningNoBook';
++  return 'unknown';
++}
++
++export type Settled<T> = { ok: true; value: T } | { ok: false; reason: 'timeout' | 'error' };
++
++export interface Scheduler {
++  set: (fn: () => void, ms: number) => unknown;
++  clear: (handle: unknown) => void;
++}
++
++const REAL_SCHEDULER: Scheduler = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
++
++/**
++ * Waits for `work` for at most `ms`. Never rejects: a throw or a rejection is `error`, a late answer is `timeout`, and a
++ * late answer after the timeout is ignored. The timer is always cleared, so nothing is left running.
++ */
++export function settleWithin<T>(work: () => PromiseLike<T> | T, ms: number, scheduler: Scheduler = REAL_SCHEDULER): Promise<Settled<T>> {
++  return new Promise((resolve) => {
++    let done = false;
++    const finish = (r: Settled<T>) => {
++      if (done) return;
++      done = true;
++      scheduler.clear(handle);
++      resolve(r);
++    };
++    const handle = scheduler.set(() => finish({ ok: false, reason: 'timeout' }), ms);
++    try {
++      Promise.resolve(work()).then(
++        (value) => finish({ ok: true, value }),
++        () => finish({ ok: false, reason: 'error' }),
++      );
++    } catch {
++      finish({ ok: false, reason: 'error' });
++    }
++  });
++}
++
++/** `{ data, error }` as the Supabase client answers an rpc: an `error` is a failure whatever `data` holds. */
++export function kindFromRpc(settled: Settled<{ data?: unknown; error?: unknown } | null | undefined>): AccountKind {
++  if (!settled.ok) return 'unknown';
++  const r = settled.value;
++  if (!r || r.error) return 'unknown';
++  return classifyAccountBooks(r.data);
++}
++
++export type AfterConsent = 'close' | 'noBook';
++
++/**
++ * After sign-in and consent, with no book on the phone. `close` hands over to the first-run route (the promise step, then
++ * the child step) or, for an account that has a book, to the app. Only a clear "new" or "has a book" closes; a returning
++ * person without a book, and every failure, see "No book here yet".
++ */
++export function afterConsent(kind: AccountKind): AfterConsent {
++  return kind === 'new' || kind === 'hasBook' ? 'close' : 'noBook';
++}
++
++export type ClaimWords = 'accountHasBook' | 'plain';
++
++/** The claim screen's first sentence. Only a clear "has a book" says so; an unreadable answer keeps today's words. */
++export function claimWords(kind: AccountKind | null): ClaimWords {
++  return kind === 'hasBook' ? 'accountHasBook' : 'plain';
++}
++
++/**
++ * "Keep in this account" waits until the check has an answer or has timed out (`null` = still asking), so the person never
++ * taps before the sentence that tells them the account already has a book. "Not my account" never waits.
++ */
++export function keepEnabled(kind: AccountKind | null): boolean {
++  return kind !== null;
++}
++
++/**
++ * What "Keep in this account" does, in Build 12 (council D, cases 4 and 5 as ONE behaviour). `takeOwnership` is not changed
++ * and has no destination parameter: it claims every local book as its own book. So an account that already has a book gets
++ * the phone's book as a second book. `mergeBack()` (merge-back.logic.ts) still describes the earlier proposal for these
++ * cases ("In the existing book", an empty book removed); Build 12 does not use those phases, and this function says so.
++ */
++export interface ClaimKeepOutcome {
++  addsAsSecondBook: boolean;
++  /** No outcome deletes a letter, a book or a recording, or removes an empty local book. */
++  deletes: false;
++  mergesIntoExistingBook: false;
++  asksDestination: false;
++  removesEmptyLocalBook: false;
++  /** Recordings stay on the phone (backup is off); the words go. */
++  recordingsLeavePhone: false;
++}
++
++export function claimKeepOutcome(kind: AccountKind | null): ClaimKeepOutcome {
++  return {
++    addsAsSecondBook: kind === 'hasBook',
++    deletes: false,
++    mergesIntoExistingBook: false,
++    asksDestination: false,
++    removesEmptyLocalBook: false,
++    recordingsLeavePhone: false,
++  };
++}
++
++/**
++ * The masked address the way a person says it, because a screen reader reads "a***" as punctuation:
++ * "a***@example.com" becomes "a, hidden, at example.com". Null when there is no masked address to read.
++ */
++export function spokenMaskedEmail(masked: string | null | undefined): string | null {
++  if (!masked) return null;
++  const at = masked.lastIndexOf('@');
++  if (at <= 0 || at === masked.length - 1) return null;
++  const local = masked.slice(0, at).replace(/\*+/g, '').trim();
++  const domain = masked.slice(at + 1);
++  return local ? `${local}, hidden, at ${domain}` : `hidden, at ${domain}`;
++}
++
++export interface SignedInLine {
++  text: string;
++  /** What VoiceOver says; differs from `text` only when an address is read out. */
++  label: string;
++}
++
++/**
++ * The quiet identity line (child step and claim screen). A masked address: "Signed in as {email}." Apple with no address
++ * (it shared none): the existing "Signed in with Apple". Anything else with no address: no line (never an empty "as .").
++ */
++export function signedInLine(
++  input: { maskedEmail: string | null; provider: string | null },
++  words: { signedInAs: string; signedInAsLabel: string; apple: string },
++): SignedInLine | null {
++  if (input.maskedEmail) {
++    const spoken = spokenMaskedEmail(input.maskedEmail) ?? input.maskedEmail;
++    return { text: words.signedInAs.replace('{email}', input.maskedEmail), label: words.signedInAsLabel.replace('{email}', spoken) };
++  }
++  if (input.provider === 'apple') return { text: words.apple, label: words.apple };
++  return null;
++}
+diff --git a/apps/mobile/src/lib/first-run/account-books.ts b/apps/mobile/src/lib/first-run/account-books.ts
+new file mode 100644
+index 00000000..f1aea1dd
+--- /dev/null
++++ b/apps/mobile/src/lib/first-run/account-books.ts
+@@ -0,0 +1,13 @@
++/**
++ * The one `sync_books()` call that tells a new account from a returning one and from one that already has a book
++ * (account-books.logic.ts says what the answer means). Bounded: it waits `ACCOUNT_BOOKS_WAIT_MS` and never throws, so the
++ * screen that asks is never held up by it; a failure, a timeout or an unreadable answer is `unknown`, which shows "No book
++ * here yet". Counts one call in the pull bucket (120 a minute per person). Sends nothing but the signed-in session.
++ */
++import type { SupabaseClient } from '@supabase/supabase-js';
++import { ACCOUNT_BOOKS_WAIT_MS, kindFromRpc, settleWithin, type AccountKind } from './account-books.logic';
++
++export async function readAccountBooks(sb: SupabaseClient, waitMs: number = ACCOUNT_BOOKS_WAIT_MS): Promise<AccountKind> {
++  const settled = await settleWithin(() => sb.rpc('sync_books'), waitMs);
++  return kindFromRpc(settled);
++}
+diff --git a/apps/mobile/test/family-surfaces.test.ts b/apps/mobile/test/family-surfaces.test.ts
+new file mode 100644
+index 00000000..a4eaf31e
+--- /dev/null
++++ b/apps/mobile/test/family-surfaces.test.ts
+@@ -0,0 +1,48 @@
++/**
++ * NX-38-R5 option A: a servers-on store build has no invite screen, no join link route and no join prompt. Its own flag,
++ * `familySurfacesShown`, not the sign-in switch. A servers-off build is unchanged.
++ */
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { inviteScreensBlocked, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
++import { invitedDoorShown } from '../src/lib/first-run/welcome.logic';
++
++const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
++const INVITE = { kind: 'invite', token: 'T' } as never;
++
++describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
++  it('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
++    // develop's join-door rule (B12-5): servers on AND an alpha build. #720 adds the one constant that can open it in a store build.
++    // Store build: servers on, not alpha.
++    expect(visibleCoParentDoors(true, false).joinButton).toBe(false);
++    expect(inviteScreensBlocked({ serverFeatures: true, surfacesShown: false })).toBe(true);
++    expect(invitedDoorShown({ alpha: false, coParent: true })).toBe(false);
++    const plan = planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j', familySurfaces: false });
++    expect(plan).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
++  });
++  it('an alpha build keeps every surface', () => {
++    expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
++    expect(inviteScreensBlocked({ serverFeatures: true, surfacesShown: true })).toBe(false);
++    expect(invitedDoorShown({ alpha: true, coParent: true })).toBe(true);
++    expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j', familySurfaces: true })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
++  });
++  it('a servers-off build is unchanged: nothing is blocked, and an invite link still opens coming soon without a token', () => {
++    expect(visibleCoParentDoors(false, false).joinButton).toBe(false);
++    expect(inviteScreensBlocked({ serverFeatures: false, surfacesShown: false })).toBe(false);
++    expect(planIncomingLink(INVITE, { serverFeatures: false, gateStopped: false, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: false, keepAuthLink: false });
++  });
++  it('leaving familySurfaces out keeps every earlier caller as it was', () => {
++    expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
++  });
++  it('the flag is its own: it is not the sign-in switch or the capability list', () => {
++    const t = src('lib/family/surfaces.ts');
++    expect(t).not.toMatch(/signIn\b|signInEnabled/);
++    expect(t).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)\.joinButton/);
++  });
++  it('the invite screens, the link route and the saved-token prompt each ask the flag', () => {
++    expect(src('app/invite/_layout.tsx')).toContain('inviteScreensHidden()');
++    expect(src('app/+native-intent.tsx')).toContain('familySurfaces: !inviteScreensHidden()');
++    expect(src('lib/family/pending-invite-watcher.tsx')).toContain('inviteScreensHidden()');
++  });
++});
+diff --git a/apps/mobile/test/first-run-new-account.test.ts b/apps/mobile/test/first-run-new-account.test.ts
+new file mode 100644
+index 00000000..8119e0c3
+--- /dev/null
++++ b/apps/mobile/test/first-run-new-account.test.ts
+@@ -0,0 +1,257 @@
++/**
++ * Account-first slice 4a: a new account goes straight to the promise and child steps, a returning one with no book keeps
++ * "No book here yet", and a claim into an account that has a book adds a second book and deletes nothing. Pure logic plus
++ * source patterns for the screens. Fictional family Asha only.
++ * Exec council 9 Nov 2026, A and D; NX-31 R12; NX-38 R6; docs/content/RETURNING-AND-NEW-PHONE-WORDS-9nov.md.
++ */
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { authCopy, en } from '@scribe/content';
++import {
++  ACCOUNT_BOOKS_WAIT_MS,
++  afterConsent,
++  claimKeepOutcome,
++  claimWords,
++  classifyAccountBooks,
++  keepEnabled,
++  kindFromRpc,
++  settleWithin,
++  signedInLine,
++  spokenMaskedEmail,
++  type AccountKind,
++  type Scheduler,
++} from '../src/lib/first-run/account-books.logic';
++import { mergeBack } from '../src/lib/first-run/merge-back.logic';
++
++const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
++const BOOK = { id: 'b1', role: 'parent', name: 'Asha' };
++
++/** A scheduler the test drives by hand, so no real timer runs. */
++function manual(): Scheduler & { fire: () => void; cleared: number; pending: () => boolean } {
++  let fn: (() => void) | null = null;
++  let cleared = 0;
++  return {
++    set: (f) => ((fn = f), 1),
++    clear: () => {
++      cleared++;
++      fn = null;
++    },
++    fire: () => fn?.(),
++    get cleared() {
++      return cleared;
++    },
++    pending: () => fn !== null,
++  } as Scheduler & { fire: () => void; cleared: number; pending: () => boolean };
++}
++
++describe('[NX-31-R12] new account, or returning with no book (sync_books first_run_open)', () => {
++  it('first_run_open true and no books is a new account', () => {
++    expect(classifyAccountBooks({ epoch: 1, first_run_open: true, books: [] })).toBe('new');
++  });
++  it('first_run_open false and no books is a returning account with no book', () => {
++    expect(classifyAccountBooks({ epoch: 1, first_run_open: false, books: [] })).toBe('returningNoBook');
++  });
++  it('any book means the account has a book, whatever first_run_open says', () => {
++    expect(classifyAccountBooks({ first_run_open: true, books: [BOOK] })).toBe('hasBook');
++    expect(classifyAccountBooks({ first_run_open: false, books: [BOOK] })).toBe('hasBook');
++  });
++  it('an answer that cannot be read is unknown, never new', () => {
++    for (const bad of [null, undefined, 'x', 3, [], {}, { books: [] }, { first_run_open: true }, { first_run_open: 'true', books: [] }, { first_run_open: true, books: 'none' }, { first_run_open: null, books: [] }]) {
++      expect(classifyAccountBooks(bad)).toBe('unknown');
++    }
++  });
++  it('after consent only a clear new account or an account with a book closes; every other answer shows No book here yet', () => {
++    const table: Record<AccountKind, string> = { new: 'close', hasBook: 'close', returningNoBook: 'noBook', unknown: 'noBook' };
++    for (const k of Object.keys(table) as AccountKind[]) expect(afterConsent(k)).toBe(table[k]);
++  });
++  it('an rpc error is unknown even when it carries data that looks new', () => {
++    expect(kindFromRpc({ ok: true, value: { data: { first_run_open: true, books: [] }, error: { message: 'boom' } } })).toBe('unknown');
++    expect(kindFromRpc({ ok: true, value: { data: { first_run_open: true, books: [] }, error: null } })).toBe('new');
++    expect(kindFromRpc({ ok: true, value: null })).toBe('unknown');
++    expect(kindFromRpc({ ok: true, value: undefined })).toBe('unknown');
++  });
++  it('a timeout and a thrown call are unknown, so the screen is No book here yet', () => {
++    expect(kindFromRpc({ ok: false, reason: 'timeout' })).toBe('unknown');
++    expect(kindFromRpc({ ok: false, reason: 'error' })).toBe('unknown');
++    expect(afterConsent(kindFromRpc({ ok: false, reason: 'timeout' }))).toBe('noBook');
++  });
++});
++
++describe('[NX-31-R12] the call is bounded and never blocks the first screen', () => {
++  it('waits no longer than the session gate timeout (10 seconds)', () => {
++    expect(ACCOUNT_BOOKS_WAIT_MS).toBe(10_000);
++    expect(src('lib/first-run/account-books.ts')).toContain('ACCOUNT_BOOKS_WAIT_MS');
++    expect(src('app/(auth)/sign-in/consent.tsx')).not.toMatch(/accountHasBooks/);
++  });
++  it('an answer in time is returned and the timer is cleared', async () => {
++    const s = manual();
++    const r = await settleWithin(() => Promise.resolve(7), 10_000, s);
++    expect(r).toEqual({ ok: true, value: 7 });
++    expect(s.cleared).toBe(1);
++    expect(s.pending()).toBe(false);
++  });
++  it('no answer when the timer fires is a timeout, and a late answer is ignored', async () => {
++    const s = manual();
++    let late!: (v: number) => void;
++    const p = settleWithin(() => new Promise<number>((res) => (late = res)), 10_000, s);
++    s.fire();
++    expect(await p).toEqual({ ok: false, reason: 'timeout' });
++    late(9);
++    expect(await p).toEqual({ ok: false, reason: 'timeout' });
++  });
++  it('a rejection is an error, not a throw', async () => {
++    const s = manual();
++    expect(await settleWithin(() => Promise.reject(new Error('network')), 10_000, s)).toEqual({ ok: false, reason: 'error' });
++    expect(s.cleared).toBe(1);
++  });
++  it('a call that throws before it returns a promise is an error, not a throw', async () => {
++    const s = manual();
++    expect(
++      await settleWithin(
++        () => {
++          throw new Error('sync');
++        },
++        10_000,
++        s,
++      ),
++    ).toEqual({ ok: false, reason: 'error' });
++  });
++  it('the real timer path settles a never-answering call within the wait', async () => {
++    const r = await settleWithin(() => new Promise<number>(() => {}), 20);
++    expect(r).toEqual({ ok: false, reason: 'timeout' });
++  });
++  it('the call is one sync_books rpc and nothing else is sent', () => {
++    const t = src('lib/first-run/account-books.ts');
++    expect(t).toContain("rpc('sync_books')");
++    expect(t).not.toMatch(/\.from\(|\.insert|\.update|record_policy_act/);
++  });
++});
++
++describe('the consent sheet decides with the pure rules', () => {
++  const t = src('app/(auth)/sign-in/consent.tsx');
++  it('closes on a new account and shows No book here yet for the rest, through afterConsent', () => {
++    expect(t).toContain('readAccountBooks(auth.client)');
++    expect(t).toContain("afterConsent(kind) === 'close'");
++    expect(t).toContain('setNoBook(true)');
++  });
++  it('a failure no longer closes the sheet onto a new-account route', () => {
++    expect(t).not.toMatch(/\.catch\(\(\) => alive && close\(\)\)/);
++  });
++  it('still asks only a person who signed in with no book on the phone', () => {
++    expect(t).toContain("getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client");
++  });
++});
++
++describe('the child step identity line and Use another account', () => {
++  const words = { signedInAs: en.onboarding.child.signedInAs, signedInAsLabel: en.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple };
++  it('reads "Signed in as {email}." with the masked address', () => {
++    expect(signedInLine({ maskedEmail: 'a***@example.com', provider: 'email' }, words)?.text).toBe('Signed in as a***@example.com.');
++  });
++  it('is read aloud with the hidden part spoken, never as stars', () => {
++    const l = signedInLine({ maskedEmail: 'a***@example.com', provider: 'email' }, words);
++    expect(l?.label).toBe('Signed in as a, hidden, at example.com.');
++    expect(l?.label).not.toContain('*');
++    expect(spokenMaskedEmail('a***@example.com')).toBe('a, hidden, at example.com');
++    expect(spokenMaskedEmail(null)).toBeNull();
++    expect(spokenMaskedEmail('nonsense')).toBeNull();
++  });
++  it('Apple with no address reuses "Signed in with Apple"; any other sign-in with no address shows no line', () => {
++    expect(signedInLine({ maskedEmail: null, provider: 'apple' }, words)).toEqual({ text: 'Signed in with Apple', label: 'Signed in with Apple' });
++    expect(signedInLine({ maskedEmail: null, provider: 'google' }, words)).toBeNull();
++    expect(signedInLine({ maskedEmail: null, provider: null }, words)).toBeNull();
++  });
++  const note = src('components/onboarding/signed-in-note.tsx');
++  it('the button is quiet, 44 pt (size sm is min-h-11), hinted, and sits after the fields', () => {
++    expect(note).toContain('variant="quiet" size="sm"');
++    expect(src('components/ui/button.tsx')).toContain("sm: 'min-h-11 px-4 py-2'");
++    expect(note).toContain('accessibilityHint={c.useAnotherHint}');
++    const ob = src('app/onboarding.tsx');
++    expect(ob.indexOf('<SignedInNote')).toBeGreaterThan(ob.indexOf('o.child.expectingHelp'));
++    expect(ob.indexOf('<SignedInNote')).toBeGreaterThan(ob.indexOf('<CoverHeading title={o.child.title}'));
++  });
++  it('shows only on the account-first route with a session, and signs out', () => {
++    const ob = src('app/onboarding.tsx');
++    expect(ob).toContain('accountFirst && hasSessionState(authState) ? (');
++    expect(ob).toContain('onUseAnother={() => void signOut()}');
++  });
++  it('lets the text wrap at the largest sizes (no truncation, no fixed height)', () => {
++    expect(note).not.toMatch(/numberOfLines|ellipsizeMode|adjustsFontSizeToFit/);
++  });
++});
++
++describe('[NX-38-R6] claiming into an account that already has a book', () => {
++  it('[NX-38-R6] nothing uploads before Keep in this account', () => {
++    const asked = mergeBack({ consent: 'accepted', claim: 'pending', accountHasBook: true, destination: null });
++    expect(asked.phase).toBe('askClaim');
++    expect(asked.uploads).toBe(false);
++    const t = src('app/(auth)/sign-in/consent.tsx');
++    // The check only reads; the one call that starts a claim is keepLettersHere, behind the button.
++    expect(t.match(/keepLettersHere\(\)/g)?.length).toBe(1);
++    expect(src('lib/first-run/account-books.ts')).not.toMatch(/takeOwnership|keepLettersHere/);
++  });
++  it('[NX-38-R6] an account with a book and a local book with kept letters deletes nothing and duplicates nothing', () => {
++    for (const kind of ['hasBook', 'unknown', null] as const) {
++      const o = claimKeepOutcome(kind);
++      expect(o.deletes).toBe(false);
++      expect(o.mergesIntoExistingBook).toBe(false);
++      expect(o.removesEmptyLocalBook).toBe(false);
++      expect(o.asksDestination).toBe(false);
++      expect(o.recordingsLeavePhone).toBe(false);
++    }
++    expect(claimKeepOutcome('hasBook').addsAsSecondBook).toBe(true);
++    // takeOwnership claims each local book under its own id (no destination), so a letter keeps its id and is not copied.
++    const own = src('lib/sync/ownership.ts');
++    expect(own).toContain("SELECT * FROM children WHERE server_state = 'local'");
++    expect(own).not.toMatch(/destination/i);
++  });
++  it('Build 12 does not use the merge-back phases for the existing book, and no outcome removes a book', () => {
++    // #722's review fix: the rule has no kept-letter count and no field that could say "remove" (first-run-merge-back.test.ts).
++    const five = mergeBack({ consent: 'accepted', claim: 'keep', accountHasBook: true, destination: null });
++    expect(five.phase).toBe('askDestination');
++    expect(Object.keys(five)).not.toContain('removesLocalBook');
++    const t = src('app/(auth)/sign-in/consent.tsx') + src('lib/first-run/handoff.logic.ts');
++    expect(t).not.toMatch(/askDestination|removesLocalBook|saysEmptyBookRemoved|local_merge_choice/);
++  });
++  it('the claim sentence says the account has a book only when the server said so', () => {
++    expect(claimWords('hasBook')).toBe('accountHasBook');
++    for (const k of ['new', 'returningNoBook', 'unknown', null] as const) expect(claimWords(k)).toBe('plain');
++  });
++  it('Keep in this account waits for the answer (or the timeout), and Not my account never does', () => {
++    expect(keepEnabled(null)).toBe(false);
++    for (const k of ['new', 'returningNoBook', 'hasBook', 'unknown'] as const) expect(keepEnabled(k)).toBe(true);
++    const t = src('app/(auth)/sign-in/consent.tsx');
++    expect(t).toContain('loading={!keepEnabled(claimKind) && !!auth.client}');
++    expect(t).not.toMatch(/label=\{c\.notMine\}[\s\S]{0,80}disabled/);
++  });
++  it('the words are in the order title, account line, recordings line, help, Keep, Not my account', () => {
++    const t = src('app/(auth)/sign-in/consent.tsx');
++    const at = (s: string) => t.indexOf(s);
++    expect(at('c.title')).toBeLessThan(at('c.bodyHasBook'));
++    expect(at('c.bodyHasBook')).toBeLessThan(at('signedIn.text'));
++    expect(at('signedIn.text')).toBeLessThan(at('c.recordingsNote'));
++    expect(at('c.recordingsNote')).toBeLessThan(at('c.help'));
++    expect(at('label={c.keep}')).toBeLessThan(at('label={c.notMine}'));
++  });
++});
++
++describe('the words', () => {
++  const k = authCopy.claim;
++  const c = en.onboarding.child;
++  const all = [k.bodyHasBook, k.recordingsNote, k.keepHint, c.signedInAs, c.signedInAsLabel, c.useAnother, c.useAnotherHint];
++  it('say the three true things and no more: second book, nothing deleted, recordings stay on this phone', () => {
++    expect(k.bodyHasBook).toBe('This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.');
++    expect(k.recordingsNote).toBe('The recordings are kept on this phone.');
++    expect(c.useAnother).toBe('Use another account');
++  });
++  it('keep the button to 22 characters or fewer', () => {
++    expect(c.useAnother.length).toBeLessThanOrEqual(22);
++    expect(k.keep.length).toBeLessThanOrEqual(22);
++  });
++  it('use none of the forbidden characters and no backup, safe or AI claim', () => {
++    for (const s of all) {
++      expect(s).not.toMatch(/[—–‘’“”…]|\p{Extended_Pictographic}/u);
++      expect(s).not.toMatch(/\bAI\b|backed up|backup|kept safe|\bsafe\b|merge/i);
++    }
++  });
++});
+diff --git a/packages/content/src/features/auth.en.ts b/packages/content/src/features/auth.en.ts
+index c3811ee5..87e0301f 100644
+--- a/packages/content/src/features/auth.en.ts
++++ b/packages/content/src/features/auth.en.ts
+@@ -165,6 +165,13 @@ export const authCopy = {
+     keep: 'Keep in this account',
+     notMine: 'Not my account',
+     waiting: 'Finish setting up to choose where your letters are kept.',
++    // Account-first slice 4a (exec council 9 Nov 2026, D; RW-21, RW-23, RW-27). Shown when the account already has a book
++    // and this phone holds a book or letters: "Keep in this account" adds the phone's book as a second book. Nothing is
++    // merged or deleted, and the recordings stay on the phone. Each says where letters go, so counsel reads it, and each
++    // needs founder word approval.
++    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
++    recordingsNote: 'The recordings are kept on this phone.',
++    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
+   },
+ 
+   errors: {
+diff --git a/packages/content/src/strings.en.ts b/packages/content/src/strings.en.ts
+index b0d652b2..a52af942 100644
+--- a/packages/content/src/strings.en.ts
++++ b/packages/content/src/strings.en.ts
+@@ -123,6 +123,13 @@ export const en = {
+       bornToday: "Born today",
+       // A long name: said gently, once the field is close to its limit.
+       nameLimit: "A name can have up to {n} characters.",
++      // Account-first slice 4a (exec council 9 Nov 2026, A; RW-01, RW-03 to RW-05 of docs/content/RETURNING-AND-NEW-PHONE-WORDS-9nov.md).
++      // Under the date field, for a signed-in person: so one who picked the wrong sign-in method can notice. {email} is the
++      // masked address (a***@example.com); {email} reads it aloud ("a, hidden, at example.com"). Each needs founder word approval.
++      signedInAs: "Signed in as {email}.",
++      signedInAsLabel: "Signed in as {email}.",
++      useAnother: "Use another account",
++      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
+       cta: "Continue",
+     },
+ 

@@ -1,0 +1,77 @@
+diff --git a/docs/product/prd/17-engineering-project-plan.md b/docs/product/prd/17-engineering-project-plan.md
+index 937242d3..fae9a3d0 100644
+--- a/docs/product/prd/17-engineering-project-plan.md
++++ b/docs/product/prd/17-engineering-project-plan.md
+@@ -121,7 +121,7 @@ BL-931 is done when every slice merges with green CI and two counted reviews (BA
+ | BL-925 | NS-09-R4a, R4b (the line) | content | design-systems / compliance-engineer | S (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1) | W: founder | needs-decision; `content` is drafting it with BL-965 today [V] |
+ | BL-926 | NS-09-R4a, R4b | mobile | principal-architect / design-systems | S (PR breakdown: see design) | 1 | BL-925 | 13; holds the cut (Q1) | W | blocked (BL-925) [V] |
+ | BL-977 | NS-09-R9 to R17; ruling D7 | mobile | principal-architect / data-steward | S (PR breakdown: see design) | 1 | BL-925, BL-926; `sync` reports the server side | 13: founder decides (Q1) | none | blocked (BL-925, BL-926) [V] |
+-| P-4 | NS-09-R6; NS-titled tests for R7, R8 | mobile | principal-architect / data-steward | M [E] (PR breakdown: see design) | 1 | #832 | 13: R6 holds the cut (P1, 14:14); R7, R8 tests before the cut (recommended, Q1) | D: two phones (R8) | Not written. The 08-keeping design reads R7 and R8 as built in code with no NS-titled test; R6 is missing (M8) |
++| P-4 | NS-09-R6; NS-titled tests for R7, R8 | mobile | principal-architect / data-steward | M [E] (PR breakdown: see design) | 1 | #832 | 13: founder decides (Q1) | D: two phones (R8) | Not written. The 08-keeping design reads R7 and R8 as built in code with no NS-titled test; R6 is missing (M8) |
+ | BL-922 | NS-10-R0 (the row cites NX-36-S17) | mobile | principal-architect / security-architect | M (PR breakdown: see design) | 1 | #764 (merged) | 13; holds the cut (Q1) | D: S1-204 on two phones | ready; in progress today with BL-961 and BL-978 (the held screen of the 08-keeping design) [V] |
+ | BL-961 | [X4-R1]; D1; NS-01-R29, R30; NS-02-R24; NS-10 second-account rows. NS-10-R3 fails today: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125` on develop; the 08-keeping design) | mobile | security-architect / compliance-engineer | M (PR breakdown: see design) | 1 | none | 13; holds the cut (Q1 recommendation: a known P0 defect) | none | ready; in progress today (#855) [V] |
+ | BL-978 | NS-10-R0 to R14 (R4 withdrawn). R3 fails today (as BL-961). R7 fails today: each consent answer mints a new idempotency key, so a retry writes a second row (`consent.ts:117`; the 08-keeping design). R7 is P1, and 14:14 says a P1 failure blocks a store build | mobile | principal-architect / security-architect | M (PR breakdown: see design) | 1 | BL-922 (the lock's row builds on it) | 13; its R7 fix holds the cut (P1 blocks a store build); its other P0 rows: founder decides (Q1) | D: S1-204 | ready; in progress today with BL-961 (#855) [V] |
+@@ -269,7 +269,7 @@ Folded into lock rows, so no longer proposed: P-3 is BL-966 (NS-32) and P-6 is B
+ | D6 | BL-933 has no wave | Wave 2 | 20:134 puts it there; it needs BL-868 and BL-931 |
+ | D7 | Cards carry no build numbers (T5; README:3, 53, 54) | Founder question Q2. Default: photo and Find merge dark, the Build 13 cut does not wait, and Build 14 turns them on after the counsel read on the photo label | No file on develop or at the lock says the cut does not wait. Release content is the founder's |
+ | D8 | Wave 1 is 18 to 22 PRs (20:133) | About 54 PRs left on 20 Nov | This count adds docs, release, the P rows and the lock's wave-1 rows |
+-| D9 | Nothing on which P0 rows hold a cut | Founder question Q1. Recommendation and default: BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 hold the Build 13 cut, with BL-978's NS-10-R7 fix, P-4's NS-09-R6 and tests for the never-list rows; the founder decides the rest of 3a's table | 14:98 needs every P0 test green and has no waiver for a missing test; 14 does not say which rows a given build meets (M23) |
++| D9 | Nothing on which P0 rows hold a cut | Founder question Q1. Recommendation and default: BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 hold the Build 13 cut, with BL-978's NS-10-R7 fix and tests for the never-list rows; the founder decides the rest of 3a's table | 14:98 needs every P0 test green and has no waiver for a missing test; 14 does not say which rows a given build meets (M23) |
+ | D10 | The spike depends on NS-35 (13:58) | BL-972 depends on BL-935 (the lock) | The lock's row; 13 and the row disagree (M25) |
+ 
+ ---
+@@ -306,7 +306,7 @@ flowchart TD
+   BL976["BL-976 NS-08 readiness"] -- "NS-08-R6 test" --> CUT
+   P9["P-9 NS-13 R5 R6a R6b tests, BL-967 lane"] --> CUT
+   BL967["BL-967 sign-out ends reminders"] --> CUT
+-  P4["P-4 NS-09 R6 R7 R8"] -- "NS-09-R6 fix, P1" --> CUT
++  P4["P-4 NS-09 R6 R7 R8"] -. test or decision .-> CUT
+   BL961["BL-961 second account, NS-10-R3"] --> CUT
+   BL962["BL-962 system intelligence"] --> CUT
+   BL966 -. "NS-32-R1b fix or decision" .-> CUT
+@@ -387,8 +387,7 @@ Release path: F4 secret fixed (founder) -> re-run the db-v0.1.0 deploy: dry run,
+ 
+ Before the cut, under Q1's default (this plan's recommendation; any change to 14:98's gate is the founder's):
+ - These rows hold the cut: BL-922, BL-925 then BL-926, BL-927 then BL-928, BL-961 (NS-10-R3) and BL-967 (NS-13-R14). BL-961 and BL-967 are there because their rows fail today.
+-- BL-978's NS-10-R7 fix holds the cut too: R7 fails today and is P1, and 14:14 says a P1 failure blocks a store build. The fix itself is built first in the quiet-books and consent-key lane (claimed on #855); BL-978 carries its NS-titled test.
+-- P-4's NS-09-R6 holds the cut for the same reason: it is P1 and not built (M8). Its Storage line is in conflict with `storage.tsx:24-28`, which says recordings never appear there (08-keeping design K3); product rules the card side, and the cut waits for either the row or that ruling.
++- BL-978's NS-10-R7 fix holds the cut too: R7 fails today and is P1, and 14:14 says a P1 failure blocks a store build.
+ - A passing test exists for each never-list row whose behaviour is live:
+   - NS-08-R6 (BL-976);
+   - NS-13-R5, R6a and R6b (P-9, in the BL-967 lane);
+@@ -410,7 +409,7 @@ P0 rows (14:104 to 135) whose behaviour is live in Build 13 and that have no NS-
+ | Card | P0 rows | Today | Work row | In the never-list? | Under Q1's default |
+ |---|---|---|---|---|---|
+ | NS-10 | R3 (a second account never sees the first) | Fails: the gate opens the local book for any signed-in session (`gate.logic.ts:123-125`; 08-keeping design) | BL-961, BL-978 | no | fixed before the cut (BL-961 holds it) |
+-| NS-13 | R14 (sign-out ends every reminder) | Fails: sign-out never calls `forgetReminders` (09:152 at the lock; 09-capture design). With names on, a name may reach the lock screen after sign-out (Review B on #847) | BL-967 | possibly, through names on; treated as never-list (the stricter reading) until the founder says otherwise | fixed before the cut (BL-967 holds it) |
++| NS-13 | R14 (sign-out ends every reminder) | Fails: sign-out never calls `forgetReminders` (09:152 at the lock; 09-capture design). With names on, a name may reach the lock screen after sign-out (Review B on #847) | BL-967 | possibly, through names on | fixed before the cut (BL-967 holds it) |
+ | NS-13 and NS-32 | NS-13-R19, NS-32-R1b (one notification a day across books) | Fails: notes keyed by kind and date allow two on one day (#846 body; 09-capture design) | BL-966 | no | the founder decides: fixed before the cut (recommended), or ship a known defect by written decision |
+ | NS-10 (P1) | R7 (a consent retry writes one row) | Fails: a new idempotency key on every call (`consent.ts:117`; 08-keeping design) | BL-978 | no; P1, which blocks a store build (14:14) | fixed before the cut |
+ | NS-08 | R6 (sign out never removes a recording) | Untested (the card marks it UNVERIFIED) | BL-976 | yes: a lost recording | a passing test before the cut |
+@@ -435,7 +434,7 @@ Notes on the table:
+ - Reminders are live today, which is why the NS-13 and NS-32 rows are here although their rows are later.
+ - Some of the untested rows may already have tests under older ids, for example the planner's names-on and names-off cases in `first-run-child-name.test.ts`. A test counts once it is mapped to its NS id (P-8, BL-964) [U].
+ - NS-35-R1 is tested by #828's navigation test under its own N ids, and NS-09-R1 to R3 by #832 under BL ids (P-8).
+-- 14:14 makes any failing P1 row block a store build too. This plan lists the P1 failures the designs found: NS-10-R7 (BL-978) and NS-09-R6 (P-4, not built). P1 rows the designs did not check may fail too; the BL-964 trace report lists every P1 row without a test, and each one found failing joins this list.
++- 14:14 makes any failing P1 row block a store build too. This plan lists only the P1 failure the designs found (NS-10-R7).
+ 
+ Facts behind the release path [V]:
+ - `deploy-db.yml` run 42973935354 on tag `db-v0.1.0` (11 Nov) passed "Tag must point at a commit on main" and "Check the secret exists", then failed at "Dry run". Push was skipped. The log, read at about 04:20 UTC 20 Nov, said "failed to parse connection string"; the log has since expired.
+@@ -461,7 +460,7 @@ Parallel paths that must also finish for "14 on":
+ 
+ If the counsel read on the photo label is late, one option is Build 14 with Find and Share on and photo dark. Under the lock that option cannot happen as written: Share (BL-939) now waits for all of BL-931, so Share cannot ship before the photo code has merged. It could still ship with the photo flag off. It is an option under Q2 for the founder, not part of this plan.
+ 
+-Where the keeping rows land: under Q1's default BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 are in Build 13, with BL-978's R7 fix, P-4's NS-09-R6 and tests for the never-list rows. Any P0 row the founder decides to ship untested or with a known defect in 13 gets its fix or test first in wave 2 and gates Build 14.
++Where the keeping rows land: under Q1's default BL-922, BL-925, BL-926, BL-928, BL-961 and BL-967 are in Build 13, with BL-978's R7 fix and tests for the never-list rows. Any P0 row the founder decides to ship untested or with a known defect in 13 gets its fix or test first in wave 2 and gates Build 14.
+ 
+ Founder gates on the Build 14 paths: Q4 only if he wants #798 kept as one PR; Find words; photo words; share words and the share verb; counsel Q45 for Share; the BL-868, BL-960 and #854 legal merges; #799 merge; the counsel NX-33 label read and the policy lines (BL-865); ADR Q4; the device sheet.
+ 
+@@ -597,7 +596,7 @@ For Q1 to Q3 and Q6 to Q8, the default holds until he answers. Q4 and Q5 are dif
+ 
+ | Q | Question | Default (or recommendation, for Q4 and Q5) | Why it is his |
+ |---|---|---|---|
+-| Q1 | Which P0 rows must the Build 13 store candidate meet (14:98; G0 at 14:96)? | This plan's recommendation, taken as the default. The cut waits for: BL-922 (NS-10-R0); BL-925 and BL-926 (NS-09-R4a, R4b); BL-928 (NS-33-R1, R2, R4); BL-961 (NS-10-R3) and BL-967 (NS-13-R14), whose rows fail today; BL-978's NS-10-R7 fix and P-4's NS-09-R6 (both P1, which blocks a store build, 14:14). The live never-list rows get a passing test before the cut: NS-08-R6, NS-13-R5, R6a, R6b and NS-32-R12. Under the stricter reading, which is the default until he says otherwise, so do NS-10-R5 with the upload part of [X4-R1], and [X6-R1] with NS-21-R13. For the other rows in 3a's table he decides: a fix or a test before the cut (recommended), or shipping a known defect or an untested row by his written decision. Any such decision is a change to 14:98, which as written lets no P0 row ship untested; it is not a 14:98 waiver, which covers only device rows with no phone. P0 rows of features that ship dark gate their flags, not the cut. If he does not answer, 3a's table as recommended holds the cut | What is in a release is his, and so is any change to 14:98's gate and whether a row is a leak. Product and compliance advise |
++| Q1 | Which P0 rows must the Build 13 store candidate meet (14:98; G0 at 14:96)? | This plan's recommendation, taken as the default. The cut waits for: BL-922 (NS-10-R0); BL-925 and BL-926 (NS-09-R4a, R4b); BL-928 (NS-33-R1, R2, R4); BL-961 (NS-10-R3) and BL-967 (NS-13-R14), whose rows fail today; and BL-978's NS-10-R7 fix (P1, which blocks a store build). The live never-list rows get a passing test before the cut: NS-08-R6, NS-13-R5, R6a, R6b and NS-32-R12. Under the stricter reading, which is the default until he says otherwise, so do NS-10-R5 with the upload part of [X4-R1], and [X6-R1] with NS-21-R13. For the other rows in 3a's table he decides: a fix or a test before the cut (recommended), or shipping a known defect or an untested row by his written decision. Any such decision is a change to 14:98, which as written lets no P0 row ship untested; it is not a 14:98 waiver, which covers only device rows with no phone. P0 rows of features that ship dark gate their flags, not the cut | What is in a release is his, and so is any change to 14:98's gate and whether a row is a leak. Product and compliance advise |
+ | Q2 | Does the Build 13 cut wait for photo and Find? | No. Photo and Find ship dark, flags off in `production`; the Build 13 cut does not wait for them; Build 14 turns them on after the counsel read on the photo label. An option, not the default: if that read is late, Build 14 turns on Find and Share with photo dark (Share's code still waits for BL-931 at the lock) | The cards carry no build numbers (T5), and no file says the cut does not wait. Release content is his |
+ | Q3 | Seals: in scope and not cancelled (README:58, 61; VISION:51; BL-969, BL-970 at the lock), or "not built" (CR-62 item 1, RULINGS:585)? | In scope; no seal code is written until counsel answers Q6 | Scope, and a counsel gate |
+ | Q4 | Does he want #798 kept as one PR (+2,511 lines in 37 files), with a size exception, instead of the split the locked BL-952 sets? | Recommendation: no; split, as BL-952 says. A `mobile` agent started the split today, and its PRs merge under D-132 with no founder step. Council F7 counted #798 at about six PRs at the limit, and BL-952 adds three locked rows #798 misses. Only #798 kept as one PR waits for his acceptance | CODE-R02: the founder accepts or refuses an exception |
