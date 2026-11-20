@@ -4073,7 +4073,8 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 #### BL-1002 File the ADRs A1, A2, A3, B, C, D and E as Proposed (step 0.3)
 - Status: in-review (PR #1029). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-46-R29, NS-47-R6, NS-47-R12, NS-48-R1 (each ADR is the decision record a row's design cites).
-- Scope: seven ADR files in `docs/adr/` with status Proposed, numbers from `node scripts/agents/next-id.mjs` (the placeholders in section 2 are not final): A1 phone-only flags and pause (amend 0029), A2 one notification budget (amend 0032), A3 Home slip registry (amend 0033), B on-device sensitive store, C notification privacy, D pure notification selection, E one age function in core. Context, decision and "from" columns are the table in section 2 of the handoff; reviewers are `principal-architect`, `security-architect` and `privacy`. No code.
+- Scope: seven ADR files in `docs/adr/` with status Proposed, filed as ADRs 0029 to 0035 in PR #1029 (numbers from `node scripts/agents/next-id.mjs`; older reserved ids read through `docs/adr/CROSSWALK-new-scope.md`): A1 phone-only flags and pause (0029), A2 one notification budget (0030), A3 Home slip registry (0031), B on-device sensitive store (0032), C notification privacy (0033), D pure notification selection (0034), E one age function in core (0035). Context, decision and "from" columns are the table in section 2 of the handoff; reviewers are `principal-architect`, `security-architect` and `privacy`. No code.
+- Drop: none (step 0, docs only).
 - Done when: the seven files exist, each Proposed, each names its card rows, `node scripts/agents/check.mjs` passes, and no ADR is marked Accepted (only the founder accepts).
 - Source: `24-engineering-handoff.md` section 2 and step 0.3.
 
