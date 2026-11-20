@@ -12,7 +12,7 @@ Paths under `apps/mobile/src/` drop that prefix. Tests live in `apps/mobile/test
 | BL-928 (b) | R2 | Delete `headerTitle: copy.settings.title` so the bar shows the tab's own `title` | `app/(tabs)/_layout.tsx:91`; `test/tab-bar.test.ts:61`; `test/a11y-headings.test.ts` | `[NS-33-R2] Me heading matches tab` | V2 |
 | BL-928 (c) | R4 | Review's fix row stops cutting the parent's words at accessibility sizes; the truncation scan | `app/review.tsx:1207-1231`; new `test/a11y-ax5.test.ts` | `[NS-33-R4] no text on the four screens is cut at accessibility sizes` | X1 |
 | BL-928 (d) | R4 | The Book's inline bar stacks at accessibility sizes | `app/(tabs)/book.tsx:385-410` | `[NS-33-R4] the Book bar stacks at accessibility sizes` | X1 |
-| design-systems | R4 | The toast puts its words above Undo and Close at accessibility sizes | `components/ui/toast.tsx:113-131` | `[NS-33-R4] the toast stacks at accessibility sizes` | X1 |
+| design-systems, #877 | R4 | The toast puts its words above Undo and Close at accessibility sizes | `components/ui/toast.tsx:113-131` | `[NS-33-R4] the toast stacks at accessibility sizes` | X1 |
 
 (a) and (b) can ship as one PR (two headings, one new test file) or two. (c) is its own PR. (d) waits for #798 (section 5.3). The toast is a `design-systems` PR that touches no BL-928 file.
 
@@ -118,7 +118,7 @@ Add `[NS-33-R4] no control under 44 pt on the four screens` in the same file: no
 
 **Behaviour.** At accessibility sizes the toast stacks: the words on their own lines, full width, then one row aligned to the end with Undo (when there is an action), then Close, both 44 pt. Below accessibility sizes, nothing changes. Nothing else changes either: the announcement, no timer while there is an action, swipe, replace and `onDismiss` all stay (COMPONENTS 2.14). VoiceOver order stays words, Undo, Close.
 
-**Owner.** `design-systems`, in its own PR. It touches no BL-928 file.
+**Owner.** `design-systems`, in #877. It touches no BL-928 file.
 
 ### 5.5 AX5 walk on the phone (X1)
 
