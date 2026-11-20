@@ -63,3 +63,6 @@ console.log(renderPage(model, { extraLines: [metricsLine, staleLine] }).join("\n
 ```
 
 Up to `EXTRA_SLOTS` (2) extra lines are printed before the last line. Anything beyond that is cut, so the note never passes 15 lines.
+
+## build-queue.sh
+`bash scripts/status/build-queue.sh > queue.md` prints the build queue from GitHub REST only: the develop head and its CI, the last `testflight.yml` runs, every open non-draft PR into develop with its head, mergeable state, CI and the counted Review A and B verdicts bound to that exact head (CR-44), and the PRs merged since the last successful build. It copies no PR title, body or comment, so agents can read it as data. A session posts it as the body of the pinned "Build queue (computed ...)" issue (#659 on 8 Nov) and refreshes it; hand-written status docs point at that issue instead of restating PR states. Needs `gh` and `jq`; runs on macOS bash 3.2.
