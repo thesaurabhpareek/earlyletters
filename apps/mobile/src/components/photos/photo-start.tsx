@@ -5,7 +5,7 @@
  */
 import { ImageIcon } from 'phosphor-react-native/src/icons/Image';
 import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { ErrorLine } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { photos } from '@/lib/photos/copy';
 
@@ -21,7 +21,8 @@ export function PhotoStartButton({ child, onPress, failed = false }: { child: st
       onPress={onPress}
       className="self-center"
     />
-    {failed ? <Text variant="footnote" tone="muted" className="text-center">{photos.capture.openFailed}</Text> : null}
+    {/* Said aloud when it appears, and a polite live region (WCAG 4.1.3; spec 01 section 6 names ErrorLine). */}
+    <ErrorLine message={failed ? photos.capture.openFailed : null} />
     </>
   );
 }

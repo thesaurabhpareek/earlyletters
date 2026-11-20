@@ -34,7 +34,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
-import { discardPendingPhoto } from '@/lib/photos/hooks';
+import { discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -113,6 +113,7 @@ export default function Listen() {
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+  const pendingPhoto = usePendingPhoto();
   const takeId = useRef<string | null>(null);
   const ended = useRef(false);
   const seenLive = useRef(false);
@@ -134,6 +135,7 @@ export default function Listen() {
   // Continue included; a start after a blocker or a failure is a new tap and plays it.
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
+  const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -567,6 +569,11 @@ export default function Listen() {
               />
             )}
           </View>
+          {/* Ready with a picture (NS-01 section 4 steps 3-4, R20b): Speak is the circle above, Type is here, so a parent
+              who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
+          {room.startControl && withPhoto ? (
+            <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
             {room.line === 'listening' && (

@@ -5,11 +5,13 @@
  * Remove; the letter itself reads whole. None of this touches the letter's words, transcript or recording.
  * Absent when the photos switch is off.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { announce } from '@/lib/a11y';
+import { ErrorLine } from '@/lib/auth/ui';
 import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
 import { clearPhotoNotSaved } from '@/lib/photos/failures';
@@ -81,9 +83,9 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
   if (!photo) {
     return own && words ? (
       <View className="items-start" testID="letter.photo.add">
-        {notSaved ? <Text variant="callout" tone="muted" testID="letter.photo.notSaved">{photos.book.letter.notSaved}</Text> : null}
+        {notSaved ? <SpokenLine text={draft ? photos.review.notStored : photos.book.letter.notSaved} testID="letter.photo.notSaved" /> : null}
         <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
-        {failed || pick.failed ? <Text variant="footnote" tone="muted">{photos.capture.openFailed}</Text> : null}
+        <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
       </View>
     ) : null;
   }
@@ -124,9 +126,24 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
             onPress={() => offerUndo(photos.book.letter.removed, removePhotoFromLetter(photoDeps(), entryId))}
             testID="letter.photo.remove"
           />
-          {failed || pick.failed ? <Text variant="footnote" tone="muted">{photos.capture.openFailed}</Text> : null}
+          <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
         </View>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * A calm line said aloud once when it appears (NS-33 section 6): announce() on iOS, a polite live region on Android. It
+ * keeps the muted look of a line that names no cause, so it is not an ErrorLine.
+ */
+function SpokenLine({ text, testID }: { text: string; testID: string }) {
+  useEffect(() => {
+    announce(text);
+  }, [text]);
+  return (
+    <Text variant="callout" tone="muted" accessibilityLiveRegion="polite" testID={testID}>
+      {text}
+    </Text>
   );
 }

@@ -42,6 +42,31 @@ describe('[NS-01-R6][NX-39-R8] the stored copy carries no metadata', () => {
     expect(r.bytes[0]).toBe(0xff);
     expect(r.bytes[1]).toBe(0xd8);
   });
+  it('[NS-01-R6] the JFIF thumbnail is gone: one APP0 left, the bare 16-byte JFIF header with a 0 by 0 thumbnail, and a JFXX thumbnail segment is dropped whole (#836 review B)', () => {
+    /** The marker segments before the scan: [marker, the segment's bytes after the marker]. */
+    const headers = (b: Uint8Array): [number, Uint8Array][] => {
+      const out: [number, Uint8Array][] = [];
+      for (let i = 2; i + 4 <= b.length && b[i + 1] !== 0xda; ) {
+        const end = i + 2 + ((b[i + 2] << 8) | b[i + 3]);
+        out.push([b[i + 1], b.slice(i + 2, end)]);
+        i = end;
+      }
+      return out;
+    };
+    const base = makeJpeg({ jfifThumb: true, seed: 3 });
+    const jfxx = [0xff, 0xe0, 0, 16, ...Array.from('JFXX\0', (c) => c.charCodeAt(0)), 0x10, 1, 2, 3, 4, 5, 6, 7, 8];
+    const both = Uint8Array.from([...base.slice(0, 2), ...jfxx, ...base.slice(2)]);
+    for (const input of [base, both]) {
+      const r = stripJpeg(input);
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      const app0 = headers(r.bytes).filter(([m]) => m === 0xe0);
+      expect(app0.length).toBe(1);
+      const seg = app0[0][1];
+      expect([seg.length, seg[0] << 8 | seg[1], seg[14], seg[15]]).toEqual([16, 16, 0, 0]);
+      expect(Buffer.from(r.bytes).toString('latin1')).not.toContain('JFXX');
+    }
+  });
   it('[NS-01-R6] reports what it cannot strip instead of keeping metadata: not a JPEG, or damaged', () => {
     expect(stripJpeg(Uint8Array.of(0x89, 0x50, 0x4e, 0x47))).toEqual({ ok: false, reason: 'not_jpeg' });
     expect(stripJpeg(makeJpeg().slice(0, 12))).toEqual({ ok: false, reason: 'corrupt' });

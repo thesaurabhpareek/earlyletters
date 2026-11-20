@@ -968,9 +968,6 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-          {/* The picture chosen with this letter, before Keep (NS-01-R7): add, change, take off, with Undo. Absent when off. */}
-          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
-
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">
               <Text variant="subhead" tone="caution">
@@ -1141,10 +1138,16 @@ export default function Review() {
                 </Button>
               )}
 
-              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
-              {inlineFooter ? footer : null}
             </>
           )}
+          {/* The picture chosen with this letter (NS-01-R7): add, change, take off, with Undo. It comes after the parent's
+              words and their small fixes and before Let it go and Keep (spec 01 section 4), so it never leads the words, and
+              when it is stored after Review opens nothing above it moves. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
+
+          {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. The footer is
+              null until the words are ready. */}
+          {inlineFooter ? footer : null}
           {inlineFooter ? keepFooter : null}
         </ScrollView>
 

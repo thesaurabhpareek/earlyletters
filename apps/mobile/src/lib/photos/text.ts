@@ -8,8 +8,8 @@ const EXTEND = `(?:(?!${VIRAMA})[\\p{M}\\u{1F3FB}-\\u{1F3FF}])`;
 const BASE = '[^\\p{M}\\u200D]';
 const CLUSTER = new RegExp(`[\\u{1F1E6}-\\u{1F1FF}]{2}|${BASE}${EXTEND}*(?:(?:${VIRAMA}${EXTEND}*|\\u200D)${BASE}${EXTEND}*)*(?:${VIRAMA}${EXTEND}*)?|[\\s\\S]`, 'gu');
 
-/** Migration 11's CHECK keeps 8 code points for each character a person sees (BL-957): a ceiling, never the limit. */
-const CODE_POINTS_PER_CHARACTER = 8;
+/** Migration 11's CHECK keeps 16 code points for each character a person sees (BL-957): a ceiling, never the limit. */
+const CODE_POINTS_PER_CHARACTER = 16;
 
 /** The characters a person sees: Intl.Segmenter where the engine has one, the rule above where it does not. */
 const graphemes = (s: string): string[] => {
@@ -20,8 +20,8 @@ const graphemes = (s: string): string[] => {
 /**
  * The parent's words about a picture (NS-01-R21): optional, trimmed at the ends, null when empty. The limit counts
  * characters a person sees (grapheme clusters, BL-957): 140 for the words and 60 for the place, keeping whole characters
- * only, so the cut never splits one. Migration 11's CHECK is only a ceiling in code points, 8 per character; a character
- * can be longer (a family with skin tones, a stack of marks), so the cut also stops before that ceiling, and the store
+ * only, so the cut never splits one. Migration 11's CHECK is only a ceiling in code points, 16 per character, which fits
+ * every RGI emoji; a character can still be longer (a stack of marks), so the cut also stops before that ceiling, and the store
  * never refuses what was kept. The app never fills the words in or suggests them, and never edits what is typed beyond
  * the ends and the length. Small on purpose: BL-957 (wave 2) moves one grapheme helper into packages/core.
  */
