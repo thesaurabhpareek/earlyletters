@@ -441,8 +441,10 @@ export const MIGRATIONS: Migration[] = [
       //   bytes       L1  size of the stripped copy
       //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
       //   width, height L2
-      //   photo_text  L4  the parent's own words about the picture, at most 140
-      //   place       L4  typed by the parent, at most 60. Never read from the picture.
+      //   photo_text  L4  the parent's own words about the picture: the app keeps at most 140 characters a person
+      //                   sees (grapheme clusters); the CHECK is only a ceiling in code points, 8 per character (BL-957)
+      //   place       L4  typed by the parent: at most 60 characters a person sees, ceiling 480 code points. Never
+      //                   read from the picture.
       //   added_at    L2
       // No deleted_at: the row is hidden while its letter's entries.deleted_at is set, by join (ADR 0028 D1).
       // One picture per letter is the unique index, not the table shape (a later build drops that one index).
@@ -457,8 +459,8 @@ export const MIGRATIONS: Migration[] = [
           sha256 TEXT NOT NULL,
           width INTEGER,
           height INTEGER,
-          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 140),
-          place TEXT CHECK (place IS NULL OR length(place) <= 60),
+          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 1120),
+          place TEXT CHECK (place IS NULL OR length(place) <= 480),
           added_at TEXT NOT NULL,
           CHECK ((entry_id IS NULL) <> (draft_id IS NULL))
         );
