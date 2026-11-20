@@ -3,8 +3,9 @@
 # it. Until this runs, no Swift in this repository has ever been compiled.
 #
 # What it does: npm ci; `expo prebuild --platform ios --no-install` with the env of the eas.json `testflight`
-# profile and EXPO_PUBLIC_SERVER_FEATURES=off; pod install; xcodebuild for the simulator with
-# CODE_SIGNING_ALLOWED=NO. Compile errors become annotations on the file and line, and a list in the run summary.
+# profile and EXPO_PUBLIC_SERVER_FEATURES=off; pod install; React Native's prebuilt core in its Debug flavour; xcodebuild
+# for the simulator with CODE_SIGNING_ALLOWED=NO. Compile errors become annotations on the file and line, and a list in
+# the run summary.
 #
 # Runner and Xcode, checked on 16 Oct 2026:
 # - Expo SDK 57 needs Xcode 26.4 or later (docs.expo.dev/versions/v57.0.0, "Support for Android and iOS versions";
@@ -148,6 +149,41 @@ jobs:
       - name: pod install
         working-directory: apps/mobile/ios
         run: '"$RUNNER_TEMP/step.sh" "pod install" pod install'
+
+      # React Native's prebuilt core (React.xcframework) and dependencies come in a Debug and a Release flavour. A build
+      # phase in each pod swaps them, keyed on a marker in the pod folder (.last_build_configuration), and with no marker
+      # it assumes Debug and keeps what is there (node_modules/react-native/scripts/replace-rncore-version.js). pod install
+      # deletes that marker whenever it installs or updates any pod: CocoaPods then cleans every pod folder, and the
+      # pods' preserve_paths '**/*.*' do not match a dotfile. The Pods restored above are saved by the Release jobs
+      # (launch, kill-harness.yml), so a pull request that added a pod linked the Release React into this Debug app
+      # (undefined RCTPackagerConnection, Sealable, ShadowNode::getDebugName: #833 to #844, 20 Nov). This step puts both
+      # in their Debug flavour with React Native's own scripts before xcodebuild, and checks the React binary is the
+      # Debug one. Only this Debug job: the Release jobs, the store build and EAS are untouched.
+      - name: React Native prebuilt core and dependencies in their Debug flavour
+        working-directory: apps/mobile/ios/Pods
+        run: |
+          set -euo pipefail
+          rn="$(cd .. && node -p 'require("path").dirname(require.resolve("react-native/package.json"))')"
+          version="$(node -p "require('$rn/package.json').version")"
+          # <pod folder> <React Native's switch script for it>
+          debug_flavour() {
+            if [ ! -d "$1" ]; then echo "$1: not installed, nothing to switch"; return; fi
+            # Any marker but Debug makes the script extract the Debug tarball pod install downloaded next to the Release one.
+            printf Release > "$1/.last_build_configuration"
+            node "$rn/$2" -c Debug -r "$version" -p "$PWD"
+            [ "$(cat "$1/.last_build_configuration")" = Debug ] || { echo "::error::$1 is not in its Debug flavour"; exit 1; }
+          }
+          debug_flavour React-Core-prebuilt scripts/replace-rncore-version.js
+          debug_flavour ReactNativeDependencies third-party-podspecs/replace_dependencies_version.js
+          # The Debug React.framework carries the dev-only classes (RCT_DEV); the Release one, which linked here on 20 Nov,
+          # does not. grep reads all of nm's output, so pipefail cannot see a SIGPIPE.
+          bin="$(find React-Core-prebuilt/React.xcframework -path '*simulator*/React.framework/React' -type f -print -quit)"
+          if [ -z "$bin" ]; then
+            echo "::warning::no simulator React.framework/React under Pods/React-Core-prebuilt: flavour not checked"
+          elif ! nm -gU "$bin" | grep 'RCTPackagerConnection' > /dev/null; then
+            echo "::error::${bin} has no RCTPackagerConnection: the Release React, which this Debug build cannot link"; exit 1
+          fi
+          echo "React Native ${version}: prebuilt core and dependencies in their Debug flavour"
 
       - name: Restore DerivedData
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
