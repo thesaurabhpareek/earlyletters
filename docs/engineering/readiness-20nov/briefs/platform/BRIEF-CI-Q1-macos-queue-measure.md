@@ -14,7 +14,7 @@ Agent: ops   Lane: Pack 10   Build: none (CI speed)   Wave: 1
    Baseline today [V, gh api, 20 Nov]: 14 successful runs of `launch`: run 13.6 to 31.1 min, median 22.6; queue wait 0 to 155.4 min, median 37.5; xcodebuild 15.7 to 17.1 min of 26 (runs 44776672118, 44754043961); DerivedData restored by prefix (restore-keys), not exact key.
 
 3. FILES
-   Touch: docs/ops/ci-queue-q1-measurement.md (new), docs/ops/proposed/workflows/ios-compile-timing.patch (new), scripts/ops/ci-timing.mjs (new, read-only reader of `gh api`; H10 in MEASUREMENT-PLAN) with scripts/ops/ci-timing.test.mjs,
+   Touch: docs/ops/ci-queue-q1-measurement.md (new), docs/ops/proposed/workflows/ios-compile-timing.patch (new), scripts/ci/ci-timing.mjs (new, read-only reader of `gh api`; H10 in MEASUREMENT-PLAN; NOT under scripts/ops, which CI's Deno job `test:functions` runs) with its test apps/mobile/test/ci-timing.test.ts (vitest, runs in `unit`),
           docs/agents/checkins/ops-rd-h3-q1.md
    Never: .github/workflows/**; any build on a paid runner; scripts/agents/**.
 
@@ -38,11 +38,11 @@ Agent: ops   Lane: Pack 10   Build: none (CI speed)   Wave: 1
 
 10. PR BREAKDOWN: PR 1 reader script + test ~110 lines, 2 files; PR 2 patch + report template ~80 lines, 3 files | base develop | nothing runs until the founder pastes the patch.
 
-11. LENSES: A security-architect (workflow patch), B principal-architect.
+11. LENSES: A security-architect (workflow patch), B principal-architect; mobile reads the test under apps/mobile/**. Done conditions: the measuring dispatch is a `workflow_dispatch` an agent may not be allowed to make [U]; if refused, the founder dispatches and the report cites his run ids; the brief is then done.
 
 12. ORDER: first of the queue briefs; before BRIEF CI-Q2, whose choices follow its result. Blocked by the founder for one dispatch (or one Mac run).
 
-13. DONE: [ ] `node --test scripts/ops/ci-timing.test.mjs`; [ ] ASCII; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE: [ ] `npx vitest run apps/mobile/test/ci-timing.test.ts`; [ ] ASCII; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY THE FOUNDER CAN PROVE: the dispatch result (agents may not be allowed to dispatch: [U]); a Mac run needs his Mac and Xcode 26.6 (the image's Xcode, `XCODE_VERSION` in the workflow).
 

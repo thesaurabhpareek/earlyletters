@@ -12,7 +12,7 @@ Agent: ops   Lane: Pack 10   Build: before 14 (photo and video libraries will ad
    unless the PR body says `Size-change: <reason, owner>` and the baseline file changes in the same PR.
 
 2. CARD ROWS and TEST TITLES: NFR budgets Z-02, Z-05, Z-06 (docs/engineering/readiness-20nov/performance/NFR-BUDGETS.md, #928); APP_SIZE.md section 1 (decision 15). No NS row.
-   Tests: extend scripts/size/lib.test.ts (exists [V]): `[Z-02] bytecode growth over the limit fails`, `[Z-05] a new app dependency fails`, `[Z-06] a Size-change line downgrades to a notice only when the baseline changed too`.
+   Tests: scripts/size/lib.test.ts exists [V] but runs in no CI list (not a workspace; not in root `test`), so a test there can never go red in CI. Put the new gate tests in `apps/mobile/test/size-gate.test.ts` (vitest, runs in `unit`, imports scripts/size/lib): `[Z-02] bytecode growth over the limit fails`, `[Z-05] a new app dependency fails`, `[Z-06] a Size-change line downgrades to a notice only when the baseline changed too`.
    Red on develop: `measure.ts` has no `--check` and no baseline file (`ls docs/ops/size-baseline.json` -> missing [V]). Mutant: compare with `>=` instead of `>` at the limit.
 
 3. FILES
@@ -40,11 +40,11 @@ Agent: ops   Lane: Pack 10   Build: before 14 (photo and video libraries will ad
 
 10. PR BREAKDOWN: PR 1 script + tests ~180 lines, 3 files; PR 2 baseline + workflow proposal ~90 lines, 3 files | base develop | check not running until the founder pastes the step.
 
-11. LENSES: A principal-architect, B security-architect (it touches `.github` only as a proposal) [E].
+11. LENSES: A principal-architect, B security-architect (it touches `.github` only as a proposal) [E]; mobile reads the test under apps/mobile/**. The base-branch baseline compare needs the single `unit` fetch step of BRIEF CI-PIN section 10 (founder).
 
 12. ORDER: after the first measured run; before Build 14 (NS-01 pictures add native code). With BRIEF B13-CHECKS step (d). Blocked by the founder for the paste and the first run.
 
-13. DONE: [ ] `npx vitest run scripts/size` [U: where scripts/size/lib.test.ts runs: confirm it is in `npm test`]; [ ] baseline from CI; [ ] ASCII; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE: [ ] `npx vitest run apps/mobile/test/size-gate.test.ts`; [ ] baseline from CI; [ ] ASCII; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY A PHONE (or Apple) CAN PROVE: the real download size: App Store Connect or the thinning report of the candidate (Z-01, Z-04), recorded in docs/release/<x.y.z>.md. Build 13's number is the first one on record.
 
