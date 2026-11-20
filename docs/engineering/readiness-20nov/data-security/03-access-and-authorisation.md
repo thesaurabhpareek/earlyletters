@@ -261,18 +261,18 @@ New gaps (council gap list, items 1, 3, 4):
 
 Not verified: any hosted state; that `npm run test:db` passes with these changes (none are built); Supabase's behaviour for a login role per function on the hosted pooler [U].
 
-## 17. Re-sync to errata E76 to E81 (20 Nov 2026, develop `df2c3502`)
+## 17. Re-sync to errata E1 to E83, CL-001 to CL-158, develop `55574906c` (20 Nov 2026)
 
-Decisions are cited by their ids: E76 to E81 in `docs/product/prd/18-errata-after-lock.md:129-134`; FR-SEC-36 (`docs/product/prd/functions/risk-security.md:316`); NS-08-R21 (`docs/product/prd/08-keeping-and-trust.md:136`). Where this section and sections 10 to 16 differ, this section wins.
+Decisions are cited by their ids: E76 to E83 in `docs/product/prd/18-errata-after-lock.md:129-134`; FR-SEC-36 (`docs/product/prd/functions/risk-security.md:316`); NS-08-R21 (`docs/product/prd/08-keeping-and-trust.md:136`). Where this section and sections 10 to 16 differ, this section wins.
 
 | Id | What it settles here | Enforced by, status |
 |---|---|---|
-| E78, NS-08-R21 | The new-device sign-in email is not built for 1.0. It is a hard gate before the backup flip (`EXPO_PUBLIC_BACKUP`): it fires once for a session on a device the account has not used, never for the first device, never from the client, email only; its "Not you?" link opens a page that acts only on a button press and signs that one session out; "We will sign that device out" (`auth.en.ts:199`) is shown only once that lever and page exist. Needs a device table (L3, service role only, keyed hash, file 04 section 14), a sender, and my read on record. This closes G-03-05 | not yet; the lever, page, table and sender are unbuilt |
+| E78, NS-08-R21 | The new-device sign-in email is built, tested and read by security-architect before the first outside family signs in (E83, NS-08-R21; it still gates the backup flip `EXPO_PUBLIC_BACKUP`; the privacy read of the device table comes first): email only, no push, no link that acts by being opened; it fires once for a session on a device the account has not used, never for the first device, never from the client, email only; its "Not you?" link opens a page that acts only on a button press and signs that one session out; "We will sign that device out" (`auth.en.ts:199`) is shown only once that lever and page exist. Needs a device table (L3, service role only, keyed hash, file 04 section 14), a sender, and my read on record. This closes G-03-05 | not yet; the lever, page, table and sender are unbuilt |
 | E76, E77, FR-SEC-36 | No new alert email at 1.0. Only mail already built or sent by the sign-in service goes out. "Sign out other devices" sends no email. No email follows wrong sign-in codes. No new control, and no server count or paging job for wrong codes | holds today (no sender in `supabase/functions`) |
 | E81 | Alert cap on any alert sender, now or later: the first 5 an hour one by one, the rest folded into one summary within minutes, and a stop at 20 alert emails per account per day. Never on sign-in codes (FR-SEC-36). Alerts are not held by quiet hours | not yet; binds NS-08-R21 and any later sender |
 | E80 | `dictionary_terms` stays built and unreachable (listed among the tables with no grant at `20261023060000_explicit_grants.sql:50`; section 4 list at line 90). Condition from the council: confirm account and book purge cover it | `grants.mjs` lists no grant for it [V: no mention]; purge coverage unverified [U] |
 
-Conflict (E78 vs the founder's decision): E78 / NS-08-R21 gate the new-device email before the backup flip; the founder decided (DECISIONS-20nov.md section 8 item 7) before the first outside family. The founder's date is earlier and so stricter: building the email before the first outside family satisfies both. Cards win on wording (CR-66), so product records the founder's decision in an erratum; engineering builds to the stricter gate.
+Conflict (E78 vs the founder's decision): closed by E83 (CL-158): the founder's answer holds; E83 replaces the timing in E78 and CL-155.
 
 My design choices, all [E]: (1) under E77 the C3b kind "wrong-code bursts" (section 16) is not built at 1.0; I keep it as a later proposal, owner `ops`, only if the founder asks for a server count. The other kinds in section 16 that count refusals (step-up failures, deletion requests refused, ceiling hit) do not email anyone and are not a paging job, so they stand. (2) The device table is L3, keyed hash (HMAC with a function secret), deleted with the account.
 
