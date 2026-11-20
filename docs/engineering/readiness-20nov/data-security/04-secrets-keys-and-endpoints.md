@@ -268,7 +268,7 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 | G-04-07 | The website launch-list form relies on in-memory limits that Vercel instances do not share; the real limit is a WAF rule nobody has confirmed. | `apps/web/src/lib/notify/rate-limit.ts:1-10` | Medium | ops (founder console) |
 | G-04-08 | Rules point to files that do not exist: `docs/ops/SECRETS.md` (SEC-R02), `docs/security/threat-model.md` (SEC-R01), `SECURITY.md` at the root and `docs/ops/INCIDENT.md` (SEC-R23). `docs/ops/SECURITY.md` and the runbooks cover part of it. | `docs/engineering/06-security-engineering.md:29,33,85` | Low | security, ops |
 | G-04-09 | Hosted Data API exposed-schema list, `pg_graphql` and Realtime state, and Auth rate limits are only checklists in `SECURITY.md:123-136`; `config.toml` has no `[api]` block and applies to the local stack only. | `supabase/config.toml:1-12`; `SECURITY.md:123-136` | Medium until read back in the dashboard | ops |
-| G-04-10 | The new-device email promises "we will sign that device out" and has no sender or lever (see file 03, G-03-05); the signal S-03 does not exist. | `supabase/templates/README.md:50`; `auth.en.ts:199` | Medium | sync |
+| G-04-10 | The new-device email (P0 in PRD V2, F02-REQ-017) promises "we will sign that device out" and has no sender or lever (see file 03, G-03-05); the signal S-03 does not exist. | `supabase/templates/README.md:50`; `auth.en.ts:199` | Medium | sync |
 | G-04-11 | No test forbids a secret-looking name in `EXPO_PUBLIC_*` (section 3). | `apps/mobile/test` (absent) | Low | security |
 
 ## 10. Conflicts
@@ -276,6 +276,7 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 - **Conflict (chapter 06 vs code):** SEC-R10 says `agents.yml` is the unpinned workflow; it is pinned and four others are not. Route: security-architect fixes the chapter text through the RFC handoff; the pinning goes to `qa`.
 - **Conflict (chapter 06 vs repo):** SEC-R03, R08, R09 cite PR #30 for `security.yml`, `dependabot.yml`, `audit-ignore.json`; none is on `develop`. Route: `qa` and the founder (is PR #30 still wanted, or is the work re-planned).
 - **Conflict (function file vs card):** the notification catalogue and function files list co-parent push (F11, NS-26); `NOTIFICATIONS.md:36` and `security.md:261` say not in v1.0. Cards win (CR-66): NS-26 is parked, so no push work is planned. Route: product to confirm in the feedback loop that no v1.0 row depends on push.
+- **Conflict (PRD V2 vs templates):** the new-device sign-in email is P0 and "before any escrow release" in PRD V2 (`docs/prd/v2/reviews/DISPOSITION-B.md:72`, F02-REQ-017, F02-U33 at `docs/prd/v2/features/F02-account.md:182`), and "1.0, not launch-blocking" in `supabase/templates/README.md:50`. No sender exists in code either way. Route: product, question `F02-REQ-017` posted on this PR; default engineering builds nothing until answered, and backup stays off.
 - **Conflict (config vs chapter):** `config.toml` header says Google sign-in in v1.0 (D-054); IAM-R05 follows D-044 (v1.1). Same as file 03; product and founder.
 
 ## 11. Questions for the council (each with a default)
