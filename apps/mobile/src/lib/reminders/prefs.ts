@@ -50,6 +50,9 @@ const K = {
   names: 'notifications.lockScreenNames',
 } as const;
 
+/** Every reminder setting above: cleared when the session ends (session.ts; NS-13-R14). */
+export const REMINDER_SETTING_KEYS: readonly string[] = Object.values(K);
+
 const onOff = (key: string, fallback: boolean): boolean => {
   const v = getSetting(key);
   return v === 'on' ? true : v === 'off' ? false : fallback;
