@@ -80,7 +80,7 @@ describe('[NS-01-R1] only Home registers a photo start', () => {
     while (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent)) parent = parent.parent;
     const siblings = parent.children.map(jsxName).filter(Boolean);
     expect(siblings).toContain('ButtonRow'); // the Speak and Type row is in the same cluster
-  });
+  }, 30_000); // parses the whole src tree: 7 to 9 s on a loaded runner
   it('[NS-01-R1] the Book, Me and every other route have 0 controls that start a letter from a picture', () => {
     for (const f of APP.filter((f) => f !== HOME)) {
       const sf = parse(f);
@@ -240,6 +240,24 @@ describe('[NS-01-R20] new controls', () => {
     // Reading order on Ready: thumbnail, prompt, then the red circle (Speak) and "or type instead" (Type) below it.
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
+  });
+  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, prompt, Speak, Type (#838 review B)', () => {
+    const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
+    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
+    expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
+    const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
+    expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
+  });
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use ErrorLine, which announces it and is a live region (#838 review B)', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
+      const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
+      expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
+      expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
+    }
+    const line = readFileSync(join(SRC, 'lib', 'auth', 'ui.tsx'), 'utf8');
+    const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
+    expect(body).toMatch(/if \(message\) announce\(message\);/);
+    expect(body).toMatch(/accessibilityLiveRegion="polite"/);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
