@@ -178,7 +178,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 
 1. Policy text and code disagree about holds: `data-policy.md:223` says staff read held data only with a logged `support_access` event; no code writes that action (`05` finding 1) [V].
 2. Production deletion is not running: only migration files 1 and 2 are applied and the worker is not deployed (`APPLY.md:48`; chapter 08 DSR-R06) [V]. Any parent-facing deletion promise is ahead of the system until D-041.
-3. Backups under Free are a 7-day encrypted dump in a private repo, not Supabase backups; `data-policy.md:211` still describes Pro daily backups [V `reliability.md:43`, FR-PRV-08]. The 38-day promise holds only while the dump stays 7 days.
+3. Backups under Free are a 7-day encrypted dump in a private repo, not Supabase backups; `data-policy.md:212` still describes Pro daily backups [V `reliability.md:43`, FR-PRV-08]. The 38-day promise holds only while the dump stays 7 days.
 4. No reader for `audit_events` (`05` finding 3): an access request that includes it needs a definer function (PQ-5).
 5. The preservation script (LEGAL-REQ-057) and the support summary function (FR-BKO-02) are not built; the first legal request or support lookup would be improvised.
 6. Letter-level "withdraw consent" has no decided effect on server rows already held (PQ-1) [V].
@@ -190,7 +190,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 
 | Id | Where | Conflict | Sent to |
 |---|---|---|---|
-| C06-1 | `data-policy.md:211` vs `reliability.md:43` and FR-PRV-08 | Policy: Pro daily backups, 7 days. Production: Free plan, no Supabase backups, nightly dump 7 days | `legal`, `ops` |
+| C06-1 | `data-policy.md:212` vs `reliability.md:43` and FR-PRV-08 | Policy: Pro daily backups, 7 days. Production: Free plan, no Supabase backups, nightly dump 7 days | `legal`, `ops` |
 | C06-2 | `data-policy.md:223` vs code | `support_access` audit event is not written (finding 1) | `legal`, `data-architect` |
 | C06-3 | D-021 (12 months for key-unwrap logs) vs DC 4.3.1 (24 months) | open as COUNSEL_PACKET Q51; Rec 12 months, section 14.1 | counsel |
 | C06-4 | `subprocessors.md` vs FR-PRV-08 | GitHub holds an encrypted dump; not named (PQ-3) | `legal` |
@@ -249,11 +249,11 @@ Owners `legal` and `privacy`. Rule: nothing about server backups goes public unt
 | 5 | Site says "never used to train AI"; names AI, "never" is a practice not code | Rec "Never used to train machine learning models"; founder and counsel (CQ14 context) | `legal` | G13 |
 | 6 | "Exactly as you said it" live on site and welcome email, held from the store (D-125 item 9) | site follows the store hold; founder merges to `main` | `legal` | G13 |
 
-Also: "kept on the phone that made them" is true only without device backup; add "and your iPhone backup if you use one".
+Also: "kept on the phone that made them" is true only without device backup. PROPOSED, counsel reads first (CQ11): add "and your iPhone backup if you use one".
 
-### 14.5 `data-policy.md:211` Free-plan conflict (C06-1, restated)
+### 14.5 `data-policy.md:212` Free-plan conflict (C06-1, restated)
 
-`data-policy.md:211` reads "7 days (Pro daily backups)" [V]; production is on Free with a 7-day encrypted nightly dump and no Supabase backups (`reliability.md:43`; FR-PRV-08). The sentence is false until A1 closes and must not be published; `docs/legal/**` is the founder's, so I do not edit it. If Pro or PITR is bought, its window (7, 14 or 28 days) replaces 7 in every promise before the policy is updated (the row's own rule). `data-policy.md:223` (`support_access`) stays unpublished until a writer exists (C06-2). Owner `legal`; gate GF.
+`data-policy.md:212` reads "7 days (Pro daily backups)" [V]; production is on Free with a 7-day encrypted nightly dump and no Supabase backups (`reliability.md:43`; FR-PRV-08). The sentence is false until A1 closes and must not be published; `docs/legal/**` is the founder's, so I do not edit it. If Pro or PITR is bought, its window (7, 14 or 28 days) replaces 7 in every promise before the policy is updated (the row's own rule). `data-policy.md:224` (`support_access`) stays unpublished until a writer exists (C06-2). Owner `legal`; gate GF.
 
 ### 14.6 Live system versus what we say (CLO G1)
 
@@ -273,7 +273,7 @@ Also: "kept on the phone that made them" is true only without device backup; add
 | A3 consent floor | | rule in place before the setting is turned on | |
 | E5 gaps 1, 3 (store line), 5, 6 | fix or hold | | |
 | E5 gaps 2, 3 (policy), 4 | | fix or hold | |
-| `data-policy.md:211` | | not published; correct after A1 | |
+| `data-policy.md:212` | | not published; correct after A1 | |
 | `safety_events` live check | | query recorded | |
 
 ### Appendix A. The 14 counsel questions (exact wording, CPrivO/CCO/CLO return section 9)
@@ -295,4 +295,4 @@ CQ12 Free-plan restore. "Where should we state that up to 24 hours of deletions 
 CQ13 Inactive accounts. "Is keeping an inactive account and its letters indefinitely, with no automatic deletion, acceptable if the policy says so, or must a period be set?" (OQ-11, Q26)
 CQ14 Pre-staged only if the founder ever opens cloud AI: "Is sending letter text to a zero-retention processor 'sharing' of consumer health data under the state laws in the register, and what consent does it need besides Apple 5.1.2(i)?"
 
-Amendment cites re-read on `origin/develop`: `data-policy.md:211, 223`; `20261108000000:33, 77`; `scribe_core.sql:178`; `data_governance.sql:277`; `APPLY.md:48`: 6 of 6 held. Not verified: any live project state (safety_events, plan, applied files), FTC and Supabase pages, counsel readings, and the council returns themselves (not on `develop`).
+Amendment cites re-read on `origin/develop`: `data-policy.md:212, 224` (re-read on develop after #854 moved them one line); `20261108000000:33, 77`; `scribe_core.sql:178`; `data_governance.sql:277`; `APPLY.md:48`: 6 of 6 held. Not verified: any live project state (safety_events, plan, applied files), FTC and Supabase pages, counsel readings, and the council returns themselves (not on `develop`).
