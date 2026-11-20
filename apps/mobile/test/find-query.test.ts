@@ -75,10 +75,7 @@ describe('[NS-02-R34] no transliteration', () => {
   it('[NS-02-R34] Hindi typed in Latin letters is found by a Latin query only; the other script never matches', () => {
     const latin = { body: 'Aaj Asha ne naav dekhi.', extra: '' };
     const deva = { body: '\u0906\u091c \u0906\u0936\u093e \u0928\u0947 \u0928\u093e\u0935 \u0926\u0947\u0916\u0940\u0964', extra: '' };
-    expect(matches(prepareQuery('naav'), latin)).toBe(true);
-    expect(matches(prepareQuery('\u0928\u093e\u0935'), latin)).toBe(false);
-    expect(matches(prepareQuery('naav'), deva)).toBe(false);
-    expect(matches(prepareQuery('\u0928\u093e\u0935'), deva)).toBe(true);
+    expect([matches(prepareQuery('naav'), latin), matches(prepareQuery('\u0928\u093e\u0935'), latin), matches(prepareQuery('naav'), deva), matches(prepareQuery('\u0928\u093e\u0935'), deva)]).toEqual([true, false, false, true]);
   });
 });
 
@@ -107,7 +104,7 @@ describe('[NS-02-R9] the excerpt is a slice of the parent\'s words', () => {
       const label = `${i}: ${target}`;
       expect(text.includes(e.text), label).toBe(true);
       expect(text.slice(e.offset, e.offset + e.text.length), label).toBe(e.text);
-      expect(e.text.length, label).toBeLessThanOrEqual(EXCERPT_MAX + 4);
+      expect(e.text.length, label).toBeLessThanOrEqual(EXCERPT_MAX);
       expect(e.text, label).not.toMatch(/[\u2026\u2013\u2014]/);
       // whole words at both ends: the neighbours in the source are a space, a line break or the edge of the text
       expect(e.offset === 0 || /[\s]/.test(text[e.offset - 1]) || /[.!?]/.test(text[e.offset - 1]), label).toBe(true);
@@ -121,12 +118,38 @@ describe('[NS-02-R9] the excerpt is a slice of the parent\'s words', () => {
     const long = ('word '.repeat(100) + 'the blue boat floated ' + 'word '.repeat(100)).trim();
     const q = prepareQuery('boat');
     const e = excerpt(q, long);
-    expect(e.text.length).toBeLessThanOrEqual(EXCERPT_MAX + 4);
+    expect(e.text.length).toBeLessThanOrEqual(EXCERPT_MAX);
     expect(e.text).toContain('boat');
     expect(e.cutStart && e.cutEnd).toBe(true);
     const short = excerpt(q, 'We saw the boat.');
     expect(short.text).toBe('We saw the boat.');
     expect(short.cutStart || short.cutEnd).toBe(false);
+  });
+
+  it('[NS-02-R9] a sentence longer than 180 units is cut to at most 180, with every character whole, over 200 mixed-script fixtures', () => {
+    const cp = (...c: number[]) => String.fromCodePoint(...c);
+    const PIECES = ['Asha', 'laughed at the boat', cp(0x3072, 0x3089, 0x304c, 0x306a).repeat(9), cp(0x20000).repeat(7), cp(0x0928, 0x093e, 0x0935, 0x0947, 0x0902), cp(0x1f44d, 0x1f3fd),
+      cp(0x1f469, 0x200d, 0x1f467), cp(0x1f1ee, 0x1f1f3), cp(0x2764, 0xfe0f), 'cafe' + cp(0x0301), cp(0x6211, 0x4eec).repeat(12)];
+    const splits = (at: number, t: string) => /^[\uDC00-\uDFFF]/.test(t.slice(at)) || /[\p{M}\u200d\ufe00-\ufe0f\u{1f3fb}-\u{1f3ff}]/u.test(String.fromCodePoint(t.codePointAt(at) ?? 32));
+    const r = rng(7);
+    for (let i = 0; i < 200; i++) {
+      const parts: string[] = [];
+      while (parts.join('').length < 400) parts.push(PIECES[Math.floor(r() * PIECES.length)] + (r() < 0.3 ? ' ' : '')); // one sentence over 400: always cut
+      parts.splice(Math.floor(r() * parts.length), 0, r() < 0.5 ? ' lighthouse ' : cp(0x8239)); // a word, or one CJK character
+      const text = parts.join('');
+      const e = excerpt(prepareQuery(text.includes('lighthouse') ? 'lighthouse' : cp(0x8239)), text);
+      const end = e.offset + e.text.length;
+      expect([e.text.length <= EXCERPT_MAX, text.slice(e.offset, end) === e.text, e.marks.length > 0], `${i}`).toEqual([true, true, true]);
+      expect([splits(0, e.text), /[\uD800-\uDBFF\u200d]$/.test(e.text), end < text.length && splits(end, text)], `${i}`).toEqual([false, false, false]);
+    }
+  });
+
+  it('[NS-02-R9] the three cuts review A measured over 180 (184, 191, 239) stay within it', () => {
+    const [ship, hira, han, big] = [0x8239, 0x3072, 0x6211, 0x20000].map((c) => String.fromCodePoint(c));
+    for (const text of [hira.repeat(40) + ' Asha ' + hira.repeat(150) + ship + hira.repeat(150), big.repeat(150) + ship + big.repeat(150), 'word '.repeat(20) + han.repeat(300) + ship + han.repeat(300)]) {
+      const e = excerpt(prepareQuery(ship), text);
+      expect([e.text.length <= EXCERPT_MAX, e.text.includes(ship), text.slice(e.offset, e.offset + e.text.length) === e.text]).toEqual([true, true, true]);
+    }
   });
 
   it('[NS-02-R9] the excerpt is the sentence that holds the match, and the match is marked as a whole word', () => {
