@@ -187,6 +187,23 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     const onAuth = index.slice(index.indexOf('unsubs.push(subscribeAuth((s) => {'), index.indexOf('unsubs.push(onInviteAccepted('));
     expect(onAuth).toMatch(/const ended = wasSignedIn && s\.status === 'signedOut';/);
     expect(callsIn(onAuth)).toEqual(['unsubs.push', 'subscribeAuth', 'isSignedIn', 'ensureEngine', 'releaseEmptyPhone']);
+    // releaseEmptyPhone itself (review A on #874): it asks ownership.ts and, only when the owner was forgotten, tells the screens.
+    const start = index.indexOf('function releaseEmptyPhone(): void {');
+    expect(start).toBeGreaterThan(-1);
+    const phoneRelease = index.slice(start, index.indexOf('\n}\n', start));
+    expect(phoneRelease).not.toMatch(/\bDELETE\b|\.delete\(/i);
+    expect(callsIn(phoneRelease)).toEqual(['releaseEmptyPhone', 'releaseEmptyOwner', 'localSqlDb', 'notifyStoreChanged']);
+    // ensureEngine, on a session that ended, only stops the engine; stopping it only drops listeners.
+    const body = (head: string) => {
+      const at = index.indexOf(head);
+      expect(at, head).toBeGreaterThan(-1);
+      return index.slice(at, index.indexOf('\n}\n', at));
+    };
+    const ensure = body('function ensureEngine(): void {');
+    expect(ensure).toMatch(/if \(!userId \|\| !client \|\| !syncAllowed\(\) \|\| mismatchUser === userId\) \{\s*if \(engine\) stopEngine\(\);\s*return;\s*\}/);
+    const stop = body('function stopEngine(): void {');
+    expect(callsIn(stop)).toEqual(['stopEngine', 'stop', 'engineUnsubs.forEach', 'u', 'idleStatus', 'statusListeners.forEach', 'l']);
+    for (const b of [ensure, stop]) expect(b).not.toMatch(/\bDELETE\b|\.delete\(/i);
     const ownership = src('lib/sync/ownership.ts');
     const release = ownership.slice(ownership.indexOf('export function releaseEmptyOwner'), ownership.indexOf('export function retryRefusedBook'));
     expect(release).not.toMatch(/\bDELETE\b|\.delete\(/i);
