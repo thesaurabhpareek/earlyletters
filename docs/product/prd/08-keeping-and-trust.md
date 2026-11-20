@@ -203,7 +203,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 **Data and engineering notes.** Slip state is a local row (book, year, shown, dismissed). No analytics event in the 1.0 line (D-124).
 **Free or Plus.** Free. Export is never gated (M1).
 **Measure (by hand, analytics off).** Testers answer one question: did you save a copy, and where did it go (Files, iCloud Drive, somewhere else). No content.
-**Backlog.** BL-934 writes the remaining rows; build row to follow.
+**Backlog.** BL-942 (build).
 **Open question.** Is the window 7 days after the birthday, or the week around it? Default: after. Owner: CPO role, by Fri 27 Nov.
 
 ---

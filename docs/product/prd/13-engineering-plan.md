@@ -103,10 +103,10 @@ The harness picks any row whose dependencies are done. This is the order of pref
 
 | Wave | Work | Why first |
 |---|---|---|
-| 1 | NS-09 (in review, #832), NS-34 run sheet, NS-33, NS-10, NS-32 review, NS-03 kit, the photo split (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
+| 1 | NS-09 (in review, #832), NS-34 run sheet, NS-33, NS-10, NS-32 (#758, a draft since 10 Nov), NS-03 kit, the photo split (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
 | 2 | NS-13 device proof, NS-21, NS-02 lands, NS-01 slices 3 and 4, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
-| 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find, in rank order: save a copy, whose book, share, another day, one past letter |
-| 4 | NS-24, NS-07, NS-06 Part A, NS-18, NS-04 spike | Reading back and the keepsake |
+| 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find: the rest of the reading and capture items, ordered by rank where dependencies allow |
+| 4 | NS-04 spike (first: X1 puts it before Share and Firsts; it starts the Monday after the Build 13 cut), NS-24, NS-07, NS-06 Part A, NS-18 | Reading back and the keepsake |
 | 5 | NS-06 Part B, NS-25, NS-16, NS-17 | Each behind a counsel or founder gate |
 
 Parallel lanes that never wait on each other: words (`content`), research (`user-research`), legal drafts (`legal`), test plans (`qa`). Engineers never wait on words: they build behind a flag with the PROPOSED key and the founder approves the words before the flag turns on.
@@ -128,4 +128,4 @@ security read + counsel (X2) -> NS-28, pictures leaving the phone
 
 ## 6. What the harness needs from each row
 
-A backlog row is ready to hand out only when it names: the card id it satisfies; scope in one paragraph; a test that fails on the old code; a done line; the owner skill; its dependencies; and whether it needs an install, a device or the founder. Rows BL-923 to BL-949 meet that. Every row from wave 2 on is held with a status the dispatcher does not hand out until the founder approves the requirements in chat. Later rows are written by `product` from these cards, wave by wave, so the backlog never runs more than one wave ahead of review.
+A backlog row is ready to hand out only when it names (rows without a Plan line need no install, device or founder step unless their Done line says so): the card id it satisfies; scope in one paragraph; a test that fails on the old code; a done line; the owner skill; its dependencies; and whether it needs an install, a device or the founder. Rows BL-923 to BL-949 meet that. Every row from wave 2 on is held with a status the dispatcher does not hand out (the founder hold is the first item in the status parenthetical, so `lib.mjs` reads it) until the founder approves the requirements in chat. Karma then releases them by one status-change PR to `docs/BACKLOG.md`. Later rows are written by `product` from these cards, wave by wave, so the backlog never runs more than one wave ahead of review.

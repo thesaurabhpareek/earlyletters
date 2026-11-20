@@ -81,11 +81,11 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 12 | 10 | C-06 | Photo with a letter | 4 | M after the enablers | Alpha only until four conditions hold (ruling 4) | First in the founder's order (X1). |
 | 13 | 11 | C-17 | Find | 3 | M | In review: #798 at e7d399b3, behind a flag; device row S1-205 | Second in the founder's order. |
 | 14 | 16 | C-19 | Family-hears-it pilot (no build) | 3 | S (no code) | Ready: BL-935. Counsel read of consent texts is the founder's, due 27 Nov | Up from 16: costs no engineering and tests the largest bet, the people around the child. |
-| 15 | 18 | C-03 | Save a copy of the year | 3 | S | Needs a requirement first: BL-934 | Up from 18: while backup is off, a saved copy is the only copy of the voice that does not depend on one phone. |
+| 15 | 18 | C-03 | Save a copy of the year | 3 | S | Requirement NS-11 written; build row BL-942 | Up from 18: while our backup is off, a saved copy is the one copy of the voice the parent controls directly, beside the phone's own iCloud backup if that is on. |
 | 16 | 14 | N-03 | Letter page as one list | 3 | S | BL-937, after BL-928 (same file) | Share, Firsts and seals each add a row here. |
 | 17 | 12 | N-04 | Book header calm | 3 | S to M | BL-938, after #798 lands | Down from 12: it rearranges the header Find adds to, so it follows Find. |
 | 18 | 13 | C-18 | Share one letter, text first | 4 | S to M | BL-939, after BL-937. Level 1 only | Build 14 in the PRD. No recording path until security and counsel have read it. |
-| 19 | 19 | C-14 | Child switcher on Home | 3 | S | Needs a requirement: BL-940, then BL-941 | A letter can land in the wrong book today with no control on Home. |
+| 19 | 19 | C-14 | Child switcher on Home | 3 | S | Requirement NS-14 written; build row BL-941 | A letter can land in the wrong book today with no control on Home. |
 | 20 | 21 | C-09 | Hands-free spike | 3 | spike S, build L | PRD 04; starts the Monday after the Build 13 cut | A spike, time-boxed. No doorway ships from it. |
 | 21 | 20 | C-20 | One past letter on Home | 3 | S | Not broken down | Shares the single Home slip. |
 | 22 | 22 | C-07 | A letter for another day | 3 | S to M | Not broken down | The app must never read a date out of the words. |
@@ -128,9 +128,11 @@ Dropped from the rank: **C-22** (co-parent caption and sheet in store builds), o
 
 | Wave | Rows | PRs [E] | Counted reviews [E] | Needs the founder |
 |---|---|---|---|---|
-| 1, ready now | BL-923, 924, 925, 927, 929, 930, 931, 934, 935, 936, and BL-922 | 11 to 15 (BL-931 is five) | 22 to 30 | words for BL-925; the phone for BL-929; the counsel read behind BL-935 |
-| 1, in flight | #828, #797, #798, #680, #758 | 5 | 10 | none |
-| 2, after wave 1 | BL-926, 928, 932, 933, 937, 938, 939, 940, 941 | 10 to 14 | 20 to 28 | word approvals for Share and Save a copy |
+| 1, ready or in flight | BL-922, 923 and 924 (#832), 925, 926, 927, 928, 929, 930, 931 (five slices, in progress), 935, 936, 949; #798 Find; #758 notification budget (draft) | 16 to 20 | 32 to 40 | words for BL-925; the phone for BL-929; the counsel read behind BL-935 |
+| 2, held for the founder's approval | BL-932, 933, 937, 943, BL-931 slices 3 and 4 | 7 to 9 | 14 to 18 | approval of the requirements in chat |
+| 3 and later, held | BL-938, 939, 941, 942, 944, 945, 946, 947, 948 | 10 to 13 | 20 to 26 | word approvals for Share, Save a copy and one past letter |
+
+Waves follow `docs/product/prd/13-engineering-plan.md` section 4. Done since this file was first written: #828 (one capture start). ADR 0028 was accepted under CR-62.
 
 The limit is review, not building. COORDINATION section 6 and D-132 need two counted reviews and green CI on each head. At that rate wave 1 is about 30 to 40 counted reviews. I have not measured how many counted reviews a day the sessions sustain; until that is measured, no date follows from this table.
 
