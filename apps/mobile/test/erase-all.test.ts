@@ -19,6 +19,8 @@ import { erasePlusLineShows, eraseNoteKeys, type ErasePlan } from '../src/compon
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
+import { entryMediaStore } from '../src/lib/photos/entry-media';
+import { photosDirectory } from '../src/lib/photos/files';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
 
@@ -1109,5 +1111,75 @@ describe('[BL-387][F17 6.2 F][DATA-REQ-024] the Erase everything row on Settings
   it("ROUTES.erase is '/settings/erase' and that screen exists", () => {
     expect(home()).toMatch(/const ROUTES = \{[^}]*\berase: '\/settings\/erase',[^}]*\} as const;/);
     expect(existsSync(join(__dirname, '..', 'src/app/settings/erase.tsx')), 'src/app/settings/erase.tsx exists').toBe(true);
+  });
+});
+
+// ---- a picture goes with its letter, its book and everything (NS-01-R16, ADR 0028 D5) --------------------------------
+// Behavioural, against the real erase, sweep and store: these replace source scans that a commented-out call or a kept
+// folder could pass (#835 reviews A N3 and B note 2).
+describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file first and then its row', () => {
+  const PHOTOS = () => photosDirectory().uri.replace(/\/$/, '');
+  /** A stored picture for an owner, as commitPhoto leaves it: the file in photos/, then its row. */
+  const picture = (owner: string, media: string) => {
+    const uri = put(h.disk, `${PHOTOS()}/${media}.jpg`, 3000);
+    entryMediaStore(db).put({ entryId: owner, mediaId: media, ext: 'jpg', bytes: 3000, sha256: 'ab', width: 4, height: 4, text: 'Rain boots', place: 'the back step', addedAt: '2026-10-03T09:00:00Z', deletedAt: null });
+    return uri;
+  };
+  const mediaRows = () => db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id);
+
+  it('[NS-01-R16] Erase now on a letter, a letter erased on another phone and Erase now on a book take their pictures; the other book keeps its own; the launch sweep empties the picker cache', async () => {
+    let app = await launch();
+    const f = family(app);
+    const a2 = picture(f.ids.a2, 'mA2');
+    const a1 = picture(f.ids.a1, 'mA1');
+    const avi = picture(f.ids.v1, 'mV1');
+    db.run("UPDATE entries SET sync_state = 'erased' WHERE id = ?", f.ids.a2); // erased on another phone
+    expect(app.erase.finishErasedLetters()).toBe(1);
+    expect([has(a2), has(a1)]).toEqual([false, true]);
+    app.store.deleteEntry(f.ids.a1);
+    expect(app.erase.eraseDeletedLetter(f.ids.a1)).toBe(true); // Erase now
+    expect(has(a1)).toBe(false);
+    const draft = picture(f.draftId, 'mD');
+    app.store.deleteBook(f.asha);
+    expect(app.erase.eraseDeletedBook(f.asha)).toBe(true);
+    expect([has(draft), has(avi)]).toEqual([false, true]);
+    expect(mediaRows()).toEqual(['mV1']);
+    const picked = put(h.disk, `${h.disk.caches}ImagePicker/0A1B2C3D-0000-4000-8000-0000000000P1.img`, 10);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    await new Promise((r) => setTimeout(r, 50)); // the photo sweep is not awaited by launch
+    expect(has(picked)).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('[NS-01-R16][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {
+    const app = await launch();
+    const f = family(app);
+    const files = [picture(f.ids.a1, 'mA1'), picture(f.draftId, 'mD'), put(h.disk, `${PHOTOS()}/stray.jpg`, 10)];
+    files.push(put(h.disk, `${h.disk.caches}ImagePicker/0A1B2C3D-0000-4000-8000-0000000000P1.img`, 10));
+    files.push(put(h.disk, `${h.disk.caches}ScribePhoto/0A1B2C3D-0000-4000-8000-0000000000P2.jpg`, 10));
+    expect(app.store.eraseEverythingLocal(() => {}, app.all.eraseDeviceFiles)).toBe('erased');
+    expect(files.filter(has)).toEqual([]);
+    expect(h.disk.dirs.has(PHOTOS())).toBe(false);
+    expect(mediaRows()).toEqual([]);
+  });
+
+  it('[ADR 0028 D1] Keep moves a draft\'s picture to the letter inside the letter\'s own transaction: a failed Keep leaves it the draft\'s', async () => {
+    const app = await launch();
+    const asha = app.store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+    const d = app.store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
+    const file = picture(d.id, 'mDraft');
+    const kept = letter({ id: d.id, childId: asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, the first snow.' });
+    const owner = () => db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mDraft');
+    // The letter cannot be written, then the move itself cannot be made: either way nothing of Keep stays.
+    for (const fail of ['BEFORE INSERT ON entries', 'BEFORE UPDATE ON entry_media']) {
+      db.run(`CREATE TRIGGER keep_fails ${fail} BEGIN SELECT RAISE(ABORT, 'disk'); END`);
+      expect(() => app.store.saveLetterFromDraft(d.id, kept), fail).toThrow();
+      db.run('DROP TRIGGER keep_fails');
+      expect([rowKept(d.id), owner()], fail).toEqual([false, { entry_id: null, draft_id: d.id }]);
+    }
+    app.store.saveLetterFromDraft(d.id, kept);
+    expect(owner()).toEqual({ entry_id: d.id, draft_id: null });
+    expect(has(file)).toBe(true);
   });
 });

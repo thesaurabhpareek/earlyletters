@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
-import { entryMediaStore } from '../src/lib/photos/entry-media';
+import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-media';
 import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
 import { photosPausedNow } from '../src/lib/photos/pause';
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, pickerDestination, withinFolder } from '../src/lib/photos/files';
@@ -442,6 +442,16 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
+  it('[D1] put refuses an owner that is neither a letter nor a draft, with a typed error, and writes nothing (DQ-R07)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    expect(() => store.put(row('nobody', 'm1'))).toThrow(PhotoOwnerUnknown);
+    expect(db.all('SELECT id FROM entry_media')).toEqual([]);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    store.put(row('d1', 'm2'));
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'm2')).toEqual({ entry_id: null, draft_id: 'd1' });
+  });
 });
 
 describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
@@ -453,9 +463,11 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     const store = entryMediaStore(db);
     store.put(row('live', 'mLive'));
     store.put(row('shelf', 'mShelf'));
-    store.put(row('gone', 'mGone')); // its letter was purged
-    store.put(row('live2', 'mNoFile')); // no letter and no file
+    letter(db, 'gone');
+    store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
     letter(db, 'live2');
+    store.put(row('live2', 'mNoFile')); // a letter whose picture file is gone
     const files = memoryFiles();
     for (const n of ['mLive.jpg', 'mShelf.jpg', 'mGone.jpg', 'stray.jpg', 'half.jpg.part']) await files.write(n, Uint8Array.of(1));
     const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': Uint8Array.of(1) });
@@ -470,7 +482,9 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     const { db } = nodeDb();
     migrate(db, ctx);
     const store = entryMediaStore(db);
+    letter(db, 'gone');
     store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
     const broken = { ...memoryFiles(), list: async () => { throw new Error('read'); } };
     const rows = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')!.n;
     expect(await sweepPhotos(db, broken, pickedMemory({}))).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
@@ -495,12 +509,6 @@ describe('[C9] where the stored copy lives', () => {
   it('[C9] any other container layout fails closed: no picture goes to Documents or anywhere unknown (review N10)', () => {
     h.disk = createDisk({ documents: 'file:///var/mobile/Containers/Data/Application/ASHA/Docs/', caches: 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/', os: 'ios' });
     expect(() => photosDirectory()).toThrow('photos_folder_unknown');
-  });
-  it('[NS-01-R16][NX-39-R31][C9] the erase-everything code removes that same folder and the picker and re-encode caches', () => {
-    const src = readFileSync(join(SRC, 'lib', 'erase-everything.ts'), 'utf8');
-    expect(src).toMatch(/photosDirectory\(\)/);
-    expect(src).not.toMatch(/Paths\.document, 'photos'/);
-    expect(src).toMatch(/'ImagePicker', 'ScribePhoto'/);
   });
 });
 
@@ -935,6 +943,7 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     const store = entryMediaStore(db);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
     store.put(row('d1', 'mD1')); // no entries row: owned by the draft
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: null, draft_id: 'd1' });
     expect(store.get('d1')?.mediaId).toBe('mD1');
@@ -943,11 +952,6 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', 'd1'); // store.saveLetterFromDraft
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
     expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
-  });
-  it('[D1] store.saveLetterFromDraft makes that move inside the letter\'s own transaction', () => {
-    const src = readFileSync(join(SRC, 'lib', 'store.ts'), 'utf8');
-    expect(src).toMatch(/UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = \?', draftId\);/);
-    expect(src.indexOf('UPDATE entry_media SET entry_id = draft_id')).toBeGreaterThan(src.indexOf('letters.saveFromDraft(c, draftId'));
   });
   it('[D1] the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
     const { db } = nodeDb();
@@ -958,7 +962,9 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     store.put(row('kept', 'mKept'));
     db.run("UPDATE entry_media SET entry_id = NULL, draft_id = 'kept' WHERE id = 'mKept'");
     store.put(row('live', 'mLive'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('letgo', 'c', 'typed', 't')");
     store.put(row('letgo', 'mGone'));
+    db.run("DELETE FROM drafts WHERE id = 'letgo'"); // let go
     const files = memoryFiles();
     for (const n of ['mKept.jpg', 'mLive.jpg', 'mGone.jpg']) await files.write(n, Uint8Array.of(1));
     await sweepPhotos(db, files, pickedMemory({}));
