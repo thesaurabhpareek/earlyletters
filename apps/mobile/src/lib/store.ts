@@ -1266,9 +1266,10 @@ export function listHeldDrafts(childId?: string): Draft[] {
 /**
  * Let it go, confirmed (F04-REQ-009): step 1 marks the draft `discarding`;
  * the caller then deletes the file, then calls finishDiscard. A kill in
- * between leaves the mark, and the launch sweep removes the row without ever
- * re-attaching the file. A held draft queues its `held.discard` in the same
- * transaction, which on the server removes the row and its backup.
+ * between, or a file that will not delete, leaves the mark, and the launch
+ * sweep finishes it: the file if still there, then the row, never re-attaching
+ * the file (capture/sweep.ts, BL-923). A held draft queues its `held.discard`
+ * in the same transaction, which on the server removes the row and its backup.
  */
 export function beginDiscard(id: string): boolean {
   const c = ctx();
@@ -1295,8 +1296,10 @@ export function finishDiscard(id: string): boolean {
 }
 
 /**
- * Removes the row only. Audio files are deleted by the explicit Discard in
- * Listen, never here. A held draft's server row goes with it (held.discard).
+ * Removes the row only. Audio files are deleted by a confirmed Let it go
+ * (Review, and Discard in Listen), by the launch sweep finishing one, and by
+ * erasing a deleted book (eraseBook) or everything (eraseEverythingLocal),
+ * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
   const c = ctx();

@@ -126,6 +126,21 @@ describe('launch sweep plan', () => {
     ]);
   });
 
+  it('[BL-923] a draft left discarding is finished, with its file, a stale path or none; never rebased, reported or re-attached', () => {
+    const a = planLaunchSweep(
+      snap({
+        files: [{ uri: `${DOCS}recording-1.m4a`, bytes: 10 }, { uri: `${DOCS}recording-2.m4a`, bytes: 10 }],
+        drafts: [
+          { id: 'd1', audioUri: `${DOCS}recording-1.m4a`, state: 'discarding' },
+          { id: 'd2', audioUri: `${OLD}recording-2.m4a`, state: 'discarding' },
+          { id: 'd3', audioUri: `${DOCS}gone.m4a`, state: 'discarding' },
+          { id: 'd4', audioUri: null, state: 'discarding' },
+        ],
+      }),
+    );
+    expect(a).toEqual(['d1', 'd2', 'd3', 'd4'].map((draftId) => ({ kind: 'finish-discard', draftId })));
+  });
+
   it('ignores files that are not recordings (the database, models, anything else)', () => {
     const a = planLaunchSweep(
       snap({ files: [{ uri: `${DOCS}SQLite/scribe.db`, bytes: 1 }, { uri: `${DOCS}ggml-large-v3-turbo-q5_0.bin`, bytes: 1 }, { uri: `${DOCS}notes.txt`, bytes: 1 }] }),
