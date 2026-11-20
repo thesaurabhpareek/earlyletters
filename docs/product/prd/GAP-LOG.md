@@ -379,3 +379,12 @@ Karma
 - Engineering rows: undo toast window (BL-954), Switch Control read (unverified in React Native, spike first), Low Power Mode read (ENG-M8), Another thought 360 ms to 150 ms cross-fade, microphone-blocked screens 200 ms fade, Listen's picture loads before a take can start.
 
 Karma
+
+## Area B motion rulings (20 Nov)
+- B-motion 1: the lens plays `H-select` (system standard); gap G5 withdrawn, DESIGN E-14 dropped. Settings stay without a haptic, so the Quiet toast gets no `tap` (G10 withdrawn; DESIGN section 10 line changes).
+- B-motion 2: the seal-opened line (B-S18) is drawn complete with no enter; DESIGN B-S18 layout line is corrected to match section 10 (G2).
+- B-motion 3: the Book header settle and the end-of-book moon draw are retired; the moon is drawn complete. NS-24 wording "the existing end of the book" stays (card gap G12 logged for the errata).
+- B-motion 4: proposals P1 (named list swap), P2 (picture viewer as a full-screen cover), P3 (Read together dusk on the 280 ms lamp timing), P4 (tint also covers the other parent's letters seen first time), P5 (inline bar on a scroll threshold): accepted into the system MOTION in its next pass.
+- B-motion 5: `letter/[id].tsx` changeDate `haptic('tap')` removed (engineering row E9).
+
+Karma
