@@ -588,16 +588,16 @@ The vocabulary does not change in Foundations: a haptic marks an outcome, never 
 | `radius.listSection` | COMPONENTS 9 | Added (6.2) | Agreed, value to measure |
 | SF Symbols scope | COMPONENTS 10: SF Symbols in system chrome, Phosphor stays in content | SF Symbols everywhere on iOS; Phosphor only as the Android and web fallback (8.1) | Differs. Reason: DESIGN_LANGUAGE 7 "app UI doesn't mix sets"; with native tabs and glass toolbars in SF, Phosphor in content would put two drawing styles on one screen (the toolbar Close next to a row chevron). Karma to decide |
 | Motion tokens (`motion.glass.*`, toast, undo window, `reduceMotion` retirement) | AUDIT 7 | Not in Foundations; owned by v2 `MOTION.md` | Out of scope here |
-| Atmosphere under glass (AUDIT 4.21) | No conflict; the cluster must not sit on the QuotePair | Rule 1.4 and 2.5 (a) keep glass off words and the mark at rest | Agreed |
+| Atmosphere under glass (AUDIT 4.21) | No conflict; the cluster must not sit on the QuotePair | 2.5 (a) keeps custom glass off words and the mark at rest | Agreed |
 
 ## 13. Open questions (for Karma with the Chief Design Officer role)
 
 - Q1. Clear glass at 35 percent dim fails 3:1 for white symbols over a near-white region of a photo (2.43:1 on pure white). Policy keeps 35 percent. Measure on device over the Asha photo set; if a control lands on a bright region, either the control moves, or the dim for that control steps to 45 percent (3.36:1 on pure white). Decision needed after measurement.
 - Q2. The radius change (md 16, lg 24, xl 32) is visible on every card. Approve with the before and after set from DS2-03, or keep v1 values and accept off-grid 14 and 20.
 - Q3. Bold Text for Devanagari letter runs (4.4).
+- Q4. Home tab symbol: `moon.stars` keeps today's meaning (the evening letter); `house` is the conventional Home glyph. Keep `moon.stars` unless testing shows people do not find Home.
 - Q5. `material.solid` in dark (`glassFallback` #282421 or `surfaceRaised`) and its Increase Contrast edge (`line` HC or `controlBorder` HC), section 12.
 - Q6. SF Symbols in content as well as chrome (this file) or chrome only (v2 COMPONENTS), section 12.
-- Q4. Home tab symbol: `moon.stars` keeps today's meaning (the evening letter); `house` is the conventional Home glyph. Keep `moon.stars` unless testing shows people do not find Home.
 
 ## 14. Engineering rows needed
 
@@ -605,8 +605,8 @@ Proposed backlog rows. Owner lanes: DS = `design-systems`, MOB = `mobile`. Sizes
 
 | Row | Lane | Size | What | Done when |
 |---|---|---|---|---|
-| DS2-01 | DS | S | Colour v2 in `tokens.ts`: refine `light.success` and `light.caution`; add `glassLabel`, `glassLabelSecondary`, `glassFallback`, `glassDim`, `mediaSolid`, `onMedia`; full `highContrast` for every text and status role (3.5) | `tokens.test.ts` asserts every pair in 3.4 and 3.5 (4.5:1 text, 7:1 HC text on bg, surface, surfaceRaised, accentSoft; 3:1 non-text); `brand-parity` and `atmosphere` tests pass; CSS regenerated |
-| DS2-02 | DS | S | Layout and material tokens: `layout.*` (5.1), `material.*` (2.1, 2.2); measure and add `layout.glassSideInset` on device | Tokens exported in TS and CSS; inset value recorded with the device and iOS version |
+| DS2-01 | DS | S | Colour v2 in `tokens.ts`: refine `light.success` and `light.caution`; add `glassLabel`, `glassLabelSecondary`, `glassFallback`, `glassBorder`, `glassDim`, `mediaSolid`, `onMedia`; full `highContrast` for every text and status role (3.5) | `tokens.test.ts` asserts every pair in 3.4 and 3.5 (4.5:1 text, 7:1 HC text on bg, surface, surfaceRaised, accentSoft; 3:1 non-text); `brand-parity` and `atmosphere` tests pass; CSS regenerated |
+| DS2-02 | DS | S | Layout, size and material tokens: `layout.*` (5.1), `size.control.*`, `size.row`, `target.md` (5.3), `iconSize.*` (8.3), `material.*` (2.1, 2.2); measure and add `layout.glassSideInset` and the system list section radius on device | Tokens exported in TS and CSS; inset value recorded with the device and iOS version |
 | DS2-03 | DS | S | Radius v2: `xs`, `control`, `cover`, new `md`, `lg`, `xl` | Before and after screenshots of Home, Book, letter page, first run, light and dark, attached to the PR for Q2 |
 | DS2-04 | DS | M | `Text` scales each token on its Apple style curve (4.3) from the content size category, applies caps, tapers letter line height, caps Reading Size times Dynamic Type at 62 pt | Unit test: every token at L, xxxL, AX1, AX3, AX5 equals the table in 4.3; no `maxFontSizeMultiplier` below 1.4 anywhere in `src` (source scan) |
 | DS2-05 | DS | M | Fonts: cut Literata SemiBold (opsz 16), Bold (opsz 30), SemiBold Italic (opsz 16), add Mukta Bold; Bold Text face map in `Text` | `fonts.test.ts` checks the new faces' weight class; app size measured and recorded; Bold Text on shows the heavier face on Home, letter page, Settings |

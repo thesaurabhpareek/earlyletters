@@ -389,3 +389,99 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Implementation**: moves from `components/app-lock/privacy-cover.tsx` to `components/ui/privacy-cover.tsx` (hand-off named in its header).
 - **Used by**: E-S22, every screen as the app leaves the front.
 
+## 8. Infrastructure the components need (house)
+
+| Name | What | Why | Row |
+|---|---|---|---|
+| `useMaterial()` (`lib/material.ts`) | `{ glass, highContrast, reduceTransparency }` from `isLiquidGlassAvailable()`, `isGlassEffectAPIAvailable()` (some iOS 26 betas lack the API and crash, Expo v57), `AccessibilityInfo.isReduceTransparencyEnabled()` and its `reduceTransparencyChanged` event, and `useContrastPreference()` | One check for rule 1.1.5; `isLiquidGlassAvailable()` ignores accessibility settings (Expo v57) | DS2-07, ENG-M2 |
+| `GlassSurface` (`components/platform/glass-surface.ios.tsx`, `.tsx` fallback) | `GlassView` when `glass`, else the FOUNDATIONS 2.3 solid; props `variant` (`regular`, `prominent`, `clear`), `interactive`, `show` (animates `glassEffectStyle` to and from `none` over `glass.styleS`, never opacity); pins `colorScheme`; draws `mediaDim` for `clear` | The one importer of `expo-glass-effect` (lint ban elsewhere, as for `expo-blur`) | DS2-07, ENG-M4 |
+| `GlassCluster` | `GlassContainer` with `spacing` = `layout.controlGap`, fallback a plain View | Rule 1.1.2; morph only inside one container (MOTION 7 rule 3) | DS2-07 |
+| `GlassLayer` context | tells A1 and I1 whether they render on glass or as solid twins; set by `GlassSurface`, cleared inside sheets | Rule 1.1.1 and "never glass inside glass" | R8 |
+| `Icon` | `SymbolView` (expo-symbols) with the Phosphor fallback, mapping table FOUNDATIONS 8.2 | One icon set per platform | DS2-09 |
+| `BlurSurface` | kept only for content-layer standard materials (`material.thin` sticky header), without its 72 percent paper overlay; chrome uses `GlassSurface` | AUDIT 2.6 | DS2-02 |
+| `m.sheet.own` users | none targeted on iOS. Temporary: the in-screen Keep gate only if R7 shows StoreKit's view cannot present over a system sheet; Android and web keep `ui/sheet.tsx` | MOTION 4 asked for the list | R4, R7 |
+
+## 9. Reconciliation with FOUNDATIONS, MOTION and AUDIT (done 20 Nov, after all three appeared)
+
+Read: `FOUNDATIONS.md` (sections 1 to 15), `MOTION.md` (sections 1 to 14 and its rows), `AUDIT.md` (sections 1 to 10). `tokens.v2.json` was not in the folder at the end of this pass; names follow FOUNDATIONS and MOTION 13a. What changed in this file as a result:
+
+| Topic | Before reconciliation | Now | Source |
+|---|---|---|---|
+| Glass fallback | `material.solid` (`surfaceRaised` + 1 pt `line`) | `glassFallback` + 0.5 pt `line` (`stroke.hairline`); HC 1 pt `line` HC; prominent falls back to solid `accent`; clear to `mediaSolid` | FOUNDATIONS 2.3 |
+| Labels on glass | `text`, `accent` | `glassLabel`, `glassLabelSecondary`; `onAccent` on prominent; `onMedia` on clear (symbols only) | FOUNDATIONS 3.2, 2.4 |
+| Dim over pictures | `material.glass.dim` | `mediaDim`, the size of the control; text only on `mediaSolid` | FOUNDATIONS 2.4 |
+| Capture cluster | Speak and Type regular glass; photo start plain in content | Speak and Type prominent twins (the screen's one tint); Start from a photo regular glass in the same container; Not much today plain in content; inline solid twins from AX3 | FOUNDATIONS 1 rule 3; MOTION 7 rule 3; AUDIT 2.9 |
+| Record control | morph ready to recording | `m.instant`, `animate: false` | MOTION 5, 7 rule 12 |
+| Motion names | provisional `motion.*` | `m.*` primitives, `T-*` transitions, `H-*` haptics | MOTION 4, 6, 9 |
+| Busy buttons | spinner | `m.progress.wait`; static words under Reduce Motion | MOTION 13 |
+| Find bar | NEW `find-bar.tsx` | `TextField variant="search"` on glass (card 02: no new component) | AUDIT 4.10 |
+| Picture | NEW `photo-thumb`, `photo-viewer` | `PhotoFrame` (card 01 names it) with `viewer` variant | card 01; AUDIT G6 |
+| Confirmations | one in-app sheet; retire `Alert.alert` | `ConfirmSheet` with `simple` (native, anchored, default Cancel), `explained` and `typed` (system sheet) | AUDIT 4.20; MOTION T-ALERT |
+| Textarea | merge into `Textarea` | retire `ui/textarea.tsx`; `TextField variant="letter"` | AUDIT 2.5 |
+| Icons | Phosphor tabs | SF Symbols through `Icon`; Home `moon.stars` | FOUNDATIONS 8 |
+| Radii | v1 | `radius.md` 16, `lg` 24, `xl` 32, `control` 12, `pill` for every glass control (pending Q2) | FOUNDATIONS 6 |
+| Empty state breath | breathes | still, pending Karma on `Breathe` | MOTION 13 |
+
+Open name requests to FOUNDATIONS (not in `FOUNDATIONS.md` at writing):
+- `target.md` 48 (the `md` button and the Find field; in code as `BUTTON_MIN_HEIGHT.md`).
+- `layout.rowMin` 52 (iOS 26 larger list rows; today rows are 44 minimum).
+- `glass.styleS` 0.25 lives in MOTION 13a; FOUNDATIONS should list it under materials too.
+
+Disagreements kept open for Karma (one line each):
+- AUDIT G9 recommends a native segmented control for the lens with a Chip fallback; this file keeps the house `ChoiceGroup segmented` because it already stacks at AX sizes and has correct radio semantics, and the native control does not stack. Recommend the house control.
+- MOTION T-ALERT lists Delete and Let it go as native alerts; this file agrees for `simple`, but sign-out (D1) and erase need a sentence and three choices, so they are `explained` sheets.
+- FOUNDATIONS 3.6 rule 2 allows `accent` as the only glass tint; the Keep toolbar button and Done in a sheet are prominent only on screens without the capture cluster, which keeps one tint per screen.
+
+## 10. Retired
+
+| Retired | Replaced by | Note |
+|---|---|---|
+| `docs/design/COMPONENTS.md` (Oct to Nov 2026) as the component source | this file | History. Its 0.2 haptics table yields to MOTION 9; 2.17 ListeningAura stays valid (aura = `m.signal`) |
+| Spec numbers cited in code: 2.25 (`AgreementRow`), 2.26 (`PrivacyCover`), 2.5c (`QuietDayRow`) | I7, S2, C1 `quiet day` | Code headers to cite the new ids (AUDIT 4.18, ES-A15) |
+| COMPONENT_LIBRARY 1 to 5 prose ("no SF Symbols", Phosphor tab PNGs, `apps/ios` paths, Expo Router form sheets as the only sheet) | N1, N7, `Icon` | COMPONENT_LIBRARY 0.1 to 0.3 stays as the library record (AUDIT) |
+| COMPONENT_LIBRARY 0.1 "NativeTabs after a device spike" | N1 decided | Device spike is the first step of DS2-10 / ENG-M3 |
+| JS tabs paper bar (`(tabs)/_layout.tsx` `BAR`, custom Pressable, Mukta labels) | N1 | |
+| Button variants `primary`, `secondary`, `outline`, `quiet`; size `capture` (icon above label); `IconButton` variants | A1 styles, `xl`, `size="icon"` | Mapping in A1 |
+| `CaptureBar` spec 2.18 and its `compact` mode; the inline `Button size="capture"` pair on Home | A2 | |
+| `@gorhom/bottom-sheet` paper sheet; hand-built sheets in `plus-gate.tsx` and `reminder-prime-ask.tsx` | N7 system sheet | Accessibility contract of `ui/sheet.tsx` kept |
+| `platform/segmented-control` (SwiftUI Picker) plan | I4 segmented | See section 9 |
+| `Chip variant="filter"`, `ChipGroup scroll` | I4 | No filters in scope |
+| `PhotoFrame` (2.23) `cover`, `polaroid`, paging; `specs/MEMORY-LIBRARY-FLOWS-10nov.md` MediaViewer with Close top left | C3, C4 | Card 01 wins; Close top right |
+| `FindBar` NEW in `specs/02-FIND-11nov.md` | N4 preset | Card 02 |
+| `DraftCard`, `ResurfacedCard` shells; "A month ago" | C1 variants; NS-23 one past letter (C9 slip 4) | Logic files kept |
+| `book/undo-toast.tsx`; toast "with an action it never times out"; COMPONENTS 2.14 5 s / 8 s; DESIGN_LANGUAGE 11.5 "persists" | F1 with the T4 window | Council ruling T4 |
+| `ui/textarea.tsx` | `TextField variant="letter"` | |
+| Ad hoc offline, pause and storage lines | F2 `SystemLine` | |
+| `elevation.3` on sheets, shadow on the toast | system sheet; glass toast | FOUNDATIONS 7 |
+| `BlurSurface` for chrome (Book inline bar) | N2 and N5 system header glass | |
+| `StickyFooter` (spec only); Review and Write footers `border-t bg-background` | N3 toolbar | AUDIT 5.6, 5.7 |
+| Hand-placed gear and Months on `CoverBand`; the Book `Settle` | N5 header items; nothing moves | MOTION 13 |
+| `ModalHeader` Close as a text button on a paper strip | glass Close (N2) | AUDIT 5.12 |
+
+## 11. Engineering rows needed (proposed backlog rows)
+
+Rows already proposed by the other leads are referenced, not repeated: FOUNDATIONS DS2-01 to DS2-15, MOTION ENG-M1 to ENG-M15, AUDIT ES-*. New rows from this file:
+
+| Row | Lane | What | Depends on |
+|---|---|---|---|
+| R1 | mobile | Native tabs (N1) = DS2-10 / ENG-M3; keep `test/tab-bar.test.ts`; check the Me hint and Large Content Viewer on device | DS2-09 |
+| R2 | design-systems | `ToastHost` without a measured tab bar (native tabs cannot be measured): anchor above the safe area plus `layout.glassClusterGap`, one host above native tabs; the T4 window (`windowSeconds`, VoiceOver completion via `announcementFinished`, a small native module for `UIAccessibility.isSwitchControlRunning`, UNVERIFIED in RN 0.86); tests for the three T4 cases; merges `book/undo-toast.tsx` | ENG-M7 |
+| R3 | mobile | A Stack inside the Book tab; Find, Go to a month and More as `Stack.Toolbar placement="right"` items and `Toolbar.Menu` (N5, N6); `CoverBand` loses its gear and Months | DS2-09 |
+| R4 | design-systems | Sheet swap: route sheets to `formSheet` (ENG-M5); spike `@expo/ui/community/bottom-sheet` for in-context sheets (glass on iOS 26, accessibility contract); move `plus-gate.tsx` and `reminder-prime-ask.tsx` onto it | ENG-M5 |
+| R5 | design-systems | `lib/material.ts`, `GlassCluster`, `GlassLayer` (with DS2-07 `GlassSurface`); lint ban on `expo-glass-effect` outside `platform/` | DS2-07 |
+| R6 | design-systems | Button v2 (A1): `style` and `xl`, glass rendering in the glass layer, solid twins in content, no `m.tap` on glass, busy per MOTION; codemod of callers; `IconButton` folded in | R5 |
+| R7 | mobile | Keep gate (F4) as a system sheet over Review; check StoreKit's view presents over it; if not, record the `m.sheet.own` exception | R4 |
+| R8 | design-systems | `ConfirmSheet` v2 (F6): `simple` native (anchored if `@expo/ui` `confirmationDialog` works, else `ActionSheetIOS`, else `Alert.alert`), `explained`, `typed`; route the 12 `confirm()` call sites through it | R4 |
+| R9 | design-systems | Capture cluster (A2) and record control (A3) on `GlassCluster`; AX3 inline solid twins; recording states instant | R5, R6 |
+| R10 | mobile | Writing tools off on letter fields (I1, I2): find the RN `TextInput` switch; if none, a native patch setting `writingToolsBehavior = .none`; test per field (D2) | none |
+| R11 | design-systems | New and moved files: `dateline.tsx`, `system-line.tsx`, `progress.tsx`, `photo-frame.tsx`, `slip-host.tsx` + `slip.logic.ts`; `TextField` `search` and `compact`; `StateScreen` `note` slot and new kinds; moves of `date-sheet`, `confirm-sheet`, `privacy-cover` into `components/ui`; export from `ui/index.ts` | R5, R6 |
+| R12 | design-systems | Story screen `(dev)/components.tsx` mirrors `REFERENCE.html`: every component, every state, light, dark, Reduce Transparency, Increase Contrast, Reduce Motion, AX5 | R11 |
+| R13 | design-systems | Device checks: date picker inline style at AX5 on SE 3 (I3); `GlassContainer` merge spacing on the capture cluster; clear glass over the Asha photo set (FOUNDATIONS Q1) | DS2-12 |
+
+## 12. Gaps and open points
+
+- G1. iOS 26 asks for title-style capitalisation in list section headers. Our content rules use sentence case for every parent-facing word (VOICE.md). Proposed default: keep sentence case; content leads to confirm.
+- G2. The e2e `DESIGN.md` files were skeletons when this was written (screen ids only). Their "components used" sections should key to the ids here (N1 to S2); a component an area needs that is not here goes to `design-systems` before it is drawn.
+- G3. The letter page budget (section 1.1) assumes the tab bar stays visible on pushed screens in the Book stack; if area B hides it, the bottom toolbar (N3) becomes available there.
+- G4. Whether `GlassContainer` merges shapes with the spacing we choose, and whether `glassEffectStyle` animation is reduced by the system under Reduce Motion, are UNVERIFIED (MOTION ENG-M9).
+- G5. `REFERENCE.html` simulates glass with CSS `backdrop-filter` and a drawn highlight. It shows layout, states, contrast and the fallbacks honestly; it is not a rendering of Apple's Liquid Glass and must not be used to judge the real material's look.

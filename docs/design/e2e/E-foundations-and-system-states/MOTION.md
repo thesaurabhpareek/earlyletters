@@ -118,7 +118,9 @@ Easing for every timed move: `easing` = cubic-bezier(0.2, 0, 0, 1) (M3 standard,
 | R5 | sheet | MP-10 (ours) or MP-11 (system) |
 | R6 | PlainScreen | none at all (no providers, by design) |
 
-### MP-H. Haptics (from `lib/haptics.shared.ts` and MOTION.md 6)
+### MP-H. Haptics (today's build; v2 is system MOTION.md section 9, `H-*`)
+
+v2 trims `success` to a kept letter, an export finished and joining a book, and lists every other call site for removal (ENG-M10). In area E that removes the book-opening `success` (E-M09), Plus on (E-M33) and app lock on (E-M75), and the `tap` on Restore (E-M38, not a choice). The table below is today's build; 4z gives the v2 haptic per row.
 
 A haptic marks an outcome the person caused, never a navigation and never a system state. Five intents:
 
@@ -288,6 +290,84 @@ A SystemLine sits under the control it is about (DESIGN E-S15), never at a scree
 | E-M81 | tap the selected tab | the platform's scroll to top | platform | platform (UNVERIFIED for JS tabs; check on a phone) | none | |
 | E-M82 | first Book view this session | MOTION 5a: the cover settles, opacity 0.6 to 1, y 6 to 0, `gentle` (area B owns) | `gentle` | one fade | none | |
 
+### 4z. Every area E moment keyed to the design system v2
+
+System names from `docs/design/system/MOTION.md` (sections 4 to 9). "v2 change" is what the system file changes from the row in section 4; the system file wins.
+
+| E-M | System transition and primitives | v2 haptic | v2 change |
+|---|---|---|---|
+| E-M01 | T-LAUNCH: `m.instant` splash to matched frame; lamp arrive (section 10) | none | none |
+| E-M02 | T-LAUNCH, W1: the mark | none | mark still (MP-17 retired, proposal) |
+| E-M03 | T-LAUNCH: `m.enter.group` | none | none |
+| E-M04 | none (PlainScreen) | none | none |
+| E-M05, E-M06 | `m.progress.wait` plus `m.swap`; result `m.swap` | none | indicator in the button when RM is off |
+| E-M07 | `m.fade` (mark), `m.enter` | none | none |
+| E-M08 | `m.swap` | none | none |
+| E-M08b | `m.swap` into a reserved slot | none | none |
+| E-M09a | T-STEP: `m.exit`, then `m.fade` | H-select on the answer | none |
+| E-M10 | T-STEP; lamp change | none | the 1200 ms in-room lamp cross-fade is not a v2 named exception: 280 (`lamp.returnMs`) unless Karma adds it |
+| E-M11 | `m.fade` (lockup), `m.enter.group` | none | offsets become `enter.staggerMs` |
+| E-M12 | `m.enter` | none | none |
+| E-M13 | T-STEP `m.step` | none | lamp dim as E-M10 |
+| E-M14 | `m.enter` | none | none |
+| E-M09 | T-STEP; lamp change | none (was `success`) | the cover hold and flyleaf opening are RETIRED (ceremony): the open book arrives with `m.enter`; lamp rise as E-M10 |
+| E-M15 | T-TAB lamp settle; `m.enter.group` | none | none |
+| E-M16 | T-SHEET (sign-in as a native sheet) | none | native `formSheet` |
+| E-M17 | `m.progress.wait` plus `m.swap` | H-select today on provider buttons; v2 lists none for sign-in | indicator plus words; RM words |
+| E-M18 | `m.enter` | none | none |
+| E-M19 | T-PUSH | none | none |
+| E-M20 | `m.progress.wait`, `m.swap` | none | as E-M17 |
+| E-M21b | `m.instant` enable; `m.enter` | none | none |
+| E-M22 | `m.swap` | none | none |
+| E-M23 | `m.progress.wait`; `m.fade` block | none | drawing still |
+| E-M24 | `m.swap` | none | none |
+| E-M25 | `m.fade`; T-STEP inside the sheet | H-select on an answer | none |
+| E-M26 | `m.swap` | none | none |
+| E-M27 | T-PUSH | none | none |
+| E-M28 | `m.progress.wait`, `m.swap`; sheet dismiss | none | none |
+| E-M29 | `m.sheet` dismiss; T-RESUME under it | none | none |
+| E-M20o | `m.fade` block | none | moon still (MP-17 retired, proposal); card 08 already asks static under RM |
+| E-M21 | `m.swap` into a reserved slot | none | none |
+| E-M22o | `m.swap` | none | none |
+| E-M23o | `m.exit`; lamp return | none | the Book's first-view settle is RETIRED (E-M82) |
+| E-M30 | T-GATE: `m.sheet` (native sheet), held card `m.enter` | none | the native sheet replaces `SlideInDown`; its glass, inset and opacity at full height are the system's |
+| E-M31 | `m.progress.wait`, `m.swap`; Apple's sheet | none | none |
+| E-M32 | `m.swap` | none | none |
+| E-M33 | Apple's sheet; T-SHEET; then T-KEEP | none (was `success`; StoreKit's sheet is the system's) | none else |
+| E-M34 | `m.sheet` dismiss; T-COVER out; `m.toast` | none | none |
+| E-M35 | `m.sheet` dismiss | none | none |
+| E-M36 | T-COVER out; `m.toast` | none | none |
+| E-M37 | T-PUSH; placeholder `m.fade` | none | none |
+| E-M38 | `m.progress.wait`, `m.swap` | none (today `tap`) | ENG-M10 |
+| E-M39 | `m.instant` (drawn with the screen) | none | none |
+| E-M38c | T-SHEET | H-select on the reminder ask only if it is a choice; Save a copy none | ENG-M10 decides |
+| E-M90 | T-SHEET | none | native sheet |
+| E-M91 | `m.instant` on return; `m.enter.group` on cold launch | none | none |
+| E-M50, E-M51 | none; then T-LAUNCH | none | none |
+| E-M52 | `m.fade` block; lamp leave | none | none |
+| E-M53 | `m.swap` | none | none |
+| E-M54, E-M55 | `m.progress.wait`, `m.exit`, lamp return, `m.enter` / T-STEP | none | none |
+| E-M56 | `m.fade` | none | none |
+| E-M40 | T-SYSLINE: `m.enter` (line), `m.move` | none | none |
+| E-M41 | `m.swap` | none | none |
+| E-M42 | T-SYSLINE out: `m.exit`, then `m.move` | none | none |
+| E-M43 | `m.list.remove` or next render | none | none |
+| E-M44 to E-M46 | `m.instant` or T-SYSLINE; `m.swap` | none (Speak's H-press stays) | none |
+| E-M47, E-M48 | area A, area C | as theirs | none |
+| E-M49 | `m.swap` | none | none |
+| E-M57 | `m.sheet` dismiss over an already filtered room | none | none |
+| E-M58 | `m.swap` | none | none |
+| E-M70 | T-LOCK cover on `m.instant` | none | none |
+| E-M71 | T-RESUME | none | none |
+| E-M72 | T-LAUNCH | none | none |
+| E-M73 | T-LOCK unlock `m.fade` | none | none |
+| E-M74 | `m.swap` | none | none |
+| E-M75 | `m.swap` | none (was `success`) | ENG-M10 |
+| E-M76 | `m.instant` | H-select | none |
+| E-M80 | T-TAB (native tabs); lamp settle | none | native tabs; T-MIN never on Home or Me |
+| E-M81 | system | none | none |
+| E-M82 | none | none | RETIRED: the Book renders complete |
+
 ## 5. Waiting and placeholders (all areas)
 
 DESIGN rule 5 is the law; this table gives its motion.
@@ -330,6 +410,8 @@ motion: { ...existing,
 a11y: { repeatGapMs: 60000 }                                              // MP-24; NS-33 Slow row
 ```
 
+Status: the system file's 13a block adopted `toast.*`, `loading.placeholderAfterMs`, `systemLine.*` and `tap.rmMs` under these names. It also carries this file's v1 `loading.slowLineAfterMs` 4000, which v2 here replaces with `loading.heldAfterMs` 10000 to match DESIGN rule 5 and NS-10-R0: the system lead should swap it. `a11y.repeatGapMs` is not in 13a (it is not motion; it may live in an a11y block).
+
 Reasons: `placeholderAfterMs` and `heldAfterMs` are DESIGN rule 5's numbers (350 from NS-34; 10 s from NS-10-R0 and the built `RESTORE_WAIT_MS`); `showAfterMs` and `hideAfterMs` are proposals to stop a line flapping on a weak signal (UNVERIFIED; tune on a phone). `RETRY_BEAT_MS` 500 may stay a module constant (a reading beat). The welcome offsets (G-EM6) should become `enter(i)` indices. Tests for `packages/design-tokens/test/tokens.test.ts`: `placeholderAfterMs` at most 350; every new duration under `hardCeilingMs` except `heldAfterMs` and `repeatGapMs`, which are waits, not moves; `reducedMs` at most `fadeMs`.
 
 ## 8. Superseded or changed
@@ -340,6 +422,7 @@ Reasons: `placeholderAfterMs` and `heldAfterMs` are DESIGN rule 5's numbers (350
 - House MOTION.md 5k, "Low Power Mode is not read": the card wins (NS-34 section 3); G-EM1.
 - House MOTION.md 6 lists `success` for a saved letter only; the code plays it for three more outcomes (MP-H, K-EM3).
 - SOUND.md `gentle_error`: not used in area E (MP-S).
+- By the design system v2 (`docs/design/system/MOTION.md`, sections 5, 9, 10 and 13; proposals there marked so): `Breathe` and the lamp breath retired (MP-17, E-M02, E-M20o, E-M23); the book-cover opening retired (E-M09, `cover.*`); the Book's first-view settle retired (E-M82, `gentle`); `success` trimmed (E-M09, E-M33, E-M75); `spring.standard` 0.30 s; `sequenceMaxMs` 600; the Keep sheet, sign-in and our sheets become native sheets (T-SHEET); JS tabs become native tabs (T-TAB).
 - This file's v1 draft: an "update required" blocking screen and a low-storage sheet are withdrawn to match DESIGN.md (E-S16 is a line in Me; under 50 MB is Listen's StateScreen state); the Opening your book rows moved to C-S10 states; the 4 s slow line became the 10 s held state.
 
 ## 9. Card gaps
@@ -357,7 +440,7 @@ DESIGN.md's K-E01 to K-E09 stand; these are the motion ones.
 
 ## 10. Engineering gaps
 
-DESIGN.md uses `G-E01` onward; motion gaps are `G-EM`.
+DESIGN.md uses `G-E01` onward; motion gaps are `G-EM`. The system file cites this file's v1 names G-E1 to G-E6: they are G-EM1 to G-EM6 here, and it carries them in ENG-M8 (G-EM1), ENG-M4 and ENG-M7 (G-EM10, G-EM4), ENG-M1 (G-EM3), ENG-M2 and ENG-M8 (G-EM8) and 13a; G-EM2 is its `m.progress.wait` row.
 
 | # | Gap | Where | Backlog row |
 |---|---|---|---|
@@ -380,4 +463,8 @@ DESIGN.md uses `G-E01` onward; motion gaps are `G-EM`.
 - With area A: A-S13 hands to the Keep sheet (area A owns Keep's press and the save, MOTION 5e; area E owns the sheet from its first frame). A-S04.lowSpace and A-S04.full take E-M45 and E-M46.
 - With area D: D-S24 (plan date line) sits in E-S11; no motion beyond E-M37 and E-M39.
 - With WORDS.md: busy words (MP-18: "Trying again", "Opening the App Store", "Sending", "Restoring", "Keeping"), the held-state title (E-M21) and every SystemLine sentence are the content lead's keys; this file times them only. Quoted words here are DESIGN's or placeholders.
-- With `docs/design/system/MOTION.md`: fill 2b; move section 7 into the system tokens proposal; where the system defines a primitive differently, the system wins and section 8 gains the line.
+- With `docs/design/system/MOTION.md` (read 20 Nov): keyed (2b, 4z). Three points for Karma and the two leads to settle:
+  1. **Waiting states.** DESIGN rule 5 asks for "a breathing state" from 350 ms to 10 s; the system file proposes retiring `Breathe` (its open question 1). Either the DESIGN rule changes to "a still state" or `Breathe` stays as a named loop. Recommendation: still (no signal behind the loop); a waiting state then reads by its words and the 10 s way forward, which is what NS-10 and NS-34 ask for.
+  2. **Busy buttons.** DESIGN rule 5 says "no spinner"; the system's `m.progress.wait` keeps the system activity indicator inside a button when RM is off. Recommendation: busy words at every setting, indicator dropped, because the words already answer the tap and one rule is easier to test; if the indicator stays, it is the system's and stops under RM and LPM.
+  3. **In-room lamp changes.** The v2 named-exception list has the lamp arrival only; first run's welcome-to-form dim and form-to-finish rise run 1200 today. Recommendation: settle them over `lamp.returnMs` 280 (within the cap), or name them in system section 5 if the lamp is kept.
+- The prototype (`MOTION-PROTOTYPE.html`) plays today's tokens, with a switch for the v2 `spring.standard`; retired moves (cover opening, `Breathe`) are labelled as today's build.
