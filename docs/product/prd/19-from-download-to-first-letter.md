@@ -2,7 +2,7 @@
 
 Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (PM role, with the CPO role) | Replaces: none | Load when: building or testing sign-up, consent, first letter or account life (NS-38 to NS-45).
 
-Status detail: LOCKED rev 2, 20 Nov 2026, inside the lock (PR #934); open items stay founder or counsel items with their defaults. Changes after lock need a PR that lists every changed id.
+Status detail: LOCKED rev 2, 20 Nov 2026, inside the lock (PR #934); open items stay founder or counsel items with their defaults. Changes after lock need a PR that lists every changed id. Release: these eight cards ship together as Drop D, after wave 1 and Drop A and before any family outside the founder's signs in (E43; the drop table is in `21-days-cultural-photos-home.md` "Release line and cut").
 
 Author: `product` (PM role, with the CPO role; a Claude session, not a scheduled `product` run), for Karma (CTO). Backlog row: see section 22. Docs only: nothing here is built by this file, no string is live, no decision is recorded in `DECISIONS.md`. Founder request of 20 Nov 2026 (relayed by Karma): the PRD covers everything from app download and the first interaction through sign-up and sign-in, risk checks, required validation, information collection and verification, so design can draw the whole path end to end.
 
@@ -452,7 +452,7 @@ The product is for adults only, with no minor mode (D-006, PRD-REQ-019, LEGAL-RE
 | App updated mid-flow | An install that passed the old gate sees only the agreement once (`decideEntry` 'agree', `agreements.logic.ts:82-85`); the question is not re-asked |
 | Low storage, Low Power Mode | No change |
 | Kill switch `serverFeaturesEnabled()` off | The question and the stop are unchanged (they are phone-only); no region check, because no account is made |
-| Outage | The hook is part of user creation, so an outage fails the sign-up as an outage (E-S14), never as a refusal. If the lookup itself fails while Auth is up, the hook fails closed (no account is made) and the phone shows the outage screen, never the refusal (PROPOSED; `security-architect` confirms) |
+| Outage | The hook is part of user creation, so an outage fails the sign-up as an outage (E-S14), never as a refusal. If the lookup itself fails while Auth is up, the hook fails open and counts an error (File 28 as written; the sign-up goes through). That is the default until counsel and the CCO answer, and the hook stays off until then (E47). The phone never shows a refusal as an outage or an outage as a refusal |
 | Plan lapsed, signed out, two books, two parents, expecting | No change: the gate is per install |
 | Second account on the same phone | The gate is per install; account B meets the Terms attestation at its own sign-in |
 | New phone | The question again (settings do not move with the session); restored from a device backup: the settings come back, so the gate stays passed |
@@ -474,8 +474,8 @@ The product is for adults only, with no minor mode (D-006, PRD-REQ-019, LEGAL-RE
 | NS-40-R5 | Given iOS 26.2 or later and an eligible account (when the module ships), When the system answers under 18, Then the stop shows at once with no question; When it answers adult, Then the question still shows; When it declines, errs or passes 3 s, Then the question decides | P0 (b) | `[NS-40-R5] the system age signal decides only a stop` |
 | NS-40-R6 | Given any system age answer, Then a test spying on the settings store, the Keychain, the logger and the analytics client sees zero writes carrying it, and nothing about it is sent to our server | P0 (b) | `[NS-40-R6] the system age signal is never stored` |
 | NS-40-R7 | Given a new account's Terms record, Then it carries `age_attested: true` and no `age_signal` value, and the server refuses `age_attested: false` | P0 (b) | `[NS-40-R7] attestation is recorded, never an age` |
-| NS-40-R8 | Given No on the consent sheet's age step, Then the session ends locally, the 18+ gate closes, and no policy act is recorded | P0 (b) | `[NS-40-R8] No at the age step ends the session` |
-| NS-40-R9 | Given D-131's hook on, When a sign-up comes from a refused country, Then the app shows the neutral refusal screen with Terms and Contact us, stores nothing on the phone, and never asks where the person is | P0 (b) | `[NS-40-R9] a refused sign-up is calm and stores nothing` |
+| NS-40-R8 | Given No on the consent sheet's age step, Then the session ends locally, the 18+ gate closes, nothing is sent to the server and no policy act is recorded (a No sends nothing and records nothing; E56) | P0 (b) | `[NS-40-R8] No at the age step ends the session` |
+| NS-40-R9 | Given D-131's hook on, When a sign-up comes from a refused country, Then the app shows the neutral refusal screen with Terms and Contact us, stores nothing on the phone, and never asks where the person is; a failed lookup is never shown as a refusal, and a refusal is never shown as an outage (E47) | P0 (b) | `[NS-40-R9] a refused sign-up is calm and stores nothing` |
 | NS-40-R10 | Given D-131's hook on, When Apple, Google (if on) and email sign-ups are each made from a test refused location in staging, Then each is refused by the hook | P0 (b) | `[NS-40-R10] every sign-in method meets the country check` (staging) |
 | NS-40-R11 | Given an existing account signing in from a refused country, Then sign-in succeeds (the hook runs only on user creation) | P1 | `[NS-40-R11] the country check is at creation only` (staging) |
 | NS-40-R12 | Given the hook's daily counts, Then they hold counts by result and the country code for refusals only, and no IP address, email or user id | P0 (b) | `[NS-40-R12] country counts hold no person` |
@@ -973,6 +973,8 @@ A person must see what they agree to before we collect, and we must be able to p
 | NS-42-R14 | Given the Privacy links on the age screen, the Welcome and the Terms step, Then each opens the policy at its "What we collect" section (notice at collection) | P1 | `[NS-42-R14] privacy links open what we collect` |
 | NS-42-R15 | Given AX5 on SE 3, Then the agreement line and links are fully visible above the buttons they govern without scrolling past them | P0 (b) | `[NS-42-R15] the agreement line is visible at AX5` |
 | NS-42-R16 | Given "Not now" on the Terms step, Then nothing is recorded, nothing syncs, and the book on the phone (if any) is unchanged | P0 (b) | `[NS-42-R16] Not now records nothing` |
+| NS-42-R17 | Given the sensitive-data consent was agreed, Then Me, Privacy has a withdrawal control; When the person withdraws, Then sync stops at once, the sheet offers to delete what is on our servers, and recording, reading and export keep working on the phone (Privacy 9: built before anyone outside the family signs in). Read of `apps/mobile/src/app/settings/privacy.tsx` at the 20 Nov head: the sync row is read-only, "no withdrawal yet"; `mobile` re-reads it before the first-run consent PR merges, and if the control already exists this row is a test title only (E46) | P0 (a)(b) | `[NS-42-R17] withdrawing stops sync and offers deletion` |
+| NS-42-R18 | Given the Welcome and the Terms step, Then two plain sentences at the point of collection say what we collect and why (the notice at collection), above the links of R14. The words are PROPOSED and the founder approves them; until then the first-run build ships R14 (the links) and no notice text (E51) | P0 (a)(b) | `[NS-42-R18] the notice is shown where we collect` |
 
 ### 8. Non-functional budgets
 - Latency: `record_policy_act` p95 300 ms (F02 section 9); the step change p95 2 s on LTE (PROPOSED).
@@ -1395,7 +1397,7 @@ The first letter is the product's promise kept: a parent talks for a minute (or 
 | Kill switch: `serverFeaturesEnabled()` off | Same allowance and gate | `[NS-44-R2]` |
 | Card's remote pause | None for capture (LEGAL-REQ-040); `freeLettersAllowance` raises only | `[NS-44-R10]` |
 | Plan lapse | Only a new Keep meets the gate | J-N25 |
-| Second account on the same phone | One phone ledger (O-13) | n/a until O-13 is ruled; then a row is added |
+| Second account on the same phone | One phone ledger (O-13, ruled per phone, E59) | n/a: per phone, a second account shares the number (E59) |
 | Reinstall | Allowance holds | `[NS-44-R5]` |
 | Restore from a device backup | Mirror and letters restore the count | existing ledger tests |
 
@@ -1467,7 +1469,7 @@ Testers, numbers only: "How long from opening the app to your first kept letter?
 Area A's capture cards; NS-39 (speech download, microphone primer); F14; G-E13 (StoreKit status cached).
 
 ### 23. Open questions
-- O-13 One allowance per phone or per account. Owner: CBO role with Karma. Default: keep per phone as built for 1.0 (the ledger holds no account id by design, to avoid fingerprinting); a second adult on the same phone shares it. Revisit with NS-25.
+- O-13 One allowance per phone or per account. Owner: CBO role with Karma. Default: keep per phone as built for 1.0 (the ledger holds no account id by design, to avoid fingerprinting); a second adult on the same phone shares it. Revisit with NS-25. Ruled 20 Nov: per phone (E59); this is a promise to a user, so the default stands and is in the founder digest (`22-final-holistic-spec.md` section 7); FR-LCY-13 now says the same.
 
 ---
 
@@ -1567,11 +1569,11 @@ Leaving must be as clear as joining. Sign-out keeps the book on the phone, becau
 | NS-45-R10 | Given Cancel within 30 days, Then letters and books return as they were | P0 (a) | `[NS-45-R10] cancel restores everything` |
 | NS-45-R11 | Given a sealed letter at deletion, Then the server copy is deleted with the account (D6), and its words are never shown anywhere before its day, on any phone | P0 (a) | `[NS-45-R11] a seal is deleted, never revealed` |
 | NS-45-R12 | Given pictures on the phone, When the account is deleted, Then the pictures stay on the phone and step 1 said so; When Erase everything runs, Then every stored copy and both derivatives are removed | P0 (a)(b) | `[NS-45-R12] pictures follow the phone, not the account` |
-| NS-45-R13 | Given a build below `minSupportedVersion`, or a server answer `upgrade_required`, Then Me shows the update line with Open the App Store, nothing appears on Home, and recording, reading, saving and export work | P0 (a)(c) | `[NS-45-R13] a required update never blocks the book` |
-| NS-45-R14 | Given a newer version that is not required, Then the app shows nothing about it | P1 | `[NS-45-R14] no update nag` |
+| NS-45-R13 | Given a build below `minSupportedVersion`, or a server answer `upgrade_required`, Then Me shows the update line with Open the App Store, nothing appears on Home, and recording, reading, saving and export work; the phone holds a yes-or-no "hide features that need the new version" hook that nothing reads yet (E58) | P0 (a)(c) | `[NS-45-R13] a required update never blocks the book` |
+| NS-45-R14 | Given a newer version that is not required, Then the app shows nothing about it, anywhere (E58) | P1 | `[NS-45-R14] no update nag` |
 | NS-45-R15 | Given Delete account offline, Then the line says nothing changed and that a connection is needed, and nothing is half-requested | P0 (b) | `[NS-45-R15] deletion offline is clear` |
 | NS-45-R16 | Given servers off in the build, Then no Account, Sign out or Delete account row shows, and Erase everything and export work | P0 (b) | `[NS-45-R16] servers-off has no account rows` |
-| NS-45-R17 | Given a deletion request and a cancel, Then the account address receives one plain email for each (no content; O-17) | P1 | `[NS-45-R17] deletion and cancel are confirmed by email` |
+| NS-45-R17 | Given a deletion request and a cancel, Then the account address receives one plain email for each (no content; O-17); this is a test of the purge worker's two sends and a check on the deployment that the sender is configured (E58) | P1 | `[NS-45-R17] deletion and cancel are confirmed by email` |
 | NS-45-R18 | Given VoiceOver and AX5 on SE 3, Then the sign-out sheet, both deletion steps, the scheduled screen and the update line are fully reachable and read in order | P0 (b) | `[NS-45-R18] leaving works with VoiceOver and at AX5` |
 
 CL/K ruling K15 (`GAP-LOG.md`; lifecycle against back-office on deletion, claim and hand acts), one home for the three rules: (1) a sole parent's book is exported only by the account holder's own phone, or by a counsel-read process that hands over the Save a copy file the person already holds; no staff tool exports a book (FR-LCY-27); (2) a deleted-elsewhere phone (FR-LCY-19) and a suspended account (FR-BKO-26) get two lines and two states; (3) a claim after deletion (FR-LCY-11) is parent-driven and never done by staff. Counsel confirms the death runbook (RUFADAA, none read). Only Q-BKO-1 (default: no hand merge) is the founder's.
@@ -1612,7 +1614,7 @@ CL/K ruling K15 (`GAP-LOG.md`; lifecycle against back-office on deletion, claim 
 - Local sign-out, waits for uploads, "Stay signed in": built (`session-provider.tsx:269-308`, `machine.logic.ts:191-209`). The sheet body says "Your letters stay on this phone. Sign in again any time." (`packages/content/src/features/auth.en.ts:297`) and lacks D1's "anyone who opens the app here" line. Backlog: BL-961 with BL-965 (content).
 - `session_expired` path and forced epoch: built (`session-provider.tsx:217-223`, `:327-341`).
 - Apple revocation checked only when a user id first appears (`session-provider.tsx:255-267`). Backlog need: foreground check and the revocation notification (O-18).
-- Deletion request, 30 days, cancel, typed word, rate limits: built (`lib/account-deletion/logic.ts:62-70`, `account-deletion.en.ts:19-110`). No step-up and no email on request or cancel (security G5). Backlog need: O-17.
+- Deletion request, 30 days, cancel, typed word, rate limits: built (`lib/account-deletion/logic.ts:62-70`, `account-deletion.en.ts:19-110`). The purge worker already sends both emails, on request and on cancel (`supabase/functions/purge-worker/account.ts:247` and `:251`, found 20 Nov); no step-up before Delete account (E54). What is open is a test and a deployment check (NS-45-R17), not a build (E58).
 - Deletion copy says "v1.0 makes no photos" (`account-deletion.en.ts:15-16`); with NS-01 it must name pictures on the phone. Backlog need: `content` with NS-01.
 - D6 sealed-letter line on the deletion sheet: not built (Firsts and seals are later; the line lands with NS-06 B).
 - Account deleted elsewhere: the phone keeps its letters (`account-deletion.en.ts:38`, `:83`); F02-REQ-007 asked for one export and a wipe. O-15.

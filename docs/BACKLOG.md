@@ -2693,12 +2693,12 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 #### BL-577 Every consent record is complete and built in one place (COMP-03, COMP-09, DATA-05)
 - Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, data architect, privacy engineer. Severity: S1: rows written in build 2 cannot be fixed later.
 - Who: `mobile` (builder), `data-architect` (migration), `privacy` (review).
-- Problem: the app sends no `rendered_sha256` and hard-codes locale `en` (`consent.ts:103-116`); `app_version` is the marketing version only, so build 1 and build 2 both record "1.0.0"; there is no OS version or `age_signal`; links open floating URLs, not the versioned URL (POLICY_VERSIONING.md:104).
+- Problem: the app sends no `rendered_sha256` and hard-codes locale `en` (`consent.ts:103-116`); `app_version` is the marketing version only, so build 1 and build 2 both record "1.0.0"; there is no OS version; links open floating URLs, not the versioned URL (POLICY_VERSIONING.md:104).
 - Requirement: every act is written through one shared builder that fills every PRIV-R21 field; a new migration adds `app_build` and `os_major` and makes `rendered_sha256` and `locale` (now meaning the language of the text shown) NOT NULL for sheet methods. DATA_CLASSIFICATION 4.5 gains rows for `app_build` and `os_major` and the new meaning of `locale` (founder merge).
 - Acceptance:
   - Given the sensitive-data sheet, when Agree is tapped, then `rendered_sha256` equals the bundled manifest hash for that version and locale.
   - Given a bundled consent text whose hash is not in the manifest, when CI runs, then the build fails.
-  - Given any act, when recorded, then the row holds the build number, the OS major version and, for Terms, `age_signal`.
+  - Given any act, when recorded, then the row holds the build number and the OS major version, and for Terms `age_attested: true` and no age signal of any kind (NS-40-R6, R7 and errata E50 of the locked pack: the card wins over the earlier text; the age signal is never stored or sent).
   - Given the Terms step, when a link is tapped, then the URL opened is the `url` of the version being recorded.
   - Given any caller in `apps/mobile`, then it uses the shared builder, and a contract test runs the builder against embedded Postgres.
 - Extends: LEGAL-REQ-001, LEGAL-REQ-002, POLICY_VERSIONING 7.1 and 9.2, PRIV-R06.

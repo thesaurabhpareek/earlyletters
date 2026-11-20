@@ -356,7 +356,7 @@ A parent with an older, smaller iPhone and the baby already stirring.
 - Today [F]: the numbers exist in `docs/prd/v2/06-nfr.md`; none has been measured on an SE 3 under its protocol. The `perf` build profile and marker harness do not exist yet (06-nfr section 0); until they land, rows are measured by hand with Instruments on a release build.
 
 ### 3. What, and Not in scope
-**What.** A run sheet measured on an iPhone SE (3rd generation), on iOS 17 and the latest iOS, release configuration, under the 06-nfr section 0 protocol (unplugged, 50% brightness, nominal thermal state at start, 2 minutes idle between runs), 200 samples per metric unless stated, on the Asha test install (D13). Results go to `docs/qa/evidence/<date>-<build>-se3.md` (file name pattern; the card sets no date).
+**What.** A run sheet measured on an iPhone SE (3rd generation), on iOS 17 and the latest iOS, release configuration, under the 06-nfr section 0 protocol (unplugged, 50% brightness, nominal thermal state at start, 2 minutes idle between runs), 200 samples per metric unless stated, on the Asha test install (D13). Until the perf profile and markers exist, a hand run records 20 samples per metric, marked `[stand-in]` and never claimed green; the 200-sample rule applies once markers exist (E53). Results go to `docs/qa/evidence/<date>-<build>-se3.md` (file name pattern; the card sets no date).
 
 Targets on an SE 3:
 - Tap Speak to microphone live: p95 500 ms over 200 taps, cold and warm (F04-REQ-023).
@@ -419,7 +419,7 @@ Targets on an SE 3:
 | NS-34-R3 | Given the run sheet, Then every number records the device model, the iOS version and the build fingerprint | P1 | `[NS-34-R3] run sheet provenance` |
 | NS-34-R4 | Given the evidence, Then it is filed at `docs/qa/evidence/<date>-<build>-se3.md` | P1 | `[NS-34-R4] evidence filed` |
 | NS-34-R5 | Given any device run, Then it uses the Asha test install, and no run sheet, trace or screenshot carries a real name, letter, picture or voice (D13) | P0 (a: private) | `[NS-34-R5] runs on Asha only` |
-| NS-34-R6 | Given perf markers, Then they carry no letter text, child name or path (PRIV-R10) | P0 (a: private) | `[NS-34-R6] markers content-free` |
+| NS-34-R6 | Given perf markers, Then they carry no letter text, child name or path (PRIV-R10); a run that needs text to scroll uses invented text only (the Asha set), never a real family's (E53) | P0 (a: private) | `[NS-34-R6] markers content-free` |
 | NS-34-R7 | Given the run on iOS 17 and the latest iOS, Then both are recorded | P1 | `[NS-34-R7] both iOS versions` |
 
 ### 8. Non-functional budgets
@@ -788,7 +788,7 @@ A parent scrolling a Book of years: 1,000 letters and 300 pictures should scroll
 - A missing copy is regenerated in the background; the card shows without its thumbnail until then.
 - Nothing is decoded while a take is recording.
 
-**Not in scope.** Video. More than one picture per letter.
+**Not in scope.** Video. More than one picture per letter. NS-37 stays as locked until NS-52 ships; any budget row that depends on NS-52 (video posters, several pictures) is marked "if NS-52 ships" in the budget file, and no budget is loosened (E52).
 
 ### 4. Happy path
 1. A parent attaches a picture; the stored copy and both smaller copies are written.
@@ -840,7 +840,7 @@ A parent scrolling a Book of years: 1,000 letters and 300 pictures should scroll
 | NS-37-R3 | Given a smaller copy is missing, Then the Book shows the card without the thumbnail and regenerates it in the background, with no error | P1 | `[NS-37-R3] missing copy regenerates` |
 | NS-37-R4 | Given the smaller copies, Then they carry no metadata segments and are excluded from the iPhone backup | P0 (a: private) | `[NS-37-R4] copies stripped and not backed up` |
 | NS-37-R5 | Given a picture is purged, erased or let go with its draft, Then all three files are removed | P0 (a: yours always; b: deletion) | `[NS-37-R5] copies erased with the picture` |
-| NS-37-R6 | Given the Book with 1,200 letters and 300 pictures, Then resident memory is under 150 MB on an SE 3 (PROPOSED; device) | P1 | `[NS-37-R6] Book memory with pictures` |
+| NS-37-R6 | Given the Book with 1,200 letters and 300 pictures, Then resident memory is under 150 MB on an SE 3 (PROPOSED; device; the "Book with 300 pictures" number, kept apart from the 120 MB "Book without pictures" number of the NFR file, E52) | P1 | `[NS-37-R6] Book memory with pictures` |
 | NS-37-R7 | Given a list copy, Then its first decode is p95 50 ms, off the UI thread (PROPOSED; device) | P1 | `[NS-37-R7] list copy decode` |
 | NS-37-R8 | Given the Book list and the letter page, Then the list reads only list copies and the page only page copies; only export reads the stored copy | P1 | `[NS-37-R8] the right copy for each place` |
 

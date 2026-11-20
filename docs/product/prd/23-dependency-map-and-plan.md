@@ -45,7 +45,7 @@ Columns. Owner: the agent handle in `agents/roster.json` that takes the row (the
 
 ### 1b. First-run cards NS-38 to NS-45 (card 19)
 
-Card 19 sets no drop. The path is one chain, so I treat it as one release unit for gates G10 to G17 (groups in `BACKLOG-GAPS.md`). No row exists for any of them except the requirement row BL-994 (in progress, "queued behind the agent limit"). P0 rows: 96, of which 94 have no backlog row (`p0.py`).
+Card 19 is Drop D (ruled 20 Nov, E43; founder-only release content, default stands, in the founder digest): its own stack after wave 1 and Drop A, in the order of engineering's first-run plan section 2, and before any family outside the founder's signs in. The path is one chain, so I treat it as one release unit for gates G10 to G17 (groups in `BACKLOG-GAPS.md`). No row exists for any of them except the requirement row BL-994 (in progress, "queued behind the agent limit"). P0 rows: 96, of which 94 have no backlog row (`p0.py`).
 
 | Id | Card | Owner | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|
@@ -204,7 +204,7 @@ Dates that exist in the docs (none is a commitment):
 | Sun 9 May 2027 Mother's Day; Sun 20 Jun 2027 Father's Day | same file, citing FUTURE-REBASELINE (not read by me; UNVERIFIED) | drop B days content only helps if it is in a build before each date |
 | 1 Jan 2027 California age assurance | same file; "CCO skill, secondary source; counsel must confirm" (UNVERIFIED) | NS-40 Declared Age Range timing, card 19 O-2 |
 
-Spike timing from the README triggers: hands-free spike on the Monday after Build 13 is cut; five-parent studies within one week of the build with the feature on (`README.md` lines 85 and 166 to 170).
+Spikes by backlog row: the date chip is BL-843. Spike timing from the README triggers: hands-free spike on the Monday after Build 13 is cut; five-parent studies within one week of the build with the feature on (`README.md` lines 85 and 166 to 170).
 
 ## 4. Founder queue, ordered by what each item unblocks
 

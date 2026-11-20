@@ -29,7 +29,7 @@ The three levels:
 
 | Level | What leaves the phone | Through what | Gate before it can ship |
 |---|---|---|---|
-| 1 | The words as plain text (date line, words, signature line), and optionally the stored copy of the picture; no recording | The iOS share sheet (the parent's own Messages, Mail, WhatsApp) | Content and review rules, and a counsel read on the optional picture (a picture of the child leaving through the parent's own share sheet; Q45, default "same as Export: the parent's own act; we collect nothing"), before the flag is on outside the founder's family |
+| 1 | The words as plain text (date line, words, signature line), and optionally the stored copy of the picture; no recording | The iOS share sheet (the parent's own Messages, Mail, WhatsApp) | Content and review rules, and a counsel read on the optional picture (a picture of the child leaving through the parent's own share sheet; Q45, default "same as Export: the parent's own act; we collect nothing") and the `security-architect` read (a picture sent to another person is an X2 path, E23), both before the picture is shared at all outside the founder's family |
 | 2 | Level 1 plus the recording file | Same | `security-architect` and counsel reads first (closed X2); NS-03 Arm V result |
 | 3 | A link to a page with words and sound, hosted by us | Our hosted page | Both reads; NS-03 GO; the founder decides hosting spend; label moves Audio Data to collected and linked (Q54(a), Q42) |
 
@@ -184,7 +184,7 @@ Inherit 06-nfr; differences only:
 - Classes: words L4, date L3 (L4 when it is a birthday, rule 6), picture L4. None are stored by this feature.
 - Migrations: none, local or server. Sync field group: none. Export schema: no effect.
 - Modules: `lib/share/payload.ts` (pure: builds the wrapper and the payload; unit-tested with the 20 fixtures), `lib/share/temp.ts` (writes and sweeps `tmp/share`), the letter page action row in `app/letter/[id].tsx`, a preview sheet component reusing the existing sheet and toggle components, `packages/content` share strings. The share call uses React Native's `Share.share` (already used at `lib/family/share.ts:13`) or `expo-sharing` (used at `lib/export/device.ts:358`); `mobile` picks the one that can hand text and one image together and proves it with the R4a fixtures (UNVERIFIED which can).
-- Flag: `EXPO_PUBLIC_SHARE_LETTER` (name proposed; `capabilities.ts` sets the final name). Off in production until the Q45 counsel read on the optional picture and the device rows (R11, R13a, R13b) pass.
+- Flag: `EXPO_PUBLIC_SHARE_LETTER` (name proposed; `capabilities.ts` sets the final name). The share-with-picture part stays off in production until the Q45 counsel read, the `security-architect` read (X2, E23) and the device rows (R11, R13a, R13b) all pass.
 - Remote pause key: none (section 9).
 - Error codes: `share_temp_write_failed` (falls back to words only; never logged with a path).
 - Rollout: flag on in preview and TestFlight; production when the gates in section 22 pass. Rollback: flag off in the next build; nothing to migrate or clean (no data).
@@ -243,7 +243,7 @@ Banned: gift, share your voice, private link, family can listen, any loss word, 
 ## 17. Legal, privacy and compliance
 
 Counsel packet 1.5.0; counsel must confirm each:
-- Q45: a picture of a child leaving through the parent's own share sheet. Default: the same as Export, the parent's own act; we collect nothing. Gates the production flag.
+- Q45: a picture of a child leaving through the parent's own share sheet. Default: the same as Export, the parent's own act; we collect nothing. Gates the production flag together with the `security-architect` read (E23).
 - Q43: the where-it-goes line and any privacy wording in the preview (a claims row).
 - Q48: a letter that names another adult, shared by the parent.
 - Levels 2 and 3: Q54(a) and Q42 (Audio Data collected and linked), plus `security-architect`.
@@ -270,7 +270,7 @@ Study pass line (PROPOSED): 4 of 5 parents send one letter in under 60 seconds w
 
 - Cards: NS-01 (the stored copy and its toggle), NS-06 (sealed letters excluded), NS-33 (Voice Control and Switch Control).
 - Founder: OQ-1 order (default: after NS-01 is in TestFlight; the roadmap holds the date).
-- Counsel: Q45 on the optional picture before the flag is on outside the founder's family.
+- Counsel: Q45 on the optional picture before the flag is on outside the founder's family; and the `security-architect` read of the picture leaving the phone (X2, E23). Neither is defaulted.
 - Device runs: R11, R13a, R13b, R23 on an SE 3 with an Asha-only test install (ruling D13).
 - `content`: the strings and the verb (OQ-6).
 - Trace: `scripts/trace.mjs` must see NS ids (F1) before this card's rows count as traced.
