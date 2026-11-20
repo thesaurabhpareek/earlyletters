@@ -1,5 +1,7 @@
 # Founder queue: every step only you can do, in one order
 
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the 28 Oct queue and the Build 12 section are history; open founder items are in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
 **Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
 - `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
 - `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.

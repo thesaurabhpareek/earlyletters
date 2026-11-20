@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `91eef422`, 20 Nov 19:04 UTC).
-Blocked until: #839 merged (base `feat/mobile-photo-4c-letter-page`); the word `book.lens.monthsButton` (PROPOSED) read by the founder; #854 merged. The slice is inside CODE-R02 (326 added, 16 removed, 12 files, counted 342) so it needs no size exception [V]. NS-37 (BL-932) must merge before the flag turns on in `production`, not before this merge. Conflict for product (DESIGN-DELTA C-09, PR #923): "Months" appears twice in one bar once Find and "Go to a month" land.
+Blocked until: #839 merged (base `feat/mobile-photo-4c-letter-page`); the word `book.lens.monthsButton` (PROPOSED) read by the founder; #854 merged. The slice is inside CODE-R02 (326 added, 16 removed, 12 files, counted 342) so it needs no size exception [V]. NS-37 (BL-932) must merge before the flag turns on in `production`, not before this merge. C-09 is ruled (CL-116): the Book bar button is "Go to a month" (card NS-22 s3, area B words), so "Months" is not twice in one bar; the lens keeps its Months and Photos choice. The rename of the bar button belongs to BL-938, not here.
 
 ```
 BRIEF PR-840 (BL-931 slice 5)                     Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
@@ -53,7 +53,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 11. LENSES: A design-systems, B principal-architect. Both PASS WITH NOTES at 91eef422 (14:55 and 15:50 UTC).
 
-12. ORDER: after #839; before BL-932, BL-956 and the Find mode on `book.tsx`. Blocked by: founder (word, #854), product (C-09).
+12. ORDER: after #839; before BL-932, BL-956 and the Find mode on `book.tsx`. Blocked by: founder (word, #854).
 
 13. DEFINITION OF DONE
     [ ] focused photos-surfaces, book-page; `npm test -w apps/mobile`: only the 8 baseline files red; `npm test -w packages/content`
@@ -62,7 +62,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 14. ONLY A PHONE CAN PROVE: AX5 and dark mode on the lens (JOURNEYS row 4.8, J-N13, PR #925); VoiceOver reads one radio group.
 
-15. STOP AND ASK: product has not ruled C-09; a stored-copy read is to be replaced by a list copy here (it is BL-932); the base moves.
+15. STOP AND ASK: a stored-copy read is to be replaced by a list copy here (it is BL-932); the base moves.
 
 16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-pr840 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-pr840.md`. Branch feat/mobile-photo-5-lens (exists, no force). Comments start `<!-- agent:mobile -->`.

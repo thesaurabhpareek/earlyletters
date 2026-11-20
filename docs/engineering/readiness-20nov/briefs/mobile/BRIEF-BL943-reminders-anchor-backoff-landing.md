@@ -41,7 +41,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 14 on   Wave
 7. LIBRARIES: none. `expo-notifications ~57.0.21` (`getLastNotificationResponse` in `NotificationsEmitter.d.ts:83` [U re-check]); Intl and `tz.ts` (LD-18); no date library (PR #920).
 
 8. BUDGETS (PR #928): L-09 re-plan under 50 ms for 3 children (Node, BLOCK at 3x); a Node bench of `lastMadeAt` plus `planReminders` on `node:sqlite` with 1,000 entries and 3 children under 10 ms (PROPOSED);
-   L-01, L-03 no awaited work added at launch (`scheduler.ts` first re-plan stays `void`); B-03 at most 60 budgeted plus up to 4 plan notices, 64 in all (NS-13-R23 "never over sixty pending" covers the budgeted group; the total with plan notices is up to 64). Checked: Node; the phone by the NS-34 run sheet; tap to Home within 2 s is a device row.
+   L-01, L-03 no awaited work added at launch (`scheduler.ts` first re-plan stays `void`); B-03 at most 60 pending in TOTAL, plan notices first (E13 applied in card 11: NS-13-R23, R7 and NS-32-R4b say 60 in total; CL-115). Today the planner allows 64: `planner.ts:295` caps the budgeted group at 60 (`maxNotifications ?? 60`) and `plan-reminders.logic.ts:48` adds up to 4 plan notices, so this change LOWERS the total. Checked: Node; the phone by the NS-34 run sheet; tap to Home within 2 s is a device row.
 
 9. ACCEPTANCE  Experience: D-S04 reminder ask, D-S06 Me Reminders (off, on, denied, backedOff, lateClamp, appLock, ax5), D-S10 (PR #921); no screen says reminders slowed (card section 15). Test cases above.
    Done also means: red on old code and mutants; an injected clock for every cadence.

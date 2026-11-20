@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `f3b21698`, 20 Nov 19:04 UTC). One already moved: review notes cite `photos/device.ts:95` for the eraser; at this head it is `erasePictureOf` at `device.ts:102`, the `COALESCE(entry_id, draft_id)` query at `:104`.
-Blocked until: #838 merged (base `feat/mobile-photo-4-capture`); the founder's size exception (592 added, 11 removed, 17 files; reviewers counted 603, 85 over the 523 (plan M29 gives 523) covered); the 13 PROPOSED keys plus `text.*` (among them `features.photos.review.notStored`) read by the founder; #854 merged. Conflicts for product (DESIGN-DELTA C-01, C-02, PR #923): the card and e2e B-S08 put the picture ABOVE the words, this slice keeps it after the words; the Undo clock, which CR-67 AX-11 already rules: one clock, the toast's own dismissal (`createUndo`, row 33-3, design-systems).
+Blocked until: #838 merged (base `feat/mobile-photo-4-capture`); the founder's size exception (592 added, 11 removed, 17 files; reviewers counted 603, 85 over the 523 (plan M29 gives 523) covered); the 13 PROPOSED keys plus `text.*` (among them `features.photos.review.notStored`) read by the founder; #854 merged. REWORK (CL-116 C-01, ruled 20 Nov): the picture sits ABOVE the words, as cards 01 and 10 say; #839 places it after the words and changes, the card does not. This adds lines to a PR already over its exception: tell the founder. C-02 (ruled): timed Undo windows with ONE clock owned by the toast (`createUndo`, row 33-3, design-systems); see BRIEF-BL954. E41: the photo words and place fields turn writing tools off, or are hidden in `production` until the native setting exists (titles `[NS-01-R50]` and `[NS-01-R50b]`).
 
 ```
 BRIEF PR-839 (BL-931 slice 4c)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
@@ -54,8 +54,8 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 11. LENSES: A principal-architect, B design-systems. Both PASS WITH NOTES at f3b21698 (14:55 and 15:50 UTC).
 
-12. ORDER: after #838; before #840. N1 (dead Undo, NS-01-R38b P0 (b)) is listed "not met" on the card: the fix is BRIEF-BL954 (CR-67 AX-11: the toast's own dismissal is the only clock; row 33-3 `createUndo` first) and is NOT a reason to
-    hold this merge unless Karma rules R38b holds the flag. Blocked by: founder (size, keys, #854), product (C-01, N7).
+12. ORDER: after #838; before #840. N1 (dead Undo, NS-01-R38b P0 (b)) is listed "not met" on the card: the fix is BRIEF-BL954 (CL-116 C-02: one timed clock owned by the toast; row 33-3 `createUndo` first) and is NOT a reason to
+    hold this merge unless Karma rules R38b holds the flag. Blocked by: founder (size, keys, #854), product (N7).
 
 13. DEFINITION OF DONE
     [ ] focused photos-capture, photos-surfaces, erase-all; `npm test -w apps/mobile`: only the 8 baseline files red; `npm test -w packages/content`
@@ -64,7 +64,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 14. ONLY A PHONE CAN PROVE: Undo toast, VoiceOver, AX5 on the letter page (JOURNEYS row 4.5, 4.1; PR #925).
 
-15. STOP AND ASK: product rules C-01 (picture above the words); a word is needed; `store.ts` shape (N3) needs a split; the base moves.
+15. STOP AND ASK: the picture-above-words rework passes the covered size; a word is needed; `store.ts` shape (N3) needs a split; the base moves.
 
 16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-pr839 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-pr839.md`. Branch feat/mobile-photo-4c-letter-page (exists, no force). Comments start `<!-- agent:mobile -->`.
