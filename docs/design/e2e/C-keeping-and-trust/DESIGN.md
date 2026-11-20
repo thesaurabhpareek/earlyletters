@@ -1,12 +1,16 @@
 # Area C. Keeping and trust: end-to-end design
 
-Status: DRAFT v1, reconciled with MOTION.md and WORDS.md (section 11), for Karma's reconciliation, 20 Nov 2026. Design lead, area C (design-systems role, Claude session). Docs only; nothing here was run on a phone.
-Motion (`MOTION.md`) and words (`WORDS.md`) in this folder key to the ids below. Ids are stable; a new screen takes the next number, never a reused one.
+Status: DRAFT v2, 20 Nov 2026 (second pass: reconciled to the FINAL product requirements). Design lead, area C (design-systems role, Claude session). Docs only; nothing here was run on a phone. v1 was reconciled with MOTION.md and WORDS.md (section 11); v2 re-keys to the final pack and adds sections 12 to 18 (re-key, function needs accounted for, motion for new states, contradictions, card and engineering gaps, open design questions).
+Motion (`MOTION.md`) and words (`WORDS.md`) in this folder key to the ids below. Ids are stable; a new screen takes the next number, never a reused one. v2 adds C-S23 (Privacy), C-S24 (Days), C-S25 (Browse days), C-S26 (Day detail), and states on C-S01 to C-S04, C-S06, C-S10, C-S18 to C-S20.
 Prototype: `PROTOTYPE.html` in this folder (self-contained, light and dark, text-size toggle to AX5, state switcher per screen).
+
+What changed in v2, in one paragraph: the final pack put NS-38 to NS-45 in card 19 (NS-45, account life after first run, now owns the sign-out, session-ended, deletion and update-line behaviours drawn on C-S01 to C-S03, C-S19 and C-S20) and added cards 21 and 22 (NS-46 Days, NS-47 optional cultural background and the lock-screen rules, NS-50 Home today). The Me tab is regrouped (adopted for design, built only after tree test T1, R-IA-4), with a fallback place for the Days row before T1. Storage shows one state line, never a list (errata E28). Reminders are "reminders", never "notes". Section 12 lists every old id and what it became.
 
 Sources, in the order of the brief: the locked cards `08-keeping-and-trust.md` (NS-08 to NS-12), `07-remaining-capability-rows.md` section 4 (NS-07 C28), `11-foundations.md` (NS-36), `10-reading-and-family.md` (NS-21, NS-22, NS-23 where they touch Me), `06-firsts-sealed-letter-quick-capture.md` (D6 and B25 lines), `01-photo-with-a-letter.md` (R29 to R31), under `00-product-frame.md`; `14-test-plan.md` journeys J-N1, J-N2, J-N8, J-N9, J-N19, J-N21, J-N25; `16-council-review-round-2.md` (T2, T4, D1, D6, D7, D8, D12, D13). Engineering: `13-engineering-plan.md`, the plan in PR #847 (`17-engineering-project-plan.md`, read 20 Nov through `gh api`), backlog rows BL-922, BL-925, BL-926, BL-942, BL-961, BL-963, BL-965, BL-973, BL-976 to BL-979, BL-985, BL-987, and `/home/claude/review/eng/C-platform-quality-delivery.md` (ADR proposals 0029, 0031, 0033, 0037; error code sets 4.2). The app as built on this worktree: `app/settings/*.tsx`, `app/(tabs)/you.tsx`, `lib/provenance.ts`, `lib/export/device.ts`, `lib/store.ts`, and the strings in `packages/content/src`.
 
-Words in quotes below are the strings that exist today (by key) or intent for `content`; every new string is a PROPOSED key owned by `WORDS.md`, and the founder approves words before any build outside his family shows them.
+Final-pack sources added in v2 (read 20 Nov on `docs/locked-pack-inputs-20nov`, HEAD cfeca754e): `22-final-holistic-spec.md`; `21-days-cultural-photos-home.md` (NS-46, NS-47, NS-50 rows as final, after the ten reviews); `19-from-download-to-first-letter.md` (NS-45 in full; NS-41 and NS-42 for C-S10 and C-S11); `18-errata-after-lock.md` (E18 blank snapshot, E20 local flag family, E21 kill-switch header, E27 BL-961 dependency, E28 Storage line); `GAP-LOG.md` (K1 to K17, R-IA-1 to R-IA-6, CB-1 to CB-6, DL-1 to DL-10, N-1 to N-8, RV-1 to RV-17); `FUNCTION-TRACE.md` section 6.3 (function needs for area C); `docs/design/e2e/IA-AUDIT.md`; the reviews `tools/review/ns46-50/design-systems.md`, `content.md`, `security.md`, `privacy.md`.
+
+Words in quotes below are the strings that exist today (by key) or intent for `content`; every new string is a PROPOSED key owned by `WORDS.md`, and the founder approves words before any build outside his family shows them. Parent-facing words follow the glossary: "reminder" never "note" for what the app sends (RV-3), "Days you added" and "Days you chose" (never "a day we mark"), "photo" as one word in the picture start, "Not today" on a day slip.
 
 ---
 
@@ -25,7 +29,7 @@ Words in quotes below are the strings that exist today (by key) or intent for `c
 
 | Id | Screen | Built today | Card source |
 |---|---|---|---|
-| C-S01 | Me (Look after), the tab root | `app/settings/index.tsx` via `(tabs)/you.tsx` | frame 4; NS-11-R1; NS-22-R3; D1; BL-927/928 heading |
+| C-S01 | Me (Look after), the tab root; `.default` = groups as built plus the Days row under Reminders (the fallback before tree test T1); `.regrouped` = the IA-AUDIT regroup (after T1) | `app/settings/index.tsx` via `(tabs)/you.tsx` | frame 4; NS-11-R1; NS-22-R3; D1; NS-45-R3, R13; NS-46-R3; R-IA-2, R-IA-4; BL-927/928 heading |
 | C-S02 | Account (sign-in method, sign out, sign out of other phones) | `app/settings/account.tsx` | D1; NS-08-R6, R15; NS-09-R12 |
 | C-S03 | Sign-out sheet (the D1 sheet) | native `Alert` in account.tsx (replaced) | D1; NS-08-R6; NS-01-R30; X4 |
 | C-S04 | Save a copy (the one export screen) | `app/settings/export.tsx` | NS-11; NS-07 C28-1; NS-10-R4b; NS-36-R2 |
@@ -42,15 +46,19 @@ Words in quotes below are the strings that exist today (by key) or intent for `c
 | C-S15 | A book in Me (details, Quiet this book, Hide this book, Delete this book) | `app/settings/children/[id].tsx` | NS-22-R3, R7; F12-REQ-011; BL-985 |
 | C-S16 | Hidden books | `app/settings/children/hidden.tsx` | NS-22; F09-REQ-016 |
 | C-S17 | Recently deleted | `app/settings/recently-deleted.tsx` | NS-21-R7b; NS-36-R1a to R1c; NS-06-B25 |
-| C-S18 | Storage (languages, a recording still on this phone, space) | `app/settings/storage.tsx` | NS-09-R6; NS-11-R20 |
+| C-S18 | Storage (languages, space, and one state line when a recording is still being removed; never a list, never a count) | `app/settings/storage.tsx` | NS-09-R6 as ruled by errata E28; NS-11-R20 |
 | C-S19 | Erase everything on this phone | `app/settings/erase.tsx` | D1; NS-36 erase row; NS-01-R52 |
 | C-S20 | Delete account | `app/settings/delete-account.tsx` | D6; NS-01-R31; NS-10-R4a; NS-08-R16 |
 | C-S21 | Recording backup (flip-only states; absent today) | `app/settings/backup.tsx` (flag off) | NS-08 sections 4, 5, 12, 15 |
 | C-S22 | Delete this book | `app/settings/children/delete-book.tsx` | F17 6.2 D (built); NS-36 |
+| C-S23 | Privacy (Me, Privacy) and its sheet `.withdraw` ("Stop syncing letters") | `app/settings/privacy.tsx` (built; withdrawal not built, BL-485) | FR-PRV-01, FR-PRV-33; FR-CMP-16; K9 (id taken by privacy) |
+| C-S24 | Days (one page: Days you added, Days you chose, Browse days, the day-name switch, Clear all) | none | NS-46-R3, R26, R40; NS-47-R14, R21, R29; NS-18 (typed days move here, D-S08 and D-S09 reused) |
+| C-S25 | Browse days (sheet, with the optional tradition and country pickers and the DoorNote) | none | NS-46-R20, R41; NS-47-R2, R20, R25, R29, R30, R35 |
+| C-S26 | Day detail (pushed from C-S24 only: date, Move this date, Remove) | none | NS-46-R14, R15, R26; NS-47-R21 |
 
 State suffixes on every screen: `.default`, `.empty`, `.loading`, `.offline`, `.error-<code>`, `.killswitch`, `.lapsed`, `.second-account`, `.signedout`, `.ax5`, `.vo` (VoiceOver order), `.dark`. Screen-specific states are listed per screen in section 3 and in the table in section 4.
 
-Cross-area keys: B-S02 (the Book's end menu with Quiet and Hide) is area B's and calls the same store functions as C-S15; B-S21 (the past-letters switch) and D-S06 (Reminders) are rows inside C-S01 drawn by their areas; B-S22 (the sealed row with no words) sits inside C-S17; E-S07 and E-S09 share components with C-S11 and C-S10 (E owns first run; C owns every NS-10 state); E-S18 (account mismatch) is the system side of `C-S01.second-account`; A-S11 (Let it go confirm) feeds C-S18's stuck-recording row.
+Cross-area keys (v2 additions first): A-S01 states `dayToday`, `daysAsk`, `quietDay` are area A's, drawn with the C9 slip host variants `daySlip` (rank 2b) and `askSlip` (rank 3b); C-S06 is the `saveSlip` (rank 3) and section 3 holds the three anatomies side by side; D-S06 loses the typed-day list (it moves to C-S24) and the day-name switch (it lives on C-S24, RV-13); D-S08 and D-S09 are reused unchanged inside C-S24; D-S10 `libraryDay-*` states and the D-S06 denied card are area D's and reused; E-S16.line (update required) and the `session_expired` line sit at the top of C-S01. Earlier keys: B-S02 (the Book's end menu with Quiet and Hide) is area B's and calls the same store functions as C-S15; B-S21 (the past-letters switch) and D-S06 (Reminders) are rows inside C-S01 drawn by their areas; B-S22 (the sealed row with no words) sits inside C-S17; E-S07 and E-S09 share components with C-S11 and C-S10 (E owns first run; C owns every NS-10 state); E-S18 (account mismatch) is the system side of `C-S01.second-account`; A-S11 (Let it go confirm) feeds C-S18's stuck-recording row.
 
 ---
 
@@ -91,7 +99,7 @@ Happy path:
 
 Unhappy paths and rules:
 - U1 "Not now": the slip leaves (exit motion per MOTION.md); state `dismissed` for this year; no toast, no undo (dismissing a suggestion loses nothing).
-- U2 A higher slip is due (a waiting card, the seal-opened line): this slip waits; at most one slip shows (R4, `[FRAME-SLIP]`).
+- U2 A higher slip is due (a waiting card, the seal-opened line, or a day the parent chose today): this slip waits; at most one slip shows. Final order (NS-50-R5, RV-5): (1) waiting set, (2) seal-opened, (2b) a day the parent chose today, (3) Save a copy, (3b) the Days ask, (4) one past letter. Known cost, accepted in NS-50 section 3: on a day-slip day in the birthday week Save a copy waits for the next Home visit that day or the next day.
 - U3 Due date only, or no kept letter: no slip (R7; first-use row).
 - U4 Quiet or hidden book: no slip for it (R8, P0, J-N19).
 - U5 Two books, different birthdays in one week: one at a time, earlier birthday first (R15).
@@ -126,12 +134,12 @@ Unhappy paths:
 Happy path:
 1. `C-S01.default` signed in: tap the account card (top).
 2. `C-S02.default`: the method line ("Signed in with Apple"), Sync row, Sign out of other phones, and "Sign out" at the end of the page.
-3. Tap Sign out: `C-S03.default` opens (a sheet, not a native alert, so it can hold the D1 sentences at AX5 and name pictures): heading "Sign out on this phone?"; the D1 lines: "Your letters and recordings stay on this phone. Anyone who opens the app here can read them. Use Erase everything to remove them." (intent; once photos are on: "letters, recordings and pictures", NS-01-R30); buttons "Stay signed in" (filled, first, default, escape), "Sign out" and "Sign out and erase this phone" (F6 variant `three`, see section 11).
+3. Tap Sign out: `C-S03.default` opens (a sheet, not a native alert, so it can hold the D1 sentences at AX5 and name pictures): heading "Sign out on this phone?"; the D1 lines: "Your letters and recordings stay on this phone. Anyone who opens the app here can read them. Use Erase everything to remove them." (intent; once photos are on: "letters, recordings and pictures", NS-01-R30); buttons "Stay signed in" (filled, first, default, escape), "Sign out" and "Sign out and erase this phone" (F6 variant `three`, see section 11). v2 adds two optional lines and one action (section 3, C-S03): when at least one day is ticked, one line that days chosen on this phone are cleared (FR-CUL-15, NS-47-R15); and while App lock is off, a plain "Turn on App lock" action under the D1 lines (FR-SEC-07).
 4. Tap Sign out. If nothing is waiting: signed out; `C-S01.signedout` (the signed-out card, Plan, books, and "Erase everything on this phone" now present in Your letters, see card gap G2).
 5. Every recording file is still on the phone (R6; J-N21).
 
 Unhappy paths:
-- U1 Letters (or a discard, NS-09-R12) still to send: `C-S02.waiting`: "Your newest letters are still on their way. This phone signs out once they are sent." (built `signOutWaiting`) with a static indicator and "Sign out now" quiet (built path; then `signOutEarly` line on the signed-out card).
+- U1 Letters (or a discard, NS-09-R12) still to send (NS-45 happy path puts the waiting sentence inside the sheet): `C-S03.waiting` swaps the sheet's text to the waiting line with "Stay signed in" first and "Sign out now" quiet; closing it leaves `C-S02.waiting` on the page: "Your newest letters are still on their way. This phone signs out once they are sent." (built `signOutWaiting`) with a static indicator and "Sign out now" quiet (built path; then `signOutEarly` line on the signed-out card).
 - U2 Offline while waiting: the waiting line stays; nothing is lost; "Sign out now" holds the ops for this account (NS-09-R12; NS-08-R15 at the flip).
 - U3 Cancel ("Stay signed in"): nothing changes; no PRIV-R21 row (door line).
 - U4 Forced re-auth (remote `forceReauthEpoch`): same sign-out path, no sheet; Me shows the signed-out card with "Sign in again" (built).
@@ -174,7 +182,7 @@ Unhappy paths:
 Happy path (a phone that never signed in, or signed out):
 1. `C-S01.signedout` or `C-S01.local`: "Erase everything on this phone" (destructive row, last in Your letters).
 2. `C-S19.default`: heading "What is erased", the body, the notes (on this phone only; exports and iPhone backups not changed; your free letters start again; Plus not cancelled when it will renew; spoken language stays), the "Save a copy first?" card with "Save a copy", and the destructive outline "Erase everything".
-3. `C-S19.confirm`: ConfirmSheet "Erase everything on this phone?" / "This cannot be undone." with "Keep everything" (default, first) and "Erase".
+3. `C-S19.confirm`: ConfirmSheet "Erase everything on this phone?" / "This cannot be undone." with "Keep everything" (default, first) and "Erase". After "Erase" the system owner check runs (Face ID or passcode, FR-SEC-06): `C-S19.ownerCheck`; cancelling it returns to the confirm unchanged (`C-S19.ownerCheckCancelled`, no message). A phone with no passcode skips the check (open question OQ-6).
 4. `C-S19.erasing`: StateScreen loading "Erasing", no way out until it ends.
 5. The app returns to the start (E-S02); VoiceOver hears "Everything on this phone is erased."
 
@@ -248,9 +256,9 @@ States: `.empty` ("No deleted letters."), `.sealed` (B-S22: a row with the chose
 
 ### J-C12. A recording that is still on this phone (NS-09-R6; P-4 has no backlog row)
 
-1. After a Let it go whose file delete has failed on 3 launches (A-S11 feeds this), `C-S18.stuck`: Storage gets a group at the top, "Recordings", with one row per stuck recording: "One recording is still on this phone" (intent; no date, no name, no text) and a "Remove now" button 44 pt.
+1. After a Let it go whose file delete has failed on 3 launches (A-S11 feeds this), `C-S18.stuck`: Storage gets one row at the top: one state line (errata E28: "A recording is still being removed", intent; no date, no name, no text, never a list of recordings, never a count, even when several are stuck) and one "Remove now" button of 44 pt. `Remove now` retries once (NS-09-R6): `C-S18.retrying` holds the button's place with a static busy label.
 2. Remove now succeeds: the row leaves (exit per MOTION.md); no toast, no celebration.
-3. Remove now fails again: `C-S18.stuckAgain`: the row stays, the same line; no error word (NS-09 row "Remove now fails again").
+3. Remove now fails again: `C-S18.stuckAgain`: the row stays, the same line, VoiceOver re-reads it, and one short in-place line says the app will finish removing it (GAP-LOG C M-5, W12; no "we", no error word).
 4. Low storage: a stuck file is the first item named (PROPOSED in the card); the existing low-storage line (E-S17) leads here.
 
 ### J-C13. Where your letters live and the recording's place (NS-08-R7, R8, R20; NS-10)
@@ -276,6 +284,68 @@ Today: `C-S21.absent`: no row in Me, no screen, no line anywhere (R5, R7). Desig
 
 `C-S15` "Delete this book" -> `C-S22.exportFirst` ("You can export everything first, free." with Save a copy) -> `C-S22.confirm` (typed "delete", "Keep the book" default) -> the book is in Recently deleted (toast "{child}'s book is in Recently deleted."). Unchanged except the export button label (one name, "Save a copy", G4) and the PDF line.
 
+### J-C16. Choose days from the Days page (NS-46, NS-47; flag `EXPO_PUBLIC_DAYS`, pause `killSwitches.libraryDays`)
+
+Happy path:
+1. `C-S01.default`: tap "Days" (directly under Reminders before tree test T1; in "Days and reminders" after it). Two taps from the tab. A parent can also arrive from the Home ask slip (A-S01.daysAsk, "Choose days"), which opens the same page.
+2. `C-S24.empty`: the DoorNote at the top (never collapsed, never dismissible), then the rows "Browse days" and "Add a day". No heading "Days you chose", no empty-state words, no count (NS-46-R3, R19).
+3. Tap "Browse days": `C-S25.default` rises as a sheet over C-S24. DoorNote full form first; the one reminder line ("A reminder arrives on that day. Unticking a day or Clear all stops it.", intent, NS-46-R35) while nothing is ticked; groups in the ruled order (seasonal and shared, family, civic, traditions), at most 5 rows per group with "Show more" (R41 design-set number).
+4. Tick Thanksgiving: the row changes (check shape, weight, VoiceOver value "ticked"); `H-select`; no toast, no count (NS-46-R41). If notification permission is undetermined, the first tick makes the one iOS ask after the reminder line (NS-46-R31); a refusal is final and one calm line shows on C-S24.
+5. "Done" (or swipe down, the VoiceOver escape gesture, Back: all equal, nothing lost, NS-46 review F47-4). `C-S24.default`: "Days you chose" now lists the day with its date, the day-name switch appears under the list, "Clear all" appears.
+
+Unhappy paths and rules:
+- U1 Nothing ticked and the sheet closed: only the `culture.asked` flag is written, with the same value as after "Not now" (NS-47-R2). The browse filter is component state: reopening Browse starts blank.
+- U2 A moving day: ticking it shows `C-S25.whichDate`, one inline row "Dates differ by country. Which date should we use?" with one row per authority and "I will pick my own date" (an inline date row, never a second sheet, NS-46-R41); the day shows "around {date}" until chosen; the first authority's date is the default (NS-46-R14).
+- U3 No date for next year: the row on C-S24 carries "{day}: no date for next year yet." in `footnote` `textMuted`, no glyph, no count (NS-46-R15).
+- U4 Library store unreadable (`days_store_unavailable`): `C-S24.store-unavailable`: typed days stay visible; in the library section one in-place line with "Try again", announced politely once, no red (NS-46-R40). "Browse days" is replaced by that line until it succeeds.
+- U5 Notifications not allowed in iOS Settings: ticking still works; the D-S06 `.denied` card is reused (one per screen) saying nothing arrives until notifications are allowed; no promise of delivery (NS-46 section 5). The Days ask slip is not shown when permission is denied (NS-47-R19).
+- U6 Reminders switched off: ticked days still send a reminder; one calm line on C-S24 (and one on D-S06) says so and where to stop it (NS-46-R35, Q-FD-21).
+- U7 App lock on: the day-name switch is present and disabled with its reason line; the effective value is `stored && !appLockOn`; turning App lock on stores off; turning it off never turns it on (NS-47-R12). State `C-S24.dayNames-appLock`; after App lock goes off the switch reads off with no message (`C-S24.dayNames-released`).
+- U8 Quiet book, hidden book, `celebrations_paused`: the Days page itself is unchanged; Home shows no day slip and no reminder is sent (NS-46-R25, R49). C-S24 does not say so (no gap line).
+- U9 Pause on (`killSwitches.libraryDays`): at the next focus the library sections, Browse, the switch and Clear all are absent; "Days you added" and "Add a day" stay (typed days are unaffected, NS-46-R28). Never changes under a finger.
+- U10 Session ended by the system (not the parent): the store was cleared; the next time C-S24 opens, one calm line says the list was cleared when the session ended and they may choose days again; no count, no "you lost" (NS-47-R15, Q-FD-12). State `C-S24.sessionCleared`.
+- U11 Clear all: F6 `explained` sheet "Clear all days you chose?" with the safe choice "Keep my days" filled and default; "Clear all" destructive text; every tick, pending reminder and delivered reminder goes at once (NS-47-R21). No Undo (re-ticking in Browse is the way back); no toast.
+- U12 Signed out after a sign-in: the Days row is absent until sign-in (the store is per account and was cleared; see card gap G18). A build with no sign-in at all uses the single local owner and shows the row.
+- U13 Second account: B sees nothing of A's days and is never told they existed (NS-47-R15; [X4-R1]).
+- U14 Offline, plan lapse, servers off: identical to default; nothing here uses the server (NS-46 section 6).
+
+### J-C17. The optional cultural background (NS-47)
+
+Happy path: the Home ask slip (area A) asks once, in a later sitting after the first kept letter, "Would you like a reminder on the days that matter to your family?" with "Choose days" and "Not now" as two equal `bordered` buttons, stacked. "Choose days" opens C-S24 (empty) and the parent taps Browse (J-C16).
+1. In `C-S25.default` the "Traditions" group carries the word "Optional" beside its heading (VoiceOver: "Traditions, optional") and its help line "Pick any that fit. You can pick more than one." The rows are alphabetical, equal visual weight, nothing preselected, no "Eastern" option (NS-47-R20, Q-FD-1). The first row is "Not now", the same row style and size as the others (the decline control of NS-47-R30; it writes nothing and moves focus to the next group).
+2. The parent picks a tradition: `C-S25.traditionPicked`. The pick is a browse filter held in memory; that tradition's days come first in the list below (NS-46-R20). Only ticked days are ever stored.
+3. The country group ("A country that matters to your family", Optional) is absent, not greyed, until a second country ships (NS-47-R35).
+4. A day not on the list: "Add a day" (one door, NS-18's flow, writing tools off on the name field, D2) closes the sheet and opens the add flow on C-S24.
+
+Unhappy paths: "Not now" on the Home slip (final for Home; Me, Days stays reachable); the ask shown on two Home opens without an answer retires to Me (NS-47-R31); a phone whose permission is denied never sees the ask; App Review fallback (CUL-Q8: plain browse-and-tick list, no ask slip, no pickers) is a flag state `C-S25.fallbackNoQuestion` with the same screen minus the Traditions and country groups.
+Never shown: any "your religion" or "your tradition" label, any count of ticked days, any default derived from locale, storefront or time zone, a stored "Prefer not to say".
+
+### J-C18. A day's detail (NS-46-R14, R15, R26)
+
+1. `C-S24.default`: tap a row under "Days you chose" (one VoiceOver element "{name}, {date or around date}", chevron hidden).
+2. `C-S26.default` (pushed): the day's name as the title, its date ("around {date}" for a moving day), "Move this date" (an inline date row with a choice group under it: "Just this year" selected, "Every year"; stacked at AX1 and above), and "Remove" (destructive text, one tap, no confirm: it unticks and cancels its reminder; Browse re-ticks it).
+3. Moving the date records the parent's own date; the table is never edited (DL-3). `C-S26.authorities` shows the same "Which date should we use?" rows where authorities differ.
+4. A quiet-tone day (Memorial Day, Veterans Day, Good Friday, Yom Kippur) looks identical here: the tone cannot be seen or changed by the parent (NS-46-R16); no prompt or preview line is drawn.
+5. Remove leaves for C-S24 with the row gone (`m.list.remove`). Swipe action on the C-S24 row and a VoiceOver custom action "Remove" do the same.
+
+### J-C19. Withdraw syncing from Privacy (FR-PRV-01, FR-PRV-33, FR-CMP-16)
+
+1. `C-S01.default`: Privacy. `C-S23.consentOn`: the promise line (only while every sentence has a claims row true of that build), where the book is kept, the iPhone backup line, the sensitive-data row now pressable, Who can see it (App lock row, Names in notifications row), What you can do (Save a copy, Recently deleted; Erase everything when no one is signed in), the two documents.
+2. Tap the sensitive-data row: `C-S23.withdraw` (a sheet, two taps from Me): what stops (new letters stop syncing; the other parent stops receiving new letters), what stays (the book on this phone; letters already on the server until the parent deletes them or the account), plain rows "Save a copy" and "Delete account", then two equal `bordered` buttons, "Cancel" first and default, "Stop syncing". Cancel changes nothing and records nothing.
+3. Stop syncing records one PRIV-R21 row (`withdraw`, `settings_toggle`, `privacy_settings`); the row reads "Not syncing"; Account's Sync row follows. Nothing is deleted by the act. `C-S23.consentOff`: tapping the row offers to agree again through the returning consent sheet (C-S11), default pending ruling (card gap G19). `C-S23.consentWaiting`: the row reads "Waiting" and opens C-S11.
+
+### J-C20. A session that ends, an account that is limited, a deletion elsewhere (NS-45-R3, R13; FR-BKO-26; FR-LCY-19)
+
+- Session ended (revoked refresh, Sign out other devices elsewhere, forced epoch, Apple link revoked): the phone signs out once after uploads; `C-S01.sessionEnded` shows one line at the top of Me, once: "You were signed out. Sign in again to carry on." (built `session_expired`). Home is unchanged; reading, recording and export never wait (NS-45-R3).
+- Update required (`minSupportedVersion` or 426): `C-S01.updateRequired` shows E-S16.line at the top of Me only, with "Open the App Store"; never on Home, never blocking (NS-45-R13). One SystemLine per screen: if both apply the update line shows (default; open question OQ-8).
+- Suspended or limited account (FR-BKO-26): `C-S02.suspended` shows one neutral line (not "banned", no reason), sync waits, the book stays readable, Save a copy and Delete account stay reachable. No state implies the data is gone.
+- Deleted on another phone while this one is signed in (FR-LCY-19, NS-45 section 5): signed out once; `C-S01.deletedElsewhere` shows once "This account was deleted on another phone. You can start a new book here." The whole book stays readable, playable and exportable; unsent letters are kept.
+- Restored from a device backup (FR-LCY-09): `C-S01.signedout` reads as normal (the same card as after a sign-out), not as a fault: no caution colour, no glyph.
+
+### J-C21. Delete account, v2 lines (NS-45-R5, K4; FR-PRV-18, FR-LEG-02, NS-47-R17)
+
+`C-S20.what` lists, one line each (nothing truncates at AX5, see section 3): the intro and 30 days; one line per book; hidden-until letters are deleted and never open (D6, only when one exists); pictures and recordings stay on each phone until that phone is erased; the retained-data lines of FR-PRV-18 (the 31, 38 and 45 day clock, the sent-email copy kept to about day 60, the kept-author book entry, saved copies and iPhone backups are the parent's own, consent records kept 3 years, Plus billing continues through Apple); the days line when a day is ticked ("Days you chose stay on your phones and are cleared with your account.", `culture.delete.line`); "Keep a copy first" card; the Plus card only when Plus will renew; and a link row "How deleting works" (the web page `brand.web.deleteAccount`, FR-MSG-34, FR-SUP-14). No order-in-flight line exists in 1.0 (FR-PRT-01: no order feature).
+
 ---
 
 ## 3. Screens: layout, components, states
@@ -286,7 +356,7 @@ AX5 rule for every list row in this area (ListRow at accessibility sizes): the t
 
 ### C-S01 Me (Look after)
 
-Default layout (SE 3, 375 pt):
+Default layout (`.default`, SE 3, 375 pt; this is the arrangement that ships first, with the Days row in the fallback place):
 ```
 Me                                     (title1, level 1 heading = tab label)
 [ Signed in with Apple            > ]  account card (or signed-out card)
@@ -299,6 +369,7 @@ Writing
 [ Spoken language                 > ]
 [ Your words                      > ]
 [ Reminders           Weekly      > ]  (D-S06)
+[ Days                            > ]  (C-S24; no value, never a count; fallback place before T1)
 [ Past letters on Home     (o)      ]  (B-S21)
 [ Appearance          System      > ]
 Keeping your book
@@ -314,9 +385,26 @@ Privacy and security
 [ Delete account                  > ]  (signed in, own section)
 Help and legal, then About (as built)
 ```
+`.regrouped` layout (adopted for design by R-IA-4 and card 22 section 3; built only after tree test T1 shows it finds each task at least as often as `.default` and not worse on "keep safe" tasks). Working group titles for `content` (RV-3: "reminders", never "notes"):
+```
+Me
+[ Account card ]  [ Plan ]                       (header, no title)
+Books           each book, Add a book, Hidden books (only while one is hidden)
+Writing         Spoken language, Your words, Appearance
+Days and reminders   Reminders, Days, Past letters on Home     (working title, T1 candidate)
+Keeping your book    Save a copy, Where your letters live, Recently deleted, Storage
+On this phone        App lock, Privacy
+(no title, last)     Erase everything on this phone (no one signed in) / Delete account (signed in)
+Help and legal       Help (Write to us), If you are struggling, Legal
+About                Version
+```
+Net against `.default`: 0 rows deleted; 9 groups to 9 groups; Reminders, Days and Past letters on Home leave Writing for a group of their own; Storage and Recently deleted join Keeping your book (the old "Your letters" group is absorbed); App lock and Privacy form "On this phone"; the two destructive rows sit together, untitled, last (a title would read as a warning). About 21 rows at default type. Spoken language stays (card 22: "no row is deleted"; the audit's idea of hiding it in English-only builds is not ruled, OQ-3). One tap to any row stays (IA NX-30a); nothing nests. `.default` ships first because the regroup waits for T1; the Days row moves with its page unchanged.
+
+Rows that depend on state: Days is present when `EXPO_PUBLIC_DAYS` is on and (signed in, or a build with no sign-in); absent when signed out after a sign-in (G18). Delete account is present whenever signed in and `EXPO_PUBLIC_ACCOUNT_DELETION` is on, including a declined-Terms session (E8, NS-45-R7). Help and legal is drawn in every state, including "If you are struggling" in every build (FR-LOC-18) and the Help row's "Write to us" (FR-SUP-01).
+
 Change from built: a "Me" heading (BL-927/928); a new section "Keeping your book" holding the one export row (renamed "Save a copy") and Where your letters live (moved from Your letters); Erase everything also shown when signed out after a sign-in (G2, E1); the Back up row absent while backup is off (as built); no co-parent caption (the 11 Nov "coming soon" caption is superseded by the frame and the brief).
 
-States: `.default` (signed in), `.signedout` (signed-out card with Sign in; Erase present), `.local` (no sign-in build: "On this phone" card, no Delete account), `.second-account` (B's books only, nothing of A's), `.killswitch` (servers off: as `.local`; Delete account absent; every keeping row present), `.lapsed` (Plan row "Free" with its line; every keeping row works; no gate in this area), `.offline` (no row changes; rows that need the network say so on their own screens), `.ax5`, `.vo`, `.dark`.
+States: `.default` (signed in; the fallback grouping), `.regrouped` (after T1), `.sessionEnded` (one line at the top, once, NS-45-R3), `.updateRequired` (E-S16.line at the top, NS-45-R13), `.deletedElsewhere` (one line once, FR-LCY-19), `.signedout` (signed-out card with Sign in; Erase present; also the state after a device restore, which reads as normal, FR-LCY-09), `.local` (no sign-in build: "On this phone" card, no Delete account), `.second-account` (B's books only, nothing of A's), `.killswitch` (servers off: as `.local`; Delete account absent; every keeping row present), `.lapsed` (Plan row "Free" with its line; every keeping row works; no gate in this area), `.offline` (no row changes; rows that need the network say so on their own screens), `.ax5`, `.vo`, `.dark`.
 VoiceOver order: heading "Me", account card, Plan, then each section title (as heading) and its rows top to bottom. Voice Control names equal visible titles.
 Components: ListSection, ListRow, ToggleRow, SignedOutCard (all built).
 Integration: NS-11-R1, NS-22-R3 (Hide in Me), D1; BL-942 (Save a copy row), BL-927/928 (heading), BL-985 (Quiet), BL-961 (Erase after sign-out); flags: `EXPO_PUBLIC_ACCOUNT_DELETION`, `capabilities.backup`; kill switch: none of its own; data read: children, plan, auth state, sync owner; module: `app/settings/index.tsx`, `components/settings/settings-home.logic.ts`.
@@ -324,7 +412,8 @@ Integration: NS-11-R1, NS-22-R3 (Hide in Me), D1; BL-942 (Save a copy row), BL-9
 ### C-S02 Account
 
 Layout as built: method line, Sync row, "Finish setup" when consent is outstanding, "Sign out other devices" with its footer, then "Sign out" alone at the end. `.waiting` replaces the Sign out row with the waiting line and a static indicator (no loop under Reduce Motion) and "Sign out now". `.offline`: Sign out of other devices disabled with its reason as the footer ("Needs a connection."). AX5: rows wrap; Sign out stays 44 pt.
-Integration: D1, NS-08-R6, R15 (flip), NS-09-R12; module `app/settings/account.tsx`, `lib/auth/session-provider.tsx` (`signOut({ scope: 'local' })`), `signOutWouldWait`.
+v2 states: `.suspended` (FR-BKO-26: one neutral line, an E-S15 SystemLine, no reason and no word like banned; the book stays readable, sync waits, Save a copy and Delete account stay reachable; nothing implies data is gone); `.syncStopped` (after C-S23 withdrawal the Sync row reads "Not syncing"). "Sign out other devices" is the pointer for "someone is in my account" (FR-SUP-13): support never changes sign-in by hand; no new screen.
+Integration: D1, NS-45-R1 to R4, R18, NS-08-R6, R15 (flip), NS-09-R12; FR-BKO-26, FR-SUP-13, FR-SEC-12; module `app/settings/account.tsx`, `lib/auth/session-provider.tsx` (`signOut({ scope: 'local' })`), `signOutWouldWait`.
 
 ### C-S03 Sign-out sheet (new use of the built Sheet)
 
@@ -339,8 +428,9 @@ them.
            Sign out               plain (not destructive: nothing is deleted)
    Sign out and erase this phone  destructive text (F6 `three`; signs out, then C-S19 confirm)
 ```
-States: `.default`, `.photos` (names pictures, NS-01-R30), `.waiting` (after Sign out, if ops are pending, the sheet closes and C-S02.waiting shows), `.ax5` (the two buttons stack under the scrolled text and stay reachable), `.vo` (heading, body, Stay signed in, Sign out; escape gesture = Stay signed in), `.dark`.
-Integration: D1, NS-08-R6 (P0), NS-01-R30, X4; BL-961 (words via BL-965); no flag; no kill switch; records nothing (door line).
+v2 additions (inside the same sheet; the D1 lines stay first): when at least one day is ticked, one line "Days you chose on this phone are cleared." (FR-CUL-15; content words it; shown only when true, so it is a build-truth line); while App lock is off and the phone can use it, a plain 44 pt "Turn on App lock" action directly under the D1 lines (FR-SEC-07, FR-SEC-25: offered in Me and here only, nothing at the end of first run); tapping it closes the sheet like "Stay signed in" and opens App lock. Every delivered library-day reminder is dismissed at sign-out (NS-47-R15; no screen).
+States: `.default`, `.photos` (names pictures, NS-01-R30), `.days` (the days line), `.appLockOffer`, `.waiting` (NS-45 happy path: after Sign out, if ops are pending, the sheet text swaps to "Your newest letters are still on their way. This phone signs out once they are sent." with "Stay signed in" first and "Sign out now" quiet; closing it leaves C-S02.waiting), `.ax5` (the two buttons stack under the scrolled text and stay reachable), `.vo` (heading, body, Stay signed in, Sign out; escape gesture = Stay signed in), `.dark`.
+Integration: D1, NS-45-R1, R2, R18, NS-08-R6 (P0), NS-01-R30, NS-47-R15, X4; FR-PRV-15, FR-SEC-07, FR-CUL-15; BL-961 (words via BL-965); no flag; no kill switch; records nothing (door line).
 
 ### C-S04 Save a copy
 
@@ -368,6 +458,7 @@ At AX5 on SE 3: the sentence wraps; the cover moves below the sentence at half s
 States: `.default`, `.running` (phase line with live region polite, stepped bar `accent` on `line`, value as percent text for VoiceOver only, Stop secondary), `.ready` (CheckCircle glyph plus words, privacy line, Save or share), `.saved`, `.cancelled`, `.stopped`, `.stopped-by-close`, `.lowPower`, `.empty`, `.nothingHere`, `.newPhone`, `.error-lowSpace`, `.error-tooBig`, `.error-other`, `.lapsed` (identical to default), `.signedout` (identical), `.second-account` (B's books), `.killswitch` (identical: export has no remote pause, LEGAL-REQ-040), `.ax5`, `.vo`, `.dark`.
 VoiceOver: heading "Save a copy", the sentence, "What is inside" heading and rows, Printable heading and rows, last prepared, the button. Start and finish announced (NS-11 VoiceOver row) through the app's announce gate.
 Components: BookCover, ListSection, ListRow, A1 Button, F3 Progress (linear), the built FailureCard, N3 Toolbar (bottom).
+v2 states and lines on `.ready` (C-S04 and C-S05): one `footnote` line "Anyone who has this file can read and hear everything in it." (FR-SEC-08, intent); on C-S05 one plain line saying what the printable file is and is not, with a help link (FR-PRT-02, FR-PRT-03; "Printable", never "print-ready", no order words, FR-PRT-01); in a book whose letters are not English, one line that the app is in English (FR-LOC-13). New `.parts` (FR-LCY-21): above 2 GB the copy is made in parts, each a complete readable archive; `.ready` says once how many parts there are, never a count of what is missing; until the split ships `.error-tooBig` stays and its words say what happens next only if support has a real answer (FR-SUP-07). "What is inside" stays words with no numbers (FR-DAT-13); the copy never says it restores a book (FR-LCY-12). The list of days is not in the copy: that one line lives on C-S24 (NS-47-R10). If FR-PRV-21 takes the manifest option, one line says server-held earlier versions are not in the copy.
 Integration: NS-11-R1, R5, R6a, R6b, R9 to R12, R16 to R21, R23, R24; NS-10-R4b; NS-36-R2; C28-1; BL-942, BL-933 (pictures in 1.7.0), BL-973; flags `EXPO_PUBLIC_SAVE_A_COPY` (slip only; the screen is always there), `EXPO_PUBLIC_PRINT_BOOK`; kill switch: none (a right); codes: `ExportLowSpaceError` (lowSpace), `ExportTooLargeError` (tooBig), other, `ExportCancelledError` (stopped), `share_cancelled`, `share_failed`, `temp_cleanup_failed` (never shown; sweep backstop); data read: every book on this phone for this account, `lastExportedAt`; written: `lastExportedAt` (after completion only, G4), `copySlip.<child id>.<year>` = saved; module `lib/export/*`, `app/settings/export.tsx`.
 
 ### C-S05 Making the printable book
@@ -379,6 +470,13 @@ Integration: C28-1 to C28-19; BL-973; ADR 0037 proposal; flag `EXPO_PUBLIC_PRINT
 
 A card in the slip place on Home (A-S01 owns placement): `surfaceRaised`, radius `md`, 16 pt padding, `callout` line, a small BookOpen glyph decorative (hidden from VoiceOver), "Not now" quiet text button at the trailing bottom. The whole card is the tap (opens C-S04). One VoiceOver element: label = the line, hint "Opens Save a copy.", custom action "Not now"; the visible "Not now" is also a button for Voice Control and Switch Control.
 AX5: the line wraps to as many lines as it needs; "Not now" drops to its own line, 44 pt high.
+Slip anatomies, side by side (the C9 slip host is area A's; shared with A-S01 and B-S17, B-S18). Same shell for all: content layer, `surfaceRaised`, `radius.md`, 16 pt padding, `callout` in `text`, never glass, at most one slip at a time (NS-50-R11).
+| Slip | Rank | Whole card is | Controls | VoiceOver | Dismissal means |
+|---|---|---|---|---|---|
+| `saveSlip` (this screen) | 3 | the tap (opens C-S04) | quiet "Not now" | one element, label = the line, hint "Opens Save a copy.", custom action "Not now" | gone for the year |
+| `daySlip` (NS-50) | 2b | not interactive (no destination) | separate 44 pt "Not today" (its own key); its own row at AX3 and above | one non-interactive element "{name}. {line}", custom action for the dismissal, hint "Hides this until tomorrow", no nested interactive child | leaves until the next local day, no haptic, not an answer to anything |
+| `askSlip` (NS-47, rank 3b) | 3b | not interactive | two `bordered` buttons of the same style and size, "Choose days" and "Not now", stacked at every size, neither `filled`; the short DoorNote under the question | question, short call-out, then both buttons; hint on "Not now": "Closes this question. You can still choose days in Me." | final for Home; retires to Me after two unanswered showings |
+On an SE 3 at the default text size the ask must leave the prompt's full text visible above the capture cluster, or sit below it (device check, NS-47-R32). Motion for all three: section 15 (T-SLIP). Not promotional: no feature name, "new", count or price (NS-50-R16, FR-MKT-24 as reworded).
 States: `.default`, `.twins`, `.dismissed` (gone), `.quiet` (absent), `.expecting` (absent), `.flagOff` (absent), `.second-account` (absent for A's state), `.ax5`, `.vo`, `.dark`.
 Integration: NS-11-R2 to R4, R7, R8, R13 to R15, R22; `[FRAME-SLIP]` slot 3; BL-942, BL-963 (registry, ADR 0033 proposal); flag `EXPO_PUBLIC_SAVE_A_COPY`; data `copySlip.<child id>.<year>` (shown, dismissed, saved), account-scoped (E10).
 
@@ -435,16 +533,17 @@ As built (shelf cards, Restore, Erase now, toasts) plus `.sealed` from B-S22 (no
 
 ### C-S18 Storage
 
-As built (speech languages, downloads, cellular) with a new first group "Recordings" only while a stuck recording exists: one row per stuck recording with Remove now (Button `quiet` size `sm`, 44 pt hit area). `.stuck`, `.stuckAgain`, `.lowSpace` (the existing card leads here; the stuck rows first), `.ax5` (Remove now under the line), `.vo`, `.dark`.
-Integration: NS-09-R6, R15; P-4 (no BL row, E3); `discard.failures.<draft id>` read; module `app/settings/storage.tsx`, the launch sweep.
+As built (speech languages, downloads, cellular) with one new row at the top, only while a delete has failed on 3 launches (NS-09-R6; errata E28 overrides v1's "one row per recording"): a single state line, "A recording is still being removed" (intent), with one "Remove now" button (Button `quiet` size `sm`, 44 pt hit area). It is one line and one button however many files are stuck: never a list of recordings, never a count, no date, no name, no text. `Remove now` retries once. States: `.stuck`, `.retrying` (the button keeps its place and shows a static busy label, no spinner; `m.swap`), `.stuckAgain` (the line stays; VoiceOver re-reads it; one short in-place line says the app will finish removing it; no error word), `.lowSpace` (the E-S17 card leads here and the stuck line is first), `.default` (row absent), `.ax5` (the button moves under the line, 44 pt), `.vo`, `.dark`. `storage.tsx`'s comment "letters and recordings never appear here" is amended to "never listed or counted" (E28). The built list of downloads, language rows and the cellular switch are unchanged (FR-REL-37 asks for a size per kind: the existing "Total" and model rows carry it; see section 13).
+Integration: NS-09-R6, R15, R17; errata E28 (BL-977 scope gains NS-09-R6); `discard.failures.<draft id>` read; module `app/settings/storage.tsx`, the launch sweep.
 
 ### C-S19 Erase everything on this phone
 
-As built: heading, body, notes, "Save a copy first?" card, destructive outline button, ConfirmSheet, Erasing StateScreen. Changes: the export button label becomes "Save a copy" (G4); `.signedoutSynced` body variant (G2); a line naming pictures once photos are on; available when signed out after a sign-in (E1).
+As built: heading, body, notes, "Save a copy first?" card, destructive outline button, ConfirmSheet, Erasing StateScreen. Changes: the export button label becomes "Save a copy" (G4); `.signedoutSynced` body variant (G2); a line naming pictures once photos are on (FR-LEG-02); available when signed out after a sign-in (E1); the body says "every book on this phone" and names none (K-E04, SEC-04: no screen names another account's book or says one exists). v2 states: `.ownerCheck` (after the confirm, the system asks for Face ID or the passcode, FR-SEC-06) and `.ownerCheckCancelled` (back on the confirm, unchanged, no message). The days store is in "everything": no new body line (FR-CUL-16). VoiceOver hears "Everything on this phone is erased." at the end (FR-PRV-34). No rating request, What's New or promotion follows (FR-MKT-23). The case "letters belong to another sign-in" (FR-LCY-10) is not drawn as a screen: see section 15, contradiction X2.
 
 ### C-S20 Delete account
 
 As built (what, confirm, scheduled, executing, signed out, not configured, errors) with two new lines on `.what`: the D6 sealed-letters line (only when the parent has a letter hidden until a day) and the pictures line (NS-01-R31, once photos are on). The export card's button calls the same export (R6a) and reads "Save a copy".
+v2 (final pack): `.what` is a list of one-line rows in the order of J-C21 (retained-data lines of FR-PRV-18, the days line `culture.delete.line` only when a day is ticked, a link row "How deleting works" to `brand.web.deleteAccount`); `.signedout` carries NS-45's line ("Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app.") and the same link; the scheduled screen promises nothing about an email unless one is sent (NS-45-R17; claims row); reachable from C-S11.declined without agreeing (NS-45-R7, E8); no switch may hide it while sign-in is on (NS-45 section 9). Reduce Motion and AX5: the typed-word field and its reason stay above the keyboard; both actions stack and pin (NS-45 section 6). Not drawn in 1.0: a line about an order in flight (FR-PRT-33; no order feature, FR-PRT-01).
 
 ### C-S21 Recording backup (flip only)
 
@@ -453,6 +552,60 @@ Designed, not built. Consent sheet with two equal buttons; status page with a st
 ### C-S22 Delete this book
 
 As built; label change only.
+
+### C-S23 Privacy (Me, Privacy; id taken by privacy, K9)
+
+Built page (`app/settings/privacy.tsx`), drawn here for the first time with every state FR-PRV-33 lists. Layout, top to bottom, all content layer, `ListSection` rows:
+1. The promise (`trust.promise`), plain text, no icon, only while every sentence has a claims row true of this build (FR-PRV-33).
+2. "Where your book is kept": the facts the build allows (`privacyPage()` decides), the iPhone backup line (same words as C-S08).
+3. Sync and family sharing (only in a build with sync): the sensitive-data row with its status value, now pressable (it opens the sheet `.withdraw`); help footer. The opt-in usage switch shows only where the build can collect (off through 1.0).
+4. "Who can see it": the plain fact for App lock off or on, the App lock row (On or Off, opens App lock), "Names in notifications" (opens Reminders; its help line says it covers the child's name only, days have their own choice on C-S24, NS-47-R14).
+5. "What you can do": Save a copy, Recently deleted, Erase everything on this phone (when no one is signed in), and the no-account footer in a local build. No Delete account row (it stays on Me, D-129).
+6. The Privacy Policy and the Terms (the two pages the website serves) and, in Legal, the accessibility statement link (FR-CMP-10).
+Sheet `.withdraw` ("Stop syncing letters", intent): N7 sheet, content layer buttons on glass sheet (no glass inside glass). Door lines (FR-PRV-01): Shown: what stops, what stays, Save a copy, Delete account. Records: one PRIV-R21 row. Never: a deletion as a side effect; a preselected choice. Decline: Cancel, first and default, records nothing. Two equal `bordered` buttons, stacked at every size, Cancel first; neither is `filled` because this is a consent act of equal weight, not a destructive one. Plain rows "Save a copy" and "Delete account" open C-S04 and C-S20.
+States: `.consentOn`, `.consentOff` (row reads "Not syncing"), `.consentWaiting` (opens C-S11), `.signedout`, `.local` (no sync rows), `.serversOff` (same as local; no withdrawal row), `.second-account` (B's facts only), `.withdraw`, `.withdrawn`, `.backgrounded` (blank snapshot, FR-SEC-22), `.ax5` (rows wrap; the sheet scrolls and both buttons stay reachable at the end), `.vo`, `.dark`.
+Integration: FR-PRV-01 (P0 (b), Apple 5.1.1(ii)), FR-PRV-33, FR-CMP-16; BL-485; flags none; kill switch: none may hide it; modules `privacy.tsx`, `privacy.logic.ts`, `lib/analytics/privacy-sources.ts`.
+
+### C-S24 Days (Me, Days; NS-46, NS-47)
+
+One page for the typed days of NS-18 and the days the parent ticked from the library (R-IA-2, no second list). Pushed from Me. Before tree test T1 the row sits under Reminders in Me's present group; after T1 in "Days and reminders"; both routes open this page. Content layer; no glass except the system navigation bar.
+```
+< Me                      Days
+[ DoorNote: "Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me." ]
+[ "Anyone who can open this phone can see this list. App lock keeps it private." ]   (second sentence only while App lock exists)
+[ A reminder arrives on that day. Unticking a day or Clear all stops it. ]           (while nothing is ticked)
+Days you added                  (heading)
+[ Mum's birthday dinner, Mar 4  > ]      typed days (D-S08 rows)
+[ Add a day                        > ]   (D-S09 flow; one door)
+Days you chose                  (heading; absent while nothing is ticked)
+[ Thanksgiving, Nov 26             > ]
+[ Diwali, around Oct 28            > ]   (a moving day says "around")
+[ Spring begins: no date for next year yet. ]   (footnote, textMuted, no glyph)
+[ Browse days                      > ]   (opens C-S25 as a sheet)
+[ Show the day's name in notifications  (o) ]   (only when a day is ticked)
+  Anyone who sees your lock screen can read it.
+[ Clear all                        ]   (destructive text; only when a day is ticked)
+These days are not part of Save a copy.   (footnote)
+```
+Rules (final pack): the page has no count, no "You mark 7 days", no "complete your list" (NS-46-R3, R19); headings are "Days you added" and "Days you chose" (NS-46-R38); nothing is pre-ticked; the day-name switch lives here, not on Reminders (RV-13, Q-FD-14); the switch is shown only when a day is ticked and is disabled with its reason line while App lock is on (the built `.appLock` pattern, read as "present and not ready"); the DoorNote is first in reading order before any control that records a choice (NS-47-R29). Each day row is one VoiceOver element "{name}, {date or around date}" with the chevron hidden; the no-date line belongs to the row's label (NS-46-R26). A row can be removed by opening it (C-S26), by a swipe action, or by a VoiceOver custom action (NS-47-R21).
+AX5: the DoorNote takes the first screenful (it is never collapsed); dates move under names; the switch's label wraps; nothing truncates; Clear all keeps its words at 44 pt.
+States: `.default`, `.empty` (no "Days you chose" heading, no words about gaps), `.typedOnly`, `.noDateNextYear`, `.clearConfirm` (F6 `explained`: "Keep my days" filled and default, "Clear all" destructive text), `.store-unavailable` (`days_store_unavailable`: typed days stay; the library section shows one in-place line with Try again, polite once), `.remindersOff` (one calm line: chosen days still send a reminder, and where to stop it), `.notificationsDenied` (D-S06 `.denied` card reused; one per screen), `.dayNames-off`, `.dayNames-on`, `.dayNames-appLock` (disabled, reason line mandatory), `.dayNames-released` (App lock turned off: reads off, no message), `.sessionCleared` (one calm line once, NS-47-R15), `.killswitch` (library sections, Browse, switch and Clear all absent; typed days stay), `.flagOff` (the page holds typed days only, in a build with NS-18 but not the library), `.signedout` (row absent), `.second-account`, `.lapsed`, `.offline` (identical: local), `.backgrounded` (blank snapshot, E18, FR-SEC-22), `.ax5`, `.vo`, `.dark`.
+VoiceOver order: page heading, DoorNote, the shared-phone line, the reminder line, "Days you added" heading and rows, Add a day, "Days you chose" heading and rows, Browse days, the switch with its help line, Clear all, the footnote.
+Components: ListSection, ListRow, ToggleRow, `DoorNote` (new, section 6), D-S06 denied card, F6 `explained` sheet. Integration: NS-46-R3, R15, R25, R26, R28, R35, R38, R40, R49; NS-47-R10, R14, R15, R21, R26, R29; flags `EXPO_PUBLIC_DAYS` (E20 local family) and `killSwitches.libraryDays` (fail-open); no analytics event (NS-47-R9); data read: the days store (L4, per account, backup-excluded), typed days (`scribe.db`); written: ticks, overrides, `notifications.dayNames`; modules: the days module only reads the store (NS-47-R11), `lib/reminders/prefs.ts`, `app/settings/days.tsx` (PROPOSED).
+
+### C-S25 Browse days (sheet over C-S24; NS-46-R20, R41; NS-47-R2, R20, R25, R30)
+
+N7 sheet at the large detent (full height at AX3 and above); the sheet is the only glass; rows are content layer and plain (no glass inside glass). The exit is the visible "Done"; swipe down, the VoiceOver escape gesture and Back do the same; nothing is lost on any (ticks save as they are made). No second sheet ever opens over it.
+Order: DoorNote (full form, first); the reminder line while nothing is ticked; "Seasonal and shared days" (with the hemisphere control: a segmented I4 row of 44 pt or more that stacks at AX1 and above, nothing selected by default, northern names shown, never inferred from time zone or locale); "Family days"; "Civic days" (quiet days show their name only); "Traditions" (the optional picker: heading with the word "Optional", the row "Not now" first, then the alphabetical tradition rows, then that tradition's days first when picked, then the rest alphabetically; "Add a day" closes the sheet and opens the add flow on C-S24); "A country that matters to your family" (Optional; absent until a second country ships). Each group shows at most 5 rows with a "Show more" row (a design-set number; the first view reads as an offer, not a form, NS-46-R41). Rows are I4 `multi`: check shape plus weight, the name, the date in `footnote` `textMuted` ("around 27 November"), role checkbox, VoiceOver "{name}, around {date}, ticked". Group titles are rotor headings; "flat" means one level, no collapsible groups, no tiers, no ordering by size. No "select all". No tradition label on any row (never "your tradition").
+Tick feedback: the row changes (`m.select`), `H-select`, a VoiceOver value change; no toast, no count, no "added". A moving day inserts the one inline question row "Dates differ by country. Which date should we use?" under that day, options named by their authority plus "I will pick my own date" (an inline date row, never a sheet). A tradition or country pick is component state only: no route parameter, no setting, no persisted navigation state (NS-47-R2).
+States: `.default`, `.hemisphere`, `.traditionPicked`, `.ticked`, `.whichDate`, `.noDateNextYear`, `.unavailable` (store cannot be read: C-S24 shows the line instead; Browse does not open), `.fallbackNoQuestion` (CUL-Q8 fallback: no Traditions or country group), `.country` (second country only), `.offline` (identical), `.backgrounded` (blank), `.ax5` (date under name; hemisphere control stacks; "Done" stays reachable), `.vo`, `.dark`.
+Integration: NS-46-R2, R11, R14, R20, R41; NS-47-R2, R20, R25, R29, R30, R35; FR-CUL-02, 10, 20, 21, 22; flag and pause as C-S24; modules: the days module, `app/settings/days-browse.tsx` (PROPOSED).
+
+### C-S26 Day detail (pushed from C-S24 only; NS-46-R14, R15, R26)
+
+Title: the day's name. Rows: the date ("around {date}" when the day moves), "Move this date" (inline date row; under it an I4 choice group, "Just this year" selected by default, "Every year"; stacked at AX1 and above; the move is the parent's own date, the table is never edited), "Remove" (destructive text, one tap, no confirm, no toast; re-ticking is in Browse). Where authorities differ, `.authorities` repeats the "Which date should we use?" rows. No tradition label, no explanation of the day, no prompt or preview line (a quiet-tone day looks identical; the tone is not the parent's to change, NS-46-R16). Writing tools are not relevant (a date field); the Add a day name field in D-S09 carries "Writing Tools: off" (D2, FR-PRV-16).
+States: `.default`, `.moving`, `.authorities`, `.noDate` (the no-date line; Move this date stays available to set the parent's own), `.removed` (leaves for C-S24), `.backgrounded` (blank), `.ax5`, `.vo`, `.dark`.
+VoiceOver: heading, date, Move this date, the choice group, Remove. Integration: NS-46-R14, R15, R26; NS-47-R21; FR-CUL-20 to 22; same flags.
 
 ---
 
@@ -492,6 +645,18 @@ As built; label change only.
 | versions fetch failed | C-S13.error | could not be shown; words unchanged | Try again | NS-12 failed |
 | versions offline, none cached | C-S13.offlineNone | show when online | none | NS-12 offline |
 | backup states (flip) | C-S21 | see J-C14 | see J-C14 | NS-08 |
+| `days_store_unavailable` (PROPOSED, local) | C-S24.store-unavailable | typed days stay; one in-place line in the library section | Try again | NS-46-R40; NS-47-R6 |
+| backup exclusion reads false | C-S24, C-S25 (same code) | nothing is ticked; the same line | Try again | NS-47-R6 |
+| `killSwitches.libraryDays` | C-S24.killswitch | library sections, Browse, switch, Clear all absent; typed days stay | none | NS-46-R28 |
+| notifications not allowed | C-S24.notificationsDenied | nothing arrives until allowed in Settings; no promise | Open Settings (D-S06 card) | NS-46 section 5 |
+| refused iOS ask | C-S24 | one calm line; never asked again | none | NS-46-R31 |
+| session ended by the system | C-S24.sessionCleared, C-S01.sessionEnded | list cleared when the session ended; signed out once | Sign in | NS-47-R15; NS-45-R3 |
+| `upgrade_required` / below `minSupportedVersion` | C-S01.updateRequired | E-S16.line at top of Me; the book works | Open the App Store | NS-45-R13 |
+| suspended account | C-S02.suspended | one neutral line; book readable | Save a copy, Delete account | FR-BKO-26 |
+| deleted on another phone (this one signed in) | C-S01.deletedElsewhere | one plain line; book stays | none | NS-45 section 5; FR-LCY-19 |
+| owner check cancelled | C-S19.ownerCheckCancelled | back on the confirm, nothing erased, no message | Keep everything, Erase | FR-SEC-06 |
+| consent withdrawal | C-S23.withdraw | what stops, what stays | Cancel, Stop syncing | FR-PRV-01 |
+| recording still being removed | C-S18.stuck, .retrying, .stuckAgain | one state line, never a list or a count | Remove now | NS-09-R6; E28 |
 
 Plan lapse: no state in this area changes (T2; NS-11-R12, C28-7, NS-12-R5, NS-10-R10, NS-08-R17). Pictures flag off or `killSwitches.photos` on: picture rows leave C-S04 "What is inside", while export and erase still handle every picture file (NS-01-R19).
 
@@ -515,6 +680,10 @@ Plan lapse: no state in this area changes (T2; NS-11-R12, C28-7, NS-12-R5, NS-10
 | C-S18 | NS-09-R6, R15 | P-4 (no row) | none | none (deletion never pausable, R17) | none shown | `discard.failures.*` | file delete | `storage.tsx`, launch sweep |
 | C-S19 | D1, NS-36, NS-01-R52 | BL-961 | none | none | erase failed | everything local | erase mark | `erase.tsx`, `lib/erase-everything.ts` |
 | C-S20 | D6, NS-01-R31, NS-10-R4a, NS-08-R16, NS-06-B18 | BL-965 | `EXPO_PUBLIC_ACCOUNT_DELETION` | server | offline, failed | books, roles, seals (boolean) | deletion request | `lib/account-deletion/*` |
+| C-S23 | FR-PRV-01, FR-PRV-33, FR-CMP-16 | BL-485 | none | none may hide it | none | consent status, App lock, names | PRIV-R21 `withdraw` row | `privacy.tsx`, `privacy.logic.ts` |
+| C-S24 | NS-46-R3, R15, R25, R26, R28, R35, R38, R40; NS-47-R10, R14, R15, R21, R26, R29 | NR-DAY-10 (new, no id), BL-963 (rank), BL-966, BL-985, BL-961 | `EXPO_PUBLIC_DAYS` | `killSwitches.libraryDays` (fail-open, not deliverable servers-off, RV-10) | `days_store_unavailable` | days store (L4), typed days | ticks, overrides, `notifications.dayNames`, `culture.asked` | days module only (NS-47-R11) |
+| C-S25 | NS-46-R2, R11, R14, R20, R41; NS-47-R2, R20, R25, R29, R30, R35 | NR-DAY-10, NR-DAY-03 | as C-S24 | as C-S24 | as C-S24 | library (bundled, one file, NS-46-R48) | ticks only | days module |
+| C-S26 | NS-46-R14, R15, R26; NS-47-R21 | NR-DAY-10 | as C-S24 | as C-S24 | none | one tick | override, removal | days module |
 | C-S21 | NS-08 (flip rows) | BL-976 | `EXPO_PUBLIC_BACKUP` (off) | `killSwitches.backupUploads`, `.escrow` | none new | backup status | consent row (flip) | `lib/backup/*` |
 
 ---
@@ -528,7 +697,12 @@ New, proposed (each justified; specs go to `COMPONENTS.md` when built):
 2. **SlipCard (proposed as a v2 C1 Letter card variant `slip`, or its own component if Karma prefers).** Content layer, never glass. The one Home slip shell for the registry (ADR 0033): card is the tap, one line, one optional quiet dismiss, one VoiceOver element with a custom action. Why: four slip types (A, B, C) would otherwise each draw their own card; the registry test needs one renderer. Shared with B-S17 and B-S18; area C proposes it, area A places it.
 3. **InlineNote (with dismiss) (v2 has no match: F2 Banner is for system conditions and has no close; proposed as an F2 variant `note` with a close action, or a new C-level component).** Content layer. A plain text line at the top of a list with an optional 44 pt close button, no card chrome. Why: C-S12 must be "one line at the top until dismissed" and not a card (NS-10 design input); AppNote has no dismiss and is for a letter's own small line.
 
-Not proposed: a progress ring, a lock or shield glyph, a count badge, any celebration.
+4. **DoorNote (NS-47-R29; design-systems review F47-1).** One static content-layer block for a promise a parent must read before choosing: `callout` type, `text` colour (not `textMuted`), on `surface`, `radius.md`, a decorative lock glyph hidden from VoiceOver (a glyph here is decoration, never the signal), never collapsed, never behind an info glyph, never dismissible, never glass, first in reading order before any control that records a choice, wraps at AX5 and never truncates; a short form (one sentence) under the Home ask question and the full form at the top of C-S25 and C-S24. Shared with C-S21 (backup consent door lines), C-S23.withdraw and E-S07; a claims row backs each sentence (NS-47-R22). Not a banner, not an AppNote. Note on the glyph: the area's rule "no lock or shield imagery" (C-S21) is about decoration that implies safety; DoorNote's glyph is optional and the default is none (open question OQ-1).
+5. **I4 `multi` list variant (NS-46-R41).** Row of at least 52 pt (`layout.rowMin`, open name request), check shape plus weight, the name, the date in `footnote` `textMuted`, role checkbox with checked state, `m.select` and `H-select` only on a change; AX5 stacks the date under the name; no select-all. COMPONENTS retired multi-select filters; this is a list, not a filter chip.
+6. **I1 `optional` slot (NS-47-R30).** The word "Optional" beside a label (never an asterisk, never placeholder-only, never colour alone); VoiceOver "{label}, optional"; the decline control has the same style and size as the accept control and sits in the same stack; nothing preselected; skipping writes nothing and prompts nothing later. Used by C-S25 pickers and the Home ask; E-S08's name field adopts it (area E).
+7. **SlipCard variants `saveSlip`, `daySlip`, `askSlip`** (section 3, C-S06). Replaces the single `slip` variant of v1.
+
+Not proposed: a progress ring, a lock or shield glyph as a signal, a count badge, any celebration.
 
 ---
 
@@ -561,6 +735,7 @@ Rules held on every screen here: at most three glass surfaces at once (nav bar, 
 - Reduce Motion: progress bars step, never animate; StateScreen drawing static; slip and row exits fade (MOTION.md).
 - Colour never alone: caution cards carry a glyph and a heading; destructive buttons carry the word; provenance states are words.
 - Targets: 44 pt minimum; primary 56 pt.
+- v2 screens (C-S23 to C-S26, A-S01 `dayToday`, `daysAsk`, `quietDay`) join the NS-33-R4, R7, R16 screen set and quality Annex B.3: AX5 with Bold Text on an SE 3, VoiceOver, Voice Control (names equal visible labels: "Browse days", "Done", "Not now", "Not today", "Clear all", "Remove", "Move this date", "Stop syncing"), Switch Control. Every L4 screen (C-S24 to C-S26 and the ask) draws `.backgrounded` blank, with or without App lock (E18, FR-SEC-22). A tick is announced as a value change, never a toast.
 - Dark and Increase Contrast: token pairs only; `textMuted` 5.51:1 light, 8.01:1 dark; caution 4.75:1 light, 9.90:1 dark.
 
 ---
@@ -635,3 +810,271 @@ v2 component names (from `docs/design/system/COMPONENTS.md`, read after it lande
 - Confirmation sheets put the safe choice as `filled` `lg` and default, and the destructive choice as `destructive` text (F6); the prototype follows.
 - C-S03 is F6 variant `three`: "Stay signed in" (safe, filled), "Sign out", "Sign out and erase this phone" (destructive text, signs out then opens C-S19's confirm). This gives the D1 line's "Use Erase everything" a door in the same sheet and narrows card gap G2 to the body wording. WORDS.md needs one key for the third choice.
 - F3 Progress is a 4 pt track with a text value ("About half") announced at most every 10 s.
+
+---
+
+## 12. Re-key to the final pack (v2)
+
+Every screen, state, transition and motion in this file now keys to the final card and row ids. Old keys and what they became:
+
+| Was (v1 keyed to) | Is now | Note |
+|---|---|---|
+| C-S01 "Your letters" group holds Recently deleted, Storage, Erase | `.default` keeps it (the groups as built) and adds the Days row under Reminders; `.regrouped` (IA-AUDIT, R-IA-4, built only after tree test T1) absorbs it into "Keeping your book" | NS-46-R3 (Days row before T1), card 22 section 3 |
+| "Notes and days" (IA-AUDIT working title) | "Days and reminders" (working title for T1) | RV-3: "note" is the glossary word for what a person writes, never for what the app sends |
+| Sign-out, session end, deletion, update line keyed to NS-10 and D1 only | NS-45-R1 to R18 (card 19) plus D1, D6 | C-S02, C-S03, C-S19, C-S20, C-S01 states |
+| C-S10, C-S11 keyed to NS-10 only | NS-10 plus NS-41 (routing) and NS-42 (consent); E-S09 is an alias of C-S10 and C-S11 (card 19 step table) | one screen, two owners; area C keeps every NS-10 state |
+| C-S18 one row per stuck recording | one state line, never a list or count | errata E28 (card wins, CR-66) |
+| Slip order (1) (2) (3) (4) | (1) (2) (2b) (3) (3b) (4) | NS-50-R5, RV-5; NS-11-R4 needs the errata row card 21 lists |
+| Day-name switch on Reminders (D-S06) | on the Days page, C-S24 | RV-13, NS-47-R14, Q-FD-14 |
+| Typed days on Reminders ("Days to remember", D-S06) | on C-S24 ("Days you added") | R-IA-2, CB-2: a ticked day is not a typed day |
+| "a day we mark", "a day you type" | "Days you chose", "Days you added" | content F7, NS-46-R38 |
+| D-S11 `libraryDay` (a day above the prompt after a tap) | dropped; one way: the day slip however the parent arrives | RV-6, NS-50-R4, Q-FD-25 |
+| A day slip "Not now" | "Not today" (own key); "Not now" stays the Days ask's answer | NS-50-R7, content F16 |
+| Flags `EXPO_PUBLIC_SAVE_A_COPY`, `_PRINT_BOOK`, `_EARLIER_VERSIONS` | the same names, read as the local (phone-only) flag family that works with servers off | errata E20 |
+| `killSwitches.earlierVersions`, `.printBook` | unchanged proposals; plus `killSwitches.libraryDays` (fail-open, hides a phone-only feature, never stops export) | errata E21, RV-10 |
+| Blank snapshot only where App lock is on | blank on every L4 screen with or without App lock | errata E18, FR-SEC-22 (C-S24 to C-S26 join the list) |
+| Second account: "BL-961 should land" | BL-961 and `[X4-R1]` are gates for NS-46, NS-47, NS-49 (E27) | the Days store is per account and enumerated by BL-961 |
+
+Section 11's reconciliation table with MOTION.md and WORDS.md still stands for the ids it names.
+
+## 13. Function needs accounted for (FUNCTION-TRACE section 6.3)
+
+Each design-needs row the trace assigns to area C (6.3.1), then the FRs that name a screen here with no design-needs row (6.3.2). "Designed" names where; "Gap" is an explicit gap with its id in sections 15 and 16.
+
+### 13.1 Rows filed by the functions
+
+| FR ids | Need (short) | Where designed, or gap |
+|---|---|---|
+| SUP-01, SUP-17 | Help and legal drawn in every C-S01 state | Designed: section 3 C-S01 (drawn in every state; `.ax5` stacks the Help value under the title); prototype states |
+| SUP-07 | `tooBig` words say what happens next | Designed: C-S04 v2 line; only if support has a real answer (gap G26) |
+| SUP-20 | Second printable failure offers "Write to us" | Designed: C-S05.error-print_pdf_failed, second failure shows the built "Write to us" button |
+| MKT-16, MKT-29 | C-S08 is the source for the privacy frame; words follow the label in force | No change to the screen; C-S08 words are claims-registered; noted in 13.3 |
+| (finance, no FR) | C-S18 Storage unchanged | Designed: unchanged except the E28 line |
+| DAT-03, DAT-13 | "What is inside" stays words, no numbers | Designed: C-S04 v2 text; no count is added for measurement |
+| PRV-01, PRV-33 | Privacy screen C-S23, withdrawal sheet | Designed: C-S23 and `.withdraw`, J-C19; re-agree path is gap G19 |
+| PRV-15 | C-S03 as drawn | Designed: C-S03 |
+| PRV-15, PRV-34 | `.signedoutSynced`, "every book on this phone", after-erase announcement | Designed: C-S19 |
+| PRV-18 | Retained-data lines on C-S20.what, one line each | Designed: J-C21 and C-S20 v2 |
+| PRV-21 | Manifest line if server-held versions are not in the copy | Designed as optional (C-S04 v2), only if the option is taken |
+| PRV-23 | "Clear the due date" on C-S15 | Gap: not drawn; the founder has not taken PQ-6. Default when taken: one `ListRow` "Clear the due date" under Details, shown only when a birthday exists, F6 `explained` sheet, safe choice default (open question OQ-10) |
+| LEG-02 | C-S20 pictures and Find index lines, seals and photos states; C-S19 names pictures | Designed: C-S20 v2, C-S19 v2 (states photos on/off, seals on/off) |
+| LEG-12 | No licence text in the PDF; Licences row in Me, Legal | Designed: no change to C-S05; Legal page lists the faces (as built `licenses.tsx`) |
+| LEG-09 | Returning consent records with an allowed method | No design change (C-S11 unchanged) |
+| LEG-16 | C-S21 consent sheet, decline and withdraw states, drawn now | Designed: J-C14 (unchanged), now using DoorNote |
+| CMP-07 | AX5 with Bold Text and VoiceOver walked on C-S20; links announced as links; no truncated agreement text | Designed: C-S20 v2, C-S23 (documents rows are links), section 7 |
+| CMP-10, CMP-16, CMP-17 | Accessibility statement link; withdrawal control; Delete account visible in store builds | Designed: C-S23 item 6 (link sits in Legal), `.withdraw`, C-S01 row rule |
+| SEC-07, SEC-25 | "Turn on App lock" on the sign-out sheet; App lock offered only in Me and the sheet | Designed: C-S03 `.appLockOffer`; nothing at the end of first run (area E) |
+| SEC-06 | Owner check after the Erase confirm; `.ownerCheckCancelled` | Designed: C-S19; no-passcode case is gap G16 |
+| SEC-08 | "Anyone who has this file can read and hear everything in it." | Designed: C-S04.ready and C-S05.ready |
+| BKO-12, SUP-01, SUP-02 | Help route for a concern: reuse Help and "Write to us" | Designed: no new screen; C-S01 Help row |
+| BKO-26 | Suspended account line | Designed: C-S02.suspended, J-C20 |
+| LOC-13 | "The app is in English" lines for non-English books on read, export, print | Designed: C-S04 and C-S05 v2 lines (words: content) |
+| LOC-15, LOC-16 | Arabic and Chinese font decision for the PDF; Hindi line height and Bold Text | Gap: font choice and size cost are a `design-systems` and `mobile` decision on the PDF template (not on a screen of area C); default: the PDF embeds the faces it needs and C-S05 never shows a missing-glyph state (open question OQ-11) |
+| LOC-01, LOC-07, LOC-28 | Settings, Spoken language and Storage language rows in a multi-language build | Designed in part: C-S18 keeps its language rows (sizes, Wi-Fi only, paused, needs newer app, removed); the language list screen is area E (E-ST08); no teaser for a language the build does not hear |
+| REL-37 | Size per kind and the actions that free space | Designed: C-S18 (Total, per-model rows as built; the stuck line; Remove now); no new kinds in 1.0 |
+| (ai-and-speech) | Me, Languages: one place listing languages that passed | Gap: no Languages screen in area C; the Spoken language page is built and area E owns E-ST08 (open question OQ-3) |
+| RSH-10 | Read-aloud cards of C-S03, C-S08, E-S10, D-S02 | Out of design scope (research artefact); C-S03 and C-S08 are drawn at AX5 for it |
+| RSH-09 | The printable book as an Asha fixture | Out of design scope; C-S05 uses Asha only |
+| QAL-09 | Undo window seconds per toast and sheet in one table | Designed: MOTION.md section 3 (one pattern); C-S17 only toasts with actions (Restore "Open") |
+| LCY-10 | A state naming "another sign-in" with Save a copy and Erase everything | Not drawn: contradicts K-E16 and the no-disclosure rule; see contradiction X2 |
+| LCY-21 | A split copy state; `tooBig` stops being a dead end | Designed: C-S04 `.parts` |
+| LCY-09 | Signed-out after a device restore reads as normal | Designed: C-S01.signedout |
+| PRT-02, PRT-03 | One plain line on what the 1.0 file is and is not; help link | Designed: C-S05 v2 |
+| PRT-06, PRT-16 | PRT-S01 "A book to hold" entry from C-S04, B-S02, C-S06; year-end slip | Gap by design: print order is not in 1.0 (FR-PRT-01); no entry is drawn; C-S06 has no print line (open question OQ-9) |
+| CUL-02, 10, 20, 21, 22 | C-S24 row, list with untick, Browse by tradition and country as flat alphabetical lists, Add a day, Clear all, "not in Save a copy", call-out, states | Designed: C-S24, C-S25, C-S26 (note: "Browse by country" is absent until a second country, NS-47-R35, so one flat list in 1.x) |
+| CUL-15 | C-S03: "Days you chose on this phone are cleared" | Designed: C-S03 `.days` |
+| CUL-16 | C-S19: the "everything" list includes days | Designed: C-S19 v2 (no new body) |
+| CUL-17 | C-S20 line | Designed: J-C21 (`culture.delete.line`; tension in contradiction X1) |
+| CUL-10 | C-S04 unchanged; the line lives on C-S24 | Designed |
+
+### 13.2 FRs that name a screen of area C with no design-needs row
+
+| FR id | Design response |
+|---|---|
+| SUP-13 | C-S02: "Sign out other devices" is the route; support changes nothing by hand (C-S02 v2) |
+| SUP-14 | C-S20 v2: Me first, the web page link row, 30 days, Plus cancelled separately |
+| MKT-23 | No rating request on C-S19, C-S20 or after Save a copy: a rule for area C (C-S19 v2); the request lives on the Book (area B) |
+| MKT-24 | C-S06 is a trust slip, not promotional; the ask slip is the one family question (NS-50-R16) |
+| DAT-02 | No screen here asks a research question or prepares a message with counts; "Write to us" uses the fixed subject only |
+| PRV-03 | No screen change: `account.json` carries the parent's consent rows |
+| PRV-05 | No screen change (purge of never-accepted accounts); C-S11.declined is unchanged |
+| PRV-20 | C-S11.declined: nothing pulls while consent is outstanding; Save a copy and Delete account work |
+| PRV-27 | C-S10.wrongAccount names the method only, never the address; no full address on any area C screen |
+| SEC-04 | C-S19 and C-S01 `.second-account`: no screen names another account or says its book exists |
+| SEC-12 | NS-45-R17 emails: no screen change; the scheduled screen promises an email only if one is sent |
+| BKO-07 | C-S02: recovery is not in-app; "Sign out other devices" and Apple's recovery are named in help |
+| BKO-24 | No screen change (mailbox out-of-office); "If you are struggling" stays in Me |
+| BKO-27 | No screen change (content-free email to the account address) |
+| MSG-34 | C-S20 v2: one link row "How deleting works" at every place that names the path (C-S20.what, .signedout, C-S11.declined) |
+| LOC-10 | C-S01 Spoken language row: its own name first with the English name under it; the interface stays English |
+| LOC-14 | C-S18 / E-S08: on a new phone the language is asked again; no line implies the model came with the account |
+| LOC-18 | C-S01: "If you are struggling" in every build and state |
+| LOC-25 | C-S01 Help: "Write to us"; replies in English (words: content) |
+| REL-61 | C-S12 (one line, once) plus C-S09: no new prompt |
+| RSH-21 | Research guide rules; no screen change |
+| QAL-08 | Glass rules: section 6a (three surfaces maximum, solid fallback); v2 adds no glass toast over a sheet for a tick |
+| LCY-04 | No screen: unsent rows are never dropped; Sign out waits (C-S03.waiting) |
+| LCY-11 | Claim after deletion is area E's (E-S24); C-S20 and C-S01.deletedElsewhere say a new book can start |
+| LCY-12 | C-S04 never says Save a copy restores a book; C-S08.local says only the phone's backup carries the book to a new phone |
+| LCY-13 | C-S09 and C-S12 as drawn (words arrive, recordings stay) |
+| LCY-19 | C-S01.deletedElsewhere, C-S10.deletedElsewhere, C-S20 |
+| LCY-20, LCY-22 | The export's README and `index.html`; no screen change |
+| LCY-25 | No delivery to {child}; C-S04 help article only |
+| LCY-26 | No new screen; C-S10.wrongAccount and help |
+| PRT-01 | No order, print-ready, hardcover or partner word on any area C screen; "Printable book" only for the C28 file |
+| PRT-33 | Not drawn in 1.0 (no order feature) |
+| CUL-01 | C-S24: the days store is L4, per account, cleared at sign-out and Erase; the screen says so in the DoorNote |
+| CUL-03 | C-S15: nothing about tradition on a child or book |
+| CUL-07 | C-S10 / claim: a new phone starts with an empty Days list; the ask is not repeated (flag in `settings`) |
+| CUL-13 | C-S24: the list shows only on the unlocked phone; blank snapshot; Home names a day only when it is today |
+| CUL-26 | C-S24 to C-S25 at AX5 with Bold Text, VoiceOver, Voice Control, Switch Control (section 7) |
+
+### 13.3 Notes on rows with no screen change
+
+MKT-16 and MKT-29: C-S08 is the source frame for the privacy screenshot; its words follow the label in force and are claims-registered (WORDS.md claims check). Marketing frames never show a tradition, a faith day or the ask slip (NS-46-R47): the prototype uses seasonal days only and the fictional family Asha.
+
+## 14. Motion and transitions for new or changed states (v2)
+
+Every row has an `m.*` primitive, a `T-*` transition (v2 `docs/design/system/MOTION.md` ids; PROPOSED ones are marked), a Reduce Motion form, and a haptic. Nothing here animates a count, a streak, a filling calendar or a celebration. All moves are at or under 300 ms except system transitions. MOTION.md carries the same rows as M-C73 to M-C91 with the prototype items.
+
+| Id | Screen.state | Trigger | What moves | `m.*` and `T-*` | Reduce Motion | Haptic |
+|---|---|---|---|---|---|---|
+| M-C73 | C-S01 to C-S24, C-S26 | Tap Days, or a day row | native push; arriving content in place | `m.push`, T-PUSH | system reduced | none |
+| M-C74 | C-S24 to C-S25 | Tap Browse days | the sheet rises (glass); content below unchanged | `m.sheet`, T-SHEET | system reduced | none |
+| M-C75 | C-S25.ticked | Tick or untick a day | the check shape and weight change; no toast, no count | `m.select`, T-INLINE (PROPOSED: a state change inside a list row) | indicator jumps; colours `m.swap` 150 | H-select on a change only |
+| M-C76 | C-S25.whichDate | Tick a moving day | the one question row opens under the day; rows below move | `m.move` plus `m.enter` (280), T-INLINE | final layout next frame, row fades 200 | none |
+| M-C77 | C-S24 row removed | Remove on C-S26, swipe, or custom action | the row `m.exit` (opacity only), rows below `m.move` up; no Undo | `m.list.remove` | row fades 160, gap closes next frame | none |
+| M-C78 | C-S24.clearConfirm to `.empty` | Clear all chosen | the F6 sheet leaves; all "Days you chose" rows leave together (no stagger, no count); the switch and Clear all leave with them | `m.sheet` then `m.list.remove` | fade 160, jump | H-warning after the choice, never when the sheet opens |
+| M-C79 | C-S24.dayNames-* | Toggle; App lock turns on or off | the switch indicator moves; a reason line is swapped in place | `m.select`; reason `m.swap` 150 | jump; swap | H-select on a toggle |
+| M-C80 | C-S24.store-unavailable, .sessionCleared, .remindersOff | the state arises | one in-place line enters in its section; announced politely once | `m.enter`, T-SYSLINE | fade 200 | none |
+| M-C81 | A-S01 `daySlip` | cold launch; later visit; "Not today"; day changes | cold launch: `m.enter.group`; later: already in place (T-RESUME); dismissal: `m.list.remove`; a day change removes it with no animation | `m.enter.group`, `m.list.remove`, T-SLIP (PROPOSED composite) | one `m.fade` 200 at most, or a jump | none (NS-50-R7, R12) |
+| M-C82 | A-S01 `askSlip` | cold launch; either answer; retire after two showings | as M-C81; retiring to Me animates nothing | as M-C81 | as M-C81 | none |
+| M-C83 | C-S23.withdraw | Tap the sensitive-data row; Stop syncing | the sheet rises; on confirm it leaves and the row's value is swapped in place; no toast | `m.sheet`, `m.swap` | system reduced; swap | none (a consent act, not a warning) |
+| M-C84 | C-S18.retrying, .stuckAgain | Tap Remove now | the button's label is swapped for a static busy label; on failure it swaps back and the line stays; VoiceOver re-reads the line | `m.swap` 150; `m.instant` for the line | swap | none |
+| M-C85 | C-S03.waiting | Sign out with sends pending | the sheet's text is swapped for the waiting line; buttons keep their place | `m.swap` 150 | swap | none |
+| M-C86 | C-S19.ownerCheck | After Erase confirm | the system owner check; cancel returns to the confirm with nothing moving | system; `m.instant` | system | H-warning only after the erase is chosen and checked, not at the check |
+| M-C87 | C-S01.sessionEnded, .updateRequired, .deletedElsewhere | Me opens after the event | one line `m.enter` at the top; content below `m.move`; dismissal (when allowed) `m.exit` then `m.move` | `m.enter`, T-SYSLINE | fade 200; layout instant | none |
+| M-C88 | C-S01.regrouped | Me opens | nothing animates a regroup (the arrangement is static); rows never reorder on screen | `m.instant` | same | none |
+| M-C89 | C-S04.parts | the copy is ready in parts | the `.ready` sentence says it once; the same bar and button; no per-part animation | `m.swap` | same | none |
+| M-C90 | C-S25.traditionPicked | Pick a tradition | that tradition's days move first in the list; reorder is a cross-fade of the list block, not rows travelling | `m.fade` 200 | jump | H-select |
+| M-C91 | C-S23.consentOff | Withdrawn | row value swaps; Account's Sync row follows when next shown | `m.swap` | same | none |
+
+Never animate in this area (v2 additions): a tick that celebrates; a calendar or list filling; any count, ring or badge on Days; a pulse on the DoorNote; the DoorNote collapsing; the ask slip "pulling" attention; hold-to-confirm on Clear all or Stop syncing.
+
+## 15. Contradictions with product rulings (flagged, not resolved)
+
+| # | Where | Contradiction | Design default meanwhile |
+|---|---|---|---|
+| X1 | NS-47-R17 and `culture.delete.line` ("Days you chose stay on your phones and are cleared with your account") against NS-47-R17's own rule ("this phone clears the store at once"), against NS-45-R10 / C-S20.cancelled ("Your letters and books are back, just as they were") | The line says days "stay" on phones; R17 clears this phone at the request; a cancelled deletion cannot bring the days back, so "just as they were" is false for them | Show the line only when a day is ticked; keep the built cancelled words but do not extend them to days; Karma and `content` rule (G25) |
+| X2 | FR-LCY-10 (a screen saying "these letters belong to another sign-in", naming the method) against K-E16 ("no block screen"), FR-SEC-04 (no screen names another account or says another book exists) and this file's J-C05 | Disclosing A's existence to B | Not drawn; C-S10.wrongAccount names only the method B used |
+| X3 | NS-11-R4 (locked card 08: four slips) against NS-50-R5 (six ranks) | Card 08 lists the older order | Draw the new order; card 21 already lists the NS-11 errata row |
+| X4 | NS-47-R30 (a decline control of the same style in the same stack for every optional question) against NS-46-R41 / review F47-4 (sheet exit is Done; no second control) | A "Not now" row inside C-S25 is a no-op | C-S25 draws a "Not now" first row per optional group (G23) |
+| X5 | NS-46-R3 / R-IA-2 (typed days leave the Reminders page) against built NS-18 where they live on Reminders, and builds with the flag off | Two homes in a flag-off build | C-S24 `.flagOff` holds typed days; D-S06 keeps a pointer row "Days" (area D) |
+| X6 | IA-AUDIT D-10 (one row in Me and one on Reminders) against NS-46-R3 (one row, in Me) | One row or two | One row in Me (card wins); area D may add a pointer on Reminders |
+| X7 | E28 ("never a list of recordings and never a count") against built `storage.tsx` and v1 of this file (a row per recording) | v1 contradicted the card | Corrected in v2 |
+
+## 16. Card gaps and engineering gaps added in v2
+
+| # | Card row | Gap | Proposed default |
+|---|---|---|---|
+| G15 | SEC-07 | "Under the D1 lines" does not say where an action sits in a sheet whose safe choice must be first | Plain 44 pt action directly under the D1 lines, before the buttons; tapping closes the sheet and opens App lock (OQ-5) |
+| G16 | FR-SEC-06 | No owner check is possible on a phone with no passcode | Skip the check; the confirm is the only gate |
+| G17 | NS-09-R6 / E28 | Words for several stuck recordings | One line, singular wording, whatever the number |
+| G18 | NS-46, NS-47-R15 | Can a signed-out parent (after a sign-in) tick days? The store is per account and cleared at sign-out | Days row absent until sign-in; a build with no sign-in uses the single local owner |
+| G19 | FR-PRV-01 | No re-agree path after withdrawal | Tap the row: the returning consent sheet (C-S11) |
+| G20 | NS-46-R3 | Days page in a build with NS-18 but not the library | Typed days only (`.flagOff`) |
+| G21 | NS-45, E-S16 | Two SystemLines apply at once in Me | The update line wins; the session line shows after it is gone |
+| G22 | NS-47-R29 | DoorNote glyph "decorative lock" against the area's no-lock-imagery rule | Default: no glyph (OQ-1) |
+| G23 | NS-47-R30 | Decline control in a sheet that has Done | "Not now" first row per optional group |
+| G24 | NS-46-R35 | Whether the reminder line repeats after the first tick | Shown whenever nothing is ticked |
+| G25 | NS-47-R17 | See X1 | Show only when a day is ticked |
+| G26 | FR-LCY-21, SUP-07 | Words under `tooBig` before the split exists | None promising a date; "Write to us" only |
+
+| # | Gap | Backlog row |
+|---|---|---|
+| E15 | Days page, Browse sheet, Day detail (`app/settings/days*.tsx`), NR-DAY-10 | new row needed (no id above BL-999 invented) |
+| E16 | Privacy withdrawal row and sheet | BL-485 |
+| E17 | Storage stuck line, `storage.tsx` rule amended | BL-977 (scope gains NS-09-R6, errata E28) |
+| E18 | Days store: Application Support, backup exclusion set and read back, fails closed | NR-DAY-03, NS-47-R6, R28 |
+| E19 | SlipCard variants `saveSlip`, `daySlip`, `askSlip`; the order as data | BL-963; COMPONENTS C9 |
+| E20 | `DoorNote`, I4 `multi`, I1 `optional` | new COMPONENTS rows (design-systems) |
+| E21 | Blank snapshot on every L4 screen | FR-SEC-22; BL-961 enumeration |
+| E22 | Me regroup after T1 (`settings-home.logic.ts`) | BL-927/928 follow-up |
+| E23 | Sign-out sheet additions | BL-961, BL-965 |
+| E24 | Owner check before erase (LocalAuthentication) | new row needed |
+| E25 | Delivered library-day reminders dismissed at sign-out | BL-961 (pattern `scheduler.ts:336-339`) |
+| E26 | Export split above 2 GB | FR-LCY-21 new row |
+
+## 17. Round 2 additions: photo moments, and pictures and videos with a letter
+
+Source: founder direction `26-founder-direction-photos-library-and-media.md` (committed f8eead016). The cards NS-51 (photo moments, library read access) and NS-52 (several pictures and videos with a letter) are being written in `27-photo-moments-and-media.md`, which did not exist when this was written; rows below key to NS-51 and NS-52 by name. Every id here is PROPOSED and flagged: "pending NS-51 or NS-52" means the card has not been read and the founder has not ruled its questions (Q-PM-1 to Q-PM-7). Nothing here changes the constitution: no caption, title, summary or story is written from a picture; no count of pictures or unwritten days is shown; nothing from the library leaves the phone by this design; no face or person matching.
+
+### C-S27 Photos access (PROPOSED; Me, Privacy and security or On this phone)
+
+A pushed page for what the app may read from the Photos library on the phone, drawn so the parent can see and change every choice (NS-51, level 3). Me row: "Photos access" with a value "Off", "Selected photos" (limited) or "All photos" (full); never a count. Absent when the flag is off or the build cannot ask (absent, not greyed). Not in first run.
+Layout: DoorNote (full form, first in reading order): what it reads (dates and how many pictures were taken together, nothing about what a picture shows), that it stays on the phone, that no face or person is matched, that place names are off. Then: "Photos the app can see" (an I4 choice: "Selected photos" / "All photos"; "Selected photos" opens the system's own limited-library picker, never ours), "Albums that count" (a multi-select list of the parent's albums, nothing preselected beyond what the parent picks; names are the parent's own and are shown only here), "Pause" (a switch: paused means no new moments and no index changes; the index stays until removed), "Turn off and remove the list" (destructive text, F6 `explained`: safe choice "Keep it on" default). A static line shows while the list is being made ("Looking at the photos on this phone."): no percentage, no count, no spinner loop.
+Records and decline (PRIV-R21 door lines, for counsel): Shown: the DoorNote, then the system's own permission alert (its purpose string is the system's and is written by `content` with counsel). Records: on the phone only (the on/off choice, the album choice, the index; class L4). Never: a count of pictures, a place name by default, a picture on a server, a face match, a nudge that describes a picture. Decline: "Not now" is a full answer of equal weight (I1 `optional` pattern); nothing is requested again in the same sitting.
+States: `.off`, `.consent` (DoorNote then the system alert), `.limited`, `.full`, `.paused`, `.indexing` (static line), `.albums`, `.turnOffConfirm`, `.removed` (one calm line "The list is removed from this phone."), `.denied` (iOS Settings: the D-S06 `.denied` pattern, "Open Settings"), `.changedInSettings` (the iOS choice changed outside the app: the page reflects it, no alarm), `.flagOff` (absent), `.killswitch` (absent at next focus), `.signedout`, `.second-account` (the index is per account: B sees none of A's, pending NS-51), `.backgrounded` (blank), `.ax5`, `.vo`, `.dark`.
+Integration: NS-51 (pending); Q-PM-1 (limited by default), Q-PM-5 (place names off), Q-PM-6 (metadata only), Q-PM-7 (drop C); flag `EXPO_PUBLIC_PHOTO_MOMENTS` (PROPOSED, local family); modules PROPOSED. The Home moment card and its reminder are area A and D (the reminder is one of the existing budgeted classes, neutral words, NS-32).
+
+### Media in Storage (C-S18, PROPOSED states)
+
+`C-S18.media`: a group "Pictures and videos" with size per kind (pictures' stored copies, videos) as phone space only, never a count of items; the existing "Total" row unchanged; a row "Photo moments list" with its size and a "Remove" action (opens the same F6 sheet as C-S27 `.turnOffConfirm`). On `.lowSpace` a stuck recording is still the first item; large videos are named by kind, not by letter. A video's size cap and the per-letter limits (default up to 6 pictures and 2 videos, a founder default, NS-52) are the card's; this screen never shows "3 of 6". Nothing here deletes a letter's media without its own confirm.
+
+### Save a copy, export, printable book (C-S04, C-S05, PROPOSED states)
+
+- C-S04 "What is inside": add a row "Every video" when videos exist and the flag is on; pictures stay "Every picture's stored copy". Words only, no numbers (FR-DAT-13).
+- The space estimate (estimate plus 200 MB, NS-11-R20) includes videos; `.error-lowSpace` names the amount; a copy with videos reaches the 2 GB split (`.parts`, FR-LCY-21) far sooner, so the split must ship before video does (engineering gap E27). `.lowPower` and `.running` unchanged; the bar steps by phase, never by items.
+- The photo moments list is never in the copy (derived, L4): one line on C-S24's pattern, "The photo moments list is not part of Save a copy." on C-S27, not on C-S04.
+- C-S05 Printable book: a video is not printed; a picture taken from a video is the parent's own choice (NS-52, pending). C-S05 draws no line about what is left out (the card says silent omission, C28-4); a QR to a video page is a print, counsel and finance question and is not drawn.
+- Recently deleted (C-S17): a deleted letter returns with all its pictures and videos (NS-36-R1b extended), and Erase now erases them with it ("The letter, its recording, pictures and videos are erased for good."; words: content). Delete this book (C-S22) and Erase everything (C-S19) name pictures and videos; the Erase scan covers media and the moments list (FR-PRV-34 extended).
+- Delete account (C-S20): pictures and videos stay on each phone until that phone is erased only while media never syncs (Q-PM-3 default: stays on the phone). If the founder rules sync, this line changes to the published deletion clock and C-S08 changes with it (pending Q-PM-3).
+
+### Privacy, backup and provenance wording (PROPOSED)
+
+- C-S23 Privacy: one new fact row "Photo moments" ("Only on this phone." true only while no picture, thumbnail or derived signal is sent; a claims row backs it); the iPhone backup line says pictures and videos are in the phone's own backup as NS-01-R27 states, and that the moments list is not (excluded, as the days store). Both lines are claims-registered and wait for counsel (X2, E23, Q45).
+- C-S08 Where your letters live: media added to "On this phone"; with backup off nothing implies a picture or video survives the loss of the phone beyond the phone's own backup and Save a copy (the same truth principle as recordings).
+- C-S09 provenance: a picture or video kept only on this phone says so with the same plain voice as recordings (pending NS-52 and Q-PM-3); no new emotional language.
+- C-S21 (backup at the flip): media is not in recording backup; the screen says nothing about pictures or videos until a card includes them.
+
+### Motion for round 2 (also in MOTION.md as M-C92 to M-C97)
+
+| Id | State | What moves | `m.*`, `T-*` | Reduce Motion |
+|---|---|---|---|---|
+| M-C92 | C-S24-style push to C-S27 | native push | `m.push`, T-PUSH | system |
+| M-C93 | C-S27.consent | DoorNote is static; the system alert is the system's | none of ours | none |
+| M-C94 | C-S27.indexing | one static line; no bar, no count | `m.swap` to `.limited` or `.full` | swap |
+| M-C95 | C-S27.paused | the switch moves | `m.select` | jump |
+| M-C96 | C-S27.turnOffConfirm to `.removed` | F6 sheet, then the page's line swaps; H-warning after the choice | `m.sheet`, `m.swap` | system, swap |
+| M-C97 | C-S18.media | rows are in place; Remove leaves by `m.list.remove` | `m.list.remove` | fade 160 |
+
+Never animate: a moment appearing as a count, pictures "found", an index filling.
+
+### Gaps for round 2
+
+| # | Gap | Proposed default |
+|---|---|---|
+| G27 | Where "Photos access" sits in Me before and after T1 | `.default`: Privacy and security group; `.regrouped`: On this phone |
+| G28 | Whether an index per account is cleared at sign-out (like the days store) | Cleared at sign-out and Erase, per account, L4, excluded from backup (pending NS-51) |
+| G29 | Albums that count: whether album names may appear in any state other than C-S27 | Only on C-S27; never in a Home card, a notification, a log or a count |
+| G30 | Does "Pause" end by itself | No; it stays until the parent changes it |
+| E27 | Export split must ship before video; media in the Erase scan; media sizes per kind in Storage | FR-LCY-21; FR-PRV-34; FR-REL-37 (new rows) |
+
+## 18. Open design questions (each with its default)
+
+| # | Question | Default |
+|---|---|---|
+| OQ-1 | Does DoorNote carry a decorative lock glyph? The area's rule is no lock imagery that implies safety. | No glyph; words only. Karma rules. |
+| OQ-2 | Does the Me regroup (`.regrouped`) replace `.default` after tree test T1, and are the group titles "Days and reminders" and "On this phone" the ones tested? | Yes after T1, working titles as drawn; `content` names them. |
+| OQ-3 | Is the Spoken language row hidden in English-only builds, and is there a Languages list screen in Me? | Neither: the row stays (card 22: no row is deleted); the list is area E. |
+| OQ-4 | Is the first tick's iOS permission ask preceded only by the inline reminder line, or by a sheet? | Inline line only (no second sheet over Browse, NS-46-R41). |
+| OQ-5 | "Turn on App lock" on the sign-out sheet: above or below the three buttons? | Directly under the D1 lines, plain; the safe choice stays the first button. |
+| OQ-6 | Owner check before Erase on a phone with no passcode. | Skipped. |
+| OQ-7 | Does Clear all offer Undo? | No; Browse re-ticks. A quiet confirm already guards it. |
+| OQ-8 | Which Me line wins when update-required and session-ended both apply? | Update required. |
+| OQ-9 | Is there any print entry (PRT-S01) drawn in 1.0? | No (no order feature in 1.0). |
+| OQ-10 | PQ-6 "Clear the due date" on C-S15. | Not drawn until the founder takes it; the spec is in 13.1. |
+| OQ-11 | PDF fonts for Arabic and Chinese, and Hindi line height. | The template embeds the faces it needs; no missing-glyph state is shown; `design-systems` and `mobile` decide the size cost. |
+| OQ-12 | The Days row for a signed-out phone after a sign-in. | Absent until sign-in (G18). |
+| OQ-13 | Round 2: limited library or full access by default (Q-PM-1), and place names (Q-PM-5). | Limited ("Selected photos") first; place names off; pending NS-51. |
+| OQ-14 | Round 2: do pictures and videos sync (Q-PM-3)? | No: they stay on the phone; C-S20 and C-S08 words follow that default. |

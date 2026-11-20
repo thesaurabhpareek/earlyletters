@@ -171,7 +171,7 @@ body.rt .sheet{background:var(--surfaceRaised)}
 <body>
 <div id="panel">
   <h1>Area C. Keeping and trust</h1>
-  <div class="note">Prototype for DESIGN.md (ids C-S01 to C-S22). Click inside the phone to move; use journeys to walk every flow, or pick any screen and state.</div>
+  <div class="note">Prototype for DESIGN.md v2 (ids C-S01 to C-S26: v2 adds C-S23 Privacy, C-S24 Days, C-S25 Browse days, C-S26 Day detail, the Me regroup, Storage's one line, the Home day and ask slips). Click inside the phone to move; use journeys to walk every flow, or pick any screen and state.</div>
 
   <h2>Display</h2>
   <div class="toggles">
@@ -282,27 +282,46 @@ function letterCard(date, words, go){
 }
 
 /* C-S01 Me */
-def('C-S01','Me (Look after)',['default','signedout','local','second-account','killswitch','lapsed','oneHidden'],(s)=>{
+def('C-S01','Me (Look after)',['default','regrouped','sessionEnded','updateRequired','deletedElsewhere','signedout','local','second-account','killswitch','lapsed','oneHidden'],(s)=>{
   let b = large('Me');
-  const signedIn = (s==='default'||s==='lapsed'||s==='oneHidden'||s==='second-account');
+  if(s==='sessionEnded') b += '<div class="inline" role="status"><div class="t-callout" style="flex:1">You were signed out. Sign in again to carry on.</div></div>';
+  if(s==='updateRequired') b += '<div class="inline" role="status"><div class="t-callout" style="flex:1">This version can no longer reach your account. Recording, reading and saving still work on this phone.</div>'+btn('Open the App Store','secondary')+'</div>';
+  if(s==='deletedElsewhere') b += '<div class="inline" role="status"><div class="t-callout" style="flex:1">This account was deleted on another phone. You can start a new book here.</div></div>';
+  const signedIn = (s==='default'||s==='regrouped'||s==='sessionEnded'||s==='updateRequired'||s==='lapsed'||s==='oneHidden'||s==='second-account');
+  const signedOutLike = (s==='signedout'||s==='sessionEnded'||s==='deletedElsewhere');
   if(signedIn) b += section('',[row(s==='second-account'?'Signed in with email':'Signed in with Apple',{go:'C-S02:default'}), row('Plan',{value:'Free',sub:s==='lapsed'?'Your first two letters are free. Plus lets you keep adding letters.':'',go:''})]);
-  else if(s==='signedout') b += '<div class="card"><div class="t-headline">Not signed in</div><div class="t-subhead muted">Your letters are on this phone.</div><div class="gap-s"></div>'+btn('Sign in','secondary')+'</div><div class="gap-s"></div>'+section('',[row('Plan',{value:'Free'})]);
+  else if(s==='signedout'||s==='deletedElsewhere') b += '<div class="card"><div class="t-headline">Not signed in</div><div class="t-subhead muted">Your letters are on this phone.</div><div class="gap-s"></div>'+btn('Sign in','secondary')+'</div><div class="gap-s"></div>'+section('',[row('Plan',{value:'Free'})]);
   else b += section('',[row('On this phone'),row('Plan',{value:'Free'})]);
   const books = s==='second-account' ? [row("Dev's book",{go:'C-S15:default'})] : [row("Asha's book",{go:'C-S15:default'})];
   books.push(row('Add a book',{go:''}));
   if(s==='oneHidden') books.push(row('Hidden books',{go:'C-S16:default'}));
   b += section('Books', books);
-  b += section('Writing',[row('Spoken language',{go:''}),row('Your words',{go:''}),row('Reminders',{value:'Weekly',go:''}),row('Past letters on Home',{sw:true}),row('Appearance',{value:'System',go:''})]);
-  b += section('Keeping your book',[row('Save a copy',{sub:'Every letter, recording and picture, free, any time.',go:'C-S04:default'}),row('Where your letters live',{go:'C-S08:default'})]);
-  const yl=[row('Recently deleted',{sub:'Letters you delete wait here for 30 days.',go:'C-S17:default'}),row('Storage',{sub:'Languages and space on this phone.',go:'C-S18:default'})];
-  if(!signedIn) yl.push(row('Erase everything on this phone',{destr:true,go:s==='signedout'?'C-S19:signedoutSynced':'C-S19:default'}));
-  b += section('Your letters', yl);
-  b += section('Privacy and security',[row('App lock',{value:'Off',go:''}),row('Privacy',{go:''})]);
-  if(signedIn && s!=='killswitch') b += section('',[row('Delete account',{destr:true,go:'C-S20:what'})]);
+  const daysRow = row('Days',{go:'C-S24:default'});
+  const showDays = !(s==='signedout'||s==='sessionEnded'||s==='deletedElsewhere');
+  const eraseRow = row('Erase everything on this phone',{destr:true,go:(signedOutLike)?'C-S19:signedoutSynced':'C-S19:default'});
+  const delRow = row('Delete account',{destr:true,go:'C-S20:what'});
+  const keep = [row('Save a copy',{sub:'Every letter, recording and picture, free, any time.',go:'C-S04:default'}),row('Where your letters live',{go:'C-S08:default'})];
+  const recent = row('Recently deleted',{sub:'Letters you delete wait here for 30 days.',go:'C-S17:default'});
+  const stor = row('Storage',{sub:'Languages and space on this phone.',go:'C-S18:default'});
+  if(s==='regrouped'){
+    b += section('Writing',[row('Spoken language',{go:''}),row('Your words',{go:''}),row('Appearance',{value:'System',go:''})]);
+    b += section('Days and reminders',[row('Reminders',{value:'Weekly',go:''}),daysRow,row('Past letters on Home',{sw:true})]);
+    b += section('Keeping your book', keep.concat([recent,stor]));
+    b += section('On this phone',[row('App lock',{value:'Off',go:''}),row('Privacy',{go:'C-S23:consentOn'})]);
+    b += section('',[delRow]);
+  } else {
+    b += section('Writing',[row('Spoken language',{go:''}),row('Your words',{go:''}),row('Reminders',{value:'Weekly',go:''})].concat(showDays?[daysRow]:[]).concat([row('Past letters on Home',{sw:true}),row('Appearance',{value:'System',go:''})]));
+    b += section('Keeping your book', keep);
+    const yl=[recent,stor];
+    if(!signedIn) yl.push(eraseRow);
+    b += section('Your letters', yl);
+    b += section('Privacy and security',[row('App lock',{value:'Off',go:''}),row('Privacy',{go:'C-S23:consentOn'})]);
+    if(signedIn && s!=='killswitch') b += section('',[delRow]);
+  }
   b += section('Help and legal',[row('Help',{value:'Write to us'}),row('If you are struggling',{go:''}),row('Legal',{go:''})]);
   b += section('About',[row('Version',{value:'1.1.0 (14)'})]);
   return frame(b,{tabs:'me'});
-},(s)=>['Me, heading','Account card or Not signed in card','Plan','Books, heading','Each book row','Writing, heading and rows','Keeping your book, heading','Save a copy','Where your letters live','Your letters, heading and rows','Privacy and security','Delete account (signed in)','Help and legal','About','Tab bar: Home, Book, Me (selected)']);
+},(s)=>['Me, heading','Account card or Not signed in card','Plan','Books, heading','Each book row','Writing, heading and rows (Days row under Reminders; the regrouped state moves Reminders, Days and Past letters on Home to Days and reminders)','Keeping your book, heading','Save a copy','Where your letters live','Your letters, heading and rows','Privacy and security','Delete account (signed in)','Help and legal','About','Tab bar: Home, Book, Me (selected)']);
 
 /* C-S02 Account */
 def('C-S02','Account',['default','waiting','offline','signedOutEarly'],(s)=>{
@@ -316,10 +335,13 @@ def('C-S02','Account',['default','waiting','offline','signedOutEarly'],(s)=>{
 },(s)=>['Back','Account, title','Signed in with Apple','Sync','Devices, heading','Sign out other devices', s==='waiting'?'Waiting line, then Sign out now':'Sign out']);
 
 /* C-S03 Sign-out sheet */
-def('C-S03','Sign-out sheet (D1)',['default','photos'],(s)=>{
+def('C-S03','Sign-out sheet (D1)',['default','photos','days','appLockOffer','waiting'],(s)=>{
   const base = SCREENS['C-S02'].render('default');
   const what = s==='photos'?'Your letters and recordings stay on this phone. So do the pictures you added.':'Your letters and recordings stay on this phone.';
-  const inner = '<h2 class="t-title2">Sign out on this phone?</h2><div class="gap-s"></div><div class="t-body">'+what+' Anyone who can open the app here can read them. Use Erase everything to remove them.</div><div class="gap"></div>'+
+  if(s==='waiting') return base + sheet('<h2 class="t-title2">Sign out on this phone?</h2><div class="gap-s"></div><div class="t-body">Your newest letters are still on their way. This phone signs out once they are sent.</div><div class="gap"></div><div class="stack">'+btn('Stay signed in','primary lg','C-S02:default')+btn('Sign out now','quiet','C-S01:signedout')+'</div>');
+  const inner = '<h2 class="t-title2">Sign out on this phone?</h2><div class="gap-s"></div><div class="t-body">'+what+' Anyone who can open the app here can read them. Use Erase everything to remove them.</div>'+
+    (s==='days'?'<div class="gap-s"></div><div class="t-subhead muted">Days you chose on this phone are cleared.</div>':'')+
+    (s==='appLockOffer'?'<div class="gap-s"></div>'+btn('Turn on App lock','quiet','C-S02:default'):'')+'<div class="gap"></div>'+
     '<div class="stack">'+btn('Stay signed in','primary lg','C-S02:default')+btn('Sign out','quiet','C-S01:signedout')+btn('Sign out and erase this phone','destrText','C-S19:confirm')+'</div>';
   return base + sheet(inner);
 },()=>['Sheet heading: Sign out on this phone?','The D1 sentences','Stay signed in (filled, default; escape gesture)','Sign out','Sign out and erase this phone (destructive text)']);
@@ -517,15 +539,15 @@ def('C-S17','Recently deleted',['default','empty','sealed','book','synced','rest
 },()=>['Back','Recently deleted','Help line','Each card: words (full in label), from, dates','Restore','Erase now']);
 
 /* C-S18 Storage */
-def('C-S18','Storage',['default','stuck','stuckAgain','lowSpace'],(s)=>{
+def('C-S18','Storage',['default','stuck','retrying','stuckAgain','lowSpace'],(s)=>{
   let b = nav('Storage','C-S01:default')+'<div class="gap-s"></div>';
   if(s==='lowSpace') b += failCard('This iPhone is almost full.','New recordings need space. Remove something below or in iPhone Storage.');
-  if(s!=='default') b += section('Recordings',[row('One recording is still on this phone.',{btn:'<div class="btn secondary" style="width:auto;min-width:120px" data-go="'+(s==='stuck'?'C-S18:default':'C-S18:stuckAgain')+'" role="button">Remove now</div>'})]);
+  if(s==='stuck'||s==='stuckAgain'||s==='lowSpace'||s==='retrying') b += section('',[row('A recording is still being removed.',{btn:'<div class="btn secondary" style="width:auto;min-width:120px" data-go="'+(s==='stuck'||s==='lowSpace'?'C-S18:retrying':s==='retrying'?'C-S18:stuckAgain':'C-S18:default')+'" role="button"'+(s==='retrying'?' aria-busy="true"':'')+'>'+(s==='retrying'?'Removing':'Remove now')+'</div>'})], s==='stuckAgain'?'The app will finish removing it.':'');
   b += section('Spoken language',[row('English',{value:'Ready'})],'Speech is written down on this phone.');
   b += section('Downloaded',[row('Total',{value:'312 MB'}),row('English speech model',{sub:'298 MB'})],'Letters and recordings are kept separately and are never removed here.');
   b += section('',[row('Use cellular data',{sw:false})]);
   return frame(b);
-},()=>['Back','Storage','Recordings, heading (only with a stuck file)','One recording is still on this phone','Remove now','Languages and downloads']);
+},()=>['Back','Storage','One state line (only with a stuck file; never a list or count)','Remove now','Languages and downloads']);
 
 /* C-S19 Erase everything */
 def('C-S19','Erase everything on this phone',['default','signedoutSynced','confirm','erasing','error-failed','signedin'],(s)=>{
@@ -592,6 +614,110 @@ def('C-S22','Delete this book (never-signed-in phone)',['exportFirst','confirm']
   return frame(b,{footer:footer(btn('Keep the book','secondary lg','C-S15:local')+btn('Delete the book','destrFill','C-S17:book'))});
 },()=>['Back','Heading','Body','Save a copy','Keep the book (default)','Continue or Delete the book']);
 
+
+/* ---------- v2: HOME slips (area A places them; drawn so the three anatomies can be compared) ---------- */
+SCREENS['HOME'].states.push('dayToday','daysAsk','quietDay');
+const _homeRender = SCREENS['HOME'].render;
+SCREENS['HOME'].render = (s)=>{
+  if(s==='dayToday'||s==='daysAsk'||s==='quietDay'){
+    let b = large('Home')+p('Thursday evening','t-footnote muted')+'<div class="gap-s"></div>';
+    if(s==='dayToday') b += '<div class="slip" role="group" aria-label="Thanksgiving. Anything you would like Asha to hear about today?"><div class="t-callout"><b>Thanksgiving.</b> Anything you would like Asha to hear about today?</div><div class="slipfoot"><div class="btn quiet" style="width:auto" role="button" data-go="HOME:slipGone">Not today</div></div></div><div class="gap-s"></div>';
+    if(s==='daysAsk') b += '<div class="slip" role="group"><div class="t-callout">Would you like a reminder on the days that matter to your family?</div><div class="gap-s"></div><div class="t-footnote">Only on this phone. Used for one thing: finding days for you to pick.</div><div class="gap-s"></div><div class="stack">'+btn('Choose days','secondary','C-S24:empty')+btn('Not now','secondary','HOME:slipGone')+'</div></div><div class="gap-s"></div>';
+    if(s==='quietDay') b += '<div class="pad"><div class="t-callout"><b>Memorial Day.</b> The book is open if you want it.</div></div>';
+    else b += p('<span class="t-letter">What did Asha do today that you want to remember?</span>','')+'<div class="gap"></div>';
+    b += '<div class="gap"></div><div class="pad stack">'+btn('Speak','primary lg')+btn('Type','secondary')+'</div>';
+    return frame(b,{tabs:'home'});
+  }
+  return _homeRender(s);
+};
+
+/* ---------- v2: DoorNote ---------- */
+function doorNote(full){
+  return '<div class="doornote" role="note" style="margin:0 20px 12px;padding:14px 16px;border-radius:14px;background:var(--surface,var(--surfaceRaised));border:1px solid var(--line);font-size:17px;line-height:1.35;color:var(--text)">'+
+    'Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me.'+
+    (full?'<div style="margin-top:8px">Anyone who can open this phone can see this list. App lock keeps it private.</div>':'')+'</div>';
+}
+function tickRow(name, date, on, go){
+  return '<div class="row tap" data-go="'+(go||'')+'" role="checkbox" aria-checked="'+on+'" aria-label="'+name+', '+date+(on?', ticked':'')+'"><div class="rt"><div class="rtitle" style="font-weight:'+(on?'700':'500')+'">'+(on?'[x] ':'[ ] ')+name+'</div><div class="rsub">'+date+'</div></div></div>';
+}
+
+/* C-S24 Days */
+def('C-S24','Days (Me, Days)',['default','empty','typedOnly','noDateNextYear','clearConfirm','store-unavailable','remindersOff','notificationsDenied','dayNames-on','dayNames-appLock','dayNames-released','sessionCleared','killswitch','flagOff','backgrounded'],(s)=>{
+  if(s==='backgrounded') return frame(nav('Days','C-S01:default')+'<div class="gap"></div>'+p('(blank: the app-switcher snapshot of an L4 screen is blank with or without App lock)','t-footnote muted'));
+  let b = nav('Days','C-S01:default')+large('Days')+doorNote(s!=='flagOff');
+  const none = (s==='empty'||s==='typedOnly'||s==='flagOff'||s==='killswitch');
+  if(none && s!=='flagOff' && s!=='killswitch') b += p('A reminder arrives on that day. Unticking a day or Clear all stops it.','t-footnote muted');
+  if(s==='remindersOff') b += p('Chosen days still send a reminder, even with Reminders off. Stop it by unticking a day.','t-footnote muted');
+  if(s==='sessionCleared') b += p('Your days were cleared when you were signed out. You can choose days again.','t-footnote muted');
+  if(s==='notificationsDenied') b += failCard('Notifications are off.','Nothing arrives until you allow them in Settings.')+'<div class="pad">'+btn('Open Settings','secondary')+'</div><div class="gap"></div>';
+  const added = s==='empty'? [] : [row("Mum's birthday dinner",{sub:'March 4',go:'C-S26:default'})];
+  b += section('Days you added', added.concat([row('Add a day',{go:'',nochev:false})]));
+  const showLib = !(s==='empty'||s==='typedOnly'||s==='flagOff'||s==='killswitch');
+  if(s==='store-unavailable'){
+    b += '<div class="pad t-callout" role="status">Days you chose could not be shown just now.</div><div class="pad">'+btn('Try again','secondary','C-S24:default')+'</div><div class="gap"></div>';
+  } else if(showLib){
+    const rows = [row('Thanksgiving',{sub:'November 26',go:'C-S26:default'}),row('Diwali',{sub:'around October 28',go:'C-S26:authorities'})];
+    if(s==='noDateNextYear') rows.push(row('Spring begins',{sub:'no date for next year yet.',go:'C-S26:noDate'}));
+    b += section('Days you chose', rows);
+  }
+  if(!(s==='flagOff'||s==='killswitch'||s==='store-unavailable')) b += section('',[row('Browse days',{go:'C-S25:default'})]);
+  if(showLib && s!=='store-unavailable'){
+    const on = (s==='dayNames-on'), lock=(s==='dayNames-appLock');
+    b += section('',[row("Show the day's name in notifications",{sw:on,swgo:on?'C-S24:default':'C-S24:dayNames-on',sub:lock?'App lock is on, so notifications stay neutral.':''})],'Anyone who sees your lock screen can read it.');
+    b += section('',[row('<span style="color:var(--destructive)">Clear all</span>',{go:'C-S24:clearConfirm',nochev:true})]);
+    b += p('These days are not part of Save a copy.','t-footnote muted');
+  }
+  let ov='';
+  if(s==='clearConfirm') ov = sheet('<h2 class="t-title2">Clear all days you chose?</h2><div class="gap-s"></div><div class="t-body">Every reminder for them stops.</div><div class="gap"></div><div class="stack">'+btn('Keep my days','primary lg','C-S24:default')+btn('Clear all','destrText','C-S24:empty')+'</div>');
+  return frame(b,{overlay:ov});
+},(s)=>['Back','Days, heading','DoorNote (first, static)','Shared-phone line','Reminder line (while nothing is ticked)','Days you added, heading and rows','Add a day','Days you chose, heading and rows (each one element: name, date)','Browse days','Day-name switch with its help line (only when a day is ticked; disabled with reason under App lock)','Clear all','These days are not part of Save a copy']);
+
+/* C-S25 Browse days (sheet) */
+def('C-S25','Browse days (sheet)',['default','traditionPicked','ticked','whichDate','noDateNextYear','unavailable','fallbackNoQuestion'],(s)=>{
+  const base = SCREENS['C-S24'].render('default');
+  if(s==='unavailable') return frame(nav('Days','C-S01:default')+'<div class="pad t-callout" role="status">Days could not be saved just now.</div><div class="pad">'+btn('Try again','secondary','C-S25:default')+'</div>');
+  let inner = '<div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px"><h2 class="t-title2">Browse days</h2>'+btn('Done','quiet','C-S24:default','style="width:auto"')+'</div>'+doorNote(true);
+  if(s==='default'||s==='default') inner += '<div class="t-footnote muted pad">A reminder arrives on that day. Unticking a day or Clear all stops it.</div>';
+  inner += '<div class="sechead" role="heading">Seasonal and shared days</div><div class="seg" role="radiogroup" aria-label="Which half of the world" style="display:flex;gap:8px;padding:0 20px 8px"><div class="btn secondary" style="flex:1;min-height:44px" role="radio" aria-checked="false">Northern</div><div class="btn secondary" style="flex:1;min-height:44px" role="radio" aria-checked="false">Southern</div></div>'+
+    '<div class="group">'+tickRow('Spring begins','around March 20',s==='ticked')+tickRow('Thanksgiving','November 26',s==='ticked'||s==='whichDate')+'<div class="row tap" role="button"><div class="rt"><div class="rtitle">Show more</div></div></div></div>';
+  if(s==='whichDate') inner += '<div class="pad t-callout">Dates differ by country. Which date should we use?</div><div class="group">'+tickRow('Announced in one country','around March 20',true)+tickRow('Announced in another country','around March 21',false)+tickRow('I will pick my own date','',false)+'</div>';
+  inner += '<div class="sechead" role="heading">Family days</div><div class="group">'+tickRow("Mother's Day",'May 11',false)+tickRow("Father's Day",'June 15',false)+'</div>';
+  inner += '<div class="sechead" role="heading">Civic days</div><div class="group">'+tickRow('Independence Day','July 4',false)+tickRow('Memorial Day','May 26',false)+'</div>';
+  if(s!=='fallbackNoQuestion'){
+    inner += '<div class="sechead" role="heading">Traditions <span class="muted t-footnote">Optional</span></div><div class="t-footnote muted pad">Pick any that fit. You can pick more than one.</div><div class="group">'+
+      '<div class="row tap" role="button"><div class="rt"><div class="rtitle">Not now</div></div></div>'+
+      tickRow('Tradition A','',s==='traditionPicked')+tickRow('Tradition B','',false)+'</div>';
+    if(s==='traditionPicked') inner += '<div class="sechead" role="heading">Days from the traditions you picked</div><div class="group">'+tickRow('A day of Tradition A','around October 28',false)+'</div>';
+  }
+  inner += '<div class="pad t-footnote muted">Not on the list? Add a day on the Days page.</div>';
+  return base + sheet(inner,true);
+},(s)=>['Sheet heading and Done','DoorNote (first)','Reminder line','Seasonal and shared days, heading (rotor)','Hemisphere control (nothing selected)','Rows: name, date, ticked or not','Family days, Civic days, Traditions (Optional) headings','Not now (first row of the optional group)']);
+
+/* C-S26 Day detail */
+def('C-S26','Day detail',['default','moving','authorities','noDate'],(s)=>{
+  let b = nav('Thanksgiving','C-S24:default')+large(s==='authorities'?'Diwali':s==='noDate'?'Spring begins':'Thanksgiving');
+  if(s==='noDate') b += p('Spring begins: no date for next year yet.','t-footnote muted');
+  b += section('',[row('Date',{value:s==='authorities'?'around October 28':s==='noDate'?'':'November 26'}),row('Move this date',{go:'C-S26:moving',nochev:false})]);
+  if(s==='moving') b += section('Move this date',[tickRow('Just this year','',true),tickRow('Every year','',false)]);
+  if(s==='authorities') b += '<div class="pad t-callout">Dates differ by country. Which date should we use?</div>'+section('',[tickRow('Announced in one country','around October 28',true),tickRow('Announced in another country','around October 29',false),tickRow('I will pick my own date','',false)]);
+  b += section('',[row('<span style="color:var(--destructive)">Remove</span>',{go:'C-S24:default',nochev:true})]);
+  return frame(b);
+},()=>['Back','Day name, heading','Date (around when it moves)','Move this date','Just this year / Every year','Remove']);
+
+/* C-S23 Privacy */
+def('C-S23','Privacy (Me, Privacy)',['consentOn','consentOff','consentWaiting','signedout','local','withdraw'],(s)=>{
+  let b = nav('Privacy','C-S01:default')+large('Privacy')+p('Your words and recordings are yours. They stay on this phone unless you choose to sync.','t-body');
+  b += section('Where your book is kept',[row('On this phone, and in your iPhone backup.')]);
+  if(s==='consentOn'||s==='withdraw') b += section('',[row('Syncing letters',{value:'On',go:'C-S23:withdraw'})]);
+  if(s==='consentOff') b += section('',[row('Syncing letters',{value:'Not syncing',go:'C-S11:default'})]);
+  if(s==='consentWaiting') b += section('',[row('Syncing letters',{value:'Waiting',go:'C-S11:default'})]);
+  b += section('Who can see it',[row('Anyone who opens the app here can read it.'),row('App lock',{value:'Off',go:''}),row('Names in notifications',{value:'Off',go:''})],"This is for your child's name. Days have their own choice on the Days page.");
+  b += section('What you can do',[row('Save a copy',{go:'C-S04:default'}),row('Recently deleted',{go:'C-S17:default'})].concat(s==='signedout'||s==='local'?[row('Erase everything on this phone',{destr:true,go:'C-S19:default'})]:[]));
+  b += section('',[row('Privacy Policy',{go:''}),row('Terms',{go:''})]);
+  let ov = s==='withdraw' ? sheet('<h2 class="t-title2">Stop syncing letters?</h2><div class="gap-s"></div><div class="t-body">New letters stop syncing, and the other parent stops receiving new letters. Your book stays on this phone, and letters already on our servers stay until you delete them or your account.</div><div class="gap-s"></div><div class="group">'+row('Save a copy',{go:'C-S04:default'})+row('Delete account',{go:'C-S20:what'})+'</div><div class="gap"></div><div class="stack">'+btn('Cancel','secondary lg','C-S23:consentOn')+btn('Stop syncing','secondary lg','C-S23:consentOff')+'</div>') : '';
+  return frame(b,{overlay:ov});
+},()=>['Back','Privacy, heading','Promise (only while true)','Where your book is kept','Syncing row (opens the sheet)','Who can see it','What you can do','Documents']);
+
 /* ---------- journeys (DESIGN.md section 2) ---------- */
 const J = [
   ['J-C01 Save a copy from Me',['C-S01:default','C-S04:default','C-S04:running','C-S04:ready','SHARE:zip','C-S04:saved'],'Unhappy: C-S04 cancelled, stopped, stopped-by-close, lowPower, empty, newPhone, error-lowSpace, error-tooBig, error-other.'],
@@ -614,6 +740,13 @@ const J = [
   ['J-C12 Stuck recording',['C-S18:stuck','C-S18:stuckAgain','C-S18:default','C-S18:lowSpace'],''],
   ['J-C13 Where letters live and provenance',['C-S08:default','C-S08:local','C-S09:onPhone','C-S09:notHere','C-S09:otherParent','C-S09:typed'],''],
   ['J-C14 Backup at the flip (not today)',['C-S21:absent','C-S21:consent','C-S21:on','C-S21:queued','C-S21:retrying','C-S21:quota','C-S21:killswitch','C-S21:withdraw','C-S09:backedUp','C-S09:arriving'],'Today the row, screen and lines are absent.'],
+  ['J-C16 Choose days',['C-S01:default','C-S24:empty','C-S25:default','C-S25:ticked','C-S25:whichDate','C-S24:default','C-S26:default'],'Unhappy: C-S24 store-unavailable, remindersOff, notificationsDenied, dayNames-appLock, sessionCleared, killswitch.'],
+  ['J-C16 unhappy states',['C-S24:store-unavailable','C-S24:noDateNextYear','C-S24:remindersOff','C-S24:notificationsDenied','C-S24:dayNames-on','C-S24:dayNames-appLock','C-S24:dayNames-released','C-S24:sessionCleared','C-S24:clearConfirm','C-S24:killswitch','C-S24:flagOff','C-S24:backgrounded'],'Nothing counts, nothing celebrates.'],
+  ['J-C17 Optional background',['HOME:daysAsk','C-S24:empty','C-S25:default','C-S25:traditionPicked','C-S25:fallbackNoQuestion'],'Not now is final for Home; the filter is forgotten when the sheet closes.'],
+  ['J-C18 Day detail',['C-S24:default','C-S26:default','C-S26:moving','C-S26:authorities','C-S26:noDate'],'Quiet days look the same here.'],
+  ['J-C19 Withdraw syncing',['C-S01:default','C-S23:consentOn','C-S23:withdraw','C-S23:consentOff','C-S23:consentWaiting'],'Two equal buttons, Cancel first.'],
+  ['J-C20 Session and account lines',['C-S01:sessionEnded','C-S01:updateRequired','C-S01:deletedElsewhere','C-S01:regrouped','C-S03:days','C-S03:appLockOffer','C-S03:waiting'],'Me regroup shows after tree test T1.'],
+  ['Home slips (area A places)',['HOME:dayToday','HOME:daysAsk','HOME:quietDay','HOME:slip'],'Day slip: Not today. Ask: two equal buttons. Quiet day replaces the prompt.'],
   ['J-C15 Delete this book',['C-S15:local','C-S22:exportFirst','C-S22:confirm','C-S17:book'],'Never-signed-in phone only.']
 ];
 

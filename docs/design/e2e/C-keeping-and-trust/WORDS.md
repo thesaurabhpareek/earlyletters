@@ -619,3 +619,57 @@ Read against DESIGN.md of 20 Nov (609 lines). Ids and states match DESIGN's; whe
 | C-S20 pictures | Pictures stay on each phone until that phone is erased. | `what.recordingsAndPictures` | Also true for recordings while backup is off; says how |
 
 Open for the design lead: C-S04 shows the privacy line on `.default` and `.ready` (both keyed here); C-S07 is keyed for the printable book and for the twins slip only if the founder keeps the chooser (G3).
+
+## Reconciliation 2: final pack (20 Nov), proposed words for the new and changed states
+
+Owner: content. Written by the design lead of area C for `content` to confirm; every line is PROPOSED, intent only, and waits for the founder's word approval. Rules applied: "reminder" never "note" (RV-3), no exclamation marks, "Not today" on a day slip and "Not now" on the Days ask, "photo" one word, no "your religion", "your tradition" or "a day we mark", no count, no gap language. Keys follow the card key families (`days.*`, `culture.*`, `notifications.dayNames.*`).
+
+| Key | Text (intent) | Where | VO / VC | Card row |
+|---|---|---|---|---|
+| `days.page.title` | Days | C-S24 title and Me row | heading / "Days" | NS-46-R3 |
+| `days.section.added` | Days you added | C-S24 heading | heading | NS-46-R38 |
+| `days.section.chose` | Days you chose | C-S24 heading | heading | NS-46-R38 |
+| `days.browse` | Browse days | C-S24 row, C-S25 title | "Browse days" | NS-46-R3 |
+| `days.add` | Add a day | C-S24 row | "Add a day" | NS-18; NS-47 content F11 |
+| `days.door.line` | Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me. | DoorNote, C-S24, C-S25 | read first | NS-47-R29 (not final until backup exclusion is confirmed, R6) |
+| `days.door.shared` | Anyone who can open this phone can see this list. App lock keeps it private. | C-S24 under the DoorNote (second sentence only while App lock exists) | | NS-47-R29 |
+| `days.reminder.consent` | A reminder arrives on that day. Unticking a day or Clear all stops it. | C-S25 while nothing is ticked | | NS-46-R35 |
+| `days.remindersOff.line` | Chosen days still send a reminder, even with Reminders off. Stop it by unticking a day. | C-S24 and D-S06 | | NS-46-R35 |
+| `days.nextYear.line` | {day}: no date for next year yet. | C-S24 row | part of the row label | NS-46-R15 |
+| `days.picker.around` | around {date} | C-S25, C-S26 | "around {date}" | NS-46-R14 |
+| `days.picker.whichDate` | Dates differ by country. Which date should we use? | C-S25.whichDate, C-S26.authorities | | NS-46-R14 |
+| `days.picker.ownDate` | I will pick my own date | the last option | | NS-46-R14 |
+| `days.move` / `days.move.thisYear` / `days.move.always` | Move this date / Just this year / Every year | C-S26 | | NS-46-R14 |
+| `days.remove` | Remove | C-S26, swipe action, VoiceOver action | "Remove" | NS-47-R21 |
+| `days.clearAll` / `days.clearAll.title` / `days.clearAll.keep` | Clear all / Clear all days you chose? / Keep my days | C-S24, F6 sheet | | NS-47-R21 |
+| `days.storeUnavailable.line` / `.retry` | Days you chose could not be shown just now. / Try again | C-S24.store-unavailable | polite, once | NS-46-R40 |
+| `days.sessionCleared.line` | Your days were cleared when you were signed out. You can choose days again. | C-S24.sessionCleared | | NS-47-R15 |
+| `days.notInSaveCopy` | These days are not part of Save a copy. | C-S24 footnote | | NS-47-R10 (`culture.notInSaveCopy`) |
+| `notifications.dayNames.switch` | Show the day's name in notifications | C-S24 | | NS-47-R14 |
+| `notifications.dayNames.help` | Anyone who sees your lock screen can read it. | C-S24 under the switch | | NS-47-R14 |
+| `notifications.dayNames.appLock` | App lock is on, so notifications stay neutral. | C-S24 reason line while disabled | | NS-47-R12 |
+| `culture.ask.question` | Would you like a reminder on the days that matter to your family? | Home ask slip | | NS-47-R32 |
+| `culture.ask.choose` / `culture.ask.notNow` | Choose days / Not now | ask slip buttons | | NS-47-R32 |
+| `culture.picker.tradition.header` / `.help` | Traditions / Pick any that fit. You can pick more than one. | C-S25 | "Traditions, optional" | NS-47-R30 |
+| `culture.picker.country.header` | A country that matters to your family | C-S25 (absent until a second country) | "..., optional" | NS-47-R35 |
+| `common.optional` | Optional | beside an optional label | "{label}, optional" | NS-47-R30 |
+| `common.notNow` | Not now | first row of an optional group | "Not now" | NS-47-R30 |
+| `culture.delete.line` | Days you chose stay on your phones and are cleared with your account. | C-S20.what, only when a day is ticked | | NS-47-R17 (contradiction X1) |
+| `culture.signOut.line` | Days you chose on this phone are cleared. | C-S03 `.days` | | FR-CUL-15 |
+| `signOut.appLockOffer` | Turn on App lock | C-S03 | "Turn on App lock" | FR-SEC-07 |
+| `daySlip.close` | Not today | day slip button | hint "Hides this until tomorrow" | NS-50-R7 |
+| `askSlip.notNow.hint` | Closes this question. You can still choose days in Me. | ask slip | | NS-50-R7 |
+| `storage.stuck.line` | A recording is still being removed. | C-S18.stuck (one line, never a list or count) | | NS-09-R6, E28 |
+| `storage.stuck.again` | The app will finish removing it. | C-S18.stuckAgain | | GAP-LOG C W12 |
+| `privacy.withdraw.title` | Stop syncing letters? | C-S23.withdraw | | FR-PRV-01 |
+| `privacy.withdraw.stops` / `.stays` | New letters stop syncing, and the other parent stops receiving new letters. / Your book stays on this phone, and letters already on our servers stay until you delete them or your account. | C-S23.withdraw | | FR-PRV-01 (counsel reads) |
+| `privacy.withdraw.confirm` / `.cancel` | Stop syncing / Cancel | the two equal buttons | | FR-PRV-01 |
+| `me.sessionEnded.line` | You were signed out. Sign in again to carry on. | C-S01.sessionEnded (built `session_expired`) | polite | NS-45-R3 |
+| `me.deletedElsewhere.line` | This account was deleted on another phone. You can start a new book here. | C-S01.deletedElsewhere | | NS-45 section 5 |
+| `export.ready.fileLine` | Anyone who has this file can read and hear everything in it. | C-S04.ready, C-S05.ready | | FR-SEC-08 |
+| `export.parts.ready` | Your copy is ready in {n} parts. Each part opens on its own. | C-S04.ready (parts) | | FR-LCY-21 (the count is of parts, once) |
+| `deleteAccount.howLink` | How deleting works | C-S20 link row | link | FR-MSG-34 |
+| `me.group.daysAndReminders` | Days and reminders | `.regrouped` working title | heading | RV-3 |
+| `me.group.onThisPhone` | On this phone | `.regrouped` working title | heading | R-IA-4 |
+
+Round 2 (pending NS-51 and NS-52, PROPOSED, not counted): `photos.access.title` "Photos access"; `photos.access.door` (what it reads: dates and how many were taken together; stays on the phone; no faces; places off); `photos.access.limited` "Selected photos"; `photos.access.full` "All photos"; `photos.albums.title` "Albums that count"; `photos.pause` "Pause"; `photos.indexing.line` "Looking at the photos on this phone."; `photos.turnOff` "Turn off and remove the list"; `photos.removed.line` "The list is removed from this phone."; `storage.media.title` "Pictures and videos"; `export.inside.videos` "Every video"; `recentlyDeleted.eraseMedia` "The letter, its recording, pictures and videos are erased for good." No line counts pictures or unwritten days, names a place by default, or says what a picture shows.

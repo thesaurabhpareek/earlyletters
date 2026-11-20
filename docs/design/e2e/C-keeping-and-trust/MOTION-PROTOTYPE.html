@@ -899,6 +899,44 @@ function buildList() {
     b.onclick = () => play(it, b); it.btn = b; nav.appendChild(b);
   });
 }
+/* ---- v2 additions: M-C73 to M-C97 (data-driven; each shows the trigger line, then the move) ---- */
+const V2 = [
+  ["M-C73","C-S01 to C-S24, C-S26","Tap Days, or a day row","native push; content in place on the first frame","m.push, T-PUSH","system reduced","none"],
+  ["M-C74","C-S24 to C-S25","Tap Browse days","the sheet rises; C-S24 does not move","m.sheet, T-SHEET","system reduced","none"],
+  ["M-C75","C-S25.ticked","Tick or untick","check shape and weight change on the row; no toast, no count","m.select, T-INLINE","indicator jumps; colours m.swap 150","H-select on a change only"],
+  ["M-C76","C-S25.whichDate","Tick a moving day","one question row opens under the day; rows below move","m.move + m.enter 280, T-INLINE","final layout next frame; row fades 200","none"],
+  ["M-C77","C-S24 row removed","Remove (C-S26), swipe, VoiceOver action","the row fades, rows below move up","m.list.remove","fade 160; gap closes next frame","none"],
+  ["M-C78","C-S24.clearConfirm to .empty","Clear all chosen","F6 sheet leaves; every \"Days you chose\" row, the switch and Clear all leave together, no stagger","m.sheet, then m.list.remove","fade 160 / jump","H-warning after the choice only"],
+  ["M-C79","C-S24.dayNames-*","Toggle; App lock on or off","indicator moves; the reason line is swapped in place","m.select; m.swap 150","jump; swap","H-select on a toggle"],
+  ["M-C80","C-S24.store-unavailable, .sessionCleared, .remindersOff","the state arises","one line enters in its section","m.enter, T-SYSLINE","fade 200","none"],
+  ["M-C81","A-S01 daySlip","cold launch; later; \"Not today\"; day change","cold: m.enter.group; later: in place (T-RESUME); dismissal: m.list.remove; day change: no animation","m.enter.group, m.list.remove, T-SLIP","one m.fade at most 200, or a jump","none"],
+  ["M-C82","A-S01 askSlip","cold launch; either answer; retire","as M-C81; retiring to Me animates nothing","as M-C81","as M-C81","none"],
+  ["M-C83","C-S23.withdraw","Tap the row; Stop syncing","sheet rises; on confirm it leaves and the row value is swapped","m.sheet, m.swap","system reduced; swap","none"],
+  ["M-C84","C-S18.retrying, .stuckAgain","Tap Remove now","label swaps to a static busy label; on failure swaps back; VoiceOver re-reads the line","m.swap 150; m.instant","swap","none"],
+  ["M-C85","C-S03.waiting","Sign out with sends pending","sheet text swaps to the waiting line","m.swap 150","swap","none"],
+  ["M-C86","C-S19.ownerCheck","After the Erase confirm","system owner check; cancel returns to the confirm","system; m.instant","system","H-warning only after check passes"],
+  ["M-C87","C-S01.sessionEnded, .updateRequired, .deletedElsewhere","Me opens after the event","one line at the top enters; content below moves","m.enter, T-SYSLINE","fade 200; layout instant","none"],
+  ["M-C88","C-S01.regrouped","Me opens","nothing; the arrangement is static","m.instant","same","none"],
+  ["M-C89","C-S04.parts","ready in parts","the .ready sentence says it once","m.swap","same","none"],
+  ["M-C90","C-S25.traditionPicked","Pick a tradition","that tradition's days come first: a cross-fade of the list block","m.fade 200","jump","H-select"],
+  ["M-C91","C-S23.consentOff","Withdrawn","row value swaps","m.swap","same","none"],
+  ["M-C92","C-S27","Open Photos access","native push","m.push, T-PUSH","system","none"],
+  ["M-C93","C-S27.consent","Choose to allow","DoorNote static; the system alert is the system's","none of ours","none","none"],
+  ["M-C94","C-S27.indexing","The list is being made","one static line, then swapped for the state","m.swap","swap","none"],
+  ["M-C95","C-S27.paused","Toggle Pause","indicator moves","m.select","jump","H-select"],
+  ["M-C96","C-S27.turnOffConfirm to .removed","Turn off and remove","F6 sheet; the line swaps","m.sheet, m.swap","system; swap","H-warning after the choice"],
+  ["M-C97","C-S18.media","Remove the moments list","the row leaves","m.list.remove","fade 160","none"],
+];
+V2.forEach(([id, scr, trig, moves, prim, rm, hap]) => {
+  item(id, scr.split(".")[0], scr, N(trig, moves, prim, rm, hap), async (c) => {
+    setScreen('<div class="nav"><div class="ntitle">' + scr + '</div></div><div id="v2host" style="padding:16px 20px"><div class="sub" id="v2a">Before: ' + trig + '</div></div>');
+    const host = $("#v2host", screenEl); await c.w(600);
+    const n = mk('<div class="card" style="padding:14px 16px;margin-top:12px" role="status">After: ' + moves + '</div>'); n.style.opacity = 0; host.appendChild(n);
+    if (RM) { await c.k(fadeIn(n)); } else { await c.k(enter(n, 0)); }
+    n.style.opacity = 1; announce(moves); log(id + " (" + prim + "); Reduce Motion: " + rm);
+  });
+});
+
 function showNotes(it) {
   const n = it.notes; const d = $("#notes"); d.innerHTML = "";
   const h = document.createElement("div"); h.innerHTML = "<b></b>"; h.firstChild.textContent = it.id + " (" + it.scr + "): " + it.title; d.appendChild(h);

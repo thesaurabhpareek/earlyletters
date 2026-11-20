@@ -1,6 +1,6 @@
 # Area C. Keeping and trust: motion
 
-Status: v1.1, 20 Nov 2026, reconciled. Motion lead, area C. Docs only; nothing here was run on a phone. Timings are tokens; feel is (opinion) until a device walk (BL-948).
+Status: v1.2, 20 Nov 2026, reconciled to the final pack (section 12 adds M-C73 to M-C97 for the Days screens, Privacy, the sign-out and session states, Storage's one line, and round 2 photo and media states). Motion lead, area C. Docs only; nothing here was run on a phone. Timings are tokens; feel is (opinion) until a device walk (BL-948).
 
 Keyed to:
 - **Screens and states**: `DESIGN.md` in this folder (C-S01 to C-S22 and the state names of its section 11 reconciliation). Every state below is DESIGN's name; where this file once used another name, DESIGN's table maps it.
@@ -287,3 +287,38 @@ Every row has its alternative. In one line: nothing we draw travels; entrances a
 - Built behaviour this file departs from, each listed with its gap: the breathing moon and Erasing drawing (E7); `ActivityIndicator`s (E2); `success` and `press` call sites (E8); `warning` at the ask (E6); `Alert.alert` for Erase everything (now F6 `explained`, DESIGN).
 - `docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md` (read for motion only): kept where the card agrees: "Nothing here adds motion", no count, no percentage, a spinner never appears (its lines 61, 84). Superseded where NS-10 differs: S17 lands on Tonight with no "still arriving" line (its line 120); NS-10 step 3 and R2 land on the Book with one line that more are on their way (M-C26 to M-C28). Its moon "breathes, still under Reduce Motion" (line 67) is superseded by v2's retirement of `Breathe`.
 - This file's own v1 of earlier today: state names now follow DESIGN section 11; M-C ids are unchanged from v1, and new items are M-C68 to M-C72.
+
+## 12. Final-pack additions (v1.2): Days, Privacy, sessions, Storage line, round 2
+
+Keyed to `DESIGN.md` v2 (sections 3, 14 and 17). Same columns as section 4; ids continue from M-C72. Primitives are v2 `m.*`; transitions are v2 `T-*` except T-INLINE and T-SLIP, which are PROPOSED here (an in-row state change; the Home slip's arrival, dismissal and day change). Calm and quick: nothing over 300 ms except system motion. Never animated: a count, a ring, a calendar filling, a tick that celebrates, the DoorNote, hold-to-confirm.
+
+| Id | Screen.state | Trigger | What moves | Primitive and `T-*` | Reduce Motion | Haptic | Notes |
+|---|---|---|---|---|---|---|---|
+| M-C73 | C-S01 to C-S24, C-S26 | Tap Days, or a day row | native push; content in place on the first frame | `m.push`, T-PUSH | system reduced | none | the same as M-C02 |
+| M-C74 | C-S24 to C-S25 | Tap Browse days | the sheet rises; C-S24 does not move | `m.sheet`, T-SHEET | system reduced | none | a sheet over a pushed page; no glass in glass |
+| M-C75 | C-S25.ticked | Tick or untick | check shape and weight change on the row; no toast, no count | `m.select`, T-INLINE | indicator jumps; colours `m.swap` 150 | H-select on a change only | VoiceOver hears a value change ("ticked") |
+| M-C76 | C-S25.whichDate | Tick a moving day | one question row opens under the day; rows below move | `m.move` + `m.enter` 280, T-INLINE | final layout next frame; row fades 200 | none | never a second sheet; the date row is inline |
+| M-C77 | C-S24 row removed | Remove (C-S26), swipe, VoiceOver action | the row fades, rows below move up | `m.list.remove` | fade 160; gap closes next frame | none | no Undo; Browse re-ticks |
+| M-C78 | C-S24.clearConfirm to `.empty` | Clear all chosen | F6 sheet leaves; every "Days you chose" row, the switch and Clear all leave together, no stagger | `m.sheet`, then `m.list.remove` | fade 160 / jump | H-warning after the choice only | no count appears at any point |
+| M-C79 | C-S24.dayNames-* | Toggle; App lock on or off | indicator moves; the reason line is swapped in place | `m.select`; `m.swap` 150 | jump; swap | H-select on a toggle | released state changes the value silently (no message) |
+| M-C80 | C-S24.store-unavailable, .sessionCleared, .remindersOff | the state arises | one line enters in its section | `m.enter`, T-SYSLINE | fade 200 | none | announced politely once |
+| M-C81 | A-S01 `daySlip` | cold launch; later; "Not today"; day change | cold: `m.enter.group`; later: in place (T-RESUME); dismissal: `m.list.remove`; day change: no animation | `m.enter.group`, `m.list.remove`, T-SLIP | one `m.fade` at most 200, or a jump | none | NS-50-R7, R12 |
+| M-C82 | A-S01 `askSlip` | cold launch; either answer; retire | as M-C81; retiring to Me animates nothing | as M-C81 | as M-C81 | none | two equal buttons never animate emphasis |
+| M-C83 | C-S23.withdraw | Tap the row; Stop syncing | sheet rises; on confirm it leaves and the row value is swapped | `m.sheet`, `m.swap` | system reduced; swap | none | consent act, not a warning |
+| M-C84 | C-S18.retrying, .stuckAgain | Tap Remove now | label swaps to a static busy label; on failure swaps back; VoiceOver re-reads the line | `m.swap` 150; `m.instant` | swap | none | supersedes M-C49's "nothing moves" for the busy label |
+| M-C85 | C-S03.waiting | Sign out with sends pending | sheet text swaps to the waiting line | `m.swap` 150 | swap | none | buttons keep their place |
+| M-C86 | C-S19.ownerCheck | After the Erase confirm | system owner check; cancel returns to the confirm | system; `m.instant` | system | H-warning only after check passes | no message on cancel |
+| M-C87 | C-S01.sessionEnded, .updateRequired, .deletedElsewhere | Me opens after the event | one line at the top enters; content below moves | `m.enter`, T-SYSLINE | fade 200; layout instant | none | one SystemLine at a time |
+| M-C88 | C-S01.regrouped | Me opens | nothing; the arrangement is static | `m.instant` | same | none | rows never reorder on screen |
+| M-C89 | C-S04.parts | ready in parts | the `.ready` sentence says it once | `m.swap` | same | none | no per-part animation |
+| M-C90 | C-S25.traditionPicked | Pick a tradition | that tradition's days come first: a cross-fade of the list block | `m.fade` 200 | jump | H-select | rows do not travel |
+| M-C91 | C-S23.consentOff | Withdrawn | row value swaps | `m.swap` | same | none | Account's Sync row follows next time shown |
+| M-C92 | C-S27 | Open Photos access | native push | `m.push`, T-PUSH | system | none | PROPOSED, pending NS-51 |
+| M-C93 | C-S27.consent | Choose to allow | DoorNote static; the system alert is the system's | none of ours | none | none | never an emphasis motion |
+| M-C94 | C-S27.indexing | The list is being made | one static line, then swapped for the state | `m.swap` | swap | none | no bar, no count, no loop |
+| M-C95 | C-S27.paused | Toggle Pause | indicator moves | `m.select` | jump | H-select | |
+| M-C96 | C-S27.turnOffConfirm to `.removed` | Turn off and remove | F6 sheet; the line swaps | `m.sheet`, `m.swap` | system; swap | H-warning after the choice | |
+| M-C97 | C-S18.media | Remove the moments list | the row leaves | `m.list.remove` | fade 160 | none | no count of media items |
+
+Reduce Motion summary for the additions: every move is a fade of at most 200 ms, a swap, or a jump; nothing loops; the Browse sheet and pushes are the system's reduced transitions.
+Engineering gaps: the slip host and its order as data (BL-963, COMPONENTS C9 variants `daySlip` and `askSlip`); T-INLINE and T-SLIP into v2 MOTION.md section 6 (design systems).
