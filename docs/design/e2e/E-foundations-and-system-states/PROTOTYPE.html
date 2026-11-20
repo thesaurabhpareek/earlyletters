@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area E prototype: foundations and system states</title>
+<!--
+  Never glass inside glass: Close inside a sheet is a plain surface button.
+  Area E, design lead, 20 Nov 2026. Self-contained: no network, no framework, no external font.
+  Token values copied from packages/design-tokens/src/tokens.ts (light, dark, highContrast, space, radius, type, motion).
+  Material policy from docs/design/system/BRIEF.md section 3: glass (regular) only on the tab bar, sheets,
+  the Keep gate sheet, the capture cluster, the toast, navigation buttons; content layer (letters, lists,
+  state screens, error screens) is never glass. Reduce Transparency: solid token surface plus hairline.
+  Fictional family only (Asha). Pictures are drawn shapes. Words are existing keys or PROPOSED.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--raised:#FFFFFF;--text:#2B2722;--muted:#6B645B;--accent:#8A5A3B;
+  --accentSoft:#F1E6DC;--onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--recording:#B5473A;
+  --success:#3F7A55;--caution:#94661A;--controlBorder:#8A8175;--scrim:rgba(43,39,34,.32);
+  --glass:rgba(255,255,255,.55);--glassEdge:rgba(255,255,255,.7);--glassSolid:#FFFFFF;
+  --s:1;--sT2:1;--sT1:1;--sD:1;
+}
+.dark{
+  --bg:#161412;--surface:#1B1917;--raised:#201D1A;--text:#F2ECE4;--muted:#B3AA9E;--accent:#D9A47E;
+  --accentSoft:#3A2E25;--onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--recording:#F08C7C;
+  --success:#8CC9A0;--caution:#E3B866;--controlBorder:#857C70;--scrim:rgba(0,0,0,.55);
+  --glass:rgba(40,36,32,.55);--glassEdge:rgba(255,255,255,.12);--glassSolid:#201D1A;
+}
+.hc{--muted:#524B43;--accent:#6E4529;--line:#6B645B;--controlBorder:#2B2722}
+.dark.hc{--muted:#D6CEC3;--accent:#E8BC9A;--line:#B3AA9E;--controlBorder:#F2ECE4}
+.ax5{--s:3.1;--sT2:2.0;--sT1:1.8;--sD:1.6}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,system-ui,"Segoe UI",sans-serif;background:#d9d4cc;color:#222;display:flex;gap:16px;padding:16px;min-height:100vh}
+#side{width:330px;flex:none;font-size:13px;background:#f4f1ec;border-radius:12px;padding:12px;overflow:auto;max-height:calc(100vh - 32px)}
+#side h1{font-size:15px;margin:0 0 8px}
+#side h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#6b645b;margin:14px 0 6px}
+#side button.j,#side button.s{display:block;width:100%;text-align:left;background:none;border:0;padding:5px 6px;border-radius:6px;cursor:pointer;font:inherit;color:#2b2722}
+#side button.j:hover,#side button.s:hover{background:#e9e3da}
+#side button.on{background:#2b2722;color:#fff}
+#main{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+#controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;background:#f4f1ec;padding:8px 10px;border-radius:10px;max-width:760px}
+#controls label{display:flex;gap:4px;align-items:center}
+#controls select,#controls button{font:inherit;padding:4px 8px}
+#info{font-size:12px;color:#3d3832;max-width:760px;background:#f4f1ec;padding:8px 10px;border-radius:10px;white-space:pre-wrap}
+#phone{width:375px;height:812px;border-radius:48px;border:10px solid #111;position:relative;overflow:hidden;background:var(--bg);color:var(--text);flex:none}
+#phone.se{height:667px;border-radius:24px}
+.status{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:14px;font-weight:600}
+.se .status{height:20px;font-size:11px;padding-bottom:2px}
+.screen{position:absolute;top:47px;bottom:0;left:0;right:0;display:flex;flex-direction:column}
+.se .screen{top:20px}
+.scroll{flex:1;overflow:auto;padding:0 20px}
+.footer{padding:12px 20px 34px;display:flex;flex-direction:column;gap:8px}
+.se .footer{padding-bottom:12px}
+.lamp{position:absolute;left:-40px;right:-40px;top:-120px;height:420px;background:radial-gradient(ellipse at 50% 30%,rgba(255,226,168,.75),rgba(243,201,139,.25) 45%,transparent 70%);pointer-events:none;z-index:0}
+.dark .lamp{background:radial-gradient(ellipse at 50% 30%,rgba(243,201,139,.20),rgba(240,140,124,.10) 45%,transparent 70%)}
+.lamp.center{top:120px}
+.rm .breathe{animation:none!important}
+.breathe{animation:breathe 8s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+.fade{animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.rel{position:relative;z-index:1}
+.body{font-size:calc(18px*var(--s));line-height:1.33}
+.sub{font-size:calc(16px*var(--s));line-height:1.31}
+.foot{font-size:calc(14px*var(--s));line-height:1.36;color:var(--muted)}
+.cap{font-size:calc(13px*var(--s));font-weight:500;color:var(--muted)}
+.muted{color:var(--muted)}
+.serif{font-family:Georgia,"Times New Roman",serif}
+.t2{font-family:Georgia,serif;font-weight:500;font-size:calc(22px*var(--sT2));line-height:1.27;margin:0}
+.t1{font-family:Georgia,serif;font-weight:500;font-size:calc(28px*var(--sT1));line-height:1.21;margin:0}
+.disp{font-family:Georgia,serif;font-weight:500;font-size:calc(34px*var(--sD));line-height:1.2;margin:0}
+.letter{font-family:Georgia,serif;font-size:calc(20px*var(--s));line-height:1.6}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;border-radius:999px;border:0;font:inherit;font-weight:500;font-size:calc(18px*var(--s));cursor:pointer;padding:8px 18px;text-align:center}
+.primary{background:var(--accent);color:var(--onAccent)}
+.quiet{background:transparent;color:var(--accent);min-height:44px}
+.outline{background:transparent;color:var(--text);border:1px solid var(--controlBorder)}
+.apple{background:#000;color:#fff}
+.dark .apple{background:#fff;color:#000}
+.link{color:var(--accent);text-decoration:underline;cursor:pointer;background:none;border:0;font:inherit;min-height:44px;padding:0}
+.state{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding-top:80px}
+.ax5 .state{padding-top:16px}
+.ax5 .art{display:none}
+.art{width:120px;height:90px}
+.glyph{width:72px;height:72px;border-radius:50%;background:var(--accentSoft);display:flex;align-items:center;justify-content:center}
+.ax5 .glyph{display:none}
+.field{width:100%;min-height:52px;border:1px solid var(--controlBorder);border-radius:8px;background:var(--raised);padding:10px 12px;font:inherit;font-size:calc(18px*var(--s));color:var(--text)}
+.field.err{border-color:var(--caution);border-width:1.5px}
+.errline{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:calc(16px*var(--s))}
+.icon{flex:none;width:20px;height:20px}
+.sysline{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:12px 14px;text-align:left;flex-wrap:wrap}
+.hc .sysline{border:1px solid var(--line)}
+.sysline .t{flex:1;min-width:160px}
+.ax5 .sysline .act{flex-basis:100%}
+.list{background:var(--raised);border-radius:14px;overflow:hidden;margin:8px 0}
+.row{display:flex;justify-content:space-between;gap:10px;padding:12px 16px;min-height:44px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.row:last-child{border-bottom:0}
+.ax5 .row{flex-direction:column;align-items:flex-start}
+.sechead{font-size:calc(13px*var(--s));color:var(--muted);margin:18px 4px 4px;font-weight:500}
+/* Glass layer */
+.glass{background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid var(--glassEdge);box-shadow:0 6px 16px rgba(43,39,34,.10)}
+.rt .glass{background:var(--glassSolid);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+.hc .glass{border-color:var(--controlBorder)}
+.tabbar{position:absolute;left:16px;right:16px;bottom:24px;height:62px;border-radius:31px;display:flex;justify-content:space-around;align-items:center;z-index:5}
+.se .tabbar{bottom:8px}
+.tab{font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);min-width:64px;min-height:44px;justify-content:center;background:none;border:0;cursor:pointer}
+.tab.on{color:var(--accent);font-weight:600}
+.ax5 .tab span{display:none}
+.scrimlayer{position:absolute;inset:0;background:var(--scrim);z-index:6}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:56px;border-radius:34px 34px 0 0;z-index:7;display:flex;flex-direction:column}
+.sheet.half{top:auto;left:8px;right:8px;bottom:8px;border-radius:34px}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--controlBorder);margin:8px auto 4px;opacity:.6}
+.sheet.full{background:var(--bg)}
+.sheet.full.glass{background:color-mix(in srgb,var(--bg) 92%,transparent)}
+.close{position:absolute;top:10px;right:12px;min-width:44px;min-height:44px;border-radius:22px;border:0;font:inherit;cursor:pointer;color:var(--text);padding:0 12px;z-index:8}
+.toast{position:absolute;left:16px;right:16px;bottom:100px;border-radius:22px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:9;flex-wrap:wrap}
+.card{background:var(--raised);border-radius:14px;padding:14px 16px;text-align:left;border:1px solid var(--line)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;background:var(--accentSoft);font-size:calc(13px*var(--s));font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+.pills{display:flex;gap:10px}
+.ax5 .pills{flex-direction:column}
+.pill{flex:1;min-height:56px;border-radius:999px;border:1px solid var(--controlBorder);background:transparent;color:var(--text);font:inherit;font-size:calc(18px*var(--s));cursor:pointer}
+.pill.sel{background:var(--accentSoft);border:1.5px solid var(--accent)}
+.check{display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:calc(16px*var(--s));min-height:44px}
+.box{width:24px;height:24px;border:1.5px solid var(--controlBorder);border-radius:6px;flex:none;margin-top:2px}
+.alert{position:absolute;left:52px;right:52px;top:40%;border-radius:14px;z-index:10;text-align:center;overflow:hidden}
+.alert .a-body{padding:16px;font-size:14px}
+.alert .a-btns{display:flex;border-top:1px solid var(--line)}
+.alert .a-btns button{flex:1;min-height:44px;border:0;background:none;color:#0a64d6;font:inherit;font-size:16px;cursor:pointer}
+.dark .alert .a-btns button{color:#4ea1ff}
+.ax5 .alert{left:12px;right:12px;top:15%}
+.ax5 .alert .a-btns{flex-direction:column}
+.note{font-size:11px;color:#3d3832}
+#phone .note{color:var(--muted)}
+.close{background:var(--surface)}
+.prompt{font-family:Georgia,serif;font-size:calc(24px*var(--s));line-height:1.33}
+.cluster{border-radius:32px;padding:10px;display:flex;gap:10px}
+.ax5 .cluster{flex-direction:column}
+.cluster .btn{min-height:64px}
+.storeimg{height:180px;border-radius:14px;background:linear-gradient(160deg,#F3C98B,#8A5A3B);margin:8px 0}
+.icon-tile{width:96px;height:96px;border-radius:22px;background:linear-gradient(#9A613C,#7F4F30);display:flex;align-items:center;justify-content:center;color:#FBF8F3;font-family:Georgia,serif;font-size:44px;flex:none}
+.dark .icon-tile{background:linear-gradient(#2C2926,#1F1B18);color:#D9A47E}
+.alias{border:1px dashed var(--controlBorder);border-radius:14px;padding:14px;margin-top:40px}
+.vo{outline:2px solid var(--focus);outline-offset:2px}
+.vonum{position:absolute;background:var(--focus);color:#fff;border-radius:9px;font-size:10px;min-width:18px;height:18px;text-align:center;line-height:18px;z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+<nav id="side" aria-label="Journeys and screens">
+  <h1>Area E: foundations and system states</h1>
+  <div class="note">Pick a journey, then use Next and Back, or tap buttons inside the phone. Every screen has a state switcher. Ids match DESIGN.md.</div>
+  <h2>Journeys</h2>
+  <div id="jlist"></div>
+  <h2>Screens</h2>
+  <div id="slist"></div>
+</nav>
+<div id="main">
+  <div id="controls" role="group" aria-label="Prototype controls">
+    <button id="back" type="button">Back</button>
+    <button id="next" type="button">Next</button>
+    <label>State <select id="stateSel" aria-label="State"></select></label>
+    <label><input type="checkbox" id="tDark"> Dark</label>
+    <label><input type="checkbox" id="tAx5"> AX5 text</label>
+    <label><input type="checkbox" id="tSe"> SE 3 (375 x 667)</label>
+    <label><input type="checkbox" id="tRt"> Reduce Transparency</label>
+    <label><input type="checkbox" id="tHc"> Increase Contrast</label>
+    <label><input type="checkbox" id="tRm"> Reduce Motion</label>
+    <label><input type="checkbox" id="tVo"> VoiceOver order</label>
+  </div>
+  <div id="phone" role="region" aria-label="iPhone frame"><div class="status"><span>9:41</span><span>5G 80%</span></div><div class="screen" id="screen"></div></div>
+  <div id="info" aria-live="polite"></div>
+</div>
+<script>
+"use strict";
+/* ---------- tiny helpers ---------- */
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const go=(target,label,cls)=>`<button type="button" class="btn ${cls||"primary"}" data-go="${target}" data-vo="1">${esc(label)}</button>`;
+const lnk=(target,label)=>`<button type="button" class="link" data-go="${target}" data-vo="1">${esc(label)}</button>`;
+const ICON={
+ warn:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 5.5v5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="14" r="1" fill="currentColor"/></svg>',
+ info:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="6" r="1" fill="currentColor"/></svg>',
+ cloud:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 15h9a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 5 15z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 3l14 14" stroke="currentColor" stroke-width="1.5"/></svg>',
+ pause:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 6.5v7M12 6.5v7" stroke="currentColor" stroke-width="1.6"/></svg>',
+ up:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 14V6M6.5 9.5 10 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+ disk:'<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="10" r="1" fill="currentColor"/></svg>',
+ mic:'<svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect x="15" y="6" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 20a10 10 0 0 0 20 0M20 30v5M6 6l28 28" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'
+};
+const ART={
+ page:'<svg class="art" viewBox="0 0 120 90" aria-hidden="true"><rect x="30" y="8" width="60" height="76" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M40 28h40M40 40h40M40 52h28" stroke="currentColor" stroke-width="1.5"/></svg>',
+ envelope:'<svg class="art" viewBox="0 0 120 90" aria-hidden="true"><rect x="18" y="20" width="84" height="54" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M18 22l42 30 42-30" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+ moon:'<svg class="art breathe" viewBox="0 0 120 90" aria-hidden="true"><path d="M70 14a32 32 0 1 0 22 52A26 26 0 0 1 70 14z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+ window:'<svg class="art" viewBox="0 0 120 90" aria-hidden="true"><rect x="28" y="10" width="64" height="70" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M60 10v70M28 45h64" stroke="currentColor" stroke-width="1.5"/></svg>',
+ mark:'<svg width="64" height="40" viewBox="0 0 64 40" aria-label="{app} mark" role="img"><path d="M8 30c0-12 6-20 14-22M34 30c0-12 6-20 14-22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
+};
+function stateScreen(o){
+  const pic=o.glyph?`<div class="glyph muted">${o.glyph}</div>`:(o.art||"");
+  return `<div class="scroll"><div class="state fade rel">${pic}<h2 class="t2" data-vo="1" role="heading">${esc(o.title)}</h2>${o.body?`<p class="body muted" data-vo="1" style="margin:0">${esc(o.body)}</p>`:""}${o.note?`<p class="sub muted" data-vo="1" style="margin:0">${esc(o.note)}</p>`:""}${o.extra||""}</div></div><div class="footer">${o.actions||""}</div>`;
+}
+function sysline(kind,text,act){
+  const ic={info:ICON.info,offline:ICON.cloud,paused:ICON.pause,action:ICON.up,waiting:ICON.info,disk:ICON.disk}[kind]||ICON.info;
+  return `<div class="sysline muted" role="status" data-vo="1">${ic}<span class="t sub" style="color:var(--text)">${esc(text)}</span>${act?`<span class="act">${act}</span>`:""}</div>`;
+}
+function errline(text){return `<div class="errline" role="alert" data-vo="1" style="color:var(--text)">${ICON.warn}<span>${esc(text)}</span></div>`;}
+function tabbar(on){
+  const t=(id,l,dest)=>`<button type="button" class="tab ${on===id?"on":""}" data-go="${dest}" data-vo="1" aria-label="${l}"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>${l}</span></button>`;
+  return `<div class="tabbar glass" role="tablist">${t("home","Home","A-S01:default")}${t("book","Book","B-BOOK:default")}${t("me","Me","ME:default")}</div>`;
+}
+function homeScreen(opts){
+  opts=opts||{};
+  return `<div class="lamp breathe"></div><div class="scroll rel" style="padding-bottom:110px">
+  <p class="cap" style="margin:12px 0 0" data-vo="1">Thursday evening. Asha, 4 months</p>
+  <h1 class="t1" style="margin:4px 0 14px" data-vo="1">Home</h1>
+  ${opts.slip||""}
+  <p class="prompt" data-vo="1">What did Asha do today that you want to remember?</p>
+  ${opts.plusLine?`<p class="foot" data-vo="1">Adding new letters to the book needs Plus. Recording, reading and export are always free.</p>`:""}
+  <div class="cluster glass">${go(opts.speak||"A-S04:default","Speak")}${go("A-S06:default","Type","outline")}</div>
+  <p style="text-align:center">${lnk("A-S01:default","Not much today")}</p>
+  </div>${tabbar("home")}`;
+}
+function heldCard(){
+  return `<div class="card" data-vo="1" aria-label="Waiting. Today Asha laughed at the rain on the window. From Mama"><span class="chip"><span class="dot"></span>Waiting</span><p class="letter" style="margin:8px 0 4px">Today Asha laughed at the rain on the window, a whole minute of it.</p><p class="serif muted" style="font-style:italic;margin:0">From Mama</p></div>`;
+}
+function areaStub(id,title,what){
+  return `<div class="scroll"><div class="alias"><p class="cap">${esc(id)} is drawn by its own area. Shown here only so the journey reads end to end.</p><h2 class="t2" data-vo="1">${esc(title)}</h2><p class="sub muted">${esc(what)}</p></div></div><div class="footer">${STUBNEXT[id]||""}</div>`;
+}
+const STUBNEXT={};
+/* ---------- screens ---------- */
+/* each: {name, states:{stateName: () => html}} ; state "x" functions may read ctx */
+const S={};
+S["E-S27"]={name:"App Store page and install (system)",states:{
+ default:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2" data-vo="1">{app}</h2><p class="foot" style="margin:4px 0">Baby book you fill by talking</p><button class="btn primary" style="min-height:36px;width:auto;padding:4px 22px" data-go="E-S27:installing" data-vo="1">Get</button></div></div>
+ <div class="storeimg" role="img" aria-label="Screenshot placeholder, a drawn shape"></div>
+ <p class="foot">Apple's App Store page. Every public line here is a claims row (CCO); no "fast", "accessible to everyone" or "smart reminders" (NS-33, NS-34, NS-32 claims). Privacy label as shipped.</p></div>`,
+ installing:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2">{app}</h2><p class="foot">Installing</p><button class="btn outline" style="min-height:36px;width:auto" data-go="E-S27:installed" data-vo="1">Open</button></div></div><p class="foot">Download under 40 MB (NS-34). No account is needed to download.</p></div>`,
+ installed:()=>`<div class="scroll" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding-top:30px">${"<div style='height:64px;border-radius:16px;background:var(--surface)'></div>".repeat(6)}<button type="button" data-go="E-S01:default" data-vo="1" aria-label="{app}" style="border:0;background:none;padding:0;cursor:pointer"><div class="icon-tile" style="width:64px;height:64px;font-size:28px;border-radius:16px">EL</div></button></div><div class="footer"><p class="foot">Home Screen: tap the icon (first launch).</p></div>`
+}};
+S["E-S01"]={name:"Launch and boot",states:{
+ default:()=>`<div class="lamp center"></div><div class="scroll rel" style="display:flex;align-items:center;justify-content:center;height:100%"><div style="color:var(--accent)">${ART.mark}</div></div><div class="footer"><p class="foot" style="text-align:center">First interactive frame p50 1.2 s on SE 3. Nothing waits on the network.</p>${go("E-S03:default","(continue to the age gate)","quiet")}</div>`,
+ migrating:()=>`<div class="lamp center"></div><div class="scroll rel" style="display:flex;align-items:center;justify-content:center;height:100%"><div class="breathe" style="color:var(--accent)">${ART.mark}</div></div><div class="footer"><p class="foot" style="text-align:center">After 350 ms only: the mark breathes (opacity). Still under Reduce Motion.</p></div>`,
+ recovery:()=>stateScreen({art:ART.page,title:"The book could not open",body:"Export saves a copy of the recordings and book files it can read, exactly as they are.",note:"Try again, or restart the phone.",actions:go("E-S01:recoveryTrying","Try again")+go("E-S01:recoveryExporting","Export what's readable","quiet")}),
+ recoveryTrying:()=>stateScreen({art:ART.page,title:"The book could not open",body:"Export saves a copy of the recordings and book files it can read, exactly as they are.",actions:`<button class="btn primary" aria-busy="true" data-vo="1">Trying again</button>`+go("E-S01:recoveryStillClosed","(result: did not open)","quiet")}),
+ recoveryStillClosed:()=>stateScreen({art:ART.page,title:"The book could not open",body:"Export saves a copy of the recordings and book files it can read, exactly as they are.",extra:`<p class="sub" role="status" data-vo="1">It did not open this time either.</p>`,actions:go("E-S01:recoveryTrying","Try again")+go("E-S01:recoveryExporting","Export what's readable","quiet")}),
+ recoveryExporting:()=>stateScreen({art:ART.page,title:"Gathering your files",actions:go("E-S01:recovery","(share sheet opens, then back)","quiet")})
+}};
+S["E-S03"]={name:"Age gate and stop",states:{
+ default:()=>ageGate(null,false,""),
+ reasonNoAnswer:()=>ageGate(null,false,"Choose Yes or No."),
+ reasonNoTick:()=>ageGate("yes",false,"Check the box to continue."),
+ ready:()=>ageGate("yes",true,""),
+ stop:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">After 24 hours: "I answered by mistake" appears here (D-026).</p></div>`,
+ platformMinor:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">E-S03.platformMinor (NS-40-R5): same room and words as the stop; nothing stored, logged or sent. Built later.</p></div>`,
+ stopAfter24h:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer">${go("E-S03:default","I answered by mistake","quiet")}</div>`
+}};
+function ageGate(ans,tick,reason){
+  return `<div class="lamp center"></div><div class="scroll rel"><div style="padding-top:40px;color:var(--accent)">${ART.mark}</div>
+  <h1 class="disp" style="margin:16px 0" data-vo="1">Are you 18 or older?</h1>
+  <div class="pills"><button class="pill ${ans==="yes"?"sel":""}" data-go="E-S03:${tick?"ready":"reasonNoTick"}" data-vo="1" aria-pressed="${ans==="yes"}">Yes</button><button class="pill ${ans==="no"?"sel":""}" data-go="E-S03:stop" data-vo="1">No</button></div>
+  <div class="check" style="margin-top:18px" data-vo="1" role="checkbox" aria-checked="${tick}" data-go="E-S03:ready"><span class="box" style="${tick?"background:var(--accent)":""}"></span><span>I agree to the Terms of Service and have read the Privacy Policy.</span></div>
+  <p style="display:flex;gap:18px">${lnk("E-S03:default","Terms of Service")}${lnk("E-S03:default","Privacy Policy")}</p>
+  ${reason?errline(reason):""}
+  </div><div class="footer">${go(ans==="yes"&&tick?"E-S02:default":(ans?"E-S03:reasonNoTick":"E-S03:reasonNoAnswer"),"Continue")}</div>`;
+}
+S["E-S02"]={name:"Welcome",states:{
+ default:()=>welcome({}),
+ serversOff:()=>welcome({noSignIn:true}),
+ alpha:()=>welcome({alpha:true}),
+ restoring:()=>`<div class="lamp breathe"></div><div class="scroll rel"></div><div class="footer"><p class="foot" style="text-align:center">Session read from the Keychain: up to 10 s with no buttons, then the Welcome.</p></div>`,
+ errorProvider:()=>welcome({err:"That sign-in did not finish. Try again, or try another way."}),
+ lastMethod:()=>welcome({lastMethod:true}),
+ sessionExpired:()=>welcome({err:"You were signed out. Sign in again to carry on."})
+}};
+function welcome(o){
+  const lamp=`<div class="lamp breathe"></div>`;
+  const head=`<div style="padding-top:60px;text-align:center;color:var(--accent)">${ART.mark}<h1 class="serif" style="font-size:calc(26px*var(--sT1));margin:6px 0;color:var(--text);font-weight:500" data-vo="1">{app}</h1></div>
+  <p class="body" style="text-align:center" data-vo="1">Letters to your child, in your own words and voice.</p>
+  <p class="sub muted" style="text-align:center" data-vo="1">Talk for a minute, or type a few lines. Kept for your child to read and hear for years.</p>
+  <p class="foot" style="text-align:center" data-vo="1">${o.alpha?"Plus is not part of this test. Every letter is free while you test.":"Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free."}</p>
+  ${o.err?errline(o.err):""}`;
+  if(o.noSignIn) return `${lamp}<div class="scroll rel">${head}</div><div class="footer">${go("E-S08:name","Begin the book")}</div>`;
+  return `${lamp}<div class="scroll rel">${head}<p class="sub" style="text-align:center;margin-top:16px" data-vo="1">Sign in to begin your book.</p></div>
+  <div class="footer"><p class="foot" style="margin:0" data-vo="1">By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.</p><p style="display:flex;gap:18px;margin:0">${lnk("E-S02:default","Terms of Service")}${lnk("E-S02:default","Privacy Policy")}</p>
+  ${o.lastMethod?`<p class="cap" style="margin:0" data-vo="1">Last time you used email.</p>`:""}
+  ${go("E-S07:loading","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email")}${o.alpha?go("E-S02:alpha","I was invited","quiet"):""}
+  <p class="note">Failure demos: ${lnk("E-S14:outageWithLocal","outage")} ${lnk("E-S14:offlineWithLocal","offline")} ${lnk("E-S02:errorProvider","provider")}</p></div>`;
+}
+S["E-S04"]={name:"Sign in: choose a way",states:{
+ default:()=>signIn(""),busy:()=>signIn("",true),
+ errorProvider:()=>signIn("Nothing has changed. That sign-in did not finish. Try again, or try another way."),
+ errorNotAvailable:()=>signIn("Nothing has changed. This way of signing in isn't available right now. Try another way."),
+ errorNetwork:()=>signIn("Nothing has changed. Sign in once you are back online."),
+ refusedRegion:()=>stateScreen({art:ART.envelope,title:"{app} can't be set up from here.",body:"If you think this is wrong, contact us.",note:"E-S04.refused-region (NS-40-R9): no map or flag, no Try again, nothing stored. Words PROPOSED.",actions:go("E-S02:default","Terms","quiet")+go("E-S02:default","Contact us","quiet")})
+}};
+function signIn(err,busy){
+  return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S02:default" data-vo="1" aria-label="Close">Close</button>
+  <div class="scroll"><h2 class="t2" style="margin-top:40px" data-vo="1">Sign in</h2><p class="cap">E-S04: the sign-in sheet reached after first run (Me, Account; the claim path). First run signs in on E-S02 itself.</p><p class="sub muted" data-vo="1">Your letters follow you to a new phone when you sign in.</p>${err?errline(err):""}</div>
+  <div class="footer">${busy?`<button class="btn apple" aria-busy="true" data-vo="1">Signing in</button>`:go("E-S07:loading","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email","outline")}
+  <p class="note">Failure demos: ${lnk("E-S14:outage","outage")} ${lnk("E-S14:offline","offline")} ${lnk("E-S04:errorProvider","provider")}</p></div></div>`;
+}
+function homeBehind(){return `<div class="scroll" style="opacity:.6"><div class="lamp"></div></div>`;}
+S["E-S05"]={name:"Sign in: email",states:{
+ default:()=>emailScr("",""),sending:()=>emailScr("","",true),
+ errorInvalidEmail:()=>emailScr("That email doesn't look quite right.","field"),
+ errorEmailWait:()=>emailScr("Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",""),
+ offline:()=>emailScr("Nothing has changed. Sign in once you are back online.",""),
+ reasonEmpty:()=>emailScr("Type your email to continue. (PROPOSED)","empty"),
+ errorNotAvailable:()=>emailScr("Nothing has changed. This way of signing in isn't available right now. Try another way.","")
+}};
+function emailScr(err,where,busy){
+  return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S04:default" data-vo="1">Back</button>
+  <div class="scroll"><h2 class="t2" style="margin-top:48px" data-vo="1">Sign in with email</h2><label class="sub" for="em" data-vo="1">Email</label><input id="em" class="field ${where==="field"||where==="empty"?"err":""}" value="${where==="field"?"asha.family@":(where==="empty"?"":"parent@example.com")}" aria-invalid="${where==="field"}">${err?`<div style="margin-top:8px">${errline(err)}</div>`:""}
+  <p class="foot">A link and a code arrive by email. No password to remember.</p></div>
+  <div class="footer">${busy?`<button class="btn primary" aria-busy="true">Sending</button>`:go("E-S06:default","Send")}<p class="note">${lnk("E-S05:errorInvalidEmail","invalid")} ${lnk("E-S05:errorEmailWait","email_wait")} ${lnk("E-S05:offline","offline")}</p></div></div>`;
+}
+S["E-S06"]={name:"Sign in: code and verify",states:{
+ default:()=>codeScr(""),checking:()=>codeScr("",true),
+ reasonShort:()=>codeScr("The code has 6 digits. (PROPOSED)"),
+ help:()=>codeScr("Nothing yet? Look in spam, or send a new email."),
+ errorWrongCode:()=>codeScr("That code didn't match. Check the newest email, or send a new one."),
+ paused:()=>codeScr("Nothing has changed. You can try a code again in 15 minutes. The link in the newest email still works, and so do the other ways to sign in."),
+ errorRateLimited:()=>codeScr("Nothing has changed. Too many tries for now. Wait a few minutes, then try again."),
+ verifying:()=>stateScreen({art:ART.moon,title:"Signing you in"}),
+ errorExpired:()=>stateScreen({art:ART.envelope,title:"Signing you in",extra:errline("That link has expired. Send a new email for a fresh one."),actions:go("E-S05:default","Send a new email")}),
+ refusedOtherPhone:()=>stateScreen({art:ART.envelope,title:"This link can't be used here",body:"Type the code from the email on this phone instead.",actions:go("E-S06:default","Type the code instead")}),
+ refusedOtherPhoneSpent:()=>stateScreen({art:ART.envelope,title:"This link can't be used here",body:"This link was opened on a different phone. Send a new email, then use the link or code from it.",actions:go("E-S05:default","Send a new email")}),
+ refusedAlreadySignedIn:()=>stateScreen({art:ART.envelope,title:"This link can't be used here",body:"You're already signed in on this phone. To use another account, sign out, then type the code from the email.",actions:go("ME:default","Close")})
+}};
+function codeScr(err,busy){
+  return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S05:default" data-vo="1">Back</button>
+  <div class="scroll"><h2 class="t2" style="margin-top:48px" data-vo="1">Check your email</h2><p class="sub muted" data-vo="1">Type the 6-digit code, or open the link on this phone.</p>
+  <input class="field ${err?"err":""}" aria-label="Code, 6 digits" value="${err?"482913":""}" placeholder="6-digit code" inputmode="numeric" data-vo="1">${err?`<div style="margin-top:8px">${errline(err)}</div>`:""}</div>
+  <div class="footer">${busy?`<button class="btn primary" aria-busy="true">Checking</button>`:go("E-S07:loading","Continue")}${go("E-S05:default","Send a new email","quiet")}
+  <p class="note">${lnk("E-S06:errorWrongCode","wrong_code")} ${lnk("E-S06:paused","code_paused")} ${lnk("E-S06:errorRateLimited","rate_limited")} ${lnk("E-S06:errorExpired","expired")} ${lnk("E-S06:refusedOtherPhone","other_phone")}</p></div></div>`;
+}
+S["E-S07"]={name:"Agreements and consent at sign-in",states:{
+ loading:()=>stateScreen({art:ART.moon,title:"Setting up your account",actions:go("E-S07:default","(account answered)","quiet")}),
+ default:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">Your letters are private to you. We never sell them, use them for ads or use them to train machine learning models.</p><p class="sub" data-vo="1">By continuing you agree to the ${lnk("E-S07:default","Terms of Service")} and the ${lnk("E-S07:default","Privacy Policy")}.</p></div><div class="footer">${go("E-S08:name","Agree and continue")}${go("C-S11:declined","Not now","quiet")}<p class="note">Returning account with a book: ${lnk("C-S10:loading","to C-S10")}. Already has a book on the phone: ${lnk("E-S24:default","claim")}</p></div></div>`,
+ reconsent:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">(PROPOSED change summary, three plain sentences at most, words by content.)</p><p class="sub" data-vo="1">By continuing you agree to the updated Terms of Service.</p></div><div class="footer">${go("E-S02:default","Agree and continue")}${go("E-S02:default","Not now","quiet")}<p class="note">E-S07.reconsent (NS-42-R10). Recording, reading, playing and export work whatever the answer.</p></div></div>`,
+ errorConsentUnavailable:()=>stateScreen({art:ART.envelope,title:"Setting up your account",extra:errline("Setting up your account did not finish. Try again."),actions:go("E-S07:default","Try again")})
+}};
+S["E-S08"]={name:"First book steps",states:{
+ name:()=>step("Who is this book for?",`<label class="sub" for="nm" data-vo="1">Their name <span class="muted">Optional</span></label><input id="nm" class="field serif" value="Asha"><p>${lnk("E-S08:twins","Add another")}</p>`,"E-S08:date"),
+ nameWaiting:()=>step("Who is this book for?",`<label class="sub" for="nm2">Their name</label><input id="nm2" class="field serif err" aria-invalid="true" value=""><div style="margin-top:8px">${errline("Add a name to continue.")}</div>`,"E-S08:nameWaiting"),
+ twins:()=>step("Who is this book for?",`<input class="field serif" value="Asha" aria-label="First name"><input class="field serif" style="margin-top:8px" value="" placeholder="Another name" aria-label="Second name"><p class="foot">Each book is free.</p>`,"E-S08:date"),
+ dateWaiting:()=>step("When is Asha's birthday?",`<div class="pills"><button class="pill sel" data-vo="1">Birthday</button><button class="pill" data-vo="1">Due date</button></div><div class="card" style="margin-top:12px;text-align:center" data-vo="1">Choose a date</div><div style="margin-top:8px">${errline("Choose Asha's birthday to continue.")}</div>`,"E-S08:dateWaiting"),
+ dateFuture:()=>step("When is Asha's birthday?",`<div class="pills"><button class="pill sel">Birthday</button><button class="pill">Due date</button></div><div class="card" style="margin-top:12px;text-align:center">3 March 2027</div><div style="margin-top:8px">${errline("Choose today or an earlier day.")}</div>`,"E-S08:dateFuture"),
+ dueRange:()=>step("When is the due date?",`<div class="pills"><button class="pill">Birthday</button><button class="pill sel">Due date</button></div><div class="card" style="margin-top:12px;text-align:center">1 January 2028</div><div style="margin-top:8px">${errline("Choose a due date from today up to ten months ahead.")}</div>`,"E-S08:dueRange"),
+ signsAsWaiting:()=>step("What does Asha call you?",`<input class="field serif err" value="" aria-invalid="true" aria-label="What Asha calls you"><div style="margin-top:8px">${errline("Add what Asha calls you to continue. (existing needSignsAs)")}</div>`,"E-S08:signsAsWaiting"),
+ date:()=>step("When is Asha's birthday?",`<div class="pills"><button class="pill sel" data-vo="1">Birthday</button><button class="pill" data-vo="1">Due date</button></div><div class="card" style="margin-top:12px;text-align:center" data-vo="1">12 July 2026</div><p class="foot">A birthday is today or earlier; a due date is today up to ten months ahead (built rules).</p>`,"E-S08:signsAs"),
+ signsAs:()=>step("What does Asha call you?",`<input class="field serif" value="Mama" aria-label="What Asha calls you"><p class="foot">Shown as the signature on your letters. Writing tools are off on this field (D2).</p>`,"E-S08:promise"),
+ promise:()=>step("Your words, kept as you said them",`<div class="card"><p class="letter" style="margin:0">today asha found her feet<span style="border-bottom:1.5px dotted var(--accent)">.</span></p><p class="foot">The app only adds small fixes like this full stop. You can undo any of them.</p></div>`,"E-S08:open"),
+ languages:()=>step("Which languages will you speak?",`<div class="list">${["English","Hindi"].map(l=>`<div class="row" data-vo="1"><span class="body">${l}</span><span class="cap">Built in</span></div>`).join("")}</div><p class="foot">Only languages that passed their gate are listed (NS-17-R1). In an English-only build this step is absent, with no "later update" line.</p>`,"E-S08:signsAs"),
+ open:()=>`<div class="lamp breathe"></div><div class="scroll rel"><div class="state"><div class="card serif" style="width:200px;height:240px;display:flex;align-items:center;justify-content:center;font-size:22px" role="img" aria-label="Book cover, Letters to Asha">Letters to Asha</div><h1 class="t1" data-vo="1">The book is open.</h1></div></div><div class="footer">${go("A-S01:first","Continue")}</div>`
+}};
+function step(title,content,next){
+  return `<div class="lamp" style="opacity:.5"></div><div class="scroll rel"><button class="link" data-go="E-S02:default" data-vo="1" style="margin-top:6px">Back</button><h1 class="t1" style="margin:16px 0" data-vo="1">${esc(title)}</h1>${content}</div><div class="footer">${go(next,"Continue")}</div>`;
+}
+S["E-S09"]={name:"First-run router (alias of C-S10, C-S11)",states:{
+ table:()=>`<div class="scroll"><h2 class="t2" style="margin-top:20px">Which screen first run shows</h2><div class="list">${[
+ ["Servers off","Welcome without sign-in (NS-10-R8)"],["Consent being read","C-S10 loading"],["needsConsent, no book","consent sheet or C-S11 held (BL-922)"],["Account: opening, slow, offline, no book","C-S10 states"],["Phone holds a book","Home (another account: E-S18)"],["Age not asked / No","E-S03 / stop"],["New account","E-S08"],["Offline or sign-in failed","E-S14"],["Otherwise","E-S04"]].map(r=>`<div class="row"><span class="sub">${r[0]}</span><span class="foot">${r[1]}</span></div>`).join("")}</div></div>`
+}};
+S["E-S10"]={name:"Keep gate sheet",states:{
+ default:()=>gate({}),opening:()=>gate({opening:true}),offline:()=>gate({offline:true}),
+ needsNewerIos:()=>gate({block:"Plus can be added on iOS 17 or later."}),unavailable:()=>gate({block:"Plus is not available on this device yet."}),
+ lapsed:()=>gate({lapsed:true}),errorCodeFailed:()=>gate({codeFailed:true}),fromLetter:()=>gate({fromLetter:true}),fromLetterOffline:()=>gate({fromLetter:true,offline:true})
+}};
+function gate(o){
+  const note=o.fromLetter?(o.offline?"Plus needs a connection to start. Your words stay with this letter, exactly as they are.":"Your words stay with this letter, exactly as they are. Keep them whenever you like."):(o.offline?"Plus needs a connection to start. This letter waits on Home, on this phone, exactly as it is.":"This letter waits on Home, on this phone, exactly as it is. Keep it whenever you like.");
+  const canBuy=!o.offline&&!o.block;
+  return `<div class="scroll" style="opacity:.5"><p class="letter">Review behind the sheet</p></div><div class="scrimlayer"></div><div class="sheet glass" role="dialog" aria-modal="true" aria-label="Keep adding to Asha's book"><div class="grab"></div>
+  <div class="scroll" style="padding-top:12px">${heldCard()}<h2 class="t2" style="margin:16px 0 8px" data-vo="1">Keep adding to Asha's book</h2>
+  ${o.lapsed?`<p class="body" data-vo="1">Plus has ended. Every letter you kept is still yours to read, play and export.</p>`:""}
+  ${o.block?`<p class="body" data-vo="1">${o.block}</p>`:`<p class="body" data-vo="1">Your first two letters are kept for good. Plus lets you keep adding letters.</p>`}
+  <p class="body muted" data-vo="1">${note}</p>${o.codeFailed?errline("That code could not be redeemed. (built codeFailed line; words in WORDS.md)"):""}${canBuy?`<p>${lnk("E-S10:default","Redeem a code")}</p>`:""}</div>
+  <div class="footer">${canBuy?(o.opening?`<button class="btn primary" aria-busy="true" data-vo="1">Opening the App Store</button>`:go("E-S10:opening","See Plus")):""}${go("A-S01:held","Keep it here for now",canBuy?"quiet":"primary")}
+  ${o.opening?go("E-S12:default","(Apple's sheet: purchase done)","quiet")+go("E-S10:default","(Apple's sheet: cancelled)","quiet"):""}</div></div>`;
+}
+S["E-S11"]={name:"Plan in Me",states:{
+ free:()=>plan([["See what Plus adds",""]],"Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free."),
+ on:()=>plan([["Plus","Plus Annual"],["","Plus renews on 3 March 2027."]]),
+ trial:()=>plan([["Plus","Plus is on, free until 4 December 2026."],["","Cancel by 3 December 2026 and you pay nothing."]]),
+ ends:()=>plan([["Plus","Plus stays on until 3 March 2027. It will not renew."]]),
+ ended:()=>plan([["Plus","Plus ended on 1 November 2026. Every letter you kept is still yours."]]),
+ grace:()=>plan([["Plus","There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again."]]),
+ retry:()=>plan([["Plus","Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe."]]),
+ shared:()=>plan([["Plus","Shared with you through Apple Family Sharing."]]),
+ alpha:()=>plan([["","Plus is not part of this test. Every letter is free while you test."]]),
+ restoring:()=>plan([["Plus","Plus is on."]],"",{restore:"Checking with the App Store"}),
+ restoreNone:()=>plan([["See what Plus adds",""]],"",{restore:"No Plus was found for this Apple Account."}),
+ restoreFailed:()=>plan([["See what Plus adds",""]],"",{restore:"The App Store could not be reached. Please try again in a moment."}),
+ notificationsOff:()=>plan([["Plus","Plus renews on 3 March 2027."]],"",{notif:true})
+}};
+function plan(rows,footer,o){
+  o=o||{};
+  return `<div class="scroll" style="padding-bottom:110px"><button class="link" data-go="ME:default" data-vo="1">Me</button><h1 class="t1" style="margin:6px 0" data-vo="1">Plan</h1>
+  <p class="sechead">Plus</p><div class="list">${rows.map(r=>`<div class="row" data-vo="1">${r[0]?`<span class="body">${esc(r[0])}</span>`:""}<span class="sub muted">${esc(r[1])}</span></div>`).join("")}</div>
+  ${o.notif?sysline("info","Notifications are off for {app}, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.",lnk("E-S11:on","Allow notifications")):""}
+  ${footer?`<p class="foot" style="margin:6px 4px">${esc(footer)}</p>`:""}
+  <p class="sechead">What Plus includes</p><div class="list"><div class="row"><span class="sub">Keep adding letters to every book, as many as you like.</span></div></div>
+  <div class="list"><div class="row" data-vo="1"><span class="body">Restore purchases</span><span class="foot">${o.restore?esc(o.restore):"Finds Plus bought with this Apple Account."}</span></div><div class="row" data-vo="1"><span class="body">Redeem a code</span></div></div>
+  <p class="foot" style="margin:6px 4px">Apple handles payment for Plus. We never see your card details.</p></div>${tabbar("me")}`;
+}
+S["E-S12"]={name:"Plus confirmed",states:{
+ default:()=>confirmed(false),withAsk:()=>confirmed(true)}};
+function confirmed(ask){
+  return `<div class="scroll"><h1 class="t1" style="margin-top:20px" data-vo="1">Plus is on.</h1><div class="list">${["Plan: Plus Annual","Free until 4 December 2026","Cancel by 3 December 2026 and you pay nothing.","Plans renew automatically until you cancel.","Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions."].map(t=>`<div class="row"><span class="sub">${t}</span></div>`).join("")}</div>${go("E-S12:default","Save a copy of the terms","outline")}${ask?`<p class="sub">Remind me before Plus renews?</p>`+go("E-S12:default","Remind me","outline"):""}</div><div class="footer">${go("A-S07:afterPlus","Done")}</div>`;
+}
+S["E-S13"]={name:"Something broke",states:{
+ boundary:()=>stateScreen({art:ART.page,title:"This page did not open",body:"Your letters and recordings are safe on this phone.",actions:go("A-S01:default","Try again")+go("A-S01:default","Go to Home","quiet")}),
+ noBook:()=>stateScreen({art:ART.page,title:"This page did not open",body:"Try again, or go to Home. (PROPOSED bodyNoBook, fresh install)",actions:go("E-S02:default","Try again")+go("E-S02:default","Go to Home","quiet")}),
+ global:()=>stateScreen({art:ART.page,title:"This page did not open",body:"Your letters and recordings are safe on this phone.",note:"(production profile only; preview builds keep the native crash)",actions:go("A-S01:default","Try again")+go("A-S01:default","Go to Home","quiet")})
+}};
+S["E-S14"]={name:"Sign-in outage and offline (first run)",states:{
+ outage:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",actions:go("E-S02:default","Try again")}),
+ outageWithLocal:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
+ signInPaused:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account. (E-S14.signInPaused: killSwitches.signIn, PROPOSED; renders as the outage.)",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
+ offline:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",actions:go("E-S02:default","Try again")}),
+ offlineWithLocal:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
+ backOnline:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",extra:`<p class="sub" role="status" data-vo="1">(announced) You are back online.</p>`,actions:go("E-S02:default","(returns to the Welcome by itself)","quiet")})
+}};
+S["E-S15"]={name:"SystemLine in place (new component)",states:{
+ all:()=>`<div class="scroll"><h1 class="t1" style="margin:16px 0" data-vo="1">SystemLine kinds</h1>${sysline("offline","Restoring needs a connection. Try again once you are back online. (PROPOSED)",lnk("E-S15:all","Try again"))}<br>${sysline("paused","Invites are paused for now. Please try again a little later.")}<br>${sysline("waiting","Downloads when you are back online")}<br>${sysline("disk","Space on this phone is getting low. (PROPOSED)")}<br>${sysline("action","A newer version is ready in the App Store. (PROPOSED)",lnk("E-S15:all","Update"))}<p class="foot">Content layer: never glass. Glyph plus words, never colour alone. Announced once, politely. Under Increase Contrast it gains a visible edge.</p></div>`
+}};
+S["E-S16"]={name:"App update line in Me",states:{
+ line:()=>meScreen({top:sysline("action","A newer version is ready in the App Store. (PROPOSED)",lnk("E-S16:line","Update"))}),
+ absent:()=>meScreen({})
+}};
+S["E-S17"]={name:"Low-storage rules (rendered by A and C)",states:{
+ under1gb:()=>`<div class="scroll"><p class="cap" style="margin-top:14px">A-S04 Listen, Ready</p><p class="prompt">What did Asha do today that you want to remember?</p>${sysline("disk","Space on this phone is getting low. (PROPOSED)")}</div><div class="footer"><button class="btn primary" style="min-height:64px" data-go="A-S05:recording" data-vo="1">Start</button></div>`,
+ under50mb:()=>stateScreen({glyph:ICON.disk.replace('class="icon"','width="40" height="40"'),title:"This phone is full",body:"Free some space to record, or type this one.",actions:go("A-S06:default","Type instead")+go("E-S17:under50mb","Try again","quiet")}),
+ under20mbMidTake:()=>areaStub("A-S05","Recording stopped and kept","Under 20 MB during a take: the take stops and is kept within 30 s; Review opens with one line saying why (area A words)."),
+ exportShort:()=>areaStub("C-S04","Save a copy: not enough space","The space check runs before writing: the screen names how much space is needed and offers smaller options (area C).")
+}};
+S["E-S18"]={name:"Second account on one phone",states:{
+ signedOutA:()=>meScreen({account:`<div class="list"><div class="row"><span class="body">Not signed in</span></div><div class="row"><span class="sub muted">The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.</span></div><div class="row">${lnk("E-S04:default","Sign in")}</div></div>`}),
+ signedInBNoBook:()=>stateScreen({art:ART.page,title:"No book here yet",body:"Did you use a different way to sign in last time?",actions:go("E-S08:name","Start a book")+go("E-S04:default","Try another way","quiet"),note:"Account B never sees Asha's book, its name or its recordings. No line says another book is on this phone."}),
+ signedInBArriving:()=>areaStub("C-S10","Opening your book","B's own book arrives (area C). Every list filters to B's rows."),
+ backToA:()=>homeScreen({})
+}};
+S["E-S19"]={name:"Interruption and recovery",states:{
+ killedMidTake:()=>homeScreen({slip:`<div class="card" data-vo="1" style="margin-bottom:12px"><span class="chip"><span class="dot"></span>Waiting</span><p class="sub" style="margin:6px 0 0">Recorded before the app closed.</p></div>`}),
+ call:()=>areaStub("A-S05","Interrupted by a call","The take is kept; on return the parent continues or stops. VoiceOver focus returns to the same element."),
+ killedOnConsent:()=>S["E-S09"].states.table(),
+ killedMidPurchase:()=>plan([["Plus","Plus is on."]])
+}};
+S["E-S20"]={name:"Not found",states:{
+ default:()=>stateScreen({art:ART.window,title:"Nothing at this link",body:"Your book is right where you left it.",actions:go("A-S01:default","Back to Home")}),
+ noBook:()=>stateScreen({art:ART.window,title:"Nothing at this link",body:"(PROPOSED words for a phone with no book yet: the body must not mention a book)",actions:go("E-S02:default","Back to Home")})}};
+S["E-S21"]={name:"Appearance",states:{
+ system:()=>appearance(0),light:()=>appearance(1),dark:()=>appearance(2),noLetter:()=>appearance(0,true)}};
+function appearance(i,none){
+  return `<div class="scroll"><button class="link" data-go="ME:default">Me</button><h1 class="t1" style="margin:6px 0" data-vo="1">Appearance</h1><div class="card" style="margin:10px 0"><p class="letter" style="margin:0">${none?"Aa":"Today Asha found her feet."}</p></div><div class="list">${["Same as the phone","Light","Dark"].map((l,j)=>`<div class="row" role="radio" aria-checked="${i===j}" data-vo="1"><span class="body">${l}</span><span>${i===j?"Selected":""}</span></div>`).join("")}</div></div>`;
+}
+S["E-S22"]={name:"App lock cover",states:{
+ locked:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div></div></div><div class="footer">${go("A-S01:default","Unlock")}</div>`,
+ failed:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="sub" role="status" data-vo="1">That did not unlock. Try again. (PROPOSED)</p></div></div><div class="footer">${go("A-S01:default","Unlock")}</div>`}};
+S["E-S24"]={name:"Claim screen",states:{
+ default:()=>claim("Your letters on this phone will be kept in the account p***@example.com."),
+ noEmail:()=>claim("Your letters on this phone will be kept in the account you just signed in to."),
+ hasBook:()=>claim("This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.","Recordings are kept on the phone that made them.")}};
+function claim(body,extra){
+  return stateScreen({art:ART.page,title:"Keep your letters in this account?",body,note:(extra?extra+" ":"")+"If this isn't your account, choose Not my account. Nothing on this phone changes.",actions:go("A-S01:default","Keep in this account")+go("ME:default","Not my account","quiet")});
+}
+S["E-S25"]={name:"Plan reminder note in the app",states:{
+ trial:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="sheet half glass"><div class="grab"></div><div class="scroll"><h2 class="t2" data-vo="1">A reminder about Plus</h2><p class="body" data-vo="1">Plus is free until 4 December 2026.</p><p class="body" data-vo="1">Cancel by 3 December 2026 and you pay nothing.</p></div><div class="footer">${go("E-S11:trial","Manage subscription","outline")}${go("A-S01:default","Got it")}</div></div>`}};
+S["E-S26"]={name:"Home Plus line (rule on A-S01)",states:{on:()=>homeScreen({plusLine:true}),off:()=>homeScreen({})}};
+/* Area stubs so journeys read end to end */
+S["A-S01"]={name:"Home (area A)",states:{default:()=>homeScreen({}),first:()=>homeScreen({speak:"A-S04P:primer"}),held:()=>homeScreen({slip:`<div class="card" data-vo="1" style="margin-bottom:12px"><span class="chip"><span class="dot"></span>Waiting</span><p class="sub" style="margin:6px 0 0">Waiting to be kept.</p></div>`,plusLine:true}),lapsed:()=>homeScreen({plusLine:true,speak:"A-S04:default"})}};
+S["A-S04P"]={name:"Microphone primer (area A, before the iOS prompt)",states:{primer:()=>stateScreen({glyph:ICON.mic,title:"Your phone will ask about the microphone",body:"(listen.primer.body, area A) Asked only at the first Speak, never at first run.",actions:go("E-S29:prompt","Continue")})}};
+S["E-S29"]={name:"Microphone permission (system, at first Speak only)",states:{
+ prompt:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="alert glass" role="alertdialog"><div class="a-body"><b>"{app}" Would Like to Access the Microphone</b><p>{app} uses the microphone to record the letters you speak to your child.</p></div><div class="a-btns"><button data-go="A-S04:blocked">Don't Allow</button><button data-go="A-S04:default">Allow</button></div></div>`}};
+S["A-S04"]={name:"Listen (area A)",states:{default:()=>`<div class="scroll"><p class="cap" style="margin-top:14px">A-S04 Listen, Ready (area A)</p><p class="prompt">What did Asha do today that you want to remember?</p></div><div class="footer"><button class="btn primary" style="min-height:64px" data-go="A-S05:recording">Start</button></div>`,
+ blocked:()=>stateScreen({glyph:ICON.mic,title:"The microphone is off",body:"Turn it on in Settings to record, or type this one. (existing key, area A)",actions:go("A-S06:default","Type instead")+go("A-S04:default","Open Settings","quiet")})}};
+S["A-S05"]={name:"Recording (area A)",states:{recording:()=>`<div class="scroll"><p class="cap" style="margin-top:14px" data-vo="1">Recording</p><p class="sub">Shown by the word, the shape and the moving bars, never by colour alone (NS-33-R12).</p></div><div class="footer"><button class="btn glass" style="min-height:64px;color:var(--text)" data-go="A-S07:default">Stop</button></div>`}};
+S["A-S06"]={name:"Write (area A)",states:{default:()=>areaStub("A-S06","Type","Typing works in every state above, offline and on a full phone.")}};
+S["A-S07"]={name:"Review (area A)",states:{
+ default:()=>review("A-S13:first"),third:()=>review("E-S10:default"),afterPlus:()=>review("A-S13:kept")}};
+function review(keepTo){
+  return `<div class="scroll"><p class="cap" style="margin-top:14px" data-vo="1">Thursday, 12 November</p><p class="letter" data-vo="1">Today Asha laughed at the rain on the window, a whole minute of it.</p><p class="foot">A-S07 Review (area A). Writing tools off (D2).</p></div><div class="footer">${go(keepTo,"Keep")}</div>`;
+}
+S["A-S13"]={name:"Kept (area A)",states:{
+ first:()=>areaStub("A-S13","Kept. Your first letter is in the book.","First and second letters keep with no gate (allowance 2). After the second, the Book shows the second-free toast once. The third Keep meets E-S10."),
+ kept:()=>areaStub("A-S13","Kept","The letter is in the book.")}};
+S["C-S10"]={name:"Opening your book (area C)",states:{loading:()=>stateScreen({art:ART.moon,title:"Opening your book.",body:"Your letters are coming across."})}};
+S["C-S11"]={name:"Returning consent, declined (area C)",states:{declined:()=>areaStub("C-S11","Not now","Nothing downloads, nothing uploads; Delete account works without agreeing; export reachable (NS-10 R4a, R4b). Area C draws it.")}};
+S["B-BOOK"]={name:"Book (area B)",states:{default:()=>`${areaStub("B","The Book","Area B.")}${tabbar("book")}`}};
+S["ME"]={name:"Me (area C)",states:{default:()=>meScreen({})}};
+function meScreen(o){
+  return `<div class="scroll" style="padding-bottom:110px"><h1 class="t1" style="margin:16px 0 8px" data-vo="1">Me</h1>${o.top||""}${o.account||""}<div class="list">${[["Plan","E-S11:free"],["Reminders","ME:default"],["Appearance","E-S21:system"],["Storage","ME:default"],["Account","E-S18:signedOutA"]].map(r=>`<div class="row" data-go="${r[1]}" data-vo="1" role="button" style="cursor:pointer"><span class="body">${r[0]}</span><span class="muted">&rsaquo;</span></div>`).join("")}</div><p class="foot">Me is area C's (C-S01). Heading equals the tab label (NS-33-R2).</p></div>${tabbar("me")}`;
+}
+STUBNEXT["A-S13"]=go("A-S01:default","Home");
+STUBNEXT["A-S06"]=go("A-S07:default","Done");
+STUBNEXT["A-S05"]=go("A-S07:default","Review");
+STUBNEXT["C-S10"]=go("B-BOOK:default","The Book");
+STUBNEXT["C-S11"]=go("E-S02:default","Back");
+/* ---------- journeys ---------- */
+const J=[
+ ["J-E01 Download to first kept letter, store build",["E-S27:default","E-S27:installing","E-S27:installed","E-S01:default","E-S03:default","E-S03:reasonNoAnswer","E-S03:reasonNoTick","E-S03:ready","E-S02:default","E-S05:reasonEmpty","E-S05:errorInvalidEmail","E-S05:default","E-S06:default","E-S06:reasonShort","E-S06:errorWrongCode","E-S07:loading","E-S07:default","E-S08:name","E-S08:dateWaiting","E-S08:dateFuture","E-S08:date","E-S08:signsAsWaiting","E-S08:signsAs","E-S08:promise","E-S08:open","A-S01:first","A-S04P:primer","E-S29:prompt","A-S04:default","A-S05:recording","A-S07:default","A-S13:first"]],
+ ["J-E02 First run, servers-off build",["E-S01:default","E-S03:ready","E-S02:serversOff","E-S08:name","E-S08:date","E-S08:signsAs","E-S08:promise","E-S08:open","A-S01:default"]],
+ ["J-E03 Sign-in cannot be reached, local start",["E-S02:default","E-S14:outageWithLocal","E-S08:name","A-S01:default","ME:default","E-S04:default","E-S07:default","E-S24:default","E-S24:hasBook"]],
+ ["J-E04 No connection at sign-in",["E-S02:default","E-S14:offlineWithLocal","E-S14:backOnline","E-S02:default"]],
+ ["J-E05 Returning parent, new phone",["E-S02:lastMethod","E-S05:default","E-S06:default","E-S07:default","C-S10:loading"]],
+ ["J-E06 Consent outstanding at relaunch",["E-S01:default","E-S09:table","C-S11:declined"]],
+ ["J-E07 Under 18 (and the platform signal)",["E-S03:default","E-S03:stop","E-S03:stopAfter24h","E-S03:platformMinor"]],
+ ["J-E08 Sign-in errors in place",["E-S02:errorProvider","E-S04:errorProvider","E-S04:errorNotAvailable","E-S05:errorNotAvailable","E-S05:offline","E-S06:help","E-S05:errorInvalidEmail","E-S05:errorEmailWait","E-S06:errorWrongCode","E-S06:paused","E-S06:errorRateLimited","E-S06:errorExpired","E-S06:refusedOtherPhone","E-S06:refusedOtherPhoneSpent","E-S06:refusedAlreadySignedIn","E-S07:errorConsentUnavailable","E-S02:sessionExpired"]],
+ ["J-E09 Kill switch at sign-in",["E-S02:serversOff","A-S01:default"]],
+ ["J-E10 Third letter: the one Plus gate",["A-S07:third","E-S10:default","E-S10:opening","E-S12:default","A-S07:afterPlus","A-S13:kept"]],
+ ["J-E10b Gate: hold, offline, unavailable",["E-S10:default","A-S01:held","E-S10:offline","E-S10:needsNewerIos","E-S10:unavailable","E-S10:fromLetter","E-S10:fromLetterOffline","E-S10:errorCodeFailed"]],
+ ["J-E11 Plan lapse",["E-S11:ended","A-S01:lapsed","E-S10:lapsed","E-S11:grace","E-S11:retry"]],
+ ["J-E12 Everyday offline",["A-S01:default","E-S11:restoreFailed","E-S15:all"]],
+ ["J-E15 App update",["E-S16:line","E-S01:migrating","E-S01:recovery","E-S01:recoveryTrying","E-S01:recoveryStillClosed"]],
+ ["J-E16 Low storage",["E-S17:under1gb","E-S17:under50mb","E-S17:under20mbMidTake","E-S17:exportShort"]],
+ ["J-E17 Second account on one phone",["E-S18:signedOutA","E-S04:default","E-S18:signedInBNoBook","E-S18:signedInBArriving","E-S18:backToA"]],
+ ["J-E18 Interruption and kill",["E-S19:call","E-S19:killedMidTake","E-S19:killedOnConsent","E-S19:killedMidPurchase"]],
+ ["J-E19 Something broke",["E-S13:boundary","E-S13:noBook","E-S13:global","E-S01:recovery"]],
+ ["J-E20 Link not found",["E-S20:default","E-S20:noBook"]],
+ ["J-E21 Forced sign-out",["E-S18:signedOutA","E-S02:sessionExpired"]],
+ ["J-E22 Appearance",["E-S21:system","E-S21:dark","E-S21:noLetter"]],
+ ["J-E23 App lock",["E-S22:locked","E-S22:failed"]],
+ ["J-E24 Notifications off and plan notes",["E-S11:notificationsOff","E-S25:trial"]]
+];
+/* ---------- engine ---------- */
+let cur={screen:"E-S27",state:"default"},jIdx=-1,sIdx=0;
+const $=id=>document.getElementById(id);
+function parse(t){const [a,b]=t.split(":");return {screen:a,state:b||Object.keys(S[a].states)[0]};}
+function render(){
+  const scr=S[cur.screen];if(!scr){return;}
+  if(!scr.states[cur.state])cur.state=Object.keys(scr.states)[0];
+  $("screen").innerHTML=scr.states[cur.state]();
+  const sel=$("stateSel");sel.innerHTML=Object.keys(scr.states).map(k=>`<option ${k===cur.state?"selected":""}>${k}</option>`).join("");
+  document.querySelectorAll("#slist button").forEach(b=>b.classList.toggle("on",b.dataset.id===cur.screen));
+  document.querySelectorAll("#jlist button").forEach((b,i)=>b.classList.toggle("on",i===jIdx));
+  let jtxt=jIdx>=0?`${J[jIdx][0]}: step ${sIdx+1} of ${J[jIdx][1].length}\n`:"";
+  $("info").textContent=`${jtxt}${cur.screen}.${cur.state}  ${scr.name}`;
+  if($("phone").classList.contains("ax5"))axReflow();
+  if($("tVo").checked)voOrder();
+}
+/* AX3 and above: the pinned footer keeps only its first (primary) action; quiet options follow the content in the scroll (DESIGN.md 5, AX rule). The Keep gate keeps both, as built. */
+function axReflow(){
+  const f=$("screen").querySelectorAll(".footer");
+  f.forEach(ft=>{const sc=ft.parentElement.querySelector(".scroll");if(!sc||cur.screen==="E-S10")return;[...ft.children].slice(1).forEach(c=>{c.style.marginTop="12px";sc.appendChild(c);});});
+}
+function voOrder(){
+  const ph=$("phone").getBoundingClientRect();
+  [...$("screen").querySelectorAll("[data-vo]")].forEach((el,i)=>{el.classList.add("vo");const r=el.getBoundingClientRect();const n=document.createElement("span");n.className="vonum";n.textContent=i+1;n.style.left=(r.left-ph.left-4)+"px";n.style.top=(r.top-ph.top-4)+"px";$("phone").appendChild(n);});
+}
+function clearVo(){document.querySelectorAll(".vonum").forEach(n=>n.remove());}
+function show(t,fromJourney){clearVo();cur=parse(t);if(!fromJourney&&jIdx>=0){/* stay in the journey when the target is one of its steps; otherwise leave it */ const k=J[jIdx][1].indexOf(t);if(k>=0)sIdx=k;else jIdx=-1;}render();}
+$("screen").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){e.preventDefault();show(b.dataset.go);}});
+$("stateSel").addEventListener("change",e=>{clearVo();cur.state=e.target.value;render();});
+$("next").onclick=()=>{if(jIdx<0)return;const st=J[jIdx][1];if(sIdx<st.length-1){sIdx++;show(st[sIdx],true);}};
+$("back").onclick=()=>{if(jIdx<0)return;if(sIdx>0){sIdx--;show(J[jIdx][1][sIdx],true);}};
+const toggles={tDark:"dark",tAx5:"ax5",tRt:"rt",tHc:"hc",tRm:"rm"};
+Object.keys(toggles).forEach(id=>$(id).addEventListener("change",e=>{$("phone").classList.toggle(toggles[id],e.target.checked);clearVo();render();}));
+$("tSe").addEventListener("change",e=>{$("phone").classList.toggle("se",e.target.checked);clearVo();render();});
+$("tVo").addEventListener("change",()=>{clearVo();render();});
+$("jlist").innerHTML=J.map((j,i)=>`<button type="button" class="j" data-i="${i}">${esc(j[0])}</button>`).join("");
+$("jlist").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;jIdx=+b.dataset.i;sIdx=0;show(J[jIdx][1][0],true);});
+$("slist").innerHTML=Object.keys(S).map(k=>`<button type="button" class="s" data-id="${k}">${k} ${esc(S[k].name)}</button>`).join("");
+$("slist").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;jIdx=-1;show(b.dataset.id);});
+if(matchMedia("(prefers-color-scheme: dark)").matches){$("tDark").checked=true;$("phone").classList.add("dark");}
+if(matchMedia("(prefers-reduced-motion: reduce)").matches){$("tRm").checked=true;$("phone").classList.add("rm");}
+jIdx=0;sIdx=0;show(J[0][1][0],true);
+</script>
+</body>
+</html>
