@@ -2,7 +2,7 @@
 
 Status: PROPOSED (lifecycle playbook, part 4 of 5) | 20 Nov 2026 | Owner: `content` | Data file: [data/events-usa.csv](data/events-usa.csv) | Siblings: [README.md](README.md), [01-experience-content-map.md](01-experience-content-map.md), [02-email-lifecycle.md](02-email-lifecycle.md), [03-in-app-and-reminder-logic.md](03-in-app-and-reminder-logic.md), [05-backlog-proposed.md](05-backlog-proposed.md).
 
-Written by `content`, a Claude role. Not a lawyer and not a cultural or religious authority. Docs and data only: no string here is live, no key exists in code, no date has been entered in the app. Every legal reading says "counsel must confirm". Every cultural reading says "a member of that community must read this". Nothing here overrides a ruling; where it disagrees with one it says so and asks.
+Written by `content`. Not a lawyer and not a cultural or religious authority. Docs and data only: no string here is live, no key exists in code, no date has been entered in the app. Every legal reading says "counsel must confirm". Every cultural reading says "a member of that community must read this". Nothing here overrides a ruling; where it disagrees with one it says so and asks.
 
 Fictional family Asha only. Nothing here names or pictures a real family.
 
@@ -70,6 +70,7 @@ Branch base: `9e47574` (develop at 20 Nov, after the playbook parts 1 to 3 and 5
 - **An official Iranian calendar** for Nowruz, **an official Chinese calendar standard** (HKO prints no authority), **Korean and Vietnamese** lunar new year dates.
 - **Holi, Navratri, Vesak and Baha'i holy days for 2027 and 2028** from a primary source.
 - **Any US state statute** other than Hawaii's published list. Cesar Chavez Day and Mardi Gras states come from commercial listing pages (S11, S18).
+- **Rule descriptions that are not dates.** Wording such as "1 Tishrei", "10th of Dhu al-Hijjah", "full moon of Kartik" or "13th day of Chaitra" in the `rule_text` column is general knowledge of each calendar, not a source I read. Only the dates and the rules named with a source id are sourced. A cultural read must confirm each rule description.
 - **Prevalence of anything.** I did not size communities. Nothing is ordered by size or popularity.
 - **Real families.** No user research. Every "who observes" is a description from the sources named, not a count and not a statement about any family.
 - I ran no test, device or app, and did not run the rules test (no install). I checked the proposed lines by eye against the fear, AI and rewrite patterns in `rules.test.ts` and the wording rules in NS-46-R17.
@@ -608,7 +609,7 @@ Every row obeys N1 to N11. The last column of each brief lists only what is extr
 | Code | Never |
 |---|---|
 | N1 | A greeting: Happy, Merry, Blessed, Mubarak, Shalom, Namaste, Gong xi, Feliz, or any other |
-| N2 | An explanation, history or meaning of the day; a "festival of ..." phrase; the word "celebrate" (the picker's verb is "mark"); what the day is "for" or "about" |
+| N2 | An explanation, history or meaning of the day; a "festival of" phrase; the word "celebrate" (the picker's verb is "mark"); what the day is "for" or "about" |
 | N3 | A presence or practice: gather, together, around the table, family time, who was there, food, prayer, fasting, gifts, decorations, costumes, travel |
 | N4 | A count, comparison or look-back: another, again, first, last year, "this year's", a streak, a gap |
 | N5 | A gendered word for {child} (he, she, son, daughter, boy, girl), or any claim that {child} keeps, follows or belongs to a tradition or a heritage |
@@ -691,7 +692,7 @@ Lines are "1 / 2" codes from 8.2: the first two lines to write for `days.landing
 | `good_friday` | M6 | L6 | "Crucifixion", "suffering", "remember"; a question. Quiet tone |
 | `easter_western` | M1 or M3 | L1 / L5 | "He is risen", bunnies, eggs; "Happy"; ranking against Orthodox Easter |
 | `pentecost` | M2 | L3 / L1 | Describing the day |
-| `christmas_day` | M1 or M3 | L1 / L5 | "Merry", Santa, trees, gifts, "the birth of ..."; assuming the family is Christian; making it a public title |
+| `christmas_day` | M1 or M3 | L1 / L5 | "Merry", Santa, trees, gifts, "the birth of" lines; assuming the family is Christian; making it a public title |
 | `christmas_orthodox` | M2 | L3 / L1 | "Old Christmas", "late Christmas", "the other Christmas"; assuming a church |
 | `easter_orthodox` | M1 or M2 | L1 / L3 | "The other Easter", "late Easter"; ranking churches |
 
@@ -931,7 +932,7 @@ Nothing here is a reviewer record. NS-46-R23 and Q-FD-9 need one recorded per tr
 | LGBTQ+ community and families | `pride_month`, family days | Whether Pride Month is ever offered; family-day wording |
 | Bereaved, adoptive, foster, single-parent and grandparent-led families | `mothers_day`, `fathers_day`, `grandparents_day`, `siblings_day`, `valentines_day` | The universal lines (L1, L14) |
 | Military and veteran families | `memorial_day`, `veterans_day` | Quiet tone and the single line |
-| A native-speaker and reading-level read | Every line | Plain words, an age-4 reading level not needed; plain adult English |
+| A native-speaker and plain-language read | Every line | Short sentences, plain adult English, no idiom that a second-language reader would miss |
 
 ---
 
