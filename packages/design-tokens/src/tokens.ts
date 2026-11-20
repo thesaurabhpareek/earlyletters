@@ -26,9 +26,9 @@ const light = {
   onAccent: '#FFFFFF', // text/icons on accent  5.82:1
   line: '#E6DED3', // hairlines, dividers (decorative, never sole affordance)
   focus: '#2F6F8F', // focus ring             5.23:1 on bg
-  recording: '#B5473A', // live mic state       5.05:1 on bg
-  success: '#3F7A55', // saved / delivered      4.80:1 on bg
-  caution: '#94661A', // needs attention        4.75:1 on bg
+  recording: '#AC4336', // live mic state       5.49:1 on bg, 4.73:1 on accentSoft
+  success: '#3A7350', // saved / delivered      5.29:1 on bg, 4.90 surface, 4.56 accentSoft
+  caution: '#8A5E17', // needs attention        5.37:1 on bg, 4.98 surface, 4.63 accentSoft
   /** Boundary of an interactive control (inputs, unselected pills, outline buttons, switch off-track).
    *  WCAG 1.4.11 needs 3:1: 3.62 on bg, 3.36 on surface, 3.83 on surfaceRaised, 3.12 on accentSoft. */
   controlBorder: '#8A8175',
@@ -36,7 +36,7 @@ const light = {
   editMark: '#8A5A3B',
   /** Destructive actions (Delete). Its own role so it can diverge from `recording`, which means
    *  "listening", never "error" (DESIGN_LANGUAGE 2). Value equals recording until design decides (TDD 09 Q1). */
-  destructive: '#B5473A', // 5.05:1 on bg
+  destructive: '#AC4336', // 5.49:1 on bg, 4.73:1 on accentSoft
   onDestructive: '#FFFFFF', // 5.35:1 on destructive
   /** Dimmed layer behind sheets and dialogs: ink at 32%, never pure black on paper. */
   scrim: '#2B272252',

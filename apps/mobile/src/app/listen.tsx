@@ -537,7 +537,7 @@ export default function Listen() {
           </View>
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
-            <Text variant="prompt" tone="muted" numberOfLines={large ? undefined : 3} className="mt-3 text-center" testID="listen.prompt">
+            <Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen.prompt">
               {fill(prompt, { child: child.name })}
             </Text>
           )}
