@@ -29,7 +29,7 @@ Agent: ops   Lane: Pack 10 (harness)   Build: none   Wave: 1
    Live stacks on 20 Nov [V gh api]: photo #835 (base develop), #836 on #835's branch, #837 on #836's, #838 on #837's, #839 on #838's, #840 on #839's; BL-952 #894 then #895; BL-961 #879 on #871's branch (head refs: use `gh api repos/.../pulls/<n> --jq '.base.ref'`)
    `git merge-base` distance needs a local clone: Rec use `GET repos/.../compare/<base>...<head>` (`ahead_by`, `behind_by`) so the script needs no checkout [U: confirm the field names against one real response before relying].
 
-6. DATA AND SECURITY: no data class. Output is PR numbers, branch names, shas and states: public repo data. No token read. Boundary: agent harness (security-architect reads `scripts/agents/**`). Fail closed: an unreadable PR prints `unknown`, never "ok".
+6. DATA AND SECURITY: the `gh` wrapper builds the argument list itself and rejects any `-f`, `-F`, `--field`, `--raw-field`, `--input` and any `--method` other than GET (`gh api` flips to POST when `-f` or `-F` is given); a test feeds each flag to the real wrapper (not only the injected `api`) and expects a throw. no data class. Output is PR numbers, branch names, shas and states: public repo data. No token read. Boundary: agent harness (security-architect reads `scripts/agents/**`). Fail closed: an unreadable PR prints `unknown`, never "ok".
 
 7. LIBRARIES: none (Node built-ins, `gh` via child_process like merge-queue.mjs).
 8. BUDGETS: one API call per open stacked PR plus one list call [E]; under 10 seconds.
