@@ -3,7 +3,7 @@
 // photos-device, photos-phone and erase-all.
 import { describe, expect, it } from 'vitest';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
-import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
+import { canKeepWithPhoto, commitPhoto, PHOTO_FREE_MARGIN_BYTES, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import type { PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
@@ -178,6 +178,15 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     const { d, files, store } = deps({ files: memoryFiles({ free: 10 }) });
     expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
     expect(files.disk.size + store.all().length).toBe(0);
+  });
+  it('[NS-01-R45] a picture needs room plus 50 MB', async () => {
+    const size = (stripJpeg(makeJpeg()) as { bytes: Uint8Array }).bytes.length;
+    const short = deps({ files: memoryFiles({ free: size + PHOTO_FREE_MARGIN_BYTES - 1 }) });
+    expect((await commitPhoto(short.d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
+    expect(short.files.disk.size + short.store.all().length).toBe(0);
+    const enough = deps({ files: memoryFiles({ free: size + PHOTO_FREE_MARGIN_BYTES }) });
+    expect((await commitPhoto(enough.d, { ...ONE, bytes: makeJpeg() })).status).toBe('stored');
+    expect(PHOTO_FREE_MARGIN_BYTES).toBe(50 * 1024 * 1024);
   });
   it('[NS-01-R17] a write that fails halfway leaves 0 files and 0 rows', async () => {
     const { d, files, store } = deps({ files: memoryFiles({ failWrite: true }) });
