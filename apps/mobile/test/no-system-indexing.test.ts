@@ -15,9 +15,12 @@
  *   is configured), expo-quick-actions, and any spotlight, siri-shortcut or user-activity package.
  * - Linking.setInitialURL, as the lane asked (no such call should exist in the app).
  * - [X6-R1] (BL-962): NEVER and NOT_BUILT_YET below, the compiled Info.plist and entitlements of every EAS
- *   profile, and the iOS code of every package the app's dependencies pull in, against a reviewed list.
+ *   profile, and the iOS source of every package the app's dependencies pull in (ios/, apple/ or a podspec),
+ *   against a reviewed list. Prebuilt binaries (.xcframework) are not read; review B on #868 checked the two
+ *   shipped today (whisper.rn, expo-sqlite's libsql) with `strings` and found no donation symbol.
  * Ruling D2 (system writing tools off on letter fields) is not tested here: React Native 0.86.3 has no switch for
- * it, which BL-962 records as a finding, so NS-01-R50, NS-06-A22 and NS-21-R12 stay open.
+ * it, which BL-962 records as a finding: NS-01-R50 stays open, NS-06-A22 waits on the founder, and NS-21-R12
+ * accepts the recorded finding.
  * The device half (Spotlight searches "Asha" and a fixture sentence, 0 results) is on the device test plan.
  */
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -65,11 +68,16 @@ const NEVER: Rule[] = [
   // NS-02-R26: no embedding or vector index of letters.
   ...['NLEmbedding', 'NLContextualEmbedding'].map(word),
   { name: 'vector index', re: /\bUSING\s+(?:vec0|vss0)\b|\bsqlite[-_]?(?:vec|vss)\b/i },
+  // expo-router links its ExpoHead native module into every build, and its defaults publish a title to Spotlight and
+  // Siri (ExpoHeadModule.swift:15-21, 99). Our code never names it, however it is reached (review B on #868).
+  { name: 'ExpoHead native module', re: /\bExpoHead(?:Module)?\b/ },
+  { name: 'createActivity', re: /\bcreateActivity\b/ },
 ];
 
 /**
  * Not built yet: App Intents and App Shortcuts. NS-06 Part C (quick capture) may add a doorway that only opens the app;
- * the PR that builds it moves these out under NS-06-C7 and NS-06-C8, and NEVER still holds for what a doorway carries.
+ * the PR that builds it moves these out under NS-06-C7 and NS-06-C8. NEVER is stricter than those rows on purpose; that
+ * PR may move a NEVER rule only by citing the card row that allows it.
  */
 const NOT_BUILT_YET: Rule[] = ['AppIntents', 'AppIntent', 'AppShortcutsProvider', 'AppShortcut'].map(word);
 
@@ -113,11 +121,19 @@ function findings(text: string): string[] {
   return bad;
 }
 
-/** A dependency may receive a link or an activity the person opens, and may carry on-device language tools it never calls on our words; what it may not do unreviewed is publish. */
-const RECEIVING_OR_LOCAL = new Set(['NSUserActivity', 'userActivity', 'setInitialURL', 'NLEmbedding', 'NLContextualEmbedding', 'vector index']);
-const donations = (text: string) => findings(text).filter((f) => !f.startsWith('import ') && !RECEIVING_OR_LOCAL.has(f));
+/**
+ * A dependency may receive a link or an activity the person opens, and may carry on-device language tools it never calls
+ * on our words; what it may not do unreviewed is publish. The ExpoHead rules are for our code: the module itself is reviewed below.
+ */
+const NOT_FOR_DEPENDENCIES = new Set(['NSUserActivity', 'userActivity', 'setInitialURL', 'NLEmbedding', 'NLContextualEmbedding', 'vector index', 'ExpoHead native module', 'createActivity']);
+/** In a dependency, making an activity (rather than receiving one) is publishing: UIKit makes a responder's activity current by itself. */
+const DEPENDENCY_ONLY: Rule[] = [{ name: 'NSUserActivity made', re: /\bNSUserActivity\s*\(\s*activityType\s*:|\binitWithActivityType\s*:|\.userActivity\s*=(?!=)/ }];
+const donations = (text: string) => [
+  ...findings(text).filter((f) => !f.startsWith('import ') && !NOT_FOR_DEPENDENCIES.has(f)),
+  ...DEPENDENCY_ONLY.filter((r) => r.re.test(strip(text))).map((r) => r.name),
+];
 /** A cheap first pass over thousands of dependency files: every rule's match contains one of these (the planted test checks it). */
-const MAYBE = /Spotlight|CSSearchable|Eligible|Invocation|INInteraction|becomeCurrent|Entit|@Parameter|Vocabulary|Shortcut|Intent|donat|NSUserActivity|userActivity|setInitialURL|Embedding|vec|vss/i;
+const MAYBE = /Spotlight|CSSearchable|Eligible|Invocation|INInteraction|becomeCurrent|Entit|@Parameter|Vocabulary|Shortcut|Intent|donat|NSUserActivity|userActivity|ActivityType|setInitialURL|Embedding|vec|vss|ExpoHead|createActivity/i;
 
 function scan(files: string[]): string[] {
   return files.flatMap((f) => findings(readFileSync(f, 'utf8')).map((b) => `${relative(APP, f)}: ${b}`));
@@ -154,13 +170,18 @@ function shippedPackages(): { packages: Map<string, string>; missing: string[] }
   return { packages, missing };
 }
 
-/** Donation APIs named in the iOS code (Swift, Objective-C, podspecs) of the given packages, by `<package>/<path>`; tests, examples and Android are skipped. */
+/**
+ * Donation APIs named in the iOS code (Swift, Objective-C, podspecs) of the given packages, by `<package>/<path>`; tests,
+ * examples and Android are skipped. A package counts as native if it has ios/, apple/ or macos/, a podspec at its root, or
+ * an expo-module.config.json (Expo is moving modules to apple/, as expo-modules-jsi already is; review B on #868).
+ */
 function dependencyHits(packages: Map<string, string>): { hits: Record<string, string[]>; files: number } {
   const hits: Record<string, string[]> = {};
   const notShipped = (n: string) => /^(tests?|__tests__|examples?|android)$/i.test(n);
   let files = 0;
   for (const [dir, name] of packages) {
-    if (!existsSync(join(dir, 'ios')) && !readdirSync(dir).some((f) => f.endsWith('.podspec'))) continue;
+    const native = ['ios', 'apple', 'macos', 'expo-module.config.json'].some((n) => existsSync(join(dir, n)));
+    if (!native && !readdirSync(dir).some((f) => f.endsWith('.podspec'))) continue;
     for (const f of walk(dir, ['.swift', '.m', '.mm', '.h', '.podspec'], notShipped)) {
       files++;
       const text = readFileSync(f, 'utf8');
@@ -176,8 +197,9 @@ function dependencyHits(packages: Map<string, string>): { hits: Record<string, s
  * A new file, or a new API in a listed file, fails until someone reads it and records here why it publishes nothing of ours.
  */
 const REVIEWED_DEPENDENCY_CODE: Record<string, string[]> = {
-  // Publishes only when a screen renders <Head> from expo-router/head (createActivity, build/head/ExpoHead.ios.js:216),
-  // and the src scan above forbids that import. expo-router's expo-module.config.json links the module either way.
+  // Linked into every build by expo-router's expo-module.config.json. It publishes only when JS calls createActivity:
+  // from <Head> (build/head/ExpoHead.ios.js:216), whose import the src scan forbids, or by the module's name, which the
+  // ExpoHead and createActivity rules forbid in our code.
   'expo-router/ios/ExpoHeadModule.swift': [
     'CoreSpotlight',
     'CSSearchableIndex',
@@ -187,6 +209,7 @@ const REVIEWED_DEPENDENCY_CODE: Record<string, string[]> = {
     'becomeCurrent',
     'CSSearchableItemAttributeSet',
     'isEligibleForPublicIndexing',
+    'NSUserActivity made',
   ],
   // Opens the app from a Spotlight or Handoff continuation; publishes nothing.
   'expo-router/ios/ExpoHeadAppDelegateSubscriber.swift': ['CoreSpotlight'],
@@ -264,6 +287,9 @@ const PLANTED: [string, string[]][] = [
   ["import { QuickActions } from 'react-native-quick-actions';", ['import react-native-quick-actions']],
   ["import { Intents } from 'react-native-app-intents';", ['import react-native-app-intents']],
   ["const v = require('react-native-embeddings');", ['import react-native-embeddings']],
+  ["const head = requireNativeModule('ExpoHead');", ['ExpoHead native module']],
+  ['globalThis.expo?.modules?.ExpoHead?.createActivity({ id, title })', ['ExpoHead native module', 'createActivity']],
+  ["NativeModules['ExpoHeadModule'].clearActivitiesAsync(ids)", ['ExpoHead native module']],
 ];
 
 describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing about a letter, picture, child or prompt reaches Spotlight, Siri, Handoff or App Intents', () => {
@@ -303,6 +329,10 @@ describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing abou
     expect(donations('func handle(_ shortcutItem: UIApplicationShortcutItem) {}')).toEqual([]);
     expect(donations('activity.isEligibleForSearch = true; activity.becomeCurrent()')).toEqual(['isEligibleForSearch', 'becomeCurrent']);
     expect(donations('INInteraction(intent: i, response: nil).donate { _ in }')).toEqual(['INInteraction', 'donate']);
+    const made = 'let a = NSUserActivity(activityType: "x"); a.title = name; vc.userActivity = a';
+    expect(donations(made)).toEqual(['NSUserActivity made']);
+    expect(MAYBE.test(made) && MAYBE.test('[[NSUserActivity alloc] initWithActivityType:t]')).toBe(true);
+    expect(donations('[[NSUserActivity alloc] initWithActivityType:t];')).toEqual(['NSUserActivity made']);
   });
 
   it('[X6-R1] the Info.plist check catches each planted key', () => {
@@ -355,14 +385,20 @@ describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing abou
     }, 60_000);
   }
 
-  it('[X6-R1] the dependency scan finds a planted donor package and skips its tests', () => {
+  it('[X6-R1] the dependency scan finds planted donor packages under ios/ and apple/, and skips their tests', () => {
     const dir = mkdtempSync(join(tmpdir(), 'x6-donor-'));
     try {
-      mkdirSync(join(dir, 'ios', 'Tests'), { recursive: true });
-      writeFileSync(join(dir, 'ios', 'Donor.swift'), 'import Intents\nINInteraction(intent: i, response: nil).donate { _ in }\n');
-      writeFileSync(join(dir, 'ios', 'Tests', 'DonorTests.swift'), 'activity.becomeCurrent()\n');
-      writeFileSync(join(dir, 'ios', 'Opener.swift'), 'func open(_ userActivity: NSUserActivity) {}\n');
-      expect(dependencyHits(new Map([[dir, 'donor']]))).toEqual({ hits: { 'donor/ios/Donor.swift': ['INInteraction', 'donate', 'Intents framework'] }, files: 2 });
+      const [donor, appleDonor] = [join(dir, 'donor'), join(dir, 'apple-donor')];
+      mkdirSync(join(donor, 'ios', 'Tests'), { recursive: true });
+      writeFileSync(join(donor, 'ios', 'Donor.swift'), 'import Intents\nINInteraction(intent: i, response: nil).donate { _ in }\n');
+      writeFileSync(join(donor, 'ios', 'Tests', 'DonorTests.swift'), 'activity.becomeCurrent()\n');
+      writeFileSync(join(donor, 'ios', 'Opener.swift'), 'func open(_ userActivity: NSUserActivity) {}\n');
+      mkdirSync(join(appleDonor, 'apple'), { recursive: true });
+      writeFileSync(join(appleDonor, 'apple', 'Donor.swift'), 'let a = NSUserActivity(activityType: "x")\na.becomeCurrent()\n');
+      expect(dependencyHits(new Map([[donor, 'donor'], [appleDonor, 'apple-donor']]))).toEqual({
+        hits: { 'donor/ios/Donor.swift': ['INInteraction', 'donate', 'Intents framework'], 'apple-donor/apple/Donor.swift': ['becomeCurrent', 'NSUserActivity made'] },
+        files: 3,
+      });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
