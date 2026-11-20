@@ -231,7 +231,8 @@ function main(argv) {
   const cardFiles = git('ls-tree', '--name-only', head, `${CARDS_DIR}/`)
     .split('\n')
     .filter((p) => p.endsWith('.md'))
-    .map((p) => ({ name: p.slice(CARDS_DIR.length + 1), text: show(head, p) }));
+    // A listed card that cannot be read stops the guard (exit 2); it never passes as an empty file.
+    .map((p) => ({ name: p.slice(CARDS_DIR.length + 1), text: git('show', `${head}:${p}`) }));
   const { lines, failed } = runGuard({ diffText, body, decisionsBase: show(base, 'docs/DECISIONS.md'), cardFiles });
   for (const l of lines) console.log(l);
   console.log(failed ? 'Label guard: FAIL (docs/ops/LABEL_GUARD.md says how to clear each line).' : `Label guard: pass (${cardFiles.length} card files read).`);
