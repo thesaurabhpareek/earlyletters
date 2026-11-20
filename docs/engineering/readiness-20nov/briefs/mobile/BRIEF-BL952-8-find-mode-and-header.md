@@ -1,4 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Pin at develop 4d33978f (errata E1 to E73, CL-001 to CL-147; `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`): E58 (CL-132): a required update shows its line in Me; the hiding hook exists and nothing reads it yet, so Find is not hidden by it.
 Blocked until: #894 and #895 merged (words, switch, wiring); #840 merged (this slice edits `app/(tabs)/book.tsx` and registers keys in `packages/content/src/features/index.ts`, which the photo stack owns until then: Karma's ruling); #879 merged for R24 (the guard is #895's). Not opened yet: the PR does not exist [V: no open PR titled "BL-952 (8/8)"]. Karma: please accept the 8a/8b split (the plan counts one PR 8 of 8). C-09 is ruled (CL-116): "Go to a month" stands for the Book bar button, so "Months" is not twice in one bar (the rename is BL-938).
 
 ```
