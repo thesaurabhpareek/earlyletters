@@ -29,7 +29,7 @@ Agent: ops   Lane: Pack 10   Build: 13   Wave: 1
    release-ios.yml:27 push of tag `ios-v*`; classify :49-88: tag, version.json and branch `release/<x.y>` must agree, a release tag needs an RC tag on the
      same commit and docs/release/<version>.md
    release-ios.yml :89-133 job `checks`: npm test, typecheck, store-config --check, placeholder scan, seam guard (--profile production),
-     TRUSTED_SIGNING_KEYS non-empty (keys.ts:20 holds 2 keys [V])
+     TRUSTED_SIGNING_KEYS non-empty (packages/api/src/keys.ts:20 holds 2 keys [V])
    release-ios.yml:134-165 job `build`: environment `app-store`, `eas build --platform ios --profile production --no-wait --auto-submit`
    apps/mobile/version.json = 1.0.0 [V]; eas.json `appVersionSource` remote, build number from EAS only (RELEASE.md 2.2)
    Rulesets "Protect release tags" and "archive tags are kept" are active [V gh api rulesets]: a wrong tag cannot be deleted. Tags never move.

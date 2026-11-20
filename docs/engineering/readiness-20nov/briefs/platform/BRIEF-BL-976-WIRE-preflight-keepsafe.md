@@ -23,7 +23,7 @@ Agent: ops   Lane: Pack 10 (+ Pack 5 backup)   Build: 13   Wave: 1   (BL-976 fol
           apps/mobile/scripts/preflight-production.mjs (same, or keep its own `backup` id and add `backup-off` beside it), apps/mobile/scripts/preflight-keepsafe.mjs (export only if needed),
           apps/mobile/test/preflight-keepsafe.test.ts, docs/ops/PRODUCTION_VARIABLES.md (one line), docs/agents/checkins/ops-rd-h3-wire.md
    Never: eas.json (any value), workflows, backup code in lib/backup/**, packages/content.
-   Shared file: preflight-production.mjs conflicts with main (BRIEF 830 lists it) [V merge-tree]; whichever lands second merges develop.
+   Shared file: preflight-production.mjs conflicts with main [V merge-tree]; BRIEF 830 now names it for per-hunk review; whichever lands second merges develop.
 
 4. READING PACK: Pack 10 item 4; Pack 5 (keeping) BL-976 rows; preflight-keepsafe.mjs (all, ~70 lines); preflight-lib.mjs `createReport`; testflight.yml:104 (the only workflow that runs a preflight).
 
