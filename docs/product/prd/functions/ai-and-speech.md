@@ -315,7 +315,7 @@ Counsel numbers come from `docs/legal/COUNSEL_PACKET.md` 1.5.0; new ones are "ne
 
 ## Findings in one place
 
-Totals: 56 function requirements (FR-AIS-01 to 56): P0 36, P1 14, P2 6 by my count of the Priority column; 11 card changes; 14 backlog rows (12 new, 2 existing extended); 11 questions (7 counsel, 4 founder). Counts are by hand, not by a script.
+Totals: 56 function requirements (FR-AIS-01 to 56): P0 43, P1 11, P2 2 (counted by script from the Priority column, where the leading token is P0, P1 or P2); 11 card-change rows; 14 backlog rows (12 new, 2 existing extended); 11 questions (5 founder, 5 counsel, 1 joint).
 
 Top findings:
 1. There is no measured gate for any language. The repo holds bars and a tool, not a result. No store build should promise a language until `docs/qa/evidence/F05-gate-<lang>.md` exists.
