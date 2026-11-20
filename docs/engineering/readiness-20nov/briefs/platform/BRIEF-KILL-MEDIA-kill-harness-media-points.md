@@ -42,7 +42,7 @@ Agent: qa (harness) with mobile (app side)   Lane: Pack 1 (photo) + Pack 10   Bu
 
 10. PR BREAKDOWN: PR 1 protocol + oracle + parity (host and app mirror) ~220 lines, 6 files | PR 2 snapshot and run sheet row ~100 lines | base: the photo stack's last merged PR or develop after it | flag-off proof: with no picture drill kind the four old points behave as before (the existing tests).
 
-11. LENSES: A security-architect, B principal-architect.
+11. LENSES: A security-architect, B principal-architect; mobile reads (app-side kill-drill files under apps/mobile/**).
 
 12. ORDER: after #835 to #839 merge and BRIEF BL-929-ASHA PR 1. Before the Build 14 sheet. Blocked by the photo stack (mobile, founder merges).
 

@@ -16,7 +16,7 @@ Agent: mobile (markers) with ops (profile and guards)   Lane: Pack 8 + Pack 10  
    apps/mobile/test/store-flags.test.ts gains `EXPO_PUBLIC_PERF` as a flag allowed only on the `perf` profile: `[FR-OPS-22] the perf flag is off in every other profile`.
    .github/scripts/seam-guard.test.mjs gains: `[NS-34-R6] a store bundle does not contain the marker module` (positive control: the perf export does).
      [FR-OPS-22] the perf profile is not a store profile, is named in no `submit` entry of eas.json and in no workflow (`grep -rn perf .github/workflows` finds no `--profile perf`)
-   Red on develop: `git grep EXPO_PUBLIC_PERF` -> 0 hits [V]; no `perf` profile (eas.json profiles: development, preview, production, testflight [V]).
+   Red on develop: `git grep EXPO_PUBLIC_PERF` -> 0 hits [V]; no `perf` profile (eas.json build profiles: development, e2e (:22), preview, production, testflight [V]).
 
 3. FILES
    Touch: apps/mobile/eas.json (a new `perf` profile cloned from `testflight`, env adds EXPO_PUBLIC_PERF "on"; BACKUP, ANALYTICS, STATUS_REPORT stay "off"), apps/mobile/src/lib/perf/markers.ts (new), apps/mobile/src/dev/asha-perf-seed.ts (with BRIEF ASHA),

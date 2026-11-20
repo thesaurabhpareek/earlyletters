@@ -40,7 +40,7 @@ Agent: qa (with mobile)   Lane: Pack 8 (foundations) + Pack 10   Build: 13 sheet
 
 10. PR BREAKDOWN: PR 1 plan + small seed + test ~250 lines, 4 files; PR 2 media writer ~150 lines, 2 files (after #835 to #840 land); PR 3 the perf-seed loader (with BRIEF BL-929-PERF) | base develop | flag-off proof: no store build imports `asha-perf-seed.ts` (the seam guard search, BRIEF BL-929-PERF).
 
-11. LENSES: A principal-architect, B privacy.
+11. LENSES: A principal-architect, B privacy; mobile reads (apps/mobile/src/dev and test under a qa name).
 
 12. ORDER: PR 1 now. Before BRIEF BL-929-PERF's markers are useful; before the Build 13 "upgrade with a seeded book" sheet row. Pictures after #840. Blocked by the photo stack for PR 2 only.
 
