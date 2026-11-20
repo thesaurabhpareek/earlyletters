@@ -131,6 +131,18 @@ describe('[NS-10-R3] a second account never sees the first', () => {
   });
 });
 
+describe('[X4-R1] partial: the reminder planner\'s inputs (lib/reminders not edited here)', () => {
+  it('plannerChildren() and lastOwnSaveAt() hold none of A\'s book while B is signed in, and come back for A', async () => {
+    const prefs = await import('../src/lib/reminders/prefs');
+    expect(prefs.plannerChildren().map((c) => c.id)).toEqual([asha]);
+    auth.publishAuth(ready(B));
+    expect(prefs.plannerChildren()).toEqual([]);
+    expect(prefs.lastOwnSaveAt()).toBeNull();
+    auth.publishAuth(ready(A));
+    expect(prefs.plannerChildren().map((c) => c.id)).toEqual([asha]);
+  });
+});
+
 describe('[NS-10-R5] a second account never claims the first\'s letters', () => {
   it('no claim screen for B, takeOwnership refuses B, and nothing is queued under B', async () => {
     const { needsAccountClaim } = await import('../src/lib/auth/account-claim.logic');
