@@ -10,7 +10,7 @@ The constitution (CLAUDE.md): no entry text, transcript, audio or child name in 
 |---|---|---|---|---|---|
 | L-1 | Edge Function and ops script logs | `supabase/functions/_shared/log/log.ts:1-20`, sink `:246` | letter text, names, emails, tokens, ids | CONTROLLED | one typed logger: closed event names, error codes, counts, durations, random `req_id`; no id field; exceptions reduced to code, sqlstate, status. `canary.test.ts` pushes the fictional family "Asha" through every path and fails on any direct `console.*` in a function. The only `console.log` is the sink itself [V grep] |
 | L-2 | Escrow function logs | `supabase/functions/escrow/log.ts:1-8`, `handler.ts:61` | key material, ids, email | CONTROLLED | its own copy of the same rules, kept in one folder on purpose; no id, email, token, key, path field |
-| L-3 | Phone console | `apps/mobile/src/lib/resilience/global-errors.ts:49` (`console.warn(line)`), header `:6-8` | an error message with a value in it | CONTROLLED, test not read | records hold kind, code, id and time only (last 20); production profile only. A line on the device console is readable through a connected Mac or a sysdiagnose, so what goes in it matters [U: the line builder was not read] |
+| L-3 | Phone console | `apps/mobile/src/lib/resilience/global-errors.ts:49` (`console.warn(line)`), header `:6-8` | an error message with a value in it | UNKNOWN | records hold kind, code, id and time only (last 20); production profile only. A line on the device console is readable through a connected Mac or a sysdiagnose, so what goes in it matters [U: the line builder was not read] |
 | L-4 | Postgres and API logs (Supabase platform) | hosted setting | statements, bound values | UNKNOWN | `DATA_CLASSIFICATION.md` 4.8 says no `log_statement=all`; not readable from here [U] |
 | L-5 | Storage and Auth platform logs | vendor | object names `{child}/{author}/{entry}` (L3), IP addresses, emails | GAP (vendor) | our typed logger does not reach vendor logs. Auth log retention is **Unverified** (`DATA_CLASSIFICATION.md` 4.2, DELETION spec OQ-5) |
 | L-6 | Phone logs of sync and backup | `backup/local-db.ts:45`, `sync_outbox.payload` | letter text in `payload` | CONTROLLED by rule | `last_error` is "a code, never content"; the outbox `payload` is L4 and "never logged" (`migrations.ts:199-200`) [V comment; no test read] |
@@ -41,7 +41,7 @@ The constitution (CLAUDE.md): no entry text, transcript, audio or child name in 
 | Id | Surface | Where | What could leak | Status | Control and proof |
 |---|---|---|---|---|---|
 | X-1 | In-app export (the person's own copy) | `apps/mobile/src/lib/export/schema.ts:90` (schema 1.6.0) | the person's own L4 in plaintext | BY DESIGN | the screen says so (DATA-REQ-056); a book export holds others' letters only as the book shows them, never raw transcripts (DATA-REQ-050) |
-| X-2 | Recovery export | `resilience/recovery-export.ts:30-43` | everything in the SQLite directory, including `backup-<id>.db` (upload token, wrapped file key) and recordings | GAP | it copies `SQLite.defaultDatabaseDirectory` whole. Gap G-11 |
+| X-2 | Recovery export | `resilience/recovery-export.ts:30-43`, filter `recovery-export.logic.ts:33-42` | the person's own recordings and `scribe.db` (L4, plaintext) | BY DESIGN | the folder is listed whole but only `scribe.db`, `-wal`, `-shm`, `-journal` and audio files enter the ZIP; `backup-<id>.db` does not |
 | X-3 | Server-built exports | none | n/a | n/a | the `exports` bucket is not created; v1.0 exports are made on the phone |
 | X-4 | Ops incident and deletion scripts | `ops_incident_scope`, `ops_deletion_consent_records` | consent rows for a request | CONTROLLED | return counts, or consent rows with `profile_id` and `subject_hash` stripped (`20261108010000:96-112`) |
 | X-5 | Test and design fixtures | `packages/content/test/no-real-family-data.test.ts` | real family details | CONTROLLED | stores hashes only; fixtures use "Asha" |
@@ -51,11 +51,11 @@ The constitution (CLAUDE.md): no entry text, transcript, audio or child name in 
 | Id | Surface | Where | What could leak | Status | Control and proof |
 |---|---|---|---|---|---|
 | B-1 | iPhone device backup | no exclusion on `scribe.db`, recordings, photos (`ScribeAudioModule.swift:94` excludes only listening copies; `packs/app-support.ts:39`, `model-files.ts:41` packs and models) | all L4 on the phone, in the person's own iCloud or computer backup | BY DESIGN | ADR 0028 D1 and NX-39 F9 choose it; Apple is the processor; the Settings words must say it (`content`) |
-| B-2 | `backup-<id>.db` in that backup | `backup/local-db.ts:60-85` | upload token, wrapped file key | GAP | G-11; flag off |
+| B-2 | `backup-<id>.db` in that backup | `backup/local-db.ts:60-85` | upload token, wrapped file key | GAP | G-11: not excluded from the iPhone backup, no delete on Erase; flag off |
 | B-3 | iCloud Keychain | `backup/keys.ts:4-6` | book keys travel to the person's other Apple devices | BY DESIGN | synchronizable item; the server never sees the key; the wrap is escrowed separately |
 | B-4 | Supabase database backups | hosted | every table, including deleted rows until the backup ages out | BY DESIGN, partly unverified | off backups within 7 more days (`DATA_CLASSIFICATION.md` 2 Deletion); encryption at rest **Unverified** (LEGAL-REQ-022(c)); the daily `ops-ledger` copy lets a restore replay deletions (`purge_ledger`) |
 | B-5 | `ops-ledger` bucket | `purge-worker/daily.ts:6`, `20261023000000:1611` | ids of purged records; the unwrap log copy holds person, device and book ids | CONTROLLED, with an exception | service role only, 60 days, outside database backups. The escrow copy is made before pseudonymising, so ids remain up to 60 days after an account is deleted (Gap G-16) |
-| B-6 | Recording backup on the server | `entry-audio` | audio | CONTROLLED | client-side AES-256-GCM before upload (ADR 0006); the server holds ciphertext; keys open only on the phone or inside `escrow` (`escrow_wrap` not selectable by the phone, `grants.mjs:15`) |
+| B-6 | Recording backup on the server | `entry-audio` | audio | CONTROLLED | client-side AES-256-GCM before upload (ADR 0006); the server holds ciphertext; keys open only on the phone or inside `escrow` (`escrow_wrap` not selectable by the phone, `grants.mjs:14`) |
 
 ## 6. Push, local notifications and in-app notices
 
@@ -94,11 +94,11 @@ The constitution (CLAUDE.md): no entry text, transcript, audio or child name in 
 
 ## Gaps found here
 
-G-5 to G-21 are in 01a section 7. New in this file: none. The register adds evidence to G-9 (L-5, U-3), G-11 (X-2, B-2), G-13 (E-4) and G-16 (B-5).
+G-5 to G-21 are in 01a section 7. New in this file: none. The register adds evidence to G-9 (L-5, U-3), G-11 (B-2), G-13 (E-4) and G-16 (B-5).
 
 ## Questions for the council
 
-- Q-b1 (CISO) Treat the recovery export as an L4 plaintext file with the same warning as the normal export, and exclude `backup-<id>.db` from it. Default: yes; `mobile` change.
+- Q-b1 (CISO) Exclude `backup-<id>.db` from the iPhone backup and delete it on Erase. Default: yes; `mobile` change, before `EXPO_PUBLIC_BACKUP` goes on.
 - Q-b2 (CPO-privacy) Put the vendor-log gap (L-5) in the vendor table of 06 with its retention. Default: yes.
 - Q-b3 (CISO, founder) If remote push is ever decided, the first PR is a rule file (payload fields allowed: none of L3 or L4), before any entitlement. Default: no remote push in v1.0; the founder decides later.
 - Q-b4 (CCO) Confirm Supabase encryption at rest in writing before launch (LEGAL-REQ-022(c)). Default: ask the vendor; nothing here can verify it.
