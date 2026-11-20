@@ -490,8 +490,8 @@ Applied 20 Nov on the coordinator's instruction. Glass is the control and naviga
 | B-S19 Read together: Close in the top bar, Back one and Next letter at the foot | glass | regular, one container for the two turn buttons | the page is content; dusk lamp stays behind the content, never through glass |
 | B-S21 Me row | content | system grouped list | |
 
-Budget check (at most three glass surfaces visible): Book = tab bar, header cluster, toast. Find open = tab bar, Find bar. Letter page = top bar, toast (the tab bar stays visible by design, ruling 32: no screen in this area hides it and no bottom toolbar is drawn; the letter page is a pushed route above the tabs as built today, and the T-MIN device spike decides minimising). A sheet open = the sheet (the rest dimmed). Read together = top bar, turn container.
-Fallback: Reduce Transparency or iOS earlier than 26: each glass surface draws `surfaceRaised` with a 1 pt `controlBorder` edge, same shape and size (the prototype's Reduce Transparency toggle shows it). Increase Contrast: borders and labels step to `tokens.highContrast`.
+Budget check (at most three glass surfaces visible): Book = tab bar, header cluster, toast. Find open = tab bar, Find bar. Letter page = top bar, toast (tab bar: no change from today: the letter page is a pushed route and hides the tab bar as built; the T-MIN device spike decides, ruling 32). A sheet open = the sheet (the rest dimmed). Read together = top bar, turn container.
+Fallback: Reduce Transparency or iOS earlier than 26: each glass surface draws `glassFallback` (#282421) with a 1 pt `line` hairline, `controlBorder` under Increase Contrast, same shape and size (the prototype's Reduce Transparency toggle shows it). Increase Contrast: borders and labels step to `tokens.highContrast`.
 
 ## 5. Components
 

@@ -544,7 +544,7 @@ Layer per E screen (at most three glass surfaces; never glass on glass):
 
 Material tokens (from `system/FOUNDATIONS.md`, which landed at the end of this pass): glass surfaces use `material.glass.regular`; the fallback is `material.solid`; no E screen uses `material.glass.clear` or `material.glass.dim` (no E control floats over a picture); custom `GlassView`s pin `colorScheme` to the app's scheme (FOUNDATIONS line 58). State screens use the large Light glyph at 44 pt, hierarchical, `textMuted` (FOUNDATIONS icon table).
 
-Fallbacks every E state must show (the prototype has toggles for both): Reduce Transparency, iOS before 26 or glass unavailable: every glass surface becomes the solid twin (`surfaceRaised` fill, 1 pt `line` hairline), same shape and size. Increase Contrast: hairlines become `controlBorder`, muted text steps to `highContrast` values, glass gains a visible edge. Never animate glass by opacity (system MOTION; `expo-glass-effect`).
+Fallbacks every E state must show (the prototype has toggles for both): Reduce Transparency, iOS before 26 or glass unavailable: every glass surface becomes the solid twin (`glassFallback` #282421 fill, 1 pt `line` hairline), same shape and size. Increase Contrast: hairlines become `controlBorder`, muted text steps to `highContrast` values, glass gains a visible edge. Never animate glass by opacity (system MOTION; `expo-glass-effect`).
 
 
 ## 8. The "coming soon" audit (brief item)

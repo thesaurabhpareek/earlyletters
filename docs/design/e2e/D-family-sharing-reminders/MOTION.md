@@ -363,7 +363,7 @@ Keyed by name to NS-51 (photo moments) and NS-52, which are being written in fil
 
 | Id | Screen, state | Trigger | What moves | `m.*` and `T-*` | Reduce Motion | Haptic |
 |---|---|---|---|---|---|---|
-| D-M80 | D-S06.photoMomentsOff -> .photoMomentsOn | The switch "Reminders about pictures" turns on | The native switch moves; the footnote swaps in place; nothing scans, shimmers, sparkles or counts | `m.select`, `m.swap` | instant swap | native |
+| D-M80 | D-S06.photoMomentsOff -> .photoMomentsOn | The switch "Reminders about photos" turns on | The native switch moves; the footnote swaps in place; nothing scans, shimmers, sparkles or counts | `m.select`, `m.swap` | instant swap | native |
 | D-M81 | D-S06.photoMomentsOn -> .photoMomentsOff | Switch off | The footnote swaps; pending nudges are removed at the next re-plan, invisibly | `m.swap` | instant | native |
 | D-M82 | D-S06 switch appears or disappears | Library access granted or removed (in Me or iOS Settings) | On return to the page the row is simply present or absent: no entrance, no exit, no line (T-RESUME: nothing re-enters). If the page is open while it changes, `m.enter` or `m.exit` at most | `T-RESUME`, `m.enter` / `m.exit` | fade or jump | none |
 | D-M83 | D-S10 `photoMoment`, `-plain`, `-hidden`, `-appLock`, `-oneDay` | Delivered | iOS's own; ours silent, no badge, no rich media, no picture attachment | system | system | none |

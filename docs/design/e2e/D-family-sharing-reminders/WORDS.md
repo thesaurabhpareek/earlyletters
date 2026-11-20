@@ -796,7 +796,7 @@ Keyed by name to NS-51 (photo moments) and NS-52 because file 27 does not exist 
 |---|---|---|---|---|---|---|
 | `ntc.photoMoment.title` | PROPOSED | Something for the book today | D-S10.photoMoment, names off or on (no name in any state) | notification | n/a | NS-51 (name) |
 | `ntc.photoMoment.body` | PROPOSED | A few words, if you like. | D-S10.photoMoment (default, same as plain; no mention of pictures, per NS-51-R11) | notification | n/a | NS-51 |
-| `ntc.photoMoment.plain.title`, `.body` | PROPOSED | Something for the book today / A few words for {child}, if you like. (neutral rendering) | D-S10.photoMoment-plain, `-appLock` | notification | n/a | G-D30 |
+| `ntc.photoMoment.plain.title`, `.body` | PROPOSED | Something for the book today / A few words, if you like. (neutral rendering, no child name) | D-S10.photoMoment-plain, `-appLock` | notification | n/a | G-D30 |
 | `notifications.placeholder.photoMoment` | PROPOSED | Something for the book, whenever you have a minute. | D-S10.photoMoment-hidden | notification | n/a | NS-47-R36 pattern |
 | `reminderCopy.settings.photoMomentsLabel` | PROPOSED | Reminders about photos | D-S06 switch | "Reminders about photos, off" | Reminders about photos | NS-51 (name) |
 | `reminderCopy.settings.photoMomentsHelp` | PROPOSED | Uses the same one reminder a day. Notifications show only neutral words. | D-S06.photoMomentsOn footnote | read as text | n/a | NS-32-R1 |

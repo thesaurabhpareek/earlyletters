@@ -737,7 +737,7 @@ Applied after the coordinator's course correction of 20 Nov. Component and token
 | D-S25 (v2) | none: the `DoorNote` blocks and the denied card are content layer; C-S25 is a sheet, so buttons inside it are solid | consent line, privacy line, calm lines | A tick shows no glass toast (a third surface on a sheet screen) |
 | D-S26 (v2) | none | specimens | design artefact |
 
-Reduce Transparency, or iOS before 26: every glass surface above becomes the solid token surface (`surfaceRaised`) with a hairline (`line`), same shape and size. Increase Contrast: hairlines and labels step to the `highContrast` tokens. At most three glass surfaces are visible at once on every screen in this area (the most is D-S02 over the letter page: the sheet, plus the page's header buttons dimmed behind the scrim).
+Reduce Transparency, or iOS before 26: every glass surface above becomes the solid fallback (`glassFallback`, #282421) with a hairline (`line`), same shape and size. Increase Contrast: hairlines and labels step to the `highContrast` tokens. At most three glass surfaces are visible at once on every screen in this area (the most is D-S02 over the letter page: the sheet, plus the page's header buttons dimmed behind the scrim).
 
 ## 5. Notifications: classes and lock-screen rendering
 

@@ -1039,7 +1039,7 @@ Integration: NS-51 (pending); Q-PM-1 (limited by default), Q-PM-5 (place names o
 
 ### Accessibility for every round 2 state (C-S27 and C-S18.media)
 
-Rules for all of them: every control is 44 pt or more (rows 52 pt, `size.row`; the switch row is one 52 pt row whose whole width toggles); Voice Control names equal the visible words; colour is never the only signal (on and off are said in the row's value words as well as the switch); text uses the existing pairs `text` on `surface` and `textMuted` on `surface` in light and dark and Increase Contrast, so no new colour needs a pair test (`mediaFrame` applies only where a thumbnail shows, ruling 27); the page keeps the tab bar (ruling 32); AX5 wraps every line and stacks every pair of buttons, nothing truncates; Reduce Motion as in M-C92 to M-C97; the page ignores no Smart Invert case because it holds no picture.
+Rules for all of them: every control is 44 pt or more (rows 52 pt, `size.row`; the switch row is one 52 pt row whose whole width toggles); Voice Control names equal the visible words; colour is never the only signal (on and off are said in the row's value words as well as the switch); text uses the existing pairs `text` on `surface` and `textMuted` on `surface` in light and dark and Increase Contrast, so no new colour needs a pair test (`mediaFrame` applies only where a thumbnail shows, ruling 27); the tab bar is as built today (ruling 32; settings pages are pushed routes and hide it, the T-MIN spike decides); AX5 wraps every line and stacks every pair of buttons, nothing truncates; Reduce Motion as in M-C92 to M-C97; the page ignores no Smart Invert case because it holds no picture.
 
 | State | VoiceOver, in order | AX5 | Contrast and signals |
 |---|---|---|---|
