@@ -48,6 +48,11 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
     expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
     expect(t.length).toBeLessThanOrEqual(120);
   });
+  it('[NS-01-R20e][NS-33-R9] with the lens row showing, the Months button and the lens option have different names (#840 review A)', () => {
+    const { months, photos, monthsButton } = photosCopy.book.lens;
+    expect(monthsButton.toLowerCase()).not.toBe(months.toLowerCase());
+    expect(monthsButton.toLowerCase()).not.toBe(photos.toLowerCase());
+  });
   it('[NS-01-R23] the lens has no "add" string; adding lives on the letter page only', () => {
     for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\badd\b/i);
     expect(photosCopy.book.letter.addPhoto).toMatch(/this letter/);

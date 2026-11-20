@@ -36,6 +36,12 @@ export const photosCopy = {
       months: 'Months',
       // TODO(founder): PROPOSED, needs word approval
       photos: 'Photos',
+      // The cover band's and the bar's Months button while the lens row shows, so the two controls have different names
+      // for Voice Control and the rotor (#840 review A). It says what the Months sheet does, and is that sheet's title
+      // (book.months.title). Without the lens the button keeps book.months.button. Renaming the lens option instead is
+      // the other way; the founder chooses.
+      // TODO(founder): PROPOSED, needs word approval
+      monthsButton: 'Go to a month',
     },
     letter: {
       // TODO(founder): PROPOSED, needs word approval

@@ -238,7 +238,7 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
     expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
     expect(book).toMatch(/\{lensOn \? \(/);
-    expect(book).toMatch(/const showPhotos = lensOn && lensMode === 'photos';/);
+    expect(book).toMatch(/const showPhotos = lensOn && lensMode === 'photos' && !params\.arrived;/);
     expect(photoSurfaces({ build: false, paused: false }).lens).toBe(false);
   });
 });
@@ -329,6 +329,30 @@ describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exact
     expect(group).toMatch(/accessibilityRole="radio"\s+accessibilityState=\{\{ checked \}\}/);
     expect(photos.book.lens.label.length).toBeGreaterThan(0);
   });
+  it('[NS-33-R3][NS-01-R10] the lens row stays mounted across the switch: both lenses are the one SectionList, the row in its header (#840 review A)', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book.match(/<LensRow /g)).toHaveLength(1);
+    expect(book.match(/<AnimatedSectionList\b/g)).toHaveLength(1);
+    expect(book).not.toMatch(/<ScrollView\b|PhotoChapters/);
+    expect(book).toMatch(/const sections = useMemo\(\(\) => \(showPhotos \? photoChapters\(chapters, lens\.photos\) : chapters\), \[showPhotos, chapters, lens\.photos\]\);/);
+    expect(book).toMatch(/sections=\{sections\}\s+keyExtractor=\{\(e: Entry\) => e\.id\}\s+ListHeaderComponent=\{header\}/);
+    expect(book).toMatch(/showPhotos \? \(\s*<LensCard entry=\{item\} picture=\{lens\.photos\.get\(item\.id\)\} child=\{active\} onOpen=\{open\} \/>/);
+    // The lens row sits in `header`, which no lens branch renders on its own.
+    const header = book.slice(book.indexOf('const header = ('), book.indexOf('const compact = '));
+    expect(header).toMatch(/<LensRow mode=\{lensMode\} onChange=\{setLensMode\} \/>/);
+  });
+  it('[NS-01-R20e][NS-33-R9] Months is not offered in Photos, never opens by itself on the way back, and has its own name beside the lens row (#840 review A)', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const months =\s*!showPhotos && showsMonthsButton\(rows\)\s*\? \{ label: lensOn \? photos\.book\.lens\.monthsButton : bookCopy\.monthsButton,/);
+    expect(book).toMatch(/<MonthsSheet open=\{monthsOpen && !showPhotos\} rows=\{rows\}/);
+    expect(book.match(/<MonthsSheet /g)).toHaveLength(1);
+    // Both Months buttons (the cover band's and the bar's) take `months`; neither is drawn without it.
+    expect(book).toMatch(/months=\{chapters\.length > 0 \? months : null\}/);
+    expect(book).toMatch(/\{months \? <Button variant="quiet" size="sm" label=\{months\.label\}/);
+    expect(photos.book.lens.monthsButton).not.toBe(photos.book.lens.months);
+    // An arrival lands in Months, and a lens that goes away leaves Months chosen.
+    expect(book).toMatch(/if \(params\.arrived \|\| !lensOn\) setLensMode\('months'\);/);
+  });
 });
 
 describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
@@ -349,7 +373,7 @@ describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot 
     // The Book now hosts the read-only Photos lens, so its flag, hook and lens component are allowed; nothing that can
     // start a letter or open the picker is (start-intent, capture, the photo start, the picker, the pending picture).
     expect(importsOf(sf).filter((m) => /start-intent|capture|photos\/(use-photo-start|use-photo-pick|photo-start|session|registry|pending|device|picker|attach)/.test(m))).toEqual([]);
-    expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/flag', '@/lib/photos/hooks', '@/lib/photos/lens', '@/lib/photos/pause']);
+    expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/copy', '@/lib/photos/flag', '@/lib/photos/hooks', '@/lib/photos/lens', '@/lib/photos/pause']);
     expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
   });
   it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
