@@ -1,8 +1,10 @@
 /**
- * NS-09 words (BL-925): the card's own bans on the Let it go lines, over the keys and every option offered.
+ * NS-09 words (BL-925): the card's own bans (NS-09 sections 14 and 16) on the Let it go lines, over the keys and every
+ * option offered. Tagged with the backlog row, not an NS row: BL-926 proves R4a and R4b on the screen.
  * Added under the widened claim (Karma, board #855): this one test file, for BL-925.
  */
 import { describe, expect, it } from 'vitest';
+import { brand } from '@scribe/brand';
 import { en } from '../src';
 
 const KEYS = {
@@ -10,13 +12,13 @@ const KEYS = {
   'en.listen.discardBodyNoUndo': () => en.listen.discardBodyNoUndo,
   'en.listen.letGoStuck': () => en.listen.letGoStuck,
   'en.listen.removeNowButton': () => en.listen.removeNowButton,
-  'en.listen.removeNowHintA11y': () => en.listen.removeNowHintA11y,
+  'en.listen.removeNowA11yHint': () => en.listen.removeNowA11yHint,
 };
 
-/** The options offered beside each key (the comments in strings.en.ts and the founder packet). */
+/** The other options offered beside each key (the comments in strings.en.ts and #870's packet rows 1 to 3). */
 const OPTIONS = [
+  'This recording is still on this phone. {app} will finish removing it.',
   'This recording is not removed yet. {app} tries again each time it opens.',
-  'This recording is still on this phone. It will be removed the next time {app} opens.',
   'It will be removed, and it cannot be brought back.',
   'It will be removed from the phone, and it cannot be brought back.',
   'One recording is still on this phone.',
@@ -25,7 +27,9 @@ const OPTIONS = [
 // NS-09 sections 14 and 16, the "we" rule (principle 2), loss and blame words, and the glossary's internal words.
 const BANNED = /\b(?:fail\w*|error\w*|deleted everywhere|instantly|we|our|us|lost|lose|gone forever|forever|sorry|oops|draft|take|entry|discard\w*|delete\w*)\b/i;
 
-describe('[NS-09-R4a] the let-it-go words say what is true, calmly', () => {
+const filled = (t: string) => t.replace('{app}', brand.name);
+
+describe('[BL-925] the let-it-go words say what is true, calmly (NS-09 s16)', () => {
   it('has every NS-09 key, non-empty', () => {
     for (const [key, read] of Object.entries(KEYS)) expect(typeof read() === 'string' && read().length > 0, key).toBe(true);
   });
@@ -37,7 +41,7 @@ describe('[NS-09-R4a] the let-it-go words say what is true, calmly', () => {
 
   it('keeps Remove now to 22 characters and the lines short enough to read at a glance', () => {
     expect(en.listen.removeNowButton.length).toBeLessThanOrEqual(22);
-    for (const t of [en.review.letGoPending, ...OPTIONS]) expect(t.replace('{app}', 'Early Letters').length).toBeLessThanOrEqual(100);
+    for (const t of [en.review.letGoPending, ...OPTIONS]) expect(filled(t).length).toBeLessThanOrEqual(100);
   });
 
   it('says the recording cannot be brought back in the confirmation (NS-09-R9)', () => {
