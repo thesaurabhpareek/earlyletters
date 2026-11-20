@@ -3,7 +3,7 @@
  * Find wired into the app's writes (NS-02-R16a, R16b, R16d, R18, R43): the repos and the sync engine move the index in
  * the letter's own transaction, Erase everything and Delete this book take it with them, and a build with Find off makes
  * nothing of Find and drops what an earlier build made. Moved from #798's find-lifecycle.test.ts; the store now runs the
- * batched rebuild (slice 5). Real SQLite with FTS5 (node:sqlite). Fictional Asha family only.
+ * batched rebuild (slice 5), started by `startFindCatchUp` after the first frame. Real SQLite with FTS5 (node:sqlite). Fictional Asha family only.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { children, entries, wipe } from '../src/lib/db/repos';
@@ -163,6 +163,7 @@ describe('[NS-02-R43] a build with Find off makes nothing of Find and drops what
     try {
       vi.mocked(rebuildSearchIndex).mockClear();
       expect(openWith(h.db).ok).toBe(true);
+      store.startFindCatchUp();
       await vi.advanceTimersByTimeAsync(60_000);
       expect([await store.ensureFindIndex(), store.findIndexReady(), findObjects(h.db), findSettings(h.db)]).toEqual(['off', false, [], []]);
       expect(rebuildSearchIndex).not.toHaveBeenCalled();
@@ -171,22 +172,26 @@ describe('[NS-02-R43] a build with Find off makes nothing of Find and drops what
     }
   });
 
-  it('[NS-02-R43][NS-02-R35] with the switch on the catch-up runs off the first frame; switched off, the next launch drops the index and the view', async () => {
+  it('[NS-02-R35][NS-02-R43] opening the store starts nothing; the catch-up runs once after the first frame; switched off, the next launch drops it all', async () => {
     vi.useFakeTimers();
     const h = nodeDb();
     try {
       setFindForTest(true);
       vi.mocked(rebuildSearchIndex).mockClear();
       expect(openWith(h.db).ok).toBe(true);
-      expect(findObjects(h.db)).toEqual([]); // nothing on the path to the first frame
       await vi.advanceTimersByTimeAsync(60_000);
+      expect([findObjects(h.db), vi.mocked(rebuildSearchIndex).mock.calls.length]).toEqual([[], 0]); // nothing before the first frame
+      store.startFindCatchUp(); // the root layout, after the first frame
+      store.startFindCatchUp();
+      await vi.advanceTimersByTimeAsync(1_000);
       expect(rebuildSearchIndex).toHaveBeenCalledTimes(1);
       expect([findObjects(h.db), store.findIndexReady()]).toEqual([[SEARCH_TABLE, SEARCH_ROWS_TABLE, 'searchable_letters'].sort(), true]);
       store.closeStore();
       setFindForTest(false);
       vi.mocked(rebuildSearchIndex).mockClear();
       expect(openWith(h.db).ok).toBe(true);
-      await vi.advanceTimersByTimeAsync(60_000);
+      store.startFindCatchUp();
+      await vi.advanceTimersByTimeAsync(1_000);
       expect([findObjects(h.db), findSettings(h.db), store.findIndexReady()]).toEqual([[], [], false]);
       expect(rebuildSearchIndex).not.toHaveBeenCalled();
     } finally {

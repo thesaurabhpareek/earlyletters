@@ -187,14 +187,10 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
-  if (result.ok) scheduleFindCatchUp();
   return result;
 }
 
 // -- Find (NS-02; ADR 0028 D4) ------------------------------------------------------------
-/** Pause after the store opens before Find's catch-up runs, so it is never on the path to the first frame. */
-const FIND_CATCH_UP_DELAY_MS = 3000;
-
 /** Whether this file holds anything of Find: its index or its view. */
 const findObjectsExist = (db: SqlDb): boolean =>
   db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name IN ('${SEARCH_TABLE}', '${SEARCH_VIEW}')`) !== null;
@@ -219,15 +215,18 @@ export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
   }
 }
 
-function scheduleFindCatchUp(): void {
-  try {
-    if (!findBuildEnabled() && !findObjectsExist(ctx().db)) return;
-  } catch {
-    return;
-  }
-  // Off the first frame: the catch-up starts after the store has opened and the first screen has drawn.
-  const handle = setTimeout(() => void ensureFindIndex(), FIND_CATCH_UP_DELAY_MS) as unknown as { unref?: () => void };
-  handle.unref?.();
+let findCatchUpFor: unknown = null;
+
+/**
+ * Find's launch catch-up, once per open store, after the first frame (NS-02-R35, R43): the root layout calls it beside
+ * startPacks() and startRemote(), never on the path to the first frame. Returns at once; the work runs in batches.
+ * Does nothing with Find off and nothing of Find on the phone.
+ */
+export function startFindCatchUp(): void {
+  if (!conn?.result.ok || findCatchUpFor === conn) return;
+  findCatchUpFor = conn;
+  if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
+  void ensureFindIndex();
 }
 
 /** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
