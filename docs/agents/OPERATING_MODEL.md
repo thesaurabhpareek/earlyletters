@@ -86,7 +86,7 @@ Two board facts are not reviews and do not change how you review. A line under "
 
 ## 7. The founder digest
 
-The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for the founder (oldest first, with the red-team verdict), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
+The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for Karma (oldest first, with the red-team verdict), and the few acts only the founder can do (CR-73), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
 
 ## 8. Hard limits (every agent, every run)
 
