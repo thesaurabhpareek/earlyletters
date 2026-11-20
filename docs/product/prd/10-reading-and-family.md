@@ -896,6 +896,7 @@ Decision record. Designers do not draw this until it is reopened.
 - **Never.** No letter text, child name, picture or prompt is donated to the system (ruling D3).
 - **Free or Plus.** Free if built (ruling T2).
 - **Counsel.** Q54(d); Apple 4.5.4 names push notifications (research note 1).
+- **1.0 rule (E79).** No 1.0 row needs a server-sent push: no APNs key, no token table, no push entitlement. Where a row seems to want one (the other parent wrote, a restore request, a security alert), it is an in-app line on next open, a local reminder inside NS-32's budget, or an email; adding a push is the founder's decision, taken only through the reopen test above.
 
 ## NS-27. Who can read each letter (candidate C-31, rank 42)
 

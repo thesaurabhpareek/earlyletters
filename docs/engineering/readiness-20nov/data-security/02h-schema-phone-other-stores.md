@@ -4,7 +4,7 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 
 ## 1. Find index (inside scribe.db, built at runtime, not by a migration)
 
-Created by `ensureSearchIndex` (`apps/mobile/src/lib/find/lifecycle.ts:179-181`), not by `migrations.ts` (ADR 0028 D4). Derived data, rebuilt from letters; never synced; erased with the letters. Retention: with the letters; `find.dirtyAt` marks a rebuild. Deletion path: `removeEverything` deletes every table (`db/repos/wipe.ts:135-144`); the FTS5 secure-delete option is set where this SQLite has it (`lifecycle.ts:185-192`, setting `find.secureDelete`). Tests: `find-index`, `find-rebuild`, `find-scan`, `find-search`.
+Created by `create()` (`apps/mobile/src/lib/find/lifecycle.ts:179-182`), called from `ensureSearchIndex` (`:258`), not by `migrations.ts` (ADR 0028 D4). Derived data, rebuilt from letters; never synced; erased with the letters. Retention: with the letters; `find.dirtyAt` marks a rebuild. Deletion path: `removeEverything` deletes every table (`db/repos/wipe.ts:135-144`); the FTS5 secure-delete option is set where this SQLite has it (`lifecycle.ts:185-192`, setting `find.secureDelete`). Tests: `find-index`, `find-rebuild`, `find-scan`, `find-search`.
 
 | Object | Type | Columns | L | Note |
 |---|---|---|---|---|
@@ -34,7 +34,7 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 | backup_jobs | cipher_sha256 | TEXT | yes | L3 | of the ciphertext |
 | backup_jobs | object_path | TEXT | yes | L3 | server path, ids only |
 | backup_jobs | upload_url, upload_token | TEXT | yes | L4 | a resumable-upload capability and its token: a secret until the upload ends |
-| backup_jobs | last_error | TEXT | yes | L2 | a code, never content (`local-db.ts:40-41`) |
+| backup_jobs | last_error | TEXT | yes | L2 | a code, never content (`apps/mobile/src/lib/backup/local-db.ts:45`) |
 | backup_restores | entry_id (pk) | TEXT | no | L3 | |
 | backup_restores | state, attempts, updated_at | TEXT check pending, done, kept_local, failed; INTEGER; TEXT | no | L2 | |
 
@@ -50,7 +50,7 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 | notifications.lockScreenNames | L2 | yes | the switch only; when on, local notice text names the child (01b L-1) |
 | player.original, packs.allowCellular | L2 | yes | playback and download choices |
 | auth.lastMethod, auth.reauth_epoch_seen | L2 | yes, new | last sign-in method; re-authentication epoch seen |
-| family.coParentNotify | L2 | yes | a day, never sent |
+| family.coParentNotify | L2 | yes | a day, never sent. In `docs/legal/DATA_CLASSIFICATION.md:702` (DC 4.5); not found in app code on develop (checked 20 Nov 2026 with git grep over apps and packages) |
 | language.spoken, speech.language, speech.letterLanguage.<letter id> | L4 | yes | the author's languages (the last key also holds a letter id, L3) |
 | speech.memoryFailures, speech.jobRunning, speech.download, speech.download.migrated | L2 | yes | model tier and download state |
 | plus.cache | L3 | yes | last plan snapshot for offline launch |
@@ -94,7 +94,7 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 |---|---|---|---|
 | `audio/<entry id>.m4a` and the other recording folder | L4 | no | `eraseDeviceFiles` (`erase-everything.ts:57`); book erase |
 | `Application Support/listening/` | L4 | yes (`ScribeAudioModule.swift:94`) | `sweepListeningCopies` |
-| `Application Support/packs/`, models | L1 | yes (`packs/app-support.ts:39`, `model-files.ts:41`) | kept on Erase by design (`erase-everything.ts:24`); the set installed is L4 |
+| `Application Support/packs/`, models | L1 | yes (`packs/app-support.ts:39`, `apps/mobile/src/lib/model-files.ts:43`) | kept on Erase by design (`erase-everything.ts:24`); the set installed is L4 |
 | `Application Support/remote` | L1 | n/a | |
 | export ZIPs and recovery export in app temp | L4, plaintext by design | temp | after the share sheet; Erase |
 | `backup-<profile id>.db` and `-wal`, `-shm` | PROPOSED L4 | no | see section 2 |
@@ -108,3 +108,10 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 
 - Q-h1 (CISO, CPO-privacy) Keep `upload_url` and `upload_token` in a file inside the iPhone backup? Default: move them to the Keychain item class of `scribe.auth` or stop persisting them, decided by `security-architect` and `sync`; until then the flag is off today and stays the founder's call.
 - Q-h2 (CPO-privacy) Exclude `backup-<id>.db` from the iPhone backup and delete it on Erase. Default: yes, a `mobile` change; not done here.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-h1: RULED (B5): `upload_token` moves to the Keychain (this-device-only class); `sync` and `security-architect` confirm the item class. [V] it is a plain column today (`backup/local-db.ts:79`).
+- Q-h2: RULED (B5): exclude `backup-<id>.db` from the device backup (on existing installs too), delete it on Erase and on sign-out of that account, add a test that fails if the file is created without the flag, and the preflight gate (01a 8.5, G-11). Recovery export does not copy it [V, `recovery-export.logic.ts:33-42`]. Classification stays PROPOSED L4 until `privacy` rules.
