@@ -11,7 +11,7 @@ Load this before you add or change anything under `apps/mobile/modules/**`, add 
 
 | What | Where |
 |---|---|
-| Modules on `develop` | `apps/mobile/modules/scribe-audio`, `scribe-files`, `scribe-keys`, `scribe-store`; `scribe-photo` is in #834 (open) |
+| Modules on `develop` | `apps/mobile/modules/scribe-audio`, `scribe-files`, `scribe-keys`, `scribe-store`, and `scribe-photo` (#834, 76a4a5d7) |
 | Who builds, who reviews | `13-engineering-plan.md` section 2: `mobile` builds, `security-architect` reviews |
 | Libraries and installs | the `mobile` charter (permissive licences, `npx expo install`); PRINCIPLES 3; CODE-R17, CODE-R18; AIE-R11 (check every API against the installed source) |
 | The only place Swift compiles | `.github/workflows/ios-compile.yml`: `compile` (Debug, simulator) when native paths change; `launch` (Release JavaScript on a simulator) on every mobile change |
@@ -22,7 +22,7 @@ Load this before you add or change anything under `apps/mobile/modules/**`, add 
 
 `apps/mobile/modules/<scribe-name>/`: `expo-module.config.json` (platforms and module class names), `index.ts`, `ios/<Name>.podspec`, `ios/<Name>Module.swift`, and `android/` only when the module ships on Android. Read an existing module first and copy its shape.
 
-- `index.ts` loads the native side with `requireOptionalNativeModule` from `expo`, as all four modules do, so the JavaScript still loads in Node tests and where the native side is absent. Callers handle `null`.
+- `index.ts` loads the native side with `requireOptionalNativeModule` from `expo`, as every module on `develop` does, so the JavaScript still loads in Node tests and where the native side is absent. Callers handle `null`.
 - Logic lives in TypeScript (`apps/mobile/src/lib/<area>/*.logic.ts`), pure and tested in Node. The Swift stays a thin adapter: take input, call the system, return plain values or a closed error code.
 
 ## 3. Tests CI can run (`npm test` never compiles Swift)
@@ -48,4 +48,4 @@ Load this before you add or change anything under `apps/mobile/modules/**`, add 
 
 ## 6. Evidence this is repeated know-how
 
-- Four modules on `develop` and a fifth in #834; source scans in three test files; the #833 ruling and its two reviews; #834's source scan that the binary carries no permission call; `13-engineering-plan.md` section 2 ("Native modules (Swift)"); the Low Power Mode guard, "New native module" (rank 36, N-13, `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`).
+- Five modules on `develop`, `scribe-photo` the newest (#834); source scans in three test files; the #833 ruling and its two reviews; #834's source scan that the binary carries no permission call; `13-engineering-plan.md` section 2 ("Native modules (Swift)"); the Low Power Mode guard, "New native module" (rank 36, N-13, `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`).
