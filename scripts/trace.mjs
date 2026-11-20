@@ -232,7 +232,9 @@ export function testTitles(src, pick = extractIds) {
   };
   for (const m of src.matchAll(TITLE_CALL)) {
     const ids = pick(m[2]);
-    const skipped = /\.(?:skip|todo|fails)\b/.test(m[0]);
+    // The modifier before the title (`it.skip(`), or a node:test option after it (`{ skip: true }`).
+    const skipped = /\.(?:skip|todo|fails)\b/.test(m[0].slice(0, -(m[2].length + 2)))
+      || /^\s*,\s*\{[^}]*\b(?:skip|todo)\s*:\s*(?!false\b)/.test(src.slice(m.index + m[0].length, m.index + m[0].length + 120));
     if (ids.length) out.push({ title: m[2], line: lineOf(m.index + (/^[\w$]/.test(m[0]) ? 0 : 1)), ids, skipped });
   }
   return out;
@@ -736,7 +738,8 @@ export function main(argv = process.argv.slice(2), log = console.log) {
   // The NS register defaults to develop's copy; --register reads another (the lock branch, a fixture).
   const register = path.resolve(repo, args.register || 'docs/product/prd/14-test-plan.md');
   if (args.register && !exists(register)) throw new Error(`no register at ${register}`);
-  m.ns = exists(register) ? collectNs({ repo, register }) : null;
+  // Report mode: a card the NS parser cannot read is logged, never a failed npm test.
+  try { m.ns = exists(register) ? collectNs({ repo, register }) : null; } catch (e) { if (args.check) throw e; m.ns = null; log(`  trace NS skipped: ${e.message}`); }
   const ns = m.ns && summarizeNs(m.ns);
   if (args.write) {
     const out = path.resolve(repo, args.out || 'docs/TRACE.md');

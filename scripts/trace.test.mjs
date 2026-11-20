@@ -301,7 +301,8 @@ function nsRepo() {
   w('apps/mobile/test/a.test.ts', ["it('[NS-90-R1][NX-39-R2] found', () => {});", "it.skip('[NS-90-R2] skipped', () => {});",
     "it('names a row in its body only', () => { /* [NS-90-R3] */ });", "it('[NS-90-R4a][stand-in] stand-in', () => {});",
     "test('[NS-90-C28-13] found, C28-1 is not', () => {});", "it('[NS-90-R99] typo', () => {});", "it('[X4-R1] second account', () => {});",
-    "it('[NS-90-A2] split parent', () => {});", "it('NS-90-R5 unbracketed', () => {});"].join('\n'));
+    "it('[NS-90-A2] split parent', () => {});", "it('NS-90-R5 unbracketed', () => {});",
+    "test('[NS-90-C28-1] option form', { skip: true }, () => {});", "it('[NS-90-R7] keeps the .todo list', () => {});"].join('\n'));
   w('apps/mobile/e2e-web/j09.flow.ts', "test('[J-N9][NS-90-R6] journey', async () => {});\n");
   return repo;
 }
@@ -320,7 +321,7 @@ test('[BL-964] planted card: the NS report finds what is tested and misses nothi
   assert.deepEqual(by['NS-90-R6'].journeys, ['J-N9 apps/mobile/e2e-web/j09.flow.ts:1']);
   assert.deepEqual(['R1', 'R2', 'R3', 'R4a', 'C28-13'].map((x) => by[`NS-90-${x}`].backlog.join()), ['BL-100', 'BL-100', 'BL-100', '', 'BL-100']);
   assert.deepEqual([ns.listedNotP0, ns.p0NotListed], [['NS-90-R7'], ['NS-90-R6', 'NS-90-C28-1']]);
-  assert.deepEqual([ns.strays.map((x) => x.id), ns.splitCited.map((x) => x.id), ns.skipped, ns.nxCited], [['NS-90-R99'], ['NS-90-A2'], 1, ['NX-39-R2']]);
+  assert.deepEqual([ns.strays.map((x) => x.id), ns.splitCited.map((x) => x.id), ns.skipped, ns.nxCited], [['NS-90-R99'], ['NS-90-A2'], 2, ['NX-39-R2']]);
   assert.deepEqual(ns.journeys.map((j) => [j.id, j.priority, j.at.join()]), [['J-N9', 'P0', 'apps/mobile/e2e-web/j09.flow.ts:1'], ['J-N10', 'P1', '']]);
   const s = summarizeNs(ns);
   assert.deepEqual([s.cards, s.rows, s.p0, s.tested, s.partial, s.journey, s.device, s.untested, s.p0NoBacklog], [1, 10, 8, 2, 1, 1, 1, 3, 4]);
@@ -336,6 +337,9 @@ test('[BL-964] the NS report is report mode: it renders, logs, and never fails -
   assert.match(md, /\| NS-90-R1 \| tested \| `apps\/mobile\/test\/a\.test\.ts:1` \|/);
   assert.match(md, /\| NS-90-R3 \| untested \|/);
   assert.throws(() => main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/none.md', 'docs/prd'], () => {}), /no register/);
+  const logged = [];
+  assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd', 'docs/prd'], (l) => logged.push(l)), 0);
+  assert.match(logged.join('\n'), /trace NS skipped: EISDIR/);
   fs.rmSync(path.join(repo, 'docs/product'), { recursive: true });
   assert.equal(main(['--no-write', '--repo', repo, 'docs/prd'], (l) => out.push(l)), 0);
 });
