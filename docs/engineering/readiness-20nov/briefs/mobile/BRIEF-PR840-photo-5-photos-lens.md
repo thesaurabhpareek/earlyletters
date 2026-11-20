@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `91eef422`, 20 Nov 19:15 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `91eef422`, 20 Nov 19:04 UTC).
 Blocked until: #839 merged (base `feat/mobile-photo-4c-letter-page`); the word `book.lens.monthsButton` (PROPOSED) read by the founder; #854 merged. The slice is inside CODE-R02 (326 added, 16 removed, 12 files, counted 342) so it needs no size exception [V]. NS-37 (BL-932) must merge before the flag turns on in `production`, not before this merge. Conflict for product (DESIGN-DELTA C-09, PR #923): "Months" appears twice in one bar once Find and "Go to a month" land.
 
 ```
-BRIEF PR-840 (BL-931 slice 5)                     Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:15 UTC
+BRIEF PR-840 (BL-931 slice 5)                     Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When a book has a kept, open letter with a picture, the Book offers one radio choice "Months or Photos" and the Photos lens lists

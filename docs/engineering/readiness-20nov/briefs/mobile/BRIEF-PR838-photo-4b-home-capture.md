@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:05 UTC).
-Blocked until: #837 merged (base `feat/mobile-photo-4-capture` sits on `feat/mobile-photo-4a-pending`); the founder's size exception at the new size (617 added, 12 removed, 25 files; reviewers counted 629, 56 over the 573 covered); the five PROPOSED photo keys read by the founder (`packages/content/src/features/photos.en.ts`, +28 lines; `needs:founder`); #854 merged. Conflict sent to product, not decided here: card R20b wants Change last in VoiceOver order, the slice keeps Change under the picture (plan M30; React Native's reading-order override is experimental).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:04 UTC).
+Blocked until: #837 merged (its base is `feat/mobile-photo-4a-pending`; its head branch is `feat/mobile-photo-4-capture`); the founder's size exception at the new size (617 added, 12 removed, 25 files; reviewers counted 629, 56 over the 573 covered); the five PROPOSED photo keys read by the founder (`packages/content/src/features/photos.en.ts`, +28 lines; `needs:founder`); #854 merged. Conflict sent to product, not decided here: card R20b wants Change last in VoiceOver order, the slice keeps Change under the picture (plan M30; React Native's reading-order override is experimental).
 
 ```
-BRIEF PR-838 (BL-931 slice 4b)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:05 UTC
+BRIEF PR-838 (BL-931 slice 4b)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When photos are switched on, Home offers "Start from a photo" once, through `startCapture({source:'photo'})`,
@@ -55,7 +55,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 9. ACCEPTANCE  Experience: A-S01 Home (Start from a photo quiet, third; C-08 conflict open), A-S03, A-S11 (EX-01 44 pt, EX-04 order, EX-08 Reduce Motion, EX-11 Smart Invert);
    motion MA-01 and MA-12 (PR #922). Test cases above; rows R39, R40, R42 stay open for BL-956. Done also means: red on old code and on each named mutant.
 
-10. PR BREAKDOWN: exists (#838, base feat/mobile-photo-4a-pending). Rebuild and retarget when #837 merges. Flag-off proof: `photos-surfaces.test.ts` (off: no registration, no controls).
+10. PR BREAKDOWN: exists (#838, 25 files, over the 20-file limit by the founder's exception). Fallback split if the exception is withdrawn: 4b-1 lib/photos, lib/capture and the content keys with their tests (about 14 files); 4b-2 screens and components (index, listen, review, write, photo-start, thumb, frame) (about 11 files), 4b-2 based on 4b-1. Existing PR #838, base feat/mobile-photo-4a-pending. Rebuild and retarget when #837 merges. Flag-off proof: `photos-surfaces.test.ts` (off: no registration, no controls).
 
 11. LENSES: A principal-architect, B design-systems. Both PASS WITH NOTES at 03704c71 (14:55 and 15:50 UTC).
 

@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `f3b21698`, 20 Nov 19:10 UTC). One already moved: review notes cite `photos/device.ts:95` for the eraser; at this head it is `erasePictureOf` at `device.ts:102`, the `COALESCE(entry_id, draft_id)` query at `:104`.
-Blocked until: #838 merged (base `feat/mobile-photo-4-capture`); the founder's size exception (592 added, 11 removed, 17 files; reviewers counted 603, 85 over the 518 covered); the 13 PROPOSED keys plus `text.*` (among them `features.photos.review.notStored`) read by the founder; #854 merged. Conflicts for product (DESIGN-DELTA C-01, C-02, PR #923): the card and e2e B-S08 put the picture ABOVE the words, this slice keeps it after the words; the Undo clock.
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `f3b21698`, 20 Nov 19:04 UTC). One already moved: review notes cite `photos/device.ts:95` for the eraser; at this head it is `erasePictureOf` at `device.ts:102`, the `COALESCE(entry_id, draft_id)` query at `:104`.
+Blocked until: #838 merged (base `feat/mobile-photo-4-capture`); the founder's size exception (592 added, 11 removed, 17 files; reviewers counted 603, 85 over the 523 (plan M29 gives 523) covered); the 13 PROPOSED keys plus `text.*` (among them `features.photos.review.notStored`) read by the founder; #854 merged. Conflicts for product (DESIGN-DELTA C-01, C-02, PR #923): the card and e2e B-S08 put the picture ABOVE the words, this slice keeps it after the words; the Undo clock, which CR-67 AX-11 already rules: one clock, the toast's own dismissal (`createUndo`, row 33-3, design-systems).
 
 ```
-BRIEF PR-839 (BL-931 slice 4c)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:10 UTC
+BRIEF PR-839 (BL-931 slice 4c)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When a letter has a picture, Review and the letter page show it, a second picture replaces the first only after confirm,
@@ -54,13 +54,13 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 11. LENSES: A principal-architect, B design-systems. Both PASS WITH NOTES at f3b21698 (14:55 and 15:50 UTC).
 
-12. ORDER: after #838; before #840. N1 (dead Undo, NS-01-R38b P0 (b)) is listed "not met" on the card: the fix is BRIEF-BL954 and is NOT a reason to
+12. ORDER: after #838; before #840. N1 (dead Undo, NS-01-R38b P0 (b)) is listed "not met" on the card: the fix is BRIEF-BL954 (CR-67 AX-11: the toast's own dismissal is the only clock; row 33-3 `createUndo` first) and is NOT a reason to
     hold this merge unless Karma rules R38b holds the flag. Blocked by: founder (size, keys, #854), product (C-01, N7).
 
 13. DEFINITION OF DONE
     [ ] focused photos-capture, photos-surfaces, erase-all; `npm test -w apps/mobile`: only the 8 baseline files red; `npm test -w packages/content`
     [ ] `npx tsc --noEmit` in apps/mobile: only the 5 known errors; ASCII only; keys PROPOSED; labels agent:mobile, from:agent, needs:founder
-    [ ] size named (603 against 518); journal PATCHed; check-in line
+    [ ] size named (603 against 523 (plan M29 gives 523)); journal PATCHed; check-in line
 
 14. ONLY A PHONE CAN PROVE: Undo toast, VoiceOver, AX5 on the letter page (JOURNEYS row 4.5, 4.1; PR #925).
 
