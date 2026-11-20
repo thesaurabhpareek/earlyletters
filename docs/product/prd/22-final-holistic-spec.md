@@ -136,7 +136,7 @@ Founder digest: defaults that stand (added 20 Nov, one line each, default and de
 | E43 (CL-117) | First-run (NS-38 to NS-45) ships as Drop D: after wave 1 and Drop A, before any family outside yours signs in | Yes, in that order | `18` E43 |
 | E46 (CL-120) | The sensitive-data withdrawal control is not built today; I add one P0 row and it is built before anyone outside the family signs in | Add the row; counsel-adjacent | `18` E46 |
 | E47 (CL-121) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
-| E56 (CL-130) | A No at the age step sends nothing and records nothing; Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
+| E56 (CL-130) | A No at the age step sends nothing and writes no server row (the phone keeps a local stop flag, NS-40-R3); Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
 | E59 (CL-133) | The free allowance is per phone, not per account | Per phone, as built | `18` E59 |
 | CL-008 | Pilot notes kept 30 days, consent records 12 months; no pilot before the reads | 30 days and 12 months | card 03 |
 | CL-099 | Support keeps messages 12 months; support never reads a letter | 12 months | `functions/support.md` |

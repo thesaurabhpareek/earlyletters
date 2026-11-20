@@ -159,7 +159,7 @@ Rules used: one group is one deliverable or one reviewable stack; rows stay in t
 | G34 | Research and validation rules (FR-RSH) | all FR-RSH gaps (10) | 10 | BL-981 | S | BL-038 |
 | G35 | Messaging and entry points (FR-MSG) | all FR-MSG gaps (9) | 9 | BL-364, BL-510, BL-053 | M | BL-039 |
 
-Row counts sum to 590 for G01 to G35 (588 at the first run; G05 is now 28 with NS-17-R11 and NS-17-R12; check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 81 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
+Row counts sum to 580 for G01 to G35 (588 at the first run; G05 is now 27 with NS-17-R11 and NS-17-R12; check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 81 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
 
 ### 5.1 Group to backlog id (the same ids as `docs/BACKLOG.md`, section "Locked pack: P0 rows with no backlog row")
 

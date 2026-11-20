@@ -190,7 +190,7 @@ Added 20 Nov 2026 (index only; the cards own every row; ranks above are unchange
 
 | Card | Item | File | P0 rows | Drop | Bucket |
 |---|---|---|---|---|---|
-| NS-38 to NS-45 (card 19) | From App Store page to first kept letter: store page, first launch, age and region, sign-in, agreements, first book, first letter and allowance, account life | 19 | 96 (8, 10, 11, 18, 13, 11, 10, 15) | none in the card; Karma to rule | H First run |
+| NS-38 to NS-45 (card 19) | From App Store page to first kept letter: store page, first launch, age and region, sign-in, agreements, first book, first letter and allowance, account life | 19 | 98 (8, 10, 11, 18, 15, 11, 10, 15) | none in the card; Karma to rule | H First run |
 | NS-46 | Days we mark | 21 | 22 | B (R14, R20 in C) | B Capture |
 | NS-47 | Cultural background | 21 | 27 | B store rules, C ask and traditions | B Capture |
 | NS-48 | Notification catalogue and rotation | 21 | 13 | A phase 1, B, C | B Capture |
