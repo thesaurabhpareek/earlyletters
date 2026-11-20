@@ -120,6 +120,14 @@ describe('[NS-13-R14] one hook on the user id ends reminders on every path a ses
     expect(run([...signedIn, { type: 'SIGNED_IN', userId: OTHER, method: 'email' }]).ends).toBe(1);
   });
 
+  it('[NS-13-R15] deletion removes reminders: account deletion ends the session through the same sign-out', () => {
+    // use-account-deletion.ts hands the person auth.signOut; the provider's signOut asks for a user sign-out.
+    expect(code('lib/account-deletion/use-account-deletion.ts')).toContain('signOut: auth.signOut');
+    expect(code('lib/auth/session-provider.tsx')).toMatch(/async signOut\(\) \{[\s\S]*?dispatch\(\{ type: 'SIGN_OUT_REQUESTED', reason: 'user'/);
+    const r = run([...signedIn, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 0 }, { type: 'SIGNED_OUT' }]);
+    expect(r.ends).toBe(1);
+  });
+
   it('never for a phone that never signed in, a repeated sign-in, or "Stay signed in"', () => {
     expect(run([{ type: 'RESTORED', userId: null }, { type: 'SIGNED_OUT' }]).ends).toBe(0);
     expect(run([...signedIn, { type: 'SIGNED_IN', userId: PARENT, method: null }]).ends).toBe(0);
@@ -130,10 +138,13 @@ describe('[NS-13-R14] one hook on the user id ends reminders on every path a ses
     const provider = code('lib/auth/session-provider.tsx');
     expect(provider).toContain("from '../reminders/session'");
     expect(provider).toMatch(/const sessionUser = authUserId\(state\);/);
+    // Only once the Keychain has answered (not while restoring), so a launch never mistakes "not read yet" for "signed out".
+    expect(provider).toMatch(/const authSettled = state\.status !== 'restoring';/);
     expect(provider).toMatch(
-      /useEffect\(\(\) => \{\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*if \(sessionEnded\(before, sessionUser\)\) void endReminderSession\(\);\s*\}, \[sessionUser\]\);/,
+      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*\}, \[sessionUser, authSettled\]\);/,
     );
-    expect(provider.match(/endReminderSession\(/g)).toHaveLength(1);
+    expect(provider.match(/settleReminderSession\(/g)).toHaveLength(1);
+    expect(provider).not.toMatch(/endReminderSession\(/);
   });
 });
 
@@ -187,12 +198,42 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
       'reminders.enabled',
       'reminders.monthNotes',
       'reminders.paused',
+      'reminders.session',
       'reminders.time',
       'reminders.weeklyDay',
     ]);
     // Kept per phone: the open book and the ask count (design OQ-13.6 default).
     expect(store.getSetting('activeChildId')).toBe(activeBefore);
     expect(store.getSetting('asks.reminderPrimes')).toBe('1');
+  });
+
+  it('[NS-13-R13] killed right after Sign out, before the clear: the next launch clears A\'s reminders before B signs in', async () => {
+    // A's session: the reminders are marked as set up inside a session.
+    await reminders.settleReminderSession(null, PARENT);
+    expect(store.getSetting('reminders.session')).toBe('on');
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(0);
+    // Sign out removed the Keychain session, and the app was killed before the clear ran. Next launch: no user.
+    await reminders.settleReminderSession(null, null);
+    expect(os.scheduled.size).toBe(0);
+    expect(reminders.readPrefs()).toMatchObject({ enabled: false, namesOnLockScreen: false });
+    expect(store.getSetting('reminders.session')).toBeNull();
+    // B signs in: starts with none, and B's own session is marked.
+    await reminders.settleReminderSession(null, OTHER);
+    expect(reminders.readPrefs().enabled).toBe(false);
+    expect(store.getSetting('reminders.session')).toBe('on');
+  });
+
+  it('a launch never clears reminders it should keep: a phone that never signed in, or A restored at launch', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening' });
+    await reminders.settleReminderSession(null, null);
+    expect(reminders.readPrefs().enabled).toBe(true);
+    expect(store.getSetting('reminders.session')).toBeNull();
+    await reminders.settleReminderSession(null, PARENT);
+    await reminders.settleReminderSession(null, PARENT); // the next launch restores A from the Keychain
+    expect(reminders.readPrefs().enabled).toBe(true);
+    expect(store.getSetting('reminders.session')).toBe('on');
   });
 
   it('[NS-13-R13] a second account starts with none: reminders off, nothing planned, names off', async () => {

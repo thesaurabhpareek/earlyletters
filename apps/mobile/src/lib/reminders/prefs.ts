@@ -13,6 +13,7 @@
  * | `reminders.time` | `HH:MM`, 07:00 to 21:30 in 15-minute steps | `20:30` |
  * | `reminders.monthNotes` | `on` / `off` | `on` |
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
+ * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
  *
  * While the app lock is on, names are off whatever that key says (F17-REQ-015; CDesO and CCO rule): the stored choice
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
@@ -48,10 +49,14 @@ const K = {
   time: 'reminders.time',
   monthNotes: 'reminders.monthNotes',
   names: 'notifications.lockScreenNames',
+  session: 'reminders.session',
 } as const;
 
 /** Every reminder setting above: cleared when the session ends (session.ts; NS-13-R14). */
 export const REMINDER_SETTING_KEYS: readonly string[] = Object.values(K);
+
+/** `on` while the reminders on this phone were set up inside a signed-in session (session.ts). */
+export const REMINDER_SESSION_KEY = K.session;
 
 const onOff = (key: string, fallback: boolean): boolean => {
   const v = getSetting(key);

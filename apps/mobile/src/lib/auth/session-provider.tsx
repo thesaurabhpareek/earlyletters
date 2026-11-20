@@ -21,7 +21,7 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { endReminderSession, sessionEnded } from '../reminders/session';
+import { settleReminderSession } from '../reminders/session';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
@@ -194,14 +194,17 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   }, [sb]);
   useEffect(() => publishAuth(state), [state]);
   // BL-967 (NS-13-R14, R13, R15): one hook on the signed-in user id. When it goes (Sign out and account deletion finish
-  // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end.
+  // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end; and
+  // at launch, a session that ended before a kill is caught by its mark (lib/reminders/session.ts).
   const sessionUser = authUserId(state);
+  const authSettled = state.status !== 'restoring';
   const lastSessionUser = useRef<string | null>(null);
   useEffect(() => {
+    if (!authSettled) return;
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
-    if (sessionEnded(before, sessionUser)) void endReminderSession();
-  }, [sessionUser]);
+    void settleReminderSession(before, sessionUser);
+  }, [sessionUser, authSettled]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
