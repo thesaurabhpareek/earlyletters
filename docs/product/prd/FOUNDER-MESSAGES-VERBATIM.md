@@ -135,6 +135,12 @@ Update the harness accordingly and inform thread we have for harness work to hav
 ### Item 38
 Align harness backlog for CTO review take CTO feedback make improvements and post CTO approval execute and inform all agents of what has updated and their new operating style.
 
+### Item 39
+
+> Ok merge. I approve. And locks ll requirements and tell engg to lock their plans now.
+
+Context: replied to the coordinator's question about merging the two packs (#934 product, #935 design). The coordinator reads "merge" as naming #934 and #935 only; PR #936 (harness rows) and #846 were not named.
+
 ## Part 2. Human turns with no text in the export
 
 Turns 724, 726, 729, 732, 734, 736, 738, 740, 744. Each shows "Human:" followed by nothing. They fall between agent reports during the scope round (phase 1 and phase 2 papers) and are probably notification carriers, not founder messages. No instruction is taken from them.
@@ -181,5 +187,6 @@ Every distinct instruction or constraint, one line each (items 34 to 38 are the 
 36. Work as one team in continuous integration and continuous development style, not in sequence: keep the harness informed; product reacts to engineering questions and clarifies requirements for design, policy and security; everyone reviews; engineering reviews the final requirements and keeps updating the plan; keep learning from feedback and improving requirements; the harness learns when a feedback or question is worth asking and then goes to the executives for approval; a continuous feedback loop so the system improves by itself. (36; Part 1b)
 37. Update the harness accordingly and inform the harness thread: complete these backlog enhancements and run as a smart, self-healing harness with a strong feedback and self-improvement loop. (37; Part 1b)
 38. Align the harness backlog for CTO review, take CTO feedback and improve, execute after CTO approval, and inform all agents of what changed and their new operating style. (38; Part 1b)
+39. Merge the product and design packs (#934, #935); he approves; lock all requirements; tell engineering to lock their plans now. (39; Part 1b)
 
 Standing rules in force across the whole list (from the founder's messages above, not from agent output): customer first and the why and the what before tactics (7, 9); requirements must be exhaustive, with no word limit (12); the PRD is the single source of truth and only the latest PRD is used (16, 17); everything must be tracked and documented through the harness (22, 31); save work often (26).
