@@ -93,10 +93,10 @@ body.darkPage #controls button{background:#201D1A;color:#F2ECE4;border-color:#85
 .inlinebar .r{display:flex;align-items:center;gap:6px;min-height:44px}
 .inlinebar .t{flex:1;font-weight:600;font-size:17px}
 .inlinebar .m{font-size:14px;color:var(--muted)}
-.veil{position:absolute;inset:0;background:var(--bg);opacity:0;z-index:5;pointer-events:none}
-.paper{position:absolute;z-index:6;background:var(--raised);pointer-events:none}
-.carried{position:absolute;z-index:8;pointer-events:none;margin:0}
-.page{position:absolute;inset:0;z-index:7;overflow-y:auto;scrollbar-width:none}
+.veil{position:absolute;inset:0;background:var(--bg);opacity:0;z-index:50;pointer-events:none}
+.paper{position:absolute;z-index:51;background:var(--raised);pointer-events:none}
+.carried{position:absolute;z-index:53;pointer-events:none;margin:0}
+.page{position:absolute;inset:0;z-index:52;overflow-y:auto;scrollbar-width:none}
 .page::-webkit-scrollbar{display:none}
 .page.solid{background:var(--bg)}
 .pagehead{height:91px;display:flex;align-items:flex-end;padding:0 12px 4px;gap:4px}
@@ -114,15 +114,15 @@ body.darkPage #controls button{background:#201D1A;color:#F2ECE4;border-color:#85
 .switch i{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .switch.on{background:#3F7A55}
 .field{border:1px solid var(--controlBorder);border-radius:8px;min-height:44px;padding:10px 12px;font-size:15px;color:var(--muted);background:var(--bg)}
-.toast{position:absolute;left:16px;right:16px;bottom:96px;z-index:20;background:var(--text);color:var(--bg);border-radius:14px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:10px;font-size:15px;min-height:52px}
+.toast{position:absolute;left:16px;right:16px;bottom:96px;z-index:70;background:var(--text);color:var(--bg);border-radius:14px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:10px;font-size:15px;min-height:52px}
 .toast button{font:inherit;font-weight:600;background:transparent;border:0;color:var(--bg);min-height:44px;padding:0 8px;cursor:pointer;text-decoration:underline}
-.scrim{position:absolute;inset:0;background:var(--scrim);z-index:30;opacity:0}
-.sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;background:var(--raised);border-radius:28px 28px 0 0;padding:10px 20px 34px;}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:60;opacity:0}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:61;background:var(--raised);border-radius:28px 28px 0 0;padding:10px 20px 34px;}
 .sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
 .sheet h3{margin:0 0 8px;font-size:18px}
 .sheet .opt{min-height:48px;display:flex;align-items:center;border-top:1px solid var(--line);font-size:16px;cursor:pointer}
 .sheet p{font-size:15px;color:var(--muted);margin:0 0 12px;line-height:1.4}
-.menu{position:absolute;z-index:32;right:16px;width:240px;background:var(--raised);border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.18);transform-origin:90% 0}
+.menu{position:absolute;z-index:62;right:16px;width:240px;background:var(--raised);border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.18);transform-origin:90% 0}
 .menu div{min-height:48px;display:flex;align-items:center;padding:0 16px;border-top:1px solid var(--line);font-size:16px;cursor:pointer}
 .menu div:first-child{border-top:0}
 .find{position:absolute;inset:0;background:var(--bg);z-index:12;opacity:0}

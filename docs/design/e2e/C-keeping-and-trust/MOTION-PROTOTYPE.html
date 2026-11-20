@@ -37,7 +37,7 @@ body.dk #notes, body.dk #log { background: rgba(255,255,255,0.06); }
 .stagewrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .replay { font: inherit; font-size: 14px; min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid rgba(0,0,0,0.25); background: transparent; color: inherit; cursor: pointer; }
 #hap { min-height: 24px; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
-#vo { min-height: 36px; max-width: 375px; font-size: 13px; background: #000; color: #fff; border-radius: 8px; padding: 8px 10px; opacity: 0; }
+#vocap { min-height: 36px; max-width: 375px; font-size: 13px; background: #000; color: #fff; border-radius: 8px; padding: 8px 10px; opacity: 0; }
 #rev { width: 375px; font-size: 12px; display: none; }
 #rev .track { height: 10px; background: rgba(0,0,0,0.12); border-radius: 5px; position: relative; overflow: hidden; }
 #rev .now { position: absolute; top: 0; bottom: 0; left: 0; background: #2F6F8F; width: 0; }
@@ -130,7 +130,7 @@ body.dk #notes, body.dk #log { background: rgba(255,255,255,0.06); }
     </div>
     <button class="replay" id="replay">Play again</button>
     <div id="hap" aria-live="polite"></div>
-    <div id="vo" aria-hidden="true"></div>
+    <div id="vocap" aria-hidden="true"></div>
     <div id="rev"><div>Reviewer view of the undo window (not in the app: the app never shows a countdown)</div><div class="track"><div class="now"></div><div class="mark"></div></div><div id="revt"></div></div>
   </div>
   <div id="side">
@@ -181,15 +181,17 @@ function haptic(name) {
 }
 let voBusyUntil = 0;
 function announce(text) {
+  const R = runId;
   log("announce: \"" + text + "\"");
   if (!VO) return Promise.resolve({ success: true, at: performance.now() });
-  const box = $("#vo");
+  const box = $("#vocap");
   const readMs = Math.max(700, text.length * 55); // real time: a reading is not slowed
   box.textContent = "VoiceOver: " + text;
   box.style.opacity = 1;
   const start = Math.max(performance.now(), voBusyUntil);
   voBusyUntil = start + readMs;
   return new Promise((res) => setTimeout(() => {
+    if (R !== runId) return;
     box.style.opacity = 0;
     log("VoiceOver finished reading (announcementFinished)");
     res({ success: true, at: performance.now() });
@@ -277,7 +279,7 @@ function lamp(op, ms, label) {
 
 /* ---------- Platform approximations (system) ---------- */
 async function push(html, opts = {}) {
-  const old = $(".page:last-of-type", screenEl);
+  const old = lastPage();
   const n = mk(html); screenEl.appendChild(n);
   log("native push (system; approximated here)");
   if (RM) { await Promise.all([fadeIn(n, M.fadeMs), old ? fadeOut(old, M.fadeMs) : 0]); }
@@ -291,7 +293,7 @@ async function push(html, opts = {}) {
   return n;
 }
 async function pop(toHtml) {
-  const cur = $(".page:last-of-type", screenEl);
+  const cur = lastPage();
   const n = mk(toHtml); screenEl.insertBefore(n, cur);
   log("native pop (system; approximated here)");
   if (RM) { await Promise.all([fadeIn(n, M.fadeMs), fadeOut(cur, M.fadeMs)]); }
@@ -414,6 +416,7 @@ function showToast(message, action, opts = {}) {
 }
 
 /* ---------- Markup helpers ---------- */
+function lastPage() { return [...screenEl.querySelectorAll(":scope > .page")].pop(); }
 function mk(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 const MOON = '<svg class="art" width="110" height="110" viewBox="0 0 110 110" aria-hidden="true"><path d="M70 18a38 38 0 1 0 22 50a30 30 0 1 1-22-50z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 const ENVELOPE = '<svg class="art" width="110" height="80" viewBox="0 0 110 80" aria-hidden="true"><rect x="8" y="10" width="94" height="60" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 14l47 32l47-32" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
@@ -425,7 +428,7 @@ function setScreen(html) { screenEl.innerHTML = html; }
 const PG = {
   me: () => '<div class="page" data-s="C-S01"><div class="tag">C-S01 Me</div><div class="big">Me</div>' +
     '<div class="list"><div class="row" data-r="copy">Save a copy<span class="chev">&gt;</span></div><div class="row">Where your letters live<span class="chev">&gt;</span></div></div>' +
-    '<div class="list" id="books"><div class="row" data-r="asha">Asha\'s book<span class="chev">&gt;</span></div><div class="row" data-r="ravi">Ravi\'s book<span class="chev">&gt;</span></div><div class="row">Hidden books<span class="chev">&gt;</span></div><div class="row">Recently deleted<span class="chev">&gt;</span></div></div>' +
+    '<div class="list" id="books"><div class="row" data-r="asha">Asha\'s book<span class="chev">&gt;</span></div><div class="row" data-r="second">Second book<span class="chev">&gt;</span></div><div class="row">Hidden books<span class="chev">&gt;</span></div><div class="row">Recently deleted<span class="chev">&gt;</span></div></div>' +
     '<div class="list"><div class="row">Storage<span class="chev">&gt;</span></div><div class="row">Account<span class="chev">&gt;</span></div></div></div>',
   copy: (o = {}) => '<div class="page" data-s="' + (o.printable ? "C-S05" : "C-S04") + '"><div class="navbar"><span class="back">&lt; Me</span>' + (o.printable ? "Printable book" : "Save a copy") + '</div>' +
     '<div class="tag">' + (o.printable ? "C-S05 Making the printable book" : "C-S04 Save a copy") + '</div>' +
@@ -434,7 +437,7 @@ const PG = {
     '<p class="sub">Placeholder words; see WORDS.md.</p><div class="stack" id="act"><div id="idle" style="padding-top:120px"><button class="btn primary lg full" id="go">' + (o.printable ? "Make the printable book" : "Save a copy") + "</button></div></div>") + "</div>",
   home: (o = {}) => '<div class="lamp"></div><div class="page lit" data-s="Home"><div class="tag">Home (area A) with C-S06</div>' +
     '<div class="sub" data-e>Friday 20 November</div><div class="t2" data-e>Good evening</div>' +
-    '<div id="slipwrap"><div class="slip" data-e id="slip" role="button"><div><div style="font-weight:600">' + (o.twins ? "Asha and Ravi's birthday week" : "Asha's birthday week") + '</div><div class="sub" style="margin:2px 0 0">Save a copy of the year, yours to keep.</div></div><div class="x" id="slipx" aria-label="Dismiss">x</div></div></div>' +
+    '<div id="slipwrap"><div class="slip" data-e id="slip" role="button"><div><div style="font-weight:600">' + (o.twins ? "The twins' birthday week" : "Asha's birthday week") + '</div><div class="sub" style="margin:2px 0 0">Save a copy of the year, yours to keep.</div></div><div class="x" id="slipx" aria-label="Dismiss">x</div></div></div>' +
     '<div class="card" data-e><div class="serif" style="font-size:20px">What made Asha laugh today?</div></div>' +
     '<div style="display:flex;gap:12px;margin-top:18px"><button class="btn primary lg" style="flex:1">Speak</button><button class="btn secondary lg" style="flex:1">Type</button></div>' +
     '<div class="sub" data-e style="margin-top:18px">Not much today</div></div>' + tabbar("home"),
@@ -460,7 +463,7 @@ const PG = {
   version: () => '<div class="page" data-s="C-S14"><div class="navbar"><span class="back">&lt; Versions</span>9 November</div><div class="tag">C-S14 An earlier version</div><div class="serif" style="font-size:20px;line-height:1.5">You found your toes today.</div><div style="display:flex;gap:12px;margin-top:28px"><button class="btn primary" id="restore">Restore</button><button class="btn secondary" id="remove">Remove</button></div></div>',
   bookset: () => '<div class="page" data-s="C-S15"><div class="navbar"><span class="back">&lt; Me</span>Asha\'s book</div><div class="tag">C-S15 A book in Me</div><div class="list"><div class="row">Name<span class="sub" style="margin:0">Asha</span></div><div class="row">Birthday<span class="sub" style="margin:0">14 Nov</span></div></div>' +
     '<div class="list"><div class="row" style="align-items:flex-start"><div><div>Quiet this book</div><div class="sub stack" id="qline" style="margin:2px 0 0"><span>Reminders and Home slips for Asha are on.</span></div></div><div class="switch" id="qsw"><div class="k"></div></div></div><div class="row" id="hide" style="color:var(--accent)">Hide this book</div><div class="row" style="color:var(--destructive)">Delete this book</div></div></div>',
-  hidden: () => '<div class="page" data-s="C-S16"><div class="navbar"><span class="back">&lt; Me</span>Hidden books</div><div class="tag">C-S16 Hidden books</div><div class="stack" id="hbox"><div><div class="list" id="hl"><div class="row">Ravi\'s book<button class="btn quiet" id="show">Show again</button></div></div></div></div></div>',
+  hidden: () => '<div class="page" data-s="C-S16"><div class="navbar"><span class="back">&lt; Me</span>Hidden books</div><div class="tag">C-S16 Hidden books</div><div class="stack" id="hbox"><div><div class="list" id="hl"><div class="row">Second book<button class="btn quiet" id="show">Show again</button></div></div></div></div></div>',
   recent: (n, sealed) => { let r = '<div class="page" data-s="C-S17"><div class="navbar"><span class="back">&lt; Me</span>Recently deleted</div><div class="tag">C-S17 Recently deleted</div><p class="sub">Letters stay here for 30 days.</p><div class="stack" id="rbox"><div><div class="list" id="rl">';
     const rows = [["Tuesday 3 November", "You found your toes today."], ["Sunday 1 November", "The first cold morning."], ["Friday 30 October", "Bath time songs."]];
     rows.slice(0, n).forEach((x, i) => { r += '<div class="row" style="display:block"><div class="sub" style="margin:0">' + x[0] + '</div><div class="serif">' + (sealed && i === 0 ? '<span class="sub">Sealed until 14 November 2027</span>' : x[1]) + '</div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn quiet" data-a="restore">Restore</button><button class="btn quiet" data-a="erase" style="color:var(--destructive)">Erase now</button></div></div>'; });
@@ -487,7 +490,7 @@ const N = (trigger, moves, time, rm, hap) => ({ trigger, moves, time, rm, hap })
 item("M-C01", "C-S01", "Tab change to Me: the lamp leaves", N("Tab change from a lit tab to Me", "Nothing of ours; the native tab swap. Me is unlit (card gap 7), so the shared tabs lamp leaves under it", "lamp 160 ms straight line", "lamp jumps to 0", "none"), async (c) => {
   setScreen(PG.home()); $(".lamp", screenEl).style.opacity = 0.6; await c.w(700);
   log("tab change to Me: native swap, no content motion");
-  const l = $(".lamp", screenEl); screenEl.querySelectorAll(".page,.tabbar").forEach((e) => e.remove()); screenEl.appendChild(mk(PG.me())); screenEl.appendChild(mk(tabbar("me")));
+  const l = $(".lamp", screenEl); screenEl.querySelectorAll(".page,.tabbar").forEach((e) => e.remove()); const mePg = mk(PG.me()); mePg.classList.add("lit"); screenEl.appendChild(mePg); screenEl.appendChild(mk(tabbar("me")));
   await lamp(0, M.lamp.leaveMs, "leaves"); c.k(); log("Me's rows were in place from the first frame: nothing enters");
 });
 item("M-C02", "C-S01", "Into a Me page: native push", N("Tap a row in Me", "The platform push; the row's own highlight", "system", "system's reduced transition (here a 200 ms fade)", "none (navigation)"), async (c) => {
@@ -495,7 +498,7 @@ item("M-C02", "C-S01", "Into a Me page: native push", N("Tap a row in Me", "The 
   await push(PG.copy()); c.k(); log("arriving page content in place on its first frame: no entrance, no stagger");
 });
 item("M-C03", "C-S01", "Return to Me after a row left", N("Return to Me", "Nothing: the collapse already played where the act happened", "0 ms", "same", "none"), async (c) => {
-  setScreen(PG.me()); $('[data-r="ravi"]', screenEl).remove(); log("Me renders without the row; nothing slides on return");
+  setScreen(PG.me()); $('[data-r="second"]', screenEl).remove(); log("Me renders without the row; nothing slides on return");
 });
 
 // C-S02, C-S03
@@ -613,7 +616,7 @@ item("M-C21", "C-S06", "Dismiss the slip", N("Tap the slip's dismiss", "Slip fad
 });
 item("M-C22", "C-S07", "Twins: which book", N("Tap the twins slip", "Our Sheet rises with two choices", "standard", "200 ms fade", "none on open; tap on a choice"), async (c) => {
   setScreen(PG.home({ twins: true })); $(".lamp", screenEl).style.opacity = 0.6; await c.w(500); await c.k(press($("#slip", screenEl), true));
-  const s = sheet('<div class="tag">C-S07 Which book</div><div class="t2">Which book?</div><div class="list"><div class="row" id="ca">Asha</div><div class="row">Ravi</div></div>'); await c.k(s.opened); await c.w(700);
+  const s = sheet('<div class="tag">C-S07 Which book</div><div class="t2">Which book?</div><div class="list"><div class="row" id="ca">Asha</div><div class="row">Second book</div></div>'); await c.k(s.opened); await c.w(700);
   haptic("tap"); $("#ca", screenEl).classList.add("hl"); await c.w(150); await c.k(s.close()); await push(PG.copy());
 });
 
@@ -866,7 +869,9 @@ function showNotes(it) {
   d.appendChild(dl);
 }
 async function play(it, btn) {
-  const R = ++runId; currentItem = it; fillVal = 0; voBusyUntil = 0; toastState = null; revReset(); $("#vo").style.opacity = 0;
+  const R = ++runId; currentItem = it; fillVal = 0; voBusyUntil = 0;
+  if (toastState) { clearTimeout(toastState.timer); clearInterval(toastState.revTimer); }
+  toastState = null; revReset(); $("#vocap").style.opacity = 0;
   document.querySelectorAll("nav button").forEach((b) => b.classList.remove("on")); (btn || it.btn).classList.add("on");
   screenEl.getAnimations && document.getAnimations().forEach((a) => { try { a.cancel(); } catch (e) {} });
   screenEl.innerHTML = ""; logEl.textContent = ""; t0 = performance.now(); showNotes(it);

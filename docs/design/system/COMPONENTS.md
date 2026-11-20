@@ -88,8 +88,8 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Implementation**: `Stack.Toolbar placement="bottom"` (iOS from SDK 55, Expo guide; renders only on iOS and Android). Web preview: a house fallback row of A1 buttons in `material.solid`. NEW at the system level (today Review draws its own footer of RN buttons); RETIRES the hand-drawn Review footer row and `StickyFooter` (spec only, never built).
 - **Used by**: A-S06, A-S07, A-S11 entry, B-S11 viewer; cards NS-01, NS-09, NS-35.
 
-### N4. Find bar (NEW)
-- **Justification**: NS-02 needs one field over the Book with Cancel, autocorrect, spell check, autocomplete and content type off (NS-02-R14), the field growing and Cancel wrapping under it at AX5 (R42). The native header search bar does not promise the AX5 wrap and its input flags through `react-native-screens` are UNVERIFIED; a house bar gives both.
+### N4. Find bar (a `TextField` preset on glass, not a new component)
+- **Why a preset**: card 02 says "No new component" (design inputs) and the brief puts the Find bar in the glass layer. NS-02 needs one field over the Book with Cancel, autocorrect, spell check, autocomplete and content type off (NS-02-R14), the field growing and Cancel wrapping under it at AX5 (R42). The native header search bar (`Stack.SearchBar`) does not promise the AX5 wrap and its input flags are UNVERIFIED, so the bar is `TextField variant="search"` plus a glass `Button` inside one `GlassCluster` (AUDIT 4.10 resolved the same way). Supersedes `FindBar` NEW in `specs/02-FIND-11nov.md`.
 - **Purpose**: Find mode over the Book (B-S06).
 - **Anatomy**: one `GlassContainer` at the top safe area: a capsule field (magnifier glyph, `TextInput`, clear button when text exists) and a `Cancel` glass capsule beside it. Results render below in the content layer (C2 rows).
 - **Variants**: `idle` (focused, empty, nothing drawn under it), `typing`, `results`, `no match` (one line under the bar, content), `failed` (line plus Try again, content).
@@ -97,7 +97,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Layer**: glass regular (field and Cancel in one container). It replaces the Book header controls (N5) while open, so the budget stays at three.
 - **Tokens**: `color.text`, `color.textMuted` (placeholder only, at 17 pt or larger), `color.focus`, `radius.pill`, `size.control.md` (48 pt field), `space.4` gutters.
 - **Motion hooks**: the overlay `m.fade` over `swapMs` (card 02); the header capsules leave and the Find glass appears by `m.glass` inside one container; Reduce Motion: the overlay appears (card 02), glass style change kept; typing never animates the list.
-- **Implementation**: house `components/book/find-bar.tsx` on `GlassContainer` plus two `GlassView` (`isInteractive`), RN `TextInput` with `autoCorrect={false}`, `spellCheck={false}`, `autoComplete="off"`, `textContentType="none"`, `keyboardType="default"`, writing tools off (I2 note). Fallback `material.solid`.
+- **Implementation**: `TextField variant="search"` (new variant in `components/ui/text-field.tsx`) rendered on `GlassSurface` with a `Button style="glass"` Cancel, both inside one `GlassCluster`, composed in the Book screen; RN `TextInput` with `autoCorrect={false}`, `spellCheck={false}`, `autoComplete="off"`, `textContentType="none"`, `keyboardType="default"`, writing tools off (I2 note). Fallback `material.solid`.
 - **Used by**: B-S06; NS-02.
 
 ### N5. Book header (cover band plus glass controls)
@@ -145,10 +145,10 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 
 ### A2. Capture cluster (Home)
 - **Purpose**: the only start of a letter (frame section 4; NS-35 one start). Speak and Type have equal weight; Start from a photo is quiet and never larger; Not much today is a quiet escape.
-- **Anatomy**: fixed bottom region of Home, above the tab bar. One `GlassContainer` with two `xl` glass capsules side by side, Speak (microphone) and Type (pencil), equal width. Under it, in content on paper (the scroll view ends above the region, with a scroll edge effect), a column of `plain` `sm` buttons: Start from a photo (A4), then Not much today.
+- **Anatomy**: fixed bottom region of Home, above the tab bar. One `GlassContainer` (MOTION 7 rule 3) holding two `xl` glass capsules side by side, Speak (microphone) and Type (pencil), equal width, and under them one `sm` glass capsule, Start from a photo (A4), centred and never wider than either. Under the container, in content on paper, Not much today as a `plain` `sm` button. The scroll view ends above the region with a scroll edge effect, so slips scroll under the glass, never under the plain button.
 - **Variants**: `rest`; `rest, no photo start` (absent per NS-01-R19 and R59: the column closes up); `quiet day kept` (Not much today replaced by the kept line with Undo, D-S21, which is a toast F1); `waiting card present` (a slip sits above in the scroll; the cluster never moves).
-- **States**: default; pressed (system glass press); focused; loading: n/a (start is instant; the Listen screen owns readiness); error: microphone denied shows Speak's label "Allow microphone" and opens Settings (kept from CaptureBar); absent per above. AX5: Speak and Type stack full width, each grows; the plain column follows; the whole region stays in the bottom third, and the slips and prompt scroll above it (NS-35, card 09 design input "capture controls stay in the bottom third"). VoiceOver order: Speak, Type, Start from a photo, Not much today; labels "Speak", "Type", "Start from a photo", "Not much today" with hint "Marks today without writing anything". Voice Control: the same words. Switch Control: the glass pair one group, the plain column one group.
-- **Layer**: Speak and Type glass regular (one container); photo start and Not much today content.
+- **States**: default; pressed (system glass press); focused; loading: n/a (start is instant; the Listen screen owns readiness); error: microphone denied shows Speak's label "Allow microphone" and opens Settings (kept from CaptureBar); absent per above. AX5 (from AX3, `useIsAccessibilitySize()`): the cluster stops floating and renders inline at the end of Home's content as solid twins (`GlassLayer` off: `bordered` capsules), Speak and Type stacked full width, then Start from a photo, then Not much today, so nothing covers the words and every label wraps (as built, `app/(tabs)/index.tsx:328`, AUDIT 2.9); at default sizes it stays in the bottom third (card 09 design input). VoiceOver order: Speak, Type, Start from a photo, Not much today; labels "Speak", "Type", "Start from a photo", "Not much today" with hint "Marks today without writing anything". Voice Control: the same words. Switch Control: the glass pair one group, the plain column one group.
+- **Layer**: Speak, Type and Start from a photo glass regular (one container, one glass surface in the budget); Not much today content. AX3 and above: all content.
 - **Tokens**: `size.control.xl`, `radius.pill`, `space.3` between capsules, `GlassContainer spacing` = `material.glass.mergeDistance` (FOUNDATIONS), `color.accent` icons.
 - **Motion hooks**: `m.tap.glass`; the shapes merge and split only inside their one container (`m.glass`, MOTION 7 rule 3); Listen opens by T-COVER `m.cover`, never by morphing the cluster (recording is immediate). Controls never animate in; the cluster never pulses (MOTION 11).
 - **Implementation**: house `components/capture/capture-cluster.tsx` (NEW file; RETIRES the inline `Button size="capture"` pair in `app/(tabs)/index.tsx` and the `CaptureBar` spec 2.18, whose `compact` mode is dropped).
@@ -167,10 +167,10 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 
 ### A4. Photo start
 - **Purpose**: "Start from a photo" inside the capture cluster (NS-01-R1).
-- **Anatomy**: `plain` `sm` button, leading image glyph, label; never larger than Speak or Type.
+- **Anatomy**: `glass` `sm` capsule inside A2's container (solid `bordered` twin at AX3 and above), leading image glyph, label; never larger than Speak or Type.
 - **States**: default; pressed; focused; loading: while the system picker downloads from iCloud the picker's own UI shows progress (A-S03; our states around it are the picker's); error: "That photo could not be opened" on Ready (#838), not on the button; absent when `EXPO_PUBLIC_PHOTOS` is off, `killSwitches.photos` is on, or the native module is missing (R19, R59). AX5: wraps, full width. VoiceOver: "Start from a photo, button". Voice Control: "Tap Start from a photo". Switch Control: one item.
-- **Layer**: content (inside A2's plain column).
-- **Implementation**: `Button style="plain"` inside A2; no new file.
+- **Layer**: glass regular (inside A2's container); content at AX3 and above.
+- **Implementation**: `Button style="glass" size="sm"` inside A2; no new file.
 - **Used by**: A-S01, A-S03; NS-01.
 
 ## 4. Content
@@ -197,22 +197,22 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Implementation**: `components/ui/list-row.tsx` (`ListSection`, `ListRow`, `ToggleRow`) kept; add `rowHeight` and section radius from tokens v2; the letter page composes it.
 - **Used by**: B-S08 to B-S15, C-S09, C-S13, D-S01; NS-21, NS-01, NS-05, NS-06, NS-08, NS-12.
 
-### C3. Photo thumbnail
+### C3. Photo thumbnail (`PhotoFrame`, the component card 01 names)
 - **Purpose**: a picture beside or above a letter in lists and on Review.
 - **Anatomy**: `expo-image` with the list copy (about 512 px, T3), `radius.sm`, 1 pt `line` hairline frame in dark mode (NS-01-R41), aspect clamped 3:4 to 16:9, never cropped to fill in the PDF.
 - **Variants**: `list` (lens and card), `ready` (on Ready and Review, larger, page copy about 1,280 px), `missing` (card without it; on the letter page the line "The picture is not on this phone" per R56), `did not come along` (R58 line).
 - **States**: default; pressed (opens C4); focused; loading (placeholder `surface` block of the final size, no shift); error (missing variant); absent when the letter has no picture. AX5: from AX3 at most 88 pt tall, above the words. VoiceOver: role image, label "Picture" or the parent's own words for it if typed; never a machine description (constitution). Smart Invert ignored.
 - **Layer**: content.
-- **Implementation**: NEW file `components/ui/photo-thumb.tsx` from spec 2.23 `PhotoFrame` (never built); RETIRES `PhotoFrame` variants `cover` and `polaroid` and multi-photo paging (one picture per letter in the cards).
+- **Implementation**: `components/ui/photo-frame.tsx`, built for the first time from spec 2.23 `PhotoFrame` (card 01 lists it as reused, so it keeps that name; not a new component in the card's sense); `accessibilityIgnoresInvertColors` on the image (NS-33-R11). RETIRES `PhotoFrame` variants `cover` and `polaroid` and multi-photo paging (one picture per letter in the cards).
 - **Used by**: A-S04, A-S07, B-S04, B-S08, B-S11; NS-01, NS-37.
 
-### C4. Stored-copy viewer
+### C4. Stored-copy viewer (`PhotoFrame variant="viewer"` in a full-screen route)
 - **Purpose**: the picture full screen from the letter page or Review (the stored copy, T3).
 - **Anatomy**: black or `bg` backdrop, the picture fitted (never cropped), controls in the top corners: Close (top right), and on the letter page Change and Take the photo off in a bottom toolbar (N3 `over picture`).
 - **States**: default; pressed; focused; loading (the page copy, then the stored copy); error (missing line, C3); absent: Change and Take off absent on another author's letter. AX5: controls stay 44 pt, labels in Large Content Viewer; the words line, if any, moves into a scroll below the picture. VoiceOver: image first, then Close, Change, Take the photo off. Voice Control: "Tap Close", "Tap Change". Zoom: pinch, double tap; VoiceOver magic tap off.
 - **Layer**: glass clear + dim (`material.glass.clear` over `material.glass.dim` 35 percent, local to the control corners).
 - **Motion hooks**: opens with T-COVER `m.cover` (no zoom from the thumbnail; photographs never zoom or Ken Burns, MOTION 11); the dim is static; a changed picture crossfades under it with `m.fade` (MOTION 7 rule 7).
-- **Implementation**: NEW `components/book/photo-viewer.tsx` (route modal, full screen); controls `GlassView glassEffectStyle="clear"` over a dim `View` (opacity on the dim layer is safe; it is not glass).
+- **Implementation**: a full-screen route (`app/letter/[id]/picture.tsx`, T-COVER) that renders `PhotoFrame variant="viewer"`; controls on `GlassSurface variant="clear" dim` (the dim is a separate black `View` at `material.glass.dim`; its opacity is static and it is not glass, so rule 1.1.6 does not apply to it).
 - **Used by**: B-S11, A-S07; NS-01, NS-37.
 
 ### C5. Quote pair
@@ -233,7 +233,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 
 ### C7. Empty state
 - **Purpose**: the warm, never-error view of something that has nothing yet (empty Book, no firsts, no typed days).
-- **Anatomy, states**: as built (`EmptyState`): line art or the quote pair, title (heading), body, one action; the drawing breathes only while focused and off under Reduce Motion. AX5: centred block becomes left aligned at AX3+ (long centred lines are hard to read; change from today), action full width.
+- **Anatomy, states**: as built (`EmptyState`): line art or the quote pair, title (heading), body, one action. The drawing is still: MOTION section 13 proposes retiring `Breathe` (a decorative loop with no signal); until Karma rules, it breathes only while focused and never under Reduce Motion or Low Power Mode. AX5: the centred block becomes left aligned from AX3 (long centred lines are hard to read; change from today), action full width. VoiceOver: title is a heading, drawing hidden; Voice Control: the action's words.
 - **Layer**: content.
 - **Used by**: B-S01.empty, B-S05 absent lens has no empty state (the lens is absent instead), C-S16, D-S06.
 
@@ -265,7 +265,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **States**: default; focused (caret only; no ring on paper, the screen is the field); empty (the prompt as placeholder in `textMuted` at letter size, also given as the label); saving (quiet "Saved on this phone" caption, announced at most every 10 s); error (line under). AX5: uncapped, scrolls, keyboard avoidance. VoiceOver: label always read; Voice Control: "Tap" the label.
 - **Writing tools off (D2)**: Apple Writing Tools must be off on every letter field (Review editor, Firsts label, photo text, place, typed-day words, From name). React Native 0.86 `TextInput` exposes no `writingToolsBehavior` prop that we have verified (UNVERIFIED); if absent, `mobile` adds a small native view config patch setting `UITextView.writingToolsBehavior = .none` and records the finding (D2 asks for it). Also off: predictive text inline completion is allowed (the person accepts each word), dictation allowed.
 - **Layer**: content.
-- **Implementation**: `components/ui/textarea.tsx` and `TextField variant="letter"` merge into one `Textarea` (RETIRES the duplicate letter variant inside TextField).
+- **Implementation**: `TextField variant="letter"` is the writing surface (as built); `components/ui/textarea.tsx` (an RNR copy with a 3 px ring and a transition class) is RETIRED (AUDIT 2.5). Add `writingTools={false}` and a `compact` size.
 - **Used by**: A-S06, A-S07, A-S10, D-S08; NS-35, D2.
 
 ### I3. Date sheet
@@ -345,13 +345,13 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 ### F5. Saved moment
 - **Purpose**: the receipt after Keep (A-S13). Kept as built (`capture/saved-moment.tsx`): the letter files into the Book, no celebration. Content layer.
 
-### F6. Confirmation sheet
+### F6. Confirmation (`ConfirmSheet`, the name cards 06 and 10 reuse)
 - **Purpose**: ask before delete, erase, sign out or remove: Delete letter, Open now (sealed), Let it go, Use this picture instead, Erase everything on this phone, Delete account, Delete this book, Undo join, sign-out (D1).
-- **Anatomy**: N7 `fit` sheet originating from the control, title (the question), one sentence of what happens (including what stays, for example "Your book stays on this phone" for sign-out, D1), the safe choice as `filled` `lg` and default, the destructive choice as `destructive` text with Trash icon. Typed-word variant for account and book deletion: an I1 field, the destructive choice not ready until the word matches, then a `destructive` fill.
-- **Variants**: `simple` (two choices), `typed` (D6), `three` (sign-out: Sign out, Sign out and erase this phone, Cancel; words per D1).
+- **Decision (AUDIT 4.20, MOTION T-ALERT)**: one API, two renderings by how much must be said. `simple`: a native confirmation that originates from the control that opened it (iOS 26 action sheet anchored to its source; on iPhone today an action sheet from the bottom), title = the question, message = one sentence, the safe choice is the cancel button and the default (card 06 B15 "default Cancel"), the destructive choice marked destructive with its verb ("Delete letter"). `explained` and `typed`: an N7 `fit` sheet with the title, the sentence (including what stays, for example the D1 line that the book stays on this phone), the safe choice as `filled` `lg` and default, the destructive choice as `destructive` text with the Trash icon; `typed` adds an I1 field and keeps the destructive choice not ready until the word matches, then a `destructive` fill (DELETE_THIS_BOOK proposal adopted).
+- **Variants**: `simple` (Let it go, Delete letter, Open now, Use this picture instead, Remove a typed day, Undo join), `explained` (sign-out with its D1 sentence and three choices, Erase everything on this phone), `typed` (Delete account D6, Delete this book).
 - **States**: default (safe focused first for VoiceOver after the title); pressed; not ready; loading (the destructive choice busy while the server works; sheet not dismissible); error (line in the sheet, Try again). AX5: choices stack, safe first, both full width. VoiceOver: title, sentence, safe choice, destructive choice. Voice Control: the words. Haptic `warning` with the outcome only.
-- **Layer**: glass regular (sheet); content inside.
-- **Implementation**: `components/book/confirm-sheet.tsx` moves to `components/ui/confirm-sheet.tsx`; RETIRES the RN `Alert.alert` `confirm()` helper for these flows (they need the sentence and the typed variant) and the separate Delete this book page drawing.
+- **Layer**: system (action sheet or alert, glass by iOS) for `simple`; glass regular sheet with content inside for `explained` and `typed`.
+- **Implementation**: `components/book/confirm-sheet.tsx` moves to `components/ui/confirm-sheet.tsx` with `kind: 'simple' | 'explained' | 'typed'`. `simple` calls the native confirmation: SwiftUI `confirmationDialog` through `@expo/ui` behind `platform/confirm` if it anchors to the source (UNVERIFIED in `@expo/ui` 57), else `ActionSheetIOS.showActionSheetWithOptions` with `cancelButtonIndex` and `destructiveButtonIndex` (anchor is iPad-only, UNVERIFIED on iPhone iOS 26), else `Alert.alert`. The 12 existing `confirm()` call sites (AUDIT 2.1) route through it, so there is one helper. The Delete this book page keeps its typed step but draws it with `typed`.
 - **Used by**: A-S11, A-S12, B-S14, B-S15, C-S03, C-S19, C-S20, C-S22, D-S09, D-S19; NS-09, NS-01, NS-06 B, NS-21, D1, D6.
 
 ## 7. System

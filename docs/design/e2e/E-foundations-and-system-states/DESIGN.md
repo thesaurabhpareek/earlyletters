@@ -1,6 +1,6 @@
 # Area E. Foundations and system states: design
 
-Status: DRAFT v1 for reconciliation, design lead for area E, 20 Nov 2026. Docs only. Nothing here changes a card, the engineering plan or the code.
+Status: v1 after the reconciliation pass with MOTION.md and WORDS.md (section 12) and the design system v2 material policy (section 7a), design lead for area E, 20 Nov 2026. Docs only. Nothing here changes a card, the engineering plan or the code.
 Companions in this folder: `MOTION.md` (motion lead), `WORDS.md` (content lead), `PROTOTYPE.html` (this lead).
 Screen ids `E-Snn` and state ids `E-Snn.<state>` are stable from the skeleton on. The cross-area state catalogue ids `E-STnn` (section 6) are for areas A to D to point at.
 
@@ -45,16 +45,22 @@ The app as built is the baseline. Every screen below names the file that draws i
 
 Notation: `->` a tap or a system event; `[E-Snn.state]` the screen and state shown. "Store build" means servers on, not alpha (`PLUS_ALPHA` false). "Servers-off build" means `serverFeaturesEnabled()` false (the kill path; today the `testflight` profile, per the platform review 2.1).
 
-### J-E01 First run, new parent, store build (happy path)
-1. Cold start -> [E-S01.default] launch screen (the gate's room, lamp `gate` scene).
-2. -> [E-S03.default] "Are you 18 or older?" Yes, tick the agreement, Continue.
-3. -> [E-S02.default] Welcome: stacked lockup, the promise line, `membership.line` (free letters), "Begin the book" (primary), "I already have a book" (quiet). No "I was invited" (store build).
-4. Begin the book -> [E-S04.default] Sign in: Sign in with Apple (Apple's button), Continue with email.
-5a. Apple -> system sheet -> [E-S07.settingUp] "Setting up your account" -> [E-S07.terms] Before your book syncs: Agree and continue / Not now.
-5b. Email -> [E-S05.default] -> Send -> [E-S06.default] code entry, or the link from the email -> [E-S06.verifying] "Signing you in" -> E-S07.
-6. Agree -> the account is asked once (BL-922) -> new account -> [E-S08.name] Who is this book for -> [E-S08.date] birthday or due date -> [E-S08.signsAs] what the child calls you -> [E-S08.promise] the small fix sample -> [E-S08.open] "The book is open."
-7. -> Home [A-S01] with the first prompt. First run ends on Home (NS-35 scenario row "First use").
-Languages: a language row shows on E-S08 only when the build offers more than English (`showOnboardingLanguageRow`), and lists only gated languages (NS-17-R1). In an English-only build the row is absent: no "coming in a later update" line (section 8).
+### J-E01 From the App Store to the first kept letter, store build (happy path, with every check)
+The founder asked (20 Nov, relayed by Karma) for the journey from download to the first kept letter. Product is writing NS-38 to NS-45 (`19-from-download-to-first-letter.md`); it was not on disk when this was written, so this flow is keyed to the built path and the open questions go to section 10 (K-E10 to K-E16) for product to answer.
+1. App Store page [E-S27.default]: Apple's page; every public line is a claims row (no "fast", "smart reminders", "accessible to everyone": NS-32, NS-33, NS-34 Claims). Get -> [E-S27.installing] -> [E-S27.installed] the icon on the Home Screen. No account is needed to download; the download is under 40 MB (NS-34).
+2. First launch -> [E-S01.default]: no words, no network wait; first interactive frame p50 1.2 s on SE 3.
+3. Age and agreement [E-S03.default]: Yes or No (nothing preselected), the agreement box (unticked), Terms and Privacy as their own links. Validation in words, announced: no answer -> [E-S03.reason-noAnswer] "Choose Yes or No."; Yes without the box -> [E-S03.reason-noTick] "Check the box to continue." with focus on the box. Fail: No -> [E-S03.stop]; retry only after 24 hours ("I answered by mistake", D-026). Records: the age boolean and the local agreement record, on the phone only.
+4. Region: no in-app region check exists (read 20 Nov in `lib/auth`, `lib/first-run`, `app`); availability is set per storefront in App Store Connect, so someone outside it cannot download. [E-S03.region] is drawn as a HOLD only, should counsel require an in-app check (K-E10).
+5. Welcome, account-first [E-S02.default] (as built, `welcome-sign-in.tsx`): lockup, descriptor, body, the free-letters line, "Sign in to begin your book.", the agreement line with its two links, then two equal 56 pt doors: Sign in with Apple, Sign in with email. A returning phone sees the last method under the matching door [E-S02.lastMethod]. No password, name or phone field.
+6a. Apple -> Apple's sheet (Apple verifies the person; we receive the account identifier and, if shared, a relay or real email) -> cancelled: nothing shown; failed: [E-S02.error-provider].
+6b. Email -> [E-S05.default] one field (email autofill), Send link. Validation: empty -> [E-S05.reason-empty] (PROPOSED words; today the button is disabled with no reason, K-E11); malformed -> [E-S05.error-invalid_email]; too many sends -> [E-S05.error-email_wait]; provider off -> [E-S05.error-not_available]; offline -> [E-S05.error-network]. -> [E-S06.default] "Check your email": the code field (6 digits, one VoiceOver field, iOS one-time-code autofill) or the link on this phone. Validation: short -> [E-S06.reason-short] (PROPOSED); wrong -> [E-S06.error-wrong_code]; five wrong -> [E-S06.paused]; 429 -> [E-S06.error-rate_limited]; expired link -> [E-S06.error-expired]; link from another phone -> [E-S06.refused-other_phone] or `refused-other_phone_spent`; already signed in -> [E-S06.refused-already_signed_in]; nothing arrived -> [E-S06.help].
+6c. A service or connection failure at any point -> [E-S14] (J-E03, J-E04).
+7. Verification and agreement: [E-S07.loading] "Setting up your account" -> [E-S07.default] Before your book syncs (registered body, agree line, links), Agree and continue / Not now; then the sensitive-data consent as built. Failed -> [E-S07.error-consent_unavailable]; declined -> [E-S07.declined] (C-S11 rules). Records: PRIV-R21 acceptance rows.
+8. The account is asked once (BL-922): new -> E-S08; has a book -> E-S09 (J-E05); this phone already holds letters -> [E-S24] claim.
+9. First book [E-S08]: name (optional on the account-first path), birthday or due date (required): none -> [E-S08.dateWaiting]; a future birthday -> [E-S08.dateFuture] "Choose today or an earlier day."; a due date beyond ten months -> [E-S08.dueRange]; twins [E-S08.twins], an empty extra name -> `needNameMany` [E-S08.name-waiting]; what the child calls you (required, D2 writing tools off): empty -> [E-S08.signsAsWaiting], over the limit -> `signsAsLimit`. Every reason is in words under Continue, announced, with focus to the field; Continue is never a silent grey button. Languages only in multi-language builds, gated ones only (NS-17-R1). Then the promise sample and [E-S08.open] "The book is open."
+10. Home [A-S01.first]. No permission has been asked yet: permissions only when needed (E-S28).
+11. First Speak -> area A's microphone primer [A-S04.primer] -> the iOS prompt [E-S29.prompt] with `permissions.microphone`. Allow -> Listen; Don't Allow -> [A-S04.blocked] with Type instead and Open Settings. Notifications are asked only by area D's reminder ask, after a kept letter, never in first run. Photos need no permission (PHPicker). Face ID is asked only when the parent turns on App lock.
+12. Record -> Review -> Keep: the first two letters keep with no gate (D-082); after the second the Book shows `secondFreeNote` once; the third meets E-S10 (J-E10).
 
 ### J-E02 First run, servers-off build (kill path)
 1. E-S01 -> E-S03 -> [E-S02.serversOff] Welcome with "Begin the book" only; no sign-in door, no "I already have a book".
@@ -227,14 +233,16 @@ Layout figures are in points at default text size on a 375 x 812 frame (safe are
 - Components: PlainScreen (existing). Integration: NS-34 cold start; NS-32-R16 re-plan; NS-36 "App updated mid-flow"; claims rows E1, E3, E4, E8. Data read: local database; written: none. Module: `lib/resilience/launch*.ts`.
 
 ### E-S02 Welcome
-- Default (store): lamp `welcome` scene (breathing), stacked lockup (`app.welcome`), one promise line, `membership.line` under it in `footnote textMuted` (the free allowance said once, before any purchase), "Begin the book" primary 56, "I already have a book" quiet 44. No price, no trial.
-- serversOff: "Begin the book" only.
+- Default (store, servers on), as built (`welcome-sign-in.tsx`, NX-36 S2): lamp `welcome` scene, lockup (`app.welcome`), descriptor as heading 1, body, the free-letters line (`membership.line`, said once before any purchase), "Sign in to begin your book.", then the footer: the agreement line directly above the buttons with Terms and Privacy as their own 44 pt links, Sign in with Apple (Apple's button) and Sign in with email (filled accent), both 56. No price, no trial.
+- lastMethod: "Last time you used email." (or Apple) under the matching door.
+- serversOff: Build 11's Welcome, "Begin the book" only, no sign-in door.
 - alpha (servers on): adds "I was invited" quiet; `alpha.note` replaces `membership.line`.
 - restoring: the room with no buttons for up to 10 s (`RESTORE_WAIT_MS`), then default.
-- error-provider: one inline line above the buttons, `firstRun.errors.provider`, announced.
-- AX5: lockup scales to its small cut; promise and footnote scroll; the two buttons pinned and stacked. No text truncates (letter-adjacent words are UI here, still never truncated).
-- VoiceOver: lockup image labelled with the brand name from `packages/brand`, promise, footnote, Begin the book, I already have a book. Voice Control: "Begin the book", "I already have a book".
-- Integration: C44 (F01, NX-31 R17, R18, R22, NX-36 S2); NS-35 first use; flag: `serverFeaturesEnabled()`; error codes: `provider`, `session_expired`. Module: `lib/first-run/route.logic.ts`, `welcome.logic.ts`.
+- error-provider: one inline line above the doors, `firstRun.errors.provider`, announced. sessionExpired: `errors.session_expired`.
+- AX5: the footer joins the scroll after the benefit line (as built); nothing truncates.
+- VoiceOver: lockup, heading, body, benefit, agreement and its links, Apple, email, I was invited (as built). Voice Control: "Sign in with Apple", "Sign in with email".
+- Layer: content (paper and lamp). Apple's button is Apple's control. No glass on this screen.
+- Integration: C44 (F01, NX-31 R2, R8, R17, R18, R22, NX-36 S2); NS-35 first use; flag `serverFeaturesEnabled()`; error codes `provider`, `session_expired`, and the outage set via E-S14. Modules: `lib/first-run/route.logic.ts`, `welcome.logic.ts`.
 
 ### E-S03 Age gate and stop
 - As built (PRD-REQ-019, LEGAL-REQ-002): the question in `display`, Yes and No as equal pills with nothing selected, the agreement row unticked, Terms and Privacy as their own 44 pt links, Continue never disabled. Reason line in `text` with a WarningCircle (never status colour on the gate).
@@ -244,8 +252,8 @@ Layout figures are in points at default text size on a 375 x 812 frame (safe are
 - Door lines (COORDINATION section 10): Shown: the question and the agreement; Records: the age boolean and the local agreement record on the phone; Never: preselected answer or ticked box; Decline: No stops the app with one line, nothing stored about the box.
 
 ### E-S04, E-S05, E-S06 Sign in
-- E-S04: modal sheet with ModalHeader Close; title "Sign in"; Apple's `ASAuthorizationAppleIDButton` (Apple's words and look, 56 tall, full width) and "Continue with email" (outline, 56). One inline error slot above the buttons.
-- E-S05: email TextField (autofill email, keyboard email), Send (primary, sticky above keyboard). Error under the field, field border `caution` plus the WarningCircle glyph and words (never colour alone).
+- E-S04: the sign-in sheet used after first run (Me, Account; the claim path; an invite in an alpha build). First run signs in on E-S02 itself. A system sheet (glass, N7) with Close; title "Sign in"; Apple's `ASAuthorizationAppleIDButton` and "Sign in with email" (filled), both 56. Inside the glass sheet the buttons are filled or plain, never glass (no glass on glass). One inline error slot above the buttons.
+- E-S05: email TextField (autofill email, keyboard email), Send link (primary, sticky above keyboard); `email.help` "A link and a code arrive by email. No password to remember." reason-empty: a tap on Send with no address says why in words (PROPOSED), never a silent disabled button. Error under the field, field border `caution` plus the WarningCircle glyph and words (never colour alone).
 - E-S06: six-box code field read as one field by VoiceOver ("Code, 6 digits"), autofill from Mail where iOS offers it; "Send a new email" quiet. Verifying: StateScreen loading with "Signing you in". Refused: StateScreen warm error with `verify.refusedTitle` and one action.
 - AX5: all three are single columns; the code boxes become one wide field at AX3 and above; sticky buttons stay above the keyboard; ModalHeader keeps Close at 44.
 - Error codes: see J-E08. Door lines: Shown: the sign-in method; Records: the session in the Keychain; Never: an email address shown in full on a shared screen beyond the field being typed; Decline: Close, back to the Welcome.

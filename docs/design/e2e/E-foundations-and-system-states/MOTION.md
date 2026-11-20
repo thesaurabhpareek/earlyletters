@@ -1,310 +1,365 @@
 # Area E. Foundations and system states: motion
 
-Status: DRAFT v1, 20 Nov 2026. Motion lead, area E. Keyed to the screen ids in `DESIGN.md` (skeleton of 20 Nov: `E-S01` to `E-S23` and the state suffixes `.default`, `.loading`, `.empty`, `.offline`, `.error-<code>`, `.killswitch`, `.paused-<switch>`, `.lapsed`, `.second-account`, `.ax5`, `.vo`, `.dark`). Re-key pass: when DESIGN.md adds journeys and per-screen states, every `E-Mnn` row below keeps its id and gains the new state names; no id is reused.
+Status: DRAFT v2, 20 Nov 2026. Motion lead, area E. Re-keyed to `DESIGN.md` (design lead, area E) section 4 inventory: screens `E-S01` to `E-S26`, their per-screen state names, the waiting rule (DESIGN section 2 rule 5), the render classes R0 to R6 and the cross-area catalogue `E-ST01` onward (DESIGN section 6). Ids in this file (`MP-nn`, `E-Mnn`) are stable; no id is reused.
 
-Play every move in `MOTION-PROTOTYPE.html` (this folder): each primitive and each area E moment, with a Reduce Motion toggle, light and dark, and a slow-motion switch for review.
+Play every move in `MOTION-PROTOTYPE.html` (this folder): each primitive and each area E moment, with toggles for Reduce Motion, dark, Reduce Transparency and a slow-motion switch for review.
 
-Sources, in order (BRIEF section 1): the locked cards (mainly `11-foundations.md` NS-33 and NS-34, `08-keeping-and-trust.md` NS-10, the Plus rows in `00` principle 6 and every card's Reduce Motion row), `14-test-plan.md` J-N15, `16-council-review-round-2.md` T4; engineering input `/home/claude/review/eng/B-mobile-client.md` (risk 9); house design `docs/design/MOTION.md` v0.2, `SOUND.md`, `tokens.motion` in `packages/design-tokens/src/tokens.ts`, `apps/mobile/src/lib/motion.ts`, `lib/transitions.logic.ts`, `lib/haptics.shared.ts`, `components/motion/*`, and the built screens named per row. History used where a card agrees: `docs/design/specs/FIRST-RUN-MOTION-SPEC-10nov.md` (what it says that is superseded is listed in section 8).
+**Design system v2 (Karma, 20 Nov).** The shared motion primitives are owned by `docs/design/system/MOTION.md` (design-systems motion lead; brief `docs/design/system/BRIEF.md`). Section 2 of this file is **input to that file, not a competing standard**. That file did not exist when this draft was finished; section 2b is the key to fill at the next pass, and where the system file differs, it wins.
+
+Sources, in order (BRIEF section 1): the locked cards (mainly `11-foundations.md` NS-33 and NS-34, `08-keeping-and-trust.md` NS-10, the frame `00` principle 6 and section 5, and every card's Reduce Motion row), `14-test-plan.md` J-N15, `16-council-review-round-2.md` T4; engineering input `/home/claude/review/eng/B-mobile-client.md` (section 7 risk 9); house design `docs/design/MOTION.md` v0.2, `SOUND.md`, `tokens.motion` in `packages/design-tokens/src/tokens.ts`, `apps/mobile/src/lib/motion.ts`, `lib/transitions.logic.ts`, `lib/haptics.shared.ts`, `components/motion/*`, and the built screens named per row; the design system v2 brief section 1 (Expo `expo-glass-effect` facts) and section 3 (material policy). History used where a card agrees: `docs/design/specs/FIRST-RUN-MOTION-SPEC-10nov.md` (superseded parts in section 8).
 
 ## 0. How to read this file
 
-- `MP-nn` is a working name for a motion primitive (section 2). Section 2 is input to `docs/design/system/MOTION.md`, which owns the shared primitives; areas A to D key to the system file's names, and no area (this one included) defines a new duration, spring or easing in a screen: it goes to the system file as a proposed token (section 7).
-- `E-Mnn` is one transition or feedback moment in area E (section 4), keyed to an `E-Snn.<state>`.
-- Every number is a token from `tokens.motion` (named in backticks) or a proposed token (section 7). No row types a raw number that is not a token, except where it quotes code that already does so (flagged as a gap).
-- RM = Reduce Motion. LPM = Low Power Mode. VO = VoiceOver.
+- `MP-nn` is a working name for a motion primitive (section 2). Areas A to D key to the system file's names; no area (this one included) types a new duration, spring or easing in a screen: it goes to the system file as a proposed token (section 7).
+- `E-Mnn` is one transition or feedback moment in area E (section 4), keyed to `E-Snn.<state>` with DESIGN.md's state names. Where DESIGN.md routes a state to another area's screen (E-S09 to C-S10 and C-S11; E-S17 to A-S04), the row names that screen.
+- Every number is a token from `tokens.motion` (named in backticks) or a proposed token (section 7). A raw number appears only where it quotes code that already types it (flagged as a gap).
+- RM = Reduce Motion. LPM = Low Power Mode. VO = VoiceOver. RT = Reduce Transparency.
 
 ## 1. The laws (all areas)
 
-From MOTION.md section 2 and 5l, restated as the rules every area signs up to:
+From MOTION.md sections 2 and 5l and DESIGN.md section 2, restated as the rules every area signs up to:
 
-1. **Calm and quick.** No single move longer than 300 ms. Named exceptions, all already tokens and all decorative or sanctioned by MOTION.md: lamp arrival and in-room light change `lamp.arriveMs` 1200; the new-letter wash `newMarkMs` 1600; draw-on `drawMs` 1200; the save hand-off (about 1.1 s, under `hardCeilingMs` 2000); empty and loading breath `emptyBreathMs` 8000 and lamp breath `lamp.breathMs` 9000 (loops, opacity only). Any sequence of moves stays under `sequenceMaxMs` 900.
-2. **Controls never animate in.** Buttons, fields and links are opaque and hittable from the first frame of every screen, sheet and state. Only content (words, drawings, cards) enters.
+1. **Calm and quick.** No single move longer than 300 ms. Named exceptions, all existing tokens and all decorative or sanctioned by MOTION.md: lamp arrival and in-room light change `lamp.arriveMs` 1200; the new-letter wash `newMarkMs` 1600; draw-on `drawMs` 1200; the save hand-off (about 1.1 s, under `hardCeilingMs` 2000); the breath loops `emptyBreathMs` 8000 and `lamp.breathMs` 9000 (opacity only). Any sequence stays under `sequenceMaxMs` 900.
+2. **Controls never animate in.** Buttons, fields and links are opaque and hittable from the first frame of every screen, sheet and state. Only content (words, drawings, cards) enters. One exception, as built (`lock-offer.tsx`): controls that can only exist after an async answer arrive by MP-06 into a slot reserved from frame 1 (E-M08b, E-M21).
 3. **Commit first, then the receipt.** No save, sign-in, purchase or retry waits on an animation.
 4. **Interruptible.** A tap during any move lands on its end state. Springs start from where the value is.
 5. **Quiet joy, no ceremony.** No confetti, counters, ticking numbers, streaks, badges, check-mark animations, pulses, shakes or flashes. Nothing celebrates sign-in, Plus or an update.
-6. **Problems arrive like any other content.** An error, outage, offline, pause, plan lapse or low-storage state uses the same arrive and swap moves as everything else: no shake, no red flash, no slide from the top, no bounce, no haptic, no sound.
-7. **Loops are opacity only, front screen only, and stop** under RM, LPM (see section 9, gap G-E1), in the background, when the screen is not focused, and when a sheet covers it (NS-33-R5, NS-34 section 3, J-N15). At most one loop on screen.
-8. **Native first.** Tabs, pushes, system sheets, alerts, Apple's sign-in and Apple's subscription sheet are the platform's own, including the platform's reduced transition under RM.
-9. **One RM mechanism.** Screens never read the setting; they use `useMotion()`, `useReducedMotion()`, `useSheetMotion()` and `useRouteTransitions()` (`lib/motion.ts`). Under RM every movement becomes one opacity fade of `fadeMs` (200 ms) run with `ReduceMotion.Never`; decoration does not run at all; nothing jumps on content that carries meaning.
-10. **Two screens of words are never on top of each other mid-move** (`HAND_OFF` 0.35): the leaving words go first.
+6. **Problems arrive like any other content.** An error, outage, offline, pause, plan lapse or low-storage state uses the same arrive and swap moves as everything else: no shake, no red flash, no slide from an edge, no bounce, no haptic, no sound. There is no global offline banner (DESIGN rule 1): a state shows in place, where the parent touched a server action.
+7. **The waiting rule** (DESIGN rule 5, NS-34): 0 to 350 ms nothing changes; 350 ms to 10 s a breathing state (MP-17) with no count and no spinner; at 10 s the slow or held state with a way forward. A tap still answers at once (MP-01 within one frame, MP-18 busy words).
+8. **Loops are opacity only, front screen only, and stop** under RM, LPM (gap G-EM1), in the background, when the screen is not focused, and when a sheet covers it (NS-33-R5, NS-34 section 3, J-N15). At most one loop on screen.
+9. **Native first.** Tabs, pushes, system sheets, alerts, Apple's sign-in and Apple's subscription sheet are the platform's own, including the platform's reduced transition under RM.
+10. **One RM mechanism.** Screens never read the setting; they use `useMotion()`, `useReducedMotion()`, `useSheetMotion()` and `useRouteTransitions()` (`lib/motion.ts`). Under RM every movement becomes one opacity fade of `fadeMs` (200 ms) run with `ReduceMotion.Never`; decoration does not run; nothing jumps on content that carries meaning.
+11. **Two screens of words are never on top of each other mid-move** (`HAND_OFF` 0.35): the leaving words go first.
+12. **Glass never fades to nothing.** A Liquid Glass surface never animates its opacity to 0 (Expo: it stops rendering); it animates `glassEffectStyle` between `regular` and `none`, and only its content and the scrim fade (section 2a).
 
 ## 2. Motion primitives: input to `docs/design/system/MOTION.md`
 
-**Status of this section (20 Nov, Karma's redirect).** The shared motion primitives are owned by the design system v2 (`docs/design/system/MOTION.md`, design-systems motion lead; brief `docs/design/system/BRIEF.md`). This table is **input to that file, not a competing standard**: it records what the built code does today (with file and line) and what area E needs. Areas A to D key to the system's primitive names, not to `MP-nn`. When the system file lands, every `MP-nn` below and every `E-Mnn` row in section 4 is re-keyed to the system's names (column "System primitive" below, filled at the final pass); where the two differ, the system file wins and the difference is listed in section 8.
+This table records what the built code does today (file and line) and what area E needs. It is input to the system file and is re-keyed to the system's names at the next pass (2b).
 
-### 2a. Glass rules that change the moves below (design system v2 brief, section 3; Expo SDK 57 `expo-glass-effect`)
+### 2a. Glass rules (design system v2 brief, sections 1 and 3)
 
-- Glass layer surfaces in area E: the tab bar (system native tabs), the Keep gate sheet and every `ui/sheet.tsx` sheet, the undo toast, navigation and toolbar buttons. Content layer (never glass): every MP-14 screen (errors, outage, kill switch, update required, not found, second account), first run's paper rooms, Plus confirmed's terms, the system line (E-S15) and placeholders (MP-19).
-- **Never animate a glass view's opacity to 0** (Expo: a glass view at opacity 0 stops rendering). Wherever a row below says "fade" for a glass surface (MP-05 toast exit, MP-10 sheet under RM, E-M30 to E-M35), the glass itself animates `glassEffectStyle` from `regular` to `none` (with `animate` and `animationDuration` set from the same token), and only the surface's content and the scrim change opacity. Under Reduce Transparency or before iOS 26 the surface is solid tokens, so an opacity fade is fine there.
-- Glass morphs between shapes (a control growing into a sheet, controls merging in a `GlassContainer`) are the system file's to define; area E uses none of its own.
-- Native tabs (`expo-router/unstable-native-tabs`) would replace the JS tabs (E-M80): the swap and the bar's own glass, including minimise on scroll, are then the system's; the lamp rule still applies to the content under it.
+- Glass layer surfaces area E draws or relies on: the tab bar (system native tabs), the Keep gate sheet (E-S10) and every `ui/sheet.tsx` sheet (E-S25), the undo toast, navigation and toolbar buttons (ModalHeader Close on E-S04 to E-S06). Content layer, never glass: every StateScreen and PlainScreen state (E-S01 recovery, E-S06 verifying and refused, E-S13, E-S14, E-S20, A-S04.full), first run's paper rooms (E-S02, E-S03, E-S08), Plus in Me and Plus confirmed (grouped lists and text), the SystemLine (E-S15), placeholders (MP-19), the held letter card on the sheet.
+- Every "fade" of a glass surface in this file (MP-05 on the toast, MP-10 under RM, E-M30 to E-M36, E-M90) means: the glass animates `glassEffectStyle` `regular` to `none` (or back) with `animate` and `animationDuration` from the same token; the surface's content and the scrim change opacity. Under RT or before iOS 26 the surface is a solid token surface with a hairline border, and a plain opacity fade is fine.
+- `isLiquidGlassAvailable()` ignores accessibility settings, so the RT read (`AccessibilityInfo.isReduceTransparencyEnabled()`) sits beside the RM read in `lib/motion.ts` (gap G-EM8).
+- Glass morphs (a control growing into a sheet, controls merging in a `GlassContainer`) are the system file's; area E adds none.
+- Native tabs (`expo-router/unstable-native-tabs`) would replace the JS tabs (E-M80): the swap, selection and minimise-on-scroll are then the system's; the lamp rule still applies to the content under the bar.
 
-Easing for every timed move: `easing` = cubic-bezier(0.2, 0, 0, 1) (M3 standard), exported as `STANDARD_EASING`. Springs: `snappy` (stiffness 520, damping 46, mass 1; ratio 1.0), `standard` (260, 30, 1; 0.92), `gentle` (90, 18, 1; 0.95).
-
-| Id | Name | Use for | What moves | Duration or spring | RM substitute | Haptic | Built in | Never |
-|---|---|---|---|---|---|---|---|---|
-| MP-01 | Press, control | every Button, IconButton, chip, row that acts | scale 1 to `press.scale` 0.97 on press-in, back on release | `snappy` spring | opacity to `press.opacity` 0.9 over 90 ms, no scale (90 ms is hardcoded: gap G-E3) | none by default; only an outcome passes `haptic` (MP-H) | `usePressScale('control')`, `components/motion/press.ts`; `Button` | delay the action until the press finishes |
-| MP-02 | Press, card | pressable cards (letter card, slip, held card) | scale to `press.cardScale` 0.98; held through card-to-page (MOTION 5f) | `snappy` | as MP-01 | none | `usePressScale('card')`, `PressHoldContext` | pop back before the page opens |
-| MP-03 | Enter | content arriving: words, a line, a card, a toast | opacity 0 to 1, y `enter.dy` 8 to 0 | `enter.durationMs` 280, `staggerMs` 30 for the first `staggerMax` 6; item 7 on gets no entrance | one fade `fadeMs` 200, no travel, no stagger | none | `useMotion().enter(i)` | controls; re-entering on a return or tab switch; typewriter effect on any words |
-| MP-04 | Leave | a step's words going up and on | opacity 1 to 0, y 0 to -8 | `exitMs` 160 | fade `exitMs` 160 | none | `useMotion().leave()` | leave controls |
-| MP-05 | Exit | transient UI going away: toast, inline card, a line | opacity to 0, y down a little | `exitMs` 160 | fade `fadeMs` 200 | none | `useMotion().exit()` | exit faster than one frame (a cut reads as broken) |
-| MP-06 | Swap in place | words replaced where they stand: a status line changing, an error line updating, a toast over a toast, a busy label | cross-fade old out, new in, same box | `swapMs` 150 | same (it is already a fade) | none | `FadeIn/FadeOut.duration(swapMs)` in toast.tsx, lock-offer.tsx, onboarding.tsx | shake, colour flash, width animation |
-| MP-07 | Step hand-off | one step to the next inside one room (first run, consent steps, a sheet's next page) | MP-04 then MP-03; the lamp does not change room | 160 + 280 = 440 ms | leave fade `fadeMs`, then arrive fade `fadeMs`, no stagger (`stepMotion(true)`) | none (Continue and Back are navigation) | `stepMotion()` in `transitions.logic.ts`; `app/onboarding.tsx` | slide the whole screen; two steps' words visible together |
-| MP-08 | Dissolve | full-screen rooms with no change of shape (Listen, Review, Read together) | platform cross-dissolve | `route.dissolveMs` 280 | `fadeMs` 200 | none | `routeTransitions`, move `dissolve` | |
-| MP-09 | Push and back | Settings and Me pages | platform push, including swipe back | platform | platform's reduced transition | none | move `push` | custom push curves |
-| MP-10 | Our sheet | `ui/sheet.tsx` and the Keep sheet | sheet rises from below, scrim fades in; room keeps its lamp and pauses its breath | `standard` spring up; out on `exitMs` | sheet and scrim fade `fadeMs`, no travel | none on open or close | `useSheetMotion()`, `Sheet`, `plus-gate.tsx` | sheet content adding its own stagger (except one held card, E-M30) |
-| MP-11 | System modal | `(auth)`, `invite`, `plus/confirmed`, Apple sign-in, Apple's subscription sheet, share sheet, photo picker | the platform's rise | platform | platform | none | move `sheet` (empty options) | restyle or re-time a system sheet |
-| MP-12 | Cut | first run route (`onboarding`), redirects that must never slide | nothing | 0 | same | none | move `cut` | |
-| MP-13 | Reflow | a line or inline card inserted into or taken out of a column; siblings move | siblings' layout on a spring; the inserted item uses MP-03 or MP-05 | `standard` (`layoutSpring`) | no reflow animation (instant), the inserted item still fades `fadeMs` | none | `useMotion().layout()` | animate text size, font size or a text block's height |
-| MP-14 | Block arrive | a full-screen state: error, outage, kill switch, update required, not found, second account held, launch recovery | the whole block fades in once | `fadeMs` 200 (always runs; it is its own RM form) | same | none | `StateScreen` ARRIVE | lamp, draw-on or breath on a problem screen |
-| MP-15 | Cover | privacy cover and app lock | on: drawn at once; off (unlock): fades | on 0 ms; off `fadeMs` 200 | same | none | `PrivacyCover`, `app-lock-layer.tsx` | a fade in (the app switcher snapshot would catch the book) |
-| MP-16 | Lamp | lit rooms only (gate, welcome, form, finish, Home, Book, write) | one radial pool, opacity only | arrive `lamp.arriveMs` 1200 (first lit room after cold launch; also an in-room change of scene or intensity); return `lamp.returnMs` 280; leave `lamp.leaveMs` 160; breath `lamp.breathMs` 9000 to `breathOpacityMin` 0.88 | jumps to its level, still; no breath | none | `Lamp`, `LampView`, `useUnlitRoom()`, `persistKey` `firstRun` and `tabs` | on any screen that records, plays a voice, sells (Keep sheet, Plus) or reports a problem (MP-14 screens, system line) |
-| MP-17 | Breathe | the one drawing in an empty or loading state (moon, envelope) | opacity 1 to 0.85 and back | `emptyBreathMs` 8000 full cycle, sine | off: drawing shown still at full opacity | none | `Breathe` (`components/motion/breathe.tsx`) | wrap text or a control; run on a problem screen; run with another loop on screen |
-| MP-18 | Busy in a control | a button whose action is running (sign in, retry, restore, purchase hand-off) | label stays; an activity indicator sits in the button; other buttons on the screen disable at once | indicator: platform; label change if any: MP-06 | **target**: no indicator; the label swaps to its busy words (MP-06) and stays static. **Built**: `ActivityIndicator` spins under RM too (gap G-E2, breaks NS-33-R5) | none | `Button loading` (`components/ui/button.tsx:162`) | full-screen blocking spinner; a spinner with no accessible name; a busy state with no time-out (see MP-23) |
-| MP-19 | Placeholder (proposed) | a region whose data is local but not ready at first frame (a long list after a cold start, a plan status) | nothing for `loading.placeholderAfterMs` (proposed 350); then static placeholder shapes fade in `fadeMs`; real content replaces them with MP-06 | as stated | same (already fades only) | none | not built (no skeleton exists in `apps/mobile/src`); new, in `components/ui` | shimmer, sweep, pulse or any loop on placeholders; placeholders for a region that has an empty state (show the empty state instead) |
-| MP-20 | Wash | a newly arrived letter in the Book; a restored span in Review | `accentSoft` background fades out | `newMarkMs` 1600 | shown static, then fades | none (the save already gave `success`) | Book arrival, Review put-back | on anything that is not a person's letter (never on Plus, sign-in, update) |
-| MP-21 | Draw once | single-weight line drawings that appear once per reader | `strokeDashoffset` | `drawMs` 1200, then text MP-03 | drawn complete; text fades `fadeMs` | none | `DrawOnPath`, `DrawOnStrokes` | repeat; draw on a problem screen |
-| MP-22 | Signature moves (reference only) | save into the month, card to page, page turn, listening glow, read-together highlight | as MOTION.md 5b, 5c, 5e, 5f, 5g, 5m | their tokens (`file`, `cardToPage`, `pageTurn`, `breath`, `highlight`) | as MOTION.md | as MOTION.md 6 | `fileIntoMonthPlan`, `CardToPage`, `PageTurn` | a second implementation in any area |
-| MP-23 | Timed lines and undo windows | toasts, undo lines, busy states that wait on a network | a toast without an action leaves after 4000 ms (hardcoded default, gap G-E4) with MP-05; with an action it stays until used, closed, swiped or the screen changes; undo windows follow T4 through one helper (BL-954) | T4: the stated seconds, or until VO has finished the line plus those seconds, whichever is later; with Switch Control, until the parent moves on | same | `tap` on Undo | `Toast`, `toast.logic.ts`; helper BL-954 | a dead Undo still on screen; a toast closing while VO reads it; any visible countdown |
-| MP-24 | Announce and focus | every state change the eye would catch | not motion: VO hears it | arrival of a screen or block: focus to its heading; a new line: one polite announcement; a "still working" line: at most once a minute (NS-33 Slow row; proposed `a11y.repeatGapMs` 60000) | same | none | `announce()`, `useFocusOnMount()` | announce over a playing voice (NS-33 section 5); move focus for a toast |
-| MP-25 | Follow the finger | swipe to dismiss a toast, page turn, story swipe | element follows the finger; past the threshold it goes, else settles | settle `snappy`; thresholds `SWIPE` (0.25 width, 600 pt/s) for pages; toast 40 pt or 600 pt/s (hardcoded, gap G-E4) | no follow; a swipe past the threshold triggers the fade form; every gesture has a button | none | `swipeOutcome()`, toast pan | a gesture with no button |
-| MP-26 | Scheme change | light, dark, Increase Contrast, Bold Text, text size | nothing animates; the next frame is in the new scheme; the lamp re-renders at its level with no arrival | 0 | same | `tap` on the Appearance choice | `useTheme()` | cross-fade a whole screen; animate font size (MOTION 5i: text cross-fades `swapMs` only for Reading Size) |
-
-### 2b. Key to the system primitive names
-
-Filled at the final pass from `docs/design/system/MOTION.md`. Until then each `MP-nn` stands for the system primitive that does the same job; a row marked "pending" has no system name yet.
+### 2b. Key to the system primitive names (fill at the next pass)
 
 | Working id | System primitive name | Glass note |
 |---|---|---|
-| MP-01, MP-02 | pending | glass buttons: the system's own press (interactive glass) replaces the scale where the control is a `GlassView` with `isInteractive` |
-| MP-03, MP-04, MP-05, MP-06, MP-07 | pending | MP-05 on the glass toast: `glassEffectStyle` to `none`, never opacity 0 |
+| MP-01, MP-02 | pending | an interactive `GlassView` button takes the system's own press instead of our scale |
+| MP-03 to MP-07 | pending | MP-05 on the glass toast animates the effect style, not opacity |
 | MP-08, MP-09, MP-11, MP-12 | pending | system transitions |
-| MP-10 | pending | glass sheet; under RM animate `glassEffectStyle`, fade only content and scrim |
-| MP-13 to MP-21, MP-23 to MP-26 | pending | content layer, no glass |
-| MP-22 | MOTION.md 5b to 5m (house) | area A and B |
+| MP-10 | pending | glass sheet; under RM, effect style plus content and scrim fade |
+| MP-13 to MP-21, MP-23 to MP-26 | pending | content layer |
+| MP-22 | house MOTION.md 5b to 5m | areas A and B |
 
-### MP-H. Haptics (shared, from `lib/haptics.shared.ts` and MOTION.md 6)
+### 2c. The primitives
 
-A haptic marks an outcome the person caused, never a navigation and never a system state. Five intents only:
+Easing for every timed move: `easing` = cubic-bezier(0.2, 0, 0, 1) (M3 standard, `STANDARD_EASING`). Springs: `snappy` (stiffness 520, damping 46, mass 1; ratio 1.0), `standard` (260, 30, 1; 0.92), `gentle` (90, 18, 1; 0.95).
+
+| Id | Name | Use for | What moves | Duration or spring | RM substitute | Haptic | Built in | Never |
+|---|---|---|---|---|---|---|---|---|
+| MP-01 | Press, control | every Button, IconButton, chip, row that acts | scale 1 to `press.scale` 0.97 on press-in, back on release | `snappy` | opacity to `press.opacity` 0.9 over 90 ms, no scale (90 typed in code: G-EM3) | none by default; only an outcome passes `haptic` (MP-H) | `usePressScale('control')` (`components/motion/press.ts`), `Button` | delay the action until the press ends |
+| MP-02 | Press, card | pressable cards (letter card, slip, held card) | scale to `press.cardScale` 0.98; held through card-to-page (MOTION 5f) | `snappy` | as MP-01 | none | `usePressScale('card')`, `PressHoldContext` | pop back before the page opens |
+| MP-03 | Enter | content arriving: words, a line, a card, a toast | opacity 0 to 1, y `enter.dy` 8 to 0 | `enter.durationMs` 280; `staggerMs` 30 for the first `staggerMax` 6; item 7 on has no entrance | one fade `fadeMs` 200, no travel, no stagger | none | `useMotion().enter(i)` | controls; re-entering on a return or a tab switch; a typewriter effect on any words |
+| MP-04 | Leave | a step's words going up and on | opacity 1 to 0, y 0 to -8 | `exitMs` 160 | fade `exitMs` | none | `useMotion().leave()` | controls leaving |
+| MP-05 | Exit | transient UI going away: toast, inline line, a block | opacity to 0, y down a little | `exitMs` 160 | fade `fadeMs` 200 | none | `useMotion().exit()` | a cut (reads as broken) |
+| MP-06 | Swap in place | words replaced where they stand: a line updating, a busy label, a toast over a toast, a state's title and body | old words fade out while new fade in, same box | `swapMs` 150 | same (already a fade) | none | `FadeIn/FadeOut.duration(swapMs)` in `toast.tsx`, `lock-offer.tsx`, `onboarding.tsx` | shake, colour flash, width animation |
+| MP-07 | Step hand-off | one step to the next inside one room (first run, consent steps) | MP-04, then MP-03; the lamp stays in the room | 160 + 280 = 440 ms | fade out `fadeMs`, then fade in `fadeMs`, no stagger (`stepMotion(true)`) | none (Continue and Back are navigation) | `stepMotion()` (`transitions.logic.ts:160`), `app/onboarding.tsx:257-263` | slide the whole screen; two steps' words visible together |
+| MP-08 | Dissolve | full-screen rooms with no change of shape (Listen, Review, Read together) | platform cross-dissolve | `route.dissolveMs` 280 | `fadeMs` 200 | none | `routeTransitions`, move `dissolve` | |
+| MP-09 | Push and back | Me pages, the sign-in stack inside its modal | platform push, swipe back | platform | platform's reduced transition | none | move `push` | custom push curves |
+| MP-10 | Our sheet | `ui/sheet.tsx`, the Keep sheet | the sheet rises from below over a scrim; the room keeps its lamp and pauses its breath | `standard` up; out over `exitMs` | no travel: glass effect style and content fade `fadeMs`, scrim fades | none on open or close | `useSheetMotion()`, `Sheet`, `plus-gate.tsx:187-190` | sheet content adding a stagger (one held card excepted, E-M30) |
+| MP-11 | System modal | `(auth)`, `invite`, `plus/confirmed`, Apple sign-in, Apple's subscription sheet, share sheet, photo picker | the platform's rise | platform | platform | none | move `sheet` (empty options) | restyle or re-time a system sheet |
+| MP-12 | Cut | the first-run route (`onboarding`), redirects that must never slide | nothing | 0 | same | none | move `cut` | |
+| MP-13 | Reflow | a line inserted into or taken out of a column; siblings move | siblings' layout on a spring; the line itself uses MP-03 or MP-05 | `standard` (`layoutSpring`) | instant reflow; the line still fades `fadeMs` | none | `useMotion().layout()` | animating text size, font size or a text block's height |
+| MP-14 | Block arrive | a whole-screen state (render classes R4 and the StateScreen half of DESIGN's catalogue) | the block fades in once; focus to its heading; title announced | `fadeMs` 200 (always runs; it is its own RM form) | same | none | `StateScreen` ARRIVE (`state-screen.tsx:67`) | lamp, draw-on or breath on a problem state |
+| MP-15 | Cover | privacy cover, app lock | on: drawn at once; off (unlock): fades | on 0; off `fadeMs` | same | none | `PrivacyCover`, `app-lock-layer.tsx:56` | a fade in (the app switcher snapshot would catch the book) |
+| MP-16 | Lamp | lit rooms only (gate, welcome, form, finish, Home, Book, write) | one radial pool, opacity only | arrive `lamp.arriveMs` 1200 (first lit room after a cold launch; an in-room change of scene or level); return `lamp.returnMs` 280; leave `lamp.leaveMs` 160; breath `lamp.breathMs` 9000 to `breathOpacityMin` 0.88 | at its level at once, still | none | `Lamp`, `LampView`, `useUnlitRoom()`, `persistKey` `firstRun` and `tabs` | any screen that records, plays a voice, sells (E-S10, E-S11, E-S12) or reports a problem (MP-14 states, SystemLine) |
+| MP-17 | Breathe | the one mark or drawing in a waiting state (350 ms to 10 s) or an empty state | opacity 1 to 0.85 and back | `emptyBreathMs` 8000 per cycle, sine | still at full opacity | none | `Breathe` (`components/motion/breathe.tsx`) | wrapping text or a control; a problem state; two loops at once |
+| MP-18 | Busy in a control | a button whose action runs (Try again, Sign in, See Plus, Restore, Keep in this account) | the label swaps to its busy words (MP-06), for example "Trying again", "Opening the App Store"; the other buttons on the screen disable at once | `swapMs` 150 | same | none | target; today `Button loading` draws `ActivityIndicator` (`components/ui/button.tsx:162`), which spins under RM too (G-EM2, breaks NS-33-R5) | a spinner (DESIGN rule 5: no spinner); a full-screen blocker; busy with no end (the 10 s rule) |
+| MP-19 | Placeholder (proposed) | a region with data still coming after 350 ms (plan status in E-S11, a list after a cold start) | nothing until `loading.placeholderAfterMs` 350 (proposed); then static placeholder shapes fade in `fadeMs`; the real content replaces them by MP-06 | as stated | same | none | not built (no skeleton in `apps/mobile/src`; G-EM7) | shimmer, sweep, pulse or any loop on placeholders; placeholders where an empty state applies |
+| MP-20 | Wash | a newly arrived letter in the Book; a restored span in Review | `accentSoft` background fades out | `newMarkMs` 1600 | shown, then fades | none (the save gave `success`) | Book arrival, Review put-back | anything that is not a person's letter (Plus, sign-in, update, a waiting card) |
+| MP-21 | Draw once | single-weight line drawings shown once per reader | `strokeDashoffset` | `drawMs` 1200, then text MP-03 | drawn complete; text fades | none | `DrawOnPath`, `DrawOnStrokes` | repeating; a problem state |
+| MP-22 | Signature moves (reference) | save into the month, card to page, page turn, listening glow, read-together highlight | MOTION.md 5b, 5c, 5e, 5f, 5g, 5m | `file`, `cardToPage`, `pageTurn`, `breath`, `highlight` | as MOTION.md | MOTION.md 6 | `fileIntoMonthPlan`, `CardToPage`, `PageTurn` | a second implementation |
+| MP-23 | Timed lines and undo windows | toasts, undo lines | a toast without an action leaves after 4000 ms (typed default, G-EM4) by MP-05, never while a screen reader runs; with an action it stays until used, closed, swiped or the screen changes; undo windows follow T4 through one helper (BL-954) | T4: the stated seconds, or until VO has read the line plus those seconds, whichever is later; Switch Control: until the parent moves on | same | `tap` on Undo | `Toast` (`toast.tsx:56-77`), helper BL-954 | a dead Undo on screen; any visible countdown |
+| MP-24 | Announce and focus | every change the eye would catch | not motion: VO hears it | a new screen or block: focus to its heading, title announced; a new line: one polite announcement; a repeated "still working" line at most once a minute (NS-33 Slow row; proposed `a11y.repeatGapMs` 60000) | same | none | `announce()`, `useFocusOnMount()` | announcing over a playing voice; moving focus for a toast |
+| MP-25 | Follow the finger | swipe to dismiss a toast; page turn | follows the finger; past the threshold it goes, else settles | settle `snappy`; pages `SWIPE` (0.25 width, 600 pt/s); toast 40 pt or 600 pt/s (typed, G-EM4) | no follow; a swipe past the threshold runs the fade form | none | `swipeOutcome()`, toast pan | a gesture with no button |
+| MP-26 | Scheme change | light, dark, Increase Contrast, Bold Text, text size | nothing animates; the next frame is in the new scheme; the lamp redraws at its level, no arrival | 0 | same | `tap` on the Appearance choice | `useTheme()` | a whole-screen cross-fade; animated font size |
+
+### 2d. Render classes (DESIGN section 6) to motion
+
+| Class | What | Motion |
+|---|---|---|
+| R0 | silent | none |
+| R1 | surface absent | leaves on the next render of its screen, never mid-gesture; if it must go while in view: MP-05 then MP-13 (DESIGN J-E14) |
+| R2 | SystemLine in place | E-M40 to E-M43 |
+| R3 | toast | MP-03 in, MP-05 out, MP-06 over another, MP-23 timing |
+| R4 | StateScreen or InlineState | MP-14 for a screen; MP-06 for an inline state replacing content in its box |
+| R5 | sheet | MP-10 (ours) or MP-11 (system) |
+| R6 | PlainScreen | none at all (no providers, by design) |
+
+### MP-H. Haptics (from `lib/haptics.shared.ts` and MOTION.md 6)
+
+A haptic marks an outcome the person caused, never a navigation and never a system state. Five intents:
 
 | Intent | iOS | Android | Where (as built) | Area E use |
 |---|---|---|---|---|
-| `tap` | `selectionAsync` | `Segment_Tick` | a choice picked (age pills, consent answers, Appearance, chips), Undo, Put it back, Reading Size | E-S03, E-S07, E-S11, E-S12, E-S21 |
+| `tap` | `selectionAsync` | `Segment_Tick` | a choice picked (age answers, consent answers, Appearance, chips), Undo, Put it back, Reading Size, provider buttons | E-S03, E-S04, E-S07, E-S11, E-S12, E-S21 |
 | `press` | `impactAsync(Light)` | `Context_Click` | record start and stop, Speak and Type | none |
 | `soft` | `impactAsync(Soft)` | `Long_Press` | long press, "Not much today" | none |
-| `success` | `notificationAsync(Success)` | `Confirm` | a letter kept; also, as built: the book opens at the end of first run (`onboarding.tsx:234`), Plus turned on in the Keep sheet (`plus-gate.tsx:114`), app lock turned on (`lock-offer.tsx:54`) | E-M09, E-M33, E-M64 (see card gap K-3) |
-| `warning` | `notificationAsync(Warning)` | `Reject` | a destructive act confirmed (Delete, Let it go) | none in E |
+| `success` | `notificationAsync(Success)` | `Confirm` | a letter kept; also, as built: the book opens (`onboarding.tsx:234`), Plus on in the Keep sheet (`plus-gate.tsx:114`), app lock turned on (`lock-offer.tsx:54`) | E-M09, E-M33, E-M75 (card gap K-EM3) |
+| `warning` | `notificationAsync(Warning)` | `Reject` | a destructive act confirmed | none in E |
 
-Never in area E: a haptic on an error, outage, offline, kill switch, pause, lapse, update, low storage, second account, sign-in success, Continue, Back, Close, Skip, a tab change, a sheet opening, a toast showing. `success` and `warning` are never throttled; `tap`, `press`, `soft` are throttled to one per 100 ms. A haptic always goes with a visible change (iOS mutes the Taptic Engine in LPM).
+Never in area E: a haptic on an error, outage, offline, pause, lapse, update, low storage, second account, claim, sign-in success, restore, Continue, Back, Close, Got it, a tab change, a sheet opening, a toast showing. `success` and `warning` are never throttled; the others are throttled to one per 100 ms. A haptic always goes with a visible change (iOS mutes the Taptic Engine in LPM).
 
 ### MP-S. Sound
 
-Paper sounds are off by default (SOUND.md 2). Area E plays none. SOUND.md's `gentle_error` (with a `notificationAsync(Error)` haptic) is reserved for "failures the person can fix now" such as a photo that did not attach (area A); it is not used for any area E state, because every area E state is a system condition, not the person's act (law 6). `invite_accepted` belongs to area D.
+Paper sounds are off by default (SOUND.md 2). Area E plays none. `gentle_error` (with a `notificationAsync(Error)` haptic) is for failures the person can fix now, such as a photo that did not attach (area A); no area E state uses it, because each is a system condition, not the person's act (law 6).
 
 ## 3. What never animates (area E)
 
-- No shake, wobble or red flash on a wrong code, a failed sign-in, a failed purchase, an outage or an error.
-- No pulse, glow or breathing on a call to action: See Plus, Update, Try again, Sign in, Continue.
-- No ticking numbers: the email resend wait says "in a minute" and re-renders once when it passes (built, `code.tsx:94`); no trial-days counter; no letters-left counter; no storage gauge that animates down.
-- No confetti, check mark draw, stamp, seal or glow on sign-in, the book opening, Plus starting, a restore, or an update.
-- No spinner as a screen; no shimmer; no indeterminate bar that eases. A progress bar appears only for real measured progress (area C export) and moves linearly with it.
-- No lamp and no breath on the Keep sheet, Plus in Me, Plus confirmed, any MP-14 screen or the system line.
-- No banner sliding down from the top or up from the bottom for offline, outage, pause, update or storage; the line appears in place (E-M40).
-- No auto-dismiss of an error line or a system line while its condition holds.
-- No motion that suggests the app is writing: no typewriter, no word-by-word reveal of anything presented as a parent's words, including sample letters in first run.
+- No shake, wobble or red flash: wrong code, failed sign-in, failed restore, failed purchase, outage, error.
+- No pulse, glow or breath on a call to action: See Plus, Update, Try again, Begin the book, Keep in this account.
+- No ticking numbers: the email resend wait says "in a minute" and re-renders once when it passes (built, `code.tsx:94`); no trial-days counter; no letters-left counter; no storage gauge running down; dates on Plan are text.
+- No confetti, check-mark draw, stamp or glow on sign-in, the book opening, Plus starting, a restore, a claim or an update.
+- No spinner as a screen, and no spinner in a waiting state (DESIGN rule 5); no shimmer; no indeterminate bar. A progress bar appears only for real measured progress (area C export) and moves linearly with it.
+- No lamp and no breath on E-S10, E-S11, E-S12, any MP-14 state or a SystemLine.
+- No banner from an edge for offline, outage, pause, update or storage; a SystemLine appears in place under the control it is about.
+- No auto-dismiss of an error line or a SystemLine while its condition holds.
+- No motion that suggests the app writes: no typewriter, no word-by-word reveal of anything presented as a parent's words, including the promise sample in first run (E-S08.promise: the sample and its small fix are still; the fix mark fades in once with `fadeMs` at most).
+- Nothing of account A's book is ever drawn for account B, not even for one frame of a transition (E-M57).
 
-## 4. Area E moments, keyed to screens
+## 4. Area E moments, keyed to DESIGN.md states
 
-Each row: trigger; what moves; timing (tokens); RM; haptic; never. "As built" means the code already does it and this file confirms it.
+Each row: trigger; what moves; timing (tokens); RM; haptic; notes and never. "As built" means the code does it today and this file confirms it.
 
 ### E-S01 Launch and boot
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M01 | `E-S01.default` | cold launch, splash hides (`SplashScreen.hideAsync`, `_layout.tsx:179`) | cut from splash to first frame; the first frame draws the mark where the splash drew it (PrivacyCover's 96 pt mark is the splash size) so nothing jumps | 0 | same | none | Whether expo-splash-screen's fade option exists in SDK 57 is UNVERIFIED; recommend no fade, the matched first frame is the transition |
-| E-M02 | `E-S01.default` then Home | cold launch with a book | MOTION 5a: Home renders complete; dateline, greeting, prompt MP-03 with stagger (under 400 ms); a waiting card ("Recorded before the app closed.") is the next stagger item; capture cluster static; lamp MP-16 arrive 1200 | as stated | one fade `fadeMs`; lamp still at level | none | warm resume does nothing (E-M70) |
-| E-M03 | `E-S01.default` then first run | cold launch, no book | lamp `gate` scene arrives 1200; the mark fades `fadeMs`; the age question MP-03 at index 2 (60 ms); controls static | as stated | fades; lamp still | none | as built (`age-gate-screen.tsx`) |
-| E-M04 | `E-S01.error-launch` (launch recovery) | local database could not open | `PlainScreen`: no motion at all (no providers, by design) | 0 | same | none | as built |
-| E-M05 | `E-S01.error-launch`, Try again | tap | MP-18 on Try again for `RETRY_BEAT_MS` 500 (a code constant, not a token: gap G-E5), then the app opens (E-M02) or the result line swaps in (MP-06) and is announced each time | 500, 150 | busy word static (no indicator) | none | never a shake on the second failure |
+| E-M01 | `E-S01.default` | splash hides (`_layout.tsx:179`) | cut from splash to the gate's room; the mark sits where the splash drew it (the 96 pt splash mark, as PrivacyCover), so nothing jumps; lamp `gate` (still) arrives over `lamp.arriveMs` | 0; 1200 | lamp at level | none | expo-splash-screen fade option in SDK 57 UNVERIFIED; keep the cut (G-EM9) |
+| E-M02 | `E-S01.migrating` | boot passes 350 ms (local migrations after an update, J-E15) | the mark breathes (MP-17); no words, no count | from 350 ms; 8000 loop | mark still | none | ends by the next screen's own arrival; at 10 s (DESIGN rule 5) the recovery path decides, not motion |
+| E-M03 | `E-S01.default` to Home | cold launch with a book | MOTION 5a: Home renders complete; dateline, greeting, prompt MP-03 with stagger (under 400 ms); a waiting card is the next stagger item; capture cluster static; Home lamp arrives 1200 | as stated | one fade; lamp at level | none | warm resume moves nothing (E-M71) |
+| E-M04 | `E-S01.recovery` | the local database could not open | PlainScreen (R6): no motion at all | 0 | same | none | as built |
+| E-M05 | `E-S01.recovery-trying`, `.recovery-stillClosed` | Try again | MP-18: label "Trying again" for `RETRY_BEAT_MS` 500 (code constant, G-EM5), then the app opens (E-M03) or the `stillClosed` line swaps in (MP-06), announced every time | 150; 500 | same | none | no shake on a second miss |
+| E-M06 | `E-S01.recovery-exporting`, `-exportNothing`, `-exportFailed` | Export what's readable | MP-18 on Export; the result line MP-06 in the shared slot (newest answer wins) | 150 | same | none | the share sheet is the system's (MP-11) |
 
-### E-S02 Welcome, E-S03 Age gate, E-S08 First book (first run as built)
+### E-S02 Welcome, E-S03 Age gate and stop, E-S08 First book steps (first run as built)
 
-One lit room, `persistKey="firstRun"`, route move `cut`. The story intro (BL-893, NX-40, cited by card 07 C44) is not built; if it ships, it follows FIRST-RUN-MOTION-SPEC-10nov sections 3 to 5 with three cards and the changes in section 8 here.
+One lit room, `persistKey="firstRun"`, route move `cut`. The story intro (BL-893, NX-40, cited by card 07 C44) is not built and DESIGN.md draws none; `flags.introVariant` changes words only (E-ST15).
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M06 | `E-S03.default` to `E-S03.stop` | age answer No, then Continue | the question and answers MP-04; the stop line MP-06 in the same room; lamp unchanged | 160, then 200 (`SWAP_IN` is `fadeMs` here) | fades | `tap` on the answer only | no red, no shake; same mark, same place |
-| E-M07 | `E-S03` to `E-S02` | Continue with Yes | gate words MP-04; lamp cross-fades from the centred `gate` pool (0.6) to the top `welcome` pool (1.0) over `lamp.arriveMs`; welcome words arrive | 160; 1200 | lamp jumps to welcome level; words fade | none | the paper is never unlit in between |
-| E-M08 | `E-S02.default` | welcome arrives | lockup fades `fadeMs` (`welcome-lockup.tsx`); hero, body, free line MP-03 at 120, 150, 180 ms; the sign-in doorway at 200 ms (hardcoded `enterAt` delays, gap G-E6); Continue and sign-in buttons static from frame 1; welcome lamp breathes | as stated | one fade each, no delays | none | |
-| E-M09 | `E-S02` to `E-S08` steps to finish | Continue on each step (`promise`, `child`, `signsAs`, `finish`) | MP-07 per step; lamp dims from welcome 1.0 to `form` 0.5 over 1200 on the first form step, rises to `finish` 1.0 over 1200 on the last; on finish the cover holds `cover.holdMs` 300 then cross-fades to the flyleaf with `cover.dx` 8 on `standard` | 440 per step; 1200 lamp | step fades; lamp jumps; cover cross-fades `fadeMs`, no shift | `success` once when finish is reached (as built) | Continue and Back silent; typed name on the cover after a pause with no per-letter motion (as built) |
-| E-M10 | `E-S08` field errors (`.error-name-length` and like) | typing past a limit or invalid | the hint line swaps (MP-06), polite live region | 150 | same | none | no shake; the field keeps its value |
-| E-M11 | finish to Home | "The book is open." then Continue | tabs join the stack in the same render; Home's lamp starts at first run's last light and settles to its daypart over `lamp.returnMs`; Home content MP-03 once (this is Home's first show) | 280; 280 | lamp at level; one fade | none | no tab bar flashes between (R1, `tabsInStack`) |
+| E-M07 | `E-S03.default` | first run opens | the mark fades `fadeMs` (QuotePair); the question MP-03 at index 2 (60 ms); answers, agreement row, links and Continue static; lamp `gate` centred, still | 200; 280 | fades | none | as built (`age-gate-screen.tsx:25`) |
+| E-M08 | `E-S03.reason-noAnswer`, `.reason-noTick` | Continue with an answer or the box missing | the reason line MP-06 into its slot (`SWAP_IN` at `fadeMs`), announced; focus to the box (noTick) | 200 | same | none | never red, never a shake, Continue never disabled |
+| E-M09a | `E-S03.stop`, `.stop-after24h` | No, then Continue | question and answers MP-04; the stop line fades into the same room; same mark, same light; "I answered by mistake" after 24 hours is static | 160; 200 | fades | `tap` on the answer only | |
+| E-M10 | `E-S03` to `E-S02.default` | Yes, box ticked, Continue | gate words MP-04; the lamp cross-fades from the centred `gate` pool (0.6) to the top `welcome` pool (1.0) over `lamp.arriveMs`, then breathes; welcome words arrive (E-M11) | 160; 1200 | lamp at welcome level; words fade | none | the paper is never unlit in between |
+| E-M11 | `E-S02.default`, `.serversOff`, `.alpha` | welcome shows | lockup fades `fadeMs` (`welcome-lockup.tsx`); promise line and `membership.line` MP-03 at 120 and 150 ms; buttons static from frame 1 (typed offsets 120 to 200 ms, G-EM6) | 200; 280 | one fade each, no offsets | none | no price, no trial, nothing pulses on Begin the book |
+| E-M08b | `E-S02.restoring` to `.default` | the 10 s restore wait (`RESTORE_WAIT_MS`) ends or the restore answers | the room shows with no buttons; then the buttons arrive by MP-06 into their reserved slot (law 2 exception) | 150 | same | none | the welcome words do not re-enter |
+| E-M12 | `E-S02.error-provider`, `.sessionExpired` | sign-in returns an error to the welcome | one inline line above the buttons MP-03, announced; the buttons do not move (slot reserved) | 280 | fade | none | |
+| E-M13 | `E-S08.name` to `.date` to `.signsAs` to `.promise` to `.open` (and `.twins`, `.languages`) | Continue | MP-07 per step; on the first form step the lamp dims from welcome 1.0 to `form` 0.5 over `lamp.arriveMs`; the typed name reaches the cover after a pause with no per-letter motion (as built) | 440; 1200 | fades; lamp at level | none (Continue and Back silent) | never two steps' words together |
+| E-M14 | `E-S08.name-waiting` | Continue with no name | the `nameRequired` line MP-03 above Continue, announced; focus to the field | 280 | fade | none | no shake |
+| E-M09 | `E-S08.open` | "The book is open." reached | the lamp rises from `form` 0.5 to `finish` 1.0 over `lamp.arriveMs` and breathes; the cover holds `cover.holdMs` 300, then cross-fades to the flyleaf with `cover.dx` 8 on `standard` | 1200; 300 + spring | lamp at level; cover cross-fade `fadeMs`, no shift | `success` once (as built) | the only success in first run |
+| E-M15 | `E-S08.open` to Home | Continue | the tabs join the stack in the same render (no tab bar flash, `tabsInStack`); Home's lamp starts at first run's last light and settles to its daypart over `lamp.returnMs`; Home content MP-03 once (its first show) | 280; 280 | at level; one fade | none | |
 
-### E-S04 to E-S07 Sign in
+### E-S04 to E-S07 Sign in, E-S24 Claim
 
 The `(auth)` group is a system modal (MP-11). Its screens have no entrance of their own (as built, `sign-in/index.tsx:17`).
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M12 | `E-S04.default` | sign-in opened (Welcome, Me, consent no-book) | platform modal rise; content static | platform | platform | none | no lamp, no illustration |
-| E-M13 | `E-S04.loading` | provider tap (Apple, email) | MP-18 on that button; the others disable at once; Apple's own button and passkey cannot hold an indicator: the busy line under the ways in swaps in (MP-06) | 150 | busy word static | `tap` (the provider buttons' own, as built) | Apple's sheet is the system's |
-| E-M14 | `E-S04.error-<code>` (cancelled, network, service) | provider returns an error | busy ends at once; the error line MP-03 under the ways in, announced once; focus stays | 280 | fade 200 | none | cancelled by the person: no line, nothing moves |
-| E-M15 | `E-S04` to `E-S05` to `E-S06` | Continue with email, code sent | native stack push inside the modal (MP-09) | platform | platform | none | |
-| E-M16 | `E-S06.error-code` | wrong or expired code | the line under the field swaps (MP-06); field keeps the digits selected for retyping | 150 | same | none | no shake, no red flash; the resend wait never ticks (as built) |
-| E-M17 | `E-S06.default` resend available | the minute passes | "Send a new email" enables in place (no animation), the recovery set appears with MP-03 and is announced once (as built `announceResend`) | 280 | fade | none | no countdown |
-| E-M18 | `E-S07` steps | answer to Terms, sensitive data, age | step out and in by opacity only, `fadeMs` (`consent.tsx` STEP_IN/OUT); the answer being recorded keeps its look with MP-18 | 200 + 200 | same | `tap` on an answer; Continue silent | |
-| E-M19 | `E-S07` to the book (success) | consent recorded | the modal dismisses (platform); under it E-M11 or the returning-account path E-M20 | platform | platform | none | no celebration, no haptic for an account |
+| E-M16 | `E-S04.default` | sign-in opened (Welcome, Me) | platform modal rise; content static | platform | platform | none | no lamp, no illustration |
+| E-M17 | `E-S04.busy` | Apple or email tapped | MP-18 on the tapped way; the other disables at once; Apple's own button cannot hold busy words, so the busy line under the ways swaps in (MP-06, as built `index.tsx:134`) | 150 | same | `tap` (as built) | Apple's sheet is the system's |
+| E-M18 | `E-S04.error-provider`, `.error-not_available`, `.error-network` | the provider returns an error | busy ends at once; the line in the inline error slot MP-03, announced; focus stays | 280 | fade | none | `.error-cancelled`: nothing moves, nothing shows |
+| E-M19 | `E-S04` to `E-S05` to `E-S06` | Continue with email; Send | native push inside the modal (MP-09) | platform | platform | none | |
+| E-M20 | `E-S05.sending`, `.error-invalid_email`, `.error-email_wait`, `.offline` | Send | MP-18 on Send ("Sending"); an error line under the field MP-06; the field border changes to `caution` at once with the WarningCircle and words (never colour alone) | 150 | same | none | no shake |
+| E-M21b | `E-S06.default` resend available | the minute passes | "Send a new email" enables in place (no animation); the recovery set MP-03, announced once (as built `announceResend`) | 280 | fade | none | no countdown |
+| E-M22 | `E-S06.error-wrong_code`, `.error-code_paused`, `.error-rate_limited`, `.error-expired` | a code is refused | the line under the field MP-06; the digits stay | 150 | same | none | no shake, no red flash |
+| E-M23 | `E-S06.checking` to `.verifying` | six digits entered | `checking`: MP-18 on Continue; `verifying` after 350 ms: StateScreen loading "Signing you in" (MP-14 with MP-17 on its drawing) | 150; 200 | drawing still | none | no spinner |
+| E-M24 | `E-S06.refused-other_phone`, `-other_phone_spent`, `-already_signed_in` | verify refused | MP-06 from the loading block to the warm error block (same StateScreen, so the box stays) | 150 | same | none | |
+| E-M25 | `E-S07.settingUp` to `.terms` | consent read | `settingUp` is a StateScreen loading (MP-14, MP-17 after 350 ms); `terms` replaces it by opacity only, `fadeMs` out then in (as built `consent.tsx:67-68`) | 200 + 200 | same | `tap` on an answer; Continue and Not now silent | |
+| E-M26 | `E-S07.declined`, `.error-consent_unavailable` | Not now; the read fails | MP-06 to the declined or error block | 150 | same | none | declined is never styled as a failure |
+| E-M27 | `E-S24.default`, `.noEmail`, `.hasBook` | a session meets this phone's rows | pushed in the sign-in stack (MP-09); static | platform | platform | none | never lists a letter |
+| E-M28 | `E-S24.waiting` | Keep in this account | MP-18 ("Keeping"); then the modal dismisses (platform) onto Home, which does not re-enter | 150 | same | none | no success haptic: a claim is housekeeping |
+| E-M29 | `E-S07` or `E-S24` to the book | consent recorded, claim done | the modal dismisses (platform); under it E-M15 (new book) or Home or the Book as the router says (E-S09) | platform | platform | none | no celebration |
 
-### E-S09 Opening your book (returning account, new phone; card NS-10; shared with C-S10)
+### E-S09 First-run router (alias): C-S10 Opening your book, C-S11 held screen
 
-| Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
-|---|---|---|---|---|---|---|---|
-| E-M20 | `E-S09.loading` | sign-in found an account with a book elsewhere | MP-14 block; the moon MP-17 breathes; no button, no count, no spinner (as built, `new-phone-screens.tsx`) | 200; 8000 loop | moon still (card 08: "indicator is static") | none | no progress bar: we cannot measure it |
-| E-M21 | `E-S09.loading` held past 10 s (NS-10-R0) | timer | "Finish setup" and "Try another way" arrive by MP-06 into a slot reserved from frame 1 (no reflow of the words above); announced once | 150 | same | none | the controls cross-fade once because they arrive after an async read (same exception as `lock-offer.tsx`); never pulse |
-| E-M22 | `E-S09.offline`, `.error-<code>`, `.second-account` | read fails | MP-06 to the warm error block in the same screen; moon stops breathing (problem screen) | 150 | same | none | |
-| E-M23 | `E-S09` to Home | book arrives | Home under it is already rendered; the block MP-05, Home lamp returns 280; Home content does not re-enter | 160; 280 | fade; lamp at level | none | `.killswitch` (NS-10-R8): never shown; local book only |
-
-### E-S10 The Keep gate (the one gate), E-S11 Plus in Me, E-S12 Plus confirmed
-
-| Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
-|---|---|---|---|---|---|---|---|
-| E-M30 | `E-S10.default`, `.lapsed` | Keep in Review when the allowance is used (`keepSheetFor`) | the Keep sheet (glass layer, v2 brief section 3) rises over Review (MP-10: `SlideInDown` springified with `standard`), scrim fades in; the held letter card (content layer, on the sheet) MP-03 at index 0 with its static -2 deg tilt (0 deg at accessibility sizes, `heldCardTilt`); title, words and both buttons static from frame 1 | `standard`; 280 | no travel: glass `glassEffectStyle` none to regular over `fadeMs` (never opacity on the glass), scrim and card fade `fadeMs`; Reduce Transparency: solid sheet fades | none (opening is navigation) | no lamp, no lockup animation, no price or trial animation, no pulsing See Plus, no count of what is left |
-| E-M31 | `E-S10` See Plus | tap | Apple's subscription sheet (MP-11) over the Keep sheet | platform | platform | none | |
-| E-M32 | `E-S10.offline` | See Plus with no connection | Apple's sheet is not opened; the offline note swaps in under the buttons (MP-06), read in order | 150 | same | none | the note is never red |
-| E-M33 | `E-S10` Plus on | purchase returns active | `success` (as built); Apple's sheet closes; `/plus/confirmed` rises (MP-11); on Done the Keep sheet is gone and Review is as it was; the person taps Keep and the save runs MOTION 5e | platform; then 5e | as 5e RM | `success` once | no confetti; the letter is not kept for them (they tap Keep) |
-| E-M34 | `E-S10` Keep it here for now | tap | sheet exits (MP-05, `SlideOutDown` over `exitMs`); Review closes (MP-08); Home shows the waiting card already in place; the held note toast MP-03 | 160; 280; 280 | fades | none | the waiting card does not enter or wash: it is not new to the parent |
-| E-M35 | `E-S10` dismissed (VO escape, Android back, scrim) | gesture | sheet exits (MP-05); Review unchanged | 160 | fade 200 | none | |
-| E-M36 | `E-S10.hold` (Plus not known yet, RT-PLS-10) | Keep while the plan status is unknown | no sheet; Review closes (MP-08); the held note toast | 280 | fade | none | never a spinner while the plan is read |
-| E-M37 | `E-S11.default`, `.loading`, `.lapsed`, `.error-<code>` | Me, Plan opened (MP-09) | rows static; plan status not ready at first frame: MP-19 for the status row only; Restore MP-18; its result MP-06 | 350 then 200; 150 | same | `tap` (as built, `settings/plus.tsx:95`) | no lamp; the plan date never counts down |
-| E-M38 | `E-S12.default` | purchase confirmed | native modal (MP-11); content static (a record of terms, not a moment) | platform | platform | `tap` on Save a copy and the reminder ask (as built) | no enter stagger, no wash, no success haptic here (E-M33 already gave it) |
-
-### E-S13 Global fault, E-S14 Outage and kill switch, E-S20 Not found, E-S16 Update required, E-S18 Second account
+E-S09 is a decision table; its visible states are area C's screens. Area C's MOTION.md should cite these rows rather than restate them.
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M50 | `E-S13.default` | unhandled throw, error boundary | `PlainScreen` cut in; no motion (by design: no providers) | 0 | same | none | |
-| E-M51 | `E-S13` Try again, Go to Home | tap | the app mounts afresh: cold-launch rules (E-M02), lamp arrives as a first lit room | as E-M02 | as E-M02 | none | |
-| E-M52 | `E-S14.offline`, `E-S14.error-outage`, `E-S14.killswitch` | sign-in or first run cannot reach the service; `serverFeaturesEnabled()` off where a screen needs it | MP-14 block; lamp underneath leaves over `lamp.leaveMs` (a problem screen is an unlit room); focus to the heading, title announced | 200; 160 | fade; lamp off at once | none | no breath, no draw-on |
-| E-M53 | `E-S14.offline` to `.error-outage` (or back) | the read changes | MP-06 on title, body and icon; announced again | 150 | same | none | |
-| E-M54 | `E-S14` Try again | tap | MP-18; on success the Welcome returns: block MP-05, lamp returns 280, welcome words MP-03 (no lamp arrival again; same `firstRun` key) | 160; 280 | fades | none | |
-| E-M55 | `E-S20.default` | a link that leads nowhere | MP-14 | 200 | same | none | |
-| E-M56 | `E-S16.default` (update required) | remote minimum version above this build | MP-14 block over everything (no lamp); Update opens the App Store (system) | 200 | same | none | no pulse on Update |
-| E-M57 | `E-S18.second-account` | a different account signs in on a phone with another account's book (X4, D1) | MP-14 held block with Sign out only; nothing from the first book is drawn, not even during a transition | 200 | same | none | Sign out runs E-M12 path in reverse: modal dismiss, then first run by cut (MP-12) |
+| E-M20o | `C-S10.opening` | a session with a book elsewhere | StateScreen loading (MP-14); after 350 ms the moon breathes (MP-17); no button, no count, no spinner (as built `new-phone-screens.tsx`) | 200; 8000 loop | moon still (card 08: "indicator is static") | none | no progress bar: nothing measures it |
+| E-M21 | `C-S10.slow`, C-S11 held screen | 10 s pass (NS-10-R0, DESIGN rule 5) | the two actions ("Finish setup", "Try another way") arrive by MP-06 into a slot reserved from frame 1 (no reflow of the words above); title swaps to the slow words (MP-06); announced once; the moon stops | 150 | same | none | the law 2 exception; never pulse |
+| E-M22o | `C-S10.offline`, `.noBook` | the read fails or finds no book | MP-06 to the warm block in the same StateScreen; the moon stops | 150 | same | none | |
+| E-M23o | `C-S10.arrived` | the book arrives | the block MP-05; the Book appears under it already rendered (the router lands on the Book); the Book's lamp returns over `lamp.returnMs`; the Book's cover settle (MOTION 5a, area B) plays once as its first view this session | 160; 280 | fade; lamp at level | none | E-S02.serversOff: never shown (NS-10-R8) |
 
-### E-S15 The system line (offline, remote pause, low storage, update available), E-S17 Low storage
-
-One line, one at a time, in its slot in place (the design lead places it). It never covers a control and never moves a control under a finger.
+### E-S10 Keep gate sheet, E-S11 Plan in Me, E-S12 Plus confirmed, E-S25 Plan reminder note, E-S26 Home Plus line
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M40 | `E-S15.offline`, `.paused-<switch>`, `.update-available`, `E-S17.low-1gb` arrive | condition starts and holds for `systemLine.showAfterMs` (proposed 2000; offline only, so a blink of the radio shows nothing) | content below reflows (MP-13); the line fades in (MP-03 with dy 0 is not needed: use `fadeMs`); one polite announcement | `standard`; 200 | instant reflow; fade 200 | none | no slide from the top edge, no icon spin, no colour pulse |
-| E-M41 | a different condition replaces the current one | priority change | MP-06 on the words; the line keeps its box | 150 | same | none | never two lines stacked |
-| E-M42 | condition ends | connection back for `systemLine.hideAfterMs` (proposed 1000), pause lifted, storage freed, update installed | line MP-05, then reflow MP-13; no "back online" toast | 160; `standard` | fade; instant | none | |
-| E-M43 | a remote pause hides a surface (`.paused-<switch>`, for example `killSwitches.bookSearch`, `killSwitches.photos`) | config arrives | the surface is removed at the next focus of its screen, not while the person is looking at it or pressing it; if removed in view: MP-05 then MP-13 | 160 | fade; instant | none | the pause never stops reading, export or erase (LEGAL-REQ-040 as carded) |
-| E-M44 | `E-S17.low-50mb` (stop) | free space under 50 MB at a start | our Sheet (MP-10) with the plain explanation; Speak's own press already happened (MP-01) and gave its `press` haptic before the check, if the check runs after the tap | `standard` | fade | no extra haptic | never `warning` haptic; never red |
+| E-M30 | `E-S10.default`, `.lapsed`, `.fromLetter`, `.needsNewerIos`, `.unavailable` | Keep in Review when the allowance is used (`keepSheetFor`) | the Keep sheet (glass) rises over Review (MP-10, `SlideInDown` springified on `standard`); the scrim fades in; the held letter card (content layer) MP-03 at index 0 with its static -2 deg tilt (0 deg at accessibility sizes, `heldCardTilt`); title, body, note and footer static from frame 1. The state is chosen when the sheet opens | `standard`; 280 | no travel: glass effect style none to regular over `fadeMs`, content, card and scrim fade `fadeMs`; RT: the solid sheet fades | none (opening is navigation) | no lamp, no price or trial motion, no pulsing See Plus, no count |
+| E-M31 | `E-S10.opening` | See Plus | MP-18: See Plus reads "Opening the App Store"; then Apple's subscription sheet (MP-11) over the Keep sheet | 150; platform | same | none | |
+| E-M32 | `E-S10.offline`, `.fromLetter-offline` | opened offline; or See Plus tapped and the connection is gone | opened offline: drawn in that state (See Plus absent, hold primary), no motion of its own. Connection lost while open: Apple's sheet is not opened; the offline words replace the held note by MP-06 (as built `sheetTap`); the footer does not rearrange under the finger | 150 | same | none | never red |
+| E-M33 | `E-S10` Plus on | the purchase returns active | `success` (as built); Apple's sheet closes; `/plus/confirmed` rises (MP-11); on Done the Keep sheet is gone and Review is as it was; the parent taps Keep and MOTION 5e runs | platform; then 5e | 5e's RM | `success` once | no confetti; the letter is not kept for them |
+| E-M34 | `E-S10` Keep it here for now | tap | the sheet exits (MP-10 out: `SlideOutDown` over `exitMs`; RM: effect style and content fade); Review closes (MP-08); Home shows the waiting card already in place; the held note toast MP-03 | 160; 280; 280 | fades | none | the waiting card neither enters nor washes |
+| E-M35 | `E-S10` dismissed (VO escape, Android back, scrim) | gesture | the sheet exits; Review unchanged | 160 | 200 | none | |
+| E-M36 | `E-S10` hold (Plus not known yet, RT-PLS-10) | Keep while the plan is unknown | no sheet; Review closes (MP-08); the held note toast | 280 | fade | none | no spinner while the plan is read |
+| E-M37 | `E-S11.free`, `.on`, `.trial`, `.renews`, `.ends`, `.ended`, `.grace`, `.retry`, `.shared`, `.alpha` | Me, Plan opened (MP-09) | grouped list static; if the status is not ready by 350 ms, MP-19 on the status row only | 350 then 200, 150 | same | none | no lamp; dates never count down |
+| E-M38 | `E-S11.restoring`, `.restored`, `.restoreNone`, `.restoreFailed` | Restore purchases | MP-18 ("Restoring"); the inline result MP-06 | 150 | same | `tap` (as built `settings/plus.tsx:95`) | no success haptic on restore |
+| E-M39 | `E-S11.notificationsOff` | iOS notifications off | the SystemLine (info) under the status row is drawn with the screen; no arrive (E-M40 applies only if it appears while the screen is open) | 0 | same | none | |
+| E-M38c | `E-S12.default`, `.withAsk` | purchase confirmed | native modal (MP-11); content static (a record of terms) | platform | platform | `tap` on Save a copy and the reminder ask (as built) | no stagger, no wash, no second success |
+| E-M90 | `E-S25.trial`, `.renews`, `.yearly` | next open inside its window, on a calm tab root | our Sheet (MP-10, glass); Got it and Manage subscription static | `standard` | glass effect style and content fade | none | never mid-task; never over a sheet; Got it is silent |
+| E-M91 | `E-S26.on`, `.off` | Home shows after the allowance is used | the line is part of Home's first frame; on a cold launch it is in Home's stagger after the prompt; returning from Review it is simply there | as E-M03 | same | none | no enter on a return, no wash, no count, never a slip |
 
-### E-S19 Interruption and recovery, E-S22 App lock, E-S21 Appearance
+### E-S13 Something broke, E-S14 Sign-in outage and offline, E-S20 Not found
 
 | Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
 |---|---|---|---|---|---|---|---|
-| E-M70 | app goes inactive or background (call, Siri, alarm, switcher) | AppState | with app lock on: `PrivacyCover` drawn at once (MP-15 on); every loop pauses (lamp breath, MP-17); nothing else moves | 0 | same | none | no fade in of the cover |
-| E-M71 | app returns (warm resume) | AppState active | nothing re-enters (MOTION 5a, 5l rule 2); loops resume from where they were; VO focus returns to the same element (NS-33 Interrupted row) | 0 | same | none | no Home stagger on warm resume |
-| E-M72 | `E-S19` relaunch after kill mid-flow | cold launch | E-M02, with the waiting card as the next stagger item; VO lands on Home's heading (NS-33 Killed row) | as E-M02 | as E-M02 | none | the waiting card has no wash |
-| E-M73 | `E-S22.default` unlock | Face ID passes | cover fades out `fadeMs` over an already rendered room (as built) | 200 | same | none | no check mark, no haptic |
-| E-M74 | `E-S22` Face ID cancelled or failed | system | lock stays; its line swaps (MP-06); focus to Unlock | 150 | same | none | no shake, no red |
+| E-M50 | `E-S13.boundary`, `.global` | an unhandled throw | PlainScreen (R6) cut in; no motion (by design) | 0 | same | none | |
+| E-M51 | `E-S13` Try again, Go to Home | tap | the app mounts afresh: cold-launch rules (E-M03); the lamp arrives as a first lit room | as E-M03 | as E-M03 | none | |
+| E-M52 | `E-S14.offline`, `.offline-withLocal`, `.outage`, `.outage-withLocal` | first-run sign-in cannot reach the service, or the 10 s read times out | the welcome's lamp leaves over `lamp.leaveMs` (a problem state is an unlit room); the StateScreen block MP-14; focus to the heading, title announced | 160; 200 | lamp off at once; fade | none | no breath, no draw-on; the envelope drawing is still |
+| E-M53 | `E-S14.offline` to `.outage` (or back) | the read changes | MP-06 on title and body; the glyph swaps in the same box; announced again | 150 | same | none | |
+| E-M54 | `E-S14` Try again, `.backOnline` | tap; or the connection returns | MP-18 ("Trying again"); on success `backOnline` is an announcement only, then the block MP-05, the lamp returns over `lamp.returnMs` (same `firstRun` key, no second arrival), the welcome words MP-03 | 150; 160; 280 | fades | none | |
+| E-M55 | `E-S14` Start on this phone | tap | MP-05 on the block; E-S08.name arrives by MP-07; the lamp returns to `form` 0.5 over `lamp.returnMs` | 160; 280 | fades | none | |
+| E-M56 | `E-S20.default` | a link that leads nowhere | StateScreen MP-14; the window drawing is still | 200 | same | none | the address is never shown |
+
+### E-S15 SystemLine, E-S16 App update line, E-S17 Low-storage rules, catalogue E-ST01 to E-ST22
+
+A SystemLine sits under the control it is about (DESIGN E-S15), never at a screen edge; there is no global offline banner.
+
+| Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
+|---|---|---|---|---|---|---|---|
+| E-M40 | `E-S15.info`, `.waiting`, `.paused`, `.offline`, `.action` arriving | a server action the parent touched answers with a state, or the state starts while its screen is open | if the screen opens in the state: drawn with the screen, no arrive. If it starts while open: content below reflows (MP-13) and the line fades in `fadeMs`; one polite announcement. A connection drop while open shows the offline line only after it holds `systemLine.showAfterMs` (proposed 2000) | `standard`; 200 | instant reflow; fade | none | no slide, no icon spin, no colour pulse; never red |
+| E-M41 | a different state replaces the line | priority or state change | MP-06 on the glyph and words; the box stays | 150 | same | none | never two lines stacked for one control |
+| E-M42 | the state ends | connection back for `systemLine.hideAfterMs` (proposed 1000), pause lifted, action succeeded | MP-05, then reflow MP-13; no "back online" toast | 160; `standard` | fade; instant | none | |
+| E-M43 | E-ST05 to E-ST13c remote pauses (R1) | signed config arrives | the paused surface leaves on the next render of its screen (DESIGN J-E14); if a sheet is already open it keeps its content and shows its paused line on its next server call; if it must leave while in view: MP-05 then MP-13, never under a finger | 160 | fade; instant | none | a pause never removes recording, typing, saving, reading, playback, export or deletion |
+| E-M44 | `E-S16.line`, `.absent` | `minSupportedVersion` above this build | the line (action) is drawn at the top of Me with the screen; if config arrives while Me is open: E-M40 without the 2 s wait | 0 or 200 | same | none | never on Home, the Book or a sheet; never blocks; no pulse on Update; the App Store page is the system's |
+| E-M45 | `E-S17.under1gb` (on A-S04) | Listen Ready with under 1 GB | the info line is part of Ready's first frame; Speak static | 0 | same | none | recording is not blocked |
+| E-M46 | `E-S17.under50mb` (A-S04.full) | Speak with under 50 MB | Listen's Ready swaps to the StateScreen glyph state (MP-06 within Listen, same room; no sheet); Type instead and Try again static | 150 | same | Speak's own `press` already played; nothing more | never `warning`, never red |
+| E-M47 | `E-S17.under20mbMidTake` | free space falls under 20 MB while recording | area A owns the stop (record stop tick after the recorder closes, MOTION 6); Review's reason line MP-03 | area A | area A | area A | |
+| E-M48 | `E-S17.exportShort` (C-S04, C-S05) | an export estimate over the free space | area C owns; inline MP-06 into the export screen's state box | 150 | same | none | |
+| E-M49 | E-ST02 sync waiting, E-ST05 sync paused (Me, Account, Sync row) | the 10 s gate read fails; the sync pause | the row's value swaps (MP-06) | 150 | same | none | nothing on Home or the Book |
+
+### E-S18 Second account on one phone, E-S19 Interruption and recovery
+
+| Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
+|---|---|---|---|---|---|---|---|
+| E-M57 | `E-S18.signedInB-noBook`, `.signedInB-arriving`, `.backToA` | account B signs in on a phone holding A's rows; or A returns | the lists filter while the sign-in modal still covers them; when the modal dismisses, the room under it already shows only the current account's rows; no row animates out, no list reflows in view | platform | platform | none | not one frame of A's letters is drawn for B (X4-R1); `signedInB-arriving` follows C-S10's rows |
+| E-M58 | `E-S18.signedOutA` | sign out (D1) | the sign-out sheet (area C) closes; Me's rows swap to the signed-out title and D1 body (MP-06); the book stays as it was | 150 | same | none | no warning haptic: nothing was deleted |
+| E-M70 | `E-S19.call`, `.background` | the app goes inactive | with app lock on, `PrivacyCover` drawn at once (MP-15); every loop pauses (lamp breath, MP-17); nothing else moves | 0 | same | none | no fade in of the cover |
+| E-M71 | warm resume | the app is active again | nothing re-enters (MOTION 5a, 5l rule 2); loops resume; VO focus returns to the same element (NS-33 Interrupted row) | 0 | same | none | no Home stagger on a warm resume |
+| E-M72 | `E-S19.killedMidTake`, `.killedOnConsent`, `.killedMidPurchase` | relaunch after a kill | cold launch (E-M03): the waiting card is Home's next stagger item; VO lands on Home's heading; a purchase finished by StoreKit shows only on E-S11 (E-M37) | as E-M03 | as E-M03 | none | the waiting card has no wash; `killedOnConsent` lands where the router says (E-S09), with that screen's own arrival |
+
+### E-S21 Appearance, E-S22 App lock cover
+
+| Id | State | Trigger | What moves | Timing | RM | Haptic | Notes and never |
+|---|---|---|---|---|---|---|---|
+| E-M73 | `E-S22.locked` to unlocked | Face ID passes | the cover fades out over `fadeMs` onto a room already rendered (as built `app-lock-layer.tsx:56`) | 200 | same | none | no check mark |
+| E-M74 | `E-S22.failed` | Face ID cancelled or failed | the lock stays; its line MP-06; focus to Unlock | 150 | same | none | no shake, no red; never interrupts a recording |
 | E-M75 | lock offer after first run | `lock-offer.tsx` | the card cross-fades in and out at `swapMs` (as built) | 150 | same | `success` when turned on (as built) | declining moves exactly as accepting |
-| E-M76 | `E-S21` scheme change | Light, Dark or System picked | MP-26: next frame in the new scheme; lamp at its level for the scheme | 0 | same | `tap` | no whole-screen cross-fade |
+| E-M76 | `E-S21.system`, `.light`, `.dark`, `.noLetter` | a choice tapped | MP-26: the next frame is in the scheme; the preview line redraws with the app | 0 | same | `tap` | no whole-screen cross-fade |
 
-### Tabs (all areas; E owns the rule)
+### Tabs (all areas; area E holds the rule)
 
 | Id | Trigger | What moves | Timing | RM | Haptic | Never |
 |---|---|---|---|---|---|---|
-| E-M80 | tap Home, Book or Me | the native swap with no animation (JS tabs today, `app/(tabs)/_layout.tsx`; on native tabs with Liquid Glass the bar's selection and minimise-on-scroll are the system's, v2 brief section 3); the arriving tab's lamp starts at the light the last tab left and settles to its own over `lamp.returnMs` (`persistKey="tabs"`); Me has no lamp (it fades the light out over `lamp.leaveMs`) | 0; 280 | lamp jumps to level | none | content re-entering, a tab badge, a bounce on the icon, a sliding indicator |
-| E-M81 | tap the tab already selected | the platform's scroll to top | platform | platform (UNVERIFIED that JS tabs honour RM here; check on a phone) | none | |
-| E-M82 | first Book view per session | MOTION 5a: cover settles opacity 0.6 to 1, y 6 to 0 on `gentle` (area B owns) | `gentle` | one fade 200 | none | |
+| E-M80 | tap Home, Book or Me | the native swap with no animation (JS tabs today, `app/(tabs)/_layout.tsx:28`; with native tabs the bar's glass, selection and minimise-on-scroll are the system's); the arriving tab's lamp starts at the light the last tab left and settles over `lamp.returnMs` (`persistKey="tabs"`); Me has no lamp, so the light leaves over `lamp.leaveMs` | 0; 280 | lamp at level | none | content re-entering, a badge, an icon bounce, a sliding indicator |
+| E-M81 | tap the selected tab | the platform's scroll to top | platform | platform (UNVERIFIED for JS tabs; check on a phone) | none | |
+| E-M82 | first Book view this session | MOTION 5a: the cover settles, opacity 0.6 to 1, y 6 to 0, `gentle` (area B owns) | `gentle` | one fade | none | |
 
-## 5. Loading, slow and placeholders (all areas)
+## 5. Waiting and placeholders (all areas)
 
-Every wait falls in one of four bands. The bands are the same for every area; only area E defines them.
+DESIGN rule 5 is the law; this table gives its motion.
 
 | Band | Wait | What the parent sees | Motion |
 |---|---|---|---|
-| L0 | under `loading.placeholderAfterMs` (proposed 350; NS-34 "controls usable by 350 ms") | the screen with its controls, and the region blank on paper | none (a placeholder that flashes for 100 ms is worse than none) |
-| L1 | 350 ms until ready | static placeholders for the region only (MP-19), or, for a whole-screen wait, the state screen loading form (MP-14 plus MP-17) | fade in 200; content replaces by MP-06 |
-| L2 | past `loading.slowLineAfterMs` (proposed 4000) | one "still working" line under the region (words: content lead) | MP-03; announced politely, at most once a minute (MP-24) |
-| L3 | a network wait with no answer at about 15 s (BL row on `delete-account.tsx`, critics' L7) | the offline or error state for that region | MP-06 into the error words; busy ends |
+| W0 | 0 to `loading.placeholderAfterMs` (proposed 350; NS-34 "controls usable by 350 ms") | the screen with its controls; a tapped button shows its busy words at once (MP-18) | none beyond MP-01 and MP-18 |
+| W1 | 350 ms to 10 s | a whole-screen wait: the StateScreen loading form with its mark or drawing breathing (MP-14 then MP-17). A region inside a ready screen: static placeholders (MP-19) | fade in 200; content replaces by MP-06 |
+| W2 | at `loading.heldAfterMs` (proposed 10000; DESIGN rule 5, NS-10-R0, `RESTORE_WAIT_MS`) | the slow or held state with a way forward | MP-06 into the slot reserved for it (E-M21); the loop stops |
+| W3 | a network answer that fails | the offline or error state for that action, in place (R2) or as a block (R4) | MP-06 into the error words; busy ends |
 
-Local reads (Home, the Book, a letter, Find) should never pass L0 on an SE 3 (NS-34, NS-37); L1 and L2 exist for network reads (plan status, sign-in, new phone, sync pulls) and for the very first open of a large book. Find never shows a spinner (NS-02 Slow row).
+Local reads (Home, the Book, a letter, Find) should never leave W0 on an SE 3 (NS-34, NS-37); W1 to W3 are for network reads and the first open after an update. Find never shows a spinner (NS-02 Slow row).
 
-## 6. Area E motion for the accessibility walk and the run sheet (E-S23)
+## 6. Motion rows for the accessibility walk and the run sheet (E-S23)
 
-Rows to add to the device walk (BL-948, BL-984) and the SE 3 run sheet (BL-929):
+To add to the device walk (BL-948, BL-984) and the SE 3 run sheet (BL-929), beside DESIGN section 9:
 
-1. J-N15 / NS-33-R5: with RM on, visit every E screen and state in DESIGN.md; nothing moves in a loop. Today this fails on any busy button (G-E2).
-2. With LPM on: the lamp breath and MP-17 stop (fails today, G-E1).
-3. Every MP-14 screen: no lamp, no breath; heading focused on arrival; announced once.
-4. Wrong email code, cancelled Face ID, failed restore, offline See Plus: no shake, no red, no haptic.
-5. The Keep sheet: buttons hittable on frame 1 (tap during the rise lands); under RM no travel.
-6. Toasts and undo lines: with VO, the window outlives the reading (T4, NS-33-R15); with Switch Control, it stays until the parent moves on.
-7. Tabs: no content re-enters; lamp never cuts to dark and back.
-8. NS-34 timing: a screen change starts within 100 ms; controls usable by 350 ms; named hand-offs under `sequenceMaxMs`; the save hand-off under `hardCeilingMs`; no frame over 16.7 ms during E-M02, E-M09, E-M30 and E-M80.
-9. Warm resume after a call during first run: same step, same light, no re-entry; after a kill: lands on the step's heading (first run) or Home's heading.
+1. J-N15, NS-33-R5: with RM on, visit every E state; nothing moves in a loop. Fails today on any busy button (G-EM2).
+2. LPM on: the lamp breath and MP-17 stop. Fails today (G-EM1).
+3. Every MP-14 state: no lamp, no breath; heading focused; title announced once.
+4. Wrong code, cancelled Face ID, failed restore, See Plus offline: no shake, no red, no haptic.
+5. Keep sheet: a tap during the rise lands on a button; under RM nothing travels; under RT the sheet is solid and still fades in; with glass on, the sheet never flashes clear at the start or end of a fade (law 12).
+6. Toasts and undo lines: with VO the window outlives the reading (T4, NS-33-R15); with Switch Control it stays until the parent moves on.
+7. Tabs: no content re-enters; the light never cuts to dark and back.
+8. NS-34 timing: a screen change starts within 100 ms; controls usable by 350 ms; named hand-offs under `sequenceMaxMs`; the save hand-off under `hardCeilingMs`; no frame over 16.7 ms during E-M03, E-M10, E-M13, E-M30 and E-M80.
+9. Warm resume after a call during first run: same step, same light, no re-entry; after a kill: the step's heading (first run) or Home's heading.
+10. Account B on A's phone: screen-record the sign-in dismiss frame by frame; no frame shows A's letters (E-M57).
 
-## 7. Proposed token additions (input to `docs/design/system/MOTION.md` and `tokens.v2.json`; none changes an existing value)
+## 7. Proposed token additions (input to `docs/design/system/MOTION.md` and `tokens.v2.json`; no existing value changes)
 
-The system file decides the names; these are area E's needs.
+The system file decides names. Area E needs:
 
 ```ts
 motion: { ...existing,
-  press: { scale: 0.97, cardScale: 0.98, opacity: 0.9, reducedMs: 90 },   // G-E3: the RM press dip, today typed in press.ts:46
-  toast: { holdMs: 4000, dismissDy: 40, dismissVelocity: 600 },            // G-E4: toast.tsx default and swipe thresholds
-  loading: { placeholderAfterMs: 350, slowLineAfterMs: 4000 },             // MP-19, section 5
-  systemLine: { showAfterMs: 2000, hideAfterMs: 1000 },                    // E-M40, E-M42
+  press: { scale: 0.97, cardScale: 0.98, opacity: 0.9, reducedMs: 90 },  // G-EM3: today typed in press.ts:46
+  toast: { holdMs: 4000, dismissDy: 40, dismissVelocity: 600 },           // G-EM4: today typed in toast.tsx:56,90
+  loading: { placeholderAfterMs: 350, heldAfterMs: 10000 },               // DESIGN rule 5; section 5
+  systemLine: { showAfterMs: 2000, hideAfterMs: 1000 },                   // E-M40, E-M42
 }
-a11y: { repeatGapMs: 60000 }                                               // MP-24, NS-33 Slow row ("once a minute")
+a11y: { repeatGapMs: 60000 }                                              // MP-24; NS-33 Slow row
 ```
 
-Reasons and sources: `placeholderAfterMs` matches the NS-34 line "controls usable by 350 ms"; `slowLineAfterMs` 4000 is a proposal (no source read this session, UNVERIFIED; tune on the SE 3); `showAfterMs` and `hideAfterMs` are proposals to stop the line flapping on a weak signal (UNVERIFIED; tune on a phone in a lift). `RETRY_BEAT_MS` 500 (`launch.logic.ts:41`) may stay a module constant: it is a reading beat, not a motion. The welcome's 120/150/180/200 ms offsets (G-E6) should become `enter(i)` indices so they come from `staggerMs`. The 10 Nov `story` block stays proposed and unchanged, used only if BL-893 ships. Tests to add in `packages/design-tokens/test/tokens.test.ts`: `placeholderAfterMs` at most 350; every new duration under `hardCeilingMs`; `reducedMs` at most `fadeMs`.
+Reasons: `placeholderAfterMs` and `heldAfterMs` are DESIGN rule 5's numbers (350 from NS-34; 10 s from NS-10-R0 and the built `RESTORE_WAIT_MS`); `showAfterMs` and `hideAfterMs` are proposals to stop a line flapping on a weak signal (UNVERIFIED; tune on a phone). `RETRY_BEAT_MS` 500 may stay a module constant (a reading beat). The welcome offsets (G-EM6) should become `enter(i)` indices. Tests for `packages/design-tokens/test/tokens.test.ts`: `placeholderAfterMs` at most 350; every new duration under `hardCeilingMs` except `heldAfterMs` and `repeatGapMs`, which are waits, not moves; `reducedMs` at most `fadeMs`.
 
-## 8. Superseded or changed from the history specs
+## 8. Superseded or changed
 
-- FIRST-RUN-MOTION-SPEC-10nov section 3: the four-card storyboard is three cards (CTO ruling 11 Nov); card 4's month-chip wash is withdrawn. The story intro is unbuilt (BL-893).
-- FIRST-RUN-MOTION-SPEC-10nov section 6, "an in-button spinner that is replaced by a static 'Working' word under Reduce Motion": kept as the target (MP-18) but it is not built; listed as G-E2.
-- FIRST-RUN-MOTION-SPEC-10nov section 6, "the last card or Skip to auth entry ... `route.dissolveMs`": superseded by the built route table, where `onboarding` is a `cut` and `(auth)` is a system modal (MOTION 5l, `transitions.logic.ts:45,55`).
-- MOTION.md 5k "Low Power Mode is not read": the card wins (NS-34 section 3, "stop under Reduce Motion and Low Power Mode"); listed as G-E1.
-- MOTION.md 5h table of haptics lists `success` for "Save letter" only; the code also plays it on three more outcomes (MP-H). Recorded here; MOTION.md 6 needs the rows (card gap K-3).
+- FIRST-RUN-MOTION-SPEC-10nov section 3: four cards became three (CTO, 11 Nov), and the story intro is unbuilt (BL-893); DESIGN.md draws none.
+- FIRST-RUN-MOTION-SPEC-10nov section 6, "a quiet in-button spinner ... replaced by a static 'Working' word under Reduce Motion": changed. Busy is words at every setting (MP-18), to meet DESIGN rule 5 (no spinner) and NS-33-R5.
+- FIRST-RUN-MOTION-SPEC-10nov section 6, auth entry on `route.dissolveMs`: superseded by the built route table (`onboarding` is a `cut`, `(auth)` a system modal; `transitions.logic.ts:45,55`).
+- House MOTION.md 5k, "Low Power Mode is not read": the card wins (NS-34 section 3); G-EM1.
+- House MOTION.md 6 lists `success` for a saved letter only; the code plays it for three more outcomes (MP-H, K-EM3).
 - SOUND.md `gentle_error`: not used in area E (MP-S).
+- This file's v1 draft: an "update required" blocking screen and a low-storage sheet are withdrawn to match DESIGN.md (E-S16 is a line in Me; under 50 MB is Listen's StateScreen state); the Opening your book rows moved to C-S10 states; the 4 s slow line became the 10 s held state.
 
 ## 9. Card gaps
 
+DESIGN.md's K-E01 to K-E09 stand; these are the motion ones.
+
 | # | Card row | What is missing | Proposed default |
 |---|---|---|---|
-| K-1 | NS-33-R5, J-N15 ("no moving loop under Reduce Motion") | Silent on busy indicators inside controls; the platform spinner is a loop | Under RM, no indicator; the label swaps to its busy words (MP-18) |
-| K-2 | NS-34 section 3 (loops stop under LPM) and NS-33 Low Power row | MOTION.md 5k says LPM is not read; nothing in the code reads it | Read LPM and stop the lamp breath and MP-17 (G-E1) |
-| K-3 | 00 frame section 5 ("no celebration"); MOTION 6 | Which outcomes earn `success` beyond a kept letter is not carded; the code plays it for the book opening, Plus on and app lock on | Keep those four outcomes (each is the person's own act); never on sign-in, restore or update; MOTION.md 6 table gains the three rows |
-| K-4 | NS-10-R0 ("held screen ... within 10 s") | How the two actions arrive at 10 s | MP-06 into a reserved slot (E-M21) |
-| K-5 | 00 frame section 5 "Slow" and "app updated between two steps" | No card says when a placeholder or a "still working" line shows, or how an update-available state looks in motion | Section 5 bands; E-M40 for update available; E-M56 for update required |
-| K-6 | Every card's kill switch and pause rows (X5) | Silent on when a paused surface disappears | At the next focus of its screen, never under a finger (E-M43) |
-| K-7 | NS-33-R15 (T4) vs built `Toast` | The built toast with an action never times out (stricter than T4, fine) but its action can expire first (BL-954's dead Undo) | One helper; the toast and the action expire together with MP-05 (BL-954) |
+| K-EM1 | NS-33-R5, J-N15 | silent on busy indicators inside controls; a platform spinner is a loop | busy words, no indicator, at every setting (MP-18) |
+| K-EM2 | NS-34 section 3 and NS-33 Low Power row (loops stop under LPM) | nothing reads LPM; house MOTION.md 5k says it is not read | read LPM; stop the lamp breath and MP-17 (G-EM1) |
+| K-EM3 | frame 00 section 5 ("no celebration"); MOTION 6 | which outcomes earn `success` beyond a kept letter | keep the four built ones (each the person's own act); never on sign-in, claim, restore or update |
+| K-EM4 | NS-10-R0 ("held screen within 10 s") | how the two actions arrive | MP-06 into a reserved slot (E-M21) |
+| K-EM5 | X5 pause rows in every card | when a paused surface disappears | on the next render of its screen, never under a finger (E-M43, DESIGN J-E14) |
+| K-EM6 | NS-33-R15 (T4) vs the built Toast | the toast with an action never times out (stricter than T4) but its action can expire first (BL-954's dead Undo) | one helper; the toast and the action expire together by MP-05 (BL-954) |
 
 ## 10. Engineering gaps
 
+DESIGN.md uses `G-E01` onward; motion gaps are `G-EM`.
+
 | # | Gap | Where | Backlog row |
 |---|---|---|---|
-| G-E1 | No Low Power Mode hook; `Breathe` and the lamp breath keep running in LPM | `lib/motion.ts` (add `useLowPowerMode`; `expo-battery` exposes it but is not installed, D-065; eng input B section 7 risk 9) | BL-984 (NS-33 floor) or a new row under bucket E |
-| G-E2 | `Button` `loading` renders `ActivityIndicator` under RM (a moving loop) and the indicator has no busy words | `components/ui/button.tsx:162` | BL-984; owner design-systems (components/ui) |
-| G-E3 | RM press dip duration typed as 90 | `components/motion/press.ts:46` | design-systems token task |
-| G-E4 | Toast default 4000 ms and swipe thresholds 40 and 600 typed in the component | `components/ui/toast.tsx:56,90` | design-systems token task |
-| G-E5 | `RETRY_BEAT_MS` 500 is a constant outside tokens | `lib/resilience/launch.logic.ts:41` | none needed (reading beat); noted only |
-| G-E6 | Welcome entrance offsets 120, 150, 180, 200 typed in the screen | `app/onboarding.tsx:387-564` | design-systems token task |
-| G-E7 | No placeholder component (MP-19) and no system line component (E-S15, E-M40 to E-M43) | `components/ui` | needs a row (design lead names it in DESIGN.md); BL-978 covers only the new-phone Book-level line |
-| G-E8 | No update-required or update-available surface (E-S16) | none | needs a row |
-| G-E9 | Splash hide fade: whether expo-splash-screen SDK 57 offers it is UNVERIFIED | `app/_layout.tsx:179` | none; keep the cut |
+| G-EM1 | no Low Power Mode hook; `Breathe` and the lamp breath run in LPM | `lib/motion.ts` (`useLowPowerMode`; `expo-battery` not installed, D-065; eng input B section 7 risk 9) | BL-984 or a new bucket E row |
+| G-EM2 | `Button loading` draws `ActivityIndicator`, a loop under RM, and has no busy words prop | `components/ui/button.tsx:162` | BL-984; owner design-systems |
+| G-EM3 | RM press dip typed as 90 | `components/motion/press.ts:46` | design-systems token task |
+| G-EM4 | toast default 4000 and swipe thresholds 40 and 600 typed | `components/ui/toast.tsx:56,90` | design-systems token task |
+| G-EM5 | `RETRY_BEAT_MS` 500 outside tokens | `lib/resilience/launch.logic.ts:41` | none needed; noted |
+| G-EM6 | welcome entrance offsets 120 to 200 typed | `app/onboarding.tsx:387-564` | design-systems token task |
+| G-EM7 | no placeholder component (MP-19); SystemLine (DESIGN section 7 item 1) needs E-M40 to E-M42 built in, including the show and hide waits | `components/ui` | the SystemLine row DESIGN proposes |
+| G-EM8 | RT is not read beside RM; glass surfaces need it (`isLiquidGlassAvailable()` ignores accessibility settings) | `lib/motion.ts` or `lib/a11y.ts` | design system v2 engineering rows |
+| G-EM9 | splash hide fade in SDK 57 UNVERIFIED | `app/_layout.tsx:179` | none; keep the cut |
+| G-EM10 | glass surfaces that fade (Keep sheet, Sheet under RM, toast) fade the whole view's opacity today (`plus-gate.tsx:187-190`, `sheet.tsx:94`, `toast.tsx` exit) | those files | design system v2 rows, when the glass surfaces are built |
 
-## 11. Reconciliation notes for the design and content leads
+## 11. Reconciliation
 
-- `E-S09` and area C's `C-S10` are the same screen (Opening your book). E-M20 to E-M23 hold for both; area C's MOTION.md should cite them, not restate them.
-- Area A's `A-S13` hands to the Keep sheet: area A owns Keep's press and the save (MOTION 5e); area E owns E-M30 to E-M36 from the first frame of the sheet.
-- Area D's `D-S24` (plan date line in Me, Plan) sits inside `E-S11`: no motion beyond E-M37.
-- State names used here that DESIGN.md does not yet list: `E-S01.error-launch`, `E-S03.stop`, `E-S10.hold`, `E-S15.update-available`, `E-S17.low-1gb`, `E-S17.low-50mb`, `E-S06.error-code`. The design lead's names win at the re-key pass.
-- Busy words (MP-18 under RM), the "still working" line (L2), and every system line are words for the content lead; this file only times them.
+- With DESIGN.md (read 20 Nov, v with sections 0 to 12): every state name in section 4 is DESIGN's. Two ids here are motion-only labels with no DESIGN state: the lock offer (E-M75, built `lock-offer.tsx`, not in DESIGN's inventory) and the Keep sheet's "hold" path (E-M36, RT-PLS-10; DESIGN has no state for it because no sheet shows).
+- DESIGN E-S10.offline says See Plus is not drawn; the built `sheetTap` also handles a connection lost after the sheet opened. E-M32 covers both; the design lead may want a state name for the second.
+- With area C: E-M20o to E-M23o are C-S10's motion; area C's MOTION.md should cite them.
+- With area A: A-S13 hands to the Keep sheet (area A owns Keep's press and the save, MOTION 5e; area E owns the sheet from its first frame). A-S04.lowSpace and A-S04.full take E-M45 and E-M46.
+- With area D: D-S24 (plan date line) sits in E-S11; no motion beyond E-M37 and E-M39.
+- With WORDS.md: busy words (MP-18: "Trying again", "Opening the App Store", "Sending", "Restoring", "Keeping"), the held-state title (E-M21) and every SystemLine sentence are the content lead's keys; this file times them only. Quoted words here are DESIGN's or placeholders.
+- With `docs/design/system/MOTION.md`: fill 2b; move section 7 into the system tokens proposal; where the system defines a primitive differently, the system wins and section 8 gains the line.
