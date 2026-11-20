@@ -1,0 +1,1 @@
+05:58 (20 Nov) mobile | done: read #798, both reviews, card 02-find (450bcb4a), ADR 0028 D4/D5, plan BL-952, eval B; slice 1 (query, excerpt) built, 14 tests | next: slices 2 to 5 inside lib/find | blocked/needs: 15 of #798's files sit outside the claim globs; six PRs at 400 lines cannot hold #798 (Karma)
