@@ -310,7 +310,7 @@ With a picture pending, each of these keeps the picture: Type instead carries it
 
 Photo failure states on Ready: `photoCouldNotOpen` (line in the thumbnail slot, "Choose another", Speak and Type unchanged; `photo_pick_failed`, `photo_reencode_failed`, `unreadable`), `iCloudOffline` (line in the slot, "Choose another"; R46). Both keep the capture going without a picture.
 
-Other states: `doorway` (identical to Ready at rest; NS-06-C1; VoiceOver announces Ready on arrival), `appLockFirst` (E-S22 then Ready), `firstRunIncomplete` (E-S02, never Ready), `secondTakeRefused` (a doorway while a take runs: the current A-S05 stays; no new Ready), `interruptedOnReady` (picture still there, R57), `offline`/`killSwitch`/`planLapse`/`signedOut` (same as default), `secondAccount` (Ready for B's active book only), `dark`, `ax5`, `vo`.
+Other states: `lowSpace` (under 1 GB: one line under the hint; capture goes on), `doorway` (identical to Ready at rest; NS-06-C1; VoiceOver announces Ready on arrival), `appLockFirst` (E-S22 then Ready), `firstRunIncomplete` (E-S02, never Ready), `secondTakeRefused` (a doorway while a take runs: the current A-S05 stays; no new Ready), `interruptedOnReady` (picture still there, R57), `offline`/`killSwitch`/`planLapse`/`signedOut` (same as default), `secondAccount` (Ready for B's active book only), `dark`, `ax5`, `vo`.
 
 Components: existing `ListeningAura`, `Button`, `ModalHeader`, `StateScreen`, `StateGlyph`, `PendingPhotoThumb` and `PhotoFrame` (#838; COMPONENTS 2.23) with `fit` and the 88 pt rule. New: none.
 Integration: NS-35-R2, R3, R7; NS-01-R3, R4, R20b, R39, R40, R41, R42, R46, R57; NS-06-C1, C2, C9; BL-931 (#838), BL-956 (AX3 thumbnail, fit, Smart Invert), BL-971; flags `EXPO_PUBLIC_PHOTOS`, `EXPO_PUBLIC_QUICK_CAPTURE`; kill `killSwitches.photos`; codes `mic_denied`, `storage_low`, photo codes above; reads active child, prompt key, pending picture; writes nothing until the tap (the draft row is written before the microphone goes live); module `app/listen.tsx`, `listen.logic.ts`, `mic-state.logic.ts`, `lib/resilience/start-intent.ts`, `lib/photos/pending.ts`.
@@ -323,7 +323,7 @@ AX5: the room scrolls; the clock and line pin with Pause and Finish, so the scre
 
 VoiceOver: never speaks into the take; labels hold still while capturing (built `stableLabels`); minute marks are dropped while live; "Paused." is said once the recorder has really stopped. Order: To Asha > lock line > prompt > clock > line > Pause ("Pause or keep talking") > Finish > Let it go.
 
-States: `recording`, `stillHere`, `paused` (aura still and dimmed, "Paused.", button reads "Keep talking"), `finishing` ("Saving your words."; never stuck, leaves within the finish timeout), `withPhoto`, `interrupted` (call, Siri, alarm, media reset: the take ends and is kept; Review opens with the stop line, A-U08), `backgrounded` (same, A-U09), `confirmLetGo` (A-S11 over it), `offline`/`killSwitch`/`planLapse`/`signedOut`/`secondAccount` (same), `dark`, `ax5`, `vo`.
+States: `recording`, `stillHere`, `saved` (the moment before Review), `lowSpace` (under 1 GB: one line in place of the hint, v2 F2), `paused` (aura still and dimmed, "Paused.", button reads "Keep talking"), `finishing` ("Saving your words."; never stuck, leaves within the finish timeout), `withPhoto`, `interrupted` (call, Siri, alarm, media reset: the take ends and is kept; Review opens with the stop line, A-U08), `backgrounded` (same, A-U09), `confirmLetGo` (A-S11 over it), `offline`/`killSwitch`/`planLapse`/`signedOut`/`secondAccount` (same), `dark`, `ax5`, `vo`.
 
 Never: a count of takes, a countdown, a flash, a sound while recording, an auto-stop on silence (spec 05 H4, NS-04 Q8 closed).
 
@@ -384,6 +384,10 @@ States:
 | `withheld` | A-S10.withheld replaces the letter sheet body | NS-17-R5, R7 |
 | `notRemoved` | After a confirmed Let it go whose file would not delete: A-S11.notRemoved | NS-09-R4a |
 | `saveFailed` | Caution line above the primary; primary reads Try again | S17 |
+| `noDraft`, `keepStillSaving`, `firstNote`, `playing`, `markOpen`, `putBack` | As built (section 9.2) | S17, S23 |
+| `dateNotSaved` | Named line instead of the generic one (WORDS G6) | NS-15 Failed row |
+| `fromTooLong` | Keep refused with the calm line (R6) | NS-16-R6 |
+| `partUnwritten` | Mixed-language stretch: the page says words are not written there | NS-17 section 5 |
 | `laterWords` | A letter whose words came later: words as stored, no fixes, no Change words | F14 6.1 |
 | `held` | After E-S10 "Keep it here for now": the toast, then back | D-082 |
 | `sample` | Development builds only | |

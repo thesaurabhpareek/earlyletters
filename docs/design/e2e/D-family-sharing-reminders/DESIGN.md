@@ -310,9 +310,9 @@ Default (words only, no picture on this phone):
 ```
 - Order is the card's (section 4 step 3; R13a): title, the text that leaves, the words row, the picture toggle, the version line, the where-it-goes line, Continue, Not now. The preview card holds the exact wrapper text the payload builds (R18): the about-day in the device locale (month and year when the precision is month), a blank line, the words, a blank line, the signature line. Nothing else (R16b).
 - `.pictureOn`: a 64 x 64 thumbnail (the list copy, `radius.sm`, 1 pt `line` hairline, ignores Smart Invert) sits inside the preview card under the signature, labelled for VoiceOver "The picture, included". The toggle label stays "Include the picture"; its state is spoken by the system.
-- `.noPicture`: the toggle row is absent, not greyed (R5b).
+- `.wordsOnly`: the toggle row is absent, not greyed (R5b).
 - `.error-share_temp_write_failed`: the thumbnail is replaced by a caution line with a `WarningCircle` icon (shape plus colour; colour is never the only signal): "The picture could not be added this time. The words will go." The toggle returns to off. VoiceOver announces the line. Continue and Not now stay.
-- `.exact`: the version line reads "Sent exactly as said." when the Book shows that version (R19).
+- `.versionExact`: the version line reads "Sent exactly as said." when the Book shows that version (R19).
 - `.long`: the preview card scrolls inside the sheet body; the footer stays pinned; a 1 pt `line` appears above the footer while the body scrolls under it.
 - `.rtl`: the words align to the reading direction; the date and signature lines keep their order.
 - Equal buttons: both `Button variant="secondary" size="lg"`, same width, same type; neither filled (NS-05-R2; spec 03 J6 exception carried). Continue on the leading side, Not now on the trailing side at default size.
@@ -351,7 +351,7 @@ Default:
  +---------------------------------------+
 ```
 - Change against the build: the built card has three answers ("Yes, evenings" filled, "Pick a time" outline, "No reminders" quiet). NS-13's door line asks for "one sentence, two equal choices". So: the two answers are equal (`secondary lg`, same size and type, stacked at every size), and "Pick a time" becomes "Change the time", a quiet control on the rhythm line that opens the system picker in place (`.picking`) and is not an answer. Card gap G-D04 records the conflict.
-- `.picking`: the rhythm line becomes "Remind me at [8:30 PM]" with the system compact picker (07:00 to 21:30, 15 minutes); the two answers stay.
+- `.pickTime`: the rhythm line becomes "Remind me at [8:30 PM]" with the system compact picker (07:00 to 21:30, 15 minutes); the two answers stay.
 - The body names the child in the app only (built `renderTemplate`); the lock screen stays neutral.
 - No Close, no swipe to dismiss: one answer ends it (as built). VoiceOver: modal; the scrim is hidden. Order: title, body, rhythm line, Change the time, Yes, evenings, No reminders.
 - AX5: icon hidden at AX3 and above to give the text room (decorative); the rhythm line and Change the time stack; both answers full width, stacked, equal.
@@ -410,13 +410,13 @@ Default, on (names off):
  +---------------------------------------+
  A day you add gets one message on that day. Your words stay on this phone.   footer (intent)
 ```
-- Built as is for NS-13; this design adds only the "Days to remember" section (NS-18), the `.backedOff` rule for the Next line, and the `.off-withDays` state. Nothing on the page says reminders slowed or stopped (NS-13 section 15).
-- `.off`: only the switch and its footer, then "Days to remember" if any exist or the flag is on (`.off-withDays`; typed days still deliver when notifications are allowed).
+- Built as is for NS-13; this design adds only the "Days to remember" section (NS-18), the `.backedOff` rule for the Next line, and the `.typedDays-remindersOff` state. Nothing on the page says reminders slowed or stopped (NS-13 section 15).
+- `.off`: only the switch and its footer, then "Days to remember" if any exist or the flag is on (`.typedDays-remindersOff`; typed days still deliver when notifications are allowed).
 - `.denied`: under the switch a card (`surface`, `radius.md`) with `WarningCircle` and "Notifications are off", one sentence, and Open Settings (outline sm). The choices below stay editable so a parent can set up before allowing.
-- `.scheduleFailed`: a card with "Could not set reminders just now." and Try again.
-- `.on-appLock`: Names in notifications off and disabled, help "Names stay hidden while App lock is on."
+- `.error-schedule_failed`: a card with "Could not set reminders just now." and Try again.
+- `.appLock`: Names in notifications off and disabled, help "Names stay hidden while App lock is on."
 - `.quietDelivery`: footnote under the Next line.
-- `.monthNoBirthDate`: the month row's help "Starts once a birth date is added."
+- `.noBirthDate`: the month row's help "Starts once a birth date is added."
 - `.backedOff`: after day 35 with no letter, the plan holds nothing of these classes; the Next line is not shown (no line about absence). The preview still shows the words a reminder would use.
 - `.twobooks`: no change on this page; each book's "Include {child} in my reminders" lives on the book's page (C-S15).
 - AX5: rows stack title over value; chips wrap to several lines (each 44 pt high); the time label sits above the time (as built `ax`); the typed-day rows put the date above the words; nothing truncates; the words wrap.
@@ -509,10 +509,10 @@ Integration: NS-25-R1, R12; BL-983; door rule `visibleCoParentDoors(coParent, al
 ```
 - The R16 line is new against the build (built `create.body` says "read the whole book" but not private letters or earlier ones). It sits above the field so it is read before the action, at full text contrast.
 - Equal buttons (NS-25 section 6 AX5 row: "stack buttons at equal size"), stacked at every size.
-- `.loading`: "Getting the link ready" replaces the button label; the button keeps its size; VoiceOver announces it.
+- `.working`: "Getting the link ready" replaces the button label; the button keeps its size; VoiceOver announces it.
 - `.full`: in place of the buttons, "{child}'s book has two parents." and Close.
-- `.paused-invites`, `.offline`, errors: one line above the buttons with `WarningCircle`; Try again where the error is not final.
-- `.signedout`: the first step is sign-in (as built: trigger `invite_create`).
+- `.paused`, `.offline`, errors: one line above the buttons with `WarningCircle`; Try again where the error is not final.
+- `.signed-out`: the first step is sign-in (as built: trigger `invite_create`).
 - AX5: full height; all text wraps; buttons full width, stacked, equal.
 - VoiceOver: title, body, the scope line, the field, its help, the two footnotes, Share invite link, Not now.
 - Integration: NS-25-R16, R18, section 12 Invite door line (Records: invite created); BL-983 (BL-882 to BL-889 first); kill switch `killSwitches.invites`; error codes SCINV (retry_new_invite), SCCAP (book_full), SCCON (consent_needed, family_share_consent), SCKIL (paused), network, rate_limited, not_parent, unknown; writes `child_invites` (hashed token) via `create_child_invite`; module `app/invite/new.tsx`, `lib/family/invites.ts`.
@@ -540,7 +540,7 @@ Reconciled with WORDS.md: D-S15 and D-S16 are the top and bottom of one sheet. T
  +---------------------------------------+
 ```
 - No child name, no cover, no letter before agreement (R2; `peek_invite`).
-- `.signedout`: "You were invited to a book" with Sign in and Not now (built).
+- `.signed-out`: "You were invited to a book" with Sign in and Not now (built).
 - `.loading`: "Opening the invite" with the system activity indicator (no count).
 - Peek errors (`.error-expired`, `.error-used`, `.error-revoked`, `.error-not_found`, `.error-signed_out`) replace the sheet body with one line and offer "Paste another link" or Close; final errors drop the token (as built `FINAL_INVITE_ERRORS`). `.paused` and `.offline` keep the token and offer Try again. Join-time errors are D-S16 states.
 - Integration: NS-25-R2, R5, R9, R11, R18; BL-983; kill switch `killSwitches.invites`; error codes SCINV (expired, used, revoked, already_member, not_found), SCCAP, SCKIL, SCCON, PGRST301 or 303 (signed_out), network; module `app/invite/index.tsx`, `lib/family/join-flow.logic.ts`.
@@ -755,7 +755,7 @@ No new token. Every colour, size and duration is an existing token (section 4).
 | E-D11 | The web link page has no App Store link and no "iPhone only for now" line | BL-983 (web) |
 | E-D12 | Typed days need the `typedDay.<date>.showWords` shape if G-D14's default holds | BL-982 |
 | E-D13 | `NotificationPreview` promotion to `components/ui` and its `COMPONENTS.md` spec | `design-systems` |
-| E-D14 | Settings, Reminders has no "Days to remember" section, and the D-S06 `.off-withDays` rule needs the section visible with the switch off | BL-982 |
+| E-D14 | Settings, Reminders has no "Days to remember" section, and the D-S06 `.typedDays-remindersOff` rule needs the section visible with the switch off | BL-982 |
 | E-D15 | The D-S20 line on P2's phone after an undo has no key or screen | BL-983 with BL-965 |
 
 ## 12. Reconciliation with MOTION.md and WORDS.md (done 20 Nov, end of run)

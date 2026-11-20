@@ -433,6 +433,8 @@ The steps below are chosen so that the common insets, 8 and 16, land on another 
 | `radius.pill` (capsule) | 9999 | 9999 | Buttons, chips, segmented controls, every glass control, the toast, the Find bar | capsule is concentric with any parent whose radius is half its height plus the inset |
 | `radius.cover` (new) | (used `md`, 14) | 14 | The book cover only, so the card change does not round the book | free-standing object |
 | `radius.sheet` (new, reference) | (used `xl`) | system | System sheets draw their own, larger, display-concentric radius (BRIEF 1). We never set a sheet radius on iOS | system |
+| `radius.listSection` (new) | none | system for system grouped lists; 24 (`lg`) for our own `ListSection` in the content layer | iOS 26 gives list sections a larger radius (BRIEF 1). Measure the system value on device (UNVERIFIED) and set ours to match within 2 pt | inner rows are square; the section clips |
+| `radius.cluster` (AUDIT 7) | none | = `pill` | The floating capture cluster. Concentric with the display in effect (6.3), since React Native cannot read the display radius | |
 
 The md, lg and xl changes are visible (2 to 4 pt rounder). They follow Apple's rounder controls and larger section radii (BRIEF 1) and put every radius on the 4 pt scale. They ship as one token PR with before and after screenshots (DS2-03).
 
@@ -528,6 +530,8 @@ Today's set is the 37 Phosphor glyphs imported in `apps/mobile/src` (counted 20 
 | Recording control | Semibold | large | 32, capped at 1.4x | monochrome |
 | State screens (empty, error) | Light | large | 44, not scaled | hierarchical, `textMuted` |
 
+These sizes become `iconSize` tokens (AUDIT 6.11, 6.12): `inline` 16 (fixed glyphs such as a check in a choice box), `row` 20, `glass` 22, `default` 24, `capture` 28, `record` 32, `state` 44. The capture glyph moves from 32 (DESIGN_LANGUAGE 7) to 28, matching what `button.tsx:136` already draws.
+
 Rules: outline in content and toolbars, fill only for a selected tab and an active play or record state (A5); no multicolour symbols (our palette carries meaning, and colour is never the only signal); no symbol animation except the system's own on system controls, and none under Reduce Motion. Symbols are images to VoiceOver only when they stand alone; next to a word they are hidden from VoiceOver.
 
 ## 9. App icon
@@ -566,13 +570,33 @@ The vocabulary does not change in Foundations: a haptic marks an outcome, never 
 
 ## 12. Reconciliation with AUDIT.md
 
-Read at the end of this pass; see the note at the end of the file for what was reconciled.
+`AUDIT.md` (draft of 20 Nov) and the v2 `COMPONENTS.md` draft were read at the end of this pass. What changed here because of them, and what still differs:
+
+| Item | AUDIT or COMPONENTS says | This file now | Status |
+|---|---|---|---|
+| Token names for glass | COMPONENTS 9 asks for `material.glass.regular`, `.clear`, `.dim`, `.tint.accent`, `.mergeDistance`, `material.solid`, `material.content.*` | Adopted as named; colour tokens behind them are `glassDim`, `glassFallback`, `glassBorder` | Agreed |
+| `material.solid` fill in dark | COMPONENTS 1.5: `surfaceRaised` plus 1 pt `line` | Light: `surfaceRaised` (same). Dark: `glassFallback` #282421, one step above `surfaceRaised`, so floating chrome reads above raised cards. Edge 1 pt (was 0.5 pt in my draft; changed to match) | Differs in dark only: Karma to confirm; the token absorbs either choice |
+| Increase Contrast edge of `material.solid` | COMPONENTS 1.5: steps to `controlBorder` HC | `glassBorder` steps to `line` HC (5.51 light, 8.01 dark) | Differs: both pass 3:1; BRIEF 3 says "their high-contrast tokens", which reads as the border's own (`line`). Karma to pick one |
+| HC for status colours and glass labels | AUDIT 2.3, 7: missing | Full HC set (3.5) | Closed |
+| `scrim` | AUDIT 2.3: keep for content-layer modals | Same | Agreed |
+| Bold Text map | AUDIT 7: Regular to Medium, Medium to SemiBold | Adopted as stage 1; stage 2 with new cuts (4.4) | Agreed, extended |
+| `type.numeral` | AUDIT 2.3: retire, unused since PR #674 | Retired | Agreed |
+| `elevation.2` | AUDIT 2.3: stays for the AudioPlayer pill | Same; my draft had moved the player to glass, which BRIEF 3 does not list | Agreed |
+| `elevation.3` | AUDIT 7: retire for sheets | Retired | Agreed |
+| `radius.xl` and a cluster radius | AUDIT 2.3, 7 | `xl` is containers only; `radius.cluster` = capsule (6.2, 6.3) | Agreed |
+| `target.md` 48, extra-large control, `iconSize` | AUDIT 2.3, 6.11, 7; COMPONENTS `size.control.*` (44, 48, 56, 64), `size.row` 52 | Adopted (5.3, 8.3) | Agreed |
+| `radius.listSection` | COMPONENTS 9 | Added (6.2) | Agreed, value to measure |
+| SF Symbols scope | COMPONENTS 10: SF Symbols in system chrome, Phosphor stays in content | SF Symbols everywhere on iOS; Phosphor only as the Android and web fallback (8.1) | Differs. Reason: DESIGN_LANGUAGE 7 "app UI doesn't mix sets"; with native tabs and glass toolbars in SF, Phosphor in content would put two drawing styles on one screen (the toolbar Close next to a row chevron). Karma to decide |
+| Motion tokens (`motion.glass.*`, toast, undo window, `reduceMotion` retirement) | AUDIT 7 | Not in Foundations; owned by v2 `MOTION.md` | Out of scope here |
+| Atmosphere under glass (AUDIT 4.21) | No conflict; the cluster must not sit on the QuotePair | Rule 1.4 and 2.5 (a) keep glass off words and the mark at rest | Agreed |
 
 ## 13. Open questions (for Karma with the Chief Design Officer role)
 
 - Q1. Clear glass at 35 percent dim fails 3:1 for white symbols over a near-white region of a photo (2.43:1 on pure white). Policy keeps 35 percent. Measure on device over the Asha photo set; if a control lands on a bright region, either the control moves, or the dim for that control steps to 45 percent (3.36:1 on pure white). Decision needed after measurement.
 - Q2. The radius change (md 16, lg 24, xl 32) is visible on every card. Approve with the before and after set from DS2-03, or keep v1 values and accept off-grid 14 and 20.
 - Q3. Bold Text for Devanagari letter runs (4.4).
+- Q5. `material.solid` in dark (`glassFallback` #282421 or `surfaceRaised`) and its Increase Contrast edge (`line` HC or `controlBorder` HC), section 12.
+- Q6. SF Symbols in content as well as chrome (this file) or chrome only (v2 COMPONENTS), section 12.
 - Q4. Home tab symbol: `moon.stars` keeps today's meaning (the evening letter); `house` is the conventional Home glyph. Keep `moon.stars` unless testing shows people do not find Home.
 
 ## 14. Engineering rows needed

@@ -1,10 +1,10 @@
 # Area E. Foundations and system states: motion
 
-Status: DRAFT v2, 20 Nov 2026. Motion lead, area E. Re-keyed to `DESIGN.md` (design lead, area E) section 4 inventory: screens `E-S01` to `E-S26`, their per-screen state names, the waiting rule (DESIGN section 2 rule 5), the render classes R0 to R6 and the cross-area catalogue `E-ST01` onward (DESIGN section 6). Ids in this file (`MP-nn`, `E-Mnn`) are stable; no id is reused.
+Status: DRAFT v3, 20 Nov 2026. Motion lead, area E. Keyed to the design system v2 motion file (`docs/design/system/MOTION.md`: primitives `m.*`, transitions `T-*`, haptics `H-*`; section 4z here) and re-keyed to `DESIGN.md` (design lead, area E) section 4 inventory: screens `E-S01` to `E-S26`, their per-screen state names, the waiting rule (DESIGN section 2 rule 5), the render classes R0 to R6 and the cross-area catalogue `E-ST01` onward (DESIGN section 6). Ids in this file (`MP-nn`, `E-Mnn`) are stable; no id is reused.
 
 Play every move in `MOTION-PROTOTYPE.html` (this folder): each primitive and each area E moment, with toggles for Reduce Motion, dark, Reduce Transparency and a slow-motion switch for review.
 
-**Design system v2 (Karma, 20 Nov).** The shared motion primitives are owned by `docs/design/system/MOTION.md` (design-systems motion lead; brief `docs/design/system/BRIEF.md`). Section 2 of this file is **input to that file, not a competing standard**. That file did not exist when this draft was finished; section 2b is the key to fill at the next pass, and where the system file differs, it wins.
+**Design system v2 (Karma, 20 Nov).** The shared motion primitives are owned by `docs/design/system/MOTION.md` (design-systems motion lead; brief `docs/design/system/BRIEF.md`). Section 2 of this file is **input to that file, not a competing standard**; the system file has already keyed every `MP-nn` to its names (its section 4b, copied in 2b here). Areas A to D use the system names, never `MP-nn`. Where the system file differs from a row below, the system file wins: section 4z lists every `E-Mnn` with its system name and each v2 change, and the rows in section 4 describe the build as it is today plus area E's needs.
 
 Sources, in order (BRIEF section 1): the locked cards (mainly `11-foundations.md` NS-33 and NS-34, `08-keeping-and-trust.md` NS-10, the frame `00` principle 6 and section 5, and every card's Reduce Motion row), `14-test-plan.md` J-N15, `16-council-review-round-2.md` T4; engineering input `/home/claude/review/eng/B-mobile-client.md` (section 7 risk 9); house design `docs/design/MOTION.md` v0.2, `SOUND.md`, `tokens.motion` in `packages/design-tokens/src/tokens.ts`, `apps/mobile/src/lib/motion.ts`, `lib/transitions.logic.ts`, `lib/haptics.shared.ts`, `components/motion/*`, and the built screens named per row; the design system v2 brief section 1 (Expo `expo-glass-effect` facts) and section 3 (material policy). History used where a card agrees: `docs/design/specs/FIRST-RUN-MOTION-SPEC-10nov.md` (superseded parts in section 8).
 
@@ -19,7 +19,7 @@ Sources, in order (BRIEF section 1): the locked cards (mainly `11-foundations.md
 
 From MOTION.md sections 2 and 5l and DESIGN.md section 2, restated as the rules every area signs up to:
 
-1. **Calm and quick.** No single move longer than 300 ms. Named exceptions, all existing tokens and all decorative or sanctioned by MOTION.md: lamp arrival and in-room light change `lamp.arriveMs` 1200; the new-letter wash `newMarkMs` 1600; draw-on `drawMs` 1200; the save hand-off (about 1.1 s, under `hardCeilingMs` 2000); the breath loops `emptyBreathMs` 8000 and `lamp.breathMs` 9000 (opacity only). Any sequence stays under `sequenceMaxMs` 900.
+1. **Calm and quick.** No single move longer than 300 ms (v2 `motion.capMs`). The named exceptions are the system file's section 5 list, and only those (v2 replaces this file's v1 list): among them the lamp arrival 1200 once per cold launch (if the lamp is kept), `m.mark` 1600, `m.draw` 1200 in first run only, `m.keep` 600 to the Book. A sequence settles within `sequenceMaxMs` (v2: 600, was 900). In-room lamp changes of 1200 (E-M09, E-M10, E-M13) are not on the v2 list: see 4z.
 2. **Controls never animate in.** Buttons, fields and links are opaque and hittable from the first frame of every screen, sheet and state. Only content (words, drawings, cards) enters. One exception, as built (`lock-offer.tsx`): controls that can only exist after an async answer arrive by MP-06 into a slot reserved from frame 1 (E-M08b, E-M21).
 3. **Commit first, then the receipt.** No save, sign-in, purchase or retry waits on an animation.
 4. **Interruptible.** A tap during any move lands on its end state. Springs start from where the value is.
@@ -44,16 +44,34 @@ This table records what the built code does today (file and line) and what area 
 - Glass morphs (a control growing into a sheet, controls merging in a `GlassContainer`) are the system file's; area E adds none.
 - Native tabs (`expo-router/unstable-native-tabs`) would replace the JS tabs (E-M80): the swap, selection and minimise-on-scroll are then the system's; the lamp rule still applies to the content under the bar.
 
-### 2b. Key to the system primitive names (fill at the next pass)
+### 2b. Key to the system primitive names (from system MOTION.md section 4b)
 
-| Working id | System primitive name | Glass note |
+| Working id | System name | v2 change that matters to area E |
 |---|---|---|
-| MP-01, MP-02 | pending | an interactive `GlassView` button takes the system's own press instead of our scale |
-| MP-03 to MP-07 | pending | MP-05 on the glass toast animates the effect style, not opacity |
-| MP-08, MP-09, MP-11, MP-12 | pending | system transitions |
-| MP-10 | pending | glass sheet; under RM, effect style plus content and scrim fade |
-| MP-13 to MP-21, MP-23 to MP-26 | pending | content layer |
-| MP-22 | house MOTION.md 5b to 5m | areas A and B |
+| MP-01, MP-02 | `m.tap`; glass controls `m.tap.glass` | a glass control runs the system press, not our scale; RM dip token `tap.rmMs` 90 |
+| MP-03 | `m.enter`; staggered `m.enter.group` | group only on cold launch or first show |
+| MP-04, MP-05 | `m.exit` | new `easing.exit` (UNVERIFIED value) |
+| MP-06 | `m.swap` | the box takes its new size at the end with `m.move` |
+| MP-07 | `m.step` (T-STEP) | none |
+| MP-08 | `m.cover` (T-COVER) | token renamed `cover.dissolveMs` |
+| MP-09 | `m.push` (T-PUSH) | none |
+| MP-10 | `m.sheet` (T-SHEET, native `formSheet`); `m.sheet.own` while `ui/sheet.tsx` remains | the Keep gate, sign-in and the plan note become native sheets |
+| MP-11 | `m.sheet` (system modal) | none |
+| MP-12 | `m.instant` | none |
+| MP-13 | `m.move` | `spring.standard` 0.30 s (439, 38.5), was 0.40 s |
+| MP-14 | `m.fade` | none |
+| MP-15 | cover on `m.instant`; unlock `m.fade` (T-LOCK) | none |
+| MP-16 | lamp, system section 10 | pending FOUNDATIONS; breath retired (proposal) |
+| MP-17 | RETIRED (`Breathe`) (proposal, system open question 1) | waiting states become still; conflicts with DESIGN rule 5's "breathing state" (section 11) |
+| MP-18 | `m.progress.wait` in a button, with `m.swap` for the busy words | RM off: system indicator plus busy words; RM: static busy words |
+| MP-19 | placeholder: `m.fade` after `loading.placeholderAfterMs` | never a loop |
+| MP-20 | `m.mark` | token `markMs` |
+| MP-21 | `m.draw` | first run only, default static |
+| MP-22 | `m.zoom`, `m.keep`, `m.pageTurn`, `m.signal`, `m.follow` | `m.keep` 600 ms to the Book |
+| MP-23 | `m.toast` (glass) | tokens `toast.*` |
+| MP-24 | not motion | none |
+| MP-25 | finger follow inside `m.pageTurn`, `m.sheet`, `m.toast` | none |
+| MP-26 | `m.instant` | none |
 
 ### 2c. The primitives
 
