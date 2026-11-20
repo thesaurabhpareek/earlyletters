@@ -15,10 +15,10 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 for the N
      [NS-32-R13] preview placeholder           [NS-32-R16] re-plan after update
      [NS-13-R20] never time-sensitive (source and config check)
      [NS-13-R21] re-plan after update
-   Red on develop: `scheduler.ts:153-164` sets no `categoryIdentifier` and no `interruptionLevel`. Mutants (catalogue A and C): set time-sensitive (R10, R20); omit `hiddenPreviewsBodyPlaceholder` on one category (R13);
+   Red on develop: `scheduler.ts:153-164` sets no `categoryIdentifier` and no `interruptionLevel`. Mutants (catalogue A and C): set time-sensitive (R10, R20); omit `previewPlaceholder` on one category (R13);
    interpolate `{child}` in the default body (R12); skip re-plan when the version changes (R16, R21).
    Types in `expo-notifications` 57.0.21: `previewPlaceholder` at `build/NotificationCategoriesModule.types.d.ts:6` and `Notifications.types.d.ts:694`; `interruptionLevel` at `:441` and `:580` [V in node_modules].
-   The catalogue names R13 `hiddenPreviewsBodyPlaceholder`; the type in 57.0.21 is `previewPlaceholder`: check the iOS spelling in the .d.ts before writing the test title's body [U].
+   The field is `previewPlaceholder` [V `NotificationCategoriesModule.types.d.ts:6`]; the old name `hiddenPreviewsBodyPlaceholder` (catalogue, `11-foundations.md:367`) does not exist in 57.0.21.
 
 3. FILES  Touch: lib/reminders/{scheduler,index}.ts (category registration in `startReminders`, fields on each request), settings key `app.lastPlannedVersion` (L1) in lib/reminders/prefs.ts,
    apps/mobile/scripts/preflight-testflight.mjs (one check: no `com.apple.developer.usernotifications.time-sensitive`), tests reminders-planner or a new `reminders-categories.test.ts`; one PROPOSED key via `content`.

@@ -1,16 +1,16 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
-Blocked until: Karma rules Q-E1 (two shapes for one file: PACK-DELTA-2 row NS-46-R30 in PR #932 says `budget.ts` is a pure chooser `chooseOnePerDay(candidates, planNoticeCount)` with the order typed day, birthday, library day, month-age, evening; our design `11-foundations.md` section 2 says a class registry with `allocate({ planPending, budgeted })` and `addNotificationClass`). The tests below hold under either shape; only the module's exports wait. Founder Q8 (the cap): default is one a day (locked card). R4b is ruled (E13, CL-115): total pending at most 60, plan notices first, so the cut drops the latest budgeted notes first. Catalogue A's R4b GAP is closed by the card text: test total <= 60 and plan notices kept.
+Blocked until: nothing on the design: CR-69 A1 (RULINGS.md on branch docs/cto-rulings-cr69-20nov, PR #981; merge pending) closes Q-E1: ONE `budget.ts` holding the class registry AND `chooseOnePerDay`; ranks typed day 1, birthday 2, `libraryDay` 3 (inside the `typedDay` group, no new class), month 4, evening 5; `TOTAL_MAX = 60`; 60 pending in TOTAL, plan notices first (E13, CL-115, NS-32-R4b). The planner change LOWERS today's 60 plus 4 (`planner.ts:295`, `plan-reminders.logic.ts:48`). The registry shape stands, so R2, R5 and R15 apply. Founder Q8 (the cap): default one a day (locked card). Hand-off: the plan-notice scheduler gets a one-line re-plan hook, owner `payments` (`lib/billing/**`, not edited here): file it as a handoff issue. Until #981 merges, cite CR-69 A1 by this line.
 
 ```
-BRIEF BL-966a (budget.ts and allocate)            Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
+BRIEF BL-966a (budget.ts: registry and chooseOnePerDay)            Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R12 tested before the cut; Q1)   Wave: 1
 
-1. GOAL: When any number of notification classes want a slot, one shared registry and one `allocate` decide, so the total stays at 60 budgeted plus plan notices outside the budget,
+1. GOAL: When any number of notification classes want a slot, one `budget.ts` (the registry and `chooseOnePerDay`) decides, so the pending total stays at 60 or fewer with plan notices kept first,
    and a class cannot be added without a registry row.
 
 2. CARD ROWS and TEST TITLES
    Rows: NS-32-R2, R3, R5, R7, R15 (R4b see above). Card 11 (NS-32) at 450bcb4a.
-   Shape-neutral titles first (hold under both shapes): R3, R7, and R1 and R1b through the chooser. R2, R5 and R15 only make sense for the REGISTRY shape: they wait for Q-E1 (if the chooser wins they are re-titled by qa and product). Titles (catalogue A, PR #925, exact):
+   Titles (catalogue A, PR #925, exact; the registry shape stands under CR-69 A1, so R2, R5 and R15 all apply). Write R7 from the 60-in-total rule, NOT from the catalogue cell ("budgeted <= 60 and plan <= 4" allows 64: `qa` corrects it):
      [NS-32-R2] unregistered class fails        [NS-32-R3] priority decides
      [NS-32-R5] registry rows                   [NS-32-R7] pending ceilings
      [NS-32-R15] a class cannot raise the total
@@ -40,12 +40,12 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R1
 
 9. ACCEPTANCE  Experience: D-S06 Me, Reminders (backedOff, lateClamp states; PR #921). Test cases above. Done also means: red on old code and on each mutant; the rows hold under both Q-E1 shapes.
 
-10. PR BREAKDOWN: PR a: `budget.ts` and `allocate` | about 250 lines, 3 files | base develop | supersedes #758 (ask Karma to close it; an agent never closes) | flag-off proof: none (a pure module nobody imports yet)
+10. PR BREAKDOWN: PR a: `budget.ts` (registry, `chooseOnePerDay`, `TOTAL_MAX = 60`) | about 250 lines, 3 files | base develop | supersedes #758 (ask Karma to close it; an agent never closes) | flag-off proof: none (a pure module nobody imports yet)
     Then 966b, 966c.
 
 11. LENSES: A principal-architect, B compliance-engineer (plan 2.3).
 
-12. ORDER: before 966b, 966c, BL-943, BL-982, BL-985. Blocked by: Karma (Q-E1), founder (Q8 cap), . Counsel Q41 gates the plan windows of a STORE build, not this code.
+12. ORDER: before 966b, 966c, BL-943, BL-982, BL-985. Blocked by: founder (Q8 cap) only. Counsel Q41 gates the plan windows of a STORE build, not this code.
 
 13. DEFINITION OF DONE
     [ ] tests red on old code and mutants; `npm test -w apps/mobile`: only the 8 baseline files red; `npx tsc --noEmit` apps/mobile: only the 5 known errors
@@ -53,7 +53,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R1
 
 14. ONLY A PHONE CAN PROVE: nothing in this PR; the plan reaches a phone in 966b.
 
-15. STOP AND ASK: Q-E1 is ruled; the ceiling is not 60; a class is wanted that the registry forbids (Memory Library `occasion`).
+15. STOP AND ASK: the ceiling is not 60 in total; a class is wanted that the registry forbids (Memory Library `occasion`).
 
 16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl966a agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl966a.md`. Branch feat/mobile-bl-966a-budget. Comments start `<!-- agent:mobile -->`.

@@ -1,11 +1,11 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Stale in the design: it says "`prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`" and that nothing reads `quiet`. On develop #901 fixed it: `plannerChildren` is at `prefs.ts:127` and passes `quiet`, and `planner.ts:25-26,78-79` honour it; NS-32-R14 has tests (`reminders-quiet-books.test.ts:75`).
-Blocked until: BL-966 (a) merged; Karma's Q-E1 ruling; founder Q8 (the cap). NS-32-R1b still fails today (two notifications can land on one day).
+Blocked until: BL-966 (a) merged; founder Q8 (the cap). Q-E1 is closed by CR-69 A1 (one `budget.ts`: registry and `chooseOnePerDay`). NS-32-R1b still fails today (two notifications can land on one day).
 
 ```
 BRIEF BL-966b (planner: one a day, priority, ceiling) Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixed before the cut, or shipped as a known defect by written decision, Q1)   Wave: 1
 
-1. GOAL: When two books have a birthday and a month note on the same local day, exactly one notification is scheduled, the highest priority wins, and no plan ever holds more than 60 budgeted notes.
+1. GOAL: When two books have a birthday and a month note on the same local day, exactly one notification is scheduled, the highest priority wins, and no plan ever holds more than 60 pending in total, plan notices kept first.
 
 2. CARD ROWS and TEST TITLES
    Rows: NS-32-R1, R1b, R3, R4, R6, R7, R8; NS-13-R19, R28 (titles only). Card 11 and card 09 at 450bcb4a.
@@ -15,7 +15,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixe
      [NS-32-R8] back-off pre-scheduled                     [NS-13-R19] two books, one notification a day
      [NS-13-R28] birthday and month merge
    R8's test lands here as a guard: it passes on the 21-day horizon and must keep passing after BL-943.
-   Red on develop: `planner.ts:319` keys notes `${kind}:${isoDate(date)}`. Mutants (catalogue A and C): remove the one-per-day clamp in `allocate()` (R1); skip the same-date merge (R1b);
+   Red on develop: `planner.ts:319` keys notes `${kind}:${isoDate(date)}`. Mutants (catalogue A and C): remove the one-per-day clamp in `chooseOnePerDay` (CR-69 A1) (R1); skip the same-date merge (R1b);
    plan in UTC dates (R6); remove the day-35 cutoff (R8); choose month copy over birthday copy (R28).
 
 3. FILES  Touch: lib/reminders/{planner,prefs,index}.ts, test/reminders-planner.test.ts (retitle), test/reminders-budget.test.ts, test/reminders-quiet-books.test.ts (read only: do not weaken).
@@ -47,7 +47,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixe
 
 11. LENSES: A principal-architect, B compliance-engineer; add security-architect for R12.
 
-12. ORDER: after BL-966 (a); before BL-966 (c), BL-943. Blocked by: 966a, Q-E1, founder (Q8).
+12. ORDER: after BL-966 (a); before BL-966 (c), BL-943. Blocked by: 966a, founder (Q8).
 
 13. DEFINITION OF DONE
     [ ] tests red on old code and mutants; `npm test -w apps/mobile`: only the 8 baseline files red; `npx tsc --noEmit` apps/mobile: only the 5 known errors; `npm test -w packages/content` if a key is added
