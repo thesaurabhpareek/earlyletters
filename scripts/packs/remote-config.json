@@ -15,6 +15,7 @@
     "serverContent": false,
     "backupUploads": false,
     "escrow": false,
-    "statusReport": false
+    "statusReport": false,
+    "bookSearch": false
   }
 }
