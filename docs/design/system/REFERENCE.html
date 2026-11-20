@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system v2: component reference</title>
+<style>
+/* Design system v2 reference. Self-contained: no network, no fonts fetched, ASCII only.
+   Token values copied from packages/design-tokens/src/tokens.ts and docs/design/system/FOUNDATIONS.md (20 Nov 2026).
+   Glass is SIMULATED with CSS backdrop-filter and a drawn highlight; it shows layout, states, contrast and fallbacks,
+   not Apple's real material (COMPONENTS.md G5). */
+:root{
+  --f-sans: Mukta, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-serif: Literata, Georgia, "Times New Roman", serif;
+  --f-sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --gi: .55;              /* simulated iOS 27 glass intensity: 0 clear, 1 opaque */
+  --ease: cubic-bezier(.2,0,0,1);      /* easing.standard */
+  --ease-exit: cubic-bezier(.3,0,1,1); /* easing.exit */
+  --snappy: 280ms; --standard: 300ms; --fade: 200ms; --swap: 150ms; --exit: 160ms; --enter: 280ms; --glass-s: 250ms;
+  /* type tokens at Large (FOUNDATIONS 4.3) */
+  --body:18px; --lbl:18px; --lblS:16px; --foot:14px; --cap:13px; --head:18px; --sub:16px; --call:17px;
+  --lb:20px; --dl:14px; --disp:34px; --t1:28px; --t2:22px; --timer:18px; --prompt:24px; --name:22px;
+}
+body.ax5{ /* AX5 sizes from FOUNDATIONS 4.3 (per-style Apple curves, caps applied) */
+  --body:56px; --lbl:56px; --lblS:52px; --foot:47px; --cap:47px; --head:56px; --sub:52px; --call:54px;
+  --lb:62px; --dl:34px; --disp:54px; --t1:50px; --t2:44px; --timer:56px; --prompt:66px; --name:56px;
+}
+/* ---------- schemes ---------- */
+.sl, body:not(.dark), body:not(.dark) .sa{
+  --bg:#FBF8F3; --surface:#F5EFE7; --raised:#FFFFFF; --text:#2B2722; --muted:#6B645B; --gl:#2B2722; --gl2:#524B43;
+  --accent:#8A5A3B; --accentSoft:#F1E6DC; --onAccent:#FFFFFF; --line:#E6DED3; --ctrl:#8A8175; --focus:#2F6F8F;
+  --rec:#B5473A; --destr:#B5473A; --onDestr:#FFFFFF; --success:#3B724F; --caution:#895E18; --gfb:#FFFFFF;
+  --gt:255,255,255; --hl:.62; --scrim:rgba(43,39,34,.32); --shadow:rgba(43,39,34,.08); --lamp:rgba(255,226,168,.55);
+  color-scheme: light;
+}
+.sd, body.dark, body.dark .sa{
+  --bg:#161412; --surface:#1B1917; --raised:#201D1A; --text:#F2ECE4; --muted:#B3AA9E; --gl:#F2ECE4; --gl2:#D6CEC3;
+  --accent:#D9A47E; --accentSoft:#3A2E25; --onAccent:#1E1612; --line:#33302C; --ctrl:#857C70; --focus:#8CC4DE;
+  --rec:#F08C7C; --destr:#F08C7C; --onDestr:#1E1612; --success:#8CC9A0; --caution:#E3B866; --gfb:#201D1A;
+  --gt:44,40,36; --hl:.26; --scrim:rgba(0,0,0,.55); --shadow:rgba(0,0,0,.30); --lamp:rgba(243,201,139,.16);
+  color-scheme: dark;
+}
+body.hc .sl, body.hc:not(.dark), body.hc:not(.dark) .sa{
+  --text:#1F1B17; --muted:#4F4942; --gl:#1F1B17; --gl2:#3F3A34; --accent:#67432C; --focus:#225068;
+  --rec:#813329; --destr:#813329; --success:#2B543B; --caution:#654612; --ctrl:#2B2722; --line:#6B645B;
+}
+body.hc .sd, body.hc.dark, body.hc.dark .sa{
+  --text:#FAF6F1; --muted:#D6CEC3; --gl:#FAF6F1; --gl2:#E6DFD6; --accent:#E8BC9A; --focus:#AED6EA;
+  --rec:#F7B0A4; --destr:#F7B0A4; --success:#A9DDBA; --caution:#EDCB8A; --ctrl:#F2ECE4; --line:#B3AA9E;
+}
+/* ---------- page chrome (not part of the system; does not scale with AX5) ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--f-sys)}
+a{color:var(--accent)}
+.top{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 20px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:.5px solid var(--line)}
+.top h1{font:600 15px/1.2 var(--f-sys);margin:0 12px 0 0}
+.tg{font:500 13px/1 var(--f-sys);border:1px solid var(--ctrl);background:transparent;color:var(--text);border-radius:999px;padding:8px 12px;min-height:34px;cursor:pointer}
+.tg[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.tg:focus-visible,.play:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.rng{display:flex;align-items:center;gap:8px;font:500 13px var(--f-sys)}
+main{padding:12px 20px 80px;max-width:1240px;margin:0 auto}
+.intro{max-width:820px;color:var(--muted)}
+.intro b{color:var(--text)}
+nav.idx{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 24px}
+nav.idx a{font:500 12px var(--f-sys);text-decoration:none;border:.5px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--text)}
+h2.grp{font:600 22px/1.2 var(--f-sys);margin:44px 0 6px;padding-top:12px;border-top:.5px solid var(--line)}
+section.comp{margin:26px 0 10px}
+.ch{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.ch h3{font:600 17px/1.3 var(--f-sys);margin:0}
+.badge{font:600 11px/1 var(--f-sys);letter-spacing:.04em;padding:4px 8px;border-radius:999px;border:1px solid var(--ctrl);color:var(--muted)}
+.badge.g{border-color:var(--accent);color:var(--accent)}
+.note{color:var(--muted);font-size:13px;margin:4px 0 10px;max-width:900px}
+.tiles{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;align-items:flex-start}
+.tile{flex:0 0 375px;width:375px;position:relative;border-radius:28px;padding:14px 16px 18px;overflow:hidden;background:var(--bg);color:var(--text);
+  box-shadow:0 0 0 .5px var(--line)}
+.tile>*{position:relative;z-index:1}
+.tlabel{font:600 11px/1 var(--f-sys);letter-spacing:.08em;text-transform:uppercase;display:inline-block;padding:4px 7px;border-radius:6px;background:var(--bg);color:var(--muted);margin-bottom:6px}
+.st{font:600 10.5px/1.2 var(--f-sys);letter-spacing:.06em;text-transform:uppercase;display:inline-block;padding:3px 6px;border-radius:5px;background:var(--bg);color:var(--muted);margin:14px 0 6px}
+/* drawn photo-like background: shapes only, no people */
+.bg-picture{background:
+  radial-gradient(ellipse 18% 7% at 28% 30%, #FFFFFF 0 62%, rgba(255,255,255,0) 64%),
+  radial-gradient(ellipse 12% 5% at 36% 27%, #FFFFFF 0 60%, rgba(255,255,255,0) 62%),
+  radial-gradient(circle at 78% 16%, #FFF6D0 0 6%, #FFD36E 6.5% 10%, rgba(255,211,110,0) 10.5%),
+  radial-gradient(ellipse 62% 18% at 18% 96%, #2E7D5B 0 70%, rgba(46,125,91,0) 71%),
+  radial-gradient(ellipse 80% 22% at 90% 100%, #1D6E85 0 70%, rgba(29,110,133,0) 71%),
+  radial-gradient(ellipse 46% 12% at 52% 90%, #E8B04A 0 70%, rgba(0,0,0,0) 71%),
+  repeating-linear-gradient(100deg, rgba(255,255,255,.0) 0 22px, rgba(255,255,255,.08) 22px 30px),
+  linear-gradient(170deg, #FBE3C2 0%, #F6A86B 24%, #E86F7E 48%, #8D70D6 72%, #3FA6C8 100%) !important}
+.bg-picture::before{content:"";position:absolute;z-index:0;width:44px;height:44px;left:62%;top:38%;transform:rotate(45deg);
+  background:conic-gradient(#FF5E7A 0 25%,#FFD24D 0 50%,#3FC1A5 0 75%,#5B7CFA 0)}
+.bg-picture::after{content:"";position:absolute;z-index:0;left:calc(62% + 22px);top:calc(38% + 62px);width:2px;height:160px;background:rgba(255,255,255,.7);transform:rotate(12deg)}
+/* ---------- the system ---------- */
+.sans{font-family:var(--f-sans)}
+.serif{font-family:var(--f-serif)}
+.t-body{font:400 var(--body)/1.33 var(--f-sans)}
+.t-call{font:400 var(--call)/1.3 var(--f-sans)}
+.t-sub{font:400 var(--sub)/1.3 var(--f-sans)}
+.t-foot{font:400 var(--foot)/1.36 var(--f-sans)}
+.t-cap{font:500 var(--cap)/1.3 var(--f-sans);letter-spacing:.2px}
+.t-head{font:600 var(--head)/1.28 var(--f-sans)}
+.t-lbl{font:500 var(--lbl)/1.22 var(--f-sans)}
+.t-lblS{font:500 var(--lblS)/1.25 var(--f-sans)}
+.t-lb{font:400 var(--lb)/1.6 var(--f-serif)}
+.ax5 .t-lb{line-height:1.5}
+.t-sig{font:italic 400 var(--lb)/1.6 var(--f-serif)}
+.t-dl{font:500 var(--dl)/1.3 var(--f-sans);letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.t-disp{font:500 var(--disp)/1.2 var(--f-serif);letter-spacing:-.2px}
+.t-t1{font:500 var(--t1)/1.2 var(--f-serif)}
+.t-t2{font:500 var(--t2)/1.25 var(--f-sans)}
+.t-timer{font:500 var(--timer)/1.25 var(--f-sans);font-variant-numeric:tabular-nums}
+.t-prompt{font:400 var(--prompt)/1.33 var(--f-serif)}
+.muted{color:var(--muted)}
+.ic{width:1.15em;height:1.15em;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.18em}
+.ic.f{fill:currentColor;stroke:none}
+.row{display:flex;align-items:center;gap:12px}
+.wrap{flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:10px}
+.sp{flex:1}
+.ax5 .stack-ax{flex-direction:column;align-items:stretch}
+.paper{background:var(--bg);border-radius:16px;padding:12px}
+.bg-picture .paper{box-shadow:0 0 0 .5px var(--line)}
+
+/* Glass (simulated). Regular: tint + blur + saturation + drawn specular highlight. */
+.glass{position:relative;isolation:isolate;color:var(--gl);
+  background:rgba(var(--gt),calc(.12 + var(--gi)*.6));
+  -webkit-backdrop-filter:blur(calc(4px + var(--gi)*20px)) saturate(1.8);
+  backdrop-filter:blur(calc(4px + var(--gi)*20px)) saturate(1.8);
+  box-shadow:inset 0 .75px 0 rgba(255,255,255,var(--hl)),inset 0 -.5px 0 rgba(255,255,255,calc(var(--hl)*.35)),0 0 0 .5px rgba(255,255,255,calc(var(--hl)*.45)),0 6px 22px var(--shadow)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,calc(var(--hl)*.85)) 0%,rgba(255,255,255,0) 34%),
+             radial-gradient(120% 80% at 90% 130%,rgba(255,255,255,calc(var(--hl)*.35)),rgba(255,255,255,0) 55%)}
+.glass.prom{color:var(--onAccent);background:var(--accent);background:color-mix(in srgb,var(--accent) calc(62% + var(--gi)*36%),transparent)}
+.glass.clear{color:#FFFFFF;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(3px) saturate(1.5);backdrop-filter:blur(3px) saturate(1.5);
+  box-shadow:inset 0 .75px 0 rgba(255,255,255,.55),0 0 0 .5px rgba(255,255,255,.25)}
+.glass.sheetfull{background:rgba(var(--gt),calc(.78 + var(--gi)*.2))}
+/* Reduce Transparency and pre-iOS 26: solid fallback, same shape, hairline (FOUNDATIONS 2.3) */
+body.rt .glass{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--gfb);box-shadow:0 0 0 1px var(--line)}
+body.rt .glass::before{display:none}
+body.rt .glass.prom{background:var(--accent);box-shadow:none}
+body.rt .glass.clear,body.hc .glass.clear{background:#2B2722;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+body.hc .glass{box-shadow:inset 0 .75px 0 rgba(255,255,255,var(--hl)),0 0 0 1px var(--ctrl),0 6px 22px var(--shadow)}
+body.hc.rt .glass{box-shadow:0 0 0 1px var(--ctrl)}
+body.hc .glass.prom,body.hc.rt .glass.prom{box-shadow:none}
+/* stage: real words behind glass, so legibility is judged honestly */
+.stage{position:relative;overflow:hidden;border-radius:20px;padding:14px;background:var(--bg);min-height:120px}
+.stage .behind{position:absolute;inset:0;padding:12px 16px;color:var(--text);font:400 20px/1.6 var(--f-serif);opacity:.95;pointer-events:none;z-index:0}
+.stage .behind b{color:var(--accent);font-weight:500}
+.stage>*:not(.behind){position:relative;z-index:1}
+.bg-picture .stage{background:transparent;box-shadow:none}
+.bg-picture .stage .behind{display:none}
+.stage.tall{min-height:220px}
+
+/* A1 Button */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:8px 18px;min-height:44px;cursor:pointer;
+  font:500 var(--lbl)/1.22 var(--f-sans);text-align:center;color:var(--gl);transition:transform var(--snappy) var(--ease),opacity 90ms linear,filter 120ms}
+.btn.sm{min-height:44px;font-size:var(--lblS);padding:6px 14px}
+.btn.md{min-height:48px}
+.btn.lg{min-height:56px;padding:10px 22px}
+.btn.xl{min-height:64px;padding:12px 24px}
+.btn.icon{width:44px;height:44px;min-height:44px;padding:0}
+.btn.full{width:100%}
+.btn.bordered{background:var(--raised);color:var(--text);box-shadow:inset 0 0 0 1px var(--ctrl)}
+.btn.filled{background:var(--accent);color:var(--onAccent)}
+.btn.plain{background:transparent;color:var(--accent)}
+.btn.destructive{background:transparent;color:var(--destr)}
+.btn.destructive.fill{background:var(--destr);color:var(--onDestr)}
+.btn.notready{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--ctrl)}
+.btn.pressed:not(.glass){transform:scale(.97)}
+.btn.glass.pressed{filter:brightness(1.12)}
+.btn.glass.pressed::before{background:radial-gradient(80% 120% at 30% 40%,rgba(255,255,255,calc(var(--hl)*1.1)),rgba(255,255,255,0) 70%)}
+body.rm .btn.pressed:not(.glass){transform:none;opacity:.9}
+.btn:active:not(.glass){transform:scale(.97)}
+body.rm .btn:active:not(.glass){transform:none;opacity:.9}
+.focused{outline:2px solid var(--focus);outline-offset:3px}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.spin{width:1em;height:1em;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin 900ms linear infinite}
+body.rm .spin{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ax5 .btn{white-space:normal;flex-wrap:wrap;overflow-wrap:anywhere}
+.ax5 .btnrow{flex-direction:column;align-items:stretch}
+.ax5 .btnrow .btn{width:100%}
+
+/* N1 Tab bar */
+.tabbar{display:flex;border-radius:999px;padding:5px;gap:2px;margin-top:10px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:999px;
+  font:500 10px/1 var(--f-sys);color:var(--gl)}
+.tab .ic{width:24px;height:24px}
+.tab.on{color:var(--accent);background:rgba(var(--gt),.55);font-weight:700}
+body.rt .tab.on{background:var(--surface)}
+.tabmini{display:inline-flex;width:52px;height:52px;border-radius:999px;align-items:center;justify-content:center;color:var(--accent)}
+.tabmini .ic{width:24px;height:24px}
+.lcv{display:inline-flex;flex-direction:column;align-items:center;gap:8px;padding:16px 22px;border-radius:16px;background:rgba(30,28,26,.92);color:#fff;font:600 28px/1 var(--f-sys)}
+.lcv .ic{width:44px;height:44px}
+
+/* N2 header, N3 toolbar */
+.hdr{display:flex;align-items:center;gap:8px;min-height:52px}
+.hdr .ttl{flex:1;text-align:center;font:600 17px/1.2 var(--f-sys);color:var(--gl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.circ{width:44px;height:44px;min-height:44px;border-radius:999px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.circ .ic{width:22px;height:22px}
+.cluster{display:inline-flex;gap:0;border-radius:999px;padding:0}
+.cluster .seg{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center}
+.toolbar{display:flex;align-items:center;gap:10px;margin-top:12px}
+.toolbar-ax{display:none}
+.ax5 .toolbar{display:none}
+.ax5 .toolbar-ax{display:block;margin-top:12px}
+
+/* N4 Find bar */
+.findbar{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+.field-glass{flex:1;display:flex;align-items:center;gap:8px;min-height:48px;border-radius:999px;padding:6px 14px;font:400 var(--body)/1.3 var(--f-sans);color:var(--gl)}
+.field-glass .ph{color:var(--gl2)}
+.caret{display:inline-block;width:2px;height:1.1em;background:var(--accent);vertical-align:-.15em;animation:blink 1s steps(1) infinite}
+body.rm .caret{animation:none}
+@keyframes blink{50%{opacity:0}}
+.ax5 .findbar{flex-wrap:wrap}
+.ax5 .findbar .field-glass{flex:1 1 100%}
+.ax5 .findbar .cancel{margin-left:auto}
+.result{padding:10px 0;border-bottom:.5px solid var(--line)}
+.match{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:600}
+
+/* N5 Book header band */
+.band{position:relative;border-radius:24px;padding:18px 16px 16px;background:radial-gradient(90% 80% at 30% 0%,var(--lamp),rgba(0,0,0,0) 70%),var(--raised);
+  box-shadow:inset 0 0 0 1px rgba(217,164,126,.4)}
+body.hc .band,body.rt .band{background:var(--raised);box-shadow:inset 0 0 0 1px var(--line)}
+.switcher{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--accent);font:500 var(--dl)/1.2 var(--f-sans);letter-spacing:.6px;text-transform:uppercase}
+.ax5 .band .row.headrow{flex-direction:column;align-items:flex-start}
+
+/* N6 menu, N7 sheet */
+.menu{border-radius:24px;padding:6px;min-width:250px;display:inline-block}
+.mi{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 14px;border-radius:16px;font:400 var(--body)/1.25 var(--f-sys);color:var(--gl)}
+.mi.on{background:rgba(var(--gt),.6)}
+.mi.d{color:var(--destr)}
+.msep{height:.5px;background:var(--line);margin:4px 10px}
+.sheet{border-radius:34px;padding:10px 16px 18px;margin:8px 0 0}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--gl2);opacity:.5;margin:0 auto 10px}
+.sheet h4{margin:4px 0 8px;font:600 var(--head)/1.25 var(--f-sans);color:var(--gl)}
+.sheet .inner{background:var(--raised);border-radius:22px;overflow:hidden}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:0}
+
+/* lists, rows */
+.lsec{background:var(--raised);border-radius:24px;overflow:hidden}
+.lsec-t{font:500 var(--foot)/1.3 var(--f-sans);color:var(--muted);margin:14px 16px 6px}
+.lr{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 16px;border-bottom:.5px solid var(--line);font:400 var(--body)/1.3 var(--f-sans);color:var(--text)}
+.lr:last-child{border-bottom:0}
+.lr .v{color:var(--muted);font-size:var(--sub);text-align:right}
+.lr .chev{color:var(--muted)}
+.lr.pr{background:var(--surface)}
+.lr.d{color:var(--destr)}
+.lr .lead{color:var(--muted)}
+.ax5 .lr{flex-wrap:wrap}
+.ax5 .lr .v{flex:1 1 100%;text-align:left;order:3}
+.check{color:var(--accent);font-weight:700}
+
+/* C1 letter card */
+.card{background:var(--raised);border-radius:16px;padding:16px;box-shadow:0 2px 6px var(--shadow);transition:transform var(--snappy) var(--ease)}
+.sd .card,body.dark .sa .card{box-shadow:inset 0 0 0 1px var(--line)}
+.card.pressed{transform:scale(.98)}
+body.rm .card.pressed{transform:none;opacity:.9}
+.card.new{background:linear-gradient(var(--accentSoft),var(--accentSoft))}
+.card .ex{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 1.6em),#000 calc(100% - 1.6em)),linear-gradient(to right,#000 55%,transparent);
+  -webkit-mask-size:100% calc(100% - 1.6em),100% 1.6em;-webkit-mask-position:top,bottom;-webkit-mask-repeat:no-repeat}
+.ax5 .card .ex{-webkit-line-clamp:2}
+.card .foot{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ax5 .card .foot{flex-direction:column;align-items:flex-start}
+.thumbrow{display:flex;gap:12px;align-items:flex-start}
+.ax5 .thumbrow{flex-direction:column}
+.mini{width:72px;height:72px;border-radius:8px;flex:0 0 auto;background:
+  radial-gradient(circle at 74% 24%,#FFD36E 0 12%,transparent 13%),radial-gradient(ellipse 70% 30% at 20% 100%,#2E7D5B 0 70%,transparent 71%),
+  linear-gradient(170deg,#F6A86B,#E86F7E 50%,#8D70D6)}
+.sd .mini,body.dark .sa .mini{box-shadow:0 0 0 1px var(--line)}
+.ax5 .mini{width:100%;height:88px}
+.mini.ld{background:var(--surface)}
+.marker{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font:500 var(--foot)/1.2 var(--f-sans)}
+.qrow{display:flex;align-items:center;gap:10px;min-height:44px;color:var(--muted);font:400 var(--sub)/1.3 var(--f-sans);padding:4px 4px}
+
+/* inputs */
+.flabel{font:500 var(--sub)/1.3 var(--f-sans);color:var(--text);margin-bottom:6px}
+.field{min-height:48px;border-radius:12px;padding:10px 14px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--ctrl);font:400 var(--body)/1.3 var(--f-sans);color:var(--text)}
+.field.foc{outline:2px solid var(--focus);outline-offset:2px}
+.help{font:400 var(--foot)/1.35 var(--f-sans);color:var(--muted);margin-top:6px}
+.err{display:flex;gap:6px;align-items:flex-start;font:400 var(--foot)/1.35 var(--f-sans);color:var(--caution);margin-top:6px}
+.segc{display:flex;padding:3px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.segc .o{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;font:500 var(--lblS)/1.2 var(--f-sans);color:var(--text);text-align:center;padding:4px 8px}
+.segc .o.on{background:var(--raised);box-shadow:inset 0 0 0 1.5px var(--accent),0 1px 3px var(--shadow);font-weight:600}
+.ax5 .segc{flex-direction:column;border-radius:24px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:4px 0;padding:4px 14px;border-radius:999px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--ctrl);font:500 var(--lblS)/1.2 var(--f-sans);color:var(--text)}
+.chip.on{background:var(--accentSoft);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.sw{width:51px;height:31px;border-radius:999px;background:transparent;box-shadow:inset 0 0 0 1.5px var(--ctrl);position:relative;flex:0 0 auto}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;background:var(--ctrl)}
+.sw.on{background:var(--accent);box-shadow:none}
+.sw.on::after{left:23px;background:#FFFFFF}
+.box{width:24px;height:24px;border-radius:8px;box-shadow:inset 0 0 0 1px var(--ctrl);flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;margin-top:2px}
+.box.on{background:var(--accent);box-shadow:none;color:var(--onAccent)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font:400 var(--sub)/1 var(--f-sans);color:var(--text)}
+.cal span{min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:999px}
+.cal .on{background:var(--accent);color:var(--onAccent);font-weight:600}
+.cal .h{color:var(--muted);font-size:12px;min-height:22px}
+.ax5 .cal{grid-template-columns:repeat(4,1fr)}
+
+/* feedback */
+.toast{display:flex;align-items:center;gap:12px;border-radius:999px;padding:6px 8px 6px 20px;min-height:52px;font:400 var(--body)/1.3 var(--f-sans);color:var(--gl)}
+.toast .btn{color:var(--gl);font-weight:600}
+.ax5 .toast{flex-direction:column;align-items:stretch;border-radius:32px;padding:14px 18px}
+.ax5 .toast .btn{align-self:flex-end}
+.sysline{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border-radius:16px;padding:12px 14px;font:400 var(--foot)/1.4 var(--f-sans);color:var(--text)}
+.sysline .ic{color:var(--muted);margin-top:2px}
+.sysline .act{margin-left:auto}
+.ax5 .sysline{flex-wrap:wrap}
+.ax5 .sysline .act{margin-left:0}
+.track{height:4px;border-radius:999px;background:var(--line);overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);border-radius:999px;transform-origin:left;transition:transform 200ms linear}
+.ring{width:22px;height:22px}
+.store{border:1.5px dashed var(--ctrl);border-radius:16px;padding:18px;text-align:center;color:var(--muted);font:400 var(--foot)/1.4 var(--f-sans)}
+.asheet{border-radius:28px;overflow:hidden}
+.asheet .t{padding:14px 18px;text-align:center;font:400 13px/1.35 var(--f-sys);color:var(--gl2)}
+.asheet .t b{display:block;color:var(--gl);font-size:15px;margin-bottom:2px}
+.asheet .a{min-height:56px;display:flex;align-items:center;justify-content:center;border-top:.5px solid var(--line);font:400 19px/1.2 var(--f-sys);color:var(--accent)}
+.asheet .a.d{color:var(--destr)}
+.asheet .a.c{font-weight:600}
+.lock{border-radius:22px;padding:18px 12px;min-height:300px}
+.clock{text-align:center;color:#fff;font:600 64px/1 var(--f-sys);text-shadow:0 1px 6px rgba(0,0,0,.25);margin:6px 0 16px}
+.notif{display:flex;gap:10px;border-radius:24px;padding:12px 14px;align-items:flex-start;font:400 15px/1.3 var(--f-sys)}
+.appic{width:38px;height:38px;border-radius:10px;flex:0 0 auto;background:linear-gradient(#9A613C,#7F4F30);display:flex;align-items:center;justify-content:center;color:#FBF8F3}
+.cover{min-height:260px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:20px}
+.glyphc{width:72px;height:72px;border-radius:50%;background:var(--accentSoft);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.glyphc .ic{width:40px;height:40px;stroke-width:1.3}
+
+/* materials */
+.swatch{height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center;font:600 14px/1.3 var(--f-sys);text-align:center;padding:8px}
+
+/* motion demos */
+.demo{display:flex;gap:16px;flex-wrap:wrap}
+.dcell{flex:0 0 360px;border-radius:20px;padding:12px;box-shadow:0 0 0 .5px var(--line);background:var(--bg)}
+.dcell h4{margin:0 0 4px;font:600 14px var(--f-sys)}
+.dcell p{margin:0 0 8px;font-size:12.5px;color:var(--muted)}
+.play{font:600 13px var(--f-sys);border:1px solid var(--ctrl);background:var(--raised);color:var(--text);border-radius:999px;padding:7px 14px;min-height:34px;cursor:pointer}
+.dstage{position:relative;height:190px;overflow:hidden;border-radius:16px;margin-top:8px}
+.anim-toast{position:absolute;left:12px;right:12px;bottom:14px}
+.anim-sheet{position:absolute;left:8px;right:8px;bottom:8px;height:120px}
+.mm{transition:none}
+.morph{display:flex;gap:12px;justify-content:center;align-items:center;position:absolute;left:0;right:0;bottom:24px}
+.footer{color:var(--muted);font-size:12.5px;margin-top:40px;max-width:900px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion: reduce){ .spin,.caret{animation:none} }
+</style>
+</head>
+<body class="sa">
+<div class="top" role="toolbar" aria-label="Display settings">
+  <h1>Design system v2: components</h1>
+  <button class="tg" data-cls="dark" aria-pressed="false">Dark</button>
+  <button class="tg" data-cls="rt" aria-pressed="false">Reduce Transparency</button>
+  <button class="tg" data-cls="hc" aria-pressed="false">Increase Contrast</button>
+  <button class="tg" data-cls="rm" aria-pressed="false">Reduce Motion</button>
+  <button class="tg" data-cls="ax5" aria-pressed="false">AX5 text</button>
+  <label class="rng">Glass intensity (iOS 27 slider, simulated)
+    <input type="range" id="gi" min="0" max="100" value="55" aria-label="Glass intensity, clear to opaque"></label>
+</div>
+<main>
+<p class="intro"><b>What this is.</b> Every component in <code>COMPONENTS.md</code> (ids N1 to S2) in every state, each drawn three times: on light paper, on dark paper, and on a drawn picture (shapes only). The third tile follows the Dark toggle. Glass is simulated with CSS <code>backdrop-filter</code> and a drawn highlight: use it to judge layout, states, contrast and fallbacks, not Apple's real material. Words are placeholders from the house voice; the area <code>WORDS.md</code> files own the strings. AX5 sizes follow <code>FOUNDATIONS.md</code> 4.3 at 375 pt. The fictional family is Asha. Toggles can also be set from the address: <code>?dark&amp;rt&amp;hc&amp;rm&amp;ax5</code>.</p>
+<nav class="idx" id="idx" aria-label="Components"></nav>
+<div id="out"></div>
+
+<h2 class="grp" id="motion">Motion primitives (MOTION.md)</h2>
+<p class="note">Each plays the named primitive with its token timing. With Reduce Motion on, each plays its MOTION section 8 substitute. Glass never fades by opacity: it appears by its style (simulated here by blur and tint).</p>
+<div class="demo" id="demos"></div>
+
+<p class="footer">Sources: BRIEF.md section 1 (HIG Materials, Adopting Liquid Glass, Expo SDK 57). Token values: packages/design-tokens/src/tokens.ts and FOUNDATIONS.md sections 2, 3, 4.3, 6. Motion values: MOTION.md section 13a. This page writes nothing, loads nothing, and runs offline.</p>
+</main>
+
+<script>
+(function(){
+"use strict";
+/* ---------- icons (outline, SF Symbols stand-ins drawn here; names per FOUNDATIONS 8.2) ---------- */
+var P={
+ house:'<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h4.5v-6h3v6H18V9.5"/>',
+ moon:'<path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"/><path d="M17 3v3M15.5 4.5h3"/>',
+ book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V5.5M20 18v3H6.5"/>',
+ person:'<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4 4-6 7.5-6s6.5 2 7.5 6"/>',
+ mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+ pencil:'<path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19z"/><path d="M14 7l3.5 3.5"/>',
+ photo:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 8"/>',
+ photoplus:'<rect x="3" y="6" width="14" height="13" rx="2.5"/><circle cx="8" cy="10.5" r="1.5"/><path d="M17 15l-4-4-8 8M20 3v6M17 6h6"/>',
+ search:'<circle cx="10.5" cy="10.5" r="6"/><path d="M20 20l-5-5"/>',
+ more:'<circle cx="6" cy="12" r="1.6" class="f"/><circle cx="12" cy="12" r="1.6" class="f"/><circle cx="18" cy="12" r="1.6" class="f"/>',
+ chevL:'<path d="M15 5l-7 7 7 7"/>', chevR:'<path d="M9 5l7 7-7 7"/>', chevD:'<path d="M6 9l6 6 6-6"/>',
+ trash:'<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ pause:'<path d="M9 5v14M15 5v14"/>',
+ stop:'<rect x="6" y="6" width="12" height="12" rx="2.5" class="f"/>',
+ wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.2" r="1" class="f"/><path d="M3 3l18 18"/>',
+ cloud:'<path d="M7 18.5h10a4.2 4.2 0 0 0 .4-8.4A6 6 0 0 0 6 11.6 3.5 3.5 0 0 0 7 18.5z"/>',
+ pausec:'<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>',
+ drive:'<rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 12h.01M17 12h-5"/>',
+ arrowdown:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M8 12.5l4 4 4-4"/>',
+ undo:'<path d="M9 7L4.5 11.5 9 16"/><path d="M4.5 11.5H15a5 5 0 0 1 0 10h-3"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+ wave:'<path d="M4 12h1.5M8 8.5v7M11.5 6v12M15 9v6M18.5 11v2"/>',
+ eyes:'<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 4l16 16"/>',
+ share:'<path d="M12 3.5v11M7.5 8L12 3.5 16.5 8M6 12v8h12v-8"/>',
+ aa:'<path d="M3 18l4.5-11L12 18M4.6 14h5.8M14 18l3-7.5 3 7.5M15 15.8h4"/>',
+ alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.5" r="1" class="f"/>'
+};
+function ic(n,cls){return '<svg class="ic'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';}
+function st(n){return '<div class="st">'+n+'</div>';}
+var LETTER='Today <b>Asha</b> found the spoon drawer and played a very serious song on the pots. We laughed until the soup went cold, and then we laughed again.';
+function stage(inner,cls){return '<div class="stage'+(cls?' '+cls:'')+'"><div class="behind">'+LETTER+' '+LETTER+'</div>'+inner+'</div>';}
+var QUOTE='<svg viewBox="0 0 64 48" width="52" height="40" aria-hidden="true" style="fill:var(--accent)"><path d="M4 30c0-12 7-22 18-26l3 5c-7 3-11 8-11 14 1-.5 2.5-.8 4-.8 5.5 0 9 3.7 9 8.6S23 40 17 40C9.5 40 4 36 4 30z"/><path d="M34 30c0-12 7-22 18-26l3 5c-7 3-11 8-11 14 1-.5 2.5-.8 4-.8 5.5 0 9 3.7 9 8.6S53 40 47 40c-7.5 0-13-4-13-10z"/></svg>';
+
+function tabbar(sel,focusIdx){
+  var t=[['house','Home'],['book','Book'],['person','Me']];
+  return '<div class="tabbar glass" role="tablist" aria-label="Tabs">'+t.map(function(x,i){
+    return '<div class="tab'+(i===sel?' on':'')+(i===focusIdx?' focused':'')+'" role="tab" aria-selected="'+(i===sel)+'">'+ic(x[0])+'<span>'+x[1]+'</span></div>';}).join('')+'</div>';
+}
+function card(opts){
+  opts=opts||{};
+  var words='<div class="ex t-lb">'+(opts.words||'Today Asha found the spoon drawer and played a very serious song on the pots. We laughed until the soup went cold, and then again.')+'</div>';
+  var body='<div class="t-dl">'+(opts.date||'Tuesday, 4 months old')+'</div>'+words+
+    '<div class="foot"><span class="t-sig" style="color:var(--text)">From Mama</span><span class="sp"></span><span class="marker">'+ic('wave')+'Voice 1:06</span></div>';
+  if(opts.thumb) body='<div class="thumbrow"><div class="mini"></div><div style="flex:1;min-width:0">'+body+'</div></div>';
+  return '<div class="card'+(opts.cls?' '+opts.cls:'')+'" role="button" aria-label="Letter from Mama, Tuesday, 4 months old">'+body+'</div>';
+}
+
+/* ---------- the catalogue ---------- */
+var G=[];
+function grp(name){G.push({grp:name});}
+function comp(id,name,layer,note,html){G.push({id:id,name:name,layer:layer,note:note,html:html});}
+
+grp('Navigation and chrome');
+comp('N1','Tab bar (native tabs)','glass regular (system)','Three rooms. Selected = tint, platter and weight. Labels never scale; Large Content Viewer at AX sizes. Minimises on scroll on the Book only.',function(){
+  return stage(st('default, Home selected')+tabbar(0)+st('Book selected, focused (Switch Control)')+tabbar(1,1),'tall')+
+    st('minimized on scroll (Book)')+stage('<div style="padding-top:40px"><span class="tabmini glass">'+ic('book')+'</span></div>')+
+    st('AX5: labels unchanged, Large Content Viewer on long press')+stage('<div style="text-align:center;padding:6px 0"><span class="lcv">'+ic('book')+'Book</span></div>'+tabbar(1),'tall');
+});
+comp('N2','Navigation header','glass regular (system items)','Push: back chevron. Letter page: glass Back and Aa, no painted bar. Modal and cover: the word Close, top right only.',function(){
+  return st('push')+stage('<div class="hdr"><span class="btn circ glass">'+ic('chevL')+'</span><span class="ttl">Storage</span><span style="width:44px"></span></div>')+
+    st('letter page')+stage('<div class="hdr"><span class="btn circ glass" aria-label="Back">'+ic('chevL')+'</span><span class="sp"></span><span class="btn circ glass" aria-label="Reading size">'+ic('aa')+'</span></div>')+
+    st('modal and cover: Close top right; pressed')+stage('<div class="hdr"><span class="sp"></span><span class="btn sm glass pressed">Close</span></div>')+
+    st('AX5: bar title stays; the screen repeats it as a heading')+stage('<div class="hdr"><span class="btn circ glass">'+ic('chevL')+'</span><span class="ttl">Storage</span><span style="width:44px"></span></div><div class="t-t1" style="margin-top:8px">Storage</div>');
+});
+comp('N3','Toolbar (bottom)','glass regular (system); clear + dim over a picture','One tinted item per screen. From AX3, sentence labels leave the bar for a pinned content button.',function(){
+  var split='<div class="toolbar"><span class="btn md glass">Let it go</span><span class="sp"></span><span class="btn md glass prom">Keep</span></div>';
+  return st('split')+stage('<div style="height:40px"></div>'+split+'<div class="toolbar-ax"><span class="btn lg filled full">Keep</span><div style="height:8px"></div><span class="btn sm plain full">Let it go</span></div>')+
+    st('single, busy (Reduce Motion: words only)')+stage('<div style="height:40px"></div><div class="toolbar"><span class="sp"></span><span class="btn md glass prom" aria-busy="true"><span class="spin"></span>Keeping</span><span class="sp"></span></div>')+
+    st('over a picture: symbol-only clear discs')+'<div class="stage" style="background:transparent"><div style="height:40px"></div><div class="toolbar"><span class="btn circ glass clear" aria-label="Change photo">'+ic('photoplus')+'</span><span class="sp"></span><span class="btn circ glass clear" aria-label="Take the photo off">'+ic('trash')+'</span></div></div>';
+});
+comp('N4','Find bar (TextField search preset)','glass regular (one container)','Replaces the Book header controls while open. Autocorrect, spell check, suggestions off. Results are content.',function(){
+  function bar(txt,foc){return '<div class="findbar"><div class="field-glass glass'+(foc?' focused':'')+'">'+ic('search')+(txt?'<span>'+txt+'</span><span class="caret"></span><span class="sp"></span><span class="muted">'+ic('x')+'</span>':'<span class="caret"></span><span class="ph">Find a letter</span>')+'</div><span class="btn sm glass cancel">Cancel</span></div>';}
+  return st('idle, focused')+stage(bar('',true))+
+    st('results (content)')+stage(bar('spoon'))+'<div class="paper" style="margin-top:8px"><div class="result"><div class="t-dl">Tuesday, 4 months old</div><div class="t-lb">Asha found the <span class="match">spoon</span> drawer and played a very serious song.</div></div></div>'+
+    st('no match: one line, no count')+stage(bar('kite'))+'<div class="paper t-foot" style="margin-top:8px">No letters with that word.</div>';
+});
+comp('N5','Book header','band = content; controls = glass','The lit band never moves. Find, Go to a month and More are glass header items in one cluster. Find is absent on a book with nothing to find.',function(){
+  function band(two,empty){return '<div class="band">'+(two?'<div class="switcher">For Asha '+ic('chevD')+'</div>':'')+
+    '<div class="row headrow"><div style="flex:1"><div class="t-disp">Asha</div><div class="t-call muted">'+(empty?'Before You':'18 months')+'</div></div></div>'+
+    (empty?'':'<div style="margin-top:12px"><span class="btn md bordered full">'+ic('book')+'Read together</span></div>')+'</div>';}
+  function ctr(find){return '<div class="hdr"><span class="sp"></span><span class="cluster glass">'+(find?'<span class="seg" aria-label="Find">'+ic('search')+'</span>':'')+'<span class="seg" aria-label="Go to a month">'+ic('cal')+'</span><span class="seg" aria-label="More for this book">'+ic('more')+'</span></span></div>';}
+  return st('one book')+stage(ctr(true))+band(false)+st('two books (switcher)')+band(true)+st('empty book: Find and Go to a month absent')+
+    stage('<div class="hdr"><span class="sp"></span><span class="cluster glass"><span class="seg">'+ic('more')+'</span></span></div>')+band(false,true);
+});
+comp('N6','Menu and popover','glass regular (system)','Originates from its control. Destructive items last, with the word and the icon; they open a confirmation.',function(){
+  return st('More for this book; Quiet is on')+stage('<div class="menu glass"><div class="mi">'+ic('cal')+'Go to a month</div><div class="mi on">'+ic('moon')+'Quiet this book<span class="sp"></span>'+ic('check')+'</div><div class="mi">'+ic('eyes')+'Hide this book</div></div>','tall')+
+    st('letter actions, pressed row')+stage('<div class="menu glass"><div class="mi on">'+ic('share')+'Share</div><div class="msep"></div><div class="mi d">'+ic('trash')+'Delete letter</div></div>');
+});
+comp('N7','Sheet (system)','glass regular; content inside','Inset at partial height so content peeks through; more opaque at full height. Buttons inside are never glass.',function(){
+  var rows='<div class="inner"><div class="lr">Asha<span class="sp"></span><span class="v">Month 18</span><span class="check">'+ic('check')+'</span></div><div class="lr">Second book<span class="sp"></span><span class="v">Before You</span></div></div>';
+  return st('fit, inset (Whose book)')+'<div class="stage tall" style="padding:0"><div class="behind">'+LETTER+' '+LETTER+'</div><div class="scrim"></div><div class="sheet glass" style="position:relative;margin:70px 8px 8px"><div class="grab"></div><h4>Whose book?</h4>'+rows+'</div></div>'+
+    st('full height: more opaque')+'<div class="stage" style="padding:0"><div class="behind">'+LETTER+'</div><div class="sheet glass sheetfull" style="margin:8px 0 0;border-radius:34px 34px 0 0"><div class="grab"></div><h4>Go to a month</h4><div class="inner"><div class="lr">Month 18<span class="sp"></span><span class="chev">'+ic('chevR')+'</span></div><div class="lr">Month 17<span class="sp"></span><span class="chev">'+ic('chevR')+'</span></div></div></div></div>';
+});
+
+grp('Actions');
+comp('A1','Button','inherits: glass in the glass layer, solid twin in content','Styles glass, prominent, plain, destructive. Sizes sm 44, md 48, lg 56, xl 64 (minimums). Absent when it cannot act; not ready only while the person finishes something here.',function(){
+  var g=st('glass layer: glass and prominent, sm md lg xl')+stage('<div class="col">'+
+    '<div class="row wrap btnrow"><span class="btn sm glass">Close</span><span class="btn sm glass prom">Done</span></div>'+
+    '<div class="row wrap btnrow"><span class="btn md glass">Cancel</span><span class="btn md glass prom">Keep</span></div>'+
+    '<div class="row wrap btnrow"><span class="btn lg glass">Let it go</span><span class="btn lg glass prom">Keep</span></div>'+
+    '<div class="row wrap btnrow"><span class="btn xl glass">'+ic('pencil')+'Type</span><span class="btn xl glass prom">'+ic('mic')+'Speak</span></div></div>','tall');
+  var s=st('states on glass: pressed, focused, busy')+stage('<div class="row wrap btnrow"><span class="btn md glass pressed">Pressed</span><span class="btn md glass focused">Focused</span><span class="btn md glass prom" aria-busy="true"><span class="spin"></span>Keeping</span></div>');
+  var c=st('content layer: bordered and filled twins, plain, destructive')+'<div class="paper col">'+
+    '<div class="row wrap btnrow"><span class="btn md bordered">Read together</span><span class="btn md filled">Save a copy</span></div>'+
+    '<div class="row wrap btnrow"><span class="btn sm plain">Not much today</span><span class="btn sm destructive">'+ic('trash')+'Delete letter</span></div>'+
+    st('pressed, focused, not ready, destructive fill after the typed word')+
+    '<div class="row wrap btnrow"><span class="btn md filled pressed">Pressed</span><span class="btn md bordered focused">Focused</span></div>'+
+    '<div class="row wrap btnrow"><span class="btn md notready" aria-disabled="true">Save</span><span class="btn md destructive fill">Delete account</span></div></div>';
+  return g+s+c;
+});
+comp('A2','Capture cluster (Home)','glass: Speak and Type prominent twins, Start from a photo regular, one container; Not much today content','The only start of a letter. Bottom third, above the tab bar. From AX3 it stops floating and sits inline as solid twins.',function(){
+  function cl(photo,denied){return '<div class="ax-solid"><div class="glass" style="background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0"></div>'+
+    '<div class="row btnrow" style="margin-top:6px"><span class="btn xl glass prom" style="flex:1">'+ic('mic')+(denied?'Allow microphone':'Speak')+'</span><span class="btn xl glass prom" style="flex:1">'+ic('pencil')+'Type</span></div>'+
+    (photo?'<div style="text-align:center;margin-top:10px"><span class="btn sm glass">'+ic('photo')+'Start from a photo</span></div>':'')+'</div>'+
+    '<div style="text-align:center;margin-top:4px"><span class="btn sm plain">Not much today</span></div>';}
+  var prompt='<div class="paper" style="background:transparent;padding:4px 0 10px"><div class="t-dl">Tuesday evening</div><div class="t-prompt">What made Asha laugh today?</div></div>';
+  return st('rest')+'<div class="stage tall" style="padding:12px">'+prompt+cl(true)+tabbar(0)+'</div>'+
+    st('photo start absent (switch off, pause on, or no picker)')+'<div class="stage" style="padding:12px">'+cl(false)+tabbar(0)+'</div>'+
+    st('microphone off')+'<div class="stage" style="padding:12px">'+cl(true,true)+'</div>';
+});
+comp('A3','Record control (Listen)','glass regular while recording; aura is content','Every state change is instant (no morph, animate false). Time in the tabular timer style. No haptic except record start and stop.',function(){
+  var aura='radial-gradient(circle at 50% 46%, color-mix(in srgb,var(--rec) 30%,transparent) 0 22%, transparent 48%)';
+  function s(inner){return '<div class="stage" style="background:'+aura+',var(--bg);text-align:center;padding:26px 12px">'+inner+'</div>';}
+  return st('ready')+s('<span class="btn glass circ" style="width:88px;height:88px" aria-label="Speak, starts recording"><svg class="ic" viewBox="0 0 24 24" style="width:34px;height:34px" aria-hidden="true">'+P.mic+'</svg></span><div class="t-lblS" style="margin-top:8px">Speak</div>')+
+    st('recording')+s('<div class="row stack-ax" style="justify-content:center"><span class="btn xl glass" aria-label="Stop recording, 42 seconds"><span style="width:14px;height:14px;border-radius:50%;background:var(--rec);display:inline-block"></span>Stop <span class="t-timer">0:42</span></span><span class="btn glass circ" style="width:64px;height:64px" aria-label="Pause">'+ic('pause')+'</span></div>')+
+    st('paused')+s('<div class="row stack-ax" style="justify-content:center"><span class="btn xl glass"><span style="width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--rec);display:inline-block"></span>Resume <span class="t-timer">0:42</span></span><span class="btn xl glass">'+ic('stop')+'Done</span></div>')+
+    st('held: kept on this phone, Stop absent')+s('<span class="btn xl glass">'+ic('lock')+'Kept on this phone</span>');
+});
+comp('A4','Photo start','glass regular inside A2; content from AX3','Never larger than Speak or Type. Absent, never greyed, when photos are off.',function(){
+  return st('default, pressed, focused')+stage('<div class="row wrap"><span class="btn sm glass">'+ic('photo')+'Start from a photo</span><span class="btn sm glass pressed">'+ic('photo')+'Pressed</span><span class="btn sm glass focused">'+ic('photo')+'Focused</span></div>');
+});
+
+grp('Content (never glass)');
+comp('C1','Letter card','content','One element, every word in its label. Excerpt ends on a whole word in a fade, never an ellipsis. Two lines and the picture above from AX sizes.',function(){
+  return st('letter')+card()+st('with picture (Smart Invert ignored)')+card({thumb:true})+
+    st('pressed, focused')+'<div class="col">'+card({cls:'pressed'})+card({cls:'focused'})+'</div>'+
+    st('new after Keep or Undo (m.mark)')+card({cls:'new'})+
+    st('words on their way (app note, not the letter face)')+'<div class="card"><div class="t-dl">Today</div><div class="marker" style="margin-top:6px">'+ic('mic')+'Words are on their way. The recording is kept just as it is.</div></div>'+
+    st('sealed: hidden row')+'<div class="qrow">'+ic('lock')+'<span>12 March. Hidden until 12 March 2027.</span></div>'+
+    st('quiet day row: unsigned, never counted')+'<div class="qrow">'+ic('moon')+'<span>Wednesday 5 March. A quiet day.</span></div>';
+});
+comp('C2','Letter page list (This letter)','content (grouped list)','The letter, then one row per fact. Value under title from AX1. Rows for off features are absent. Delete is last.',function(){
+  function r(t,v,ch,cls,lead){return '<div class="lr'+(cls?' '+cls:'')+'">'+(lead?'<span class="lead">'+ic(lead)+'</span>':'')+'<span>'+t+'</span><span class="sp"></span>'+(v?'<span class="v">'+v+'</span>':'')+(ch?'<span class="chev">'+ic('chevR')+'</span>':'')+'</div>';}
+  return '<div class="paper"><div class="t-dl">Tuesday, 4 months old</div><div class="t-lb" style="margin:6px 0">'+LETTER.replace(/<\/?b>/g,'')+'</div><div class="t-sig" style="text-align:right">From Mama</div></div>'+
+    '<div class="lsec-t">This letter</div><div class="lsec">'+r('The day it is about','Tuesday 4 March',true,'','cal')+r('From','Mama',false,'','person')+r('Who can read it','Both of you',true,'pr','lock')+
+    '<div class="lr"><span class="lead">'+ic('photo')+'</span><span>Picture</span><span class="sp"></span><span class="mini" style="width:40px;height:40px"></span><span class="btn sm plain">Change</span></div>'+
+    '<div class="lr"><span class="lead">'+ic('check')+'</span><span>A first</span><span class="sp"></span><span class="sw"></span></div>'+
+    r('Where the recording is','On this phone',false,'','mic')+r('Earlier versions','',true,'focused','cal')+r('Share','',false,'','share')+r('Delete letter','',false,'d','trash')+'</div>';
+});
+comp('C3','PhotoFrame (thumbnail)','content','List copy about 512 px, never cropped in print. 1 pt hairline in dark. Loading keeps its final size.',function(){
+  return st('present, loading, missing')+'<div class="paper"><div class="row"><span class="mini"></span><span class="mini ld" aria-busy="true"></span></div><div class="t-foot muted" style="margin-top:8px">The picture is not on this phone.</div></div>';
+});
+comp('C4','Stored-copy viewer (PhotoFrame viewer)','glass clear + 35 percent dim per control','Symbol-only clear discs; the word Close sits on a solid media capsule. Increase Contrast or Reduce Transparency: all solid.',function(){
+  return '<div class="lock bg-picture" style="position:relative;min-height:300px;border-radius:20px"><div class="row"><span class="sp"></span><span class="btn sm" style="background:#2B2722;color:#fff">Close</span></div>'+
+    '<div style="position:absolute;left:12px;right:12px;bottom:14px" class="row"><span class="btn circ glass clear" aria-label="Change photo">'+ic('photoplus')+'</span><span class="sp"></span><span class="btn circ glass clear" aria-label="Take the photo off">'+ic('trash')+'</span></div></div>';
+});
+comp('C5','Quote pair','content (decorative)','One per screen, accent on paper. Hidden from VoiceOver.',function(){return '<div class="paper" style="text-align:center">'+QUOTE+'</div>';});
+comp('C6','Dateline','content','The app\'s small voice. Tappable on Review with a visible affordance; wraps, never truncates.',function(){
+  return '<div class="paper col">'+st('static')+'<div class="t-dl">Tuesday, 4 months old</div>'+
+    st('tappable (Review), pressed, focused')+'<div class="row wrap"><span class="t-dl" style="text-decoration:underline;text-decoration-color:var(--ctrl);text-underline-offset:4px;color:var(--text);min-height:44px;display:inline-flex;align-items:center;gap:4px">Tuesday, 4 months old '+ic('chevD')+'</span></div>'+
+    '<div class="row wrap"><span class="t-dl focused" style="background:var(--surface);padding:6px;border-radius:8px;color:var(--text)">Tuesday, 4 months old '+ic('chevD')+'</span></div>'+
+    st('two dates')+'<div><div class="t-dl">Tuesday, 4 months old</div><div class="t-foot muted">Kept on Friday 7 March</div></div></div>';
+});
+comp('C7','Empty state','content','Still drawing (breath pending a ruling), heading, one sentence. Left aligned from AX3.',function(){
+  return '<div class="paper" style="text-align:center;padding:24px 16px">'+QUOTE+'<div class="t-t2" style="margin-top:10px">Asha\'s book is ready</div><div class="t-body muted">Letters you keep on Home will be here, month by month.</div></div>';
+});
+comp('C8','State screen','content','Picture, heading, one sentence, the way forward pinned in the bottom third. Never red, never a spinner, never a count.',function(){
+  return '<div class="paper" style="padding:22px 16px"><div style="display:flex;justify-content:center"><span class="glyphc">'+ic('wifi')+'</span></div>'+
+    '<div class="t-t2" style="text-align:center;margin-top:12px">You are offline</div><div class="t-body muted" style="text-align:center">Everything you keep stays on this phone.</div>'+
+    '<div class="t-foot muted" style="text-align:center;margin-top:6px">Note: it goes to your other phone when you are back.</div>'+
+    '<div style="margin-top:22px"><span class="btn lg filled full">Try again</span><div style="height:6px"></div><span class="btn sm plain full">Keep writing</span></div></div>';
+});
+comp('C9','Home slip host','content','One slip at a time, fixed order: waiting cards, the seal-opened line, Save a copy in the birthday week, one past letter.',function(){
+  return st('slip 3: Save a copy')+'<div class="card"><div class="t-dl">Birthday week</div><div class="t-body" style="margin:6px 0 10px">Save a copy of Asha\'s first year.</div><span class="btn md bordered">Save a copy</span></div>'+
+    st('slip 4: one past letter, with its quiet dismiss')+card({date:'A year ago today'})+'<div style="text-align:right"><span class="btn sm plain">Not now</span></div>';
+});
+
+grp('Inputs');
+comp('I1','Text field','content','Visible label, 3:1 edge, focus ring outside, error with icon and words. Writing tools off on letter fields.',function(){
+  function f(v,cls,extra){return '<div class="flabel">Who is speaking?</div><div class="field'+(cls?' '+cls:'')+'">'+(v||'<span class="muted">A name</span>')+'</div>'+(extra||'');}
+  return '<div class="paper">'+st('default')+f('')+st('focused')+f('Gra<span class="caret"></span>','foc')+st('filled, with helper')+f('Grandma','', '<div class="help">This name signs the letter.</div>')+
+    st('error')+f('','', '<div class="err">'+ic('alert')+'<span>Type a name, or choose one below.</span></div>')+'</div>';
+});
+comp('I2','Letter writing surface (TextField letter)','content','Paper, no box, the letter face at Reading Size, uncapped. Writing tools off.',function(){
+  return '<div class="paper">'+st('empty')+'<div class="t-dl">Tuesday, 4 months old</div><div class="t-lb muted"><span class="caret"></span>What happened today?</div>'+
+    st('typing, saved on this phone')+'<div class="t-lb">Asha clapped at the rain for the first time<span class="caret"></span></div><div class="t-foot muted" style="margin-top:6px">Saved on this phone</div></div>';
+});
+comp('I3','Date sheet','glass sheet; content inside','A day or a month. Save is not ready until the pick differs. From AX5 the month list scrolls.',function(){
+  var days='';for(var i=1;i<=28;i++){days+='<span'+(i===4?' class="on"':'')+'>'+i+'</span>';}
+  return '<div class="stage tall" style="padding:0"><div class="behind">'+LETTER+'</div><div class="sheet glass" style="margin:30px 8px 8px"><div class="grab"></div><h4>When was this?</h4>'+
+    '<div class="segc" role="radiogroup" aria-label="Day or month"><span class="o on" role="radio" aria-checked="true">'+ic('check')+'A day</span><span class="o" role="radio" aria-checked="false">A month</span></div>'+
+    '<div class="inner" style="padding:10px;margin-top:10px"><div class="cal"><span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span><span class="h">S</span>'+days+'</div></div>'+
+    '<div class="row btnrow" style="margin-top:12px"><span class="btn lg notready" style="flex:1" aria-disabled="true">Save</span><span class="btn lg filled" style="flex:1">Save</span></div></div></div>';
+});
+comp('I4','Choice group (segmented, chips, list)','content','Radio semantics. Selected = fill, edge, check and weight. Segmented becomes a list from AX1.',function(){
+  return '<div class="paper">'+st('segmented lens')+'<div class="segc" role="radiogroup" aria-label="Lens"><span class="o on" role="radio" aria-checked="true">'+ic('check')+'Months</span><span class="o" role="radio" aria-checked="false">Photos</span><span class="o focused" role="radio" aria-checked="false">Firsts</span></div>'+
+    st('chips (suggestions)')+'<div class="row wrap" style="gap:8px"><span class="chip on">'+ic('check')+'Mama</span><span class="chip">Papa</span><span class="chip">Grandma</span></div>'+
+    st('list')+'<div class="lsec"><div class="lr">Standard<span class="sp"></span><span class="check">'+ic('check')+'</span></div><div class="lr">Large</div><div class="lr">Large print</div></div></div>';
+});
+comp('I5','Toggle row','content row; the thumb is system glass while dragged','Whole row is the target. Label, switch, state read once.',function(){
+  return '<div class="paper"><div class="lsec"><div class="lr">Mark as a first<span class="sp"></span><span class="sw"></span></div><div class="lr">Past letters on Home<span class="sp"></span><span class="sw on"></span></div><div class="lr focused">Reminders<span class="sp"></span><span class="sw on"></span></div></div></div>';
+});
+comp('I6','Child switcher','content row; opens the glass Whose book sheet (N7)','Shown only with two books. Above the title or dateline, never between the prompt and the capture cluster.',function(){
+  return '<div class="paper">'+st('default, pressed, focused')+'<div class="row wrap"><span class="switcher">For Asha '+ic('chevD')+'</span><span class="switcher" style="background:var(--surface);border-radius:8px;padding:0 6px">For Asha '+ic('chevD')+'</span><span class="switcher focused">For Asha '+ic('chevD')+'</span></div></div>';
+});
+comp('I7','Agreement row','content','Unticked by default; links sit below, never inside the label.',function(){
+  function a(on,cls){return '<div class="row'+(cls?' '+cls:'')+'" style="align-items:flex-start;min-height:44px;padding:6px 0"><span class="box'+(on?' on':'')+'">'+(on?ic('check'):'')+'</span><span class="t-body">I agree to the Terms and the Privacy notice.</span></div>';}
+  return '<div class="paper">'+st('unticked, ticked, invalid (focus moves here)')+a(false)+a(true)+a(false,'focused')+'<div class="err">'+ic('alert')+'<span>Tick the box to go on.</span></div></div>';
+});
+
+grp('Feedback');
+comp('F1','Undo toast (timed T4, or untimed)','glass regular','Timed: open for its seconds, or until VoiceOver has read it plus those seconds, whichever is later; with Switch Control, until the parent moves on. Untimed: the Book\'s Letter deleted stays until Undo, a swipe or leaving the Book. No countdown is ever drawn. The quiet-day line is not a toast (inline on Home).',function(){
+  function t(m,u){return '<div class="toast glass"><span>'+m+'</span><span class="sp"></span>'+(u?'<span class="btn sm">'+ic('undo')+'Undo</span>':'')+'</div>';}
+  return st('untimed: the Book delete')+stage('<div style="height:60px"></div>'+t('Letter deleted.',true))+st('timed (T4)')+stage('<div style="height:60px"></div>'+t('Marked as a first.',true))+st('after Undo: words swap in place')+stage('<div style="height:60px"></div>'+t('Put back.',false))+
+    st('focused (VoiceOver or Switch Control holds the window)')+stage('<div style="height:60px"></div><div class="focused" style="border-radius:999px">'+t('Took the photo off.',true)+'</div>');
+});
+comp('F2','System line','content (never glass, never red)','One line in place, at most one per screen, by priority: update required, outage, offline, paused, low storage, update available.',function(){
+  function l(i,txt,act){return '<div class="sysline" style="margin:6px 0">'+ic(i)+'<span>'+txt+'</span>'+(act?'<span class="act"><span class="btn sm plain">'+act+'</span></span>':'')+'</div>';}
+  return '<div class="paper">'+l('wifi','Offline. What you keep stays on this phone.')+l('cloud','We cannot reach our side right now.','Try again')+l('pausec','Pictures are paused for now.')+l('drive','This phone is nearly full.','Storage')+l('arrowdown','A new version is ready.','Update')+'</div>';
+});
+comp('F3','Progress','content','Linear for Save a copy and the printable book; a determinate ring in rows. No percent ticking, no sweep under Reduce Motion.',function(){
+  return '<div class="paper">'+st('running')+'<div class="t-body">Making your copy</div><div class="track" role="progressbar" aria-valuetext="About half" style="margin:10px 0"><i style="transform:scaleX(.46)"></i></div><div class="t-foot muted">You can leave this screen.</div>'+
+    st('paused by Low Power Mode')+'<div class="t-foot muted">Paused while Low Power Mode is on.</div>'+
+    st('stopped')+'<div class="row wrap"><span class="t-body">The copy stopped.</span><span class="btn sm plain">Try again</span></div>'+
+    st('ring in a row')+'<div class="lsec"><div class="lr">Hindi<span class="sp"></span><svg class="ring" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="var(--line)" stroke-width="2.5"/><circle cx="11" cy="11" r="9" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset="34" transform="rotate(-90 11 11)"/></svg><span class="btn sm plain">Stop</span></div></div></div>';
+});
+comp('F4','Keep gate sheet','glass sheet (system); no lamp','The held letter at the top, one plain sentence, then Apple\'s store view. We never type a price, trial, countdown or count.',function(){
+  return '<div class="stage tall" style="padding:0"><div class="behind">'+LETTER+'</div><div class="sheet glass sheetfull" style="margin:8px 0 0;border-radius:34px 34px 0 0"><div class="grab"></div><h4>This letter is waiting here</h4>'+
+    '<div class="card" style="padding:12px"><div class="t-dl">Tonight</div><div class="ex t-lb">Asha clapped at the rain for the first time.</div></div>'+
+    '<div class="t-body" style="margin:10px 0;color:var(--gl)">It stays on this phone until you choose.</div><div class="store">Apple subscription view (system)</div>'+
+    '<div style="margin-top:12px"><span class="btn lg filled full">See Plus</span><div style="height:6px"></div><span class="btn sm plain full">Keep it here for now</span></div></div></div>';
+});
+comp('F5','Saved moment','content','The receipt after Keep: one line, no celebration.',function(){
+  return '<div class="paper"><div class="row">'+ic('check')+'<span class="t-body">Kept in Month 18</span></div></div>';
+});
+comp('F6','Confirmation (ConfirmSheet)','simple: system action sheet; explained and typed: glass sheet','The safe choice is the default. The destructive choice says its verb, with the icon. Typed: not ready until the word matches.',function(){
+  return st('simple (native, from its control)')+stage('<div class="asheet glass"><div class="t"><b>Delete this letter?</b>You can undo for a few seconds.</div><div class="a d">Delete letter</div></div><div class="asheet glass" style="margin-top:8px"><div class="a c">Keep it</div></div>','tall')+
+    st('explained (sign out, D1)')+'<div class="stage" style="padding:0"><div class="behind">'+LETTER+'</div><div class="sheet glass" style="margin:20px 8px 8px"><div class="grab"></div><h4>Sign out?</h4><div class="t-body" style="color:var(--gl)">Your book stays on this phone.</div>'+
+    '<div class="col" style="margin-top:12px"><span class="btn lg filled full">Stay signed in</span><span class="btn sm plain full">Sign out</span></div></div></div>'+
+    st('typed (delete account, D6): not ready, then ready')+'<div class="stage" style="padding:0"><div class="behind">'+LETTER+'</div><div class="sheet glass" style="margin:20px 8px 8px"><div class="grab"></div><h4>Delete your account?</h4>'+
+    '<div class="flabel" style="color:var(--gl)">Type DELETE to go on</div><div class="field">DELE</div><div class="col" style="margin-top:12px"><span class="btn lg notready full" aria-disabled="true">'+ic('trash')+'Delete account</span><span class="btn lg destructive fill full">'+ic('trash')+'Delete account</span><span class="btn sm plain full">Keep my account</span></div></div></div>';
+});
+
+grp('System');
+comp('S1','Notification renderings','system (glass by iOS)','No child name or letter text on a lock screen by default. With previews hidden, iOS shows our own neutral placeholder line (hiddenPreviewsBodyPlaceholder), never its generic text.',function(){
+  return '<div class="lock bg-picture"><div class="clock">9:41</div>'+
+    '<div class="notif glass" style="color:var(--gl)"><span class="appic">'+'<svg viewBox="0 0 64 48" width="22" height="17" aria-hidden="true" style="fill:#FBF8F3"><path d="M4 30c0-12 7-22 18-26l3 5c-7 3-11 8-11 14 1-.5 2.5-.8 4-.8 5.5 0 9 3.7 9 8.6S23 40 17 40C9.5 40 4 36 4 30z"/><path d="M34 30c0-12 7-22 18-26l3 5c-7 3-11 8-11 14 1-.5 2.5-.8 4-.8 5.5 0 9 3.7 9 8.6S53 40 47 40c-7.5 0-13-4-13-10z"/></svg>'+'</span><div><b>[app name]</b> <span style="color:var(--gl2)">now</span><div>A moment for tonight?</div><div style="color:var(--gl2)">A few words is plenty.</div></div></div>'+
+    '<div class="notif glass" style="color:var(--gl);margin-top:8px"><span class="appic"></span><div><b>[app name]</b><div style="color:var(--gl2)">[our neutral placeholder line, NS-32-R13]</div></div></div></div>';
+});
+comp('S2','Privacy cover','content (opaque, never glass)','Drawn at once as the app leaves the front. The mark only; VoiceOver reads the app name.',function(){
+  return '<div class="cover">'+QUOTE.replace('width="52" height="40"','width="96" height="72"')+'</div>';
+});
+
+grp('Materials (FOUNDATIONS 2)');
+comp('M','Glass, tint, clear + dim, and the fallback','reference','Regular carries text. Prominent is the one tint per screen. Clear only over a picture, symbol-only, with the dim. Toggle Reduce Transparency to see every surface go solid with a hairline.',function(){
+  return stage('<div class="col"><div class="swatch glass">Regular: glassLabel<br><span style="color:var(--gl2);font-weight:500">glassLabelSecondary</span></div><div class="swatch glass prom">Prominent: onAccent</div><div class="swatch glass clear">Clear + 35% dim</div></div>','tall');
+});
+
+/* ---------- render ---------- */
+var out=document.getElementById('out'), idx=document.getElementById('idx'), html='', nav='';
+var tilesDef=[['sl','Light paper',''],['sd','Dark paper',''],['sa bg-picture','Picture (follows Dark)','']];
+G.forEach(function(x){
+  if(x.grp){html+='<h2 class="grp">'+x.grp+'</h2>';return;}
+  var inner=x.html();
+  var isGlass=/glass/.test(x.layer)&&!/^content/.test(x.layer);
+  nav+='<a href="#c-'+x.id+'">'+x.id+' '+x.name.replace(/ \(.*\)/,'')+'</a>';
+  html+='<section class="comp" id="c-'+x.id+'" aria-labelledby="h-'+x.id+'"><div class="ch"><h3 id="h-'+x.id+'">'+x.id+'. '+x.name+'</h3><span class="badge'+(isGlass?' g':'')+'">'+x.layer+'</span></div>'+
+    '<p class="note">'+x.note+'</p><div class="tiles">'+tilesDef.map(function(t){return '<div class="tile '+t[0]+'"><div class="tlabel">'+t[1]+'</div>'+inner+'</div>';}).join('')+'</div></section>';
+});
+nav+='<a href="#motion">Motion</a>';
+out.innerHTML=html; idx.innerHTML=nav;
+
+/* ---------- toggles ---------- */
+Array.prototype.forEach.call(document.querySelectorAll('.tg'),function(b){
+  b.addEventListener('click',function(){var c=b.getAttribute('data-cls');var on=document.body.classList.toggle(c);b.setAttribute('aria-pressed',String(on));});
+});
+if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.querySelector('[data-cls="dark"]').click();}
+if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.querySelector('[data-cls="rm"]').click();}
+(location.search||'').replace('?','').split('&').forEach(function(k){var b=document.querySelector('[data-cls="'+k+'"]');if(b&&b.getAttribute('aria-pressed')!=='true'){b.click();}});
+document.getElementById('gi').addEventListener('input',function(e){document.body.style.setProperty('--gi',String(e.target.value/100));});
+
+/* ---------- motion demos ---------- */
+function rm(){return document.body.classList.contains('rm');}
+function after(ms,f){return setTimeout(f,ms);}
+function set(el,css){for(var k in css){el.style[k]=css[k];}}
+var D=[
+ {id:'tap',t:'m.tap and m.tap.glass',p:'Solid: scale 0.97 on spring.snappy (280 ms). Glass: the system response, no scale of ours. Reduce Motion: opacity 0.9 for 90 ms.',
+  stage:'<div style="display:flex;gap:14px;justify-content:center;padding-top:60px"><span class="btn md filled" id="d-tap1">Save a copy</span><span class="btn md glass" id="d-tap2">Close</span></div>',
+  run:function(){var a=document.getElementById('d-tap1'),b=document.getElementById('d-tap2');
+    if(rm()){set(a,{transition:'opacity 90ms linear',opacity:'.9'});after(180,function(){a.style.opacity='1';});}
+    else{set(a,{transition:'transform 280ms cubic-bezier(.2,0,0,1)',transform:'scale(.97)'});after(300,function(){a.style.transform='scale(1)';});}
+    b.classList.add('pressed');after(300,function(){b.classList.remove('pressed');});}},
+ {id:'toast',t:'m.toast (in, Undo swap, out)',p:'In: glass by style, rises 8 pt (spring.snappy), words m.enter 280. Swap 150. Out: words m.exit 160, glass to none. Reduce Motion: no rise.',
+  stage:'<div class="behind" style="position:absolute;inset:0;padding:12px;font:400 18px/1.6 var(--f-serif)">'+LETTER+'</div><div class="anim-toast"><div class="toast glass" id="d-toast" style="visibility:hidden"><span id="d-tmsg">Letter deleted.</span><span class="sp"></span><span class="btn sm" id="d-tund">'+ic('undo')+'Undo</span></div></div>',
+  run:function(){var t=document.getElementById('d-toast'),m=document.getElementById('d-tmsg'),u=document.getElementById('d-tund');
+    m.textContent='Letter deleted.';u.style.visibility='visible';
+    set(t,{transition:'none',visibility:'visible',transform:rm()?'none':'translateY(8px)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)',background:'rgba(var(--gt),0)'});
+    m.style.opacity='0';void t.offsetWidth;
+    set(t,{transition:'transform 280ms cubic-bezier(.2,0,0,1), background 250ms, backdrop-filter 250ms, -webkit-backdrop-filter 250ms',transform:'none',backdropFilter:'',webkitBackdropFilter:'',background:''});
+    set(m,{transition:'opacity 280ms cubic-bezier(.2,0,0,1)',opacity:'1'});
+    after(1400,function(){m.style.transition='opacity 75ms';m.style.opacity='0';after(75,function(){m.textContent='Put back.';u.style.visibility='hidden';m.style.transition='opacity 75ms';m.style.opacity='1';});});
+    after(2800,function(){m.style.transition='opacity 160ms cubic-bezier(.3,0,1,1)';m.style.opacity='0';
+      set(t,{transition:'background 250ms, backdrop-filter 250ms, -webkit-backdrop-filter 250ms, box-shadow 250ms',background:'rgba(var(--gt),0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)',boxShadow:'none'});
+      after(260,function(){t.style.visibility='hidden';t.style.boxShadow='';});});}},
+ {id:'sheet',t:'m.sheet (system) and m.sheet.own fallback',p:'System sheet rises; here the fallback timing: rise on spring.standard (300 ms), scrim fade 200. Reduce Motion: no travel, glass style and scrim fade only.',
+  stage:'<div class="behind" style="position:absolute;inset:0;padding:12px;font:400 18px/1.6 var(--f-serif)">'+LETTER+'</div><div class="scrim" id="d-scrim" style="opacity:0"></div><div class="anim-sheet sheet glass" id="d-sheet" style="visibility:hidden"><div class="grab"></div><h4>Whose book?</h4></div>',
+  run:function(){var s=document.getElementById('d-sheet'),c=document.getElementById('d-scrim');
+    set(s,{transition:'none',visibility:'visible',transform:rm()?'none':'translateY(140px)'});c.style.transition='none';c.style.opacity='0';void s.offsetWidth;
+    set(s,{transition:'transform 300ms cubic-bezier(.2,0,0,1)',transform:'none'});set(c,{transition:'opacity 200ms linear',opacity:'1'});
+    after(1600,function(){set(s,{transition:'transform 160ms cubic-bezier(.3,0,1,1)',transform:rm()?'none':'translateY(140px)'});set(c,{opacity:'0'});after(rm()?0:170,function(){s.style.visibility='hidden';});});}},
+ {id:'glass',t:'m.glass (appear by style, never opacity)',p:'Glass goes from none to regular over glass.styleS 250 ms; the label fades with m.enter. Reduce Motion keeps the style change, no travel.',
+  stage:'<div class="behind" style="position:absolute;inset:0;padding:12px;font:400 18px/1.6 var(--f-serif)">'+LETTER+'</div><div style="position:absolute;left:0;right:0;top:70px;text-align:center"><span class="btn md glass" id="d-glass" style="visibility:hidden"><span id="d-gl">Close</span></span></div>',
+  run:function(){var g=document.getElementById('d-glass'),l=document.getElementById('d-gl');
+    set(g,{transition:'none',visibility:'visible',background:'rgba(var(--gt),0)',backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)',boxShadow:'none'});l.style.opacity='0';void g.offsetWidth;
+    set(g,{transition:'background 250ms, backdrop-filter 250ms, -webkit-backdrop-filter 250ms, box-shadow 250ms',background:'',backdropFilter:'',webkitBackdropFilter:'',boxShadow:''});
+    set(l,{transition:'opacity 280ms cubic-bezier(.2,0,0,1)',opacity:'1'});}},
+ {id:'merge',t:'Glass cluster merge (one container)',p:'Shapes in one GlassContainer merge as they approach (system timing). Simulated: Find and More slide together. Reduce Motion: no travel, the merged shape appears by style.',
+  stage:'<div class="behind" style="position:absolute;inset:0;padding:12px;font:400 18px/1.6 var(--f-serif)">'+LETTER+'</div><div class="morph"><span class="btn circ glass" id="d-m1">'+ic('search')+'</span><span class="btn circ glass" id="d-m2">'+ic('more')+'</span></div>',
+  run:function(){var a=document.getElementById('d-m1'),b=document.getElementById('d-m2');
+    if(rm()){return;}
+    set(a,{transition:'transform 300ms cubic-bezier(.2,0,0,1), border-radius 300ms',transform:'translateX(6px)',borderRadius:'999px 0 0 999px'});
+    set(b,{transition:'transform 300ms cubic-bezier(.2,0,0,1), border-radius 300ms',transform:'translateX(-6px)',borderRadius:'0 999px 999px 0'});
+    after(1500,function(){a.style.transform='none';b.style.transform='none';a.style.borderRadius='999px';b.style.borderRadius='999px';});}},
+ {id:'record',t:'Recording state: m.instant',p:'Ready to recording changes on the frame the recorder reports it: no fade, no morph, in every mode.',
+  stage:'<div style="text-align:center;padding-top:60px"><span class="btn xl glass" id="d-rec">'+ic('mic')+'Speak</span></div>',
+  run:function(){var r=document.getElementById('d-rec');r.innerHTML='<span style="width:14px;height:14px;border-radius:50%;background:var(--rec);display:inline-block"></span>Stop <span class="t-timer">0:01</span>';
+    after(1600,function(){r.innerHTML=ic('mic')+'Speak';});}},
+ {id:'mark',t:'m.mark',p:'After Keep or Undo, an accentSoft tint behind still words fades over markMs 1600. Reduce Motion: shown static, then the same fade.',
+  stage:'<div style="padding:16px">'+card({cls:'new'}).replace('class="card new"','class="card" id="d-mark"')+'</div>',
+  run:function(){var c=document.getElementById('d-mark');c.style.transition='none';c.style.background='var(--accentSoft)';void c.offsetWidth;c.style.transition='background 1600ms cubic-bezier(.2,0,0,1)';c.style.background='var(--raised)';}},
+ {id:'enter',t:'m.enter and m.exit (a system line)',p:'Enter: opacity and 8 pt, 280 ms easing.standard. Exit: 160 ms easing.exit. Reduce Motion: opacity only (200 and 160).',
+  stage:'<div style="padding:40px 14px"><div class="sysline" id="d-line" style="opacity:0">'+ic('wifi')+'<span>Offline. What you keep stays on this phone.</span></div></div>',
+  run:function(){var l=document.getElementById('d-line');set(l,{transition:'none',opacity:'0',transform:rm()?'none':'translateY(8px)'});void l.offsetWidth;
+    set(l,{transition:(rm()?'opacity 200ms linear':'opacity 280ms cubic-bezier(.2,0,0,1), transform 280ms cubic-bezier(.2,0,0,1)'),opacity:'1',transform:'none'});
+    after(1700,function(){set(l,{transition:'opacity 160ms cubic-bezier(.3,0,1,1), transform 160ms cubic-bezier(.3,0,1,1)',opacity:'0',transform:rm()?'none':'translateY(-8px)'});});}},
+ {id:'progress',t:'m.progress',p:'Fill by scaleX, 200 ms linear per reading. Reduce Motion: jumps to each value.',
+  stage:'<div style="padding:60px 18px"><div class="track"><i id="d-prog" style="transform:scaleX(0)"></i></div></div>',
+  run:function(){var p=document.getElementById('d-prog');var v=[0,.18,.34,.52,.7,.86,1],i=0;p.style.transition=rm()?'none':'transform 200ms linear';
+    (function step(){p.style.transform='scaleX('+v[i]+')';i++;if(i<v.length){after(400,step);}})();}}
+];
+var dh='';D.forEach(function(d){dh+='<div class="dcell sa"><h4>'+d.t+'</h4><p>'+d.p+'</p><button class="play" data-d="'+d.id+'">Play</button><div class="dstage stage" style="padding:0">'+d.stage+'</div></div>';});
+document.getElementById('demos').innerHTML=dh;
+Array.prototype.forEach.call(document.querySelectorAll('.play'),function(b){b.addEventListener('click',function(){D.forEach(function(d){if(d.id===b.getAttribute('data-d')){d.run();}});});});
+})();
+</script>
+</body>
+</html>

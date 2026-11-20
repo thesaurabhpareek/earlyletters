@@ -844,6 +844,64 @@ demo("g-quiet", {
   play: function (c) { c.log("nothing animates (by design)"); return Promise.resolve(); }
 });
 
+
+/* ------------------------------------------------------------------ */
+/* Appended items (v1.1)                                               */
+/* ------------------------------------------------------------------ */
+demo("g-remind", {
+  title: "Add a day: show my words in the notification", ids: "D-M64 | D-S08.default <-> D-S08.showWords",
+  what: "The native switch moves; the preview's words cross-fade in place between the fixed line and the parent's words, unchanged.",
+  rm: "instant swap.",
+  scene: function () {
+    var w = wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days to remember</div></div>' + tabbar("Me") +
+      '<div class="scrim" style="opacity:1"></div><div class="sheet" style="transform:none"><div class="grab"></div><div class="title2">Add a day</div><div class="listrow" style="border-radius:14px;margin:12px 0"><span>Date</span><span class="chip">Mon 30 Nov</span></div><div class="card" style="background:var(--surface);box-shadow:none">Nursery starts</div>' +
+      '<div class="row" style="justify-content:space-between;align-items:center;min-height:44px;margin-top:10px"><span class="small">Show my words in the notification</span><span class="switch" id="sw2"></span></div>' +
+      '<div class="small muted" style="margin-top:6px">How it will look</div><div class="card"><div id="pv" style="font-size:16px">A day you wanted to remember</div></div><div class="btn" style="margin-top:14px">Save</div></div>');
+    return w;
+  },
+  play: function (c) {
+    c.log("switch on (native switch's own haptic); preview words swap (swapMs)"); c.q("#sw2").classList.add("on");
+    return swapText(c.q("#pv"), "Nursery starts").then(function () { return c.wait(900); }).then(function () {
+      c.log("switch off; swap back"); c.q("#sw2").classList.remove("on"); return swapText(c.q("#pv"), "A day you wanted to remember");
+    });
+  }
+});
+demo("g-land", {
+  title: "A tap with App lock on", ids: "D-M65 | D-S10 -> D-S11.appLock -> warm landing",
+  what: "App lock's own screen comes first; nothing of the landing shows behind it. After unlock the warm landing plays (here: Home), never the cold entrance a second time.",
+  rm: "App lock's reduced form, then the warm landing's.",
+  scene: function () { return wrap('<div id="under">' + bookScreen(0.6) + '</div><div id="applock" style="position:absolute;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px"><div class="title2">Unlock to open the book</div><div class="btn out" style="min-width:200px">Unlock</div><div class="syslabel">app lock (area C/E owns its motion)</div></div>' + lockScreen("A note for tonight")); },
+  play: function (c) {
+    return openFromLock(c).then(function () { c.log("App lock shown first; landing waits"); return c.wait(900); })
+      .then(function () { c.log("unlocked (stand-in fade)"); c.q("#under").innerHTML = homeScreen({ lamp: 0.6 }); return fade(c.q("#applock"), 1, 0, T.fadeMs); })
+      .then(function () { set(c.q("#applock"), { display: "none" }); c.log("warm landing: tab swap, lamp settles over returnMs; no content entrance"); return lampTo(c.q("#lamp"), 0.6, 1, T.lamp.returnMs); });
+  }
+});
+demo("g-quiet", {
+  title: "Quiet day: save fails; Remove this mark", ids: "D-M67, D-M66 | D-S21.error-save_failed; D-S22.menu -> .removed",
+  what: "Save fails: the line replaces the link in place (swapMs); no haptic (soft plays only after a commit); the light does not dim. Remove this mark: soft on the long press, the system menu, the row leaves and the list closes up, the toast enters.",
+  rm: "instant swap; row fades; list jumps; toast fades.",
+  scene: function () { return wrap(homeScreen({ lamp: 1 })); },
+  plays: [
+    { label: "Save fails", fn: function (c) {
+      var nm = c.q("#notmuch");
+      c.log("tap: the write fails; no haptic; lamp unchanged");
+      function put() { nm.innerHTML = '<span class="small" style="color:var(--caution)">Today\'s mark did not save.</span>&nbsp;<span>Try again</span>'; }
+      if (RM) { put(); return Promise.resolve(); }
+      return fade(nm, 1, 0, T.swapMs / 2).then(function () { put(); return fade(nm, 0, 1, T.swapMs / 2); });
+    } },
+    { label: "Remove this mark", fn: function (c) {
+      c.q(".phone > div").innerHTML = bookScreen(0.6) + '<div class="toast" id="toast"><span>Mark removed.</span></div>' + '<div class="sysalert sys" id="menu" style="top:40%;margin-top:0;text-align:left"><div class="syslabel">system context menu</div><div style="padding:10px 0">Remove this mark</div></div>';
+      var row = c.phone.querySelectorAll(".card")[1];
+      c.log("long press: haptic soft; system menu");
+      return pressOn(row, true).then(function () { return sysAlertIn(c.q("#menu")); }).then(function () { return c.wait(700); })
+        .then(function () { c.log("Remove: commit (no haptic); row leaves; list closes up"); pressOff(row, true); return sysAlertOut(c.q("#menu")); })
+        .then(function () { return exitEl(row).then(function () { return collapse(row); }); })
+        .then(function () { c.log("toast enters: book.quietDay.removedToast"); return enterEl(c.q("#toast")); });
+    } }
+  ]
+});
+
 /* Mount everything. */
 demos.forEach(mount);
 </script>
