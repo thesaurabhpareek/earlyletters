@@ -29,6 +29,7 @@ Author: `ai-eng-lead`, 20 Nov 2026, 18:30 UTC. Docs only; no workflow, script, r
 
 - Rule: PRs carry `agent:<handle>` and `from:agent` (OPERATING_MODEL section 4; HARNESS-RUN "Branch, commits, PR").
 - Why it matters: the dispatcher counts open PRs with an `agent:` label against `max_open_agent_prs` 10 (`scripts/agents/dispatch.mjs:235`, per #847 section 4.4). 66 carry the label (45 drafts) and the photo slices carry none, so the cap is wrong both ways [V from #847; not re-counted]. The merge-queue reads author lens from review comments, not labels, so labels do not gate a merge (`merge-queue.mjs:184-200` reads reviews and checks only) [V].
+- Seen here: `gh api -X POST repos/.../issues/<n>/labels -f 'labels[]=agent:ai-eng-lead' -f 'labels[]=from:agent'` succeeded for #916, #917 and #918 [V]. So label refusal is also per session [U cause].
 - Fix: the PR body's first line is `Labels wanted: agent:<handle>, from:agent[, needs:founder]` when the label call fails. Karma applies them in one pass (`gh api -X POST repos/.../issues/<n>/labels -f 'labels[]=...'`). Add the same try-then-fallback line to the brief (done in `BRIEF-TEMPLATE.md` field 16).
 - Owner: Karma. Founder: no.
 
@@ -51,8 +52,8 @@ Pitfall: a lower slice that changes after a higher slice is reviewed forces a me
 
 Owner: Karma (runbook), ops (script). Founder: for the script only.
 
-### H3.1 Test of the REST `base` field [V in this PR]
-Result is recorded in the PR body of this run (I PATCH my own PR's base to its current value, `develop`; a 200 with `base.ref` unchanged shows the field is accepted, not that it retargets). If it was refused, the PR body says so.
+### H3.1 Test of the REST `base` field [V]
+On #918 I ran `gh api -X PATCH repos/thesaurabhpareek/earlyletters/pulls/918 -f base=develop`. It returned 200 with `base.ref` `develop`. So the field is accepted by the API from this session. That it retargets to a different branch is not shown (I did not move a PR to another base); the `stacked-prs` skill's runbook step stays the way to do it, and the first real retarget should record the result here.
 
 ## H4. Reviews that moved heads under a reviewer, and the 10-minute rule
 
