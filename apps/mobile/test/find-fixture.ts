@@ -6,7 +6,7 @@
  */
 import { entries } from '../src/lib/db/repos';
 import type { Entry } from '../src/lib/db/repos';
-import { ensureSearchIndex, forgetSearchState, reindexLetter, setIndexableBooks } from '../src/lib/find/lifecycle';
+import { ensureSearchIndex, forgetSearchState, setIndexableBooks } from '../src/lib/find/lifecycle';
 import { forgetSearchView, resetFindExtraSources } from '../src/lib/find/sources';
 import { fixture, letter, seedChild, type Fixture } from './helpers/store-fixture';
 
@@ -34,7 +34,6 @@ export function findFixture(opts: { index?: boolean } = {}): FindFixture {
       letter({ id, finalText: text ?? 'Asha, you laughed at the rain today.', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, captureMode: 'typed', inBook: true, ...rest }),
       { childId: null, authorSignsAs: null },
     );
-    reindexLetter(f.db, id); // what the repo hook does once the store is wired (BL-952 slice 7); a no-op twice
     return id;
   };
   return { ...f, add };

@@ -115,6 +115,12 @@ export function ensureSearchView(db: SqlDb): void {
   viewState.set(db, sig);
 }
 
+/** Drops the view (a build with Find off, NS-02-R43). It holds no data; the next ensureSearchView makes it again. */
+export function dropSearchView(db: SqlDb): void {
+  db.exec(`DROP VIEW IF EXISTS ${SEARCH_VIEW}`);
+  viewState.delete(db);
+}
+
 /** Forget what was cached for this connection (after the file is replaced, and in tests). */
 export function forgetSearchView(db: SqlDb): void {
   viewState.delete(db);
