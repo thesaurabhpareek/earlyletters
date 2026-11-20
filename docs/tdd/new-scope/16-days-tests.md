@@ -1,6 +1,6 @@
 # Days, culture, catalogue, picture-first and Home: test design for the 87 P0 rows, part 4 of 5
 
-Status: Proposed, 20 Nov 2026. Author: `mobile` (Claude session) for Karma, task RD-I2. Target: `docs/tdd/new-scope/16-days-tests.md`. Continues files 13 to 15. Tags and sources as in file 13. Mutants are designs, not runs: none was applied in this run; the first run of each belongs to the author (QA rule C-05 in `CHECKS-AND-BALANCES.md`, #924).
+Status: Proposed, 20 Nov 2026 (re-pinned to `84bcf961`). Author: `mobile` (Claude session) for Karma, task RD-I2. Target: `docs/tdd/new-scope/16-days-tests.md`. Continues files 13 to 15. Tags and sources as in file 13. Mutants are designs, not runs: none was applied in this run; the first run of each belongs to the author (QA rule C-05 in `CHECKS-AND-BALANCES.md`, #924).
 
 ## 0. What exists and what this adds
 **Fact** The quality catalogues A to D (#924 to #927) key waves 1 to 5 of NS-01 to NS-37 and contain no `NS-38` to `NS-52` row id (PD2 section 4, last paragraph; a grep of `catD.md`, `journeys.md`, `a11y.md`, `motion.md`, `delta.md` for NS-46 to NS-50 finds none [V]). `scripts/trace.mjs` does not read NS ids (`21:15`). So this file proposes a **Catalogue E: NS-46 to NS-50** in the shape of Catalogue D (Row, exact title, Lvl, Run, W, Fixture and assert, Mutant, Lane). Titles are the backticked titles on the cards, used exactly (`21:261-299` and the other tables). `qa` merges it into the catalogue; ids `J-N37` (J-CUL-01 device walk, `21:550`) is qa's to register.
