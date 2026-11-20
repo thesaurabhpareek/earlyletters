@@ -1,8 +1,8 @@
 # Karma review of the feedback-loop backlog rows (HV2-B61 to B83, first pass)
 
-Status: REVIEW RECORD | 20 Nov 2026 (UTC) | Karma (CTO, Claude role) | Reviewed file: `docs/agents/harness-v2/BACKLOG-FEEDBACK-LOOP-20nov.md` at first-pass commit `955131739daf39582b02f6ad4637407ab2b38033`.
+Status: REVIEW RECORD | 20 Nov 2026 (UTC) | Karma (CTO) | Reviewed file: `docs/agents/harness-v2/BACKLOG-FEEDBACK-LOOP-20nov.md` at first-pass commit `955131739daf39582b02f6ad4637407ab2b38033`.
 
-I want to be plain about the setup. I am a Claude session playing Karma, in the same session lineage that drafted the rows. This is a review of method, not an independent one: one account, one model family (CR-32). The founder's merge is the only thing that makes any row real. Nothing here is a founder approval.
+I want to be plain about the setup. I drafted the rows and I am reviewing them, so this is a review of method, not an independent one: one account, one model family (CR-32). Only the founder merging makes any row real. Nothing here is a founder approval.
 
 Read before ruling: the CTO skill (tiers, loop, pre-mortem, founder gate), the harness rules skill, `COUNCIL.md`, `OPERATING_MODEL.md`, `AGENT-COMMS.md`, `COORDINATION.md`, `HARNESS.md`, `LIFECYCLE.md` (PR #815), `FEEDBACK-LOOP.md`, `requirements-feedback-loop.md`, `LOAD-ORDER.md`, `REGISTRY.md`, and the dispatcher and merge-queue sources on `develop` (`16e61549`).
 
@@ -81,4 +81,4 @@ I re-read each changed row against its finding. Closed: MF-1 to MF-9 and SF-1 to
 
 I approve rows B61 to B75, B78, B80 and B82 to B86 for the harness lane as T1 or T2, each built as its own draft PR the founder merges. Row B87 needs the founder. B76, B77 and B79 are cut or deferred. This is a role approval. It merges nothing and it does not replace the founder's merge.
 
-Karma (CTO, Claude role)
+Karma
