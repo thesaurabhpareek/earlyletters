@@ -30,7 +30,7 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 
 | File | What | Bucket |
 |---|---|---|
-| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E68 ruled after the lock (highest E68) | record |
+| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E73 ruled after the lock (highest E73) | record |
 | `19-from-download-to-first-letter.md` | NS-38 to NS-45: first run to first letter | A, B |
 | `20-founder-direction-20nov.md` | the founder's direction of 20 Nov (candidates, not conclusions) | input |
 | `21-days-cultural-photos-home.md` | NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first and Journaling Suggestions, NS-50 Home today; final after ten expert reviews (`tools/review/ns46-50/`), with the release cut (drops A, B, C), the founder-items table and the row-by-row drop tags | B, F |
