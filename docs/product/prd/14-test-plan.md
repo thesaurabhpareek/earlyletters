@@ -1,6 +1,10 @@
-# Test plan for the new scope (with the quality role, 19 Nov 2026)
+# Test plan for the new scope (with the quality role)
 
-For `qa` and every engineer. Each card's acceptance rows are its unit and integration tests; this file adds what sits above them: the journeys a parent takes, the order we test in, what blocks a store build, and the device matrix. Test titles carry the requirement id in brackets so `scripts/trace.mjs` can find them.
+Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
+
+For `qa` and every engineer. Each card's acceptance rows are its unit and integration tests; this file adds what sits above them: the journeys a parent takes, the order we test in, what blocks a store build, the device matrix and the P0 register. Test titles carry the requirement id in brackets, for example `[NS-09-R1]`.
+
+**Traceability gap (must close first).** `scripts/trace.mjs` today matches only `X-REQ-nnn` and `X-NFR-nnn` ids and reads `docs/prd/v2`, so no NS or NX id is traced yet (CTO pass, 20 Nov). Draft PR #819 is to be reworked to read `docs/product/prd` and ratchet NS P0 rows. Gate G0: no NS flag turns on in any build outside the founder's family until trace sees NS ids and every P0 row has a test and a backlog row (RR-3).
 
 ## 1. Priority
 
@@ -29,7 +33,16 @@ A test that runs against a stand-in says so in its title and the row stays "part
 2. Integration over the Asha fixtures, including 1,000 letters and 300 pictures.
 3. Journeys in section 4.
 4. The device run sheet, once per build, P0 rows first.
-5. Regression: the full suite on every change; the device P0 rows on every store candidate.
+5. Regression, in this sequence:
+
+| When | Run |
+|---|---|
+| Every PR | `npm test`, `npm run typecheck`, content rules, the trace ratchet on NS P0 rows (once G0 lands); `npm run test:db` when `supabase/**` changes; `npm run test:functions` when functions change |
+| Every merge to develop | The full suite plus the simulator flows; the kill harness (50 runs) when capture, store or erase changes |
+| Every store candidate | Device P0 rows first; an upgrade from the last store build with a seeded 1,000-letter Asha book; an export round trip on the previous and the new schema; preflight for production flags; a privacy label and claims diff |
+| Monthly | The full device plan |
+
+Journeys that would need weeks of real time (J-N4: reminders slow then stop) run as unit tests on the planner with an injected clock, plus one device spot check that the first scheduled notes appear.
 
 ## 4. Journeys
 
@@ -68,13 +81,19 @@ A test that runs against a stand-in says so in its title and the row stays "part
 | Phone | Why |
 |---|---|
 | Which phones the founder holds is not recorded. Before the first run sheet, he says which he has; buying one is his decision | |
-| iPhone SE (3rd generation), iOS 17 | the smallest screen, the slowest chip we support, our lowest iOS |
+| iPhone SE (3rd generation) on the newest iOS it takes | the smallest screen and the slowest chip we support |
+| A phone on iOS 17 | our lowest supported iOS (an SE 3 on the newest iOS does not cover it) |
 | A current large iPhone, latest iOS | the largest layout and newest system behaviour |
-| A second phone on the same account | sync, new phone, seals |
+| A second phone on the same account | sync, new phone, seals, let it go on a second phone |
+| An iPad | App Review runs the iPhone app on iPad (DEVICE_TEST_PLAN) |
 
-Settings on every device walk: the largest accessibility text size with Bold Text, VoiceOver, Reduce Motion, Increase Contrast, dark mode, airplane mode where the journey says so.
+**Device evidence never touches real family data (ruled 20 Nov).** Every device row runs on a separate install signed in to a test account that holds only the fictional Asha book. No run sheet, screenshot, screen recording, log, performance trace or note carries a real name, letter, picture or voice (CLAUDE.md privacy rules). The `no-real-family-data` test runs on every PR that adds device evidence. Evidence files live at `docs/qa/evidence/<date>-<build>-<phone>.md`.
+
+Settings on every device walk: the largest accessibility text size with Bold Text, VoiceOver, Voice Control, Switch Control, Reduce Motion, Increase Contrast, Smart Invert, dark mode, Low Power Mode, airplane mode where the journey says so.
 
 ## 6. What blocks a store build
+
+Gates, in order: G0 trace sees NS ids and every P0 has a test and a backlog row; G1 the on-device data rules (ADR 0028, PR #797) and the export schema they need are merged; G2 the counsel reads each card names; G3 the founder has approved the words; G4 every P0 device row passes on the candidate; G5 the privacy label and claims inventory match what the build sends; G6 no `production` flag is on while its card has an open P0.
 
 Every P0 unit, source and journey test green; every P0 device row run on the candidate. A P0 device row may be waived by the founder in writing only when no suitable phone was available, and never for a lost letter or recording, a leak off the phone, a name or letter words on a lock screen, or a guilt or count line; each waiver is recorded in the build record; the privacy label and claims match what the build sends off the phone; no flag on in `production` whose card has an open P0.
 

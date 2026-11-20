@@ -2,6 +2,8 @@
 
 Owner: Karma (CTO role), with the Chief Product Officer role. Docs only. Read against develop `09a104da` (19 Nov, after #764 merged) and the open PRs listed in section 2, at 22:15 UTC.
 
+Status: Locked v1.0, 20 Nov 2026 (council round 2). Rescoped items marked "Rescoped 20 Nov". Changes after lock need a PR that lists every changed id.
+
 What this is: the 55 candidates of the 19 Nov scope round (C-01 to C-42, N-01 to N-13), looked at again by the CPO against what develop holds now, debated with the owning roles, given a final order, sized by the CTO, and broken into backlog rows BL-923 to BL-941 for the first two waves.
 
 What it is not: a calendar. No build date is set here; dates and what is in a release are the founder's. No device was run. No parent evidence exists yet, so every Value number is a judgment and is labelled as one.
@@ -87,15 +89,15 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 18 | 13 | C-18 | Share one letter, text first | 4 | S to M | BL-939, after BL-937. Level 1 only | Build 14 in the PRD. No recording path until security and counsel have read it. |
 | 19 | 19 | C-14 | Child switcher on Home | 3 | S | Requirement NS-14 written; build row BL-941 | A letter can land in the wrong book today with no control on Home. |
 | 20 | 21 | C-09 | Hands-free spike | 3 | spike S, build L | PRD 04; starts the Monday after the Build 13 cut | A spike, time-boxed. No doorway ships from it. |
-| 21 | 20 | C-20 | One past letter on Home | 3 | S | Not broken down | Shares the single Home slip. |
-| 22 | 22 | C-07 | A letter for another day | 3 | S to M | Not broken down | The app must never read a date out of the words. |
-| 23 | 25 | N-09 | One notification budget (taken before C-05 when both are free: reminders depend on it) | 2 | S | In flight: #758 | Gates every reminder class after it. |
+| 21 | 20 | C-20 | One past letter on Home | 3 | S | NS-23; BL-946. Rescoped 20 Nov: changes the built "A month ago" card (`resurfaced`) to the same day of an earlier month or year; one Home card rule with open PR #721 | Shares the single Home slip. |
+| 22 | 22 | C-07 | A letter for another day | 3 | S | NS-15; BL-945. Rescoped 20 Nov: the about-day (`occurred_on`) is already stored, synced and exported; the card adds the Review control and the two-day line; BL-944 superseded | The app must never read a date out of the words. |
+| 23 | 25 | N-09 | One notification budget (built before C-05: reminders depend on it; plan notices sit outside it) | 2 | S | #758 to be reworked without Memory Library classes; needs a backlog row | Gates every reminder class after it. |
 | 24 | 24 | N-12 | Doc and code drift | 1 | S | Needs its list copied into the repo first | Cheap; not urgent. |
 | 25 | 26 | C-23 | Firsts | 3 | M | Earliest Build 15 (PRD 06) | Tone risk: must not become milestones. |
 | 26 | 28 | C-25 | Read the year back | 3 | S to M | Not broken down | Read together is built; this is a thin layer. |
 | 27 | 31 | C-26 | Print-ready file | 3 | M | Structure only (PRD 07 3.2). Proof-book spend is the founder's | Up from 31: R6 names print as the best-evidenced gap [S]. No spend, no partner. |
 | 28 | 27 | C-21 | Co-parent turned on in store builds | 3 | S to M | D-162 draft keeps it alpha-only | A second adult sees every letter; needs the co-parent work BL-882 to BL-889. |
-| 29 | 29 | C-08 | Someone else speaks | 3 | M | Not broken down | Authorship and allowance rules. |
+| 29 | 29 | C-08 | Someone else speaks | 3 | M to L | NS-16. The name is the existing `author_signs_as` (30 characters, set before first upload); counsel Q48 and the sibling question first | Authorship and allowance rules. |
 | 30 | 30 | C-12 | Second spoken language (gate) | 3 | L per language | Native reviewer and the founder | A promise we keep only when the gate passes. |
 | 31 | 32 | C-24 | Sealed letters | 3 | L | Earliest Build 15; counsel on minors and open-on-a-day | Legal and sync. |
 | 32 | 33 | C-10 | Quick capture from a doorway | 3 | M | After the spike; Ready only (ruling 6) | Risk of an unmeant recording. |

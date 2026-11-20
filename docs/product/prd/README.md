@@ -22,11 +22,12 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 | `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N27, device matrix, store-build gate | for `qa` |
 | `15-council-review.md` | what the council found and how each was answered | record |
 
-### How to read a card (NS-08 onward)
+### How to read a card (locked shape, 20 Nov 2026)
 
-Each card has, in order: who and when (the parent and the moment); why (the job and what goes wrong today); what (and what is not in scope); the happy path; the unhappy paths as a table; acceptance rows in Given, When, Then form with a number or an observable state and a test title; design inputs; content inputs (words in quotes are intent, `content` writes them, the founder approves them); legal, privacy and compliance inputs (counsel must confirm any legal reading); free or Plus; how it is measured with analytics off; open questions with an owner and a default.
+Every card from NS-01 to NS-37 follows one shape after the round-2 council review. A section may say "n/a because ..." but may not be missing:
+1. Who and when. 2. Why. 3. What, and Not in scope. 4. Happy path. 5. Unhappy paths and edge cases. 6. Scenario coverage (one row for each standing state in `00-product-frame.md` section 5). 7. Acceptance criteria: `Id | Given, When, Then | Priority | Test title`, where Priority is P0 with its RR-4 reason ((a) a promise, (b) a legal or store duty, (c) the core loop), P1 or P2. 8. Non-functional budgets: latency (p95 on an iPhone SE 3 under the 06-nfr protocol), memory, on-device storage, battery, offline, accessibility, localisation, privacy (log canary); defaults inherit 06-nfr. 9. State space (RR-5) where sync, accounts or notifications are touched, including the kill switch, the card's remote pause and plan lapse. 10. Data and engineering: fields, classes, migrations (server ones update the `entries` content trigger tuple and `book_entries`), sync field group, export effect, modules and files, flags and pause keys, error codes, rollout and rollback. 11. Data inventory rows. 12. Door lines. 13. Threat rows. 14. Never lines (no system-intelligence donation; writing tools off on letter fields). 15. Design inputs. 16. Content inputs (lines in quotes are intent; `content` writes; the founder approves). 17. Legal, privacy and compliance inputs (counsel packet 1.5.0 numbers; counsel must confirm). 18. Label effect. 19. Claims enabled and forbidden. 20. Free or Plus. 21. Measures with analytics off. 22. Dependencies and gates (no build numbers or dates: the roadmap owns timing). 23. Open questions, each with an owner and a default.
 
-Priority: every acceptance row is P1 unless the P0 register in `14-test-plan.md` section 7 lists it with its RR-4 reason.
+Priority: the Priority column in each card is the source; `14-test-plan.md` section 7 collects every P0 row. Locked cards change only by a PR that lists every changed id.
 
 Cards for items further down the rank are shorter on purpose: they record the decision, the reason it waits, and what would reopen it, so nobody designs or builds them by accident.
 
@@ -92,7 +93,7 @@ NX-41 and NX-42 live on PR #790's branch (`docs/nav-tabs-requirements-10nov`, he
 
 | File and line | Says now | Must say |
 |---|---|---|
-| NX-41 R12 | "Alpha stays whole. ... the Family tab with the real co-parent screens stays" in a `preview` build | Family is never a tab, in any build. The real co-parent screens are reached from Me. "Coming soon" is one small caption line in Me, tappable, opening one on-device sheet, with no row, badge or chevron (closed N1 as amended by the founder on 11 Nov; design spec 07). |
+| NX-41 R12 | "Alpha stays whole. ... the Family tab with the real co-parent screens stays" in a `preview` build | Family is never a tab, in any build. The real co-parent screens are reached from Me. No caption, row, sheet or "coming soon" line in any build (founder, 19 Nov: "Sorry second. Go for it"; D-161 draft in #827). |
 | NX-41 section 4 and H6 | Four tabs; a Moments tab; an alpha Family tab | Three tabs: Home (Say), Book (Read), Me (Look after). No Moments tab, no Family tab. |
 | NX-42 section 1, "Tab model" | Home, Book, Moments (proposed), Me | Home, Book, Me (three tabs). |
 | NX-42 rows C17 to C21 and section 2.3 "Remember (Moments, proposed)" | Tab "Moments" | C17 and C18 attach to a letter (Review, letter page); the picture shelf is the Book's Photos lens (NS-01); C19 is a doorway into the same chooser; C20 shares Home's one memory slot. No Moments tab. |
@@ -124,9 +125,9 @@ The tab job sentences are the design's (spec 06), and the navigation test N1 to 
 | Author-only export exception (FS-R10 and FS-R11): the ZIP data export carries a sealed letter whole for the author; the PDF book and any other person's export never carry its words until the seal is removed | NS-06-B2, B5, NS-07-C28-4 |
 | Design spec 02 FD-R13: a VoiceOver-only hint under 3 characters, drawn nowhere | NS-02-R23 |
 | Design spec 03 now makes the words row static text, not a switch (SH-R15) | NS-05-R4, R13 |
-| Design spec 07: the co-parent caption is tappable and opens one on-device sheet (founder amendment of N1, 11 Nov) | README ground rules, NX-41 R12 row, NS-05 section 10 |
+| Design spec 07 (the tappable co-parent caption) is withdrawn by the founder's answer of 19 Nov: no "coming soon" surface in any build | README ground rules, NX-41 R12 row, NS-05 section 10 |
 | Share verb and the 22-character label limit are a `content` and `legal` decision | NS-05 OQ-6 (flag only; the PRD wording is unchanged) |
-| Seal opens at an absolute UTC instant (spec 04 FS-R7); differs from ADR 0028 D3 calendar date | NS-06-B1; `data-architect` reconciles |
+| Seal opens at an absolute instant (spec 04 FS-R7): settled by ADR 0028 D3a (two columns written together; `seal_opens_at` is the rule, the date is display), accepted under CR-62, file on PR #797 until it merges | NS-06-B1 |
 | Spec 02 dropped the "Type three letters" hint; PR #798's `find.en.ts` still has it | NS-02-R3: the `hint` slot leaves #798 |
 
 ## Appendix A. String-scan pattern lists (used by NS-05-R17, NS-06-A5, A12, B9 and NS-01-R24)
