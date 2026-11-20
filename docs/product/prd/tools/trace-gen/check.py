@@ -25,7 +25,7 @@ for f in files:
         m=re.match(r'\| (FR-(?:%s)-\d+[a-z]?)[ |]'%OWN[f],l)
         # six columns = a requirement row; the addenda's 2 or 3 cell "neighbouring rows extended" lines point at an existing row
         if m and len([x for x in l.strip().strip('|').split(' | ')])>=6: ids.append(m.group(1))
-check('FR rows (own code only)',len(ids),947)
+check("FR rows (own code only)",len(ids),949)
 check('FR ids unique',len(set(ids)),len(ids))
 # forward table in the trace
 fw=[]

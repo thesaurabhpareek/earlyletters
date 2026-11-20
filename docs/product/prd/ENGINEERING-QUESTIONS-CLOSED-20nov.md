@@ -1,6 +1,6 @@
 # Engineering's questions, closed one by one (20 Nov 2026)
 
-Status: CURRENT | Owner: product | Replaces: none | Load when: you asked a question on #934 or #935, or you want to know whether CF-1, CF-8 or Q57 is still open
+Status: CURRENT | Owner: product | Replaces: none | Load when: you asked a question on #934, #935 or a data and security pack PR (#999 to #1011), or you want to know whether CF-1, CF-8 or Q57 is still open
 
 Written by product for Karma, 20 Nov 2026. This file points; the rulings live in `18-errata-after-lock.md` (E) and `GAP-LOG.md` "Closures 20 Nov" (CL). It changes no card. Rule used throughout: show less, store less, send less, undoable. "Founder" and "counsel" mean the default stands and the item is in the founder digest (`22-final-holistic-spec.md` section 7); it is not closed for good.
 
@@ -63,7 +63,27 @@ Basis: 24 product questions on #934 (merged), 13 design questions on #935 (close
 | CF-8 (region_refused at Send) | Card wording final (NS-41-R2, NS-40-R9). Same wait screen for every address; the phone holds a refusal in memory for that attempt and shows the refused screen at the code step. A security read at FP-6 checks the server answer | E62, E70 | CL-136, CL-144 | No | As written |
 | Q57 (region hook fail open or closed) | Counsel's and the founder's. Product proposes sub-question (g) for Q57; it does not block the build because FP-6 builds both screens | E47, E72 | CL-121, CL-146 | Counsel only | Fail open and count; hook off until answered |
 
-## 4. Things that are not requirement questions (owner, not ruled here)
+## 4. The eleven questions on the data and security pack (#999 to #1011)
+
+Read 20 Nov by listing every issue comment and review on #999 to #1011 and filtering for the marker `<!-- req-question:`. Found on #999 (1), #1000 (1), #1001 (6), #1003 (2) and #1004 (1); none on #1002 and #1005 to #1011. #934 and #935 were re-checked: the 37 markers there are exactly P1 to P37 above, nothing new. Rule used: show less, store less, send less, undoable. Founder-only items keep a stated default and sit in the digest (`22-final-holistic-spec.md` section 7), never closed for good.
+
+| Q | Row id (PR) | Already closed? | E | CL | Founder or counsel only? | Default that stands |
+|---|---|---|---|---|---|---|
+| P38 | FR-PRV-03-audit-rows (#999) | Export half only (CL-081); the screen question was not | E74 | CL-148 | No | No screen; own rows only in Save a copy |
+| P39 | FR-MKT-app-user-email (#1000) | No | E75 | CL-149 | Founder (promise to a user); waitlist class is counsel's (Q34) | Transactional mail only to app addresses; waitlist never joined to accounts |
+| P40 | Q-COM-1 (#1001) | No | E76, E78 | CL-150, CL-152 | The new-device part is a founder line | Only what is built or sent by the sign-in service; new-device email gated before the backup flip |
+| P41 | Q-COM-2 (#1001, with Karma's correction) | No | E77 | CL-151 | No | "Sign out other devices" as built, sends no email; no sign-out-everywhere control |
+| P42 | Q-COM-3 (#1001) | No | E76 | CL-150 | No | Security alerts are not held by quiet hours |
+| P43 | Q-COM-4 (#1001) | No | E76 | CL-150 | No | New address masked (`a***@example.com`), or not named |
+| P44 | Q-COM-5 (#1001, with Karma's correction) | No | E77 | CL-151 | No (a server count or paging job is `security-architect`'s) | No email on wrong codes; the phone pause only |
+| P45 | Q-COM-6 (#1001) | No | E76 | CL-150 | No | No echo screen; the email is the record |
+| P46 | F02-REQ-017 (#1003) | No | E78 | CL-152 | Founder line (what a user is told about account safety) | Not built for 1.0; built and read before the backup flip (NS-08-R21) |
+| P47 | NS-26 (#1003) | Parked on record (frame row 41, card 10) but no E or CL said "no 1.0 row needs push" | E79 | CL-153 | Founder only if he reopens it; no digest line today | No remote push, no APNs key, no token table |
+| P48 | FR-AIS-34 (#1004) | No | E80 | CL-154 | No | Dictionary on the phone only; server table stays unreachable |
+
+Conflict list on #1001 (comment "Conflicts found in document 07"), not requirement questions, so not ruled here: C1 and C2 (`docs/emails/CATALOG.md` still plans one billing push and lists `welcome-coparent` and `coparent-invite` at 1.0; CL-064 and CL-063 already say no) go to `content` and `payments`; C3 (64 versus 60 notifications) is E13 and CR-69 A1, `mobile` BL-966; C5 (no hidden-preview category in `apps/mobile`) is `mobile`; C6 is Q-COM-1 (E76, E78); C4 (the birthday title) is G-D21 in `GAP-LOG.md`, a founder item whose default is already the neutral title with names off, so `content` follows that default.
+
+## 5. Things that are not requirement questions (owner, not ruled here)
 
 | Item | Owner and closing line |
 |---|---|
