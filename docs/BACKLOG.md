@@ -1096,7 +1096,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J09 (J09-04, J09-05) and J10 (J10-17, J10-10, J10-01); retry-sets-words-once case in `apps/mobile/test/transcription-queue.test.ts`; `apps/mobile/test/store.entries.test.ts`.
 
 #### BL-377 Review keeps what the person changed: autosave edits, warn on Close, mark person edits [High]
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
+- Status: done (PR #522, 34f848b7, merged 8 Nov 2026). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
 - Severity: major. Raised by: quality (2 findings). Steps: J06-08, J06-10.
 - Satisfies: CLAUDE.md constitution (edits stored, raw immutable); WCAG 2.2.1 (LEGAL-REQ-051); extends BL-148.
 - Scope: Persist `userText` to the draft (autosave like Write). Warn before Close when edits are unsaved. Record a user-edit marker in the edit log so replay does not present a person's edit as machine output. Cap the length. The 900 ms saved card stays until dismissed when VoiceOver is on, and a failed save shows a Try again button.
@@ -2532,7 +2532,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 ### Build 2 blockers (S0)
 
 #### BL-563 Listen never sticks on "finishing" (APP-01)
-- Status: ready. Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
+- Status: done (PR #595, 9b202f67, merged 8 Nov 2026). Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
 - Who: `mobile`.
 - Problem: `apps/mobile/src/app/listen.tsx:134-144` calls `endTake` without a catch, and most callers use `void` (`finish` at :263 awaits nothing either). If `finalizeDraftAudio` throws (a full disk makes the SQLite write in `recorder.ts:150` throw), the screen stays on "finishing" and the only control left is "Let it go", which deletes the take (`listen.logic.ts:74-76`).
 - Requirement: every way out of a take reaches Review or Tonight within 3 s, and the take is kept.
@@ -2543,7 +2543,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Tests: a `listen.logic` unit test named `[BL-563]`; one device row in `docs/qa/DEVICE_TEST_PLAN.md`.
 
 #### BL-564 Consent sheet links only to pages that exist (COMP-02)
-- Status: ready. Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
+- Status: done (PR #589, 05ded2c5, merged 8 Nov 2026). Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
 - Who: `mobile`.
 - Problem: `apps/mobile/src/app/(auth)/sign-in/consent.tsx:296` opens `brand.web.healthPrivacy`, which returns 404 (checked 1 Nov 2026). The guard test `apps/mobile/test/privacy-documents.test.ts:22-44` checks only `settings/privacy.tsx`.
 - Requirement: the sheet shows Terms and Privacy only, unless counsel answers COUNSEL_PACKET Q32 the other way, and a test covers every legal link in the app.
@@ -2552,7 +2552,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the Terms step, when it renders, then it lists Terms and Privacy and nothing else.
 
 #### BL-565 Publish the app's own Terms and Privacy before build 2 signs anyone in (COMP-01)
-- Status: ready. Mode: agent. Owner: legal. Severity: S0. Area: legal. **Decided: publish (D-138 item 1).** COUNSEL_PACKET Q31 still asks counsel about draft text for testers; the founder merges legal text (D-125).
+- Status: done in part (PRs #616 and #652, merged 8 Nov 2026: the 0.9.0 texts and website pages; the live URLs, the `policy_versions` rows and APPLY step 8.2 are founder steps). Mode: agent. Owner: legal. Severity: S0. Area: legal. **Decided: publish (D-138 item 1).** COUNSEL_PACKET Q31 still asks counsel about draft text for testers; the founder merges legal text (D-125).
 - Who: `legal`, through the CLO; the website lane publishes.
 - Problem: the live /terms and /privacy say they do not cover the app (`apps/web/src/lib/legal/terms-copy.ts:24`, `privacy-copy.ts:1-3`), yet the app links to them at sign-in and in Settings. The app texts are drafts (`docs/legal/privacy-policy.md` 3.0.0, `terms-of-service.md` 4.1.0). Sign-in needs published `terms` and `sensitive-data` rows with a URL and hash (`docs/ops/AUTH_SETUP.md:34`, `supabase/APPLY.md:193`).
 - Requirement: a beta version of each app text (0.9.0 under POLICY_VERSIONING 2.4) is live at a permanent URL before the first build 2 sign-in, and each `policy_versions` row carries that URL and hash.
