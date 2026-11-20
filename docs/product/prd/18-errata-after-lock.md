@@ -125,7 +125,7 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E72 | none; default as E47; one proposed sub-question for counsel | NS-40-R9; COUNSEL_PACKET Q57 (proposal only) | security-architect, regulatory-affairs |
 | E73 | none; the claim step is the only adoption | card 21 NS-47-R7; CR-69 A4 | mobile |
 | E74 | none; the export reads the person's own rows through a definer function, no screen | `functions/privacy.md` FR-PRV-03, PQ-5; engineering question on #999 | mobile, data-architect, privacy |
-| E75 | new P0 row FR-MKT-44 joins gap group G32, no new BL id; the purge worker already sends only transactional mail; one content test (class per template) as `LEGAL-REQ-053` says | `functions/marketing.md` FR-MKT-44; engineering question on #1000 | privacy, content, marketing |
+| E75 | new P0 row FR-MKT-44 joins gap group G38 (the marketing addendum rows; no BL covers G38 yet), no new BL id; the purge worker already sends only transactional mail; one content test (class per template) as `LEGAL-REQ-053` says | `functions/marketing.md` FR-MKT-44; engineering question on #1000 | privacy, content, marketing |
 | E76 | none (engineering's defaults taken); two catalogue lines for `content` | `functions/risk-security.md` FR-SEC-36; `docs/emails/CATALOG.md` 10.3 | sync, content, security-architect |
 | E77 | none; no new control, no new email | FR-SEC-36; card 19 NS-45-R3 | sync, mobile, security-architect |
 | E78 | new P0 row NS-08-R21 joins gap group G03; one proposed row (no BL id until #912 merges): the new-device email, built before the backup flip; nothing for 1.0 | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content |
@@ -256,7 +256,7 @@ Founder note: E69 to E73 add no item to the founder's own list. E72 keeps the E4
 
 ## Fourth round, E74 to E80 (20 Nov, Karma with product, from engineering's data and security pack questions)
 
-Source: the eleven `req-question` comments on the data and security pack PRs (#999, #1000, #1001 with six, #1003 with two, #1004), read against the record one by one (the table is in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 5). Nothing on #1002 or #1005 to #1011, and nothing new on #934 or #935. Same rule: show less, store less, send less, undoable. Two of the seven rulings (E75, E78) carry a founder line in the digest with a default; none is closed for good. The closure rows are CL-148 to CL-154, one per row E74 to E80 in order (CL-148 is E74).
+Source: the eleven `req-question` comments on the data and security pack PRs (#999, #1000, #1001 with six, #1003 with two, #1004), read against the record one by one (the table is in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 4). Nothing on #1002 or #1005 to #1011, and nothing new on #934 or #935. Same rule: show less, store less, send less, undoable. Two of the seven rulings (E75, E78) carry a founder line in the digest with a default; none is closed for good. The closure rows are CL-148 to CL-154, one per row E74 to E80 in order (CL-148 is E74).
 
 ### E74: does a parent see their own audit rows (20 Nov, Karma with product; FR-PRV-03, PQ-5)
 
@@ -272,7 +272,7 @@ Question (#1000, `FR-MKT-app-user-email`; engineering cited FR-MKT-01, which is 
 
 Ruling: no, at 1.0. An address given in the app gets transactional mail only (the list in `LEGAL-REQ-053`: sign-in codes, account and security notices, deletion receipts, legal notices). No newsletter, product news, tip, re-engagement or Plus offer, and no opt-in for one in the app. The waitlist stays its own list at the mail vendor, is never joined to accounts and never used to look one up. The one welcome email stays as the catalogue has it (once, no promotion inside). Any later commercial email needs its own row, a separate opt-in that is off by default, a one-click unsubscribe, hashed suppression, and his yes. This is a promise to a user, so it is a founder line with this default, not closed for good. Whether the waitlist's "tell me when it is ready" mail is commercial is counsel's (Q34) and is not decided here; FR-MKT-06 already holds that email until it is.
 
-Edited in place: new row FR-MKT-44. Plan delta: `purge-worker` already sends only transactional mail; the one content test is `LEGAL-REQ-053`'s class check; FR-MKT-44 is a new P0 row and joins gap group G32 in `BACKLOG-GAPS.md` (the marketing rows, BL-965 and BL-958), no new BL id; none otherwise; privacy, content, marketing.
+Edited in place: new row FR-MKT-44. Plan delta: `purge-worker` already sends only transactional mail; the one content test is `LEGAL-REQ-053`'s class check; FR-MKT-44 is a new P0 row and joins gap group G38 in `BACKLOG-GAPS.md` (the marketing addendum rows; no BL covers G38 yet), no new BL id; none otherwise; privacy, content, marketing.
 
 ### E76: which account security emails exist at 1.0 (20 Nov, Karma with product; Q-COM-1, Q-COM-3, Q-COM-4, Q-COM-6)
 
@@ -310,7 +310,7 @@ Edited in place: NS-26 (one "1.0 rule" line). Plan delta: none; no APNs work in 
 
 Question (#1004, `FR-AIS-34`): does a family's taught-names dictionary live on the phone only, or sync?
 
-Ruling: phone only. It is never synced, copied to the server or put in the server export. It follows the other phone stores of the book (E49: a second account sees nothing of it; Erase everything removes it), and a new phone starts with it empty, so the parent teaches the names again. Names a family teaches can include a child's name (L4), so storing less is the safe side. The server table `public.dictionary_terms` stays built and unreachable: no grant, no writer, no reader, until a card names a synced dictionary (that card would need a privacy read, export and deletion rows, and a label check). Whether to drop the unreachable table, and where on the phone the dictionary is stored (schema 10 has no table for it), are engineering's (`data-architect`, `mobile`) and are not ruled here.
+Ruling: phone only. It is never synced, copied to the server or put in the server export. It follows the other phone stores of the book (E49: a second account sees nothing of it; card 01's Erase everything table removes it), and a new phone starts with it empty, apart from any seed from the child's name (card 19, F03-REQ-010, unverified), so the parent teaches the names again. Names a family teaches can include a child's name (L4), so storing less is the safe side. The server table `public.dictionary_terms` stays built and unreachable: no grant, no writer, no reader, until a card names a synced dictionary (that card would need a privacy read, export and deletion rows, and a label check). Whether to drop the unreachable table, and where on the phone the dictionary is stored (schema 10 has no table for it), are engineering's (`data-architect`, `mobile`) and are not ruled here.
 
 Edited in place: FR-AIS-34. Plan delta: none; mobile, data-architect.
 
