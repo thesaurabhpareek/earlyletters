@@ -200,11 +200,11 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
     expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
     expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
-    // The CHECKs are ceilings in code points, 8 per character a person sees, never the product limit (BL-957): they
+    // The CHECKs are ceilings in code points, 16 per character a person sees, never the product limit (BL-957): they
     // admit the longest words and place the app keeps, and refuse one code point more.
-    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(1121) })).toThrow();
-    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(481) })).toThrow();
-    ins('m9', 'e4', null, { text: 'x'.repeat(1120), place: 'y'.repeat(480) });
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(2241) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(961) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(2240), place: 'y'.repeat(960) });
   });
   it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
     const { db } = nodeDb();
