@@ -36,7 +36,7 @@ import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
 import { useRouteTransitions } from '@/lib/motion';
-import { getFamily, getSetting, subscribe, subscribeTo } from '@/lib/store';
+import { getFamily, getSetting, startFindCatchUp, subscribe, subscribeTo } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -107,6 +107,7 @@ function startServices(launchedAt: number): void {
   setFreeLettersAllowanceSource(allowanceSourceFor(PLUS_ALPHA, () => effectiveFreeLetters(getRemoteConfig())));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
+  safely(startFindCatchUp); // Find's index caught up in batches (NS-02-R35); nothing with Find off and no index
   // After packs: the queue registers the speech plan as a language resolver on the
   // platform pack facade (models/speech-packs.ts uses it by default; no bind needed).
   safely(() => startTranscriptionQueue());

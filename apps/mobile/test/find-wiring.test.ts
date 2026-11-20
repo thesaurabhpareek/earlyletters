@@ -5,6 +5,8 @@
  * nothing of Find and drops what an earlier build made. Moved from #798's find-lifecycle.test.ts; the store now runs the
  * batched rebuild (slice 5), started by `startFindCatchUp` after the first frame. Real SQLite with FTS5 (node:sqlite). Fictional Asha family only.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { children, entries, wipe } from '../src/lib/db/repos';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -197,5 +199,17 @@ describe('[NS-02-R43] a build with Find off makes nothing of Find and drops what
     } finally {
       h.close();
     }
+  });
+});
+
+describe('[NS-02-R35] the root layout starts the catch-up after the first frame', () => {
+  it('[NS-02-R35] _layout.tsx calls startFindCatchUp in startServices, after startPacks, and startServices runs only in the frame callback', () => {
+    const layout = readFileSync(join(__dirname, '..', 'src', 'app', '_layout.tsx'), 'utf8');
+    expect(layout).toMatch(/import \{[^}]*\bstartFindCatchUp\b[^}]*\} from '@\/lib\/store';/);
+    const services = layout.slice(layout.indexOf('function startServices('), layout.indexOf('\n}\n', layout.indexOf('function startServices(')));
+    expect(services).toMatch(/safely\(startPacks\);[^\n]*\n\s*safely\(startFindCatchUp\);/);
+    expect(layout.match(/startFindCatchUp/g)).toHaveLength(2); // the import and the one call: nothing else starts it
+    expect(layout.match(/startServices\(launchedAt\)/g)).toHaveLength(1);
+    expect(layout).toMatch(/requestAnimationFrame\(\(\) => \{\s*void runLaunchSweep\(\);\s*startServices\(launchedAt\);/);
   });
 });
