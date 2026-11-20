@@ -10,8 +10,9 @@
  *   G11-3   a new analytics, crash or ads SDK in apps/mobile/package.json, a new entitlement, or a new usage string
  *   Each such finding passes only when the PR body names a D-id, that D-id is a heading in docs/DECISIONS.md on the
  *   base branch, its section names the privacy label, and docs/legal/app-store-privacy-labels.md changes in the PR.
+ *   G11-2   every card in docs/product/prd/*.md at the head has a line starting `**Label effect.**` or `Label effect:`.
  * Output names files, lines and ids only, never diff content. Exit 0 pass, 1 a finding, 2 the guard could not run.
- * It reads added lines by name, so the founder's merge stays the real gate.
+ * What it cannot catch, and why the founder's merge stays the real gate: docs/ops/LABEL_GUARD.md.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -20,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { permissionNames } from '../../apps/mobile/scripts/preflight-lib.mjs';
 
 export const LABEL_FILE = 'docs/legal/app-store-privacy-labels.md';
+export const CARDS_DIR = 'docs/product/prd';
 
 const SHIPPED = /^(?:apps\/mobile\/(?:src|modules)|packages\/[^/]+\/src|supabase\/(?:migrations|functions))\//;
 const NOT_SHIPPED = /(?:^|\/)(?:test|tests|__tests__|e2e|fixtures?)\/|\.(?:test|spec)\.[a-z]+$|\.md$/;
@@ -155,17 +157,47 @@ export function decisionProblems({ body, decisionsBase, changed }) {
   return problems;
 }
 
+/** G11-2: every card, or every Part of a card file, has its label line before the next card or Part heading. */
+export function labelEffectProblems(cardFiles) {
+  const out = [];
+  for (const { name, text } of cardFiles) {
+    const units = [];
+    const labels = [];
+    let fence = false;
+    String(text ?? '').split('\n').forEach((l, i) => {
+      if (/^\s*(?:```|~~~)/.test(l)) fence = !fence;
+      if (fence) return;
+      if (/^(?:\*\*Label effect\.\*\*|Label effect:)/.test(l)) labels.push(i + 1);
+      const h = /^(#{1,2})\s+(.*)$/.exec(l);
+      if (!h) return;
+      const id = /^NS-\d{2}(?!\d)/.exec(h[2])?.[0];
+      const range = /^NS-\d{2}\S*\s*(?:to|and|,|&)\s*NS-\d{2}/i.test(h[2]);
+      if (id && !range) units.push({ line: i + 1, id, part: false });
+      else if (h[1] === '##' && /^Part\b/.test(h[2]) && units.length) units.push({ line: i + 1, id: `${units.filter((u) => !u.part).at(-1).id} ${/^Part\s+\S+?(?=[.:\s]|$)/.exec(h[2])?.[0] ?? 'Part'}`, part: true });
+    });
+    units.forEach((u, k) => {
+      const end = units[k + 1]?.line ?? Infinity;
+      // A card whose next heading is one of its Parts is carried by its Parts (card 06 at the lock).
+      if (!u.part && units[k + 1]?.part) return;
+      if (!labels.some((n) => n > u.line && n < end)) out.push({ check: 'G11-2', path: `${CARDS_DIR}/${name}`, line: u.line, what: `${u.id} has no "**Label effect.**" line before the next card` });
+    });
+  }
+  return out;
+}
+
 /** Every finding, with the decision problems of G11-1a and G11-3 findings attached. `failed` is the exit decision. */
-export function runGuard({ diffText, body, decisionsBase }) {
+export function runGuard({ diffText, body, decisionsBase, cardFiles }) {
   const files = parseDiff(diffText);
   const changed = new Set(files.map((f) => f.path));
   const triggers = labelTriggers(files);
   const missing = triggers.length ? decisionProblems({ body, decisionsBase, changed }) : [];
+  const cards = labelEffectProblems(cardFiles);
   const lines = [
     ...triggers.map((t) => `${missing.length ? 'FAIL' : 'PASS'} ${t.check} ${t.path}:${t.line} ${t.what}${missing.length ? '' : ' (recorded)'}`),
     ...missing.map((m) => `FAIL record: ${m}`),
+    ...cards.map((c) => `FAIL ${c.check} ${c.path}:${c.line} ${c.what}`),
   ];
-  return { lines, failed: missing.length > 0 };
+  return { lines, failed: missing.length > 0 || cards.length > 0 };
 }
 
 function main(argv) {
@@ -183,9 +215,13 @@ function main(argv) {
   };
   const body = arg('--body-file') ? readFileSync(arg('--body-file'), 'utf8') : (process.env.PR_BODY ?? '');
   const diffText = git('diff', '--no-color', '--no-ext-diff', '-M', '--unified=0', '--src-prefix=a/', '--dst-prefix=b/', `${base}...${head}`);
-  const { lines, failed } = runGuard({ diffText, body, decisionsBase: show(base, 'docs/DECISIONS.md') });
+  const cardFiles = git('ls-tree', '--name-only', head, `${CARDS_DIR}/`)
+    .split('\n')
+    .filter((p) => p.endsWith('.md'))
+    .map((p) => ({ name: p.slice(CARDS_DIR.length + 1), text: show(head, p) }));
+  const { lines, failed } = runGuard({ diffText, body, decisionsBase: show(base, 'docs/DECISIONS.md'), cardFiles });
   for (const l of lines) console.log(l);
-  console.log(failed ? 'Label guard: FAIL (each line names what is missing).' : 'Label guard: pass.');
+  console.log(failed ? 'Label guard: FAIL (docs/ops/LABEL_GUARD.md says how to clear each line).' : `Label guard: pass (${cardFiles.length} card files read).`);
   return failed ? 1 : 0;
 }
 
