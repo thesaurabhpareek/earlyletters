@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { children, wipe } from '../src/lib/db/repos';
+import { children, entries, wipe } from '../src/lib/db/repos';
 import { prepareQuery, snippetSource } from '../src/lib/find/query';
 import { scanSearch } from '../src/lib/find/scan-index';
 import { ensureSearchView, registerFindExtraSource, resetFindExtraSources } from '../src/lib/find/sources';
@@ -151,16 +151,24 @@ describe('[NS-02-R10] order', () => {
   });
 });
 
-describe('[NS-02-R17] letters without words are not found', () => {
+describe('[NS-02-R17][NS-02-R33] letters without kept words are not found', () => {
   it('[NS-02-R17] a spoken letter waiting for its words, and a letter with no words, are not found', () => {
     f = findFixture();
     f.add({ text: '', transcriptStatus: 'waiting', captureMode: 'spoken' });
     f.add({ text: '   ' });
-    const kept = f.add({ text: 'Words that arrived later wait for review but exist.' });
-    f.db.run("UPDATE entries SET transcript_status = 'unreviewed' WHERE id = ?", kept);
+    const kept = f.add({ text: 'Kept words about the review.' });
     expect(find('review')).toEqual([kept]);
     ensureSearchView(f.db);
     expect(f.db.all('SELECT id FROM searchable_letters')).toEqual([{ id: kept }]);
+  });
+
+  it('[NS-02-R33] machine words the author has not kept from Review yet are not found; once kept, they are', () => {
+    f = findFixture();
+    const id = f.add({ text: '', transcriptStatus: 'waiting', captureMode: 'spoken', rawTranscript: '' });
+    entries.setWordsOnce(f.ctx, id, { rawTranscript: 'the harbour', machineEdits: [], finalText: 'The harbour.', editLevel: 'clean', engineVersion: 5 });
+    expect(find('harbour')).toEqual([]); // 'unreviewed' (M17): words exist but are not kept
+    expect(entries.markWordsReviewed(f.ctx, id)).toBe(true);
+    expect(find('harbour')).toEqual([id]);
   });
 });
 
