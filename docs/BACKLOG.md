@@ -3718,11 +3718,11 @@ Written 20 Nov 2026 by Karma with the CPO role, docs only, after the requirement
 
 How the harness reads this section: a row is eligible when its Status is `ready`, or `blocked` on backlog ids that are all done, and every `Depends on` id is done (`scripts/agents/lib.mjs`). A row blocked on a counsel answer, a founder step or an unmerged PR names it in words, so the dispatcher leaves it alone until a person changes the status.
 
-#### BL-952 Find on the phone, as at most six reviewable PRs (NS-02)
+#### BL-952 Find on the phone, as eight reviewable PRs (NS-02)
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L.
 - Satisfies: NS-02-R1 to NS-02-R50 (`docs/product/prd/02-find.md`), P0 rows first; NS-35-R7 (Find never starts a letter).
 - Problem: #798 is +2,511 lines in 37 files, far over the 400-line review limit, and it misses three locked rows: the index rebuild runs as one transaction (R35), the failed view is not announced to VoiceOver (R37), and typing has no debounce.
-- Scope: split #798 into at most six PRs behind `EXPO_PUBLIC_BOOK_SEARCH` (off): (1) `letter_search` and `letter_search_rows` made by `ensureSearchIndex`; (2) `searchable_letters` as the one visibility view, with the seal clause slot; (3) `reconcileSearch` inside sync with the proposed budget of section 8; (4) the Find bar and results; (5) rebuild in batches of 200 off the first frame, silent scan fallback on `fts_unavailable` or corrupt; (6) `killSwitches.bookSearch`, the failed-view announcement and the debounce. The index lives in `scribe.db`; it is derived L4 data, never synced, exported or logged.
+- Scope: split #798 into eight PRs (the lock text said at most six; the split Karma ruled and the series built is eight, five of eight merged at 20 Nov 18:20 UTC per `docs/product/prd/17-engineering-project-plan.md` section 8 M31, UNVERIFIED here: not re-read) behind `EXPO_PUBLIC_BOOK_SEARCH` (off); the six steps are: (1) `letter_search` and `letter_search_rows` made by `ensureSearchIndex`; (2) `searchable_letters` as the one visibility view, with the seal clause slot; (3) `reconcileSearch` inside sync with the proposed budget of section 8; (4) the Find bar and results; (5) rebuild in batches of 200 off the first frame, silent scan fallback on `fts_unavailable` or corrupt; (6) `killSwitches.bookSearch`, the failed-view announcement and the debounce. The index lives in `scribe.db`; it is derived L4 data, never synced, exported or logged.
 - Fails on old code: `[NS-02-R24]` (account B's index holds none of A), `[NS-02-R25]` (no query in a URL or route param), `[NS-02-R35]` (rebuild in batches).
 - Done when: every P0 row of NS-02 passes, each PR has two counted reviews at its head, and the J-N2 device row exists.
 
@@ -4087,10 +4087,10 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 
 #### BL-182 Languages: only what is shipped, in a store build (NS-17, FR-LOC)
 - Status: proposed (docs/product/prd/BACKLOG-GAPS.md G05; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: L. Depends on: BL-965, BL-958.
-- Satisfies: 26 P0 rows with no backlog row: FR-LOC-01 to FR-LOC-05, FR-LOC-08, FR-LOC-10, FR-LOC-13, FR-LOC-19 to FR-LOC-24, FR-LOC-26, FR-LOC-28 to FR-LOC-29, NS-17-R1 to NS-17-R8, NS-17-R10.
+- Satisfies: 28 P0 rows with no backlog row: FR-LOC-01 to FR-LOC-05, FR-LOC-08, FR-LOC-10, FR-LOC-13, FR-LOC-19 to FR-LOC-24, FR-LOC-26, FR-LOC-28 to FR-LOC-29, NS-17-R1 to NS-17-R8, NS-17-R10 to NS-17-R12.
 - Scope: tests first, then code or words only where a test fails, for the rows above: a language is offered only when its pack is in the build; FR-LOC-10 cites BL-321, which has no heading. Note: split into at most four PRs when made ready. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
-- Source: docs/product/prd/BACKLOG-GAPS.md G05. Group G05; 26 rows.
+- Source: docs/product/prd/BACKLOG-GAPS.md G05. Group G05; 28 rows.
 
 #### BL-183 Capture and reading stragglers of the 20 Nov lock (NS-19, NS-21, NS-24, NS-35, NS-37)
 - Status: proposed (docs/product/prd/BACKLOG-GAPS.md G06; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931, BL-952, BL-947.
@@ -4308,19 +4308,19 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 
 #### BL-045 Photo moments, level 3 (NS-51)
 - Status: proposed (docs/product/prd/BACKLOG-GAPS.md G36; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-961, BL-985.
-- Satisfies: 27 P0 rows of NS-51 (`docs/product/prd/27-photo-moments-and-media.md`): NS-51-R1 to NS-51-R3, NS-51-R5 to NS-51-R6, NS-51-R8 to NS-51-R12, NS-51-R15 to NS-51-R19, NS-51-R23 to NS-51-R26, NS-51-R28 to NS-51-R31, NS-51-R33 to NS-51-R34, NS-51-R37, NS-51-R42.
+- Satisfies: 26 P0 rows of NS-51 (`docs/product/prd/27-photo-moments-and-media.md`; NS-51-R24 is cite-covered by BL-961 and is not listed): NS-51-R1 to NS-51-R3, NS-51-R5 to NS-51-R6, NS-51-R8 to NS-51-R12, NS-51-R15 to NS-51-R19, NS-51-R23, NS-51-R25 to NS-51-R26, NS-51-R28 to NS-51-R31, NS-51-R33 to NS-51-R34, NS-51-R37, NS-51-R42.
 - Drop: C for every row (card 27 conventions).
 - Scope: tests first, then code or words only where a test fails, for the rows above: photo moments on the phone; every row is drop C and the spike comes first (Q-PM-7), which needs a device. Note: build after the suggestions row (BL-298). The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
-- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-51). Group G36; 27 rows.
+- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-51). Group G36; 26 rows.
 
 #### BL-046 Pictures and videos with a letter (NS-52)
 - Status: proposed (docs/product/prd/BACKLOG-GAPS.md G37; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-961, BL-985.
-- Satisfies: 26 P0 rows of NS-52 (`docs/product/prd/27-photo-moments-and-media.md`): NS-52-R2 to NS-52-R6, NS-52-R8, NS-52-R10 to NS-52-R11, NS-52-R15 to NS-52-R19, NS-52-R21 to NS-52-R23, NS-52-R25, NS-52-R28 to NS-52-R30, NS-52-R32, NS-52-R36 to NS-52-R38, NS-52-R40, NS-52-R44.
+- Satisfies: 25 P0 rows of NS-52 (`docs/product/prd/27-photo-moments-and-media.md`; NS-52-R18 is cite-covered by BL-933 and is not listed): NS-52-R2 to NS-52-R6, NS-52-R8, NS-52-R10 to NS-52-R11, NS-52-R15 to NS-52-R17, NS-52-R19, NS-52-R21 to NS-52-R23, NS-52-R25, NS-52-R28 to NS-52-R30, NS-52-R32, NS-52-R36 to NS-52-R38, NS-52-R40, NS-52-R44.
 - Drop: C for every row (card 27 conventions).
 - Scope: tests first, then code or words only where a test fails, for the rows above: several pictures and videos per letter; every row is drop C and the spike comes first (Q-PM-7), which needs a device. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
-- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-52). Group G37; 26 rows.
+- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-52). Group G37; 25 rows.
 
 #### BL-047 P0 rows added to the function reviews on 20 Nov (functions/*.md)
 - Status: proposed (docs/product/prd/BACKLOG-GAPS.md G38; Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: M.

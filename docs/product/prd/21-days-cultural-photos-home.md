@@ -744,7 +744,7 @@ Default settings, Tuesday and Saturday at 8:30 PM. After a spoken letter on Mond
 | Second account on the same phone | B starts with nothing pending | `[NS-13-R13]` |
 | Reminders off or paused | The evening class is not planned and the function is not called for it; a ticked day still resolves its key (NS-46-R31) | `[NS-48-R2]` |
 | Notifications not allowed | Nothing scheduled | `[NS-13-R16]` |
-| Quiet or hidden book | None (blocked by BL-985) | `[NS-48-R21]` |
+| Quiet or hidden book | None (blocked by the Home slip registry) | `[NS-48-R21]` |
 
 ### 10. Data and engineering
 - Fields: none. The "last chosen key" setting is removed: the variant is a pure function of the cell and `slotOrdinal` (RV-14), so no occasion or day key sits in the iPhone backup and a store write never changes every pending note.
@@ -990,7 +990,7 @@ Risk checks:
 | Device runs on iOS 17.1, 17.2 and 26 | Before ship | `qa` | Flag off |
 
 ### 14. Never
-As section 12, plus: no system-intelligence donation (D3); writing tools off on the label field, photo words and place (D2, BL-962); no sound or haptic on a failed picture (A-motion 4).
+As section 12, plus: no system-intelligence donation (D3); writing tools off on the label field, photo words and place (D2); no sound or haptic on a failed picture (A-motion 4).
 
 ### 15. Design inputs
 New ids (PROPOSED): **A-S16** One photo from a suggestion (an N7 sheet, NS-49-R30). New states of existing screens: A-S01 capture cluster with the anchored menu on "Start from a photo" (light, dark, AX5 on SE 3; absent below 17.2); A-S03 state `suggestions.noPhoto` (one calm line, then a picture-less letter; the `suggestions.empty` state is removed because the app cannot observe an empty list); A-S04 state `suggestionLabel` ("From your phone: {title}", a glyph plus words, "Use this" and a 44 pt Clear); D-S06 `journalNote` (the one calm line that the phone's own journal suggestions are separate). There is no Home strip tile (R-IA-3).

@@ -4,11 +4,11 @@ Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Rep
 
 Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
-Author: `product` (CPO role). Rank 1 of 7 in the founder's order (photo, Find, pilot, spike, share, Firsts and sealed; `closed-questions-2026-11-11.md`, X1). Index: `README.md`. Design source: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794). Data source: ADR 0028 (PR #797, not yet on `develop`; cited as "ADR 0028 (PR #797)" until it merges). Rulings applied: round-2 rulings T2, T3, T4, T5, D1, D2, D3, D5, D13 (Karma, 20 Nov 2026, council round 2; each card line that applies one says so).
+Author: `product` (CPO role). Rank 1 of 7 in the founder's order (photo, Find, pilot, spike, share, Firsts and sealed; `closed-questions-2026-11-11.md`, X1). Index: `README.md`. Design source: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` Data source: ADR 0028 (not yet on `develop`; cited by number until it merges). Rulings applied: round-2 rulings T2, T3, T4, T5, D1, D2, D3, D5, D13 (Karma, 20 Nov 2026, council round 2; each card line that applies one says so).
 
 Terms. "Lens", "Photos lens" and "entry_media" are internal; `content` names what a parent reads (BRAND.md glossary, CR-25). One picture term everywhere (ruling T3): **stored copy** = the file this app keeps, metadata stripped, at most 4,032 px on the long side; **list copy** about 512 px and **page copy** about 1,280 px (NS-37); **the picker's temporary copy** = the file Apple's picker hands over, which still carries location and is deleted once read. The picture in the parent's photo library is never touched, copied into the book or exported. The word "original" is not used for anything this app keeps (finding F16).
 
-Tags: [F] fact read this session in a file or PR diff (named). [A] assumption about parents. [E] estimate. PROPOSED = a number or line `product` proposes. UNVERIFIED = not read or not run this session. Nothing in this card was run on a phone. Code facts come from reading the diffs of the open stack #834, #841, #842, #835, #836, #837, #838, #839, #840 (in merge order) on 20 Nov 2026; "built" below means "present in that diff", not "passes".
+Tags: [F] fact read this session in a file or PR diff (named). [A] assumption about parents. [E] estimate. PROPOSED = a number or line `product` proposes. UNVERIFIED = not read or not run this session. Nothing in this card was run on a phone. Code facts come from reading the diffs of the open stack of nine draft pull requests (listed in section 10, in merge order) on 20 Nov 2026; "built" below means "present in that diff", not "passes".
 
 ## 1. Who and when
 
@@ -30,7 +30,7 @@ Tags: [F] fact read this session in a file or PR diff (named). [A] assumption ab
 - On Review and on a kept letter's page, the author can add a picture, change it (asks first, Undo after), take it off (Undo after), and type optional words about it (at most 140 characters) and a place (at most 60). The app writes none of these.
 - One picture per letter. The stored copy lives on this phone only, in `Library/Application Support/photos/<media_id>.jpg`, metadata stripped, upright, in the iPhone's own backup.
 - In the Book, a Photos lens (Months or Photos) appears only once a kept, open letter has a picture. It lists those letters as the Book's own letter cards with a thumbnail, newest first, under the Book's month openers. It only reads.
-- The export (schema 1.7.0, BL-933) carries each stored copy with the letter.
+- The export (schema 1.7.0) carries each stored copy with the letter.
 
 **Not in scope (this card).**
 - Camera capture. A picture alone as a letter (a letter needs words: D-103). More than one picture per letter, video, multi-select, the "Add photos" row, the 3-photo and 8-photo layouts, swipe between items (design spec 01 section 1a, later NX-39 phases). A date read from the file (NX-39 P1, OQ-1). Any caption, title, tag, description, face, scene or "best photo" made by the machine (constitution; `NX-39-R9`). Pictures following the account to another phone (C-32, later; would change the privacy label). A picture on a quiet-day mark. Pictures in the owner backup of ADR 0024 (audio only). A Share of the picture (NS-05 decides).
@@ -79,13 +79,13 @@ Add later, from a kept letter:
 
 | Scenario | Behaviour |
 |---|---|
-| First use | "Start from a photo" shows on Home whenever the switch is on and the picker is registered, before any picture exists (OQ-3 closed as built in #838). No Photos lens until a kept, open letter has a picture (R10a). |
+| First use | "Start from a photo" shows on Home whenever the switch is on and the picker is registered, before any picture exists (OQ-3 closed as built). No Photos lens until a kept, open letter has a picture (R10a). |
 | Empty | Book with 0 letters: no lens, no hint, no count; the Book's empty button only moves to Home (R23a). |
 | Many (1,000 letters, 300 pictures) | The lens lists only letters with a picture, using list copies (NS-37, R53); a 300-picture lens scrolls with no frame over 16.7 ms on SE 3 (NS-37-R1). On-device storage about 0.5 to 0.9 GB for 300 stored copies [E] plus derivatives (NS-37). |
 | Offline | Everything works: picker (local pictures), stored copy, lens, export. An iCloud-only picture fails calmly (R46). |
-| Slow | Thumbnail p95 1,000 ms from picker close; stored copy written within 1,500 ms p95 off the UI thread (section 8). The native re-encode times out at 20 s and counts as a failure, letter kept (`BAKE_TIMEOUT_MS`, #834 baker.ts [F]). |
+| Slow | Thumbnail p95 1,000 ms from picker close; stored copy written within 1,500 ms p95 off the UI thread (section 8). The native re-encode times out at 20 s and counts as a failure, letter kept (`BAKE_TIMEOUT_MS`, `baker.ts` [F]). |
 | Failed | Every failure leaves 0 files and 0 rows and keeps the letter (R17a, R51, R58). |
-| Interrupted (call, Siri, alarm, the baby) | After the pick and before speaking: the picture stays on Ready for that capture session when the app returns (R57). While the picker is open: the picker sheet going away answers Cancel (#842 [F]). During recording: recording rules as today; the picture stays pending. |
+| Interrupted (call, Siri, alarm, the baby) | After the pick and before speaking: the picture stays on Ready for that capture session when the app returns (R57). While the picker is open: the picker sheet going away answers Cancel [F]. During recording: recording rules as today; the picture stays pending. |
 | App killed mid-flow | Before Review: no picture kept, temporary copy swept (R43). After Review opened: the draft holds the picture and returns with it (R43). Between file and row: swept (R36). |
 | App updated mid-flow | A draft holding a picture is intact after the update (R44); local migration 11 runs once and never reverses (R35). |
 | Low storage (under 1 GB; under 50 MB) | Under 1 GB: capture starts with the calm line (06-nfr 11.3); the stored copy is written only if free space covers it plus 50 MB (R45, PROPOSED), else the letter is kept without it (R17a). Under 50 MB: no draft is created (06-nfr 11.3), so no picture is stored. |
@@ -94,7 +94,7 @@ Add later, from a kept letter:
 | Two parents | Each author's picture stays on the phone that added it; the other parent's phone shows the letter whole with no picture slot and no message (R28). Only the author can add, change or remove (R9c). |
 | Expecting parent (due date only) | No difference: a picture can go with a letter written before birth (a scan, a room). |
 | Multilingual (Devanagari, RTL, CJK) | Photo words and place in any script, stored as typed, capped by grapheme clusters (R54); RTL words render right to left on the letter page. |
-| Largest text (AX5 plus Bold Text) on SE 3 | Thumbnail rule of R39; lens cards stack the thumbnail above the words (#840 [F]); every control 44 pt (R20a). |
+| Largest text (AX5 plus Bold Text) on SE 3 | Thumbnail rule of R39; lens cards stack the thumbnail above the words [F]; every control 44 pt (R20a). |
 | VoiceOver | Fixed label or the parent's own words (R9a, R21c); order thumbnail, prompt, Speak, Type (R20b); Undo windows follow T4 (R38). |
 | Voice Control and Switch Control | Every visible label is a command; everything reachable by item scanning; with Switch Control on, Undo stays until the parent moves on (R38c, R20e). |
 | Reduce Motion | No motion added; fades only (R20d). |
@@ -198,7 +198,7 @@ Priority: P0 rows carry their RR-4 reason: (a) a promise, (b) a legal or store d
 
 Inherited from `docs/prd/v2/06-nfr.md` unless stated. Device numbers are on an iPhone SE 3 under the 06-nfr section 0 protocol. All numbers below are PROPOSED until the first device run.
 
-- **Latency.** Picker close to thumbnail shown: p95 1,000 ms for a 12 MP local photo, over 20 picks of 12 MP HEIC (CTO pass). Stored copy written (strip, re-encode when needed, hash, write, row): p95 1,500 ms, off the UI thread, no UI frame over 16.7 ms. Tap Speak to microphone live with a picture attached: p95 500 ms, unchanged (F04-REQ-023). Native re-encode hard limit 20 s, then a failure (`BAKE_TIMEOUT_MS`, #834 [F]).
+- **Latency.** Picker close to thumbnail shown: p95 1,000 ms for a 12 MP local photo, over 20 picks of 12 MP HEIC (CTO pass). Stored copy written (strip, re-encode when needed, hash, write, row): p95 1,500 ms, off the UI thread, no UI frame over 16.7 ms. Tap Speak to microphone live with a picture attached: p95 500 ms, unchanged (F04-REQ-023). Native re-encode hard limit 20 s, then a failure (`BAKE_TIMEOUT_MS` [F]).
 - **Memory.** Peak during attach under 80 MB above the Home baseline. Book with 1,200 letters and 300 pictures under 150 MB resident (NS-37; 06-nfr's 120 MB plus 30 MB).
 - **On-device storage.** Stored copy about 1.5 to 3 MB at 4,032 px and quality 0.85 [E]; 300 pictures about 0.5 to 0.9 GB [E], plus list and page copies (NS-37). Temporary copies: 0 bytes after each pick and at every launch. Counted in Storage, never as purgeable cache.
 - **Battery.** Under the measurable step for 20 attaches (06-nfr section 0 method). No background work.
@@ -251,7 +251,7 @@ Inherited from `docs/prd/v2/06-nfr.md` unless stated. Device numbers are on an i
 
 | Field | Class | Where | Synced | Retention clock | Deletion path | Export | Log exclusion |
 |---|---|---|---|---|---|---|---|
-| Stored copy `Library/Application Support/photos/<media_id>.jpg` | L4 (child's image), C | phone sandbox; in the iPhone backup (no exclusion call) | No; `photo_path` null; server write-deny (BL-870) | life of the letter; Recently deleted 30 days then purge; draft let go; Erase everything; app deleted | `erasePictureOf` through `eraseAudioFile` (eraseEntry, finishServerErased, eraseBook); folder deleted at Erase everything | `photos/<entry_id>/<media_id>.jpg` (1.7.0) | path, name and hash never logged (PRIV-R10) |
+| Stored copy `Library/Application Support/photos/<media_id>.jpg` | L4 (child's image), C | phone sandbox; in the iPhone backup (no exclusion call) | No; `photo_path` null; server write-deny | life of the letter; Recently deleted 30 days then purge; draft let go; Erase everything; app deleted | `erasePictureOf` through `eraseAudioFile` (eraseEntry, finishServerErased, eraseBook); folder deleted at Erase everything | `photos/<entry_id>/<media_id>.jpg` (1.7.0) | path, name and hash never logged (PRIV-R10) |
 | Picker's temporary copy `Caches/ImagePicker/<id>.img` (carries location) | L4 | phone cache | No | until read (seconds), or the next launch | removed after read, Cancel, back-out, drop; launch sweep; Erase everything | No | never logged |
 | Re-encode temporary JPEG `Caches/ScribePhoto/<id>.jpg` | L4 | phone cache | No | until read | removed at once; launch sweep; Erase everything | No | never logged |
 | `entry_media.id` | L2 | `scribe.db` | No | as the picture | same step | in the path | ids only, never with a path |
@@ -281,8 +281,8 @@ Picking a picture is an act the parent does, not an agreement.
 | Child's picture (L4) | A modified client or hostile contributor uploads to `entry-photos` or sets `photo_path` | Drop author insert and update policies; trigger `entries_15_photo_closed` refuses with `SCPHO` (ADR 0028 D6) | R61, `photo_bucket_closed.test.mjs` |
 | Location and device data in the file | GPS leaks through the stored copy, export or a later share | Strip at write (segment walk plus signature scan); re-encode carries no source properties | R6 |
 | The picker's temporary copy | Location-bearing file left in Caches | Delete after read; launch sweep; Erase everything | R52 |
-| Paths from JavaScript | Path traversal into or out of the app's folders | Native accepts only a plain name directly inside its Caches folder; JS `withinFolder` judges the decoded name; stored names match `<id>.jpg` only | #834, #841 tests; R34 |
-| A crafted image | Decompression bomb or unexpected codec | Type allowlist; canvas cap 150 MP read before decode; serial queue; 20 s timeout | #834 source scan |
+| Paths from JavaScript | Path traversal into or out of the app's folders | Native accepts only a plain name directly inside its Caches folder; JS `withinFolder` judges the decoded name; stored names match `<id>.jpg` only | the stack's tests; R34 |
+| A crafted image | Decompression bomb or unexpected codec | Type allowlist; canvas cap 150 MP read before decode; serial queue; 20 s timeout | the stack's source scan |
 | Native picker module | Supply chain (A8) | No picker package; `security-architect` reviews lockfile and plist (`NX-39-R52`) | R22, review record |
 | Switcher snapshot | Shoulder or lost phone (A3) | Pictures blank on inactive, with or without App lock | R13a, R13b |
 | Files app | User-visible folder | Application Support, never Documents | R34 |
@@ -296,7 +296,7 @@ Picking a picture is an act the parent does, not an agreement.
 
 ## 15. Design inputs
 
-- **States to draw.** Home with the photo start (light, dark, AX5 on SE 3); Ready with a picture (default, AX3 or larger per R39, panorama per R42); Ready with "That photo could not be opened" (#838); Review with picture, words and place fields; letter page with picture (own, other author's, file missing per R56, "did not come along" per R58); replace confirm; Undo toast during and after its window (R38b); Book with the Months or Photos choice; lens with 1, 30 and 300 letters; lens at AX5 (thumbnail above the words); second phone with no slot (R28); Me, Storage line that pictures stay on the phone that added them.
+- **States to draw.** Home with the photo start (light, dark, AX5 on SE 3); Ready with a picture (default, AX3 or larger per R39, panorama per R42); Ready with "That photo could not be opened"; Review with picture, words and place fields; letter page with picture (own, other author's, file missing per R56, "did not come along" per R58); replace confirm; Undo toast during and after its window (R38b); Book with the Months or Photos choice; lens with 1, 30 and 300 letters; lens at AX5 (thumbnail above the words); second phone with no slot (R28); Me, Storage line that pictures stay on the phone that added them.
 - **Components reused.** `Button` (quiet), `Toast` with Undo, `TextField`, `LetterCard` with the `photo` prop, `MonthOpener`, `BookRow`, `PhotoFrame` (COMPONENTS 2.23), `ChoiceGroup` or `ChipGroup` for the lens (R48). No new component.
 - **Layout at AX5 on SE 3.** Thumbnail at most 88 pt tall from AX3 (R39, PROPOSED); Speak and Type stay above the fold; lens cards stack; Change, Take the photo off and Undo wrap, each 44 pt.
 - **Motion.** None new beyond existing fades; Reduce Motion fades only.

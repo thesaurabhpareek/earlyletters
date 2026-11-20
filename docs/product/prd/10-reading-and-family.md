@@ -20,7 +20,7 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 - **Free or Plus (ruling T2).** Every capability that ships free in the 1.0.x line falls under principle 6 and never moves behind Plus. Plus holds one paid act: keeping letters beyond the allowance (D-082, D-103). Each card here raises the value of a kept letter. Public copy says nothing either way.
 - **Hand-sent measures (ruling D5).** Analytics is off through the 1.0 line (D-124). Testers send numbers only; the founder keeps them in a private sheet, never in the repo or a Claude session, and deletes them 90 days after the round. Results are reported as "x of n", never as a percentage when n is under 20. Each round asks at most 5 questions with fixed wording, versioned in `docs/research/`.
 - **Home slips, one fixed order (ruled 20 Nov, Karma, council round 2).** Home shows at most one slip, in this order: (1) the existing waiting cards, in their existing order; (2) the seal-opened line on its day (NS-06-B4); (3) Save a copy in the birthday week (NS-11); (4) one past letter (NS-23, replacing "A month ago"). The reminder ask sheet and the Plus line are not slips. The photo start is part of the capture cluster, never a slip. A registry test fails when an unregistered slip renders (`[FRAME-SLIP]`).
-- **Traceability.** Test titles start with the row id in square brackets. `scripts/trace.mjs` does not yet match NS ids (finding F1; #819 partly addresses it), so no card here claims trace coverage until that lands.
+- **Traceability.** Test titles start with the row id in square brackets. `scripts/trace.mjs` does not yet match NS ids (finding F1; an open draft partly addresses it), so no card here claims trace coverage until that lands.
 - **Counsel numbers** are from `COUNSEL_PACKET.md` 1.5.0 (old Q2 is Q48, Q29 is Q49, Q27 is Q50, Q1 is Q47, Q7 is Q54).
 
 ---
@@ -34,7 +34,7 @@ Every parent (P1, P2), every time they open a letter from the Book, Find, Home's
 
 ### 2. Why
 - The job: "Leave my words and voice for my child's future" (rank 3). The page is where a kept letter is read and looked after.
-- What goes wrong today [F, read in code]: `apps/mobile/src/app/letter/[id].tsx` shows the words, then Play (`:413`), then a provenance footnote and a Private chip in their own block (`:430-455`), then, for the author only, one inset list of three rows: Make private or Add to book, Change the date, Delete (`:458-483`). The page has no heading (`accessibilityRole="header"` appears nowhere in the file). Six coming features each need a control here: a picture (NS-01, open PR #839 edits this file), a first and a seal (NS-06), Share (NS-05), earlier versions (NS-12), both days (NS-15).
+- What goes wrong today [F, read in code]: `apps/mobile/src/app/letter/[id].tsx` shows the words, then Play (`:413`), then a provenance footnote and a Private chip in their own block (`:430-455`), then, for the author only, one inset list of three rows: Make private or Add to book, Change the date, Delete (`:458-483`). The page has no heading (`accessibilityRole="header"` appears nowhere in the file). Six coming features each need a control here: a picture (NS-01, an open draft edits this file), a first and a seal (NS-06), Share (NS-05), earlier versions (NS-12), both days (NS-15).
 - What goes wrong next [A]: if each feature adds its own control where there is room, the page becomes a settings screen around a letter, and a VoiceOver reader hears controls in a different order on every letter.
 
 ### 3. What, and Not in scope
@@ -224,7 +224,7 @@ A parent opening the Book to read, often in the evening, sometimes at the larges
 ### 2. Why
 - The job: "Leave my words and voice for my child's future" (rank 3); the Book is for reading.
 - Today [F, read in code]: the cover band (`app/(tabs)/book.tsx:356-368`, `CoverBand`) holds the title, the age, the child switcher (two books only), Read together, Months and the gear; the inline bar after scroll holds the title, Months and the gear (`:385-400`). The gear opens `/settings` (`:353`). Me is already Settings home as a tab (`app/(tabs)/you.tsx`, NX-30a; IA.md row Me), so the gear is a second door to the same place.
-- Next [F]: Find (#798) and the lens choice (#840) both want the same inch.
+- Next [F]: Find and the lens choice both want the same inch.
 - Quiet this book has no surface on `develop` [F]: `setChildQuiet` exists in `lib/store.ts:390` and no screen calls it, while F12-REQ-011 (P0) wants it within 2 taps of the book header. Hide this book lives in Me, then the book (`app/settings/children/[id].tsx:113-125`).
 
 ### 3. What, and Not in scope
@@ -357,7 +357,7 @@ NS-02 (#798), NS-01 lens (#840), F12-REQ-011. Device rows under D13.
 
 **Label effect.** None.
 
-Ruled 20 Nov (Karma, council round 2): this card changes the built `resurfaced` card ("A month ago", 28 to 35 days) to "the same day of an earlier month or year", as one Home card rule, reconciled with open PR #721.
+Ruled 20 Nov (Karma, council round 2): this card changes the built `resurfaced` card ("A month ago", 28 to 35 days) to "the same day of an earlier month or year", as one Home card rule, reconciled with the open draft for the same card.
 
 ### 1. Who and when
 P1 opening Home to speak tonight, finding a letter they said a year ago today, or on this day last month. Sometimes P2, whose in-book letters can come back too.
@@ -365,7 +365,7 @@ P1 opening Home to speak tonight, finding a letter they said a year ago today, o
 ### 2. Why
 - The job: "Leave my words and voice for my child's future" (rank 3). Rereading turns a habit of speaking into a reason to keep going [A: no evidence from our families yet].
 - Today [F, read in code]: `resurfaced()` in `apps/mobile/src/components/tonight/draft-card.logic.ts:177-206` shows, only when no draft is waiting, the newest in-book letter with words dated 28 to 35 days ago, never a private letter, never a quiet-day mark, never a month-only date; `index.tsx:200` and `:319-326` render it under the prompt, after any draft cards. Its kicker is `tonight.resurfaced.kicker` "A month ago" (`packages/content/src/strings.en.ts:277-280`).
-- Open PR #721 (draft, +678, "From the book", BL-790, NX-36 S13) [F, read 20 Nov]: moves the rule to `from-the-book.logic.ts`, keeps the 28 to 35 day window first, and otherwise rotates through every eligible letter by the day count; adds a hard-day prompt exclusion (`hard.*`), excludes today's letters, a grapheme-safe excerpt and capped VoiceOver labels, and a day-zero card for an empty book.
+- Open draft (+678, "From the book", NX-36 S13) [F, read 20 Nov]: moves the rule to `from-the-book.logic.ts`, keeps the 28 to 35 day window first, and otherwise rotates through every eligible letter by the day count; adds a hard-day prompt exclusion (`hard.*`), excludes today's letters, a grapheme-safe excerpt and capped VoiceOver labels, and a day-zero card for an empty book.
 - What goes wrong [A]: a window that slides daily makes "a year ago today", the moment parents talk about, impossible; a daily rotation through the whole book reads as the app choosing for the parent. One rule by date, stated plainly, is easier to trust.
 
 ### 3. What, and Not in scope
@@ -373,7 +373,7 @@ P1 opening Home to speak tonight, finding a letter they said a year ago today, o
 
 Choice rule (PROPOSED, R12): first, the same day and month in an earlier year, the most recent such year; otherwise, the same day in an earlier month, the most recent. Ties: later `captured_at`, then id. The same letter shows all day and moves on at local midnight.
 
-Reconciliation with #721 (R16): #721's eligibility (kept letter, in the book, has words, not a quiet-day mark, not month-only, not dated today, not from a `hard.*` prompt), its verbatim grapheme-safe excerpt and its capped VoiceOver label are kept. Its 28 to 35 day window and its daily rotation through the book are replaced by this card's date rule. Its day-zero card is not a past letter and is not one of the four registered slips; it does not ship under this card (open question 1).
+Reconciliation with the open draft (R16): its eligibility (kept letter, in the book, has words, not a quiet-day mark, not month-only, not dated today, not from a `hard.*` prompt), its verbatim grapheme-safe excerpt and its capped VoiceOver label are kept. Its 28 to 35 day window and its daily rotation through the book are replaced by this card's date rule. Its day-zero card is not a past letter and is not one of the four registered slips; it does not ship under this card (open question 1).
 
 **Not in scope.** Notifications (nothing reaches a notification). A widget (C-30, parked). Any ranking by a score, model, "most loved" or play count. Private letters, even the author's own (as built).
 
@@ -393,7 +393,7 @@ Reconciliation with #721 (R16): #721's eligibility (kept letter, in the book, ha
 | A sealed letter | Never shown before its day |
 | A letter in Recently deleted | Never chosen; eligible again once restored |
 | A month-only letter (`occurred_precision = month`) | Never chosen (as built; its day is not one the parent gave) |
-| A letter started from a hard-day prompt (`hard.*`) | Never chosen (from #721) |
+| A letter started from a hard-day prompt (`hard.*`) | Never chosen (from the open draft) |
 | A letter dated today | Never chosen; it is in the Book |
 | The parent dismisses it | Gone until tomorrow (local midnight) |
 | A hard day the app cannot know about | The switch in Me turns past letters off in one tap; Quiet this book stops it for that book |
@@ -466,7 +466,7 @@ Reconciliation with #721 (R16): #721's eligibility (kept letter, in the book, ha
 | Offline | Works fully |
 | Accessibility | One element; AX5 plus Bold Text; 44 pt for the dismiss control |
 | Localisation | Date by `Intl.DateTimeFormat`; fragment in the letter's language and direction; `Intl.Segmenter` on Hermes is UNVERIFIED, so the built grapheme-prefix rule is the floor |
-| Privacy | Log canary: no fragment, letter id or child name in any log; no analytics event (as #721 states) |
+| Privacy | Log canary: no fragment, letter id or child name in any log; no analytics event (as the open draft states) |
 
 ### 9. State space (RR-5)
 | Case | Expected | Test |
@@ -517,7 +517,7 @@ States: card present; card absent; dismissed; switch off in Me; AX5 on SE 3 with
 - The Me switch label (intent: "Past letters on Home") and its one-line footer (intent: "One letter you made on this day, now and then").
 - The dismiss label (intent: "Not today").
 - Banned: "memories", "on this day" if the glossary does not carry it, any count, "since", "missed".
-- `content` writes; the founder approves. #721's five strings already need founder approval (NX-36 section 6).
+- `content` writes; the founder approves. The open draft's five strings already need founder approval (NX-36 section 6).
 
 ### 17. Legal, privacy and compliance inputs
 Words of a letter on Home are already on screen in the app; nothing reaches a notification. Counsel: none.
@@ -699,14 +699,14 @@ P2, who has heard about the book from P1 and wants to add letters in their own v
 
 ### 2. Why
 - The job: "Let family see the baby grow" (rank 6); "Leave my words and voice for my child's future" (rank 3) for the second parent.
-- Today [F, read in code and record]: co-parent invites, peek, accept and a 72-hour undo are built on the server (`supabase/migrations/20261015010000_v1_gate_peek_invite_consent_pepper.sql:141-200`, `20261015020000_v1_gate_coparent_invites_undo.sql:397-456`); a co-parent surface shows only when server features are on and the build is an alpha (D-162 as drafted in #827, not merged on 20 Nov). Nothing about co-parent shows in any store build, and nothing says "coming soon" in any build (D-161 draft; founder answer of 19 Nov).
+- Today [F, read in code and record]: co-parent invites, peek, accept and a 72-hour undo are built on the server (`supabase/migrations/20261015010000_v1_gate_peek_invite_consent_pepper.sql:141-200`, `20261015020000_v1_gate_coparent_invites_undo.sql:397-456`); a co-parent surface shows only when server features are on and the build is an alpha (D-162 as drafted, not merged on 20 Nov). Nothing about co-parent shows in any store build, and nothing says "coming soon" in any build (D-161 draft; founder answer of 19 Nov).
 - What goes wrong today [F]: BRAND.md line 40 says "At v1.0 the book is shared with your co-parent", which is false for store builds; the Terms (3.3 and 4) allow removal only by the inviter within 72 hours, while this card's draft said "the second adult can be removed by the first" (conflict, counsel Q53).
 - [S] "Both parents in one book" is a gap other products leave open (`FEATURE-GAP-AND-WEDGE-10nov.md`, competitor facts UNVERIFIED).
 
 ### 3. What, and Not in scope
 **What, when the gates in section 22 clear.** P1 invites from Me. P2 opens the link, installs, signs in, sees only the inviter's sign-off and role, agrees, and sees the book. Each signs their own letters. Two parents per book, at most. The inviter may undo the join within 72 hours; after that, neither removes the other (Terms 3.3 and 4; ruling D11 until counsel answers Q53). Each parent's private letters stay theirs. Each parent's free allowance counts only their own kept letters (D-103).
 
-**Not in scope.** Grandparents or close family (contributors; NS-28, v1.1). Push notifications (NS-26). Per-letter audience (NS-27). Android (C-39). A Leave control (D-113 hides it until left books are listed, BL-444). Any change to removal rules before Q53.
+**Not in scope.** Grandparents or close family (contributors; NS-28, v1.1). Push notifications (NS-26). Per-letter audience (NS-27). Android (C-39). A Leave control (D-113 hides it until left books are listed). Any change to removal rules before Q53.
 
 ### 4. Happy path
 1. P1 opens Me and taps the invite row; a sheet says, before sending, that P2 will be able to read every letter in the book that is not private, including the ones already there.
@@ -829,7 +829,7 @@ Existing rows, stated (CDO finding M4): `child_invites` (hash L3, kept 90 days a
 - **Invite.** Shown (to the inviter, before sending, intent): "They will be able to read every letter in this book that is not private, including the ones already there." Records: invite created (PRIV-R21). Never: a child name or letter in the link or the link page; the invitee's contacts. Decline: nothing is sent.
 - **Accept.** Shown: the inviter's sign-off and role, the agreement with versioned links. Records: PRIV-R21 row (document, version, method, surface `invite_accept`). Never: a child name or letter before acceptance (`peek_invite`). Decline: nothing joins; the inviter is not told why.
 - **Undo (72 hours).** Shown: what happens to the other parent's letters (they leave the book and stay theirs). Records: membership audit `member_join_undone`, PRIV-R21 row for the act. Never: delete the other parent's letters. Decline: no change.
-- **Leave.** Not offered (D-113) until left books are listed (BL-444).
+- **Leave.** Not offered (D-113) until left books are listed.
 
 ### 13. Threats
 | Asset | Threat | Control | Test |
@@ -965,7 +965,7 @@ Decision record.
 Decision record.
 
 - **Who it serves.** P1 with years of photos who wants days suggested from them.
-- **Why it waits.** Specified in full as NX-39 (Memory Library), after the photo-with-a-letter work as a whole (10 Nov exec record). It reads the photo library and suggests days, which needs counsel on several questions (the NX-39 counsel brief). #758 currently registers an `occasion` notification class for it; that class leaves #758 when it becomes NS-32 (see NS-32).
+- **Why it waits.** Specified in full as NX-39 (Memory Library), after the photo-with-a-letter work as a whole (10 Nov exec record). It reads the photo library and suggests days, which needs counsel on several questions (the NX-39 counsel brief). The open reminders draft currently registers an `occasion` notification class for it; that class leaves it when it becomes NS-32 (see NS-32).
 - **What would reopen it.** NS-01 shipped and its five-parent study read; counsel answers on the NX-39 brief.
 - **What must be true before anyone designs it.** As NX-39 states; no notification derived from the library (NX-39 R27).
 - **Never.** No letter text, child name, picture or prompt is donated to the system (ruling D3). No machine-made caption or title.

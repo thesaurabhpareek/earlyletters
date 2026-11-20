@@ -2,7 +2,7 @@
 
 Status: CURRENT (index) | 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: you need the pack index and card shape.
 
-Author: `product`. Status: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E32); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Earlier: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
+Author: `product`. Status: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E33); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Earlier: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
 
 Questions, feedback and review comments on any requirement follow `FEEDBACK-LOOP.md` (intake, triage class, parallel lens reviews, errata with a plan delta, weekly learning).
 
@@ -30,7 +30,7 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 
 | File | What | Bucket |
 |---|---|---|
-| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E30 ruled after the lock | record |
+| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E33 ruled after the lock | record |
 | `19-from-download-to-first-letter.md` | NS-38 to NS-45: first run to first letter | A, B |
 | `20-founder-direction-20nov.md` | the founder's direction of 20 Nov (candidates, not conclusions) | input |
 | `21-days-cultural-photos-home.md` | NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first and Journaling Suggestions, NS-50 Home today; final after ten expert reviews (`tools/review/ns46-50/`), with the release cut (drops A, B, C), the founder-items table and the row-by-row drop tags | B, F |
@@ -38,6 +38,9 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 | `27-photo-moments-and-media.md` | NS-51 photo moments (level 3, library access, dates only, on the phone), NS-52 pictures and videos with a letter (several per letter, Variant A phone only by default, Variant B sync specified); founder questions Q-PM-1..12; changes to locked cards; drop C, spike first | B, F |
 | `GAP-LOG.md` | design-to-product gap rulings, including K1 to K10, R-IA, N-, CB-, DL-, "Trace conflict rulings K11..K17" and "Review round 20 Nov" (RV-1 to RV-17) | rulings |
 | `BACKLOG-GAPS.md` | every P0 row with no backlog row, grouped into proposed rows for Karma (gate G0, errata E30); regenerate with `tools/review/p0.py` after a card or function file changes. P0 totals, `p0.py` on 20 Nov (it reads cards 00 to 27 and the function files): 1,048 P0 rows, 534 in NS-01 to NS-52 (NS-51 27, NS-52 26) and 514 in `functions/*.md`; 781 have no row-level backlog row (its section 1). The function trace (`FUNCTION-TRACE.md`) holds 947 FR rows in 23 files | gate G0 |
+| `23-dependency-map-and-plan.md`, `24-engineering-handoff.md` | workstreams, order, gates and the founder queue; the engineering hand-off for NS-46 to NS-52 (execution layer) | execution |
+| `25-instruction-coverage-audit.md` | the final audit of the founder's instructions 1 to 38 and the 18-item readiness checklist | audit |
+| `REGISTRY.md`, `LOAD-ORDER.md`, `RESUME.md` | every pack file by id with layer and status; the least each role loads; the restart sheet | index |
 | `FUNCTION-TRACE.md`, `functions/` | 23 function reviews traced to the cards; regenerate with `tools/trace-gen/gen.py` then `check.py` | trace |
 
 ### How to read a card (locked shape, 20 Nov 2026)

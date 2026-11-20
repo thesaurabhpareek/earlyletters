@@ -6,7 +6,7 @@ Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock ne
 
 Author: `product` (CPO lens). Rank 5 of 7. Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Founder decision, 10 Nov 2026: build Share one letter, text first (relayed by Karma on 11 Nov; design spec 03 records it as Q0/Q1 "DECIDED by the founder"). Ruled 20 Nov (Karma, council round 2): T2 (free in 1.0.x stays free), T4 (undo and time limits), T5 (no build numbers or dates), D2, D3, D13.
 
-Design source: `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (PR #794; SH-R rows in its section 9; the Share-tab test in its section 8). Navigation test N9 proves there is no share control on Home. This card specifies Level 1 in full. Levels 2 and 3 carry only the guards in section 3; their requirements are written after their gates, not before.
+Design source: `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (SH-R rows in its section 9; the Share-tab test in its section 8). Navigation test N9 proves there is no share control on Home. This card specifies Level 1 in full. Levels 2 and 3 carry only the guards in section 3; their requirements are written after their gates, not before.
 
 Tags: EVIDENCE = repo file or PR read in the session that wrote the line. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. PROPOSED = a number `product` proposes. Code facts below were read on `develop` at `697233d35` on 20 Nov 2026.
 
@@ -41,7 +41,7 @@ Not in scope: Levels 2 and 3; a Share tab (section 3.1); sharing several letters
 
 ### 3.1 Does this justify a Share tab?
 
-No, not at Level 1. The closed decision is Home | Book | Me; a fourth tab ships only when it passes the job-clarity checklist (N2). NAV-TAB-ROLES's test for a tab: a verb no other tab has, material no other tab holds, and a day-one state that is not empty. Level 1 gives a verb but no material: Export sits in Me, and sharing starts from a letter page. Revisit only when Level 2 or 3 is live, Export, share-one-letter and people with access are three outputs parents actually use (a study, not telemetry), and the checklist passes with five parents. No build shows a co-parent "coming soon" surface (founder, 19 Nov; D-161 as drafted in #827).
+No, not at Level 1. The closed decision is Home | Book | Me; a fourth tab ships only when it passes the job-clarity checklist (N2). NAV-TAB-ROLES's test for a tab: a verb no other tab has, material no other tab holds, and a day-one state that is not empty. Level 1 gives a verb but no material: Export sits in Me, and sharing starts from a letter page. Revisit only when Level 2 or 3 is live, Export, share-one-letter and people with access are three outputs parents actually use (a study, not telemetry), and the checklist passes with five parents. No build shows a co-parent "coming soon" surface (founder, 19 Nov; D-161 as drafted).
 
 ## 4. Happy path
 
@@ -147,7 +147,7 @@ No, not at Level 1. The closed decision is Home | Book | Me; a fourth tab ships 
 | NS-05-R26 | Given `EXPO_PUBLIC_SHARE_LETTER` off, Then 0 share controls and 0 share code paths are reachable, and the letter page is otherwise unchanged | P1 | `[NS-05-R26] flag off removes Share cleanly` |
 | NS-05-R27 | Given account A signed out and account B signed in on the same phone, Then B's letter pages offer Share only on B's own letters, and A's letters are neither listed nor shareable for B (ruling D1; X4) | P0 (a) | `[NS-05-R27] a second account never shares the first account's letters` |
 
-Withdrawn or replaced ids: R10, R13 and R16 are kept as split markers; R15 stays withdrawn. `scripts/trace.mjs` does not see NS ids yet (F1, PR #819); no row claims to be traced until it does.
+Withdrawn or replaced ids: R10, R13 and R16 are kept as split markers; R15 stays withdrawn. `scripts/trace.mjs` does not see NS ids yet (F1); no row claims to be traced until it does.
 
 ## 8. Non-functional budgets
 
@@ -273,7 +273,7 @@ Study pass line (PROPOSED): 4 of 5 parents send one letter in under 60 seconds w
 - Counsel: Q45 on the optional picture before the flag is on outside the founder's family.
 - Device runs: R11, R13a, R13b, R23 on an SE 3 with an Asha-only test install (ruling D13).
 - `content`: the strings and the verb (OQ-6).
-- Trace: `scripts/trace.mjs` must see NS ids (F1, PR #819) before this card's rows count as traced.
+- Trace: `scripts/trace.mjs` must see NS ids (F1) before this card's rows count as traced.
 
 ## 22. Open questions
 

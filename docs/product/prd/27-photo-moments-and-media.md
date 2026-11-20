@@ -305,7 +305,7 @@ The founder: pictures matter most, and videos too (`26` section 1). Remento acce
 | Over the limit | The seventh picture or third video is not added; one calm line: "A letter holds up to 6 pictures and 2 videos" (no scolding) |
 | Deleted source | Irrelevant after attach (the stored copy is ours); before attach, NS-51-R22 |
 | Restored phone | The letters' words come back with the backup; media come back only if they were in the iPhone backup (Variant A); a missing file shows a plain box and one calm line, never an error (NS-52-R40) |
-| Second account | Each account's media are separate; B never reaches A's files (BL-961) |
+| Second account | Each account's media are separate; B never reaches A's files |
 | App lock | A pick that lands while locked is discarded with 0 files (NS-01-R47) and playback stops on lock |
 | Backgrounded during a transcode | The work pauses and resumes in the foreground or restarts; the draft is kept; no background mode (NS-52-R33) |
 | Live Photo | The still only |
@@ -440,7 +440,7 @@ Adding a video of a child is an act, and under Variant B a one-way door.
 | Words | A media failure loses words | R10, R11 | `[NS-52-R11]` |
 | Trust | Machine words from media | R6, R29 | `[NS-52-R29]` |
 | Lock | A frame in the switcher | R30 | `[NS-52-R30]` |
-| Shared phone | Account B reads A's media | R21 (B), BL-961 | `[NS-52-R21]` |
+| Shared phone | Account B reads A's media | R21 (B) | `[NS-52-R21]` |
 | Store | Label surprise under B | R23 | `[NS-52-R23]` |
 | Deletion | Orphan file | R15, R16, R22 | `[NS-52-R16]` |
 

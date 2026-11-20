@@ -26,7 +26,7 @@ Rules for every card here:
 P1 at the hour they chose, usually after bedtime, phone face down beside them. And P1 three weeks later, who has not opened the app and must not be made to feel behind.
 
 ### 2. Why
-A parent who means to keep letters forgets. A reminder at the right hour is the difference between twelve letters a year and sixty [A]. Reminders are built (`apps/mobile/src/lib/reminders/`) and have never been proven on a real phone across a time-zone change, a season change, or a week of silence (`docs/design/NOTIFICATIONS.md` section 1). The back-off is in the spec (C-REQ-008) and not in the planner (`planner.ts:26-27`; BL-537). A reminder that repeats itself, fires at night after a flight, or keeps knocking is worse than none: it teaches the parent to turn notifications off for good.
+A parent who means to keep letters forgets. A reminder at the right hour is the difference between twelve letters a year and sixty [A]. Reminders are built (`apps/mobile/src/lib/reminders/`) and have never been proven on a real phone across a time-zone change, a season change, or a week of silence (`docs/design/NOTIFICATIONS.md` section 1). The back-off is in the spec (C-REQ-008) and not in the planner (`planner.ts:26-27`). A reminder that repeats itself, fires at night after a flight, or keeps knocking is worse than none: it teaches the parent to turn notifications off for good.
 
 Why the back-off must be scheduled in advance (r3 F14): iOS delivers calendar triggers that were scheduled ahead. A parent who never opens the app never runs a re-plan. So the whole back-off, including its stop, must be inside the plan that is already on the phone.
 
@@ -430,7 +430,7 @@ None. Device row R5 (D13).
 
 ## NS-15. A letter for another day (candidate C-07, rank 22)
 
-Ruled 20 Nov (Karma, council round 2): the about-day is `occurred_on` with `occurred_precision`, already stored, synced (own field group) and exported; the said-on day is `captured_at`. This card adds only the Review dateline control (existing `DateSheet`), both days shown when they differ, author-only control, and the built limit `BACKDATE_YEARS = 3`. Size S. BL-944 superseded.
+Ruled 20 Nov (Karma, council round 2): the about-day is `occurred_on` with `occurred_precision`, already stored, synced (own field group) and exported; the said-on day is `captured_at`. This card adds only the Review dateline control (existing `DateSheet`), both days shown when they differ, author-only control, and the built limit `BACKDATE_YEARS = 3`. Size S. The earlier backlog row for this is superseded.
 
 ### 1. Who and when
 P1 on a Sunday, remembering what happened on Thursday. And a parent who installs when the baby is four months old and wants to tell the birth story where it belongs.

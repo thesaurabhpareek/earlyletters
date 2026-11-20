@@ -219,7 +219,7 @@ The pilot changes no app behaviour, so most rows describe the participant's situ
 | NS-03-R8 | Given any agent session, Then it never reads the private pilot log; only the read-out counts reach the repo | P0 (a) | `[NS-03-R8] agents never read the pilot log` (process check) |
 | NS-03-R9 | Given the `.m4a` fixture check, Then a yes or no is filed for WhatsApp on Android, Gmail on the web and Apple Mail before recruiting starts | P1 | `[NS-03-R9] recipient playback checked before recruiting` |
 
-These are process checks, not code tests. `scripts/trace.mjs` does not see NS ids yet (finding F1, PR #819); no row here claims to be traced until it does.
+These are process checks, not code tests. `scripts/trace.mjs` does not see NS ids yet (finding F1); no row here claims to be traced until it does.
 
 ## 11. Non-functional budgets
 

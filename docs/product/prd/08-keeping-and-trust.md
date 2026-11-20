@@ -31,7 +31,7 @@ The first store release ships with recording backup off. The words come back on 
 
 ### 3. What, and Not in scope
 **What.** Five deliverables, no parent-facing change:
-1. A read of the built backup and restore paths against `docs/ops/BACKUP_RUNBOOK.md` and ADR 0024 (owner backup v1.0; status Proposed in its header; ADR 0023 is email links and is not the backup ADR), with every difference listed by file and line. The read depends on #622 (the narrowed backup role) being merged.
+1. A read of the built backup and restore paths against `docs/ops/BACKUP_RUNBOOK.md` and ADR 0024 (owner backup v1.0; status Proposed in its header; ADR 0023 is email links and is not the backup ADR), with every difference listed by file and line. The read depends on the narrowed backup role being merged.
 2. A sizing note with the arithmetic below, re-read prices, and the CFO case "1,000 free families, 20 held drafts each".
 3. The escrow drill rehearsed on a scratch project, written up as a run sheet the founder can repeat on production.
 4. The label and policy difference drafted for counsel (what changes from Audio Data: No).
@@ -239,7 +239,7 @@ Nothing to start the read. The read needs #622 merged. The flip needs: the six c
 P1, a second after deciding a take was not worth keeping, or was something they did not want kept: a cough, a wrong start, a private moment.
 
 ### 2. Why
-"Let it go" is a promise as much as "kept" is. Before #832, if the app stopped midway through letting a take go, or the phone refused to remove the file, the take disappeared from view and its audio stayed on the phone; discarding while still recording had the same gap; Review did not notice when removal failed. #832 merged BL-923 and BL-924 (a let-go draft never leaves its recording on the phone). BL-925 (the Review line) and BL-926 remain. A parent who let something go believes it is gone. Evidence: [F] code defects fixed in #832.
+"Let it go" is a promise as much as "kept" is. Before the fix, if the app stopped midway through letting a take go, or the phone refused to remove the file, the take disappeared from view and its audio stayed on the phone; discarding while still recording had the same gap; Review did not notice when removal failed. The fix is merged (a let-go draft never leaves its recording on the phone). The Review line and one more row remain (backlog pointer, section 22). A parent who let something go believes it is gone. Evidence: [F] code defects since fixed.
 
 ### 3. What, and Not in scope
 **What.** The launch sweep finishes any draft left `discarding`; Listen uses the same path as Review; Review tells the parent, once and calmly, when a recording could not be removed yet; Storage in Me names a stuck recording with Remove now; a let-go held draft that reached the server is purged there at once when the discard is acknowledged (ruling D7, after `sync` reports today's behaviour).
@@ -361,7 +361,7 @@ P1, a second after deciding a take was not worth keeping, or was something they 
 | `discard.failures.<draft id>` | L3 (id), L2 (count) | Phone settings | No | Until the draft is gone | With the draft; Erase everything; account deletion | No | Never logged |
 
 ### 12. Door lines
-- **Shown:** the existing confirmation (default keep), plus BL-925's line when removal fails.
+- **Shown:** the existing confirmation (default keep), plus the Review line when removal fails.
 - **Records:** the `discarding` mark and the outbox op, on the phone only; no PRIV-R21 row, because letting go is an act, not an agreement.
 - **Never:** keep audio after a confirmed let-go beyond the retry; show the draft as keepable again; keep the server's words after acknowledgement (D7).
 - **Decline:** Cancel keeps the take.
@@ -383,7 +383,7 @@ P1, a second after deciding a take was not worth keeping, or was something they 
 States: confirmation; Review line (inline, the app's small muted voice, never the letter's serif, no icon, no red; never blocks leaving Review); Storage row with Remove now. AX5 on SE 3: the line wraps; Remove now stays 44 pt. Motion: none added. Dark mode: tokens. Smart Invert: n/a. Components reused: the existing confirmation sheet and Storage list row.
 
 ### 16. Content inputs
-BL-925 key (the Review line), the Storage line ("One recording is still on this phone", intent), "Remove now", the confirmation's "cannot be brought back" line. True, calm, no blame; banned: "failed", "error", "deleted everywhere", "instantly". `content` writes; the founder approves.
+The Review line key, the Storage line ("One recording is still on this phone", intent), "Remove now", the confirmation's "cannot be brought back" line. True, calm, no blame; banned: "failed", "error", "deleted everywhere", "instantly". `content` writes; the founder approves.
 
 ### 17. Legal, privacy and compliance inputs
 A deletion promise on the phone, on the server and on the parent's other phones. The fix changes no published sentence. The Review line is a claim and needs a claims inventory row. Server retention of a let-go held draft: packet Q51; ruling D7 sets "purged at once". Counsel must confirm.
@@ -402,7 +402,7 @@ Free; never gated (T2).
 - Tester question: "Did anything you let go come back? (yes / no)". Reported as x of n.
 
 ### 22. Dependencies and gates
-#832 merged (BL-923, BL-924). BL-925 needs the founder's word approval. R14 needs `sync`'s report of today's server behaviour. Device rows follow ruling D13.
+The let-go fix is merged. The Review line needs the founder's word approval. R14 needs `sync`'s report of today's server behaviour. Device rows follow ruling D13.
 
 ### 23. Open questions
 - What the server does today with a let-go held draft. Owner: `sync`. Default: ruling D7 (purge at acknowledgement).
@@ -416,7 +416,7 @@ Free; never gated (T2).
 P1 or P2 on the first evening with a new phone, signing in and expecting their book.
 
 ### 2. Why
-The app now waits on "Opening your book" while the account's book may be on its way, and no longer says a recording is kept on a phone that does not hold it. One hole remains: a returning account whose consent is outstanding (a Terms version changed, or the app was closed on the Terms sheet) sees the first-run promise step with Continue and no way to agree (BL-922). For a parent that reads as "my book is gone". Evidence: [F] BL-922.
+The app now waits on "Opening your book" while the account's book may be on its way, and no longer says a recording is kept on a phone that does not hold it. One hole remains: a returning account whose consent is outstanding (a Terms version changed, or the app was closed on the Terms sheet) sees the first-run promise step with Continue and no way to agree. For a parent that reads as "my book is gone". Evidence: [F] read in code (backlog pointer, section 22).
 
 ### 3. What, and Not in scope
 **What.** Close that gap; prove the whole arrival on two phones; with backup off, explain once at Book level that recordings stay on the phone that made them.

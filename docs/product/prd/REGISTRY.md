@@ -2,7 +2,7 @@
 
 Status: CURRENT | 20 Nov 2026 | Owner: `product` for Karma | Replaces: the file map in 22-final-holistic-spec.md section 8 (that section stays; this table adds layer, status and load-when) | Load when: you need to find a file, learn its status, or pick what to load (read LOAD-ORDER.md first, it points here by id).
 
-Written on branch `docs/locked-pack-inputs-20nov`. Requirements rev 2 are LOCKED 20 Nov 2026 (`22-final-holistic-spec.md` section 10): changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E32), no duplicate copies, one home per fact, link by id. ASCII only.
+Written on branch `docs/locked-pack-inputs-20nov`. Requirements rev 2 are LOCKED 20 Nov 2026 (`22-final-holistic-spec.md` section 10): changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E33), no duplicate copies, one home per fact, link by id. ASCII only.
 
 ## How to read this table
 
@@ -11,13 +11,13 @@ Written on branch `docs/locked-pack-inputs-20nov`. Requirements rev 2 are LOCKED
 - Status: CURRENT, LOCKED rev 2, WORKING-INPUT, or SUPERSEDED-BY <file>. A file marked SUPERSEDED-BY is not loaded; a part-only supersession names the part.
 - Lines: approximate line count at 20 Nov 2026 so a loader can budget; load by section or by id (grep the NS or FR id), not whole, for any file over 400 lines.
 
-Honest gap on the layer rule: the product-layer cards still carry BL and PR ids in 219 lines across 21 card files (grep for `BL-nnn` or `#nnn`). Ids were not stripped by script (22 section 10). The map back from execution rows to cards exists in `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md`; a manual pass to move tactical ids out of card prose is owed and is not done.
+Layer rule for BL and PR ids (final audit, 20 Nov): ids are not stripped by script. Where each lives: (1) the execution layer holds them as the record: `docs/BACKLOG.md`, `BACKLOG-GAPS.md`, `FUNCTION-TRACE.md`, `13`, `14`, `23`, `24`, `18`, `GAP-LOG.md` and the plan files. (2) In the cards, each card's own "Data and engineering" and "Dependencies and gates" sections and its `Backlog:` pointer line are its execution pointer: ids stay there (105 lines across the 21 card files). (3) 36 acceptance rows keep a PR or backlog id inside a status note such as "Not met in the open stack": it is the cross-reference to the trace and stays. (4) The customer-facing prose of the cards carries none: 66 prose lines had their ids removed by hand on 20 Nov (the id is still in that card's execution section or in the execution layer). Remaining and owner: the 141 lines of (2) and (3), `product`, to move only when a card is next edited under errata; the PDF render drops any line with an id from its product layer (`tools/pdf/build.py`).
 
 ## 1. Cards, records, errata and indexes (docs/product/prd)
 
 | Id | Path | Layer | Status | Owner | Replaces | Load when | Lines |
 |---|---|---|---|---|---|---|---|
-| BLGAPS | `docs/product/prd/BACKLOG-GAPS.md` | execution | CURRENT (header owned by the counts thread) | `qa` | none | closing gate G0 (a backlog row for every P0 row) | ~1174 |
+| BLGAPS | `docs/product/prd/BACKLOG-GAPS.md` | execution | CURRENT (generated lists; header added) | `qa` | none | closing gate G0 (a backlog row for every P0 row) | ~1174 |
 | C00 | `docs/product/prd/00-product-frame.md` | product | CURRENT (LOCKED rev 2) | Karma with the CPO role | none | you need the principles, the three-tab IA, or the index of every card | ~210 |
 | C01 | `docs/product/prd/01-photo-with-a-letter.md` | product | CURRENT (LOCKED rev 2) | `product` (CPO role) | none | building or testing NS-01 | ~366 |
 | C02 | `docs/product/prd/02-find.md` | product | CURRENT (LOCKED rev 2) | `product` (CPO role) | none | building or testing NS-02 | ~297 |
@@ -35,14 +35,14 @@ Honest gap on the layer rule: the product-layer cards still carry BL and PR ids 
 | C14 | `docs/product/prd/14-test-plan.md` | execution | CURRENT | Karma with `qa` | none | you need journeys, the device matrix, gates G0 to G6 or the P0 register | ~151 |
 | C15 | `docs/product/prd/15-council-review.md` | product | WORKING-INPUT (record; findings applied in the cards; do not load) | Karma with the CPO role | none | auditing why a round 1 finding was made; otherwise do not load | ~65 |
 | C16 | `docs/product/prd/16-council-review-round-2.md` | product | WORKING-INPUT (record of the round 2 debate; rulings live in GAP-LOG and the cards; do not load) | Karma with the CPO role | none | auditing the round 2 debate; otherwise do not load | ~129 |
-| C18 | `docs/product/prd/18-errata-after-lock.md` | execution | CURRENT (LOCKED rev 2) (errata register, highest E32) | Karma (CTO role, product side) | none | a card statement and engineering seem to differ, or you change a locked statement (next free E number) | ~42 |
+| C18 | `docs/product/prd/18-errata-after-lock.md` | execution | CURRENT (LOCKED rev 2) (errata register, highest E33) | Karma (CTO role, product side) | none | a card statement and engineering seem to differ, or you change a locked statement (next free E number) | ~42 |
 | C19 | `docs/product/prd/19-from-download-to-first-letter.md` | product | CURRENT (LOCKED rev 2) | `product` (PM role, with the CPO role) | none | building or testing sign-up, consent, first letter or account life (NS-38 to NS-45) | ~1768 |
 | C20 | `docs/product/prd/20-founder-direction-20nov.md` | product | SUPERSEDED-BY 21-days-cultural-photos-home.md, 22-final-holistic-spec.md section 7 and 27-photo-moments-and-media.md | Karma (product) | none | you need the founder's first-round direction in context; otherwise do not load | ~139 |
 | C21 | `docs/product/prd/21-days-cultural-photos-home.md` | product | CURRENT (LOCKED rev 2) | `product` (PM role) | none | building or testing days, background, notification catalogue, picture-first start or Home today (NS-46 to NS-50) | ~1201 |
 | C22 | `docs/product/prd/22-final-holistic-spec.md` | product | CURRENT (LOCKED rev 2) (entry point) | `product` | none | FIRST for every role: the whole pack in one reading, the eight founder answers (section 7), the file map (section 8) and the lock (section 10) | ~168 |
 | C23 | `docs/product/prd/23-dependency-map-and-plan.md` | execution | CURRENT | `product` | parts of docs/ROADMAP.md, roadmap order tables and 13-engineering-plan.md sections 4 and 5 (section 8 lists them) | you need workstreams, order, gates or the founder queue | ~408 |
 | C24 | `docs/product/prd/24-engineering-handoff.md` | execution | CURRENT | `principal-architect` | parts of docs/ARCHITECTURE.md (section 7 lists them) | building the days, catalogue, culture, pictures or Home today work (NS-46 to NS-52) | ~332 |
-| C25 | `docs/product/prd/25-instruction-coverage-audit.md` | execution | WORKING-INPUT (audit) | `qa` | none | deciding whether to start development or closing an audit gap; otherwise do not load | ~186 |
+| C25 | `docs/product/prd/25-instruction-coverage-audit.md` | execution | CURRENT (final audit, rev 2 lock) | `qa` | the morning audit | deciding whether to start development or closing an audit gap; otherwise do not load | ~140 |
 | C26 | `docs/product/prd/26-founder-direction-photos-library-and-media.md` | product | WORKING-INPUT (founder direction; carried by 27-photo-moments-and-media.md) | founder, via Karma | none | you need the founder's own words on photo moments and media; otherwise load 27 | ~49 |
 | C27 | `docs/product/prd/27-photo-moments-and-media.md` | product | CURRENT | `product` (PM role) | none | building, reviewing or pricing photo-library moments (NS-51) or several pictures and videos per letter (NS-52) | ~483 |
 | FEEDBACK | `docs/product/prd/FEEDBACK-LOOP.md` | execution | CURRENT (header already present) | `product` | none | any question, feedback or review comment touches a requirement | ~272 |
@@ -51,7 +51,8 @@ Honest gap on the layer rule: the product-layer cards still carry BL and PR ids 
 | README | `docs/product/prd/README.md` | product | CURRENT (index) | `product` | none | you need the pack index and card shape | ~180 |
 | RESUME | `docs/product/prd/RESUME.md` | execution | CURRENT | `product` | none | restarting after a usage limit or outage | ~15 |
 | TOOLS-P0 | `docs/product/prd/tools/review/p0.py` | execution | CURRENT (generator; owned by the counts thread, not edited here) | `qa` | none | regenerating the P0 register counts | ~349 |
-| TRACE | `docs/product/prd/FUNCTION-TRACE.md` | execution | CURRENT (generated; header owned by the trace-gen thread) | `product` (script) | none | tracing a function requirement to cards, screens and backlog rows | ~4501 |
+| TOOLS-PDF | `docs/product/prd/tools/pdf/build.py` | execution | CURRENT (generator of the founder PDF; output in /tmp, binary not committed) | `product` | `docs/product/pack-pdf/build.py` for rev 2 | rebuilding the founder PDF | ~430 |
+| TRACE | `docs/product/prd/FUNCTION-TRACE.md` | execution | CURRENT (generated; header added) | `product` (script) | none | tracing a function requirement to cards, screens and backlog rows | ~4501 |
 
 ## 2. Function reviews (docs/product/prd/functions)
 
@@ -97,9 +98,9 @@ Honest gap on the layer rule: the product-layer cards still carry BL and PR ids 
 | REV-AGENT-BRIEF | `docs/product/prd/tools/review/AGENT-BRIEF.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~59 |
 | REV-bl-new | `docs/product/prd/tools/review/bl-new.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~258 |
 | REV-design-reconcile-BRIEF | `docs/product/prd/tools/review/design-reconcile-BRIEF.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~5 |
-| REV-eng-A-data-and-sync | `docs/product/prd/tools/review/eng/A-data-and-sync.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~410 |
-| REV-eng-B-mobile-client | `docs/product/prd/tools/review/eng/B-mobile-client.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~541 |
-| REV-eng-C-platform-quality-delivery | `docs/product/prd/tools/review/eng/C-platform-quality-delivery.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E32; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~530 |
+| REV-eng-A-data-and-sync | `docs/product/prd/tools/review/eng/A-data-and-sync.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E33; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~410 |
+| REV-eng-B-mobile-client | `docs/product/prd/tools/review/eng/B-mobile-client.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E33; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~541 |
+| REV-eng-C-platform-quality-delivery | `docs/product/prd/tools/review/eng/C-platform-quality-delivery.md` | execution | WORKING-INPUT (engineering evaluation behind errata E1 to E33; findings applied in C18) | the review role named in the file | none | reading section 8, which C18 cites; otherwise do not load | ~530 |
 | REV-gap-agents-common | `docs/product/prd/tools/review/gap-agents-common.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~5 |
 | REV-handback-notes | `docs/product/prd/tools/review/handback-notes.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~19 |
 | REV-ns46-50-BRIEF | `docs/product/prd/tools/review/ns46-50/BRIEF.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~5 |
@@ -206,5 +207,5 @@ Banners were added to the top of: `13-engineering-plan.md` (sections 4 and 5), `
 - Project docs: not readable from this session; statuses are expectations, marked UNVERIFIED.
 - `docs/product/prd/17-engineering-project-plan.md` (PR #847) is not on this branch and has no row.
 - Design file headers and line counts are read from the design worktree head at the time of writing; that branch moves.
-- `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md` have no founder header yet: another thread owns those files and their counts. Add `Status: CURRENT | 20 Nov 2026 | Owner: ... | Replaces: none | Load when: ...` after that thread finishes.
+- `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md` now carry the four-field header (final audit, 20 Nov); `tools/review/p0-table.md` has none because the script rewrites it.
 - Owners are taken from each file's own header text; where a file named no agent handle, the role is written as the file words it.

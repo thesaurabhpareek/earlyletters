@@ -2,7 +2,7 @@
 
 Status: CURRENT | Owner: product | Replaces: none | Load when: any question, feedback or review comment touches a requirement
 
-Written 20 Nov 2026 after the founder's directive of the same day (intent, not a quote): work runs like continuous integration and continuous development, not in sequence. Product is reactive to engineering questions and clarifies requirements. Design, policy (legal, compliance, privacy), security, QA and engineering review requirements in parallel. Engineering reviews the final requirements and keeps updating its plan. The harness keeps learning from feedback, and it learns which questions are worth asking before it goes to the executives for approval. Docs only: this file changes no card, no code and no script. Harness changes are proposals in `docs/ops/proposed/requirements-feedback-loop.md`.
+Written 20 Nov 2026 after the founder's directive of the same day, quoted verbatim as items 34 to 38 in `FOUNDER-MESSAGES-VERBATIM.md` (item 34: finalize and lock, listen to engineering and fix gaps; item 35: ask engineering their plan and what help they need; item 36: continuous integration and continuous development, not sequential, product reactive to engineering, everyone reviews, keep learning, the harness learns which feedback is worth asking the executives about, a loop that improves by itself; item 37: update the harness, a smart self-healing harness with a feedback and self-improvement loop; item 38: align the harness backlog for CTO review, apply CTO feedback, execute after approval, inform all agents of their new operating style). In short: work runs like continuous integration and continuous development, not in sequence. Product is reactive to engineering questions and clarifies requirements. Design, policy (legal, compliance, privacy), security, QA and engineering review requirements in parallel. Engineering reviews the final requirements and keeps updating its plan. The harness keeps learning from feedback, and it learns which questions are worth asking before it goes to the executives for approval. Docs only: this file changes no card, no code and no script. Harness changes are proposals in `docs/ops/proposed/requirements-feedback-loop.md`.
 
 ## Quick reference (load this alone if that is all your budget allows)
 
@@ -11,7 +11,7 @@ Written 20 Nov 2026 after the founder's directive of the same day (intent, not a
 3. Product triages in this order: A answer from record, F needs evidence (cheapest check first), E founder-only, C cross-lens, D exec ruling, B clarify in place. Section 3 has the rule.
 4. Nothing waits in a line. Lens reviews (design, policy, security, QA, engineering) run at the same time. A fact check runs while they do.
 5. Only three things are gates: the founder-only list (Karma, section 3), the X2 security and counsel read, and the merge gates (D-132: two counted reviews at the full 40-char head sha, green CI).
-6. Changing a locked statement needs an errata row (next free E number, now E33) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
+6. Changing a locked statement needs an errata row (next free E number, now E34) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
 7. Apply the change to the card in the same PR as the errata row. Tell engineering the same day by handoff, with the plan delta.
 8. Silence past the target time means the stated default stands, except founder-only and counsel items, which wait with their safe default in force and nothing irreversible done.
 9. Only class E reaches the founder: batched, one digest line a day, each with a default and a deadline. Never one at a time.
@@ -199,7 +199,7 @@ The harness learns which questions are worth asking by looking at what it asked.
 5. Prune (see "Keeping context small").
 6. Post a short retro entry in the harness lessons file (below). Karma reads it.
 
-**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 32 errata rows (E1 to E32) after the lock, and 113 grouped closure rows (79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
+**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 33 errata rows (E1 to E33) after the lock, and 113 grouped closure rows (79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
 
 | Metric | How to count it | What a bad trend means |
 |---|---|---|
@@ -267,6 +267,6 @@ Owners are the harness owner (Karma, under D-132) for `scripts/agents/`, the ros
 - I did not run `scripts/agents/handoff.mjs`, `dispatch.mjs` or `ledger.mjs`. Their behaviour here comes from `AGENT-COMMS.md`, `OPERATING_MODEL.md` and a read of label handling in `scripts/agents/lib.mjs`. A `req-question` kind does not exist yet; until it does, use kind `question` and the comment tag.
 - I did not check whether the digest or board already carry a requirements field.
 - I did not verify any law, Apple rule or vendor term. This file makes no legal claim.
-- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E32 and the closures CL-001 to CL-113 and check that each lands in a sensible class.
+- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E33 and the closures CL-001 to CL-113 and check that each lands in a sensible class.
 
 Sources read this session: `docs/agents/COORDINATION.md`, `AGENT-COMMS.md`, `OPERATING_MODEL.md`, `HARNESS.md` (headings and board and digest references only), `.claude/skills/early-letters-cto/SKILL.md` sections 1, 3, 10, 10a, `docs/agents/exec/COUNCIL.md`, `18-errata-after-lock.md`, `22-final-holistic-spec.md` sections 9 and 10, `GAP-LOG.md` "Closures 20 Nov", `FOUNDER-MESSAGES-VERBATIM.md`, `README.md` of this folder.

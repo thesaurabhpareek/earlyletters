@@ -6,7 +6,7 @@ Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock ne
 
 Author: `product` (CPO lens). Rank 7 of 7. Index: `README.md`. Earlier: Draft v1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T2, T3 (stored copy), T4, T5, D2, D3, D13.
 
-Source: `docs/roadmap/next/03-requirements/NX-42-capability-map.md` on branch `docs/nav-tabs-requirements-10nov` (PR #790, head `d80db1f2`), rows C1 to C46, and the gaps G1 to G11 in `FEATURE-GAP-AND-WEDGE-10nov.md` (PR #792). Requirement files named as "cited" were not all opened; each such cite is UNVERIFIED for content where marked. Several live on branches, not on `develop`. Code facts below were read on `develop` at `697233d35` on 20 Nov 2026.
+Source: `docs/roadmap/next/03-requirements/NX-42-capability-map.md` on branch `docs/nav-tabs-requirements-10nov` (head `d80db1f2`), rows C1 to C46, and the gaps G1 to G11 in `FEATURE-GAP-AND-WEDGE-10nov.md`. Requirement files named as "cited" were not all opened; each such cite is UNVERIFIED for content where marked. Several live on branches, not on `develop`. Code facts below were read on `develop` at `697233d35` on 20 Nov 2026.
 
 This file holds three specified cards (C5, C28, G11), each with the full card shape and its own `**Label effect.**` line, plus the disposition table and the parked rows.
 
@@ -27,7 +27,7 @@ This file holds three specified cards (C5, C28, G11), each with the full card sh
 | C5 | Not much today | Specified here | section 3 |
 | C6 | Age and stage | Cited | F03, F12, F13-REQ-003 |
 | C7 | Catch-up letters | Cited (branch) | NX-27, on `docs/execution-tracker-8nov`; UNVERIFIED on `develop` |
-| C8 | Memories on Home | Cited (branch) | NX-43 (PR #790), R1 to R14; NS-23 replaces the built "A month ago" card |
+| C8 | Memories on Home | Cited (branch) | NX-43, R1 to R14; NS-23 replaces the built "A month ago" card |
 | C9 | Plus line on Home | Cited | F14-REQ-040 |
 | C10 to C12 | Book by month, letter page, Read together | Cited | F09, F08, F10 |
 | C13 | Find | Specified | NS-02 |
@@ -35,7 +35,7 @@ This file holds three specified cards (C5, C28, G11), each with the full card sh
 | C15, C16 | Several books, hide and delete | Cited | F12, F17, NX-04 |
 | C17 to C19 | Photo, date and place chips, library chooser | C17 specified; C18, C19 cited | NS-01; NX-39 P1, P2a |
 | C20 to C22 | Suggested days, video, occasions | Cited | NX-39 P2b, P3, P4a |
-| C23 | Co-parent sharing | Cited | F11; NS-25; BL-882 to BL-889 |
+| C23 | Co-parent sharing | Cited | F11; NS-25; the co-parent backlog rows |
 | C24 | Shared voice, close family | Parked | section 6.1 |
 | C25 | Plus | Cited | F14; `08-plus-and-billing-trust.md` |
 | C26 | Gifts and lifetime | Parked | section 6.2 |

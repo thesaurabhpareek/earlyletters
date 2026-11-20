@@ -4,11 +4,11 @@ Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (CPO role) | Rep
 
 Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id.
 
-Author: `product` (CPO role). Rank 2 of 7 in the founder's order (closed X1). Index: `README.md`. Design source: `docs/design/specs/02-FIND-11nov.md` (PR #794). Data source: ADR 0028 D4 and D5 (PR #797, not yet on `develop`; cited as "ADR 0028 (PR #797)" until it merges). This card makes F09-REQ-015 shippable: it cites that row and F09 section 6.2 step 16, and records the founder question F09 Q4 as decided: Find is in scope (closed X1; research gap G3). Rulings applied: round-2 rulings T2, T5, D1, D2 (as n/a), D3, D5, D13 (Karma, 20 Nov 2026, council round 2).
+Author: `product` (CPO role). Rank 2 of 7 in the founder's order (closed X1). Index: `README.md`. Design source: `docs/design/specs/02-FIND-11nov.md` Data source: ADR 0028 D4 and D5 (not yet on `develop`; cited by number until it merges). This card makes F09-REQ-015 shippable: it cites that row and F09 section 6.2 step 16, and records the founder question F09 Q4 as decided: Find is in scope (closed X1; research gap G3). Rulings applied: round-2 rulings T2, T5, D1, D2 (as n/a), D3, D5, D13 (Karma, 20 Nov 2026, council round 2).
 
 Terms. "Find" as a header action, "index", `letter_search` and `searchable_letters` are internal; `content` names what a parent reads (BRAND.md glossary, CR-25).
 
-Tags: [F] fact read this session in a file or PR diff (named). [A] assumption about parents. [E] estimate. PROPOSED = a number or line `product` proposes. UNVERIFIED = not read or not run this session. Nothing here was run on a phone. Code facts come from reading the diff of draft PR #798 (head `7f36031a`, +2,511 lines in 37 files) on 20 Nov 2026; "built" means "present in that diff", not "passes".
+Tags: [F] fact read this session in a file or PR diff (named). [A] assumption about parents. [E] estimate. PROPOSED = a number or line `product` proposes. UNVERIFIED = not read or not run this session. Nothing here was run on a phone. Code facts come from reading the diff of the draft stack for Find (head `7f36031a`, +2,511 lines in 37 files) on 20 Nov 2026; "built" means "present in that diff", not "passes".
 
 ## 1. Who and when
 
@@ -154,7 +154,7 @@ Priority: P0 rows carry their RR-4 reason: (a) a promise, (b) a legal or store d
 ## 8. Non-functional budgets
 
 Inherited from `docs/prd/v2/06-nfr.md` unless stated; SE 3 under the section 0 protocol; PROPOSED unless from F09.
-- **Latency.** First row within 300 ms p95 of the last keystroke at 1,000 letters (F09-REQ-015, R2). #798 searches on every keystroke, synchronously, with no debounce [F]; if R2 misses, a 150 ms debounce counted inside the 300 ms is the first fix (O-1). Index rebuild: 1,000 letters within 3 s in batches of 200, off the first frame (R35). Index write: under 20 ms per save (R36). Reconcile on a sync transaction that changed no letter: under 20 ms at 1,000 letters (PROPOSED; #798 runs it in every sync transaction [F]).
+- **Latency.** First row within 300 ms p95 of the last keystroke at 1,000 letters (F09-REQ-015, R2). the draft stack searches on every keystroke, synchronously, with no debounce [F]; if R2 misses, a 150 ms debounce counted inside the 300 ms is the first fix (O-1). Index rebuild: 1,000 letters within 3 s in batches of 200, off the first frame (R35). Index write: under 20 ms per save (R36). Reconcile on a sync transaction that changed no letter: under 20 ms at 1,000 letters (PROPOSED; the draft stack runs it in every sync transaction [F]).
 - **Memory.** One search adds at most 50 MB over the Book baseline at 1,200 letters (R20).
 - **On-device storage.** Index at most 10 MB at 1,200 letters (R20; under 10 KB per letter on average). Inside `scribe.db`; no other file.
 - **Battery.** Under the measurable step; no background work; the catch-up runs once after launch and when Find opens with no index.

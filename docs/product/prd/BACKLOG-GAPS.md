@@ -1,12 +1,14 @@
 # Backlog gaps: P0 rows with no backlog row (20 Nov 2026)
 
+Status: CURRENT (generated lists; LOCKED rev 2 inputs) | 20 Nov 2026 | Owner: `qa` (script `tools/review/p0.py`) | Replaces: none | Load when: closing gate G0 (a backlog row for every P0 row) or looking up which proposed backlog row takes a P0 row; grep by row id, never load whole (over 1,100 lines).
+
 Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a backlog row) and errata E30 (`18-errata-after-lock.md`). Docs only. The groups below are filed as 38 `proposed` rows in `docs/BACKLOG.md` (section "Locked pack: P0 rows with no backlog row"; 5.1 maps group to id, and `docs/BACKLOG.md` wins if the two differ); Karma or the founder sets them to `ready`. The list is generated: `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps | --md | --groups | --json` (script header explains the rules). Re-run it after every backlog edit; the numbers below are for this branch (`docs/locked-pack-inputs-20nov`). Counts refreshed 20 Nov 2026 by running `p0.py` at head f8eead016: 850 P0 rows, 588 with no row-level backlog row (first version: 826 and 565).
 
 ## 1. Result in one paragraph
 
 1,048 P0 rows were read (`p0.py`, 20 Nov, regenerated after the tooling fixes described below): 534 acceptance rows in cards 01 to 12, 19, 21 and 27 (NS-01 to NS-52 with P0 rows; card 27 holds 27 in NS-51 and 26 in NS-52) and 514 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block (all NS rows). 81 more cite an existing `BL-nnn` in the row's own text (6 NS rows, 75 FR rows). **781 have no row-level backlog row**: 737 with no backlog mention at all (298 NS rows, 439 FR rows), and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 781 (about eleven times E30's): 590 from the locked cards, cards 19 and 21 and the first function reviews (groups G01 to G35: 588 at the first run, plus NS-17-R11 and NS-17-R12, which the K17 ruling added to card 09 later on 20 Nov), 51 from NS-51 and NS-52 (G36, G37) and 140 FR rows added to the function files by the 20 Nov addenda (G38). Cards 19, 21 and 27 (96, 87 and 53 P0 rows) and the function reviews have no backlog rows by design: each card says "new rows needed (no id invented)". The first run of 20 Nov moved the totals from 826 / 565 to 850 / 588 after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4).
 
-**Update, 20 Nov (regenerated; the pack tooling was repaired).** `p0.py` now reads cards 00 to 27 and `functions/*.md` (cards 22 to 26 hold no P0 acceptance row; card 27 adds 53). It does not count the 38 rows filed from this file (their status starts `proposed (docs/product/prd/BACKLOG-GAPS.md`) as cover, so `--gaps` and `--groups` keep listing the gaps those rows propose to close; once Karma or the founder sets a row to `ready` it counts as cover like any other row. `--groups` no longer stops with `StopIteration` at FR-AIS-57 and later: FR rows from the first id of each file's 20 Nov addendum on are group G38 (table `ADDENDUM_FROM` in the script), NS-51 is G36 and NS-52 is G37. The group counts in 5.1 are the output of `p0.py --groups` and sum to 781. Per-card counts in section 3 are the output of `p0.py --gaps`; NS-01 to NS-50 are unchanged from the first run except NS-17 (9 to 11 rows: NS-17-R11 and NS-17-R12, both gaps, so G05 is 28 and `BL-182` names 26: it does not name those two). **Two of the 53 rows of card 27 are cite-covered, not gaps:** NS-51-R24 cites BL-961 and NS-52-R18 cites BL-933. BL-045 lists 27 rows and BL-046 lists 26 (the table parse of the 53) while `p0.py` counts 26 and 25 gap rows; `docs/BACKLOG.md` is not edited here (the extra ids do no harm in a Satisfies line). Every other one of the 38 proposed rows (BL-182 apart) names the same number of rows, and the same ids, as `p0.py` (NS ids compared through the script's own parser; FR ranges expanded by hand-written code that is not kept in the repo). Sections 3, 5, 5.1 and 8 are refreshed. Section 7 is the first run's list (G01 to G35, 588 rows; NS-17-R11 and NS-17-R12 are not in it) and is not regenerated: the rows of G36 to G38 (191) are in the `Satisfies:` lines of BL-045, BL-046 and BL-047.
+**Update, 20 Nov (regenerated; the pack tooling was repaired).** `p0.py` now reads cards 00 to 27 and `functions/*.md` (cards 22 to 26 hold no P0 acceptance row; card 27 adds 53). It does not count the 38 rows filed from this file (their status starts `proposed (docs/product/prd/BACKLOG-GAPS.md`) as cover, so `--gaps` and `--groups` keep listing the gaps those rows propose to close; once Karma or the founder sets a row to `ready` it counts as cover like any other row. `--groups` no longer stops with `StopIteration` at FR-AIS-57 and later: FR rows from the first id of each file's 20 Nov addendum on are group G38 (table `ADDENDUM_FROM` in the script), NS-51 is G36 and NS-52 is G37. The group counts in 5.1 are the output of `p0.py --groups` and sum to 781. Per-card counts in section 3 are the output of `p0.py --gaps`; NS-01 to NS-50 are unchanged from the first run except NS-17 (9 to 11 rows: NS-17-R11 and NS-17-R12, both gaps, so G05 is 28 and `BL-182` named 26 until the final audit, which added both: it now names 28). **Two of the 53 rows of card 27 are cite-covered, not gaps:** NS-51-R24 cites BL-961 and NS-52-R18 cites BL-933. BL-045 listed 27 rows and BL-046 listed 26 (the table parse of the 53) while `p0.py` counts 26 and 25 gap rows; the final audit corrected `docs/BACKLOG.md`: BL-045 now names 26 (NS-51-R24 left out, cite-covered by BL-961) and BL-046 names 25 (NS-52-R18 left out, cite-covered by BL-933). Every other one of the 38 proposed rows (BL-182 apart) names the same number of rows, and the same ids, as `p0.py` (NS ids compared through the script's own parser; FR ranges expanded by hand-written code that is not kept in the repo). Sections 3, 5, 5.1 and 8 are refreshed. Section 7 was regenerated in the final audit and lists all 781 rows (G01 to G38).
 
 Card 20 (`20-founder-direction-20nov.md`), 00, 13, 12 hold no P0 acceptance rows. `14-test-plan.md` holds the P0 register (a copy), `15`, `16`, `18` are review records: none is read as a row source.
 
@@ -125,7 +127,7 @@ Rules used: one group is one deliverable or one reviewable stack; rows stay in t
 | G02 | Pilot privacy and consent handling (NS-03) | NS-03-R1 to R5, R7, R8 | 7 | BL-935 (ready; it holds only the kit and names the card file, not these rows) | S | BL-127 |
 | G03 | Recording backup flip rows (NS-08 R10 to R19) | NS-08-R10, R11, R13, R14, R16, R17, R18, R19 | 8 | BL-976 (blocked, PR #622); waits for the founder's flip decision, as BL-976 says | L | BL-128 |
 | G04 | Let it go and child switcher: the rows BL-923 to BL-926 do not name | NS-09-R1 to R4b, R7, R8; NS-14-R8, R11 | 9 | BL-925, BL-926, BL-977, BL-941. BL-923 and BL-924 are `done (#832)` and probably already satisfy NS-09-R1 to R3 in code: add the ids, then test | M | BL-181 |
-| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 26 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-182 |
+| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10 to R12; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 28 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-182 |
 | G06 | Capture and reading stragglers of the 20 Nov lock | NS-19-R1, R4; NS-21-R9, R11, R13; NS-24-R10; NS-35-R1, R3, R4; NS-37-R2 | 10 | BL-931, BL-952, BL-947 | M | BL-183 |
 | G07 | Accessibility floor rows (NS-33 R1 to R8) | NS-33-R1, R2, R4 to R8 | 7 | BL-927, BL-928, BL-984. BL-927 to BL-928 satisfy LEGAL-REQ-051, not these ids: the fix may be Satisfies lines | S | BL-184 |
 | G08 | Quality gates: test plan rows, trace ratchet for backlog rows (NS-34, FR-QAL) | NS-34-R2, R5, R6; FR-QAL-01, 03, 05, 06, 11, 12, 15, 16, 17, 20 to 23 | 16 | BL-929, BL-948, BL-964 (trace sees NS ids). Proposed new check: `p0.py` as a CI step (`docs/ops/proposed/` patch, qa cannot edit workflows) | M | BL-185 |
@@ -161,7 +163,7 @@ Row counts sum to 590 for G01 to G35 (588 at the first run; G05 is now 28 with N
 
 ### 5.1 Group to backlog id (the same ids as `docs/BACKLOG.md`, section "Locked pack: P0 rows with no backlog row")
 
-If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this table is corrected. G36 and G37 are the P0 rows of NS-51 and NS-52 (`27-photo-moments-and-media.md`, 27 and 26 rows, all drop C; `p0.py` reads card 27 and counts 26 and 25 gap rows, one cite-covered row in each). G38 is the 140 FR rows added to `functions/*.md` on 20 Nov that section 7 does not list. Status of every row is `proposed`. Owner is the backlog owner name; the agent handle is the roster agent that name maps to (`agents/roster.json`). `product` has no owner name in the roster, so G01 and G38 carry the founder as Owner in the backlog and the product agent does the edit.
+If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this table is corrected. G36 and G37 are the P0 rows of NS-51 and NS-52 (`27-photo-moments-and-media.md`, 27 and 26 P0 rows of which 26 and 25 are gaps, all drop C; `p0.py` reads card 27 and counts 26 and 25 gap rows, one cite-covered row in each). G38 is the 140 FR rows added to `functions/*.md` on 20 Nov that section 7 does not list. Status of every row is `proposed`. Owner is the backlog owner name; the agent handle is the roster agent that name maps to (`agents/roster.json`). `product` has no owner name in the roster, so G01 and G38 carry the founder as Owner in the backlog and the product agent does the edit.
 
 | Group | Backlog id | Owner (backlog name) | Agent handle | Size | Rows |
 |---|---|---|---|---|---|
@@ -205,7 +207,7 @@ If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this
 | G38 | BL-047 | founder (done by product) | product | M | 140 |
 | Total | | | | | 781 |
 
-Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS-17-R12), 51 in G36 and G37 (26 and 25; BL-045 and BL-046 list 27 and 26 because NS-51-R24 and NS-52-R18 are cite-covered, see section 1), 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
+Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS-17-R12), 51 in G36 and G37 (26 and 25; BL-045 and BL-046 name the same numbers since the final audit: NS-51-R24 and NS-52-R18 are cite-covered, see section 1), 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
 
 ## 6. Coarse plan if only four ids are allowed (Tier A, BL-826 to BL-829)
 
@@ -218,9 +220,9 @@ Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS
 
 Check: 139 + 109 + 144 + 196 = 588. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
 
-## 7. Full gap list (588 rows)
+## 7. Full gap list (781 rows)
 
-This is the first run's list (groups G01 to G35). The 191 rows of G36 to G38 are not listed here (see the Update in section 1), and the "of N P0 rows" figures in the headings below are the first run's; section 3 has the current counts.
+Regenerated 20 Nov 2026 (final audit) with `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --md`: all 781 rows with no row-level backlog row, groups G01 to G38 (590 + 51 + 140), including NS-17-R11 and NS-17-R12 (G05) and the 51 rows of card 27 (G36, G37). The "of N P0 rows" figures in the headings are the current per-card counts of section 3.
 
 Band `none` means nothing in the backlog names the row or its card. Band `card-level only` means a backlog row names the whole card. Group is the proposed row of section 5. One-line text is the first 100 characters of the Given, When, Then cell (FR rows start with the rule's title); `(cut)` marks a shortened line.
 
@@ -327,7 +329,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-14-R8 | Given Listen is open, Then no switcher is on screen | 09-capture.md | none | G04 |
 | NS-14-R11 | Given A's selection and B signs in on the same phone, Then the selection resets and no name of A's shows | 09-capture.md | none | G04 |
 
-### NS-17 (9 of 9 P0 rows)
+### NS-17 (11 of 11 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -340,6 +342,8 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-17-R7 | Given a withheld take, Then its machine output is never shown, indexed, shared, printed or exported (cut) | 09-capture.md | none | G05 |
 | NS-17-R8 | Given a withheld take, Then its machine output is not synced; if already pushed as a held draft, (cut) | 09-capture.md | none | G05 |
 | NS-17-R10 | Given a recording in a held language, Then it is never handed to the recogniser and asks for no (cut) | 09-capture.md | none | G05 |
+| NS-17-R11 | Given a language other than English whose distress patterns have not passed FR-LOC-18 (a), Then no (cut) | 09-capture.md | none | G05 |
+| NS-17-R12 | Given a language that passed its gate on the full tier but not on the compact tier, Then a (cut) | 09-capture.md | none | G05 |
 
 ### NS-19 (2 of 2 P0 rows)
 
@@ -658,7 +662,68 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-50-R8 | Given a quieted or hidden active book, or "Include in my reminders" off, Then no day slip shows for (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-50-R11 | Given Home on any day, Then at most one slip rank shows at a time (rank 1, the waiting set, keeps (cut) | 21-days-cultural-photos-home.md | none | G18 |
 
-### FR-AIS (37 of 43 P0 rows)
+### NS-51 (26 of 27 P0 rows)
+
+| Row | One line | Card file | Band | Group |
+|---|---|---|---|---|
+| NS-51-R1 | Given any build, Then Photo moments is off until the parent taps "Turn on" on its own row after one (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R2 | Given the plist of each EAS profile, Then the photo-library usage string exists only in builds (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R3 | Given the system sheet, Then the parent may choose limited or full (Q-PM-1); the app works under (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R5 | Given the index build, Then it reads only each picture's creation date and a system identifier, (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R6 | Given the index, Then it is the whole derived store: at most 30 moments, each a start and end time (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R8 | Given moments exist, Then the capture menu offers only the newest moment (never a list, a count or (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R9 | Given the moment sheet A-S17, Then it shows the parent's own pictures as thumbnails of at least 96 (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R10 | Given any surface of this card, Then nothing describes what a picture shows, suggests words, (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R11 | Given a moment known when the app was last open and the parent's reminders on, Then it is a ranked (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R12 | Given any day, Then no nudge, line or setting counts moments, unwritten days or pictures, names a (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R15 | Given "Pause", Then no read, index or nudge happens until resumed, the index is emptied at once (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R16 | Given "Turn off", Then the index and album choice are deleted in the same action, pending moment (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R17 | Given sign-out, Erase everything, Delete account or a system-ended session, Then the index, album (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R18 | Given limited access with an empty or small selection, Then no moment shows, no prompt or message (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R19 | Given denied or restricted, Then the row shows the state in one calm line and "Open Settings" only (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R23 | Given a restored or new phone, Then the opt-in and index are absent (excluded from backup, read (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R25 | Given App lock is up or the app goes inactive, Then the sheet cannot open, a result returning while (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R26 | Given the whole feature (turn on, index, sheet, nudge, off), Then a network fake sees 0 requests, (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R28 | Given canary asset identifiers, album names and dates through every path, Then 0 hits in logs, (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R29 | Given the compiled app and the source, Then library calls exist only in one module (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R30 | Given the privacy label, Then "Photos or Videos: not collected" holds only while NS-51-R26 and (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R31 | Given the Notes for Review and policy, Then they say what is read (dates only), that it is on the (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R33 | Given any picture of any person, Then nothing reads faces, people albums or Apple's "People" data, (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R34 | Given AX5, VoiceOver, Voice Control, Switch Control and Reduce Motion, Then the row, menu item and (cut) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R37 | Given a picture of a child or another adult, Then nothing differs from level 1 (counsel Q45, Q48) | 27-photo-moments-and-media.md | none | G36 |
+| NS-51-R42 | Given the where-it-lives lines, Then they say pictures are read for dates only on this phone and (cut) | 27-photo-moments-and-media.md | none | G36 |
+
+### NS-52 (25 of 26 P0 rows)
+
+| Row | One line | Card file | Band | Group |
+|---|---|---|---|---|
+| NS-52-R2 | Given the picture start or Review's Add control, Then the system picker (multi-select, photos and (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R3 | Given media and no words, Then the letter cannot be kept as a letter (D-103); a letter with words (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R4 | Given each picture, Then NS-01-R6, R37a, R37b, R37c, R34 apply (strip, 4,032 px, upright JPEG, (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R5 | Given a picked video, Then it is copied into the app's Caches, validated by bytes, re-encoded to (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R6 | Given a video with sound, Then the sound stays in the file and is never transcribed, analysed or (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R8 | Given a corrupt, truncated, wrong-type, zero-byte, symlinked or oversized file, Then it is refused: (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R10 | Given free space below twice the video's bytes plus a margin, Then the copy never starts, one calm (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R11 | Given any failure of any media item, Then the words, the audio take and the other items are intact (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R15 | Given Remove on one item, Then it leaves the letter with Undo for the NS-01 window, and after the (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R16 | Given a deleted letter, Let it go, Erase now or Erase everything, Then every picture and video of (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R17 | Given Save a copy, Then it includes every picture and video, stripped, streamed to disk (not held (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R19 | Given the sync decision (Q-PM-3), Then Variant A (default) holds: a push carries no media path (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R21 | Given Variant B only, Then media are encrypted at rest, served by short-lived signed URLs bound to (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R22 | Given Variant B only, Then delete, Let it go, Delete account and a legal hold each remove or keep (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R23 | Given Variant B only, Then the privacy label becomes Photos or Videos collected, linked to the (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R25 | Given Variant B only, Then the other parent sees media only through NS-25's rules, private letters (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R28 | Given VoiceOver, AX5, Voice Control, Switch Control and Reduce Motion, Then each item is labelled (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R29 | Given any media, Then nothing generates, suggests, pre-fills or infers a caption, title, alt text, (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R30 | Given inactive or background, Then every picture and video frame is replaced by an opaque box (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R32 | Given any pick landing while App lock is up, Then every picked item is discarded and every (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R36 | Given every where-it-lives line and the policy, Then they name pictures and videos and the variant (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R37 | Given the Share picture (NS-05 Level 1), Then it still carries at most one picture, never a video, (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R38 | Given the code, Then only the system's media framework may read or re-encode video; the scan fails (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R40 | Given a restored phone, a missing file or a failed read, Then the page shows a plain box and one (cut) | 27-photo-moments-and-media.md | none | G37 |
+| NS-52-R44 | Given canary file names, durations and sizes, Then 0 hits in logs, breadcrumbs, crash payloads and analytics | 27-photo-moments-and-media.md | none | G37 |
+
+### FR-AIS (48 of 54 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -699,8 +764,19 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-AIS-53 | Given any request (from a user, a tester, a competitor review, a stakeholder, an agent or the (cut) | functions/ai-and-speech.md | none | G25 |
 | FR-AIS-54 | Given the card text, the packages/content keys and the code, Then a scan fails on the (cut) | functions/ai-and-speech.md | none | G22 |
 | FR-AIS-56 | Given a screen that shows a machine-made result (the small fixes in Review), Then it shows only (cut) | functions/ai-and-speech.md | none | G22 |
+| FR-AIS-57 | Given NS-51 reads the library, Then the only inputs are what the platform records at capture: asset (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-58 | Given a set of asset dates, birthday and marked days, When moments are computed, Then the result is (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-59 | Given any surface that shows a moment, a nudge, a slip, a picture, a video poster or a (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-60 | Given the red-team set in A.2, When CI runs, Then every case passes: the output equals the (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-61 | Given module names and strings, Then the deny-list of FR-AIS-54 stays as is (suggest, classif, (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-62 | Given a video attached to a letter, Then its sound is not read, extracted, transcribed or analysed: (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-64 | Given adding, replacing or removing a picture or video, or editing its words, Then the letter's (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-65 | Given Apple's people or face groupings in the library, Then they are never read or used to choose a (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-66 | Given text that arrives with media (filename, album title, caption, IPTC or Exif text, a video's (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-67 | Given the evaluation kit and harness agents, Then library and media fixtures are generated (Asha, (cut) | functions/ai-and-speech.md | none | G38 |
+| FR-AIS-68 | Given a field for a picture's or video's words or alt text, Then it follows FR-AIS-55 (writing (cut) | functions/ai-and-speech.md | none | G38 |
 
-### FR-BKO (7 of 11 P0 rows)
+### FR-BKO (13 of 17 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -711,8 +787,14 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-BKO-16 | Letters from lawyers, courts and the police. Given one arrives, Then the card copies (cut) | functions/back-office.md | none | G26 |
 | FR-BKO-18 | The founder cannot act. Given a founder who is ill, away or lost a device, Then there is a written (cut) | functions/back-office.md | none | G26 |
 | FR-BKO-21 | Agents hold no production power. Given the harness opens pull requests and never merges, Then the (cut) | functions/back-office.md | none | G26 |
+| FR-BKO-28 | No staff read path to family media. Given hosted pictures or videos, Then no role, console, (cut) | functions/back-office.md | none | G38 |
+| FR-BKO-29 | Support lookup shows media state only. Given the support summary (FR-BKO-02), When a parent writes (cut) | functions/back-office.md | none | G38 |
+| FR-BKO-30 | Deletion and what staff may do. Given a parent deletes a picture, a letter or the account, Then the (cut) | functions/back-office.md | none | G38 |
+| FR-BKO-31 | Legal hold on media. Given a lawyer, court or police letter asks to preserve a family's media, Then (cut) | functions/back-office.md | none | G38 |
+| FR-BKO-32 | Abuse and child-safety reports about media. Given a report says a person is adding harmful pictures (cut) | functions/back-office.md | none | G38 |
+| FR-BKO-35 | Support tooling limits. Given any support macro, template, help article or mailbox rule, Then: no (cut) | functions/back-office.md | none | G38 |
 
-### FR-CMP (15 of 16 P0 rows)
+### FR-CMP (22 of 23 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -731,8 +813,15 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-CMP-18 | Given the store build requires sign-in (D-160), Then the Notes for Review state the account-based (cut) | functions/compliance.md | none | G10 |
 | FR-CMP-19 | Given NS-05 or NS-25 is on in a candidate, Then the App Store Connect age-rating questionnaire is (cut) | functions/compliance.md | none | G10 |
 | FR-CMP-20 | Given a store candidate, Then every public line in packages/content/src/store.en.ts, the site and (cut) | functions/compliance.md | none | G10 |
+| FR-CMP-22 | Given NS-51 in a candidate, Then the Notes for Review name the feature, its flag, the reviewer path (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-23 | Given the 1.x rule "no Photos usage string, no PhotoKit call, no background mode" (NS-01-R22, (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-24 | Given the 5.1.1(ii) duty to give an easy way to withdraw consent, Then Me has Photo moments off in (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-25 | Given NS-52, When a candidate has media on, Then the age-rating questionnaire is answered again (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-26 | Given the obligations register, Then it gains rows: Apple 5.1.1(iii) and Photos permission (CR-083 (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-27 | Given age and consent, Then no part of NS-51 or NS-52 asks a child to do anything: the 18+ gate (cut) | functions/compliance.md | none | G38 |
+| FR-CMP-28 | Given each store candidate with media on, Then a proxy capture shows 0 requests carrying a file, (cut) | functions/compliance.md | none | G38 |
 
-### FR-CUL (15 of 16 P0 rows)
+### FR-CUL (22 of 23 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -751,8 +840,15 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-CUL-21 | Given any day offered, Then the parent ticks it; nothing is pre-ticked; a day the parent ticks can (cut) | functions/cultural-background-data.md | none | G19 |
 | FR-CUL-22 | Given the call-out at the point of choice, Then every sentence in it has a row in the claims (cut) | functions/cultural-background-data.md | none | G19 |
 | FR-CUL-23 | Given a store candidate, Then privacy re-runs the label against the binary (FR-PRV-30): the label (cut) | functions/cultural-background-data.md | none | G19 |
+| FR-CUL-28 | Given photo moments and any analysis of pictures, videos or library metadata, Then cultural data is (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-29 | Given the module boundary of FR-CUL-11, Then the import test also fails if the moments module (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-30 | Given place names in moment suggestions (Q-PM-5), Then the default stays off; if the founder turns (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-31 | Given a cluster on or near a day a tradition keeps, Then the cluster looks and reads exactly like (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-33 | Given sign-out, Erase everything and Delete account, Then the on-phone moment index and the culture (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-34 | Given the log canary (FR-CUL-08), Then it runs with synthetic album names and place names that (cut) | functions/cultural-background-data.md | none | G38 |
+| FR-CUL-35 | Given a test library (Asha, fictional), Then it holds 40 pictures dated on Christmas Day, an Eid, a (cut) | functions/cultural-background-data.md | none | G38 |
 
-### FR-DAT (9 of 11 P0 rows)
+### FR-DAT (14 of 16 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -765,8 +861,13 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-DAT-27 | Never an event, in any version, for this pack: anything at a seal's opening time; typed-day (cut) | functions/data-and-measurement.md | none | G29 |
 | FR-DAT-32 | Targets with no 1.0 source are marked "not measurable in 1.0" wherever they appear (frame, (cut) | functions/data-and-measurement.md | none | G29 |
 | FR-DAT-35 | Server-side counts named by cards (NS-40 refusals by country code, NS-41 sign-in success per (cut) | functions/data-and-measurement.md | none | G29 |
+| FR-DAT-36 | Allowlist rule, for when analytics returns. Given any event schema change for NS-51 or NS-52, When (cut) | functions/data-and-measurement.md | none | G38 |
+| FR-DAT-37 | No measurement in 1.0 for the two cards. Given a build with EXPO_PUBLIC_PHOTO_MOMENTS or the (cut) | functions/data-and-measurement.md | none | G38 |
+| FR-DAT-38 | Never an event, in any version, for these cards: a moment shown, tapped, dismissed or empty; an (cut) | functions/data-and-measurement.md | none | G38 |
+| FR-DAT-39 | Derived signals live on the phone only. Given NS-51 builds an on-device index of moments (dates, (cut) | functions/data-and-measurement.md | none | G38 |
+| FR-DAT-40 | Guardrails added to FR-DAT-09 (one report trips each; same-day to the founder): (a) a picture or (cut) | functions/data-and-measurement.md | none | G38 |
 
-### FR-DAY (7 of 12 P0 rows)
+### FR-DAY (13 of 18 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -777,8 +878,14 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-DAY-20 | No analytics. Given any build, Then no analytics event, log line or crash report carries a day id, (cut) | functions/days-library.md | none | G18 |
 | FR-DAY-23 | Licence and counsel. Before any source table ships, counsel confirms the right to use each source's (cut) | functions/days-library.md | none | G18 |
 | FR-DAY-25 | A note on a day is never a count or comparison with a previous year; the library never says "last (cut) | functions/days-library.md | none | G18 |
+| FR-DAY-26 | Given a date that is both a ticked day (library or typed) and has a photo moment, Then the parent (cut) | functions/days-library.md | none | G38 |
+| FR-DAY-27 | Given the Home slip slot on that date, Then the day's landing (days.landing.*) holds it and it (cut) | functions/days-library.md | none | G38 |
+| FR-DAY-28 | Given a quiet day (Memorial Day, Veterans Day, Good Friday, Yom Kippur, a national day naming a (cut) | functions/days-library.md | none | G38 |
+| FR-DAY-29 | Given pictures dated on a day, Then the library never learns from them: no day is suggested, (cut) | functions/days-library.md | none | G38 |
+| FR-DAY-32 | Given the on-phone moment index and the ticked-days store, Then neither holds a field from the (cut) | functions/days-library.md | none | G38 |
+| FR-DAY-33 | Given the day's landing and a letter begun from a picture on that day, Then the letter carries no (cut) | functions/days-library.md | none | G38 |
 
-### FR-FIN (5 of 6 P0 rows)
+### FR-FIN (7 of 8 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -787,8 +894,10 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-FIN-09 | Given any string the app shows or schedules (Keep gate, Plan, Plus confirmed, plan reminder note, (cut) | functions/finance.md | none | G26 |
 | FR-FIN-11 | Given Plus refunded or revoked by Apple, When the app next checks entitlements, Then it treats the (cut) | functions/finance.md | none | G26 |
 | FR-FIN-22 | Given the first Apple payout, When it is expected, Then the accountant brief (section 7, A1 to A9) (cut) | functions/finance.md | none | G26 |
+| FR-FIN-30 | Plan limits and Plus: options only, the price and the allowance are the founder's (FR-FIN-10). (cut) | functions/finance.md | none | G38 |
+| FR-FIN-32 | Accountant timing. Given any of: a paid plan that holds storage or media, a hosted-media vendor (cut) | functions/finance.md | none | G38 |
 
-### FR-LCY (18 of 18 P0 rows)
+### FR-LCY (24 of 24 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -810,8 +919,14 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-LCY-21 | Given a book that grows for years, Then a copy never fails for size: above 2 GB the export splits (cut) | functions/lifecycle-and-platforms.md | none | G27 |
 | FR-LCY-28 | Given every lifecycle surface above, Then its words pass the legacy rule (time and love, never (cut) | functions/lifecycle-and-platforms.md | none | G27 |
 | FR-LCY-34 | Given the test plan, Then these journeys exist and run on every release candidate: J-L1 upgrade (cut) | functions/lifecycle-and-platforms.md | none | G27 |
+| FR-LCY-35 | Given a database and export from any shipped build (one picture per letter, schema 1.7.0), When the (cut) | functions/lifecycle-and-platforms.md | none | G38 |
+| FR-LCY-36 | Given Save a copy with several pictures and videos, Then: each media file is in the archive with (cut) | functions/lifecycle-and-platforms.md | none | G38 |
+| FR-LCY-37 | Given a new phone, a restore from an iCloud device backup, or a second phone, Then: pictures and (cut) | functions/lifecycle-and-platforms.md | none | G38 |
+| FR-LCY-40 | Given a family change (the parents separate; a sole parent hands a phone on; two parents share a (cut) | functions/lifecycle-and-platforms.md | none | G38 |
+| FR-LCY-41 | Given account deletion with media, Then: on the phone that deletes, Erase everything removes every (cut) | functions/lifecycle-and-platforms.md | none | G38 |
+| FR-LCY-42 | Given sign-out, a second account on the same phone and Erase, Then: sign-out keeps the book and its (cut) | functions/lifecycle-and-platforms.md | none | G38 |
 
-### FR-LEG (11 of 15 P0 rows)
+### FR-LEG (17 of 21 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -826,8 +941,14 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-LEG-13 | Given a speech pack for a second language (NS-17) or any font, model or image added to the app, (cut) | functions/legal.md | none | G31 |
 | FR-LEG-15 | Given NS-16 on in a build, Then the Terms say: if you sign a letter as someone else, do it only (cut) | functions/legal.md | none | G31 |
 | FR-LEG-20 | Given any build that records an agreement (E-S03 local row, E-S07 server row), Then the version it (cut) | functions/legal.md | none | G31 |
+| FR-LEG-21 | Given NS-51 on in a build, When the Privacy Policy that build links is read, Then it says that, if (cut) | functions/legal.md | none | G38 |
+| FR-LEG-22 | Given NS-52 on, Then the Terms section 5 and Privacy sections 2 and 7 say, for the variant shipped: (cut) | functions/legal.md | none | G38 |
+| FR-LEG-23 | Given the counsel pack (FR-LEG-18), Then it carries a section "A child's picture and video": what (cut) | functions/legal.md | none | G38 |
+| FR-LEG-24 | Given any feature that could create face, voice or body measurements (face matching, "same person", (cut) | functions/legal.md | none | G38 |
+| FR-LEG-26 | Given any public line that touches the library or media (store page, site, notification, (cut) | functions/legal.md | none | G38 |
+| FR-LEG-27 | Given print QR to a video page (print and finance question), Then it is a separate counsel read (cut) | functions/legal.md | none | G38 |
 
-### FR-LOC (17 of 20 P0 rows)
+### FR-LOC (21 of 24 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -848,8 +969,12 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-LOC-26 | Given any language that is proposed for a store build, Then a dossier file exists, one per (cut) | functions/languages-and-localisation.md | none | G05 |
 | FR-LOC-28 | Given a language is paused or removed (manifest pause, a defect, the correction-rate guardrail, or (cut) | functions/languages-and-localisation.md | none | G05 |
 | FR-LOC-29 | Given language is sensitive data (it can stand for ethnicity), Then no language code, language (cut) | functions/languages-and-localisation.md | none | G05 |
+| FR-LOC-30 | Given the Photos permission string (a library read string, plus a string for writing to the library (cut) | functions/languages-and-localisation.md | none | G38 |
+| FR-LOC-34 | Given text that comes with media in any script (the parent's words about a picture, alt text, a (cut) | functions/languages-and-localisation.md | none | G38 |
+| FR-LOC-35 | Given a language that unlocks later, Then no prompt, moment wording or invitation is drawn from a (cut) | functions/languages-and-localisation.md | none | G38 |
+| FR-LOC-37 | Given store metadata and public copy, Then no keyword or line says "photos", "journal", "memories", (cut) | functions/languages-and-localisation.md | none | G38 |
 
-### FR-MKT (19 of 20 P0 rows)
+### FR-MKT (25 of 26 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -872,8 +997,14 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-MKT-29 | Given recording backup is off, Then NS-08-R7's check also reads the welcome email, /support and the (cut) | functions/marketing.md | none | G32 |
 | FR-MKT-32 | Given any marketing material (store, preview, screenshots, emails, posts, recruitment), Then the (cut) | functions/marketing.md | none | G32 |
 | FR-MKT-34 | Given launch measurement with analytics off (D-124), Then the website, emails and store links carry (cut) | functions/marketing.md | none | G32 |
+| FR-MKT-35 | Given any public line about pictures, videos or photo moments, Then it says only what the code (cut) | functions/marketing.md | none | G38 |
+| FR-MKT-36 | Given the label effect of NS-51 and NS-52 (Photos or Videos collected if any picture or video (cut) | functions/marketing.md | none | G38 |
+| FR-MKT-37 | Given store screenshots, previews and site images that show a picture or video in a letter or a (cut) | functions/marketing.md | none | G38 |
+| FR-MKT-39 | Given NS-51 and NS-52 have separate production flags, When What's New is written, Then each names (cut) | functions/marketing.md | none | G38 |
+| FR-MKT-40 | Given the Notes for Review, Then the Photos purpose, limited-access behaviour and a reviewer path (cut) | functions/marketing.md | none | G38 |
+| FR-MKT-41 | Given plan limits for pictures and videos (default 6 pictures, 2 videos, 60 seconds), Then no (cut) | functions/marketing.md | none | G38 |
 
-### FR-MSG (9 of 23 P0 rows)
+### FR-MSG (14 of 28 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -886,8 +1017,13 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-MSG-22 | Given any push or email that could count as promotion or direct marketing, Then none is sent in v1; (cut) | functions/messaging-and-entry-points.md | none | G35 |
 | FR-MSG-24 | Given each way a link can arrive, Then one table states what the person sees, and a device run (cut) | functions/messaging-and-entry-points.md | none | G35 |
 | FR-MSG-28 | Given the invite page, Then it never states or implies whether the invite is valid or expired (the (cut) | functions/messaging-and-entry-points.md | none | G35 |
+| FR-MSG-40 | Given the Photos permission and the notification permission, Then they are never asked in the same (cut) | functions/messaging-and-entry-points.md | none | G38 |
+| FR-MSG-41 | Given any reminder or lock-screen text, Then it never states, implies or conditions on the (cut) | functions/messaging-and-entry-points.md | none | G38 |
+| FR-MSG-43 | Given the 1.x line forbids a background mode (NS-49-R25) and the app cannot observe the library (cut) | functions/messaging-and-entry-points.md | none | G38 |
+| FR-MSG-44 | Given a proposal for a widget, a share extension (send a picture from the Photos app to the book), (cut) | functions/messaging-and-entry-points.md | none | G38 |
+| FR-MSG-45 | Given a share of a letter that carries media (NS-05 levels), a link preview, the invite page or any (cut) | functions/messaging-and-entry-points.md | none | G38 |
 
-### FR-NTC (9 of 9 P0 rows)
+### FR-NTC (17 of 17 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -900,17 +1036,26 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-NTC-09 | Given a family or faith day, or names off, Then the lock-screen title is neutral ("Something for (cut) | functions/notification-catalogue.md | none | G20 |
 | FR-NTC-10 | Given any variant, Then title is at most 40 characters and body at most 110, and no emoji, dash, (cut) | functions/notification-catalogue.md | none | G20 |
 | FR-NTC-11 | Given names off (the default) or App lock on, Then no title or body contains a child name; names (cut) | functions/notification-catalogue.md | none | G20 |
+| FR-NTC-22 | Given a photo-moment nudge, Then it is not a new class: it is a variant pool inside the existing (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-23 | Given a day with any two of: a ticked day, a birthday or month note, an evening reminder, a (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-24 | Given recency and back-off, Then a photo-moment nudge does not reset or extend the anchor, is not a (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-25 | Given any moment variant, Then title is at most 40 and body at most 110 characters, no exclamation (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-26 | Given names off (default) or App lock on, Then the lock-screen title is neutral ("Something for the (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-27 | Given a moment nudge is tapped, Then it opens the capture area's moments view, never a prompt or a (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-28 | Given a book that is quieted, a hard-day tier, Reminders off, Photo moments off, or the library (cut) | functions/notification-catalogue.md | none | G38 |
+| FR-NTC-29 | Given the last-letter layer (section 4.2), Then a letter that has pictures or videos is not a kind (cut) | functions/notification-catalogue.md | none | G38 |
 
-### FR-OPP (4 of 4 P0 rows)
+### FR-OPP (5 of 5 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
-| FR-OPP-03 | Given a suggestion or picture is chosen, Then only the chosen item reaches the app, anything beyond (cut) | functions/feature-opportunities.md | none | G21 |
+| FR-OPP-03 | Superseded in part by NS-51 and FR-OPP-14 on 20 Nov (level 3 reads the library on the phone). Given (cut) | functions/feature-opportunities.md | none | G21 |
 | FR-OPP-05 | Given a doorway is added after the spike (OPP-02), When the control is used on a locked phone, Then (cut) | functions/feature-opportunities.md | none | G21 |
 | FR-OPP-06 | Given a doorway control exists, When the NS-04 exit has not passed on that phone and iOS version, (cut) | functions/feature-opportunities.md | none | G21 |
 | FR-OPP-09 | Given any opportunity touches a child's voice or another adult's voice, Then counsel reads before (cut) | functions/feature-opportunities.md | none | G21 |
+| FR-OPP-14 | Given any opportunity touches pictures or videos, Then no machine selects, ranks, crops, captions, (cut) | functions/feature-opportunities.md | none | G38 |
 
-### FR-OPS (12 of 15 P0 rows)
+### FR-OPS (15 of 19 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -926,8 +1071,11 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-OPS-28 | 40 MB per candidate. Given an RC, Then the App Store Connect download size of the largest variant (cut) | functions/operations.md | none | G26 |
 | FR-OPS-31 | Device evidence on Asha only. Given any device row, Then it runs on a separate install signed in to (cut) | functions/operations.md | none | G26 |
 | FR-OPS-33 | First run survives a server outage. Given sign-in is unreachable (a paused or restricted project, a (cut) | functions/operations.md | none | G26 |
+| FR-OPS-39 | Kill switches and flags, servers-off builds included. Given NS-51 and NS-52 each have a local flag (cut) | functions/operations.md | none | G38 |
+| FR-OPS-42 | Data requests for media. Given an access, export or deletion request, Then the card says where each (cut) | functions/operations.md | none | G38 |
+| FR-OPS-43 | Device evidence for media. Given NS-51 or NS-52 is run on a device row, Then the test install's (cut) | functions/operations.md | none | G38 |
 
-### FR-PHS (23 of 23 P0 rows)
+### FR-PHS (35 of 35 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -954,8 +1102,20 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-PHS-55 | Given App Review, Then the review notes name the entitlement, say the picker is Apple's own and (cut) | functions/photos-and-suggestions.md | none | G21 |
 | FR-PHS-56 | Given the Apple Developer Program License Agreement section that A2 points to for suggestion data, (cut) | functions/photos-and-suggestions.md | none | G21 |
 | FR-PHS-57 | Given a child's picture and a picture showing another adult arrive through level 2, Then nothing (cut) | functions/photos-and-suggestions.md | none | G21 |
+| FR-PHS-58 | Given the parent taps "turn on" on our own screen, Then the first PhotoKit call is (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-59 | Given limited access, Then the app works with the chosen set only; "Choose which pictures" opens (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-60 | Given the moments pass, Then the only fields read are creation date and media type (image or (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-61 | Given the moments pass runs, Then it runs in the foreground when the app opens or the capture area (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-63 | Given the moments index, Then it holds only date, count and the library item identifiers needed to (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-64 | Given the moment card in capture, Then it shows the parent's own pictures, a plain invitation from (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-65 | Given the parent starts a letter from a moment, Then the chosen pictures are read through PhotoKit (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-66 | Given "Add pictures or videos" without permission, Then the system picker is used (multi-select (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-67 | Given a picture or video held only in iCloud, Then the app does not freeze: it shows progress and a (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-69 | Given a video, Then duration and byte caps (proposed 60 seconds, a size cap) are checked before (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-70 | Given a letter with media, Then each item has no machine caption; alt text is the parent's own (cut) | functions/photos-and-suggestions.md | none | G38 |
+| FR-PHS-71 | Given the first media letter, Then NS-01's rule "a letter holds one picture" is replaced by the (cut) | functions/photos-and-suggestions.md | none | G38 |
 
-### FR-POL (8 of 8 P0 rows)
+### FR-POL (9 of 9 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -967,16 +1127,21 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-POL-07 | Given a report that an account holder or a family contributor is under 18, Then support uses the (cut) | functions/support.md | none | G33 |
 | FR-POL-12 | Given any Claude session, the support agent included, Then it never reads the mailbox, never (cut) | functions/support.md | none | G33 |
 | FR-POL-13 | Given a parent reports that someone else can see their letters, or that data reached someone it (cut) | functions/support.md | none | G33 |
+| FR-POL-14 | Given media that reaches our servers (only if Q-PM-3 is yes), Then trust and safety changes level: (cut) | functions/support.md | none | G38 |
 
-### FR-PRT (3 of 4 P0 rows)
+### FR-PRT (7 of 8 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
 | FR-PRT-02 | Given the free printable file in 1.0 (NS-07 C28), When a parent reads the line above its button, (cut) | functions/print-and-fulfilment.md | none | G31 |
 | FR-PRT-39 | Given any printed page, When it is designed, Then it has no QR code, no link, no printed URL and no (cut) | functions/print-and-fulfilment.md | none | G31 |
 | FR-PRT-45 | Given a printed page contains a real family's words, When a proof, test or support check is run, (cut) | functions/print-and-fulfilment.md | none | G31 |
+| FR-PRT-49 | The parent chooses what goes to print. Given the order flow, When the parent reaches the picture (cut) | functions/print-and-fulfilment.md | none | G38 |
+| FR-PRT-51 | QR to a video: a question, not a feature. Given someone proposes a printed QR that plays a family's (cut) | functions/print-and-fulfilment.md | none | G38 |
+| FR-PRT-54 | Fixtures and fairness. Given a proof, a test or a support check of a printed picture, Then only (cut) | functions/print-and-fulfilment.md | none | G38 |
+| FR-PRT-55 | Moments never reach print. Given NS-51, Then nothing the moments index holds (dates, clusters, (cut) | functions/print-and-fulfilment.md | none | G38 |
 
-### FR-PRV (15 of 22 P0 rows)
+### FR-PRV (28 of 35 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -995,8 +1160,21 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-PRV-31 | Given any 1.0.x build, When preflight-production.mjs runs, Then it fails if the dependency tree (cut) | functions/privacy.md | none | G30 |
 | FR-PRV-33 | Given Me, Privacy, Then it has a design id and every state (signed in with consent on, off or (cut) | functions/privacy.md | none | G30 |
 | FR-PRV-34 | Given Erase everything on a phone that held pictures, Find, typed days, shares and printable files, (cut) | functions/privacy.md | none | G30 |
+| FR-PRV-36 | Given a store candidate, Then app-store-privacy-labels.md has one row per variant and the build (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-37 | Given NS-51 on, Then one purpose string for the Photos read permission exists, in every language (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-38 | Given limited, full or denied access, When the parent uses the app, Then behaviour is identical in (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-39 | Given the moments index (dates, counts, library item identifiers, the parent's album picks, (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-40 | Given any child's picture or video, Then nothing in NS-51 or NS-52 detects a face, person, pet, (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-41 | Given a letter with attached media, When the letter is deleted, Then every file, poster frame and (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-42 | Given Save a copy, Then media attached to the author's letters is in the ZIP in the format stored (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-43 | Given Variant B and production on the Supabase Free plan, Then the Privacy Policy and data-policy (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-44 | Given account A signed out and B signed in on one phone, Then B sees none of A's attached media, (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-45 | Given the Asha fixtures with canary strings in file names, album names, asset ids, captions and (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-46 | Given a moments nudge, Then its words never describe, count or imply a picture's content, place or (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-47 | Given a video with sound, Then the sound is neither transcribed nor analysed by default; any later (cut) | functions/privacy.md | none | G38 |
+| FR-PRV-48 | Given the where-it-lives lines (whereLive.*, settings.privacy.*, Privacy section 10), Then they (cut) | functions/privacy.md | none | G38 |
 
-### FR-QAL (13 of 16 P0 rows)
+### FR-QAL (18 of 21 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -1013,8 +1191,13 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-QAL-21 | Given a candidate, When it is tested, Then an upgrade from the last store build with a seeded (cut) | functions/quality.md | none | G08 |
 | FR-QAL-22 | Given the sign-in rows (E-S05, E-S06, J-E08), When they are tested, Then CI proves every error kind (cut) | functions/quality.md | none | G08 |
 | FR-QAL-23 | Given a P0 device row, When no suitable phone is available, Then the founder may waive it in (cut) | functions/quality.md | none | G08 |
+| FR-QAL-25 | Given NS-51 and NS-52 are locked, When 14-test-plan.md section 7 is regenerated, Then every P0 (cut) | functions/quality.md | none | G38 |
+| FR-QAL-26 | Given a store candidate with the moments or media flags on, When G4 runs, Then the device matrix of (cut) | functions/quality.md | none | G38 |
+| FR-QAL-27 | Given the content and code rules, When CI runs, Then: (a) keys under the moments and media families (cut) | functions/quality.md | none | G38 |
+| FR-QAL-28 | Given media tests, Then fixtures are generated and shared by one module: an Asha media library (cut) | functions/quality.md | none | G38 |
+| FR-QAL-29 | Given the P0 rows that lose or leak media (delete, erase, backup, restore, second account, share (cut) | functions/quality.md | none | G38 |
 
-### FR-REL (9 of 15 P0 rows)
+### FR-REL (18 of 24 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -1027,8 +1210,17 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-REL-43 | The outbox survives everything: kill, reboot, update, a full disk, months offline. After months (cut) | functions/reliability.md | none | G27 |
 | FR-REL-45 | The conflict note is built. Given the author's two phones change one letter's words while offline, (cut) | functions/reliability.md | none | G27 |
 | FR-REL-61 | Switching phones with backup off is explained before it hurts, in the help centre and the existing (cut) | functions/reliability.md | none | G27 |
+| FR-REL-62 | Add never loses the letter. Given a parent attaches pictures or videos while the phone is full, (cut) | functions/reliability.md | none | G38 |
+| FR-REL-63 | iCloud-optimised originals. Given a picture or video whose full file is not on the phone, When the (cut) | functions/reliability.md | none | G38 |
+| FR-REL-64 | Formats. Given HEIC, HEIF, JPEG, PNG, wide-colour or HDR pictures, Live Photos, ProRAW-size files (cut) | functions/reliability.md | none | G38 |
+| FR-REL-65 | Memory and thermal limits. Given a 60 s video, a 50,000-item library or six pictures added at once, (cut) | functions/reliability.md | none | G38 |
+| FR-REL-67 | Low storage ladder for media. Given free space falls, Then rows are added to FR-REL-48: under the (cut) | functions/reliability.md | none | G38 |
+| FR-REL-68 | Moment index (NS-51) reliability, phone only. Given a library of any size, Then: the first scan is (cut) | functions/reliability.md | none | G38 |
+| FR-REL-70 | Restore and phone-change matrix, media rows (corrects FR-REL-59). Stored picture and video copies (cut) | functions/reliability.md | none | G38 |
+| FR-REL-71 | Servers-off builds. Given a TestFlight or any servers-off build, When the new flags are on, Then (cut) | functions/reliability.md | none | G38 |
+| FR-REL-72 | Device evidence for media on old phones. Given the matrix (SE 3, iOS 17.0 to 17.2, 26, a second (cut) | functions/reliability.md | none | G38 |
 
-### FR-RSH (10 of 14 P0 rows)
+### FR-RSH (13 of 17 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -1042,6 +1234,9 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-RSH-22 | Given research data, Then one table of clocks holds in the founder's private store, outside the (cut) | functions/research-validation.md | none | G34 |
 | FR-RSH-26 | Given any study result, Then it is never used as a public claim, a store line, a website sentence (cut) | functions/research-validation.md | none | G34 |
 | FR-RSH-27 | Given a stop rule fires in any study (lost or changed words, a guilt or count line, an unintended (cut) | functions/research-validation.md | none | G34 |
+| FR-RSH-30 | Given a study of moments or media, Then sessions the team observes use the fictional Asha library (cut) | functions/research-validation.md | none | G38 |
+| FR-RSH-31 | Given a fictional library for studies, Then it is one fixture shared with qa (FR-QAL-28), (cut) | functions/research-validation.md | none | G38 |
+| FR-RSH-35 | Given the moments feature, Then no study score, tuning or "moment quality" rating is made: a study (cut) | functions/research-validation.md | none | G38 |
 
 ### FR-RSK (4 of 4 P0 rows)
 
@@ -1052,7 +1247,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-RSK-04 | Given no person outside the founding family stores letters on the server, Then the R-17 review (cut) | functions/risk-security.md | none | G28 |
 | FR-RSK-06 | Given a kill switch per surface (ADR 0029), Then each card's switch is tested in .killSwitch (cut) | functions/risk-security.md | none | G28 |
 
-### FR-SEC (9 of 11 P0 rows)
+### FR-SEC (14 of 18 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -1065,8 +1260,13 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-SEC-18 | Given Find, From name, Firsts labels, typed days and photo paths, Then no query, label, name or (cut) | functions/risk-security.md | none | G28 |
 | FR-SEC-24 | O-6 (code length): I agree with the default (8 digits, 900 s, the app length set in the same (cut) | functions/risk-security.md | none | G28 |
 | FR-SEC-26 | Given the App Review demo sign-in, Then the reviewer account holds only the Asha book and is not a (cut) | functions/risk-security.md | none | G28 |
+| FR-SEC-28 | Variant B. Given a member opens a picture or video, Then the app asks an Edge Function that checks (cut) | functions/risk-security.md | none | G38 |
+| FR-SEC-30 | Given any picture, Then Exif, GPS, XMP and trailing bytes are stripped before it is stored and (cut) | functions/risk-security.md | none | G38 |
+| FR-SEC-31 | Given malicious or malformed media (corrupt HEIC, oversized dimensions, huge duration, (cut) | functions/risk-security.md | none | G38 |
+| FR-SEC-33 | Given the moments index and thumbnails of library pictures, Then they appear only in the capture (cut) | functions/risk-security.md | none | G38 |
+| FR-SEC-35 | Given Save a copy and share of media, Then a video or picture leaves only by the parent's tap, the (cut) | functions/risk-security.md | none | G38 |
 
-### FR-SUP (11 of 15 P0 rows)
+### FR-SUP (16 of 20 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -1081,6 +1281,11 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-SUP-14 | Given a deletion request, Then the help centre and M3 point first to Me, Delete account (C-S20; (cut) | functions/support.md | none | G33 |
 | FR-SUP-17 | Given any build, When a parent taps "If you are struggling" in Me, Then the page shows the lines (cut) | functions/support.md | none | G33 |
 | FR-SUP-21 | Given a parent asks us to bring back pictures, recordings or a sealed letter's words from a lost or (cut) | functions/support.md | none | G33 |
+| FR-SUP-24 | Given NS-52 or NS-51 ships, Then the help centre gains one article each, written from the build and (cut) | functions/support.md | none | G38 |
+| FR-SUP-25 | Given a parent writes about media, Then saved macros exist before the flag: M-MED-1 a picture or (cut) | functions/support.md | none | G38 |
+| FR-SUP-26 | Given support is asked about a media fault, Then we never ask for a picture, video, screenshot of (cut) | functions/support.md | none | G38 |
+| FR-SUP-27 | Given Q-PM-3 (do pictures and videos reach our servers), Then macros and articles exist in two held (cut) | functions/support.md | none | G38 |
+| FR-SUP-28 | Given deletion or export (FR-SUP-14, 15), Then articles say in plain words what happens to media on (cut) | functions/support.md | none | G38 |
 
 ## 8. Rows covered only by a cite (81), for review
 

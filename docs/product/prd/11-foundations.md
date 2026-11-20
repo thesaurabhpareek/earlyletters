@@ -24,7 +24,7 @@ P1, whose phone already buzzes too often, at any hour; and the founder, whose pl
 ### 2. Why
 - The job: "Leave my words and voice for my child's future" (rank 3), kept up without guilt; guardrails: zero counts of gaps, streaks or guilt lines, and zero child names on a lock screen by default (00 section 3).
 - Today [F, read in code]: `lib/reminders/planner.ts` plans three classes (evening, monthAge, birthday) and says "at most one note a day: a month or birthday note replaces that day's evening nudge". It keys month and birthday notes by kind and date (`${kind}:${date}`), so a birthday of one child and a month-day of another on the same date plan two notifications that day. It keeps at most 60 pending (`maxNotifications`). Plan reminders (`lib/billing/plan-reminders.logic.ts`) are a separate group of at most 4 (`MAX_PLAN_NOTIFICATIONS`), fired inside hard windows at 10:00 local when possible and never in quiet hours. iOS keeps 64 pending per app; 60 plus 4 is 64.
-- Open PR #758 (draft, BL-869) [F]: adds `lib/reminders/budget.ts`, a class registry with groups and pending ceilings, and registers `occasion` for the parked Memory Library (NS-31).
+- Open draft for the reminder budget [F]: adds `lib/reminders/budget.ts`, a class registry with groups and pending ceilings, and registers `occasion` for the parked Memory Library (NS-31).
 - Coming [F, cards]: typed days (NS-18), NS-13's back-off, later a co-parent push (NS-26, parked).
 - [A] Each class alone seems reasonable; together they nag. One budget in one place makes the total a product decision.
 
@@ -38,7 +38,7 @@ P1, whose phone already buzzes too often, at any hour; and the founder, whose pl
 - NS-13's back-off applies to the `evening` class only and is pre-scheduled in the plan (7 daily, then weekly for 4 weeks, then none, counted from the last made letter), so a parent who never opens the app gets nothing after day 35. It never suppresses a typed day the parent asked for, which still counts toward the one per day.
 - Every class: interruption level `active`, never `time-sensitive`; every body is a `packages/content` key; every category sets a neutral `hiddenPreviewsBodyPlaceholder` (research note 3).
 
-**Not in scope.** What each class says and when (NS-13, NS-18, F14). Push notifications (NS-26). Any class derived from the photo library (the `occasion` class leaves #758; NX-39 R27).
+**Not in scope.** What each class says and when (NS-13, NS-18, F14). Push notifications (NS-26). Any class derived from the photo library (the `occasion` class leaves the open draft; NX-39 R27).
 
 ### 4. Happy path
 1. The parent has evening reminders on, two books, and a typed day on 14 March.
@@ -208,7 +208,7 @@ A VoiceOver user recording at 2 a.m.; a grandparent at the largest text size; a 
 ### 2. Why
 - The job: every job, for every parent; must-be quality (00 section 2).
 - The standard on record [F]: WCAG 2.2 AA, Dynamic Type to AX5 on every screen, every gesture with a button (LEGAL-REQ-051; `06-nfr.md` section 8; design language section 11). Voice Control and Switch Control gate at submission (06-nfr section 8, G4).
-- Misses today [F, read in code 20 Nov]: the letter page has no heading (no `accessibilityRole="header"` in `app/letter/[id].tsx`); the Me tab is titled "Me" while its screen heading is "Settings" (`app/(tabs)/_layout.tsx:87-91`, `copy.settings.title`); no view sets `accessibilityIgnoresInvertColors` anywhere in `apps/mobile/src`, so pictures would invert under Smart Invert; nothing reads Bold Text for the three custom fonts. Built and kept: the tab bar items show the Large Content Viewer (`LARGE_CONTENT`, `_layout.tsx:57`). The lens control in #840 must not announce itself as tabs. The Book header at AX5 is reported to break (draft finding; UNVERIFIED on a device).
+- Misses today [F, read in code 20 Nov]: the letter page has no heading (no `accessibilityRole="header"` in `app/letter/[id].tsx`); the Me tab is titled "Me" while its screen heading is "Settings" (`app/(tabs)/_layout.tsx:87-91`, `copy.settings.title`); no view sets `accessibilityIgnoresInvertColors` anywhere in `apps/mobile/src`, so pictures would invert under Smart Invert; nothing reads Bold Text for the three custom fonts. Built and kept: the tab bar items show the Large Content Viewer (`LARGE_CONTENT`, `_layout.tsx:57`). The lens control in the photo stack must not announce itself as tabs. The Book header at AX5 is reported to break (draft finding; UNVERIFIED on a device).
 
 ### 3. What, and Not in scope
 **What.** The rows below on the screens a parent uses every day: Home, Listen, Review, the Book, the letter page, Me and Read together. Every new card inherits them.
@@ -606,7 +606,7 @@ Every parent, the day they delete, hide, restore, seal or export a letter that c
 ### 2. Why
 - The jobs: "Never lose what I made" (rank 1) and "Keep my child's memories private" (rank 4); the promises "yours always" and "private".
 - [A] If a picture, a first or a seal outlives its letter after a delete, shows in Find after it was hidden, or is missing from an export, the promise breaks quietly.
-- Today [F, read in code and branches]: export schema 1.6.0 (`lib/export/schema.ts:90`); `manifest.counts` already has `photos`; the about-day (`occurred_on`, `occurred_precision`, since 1.5.0) and the signature (`author.signs_as`) are already exported. Schema compatibility is one way: each v1 schema closes its objects, so an older schema rejects a newer file, and each export is read with the schema it carries (`schema.ts:13-27`). ADR 0028 is on branch `docs/adr-photo-seal-find-data-11nov` (#797, draft, head `1bee878b`), status "Proposed", accepted under CR-62 but not merged (finding F5, X11). A new synced column not added to the `entries` content trigger tuple (`20261003000000_security_and_family.sql:444-450`) and the `book_entries` view (`20261002020000_data_governance.sql:210`) bypasses `require_content_consent()` and is invisible to the other parent (F12).
+- Today [F, read in code and branches]: export schema 1.6.0 (`lib/export/schema.ts:90`); `manifest.counts` already has `photos`; the about-day (`occurred_on`, `occurred_precision`, since 1.5.0) and the signature (`author.signs_as`) are already exported. Schema compatibility is one way: each v1 schema closes its objects, so an older schema rejects a newer file, and each export is read with the schema it carries (`schema.ts:13-27`). ADR 0028 is on branch `docs/adr-photo-seal-find-data-11nov` (draft, head `1bee878b`), status "Proposed", accepted under CR-62 but not merged (finding F5, X11). A new synced column not added to the `entries` content trigger tuple (`20261003000000_security_and_family.sql:444-450`) and the `book_entries` view (`20261002020000_data_governance.sql:210`) bypasses `require_content_consent()` and is invisible to the other parent (F12).
 
 ### 3. What, and Not in scope
 **Rule for every new field or file** (a picture and its copies, a first, a seal, a Find index row, and any later field):
@@ -779,7 +779,7 @@ A parent scrolling a Book of years: 1,000 letters and 300 pictures should scroll
 ### 2. Why
 - The job: "Leave my words and voice for my child's future" (rank 3); the Book must stay readable as it grows.
 - [F] 06-nfr: Book first render with 1,200 letters p95 500 ms; Book screen under 120 MB resident without pictures. [A] Pictures are the usual cause of a slow list.
-- Today [F]: no smaller copies exist; #836 writes the stripped stored copy only (`lib/photos/strip.ts`), and ADR 0028 names no smaller copies.
+- Today [F]: no smaller copies exist; the photo stack writes the stripped stored copy only (`lib/photos/strip.ts`), and ADR 0028 names no smaller copies.
 
 ### 3. What, and Not in scope
 **What.**

@@ -6,7 +6,7 @@ Status detail: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock ne
 
 Author: `product` (CPO lens). Rank 6 of 7. Index: `README.md`. Earlier: Draft v1.1, 11 Nov 2026. Ruled 20 Nov (Karma, council round 2): T2, T4, T5, D2, D3, D6, D13. Three cards in one file; each part carries the full card shape and its own `**Label effect.**` line.
 
-Sources: design specs `04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794); `NX-44-firsts.md` (PR #790; its ids are cited, not copied); ADR 0028 (PR #797, on branch `docs/adr-photo-seal-find-data-11nov` at `1bee878b`, status Proposed, accepted by Karma under CR-62, `docs/agents/cto/RULINGS.md:570`; not yet on `develop`, so cited as "ADR 0028 (PR #797)"). Code facts below were read on `develop` at `697233d35` on 20 Nov 2026.
+Sources: design specs `04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md`; `NX-44-firsts.md` (its ids are cited, not copied); ADR 0028 (on branch `docs/adr-photo-seal-find-data-11nov` at `1bee878b`, status Proposed, accepted by Karma under CR-62, `docs/agents/cto/RULINGS.md:570`; not yet on `develop`, so cited as "ADR 0028"). Code facts below were read on `develop` at `697233d35` on 20 Nov 2026.
 
 Scope and order (T5: order and gates only; the roadmap holds dates): all three parts are in scope (founder, 10 Nov: include all new scope; founder approval of requirements, 19 Nov). Firsts and the sealed letter are built after Share one letter (Level 1) ships and their five-parent study has run. The sealed letter also waits for ADR 0028 to merge on `develop` and for the sync choice in B10.1. Quick capture waits for NS-04's GO.
 

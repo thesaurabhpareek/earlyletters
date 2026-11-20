@@ -118,13 +118,30 @@ Make sure you read some inputs I gave on what new features we are not thinking o
 ### Turn after 874 (relayed by the coordinator on 20 Nov; the chat turn number is not in this export)
 Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture
 
+## Part 1b. Founder messages relayed by the coordinator, 20 Nov 2026 (items 34 to 38; no turn numbers; wording exactly as relayed, typos included)
+
+### Item 34
+Great. Finalize all requirements and lock because engg is working in parallel now for their plan. Listen to their feedback and fix gaps too.
+
+### Item 35
+Ask engg / them their plan and what help they need.
+
+### Item 36
+Yes, the whole goal is for all of your work to work very closely. Keep harness informed and make sure as questions come Product is reactive to engineering and clarify requirement so that design policy security. Everyone can also review all of those things and then engineering can review the final requirements and keep updating the plan. It needs to be like a continuous integration continues development, kind of mindset and really from self feeling CICD principles. So don't make everything sequential. Keep learning from feedback. Keep improving requirement and tell harness to learn this skill that whenever there is a feedback or question come in, it knows which are the reason to ask and then go to executive and get the approval so make sure there is a continuous feedback loop and continuous selfie progress that keeps happening so the system keeps improving by itself
+
+### Item 37
+Update the harness accordingly and inform thread we have for harness work to have this backlog enhancements completed and run as a smart self healing harness and has a strong feedback and self improvement loop.
+
+### Item 38
+Align harness backlog for CTO review take CTO feedback make improvements and post CTO approval execute and inform all agents of what has updated and their new operating style.
+
 ## Part 2. Human turns with no text in the export
 
 Turns 724, 726, 729, 732, 734, 736, 738, 740, 744. Each shows "Human:" followed by nothing. They fall between agent reports during the scope round (phase 1 and phase 2 papers) and are probably notification carriers, not founder messages. No instruction is taken from them.
 
 ## Instruction index
 
-Every distinct instruction or constraint, one line each, with the turn numbers that carry it. "Superseded" marks items a later message replaces, narrows or repeats.
+Every distinct instruction or constraint, one line each (items 34 to 38 are the 20 Nov messages relayed by the coordinator, in Part 1b), with the turn numbers that carry it. "Superseded" marks items a later message replaces, narrows or repeats.
 
 1. Produce a very detailed scope document of new features and enhancements, debated as a team, stack ranked on value with the why, and redesign IA and navigation; use a senior team of product, architecture, design and animation together. (720)
 2. Verify that a full backlog, exhaustive feature evaluation and a 3 to 6 month future vision exist. (747)
@@ -159,5 +176,10 @@ Every distinct instruction or constraint, one line each, with the turn numbers t
 31. Look end to end across the product spec, the design, animation and transition team work, the executive feedback and all domain SME requirements; update the project plan and dependency mapping; partner with the ongoing engineering architecture work so it uses the latest requirements; work closely with the harness to avoid duplication and cover all instructions; verify all of it, fill pending gaps, then tell me when all end-to-end requirements are ready to kick off the development cycle. (872)
 32. Make sure the earlier inputs on new features not yet considered are read; product agents enhance their requirement doc to include them, especially Apple Journal-like access to the Photos folder and using that data to find which letter someone should write, and attaching pictures or videos to the letter; make sure all other agents update their requirements for all enhancements in the product spec. (874) Restates the photo part of item 28 and extends it to videos; items 28 and 32 should be read together.
 33. Go with all default answers; customer experience wins where two defaults conflict; lock all requirements; then inform the harness and the engineering leads working on architecture. (relayed 20 Nov, after 874) Effect: every FOUNDER row (F1..F8 and the founder-only groups in `GAP-LOG.md` "Closures 20 Nov") is FOUNDER-ANSWERED: default accepted. Where a default needs his hands, the decision is made and the action is pending (22 section "Founder hands").
+34. Finalize and lock all requirements because engineering works in parallel on its plan; listen to engineering's feedback and fix gaps too. (34; Part 1b)
+35. Ask engineering for their plan and what help they need. (35; asked on the PR comment thread of the readiness-folders claim, REST comments of 20 Nov 18:27 UTC; no reply yet at 18:40 UTC)
+36. Work as one team in continuous integration and continuous development style, not in sequence: keep the harness informed; product reacts to engineering questions and clarifies requirements for design, policy and security; everyone reviews; engineering reviews the final requirements and keeps updating the plan; keep learning from feedback and improving requirements; the harness learns when a feedback or question is worth asking and then goes to the executives for approval; a continuous feedback loop so the system improves by itself. (36; Part 1b)
+37. Update the harness accordingly and inform the harness thread: complete these backlog enhancements and run as a smart, self-healing harness with a strong feedback and self-improvement loop. (37; Part 1b)
+38. Align the harness backlog for CTO review, take CTO feedback and improve, execute after CTO approval, and inform all agents of what changed and their new operating style. (38; Part 1b)
 
 Standing rules in force across the whole list (from the founder's messages above, not from agent output): customer first and the why and the what before tactics (7, 9); requirements must be exhaustive, with no word limit (12); the PRD is the single source of truth and only the latest PRD is used (16, 17); everything must be tracked and documented through the harness (22, 31); save work often (26).

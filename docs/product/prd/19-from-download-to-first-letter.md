@@ -4,7 +4,7 @@ Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (PM role, with t
 
 Status detail: Locked v1.0 candidate, 20 Nov 2026 (needs Karma's ruling on open items). Changes after lock need a PR that lists every changed id.
 
-Author: `product` (PM role, with the CPO role; a Claude session, not a scheduled `product` run), for Karma (CTO). Backlog row BL-994. Docs only: nothing here is built by this file, no string is live, no decision is recorded in `DECISIONS.md`. Founder request of 20 Nov 2026 (relayed by Karma): the PRD covers everything from app download and the first interaction through sign-up and sign-in, risk checks, required validation, information collection and verification, so design can draw the whole path end to end.
+Author: `product` (PM role, with the CPO role; a Claude session, not a scheduled `product` run), for Karma (CTO). Backlog row: see section 22. Docs only: nothing here is built by this file, no string is live, no decision is recorded in `DECISIONS.md`. Founder request of 20 Nov 2026 (relayed by Karma): the PRD covers everything from app download and the first interaction through sign-up and sign-in, risk checks, required validation, information collection and verification, so design can draw the whole path end to end.
 
 Why this file exists. The locked pack (`00` to `12`, NS-01 to NS-37) treats first run, sign-in and Plus as built and only "cites" them (`07-remaining-capability-rows.md` rows C25, C44, C45, C46). Area E design drew the path anyway (`docs/design/e2e/E-foundations-and-system-states/DESIGN.md` and `WORDS.md` section 5.14, worktree `/home/claude/wt/E`) and listed what no card answers (WORDS section 10, CG1 to CG14; DESIGN section 10, K-E01 to K-E09). These cards answer them. Where this file and an older source differ, this file says which wins and why.
 
@@ -62,7 +62,7 @@ The page is the first promise. Every sentence on it must be true of the build Ap
 
 ### 3. What, and Not in scope
 **What.** The listing fields and their sources; the age rating; availability; the App Privacy answers; the Notes for Review with the demo path; what the install puts on the phone (nothing but the binary); what a reinstall, an offloaded app and a restored phone find at first launch.
-**Not in scope.** Store screenshots' art direction (design, BL-340). Pricing (App Store Connect and `packages/content/src/pricing.ts`). The website (F21). Search ads (none).
+**Not in scope.** Store screenshots' art direction (design). Pricing (App Store Connect and `packages/content/src/pricing.ts`). The website (F21). Search ads (none).
 
 ### 4. Happy path
 1. The person reads the page: name `brand.storeName` ("Early Letters: Baby Journal", `packages/brand/index.ts:83`), subtitle (`:85`), description and captions from `packages/content/src/store.en.ts`, six screenshots from the release build with the Asha book only (F21-REQ-008), age rating 18+, in-app purchases listed by Apple.
@@ -181,7 +181,7 @@ Risk checks (what we check, when, and what a fail does):
 - Ruling D3: n/a because no letter text exists yet. Ruling D2: n/a because no text field.
 
 ### 15. Design inputs
-No E screen. Design owns the screenshot frames (BL-340): Asha only, no co-parent, no backup, no other-language letters unless the build transcribes them.
+No E screen. Design owns the screenshot frames: Asha only, no co-parent, no backup, no other-language letters unless the build transcribes them.
 
 ### 16. Content inputs
 `store.en.ts` fields (REUSE). Content checks the listing never names sign-in as optional and names the account's reason as "your letters' words come with you to a new phone" (intent; the same truth as `trust.signIn.why`'s proposed replacement, CG4). `content` writes; the founder approves.
@@ -633,7 +633,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | 4 | Apple returns no name (any sign-in after the first) | Nothing; expected | n/a |
 | 5 | Hide My Email chosen | Normal. The account's address is a relay address; where a screen would show it (claim, Account), the method shows instead (PROPOSED "Apple (email hidden)", answers security G16) | n/a |
 | 6 | Offline on the Welcome or a sign-in tap (first run) | E-S14.offline (NS-39) | Try again; Start on this phone |
-| 7 | Sign-in service error (5xx) or the 10 s wait (first run) | E-S14.outage; a 5xx is never called "offline" (BL-488) | Try again; Start on this phone |
+| 7 | Sign-in service error (5xx) or the 10 s wait (first run) | E-S14.outage; a 5xx is never called "offline" | Try again; Start on this phone |
 | 8 | Email field empty, Send tapped | Today Send is disabled with no reason. Required: "Type your email to continue." under the button, announced (PROPOSED `authCopy.email.needEmail`, answers CG11) | Type |
 | 9 | Email malformed | On submit only, never while typing: `authCopy.errors.invalid_email` "That email doesn't look quite right." under the field, field border `caution` plus the glyph; clears when the person types | Fix and Send |
 | 10 | Supabase rejects the address (`email_address_invalid`, `validation_failed`) | `invalid_email` | Fix |
@@ -659,8 +659,8 @@ Every failure keeps the person where they are, says what happened in words, says
 | 30 | Phone clock wrong | A request note more than 60 s in the future counts as no request (`other_phone`); over an hour old counts as `expired`; the typed code still works | Type the code |
 | 31 | Returning account, other method (a different address, often Hide My Email on one phone and a real address on another) | A second, empty account is made; after consent the router shows C-S11 "No book here yet / Did you use a different way to sign in last time?" with "Try another way" (signs out) and "Start a book"; the screen names the method used, never the full email (NS-10-R12) | Try another way |
 | 32 | Same verified address by Apple and by email | One account (Supabase links identities with the same verified email automatically; security input 7) | n/a |
-| 33 | Session exists, consent outstanding, no book on the phone (killed on the Terms sheet; a Terms version bumped) | The consent sheet again, or C-S11's held screen with Finish setting up and Try another way, within 10 s; never E-S08 (NS-10-R0; BL-922) | Finish setting up |
-| 34 | The phone already holds letters owned by no account (local start, or a servers-off build updated) | E-S24 after consent: masked email (or the method for a relay address), Keep in this account, Not my account. Nothing is claimed or uploaded before Keep (BL-347, built) | Keep, or Not my account |
+| 33 | Session exists, consent outstanding, no book on the phone (killed on the Terms sheet; a Terms version bumped) | The consent sheet again, or C-S11's held screen with Finish setting up and Try another way, within 10 s; never E-S08 (NS-10-R0) | Finish setting up |
+| 34 | The phone already holds letters owned by no account (local start, or a servers-off build updated) | E-S24 after consent: masked email (or the method for a relay address), Keep in this account, Not my account. Nothing is claimed or uploaded before Keep (built) | Keep, or Not my account |
 | 35 | The account already has a book and the phone holds a local one | E-S24.hasBook: the phone's book joins as a second book; nothing deleted | Keep |
 | 36 | Killed on the claim screen | Nothing claimed; "Finish setting up" in Me, Account reopens it | Finish setting up |
 | 37 | Second account B signs in on a phone holding A's book (A signed out) | B never sees, is offered or uploads A's letters: A's book is hidden and locked on this phone until A signs in again or Erase everything runs (ADR 0031 as proposed; open item O-5). B meets C-S10 (B's book arrives) or C-S11 "No book here yet" and Start a book. No line says another book exists | n/a |
@@ -913,7 +913,7 @@ A person must see what they agree to before we collect, and we must be able to p
 | No (whatever the box) | The stop (NS-40) | nothing about the box |
 | An install that passed the old age gate and holds no agreement (build 1) | The box only, "Before you continue" (`en.beforeBegin.returningTitle`); the question is not asked again | Two local rows, surface `update.agreement` |
 | "Not now" on the Terms step | The sheet closes; the person stays signed in; nothing syncs; Me, Account shows "Finish setting up" (`authCopy.account.finishSetup`) and `system.consentNeeded.line` (PROPOSED) | nothing |
-| Killed on the Terms or sensitive step | Relaunch: the sheet again, or C-S11's held screen with Finish setting up and Try another way within 10 s; never the child step (NS-10-R0, BL-922) | nothing until answered |
+| Killed on the Terms or sensitive step | Relaunch: the sheet again, or C-S11's held screen with Finish setting up and Try another way within 10 s; never the child step (NS-10-R0) | nothing until answered |
 | "Keep on this phone" on sensitive data | Signed in, sync off, letters stay on the phone; `en.sensitiveConsent.declineHelp` "If you keep it on this phone, syncing and sharing stay off."; Me, Privacy offers "Agree and sync" later, never a one-tap consent (`consent.tsx` header) | `sensitive-data` decline |
 | Turning sync on later | The full sensitive-data step with all its words (`/sign-in/consent?step=sensitive`) | `sensitive-data` accept |
 | Turning sync off later (withdrawal) | Me, Privacy, "Sync and family sharing" shows On or Off (D-128); turning it off stops uploads; letters stay on the phone | `sensitive-data` decline (withdrawal). Whether server copies are removed on withdrawal: counsel and NS-36; UNVERIFIED as built |
@@ -1020,7 +1020,7 @@ A person must see what they agree to before we collect, and we must be able to p
 
 | Field | Why | Required or optional | Validation | Class | Store | Retention | Export |
 |---|---|---|---|---|---|---|---|
-| Local agreement rows (Terms, Privacy) | Proof of what was agreed before any account | Required to pass the age screen | Box unticked every visit; versions from constants; SHA-256 of the rendered sentence | L2 | Phone, local agreements table | Install; Erase everything | Not today (UNVERIFIED); after BL-579 via `consent_history` |
+| Local agreement rows (Terms, Privacy) | Proof of what was agreed before any account | Required to pass the age screen | Box unticked every visit; versions from constants; SHA-256 of the rendered sentence | L2 | Phone, local agreements table | Install; Erase everything | Not today (UNVERIFIED); after the consent-history sync row via `consent_history` |
 | Server Terms row | LEGAL-REQ-001 | Required for any server feature | Current published version only; `age_attested: true` only; allowlisted context keys | L2 (profile id L3) | `public.policy_acceptances`, append-only | Account life, then pseudonymised for the period in Privacy 7 (3 years per the compliance input; counsel sets it, Q41 (e)) | Yes, `consent_history` |
 | Server sensitive-data row | LEGAL-REQ-006 (consumer health data: a due date shows a pregnancy; Washington MHMDA, Connecticut) | Required for sync; decline allowed | `accept` or `decline` | L2 (profile id L3) | as above | as above | Yes |
 | Permission states (microphone, notifications) | Know whether to ask | Set by iOS | n/a | L2 | iOS | iOS's | No |
@@ -1440,7 +1440,7 @@ Risk checks: the gate decision (local ledger, cached StoreKit status), `hasWords
 
 ### 14. Never
 - Never a count of gaps, a streak, a badge or "letters left" (frame guardrails).
-- Ruling D2: writing tools off on the Review editor (BL-962). Ruling D3: the first letter is never donated to system intelligence (`[X6-R1]`).
+- Ruling D2: writing tools off on the Review editor. Ruling D3: the first letter is never donated to system intelligence (`[X6-R1]`).
 
 ### 15. Design inputs
 Area A owns A-S01, A-S04 (primer, blocked, full), A-S05, A-S07, A-S13. Area E: E-S10 (all states), E-S26 (absent until the allowance is used), the `secondFreeNote` toast. No new screen.
@@ -1653,7 +1653,7 @@ Risk checks: refresh-token validity (Supabase), Apple credential state (launch, 
 Area C: C-S02 (signed-out Account), C-S03 (sign-out sheet with the D1 words and the waiting state), C-S19 (Erase everything, "every book on this phone"), C-S20 (deletion steps 1 and 2, scheduled, cancelled, offline, rate limited). Area E: E-S16.line (SystemLine action, Me top), the `session_expired` line in Me, E-S01 migrating and recovery. AX5 on SE 3 and VoiceOver per section 6.
 
 ### 16. Content inputs
-REUSE `authCopy.account.*` (signOut, signOutWaiting, signOutEarly, signedOutTitle, signOutOthers*), `authCopy.errors.session_expired`, `accountDeletionCopy.*`, `authCopy.newPhone.accountDeleted` (PROPOSED in WORDS). PROPOSED: `system.update.line`, `system.update.storeButton`, `system.update.storeHint` (WORDS 9); the D1 sign-out line (BL-965); the deletion step-1 picture line (with NS-01) and seal line (with NS-06 B); a typed-word reason line. CHANGE: none of these may say "safe" outside its two places (CG5 for `billingCopy.plan.retry`). `content` writes; counsel reads deletion and retention lines; the founder approves.
+REUSE `authCopy.account.*` (signOut, signOutWaiting, signOutEarly, signedOutTitle, signOutOthers*), `authCopy.errors.session_expired`, `accountDeletionCopy.*`, `authCopy.newPhone.accountDeleted` (PROPOSED in WORDS). PROPOSED: `system.update.line`, `system.update.storeButton`, `system.update.storeHint` (WORDS 9); the D1 sign-out line; the deletion step-1 picture line (with NS-01) and seal line (with NS-06 B); a typed-word reason line. CHANGE: none of these may say "safe" outside its two places (CG5 for `billingCopy.plan.retry`). `content` writes; counsel reads deletion and retention lines; the founder approves.
 
 ### 17. Legal, privacy and compliance inputs
 Apple 5.1.1(v) (in-app deletion), Apple TN3194 (revocation), DELETION_AND_EXPORT_SPEC 2.6, LEGAL-REQ-029, LEGAL-REQ-040 (no switch stops export), Q51 (retention of receipts and consent rows), D6. Counsel must confirm.
