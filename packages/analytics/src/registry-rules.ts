@@ -33,6 +33,8 @@ export interface RegistryInput {
   idRefProps: Readonly<Record<string, string>>;
   /** Source files to scan for V3: path to text. */
   sources?: Readonly<Record<string, string>>;
+  /** Held (typed, not sendable) names. A literal of one at a call site is allowed: it has no wire name and is dropped. */
+  heldNames?: readonly string[];
 }
 
 /** The current naming shape: lowercase snake_case, at most 40 characters. The coming rename changes this one object. */
@@ -87,14 +89,14 @@ export function ruleV3(input: RegistryInput): RuleFailure[] {
   for (const [path, text] of Object.entries(input.sources ?? {})) {
     const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     // track( `${x}`, track( a + b, track(someVariable,  : a name must be EV.something or a literal
-    const re = /\.track\(\s*([^,)]+)/g;
+    const re = /\btrack\(\s*([^,)]+)/g;
     for (let m = re.exec(code); m; m = re.exec(code)) {
       const arg = m[1].trim();
-      if (!/^EV\.[a-zA-Z0-9]+$/.test(arg) && !/^name$/.test(arg)) out.push(fail('V3', path, `track() is called with "${arg.slice(0, 40)}", not an EV constant`));
-    }
-    // A registered name written as a string literal outside the registry is a call-site name.
-    for (const n of keys) {
-      if (new RegExp(`['"\`]${n}['"\`]`).test(code)) out.push(fail('V3', path, `registered name "${n}" is written as a literal; use EV`));
+      if (/^EV\.[a-zA-Z0-9]+$/.test(arg) || arg === 'name') continue; // a registry constant, or the pass-through parameter of a wrapper
+      const literal = /^['"`]([a-z0-9_]+)['"`]$/.exec(arg);
+      if (literal && !keys.has(literal[1]) && input.heldNames?.includes(literal[1])) continue;
+      const detail = literal && keys.has(literal[1]) ? `registered name "${literal[1]}" is written as a literal; use EV` : `track() is called with "${arg.slice(0, 40)}", not an EV constant`;
+      out.push(fail('V3', path, detail));
     }
   }
   return out;

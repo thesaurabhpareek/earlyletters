@@ -3,6 +3,7 @@ export * from './catalog';
 export * from './registry';
 export * from './registry-rules';
 export * from './crash';
+export * from './basics';
 export * from './validate';
 export * from './consent';
 export * from './provider';
