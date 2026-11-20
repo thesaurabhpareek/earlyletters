@@ -21,13 +21,13 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | T-01 to T-20 | The twenty tests named in the last column of 07.3 section 2 (LR-01 to LR-20) | LR-01 to LR-20 |
 | T-21 | Given an alert kind and an event, When the sender is called twice with the same key, Then Resend receives one send and the second call returns the first result | 07.2 rule 5; R5 |
 | T-22 | Given Resend times out, When the job retries, Then the key is reused and at most one mail arrives; given a 4xx, Then no retry and an `alert_failed` kind is recorded with no address | 07.2 rule 5 |
-| T-23 | Given 6 alert mails to one account within an hour, Then 5 send one by one and the 6th and later fold into one summary sent within minutes, never held to the next day; A4 and A5 are never folded; no A2 email test exists because none is built | 07.2 rule 6; D2 |
+| T-23 | Given 6 alert mails to one account within an hour, Then 5 send one by one and the 6th and later fold into one summary sent within minutes, never held to the next day; given 20 already sent that day, Then the next alert is not mailed and shows as an in-app line; sign-in codes are never capped; A4 and A5 are never folded; no A2 email test exists because none is built. Binds NS-08-R21's sender, not 1.0 | 07.2 rule 6; D2, E81 |
 | T-24 | Given any alert render with the Asha fixture, Then the subject has no placeholder and equals the content key, and the body has no IP, place, user agent, token or link that signs in | 07.2 rules 1 to 3 |
 | T-25 | Given a client token (anon or user) calls the alert function URL, Then it answers 401 and writes nothing | 07.2 rule 7 |
 | T-26 | Given a new device id at sign-in for an account that has one earlier device, Then exactly one A1 row is queued; for the first device none; the same device again none | A1 |
 | T-27 | Given the account is deleted, Then no alert, billing or policy mail is queued afterwards, and a queued one is dropped | S13 |
 | T-28 | Given content rules, Then `en.notifications.gentleReturn`, `familyLetter`, `familyAdded` are not referenced from any v1 code path | LR-17 |
-| T-30 | Given names off, When every lock-screen key renders, Then no title or body holds a month number or "A year of letters." | LR-21; D4 |
+| T-30 | Given names off, When every lock-screen key renders, Then no digit and no "year" appears in any lock-screen string, and the neutral body is used where an age would have shown | LR-21; D4, E82 (BL-966) |
 | T-29 | Given a logged send, Then the log line holds kind, request id, outcome and no field named address, email, name, title, body, device | LR-11 |
 
 ## 2. Budgets and latency (Rec, with basis)
@@ -39,7 +39,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Alert: event to queued row | p95 under 200 ms inside the same database call that caused it | Rec [E]: same bar as the local save commit (DATA-REQ-048) because it rides the same transaction; no network call in it |
 | Alert: queued row to provider accepted | p95 under 60 s, p99 under 10 min; a miss pages `ops` | Rec [E]: a takeover warning is only useful soon; the purge worker already runs every 15 minutes (`purge-worker/alerts.ts` header), so alerts get their own 1-minute drain or a database webhook |
 | Sign-in mail | p90 under 30 s | `docs/emails/SECURITY.md` finding on `A-NFR-004` (as read in 3.4) |
-| Rate limits | alert mail: first 5 per account per hour one by one, then one summary within minutes, backstop 20 per account per day [E, reviewer's number; product confirms] (D2), no A2 email; sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
+| Rate limits | alert mail: first 5 per account per hour one by one, then one summary within minutes, ceiling 20 per account per day (E81), never on sign-in codes, no A2 email; sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
 
 ## 3. What could not be verified
 
@@ -60,22 +60,22 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | C3 | Locked NS-32-R4b says 64; code plans 60 plus 4 | E13, CR-69 A1, CL-115: 60 in total | `mobile` (BL-966) |
 | C4 | Built birthday title names the day on a lock screen | `GAP-LOG.md:203` default (a founder item, still open) | `product` and `privacy` decide; `mobile` waits |
 | C5 | No notification category or hidden-preview placeholder in code | NS-32-R13 | `mobile` |
-| C6 | Catalogue says `new-device-sign-in` is a 1.0 email; no card names it and nothing sends it | No card names it; PRD V2 F02-REQ-017 is P0 and puts it before the switch flip (`docs/prd/v2/features/F02-account.md:232, 306`). Cards win over PRD V2 (CR-66, `docs/agents/cto/RULINGS.md:632`); product confirms (D1; founder approved 20 Nov). Built before the first outside family | `product` confirms: Q-COM-1 |
+| C6 | Catalogue and PRD V2 F02-REQ-017 (P0, `docs/prd/v2/features/F02-account.md:232, 306`) say the new-device email comes first; product's E78 (CL-152) says not built for 1.0, gated before the backup flip by NS-08-R21 (`docs/product/prd/08-keeping-and-trust.md:136`, whose Stop page acts on a button press while this pack's A1 has no action link, D1); the founder decided before the first outside family | E78 / NS-08-R21 gate the new-device email before the backup flip; the founder decided (`DECISIONS-20nov.md` section 8 item 7) before the first outside family. The founder's date is earlier and so stricter: building the email before the first outside family satisfies both. Cards win on wording (CR-66), so product records the founder's decision in an erratum; engineering builds to the stricter gate. Q-COM-1 is that confirmation | `product`, `security-architect` |
 | C8 | The built `new-device-sign-in` template says "We will sign that device out" (`packages/content/src/emails/auth.en.ts:199`) and no lever exists | C10: build the lever or remove the line (words PROPOSED); D1 words replace it with the in-app path | `content`, `sync` |
 | C7 | The founder-paging job in `SECURITY.md` section 3.4 is a Rec; it is not found as code | `docs/emails/SECURITY.md:122` | `security-architect`, `ops` |
 
 ## 5. Questions
 
-### 5.1 Product and design (posted as feedback-loop comments on the PR; none is closed by E1 to E73 or CL-001 to CL-147 [V: searched `18-errata-after-lock.md` and `GAP-LOG.md` for sign-in alert, new device, sign-out everywhere, failed code, quiet hours on email, 20 Nov])
+### 5.1 Product and design (posted as feedback-loop comments on the PR; E76 to E82 and CL-150 to CL-153 have since closed them (the defaults below follow those rows); first searched against E1 to E73 and CL-001 to CL-147 [V: searched `18-errata-after-lock.md` and `GAP-LOG.md` for sign-in alert, new device, sign-out everywhere, failed code, quiet hours on email, 20 Nov])
 
 | Id | Question | Default engineering builds |
 |---|---|---|
-| Q-COM-1 | Which security alert emails exist at v1: new sign-in on a new device (A1), recovery (A3), sign-out of all devices (A6)? | D1 (founder approved 20 Nov; product confirms against PRD V2 F02-REQ-017; cards win, CR-66): A1 built before the first outside family, no action link; A5, A7, A8 as specified; A3 and A6 after the BL-598 runbook; email only |
-| Q-COM-2 | A control "Sign out other devices" already exists in Me, Account (`account.tsx:181-251`; it ends the other phones, keeps this one). Should using it send a confirmation email (A6), and should a "sign out everywhere including this phone" exist? (Correction: the question first posted on the PR said no control existed; that premise was wrong.) | Keep the control as built. Build the A6 confirmation email after the BL-598 runbook (D1); no second control; I5 tells each signed-out phone |
-| Q-COM-3 | Are security alerts sent between 21:30 and 07:00? | Yes (exempt), like sign-in mail; AGREED (D2) |
-| Q-COM-4 | In the email-changed notice to the old address, is the new address shown in full or masked? | Masked (first letter and domain) |
-| Q-COM-5 | Does anyone get an email after repeated wrong codes (A2)? | No email (AGREED, D2 and D3). The phone pause line only: memory only, 5 in 15 minutes, and a server lockout may never block the local book (D3). A server count per address and a paging job stay an open question for `security-architect` until it is confirmed what Supabase gives (07.2 section 5, gap 2) |
-| Q-COM-6 | Is there an in-app place that echoes an alert after the fact (I9), or is email the only record? | No new screen in v1. The email is the record; I5 and I6 are the only in-app lines |
+| Q-COM-1 | Which security alert emails exist at v1: new sign-in on a new device (A1), recovery (A3), sign-out of all devices (A6)? | E76 (CL-150): only what is built or sent by the sign-in service; none new; email only. A1: build before the first outside family (the founder, D1; stricter than E78's gate before the backup flip, so it satisfies both; C6); product confirms and records it. A3 and A6 after the BL-598 runbook if ever built |
+| Q-COM-2 | A control "Sign out other devices" already exists in Me, Account (`account.tsx:181-251`; it ends the other phones, keeps this one). Should using it send a confirmation email (A6), and should a "sign out everywhere including this phone" exist? (Correction: the question first posted on the PR said no control existed; that premise was wrong.) | Closed by E77 (CL-151): the control sends no email and there is no sign-out-everywhere control; I5 tells each signed-out phone |
+| Q-COM-3 | Are security alerts sent between 21:30 and 07:00? | Yes (exempt), like sign-in mail; AGREED (D2, E76) |
+| Q-COM-4 | In the email-changed notice to the old address, is the new address shown in full or masked? | Masked (`a***@example.com`), or no address if the sender cannot mask (E76) |
+| Q-COM-5 | Does anyone get an email after repeated wrong codes (A2)? | No email (AGREED, D2, D3, E77). The phone pause line only: memory only, 5 in 15 minutes, and a server lockout may never block the local book (D3). A server count per address and a paging job stay an open question for `security-architect` until it is confirmed what Supabase gives (07.2 section 5, gap 2) |
+| Q-COM-6 | Is there an in-app place that echoes an alert after the fact (I9), or is email the only record? | No echo screen (E76); a capped alert shows as an in-app line (E81). The email is the record; I5 and I6 are the only in-app lines |
 
 ### 5.2 Questions for the council (each with a default)
 
@@ -85,15 +85,15 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | CISO | Is a salted device-id hash per account (new table) acceptable for A1, and who may read it? | Yes; service role and the alert function only; deleted with the account; the CPrivO label read (does the hash count as Device ID, CQ8) comes before the table is built (D1) |
 | Chief Privacy Officer | Does a device class word ("an iPhone") plus time count as L2 or L3 in an email? | L3 with the address; never stored in a log |
 | CCO, CLO | Are A1 to A9 transactional under CAN-SPAM and need no unsubscribe, and does the incident notice (E14) stay counsel-approved by hand? | Yes transactional; yes by hand |
-| CPO | Order of build: A4 (done), A5, A7, A8, then A1, then A6 and A3 | D1 (founder approved 20 Nov; product confirms): A1 before the first outside family; A3 and A6 after the BL-598 runbook |
-| CISO | Do you agree the 20-a-day backstop never holds required notices or the security alerts A1, A3 to A9 (07.2 rule 6)? | Yes [E, product confirms]; never silently dropped |
+| CPO | Order of build: A4 (done), A5, A7, A8, then A1, then A6 and A3 | D1 (founder approved 20 Nov): A1 before the first outside family (C6); A3 and A6 after the BL-598 runbook if ever built |
+| CISO | Do you agree A4 receipts and A5 stay outside the 20-a-day ceiling while A1, A3 and A6 to A9 are capped with an in-app line (E81)? | Yes [E, product confirms] |
 | CMO, CDesO | The words: subjects, the neutral lock-screen lines, the alert bodies (all PROPOSED keys `comms.alert.*`) | Written by `content` as a person, linted, approved by the founder |
 
 ### 5.3 Founder and counsel
 
 | To | Question | Default |
 |---|---|---|
-| Founder | New-device sign-in email before the first outside family (D1, item 7 of the record) | Approved 20 Nov ("I approve all you asked me"); product confirms against PRD V2 F02-REQ-017 |
+| Founder | New-device sign-in email before the first outside family (D1, item 7 of the record) | Approved 20 Nov ("I approve all you asked me"); product records it in an erratum (C6) |
 | Founder | Remote push (APNs) in a later version? | No. Not decided here; 07.3 section 4 lists what would change |
 | Founder | G-D21: neutral birthday title when names are off | The neutral title ("Something for the book today" family); D4 AGREED and widened: no month number or "A year of letters." with names off; founder confirms |
 | Counsel | Whether Guideline 4.5.4 applies to local reminders (`09-capture.md:253`) and the notice of a data act sent after deletion | Local only, no promotion; receipts are legal notices |
@@ -110,3 +110,5 @@ Checked against the worktree at `origin/develop` `4d33978f` on 20 Nov 2026 with 
 Statements marked [U] were not cite-checked by design. The counts of grep results (no `categoryIdentifier`, no `scope: 'global'`, no `renderForResend` outside the purge worker) are command results from 20 Nov, not file lines.
 
 Amendment check, 20 Nov 2026: the cites added by the council amendment were read at `origin/develop` `2dc20e2e`: `docs/prd/v2/features/F02-account.md:232, 306`, `packages/content/src/emails/auth.en.ts:190-199`, `packages/content/src/features/reminders.en.ts:24-26`, `packages/content/src/features/auth.en.ts:291`, `docs/product/prd/11-foundations.md:109`, `docs/product/prd/14-test-plan.md:82`, `docs/agents/cto/RULINGS.md:632`, `docs/BACKLOG.md:2783`, `docs/content/words-packet-20nov.md:80-81` (PR #870; first read on branch `docs/content-bl-965-founder-words`, found on `origin/develop` at this sha). Not verified: CQ8 and the CPO and CDesO wording notes (read from the council returns, which are not in the repo), and whether `account.tsx` changed after 07.2 was written.
+
+Re-sync check, 20 Nov 2026: read at `origin/develop` `df2c3502`: `docs/product/prd/18-errata-after-lock.md` E76 to E82 (headings at `:279, :295, :303, :323, :331`; E45 row at `:53`), `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 4 (P40 to P47), `docs/product/prd/08-keeping-and-trust.md:136` (NS-08-R21), `docs/product/prd/functions/risk-security.md:316` (FR-SEC-36), `docs/product/prd/09-capture.md:164` (NS-13-R24), `docs/product/prd/11-foundations.md:108` (NS-32-R12). Not verified: that `days.lock.body.neutral` exists as a content key (E45 calls it PROPOSED); the CL-150 to CL-157 rows themselves (cited through the questions file).
