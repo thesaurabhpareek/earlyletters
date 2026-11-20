@@ -58,6 +58,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - How the harness works, end to end: `docs/agents/HARNESS.md`. The team (26 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
 - Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
+- Approval: Karma (the CTO role) approves and merges every PR into `develop` once two counted reviews and the required checks hold (CR-70, CR-73). Do not ask the founder to approve, comment on or paste anything for a PR. Money, accounts and secrets, hosted migrations, store builds, legal text, `docs/DECISIONS.md` and this constitution stay his.
 - Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
 
 ## Saving work (every session, human or AI)
