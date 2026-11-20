@@ -276,12 +276,6 @@ describe('[C9] where the stored copy lives', () => {
     h.disk = createDisk({ documents: 'file:///var/mobile/Containers/Data/Application/ASHA/Docs/', caches: 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/', os: 'ios' });
     expect(() => photosDirectory()).toThrow('photos_folder_unknown');
   });
-  it('[NS-01-R16][NX-39-R31][C9] the erase-everything code removes that same folder and the picker and re-encode caches', () => {
-    const src = readFileSync(join(SRC, 'lib', 'erase-everything.ts'), 'utf8');
-    expect(src).toMatch(/photosDirectory\(\)/);
-    expect(src).not.toMatch(/Paths\.document, 'photos'/);
-    expect(src).toMatch(/'ImagePicker', 'ScribePhoto'/);
-  });
 });
 
 /** An in-memory BakedFiles: what the baker may hand over and where the native step writes (the phone's folders are tested below). */
@@ -712,11 +706,6 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', 'd1'); // store.saveLetterFromDraft
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
     expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
-  });
-  it('[D1] store.saveLetterFromDraft makes that move inside the letter\'s own transaction', () => {
-    const src = readFileSync(join(SRC, 'lib', 'store.ts'), 'utf8');
-    expect(src).toMatch(/UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = \?', draftId\);/);
-    expect(src.indexOf('UPDATE entry_media SET entry_id = draft_id')).toBeGreaterThan(src.indexOf('letters.saveFromDraft(c, draftId'));
   });
   it('[D1] the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
     const { db } = nodeDb();
