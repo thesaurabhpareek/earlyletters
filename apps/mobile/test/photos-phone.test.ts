@@ -98,6 +98,7 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     const store = entryMediaStore(db);
     const files = expoPhotoFiles();
     store.put(row('e1', 'm1'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
     store.put(row('d1', 'm2')); // a draft owns it (no letter with that id)
     letter(db, 'e2');
     store.put(row('e2', 'm3'));
