@@ -4425,6 +4425,157 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Done when: a perf build installs on the small-phone baseline, a marker run produces content-free numbers, and the preflight fails a `production` profile with the flag on.
 - Source: `docs/product/prd/11-foundations.md` NS-34 section 10; measurement plan H1 ("someone must own H1; I recommend `product` adds one").
 
+## Build 13 start: build-sequence rows for the new scope (NS-46 to NS-52), 20 Nov 2026
+
+Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md` section 4, after PR #912 let the scripts read four-digit ids. One row per step of that build sequence that had no row. The founder gave the start word on 20 Nov 2026 in chat.
+
+**Which build carries what (`docs/product/prd/22-final-holistic-spec.md` section 4; card 21 "Release line and cut").** Drop A, the next build (Build 13 or later), is NS-48 phase 1 only. Drop B (NS-46 US days and the plain list, NS-47 store rules only, NS-50 rank 2b, NS-49 level 1) is 1.0 only if every gate closes before freeze, otherwise 1.1. Drop C (NS-47 ask slip and tradition browse, NS-48 recency layers, NS-49 level 2, NS-51, NS-52 variant A) is after 1.0 is approved. Each row below names its drop. Only the Drop A rows are Build 13 work; a row in Drop B or C is not promised to Build 13. Parked and not given a row: a Home strip, other countries' days, regional days, OPP-02 to OPP-05.
+
+**Rows that already exist are cited, not copied (`23-dependency-map-and-plan.md` section 6.5).**
+- Engineering prerequisites: P03 is BL-966, P04 is BL-943, P05 is BL-985, P06 is BL-963, P07 is BL-961, P08 is BL-982, P09 is BL-537. Steps 2.1, 2.2, 2.3 and 2.5 of the sequence are BL-985, BL-966, BL-967 (done) and BL-963.
+- Card groups G01 to G38 are filed as proposed rows: BL-126 and BL-127 and BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298, BL-328, BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047. F39 to F45 are BL-188, BL-198, BL-208, BL-291, BL-292, BL-293, BL-294 (card 19 is Drop D). D01 and D05 are in BL-295, D02 in BL-296, D03 in BL-297, D04 in BL-298. M01 is BL-045 and M02 is BL-046. Function-review groups G22 to G35 are BL-328, BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038 and BL-039. Those rows hold the P0 test-gap rows; the rows below hold the build steps. No `Satisfies` id below is removed from a group row.
+- L01 to L06 are BL-931, BL-952, BL-933, the residue groups, BL-926 and BL-976 to BL-978, and BL-937 to BL-947. Not repeated.
+
+#### BL-1001 Record the level 3 and multi-media reversals and the CR-66 precedence (step 0.1)
+- Status: blocked (founder ruling on the reversals RV-18 onward, and Karma). Mode: human. Owner: founder. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-49-R6, NS-49-R25 (the "no photo-library permission, level 3 closed" lines that NS-51 reverses, `24-engineering-handoff.md` section 1.13).
+- Scope: the ruling that records the reversals of the closed level 3 and the one-picture rule, and amends the CR-66 precedence, so that a card that reverses another is not a conflict. Docs only; product drafts the D-### entry as Proposed in its PR body and the founder decides.
+- Done when: the ruling is in `docs/DECISIONS.md` (or the CR file the founder names) with its number, and BL-1018 to BL-1020 cite it.
+- Source: `24-engineering-handoff.md` section 4 step 0.1; `22-final-holistic-spec.md` section 4 (Drop C).
+
+#### BL-1002 File the ADRs A1, A2, A3, B, C, D and E as Proposed (step 0.3)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-46-R29, NS-47-R6, NS-47-R12, NS-48-R1 (each ADR is the decision record a row's design cites).
+- Scope: seven ADR files in `docs/adr/` with status Proposed, numbers from `node scripts/agents/next-id.mjs` (the placeholders in section 2 are not final): A1 phone-only flags and pause (amend 0029), A2 one notification budget (amend 0032), A3 Home slip registry (amend 0033), B on-device sensitive store, C notification privacy, D pure notification selection, E one age function in core. Context, decision and "from" columns are the table in section 2 of the handoff; reviewers are `principal-architect`, `security-architect` and `privacy`. No code.
+- Done when: the seven files exist, each Proposed, each names its card rows, `node scripts/agents/check.mjs` passes, and no ADR is marked Accepted (only the founder accepts).
+- Source: `24-engineering-handoff.md` section 2 and step 0.3.
+
+#### BL-1003 Content rules drift test: every key family is under ALL, notification scope paths, VOICE.md line 70 (step 1.1, Drop A)
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-48-R28, NS-46-R37 (neutral title and body exist once each), NS-47-R36.
+- Scope: in `packages/content/test/rules.test.ts`, a drift test that fails when a key family exists in `packages/content/src` and is not in `ALL`; the new families `days.*`, `culture.*`, `ntc.*`, `notifications.dayNames.*`, `features.photos.suggestions.*` named so a later words PR is covered on arrival; the notification scope paths (exclamation budget, 40 and 110 limit, rhythm); `VOICE.md` line 70 corrected and the BRAND.md glossary rows the handoff names. No words are written (they wait for G3). If a rule test fails, fix the copy, not the test.
+- Done when: `[NS-48-R28]` passes, a stray key family makes the drift test red, and `npm test -w packages/content` passes.
+- Source: `24-engineering-handoff.md` section 1.11 and step 1.1. Unblocks every words PR.
+
+#### BL-1004 NS-48 phase 1: pure key function, planner select seam, the built 8 re-keyed with the day-part filter (step 1.2, Drop A)
+- Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: none.
+- Satisfies: NS-48-R1, NS-48-R2, NS-48-R10, NS-48-R11, NS-48-R31, NS-48-R36 (the Drop A P0 rows).
+- Scope: `selectNotificationKey(cell, slotOrdinal)` in `packages/core/src/notification-key.ts`; a `select` seam in the planner so tests inject the floor-only selector; the built 8 evening variants re-keyed with the day-part filter and weekday tone; `planSignature` stable on identical inputs; the payload stays `{ source, kind }`. No new setting, no stored field, no dependency on BL-966. Words come only from keys already built; new words wait for BL-965 (G3).
+- Done when: `[NS-48-R1]`, `[NS-48-R2]`, `[NS-48-R31]` tests pass (same set of id, date, time and class with the catalogue on or off; no key in `data`, `identifier` or `threadIdentifier`) and `npm test` passes.
+- Source: `24-engineering-handoff.md` section 1.4 and step 1.2; ADR D (BL-1002). This is the only Build 13 (Drop A) feature row.
+
+#### BL-1005 Analytics tests: stems, enum values, event names, four never-reported kinds, variant_id range (step 1.3)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-47-R34, NS-46-R34, NS-48-R38.
+- Scope: tests in `packages/analytics/test/` only (analytics stays off): the NS-47-R34 stems list plus an enum-value and event-name check; `libraryDay`, `typedDay`, `birthday` and `monthAge` never reported (`observe.test.ts`); `variant_id` inside its range and no age band; `capture_started.source` gains only `photo` and `suggestion`; never a Home slip event; never `reminder_suppressed` when a day note wins; no `insights.*` view column matches the stems. Extending TRACKING_PLAN 6.4 to chosen days is Q-AN-5 and is not done here.
+- Done when: the tests pass and a forbidden stem in an enum value makes one red.
+- Source: `24-engineering-handoff.md` section 1.10 and step 1.3.
+
+#### BL-1006 NS-49 level 1 as the first-class picture start (step 1.4, Drop B)
+- Status: blocked (photo stack BL-931 with #835 to #840 open, NS-01 on testflight, the A-S01 re-draw passing its AX5 test, and the founder's words G3). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931.
+- Satisfies: NS-49-R1, NS-49-R3, NS-49-R4, NS-49-R25, NS-49-R26.
+- Scope: the picture start as a first-class way to begin a letter behind the existing photo flag; no photo-library permission and no PhotoKit call (the NS-01-R22 scans stay true). Drop B: 1.0 only if every gate closes before freeze, otherwise 1.1.
+- Done when: the NS-49 level 1 tests pass in Unit and Journey, the AX5 check passes on the SE 3 layout, and the device row is filed for the founder.
+- Source: `24-engineering-handoff.md` section 1.9 and step 1.4; card 21 (Rows by drop, NS-49).
+
+#### BL-1007 Day-only reminder gate and the first-tick permission door (step 2.4, Drop B)
+- Status: blocked (founder consent line Q-FD-20 and Q-FD-21, and counsel). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
+- Satisfies: NS-46-R31.
+- Scope: `libraryDay` and `typedDay` plan while evening, month and birthday do not (a gate beside `prefs.enabled`); permission is asked once, through one `turnOnReminders`-style door, at the first tick; the planner and `scheduler.ts` keep their other gates.
+- Done when: `[NS-46-R31]` passes for reminders off with notifications allowed, and for permission not yet asked.
+- Source: `24-engineering-handoff.md` section 1.1 and step 2.4.
+
+#### BL-1008 Phone-only flag and pause pattern: libraryDays key, schema, parse test, scheduler subscribes (step 2.6, Drop B)
+- Status: blocked (BL-1002 for ADR A1, and the Find stack BL-952 whose #894 holds the pattern to reuse). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1002, BL-952.
+- Satisfies: NS-46-R33, NS-46-R42.
+- Scope: `EXPO_PUBLIC_DAYS` flag and a `killSwitches.libraryDays` key in `packages/api` (additive; older configs parse it as off), pause read outside `mayRun` through an injected `RemoteConfigReader`, the scheduler subscribed to remote config so a pause cancels pending library notes within the debounce, the `kill-switches.ts` header corrected (E21). Reuse #894's files; do not duplicate.
+- Done when: config parse, older config and unknown key tests pass, and a pause arriving mid-session cancels pending library notes while typed days stay.
+- Source: `24-engineering-handoff.md` section 1.7 and step 2.6.
+
+#### BL-1009 Notification categories with a preview placeholder, opaque identifiers, neutral strings (step 2.7, Drop B)
+- Status: blocked (BL-1002 for ADR C, then a device run G4 for hidden previews). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: M. Depends on: BL-1002.
+- Satisfies: NS-47-R12, NS-47-R13, NS-46-R36.
+- Scope: every scheduled note carries a category with one neutral `previewPlaceholder`; one neutral title and body per tone; day names only behind their own switch (forced off under App lock, stored value cleared); a `publicTitleOk` allowlist; delivered notes dismissed at sign-out. Hard prerequisite of NS-47-R12.
+- Done when: Unit and Source-check tests pass (no day id or name in any identifier, `data` or category) and the device row for a hidden preview is filed.
+- Source: `24-engineering-handoff.md` section 1.6, ADR C and step 2.7.
+
+#### BL-1010 Days store module: outside scribe.db, backup-excluded, fail closed, erase and sign-out wiring (step 3.1, Drop B)
+- Status: blocked (BL-961 and BL-1002 for ADR B, and counsel on the consent line). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-1002.
+- Satisfies: NS-47-R1, NS-47-R6, NS-47-R11, NS-47-R28.
+- Scope: one versioned file in Application Support with the backup exclusion set and read back, atomic write, a refusal to write when the read-back says false, fail closed with the local error `days_store_unavailable`, `subscribeDays`, the import-boundary test, cleared at sign-out and Erase, added to the `[X4-R1]` enumeration; `culture.asked` stays in `settings`. The L4 row in `docs/legal/DATA_CLASSIFICATION.md` section 4.6 is a legal-text change the founder merges: the row names it and does not edit it.
+- Done when: the Unit, Integration and Source-check tests of section 1.5 pass (a fake exclusion that returns false writes 0 bytes; two accounts never see each other's file).
+- Source: `24-engineering-handoff.md` section 1.5, ADR B and step 3.1.
+
+#### BL-1011 Calendar engine and oracle tables for 2026 to 2030, US days only (step 3.2, Drop B)
+- Status: blocked (counsel on any copied table, FR-DAY-23; computed dates need none, DL-4). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1002.
+- Satisfies: NS-46-R1, NS-46-R12, NS-46-R23, NS-46-R24, FR-DAY-23.
+- Scope: rules in `packages/core` (`days.ts`: fixed, nth weekday, computus, astronomical instant to local date), data in `packages/content/src/days/` with an authority per row, a sourced and dated oracle for 2026 to 2030, `daysDueOn(rows, today)` with an injected today; one age function (ADR E). Fixtures are synthetic ids, never a real tradition beside Asha.
+- Done when: `[NS-46-R12]` passes against the oracle and a row with no authority fails the build.
+- Source: `24-engineering-handoff.md` section 1.1 and step 3.2.
+
+#### BL-1012 Planner feed for libraryDay and tap routing to Home (step 3.3, Drop B)
+- Status: blocked (BL-966, BL-982, BL-1010, BL-1011, BL-1008). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-966, BL-982, BL-1010, BL-1011, BL-1008.
+- Satisfies: NS-46-R9, NS-46-R29, NS-46-R30, NS-46-R32, NS-46-R33.
+- Scope: `libraryDay` as a ranked source inside the `typedDay` group (no new class), 60 in total with plan notices first, identifier `el.day.<isoDate>`, payload `{source, kind}` only, tap routes to Home and a cold tap is read through `getLastNotificationResponse()`, re-plan within 1.5 s of a tick.
+- Done when: the property test (no date holds two budgeted notes) and the cold and warm tap tests pass; device row NTC-T24 is filed.
+- Source: `24-engineering-handoff.md` sections 1.1, 1.2, 1.6 and step 3.3.
+
+#### BL-1013 Days page and Browse: the plain browse-and-tick list in Me with one consent line (step 3.4, Drop B)
+- Status: blocked (founder words G3, BL-1010, BL-1012). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1010, BL-1012.
+- Satisfies: NS-46-R1, NS-46-R2, NS-46-R3, NS-46-R19, NS-46-R26, NS-46-R27.
+- Scope: C-S24 and C-S25 as one list in one place with "Add a day"; nothing ticked for the parent; "Not now" is a full answer; no count, no missing-day language, no Plus word. The fallback with no ask slip, no tradition and no country. Words only from approved keys.
+- Done when: the Journey test and the AX5, VoiceOver and Voice Control checks pass, and `[NS-46-R27]` passes.
+- Source: `24-engineering-handoff.md` step 3.4; card 21.
+
+#### BL-1014 NS-50 rank 2b: the day slip and the blank-on-background rule (step 3.5, Drop B)
+- Status: blocked (BL-963, BL-1010, BL-1012, and a device run G4). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-963, BL-1010, BL-1012.
+- Satisfies: NS-50-R1, NS-50-R2, NS-50-R3, NS-50-R4, NS-50-R5, NS-50-R9.
+- Scope: rank 2b registered in the slip registry (absent ranks allowed); the slip shows a day only when it is today, reads the days module read-only, "Not today" stores a date and never a day id; the privacy cover generalised to a blank-on-background rule for Home and Me with or without App lock.
+- Done when: the registry order and stub-slip tests pass and the snapshot device row is filed.
+- Source: `24-engineering-handoff.md` section 1.3 and step 3.5; ADR A3.
+
+#### BL-1015 NS-47 ask slip, tradition browse, day-name switch, culture-led days (step 4.1, Drop C)
+- Status: blocked (counsel CUL-Q5, Q6, Q7 and Q11, and a named tradition reviewer, Q-FD-9). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-1010, BL-1013.
+- Satisfies: NS-47-R14, NS-47-R19, NS-47-R20, NS-47-R25, NS-47-R27, NS-47-R30, NS-47-R35.
+- Scope: the ask slip (rank 3b) and tradition browse, the day-name switch, culture-led days, with each tradition member's review recorded before it ships; the J-CUL-01 lock-screen device walk is filed. After 1.0 is approved.
+- Done when: the NS-47 tests pass, the review record exists per tradition, and the counsel answers are on file.
+- Source: `24-engineering-handoff.md` step 4.1; card 21 (Drop C).
+
+#### BL-1016 NS-48 recency and last-letter layers (step 4.2, Drop C)
+- Status: blocked (the NS-13 anchor and back-off BL-537, and BL-1004). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-1004, BL-537.
+- Satisfies: NS-48-R3, NS-48-R4, NS-48-R5, NS-48-R27, NS-48-R29, NS-48-R30.
+- Scope: `lastMadeLetter()` as one indexed query, then the recency and last-letter layers on the catalogue seam; words wait for G3.
+- Done when: the NS-48 layer tests pass and the set of scheduled notes is unchanged with the layers on or off.
+- Source: `24-engineering-handoff.md` section 1.4 and step 4.2. BL-537 is deferred, so this row waits on a founder decision to bring it back.
+
+#### BL-1017 NS-49 level 2: Journaling Suggestions weak-link spike, then module (step 4.3, Drop C)
+- Status: blocked (the entitlement Q-FD-11, a phone on iOS 17.0 or 17.1 Q-FD-33, counsel 3.3.3(H) and 5.1.3). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1006.
+- Satisfies: NS-49-R2, NS-49-R5, NS-49-R20, NS-49-R27, NS-49-R28.
+- Scope: spike on a real phone first (weak link, `@available(iOS 17.2, *)`, one `pickSuggestion()` boundary, a stand-in for tests), then the module behind `EXPO_PUBLIC_SUGGESTIONS`; launch runs on iOS 17.0, 17.1, 17.2 and 26 and an iPad.
+- Done when: the spike result is written up and the stand-in tests and source scans pass.
+- Source: `24-engineering-handoff.md` section 1.8 and step 4.3.
+
+#### BL-1018 NS-52 variant A: several pictures and video on the phone only (step 5.1, Drop C)
+- Status: blocked (BL-1001 reversal, #835 merged, founder limits Q-PM-2, the label read, and a dependency review for `expo-video`). Mode: agent. Owner: mobile engineer, data architect. Milestone: M15. Size: L. Depends on: BL-1001, BL-933, BL-961.
+- Satisfies: NS-52-R1, NS-52-R4, NS-52-R5, NS-52-R6, NS-52-R15, NS-52-R16, NS-52-R17, NS-52-R18, NS-52-R19 (variant A; the remaining NS-52 P0 rows stay on BL-046).
+- Scope: a new local migration after migration 11 (Q-E12 is ruled: #835 merges as it is), video cap and transcode in a native module with a metadata-stripped container test, a playback component, the export minor, delete and purge, Save a copy. No server change.
+- Done when: the Unit, Source-check, Integration and Device rows of card 27 for variant A pass.
+- Source: `24-engineering-handoff.md` section 1.14 and step 5.1.
+
+#### BL-1019 NS-51 photo moments: the scribe-library spike, then module, moment index and neutral nudge (step 5.2, Drop C)
+- Status: blocked (BL-1001 reversal, counsel on Photos access and guideline 5.1.1, the label, and BL-961). Mode: pair. Owner: mobile engineer, security engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-1001, BL-961, BL-1010.
+- Satisfies: NS-51-R5, NS-51-R24, NS-51-R26, NS-51-R29 (the others stay on BL-045).
+- Scope: spike NS-51-R36 first (authorisation, a limited library, thumbnail only) in a new `scribe-library` module that leaves `scribe-photo` permission-free; then the moment index store on the BL-1010 pattern, the moment rule, and the nudge through the chooser; every scan rewritten, none deleted.
+- Done when: the spike is written up on a real phone, then the card 27 tests for the moment rule, the index and the scans pass.
+- Source: `24-engineering-handoff.md` section 1.13 and step 5.2.
+
+#### BL-1020 NS-52 variant B: hosted pictures and video (step 5.3, Drop C)
+- Status: blocked (X2, counsel, a security threat model, red team, and the founder's money decision; not before BL-1018 is in a build). Mode: pair. Owner: sync owner, data architect, security engineer. Milestone: M15. Size: L. Depends on: BL-1018.
+- Satisfies: NS-52-R20, NS-52-R21, NS-52-R22, NS-52-R23, NS-52-R24, NS-52-R25 (variant B only).
+- Scope: migration and grants, a new private bucket, a signed-URL function, a blob queue, quotas, the label, then the app. The migration is never applied here: it waits for `approve-migration` and the founder.
+- Done when: `npm run test:db` and `npm run test:functions` cover allow and deny per role, and the founder has decided variant B.
+- Source: `24-engineering-handoff.md` section 1.14 and step 5.3.
+
 ## Proposed rows waiting for a four-digit id (20 Nov 2026)
 
 These rows have no BL id. The dispatcher reads three-digit ids only, and four-digit ids start after PR #912 merges (errata E60). Until then they are not tasks the dispatcher can see; when #912 merges, `next-id.mjs` gives each an id and the row becomes a `####` heading. Written by `product`.
