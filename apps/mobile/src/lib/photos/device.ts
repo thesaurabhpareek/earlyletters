@@ -28,6 +28,7 @@ export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles())
  * it is unaffected.
  */
 function nativePhoto(): ScribePhotoNative | null {
+  if (nativeForTest !== undefined) return nativeForTest;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
@@ -61,6 +62,14 @@ export const photoUri = (p: Pick<StoredPhoto, 'mediaId'>): string => storedPhoto
  * Home draws no photo start.
  */
 let registered = false;
+let nativeForTest: ScribePhotoNative | null | undefined;
+
+/** Tests only: stand in the scribe-photo module (Node never has it) and start again from an unregistered phone. */
+export function resetPhotoDeviceForTest(native: ScribePhotoNative | null | undefined): void {
+  registered = false;
+  nativeForTest = native;
+}
+
 export function registerPhotoDevice(): void {
   if (registered || !photosBuildEnabled()) return;
   registered = true;
