@@ -564,7 +564,7 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language). Built: `20261005000000_family_cap_language_idempotency.sql:1207` |
 | `entries.first_mark`; `entries.first_label` (NS-06 Part A, BL-968) | L3 (the mark says something about the child that is not content); L4 (free text, rule 1.1.3; can be a health fact) |
 | `entries.seal_opens_at`, `seal_opens_on`, `seal_cleared_at` (NS-06 Part B, ADR 0028 D3a, BL-969) | L4 (CR-62; a chosen day can state a birthday; the instant states the sealing zone's offset). Author row only, never in `book_entries` |
-| The withheld-words flag on `held_drafts` (NS-17; named `words_withheld` or `language_withheld`, whichever lands; no BL row at the lock) | L4: it states the take was in another language (rule 1.1.2: not reduced) |
+| The withheld-words flag on `held_drafts`, only if S3 is ruled in (CR-67 AX-5 in #856; under the rule in force a flagged take is not pushed until it has typed words) (NS-17; named `words_withheld` or `language_withheld`, whichever lands; no BL row at the lock) | L4: it states the take was in another language (rule 1.1.2: not reduced) |
 | `entry_versions.edit_level`; `entry_versions.author_edits`, `locked_spans` (NS-12, BL-979, if its design extends the table) | L2; L4 (derived from the words, rule 1.1.2) |
 
 The migrations that add `first_label` and the seal columns also add them to `mustBeL4` in `supabase/tests/classification.test.mjs:24`.
