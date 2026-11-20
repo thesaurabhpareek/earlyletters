@@ -411,3 +411,13 @@ Karma
 - K10: country counts: privacy's storage rule is the source (daily count, 2 years); data's weekly k=10 view reads from it.
 - FR-SEC-13 has no row: the security author fills or retires it in the next pass.
 Karma
+
+## IA audit rulings R-IA-1 to R-IA-6 (20 Nov, from docs/design/e2e/IA-AUDIT.md on docs/e2e-ux-20nov)
+- R-IA-1: one age function with two named precisions (Home exact, Book months). What a parent sees does not change; the four wrappers and the duplicated month arithmetic (`chapters.ts:182`, `lib/reminders/tz.ts:131`) move into `packages/core` (engineering row).
+- R-IA-2: one "Days" page for NS-18 typed days and the NS-46 library, in Me under a new "Notes and days" group. No second list.
+- R-IA-3: slip, not strip. NS-50 is one more rank in the single Home slip slot (COMPONENTS C9); a strip of several items is a feed and is refused. The picture suggestion lives in the capture cluster. This amends section 5 of 20-founder-direction ("a strip").
+- R-IA-4: the Me regroup (Notes and days; Storage under Keeping your book; App lock and Privacy under On this phone; Erase and Delete account last) is adopted for design, built only after tree test T1.
+- R-IA-5: the religion and country question is a slip rank after the first letter and a row in Me > Days, pending founder Q-FD-2.
+- R-IA-6: "Quiet this book" silences every budgeted note for that book (F12-REQ-011), its Home slips and its prompts. Audit says no reader of `setChildQuiet` was found in the planner (inference); mobile confirms, then a quiet-enforcement test (T6). Also confirm where NS-32's one-a-day budget is enforced before NS-46 and NS-48 add classes.
+- Tests T1 to T6 (Me tree test, Save-a-copy confusion, slip vs strip, age line, month-arithmetic table, quiet enforcement) go into the research plan and test plan.
+Karma
