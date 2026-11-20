@@ -35,7 +35,7 @@ import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
-import { photosDirectory } from './photos/files';
+import { BAKED_CACHE_FOLDER, PICKER_CACHE_FOLDER, photosDirectory } from './photos/files';
 import { clearPendingInvite } from './family/pending-invite';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
@@ -48,7 +48,7 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
  * PDF expo-print writes to `Caches/Print/<uuid>.pdf` while an export renders the whole book (export/device.ts deletes
  * it afterwards, but a kill mid-render leaves it, and `cleanupExports` does not look there).
  */
-const CACHE_COPIES = ['exports', 'recovery-export', 'Print', 'ImagePicker', 'ScribePhoto'] as const; // ImagePicker: the photo picker's originals
+const CACHE_COPIES = ['exports', 'recovery-export', 'Print', PICKER_CACHE_FOLDER, BAKED_CACHE_FOLDER] as const; // the photo picker's originals and the re-encode's JPEGs
 
 /**
  * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.
