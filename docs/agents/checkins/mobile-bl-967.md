@@ -1,0 +1,2 @@
+06:10 (20 Nov) mobile | done: fix/reminders-skip-quiet-books, fix/month-ago-skip-quiet-books pushed; consent key and BL-967 session hook written, tests red on develop and green | next: full suites, PR bodies | blocked/needs: GitHub posting (journal, PR open) refused by the permission system
+11:11 (20 Nov) mobile | done: resumed from Karma's wip commits 69aae08d and 881863d8; no other agent on BL-967 | next: confirm fix 3 and BL-967 suites, never-list tests (NS-13-R5, R6a, R6b) | blocked/needs: same GitHub posting refusal
