@@ -1,0 +1,8 @@
+{
+  "about": "Record docs that only grow (HV2-B35). A PR diff that deletes or rewrites a line in one of these files is flagged by scripts/agents/append-only-check.mjs. Corrections are new dated sections, not edits (LESSONS-2026-11-08.md lesson 4). Paths are repo-relative. Add a path here in the same PR that creates the record. docs/release/DISPATCH-LOG.md is listed ahead of PR for HV2-B34; a path that is not in the diff is ignored.",
+  "files": [
+    "docs/agents/cto/RULINGS.md",
+    "docs/release/BUILD_GATE_2026-11-08.md",
+    "docs/release/DISPATCH-LOG.md"
+  ]
+}

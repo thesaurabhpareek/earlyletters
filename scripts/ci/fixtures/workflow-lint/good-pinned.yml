@@ -1,0 +1,9 @@
+name: good pinned
+on: [push]
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v4.1.1
+      - uses: ./.github/actions/setup
+      - run: echo ok

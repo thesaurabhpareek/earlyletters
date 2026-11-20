@@ -1,0 +1,1 @@
+19:19 (20 Nov) data-architect | done: read cards 27, errata, delta 3, #914 to #930, #835 reviews, code; wrote 14 to 16 (3 files, 406 lines) | next: commit, push, 3 PRs, journal | blocked/needs: #923 not fetchable

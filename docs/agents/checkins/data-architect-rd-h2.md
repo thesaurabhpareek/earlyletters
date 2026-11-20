@@ -1,0 +1,1 @@
+19:02 (20 Nov) data-architect | done: 22 briefs for keeping, trust, data and sync written and checked (61 cites, 51 held); README; 8 PRs | next: open PRs, journal | blocked/needs: founder words and approve-migration as listed in README

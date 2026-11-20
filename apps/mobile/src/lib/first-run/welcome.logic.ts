@@ -85,8 +85,11 @@ const NEW_PHONE_SCREENS: Partial<Record<FirstRunStep, FirstRunScreen>> = { openi
  * (route.logic.ts: "must keep Continue when the auth state moves under them"). The book stays on the phone either way;
  * signing in again is in Settings. And neither sign-in screen shows while the session is still being read: a returning
  * person who is offline at launch is not told sign-in needs a connection.
+ * BL-961: another account signed in on a phone that holds this owner's book draws nothing here, even past the welcome
+ * (a book begun now would be the owner's): the screen cover over every route offers sign-out.
  */
 export function firstRunScreen(input: { step: FirstRunStep; outage: 'offline' | 'outage' | null; restoring: boolean; pastWelcome: boolean }): FirstRunScreen {
+  if (input.step === 'otherAccount') return 'blank';
   if (input.pastWelcome) return 'steps';
   const newPhone = NEW_PHONE_SCREENS[input.step];
   if (newPhone) return newPhone;

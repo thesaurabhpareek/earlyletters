@@ -1,0 +1,2 @@
+05:54 (20 Nov) legal | done: read HARNESS-RUN, packet 1.5.0, cards 08 to 16 at 450bcb4a, designs privacy, security, 08, 09, 10, data-and-sync; Q58 to Q106 claimed by #598, BL-780, #760, so new ids start at Q107 | next: draft packet 1.7.0 section 7 | blocked/needs: none
+11:10 (20 Nov) legal | done: packet 1.7.0 section 7 (14 questions, Q107 and Q108 new), section 6 items 9 to 12; content tests 395 pass (one load timeout in no-real-family-data on two runs, passes alone and on rerun) | next: open PR, journal | blocked/needs: founder merges docs/legal (D-125)
