@@ -49,6 +49,10 @@
 //
 // Verdicts, first match wins:
 //   DIRTY          mergeable_state is dirty (conflicts)
+//   STALE-UNKNOWN  mergeable_state is unknown and the head is older than 7 days (GitHub never
+//                  computed it, or the PR is abandoned); never READY, no Merge ask, printed
+//                  in its own group under the table. A fresh PR with unknown mergeability
+//                  is not stale: it keeps the normal verdicts (WAIT-CI at the latest).
 //   OTHER-BASE     (--all-bases) PR is not into the listed base; never gets a Merge ask
 //   BLOCKED-REVIEW the newest trusted verdict at head for a lens is not exactly PASS or
 //                  PASS WITH NOTES (BLOCKED, CHANGES, FAIL, ...); a later pass clears it
@@ -67,6 +71,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** A head older than this with mergeability still "unknown" is parked as STALE-UNKNOWN (7 days, in minutes). */
+export const STALE_UNKNOWN_MINUTES = 7 * 24 * 60;
 export const DEFAULT_REPO = "thesaurabhpareek/earlyletters";
 export const FALLBACK_REQUIRED = ["applied migrations unchanged", "required", "compliance-fence"];
 export const MACOS_CHECKS = [/^iOS simulator build/, /^store-profile Release launch/];
@@ -184,6 +190,7 @@ export function parseClaims(text) {
 export function verdictFor(row, quietMinutes) {
   const { reviews, checks } = row;
   if (row.mergeable_state === "dirty") return "DIRTY";
+  if (row.mergeable_state === "unknown" && row.pushAgeMinutes >= STALE_UNKNOWN_MINUTES) return "STALE-UNKNOWN"; // unknown age (null) is not stale
   if (row.otherBase) return "OTHER-BASE";
   if (Object.keys(reviews.blocked).length) return "BLOCKED-REVIEW";
   if (!(reviews.A && reviews.B)) return reviews.staleLenses.length ? "STALE-REVIEW" : "NEEDS-REVIEW";
@@ -272,7 +279,9 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
   return rows.sort((a, b) => a.number - b.number);
 }
 
-export function formatTable(rows) {
+export function formatTable(allRows) {
+  const stale = allRows.filter((r) => r.verdict === "STALE-UNKNOWN");
+  const rows = allRows.filter((r) => r.verdict !== "STALE-UNKNOWN");
   const rev = (r) => `${r.reviews.A ? "A" : r.reviews.staleLenses.includes("A") ? "a" : "-"}${r.reviews.B ? "B" : r.reviews.staleLenses.includes("B") ? "b" : "-"}`;
   const ck = (r) => `${r.required.filter((n) => r.checks[n] === "success").length}/${r.required.length}` + (r.required.some((n) => r.checks[n] !== "success") ? " " + r.required.filter((n) => r.checks[n] !== "success").map((n) => `${n}:${r.checks[n]}`).join(",") : "");
   const head = ["PR", "head (40)", "base", "push-min", "rev", "mergeable", "required", "q/ip", "watch", "claim", "verdict"];
@@ -285,7 +294,11 @@ export function formatTable(rows) {
   const blockedNotes = rows.filter((r) => Object.keys(r.reviews.blocked).length).map((r) => `note: #${r.number} review not met, newest at head: ${Object.entries(r.reviews.blocked).map(([l, w]) => `${l}=${clean(w)}`).join(", ")}`);
   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
   const asks = rows.filter((r) => r.founderAsk).map((r) => r.founderAsk);
-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...asks].join("\n");
+  const days = (r) => Math.floor(r.pushAgeMinutes / 1440);
+  const parked = stale.length
+    ? ["", `stale-unknown (${stale.length}): mergeability unknown and head older than 7 days; not in the table above, no Merge ask`, ...stale.map((r) => `  #${r.number} base ${r.base}, last push ${days(r)} days ago, head ${r.head}`)]
+    : [];
+  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...asks, ...parked].join("\n");
 }
 
 function ghApi(path, { method = "GET" } = {}) {
