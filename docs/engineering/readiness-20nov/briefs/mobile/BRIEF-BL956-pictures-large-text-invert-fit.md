@@ -47,7 +47,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 11. LENSES: A design-systems, B principal-architect (plan 2.4).
 
-12. ORDER: after BL-931, BL-932; before the production flag. Blocked by: design-systems (88 pt confirm), product (R42 title, C-01).
+12. ORDER: after BL-931, BL-932; before the production flag. Blocked by: design-systems (88 pt confirm), product (R42 title).
 
 13. DEFINITION OF DONE
     [ ] tests red on old code and on mutants; `npm test -w apps/mobile`: only the 8 baseline files red; `npx tsc --noEmit` apps/mobile: only 5 known errors
