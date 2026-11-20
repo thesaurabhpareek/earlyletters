@@ -421,3 +421,15 @@ Karma
 - R-IA-6: "Quiet this book" silences every budgeted note for that book (F12-REQ-011), its Home slips and its prompts. Audit says no reader of `setChildQuiet` was found in the planner (inference); mobile confirms, then a quiet-enforcement test (T6). Also confirm where NS-32's one-a-day budget is enforced before NS-46 and NS-48 add classes.
 - Tests T1 to T6 (Me tree test, Save-a-copy confusion, slip vs strip, age line, month-arithmetic table, quiet enforcement) go into the research plan and test plan.
 Karma
+
+## Notification catalogue rulings (20 Nov, from functions/notification-catalogue.md)
+- N-1 (Q-NTC-1): 6 variants per grid cell (one plan holds at most 11 evening nudges, each cell is visited about once); the founder's 8 to 12 applies to the day, season and last-letter layers. Launch floor about 128 variants, filled later in content drops.
+- N-2: `occasion` returns only as a source of typed days, never as a new class (Q-FD-6 first half ruled yes). No class is added to the NS-32 registry.
+- N-3 (Q-NTC-2): only public days (seasons, civic) may name themselves in a lock-screen title; family and faith days need "names in notifications" on.
+- N-4 (Q-NTC-3): a visible body may mention the kind of the last letter; a title never does.
+- N-5 (Q-NTC-7): zero exclamation marks. VOICE.md line 70 is corrected to match line 160 and the checker.
+- N-6: the axis is days between the fire date and the newest made letter, not hours (every input must be known at plan time, iOS schedules up to 35 days ahead). Depends on NS-13's anchor and back-off, not yet built.
+- N-7: content mines the existing 87 rows and 174 variants in docs/design/NOTIFICATIONS.md and docs/design/notifications/COPY_INVENTORY.md first; one text per variant with a `{child}` slot, one names switch (the separate "Show celebration names" switch is refused).
+- N-8: evening-worded variants are dropped before 17:00 (day-part filter).
+- Engineering: string `key` in the planner, untie name rotation from the 8 variants, a `lastMadeLetter()` reader; picture and first kinds fall back to the grid until NS-01 and NS-06 supply flags.
+Karma
