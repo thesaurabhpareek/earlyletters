@@ -292,7 +292,7 @@ Integration: NS-01-R2, R4, R17b, R22, R46, R47, R52; BL-931 (#837), P-1 / BL-950
 
 Two Ready forms, kept apart on purpose:
 
-1. **Ready at rest** (built S12: a link, a restored screen, a doorway): Close top left; "To Asha" (`headline`) with the lock line "Only you, until you add it to the book." (`footnote`); the prompt if one came with it; the 120 pt red circle is the start control (target 120 pt); "Tap the red circle and talk." (`callout`, muted); Pause and Finish present but off, so nothing moves when the take starts; Let it go slot held invisibly.
+1. **Ready at rest** (built S12: a link, a restored screen, a doorway): Close (the word, top right, N2); "To Asha" (`headline`) with the lock line "Only you, until you add it to the book." (`footnote`); the prompt if one came with it; the 120 pt red circle is the start control (target 120 pt), held in a glass ring: the v2 record control A3 at `ready`, keeping the red disc so the built words "Tap the red circle" stay true; "Tap the red circle and talk." (`callout`, muted); the region where the record control's Pause and Finish appear is reserved, so nothing moves when the take starts (built 5.8 rule 3).
 2. **Ready with a picture** (NS-01-R3, R20b): Close; "To Asha" and the lock line; the thumbnail, fitted and uncropped, at most 160 pt tall, 1 pt hairline frame in dark mode and Increase Contrast; "Change" quiet 44 pt under it; the prompt (`prompt`); Speak and Type as the 64 pt twins in the thumb zone (as on Home, because the card names them). No red circle.
 
 AX5: Ready at rest: the room scrolls; the clock and line pin with the controls (built). Ready with a picture: from AX3 the thumbnail is at most 88 pt tall (R39, O-4 default), Change wraps beside or under it, Speak and Type stack and are on screen without scrolling on an SE 3; the prompt scrolls if long.
@@ -392,7 +392,7 @@ States:
 | `secondAccount` | Only B's drafts | X4 |
 | `dark`, `ax5`, `vo` | As above | |
 
-Components: existing `LetterSheet` (header gains three controls), `Transcript`, `EditUnderline`, `ViewControl`, `FixRow`, `WordsStatus` (InlineState), `Button`, `TextField`, `ReviewPhoto` and `PhotoFrame` (#839), `Toast`, `SavedMoment`, `PlusGate`. New: `LetterHeaderControl` (proposed): one small caps control used three times (To, the day, From). Why: the built header is plain text with one optional press target; three controls with an icon affordance, a 44 pt target, wrapping at AX5 and their own VoiceOver label and hint need one component so the three never drift apart. It is a `Button` variant (`quiet`, `sm`, caps text, trailing glyph), so it may land as a variant rather than a new file.
+Components: existing `LetterSheet` (header gains three controls: v2 I6 child switcher for To, v2 C6 Dateline `tappable` for the day, v2 A1 `plain` `sm` with a trailing pencil for From), `Transcript`, `EditUnderline`, `ViewControl`, `FixRow`, `WordsStatus` (InlineState), `Button`, `TextField`, `ReviewPhoto` and `PhotoFrame` (#839), `Toast`, `SavedMoment`, `PlusGate`. New: none. (The first draft proposed `LetterHeaderControl`; withdrawn in favour of v2 C6 Dateline, I6 and A1, see section 9.)
 
 Integration map:
 | | |
@@ -446,7 +446,7 @@ Integration: NS-17-R5, R6, R7, R8, R9, R10; J-N16, J-N23; no backlog row (E-03),
 
 ### A-S11 Let it go
 
-Confirmation (built `Alert`, kept: the system alert is the most familiar destructive confirm and reads its consequence to VoiceOver): title "Let this recording go?", body that says it cannot be brought back (content lead updates the built body, NS-09-R9), "Keep it" (cancel style, the default) and "Remove it" (destructive). With a picture: the body also names the picture (R16c). From Listen: the same alert; the take stops first.
+Confirmation: v2 F6 confirmation sheet (`simple`), originating from the control, replacing the built `Alert.alert`: title "Let this recording go?", body that says it cannot be brought back (content lead updates the built body, NS-09-R9), "Keep it" (`filled` `lg`, the default and first for VoiceOver) and "Remove it" (`destructive` text). Haptic `warning` only with the outcome. With a picture: the body also names the picture (R16c). From Listen: the same alert; the take stops first.
 
 `notRemoved` (NS-09-R4a, R4b; BL-925 words, BL-926): after confirm, when the file would not delete. Review keeps the screen only to say it, once: the letter sheet and footer give way to one muted `subhead` line, no icon, no red ("That recording is still on this phone. We will finish removing it.", intent), and one "Done" (quiet) back to where they were. Announced to VoiceOver after the screen settles. Never blocks leaving; the draft is never shown as keepable again.
 
@@ -503,16 +503,16 @@ Rule applied: glass (regular) only on the navigation and control layer; clear gl
 
 | Screen | Glass (regular) | Clear glass, 35 percent dim | Content layer | Glass surfaces visible (max 3) |
 |---|---|---|---|---|
-| A-S01 Home | Native tab bar; the capture cluster as one container (Plus line, Speak, Type, Start from a photo, Not much today) | none | Switcher row, dateline, greeting, prompt, Another thought, slips and waiting cards | 2 (tab bar, cluster). At AX5 the cluster rides inline in the scroll and renders as content-layer solid buttons, because it no longer floats (reconcile with system COMPONENTS.md) |
+| A-S01 Home | Native tab bar (N1); Speak and Type as one `GlassContainer` (A2) | none | Switcher row (I6), dateline, greeting, prompt, Another thought, slips and waiting cards; the Plus line, Start from a photo (A4) and Not much today on paper in the fixed bottom region (A2) | 2 (tab bar, cluster). At AX5 the cluster rides inline in the scroll and renders as content-layer solid buttons, because it no longer floats (reconcile with system COMPONENTS.md) |
 | A-S02 Whose book | The sheet | none | Rows inside the sheet (no glass inside glass) | 1 |
 | A-S03 Picker | System | none | none | system |
-| A-S04 Ready | Close button; Speak and Type as one bottom container (picture form) | none | Thumbnail, Change, prompt, the red circle at rest (solid `recording` disc: not yet recording), primer and problem screens (error screens are never glass) | 2 |
-| A-S05 Recording | The recording control: Pause, Finish and Let it go as one container (the "record control while recording") | none | Aura, clock, line, prompt | 1 |
+| A-S04 Ready | Close button; Speak and Type as one bottom container (picture form) | none | Thumbnail, Change, prompt, primer and problem screens (C8 state screens are never glass). The red circle at rest sits in the A3 glass ring | 2 |
+| A-S05 Recording | The record control A3: Pause and Finish (with the recording dot and the time) in one container | none | Aura, clock, line, prompt; Let it go as a `plain` button on paper | 1 |
 | A-S06 Write | Close; Save toolbar above the keyboard | none | The field and prompt | 2 |
-| A-S07 Review | Header container (Close, Play); the Keep footer container; the Undo toast when open | Only if a control is placed over the picture (none in this design: Change photo and Take the photo off sit under it) | The letter sheet including its To, day and From controls (they are part of the letter), view control, fixes, picture card, Let it go | 3 at most (header, footer, toast). At AX5 the footer is inline and solid, leaving 2 |
+| A-S07 Review | N2 header items (Play, Close); the N3 bottom toolbar (Keep prominent, Keep private plain); the F1 Undo toast when open | Only if a control is placed over the picture (none in this design: Change photo and Take the photo off sit under it) | The letter sheet including its To, day and From controls (they are part of the letter), view control, fixes, picture card, Let it go | 3 at most (header, footer, toast). At AX5 the footer is inline and solid, leaving 2 |
 | A-S08, A-S09, A-S12 | The sheet | none | Fields, pickers, lists inside | 1 (Review below sits under the scrim) |
 | A-S10 | none | none | All inline on Review | as A-S07 |
-| A-S11 | System alert | none | the notRemoved line | system |
+| A-S11 | The F6 confirmation sheet | none | the notRemoved line | 1 |
 | A-S13 | Undo or held toast | none | The saved sheet | 1 |
 | A-S14 | System (widget, control) | none | none | system |
 
@@ -520,7 +520,7 @@ Names: this file uses the built component names. Section 9 maps them to the v2 n
 
 ## 4. New components proposed
 
-1. `LetterHeaderControl` (A-S07): see A-S07 Components. Justification: three tappable header items with one look, one target size, one AX5 wrap rule and their own labels. Smallest form: a `Button` variant.
+1. None. The first draft's `LetterHeaderControl` is withdrawn: v2 C6 Dateline (`tappable`), I6 Child switcher and A1 cover it.
 2. No other new component. The From sheet, the day sheet, the replace confirm, the Undo line, the picker states, the another-language state and the doorway arrival use `Sheet`, `ChoiceGroup`, `TextField`, `Toast`, `StateScreen` / `InlineState`, `PhotoFrame` and `Button` as built. The undo window is a helper, not a component (BL-954).
 
 ## 5. Integration summary by card
@@ -548,7 +548,7 @@ How each card's error code reaches the parent: never as a code. Photo pick codes
 
 Each: card row, what is missing, proposed default. No card is changed.
 
-- G-01 NS-15 section 15 and the built Review header (`letter-sheet.tsx`): the left header "To {child} (dot) Month n" is today both the label and, with two books, the whose-book control. The card asks the "dateline" to open `DateSheet`. Default: split into two controls (To on line 1, the day on line 2) through `LetterHeaderControl`.
+- G-01 NS-15 section 15 and the built Review header (`letter-sheet.tsx`): the left header "To {child} (dot) Month n" is today both the label and, with two books, the whose-book control. The card asks the "dateline" to open `DateSheet`. Default: split into two controls (To on line 1, the day on line 2) through v2 C6 Dateline (`tappable`) on line 2 and I6 on line 1.
 - G-02 NS-16 section 15: "the signature line on Review becomes a control", but Review shows the signature at the top right of the sheet, not at the end. Default: the top-right "From" is the control; the letter page keeps the signature where B draws it.
 - G-03 NS-15-R1 on Review: the day line's words for today and for a chosen day are not given. Default: "Today, 9 June" until changed, then the day; VoiceOver "About {date}" (WORDS.md).
 - G-04 NS-14 VoiceOver row says the switcher reads "Letters go to {child}'s book"; the visible label is "For {child}". Voice Control needs the visible label as the command (NS-14 Voice Control row). Default: accessibility label starts with the visible words: "For Asha. Letters go to Asha's book."
@@ -572,7 +572,7 @@ Each: card row, what is missing, proposed default. No card is changed.
 
 ## 7. Engineering gaps
 
-- E-01 Review header controls (To, the day, From) as one component: no row names `LetterHeaderControl`; belongs to BL-945 (first to land), reused by BL-980.
+- E-01 Review header controls: the day line needs v2 C6 Dateline (`components/ui/dateline.tsx`, v2 row R11) before BL-945 can draw it; From needs only A1; To reuses I6. BL-945 depends on R11.
 - E-02 "Let it go" on Review outside the short-take card (G-09): belongs to BL-926 or BL-977.
 - E-03 NS-17's Review mark, the withheld state, the Undo, the held-draft push without words and "Type the words yourself" for a take: no backlog row (the plan 17 table gives NS-17 "No row"), while NS-17-R5, R7, R8 are P0. Needs a new row next to BL-987's `held_drafts` question.
 - E-04 Review's photo-not-stored line (G-08): belongs to BL-931 slice 4c (#839).
@@ -589,4 +589,114 @@ Each: card row, what is missing, proposed default. No card is changed.
 
 ## 8. Reconciliation with MOTION.md and WORDS.md
 
-See section 9, written after reading both files.
+See section 9.
+
+## 9. Reconciliation pass (end of round, 20 Nov)
+
+Read: `MOTION.md` and `WORDS.md` in this folder; `docs/design/system/BRIEF.md`, `COMPONENTS.md` and `MOTION.md` (design system v2). `FOUNDATIONS.md` and `tokens.v2.json` were not yet in `docs/design/system/` at this pass, so token names below are the ones v2 COMPONENTS.md asks for.
+
+### 9.1 Screen ids
+All three files use A-S01 to A-S15 with the same meaning. No re-keying of screens is needed.
+
+### 9.2 State ids: this file's names are canonical
+WORDS.md section 12 says DESIGN.md's names win. MOTION.md keys moments (MA-nn) to states. The alias table below is the find-and-replace list for Karma; states marked "added" are taken into this file from the siblings.
+
+| Used in WORDS.md or MOTION.md | Canonical (this file) |
+|---|---|
+| A-S01.namelessTwo | A-S01.twoBooksNameless |
+| A-S01.waitingCard | A-S01.waiting |
+| A-S01.waitingMany | A-S01.heldMany |
+| A-S02.open | A-S02.default |
+| A-S03.iCloudProgress | A-S03.downloading |
+| A-S04.default, A-S04.fromDoorway | A-S04.ready, A-S04.doorway |
+| A-S04.photo, A-S04.withPicture | A-S04.readyPhoto |
+| A-S04.micDenied, micBusy, phoneFull | A-S04.denied, busy, full |
+| A-S04.openFailed, A-S04.photoFailed | A-S04.photoCouldNotOpen |
+| A-S04.photoOffline | A-S04.iCloudOffline |
+| A-S04.lowSpace, A-S05.lowSpace | added: A-S04.lowSpace and A-S05.lowSpace (under 1 GB: one line in place of the hint; capture goes on; v2 F2 SystemLine `lowStorage`) |
+| A-S05.saved | added: A-S05.saved (the moment between finishing and Review; words `tonight.states.saved`) |
+| A-S06.photo | A-S06.withPhoto |
+| A-S07.transcribing | A-S07.writing |
+| A-S07.waitingLong | A-S07.writing (after 8 s) |
+| A-S07.noSpeech | A-S07.noWords |
+| A-S07.missingFile | A-S07.fileMissing |
+| A-S07.stoppedEarly, A-S07.stoppedBy | A-S07.interrupted (the stop line) |
+| A-S07.dateline | A-S07.default (the day line) and A-S07.dateSet |
+| A-S07.from | A-S07.default (From control) and A-S07.fromSet |
+| A-S07.photo, A-S07.withPicture | A-S07.withPhoto |
+| A-S07.keepDisabled | A-S07.photoNeedsWords |
+| A-S07.otherLanguage | A-S07.anotherLanguageOffer |
+| A-S07.wordsWaiting | A-S10.withheld |
+| A-S07.voiceOnly, A-S13.keptVoiceOnly | A-S13.voiceOnly |
+| A-S07.noDraft, keepStillSaving, firstNote, playing, markOpen, putBack | added as A-S07 states, as built (Review with nothing to read; Keep tapped while the save still runs; the first-time note; Play running; a fix's card open; the put-back line with Undo) |
+| A-S07.dateNotSaved | added: A-S07.dateNotSaved (WORDS G6: a named line instead of the generic one) |
+| A-S07.fromTooLong | added: A-S07.fromTooLong (Keep refused when a draft carries a name over the limit, R6) |
+| A-S07.partUnwritten | added: A-S07.partUnwritten (NS-17 section 5, mixed-language stretch). Engineering gap: no module reports an unwritten stretch (WORDS section 19) |
+| A-S08.default | A-S08.day |
+| A-S09.default, A-S09.recentNames | A-S09.empty, A-S09.recent |
+| A-S10.undo | A-S10.withheldUndo |
+| A-S10.waiting | A-S10.withheld |
+| A-S10.writeWords | A-S06.forTake |
+| A-S10.confirm | not drawn: only if the founder prefers a confirm to the Undo (WORDS G8, this file G-07) |
+| A-S12.replaceAsk | A-S12.confirm |
+| A-S12.changedUndo, takenOffUndo | A-S12.undo (A-S07.photoUndo for take off on Review) |
+| A-S12.undoClosed | A-S12.closed |
+| A-S13.kept, keptPrivate, gateHandoff | A-S13.saved, savedPrivate, gate |
+| A-S14.beforeFirstRun | A-S14.firstRun |
+| A-S15.hypotheses | A-S15.map |
+
+### 9.3 Words decisions this file follows (WORDS.md wins on words)
+- "Write the words" (built) instead of the card's intent "Type the words yourself" (WORDS ruling 2). The prototype uses it.
+- "Change photo" on Ready as on Review (WORDS G2, for an unambiguous Voice Control name). The prototype uses it.
+- Storage line "A recording you let go is still on this phone." (WORDS G4, not a count).
+- Day line: "About {a}. Said on {b}." on the letter page; on Review the day line shows the chosen day (WORDS 7.2).
+- The waiting line for a withheld or held language drops "coming in a later update" (WORDS G11, this file G-05).
+- Typed-day line on Home is part of the prompt block, never a slip (WORDS G9 agrees with A-S01 layout item 4).
+
+### 9.4 Motion decisions this file follows (MOTION.md wins on motion)
+- Review stays to show the not-removed line (MOTION CG-7 = this file G-10).
+- The NS-17 Undo is an MA-44 window (T4) (MOTION CG-8 = G-07).
+- "Moves on" for Switch Control: leaves the screen, activates another control, or locks the phone (MOTION CG-4); the clock pauses in the background (CG-3).
+- No sound and no haptic on a picture that failed (MOTION CG-6).
+- MOTION's MA-nn ids map to v2 primitives through v2 MOTION.md section 4b and 13; this file names no durations.
+
+### 9.5 Design system v2 names (COMPONENTS.md, MOTION.md)
+| This file said | v2 name |
+|---|---|
+| `Button` capture, primary, secondary, quiet | A1 `Button` styles `prominent` / `glass` / `plain`, size `xl` for Speak and Type |
+| Speak and Type pair on Home | A2 Capture cluster (`components/capture/capture-cluster.tsx`) |
+| Ready red circle; Pause and Finish | A3 Record control (`ready`, `recording`, `paused`, `still here`, `interrupted`) |
+| "Start from a photo" | A4 Photo start (`plain`, content) |
+| `ChildSwitcher`, `WhoseBookSheet` | I6 Child switcher plus N7 sheet with I4 list |
+| `DateSheet` | I3 Date sheet (moves to `components/ui/date-sheet.tsx`) |
+| Review's day line | C6 Dateline `tappable` (and `two dates` on the letter page) |
+| `PhotoFrame`, `PendingPhotoThumb` | C3 Photo thumbnail (`ready` variant on Ready and Review) |
+| `TextField` (From, photo words, place) | I1 Text field, `writingTools={false}` |
+| Write field, Review editor | I2 Textarea (`letter`, `review`) |
+| `Toast` with Undo | F1 Undo toast (T4 window) |
+| `Alert.alert` Let it go; replace confirm | F6 Confirmation sheet (`simple`) |
+| `PlusGate` | F4 Keep gate sheet |
+| `SavedMoment` | F5 Saved moment |
+| `StateScreen` primer and problems | C8 State screen |
+| Low storage and offline lines | F2 Banner (SystemLine) |
+| `ModalHeader` Close | N2 header, Close as the word, top right |
+| Review footer | N3 bottom toolbar |
+| Motion | v2 `m.cover` (Listen, Review), `m.sheet`, `m.toast`, `m.glass` (Speak capsule to record control), `m.keep`, `m.signal` (aura), `m.instant` (recording state changes) |
+
+### 9.6 Open points between this design and v2 (Karma rules; the card wins where one speaks)
+- O-1 A2 says the capture cluster stays in the bottom third at AX5. NS-35's scenario row says "Capture actions inline under the prompt (as built)" at the largest text size, and NS-14-R5 needs the switcher, dateline and three controls not to overlap. This file keeps the card: inline under Another thought at AX5, rendered solid (content layer) because it no longer floats.
+- O-2 N3 lists Let it go in Review's toolbar (`split`). Review's toolbar already holds two keep choices (Add to the book, Keep private) and allows one prominent item; a destructive choice next to Keep invites a mis-tap with a baby on one arm. This file keeps Let it go as the last `plain` item in Review's content (G-09); the toolbar holds Keep (prominent) and Keep private (plain). At AX3 and above both move into content as A1 `lg` (N3 rule).
+- O-3 A3 names "Stop" and "Speak" on the record control; the built words are "Finish" and the glossary phrase "Tap the red circle and talk." Words are WORDS.md's call; the prototype shows the built words. A3's glass circle at Ready is drawn as a glass ring around the red disc so "red circle" stays true.
+- O-4 A2 shows Speak and Type as glass; F4 and N7 put the Keep gate as a system sheet over Review. Budget on Review with the toast and a sheet: header, toolbar, sheet (the toast cannot show under a sheet). Within three.
+- O-5 v2 I2 says writing tools off on "every letter field"; D2's list omits Write. This file's G-16 asks for Write too; v2 R10 covers the build.
+- O-6 FOUNDATIONS.md and `tokens.v2.json` were absent at this pass; the prototype copies today's `tokens.ts` values and draws glass with CSS `backdrop-filter`, solid under Reduce Transparency, per BRIEF section 3.
+
+### 9.7 Gap ids across the three files
+| This file | WORDS.md | MOTION.md |
+|---|---|---|
+| G-05 (coming-soon waiting line) | G11 | |
+| G-07 (NS-17 Undo) | G8 | CG-8 |
+| G-08 (photo not stored on Review) | G1 | |
+| G-10 (Review stays for the not-removed line) | | CG-7 |
+| G-04 (switcher label vs Voice Control) | G5 (nameless label format), section 19 row 1 | |
+| E-03 (no NS-17 row) | section 19 row 2 | |

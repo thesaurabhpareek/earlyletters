@@ -1,6 +1,6 @@
 # Area D: Family, sharing and reminders. End-to-end design
 
-Status: DRAFT v1, 20 Nov 2026. Design lead, area D (`design-systems` lens). Docs only. Screen ids are stable: `MOTION.md` and `WORDS.md` in this folder key to them; new screens are appended, never renumbered.
+Status: v1, 20 Nov 2026 (reconciled with MOTION.md and WORDS.md; glass per the system v2 brief). Design lead, area D (`design-systems` lens). Docs only. Screen ids are stable: `MOTION.md` and `WORDS.md` in this folder key to them; new screens are appended, never renumbered.
 
 Prototype: `PROTOTYPE.html` in this folder (self-contained; every journey below is a path through it).
 
@@ -46,7 +46,7 @@ Each journey lists the screens it walks. Every row of each card's "Unhappy paths
 3. Tap Share: D-S02 opens within p95 300 ms (R23): title, the exact text that leaves (date line, words, signature line), the static row "The words always go", the version line, the where-it-goes line, then Continue and Not now, equal (R2).
 4. Tap Continue (haptic `tap`): D-S03, the iOS share sheet, opens within 1 s (R11) with the text only.
 5. The parent picks an app and a person and sends in that app.
-6. The share sheet completes. The preview is already gone; the letter page is as it was. No toast, no haptic, no mark (R12, R22). The app never reads the result (R3b).
+6. The share sheet completes (sent, cancelled or failed alike). The preview closes with it onto the unchanged letter page (reconciled with MOTION.md G2). No toast, no haptic, no mark (R12, R22). The app never reads the result (R3b).
 
 **J-D02 Share with the picture.** As J-D01; at step 3 the letter has a stored copy on this phone (NS-01), so the "Include the picture" toggle shows, default off (R5b). The parent turns it on: a 64 pt thumbnail with a 1 pt hairline appears in the preview below the words (D-S02.pictureOn). Continue hands over text plus one file `letter-photo.jpg` (R6a, R6b). On completion the temp file is deleted (R10a).
 
@@ -73,8 +73,8 @@ Each journey lists the screens it walks. Every row of each card's "Unhappy paths
 **J-D10 The ask after the first kept letter.**
 1. Review, Keep (A-S07, A-S13): the first letter is kept; the Book shows (as built, Review asks for the card after the Book is on screen).
 2. D-S04 rises: one sentence, the planned rhythm line ("A few times a week, Tuesday and Saturday, 8:30 PM" read from prefs), and two equal answers: "Yes, evenings" and "No reminders". A "Change the time" text button (44 pt) under the rhythm line opens the system time picker in place (D-S04.picking).
-3a. Yes: the card closes; D-S05 (iOS permission) appears once. Allow: a toast "Reminders are on. Next: Tuesday at 8:30 PM." with Change (to D-S06). Don't Allow: a toast "Notifications are off" with Open Settings; no second ask from us (door line Never).
-3b. No reminders: no iOS prompt; the toast "You can write whenever you like." The card may show once more later (cap of 2 ever; R31).
+3a. Yes: the card closes; D-S05 (iOS permission) appears once. Allow: `.after-yes`, the toast "Reminders are on. Next: Tuesday at 8:30 PM." with Change (to D-S06). Don't Allow: `.after-yes-denied`, "Not sending yet." with Open Settings; no second ask from us (door line Never). iOS refuses the schedule: `.after-yes-failed` with Try again.
+3b. No reminders: no iOS prompt; `.after-no`, the toast "You can turn reminders on in Me whenever you like." (Me explains, door line Decline). The card may show once more later (cap of 2 ever; R31).
 4. The card has no Close and no swipe: one of the answers ends it (as built). It is not a Home slip (frame section 4).
 
 **J-D11 A reminder at the chosen hour (J-N3).**
@@ -233,7 +233,7 @@ State names below are the reconciled set shared with `WORDS.md` and `MOTION.md` 
 | D-S08 | Add a day sheet | NS-18 | D | `.default`, `.filled`, `.showWords`, `.error-typed_day_empty`, `.error-typed_day_past`, `.error-typed_day_too_long`, `.error-schedule_failed`, `.notAllowed`, `.interrupted` (words kept until Save) |
 | D-S09 | A typed day: detail and Delete | NS-18 | D | `.default`, `.confirm` |
 | D-S10 | Lock screen and Notification Centre | NS-32, NS-13, NS-18 | system render | per class `evening`, `monthAge`, `together`, `birthday`, `typedDay`, `plan` (previews shown, defaults); `<class>-hidden` (placeholder; `WORDS.md` groups these as `.hidden`); `evening-named`, `birthday-named`; `typedDay-words`; `oneDay` (plan notice plus one budgeted); `quiet`; `focus` |
-| D-S11 | Notification landing | NS-13, NS-18, NS-35 | A, B, E | `.home` (evening), `.typedDay` (Home with the words), `.book` (month, birthday), `.plan` (Settings, Plan), `.appLock` (lock first) |
+| D-S11 | Notification landing | NS-13, NS-18, NS-35 | A, B, E | `.home` (evening), `.typedDay` (Home with the words), `.book` (month, birthday), `.plan` (Settings, Plan), `.appLock` (lock first), `.whileCapturing` (stays put) |
 | D-S12 | Me, the book's page: "Write this book together" | NS-25 | C (C-S15) | `.store` (absent: store build before the gates or outside the D-162 door rule), `.killswitch` (absent: servers off), `.one-parent`, `.consent-needed`, `.invited`, `.two-parents` |
 | D-S13 | Invite sheet | NS-25 | D | `.default`, `.working`, `.sent` (toast on D-S18), `.full`, `.paused`, `.offline`, `.error-<code>` (rate_limited, not_parent, consent_needed, family_share_consent, retry_new_invite, unknown) |
 | D-S14 | Invite link page (web) | NS-25 | D | `.iphone`, `.other-device`, `.missing-token`, `.copied` (`.expired` is not reachable: section 12) |
@@ -355,7 +355,8 @@ Default:
 - The body names the child in the app only (built `renderTemplate`); the lock screen stays neutral.
 - No Close, no swipe to dismiss: one answer ends it (as built). VoiceOver: modal; the scrim is hidden. Order: title, body, rhythm line, Change the time, Yes, evenings, No reminders.
 - AX5: icon hidden at AX3 and above to give the text room (decorative); the rhythm line and Change the time stack; both answers full width, stacked, equal.
-- Results are toasts (existing `Toast`): "Reminders are on. Next: {weekday} at {time}." with Change; "Notifications are off" with Open Settings; "You can write whenever you like." (no action). Toasts with an action follow T4 through BL-954.
+- Results are toasts on the undo-toast surface (glass): `.after-yes` "Reminders are on. Next: {weekday} at {time}." with Change; `.after-yes-denied` "Not sending yet." with Open Settings; `.after-yes-failed` "Could not set reminders just now." with Try again; `.after-no` "You can turn reminders on in Me whenever you like." (no action). Toasts with an action follow T4 through BL-954.
+- `.pickTime`: the picker opens in place under the rhythm line; the two answers stay and "Yes, evenings" applies the chosen time. No separate "Set reminder" button (the built `cta` key is not drawn). New PROPOSED key for the control: `onboarding.reminder.changeTimeButton` "Change the time" (WORDS.md to add).
 - Integration: NS-13-R31 (cap of 2), section 12 door lines; BL-943 (copy change through BL-965); no flag; no kill switch (none exists; `killSwitches.reminders` not added, NS-13 OQ); reads prefs and the active child's name; writes `reminders.*`, `reminders.onSince` (new) via `turnOnReminders()`; module `components/asks/reminder-prime-ask.tsx`, `lib/asks`.
 
 ### D-S05 iOS permission alert
@@ -450,9 +451,9 @@ Default:
  | [               Save               ]  |  Button primary lg, 56 pt
  +---------------------------------------+
 ```
-- No character counter: a counter is a count shown while typing. The field accepts up to 80 graphemes and then stops taking input; a single line "80 letters at most" (intent) appears only when the limit is reached (`.tooLong`), announced politely. Card gap G-D13 (the card is silent).
-- Save is disabled with a reason line until there are words ("Add a few words to save." intent).
-- The date picker offers tomorrow onward (gap G-D10 on today).
+- No character counter (a counter is a count shown while typing). Typing stops at 80 graphemes; a paste over 80 keeps every character, and Save shows `.error-typed_day_too_long` ("That is longer than fits here. A short line works best.") and waits. Nothing is cut silently.
+- Save is never disabled (the system v2 disabled-absent rule): Save with no words shows `.error-typed_day_empty` ("Add a few words about the day.").
+- The date picker starts at today; today is accepted only while today's reminder time is still ahead, else `.error-typed_day_past` ("Choose a day that is still to come."). Reconciled with WORDS.md G6; replaces this file's first default (tomorrow onward).
 - `.notAllowed`: the line "Notifications are off. This day is saved and will be sent once they are allowed." (intent) above Save; Save still works.
 - AX5: full height; fields stack; the toggle stacks label over switch; Save pinned.
 - VoiceOver: title, date (picker), words field "Your words", toggle, preview as one element, Save. The field's hint: "Shows in the app on that day."
@@ -473,6 +474,7 @@ See section 5 for the class registry and the rendering matrix. Design reviews on
 - `.monthAge`, `.birthday`: the Book (B-S01) at its current position (as built).
 - `.plan`: Settings, Plan (E-S11), where the plan note waits (as built `openPlan`).
 - `.appLock`: App lock first; then the landing.
+- `.whileCapturing`: Listen, Review or Write is open: the app stays where it is; nothing records or stops (MOTION.md G6).
 - AX5: the typed-day line wraps; it never truncates.
 - VoiceOver: on landing, focus goes to the screen's first element as usual; on Home with a typed day, the line is read before the prompt.
 - Integration: NS-13-R9, NS-18-R1, NS-35-R3, R4; built router `scheduler.ts:253-261` (evening to `/`, else `/book`) needs `typedDay` to `/` (engineering gap E-D04).
@@ -517,9 +519,11 @@ Integration: NS-25-R1, R12; BL-983; door rule `visibleCoParentDoors(coParent, al
 
 ### D-S14 Invite link page (web)
 
-The built static page `/j` (no server, no analytics, the token in the fragment). Design changes: one App Store link line for an iPhone without the app (card section 4 step 3), styled as the page's existing link; no child or inviter name (R6). `.otherDevice`: "On a computer? Open this link on the iPhone that has {app}." (built) plus "The app is for iPhone for now." (intent; card section 5). `.missingToken`, `.copied`, `.copyFailed`, `.noScript` as built. It cannot show "expired" (gap G-D12). Integration: NS-25-R6; `apps/web/src/app/j/page.tsx`, `site.invite`.
+The built static page `/j` (no server, no analytics, the token in the fragment). Design changes: one App Store link line for an iPhone without the app (card section 4 step 3), styled as the page's existing link; no child or inviter name (R6). `.other-device`: "{app} works on iPhone." (WORDS.md G17: no "for now") above the built computer line. `.missing-token`, `.copied`, and the built copy-failed and no-script lines as built. It cannot show "expired" (gap G-D12). Integration: NS-25-R6; `apps/web/src/app/j/page.tsx`, `site.invite`.
 
 ### D-S15 Join ask: peek
+
+Reconciled with WORDS.md: D-S15 and D-S16 are the top and bottom of one sheet. The peek (who invited, the role) sits above the agreement (the shared-scope sentence, the versioned links) and one equal pair, "Join the book" and "Not now". There is no separate Continue step. The sketch below is the top half; D-S16 is the bottom half.
 
 ```
  +---------------------------------------+
@@ -538,37 +542,46 @@ The built static page `/j` (no server, no analytics, the token in the fragment).
 - No child name, no cover, no letter before agreement (R2; `peek_invite`).
 - `.signedout`: "You were invited to a book" with Sign in and Not now (built).
 - `.loading`: "Opening the invite" with the system activity indicator (no count).
-- Error states replace the body with one line and offer "Paste another link" or Close; final errors drop the token (as built `FINAL_INVITE_ERRORS`). `.error-already_member` offers Open the book.
+- Peek errors (`.error-expired`, `.error-used`, `.error-revoked`, `.error-not_found`, `.error-signed_out`) replace the sheet body with one line and offer "Paste another link" or Close; final errors drop the token (as built `FINAL_INVITE_ERRORS`). `.paused` and `.offline` keep the token and offer Try again. Join-time errors are D-S16 states.
 - Integration: NS-25-R2, R5, R9, R11, R18; BL-983; kill switch `killSwitches.invites`; error codes SCINV (expired, used, revoked, already_member, not_found), SCCAP, SCKIL, SCCON, PGRST301 or 303 (signed_out), network; module `app/invite/index.tsx`, `lib/family/join-flow.logic.ts`.
 
 ### D-S16 Accept: the agreement
 
-The PRIV-R21 door (NS-25 section 12 Accept): the shared-book agreement as `AgreementRow` lines with versioned links (Terms, Privacy Policy, Consumer Health Data Privacy Policy), then "Agree and join" and "Not now", equal. Records one `policy_acceptances` row (`invite_accept`). Decline: nothing joins; the inviter is not told. `.loading`: "Joining the book". `.offline`: one line, Try again; nothing half-joins (R10). Whether this is a separate step or folded into D-S15's Join is a card gap (G-D16): the built join goes straight from peek to accept after general consent; the card's happy path step 5 reads the agreement first. Default: a separate D-S16 step when the server sends SCCON `family-share`, else the general consent already holds and D-S15's Join is the agreement (built behaviour). Integration: NS-25-R17; `components/ui/agreement-row.tsx`.
+The bottom of the join sheet (NS-25 section 12 Accept door): the line "You will both read every letter in the book that is not private. Join only if you know who sent you this link." (CHANGE to `family.accept.askBody`, WORDS.md), the agreement as `AgreementRow` lines with versioned links (Terms, Privacy Policy, Consumer Health Data Privacy Policy; E owns the keys), then "Join the book" and "Not now", equal and stacked. Join records one `policy_acceptances` row (`invite_accept`, R17). Not now: nothing joins; the inviter is not told.
+- No sign-off field here. The built field label "What does {child} call you?" would name the child before agreement (R2; WORDS.md G13). Design decision: the field moves to D-S17.joined, after agreement, where the child is named anyway. `family.accept.signsAsLabelBeforeJoin` is then not needed.
+- `.joining`: "Joining the book"; the button keeps its size.
+- `.needs-sync`: "To join, choose Agree and sync in Settings, Account." (built).
+- `.error-join_failed` (a failed or lost accept answer): "Joining did not finish. Nothing has changed. Try again." (PROPOSED `family.errors.joinFailed`); a retry makes exactly one membership (R10).
+- `.error-already_member`: one line and Open the book (R9). `.error-book_full` (SCCAP, R5) and `.error-book_deleted`: one line and Close. `.error-consent_needed`, `.error-family_share_consent` (SCCON): their built lines.
+- Separate agreement step (gap G-D16): only if the server requires the family-share consent and a later build adds that sheet; until then this sheet is the agreement.
+- AX5: full height; the peek, the sentence and the links scroll; the pair is pinned. VoiceOver: title, invited by, role, the sentence, each link, Join the book, Not now.
+- Integration: NS-25-R2, R5, R9, R10, R11, R17; error codes SCINV, SCCAP, SCKIL, SCCON; `accept_child_invite`; `components/ui/agreement-row.tsx`.
 
 ### D-S17 Joined: arrival
 
-As built: the book cover appears for the first time with the child's name, the flyleaf line ("Your letters and Mama's sit side by side, each signed."), "{child}'s book is on its way to this phone." with a thin bar and no count; then "What does {child} call you?" (prefilled) and "Open the book". `.notYet` adds Try again. `.twobooks`: the switcher on Home and the Book now lists both (NS-14). Integration: NS-25-R8, section 8 latency; BL-983.
+As built (states `.arriving`, `.slow`, `.joined`): the book cover appears for the first time with the child's name, the flyleaf line ("Your letters and Mama's sit side by side, each signed."), "{child}'s book is on its way to this phone." with a thin bar and no count; then "What does {child} call you?" (prefilled) and "Open the book". `.notYet` adds Try again. `.twobooks`: the switcher on Home and the Book now lists both (NS-14). Integration: NS-25-R8, section 8 latency; BL-983.
 
 ### D-S18 Family page
 
 Built `/family` page ("Who writes to {child}"): member rows as signatures, pending invites with Share again and Cancel invite. Added for NS-25:
-- `.twoParents-undoable`: under the co-parent's row, "Joined {date}. You can undo this until {weekday}, {time}." (footnote) and an "Undo join" button (`Button outline sm`, 44 pt). Only for the inviter, only inside 72 hours.
-- `.twoParents`: no control and no line (R13).
+- `.undo-open`: under the co-parent's row, "You can undo this until {date} at {time}." (PROPOSED `family.undoJoin.rowHelp`) and the button "Undo {coParent}'s join" (PROPOSED `family.undoJoin.row`; `Button outline sm`, 44 pt, solid). Only for the inviter, only inside 72 hours. A deadline, not a countdown.
+- `.undo-closed`: no control and no line (R13).
+- `.pending`, `.expired`, `.paused`: the built invite rows.
 - `.left`: the built neutral note, once.
 - No "Leave" row (D-113).
 - Integration: NS-25-R4, R13; `undo_parent_join`; BL-983.
 
 ### D-S19 Undo join confirm
 
-`ConfirmSheet`: title "Undo the join?" (intent), body "Their letters leave this book and stay theirs. Their phone stops receiving this book.", safe default "Keep them in the book" (primary), destructive quiet "Undo join". Records `member_join_undone` and a PRIV-R21 row (card door line). `.error-SCPAR`: "This can no longer be undone here." (intent) with Close. Integration: NS-25-R4, R13; error SCPAR.
+`ConfirmSheet`: title "Undo the join?" (intent; `family.undoJoin.*` in WORDS.md), body "Their letters leave the book and stay theirs. Their phone stops receiving this book.", plus `family.leave.cantTakeBack` if engineering confirms copies already on their phone stay (WORDS.md G10); safe default "Keep them in the book" (primary, solid), destructive quiet "Undo join". Records `member_join_undone` and a PRIV-R21 row. `.working`: one call. `.done`: the row leaves; toast "Join undone." `.error-SCPAR`: the existing `family.errors.not_allowed` ("That isn't possible from here.") with Close. `.error-network`, `.error-unknown` ("The undo did not finish. Nothing has changed. Try again."). Integration: NS-25-R4, R13; error SCPAR.
 
 ### D-S20 The other parent's phone after an undo
 
-One neutral `AppNote` line at the top of the Book for that book, shown once, then gone: "This book is no longer shared with you. Your own letters stay yours." (intent). No reason, no name of who undid it. P2's own letters stay in their own list as private letters. Gap G-D17: the card states the behaviour but not what P2 reads.
+One neutral `AppNote` line at the top of the Book for that book, shown once, then gone: "This book is no longer shared with you. Your letters stay yours, to read, export or delete." (`family.undone.note`, PROPOSED in WORDS.md). No reason, no name of who undid it. P2's own letters stay in their own list as private letters. Gap G-D17: the card states the behaviour but not what P2 reads.
 
 ### D-S21 Home: Not much today
 
-Built (`components/tonight/quiet-day-inline.tsx`): the quiet link in the capture cluster (`Button quiet`, 44 pt); on tap, the link fades and the line "A quiet day, kept." with "Undo" (44 pt) takes its place, in `subhead` `textMuted`, status colour rules for lit paper (atmosphere `onLitPaper.status` lower 30 percent). `.error-save`: the standard save error line in place; Home stays. AX5: the line and Undo wrap onto two lines, Undo stays visible and 44 pt. VoiceOver: hint "Marks today without writing anything."; the kept line is announced. Reduce Motion: the fade is Reduce Motion's fade. Integration: NS-07-C5-1, C5-5, C5-6, C5-13; BL-974; no flag; no pause (capture has no switch).
+Built (`components/tonight/quiet-day-inline.tsx`): the quiet link in the capture cluster (`Button quiet`, 44 pt); on tap, the link fades and the line "A quiet day, kept." with "Undo" (44 pt) takes its place, in `subhead` `textMuted`, status colour rules for lit paper (atmosphere `onLitPaper.status` lower 30 percent). `.error-save_failed`: "Today's mark did not save. Try again." (PROPOSED `notMuch.saveFailed`, WORDS.md G14) with Try again; Home stays. AX5: the line and Undo wrap onto two lines, Undo stays visible and 44 pt. VoiceOver: hint "Marks today without writing anything."; the kept line is announced. Reduce Motion: the fade is Reduce Motion's fade. Integration: NS-07-C5-1, C5-5, C5-6, C5-13; BL-974; no flag; no pause (capture has no switch).
 
 ### D-S22 Book: the quiet-day row
 
@@ -643,7 +656,7 @@ iOS draws the frame. The rows below are what our content makes it show. "App" is
 | Scheduled Summary on | any | collected into the summary at its time | in the summary |
 | Apple Intelligence notification summaries on | any | iOS may summarise our title and body in its own words; this is outside our control and the per-app toggle is the parent's (UNVERIFIED whether an app can opt out). See Card gaps G-D18 for typed-day words | same |
 
-Placeholder words are `WORDS.md`'s. Design rules for them: one short neutral sentence per category, no child name, no brand name (the app name already shows), no count, no "since", no "missed", and the same calm register as the bodies (NS-32 section 16).
+Placeholder words are `WORDS.md`'s: one line for every budgeted category, "Something for the book, whenever you have a minute.", and for plan "A reminder about your plan." Design rules for them: one short neutral sentence per category, no child name, no brand name (the app name already shows), no count, no "since", no "missed", and the same calm register as the bodies (NS-32 section 16).
 
 The prototype draws each row (lock screen frame, previews shown and hidden, named and neutral, words on and off).
 
@@ -702,25 +715,27 @@ No new token. Every colour, size and duration is an existing token (section 4).
 
 | Id | Card row | What is missing or conflicting | Proposed default |
 |---|---|---|---|
-| G-D01 | NS-05 section 4 step 7 | Does the preview close when Continue hands off, or after the share sheet completes? | Close when the share sheet is presented; the letter page is what remains |
+| G-D01 | NS-05 section 4 step 7 | Does the preview close when Continue hands off, or after the share sheet completes? | After the share sheet completes, whatever the outcome (MOTION.md G2); the preview stays under the system sheet meanwhile |
 | G-D02 | NS-05 section 5 "own private letter" | Spec 03 wanted a line saying the letter was private; the card shows the same preview | No extra line; the where-it-goes line is enough |
 | G-D03 | NS-05 section 5 `share_temp_write_failed` | Whether the sheet opens at once with words only or waits for a second Continue | Stay on the preview, show the line, turn the toggle off; the next Continue sends words only (the parent sees the change before anything leaves) |
 | G-D04 | NS-13 section 12 "two equal choices" vs the built three-answer card | Conflict | Two equal answers; "Change the time" is a control, not an answer |
 | G-D05 | NS-13-R31 | Does a second account on the same phone get its own two showings? | Yes: the cap is per account on this phone (settings are cleared at sign-out, R14) |
 | G-D06 | NS-13 section 15 "back-off invisible" vs D-S06's Next line | After day 35 there is no next reminder; the built line would say "Next:" with nothing or a far date | Hide the Next line when nothing of these classes is pending |
-| G-D07 | NS-13-R14 | Should the sign-out sheet (C-S03) say reminders stop? | No line: D1 fixes the sheet's words; reminders are a setting that simply clears |
+| G-D07 | NS-13-R14 | Should the sign-out sheet (C-S03) say reminders stop? | WORDS.md proposes `account.signOut.remindersLine` for area C. Design has no objection (it is true and calm); area C decides whether D1's sheet carries it |
 | G-D08 | NS-13-R13 | Where B's ask card can appear after B's first letter on A's phone | As G-D05 |
 | G-D09 | NS-18 section 4 step 2 "at the reminder time" | The time when reminders are off, or never set | The stored time, default 20:30 |
-| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | No: tomorrow onward, so a day is never added after its delivery time has passed |
+| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | Today only while today's reminder time is still ahead (reconciled with WORDS.md G6) |
 | G-D11 | NS-18 section 5 "reminders turned off" | What the parent sees when notifications are not allowed | Save works; one line says it will be sent once allowed |
 | G-D12 | NS-25 section 5 "invite expired" | The link page has no server and cannot know expiry | Expiry is shown in the app at peek (D-S15.error-expired) |
-| G-D13 | NS-18-R5 | How the 80-character limit is shown without a counter | A line only when the limit is reached |
+| G-D13 | NS-18-R5 | How the 80-character limit is shown without a counter | No counter; a paste over 80 is kept and Save shows one line (D-S08) |
 | G-D14 | NS-18 section 10 `typedDay.showWords` | One switch for all days, or per day? The happy path reads per day | Per day (each day's sheet has its own switch); the key becomes `typedDay.<date>.showWords` |
 | G-D15 | NS-18 section 4 step 3, frame section 4 | Is the typed-day line on Home a slip? | Not a slip: a line attached to the prompt, registered in `[FRAME-SLIP]` as "not a slip" like the Plus line |
 | G-D16 | NS-25 section 4 step 5 | Separate agreement step vs the built peek-then-join | Separate only when the family-share consent is required; else Join is the agreement |
 | G-D17 | NS-25-R4 | What P2 reads after an undo | One neutral line once (D-S20) |
 | G-D18 | NS-18-R3, D3 | iOS notification summaries may restate typed words in machine words on the lock screen | Keep words hidden by default; the switch's help says the words show as typed in the notification (no claim about summaries); counsel and CAIO to read |
-| G-D19 | NS-32 section 16 | The intent "A note for tonight" uses "note", which the glossary reserves; and one placeholder per category | `WORDS.md` writes one per category without "note" |
+| G-D19 | NS-32 section 16 | The intent "A note for tonight" uses "note", which the glossary reserves | One line for every budgeted category ("Something for the book, whenever you have a minute.") so a hidden preview never reveals a birthday or a private day; plan: "A reminder about your plan." (WORDS.md G1) |
+| G-D21 | NS-13-R6a, NS-32-R12 | The neutral birthday title "A birthday today" tells anyone at the lock screen it is the child's birthday (an L4 fact by NS-05-R6a's reasoning) | Raised by WORDS.md G3; CPrivO decides. Design draws the built title and the fallback "Something for the book today" |
+| G-D22 | NS-13-R9, NS-18-R1 | A tap while a letter is being made (Listen, Review, Write open) | Do not navigate away; the typed-day line waits on Home (MOTION.md G6); state D-S11.whileCapturing |
 | G-D20 | NS-13 section 4 step 3 "quiet, silent notification" | Whether "silent" means no sound | No sound set by us; iOS settings decide |
 
 ## 11. Engineering gaps
@@ -743,6 +758,56 @@ No new token. Every colour, size and duration is an existing token (section 4).
 | E-D14 | Settings, Reminders has no "Days to remember" section, and the D-S06 `.off-withDays` rule needs the section visible with the switch off | BL-982 |
 | E-D15 | The D-S20 line on P2's phone after an undo has no key or screen | BL-983 with BL-965 |
 
-## 12. Reconciliation with MOTION.md and WORDS.md
+## 12. Reconciliation with MOTION.md and WORDS.md (done 20 Nov, end of run)
 
-Filled at the end of the run (section 12 below is updated in place).
+Read `MOTION.md` (v1) and `WORDS.md` in this folder after both were written. Screen ids D-S01 to D-S24 match in all three files; no id was added or renumbered. State names: `WORDS.md` names are taken as canonical because they carry the string keys; this file and `PROTOTYPE.html` were renamed to them. `MOTION.md` keeps its motion ids (D-Mnn) and needs only the state renames below.
+
+### 12.1 State renames (canonical on the right)
+
+| Screen | DESIGN.md first draft | MOTION.md | Canonical |
+|---|---|---|---|
+| D-S01 | `.default` | | `.default` (WORDS `.present` is the same state) |
+| D-S02 | `.default` | `.picture-off` | `.pictureOff` |
+| D-S02 | `.noPicture` | | `.wordsOnly` |
+| D-S02 | | `.picture-on` | `.pictureOn` |
+| D-S02 | `.error-share_temp_write_failed` | `.picture-failed` | `.error-share_temp_write_failed` |
+| D-S02 | `.exact` | | `.versionExact` (and `.versionFixes`) |
+| D-S04 | `.picking` | `.pick-time` | `.pickTime` |
+| D-S04 | `.yes-allowed`, `.yes-denied`, `.no` | | `.after-yes`, `.after-yes-denied`, `.after-no`; new `.after-yes-failed` |
+| D-S06 | `.on-named`, `.on-appLock`, `.monthNoBirthDate`, `.scheduleFailed`, `.off-withDays`, `.typedDays`, `.typedDaysEmpty`, `.typedDaysFlagOff` | | `.named`, `.appLock`, `.noBirthDate`, `.error-schedule_failed`, `.typedDays-remindersOff`, `.typedDays-list`, `.typedDays-empty`, `.typedDays-flagOff` |
+| D-S08 | `.empty`, `.tooLong`, `.error-scheduleFailed` | `.error` | `.default`, `.error-typed_day_too_long`, `.error-schedule_failed`; new `.error-typed_day_empty`, `.error-typed_day_past` (MOTION `.error` covers all of them) |
+| D-S09 | `.default` | | `.default` (detail), `.confirm` |
+| D-S10 | `evening.shown`, `<class>.hidden-locked`, `.named`, `typedDay.words` | | `<class>`, `<class>-hidden` (WORDS `.hidden` for the set), `<class>-named`, `typedDay-words` |
+| D-S11 | `.evening`, `.monthAge` | `.home`, `.book`, `.home-typed-day` | `.home`, `.book`, `.typedDay` |
+| D-S12 | `.absent`, `.oneParent`, `.twoParents` | | `.store`, `.killswitch`, `.one-parent`, `.two-parents`; new `.consent-needed` |
+| D-S13 | `.loading`, `.paused-invites` | | `.working`, `.paused` |
+| D-S14 | `.otherDevice`, `.missingToken` | | `.other-device`, `.missing-token` |
+| D-S15 | `.signedout`, `.unknownInviter`, join-time errors | | `.signed-out`, `.no-signoff`; join-time errors moved to D-S16 |
+| D-S16 | `.loading`, `.error-unknown` | | `.joining`, `.error-join_failed`, `.needs-sync`, `.paused` |
+| D-S17 | `.waiting`, `.notYet`, `.ready` | `.waiting`, `.joined` | `.arriving`, `.slow`, `.joined` |
+| D-S18 | `.oneParent`, `.invited`, `.twoParents-undoable`, `.twoParents`, `.paused-invites` | | `.one-parent`, `.pending`, `.undo-open`, `.undo-closed`, `.paused`; new `.expired` |
+| D-S19 | `.loading`, `.offline` | | `.working`, `.error-network`; plus `.error-unknown`, `.error-SCPAR` |
+| D-S21 | `.error-save` | | `.error-save_failed` |
+| D-S22 | | | new `.menu`, `.removed` (built "Remove this mark") |
+| D-S24 | `.notificationsOff` | | `.denied` |
+
+`MOTION.md` to apply: D-S02 `.picture-off` to `.pictureOff`, `.picture-on` to `.pictureOn`, `.picture-failed` to `.error-share_temp_write_failed`; D-S04 `.pick-time` to `.pickTime`; D-S11 `.home-typed-day` to `.typedDay`; D-S17 `.waiting` to `.arriving`.
+
+### 12.2 Decisions taken in reconciliation
+
+1. **Reminder ask (WORDS G2, MOTION D-M30).** Two equal answers, "Yes, evenings" and "No reminders". The time is changed in place by a quiet "Change the time" control on the rhythm line, which opens the system picker; the answers stay; there is no "Set reminder" button. `WORDS.md` to add `onboarding.reminder.changeTimeButton` and mark `pickTimeButton` and `cta` not drawn. `MOTION.md` D-M30 to read: the picker opens in place under the rhythm line (cross-fade `swapMs`), the answers do not move.
+2. **Join sheet (WORDS G13).** D-S15 and D-S16 are one sheet. The sign-off field leaves the pre-agreement sheet and lives only in D-S17.joined, so the child is never named before agreement. `family.accept.signsAsLabelBeforeJoin` is not needed.
+3. **Link page expiry (WORDS `D-S14.expired`).** The web page is static and never sees the token server-side, so it cannot know an invite expired. `D-S14.expired` is not reachable; the expired line belongs to D-S15.error-expired (existing `family.errors.expired`). `site.invite.expiredBody` and the reuse of `onboarding.inviteExpired.title` on the page should be dropped from WORDS.md.
+4. **Share completion (MOTION G2).** The preview closes after the share sheet completes, in every outcome.
+5. **Typed day validation (WORDS G6).** Today allowed while its reminder time is ahead; Save never disabled; three local codes `typed_day_empty`, `typed_day_past`, `typed_day_too_long`.
+6. **Placeholders (WORDS G1, section D-S10.hidden).** One neutral line for every budgeted class; a separate line for plan. Keys `reminderCopy.placeholders.<class>` and `billing.reminders.placeholder`.
+7. **Brand placeholder.** `{app}` (WORDS.md) in docs and the prototype, rendered from `packages/brand`.
+8. **Ask position (MOTION G8).** Over the Book, after the saved moment lands (as built).
+9. **Over-300 ms items (MOTION section 6).** No design objection to the lamp, quiet-day dim and first-row wash. For the joined cover (item 5) design prefers keeping the built opening (it happens once per parent per book). The waiting bar (item 6) is the only loop; design accepts it while sync is genuinely running, still under Reduce Motion.
+10. **Glass (design system v2 brief, section 3).** Section 4a. Neither MOTION.md nor WORDS.md conflicts with it; MOTION's sheet and toast moments should take their curves from `docs/design/system/MOTION.md` once it exists. `docs/design/system/COMPONENTS.md`, `FOUNDATIONS.md` and `tokens.v2.json` did not exist at the end of this run, so this file still uses today's component and token names; Karma's reconciliation maps them.
+
+### 12.3 Open between the three files (for Karma)
+
+- WORDS.md `family.errors.not_allowed` is reused for SCPAR at D-S19; WORDS lists it for "any deep link to a removal after 72 hours". Same line; no conflict.
+- WORDS.md proposes `reminderCopy.typedDay.remindersOffNote` (G7) and design shows the section with reminders off (`.typedDays-remindersOff`); both depend on the CPO keeping NS-18's PROPOSED behaviour.
+- WORDS.md G15 (plan notices name Plus) is consistent with section 5.1 here.

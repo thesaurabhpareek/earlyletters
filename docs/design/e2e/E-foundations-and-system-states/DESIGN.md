@@ -67,18 +67,18 @@ The founder asked (20 Nov, relayed by Karma) for the journey from download to th
 2. -> E-S08 steps -> Home. No account, Me has no Account or Delete account rows (`capabilities.ts`), no Plus offer copy changes (alpha note only in alpha builds).
 
 ### J-E03 First run, sign-in cannot be reached (unhappy)
-1. E-S02 -> Begin the book -> E-S04 -> a failure (`network`, `rate_limited`, `email_wait`, `not_available`, `unknown`) or the 10 s gate timeout.
+1. E-S02 -> Sign in with Apple or Sign in with email -> a failure (`network`, `rate_limited`, `email_wait`, `not_available`, `unknown`) or the 10 s gate timeout.
 2. -> [E-S14.outage] "Sign-in cannot be reached right now." / "Try again in a moment." / Try again (primary) / Start on this phone (quiet, only when the gate offers it: age Yes, a failure, `LOCAL_START_FALLBACK`) with its note.
 3a. Try again -> E-S02 (the failure is set aside) -> sign in again.
-3b. Start on this phone -> E-S08 -> Home. Later, Me, Account, Sign in -> E-S04 -> E-S07 -> [E-S24.default] "Keep your letters in this account?" -> Keep in this account / Not my account.
+3b. Start on this phone -> E-S08 -> Home. Later, Me, Account, Sign in -> E-S04 (the later sign-in sheet) -> E-S07 -> [E-S24.default] "Keep your letters in this account?" -> Keep in this account / Not my account.
 4. If the account already has a book -> [E-S24.hasBook] the phone's book is added as a second book; nothing deleted.
 
 ### J-E04 First run, no connection
-1. E-S02 -> Begin the book while offline -> [E-S14.offline] "Sign-in needs a connection." / "Connect to the internet, then tap Try again." / Try again / Start on this phone (same rule).
+1. E-S02 -> a sign-in door while offline -> [E-S14.offline] "Sign-in needs a connection." / "Connect to the internet, then tap Try again." / Try again / Start on this phone (same rule).
 2. Connection returns -> announcement "You are back online." -> E-S02 by itself.
 
 ### J-E05 Returning parent on a new phone
-1. E-S03 -> E-S02 -> "I already have a book" -> E-S04 -> E-S06 -> E-S07 -> the account has a book -> E-S09 (alias; area C draws C-S10: Opening your book, slow, offline, no book here yet, wrong account) -> the Book with the C-S12 line. Never E-S08 (NS-10-R0).
+1. E-S03 -> E-S02.lastMethod -> the same door as last time -> E-S05, E-S06 or Apple -> E-S07 -> the account has a book -> E-S09 (alias; area C draws C-S10: Opening your book, slow, offline, no book here yet, wrong account) -> the Book with the C-S12 line. Never E-S08 (NS-10-R0).
 
 ### J-E06 Consent outstanding at relaunch (BL-922, NS-10-R0)
 1. A session in `needsConsent` with no local book -> relaunch -> within 10 s the consent sheet again, or C-S11's held screen with "Finish setting up" and "Try another way". Never E-S08. E's part: the router (section 5, E-S09).
@@ -193,31 +193,34 @@ Common state suffixes (any screen may carry them): `.default`, `.loading`, `.emp
 
 | Id | Screen | Built file | States |
 |---|---|---|---|
-| E-S01 | Launch and boot | `app/_layout.tsx`, `components/resilience/launch-recovery.tsx`, `plain-screen.tsx` | default, migrating (breathing after 350 ms), recovery, recovery-trying, recovery-stillClosed, recovery-exporting, recovery-exportNothing, recovery-exportFailed, ax5, vo, dark |
-| E-S02 | Welcome | `app/onboarding.tsx`, `components/onboarding/welcome-*.tsx` | default (store), serversOff, alpha (shows "I was invited" in a servers-on alpha only), restoring (blank up to 10 s, then default), error-provider, sessionExpired, ax5, vo, dark |
-| E-S03 | Age gate and stop | `components/gate/age-gate-screen.tsx` | default, reason-noAnswer, reason-noTick, agreeOnly (old install), stop, stop-after24h, ax5, vo, dark |
-| E-S04 | Sign in: choose a way | `app/(auth)/sign-in/index.tsx` | default, busy, error-cancelled (nothing), error-provider, error-not_available, error-network, ax5, vo, dark |
-| E-S05 | Sign in: email | `app/(auth)/sign-in/email.tsx` | default, sending, error-invalid_email, error-email_wait, offline, ax5, vo, dark |
-| E-S06 | Sign in: code and verify | `code.tsx`, `verify.tsx` | default, checking, verifying, error-wrong_code, error-code_paused, error-rate_limited, error-expired, refused-other_phone, refused-other_phone_spent, refused-already_signed_in, ax5, vo, dark |
-| E-S07 | Agreements and consent at sign-in | `app/(auth)/sign-in/consent.tsx` | settingUp, terms, declined (to C-S11), error-consent_unavailable, ax5, vo, dark |
-| E-S08 | First book steps | `app/onboarding.tsx` | name, name-waiting (Continue tapped empty), date, signsAs, promise, open, twins (add another), languages (multi-language builds only), ax5, vo, dark |
+| E-S01 | Launch and boot | `app/_layout.tsx`, `components/resilience/launch-recovery.tsx`, `plain-screen.tsx` | default, migrating (breathing after 350 ms), recovery (alias `error-launch`), recovery-trying, recovery-stillClosed, recovery-exporting (alias `loading-export`), recovery-exportNothing, recovery-exportFailed, ax5, vo, dark |
+| E-S02 | Welcome (account-first when servers on) | `app/onboarding.tsx`, `components/onboarding/welcome-sign-in.tsx`, `welcome-lockup.tsx` | default (store, two sign-in doors), lastMethod, serversOff (Begin the book), alpha, restoring (alias `loading`), error-provider, sessionExpired, ax5, vo, dark |
+| E-S03 | Age gate and stop | `components/gate/age-gate-screen.tsx` | default, reason-noAnswer, reason-noTick, agreeOnly (old install), stop, stop-after24h, region (HOLD, K-E10), ax5, vo, dark |
+| E-S04 | Sign-in sheet after first run (Me, claim path) | `app/(auth)/sign-in/index.tsx` | default, busy, error-cancelled (nothing), error-provider, error-not_available, error-network, ax5, vo, dark |
+| E-S05 | Sign in: email | `app/(auth)/sign-in/email.tsx` | default, sending, reason-empty (new, K-E11), error-invalid_email, error-email_wait, error-not_available, error-network, ax5, vo, dark |
+| E-S06 | Sign in: code and verify | `code.tsx`, `verify.tsx` | default, checking, reason-short (new, K-E11), help, noAddress, verifying, error-wrong_code, paused (code_paused), error-rate_limited, error-expired, refused-other_phone, refused-other_phone_spent, refused-already_signed_in, ax5, vo, dark |
+| E-S07 | Agreements and consent at sign-in | `app/(auth)/sign-in/consent.tsx` | loading (Setting up your account), default (Terms sheet), declined (to C-S11), error-consent_unavailable, claim (alias of E-S24), ax5, vo, dark |
+| E-S08 | First book steps | `app/onboarding.tsx` | name (optional on the account-first path), name-waiting (twins or servers-off path), date, dateWaiting, dateFuture, dueRange, signsAs, signsAsWaiting, promise, open, twins, languages (multi-language builds only), ax5, vo, dark |
 | E-S09 | First-run router (alias of C-S10, C-S11) | `lib/first-run/*.ts` | decision table only (section 5) |
-| E-S10 | Keep gate sheet | `components/child/plus-gate.tsx` | default, opening, offline, needsNewerIos, unavailable, lapsed, fromLetter, fromLetter-offline, synced (held for counsel C10), ax5, vo, dark |
+| E-S10 | Keep gate sheet | `components/child/plus-gate.tsx` | default, opening, offline, needsNewerIos, unavailable, lapsed, fromLetter, fromLetter-offline, error-codeFailed (built `codeFailed`), hold (no sheet: Plus not known, E-ST26), synced (held for counsel C10), ax5, vo, dark |
 | E-S11 | Plan in Me | `app/settings/plus.tsx` | free (never had Plus), on, trial, renews, ends, ended, grace, retry, shared, alpha, restoring, restored, restoreNone, restoreFailed, notificationsOff, ax5, vo, dark |
 | E-S12 | Plus confirmed | `app/plus/confirmed.tsx` | default, withAsk (notifications never asked), ax5, vo, dark |
-| E-S13 | Something broke | `components/resilience/global-fault-screen.tsx`, root error boundary | boundary, global, ax5, vo, dark |
+| E-S13 | Something broke | `components/resilience/global-fault-screen.tsx`, root error boundary | boundary, noBook (fresh install: no safety sentence), global, ax5, vo, dark |
 | E-S14 | Sign-in outage and offline (first run) | `components/onboarding/outage-screen.tsx` | outage, outage-withLocal, offline, offline-withLocal, backOnline (announcement), ax5, vo, dark |
 | E-S15 | SystemLine in place (new component) | none | info, waiting, paused, offline, action, ax5, vo, dark |
 | E-S16 | App update line in Me | none (gap) | line, absent, ax5, dark |
 | E-S17 | Low-storage rules (rendered by A-S04, A-S05, C-S04, C-S18) | `lib/capture/free-space.ts` | under1gb, under50mb, under20mbMidTake, exportShort |
 | E-S18 | Second account on one phone | `lib/auth/account-claim.logic.ts`, `lib/first-run/account-books*.ts` | signedOutA, signedInB-noBook, signedInB-arriving, backToA |
 | E-S19 | Interruption and recovery | `lib/resilience/recover-to-tonight.ts`, capture sweep | call, background, killedMidTake, killedOnConsent, killedMidPurchase |
-| E-S20 | Not found | `app/+not-found.tsx` | default, ax5, dark |
+| E-S20 | Not found | `app/+not-found.tsx` | default, noBook (fresh install), ax5, dark |
 | E-S21 | Appearance | `app/settings/appearance.tsx` | system, light, dark, noLetter |
 | E-S22 | App lock cover | `components/app-lock` | locked, failed, ax5, dark |
 | E-S23 | Accessibility walk and speed sheet | `docs/qa` (BL-929, BL-948) | matrix (section 9) |
 | E-S24 | Claim screen | `lib/auth/account-claim.logic.ts` (screen in sign-in stack) | default, noEmail, hasBook, waiting, ax5, vo, dark |
 | E-S25 | Plan reminder note in the app | `lib/billing/plan-notice.tsx` | trial, renews, yearly, ax5, dark |
+| E-S27 | App Store page and install (Apple's; ours only as claims) | none | default, installing, installed |
+| E-S28 | Permission asks map (when each system permission is asked) | `permissions.en.ts`, `app.config.ts` | matrix (section 5) |
+| E-S29 | Microphone prompt (iOS), after area A's primer at the first Speak | system | prompt, allowed, denied (to A-S04.blocked) |
 | E-S26 | Home Plus line (a rule drawn on A-S01) | `app/(tabs)/index.tsx` | off (absent), on (allowance used, Plus off or lapsed), alpha (absent) |
 
 ## 5. Screens in detail
@@ -362,6 +365,21 @@ Not on Home: a storage card on Home would be an unregistered slip and fail `[FRA
 ### E-S26 Home Plus line
 - On A-S01, once the free letters are used and Plus is off or lapsed (store build): one standing line above Speak and Type, `billingCopy.tonight.plusLine`, `footnote textMuted`, no button, no count. Not a slip; never replaces a slip; absent in alpha builds.
 
+### E-S27 App Store page and install
+- Apple's surface. Ours: the listing words (`storeListing.*`, claims rows), screenshots drawn from the Asha book only (D13), the privacy label as shipped (G5), no claim the build does not back (NS-17-R4: only shipped languages named). Install needs no account.
+
+### E-S28 Permission asks map (only when needed)
+| Permission | Asked when | Never | Declined |
+|---|---|---|---|
+| Microphone | the first Speak, after area A's primer (E-S29) | in first run, at launch, from a doorway (NS-35-R7) | A-S04.blocked: Type instead, Open Settings; typing works |
+| Notifications | area D's reminder ask after a kept letter; the Plus confirmed "Remind me" ask (E-S12.withAsk) only while iOS never asked | in first run; twice by us (NS-13 door lines) | no reminders; Me explains in one sentence; plan dates stay on Plan (NS-32-R4) |
+| Photos | never: PHPicker needs no permission (council round 2, section 6) | a library permission prompt | n/a |
+| Face ID | turning on App lock | at launch | the lock stays off |
+| Speech recognition, location, contacts, tracking | never (no usage string; G11-3 guard) | | |
+
+### E-S29 Microphone prompt
+- iOS's alert with `permissions.microphone` ("{app} uses the microphone to record the letters you speak to your child."). Glass is the system's. Allow -> Listen Ready; Don't Allow -> A-S04.blocked.
+
 ## 6. Cross-area state catalogue
 
 Render classes: R0 silent (nothing shown); R1 the surface is absent (hidden, no hole); R2 SystemLine in place; R3 toast; R4 StateScreen or InlineState; R5 sheet; R6 PlainScreen. "Parent can" is the way forward that must exist.
@@ -471,6 +489,36 @@ No global banner, toast-for-errors or modal alert is proposed for system states.
 
 Token gaps (TDD 09) seen while designing: `destructive` still equals `recording` (TDD 09 Q1); no semantic token for a neutral system surface, so SystemLine uses `surface` and `textMuted` (adequate: 5.11:1 light, 8.01:1 dark). No new token proposed now.
 
+## 7a. Material policy and the system components (design system v2, `docs/design/system/`)
+
+The coordinator relayed on 20 Nov that design system v2 adopts Apple's Liquid Glass under a decided policy (`system/BRIEF.md` section 3) and that the shared catalogue is now `system/COMPONENTS.md`. Area E keeps the state catalogue and renders each state with the system's components. `tokens.v2.json` was not on disk at this pass and `FOUNDATIONS.md` arrived at its end; names below are from `system/COMPONENTS.md` and `system/MOTION.md`, and token names stay the v1 names until `tokens.v2.json` lands.
+
+How my proposals map to the catalogue (the catalogue's names win):
+| This file | System component | Note |
+|---|---|---|
+| SystemLine (section 7, item 1) | F2 Banner (SystemLine) | adopted as is: content layer, `surface` fill, never glass, one per screen with the catalogue's priority order. One difference to settle: the catalogue places it under the screen header; for a line about one action (Restore, Send link, an invite) E places it under that control. Proposal: header placement for screen-wide states (offline on a screen that needs the network, paused, update available); control placement for action results |
+| StateScreen `note` slot and heading ref (item 2) | C8 State screen | adopted (the catalogue adds `note`) |
+| HeldLetterCard (item 3) | C1 Letter card (compact) inside F4 | withdrawn as a separate component; F4 uses C1 compact |
+| Keep gate sheet | F4 | glass regular (system sheet); buttons inside are filled or plain |
+| Sign-in sheet E-S04, plan note E-S25 | N7 Sheet | glass regular |
+| Undo and result toasts | F1 Undo toast | glass regular; T4 window |
+| Crash, launch recovery | C8's provider-free twin PlainScreen | content |
+
+Layer per E screen (at most three glass surfaces; never glass on glass):
+| Screen | Glass | Content (never glass) |
+|---|---|---|
+| E-S01, E-S03, E-S02, E-S08, E-S13, E-S14, E-S20, E-S22, E-S24 | none (navigation buttons only where a native header exists) | the whole screen: paper, lamp, StateScreen |
+| E-S04, E-S05, E-S06, E-S07 (sheets) | the sheet (1) | fields, lines; buttons filled or plain inside the sheet |
+| E-S10 | the sheet (1) over Review | held card (C1), body, buttons filled or plain |
+| E-S11, E-S16, E-S21 (Me lists) | navigation bar or tab bar (1), toast (2) | grouped lists, the banner |
+| E-S25 | half sheet (1) over Home, with tab bar (2) | text |
+| A-S01 with E-S26 | tab bar (1), capture cluster (2), toast or sheet (3) | the Plus line is content |
+
+Material tokens (from `system/FOUNDATIONS.md`, which landed at the end of this pass): glass surfaces use `material.glass.regular`; the fallback is `material.solid`; no E screen uses `material.glass.clear` or `material.glass.dim` (no E control floats over a picture); custom `GlassView`s pin `colorScheme` to the app's scheme (FOUNDATIONS line 58). State screens use the large Light glyph at 44 pt, hierarchical, `textMuted` (FOUNDATIONS icon table).
+
+Fallbacks every E state must show (the prototype has toggles for both): Reduce Transparency, iOS before 26 or glass unavailable: every glass surface becomes the solid twin (`surfaceRaised` fill, 1 pt `line` hairline), same shape and size. Increase Contrast: hairlines become `controlBorder`, muted text steps to `highContrast` values, glass gains a visible edge. Never animate glass by opacity (system MOTION; `expo-glass-effect`).
+
+
 ## 8. The "coming soon" audit (brief item)
 
 1. `flags.familyTeaser` defaults to `coming_soon` (`packages/api/src/remote-config.ts:88, 90, 122`). Read in code on 20 Nov: no screen or hook reads it (only a comment in `lib/capabilities.ts:24` and `apps/mobile/test/capabilities.test.ts:411`). So no screen shows it today. The family page (`app/family.tsx`), `/invite`, `/invite/new` and child settings all send the parent Home or draw no row when sharing is not in the build. Designed absent state (E-ST14): no tab, no row, no caption, no chevron, no screen, no line, in every value of the flag. Engineering gap G-E01: change the default to `quiet` or retire the key in the next schema version, so a future reader cannot draw a teaser by default.
@@ -512,6 +560,13 @@ Speed (NS-34) design markers: the screen change begins within 100 ms of the tap;
 | K-E06 | E-S13 (`errors.crash.body`) | "Your letters and recordings are safe on this phone." is a safety claim on a failure screen; no claims row checked it for the case where the database is what failed | keep for the boundary (React) case; the launch recovery already avoids the claim; CCO checks the claims row |
 | K-E07 | `killSwitches.sync` (NS-10, NS-06, NS-09) | no card says what Me, Account, Sync shows while sync is paused | a paused value "Paused for now" (PROPOSED), not "Waiting for a connection", which would blame the network |
 | K-E08 | NS-33 section 3 | E screens (first run, gate sheet) are named only by "First use" and "Plan lapsed" scenario rows, not in R4 and R7's screen lists | include E-S02, E-S03, E-S08, E-S10 in the AX5 device rows (BL-948) |
+| K-E10 | NS-38 to NS-45 (not yet on disk); C44 | an "age and region risk check" is asked for; the app has an age gate (18+) and no region check; store availability is per storefront | no in-app region check; if counsel requires one, a stop line in the gate's room (E-S03.region, HOLD), nothing stored, no reason asked, no retry except after travel; the age stop keeps its 24 hour retry |
+| K-E11 | F02 (cited) | Send link and the code's Continue are disabled with no reason in words, against the house rule "Continue is never disabled" used on the age gate | the button stays tappable; a tap says why (E-S05.reason-empty, E-S06.reason-short; words PROPOSED in WORDS.md) |
+| K-E12 | F01 (cited), account-first path | the name is optional on the account-first path but required on the servers-off path (`nameRequired`); no card says which rule a store build follows | optional everywhere; the book cover reads "Letters to your child" until a name is added (PROPOSED) |
+| K-E13 | NS-13 door lines; E-S12 | two notification asks exist (the reminder ask and Plus confirmed's "Remind me"); "Never: a second ask from us" | whichever comes first asks iOS; the other then shows no ask, only the result (allowed: nothing; denied: the Plan or Reminders line) |
+| K-E14 | none | what information first run collects, in one place, for the founder's "information collected and verification" | the table in E-S28 plus: age boolean and agreement (phone), Apple identifier or email (server, verified by Apple or the email link or code), acceptance rows (server), child name optional, date, signs-as (phone, then synced). Nothing else; no phone number, no password, no birth year of the parent |
+| K-E15 | remote config comment (`minSupportedVersion`: "never blocks local use") vs system COMPONENTS F2 "update required (becomes C8)" and MOTION E-M56 "block over everything" | a blocking update screen would stop recording and reading, which LEGAL-REQ-040 forbids a remote value to do | no blocking update screen; E-S16 is a line in Me; a feature that truly needs a newer app hides itself (absent rule) and its pack row says "Needs the latest version of the app" |
+| K-E16 | NS-10 second-account row vs MOTION E-M57 "held block with Sign out only" | NS-10 says the app offers B their own book or a new one | no block: B lands on C-S10 or "No book here yet" with Start a book (E-S18) |
 | K-E09 | C25, C44 cited rows | first run and Plus rows are cited to F01, F14 which this pack did not re-lock; the brief asks for "every locked-pack change" | E treats only NS-10, NS-17-R1, NS-33, NS-35, D1, T2 as the changes; any other F01 or F14 change needs a card |
 
 ## 11. Engineering gaps (with the backlog row each belongs to)
@@ -532,6 +587,35 @@ Speed (NS-34) design markers: the screen change begins within 100 ms of the tap;
 | G-E12 | Account Sync row has no value for a paused sync | BL-978 |
 | G-E13 | the Plus gate decision must stay local to meet the 900 ms hand-off; confirm StoreKit status is cached and the `hold` path never waits | BL-929 sheet row; mobile |
 
-## 12. Reconciliation with MOTION.md and WORDS.md
+## 12. Reconciliation with MOTION.md and WORDS.md (done 20 Nov)
 
-Pending: this section is completed after reading the motion and content leads' files (see the end of this file once updated).
+Naming rule: in the docs a state is `E-Snn.<state>` with `error-<code>` and `reason-<what>` hyphenated as WORDS.md writes them; the prototype's state switcher uses the same names in camel case (`errorWrongCode` is `error-wrong_code`, `reasonEmpty` is `reason-empty`).
+
+Aliases adopted (both names point at one state; the first is canonical):
+| Canonical (this file) | Also used in | As |
+|---|---|---|
+| E-S01.recovery | MOTION, WORDS | `E-S01.error-launch` |
+| E-S01.recovery-exporting | WORDS | `E-S01.loading-export` |
+| E-S02.restoring | WORDS | `E-S02.loading` |
+| E-S06.paused | MOTION | `E-S06.error-code` covers `error-wrong_code` and `error-expired` (one motion for both) |
+| E-S07.loading, E-S07.default | earlier draft | `settingUp`, `terms` (retired) |
+| E-S24 | WORDS | `E-S07.claim` |
+| E-S10.hold | MOTION | E-ST26 (Plus not known: no sheet) |
+| E-S15 kinds `offline`, `paused`, `update-available` | MOTION, WORDS | system F2 Banner variants `offline`, `paused`, `update available` |
+| E-S17.under1gb, under50mb | MOTION | `E-S17.low-1gb`, `low-50mb` |
+| E-S18 (a rule, no screen) | MOTION | `E-S18.second-account` |
+| E-S16.line | MOTION | `E-S16.default` |
+| E-S22.locked | MOTION | `E-S22.default` |
+
+Taken from WORDS.md (its reconciliation notes): "Sign in with email" (the glossary bans "Continue with email"); the servers-on Welcome is the account-first screen as built, "Begin the book" is the servers-off Welcome; the name is optional on the account-first path; new states E-S05.reason-empty, E-S06.reason-short, E-S06.help, E-S13.noBook, E-S20.noBook, E-S03.region (HOLD), E-S10.error-codeFailed; the update line's keys `system.update.line` and `system.update.storeButton`; E-S22.failed has no built line (the system sheet speaks), so the prototype's line is marked PROPOSED.
+
+Taken from MOTION.md: the banner appears only after its condition holds for `systemLine.showAfterMs` (proposed 2,000 ms, offline only) so a radio blink shows nothing; E-S09 and C-S10 share E-M20 to E-M23.
+
+Disagreements returned to the motion lead (design wins per MOTION.md section 11, and each rests on a card):
+1. `E-S14.killswitch` does not exist: with `serverFeaturesEnabled()` off the phone shows its local book or the servers-off Welcome, never a problem screen (NS-10-R8). E-M52 drops that state.
+2. E-M56 (update required, "block over everything") is withdrawn: K-E15.
+3. E-M57 (second account, "held block with Sign out only") is withdrawn: K-E16; B's arrival uses C-S10's motion.
+
+Returned to the system components lead: F2's `update required (becomes C8)` variant conflicts with K-E15; C8's `killSwitch` variant is used only when a paused feature's route is reached directly (an old link), otherwise the absent rule applies.
+
+Still open after this pass: `tokens.v2.json` was not on disk (FOUNDATIONS.md was read only for material names); NS-38 to NS-45 were not on disk. When they land, re-key J-E01 steps to the NS ids and replace v1 token names.

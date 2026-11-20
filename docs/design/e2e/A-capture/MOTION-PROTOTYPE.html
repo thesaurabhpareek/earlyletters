@@ -91,8 +91,8 @@ ol.log li.a11y { color: var(--focus); }
 .disc { position: relative; width: 120px; height: 120px; border-radius: 50%; background: var(--recording); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 0; }
 .disc .fill { position: absolute; inset: 0; border-radius: 50%; background: var(--recording); }
 .disc .outline { position: absolute; inset: 0; border-radius: 50%; background: var(--raised); border: 2px solid var(--recording); opacity: 0; }
-.mic { position: relative; width: 22px; height: 34px; border-radius: 11px; border: 4px solid var(--onAccent); }
-.disc.paused .mic { border-color: var(--recording); }
+.mic { position: relative; color: var(--onAccent); }
+.disc.paused .mic { color: var(--recording); }
 .clock { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; font-size: 17px; min-height: 24px; opacity: 0; }
 .line { min-height: 22px; font-size: 15px; text-align: center; }
 .review .words { font: 17px/1.5 Georgia, serif; }
@@ -341,7 +341,7 @@ const listenHTML = (o = {}) => `
     <div class="lhead mv" data-el="lhead"><div class="h">To Asha</div><div class="aud">Only you can read this until you share it.</div>${o.prompt === false ? '' : '<div class="pr">What made Asha laugh today?</div>'}</div>
     <div class="stagewrap">
       <div class="aura"><div class="glow mv" data-el="glow"></div><div class="ring" data-el="ring"></div>
-        <button class="disc mv" data-el="disc" aria-label="Start recording"><span class="outline" data-el="outline"></span><span class="mic"></span></button></div>
+        <button class="disc mv" data-el="disc" aria-label="Start recording"><span class="outline" data-el="outline"></span><svg class="mic" width="44" height="44" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button></div>
       <div class="clock" data-el="clock">0:00</div>
       <div class="line" data-el="line" style="color:var(--muted)">Tap the red circle and talk.</div>
     </div>

@@ -33,7 +33,7 @@ Apple's model, which we adopt without change (A2, A6, BRIEF 1): a content layer 
 | Layer | What lives there | Material | Our tokens |
 |---|---|---|---|
 | Content | Letters, Book pages, the letter page body, Read together pages, lists of letters, cards in the flow, settings lists (system grouped list), empty states, errors | Paper (solid tokens). Standard materials only where something must show through. Never Liquid Glass | `bg`, `surface`, `surfaceRaised`, `accentSoft`, `line`, the lamp (`tokens.atmosphere`) |
-| Functional | Tab bar (native tabs), navigation and toolbar buttons, the Home capture cluster, sheets and the Keep gate sheet, menus and popovers, the Find bar, the Book header controls, the undo toast, the recording control while recording | Liquid Glass, regular. Clear with a 35 percent dim only over a picture | `glass.*`, `glassLabel`, `glassLabelSecondary`, `glassFallback`, `mediaDim`, `onMedia` |
+| Functional | Tab bar (native tabs), navigation and toolbar buttons, the Home capture cluster, sheets and the Keep gate sheet, menus and popovers, the Find bar, the Book header controls, the undo toast, the recording control while recording | Liquid Glass, regular. Clear with a 35 percent dim only over a picture | `material.glass.*`, `material.solid`, `glassLabel`, `glassLabelSecondary`, `glassFallback`, `glassBorder`, `glassDim`, `onMedia` |
 
 Rules that follow from the policy (BRIEF 3), restated here so the tokens carry them:
 1. One `GlassContainer` per cluster; glass never inside glass; at most three glass surfaces visible on any screen. The tab bar counts as one.
@@ -48,8 +48,10 @@ Rules that follow from the policy (BRIEF 3), restated here so the tokens carry t
 | Token | `GlassView` setting | Where (BRIEF 3) | Labels on it |
 |---|---|---|---|
 | `material.glass.regular` | `glassEffectStyle="regular"`, no tint, `isInteractive` on pressable surfaces only | Tab bar (system), toolbar and navigation buttons (system), capture cluster, Find bar, Book header controls, undo toast, recording control while recording, menus and popovers (system) | `glassLabel`, `glassLabelSecondary`; symbols in `glassLabel` |
-| `material.glass.prominent` | `regular` with `tintColor = accent` (the scheme's value) | The one primary action on a screen that sits on glass: the capture cluster on Home, Done in a sheet toolbar (system prominent glass button) | `onAccent` |
-| `material.glass.clear` | `glassEffectStyle="clear"` over a `mediaDim` layer the size of the control | Controls over a picture: the photo on Review and on the letter page, the Photos lens viewer | `onMedia`, icon only (see 2.4) |
+| `material.glass.tint.accent` (prominent) | `regular` with `tintColor = accent` (the scheme's value) | The one primary action on a screen that sits on glass: the capture cluster on Home, Keep or Done in a sheet toolbar (system prominent glass button) | `onAccent` |
+| `material.glass.clear` | `glassEffectStyle="clear"` over a `material.glass.dim` layer (colour `glassDim`, black at 35 percent) local to the controls, never over the whole picture | Controls over a picture: the photo on Review and on the letter page, the Photos lens viewer | `onMedia`, icon only (see 2.4) |
+| `material.glass.mergeDistance` | `GlassContainer spacing` = 12 pt, the same as the gap between capsules in a cluster (`layout.controlGap`), so capsules rest apart and morph when they move closer. Tune on device | Every cluster | |
+| `material.solid` | Not glass: `glassFallback` fill with a 1 pt `glassBorder` edge | Every glass surface under Reduce Transparency, below iOS 26, on Android and on web (2.3) | `glassLabel`, `glassLabelSecondary` |
 
 Implementation rules (Expo SDK 57, BRIEF 1):
 - Render glass only when `isLiquidGlassAvailable()` is true and `AccessibilityInfo.isReduceTransparencyEnabled()` is false. `isLiquidGlassAvailable()` ignores accessibility settings, so both checks are needed, and the second is a live subscription (`reduceTransparencyChanged`).
@@ -63,10 +65,10 @@ Apple keeps four standard materials on iOS for the content layer: ultra-thin, th
 
 | Token | iOS (`expo-blur` `BlurView` tint, UNVERIFIED names) | Allowed use | Solid fallback (light / dark) |
 |---|---|---|---|
-| `material.ultraThin` | `systemUltraThinMaterial` | None by default. Apple: avoid the lowest label vibrancy on thin and ultra-thin (A2); our muted text would be at risk | `bg` |
-| `material.thin` | `systemThinMaterial` | A sticky in-content header over scrolling letters, if a screen keeps one (the Book's month header while its section scrolls) | `bg` |
-| `material.regular` | `systemMaterial` | A panel inside the content layer over mixed content, such as a caption plate under the Photos lens image (never over a face, never over the words of a letter) | `surface` |
-| `material.thick` | `systemThickMaterial` | Fine text over a busy picture where the text must win (Apple: thicker gives better contrast for fine features, A2). Expected to be rare | `surfaceRaised` |
+| `material.content.ultraThin` | `systemUltraThinMaterial` | None by default. Apple: avoid the lowest label vibrancy on thin and ultra-thin (A2); our muted text would be at risk | `bg` |
+| `material.content.thin` | `systemThinMaterial` | A sticky in-content header over scrolling letters, if a screen keeps one (the Book's month header while its section scrolls); the drawn notification preview on Reminders | `bg` |
+| `material.content.regular` | `systemMaterial` | A panel inside the content layer over mixed content, such as a caption plate under the Photos lens image (never over a face, never over the words of a letter) | `surface` |
+| `material.content.thick` | `systemThickMaterial` | Fine text over a busy picture where the text must win (Apple: thicker gives better contrast for fine features, A2). Expected to be rare | `surfaceRaised` |
 
 Text on a standard material uses `text` and the Increase Contrast muted value (`glassLabelSecondary`) for secondary text, never `textMuted` at default strength: the material's colour is set by the system and can change with settings (A2: choose by meaning, not by the colour it imparts).
 
@@ -76,7 +78,7 @@ The deployment target is iOS 17.0, so iOS 17 to 25 users always get the fallback
 
 | Case | Surface | Edge | Labels |
 |---|---|---|---|
-| Glass regular, fallback | `glassFallback` (light #FFFFFF, dark #282421) | 0.5 pt hairline in `line` (`stroke.hairline`); under Increase Contrast 1 pt in `line` HC | `glassLabel`, `glassLabelSecondary` |
+| Glass regular, fallback (`material.solid`) | `glassFallback` (light #FFFFFF, dark #282421) | 1 pt `glassBorder` (= `line`; under Increase Contrast its HC value, #6B645B light, #B3AA9E dark) | `glassLabel`, `glassLabelSecondary` |
 | Glass prominent, fallback | `accent`, solid | none | `onAccent` (5.82 light, 8.11 dark) |
 | Glass clear over a photo, fallback | `mediaSolid` (#2B2722 at 100 percent, both schemes) disc or capsule | none | `onMedia` #FFFFFF, 14.83:1 |
 | Standard materials | The solid in 2.2 | `line` hairline where it meets content of the same colour | Normal text tokens |
@@ -98,7 +100,7 @@ Apple: clear glass only over visually rich backgrounds, with about a 35 percent 
 
 White passes 3:1 when the picture under the control is no lighter than grey #E4E4E4, and 4.5:1 when no lighter than #B6B6B6. So:
 1. Controls on clear glass are symbol-only (a non-text 3:1 target), with the symbol at Semibold (section 8), and their accessibility label carries the words.
-2. Text never sits on clear glass. A caption, a time or a name over a picture uses the solid `mediaSolid` capsule or `material.thick`.
+2. Text never sits on clear glass. A caption, a time or a name over a picture uses the solid `mediaSolid` capsule or `material.content.thick`.
 3. The worst case (a blown-out white sky under the control) fails at 35 percent. See open question Q1: it is a measurement for device, not a reason to change the policy here.
 4. Increase Contrast or Reduce Transparency: clear-glass controls become the `mediaSolid` disc (14.83:1).
 
@@ -153,7 +155,8 @@ Names are kept; new roles are marked new.
 | `glassLabel` (new) | Primary label on glass | Text and symbols on regular glass | |
 | `glassLabelSecondary` (new) | Secondary label on glass or a standard material | The quieter line on a glass control (the toast's second line, a hint in the Find bar); secondary text on a standard material | `textMuted` in its place |
 | `glassFallback` (new) | Solid chrome | Every glass surface under Reduce Transparency and below iOS 26 | Content cards |
-| `mediaDim` (new) | Dim under clear glass | #000000 at 35 percent, the size of the control | Full-screen over a photo |
+| `glassDim` (new; `material.glass.dim`) | Dim under clear glass | #000000 at 35 percent, local to the controls | Full-screen over a photo |
+| `glassBorder` (new) | Edge of `material.solid` | 1 pt; equals `line`, and its HC value under Increase Contrast | A content card edge (that is `line`) |
 | `mediaSolid` (new) | Solid control over a picture | Fallback for clear glass; caption plates | |
 | `onMedia` (new) | Label over a picture | Symbols on clear glass, text on `mediaSolid` | Text on clear glass |
 
@@ -257,7 +260,7 @@ Kept from DESIGN_LANGUAGE 2: colour is never the only signal; `recording` means 
 New:
 1. Status text (`recording`, `destructive`, `success`, `caution`) sits on `bg`, `surfaceRaised` or `glassFallback`, never on `accentSoft`.
 2. No colour from the palette is ever placed on glass as a fill except `accent` as the prominent tint (one per screen).
-3. Photos in dark mode keep the 92 percent brightness rule (DESIGN_LANGUAGE 9); `mediaDim` is applied after it.
+3. Photos in dark mode keep the 92 percent brightness rule (DESIGN_LANGUAGE 9); `glassDim` is applied after it.
 
 ## 4. Typography
 
@@ -267,7 +270,7 @@ New:
 |---|---|---|---|
 | Mukta Regular / Medium / SemiBold | 400 / 500 / 600 | UI sans, Latin and Devanagari | `tnum`, `onum` (lining by default); no `lnum` |
 | Literata Regular (opsz 16) | 400 | Letters, prompts, the name field | `lnum`, `onum`, `pnum`, `tnum`, `smcp`, `c2sc` |
-| Literata Medium (opsz 30) | 500 | Display and titles, the month numeral | as Regular |
+| Literata Medium (opsz 30) | 500 | Display and titles | as Regular |
 | Literata Italic (opsz 16) | 400 | Signatures | as Regular |
 | Tiro Devanagari Hindi Regular | 400 | Devanagari runs in letters | `lnum`; no `tnum` |
 
@@ -278,7 +281,7 @@ System chrome keeps the system font: native tab labels, system navigation bar bu
 ### 4.2 Roles
 
 - Sans (Mukta) is the voice of the app: buttons, labels, metadata, settings, errors.
-- Serif (Literata, Tiro for Devanagari) is the voice of the family and the book: letters, signatures, prompts, the child's name, titles, the month numeral. Never on a button or a settings row (DESIGN_LANGUAGE principle 3).
+- Serif (Literata, Tiro for Devanagari) is the voice of the family and the book: letters, signatures, prompts, the child's name, titles. Never on a button or a settings row (DESIGN_LANGUAGE principle 3).
 
 ### 4.3 The type scale mapped to Dynamic Type, up to AX5
 
@@ -307,7 +310,9 @@ Sizes in pt (size at Large / line), then size at each setting. The last column i
 | `nameField` | 22/28 | Title 2 | none | 24 | 28 | 34 | 44 | 56 | 79 |
 | `prompt` | 24/32 | Title 3 | none | 26 | 31 | 37 | 52 | 66 | 86 |
 | `promptHero` | 28/36 | Title 1 | 1.8 | 30 | 34 | 38 | 48 | 50 | 50 |
-| `numeral` | 64/96 | Large Title | 1.4 | 68 | 75 | 83 | 90 | 90 | 90 |
+| `numeral` (retired) | 64/96 | Large Title | 1.4 | 68 | 75 | 83 | 90 | 90 | 90 |
+
+`numeral` is retired with AUDIT 2.3: no screen has used it since PR #674 (the month opener no longer shows a bare numeral, `components/book/month-opener.tsx` header). Its `fontMetrics` entry and `Text trim="figures"` go with it unless a v2 screen asks for a numeral again; the row stays above only as the record of how it would scale.
 
 Apple reference (A1, size at Large and AX5): Large Title 34 to 60, Title 1 28 to 58, Title 2 22 to 56, Title 3 20 to 55, Headline and Body 17 to 53, Callout 16 to 51, Subheadline 15 to 49, Footnote 13 to 44, Caption 1 12 to 43.
 
@@ -321,25 +326,25 @@ Rules:
 
 ### 4.4 Bold Text
 
-iOS Bold Text asks every face one step heavier. Apple's emphasized weights for its own styles are Bold or Semibold (A1). With the files we ship:
+iOS Bold Text asks for heavier text. Apple's emphasized weights for its own styles are Semibold for Body, Callout, Subheadline, Footnote and Captions, and Bold for the titles (A1). Bundled faces do not get heavier by themselves (AUDIT 1.6), and the house rule is never to let iOS synthesise a weight, so `Text` swaps the face. Two stages:
 
-| Base face | Bold Text face today | Gap | v2 proposal |
+| Base face | Stage 1: files we ship today (one step, keeps hierarchy) | Gap in stage 1 | Stage 2: after DS2-05 adds four cuts |
 |---|---|---|---|
-| Mukta Regular 400 | Mukta SemiBold 600 | none | Keep |
-| Mukta Medium 500 | Mukta SemiBold 600 | none | Keep |
-| Mukta SemiBold 600 | Mukta SemiBold 600 (no change) | Headline does not get heavier | Add Mukta Bold 700 (OFL, same family on Google Fonts, about 0.27 MB raw before subsetting) |
-| Literata Regular 400 (opsz 16) | Literata Medium 500 (opsz 30) | Wrong optical size for reading text | Cut Literata SemiBold 600 at opsz 16 from the variable source in `build_fonts.py` |
-| Literata Medium 500 (opsz 30) | Literata Medium 500 (no change) | Titles do not get heavier | Cut Literata Bold 700 at opsz 30 |
-| Literata Italic 400 | Literata Italic 400 (no change) | Signatures do not get heavier | Cut Literata SemiBold Italic 600 at opsz 16 |
-| Tiro Devanagari Hindi 400 | Tiro Regular (no change) | No heavier Tiro exists | Keep Tiro. Q3: whether Devanagari letter runs switch to a heavier OFL Devanagari serif under Bold Text, or stay Tiro. A changed face inside one letter is a design call, not a token call |
+| Mukta Regular 400 (body, callout, footnote) | Mukta Medium 500 | A small step | Mukta SemiBold 600 (Apple's emphasized weight for these styles) |
+| Mukta Medium 500 (labels, caption, dateline) | Mukta SemiBold 600 | none | Mukta Bold 700 (new file, OFL, same family) |
+| Mukta SemiBold 600 (headline) | Mukta SemiBold 600, no change | Headline does not get heavier | Mukta Bold 700 |
+| Literata Regular 400, opsz 16 (letters, prompts) | Literata Medium 500, opsz 30 | Display optical size on reading text (slightly tighter, finer) | Literata SemiBold 600, opsz 16 (new cut from the variable source in `build_fonts.py`) |
+| Literata Medium 500, opsz 30 (titles) | Literata Medium 500, no change | Titles do not get heavier | Literata Bold 700, opsz 30 (new cut) |
+| Literata Italic 400 (signature) | Literata Italic 400, no change | Signatures do not get heavier | Literata SemiBold Italic 600, opsz 16 (new cut) |
+| Tiro Devanagari Hindi 400 | Tiro Regular, no change | No heavier Tiro exists (Google Fonts has Regular and Italic only) | Q3 |
 
-Until the new cuts ship, the `Text` component maps Bold Text with the table's "today" column, so no face is ever synthesised (the current one-family-per-face rule stays). Size cost of the four new cuts is to be measured in DS2-05 against the 40 MB budget.
+Stage 1 is the audit's map (AUDIT 7) and ships with DS2-04; stage 2 needs the new files and a size measurement against the 40 MB budget (DS2-05). Symbols step one weight heavier with Bold Text (section 8). Q3: Devanagari letter runs either stay in Tiro Regular under Bold Text (the letter's face does not change mid-paragraph) or switch to a heavier OFL Devanagari serif; that is a design call for the Chief Design Officer role, not a token call.
 
 ### 4.5 Numerals
 
 - Durations and the elapsed recording time: `timer` (Mukta Medium, `tabular-nums`) so digits do not jitter as they count. Mukta has `tnum`.
 - Datelines with numbers ("Month 4"): proportional, lining (Mukta defaults).
-- The month numeral: Literata Medium, `lining-nums proportional-nums`, +1 tracking, trimmed to the figures' ink (unchanged, `fontMetrics`).
+- Large figures in Literata (any future numeral display): `lining-nums proportional-nums`, never negative tracking on figures (the "18" closing up in TestFlight build 1 is the lesson kept from the retired `numeral`).
 - Letter text: Literata defaults; never force oldstyle figures on a person's words.
 - Devanagari digits stay as typed (Tiro has no `tnum`; it is never used for timers).
 
@@ -393,9 +398,19 @@ One column. 375 pt is the design floor and the AX5 test width (house rule).
 
 The two-up grid becomes one-up at AX1 and above, or when a column would be under 160 pt. Safe areas are always respected; the floating capture cluster sits `layout.glassClusterGap` above the tab bar and never under the home indicator.
 
-### 5.3 Targets (unchanged values)
+### 5.3 Targets and control sizes
 
-`target.min` 44, `target.primary` 56, `target.capture` 64, web 48. Apple's minimum is 28 x 28 for iOS with 44 x 44 the default (H2 via BENCHMARK 8); we keep 44 everywhere.
+`target.min` 44, `target.primary` 56, `target.capture` 64, web 48 (unchanged). Apple's minimum is 28 x 28 for iOS with 44 x 44 the default (H2 via BENCHMARK 8); we keep 44 everywhere.
+
+Control heights at Large, named for v2 COMPONENTS (`size.control.*`); every one grows with its label at larger text and never shrinks below its value:
+
+| Token (new) | Height | Same as | Use |
+|---|---|---|---|
+| `size.control.sm` | 44 | `target.min` | Toolbar buttons, chips, small glass buttons |
+| `size.control.md` | 48 | `target.md` (new; was typed in `button.tsx:254`) | Text fields, the Find field, secondary buttons |
+| `size.control.lg` | 56 | `target.primary` | Primary buttons, Keep |
+| `size.control.xl` | 64 | `target.capture` | Speak and Type, the recording control (Apple's extra-large control size, BRIEF 1) |
+| `size.row` | 52 | | List row minimum height (Liquid Glass lists are taller, BRIEF 1); system grouped lists set their own |
 
 ## 6. Corner radii: concentric
 
@@ -431,7 +446,7 @@ React Native cannot read the display's corner radius, so custom glass near a scr
 |---|---|---|---|
 | `elevation.0` | flat | flat | Lists, reading, the letter page |
 | `elevation.1` | y2 / 6 / 6% ink | kept | Resting cards in the flow (light); dark uses `surfaceRaised` plus a `line` border |
-| `elevation.2` | y6 / 16 / 10% ink | kept, narrowed | A card lifted by long press or drag only. No longer the floating player: that is glass now |
+| `elevation.2` | y6 / 16 / 10% ink | kept, narrowed | The AudioPlayer pill on the letter page (a content-layer control, not in the BRIEF 3 glass list, so it stays solid paper with this shadow; AUDIT 2.3), and a card lifted by long press or drag. No longer the toast or the sheet |
 | `elevation.3` | y12 / 32 / 16% ink | retired | Was sheets; sheets are system glass |
 
 Glass has no elevation token: no shadow, no border and no background of our own (A6: elevate controls with Liquid Glass and the scroll edge effect, not with a background). The fallback in 2.3 has the hairline edge and no shadow (BRIEF 3: same shape, solid, hairline). Shadows stay warm ink, never black, and never on a glass surface.
@@ -566,13 +581,13 @@ Proposed backlog rows. Owner lanes: DS = `design-systems`, MOB = `mobile`. Sizes
 
 | Row | Lane | Size | What | Done when |
 |---|---|---|---|---|
-| DS2-01 | DS | S | Colour v2 in `tokens.ts`: refine `light.success` and `light.caution`; add `glassLabel`, `glassLabelSecondary`, `glassFallback`, `mediaDim`, `mediaSolid`, `onMedia`; full `highContrast` for every text and status role (3.5) | `tokens.test.ts` asserts every pair in 3.4 and 3.5 (4.5:1 text, 7:1 HC text on bg, surface, surfaceRaised, accentSoft; 3:1 non-text); `brand-parity` and `atmosphere` tests pass; CSS regenerated |
+| DS2-01 | DS | S | Colour v2 in `tokens.ts`: refine `light.success` and `light.caution`; add `glassLabel`, `glassLabelSecondary`, `glassFallback`, `glassDim`, `mediaSolid`, `onMedia`; full `highContrast` for every text and status role (3.5) | `tokens.test.ts` asserts every pair in 3.4 and 3.5 (4.5:1 text, 7:1 HC text on bg, surface, surfaceRaised, accentSoft; 3:1 non-text); `brand-parity` and `atmosphere` tests pass; CSS regenerated |
 | DS2-02 | DS | S | Layout and material tokens: `layout.*` (5.1), `material.*` (2.1, 2.2); measure and add `layout.glassSideInset` on device | Tokens exported in TS and CSS; inset value recorded with the device and iOS version |
 | DS2-03 | DS | S | Radius v2: `xs`, `control`, `cover`, new `md`, `lg`, `xl` | Before and after screenshots of Home, Book, letter page, first run, light and dark, attached to the PR for Q2 |
 | DS2-04 | DS | M | `Text` scales each token on its Apple style curve (4.3) from the content size category, applies caps, tapers letter line height, caps Reading Size times Dynamic Type at 62 pt | Unit test: every token at L, xxxL, AX1, AX3, AX5 equals the table in 4.3; no `maxFontSizeMultiplier` below 1.4 anywhere in `src` (source scan) |
 | DS2-05 | DS | M | Fonts: cut Literata SemiBold (opsz 16), Bold (opsz 30), SemiBold Italic (opsz 16), add Mukta Bold; Bold Text face map in `Text` | `fonts.test.ts` checks the new faces' weight class; app size measured and recorded; Bold Text on shows the heavier face on Home, letter page, Settings |
 | DS2-06 | DS | S | `timer` type token (Mukta Medium, tabular) | Elapsed time and durations use it; digits do not shift width in a test render |
-| DS2-07 | DS | M | `GlassSurface` wrapper: `GlassView` or `GlassContainer` when available and Reduce Transparency is off, else the 2.3 solid; pinned `colorScheme`; prominent and clear variants with `mediaDim`; Increase Contrast edge | Component test for each of the four cases; never sets opacity 0 on a glass view (source scan) |
+| DS2-07 | DS | M | `GlassSurface` wrapper: `GlassView` or `GlassContainer` when available and Reduce Transparency is off, else the 2.3 solid; pinned `colorScheme`; prominent and clear variants with `glassDim`; Increase Contrast edge | Component test for each of the four cases; never sets opacity 0 on a glass view (source scan) |
 | DS2-08 | DS | S | `useContrastPreference()` reads iOS Increase Contrast (a small Expo module if RN has no query, TDD 09 3.x) and feeds `useTheme()` | Toggling the setting on device swaps every role live |
 | DS2-09 | DS | M | `Icon` wrapper over `SymbolView` with the Phosphor fallback; the mapping in 8.2 as one table; weights and sizes from 8.3 | Every Phosphor import in `src` replaced by `Icon`; a test fails on a direct `phosphor-react-native` import outside the wrapper |
 | DS2-10 | MOB | M | Native tabs (`unstable-native-tabs`) with `moon.stars`, `book`, `person` and fills; remove the paper bar | Device spike recorded (COMPONENT_LIBRARY 0.1); tab bar is system glass on iOS 26, system bar on iOS 17 to 25; Large Content Viewer works |
@@ -588,12 +603,13 @@ Proposed backlog rows. Owner lanes: DS = `design-systems`, MOB = `mobile`. Sizes
 |---|---|---|
 | Phosphor as the iOS icon set | DESIGN_LANGUAGE 7 | SF Symbols (section 8); Phosphor stays only as the Android and web fallback |
 | "Paper bar with a hairline (not Liquid Glass yet)" for the tab bar | BENCHMARK 9, COMPONENT_LIBRARY 0.1 | Native tabs, system glass (DS2-10) |
-| The floating pill player at `elevation.2` | DESIGN_LANGUAGE 6 and 12 (letter reading view) | A glass control (regular), no shadow |
+| `elevation.2` on the toast and `elevation.3` on the sheet | `ui/toast.tsx:114`, `ui/sheet.tsx:185` | Glass capsule toast and the system sheet, no shadow (AudioPlayer keeps `elevation.2`) |
+| `type.numeral` and the `serifMedium` `fontMetrics` entry | `tokens.type`, `tokens.fontMetrics` | Nothing (unused since PR #674; AUDIT 2.3) |
 | `elevation.3` (sheets) | `tokens.elevation[3]`, DESIGN_LANGUAGE 6 | System sheets |
 | `radius.xl` as the sheet radius on iOS | DESIGN_LANGUAGE 5 | System sheet radius; `xl` is containers and web or Android sheets |
 | Uniform Dynamic Type scaling (one multiplier for every style) | `Text`, `lineHeightFor`, `renderedScale` | Per-style Apple curve (4.3) |
 | Partial Increase Contrast set (five roles) | `tokens.highContrast` | Full set (3.5) |
 | `light.success` #3F7A55, `light.caution` #94661A | `tokens.light` | #3B724F, #895E18 |
 | HC `textMuted` #524B43 and `accent` #6E4529 | `tokens.highContrast.light` | #4F4942, #67432C |
-| `BlurSurface` with arbitrary blur for chrome (Book's inline title bar) | COMPONENT_LIBRARY 0.1 | System navigation bar glass; `material.thin` only for a sticky header in the content layer |
+| `BlurSurface` with arbitrary blur for chrome (Book's inline title bar) | COMPONENT_LIBRARY 0.1 | System navigation bar glass (BlurSurface stays only as the iOS 18 fallback for that bar until it moves to the native header, per v2 COMPONENTS); `material.content.thin` only for a sticky header in the content layer |
 | "No Liquid Glass in the content layer; system tab bar and toolbars may use it" as the whole glass rule | DESIGN_LANGUAGE 2 | The material policy (BRIEF 3) and section 2 here |

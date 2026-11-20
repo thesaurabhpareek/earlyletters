@@ -32,11 +32,12 @@ Sources for Apple facts are the ones listed in `BRIEF.md` section 1 (HIG Materia
 | Picture viewer (C4 viewer) | Close and Change (clear + dim) | none | Toast |
 | Me and settings (C-S01 on) | Tab bar or navigation bar | none | Toast or sheet |
 
-4. **Content never wears glass**: letters, Book pages, letter page body, Read together pages, letter lists, cards in the flow, settings lists, empty states, state screens. Separation there uses paper tokens (`bg`, `surface`, `surfaceRaised`, `line`) or a standard material (`material.content.*`).
-5. **Fallbacks.** Reduce Transparency on, iOS earlier than 26, `isGlassEffectAPIAvailable()` false, Android and web: every glass surface renders `material.solid` (`surfaceRaised` fill, 1 pt `line` hairline), same shape and size. Increase Contrast: borders step to `controlBorder` (high-contrast values), labels to `text`, and glass gains a visible 1 pt edge. The check is `useMaterial()` (section 8): `isLiquidGlassAvailable() && isGlassEffectAPIAvailable() && !reduceTransparency`.
+4. **Content never wears glass**: letters, Book pages, letter page body, Read together pages, letter lists, cards in the flow, settings lists, empty states, state screens. Separation there uses paper tokens (`bg`, `surface`, `surfaceRaised`, `line`) or a standard material (`material.thin`, `material.regular`, `material.thick` (FOUNDATIONS 2.2)).
+5. **Fallbacks.** Reduce Transparency on, iOS earlier than 26, `isGlassEffectAPIAvailable()` false, Android and web: every glass surface renders `glassFallback` (solid; 0.5 pt `line` hairline, `stroke.hairline`; FOUNDATIONS 2.3), same shape and size. Increase Contrast: every role takes its HC value (FOUNDATIONS 3.5), the glass fallback edge becomes 1 pt `line` HC, and clear glass becomes the `mediaSolid` disc. Our custom `GlassView`s pin `colorScheme` to the app's scheme and use `glassLabel` and `glassLabelSecondary`, never `textMuted` (FOUNDATIONS 2.1, 3.2). Glass carries no shadow, border or background of ours (FOUNDATIONS 7). The check is `useMaterial()` (section 8): `isLiquidGlassAvailable() && isGlassEffectAPIAvailable() && !reduceTransparency`.
 6. **Never fade glass with `opacity`.** Setting opacity 0 on a `GlassView` or a parent stops it rendering (Expo v57 reference). Glass appears and leaves by animating `glassEffectStyle` (`{ style, animate: true, animationDuration }`) to and from `none`; a wrapper's opacity only moves together with a style switch to `none`.
-7. **Both ends of the iOS 27 intensity slider** (BRIEF 1, press reports, UNVERIFIED on device): every glass label uses `text` or `accent` on regular glass, never `textMuted` below 17 pt; every specimen in `REFERENCE.html` has an intensity control from opaque to clear, and nothing may lose 4.5:1 at the clear end over paper or 3:1 for icons.
-8. **Clear glass only over a picture**, always with `material.glass.dim` (black at 35 percent) between the picture and the control, local to the controls' corner, never over the whole picture.
+7. **Both ends of the iOS 27 intensity slider** (BRIEF 1, press reports, UNVERIFIED on device; FOUNDATIONS 2.5): every glass label uses `glassLabel` or `glassLabelSecondary`, symbols Medium or heavier; at rest no custom glass sits over words, and every floating cluster has a scroll edge effect (system, or the 32 pt paper fade `layout.scrollEdgeFade`); every specimen in `REFERENCE.html` has an intensity control from opaque to clear, and nothing may lose 4.5:1 at the clear end over paper or 3:1 for icons.
+8. **Clear glass only over a picture**, always with `mediaDim` (black at 35 percent) the size of the control, never over the whole picture. Controls on clear glass are symbol-only (`onMedia`, Semibold) with the words in their accessibility label; text over a picture sits on a `mediaSolid` capsule (FOUNDATIONS 2.4).
+9. **One tinted glass element per screen** (FOUNDATIONS 1 rule 3): the capture cluster on Home, Keep on Review, Done in a sheet toolbar.
 
 ### 1.2 The absent rule
 A control that cannot act because a feature is off, a remote pause is on, the build lacks a module, the plan does not allow it, or the role does not allow it is **absent, not disabled**: it is not rendered and its space closes up (cards NS-01-R19, R59; NS-02-R1; NS-05; frame section 2 "no coming soon surface"). A control that will act once the person finishes something on the same screen (Save in the Day sheet until the pick differs, Delete account until the word is typed) is **present and not ready**: its fill drops to a 1 pt `controlBorder` outline with the label in `textMuted` (never 40 percent opacity), VoiceOver reads "dimmed" and the hint says what is missing. No third case exists.
@@ -61,9 +62,9 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `expanded` (default), `minimized` (scroll down on the Book, `minimizeBehavior="onScrollDown"`; Home and Me never minimise, their pages are short and the capture cluster sits above the bar).
 - **States**: default; selected (tint and platter plus weight, never colour alone); pressed (system); focused (system focus ring); loading, error: n/a; absent: never (the bar is the same in every build, `test/tab-bar.test.ts`). AX5: labels do not scale (system); long press shows Large Content Viewer. VoiceOver: "Home, tab, 1 of 3", "Book, tab, 2 of 3", "Me, tab, 3 of 3" (system traits). Voice Control: "Tap Home", "Tap Book", "Tap Me". Switch Control: one group of three.
 - **Layer**: glass regular (system). Reduce Transparency and iOS before 26: the system's own solid bar.
-- **Tokens**: `color.accent` as `tintColor` via `DynamicColorIOS` with light, dark and high-contrast values; labels in the system font (the bar is system chrome; Mukta in the tab bar retired).
+- **Tokens**: `accent` as `tintColor` via `DynamicColorIOS` with light, dark and HC values; labels in the system font (the bar is system chrome; Mukta in the tab bar retired). Symbols `moon.stars`, `book`, `person`, fill when selected (FOUNDATIONS 8.2; Q4 keeps `moon.stars` for Home).
 - **Motion hooks**: T-TAB (system; no animation of content); T-MIN `m.minimize` on the Book only. No haptic.
-- **Implementation**: Expo Router native tabs, `expo-router/unstable-native-tabs` (SDK 55 to 57), in `app/(tabs)/_layout.tsx`. Icons: SF Symbols through `NativeTabs.Trigger.Icon sf` (`house`, `book`, `person.crop.circle` with `.fill` selected; mapping owned by FOUNDATIONS iconography) with `src` Phosphor PNG as the Android and web fallback. Remove `backgroundColor`, `blurEffect`, `shadowColor` (ignored on iOS 26 anyway). Wrap in `ThemeProvider` to avoid the dark-mode white flash (Expo guide). Changes from today: `expo-router/js-tabs` with a paper bar, `BAR = 58`, Mukta labels and a custom Pressable are retired. The `ToastHost` offset must stop reading a fixed bar height (native tabs cannot be measured, Expo guide): toasts anchor to the safe area plus `NativeTabs.BottomAccessory`-free spacing (UNVERIFIED on device; engineering row R2). `ReminderPrimeAsk` stays a sheet, not a bottom accessory.
+- **Implementation**: Expo Router native tabs, `expo-router/unstable-native-tabs` (SDK 55 to 57), in `app/(tabs)/_layout.tsx`. Icons: SF Symbols through `NativeTabs.Trigger.Icon sf` with `{ default, selected }` (FOUNDATIONS 8.2) and `src` Phosphor PNG as the Android and web fallback. Remove `backgroundColor`, `blurEffect`, `shadowColor` (ignored on iOS 26 anyway). Wrap in `ThemeProvider` to avoid the dark-mode white flash (Expo guide). Changes from today: `expo-router/js-tabs` with a paper bar, `BAR = 58`, Mukta labels and a custom Pressable are retired. The `ToastHost` offset must stop reading a fixed bar height (native tabs cannot be measured, Expo guide): toasts anchor to the safe area plus `NativeTabs.BottomAccessory`-free spacing (UNVERIFIED on device; engineering row R2). `ReminderPrimeAsk` stays a sheet, not a bottom accessory.
 - **Used by**: frame section 4; spec 06 (IA); every e2e area (A-S01, B-S01, C-S01).
 
 ### N2. Navigation header
@@ -72,7 +73,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `push` (back chevron with the previous title), `modal` (Close trailing), `flow step` (onboarding back, drawn by the system header in a nested Stack), `large` title (settings roots in Me), `inline`.
 - **States**: default; pressed (system); focused (system); loading: a trailing item can show busy (Close disabled only while a request must not be cut off, today's `closeDisabled`, kept); error: n/a; absent: an item with nothing to do is not rendered. AX5: titles truncate only in the bar (system), and every screen repeats its title as an in-content heading (level 1) so nothing is lost; item labels show in Large Content Viewer. VoiceOver: "Back, button", "Close, button" plus `closeHint` where the draft is kept. Voice Control: "Tap Back", "Tap Close". Switch Control: one group.
 - **Layer**: glass regular (system items). Scroll edge effect keeps them legible over scrolling letters.
-- **Tokens**: `color.accent` tint; `color.text` title; `type.headline` equivalent is the system's.
+- **Tokens**: `accent` tint; `text` title; `headline` equivalent is the system's.
 - **Motion hooks**: T-PUSH `m.push` and T-COVER `m.cover` (system or route table, never re-created per screen); T-ZOOM `m.zoom` for Book card to letter page stays ours and the glass Back and Aa appear by `m.glass` (style, never opacity) once the page has landed.
 - **Implementation**: native Stack header (`expo-router` Stack, `headerTransparent` on iOS 26 so content scrolls under it; no custom `headerBackground`). `ModalHeader` and `BackButton` (`components/ui/screen-header.tsx`) become the **fallback** for screens that are not in a native Stack (the in-screen Keep gate, the age gate outside navigation); the "Close top right" rule in `lib/navigation.logic.ts` is unchanged.
 - **Used by**: A-S04 to A-S07 (modals), B-S08 (letter page), C-S02 onward (settings), D-S06, E-S04 to E-S07.
@@ -83,9 +84,9 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `single` (one prominent item centred, for example Keep), `split` (a plain item leading and a prominent item trailing, for example Let it go and Keep), `over picture` (clear + dim, C4 viewer).
 - **States**: default; pressed and focused (system); loading (the prominent item shows busy and ignores presses, label stays); error: the screen's line above the toolbar carries the words; absent: per 1.2. AX5: toolbar items do not grow past the bar (system); therefore **any item whose label is a sentence moves into the content as an A1 `lg` button pinned in the bottom third** at AX3 and above (`useIsAccessibilitySize()`), and the toolbar keeps only icon items with Large Content Viewer titles. VoiceOver and Voice Control: the item's label ("Keep", "Let it go"). Switch Control: one group.
 - **Layer**: glass regular (system); clear + dim over a picture.
-- **Tokens**: `color.accent` tint for prominent; `color.destructive` never in a toolbar (destructive actions open F6).
+- **Tokens**: `accent` tint for prominent; `destructive` never in a toolbar (destructive actions open F6).
 - **Motion hooks**: system; busy words `m.swap` with `m.progress.wait` (static words under Reduce Motion); T-KEEP `m.keep` follows the Keep press.
-- **Implementation**: `Stack.Toolbar placement="bottom"` (iOS from SDK 55, Expo guide; renders only on iOS and Android). Web preview: a house fallback row of A1 buttons in `material.solid`. NEW at the system level (today Review draws its own footer of RN buttons); RETIRES the hand-drawn Review footer row and `StickyFooter` (spec only, never built).
+- **Implementation**: `Stack.Toolbar placement="bottom"` (iOS from SDK 55, Expo guide; renders only on iOS and Android). Web preview: a house fallback row of A1 buttons in `glassFallback`. NEW at the system level (today Review draws its own footer of RN buttons); RETIRES the hand-drawn Review footer row and `StickyFooter` (spec only, never built).
 - **Used by**: A-S06, A-S07, A-S11 entry, B-S11 viewer; cards NS-01, NS-09, NS-35.
 
 ### N4. Find bar (a `TextField` preset on glass, not a new component)
@@ -93,20 +94,20 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Purpose**: Find mode over the Book (B-S06).
 - **Anatomy**: one `GlassContainer` at the top safe area: a capsule field (magnifier glyph, `TextInput`, clear button when text exists) and a `Cancel` glass capsule beside it. Results render below in the content layer (C2 rows).
 - **Variants**: `idle` (focused, empty, nothing drawn under it), `typing`, `results`, `no match` (one line under the bar, content), `failed` (line plus Try again, content).
-- **States**: default; focused (2 pt `focus` ring outside the capsule, plus the caret); pressed (Cancel: `motion.press`); loading: the getting-ready line in content under the bar, never a spinner in the field; error: per variant; absent: the Find action that opens it is absent when the flag or pause is off or the book has no findable letter (NS-02-R1). AX5: the field takes the full width and grows in height with its text; Cancel wraps under it, right aligned, 44 pt. VoiceOver: field "Find a letter, search field" (label), hint "Type a word you remember"; Cancel "Cancel, button"; result count never spoken (NS-02-R41). Voice Control: "Tap Find" opens, "Tap Cancel" closes. Switch Control: field and Cancel one group; rows one item each.
+- **States**: default; focused (2 pt `focus` ring outside the capsule, plus the caret); pressed (Cancel: `m.tap.glass`); loading: the getting-ready line in content under the bar, never a spinner in the field; error: per variant; absent: the Find action that opens it is absent when the flag or pause is off or the book has no findable letter (NS-02-R1). AX5: the field takes the full width and grows in height with its text; Cancel wraps under it, right aligned, 44 pt. VoiceOver: field "Find a letter, search field" (label), hint "Type a word you remember"; Cancel "Cancel, button"; result count never spoken (NS-02-R41). Voice Control: "Tap Find" opens, "Tap Cancel" closes. Switch Control: field and Cancel one group; rows one item each.
 - **Layer**: glass regular (field and Cancel in one container). It replaces the Book header controls (N5) while open, so the budget stays at three.
-- **Tokens**: `color.text`, `color.textMuted` (placeholder only, at 17 pt or larger), `color.focus`, `radius.pill`, `size.control.md` (48 pt field), `space.4` gutters.
+- **Tokens**: `glassLabel`, `glassLabelSecondary` (placeholder and hint), `focus`, `radius.pill` (glass capsule; `radius.control` 12 on the fallback field), 48 pt field, `layout.gutter`.
 - **Motion hooks**: the overlay `m.fade` over `swapMs` (card 02); the header capsules leave and the Find glass appears by `m.glass` inside one container; Reduce Motion: the overlay appears (card 02), glass style change kept; typing never animates the list.
-- **Implementation**: `TextField variant="search"` (new variant in `components/ui/text-field.tsx`) rendered on `GlassSurface` with a `Button style="glass"` Cancel, both inside one `GlassCluster`, composed in the Book screen; RN `TextInput` with `autoCorrect={false}`, `spellCheck={false}`, `autoComplete="off"`, `textContentType="none"`, `keyboardType="default"`, writing tools off (I2 note). Fallback `material.solid`.
+- **Implementation**: `TextField variant="search"` (new variant in `components/ui/text-field.tsx`) rendered on `GlassSurface` with a `Button style="glass"` Cancel, both inside one `GlassCluster`, composed in the Book screen; RN `TextInput` with `autoCorrect={false}`, `spellCheck={false}`, `autoComplete="off"`, `textContentType="none"`, `keyboardType="default"`, writing tools off (I2 note). Fallback `glassFallback`.
 - **Used by**: B-S06; NS-02.
 
 ### N5. Book header (cover band plus glass controls)
 - **Purpose**: the Book's one lit object (title, age) and its few controls: Find, Go to a month, More for this book (Quiet, Unquiet, Hide, Show again), Read together, and the child switcher when there are two books.
 - **Anatomy**: content part, the existing `CoverBand` (title in `display` as heading 1, age in `callout`, switcher above the title, Read together as an in-flow A1 `bordered` `md` button); glass part, a `GlassContainer` of icon capsules trailing in the navigation bar: Find (magnifier) and More (ellipsis, opens the system menu, N6). Go to a month lives in More at AX3 and above (B-S02), otherwise as a third capsule.
 - **Variants**: `band` (top of the Book), `inline` (after scroll: the system inline title and the same capsules), `empty book` (title and age only; Find absent), `two books` (switcher present), `quieted` (Unquiet in More).
-- **States**: default; pressed (capsule `motion.press`); focused (system ring); loading: n/a; error: n/a; absent: Find per NS-02-R1, Go to a month when there is one month only, the switcher with one book. AX5: the band stacks title, age, switcher, Read together; capsules stay in the bar (Large Content Viewer); Go to a month folds into More. VoiceOver order: title, age, switcher, Read together, Find, Go to a month, More. Labels "Find", "Go to a month", "More for this book". Voice Control: same words. Switch Control: band items one by one, capsules one group.
+- **States**: default; pressed (capsule `m.tap.glass`); focused (system ring); loading: n/a; error: n/a; absent: Find per NS-02-R1, Go to a month when there is one month only, the switcher with one book. AX5: the band stacks title, age, switcher, Read together; capsules stay in the bar (Large Content Viewer); Go to a month folds into More. VoiceOver order: title, age, switcher, Read together, Find, Go to a month, More. Labels "Find", "Go to a month", "More for this book". Voice Control: same words. Switch Control: band items one by one, capsules one group.
 - **Layer**: band = content (paper, lamp light, no glass); controls = glass regular (system header items).
-- **Tokens**: band as today (`atmosphere`, `radius.lg`, `LIT_BAND_STRENGTH`); capsules `color.accent` tint.
+- **Tokens**: band as today (`atmosphere`, `radius.lg`, `LIT_BAND_STRENGTH`); capsules `accent` tint.
 - **Motion hooks**: none on the band (nothing moves; the Book `Settle` is retired, MOTION 13); system for header items (`m.tap.glass`); T-MENU for More; the hand-over to N4 as in N4.
 - **Implementation**: band: today's `components/book/cover-band.tsx`, minus its gear and Months buttons, which move to `Stack.Toolbar placement="right"` with `Toolbar.Button` (Find) and `Toolbar.Menu` (More) in a Stack inside the Book tab. Requires the Book tab to host a Stack (engineering row R3). Retires the hand-placed trailing buttons and the "space kept for them" layout trick.
 - **Used by**: B-S01, B-S02, B-S06, B-S07, C-S12 (book-level new phone line sits under the band, content); NS-22, NS-02, NS-24.
@@ -133,12 +134,12 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 
 ### A1. Button
 - **Purpose**: the one control for acting.
-- **Anatomy**: capsule (`radius.pill`, concentric with its container); optional leading icon; label (`type.label`, `labelSmall` at `sm`); busy glyph replacing the icon when loading.
+- **Anatomy**: capsule (`radius.pill`, concentric with its container); optional leading icon; label (`label`, `labelSmall` at `sm`); busy glyph replacing the icon when loading.
 - **Styles**: `glass` (glass regular in the glass layer, `bordered` in content), `prominent` (glass regular tinted `accent` in the glass layer, `filled` accent in content; at most one per screen), `plain` (no fill, `accent` label: Skip, Not much today, Close inside a sheet), `destructive` (no fill, `destructive` label and Trash icon; a `destructive` fill only on a confirm page after the typed word matches, D6 Delete account and Delete this book).
 - **Sizes**: `sm` 44 pt, `md` 48 pt, `lg` 56 pt (pinned primary actions, NS-11 "at least 56 pt"), `xl` 64 pt (Speak, Type, the record control; Apple's extra-large control size), `icon` 44 by 44 (capsule or circle). Heights are minimums.
-- **States**: default; pressed (`motion.press`, scale 0.97 and 0.9 opacity on solid twins; on glass, `isInteractive` gives the system's own press response and we add no scale); focused (2 pt `focus` ring outside the shape); selected: n/a (use I4 or N6); loading (busy glyph, label stays, presses ignored, VoiceOver "busy" not "dimmed"); not ready (1.2: outline and `textMuted`); error: never on the button (the screen's line); absent per 1.2. AX5: label wraps, never truncates, the button grows; `ButtonRow` pairs stack from AX1 (today: xxxLarge), equal width. VoiceOver: label = visible text, trait button, state busy or dimmed. Voice Control: the label. Switch Control: one item.
+- **States**: default; pressed (`m.tap`, scale 0.97 on solid twins; on glass, `isInteractive` gives the system's own press response and we add no scale); focused (2 pt `focus` ring outside the shape); selected: n/a (use I4 or N6); loading (busy glyph, label stays, presses ignored, VoiceOver "busy" not "dimmed"); not ready (1.2: outline and `textMuted`); error: never on the button (the screen's line); absent per 1.2. AX5: label wraps, never truncates, the button grows; `ButtonRow` pairs stack from AX1 (today: xxxLarge), equal width. VoiceOver: label = visible text, trait button, state busy or dimmed. Voice Control: the label. Switch Control: one item.
 - **Layer**: inherited (1.1 rule 1).
-- **Tokens**: `color.accent`, `color.onAccent`, `color.surfaceRaised`, `color.controlBorder`, `color.destructive`, `color.onDestructive`, `color.focus`; `material.glass.regular`, `material.glass.tint.accent` (prominent tint, value from FOUNDATIONS); `size.control.sm|md|lg|xl`; `radius.pill`.
+- **Tokens**: `accent`, `onAccent`, `surfaceRaised`, `controlBorder`, `destructive`, `onDestructive`, `focus`; `material.glass.regular`, `material.glass.prominent` (regular tinted `accent`); `target.min` (44), 48 (md, see section 9), `target.primary` (56), `target.capture` (64); `radius.pill`.
 - **Motion hooks**: `m.tap` on solid twins, `m.tap.glass` on glass (never both); busy `m.progress.wait` (system activity indicator) with the busy words `m.swap`; Reduce Motion: no indicator, static busy words (MOTION 13). Haptic only for the outcomes in MOTION section 9 (`H-press` on Speak and Type, `H-success` at Keep's commit, `H-warning` after a destructive confirm).
 - **Implementation**: `components/ui/button.tsx`. Change: variants become `style` (`glass | prominent | plain | destructive`) plus the layer from context; `size` adds `xl` (rename of `capture`; the icon-above-label layout of `capture` is retired, the icon leads as on every other size). Map: `primary` to `prominent`, `secondary` and `outline` to `glass` (both render `bordered` in content, which fixes the 1.08 : 1 secondary fill found in PR #713), `quiet` to `plain`, `destructive` unchanged. In the glass layer the button renders `GlassView` with `glassEffectStyle="regular"`, `isInteractive`, `tintColor` for prominent. `IconButton` becomes `Button size="icon"` (variants `plain`, `tinted`, `filled` retired into the styles). `ButtonRow` kept; stacking threshold moves to AX1.
 - **Used by**: every area.
@@ -149,7 +150,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `rest`; `rest, no photo start` (absent per NS-01-R19 and R59: the column closes up); `quiet day kept` (Not much today replaced by the kept line with Undo, D-S21, which is a toast F1); `waiting card present` (a slip sits above in the scroll; the cluster never moves).
 - **States**: default; pressed (system glass press); focused; loading: n/a (start is instant; the Listen screen owns readiness); error: microphone denied shows Speak's label "Allow microphone" and opens Settings (kept from CaptureBar); absent per above. AX5 (from AX3, `useIsAccessibilitySize()`): the cluster stops floating and renders inline at the end of Home's content as solid twins (`GlassLayer` off: `bordered` capsules), Speak and Type stacked full width, then Start from a photo, then Not much today, so nothing covers the words and every label wraps (as built, `app/(tabs)/index.tsx:328`, AUDIT 2.9); at default sizes it stays in the bottom third (card 09 design input). VoiceOver order: Speak, Type, Start from a photo, Not much today; labels "Speak", "Type", "Start from a photo", "Not much today" with hint "Marks today without writing anything". Voice Control: the same words. Switch Control: the glass pair one group, the plain column one group.
 - **Layer**: Speak, Type and Start from a photo glass regular (one container, one glass surface in the budget); Not much today content. AX3 and above: all content.
-- **Tokens**: `size.control.xl`, `radius.pill`, `space.3` between capsules, `GlassContainer spacing` = `material.glass.mergeDistance` (FOUNDATIONS), `color.accent` icons.
+- **Tokens**: `material.glass.prominent` for Speak and Type (the screen's one tinted element), `onAccent` labels and symbols (`mic`, `pencil`, Medium 28), `material.glass.regular` and `glassLabel` for Start from a photo (`photo`), `target.capture` (64), `radius.pill`, `layout.controlGap` between capsules, `GlassContainer spacing` = `layout.controlGap` (12), cluster `layout.glassClusterGap` (8) above the tab bar, `accent` icons.
 - **Motion hooks**: `m.tap.glass`; the shapes merge and split only inside their one container (`m.glass`, MOTION 7 rule 3); Listen opens by T-COVER `m.cover`, never by morphing the cluster (recording is immediate). Controls never animate in; the cluster never pulses (MOTION 11).
 - **Implementation**: house `components/capture/capture-cluster.tsx` (NEW file; RETIRES the inline `Button size="capture"` pair in `app/(tabs)/index.tsx` and the `CaptureBar` spec 2.18, whose `compact` mode is dropped).
 - **Used by**: A-S01, A-S13, D-S21; NS-35, NS-01, NS-07 C5, NS-14.
@@ -160,7 +161,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `ready`, `recording`, `paused` (dot hollow, word "Resume"), `still here` (A-S05 hands-free prompt), `interrupted` (call or route change: paused with its line), `held` (the take is kept on the phone; Stop absent).
 - **States**: default; pressed (system glass); focused; loading: `starting` (busy for at most the audio session start; label stays); error: microphone off shows the StateScreen (C8) instead of the control; absent: Pause absent where the recorder cannot pause. AX5: the capsule grows taller and the time moves under "Stop"; Pause moves under the capsule; the aura shrinks to the remaining space. VoiceOver: Ready "Speak, button, starts recording"; Recording "Stop recording, 42 seconds" (time announced each minute, not each second); Pause "Pause". Voice Control: "Tap Stop", "Tap Pause", "Tap Speak". Switch Control: one group; no timed step.
 - **Layer**: glass regular while recording (BRIEF 3); at Ready the circle is glass too (it is the screen's one control over the aura). Never clear glass.
-- **Tokens**: `color.recording` (dot and the hollow ring), `color.text` label, `size.control.xl`, `type.label`, `type.footnote` for the time with tabular figures.
+- **Tokens**: `recording` (dot and the hollow ring), `glassLabel` label, `target.capture` (64), `label`, `timer` for the elapsed time (FOUNDATIONS 4.5), symbol Semibold 32 (`mic.fill` while recording, `stop.fill`, `pause.fill`).
 - **Motion hooks**: every state change (ready, recording, paused, stopped, error) is `m.instant` with `glassEffectStyle` `animate: false` (MOTION section 5 and 7 rule 12): the control, its label, colour and time change on the frame the recorder reports it. The aura is `m.signal`. Reduce Motion: the same (instant) plus the aura's static ring. `H-press` before the audio session starts and after it ends; nothing else.
 - **Implementation**: house `components/capture/record-control.tsx` (NEW file) on `GlassContainer` plus `GlassView`; morph by changing the container's children with `glassEffectStyle` animate (UNVERIFIED that `GlassContainer` animates a shape change; fallback is a Reanimated layout transition of the wrapper with the style switch, rule 1.1.6). Today the record button is drawn inline in `app/listen.tsx`.
 - **Used by**: A-S04, A-S05, A-S14 (arrival from a doorway), A-S15; NS-04, NS-06 C, NS-09, NS-35.
@@ -179,9 +180,9 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Purpose**: one letter in the Book and on Home (one past letter, slip 4; waiting cards).
 - **Anatomy**: as built (`components/book/letter-card.tsx`): dateline, up to three whole lines of the person's words ending in `ExcerptFade` (two at AX sizes), signature in `signature` italic, Private tag, a quiet "Voice 1:06" marker, optional photo thumbnail (C3) leading or above.
 - **Variants**: `letter`, `note`, `with picture`, `waiting words` (AppNote line), `typed`, `other parent's`, `sealed` (the hidden row: date and "Hidden until {date}", no words, NS-06-B2), `quiet day` (QuietDayRow, not a card), `draft` (DraftCard on Home), `past letter` (ResurfacedCard, Home slip 4).
-- **States**: default; pressed (`motion.press` card scale 0.98); focused (ring around the card); selected: n/a; loading: skeleton not used (the Book renders from the phone); error: picture missing shows the card without the thumbnail (card 11 design input); new (the `accentSoft` wash once over `newMarkMs`). AX5: excerpt two lines, footer stacks, thumbnail above the words (NS-01 lens rule), at most 88 pt tall from AX3. VoiceOver: one element, composed label with every word of the letter (D-027), recording length in words, hint "Opens the letter"; actions (share, mark a first, delete) as accessibility actions. Voice Control: the name begins with the dateline as shown. Switch Control: one item.
+- **States**: default; pressed (`m.tap` card scale 0.98); focused (ring around the card); selected: n/a; loading: skeleton not used (the Book renders from the phone); error: picture missing shows the card without the thumbnail (card 11 design input); new (`m.mark`: the `accentSoft` tint once over `markMs` 1600). AX5: excerpt two lines, footer stacks, thumbnail above the words (NS-01 lens rule), at most 88 pt tall from AX3. VoiceOver: one element, composed label with every word of the letter (D-027), recording length in words, hint "Opens the letter"; actions (share, mark a first, delete) as accessibility actions. Voice Control: the name begins with the dateline as shown. Switch Control: one item.
 - **Layer**: content. Raised paper in light, 1 pt `line` edge in dark.
-- **Tokens**: `color.surfaceRaised`, `color.line`, `radius.md`, `elevation.1`, `type.letterBody`, `type.letterDateline`, `type.signature`.
+- **Tokens**: `surfaceRaised`, `line`, `radius.md`, `elevation.1`, `letterBody`, `letterDateline`, `signature`.
 - **Motion hooks**: `m.tap` (card scale 0.98); T-ZOOM `m.zoom`; `m.mark` after Keep or Undo; `m.list.insert` and `m.list.remove`. The words never animate on their own (MOTION 11).
 - **Implementation**: unchanged file; DraftCard and ResurfacedCard become variants of one `LetterCard` shape with the 3 pt accent rule as a prop (`rule`), RETIRING the two near-duplicate card shells in `components/tonight/` (the logic files stay).
 - **Used by**: B-S01, B-S04, B-S05, B-S16, B-S17, A-S01 (waiting cards); NS-01, NS-06, NS-21, NS-23.
@@ -192,7 +193,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants per row**: `navigation` (chevron), `value` (value then chevron), `toggle` (I5), `read-only` (no chevron, role text), `destructive` (no chevron, words say the action), `action` (`actionWord` last in the label).
 - **States**: default; pressed (`surface` highlight); focused; loading: the row's value shows its line, not a spinner (speech rows keep the ring, F3); error: the row's subtitle carries words; absent: rows for off features are not rendered (Share when NS-05 is off; Picture when photos are off; Hide until in a book where sealing is unavailable). AX5: one column, value under title, every title wraps, Share full width, Delete full width and last (card 10 design input). VoiceOver: one element per row "Title, value, button" with `actionWord` last. Voice Control: the title. Switch Control: one item per row.
 - **Layer**: content (system grouped list style; settings lists never glass).
-- **Tokens**: `color.surfaceRaised` rows on `color.surface`, `radius.lg` section corner (larger per iOS 26 lists; value from FOUNDATIONS `radius.listSection`), row min height `size.row` 52 (iOS 26 larger rows; FOUNDATIONS), `type.body` title, `type.subhead` value, section header in title-style capitalisation (Apple 26: "This Letter" style is NOT adopted for our words; see section 11 gap G1).
+- **Tokens**: `surfaceRaised` rows on `surface`, `radius.lg` (24) section corner (iOS 26 larger section radius), row min height 52 (iOS 26 larger rows; proposed `layout.rowMin`, section 9), leading symbol Regular 20 in `textMuted` (FOUNDATIONS 8.3), `body` title, `subhead` value, section header in title-style capitalisation (Apple 26: "This Letter" style is NOT adopted for our words; see section 11 gap G1).
 - **Motion hooks**: `m.tap` on pressable rows (highlight); a row that appears or leaves uses `m.list.insert` or `m.list.remove`; a value that changes uses `m.swap`.
 - **Implementation**: `components/ui/list-row.tsx` (`ListSection`, `ListRow`, `ToggleRow`) kept; add `rowHeight` and section radius from tokens v2; the letter page composes it.
 - **Used by**: B-S08 to B-S15, C-S09, C-S13, D-S01; NS-21, NS-01, NS-05, NS-06, NS-08, NS-12.
@@ -210,9 +211,9 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Purpose**: the picture full screen from the letter page or Review (the stored copy, T3).
 - **Anatomy**: black or `bg` backdrop, the picture fitted (never cropped), controls in the top corners: Close (top right), and on the letter page Change and Take the photo off in a bottom toolbar (N3 `over picture`).
 - **States**: default; pressed; focused; loading (the page copy, then the stored copy); error (missing line, C3); absent: Change and Take off absent on another author's letter. AX5: controls stay 44 pt, labels in Large Content Viewer; the words line, if any, moves into a scroll below the picture. VoiceOver: image first, then Close, Change, Take the photo off. Voice Control: "Tap Close", "Tap Change". Zoom: pinch, double tap; VoiceOver magic tap off.
-- **Layer**: glass clear + dim (`material.glass.clear` over `material.glass.dim` 35 percent, local to the control corners).
+- **Layer**: glass clear + dim (`material.glass.clear` over `mediaDim`, each the size of its control). Change and Take the photo off are symbol-only clear discs (`photo.badge.plus`, `trash`, `onMedia`, Semibold); Close is the word on a `mediaSolid` capsule, top right (text never on clear glass, FOUNDATIONS 2.4). Increase Contrast and Reduce Transparency: all become `mediaSolid`.
 - **Motion hooks**: opens with T-COVER `m.cover` (no zoom from the thumbnail; photographs never zoom or Ken Burns, MOTION 11); the dim is static; a changed picture crossfades under it with `m.fade` (MOTION 7 rule 7).
-- **Implementation**: a full-screen route (`app/letter/[id]/picture.tsx`, T-COVER) that renders `PhotoFrame variant="viewer"`; controls on `GlassSurface variant="clear" dim` (the dim is a separate black `View` at `material.glass.dim`; its opacity is static and it is not glass, so rule 1.1.6 does not apply to it).
+- **Implementation**: a full-screen route (`app/letter/[id]/picture.tsx`, T-COVER) that renders `PhotoFrame variant="viewer"`; controls on `GlassSurface variant="clear" dim` (the dim is a separate black `View` at `mediaDim`; its opacity is static and it is not glass, so rule 1.1.6 does not apply to it).
 - **Used by**: B-S11, A-S07; NS-01, NS-37.
 
 ### C5. Quote pair
@@ -227,7 +228,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `static`, `tappable` (Review, opens I3), `two dates`, `month only`, `before you`.
 - **States**: default; pressed (`surface` highlight behind the line); focused (ring); loading, error: n/a; absent: n/a. AX5: wraps to two or more lines; cap 2.4x as the type style says; never truncates. VoiceOver: static as text; tappable "Tuesday, 4 months old, button, change the day". Voice Control: the visible date words. Switch Control: one item.
 - **Layer**: content.
-- **Tokens**: `type.letterDateline`, `type.footnote`, `color.textMuted`, `color.controlBorder`.
+- **Tokens**: `letterDateline`, `footnote`, `textMuted`, `controlBorder`.
 - **Implementation**: `components/ui/dateline.tsx` (NEW).
 - **Used by**: A-S07, A-S08, B-S08, B-S19, C1; NS-15.
 
@@ -245,6 +246,15 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Layer**: content. `PlainScreen` (resilience) stays as the provider-free twin for crashes.
 - **Implementation**: `components/ui/state-screen.tsx` plus `note`; variants added to `state-screen.logic.ts`.
 - **Used by**: E-S13, E-S14, E-S16, E-S18, E-S20, A-S05 (microphone off), C-S11 declined; every area's `.error-<code>` and `.killswitch` states that replace a whole screen.
+
+### C9. Home slip host (NEW layout component)
+- **Justification**: the frame fixes one slip at a time in a fixed order (waiting cards, the seal-opened line on its day, Save a copy in the birthday week, one past letter; `00-product-frame.md:67`, registry test `[FRAME-SLIP]`); four areas draw slips (A, B, C, D) and nothing enforces the order today (AUDIT G13).
+- **Anatomy**: a slot above the prompt on Home that renders at most one slip, chosen by `slipFor(state)` in a logic file; each slip is an existing content component: C1 `draft` (waiting card), a one-line `AppNote`-style line (seal opened), a C1-shaped card with one `bordered` button (Save a copy), C1 `past letter`. The reminder ask and the Plus line are not slips.
+- **States**: one slip or none; dismissed (a quiet `plain` `sm` text button where the card asks for one, NS-23); AX5: the slip scrolls with the content and never sits between the prompt and the capture cluster. VoiceOver: the slip is one element after the prompt. Absent: no slip, no space kept.
+- **Layer**: content.
+- **Motion hooks**: a slip present on cold launch arrives with `m.enter.group`; one that appears later is already in place (T-RESUME); a dismissed slip `m.list.remove`.
+- **Implementation**: `components/tonight/slip-host.tsx` plus `slip.logic.ts` with the order as data and a test.
+- **Used by**: A-S01, B-S17, B-S18, C-S06; NS-23, NS-06 B, NS-11.
 
 ## 5. Inputs
 
@@ -300,6 +310,12 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Implementation**: `components/child/child-switcher.tsx` and `whose-book-sheet.tsx` kept; one export used by Home and Book.
 - **Used by**: A-S01, A-S02, B-S01; NS-14.
 
+### I7. Agreement row
+- **Purpose**: the unticked clickwrap box with one sentence (Before you begin, consent at sign-in, the join agreement D-S16).
+- **Anatomy, states**: as built (`components/ui/agreement-row.tsx`, cited in code as "COMPONENTS 2.25"): 24 pt box, 1 pt `controlBorder` edge, ticked = `accent` fill with a check; the whole row is the target; links never inside the label. VoiceOver: checkbox, checked state; `invalid` moves focus to the row and the screen's line says why. AX5: sentence wraps, box top aligned. Haptic `H-select`; motion `m.swap` on the fill.
+- **Layer**: content.
+- **Used by**: E-S07, D-S16.
+
 ## 6. Feedback
 
 ### F1. Undo toast (T4)
@@ -308,7 +324,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Window (T4)**: open for its stated seconds (`windowSeconds`, from the card: 10 s default), or until VoiceOver has finished reading the undo line plus that many seconds, whichever is later; with Switch Control on, until the parent moves on (focus leaves the toast or the screen changes). This replaces today's "with an action it never times out".
 - **States**: visible; pressed Undo (`tap` haptic, then the outcome reverses and the toast swaps to the result line, "Put back."); replaced (a new toast swaps in place over `swapMs`, the old onDismiss runs); after the window (gone; the Book's row stays as it is). AX5: wraps to several lines, Undo moves under the words, right aligned. VoiceOver: announced once ("Letter deleted. Undo available."), not focused; reachable by swipe. Voice Control: "Tap Undo". Switch Control: one item; the window holds.
 - **Layer**: glass regular.
-- **Tokens**: `material.glass.regular`, `color.text`, `color.accent` (Undo), `radius.pill` (one line) or `radius.lg` (wrapped), `space.4`.
+- **Tokens**: `material.glass.regular`, `glassLabel` words, `glassLabel` Undo with `arrow.uturn.backward` (FOUNDATIONS 8.2), `radius.pill` at every size (FOUNDATIONS 6.3: a capsule near the display corner), `layout.glassClusterGap` above the bar.
 - **Motion hooks**: `m.toast` (glass materialises by style and rises 8 pt; words `m.enter`; out: words `m.exit`, glass to `none`, then unmount; over a toast: `m.swap`, the glass stays); swipe-down follows the finger (`toast.dismissDy`, `toast.dismissVelocity`). Reduce Motion: no rise. Never a progress ring or countdown on the toast (D-S21). `H-select` on Undo.
 - **Implementation**: `components/ui/toast.tsx` on `GlassView`; add `windowSeconds`, VoiceOver completion through `AccessibilityInfo` `announcementFinished` (iOS event; UNVERIFIED in RN 0.86 New Architecture), Switch Control detection (no RN API; native `UIAccessibility.isSwitchControlRunning` through a small module, UNVERIFIED; engineering row R6). `book/undo-toast.tsx` RETIRED into it.
 - **Used by**: A-S12, B-S11, B-S12, B-S15, D-S21; NS-01, NS-06, NS-07 C5, NS-21; T4.
@@ -320,7 +336,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Variants**: `offline`, `outage`, `paused` (a remote pause of one feature), `lowStorage`, `update available`, `update required` (becomes C8), `plan` (plan date line, D-S24).
 - **States**: default; pressed action; absent when the condition clears (the line leaves with `motion.fade`); at most one line per screen (priority: update required, outage, offline, paused, low storage, update available). AX5: wraps; action under. VoiceOver: one element announced politely once on arrival; action reachable. Voice Control: the action word.
 - **Layer**: content (a line in the flow, `surface` fill, `radius.md`); never glass (budget, and it is information).
-- **Tokens**: `color.surface`, `color.textMuted` glyph, `color.text` words, never status red.
+- **Tokens**: `surface`, `textMuted` glyph, `text` words, never status red.
 - **Implementation**: `components/ui/system-line.tsx` (NEW); RETIRES the ad hoc lines in Listen, the Book and Storage.
 - **Used by**: E-S14, E-S15, E-S16, E-S17, D-S24, C-S04 (offline), B-S01 (paused).
 
@@ -363,7 +379,7 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **States**: system. VoiceOver: system reads title and body.
 - **Layer**: system (glass by iOS).
 - **Tokens**: none of ours beyond the app icon layers (FOUNDATIONS, Icon Composer: default, dark, clear, tinted).
-- **Implementation**: `settings/notification-preview.tsx` draws a faithful preview on the Reminders screen (content layer, `material.content.thin` over a drawn wallpaper, never real glass, since it is a picture of a notification inside content).
+- **Implementation**: `settings/notification-preview.tsx` draws a faithful preview on the Reminders screen (content layer, `material.thin` over a drawn wallpaper, never real glass, since it is a picture of a notification inside content).
 - **Used by**: D-S06 (live preview), D-S10; NS-32.
 
 ### S2. Lock-screen privacy snapshot
@@ -373,76 +389,3 @@ From `MOTION.md`: controls never animate in (they are hittable from the first fr
 - **Implementation**: moves from `components/app-lock/privacy-cover.tsx` to `components/ui/privacy-cover.tsx` (hand-off named in its header).
 - **Used by**: E-S22, every screen as the app leaves the front.
 
-## 8. Infrastructure the components need (NEW, house)
-
-| Name | What | Why |
-|---|---|---|
-| `useMaterial()` (`lib/material.ts`) | `{ glass: boolean, clear: boolean, highContrast: boolean }` from `isLiquidGlassAvailable()`, `isGlassEffectAPIAvailable()`, `AccessibilityInfo.isReduceTransparencyEnabled()` and its change event, Increase Contrast | One check for rule 1.1.5; `isLiquidGlassAvailable()` ignores accessibility settings (Expo v57) |
-| `GlassSurface` (`components/platform/glass-surface.ios.tsx`, `.tsx` fallback) | `GlassView` when `glass`, else `material.solid` View with hairline; props `variant` regular or clear, `dim`, `tint`, `interactive` | One place imports `expo-glass-effect` (lint rule, like `expo-blur` today) |
-| `GlassCluster` | `GlassContainer` with `spacing` from tokens, fallback a plain View | Rule 1.1.2 |
-| `GlassLayer` context | tells A1 whether it sits in the glass layer | Rule 1.1.1 |
-| `BlurSurface` | RETIRED on iOS 26 (glass replaces it); kept as the iOS 18 fallback for the Book's inline bar only until N5 moves to the native header | Duplicate material path |
-
-## 9. Reconciliation with FOUNDATIONS, MOTION and AUDIT
-
-Status at writing: `FOUNDATIONS.md`, `tokens.v2.json`, `MOTION.md` and `AUDIT.md` were not yet in the folder; names below are the ones this file asks for. Karma: where the foundations or motion lead chose a different name, theirs wins and this table is the find-and-replace list.
-
-| Name used here | Owner | Meaning |
-|---|---|---|
-| `material.glass.regular`, `material.glass.clear` | FOUNDATIONS | Liquid Glass variants (system) |
-| `material.glass.dim` | FOUNDATIONS | black at 0.35 under clear glass over pictures |
-| `material.glass.tint.accent` | FOUNDATIONS | prominent glass tint |
-| `material.glass.mergeDistance` | FOUNDATIONS | `GlassContainer spacing` |
-| `material.solid` | FOUNDATIONS | Reduce Transparency and pre-26 fallback: `surfaceRaised` plus 1 pt `line` |
-| `material.content.thin`, `.regular`, `.thick` | FOUNDATIONS | standard materials in content |
-| `size.control.sm|md|lg|xl` (44, 48, 56, 64), `size.row` (52) | FOUNDATIONS | control and list row heights |
-| `radius.listSection` and concentric rule | FOUNDATIONS | iOS 26 larger section radius |
-| `motion.press`, `motion.fade`, `motion.snappy|standard|gentle` | MOTION | existing primitives |
-| `motion.glass.morph`, `motion.glass.materialize` | MOTION | glass shape morph and appear by style |
-| `motion.toast.enter|exit|swap`, `motion.tab.swap`, `motion.find.open`, `motion.viewer.open`, `motion.cardToPage`, `motion.newMark`, `motion.rowCollapse`, `motion.progress`, `motion.focusRing`, `motion.button.busy`, `motion.breath.*` | MOTION | hooks named in entries above |
-
-## 10. Retired
-
-| Retired | Replaced by | Note |
-|---|---|---|
-| `docs/design/COMPONENTS.md` (Oct to Nov 2026) as the component source | this file | Its sections stay as history; 0.2 haptics and 2.17 ListeningAura remain valid and are referenced, not copied |
-| COMPONENT_LIBRARY 1 and 5: "no SF Symbols in v1", Phosphor tab icons | N1 SF Symbols in system chrome; Phosphor stays in content | System chrome should use system symbols to match the glass bar |
-| COMPONENT_LIBRARY 0.1: NativeTabs "next step after a device spike" | N1 decided | Device check is row R1 |
-| JS tabs paper bar (`(tabs)/_layout.tsx` `BAR`, custom Pressable) | N1 | |
-| Button variants `primary`, `secondary`, `outline`, `quiet`; size `capture`; `IconButton` variants | A1 styles and `xl` | Mapping in A1 |
-| `CaptureBar` spec (2.18) and its `compact` mode | A2 | Never built as specified |
-| `@gorhom/bottom-sheet` paper sheet look | N7 system sheet | Swap behind `ui/sheet.tsx`; accessibility contract kept |
-| `platform/segmented-control` (SwiftUI Picker) plan | I4 segmented | Native segmented does not stack at AX sizes |
-| `Chip variant="filter"`, `ChipGroup scroll` | I4 | No filters in scope |
-| `PhotoFrame` (2.23) `cover`, `polaroid`, paging | C3, C4 | Never built |
-| `DraftCard`, `ResurfacedCard` shells | C1 variants | Logic files kept |
-| `book/undo-toast.tsx` | F1 | |
-| Toast "with an action it never times out" | F1 T4 window | Ruling T4 |
-| `confirm()` via `Alert.alert` for delete and erase | F6 | |
-| `BlurSurface` on iOS 26 | `GlassSurface` | |
-| `StickyFooter` (spec only) | N3 toolbar or A1 pinned | |
-| Hand-placed gear and Months buttons on `CoverBand` | N5 header items | |
-
-## 11. Engineering rows needed (proposed backlog rows)
-
-| Row | Lane | What |
-|---|---|---|
-| R1 | mobile | Native tabs (N1): swap `expo-router/js-tabs` for `unstable-native-tabs`, SF Symbol icons with PNG fallback, `ThemeProvider`, keep `test/tab-bar.test.ts` green; device check of VoiceOver "1 of 3" and Large Content Viewer |
-| R2 | mobile | ToastHost offset without a measured tab bar (native tabs cannot be measured) |
-| R3 | mobile | A Stack inside the Book tab; move gear and Months into `Stack.Toolbar` right items and the More menu (N5, N6) |
-| R4 | design-systems | Device spike: `@expo/ui/community/bottom-sheet` renders iOS 26 glass and keeps `ui/sheet.tsx`'s accessibility contract; else route sheets via `formSheet` |
-| R5 | design-systems | `lib/material.ts`, `platform/glass-surface`, `GlassCluster`, `GlassLayer`; lint ban on `expo-glass-effect` outside `platform/` |
-| R6 | design-systems | Toast T4 window: `windowSeconds`, VoiceOver completion, Switch Control detection module; tests for the three cases |
-| R7 | mobile | Keep gate as a system sheet over Review with StoreKit's view presenting over it |
-| R8 | design-systems | Button styles and `xl` size (A1), with the variant mapping and a codemod of callers |
-| R9 | design-systems | Device check: date picker inline style at AX5 on SE 3 |
-| R10 | mobile | Writing tools off on letter fields (I2): verify the RN prop, else a native patch |
-| R11 | design-systems | New files: `capture-cluster`, `record-control`, `find-bar`, `photo-thumb`, `photo-viewer`, `dateline`, `system-line`, `progress`; moves: `date-sheet`, `confirm-sheet`, `privacy-cover` into `components/ui` |
-| R12 | design-systems | Story screen `(dev)/components.tsx` mirrors `REFERENCE.html` (light, dark, Reduce Transparency, Increase Contrast, Reduce Motion, AX5) |
-
-## 12. Gaps and open points
-
-- G1. iOS 26 asks for title-style capitalisation in section headers. Our content rules use sentence case for every parent-facing word (VOICE.md). Proposed default: keep sentence case; content lead to confirm.
-- G2. The e2e `DESIGN.md` files were skeletons at writing (screen ids only). Their "components used" sections will key to the ids here; each area lead should check every new component they name against this list before adding one.
-- G3. Whether `GlassContainer` animates a shape change (A3 morph) is UNVERIFIED; the fallback is stated in A3.
-- G4. Glass budget on the letter page assumes the tab bar stays visible on pushed screens in the Book stack; if B decides to hide it, the bottom toolbar (N3) becomes available there.

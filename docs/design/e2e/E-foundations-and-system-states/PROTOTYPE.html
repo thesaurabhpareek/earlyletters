@@ -280,7 +280,7 @@ function welcome(o){
   return `${lamp}<div class="scroll rel">${head}<p class="sub" style="text-align:center;margin-top:16px" data-vo="1">Sign in to begin your book.</p></div>
   <div class="footer"><p class="foot" style="margin:0" data-vo="1">By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.</p><p style="display:flex;gap:18px;margin:0">${lnk("E-S02:default","Terms of Service")}${lnk("E-S02:default","Privacy Policy")}</p>
   ${o.lastMethod?`<p class="cap" style="margin:0" data-vo="1">Last time you used email.</p>`:""}
-  ${go("E-S07:settingUp","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email")}${o.alpha?go("E-S02:alpha","I was invited","quiet"):""}
+  ${go("E-S07:loading","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email")}${o.alpha?go("E-S02:alpha","I was invited","quiet"):""}
   <p class="note">Failure demos: ${lnk("E-S14:outageWithLocal","outage")} ${lnk("E-S14:offlineWithLocal","offline")} ${lnk("E-S02:errorProvider","provider")}</p></div>`;
 }
 S["E-S04"]={name:"Sign in: choose a way",states:{
@@ -292,7 +292,7 @@ S["E-S04"]={name:"Sign in: choose a way",states:{
 function signIn(err,busy){
   return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S02:default" data-vo="1" aria-label="Close">Close</button>
   <div class="scroll"><h2 class="t2" style="margin-top:40px" data-vo="1">Sign in</h2><p class="cap">E-S04: the sign-in sheet reached after first run (Me, Account; the claim path). First run signs in on E-S02 itself.</p><p class="sub muted" data-vo="1">Your letters follow you to a new phone when you sign in.</p>${err?errline(err):""}</div>
-  <div class="footer">${busy?`<button class="btn apple" aria-busy="true" data-vo="1">Signing in</button>`:go("E-S07:settingUp","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email","outline")}
+  <div class="footer">${busy?`<button class="btn apple" aria-busy="true" data-vo="1">Signing in</button>`:go("E-S07:loading","Sign in with Apple","apple")}${go("E-S05:default","Sign in with email","outline")}
   <p class="note">Failure demos: ${lnk("E-S14:outage","outage")} ${lnk("E-S14:offline","offline")} ${lnk("E-S04:errorProvider","provider")}</p></div></div>`;
 }
 function homeBehind(){return `<div class="scroll" style="opacity:.6"><div class="lamp"></div></div>`;}
@@ -315,7 +315,7 @@ S["E-S06"]={name:"Sign in: code and verify",states:{
  reasonShort:()=>codeScr("The code has 6 digits. (PROPOSED)"),
  help:()=>codeScr("Nothing yet? Look in spam, or send a new email."),
  errorWrongCode:()=>codeScr("That code didn't match. Check the newest email, or send a new one."),
- errorCodePaused:()=>codeScr("Nothing has changed. You can try a code again in 15 minutes. The link in the newest email still works, and so do the other ways to sign in."),
+ paused:()=>codeScr("Nothing has changed. You can try a code again in 15 minutes. The link in the newest email still works, and so do the other ways to sign in."),
  errorRateLimited:()=>codeScr("Nothing has changed. Too many tries for now. Wait a few minutes, then try again."),
  verifying:()=>stateScreen({art:ART.moon,title:"Signing you in"}),
  errorExpired:()=>stateScreen({art:ART.envelope,title:"Signing you in",extra:errline("That link has expired. Send a new email for a fresh one."),actions:go("E-S05:default","Send a new email")}),
@@ -327,13 +327,13 @@ function codeScr(err,busy){
   return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S05:default" data-vo="1">Back</button>
   <div class="scroll"><h2 class="t2" style="margin-top:48px" data-vo="1">Check your email</h2><p class="sub muted" data-vo="1">Type the 6-digit code, or open the link on this phone.</p>
   <input class="field ${err?"err":""}" aria-label="Code, 6 digits" value="${err?"482913":""}" placeholder="6-digit code" inputmode="numeric" data-vo="1">${err?`<div style="margin-top:8px">${errline(err)}</div>`:""}</div>
-  <div class="footer">${busy?`<button class="btn primary" aria-busy="true">Checking</button>`:go("E-S07:settingUp","Continue")}${go("E-S05:default","Send a new email","quiet")}
-  <p class="note">${lnk("E-S06:errorWrongCode","wrong_code")} ${lnk("E-S06:errorCodePaused","code_paused")} ${lnk("E-S06:errorRateLimited","rate_limited")} ${lnk("E-S06:errorExpired","expired")} ${lnk("E-S06:refusedOtherPhone","other_phone")}</p></div></div>`;
+  <div class="footer">${busy?`<button class="btn primary" aria-busy="true">Checking</button>`:go("E-S07:loading","Continue")}${go("E-S05:default","Send a new email","quiet")}
+  <p class="note">${lnk("E-S06:errorWrongCode","wrong_code")} ${lnk("E-S06:paused","code_paused")} ${lnk("E-S06:errorRateLimited","rate_limited")} ${lnk("E-S06:errorExpired","expired")} ${lnk("E-S06:refusedOtherPhone","other_phone")}</p></div></div>`;
 }
 S["E-S07"]={name:"Agreements and consent at sign-in",states:{
- settingUp:()=>stateScreen({art:ART.moon,title:"Setting up your account",actions:go("E-S07:terms","(account answered)","quiet")}),
- terms:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.</p><p class="sub" data-vo="1">By continuing you agree to the ${lnk("E-S07:terms","Terms of Service")} and the ${lnk("E-S07:terms","Privacy Policy")}.</p></div><div class="footer">${go("E-S08:name","Agree and continue")}${go("C-S11:declined","Not now","quiet")}<p class="note">Returning account with a book: ${lnk("C-S10:loading","to C-S10")}. Already has a book on the phone: ${lnk("E-S24:default","claim")}</p></div></div>`,
- errorConsentUnavailable:()=>stateScreen({art:ART.envelope,title:"Setting up your account",extra:errline("Setting up your account did not finish. Try again."),actions:go("E-S07:terms","Try again")})
+ loading:()=>stateScreen({art:ART.moon,title:"Setting up your account",actions:go("E-S07:default","(account answered)","quiet")}),
+ default:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.</p><p class="sub" data-vo="1">By continuing you agree to the ${lnk("E-S07:default","Terms of Service")} and the ${lnk("E-S07:default","Privacy Policy")}.</p></div><div class="footer">${go("E-S08:name","Agree and continue")}${go("C-S11:declined","Not now","quiet")}<p class="note">Returning account with a book: ${lnk("C-S10:loading","to C-S10")}. Already has a book on the phone: ${lnk("E-S24:default","claim")}</p></div></div>`,
+ errorConsentUnavailable:()=>stateScreen({art:ART.envelope,title:"Setting up your account",extra:errline("Setting up your account did not finish. Try again."),actions:go("E-S07:default","Try again")})
 }};
 S["E-S08"]={name:"First book steps",states:{
  name:()=>step("Who is this book for?",`<label class="sub" for="nm" data-vo="1">Their name (you can add it later)</label><input id="nm" class="field serif" value="Asha"><p>${lnk("E-S08:twins","Add another")}</p>`,"E-S08:date"),
@@ -464,9 +464,9 @@ S["E-S26"]={name:"Home Plus line (rule on A-S01)",states:{on:()=>homeScreen({plu
 S["A-S01"]={name:"Home (area A)",states:{default:()=>homeScreen({}),first:()=>homeScreen({speak:"A-S04P:primer"}),held:()=>homeScreen({slip:`<div class="card" data-vo="1" style="margin-bottom:12px"><span class="chip"><span class="dot"></span>Waiting</span><p class="sub" style="margin:6px 0 0">Waiting to be kept.</p></div>`,plusLine:true}),lapsed:()=>homeScreen({plusLine:true,speak:"A-S04:default"})}};
 S["A-S04P"]={name:"Microphone primer (area A, before the iOS prompt)",states:{primer:()=>stateScreen({glyph:ICON.mic,title:"Your phone will ask about the microphone",body:"(listen.primer.body, area A) Asked only at the first Speak, never at first run.",actions:go("E-S29:prompt","Continue")})}};
 S["E-S29"]={name:"Microphone permission (system, at first Speak only)",states:{
- prompt:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="alert glass" role="alertdialog"><div class="a-body"><b>"Early Letters" Would Like to Access the Microphone</b><p>Early Letters uses the microphone to record the letters you speak to your child.</p></div><div class="a-btns"><button data-go="A-S04:micOff">Don't Allow</button><button data-go="A-S04:default">Allow</button></div></div>`}};
+ prompt:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="alert glass" role="alertdialog"><div class="a-body"><b>"Early Letters" Would Like to Access the Microphone</b><p>Early Letters uses the microphone to record the letters you speak to your child.</p></div><div class="a-btns"><button data-go="A-S04:blocked">Don't Allow</button><button data-go="A-S04:default">Allow</button></div></div>`}};
 S["A-S04"]={name:"Listen (area A)",states:{default:()=>`<div class="scroll"><p class="cap" style="margin-top:14px">A-S04 Listen, Ready (area A)</p><p class="prompt">What did Asha do today that you want to remember?</p></div><div class="footer"><button class="btn primary" style="min-height:64px" data-go="A-S05:recording">Start</button></div>`,
- micOff:()=>stateScreen({glyph:ICON.mic,title:"The microphone is off",body:"Turn it on in Settings to record, or type this one. (existing key, area A)",actions:go("A-S06:default","Type instead")+go("A-S04:default","Open Settings","quiet")})}};
+ blocked:()=>stateScreen({glyph:ICON.mic,title:"The microphone is off",body:"Turn it on in Settings to record, or type this one. (existing key, area A)",actions:go("A-S06:default","Type instead")+go("A-S04:default","Open Settings","quiet")})}};
 S["A-S05"]={name:"Recording (area A)",states:{recording:()=>`<div class="scroll"><p class="cap" style="margin-top:14px" data-vo="1">Recording</p><p class="sub">Shown by the word, the shape and the moving bars, never by colour alone (NS-33-R12).</p></div><div class="footer"><button class="btn glass" style="min-height:64px;color:var(--text)" data-go="A-S07:default">Stop</button></div>`}};
 S["A-S06"]={name:"Write (area A)",states:{default:()=>areaStub("A-S06","Type","Typing works in every state above, offline and on a full phone.")}};
 S["A-S07"]={name:"Review (area A)",states:{
@@ -491,14 +491,14 @@ STUBNEXT["C-S10"]=go("B-BOOK:default","The Book");
 STUBNEXT["C-S11"]=go("E-S02:default","Back");
 /* ---------- journeys ---------- */
 const J=[
- ["J-E01 Download to first kept letter, store build",["E-S27:default","E-S27:installing","E-S27:installed","E-S01:default","E-S03:default","E-S03:reasonNoAnswer","E-S03:reasonNoTick","E-S03:ready","E-S02:default","E-S05:reasonEmpty","E-S05:errorInvalidEmail","E-S05:default","E-S06:default","E-S06:reasonShort","E-S06:errorWrongCode","E-S07:settingUp","E-S07:terms","E-S08:name","E-S08:dateWaiting","E-S08:dateFuture","E-S08:date","E-S08:signsAsWaiting","E-S08:signsAs","E-S08:promise","E-S08:open","A-S01:first","A-S04P:primer","E-S29:prompt","A-S04:default","A-S05:recording","A-S07:default","A-S13:first"]],
+ ["J-E01 Download to first kept letter, store build",["E-S27:default","E-S27:installing","E-S27:installed","E-S01:default","E-S03:default","E-S03:reasonNoAnswer","E-S03:reasonNoTick","E-S03:ready","E-S02:default","E-S05:reasonEmpty","E-S05:errorInvalidEmail","E-S05:default","E-S06:default","E-S06:reasonShort","E-S06:errorWrongCode","E-S07:loading","E-S07:default","E-S08:name","E-S08:dateWaiting","E-S08:dateFuture","E-S08:date","E-S08:signsAsWaiting","E-S08:signsAs","E-S08:promise","E-S08:open","A-S01:first","A-S04P:primer","E-S29:prompt","A-S04:default","A-S05:recording","A-S07:default","A-S13:first"]],
  ["J-E02 First run, servers-off build",["E-S01:default","E-S03:ready","E-S02:serversOff","E-S08:name","E-S08:date","E-S08:signsAs","E-S08:promise","E-S08:open","A-S01:default"]],
- ["J-E03 Sign-in cannot be reached, local start",["E-S02:default","E-S14:outageWithLocal","E-S08:name","A-S01:default","ME:default","E-S04:default","E-S07:terms","E-S24:default","E-S24:hasBook"]],
+ ["J-E03 Sign-in cannot be reached, local start",["E-S02:default","E-S14:outageWithLocal","E-S08:name","A-S01:default","ME:default","E-S04:default","E-S07:default","E-S24:default","E-S24:hasBook"]],
  ["J-E04 No connection at sign-in",["E-S02:default","E-S14:offlineWithLocal","E-S14:backOnline","E-S02:default"]],
- ["J-E05 Returning parent, new phone",["E-S02:lastMethod","E-S05:default","E-S06:default","E-S07:terms","C-S10:loading"]],
+ ["J-E05 Returning parent, new phone",["E-S02:lastMethod","E-S05:default","E-S06:default","E-S07:default","C-S10:loading"]],
  ["J-E06 Consent outstanding at relaunch",["E-S01:default","E-S09:table","C-S11:declined"]],
  ["J-E07 Under 18, and the region hold",["E-S03:default","E-S03:stop","E-S03:stopAfter24h","E-S03:region"]],
- ["J-E08 Sign-in errors in place",["E-S02:errorProvider","E-S04:errorProvider","E-S04:errorNotAvailable","E-S05:errorNotAvailable","E-S05:offline","E-S06:help","E-S05:errorInvalidEmail","E-S05:errorEmailWait","E-S06:errorWrongCode","E-S06:errorCodePaused","E-S06:errorRateLimited","E-S06:errorExpired","E-S06:refusedOtherPhone","E-S06:refusedOtherPhoneSpent","E-S06:refusedAlreadySignedIn","E-S07:errorConsentUnavailable","E-S02:sessionExpired"]],
+ ["J-E08 Sign-in errors in place",["E-S02:errorProvider","E-S04:errorProvider","E-S04:errorNotAvailable","E-S05:errorNotAvailable","E-S05:offline","E-S06:help","E-S05:errorInvalidEmail","E-S05:errorEmailWait","E-S06:errorWrongCode","E-S06:paused","E-S06:errorRateLimited","E-S06:errorExpired","E-S06:refusedOtherPhone","E-S06:refusedOtherPhoneSpent","E-S06:refusedAlreadySignedIn","E-S07:errorConsentUnavailable","E-S02:sessionExpired"]],
  ["J-E09 Kill switch at sign-in",["E-S02:serversOff","A-S01:default"]],
  ["J-E10 Third letter: the one Plus gate",["A-S07:third","E-S10:default","E-S10:opening","E-S12:default","A-S07:afterPlus","A-S13:kept"]],
  ["J-E10b Gate: hold, offline, unavailable",["E-S10:default","A-S01:held","E-S10:offline","E-S10:needsNewerIos","E-S10:unavailable","E-S10:fromLetter","E-S10:fromLetterOffline","E-S10:errorCodeFailed"]],
