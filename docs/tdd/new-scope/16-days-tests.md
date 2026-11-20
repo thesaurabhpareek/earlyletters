@@ -55,7 +55,7 @@ Mutant column: a change that must turn the test red. `(code not built yet)` is i
 | NS-47-R3 | `[NS-47-R3] nothing is attached to the child` | S | `test/days-migration-lint.test.ts` | A `tradition` column on children |
 | NS-47-R4 | `[NS-47-R4] no request carries a day key` | U, S | `test/days-network.test.ts` | A fetch with a day id; a migration named `faith` |
 | NS-47-R5 | `[NS-47-R5] a day note leaves no trace in the synced row` | I | `test/days-synced-row.test.ts` | Pass a day id as `prompt_key` |
-| NS-47-R6 | `[NS-47-R6] the store is out of the backup and fails closed` | U, D | `test/days-store.test.ts`, DV-1 | Skip exclusion; write when read-back is false; write to Caches |
+| NS-47-R6 | `[NS-47-R6] the store is out of the backup and fails closed` | U, D | `test/days-store.test.ts`, DV-1 | Skip exclusion; write bytes before the empty-file read-back; rename then read back only; leave the `.tmp` after a kill; write to Caches |
 | NS-47-R7 | `[NS-47-R7] claim and new phone move nothing` | I | `test/days-claim.test.ts` | Upload at the claim step |
 | NS-47-R8 | `[NS-47-R8] canary finds nothing` | U | `test/days-canary.test.ts` | Log the day id in a failure path |
 | NS-47-R9 | `[NS-47-R9] analytics allowlist rejects day data` | U | `packages/analytics/test/catalog.test.ts` | Add `tradition_picked` |
@@ -63,8 +63,8 @@ Mutant column: a change that must turn the test red. `(code not built yet)` is i
 | NS-47-R11 | `[NS-47-R11] one reader` | S | `test/days-boundary.test.ts` | Import the store from `analytics` |
 | NS-47-R12 | `[NS-47-R12] one neutral body; the name only behind its switch` | U | `test/days-lockscreen.test.ts` | Stored switch survives App lock on; name in a body |
 | NS-47-R13 | `[NS-47-R13] public days may name themselves; others need the switch` | U | `test/days-lockscreen.test.ts` | Skip one combination; title named for a family day |
-| NS-47-R15 | `[NS-47-R15] sign-out clears and B sees nothing` | I | `test/days-session.test.ts` | Leave the file on sign-out; skip delivered dismissal; clear on A's id only |
-| NS-47-R16 | `[NS-47-R16] erase scan finds nothing` | I | `test/erase-all.test.ts` (extended) | Omit the folder; no resume after a kill |
+| NS-47-R15 | `[NS-47-R15] sign-out clears and B sees nothing` | I | `test/days-session.test.ts` | Leave the file on sign-out; skip delivered dismissal; clear on A's id only; run `forgetReminders()` before deleting the file; drop the owner check so a queued re-plan schedules A's days for B; skip adopting the `'local'` file at first sign-in |
+| NS-47-R16 | `[NS-47-R16] erase scan finds nothing` | I | `test/erase-all.test.ts` (extended) | Omit the folder or the Caches suggestion folder; no resume after a kill; leave `dismissedOn` in `settings` |
 | NS-47-R17 | `[NS-47-R17] delete account line and clear` | U, I | `test/days-session.test.ts`, `test/delete-account.logic.test.ts` | The line claims an offline phone cleared |
 | NS-47-R18 | `[NS-47-R18] first run has no such field` | S | `test/first-run-fields.test.ts` | Add a tradition field to E-S08 |
 | NS-47-R21 | `[NS-47-R21] untick and clear all` | U, I | `test/days-store.test.ts`, `days-session.test.ts` | Clear all leaves a pending note |
@@ -77,6 +77,9 @@ Mutant column: a change that must turn the test red. `(code not built yet)` is i
 | NS-47-R34 | `[NS-47-R34] analytics allowlist rejects day vocabulary` | U | `packages/analytics/test/catalog.test.ts` | Add the stem `holiday` to an enum |
 | NS-47-R36 | `[NS-47-R36] no category shows a title with previews hidden` | U | `test/reminders-categories.test.ts` | `hiddenPreviewsShowTitle: true` |
 | NS-47-R38 | `[NS-47-R38] no day name beside a child name on a lock screen` | U | `test/days-lockscreen.test.ts` | Named title with a `{child}` body, names on |
+
+Added tests (review A on #970): `[NS-47-R15]` first sign-in on a never-signed-in phone: a `'local'` file is adopted by A (owner re-keyed, ticks kept, nothing uploaded) and B then reads nothing (`test/days-session.test.ts`); `[NS-47-R6]` write order: a fake `ScribeFiles` records call order and asserts exclusion set and read back on an empty temp before any byte is written, a read-back on every open, and a swept temp (`test/days-store.test.ts`); `[NS-47-R1]` `dismissedOn` is in the file, not in `settings` (`test/days-store.test.ts`).
+New test files that do not exist on develop (not extensions): `test/photos-notes.test.ts`, `test/first-run-fields.test.ts`, `test/delete-account.logic.test.ts`, `packages/content/test/store-claims.test.ts`, `test/app.config.test.ts`. The migration lint of NS-47-R4 is two halves: the `supabase/migrations` half is a `data-architect` PR (`supabase/tests/`), the settings-key and local-column half stays in `test/days-migration-lint.test.ts`.
 
 ### 2.3 NS-48 (13 P0)
 | Row | Exact title | Lvl | File | Mutant |
