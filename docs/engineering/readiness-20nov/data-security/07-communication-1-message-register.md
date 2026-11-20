@@ -94,7 +94,7 @@ Global rules (`CATALOG.md:133-139`): at most one non-auth email per address a da
 | Plan notices | 4 pending, 1 message a day | `plan-reminders.logic.ts:48` |
 | Email, non-required | 1 per address per day | `CATALOG.md:135` (no enforcement code found [U]) |
 | Email, sign-in | 1 per address per 60 s, 100 an hour for the project | `supabase/config.toml:54, 70` |
-| Email, security alert | First 5 per account per hour one by one, later ones folded into one summary sent within minutes; ceiling 20 alert mails per account per day (E81, engineering's number, not a promise to a parent); never applies to sign-in codes; a capped alert still shows as an in-app line; exempt from quiet hours (E76) | No alert sender is built for 1.0; binds NS-08-R21's sender and any later one; T-23 |
+| Email, security alert | First 5 per account per hour one by one, later ones folded into one summary sent within minutes; ceiling 20 alert mails per account per day (E81, engineering's number, not a promise to a parent); never applies to sign-in codes; a capped alert still shows as an in-app line; exempt from quiet hours (E76) | The one alert sender is A1's, built before the first outside family (E83); the cap binds it from its first send and any later one; T-23 |
 | Push | 0 | `app.config.ts:103-106` |
 
 ## 7. Conflicts found (routed in 07.4 section 4)
