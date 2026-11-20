@@ -20,13 +20,13 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
    Never: components/ui/** (toast.tsx, toast.logic.ts: design-systems, row 33-3), packages/content (no new words), lib/find/**.
    Shared file rule: `attach.ts` is #839's file; `review.tsx` and `letter/[id].tsx` are also #838/#839 files.
 
-4. READING PACK: CR-67 AX-11 (`RULINGS.md:662`); GAP-LOG CL-116 C-02 and C-07 (inputs branch 84bcf961); 11-foundations section 1.1 and the 33-3 row; docs/design/system COMPONENTS 2.14 toast; EX-14 (PR #921).
+4. READING PACK: CR-67 AX-11 (`RULINGS.md:662`; CL-116 C-02 narrows it to one clock, timed, owned by the toast); GAP-LOG CL-116 C-02 and C-07 (inputs branch 84bcf961); 11-foundations section 1.1 and the 33-3 row; docs/design/system COMPONENTS 2.14 toast; EX-14 (PR #921).
 
 5. CODE ENTRY POINTS (develop 16e61549; #839 head f3b21698)
    apps/mobile/src/components/ui/toast.tsx:9-12        today an action toast never times out
    apps/mobile/src/components/ui/toast.logic.ts:58     `createToastStore` (where `createUndo` lands)
    #839: src/lib/photos/attach.ts:8,41,50,54            UNDO_WINDOW_MS, `expiresAt`, `undoPhotoChange`
-   Callers: `grep -rlE "actionLabel|onAction" apps/mobile/src` lists 21 files at 16e61549; keep only those that pass an Undo action.
+   Callers (reproducible): `git grep -lE "onUndo|undoButton|undoPhotoChange" origin/develop -- apps/mobile/src` lists 7 files at eb34f0c7: book.tsx, (tabs)/index.tsx, letter/[id].tsx, review.tsx, components/book/undo-toast.tsx, components/onboarding/promise-sample.tsx, components/tonight/quiet-day-inline.tsx. The toast's prop is `action: { label, onPress }` (`toast.tsx:40`), so also `git grep -nE "action:\s*\{" origin/develop -- apps/mobile/src` (3 files: book.tsx, letter/[id].tsx, recently-deleted.tsx, which is not an Undo). The earlier grep for `actionLabel|onAction` and its count of 21 were wrong (it returns 5).
 
 6. DATA AND SECURITY
    Data classes: none. New storage, send, log: none. Boundary: none. Privacy line: ids in memory only; no word logged.
@@ -39,7 +39,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 10. PR BREAKDOWN (each at most 400 lines and 20 files)
     PR 1: the photo caller and R38b test | about 120 lines | base develop after 33-3 and #839
-    PR 2..n: other Undo callers in batches of at most 8 files | about 250 lines each | list the callers in PR 1's body
+    PR 2: the other Undo callers (7 files at eb34f0c7 less the photo ones already moved; one batch, at most 8 files) | about 250 lines | list them in PR 1's body; re-run the command first, the count moves with the photo stack
 
 11. LENSES: A design-systems, B principal-architect (plan 2.4).
 
