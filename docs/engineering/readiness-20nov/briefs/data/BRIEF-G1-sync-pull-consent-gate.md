@@ -11,6 +11,8 @@ Blocked until: security-architect answers #909: writes the IAM row (proposed IAM
      [G1] sync_pull omits others' rows without current age-attested terms    db access cell, deny and allow; mutant: remove the check
      [G1b] export and deletion work without current consent                  mutant: add the gate to those RPCs
      [G1c] an old build still pulls its own rows                             unit on a frozen packages/api v1 fixture; mutant: return an error shape
+   Consent boundary as separate cells (title each; state none, stale, current, grace): [G1-none] caller with no terms acceptance gets own rows only; [G1-stale] acceptance of an older Terms version outside the grace window gets own rows only; [G1-grace] stale but inside the grace window gets both (default; the founder may change it); [G1-current] current acceptance with age_attested gets both; [G1-no-age] current acceptance without age_attested gets own rows only.
+   [G1c] must not pass without the gate: use TWO frozen fixtures, the old shape (a response with no flag) and the new gated shape (own rows plus the omission flag), and assert the old-build parser (PulledRowSchema, packages/api/src/server/sync.ts:583) accepts both; a third assertion fails if the gated response adds a required key.
    Red on develop: sync_pull starts with require_user() only (20261016000000_sync_v1_server.sql:1306), so a co-parent with no acceptance receives the other author's rows through book_entries (:1498).
 
 3. FILES: TOUCH / DO NOT TOUCH
@@ -25,7 +27,7 @@ issue #909 body; PR #914 SECURITY-PRIVACY-ACCEPTANCE.md section 3.3 (G1); docs/t
 5. CODE ENTRY POINTS (file:line, checked at 16e61549 unless marked)
    supabase/migrations/20261016000000_sync_v1_server.sql:1306   require_user() only; :1498, :1542, :1553, :1563 the book_entries reads
    supabase/tests/v1_gate_coparent.test.mjs and access_matrix.test.mjs   co-parent persona fixtures
-   packages/api/src/server/sync.ts:618   PulledRowSchema (old builds must still parse)
+   packages/api/src/server/sync.ts:583   PulledRowSchema (old builds must still parse)
    apps/mobile/src/lib/first-run/gate.logic.ts:194   the phone's canSync control that is the only gate today
 
 6. DATA AND SECURITY

@@ -12,6 +12,8 @@ Blocked until: BL-939 and BL-981 (BL-968's row status), H1 or a founder size exc
      [NS-06-A17] a private letter's mark never reaches the other parent (SQL test)   mutant: add the column to a broader view
      [NS-06-A8] mark and label travel with the letter; [NS-06-A16] marks reach the author's second phone (held drafts too); [NS-06-A19] a retried mark applies once; [NS-06-A23] the 40 counts graphemes in every script (phone; the database counts code points, ceiling 320)
      [NS-36-R11] trigger tuple and view (T1 must stay green with the two new columns); [NS-36-R10] level in the migration (T3)
+   Runtime cell (not a source check): [NS-06-A-consent] a write of first_label by a caller without content consent is refused by the entries content trigger, and the same write with consent passes (BL-968 'fails on old code'); mutant: omit the columns from the tuple.
+   Mutants for the phone and sync rows: A8 drop first_label from the sync group (the other phone gets the mark but no label); A16 omit the two columns from the held-draft builder (second phone gets no mark); A19 send the mark as an increment or without the idempotency base (a retry applies twice); A23 count code points instead of graphemes (a 40-grapheme label with combined characters is refused).
    Red on develop: no such column; a non-consented write of first_label has nothing to refuse.
 
 3. FILES: TOUCH / DO NOT TOUCH
