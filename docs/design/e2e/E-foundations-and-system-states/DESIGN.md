@@ -1,13 +1,13 @@
 # Area E. Foundations and system states: design
 
-Status: v1 after the reconciliation pass with MOTION.md and WORDS.md (section 12) and the design system v2 material policy (section 7a), design lead for area E, 20 Nov 2026. Docs only. Nothing here changes a card, the engineering plan or the code.
+Status: v2, 20 Nov 2026, design lead for area E. v1 was reconciled with MOTION.md and WORDS.md (section 12) and the design system v2 material policy (section 7a). v2 re-keys area E to the final product pack: first run, sign-in, permissions order and optional fields now follow card 19 (NS-38 to NS-45), the days, cultural-background, picture-first and Home-today cards (NS-46 to NS-50, `21-days-cultural-photos-home.md`), `22-final-holistic-spec.md`, GAP-LOG rulings (RV-1 to RV-17, K1 to K17) and the function reviews (`FUNCTION-TRACE.md` section 6.5). New in v2: sections 13 (consolidated state and error inventory for every new state), 14 (foundations and tokens: DoorNote, optional field, slip variants, C9 text), 15 (Liquid Glass policy check for each new surface), 16 (function needs accounted for), 17 (contradictions to flag) and 18 (open design questions, with defaults). Docs only. Nothing here changes a card, the engineering plan or the code.
 Companions in this folder: `MOTION.md` (motion lead), `WORDS.md` (content lead), `PROTOTYPE.html` (this lead).
 Screen ids `E-Snn` and state ids `E-Snn.<state>` are stable from the skeleton on. The cross-area state catalogue ids `E-STnn` (section 6) are for areas A to D to point at.
 
 ## 0. Sources, precedence and what this file supersedes
 
 Read in the brief's order (CR-66):
-1. Locked cards: `11-foundations.md` (NS-32 to NS-37) is this area's own card. First run, sign-in, Plus and the switches are "Cited" rows in `07-remaining-capability-rows.md` section 2 (C25, C44, C45, C46: F01, F03, F14, F19, NX-31, NX-36), so for them the locked pack adds only the rows other cards name: NS-10 (new phone, consent outstanding, kill switch at sign-in, second account), NS-17-R1 (ungated languages absent from every picker, first run included), NS-33 (every row on first run and on the gate sheet), NS-35 (first run ends on Home), D1 (sign-out keeps the book), D2 and D3, T2 (free stays free), the frame's guardrail "zero paywalls before a parent has seen their words", and X5 (every state table carries the kill switch, the remote pause and plan lapse).
+1. Locked cards: `19-from-download-to-first-letter.md` (NS-38 to NS-45; status Locked v1.0 candidate, 20 Nov) is now the card for first run, sign-in, agreements, the first book, the first letter and account life; `11-foundations.md` (NS-32 to NS-37) is this area's other card. Where the older text below says first run and sign-in are only "cited", card 19 now owns them and wins. First run, sign-in, Plus and the switches are "Cited" rows in `07-remaining-capability-rows.md` section 2 (C25, C44, C45, C46: F01, F03, F14, F19, NX-31, NX-36), so for them the locked pack adds only the rows other cards name: NS-10 (new phone, consent outstanding, kill switch at sign-in, second account), NS-17-R1 (ungated languages absent from every picker, first run included), NS-33 (every row on first run and on the gate sheet), NS-35 (first run ends on Home), D1 (sign-out keeps the book), D2 and D3, T2 (free stays free), the frame's guardrail "zero paywalls before a parent has seen their words", and X5 (every state table carries the kill switch, the remote pause and plan lapse).
 2. `14-test-plan.md` journeys J-N2, J-N12, J-N15, J-N17, J-N20, J-N21, J-N22, J-N25, J-N27 and gates G0 to G6; `16-council-review-round-2.md` T1 to T5, D1 to D13.
 3. Engineering: `13-engineering-plan.md`; PR #847 (`17-engineering-project-plan.md`, read 20 Nov through `gh api`); backlog BL-922, BL-927 to BL-930, BL-948, BL-954, BL-958, BL-961 to BL-967, BL-978, BL-984, BL-987; `/home/claude/review/eng/C-platform-quality-delivery.md` (flags, kill switch policy ADR 0029, proposed keys).
 4. House design: `DESIGN_LANGUAGE.md`, `COMPONENTS.md` (2.12 Sheet, 2.13 Dialog, 2.14 Toast, 2.15 EmptyState, 2.15a StateScreen), `MOTION.md`; tokens `packages/design-tokens/src/tokens.ts`; words `packages/content/src/features/auth.en.ts`, `billing.en.ts`, `strings.en.ts` (`errors.*`).
@@ -46,27 +46,28 @@ The app as built is the baseline. Every screen below names the file that draws i
 Notation: `->` a tap or a system event; `[E-Snn.state]` the screen and state shown. "Store build" means servers on, not alpha (`PLUS_ALPHA` false). "Servers-off build" means `serverFeaturesEnabled()` false (the kill path; today the `testflight` profile, per the platform review 2.1).
 
 ### J-E01 From the App Store to the first kept letter, store build (happy path, with every check)
-The founder asked (20 Nov, relayed by Karma) for the journey from download to the first kept letter. Product is writing NS-38 to NS-45 (`19-from-download-to-first-letter.md`); it was not on disk when this was written, so this flow is keyed to the built path and the open questions go to section 10 (K-E10 to K-E16) for product to answer.
-1. App Store page [E-S27.default]: Apple's page; every public line is a claims row (no "fast", "smart reminders", "accessible to everyone": NS-32, NS-33, NS-34 Claims). Get -> [E-S27.installing] -> [E-S27.installed] the icon on the Home Screen. No account is needed to download; the download is under 40 MB (NS-34).
-2. First launch -> [E-S01.default]: no words, no network wait; first interactive frame p50 1.2 s on SE 3.
-3. Age and agreement [E-S03.default]: Yes or No (nothing preselected), the agreement box (unticked), Terms and Privacy as their own links. Validation in words, announced: no answer -> [E-S03.reason-noAnswer] "Choose Yes or No."; Yes without the box -> [E-S03.reason-noTick] "Check the box to continue." with focus on the box. Fail: No -> [E-S03.stop]; retry only after 24 hours ("I answered by mistake", D-026). Records: the age boolean and the local agreement record, on the phone only.
-4. Region: no in-app region check exists (read 20 Nov in `lib/auth`, `lib/first-run`, `app`); availability is set per storefront in App Store Connect, so someone outside it cannot download. [E-S03.region] is drawn as a HOLD only, should counsel require an in-app check (K-E10).
-5. Welcome, account-first [E-S02.default] (as built, `welcome-sign-in.tsx`): lockup, descriptor, body, the free-letters line, "Sign in to begin your book.", the agreement line with its two links, then two equal 56 pt doors: Sign in with Apple, Sign in with email. A returning phone sees the last method under the matching door [E-S02.lastMethod]. No password, name or phone field.
-6a. Apple -> Apple's sheet (Apple verifies the person; we receive the account identifier and, if shared, a relay or real email) -> cancelled: nothing shown; failed: [E-S02.error-provider].
-6b. Email -> [E-S05.default] one field (email autofill), Send link. Validation: empty -> [E-S05.reason-empty] (PROPOSED words; today the button is disabled with no reason, K-E11); malformed -> [E-S05.error-invalid_email]; too many sends -> [E-S05.error-email_wait]; provider off -> [E-S05.error-not_available]; offline -> [E-S05.error-network]. -> [E-S06.default] "Check your email": the code field (6 digits, one VoiceOver field, iOS one-time-code autofill) or the link on this phone. Validation: short -> [E-S06.reason-short] (PROPOSED); wrong -> [E-S06.error-wrong_code]; five wrong -> [E-S06.paused]; 429 -> [E-S06.error-rate_limited]; expired link -> [E-S06.error-expired]; link from another phone -> [E-S06.refused-other_phone] or `refused-other_phone_spent`; already signed in -> [E-S06.refused-already_signed_in]; nothing arrived -> [E-S06.help].
-6c. A service or connection failure at any point -> [E-S14] (J-E03, J-E04).
-7. Verification and agreement: [E-S07.loading] "Setting up your account" -> [E-S07.default] Before your book syncs (registered body, agree line, links), Agree and continue / Not now; then the sensitive-data consent as built. Failed -> [E-S07.error-consent_unavailable]; declined -> [E-S07.declined] (C-S11 rules). Records: PRIV-R21 acceptance rows.
-8. The account is asked once (BL-922): new -> E-S08; has a book -> E-S09 (J-E05); this phone already holds letters -> [E-S24] claim.
-9. First book [E-S08]: name (optional on the account-first path), birthday or due date (required): none -> [E-S08.dateWaiting]; a future birthday -> [E-S08.dateFuture] "Choose today or an earlier day."; a due date beyond ten months -> [E-S08.dueRange]; twins [E-S08.twins], an empty extra name -> `needNameMany` [E-S08.name-waiting]; what the child calls you (required, D2 writing tools off): empty -> [E-S08.signsAsWaiting], over the limit -> `signsAsLimit`. Every reason is in words under Continue, announced, with focus to the field; Continue is never a silent grey button. Languages only in multi-language builds, gated ones only (NS-17-R1). Then the promise sample and [E-S08.open] "The book is open."
-10. Home [A-S01.first]. No permission has been asked yet: permissions only when needed (E-S28).
-11. First Speak -> area A's microphone primer [A-S04.primer] -> the iOS prompt [E-S29.prompt] with `permissions.microphone`. Allow -> Listen; Don't Allow -> [A-S04.blocked] with Type instead and Open Settings. Notifications are asked only by area D's reminder ask, after a kept letter, never in first run. Photos need no permission (PHPicker). Face ID is asked only when the parent turns on App lock.
-12. Record -> Review -> Keep: the first two letters keep with no gate (D-082); after the second the Book shows `secondFreeNote` once; the third meets E-S10 (J-E10).
+Re-keyed on 20 Nov to card 19 (`19-from-download-to-first-letter.md`, NS-38 to NS-45). Each step names its card row. The built order holds: the age question comes before the Welcome because the root layout renders no route until it passes (card 19, "Order on a fresh install"); D-043's "welcome, then the gate" is superseded. K-E10 to K-E16 are answered in section 10a.
+1. App Store page [E-S27.default] (NS-38): Apple's page. Every public line is a claims row; the listing never says or implies "no account", "no sign-up", co-parent sharing, recording backup or a language the build does not transcribe (NS-38-R2). One plain sentence says sign-in is needed and why (open item O-1). Get -> [E-S27.installing] -> [E-S27.installed]. The install is under 40 MB and holds no speech model (NS-38-R6). A phone restored from an iCloud device backup opens Home with the restored book, signed out, sign-in offered and never required (NS-38-R8).
+2. First launch [E-S01.default] (NS-39-R1): no words, no network request before the age question, first interactive frame p50 1.2 s and p90 2.0 s on SE 3 (NS-39-R7). If the Keychain read does not settle, the Welcome shows within 10 s (NS-39-R8).
+3. Age and agreement [E-S03.default] (NS-40, NS-42): Yes or No with nothing selected, the agreement box unticked, Terms and Privacy as their own 44 pt links that open the version recorded, at "What we collect" (NS-42-R14). No answer -> [E-S03.reason-noAnswer] "Choose Yes or No."; Yes without the box -> [E-S03.reason-noTick] "Check the box to continue." with focus on the box (NS-42-R1). No -> [E-S03.stop] (NS-40-R3: one row, nothing in Documents, zero requests, a held link token gone); after 24 hours "I answered by mistake" (NS-40-R4; no confirm step, O-3). Records: the age boolean and two local agreement rows in one transaction, never an age (NS-40-R2, NS-42-R2). The answer and the box show their state by a check shape and weight as well as colour (QAL-09, NS-33-R12 reading). When the platform age signal ships, a minor answer shows [E-S03.platformMinor]: the same room and words as the stop, nothing stored (NS-40-R5, R6, K5).
+4. Region: there is no in-app region question and no E-S03.region state (NS-40 Never: never ask where a person is). A refused country meets [E-S04.refused-region] only at sign-up (step 6, NS-40-R9). The HOLD state of v1 is retired.
+5. Welcome, account-first [E-S02.default] (NS-39, NS-41-R1): lockup, descriptor, body, the free-letters line (one string, K2), "Sign in to begin your book.", the agreement line directly above the buttons, then two equal 56 pt doors: Sign in with Apple (where available) and Sign in with email. A returning phone sees the last method under the matching door [E-S02.lastMethod]. No password, name, phone, Google or passkey control (NS-41-R20). The words "sign up", "log in" and "create account" appear nowhere (NS-41-R1). No story card, no "coming soon" line, no price, trial or Plus button (NS-39-R12).
+6a. Apple -> Apple's sheet -> cancelled: nothing shown (NS-41-R7); failed: [E-S02.error-provider]. Email name scope is requested as email only (O-8), so no Apple name is ever shown.
+6b. Email -> [E-S05.default]; empty -> [E-S05.reason-empty] "Type your email to continue." (NS-41-R8, no silent grey button); malformed -> [E-S05.error-invalid_email]; address trimmed and lower-cased before send (NS-41-R24); identical screens for a known and an unknown address (NS-41-R2); too many sends -> [E-S14.outage] on first run with Sign in with Apple still reachable (NS-41-R12, R21). -> [E-S06.default] "Check your email": one field that reads as one VoiceOver field with its length (`code.digits` with `{n}`; 8 digits by default, O-6; the field draws 6 to 10), or the link on this phone. Short -> [E-S06.reason-short]; wrong -> [E-S06.error-wrong_code]; five wrong in 15 minutes -> [E-S06.paused] (NS-41-R9); 429 -> [E-S06.error-rate_limited]; expired (900 s) -> [E-S06.error-expired]; link from another phone -> [E-S06.refused-other_phone] or `refused-other_phone_spent` (NS-41-R3); already signed in -> [E-S06.refused-already_signed_in] (NS-41-R4); nothing arrived after a minute -> [E-S06.help]. A Hide My Email address shows the method, never the relay address (NS-41-R18).
+6c. A refusal by the sign-up hook from a refused country -> [E-S04.refused-region] (NS-40-R9, R14): never a generic error or an outage; no Try again; Terms and Contact us as quiet actions (card 19 words; content decides whether the label is "Contact us" or "Write to us"); nothing stored. An existing account signs in from anywhere (NS-40-R11).
+6d. A service, connection or `killSwitches.signIn` condition at any point -> [E-S14] (J-E03, J-E04, J-E09).
+7. Setting up and agreements [E-S07.loading] -> [E-S07.default] "Before your book syncs": the agree line directly above "Agree and continue" (NS-42-R3), "Not now" records nothing and syncs nothing (NS-42-R16); then the sensitive-data step with two equal answers, nothing preselected (NS-42-R4). Declined sensitive data: zero entries uploaded, still signed in, reachable later from Me, Privacy in two taps (NS-42-R5). Failed -> [E-S07.error-consent_unavailable]; declined Terms -> [E-S07.declined] (C-S11 rules); a new major version -> [E-S07.reconsent] (NS-42-R10). Local agreement rows upload unchanged after the server row (NS-42-R12).
+8. The account is asked once (BL-922): new -> E-S08; has a book -> E-S09 (never E-S08, NS-41-R14, NS-43-R8); this phone already holds letters owned by no account -> [E-S24] claim, nothing claimed until Keep in this account is tapped on a screen showing the masked address or the method (NS-41-R5).
+9. First book [E-S08] (NS-43): what we promise, then who the book is for. The only required field is the date (NS-43-R1); the name is optional and says so in words (section 14.2). A missing date -> [E-S08.dateWaiting]; a future or impossible birthday -> [E-S08.dateFuture]; a due date out of range -> [E-S08.dueRange] (NS-43-R3); a 61-code-point name -> its limit line (NS-43-R4); twins with an empty extra name -> `needNameMany` (NS-43-R5); what the child calls you (writing tools off, NS-43-R12): empty -> [E-S08.signsAsWaiting], over 30 -> `signsAsLimit` (NS-43-R7). Every reason is in words under Continue, announced, focus to the field. Languages only in multi-language builds and only gated ones; no "coming soon" line (NS-43-R11). Then "The book is open." with the speech card [E-S08.open] and no app lock offer (NS-39-R9). A refused first-run book never deletes anything and says nothing on Home (NS-43-R14). The books commit together or not at all (NS-43-R9).
+10. Home [A-S01.first] (NS-43-R10): no sheet, permission prompt, Plus surface or lock offer in front. No OS permission has been asked in the whole path (NS-39-R2; section 5 E-S28 map).
+11. First Speak -> area A's primer [A-S04.primer] -> the iOS prompt [E-S29.prompt]; Continue on the primer is the only path to iOS's prompt (NS-39-R10, NS-44-R6). Don't Allow -> [A-S04.blocked] with Type instead and Open Settings, no dead end. Notifications are asked only after a kept letter by area D's ask (or once by Plus confirmed, K-E13); photos need no permission; Face ID only when App lock is turned on from Settings.
+12. Record -> Review -> Keep [A-S13]: no price, trial, Plus name or sheet at any step (NS-44-R1); the first two kept letters meet no gate (NS-44-R2); the first Keep plays the success haptic once, with no confetti, badge, count or streak (NS-44-R12); a recording made before the speech model arrived is kept and waits for its words (NS-39-R4, NS-44-R7); after the second the Book shows `secondFreeNote` once as a toast (NS-44-R11); the third meets E-S10 (J-E10, NS-44-R3).
 
 ### J-E02 First run, servers-off build (kill path)
 1. E-S01 -> E-S03 -> [E-S02.serversOff] Welcome with "Begin the book" only; no sign-in door, no "I already have a book".
 2. -> E-S08 steps -> Home. No account, Me has no Account or Delete account rows (`capabilities.ts`), no Plus offer copy changes (alpha note only in alpha builds).
 
-### J-E03 First run, sign-in cannot be reached (unhappy)
+### J-E03 First run, sign-in cannot be reached (unhappy) (NS-39-R5, NS-41-R12, R21, R25)
 1. E-S02 -> Sign in with Apple or Sign in with email -> a failure (`network`, `rate_limited`, `email_wait`, `not_available`, `unknown`) or the 10 s gate timeout.
 2. -> [E-S14.outage] "Sign-in cannot be reached right now." / "Try again in a moment." / Try again (primary) / Start on this phone (quiet, only when the gate offers it: age Yes, a failure, `LOCAL_START_FALLBACK`) with its note.
 3a. Try again -> E-S02 (the failure is set aside) -> sign in again.
@@ -106,7 +107,8 @@ The founder asked (20 Nov, relayed by Karma) for the journey from download to th
 | `network`, `unknown` | E-S04 | to E-S14 on first run; inline in Me | Try again |
 | `under_18` | E-S03 | E-S03.stop | none |
 
-### J-E09 Kill switch at sign-in (NS-10-R8)
+### J-E09 Kill switch at sign-in (NS-10-R8) and the sign-in pause (`killSwitches.signIn`, NS-41-R25)
+0. `killSwitches.signIn` on (disable-only, signed config; PROPOSED, O-19): a person with no session who reaches the Welcome and taps a door meets [E-S14.signInPaused], which renders as E-S14.outage with the local start; a signed-in session on any phone is never ended, refreshed differently or blocked.
 1. A build or a moment with `serverFeaturesEnabled()` off -> the phone shows its local book only. Never the held screen, never a sign-in error. E-S02.serversOff on a fresh install; Home on a phone with a book.
 
 ### J-E10 The third letter: the one Plus gate (store build)
@@ -194,33 +196,35 @@ Common state suffixes (any screen may carry them): `.default`, `.loading`, `.emp
 | Id | Screen | Built file | States |
 |---|---|---|---|
 | E-S01 | Launch and boot | `app/_layout.tsx`, `components/resilience/launch-recovery.tsx`, `plain-screen.tsx` | default, migrating (breathing after 350 ms), recovery (alias `error-launch`), recovery-trying, recovery-stillClosed, recovery-exporting (alias `loading-export`), recovery-exportNothing, recovery-exportFailed, ax5, vo, dark |
-| E-S02 | Welcome (account-first when servers on) | `app/onboarding.tsx`, `components/onboarding/welcome-sign-in.tsx`, `welcome-lockup.tsx` | default (store, two sign-in doors), lastMethod, serversOff (Begin the book), alpha, restoring (alias `loading`), error-provider, sessionExpired, ax5, vo, dark |
-| E-S03 | Age gate and stop | `components/gate/age-gate-screen.tsx` | default, reason-noAnswer, reason-noTick, agreeOnly (old install), stop, stop-after24h, region (HOLD, K-E10), ax5, vo, dark |
-| E-S04 | Sign-in sheet after first run (Me, claim path) | `app/(auth)/sign-in/index.tsx` | default, busy, error-cancelled (nothing), error-provider, error-not_available, error-network, ax5, vo, dark |
+| E-S02 | Welcome (account-first when servers on) | `app/onboarding.tsx`, `components/onboarding/welcome-sign-in.tsx`, `welcome-lockup.tsx` | default (store, two sign-in doors, no Google or passkey), lastMethod, serversOff (Begin the book), alpha, restoring (alias `loading`, capped at 10 s), error-provider, sessionExpired, ax5, vo, dark. NS-39, NS-41, NS-42 |
+| E-S03 | Age gate and stop | `components/gate/age-gate-screen.tsx` | default, reason-noAnswer, reason-noTick, agreeOnly (old install), stop, stop-after24h, platformMinor (new, built later, same room as stop, nothing stored; NS-40-R5), ax5, vo, dark. The v1 state `region` (HOLD) is RETIRED: no in-app region question exists (NS-40). NS-40, NS-42 |
+| E-S04 | Sign-in sheet after first run (Me, claim path) | `app/(auth)/sign-in/index.tsx` | default, busy, error-cancelled (nothing), error-provider, error-not_available, error-network, refused-region (new, NS-40-R9: StateScreen warm, one line, no drawing of a map or flag, Terms and Contact us, no Try again), ax5, vo, dark. NS-41 |
 | E-S05 | Sign in: email | `app/(auth)/sign-in/email.tsx` | default, sending, reason-empty (new, K-E11), error-invalid_email, error-email_wait, error-not_available, error-network, ax5, vo, dark |
-| E-S06 | Sign in: code and verify | `code.tsx`, `verify.tsx` | default, checking, reason-short (new, K-E11), help, noAddress, verifying, error-wrong_code, paused (code_paused), error-rate_limited, error-expired, refused-other_phone, refused-other_phone_spent, refused-already_signed_in, ax5, vo, dark |
-| E-S07 | Agreements and consent at sign-in | `app/(auth)/sign-in/consent.tsx` | loading (Setting up your account), default (Terms sheet), declined (to C-S11), error-consent_unavailable, claim (alias of E-S24), ax5, vo, dark |
-| E-S08 | First book steps | `app/onboarding.tsx` | name (optional on the account-first path), name-waiting (twins or servers-off path), date, dateWaiting, dateFuture, dueRange, signsAs, signsAsWaiting, promise, open, twins, languages (multi-language builds only), ax5, vo, dark |
+| E-S06 | Sign in: code and verify (field draws 6 to 10 digits, `code.digits` with `{n}`) | `code.tsx`, `verify.tsx` | default, checking, reason-short (new, NS-41-R8), help (ordered per MSG-08, with Write to us), noAddress, verifying, error-wrong_code, paused (code_paused), error-rate_limited, error-expired, refused-other_phone, refused-other_phone_spent, refused-already_signed_in, ax5, vo, dark |
+| E-S07 | Agreements and consent at sign-in | `app/(auth)/sign-in/consent.tsx` | loading (Setting up your account), default (Terms sheet), sensitive (the second step, two equal answers), reconsent (new: a new major version, change summary, NS-42-R10), offline (new), declined (to C-S11), error-consent_unavailable, claim (alias of E-S24), ax5, vo, dark |
+| E-S08 | First book steps | `app/onboarding.tsx` | promise, name (optional, marked "Optional", NS-43-R1), name-waiting (twins only; no longer the servers-off path), date (with the PROPOSED why-we-ask line), dateWaiting, dateFuture, dueRange, nameLimit, twins, signsAs, signsAsWaiting, signsAsLimit, languages (multi-language builds only), open (the speech card: ask, downloading, waitingWifi, verifying, stopped, pausedRemote, needsSpace, done), ax5, vo, dark. NS-43 |
 | E-S09 | First-run router (alias of C-S10, C-S11) | `lib/first-run/*.ts` | decision table only (section 5) |
 | E-S10 | Keep gate sheet | `components/child/plus-gate.tsx` | default, opening, offline, needsNewerIos, unavailable, lapsed, fromLetter, fromLetter-offline, error-codeFailed (built `codeFailed`), hold (no sheet: Plus not known, E-ST26), synced (held for counsel C10), ax5, vo, dark |
 | E-S11 | Plan in Me | `app/settings/plus.tsx` | free (never had Plus), on, trial, renews, ends, ended, grace, retry, shared, alpha, restoring, restored, restoreNone, restoreFailed, notificationsOff, ax5, vo, dark |
 | E-S12 | Plus confirmed | `app/plus/confirmed.tsx` | default, withAsk (notifications never asked), ax5, vo, dark |
-| E-S13 | Something broke | `components/resilience/global-fault-screen.tsx`, root error boundary | boundary, noBook (fresh install: no safety sentence), global, ax5, vo, dark |
-| E-S14 | Sign-in outage and offline (first run) | `components/onboarding/outage-screen.tsx` | outage, outage-withLocal, offline, offline-withLocal, backOnline (announcement), ax5, vo, dark |
+| E-S13 | Something broke | `components/resilience/global-fault-screen.tsx`, root error boundary | boundary, noBook (fresh install: no safety sentence), global, secondFault (adds Write to us), ax5, vo, dark |
+| E-S14 | Sign-in outage and offline (first run) | `components/onboarding/outage-screen.tsx` | outage, outage-withLocal, offline, offline-withLocal, signInPaused (new: `killSwitches.signIn`, renders as outage-withLocal), backOnline (announcement), ax5, vo, dark. NS-39-R5, NS-41-R12, R25 |
 | E-S15 | SystemLine in place (new component) | none | info, waiting, paused, offline, action, ax5, vo, dark |
-| E-S16 | App update line in Me | none (gap) | line, absent, ax5, dark |
+| E-S16 | App update line in Me | none (gap G-E03) | line (one line, two wordings: required update, and "can no longer reach your account"; LCY-17), absent (current build, or an update that is available but not required: nothing shows, NS-45-R14), ax5, dark. NS-45-R13 |
 | E-S17 | Low-storage rules (rendered by A-S04, A-S05, C-S04, C-S18) | `lib/capture/free-space.ts` | under1gb, under50mb, under20mbMidTake, exportShort |
-| E-S18 | Second account on one phone | `lib/auth/account-claim.logic.ts`, `lib/first-run/account-books*.ts` | signedOutA, signedInB-noBook, signedInB-arriving, backToA |
+| E-S18 | Second account on one phone | `lib/auth/account-claim.logic.ts`, `lib/first-run/account-books*.ts` | signedOutA (the book of the account that signed out last shows, K-E02 answered by O-5), signedInB-noBook, signedInB-arriving, signedInB-ownerMismatch (new: A's book hidden and locked, B's arrives or "No book here yet"), signedInB-localOnly (new: B's letters stay on this phone, one SystemLine), backToA. NS-41-R6 |
 | E-S19 | Interruption and recovery | `lib/resilience/recover-to-tonight.ts`, capture sweep | call, background, killedMidTake, killedOnConsent, killedMidPurchase |
 | E-S20 | Not found | `app/+not-found.tsx` | default, noBook (fresh install), ax5, dark |
 | E-S21 | Appearance | `app/settings/appearance.tsx` | system, light, dark, noLetter |
 | E-S22 | App lock cover | `components/app-lock` | locked, failed, ax5, dark |
 | E-S23 | Accessibility walk and speed sheet | `docs/qa` (BL-929, BL-948) | matrix (section 9) |
-| E-S24 | Claim screen | `lib/auth/account-claim.logic.ts` (screen in sign-in stack) | default, noEmail, hasBook, waiting, ax5, vo, dark |
+| E-S24 | Claim screen | `lib/auth/account-claim.logic.ts` (screen in sign-in stack) | default, noEmail, methodOnly (new: relay address, shows the method), hasBook, accountDeleted (new: "your earlier account was deleted; keep these letters in this account?", LCY-11), waiting, ax5, vo, dark. NS-41-R5, R18 |
 | E-S25 | Plan reminder note in the app | `lib/billing/plan-notice.tsx` | trial, renews, yearly, ax5, dark |
 | E-S27 | App Store page and install (Apple's; ours only as claims) | none | default, installing, installed |
 | E-S28 | Permission asks map (when each system permission is asked) | `permissions.en.ts`, `app.config.ts` | matrix (section 5) |
 | E-S29 | Microphone prompt (iOS), after area A's primer at the first Speak | system | prompt, allowed, denied (to A-S04.blocked) |
+| E-S30 | If you are struggling (new; support SUP-17, SUP-18; id assigned here because support's proposed E-S27 and E-S28 are taken, K9) | none | region with lines, IN (emergency and directory only), other region, iPad or no SIM (Copy fallback), offline, ax5, vo, dark. Reached from a quiet link on the Welcome and from Me, Help and legal (C-S01) |
+| E-S31 | Lines in other countries (new; SUP-17) | none | list, offline, ax5, vo, dark. Reached only from E-S30 |
 | E-S26 | Home Plus line (a rule drawn on A-S01) | `app/(tabs)/index.tsx` | off (absent), on (allowance used, Plus off or lapsed), alpha (absent) |
 
 ## 5. Screens in detail
@@ -233,6 +237,7 @@ Layout figures are in points at default text size on a 375 x 812 frame (safe are
 - Recovery (built, PlainScreen): page drawing, `errors.launch.title`, body, hint; Try again (primary, becomes "Trying again" for a beat), Export what's readable (quiet). After a failed retry, `stillClosed` in a polite live line. No action deletes data.
 - AX5: drawing hides above AX2 to give text room (StateScreen rule); title wraps; both buttons stack full width, pinned.
 - VoiceOver order: title (heading), body, hint, Try again, Export what's readable. Each result line announced every time.
+- Recovery keeps "Export what's readable" on every recovery state, and it must run against an older-schema file (LCY-02, NS-39-R11: neither action deletes a file or row). After a second failure a quiet "Write to us" text button sits below Export what's readable (SUP-02); the readme inside the export names the address.
 - Components: PlainScreen (existing). Integration: NS-34 cold start; NS-32-R16 re-plan; NS-36 "App updated mid-flow"; claims rows E1, E3, E4, E8. Data read: local database; written: none. Module: `lib/resilience/launch*.ts`.
 
 ### E-S02 Welcome
@@ -244,12 +249,15 @@ Layout figures are in points at default text size on a 375 x 812 frame (safe are
 - error-provider: one inline line above the doors, `firstRun.errors.provider`, announced. sessionExpired: `errors.session_expired`.
 - AX5: the footer joins the scroll after the benefit line (as built); nothing truncates.
 - VoiceOver: lockup, heading, body, benefit, agreement and its links, Apple, email, I was invited (as built). Voice Control: "Sign in with Apple", "Sign in with email".
+- Re-keyed to NS-39, NS-41 and NS-42: exactly Sign in with Apple and Sign in with email at equal size (NS-41-R1); no Google or passkey control (NS-41-R20); the agreement line stays directly above the buttons and fully visible at AX5 without scrolling past them (NS-42-R15); Privacy opens the policy at "What we collect" (NS-42-R14). A two-sentence notice at collection above the agreement line was asked by the privacy function (PRV-24); card 19 does not carry it, so it is drawn as a pending state `E-S02.notice` (pending counsel Q20, open question D-5). A quiet "If you are struggling" link (E-S30) sits below the doors and needs no account (SUP-18; pending ruling). `killSwitches.signIn` never changes this screen; it sends a tap on a door to E-S14.signInPaused.
 - Layer: content (paper and lamp). Apple's button is Apple's control. No glass on this screen.
 - Integration: C44 (F01, NX-31 R2, R8, R17, R18, R22, NX-36 S2); NS-35 first use; flag `serverFeaturesEnabled()`; error codes `provider`, `session_expired`, and the outage set via E-S14. Modules: `lib/first-run/route.logic.ts`, `welcome.logic.ts`.
 
 ### E-S03 Age gate and stop
 - As built (PRD-REQ-019, LEGAL-REQ-002): the question in `display`, Yes and No as equal pills with nothing selected, the agreement row unticked, Terms and Privacy as their own 44 pt links, Continue never disabled. Reason line in `text` with a WarningCircle (never status colour on the gate).
-- Stop: one line in the same room; "I answered by mistake" after 24 hours (D-026).
+- Stop: one line in the same room; "I answered by mistake" after 24 hours (D-026). platformMinor (NS-40-R5, K5): identical room, words and absence of any control; nothing about the system answer is stored, logged or sent (NS-40-R6). Never "verified" or "safe for kids" wording (claims).
+- Selected is never colour alone: the chosen answer pill gets a check glyph and a heavier label; the ticked box shows a check mark; the reason line carries a WarningCircle (QAL-09, WCAG 1.4.1).
+- Region (v1 HOLD) is retired. No state asks where a person is (NS-40 Never).
 - AX5: Yes and No stack; agreement row wraps with the box top-aligned; Continue pinned.
 - VoiceOver: question (heading), Yes, No (each "selected" when chosen), agreement checkbox with its full sentence, Terms, Privacy, Continue; the reason line is announced and focus moves to the box.
 - Door lines (COORDINATION section 10): Shown: the question and the agreement; Records: the age boolean and the local agreement record on the phone; Never: preselected answer or ticked box; Decline: No stops the app with one line, nothing stored about the box.
@@ -258,17 +266,25 @@ Layout figures are in points at default text size on a 375 x 812 frame (safe are
 - E-S04: the sign-in sheet used after first run (Me, Account; the claim path; an invite in an alpha build). First run signs in on E-S02 itself. A system sheet (glass, N7) with Close; title "Sign in"; Apple's `ASAuthorizationAppleIDButton` and "Sign in with email" (filled), both 56. Inside the glass sheet the buttons are filled or plain, never glass (no glass on glass). One inline error slot above the buttons.
 - E-S05: email TextField (autofill email, keyboard email), Send link (primary, sticky above keyboard); `email.help` "A link and a code arrive by email. No password to remember." reason-empty: a tap on Send with no address says why in words (PROPOSED), never a silent disabled button. Error under the field, field border `caution` plus the WarningCircle glyph and words (never colour alone).
 - E-S06: six-box code field read as one field by VoiceOver ("Code, 6 digits"), autofill from Mail where iOS offers it; "Send a new email" quiet. Verifying: StateScreen loading with "Signing you in". Refused: StateScreen warm error with `verify.refusedTitle` and one action.
+- E-S04.refused-region (NS-40-R9, R14): StateScreen warm (C8), no drawing of a map or flag, one line (content: intent "{app} can't be set up from here."), Terms and Contact us as quiet actions, no Try again, nothing stored, never styled as an outage or a generic sign-in error. VoiceOver: heading first, then the line, then the two actions. Layer: content.
 - AX5: all three are single columns; the code boxes become one wide field at AX3 and above; sticky buttons stay above the keyboard; ModalHeader keeps Close at 44.
 - Error codes: see J-E08. Door lines: Shown: the sign-in method; Records: the session in the Keychain; Never: an email address shown in full on a shared screen beyond the field being typed; Decline: Close, back to the Welcome.
 
 ### E-S07 Agreements and consent at sign-in
 - As built: "Setting up your account" (loading), then the Terms sheet "Before your book syncs" with the privacy body, the agree line with links, "Agree and continue" primary, "Not now" quiet.
+- reconsent (NS-42-R10, new): a new major version while signed in. The same sheet with a change summary block (a PROPOSED key, content names it) above the agree line, then Agree and continue / Not now. Recording, reading, playing and export work whatever the answer; Delete account works without agreeing (NS-42-R11). Shows before sync resumes, never mid-gesture.
+- offline (new): the sheet's own line `consent_unavailable` family, nothing recorded; Try again.
+- sensitive: the second step; two answers of the same size and width, nothing preselected (NS-42-R4); the decline path is reachable later from Me, Privacy in two taps (NS-42-R5).
 - Not now (declined) on first run -> C-S11 rules (nothing downloads, nothing uploads, Delete account works without agreeing, export reachable).
 - Door lines: Shown: the existing keys and versioned links; Records: a PRIV-R21 row (surface `returning_consent_sheet` when returning, method `tap`); Never: preticked; Decline: as NS-10 section 12.
 
 ### E-S08 First book steps
 - One step per screen, lamp `form` scene; Continue full width at the bottom; Back top left. Name (nameField serif 22), date (wheel, birthday or due date, one control with two equal choices), what the child calls you (signs-as, D2 writing tools off), the promise sample (a small fix shown, not described), "The book is open." (lamp rises; success haptic once).
-- name-waiting: tapping Continue with no name shows `childrenExtra.nameRequired` above Continue with the WarningCircle, focus to the field.
+- Optional name (NS-43-R1, K-E12 answered): the name is optional on every path, including the servers-off path. The label reads "Their name" with the word "Optional" beside it (section 14.2); VoiceOver reads "Their name, optional"; the book cover reads "Letters to your child" until a name is added (NS-43-R1: "your child" is shown). Continue is enabled with the field empty, so Continue is itself the skip: no second "Skip" control on this step. Only the date is required: missing -> `dateWaiting`, in words under Continue, announced.
+- name-waiting is now only twins: an extra book with an empty name -> `needNameMany` (NS-43-R5). `childrenExtra.nameRequired` stays for Me, Add a child (NX-31-R28), where the name is required.
+- why-we-ask (PRV-16, PRV-24, PROPOSED words): one `footnote` line under the date, that the book's chapters follow the child's age. Static, never a tooltip.
+- nameLimit: 61 code points -> the limit line, announced; names in any script up to 60 (NS-43-R4).
+- open: the speech card sits on "The book is open." (E-S08.open): ask (a size line read from the catalog, never typed), Download on Wi-Fi (primary) and Not now (quiet, same size; nothing starts without a tap, NS-39-R3); downloading and waitingWifi say it in words, never a percentage (NS-39-R13); verifying; stopped (Try again); pausedRemote (`packDownloads`, one built paused line); needsSpace; done. Not now is a full answer: the recording waits for its words (NS-39-R4). No lock offer here (NS-39-R9).
 - Twins: "Add another" quiet under the name; each book free.
 - Languages: only in multi-language builds and only gated languages (NS-17-R1); absent otherwise (no "later update" line).
 - AX5: the field and its label stack; the wheel becomes the system compact date picker at AX3+; Continue pinned.
@@ -313,11 +329,13 @@ What first run shows, first match wins (as built in `gate.logic.ts`, with BL-922
 
 ### E-S13 Something broke
 - PlainScreen: page drawing, `errors.crash.title`, `errors.crash.body`, Try again (primary), Go to Home (quiet). No code, no stack, nothing logged but the class name (PRIV-R10).
-- Card gap noted (section 10): `errors.crash.body` makes a safety statement on a screen shown because something failed.
+- Card gap noted (section 10): `errors.crash.body` makes a safety statement on a screen shown because something failed. K-E06 answered by card 19 (NS-39 E-S13 row): `errors.crash.bodyNoBook` when no book is on the phone; the safety sentence only on the React boundary path, never after a database failure (OPS-20). secondFault: on a second fault in one session a quiet "Write to us" sits below Go to Home (SUP-02). No error text carries a path or a name (PRV-11). Order status under outage and offline is area C's line (PRT-41).
 
 ### E-S14 Sign-in outage and offline (first run)
 - StateScreen warm error: envelope drawing; outage: `outage.title`, `outage.body`; offline: `offline.title`, `offline.body`; Try again (primary); Start on this phone (quiet) with `startLocalNote` only when shown.
 - Needs the StateScreen `note` slot and a heading ref (both asked for in `outage-screen.tsx`; proposed in section 7).
+- signInPaused (NS-41-R25, O-19, PROPOSED `killSwitches.signIn`): the outage render with Start on this phone; the line says nothing about a switch or a pause. A signed-in phone never meets it.
+- The screen says in words that Sign in with Apple and the local start stay open when mail or the site is down (MSG-15); Start on this phone is shown for every outage kind on first run (OPS-33, REL-03); a wrong-clock hint, when the phone's date is far off, is help text under the body, never a banner (REL-55).
 - backOnline: announcement only, then the Welcome.
 - AX5: drawing hidden above AX2; buttons stacked and pinned.
 - Integration: NX-31 R18, R19; NX-36 S3; `LOCAL_START_FALLBACK`; error codes `network`, `rate_limited`, `email_wait`, `not_available`, `unknown`, the 10 s timeout.
@@ -327,7 +345,8 @@ One line in place under the control it is about: a 20 pt Phosphor glyph (Info, C
 
 ### E-S16 App update line
 - Me, top of the list, a SystemLine (action) "A newer version is ready in the App Store." with Update. Absent when the build is at or above `minSupportedVersion`. Never on Home, Book or a sheet. Never blocks. PROPOSED words (content lead keys them).
-- Integration: remote config `minSupportedVersion` (built in the schema; no consumer today: engineering gap G-E03). No card row: card gap K-E05.
+- Two wordings, one line (LCY-17, NS-45-R13): "A newer version is ready in the App Store." for a build below `minSupportedVersion`, and a second sentence for a server answer `upgrade_required` or `gone` ("This version of {app} can no longer reach your account." PROPOSED), both with Update. A newer version that is not required shows nothing at all (NS-45-R14, O-16). Never a block (K-E15 held: reading, recording, saving and export always work, NS-45-R13). The line never lists features (MKT-09).
+- Integration: remote config `minSupportedVersion` (built in the schema; no consumer today: engineering gap G-E03). Card row: NS-45-R13, R14 (K-E05 answered).
 
 ### E-S17 Low-storage rules
 | Free space | Where it shows | What |
@@ -341,6 +360,7 @@ Not on Home: a storage card on Home would be an unregistered slip and fail `[FRA
 
 ### E-S18 Second account on one phone
 - No screen of its own: a rule every area follows. While a session of account B is on a phone holding account A's rows, every list (Home waiting cards, Book, Find, Read together, Save a copy, Storage per-book lines, Recently deleted, notifications) filters to B's rows. No line mentions another book. The claim screen (E-S24) never lists A's letters (NS-10-R5).
+- Default rule (O-5, ADR 0031 as proposed, NS-41-R6): B signing in hides and locks A's book: no read, claim, upload, index or reminder until A signs in again or Erase everything runs. Two new states drawn for security (SEC-01, SEC-02, SEC-04): signedInB-ownerMismatch (A's book hidden; B's book arrives through C-S10 or "No book here yet" with Start a book) and signedInB-localOnly (B's own letters that have not synced stay on this phone, shown by one SystemLine, E-S15, `waiting`). No line names another book.
 - signedOutA: D1 holds: A's book reads for anyone; Me shows `account.signedOutTitle` and the D1 body (C-S02).
 - Integration: X4-R1, NS-10-R3, R5, NS-07-C5-12, NS-07-C28-17, NS-01-R29, R30, NS-02-R24, NS-18-R6; BL-961; ADR 0023. Engineering gap G-E05 (the first-run gate opens Home for any session when the phone holds a book).
 
@@ -357,7 +377,7 @@ Not on Home: a storage card on Home would be an unregistered slip and fail `[FRA
 - As built: cover over the app switcher snapshot and on return; lockup, "Unlock" primary; Face ID; failed: one line, Try again. Never interrupts a recording.
 
 ### E-S24 Claim screen
-- As built: `claim.title`, `claim.body` with the masked email (or `noEmail`), `claim.help`, Keep in this account (primary), Not my account (quiet). hasBook: `bodyHasBook` and `recordingsNote`. Door lines: Shown: the masked account; Records: ownership of this phone's rows on tap; Never: another account's letters listed; Decline: Not my account, nothing on the phone changes.
+- As built: `claim.title`, `claim.body` with the masked email (or `noEmail`), `claim.help`, Keep in this account (primary), Not my account (quiet). hasBook: `bodyHasBook` and `recordingsNote`. methodOnly (NS-41-R18): a Hide My Email address shows the method ("Apple (email hidden)", PROPOSED), never the relay address. accountDeleted (LCY-11, LCY-19; K15 ruling: parent-driven, never staff): "your earlier account was deleted; keep these letters in this account?" with the same masked-method and tap rules and words that say what happens, never who is at fault. Door lines: Shown: the masked account; Records: ownership of this phone's rows on tap; Never: another account's letters listed; Decline: Not my account, nothing on the phone changes.
 
 ### E-S25 Plan reminder note
 - As built: on the next open inside its window, on a calm tab root only (never mid-task), a sheet with `note.title`, the date line, cancel-by line, Manage subscription, Got it. Never a child name, a count or a price (NS-32-R12, D-083).
@@ -376,9 +396,17 @@ Not on Home: a storage card on Home would be an unregistered slip and fail `[FRA
 | Photos | never: PHPicker needs no permission (council round 2, section 6) | a library permission prompt | n/a |
 | Face ID | turning on App lock | at launch | the lock stays off |
 | Speech recognition, location, contacts, tracking | never (no usage string; G11-3 guard) | | |
+The order a new parent can meet a system prompt, in full (NS-39-R2, NS-39-R10, NS-44-R6, NS-13): 1. none through "The book is open." and Home; 2. microphone at the first Speak, after our primer and only through its Continue; 3. notifications after a kept letter, once, by area D's ask or by Plus confirmed (whichever comes first; the other shows no ask, K-E13); on the first tick of a day in Days, one sentence then iOS's ask (RV-9, Q-FD-20); 4. Face ID when App lock is turned on from Settings; 5. never: photos, tracking (ATT), contacts, location, speech. A parent who has declined notifications sees no Days ask (RV-9).
 
 ### E-S29 Microphone prompt
 - iOS's alert with `permissions.microphone` ("{app} uses the microphone to record the letters you speak to your child."). Glass is the system's. Allow -> Listen Ready; Don't Allow -> A-S04.blocked.
+
+### E-S30 If you are struggling, E-S31 Lines in other countries (new, 20 Nov)
+- Source: support SUP-17 and SUP-18 (`FUNCTION-TRACE.md` 6.5.1), drawn from `STRUGGLING.md`. Support proposed E-S27 and E-S28, which are taken (K9), so area E assigns E-S30 and E-S31 (pending ruling: GAP-LOG K9 names only C-S23 and E-ST47).
+- E-S30: a content screen on paper, no drawing, no lamp. Title, one calm paragraph that is not advice, then the lines for the phone's region as rows that dial (44 pt or more, name and number as one VoiceOver element, "Calls {name}"). States: region with lines; IN (emergency and directory only); any other region (a link to E-S31 and a directory link); iPad or no SIM (a Copy button replaces dialling); offline (the directory link needs a connection, said in one line; the lines on the phone still show). Never a count, a score, a check-in, a "how are you" question or any word about the child's age. Reached from a quiet link below the Welcome's doors (needs no account) and from Me, Help and legal.
+- E-S31: a list of countries, one row each, one level, no search needed at 30 rows or fewer; group titles are headings.
+- AX5: rows grow, number under name, nothing truncates. VoiceOver: heading first. Layer: content; no glass; no sheet.
+- Words: `content` and the founder; counsel reads (the lines are public claims). Fictional data only in any prototype.
 
 ## 6. Cross-area state catalogue
 
@@ -405,7 +433,7 @@ Render classes: R0 silent (nothing shown); R1 the surface is absent (hidden, no 
 | E-ST12 | `statusReport` | yes | R0 (phone reminders keep working) | R0 | R0 | R0 | R0 |
 | E-ST13a | `bookSearch` | no (#798 adds it) | R1 Find absent; index keeps following letters | R0 | R1 | R0 | R0 |
 | E-ST13b | `reminders` | no (PROPOSED, NS-13) | R0 for scheduled ones; may only narrow the window (C-NFR-009) | R0 | R0 | R0 | D's state |
-| E-ST13c | `shareLetter`, `firsts`, `seals`, `printBook`, `quickCapture`, `earlierVersions`, `signAsOther` | no (platform review 2.2 proposal) | R1 the control absent; existing data reads; seals never revealed early and Open now stays (NS-06 B) | per card | per card | per card | per card |
+| E-ST13c | `shareLetter`, `firsts`, `seals`, `printBook`, `quickCapture`, `earlierVersions`, `signAsOther` | no. WITHDRAWN as pause keys (OPS-01, GAP-LOG B E-03: the cards win and say none). Render for these: "build flag only; no remote state" | R1 where a build flag is off; there is no remote pause to draw; seals are never revealed early and Open now stays (NS-06 B) | per card | per card | per card | per card |
 Rule for every row: a pause never removes recording, typing, saving, reading, playback, export or deletion (LEGAL-REQ-040; NS-09-R17 deletion is never pausable).
 
 ### 6.3 Other remote config keys
@@ -434,7 +462,7 @@ Rule for every row: a pause never removes recording, typing, saving, reading, pl
 | Id | State | Render | Areas |
 |---|---|---|---|
 | E-ST28 | Signed out with a book | the book reads (D1); Me Account signed-out state | C (C-S02), all others R0 |
-| E-ST29 | Second account on the phone | E-S18 filter rule; no line | every list in A to D |
+| E-ST29 | Second account on the phone | E-S18 filter rule; A's book hidden and locked (O-5); no line names it; B's own unsynced letters show `signedInB-localOnly` | every list in A to D |
 | E-ST30 | Consent outstanding | E-S09 routing to C-S11 | C |
 | E-ST31 | Consent declined | C-S11 declined rules | C |
 | E-ST32 | Under 1 GB free | E-S17 | A |
@@ -569,6 +597,30 @@ Speed (NS-34) design markers: the screen change begins within 100 ms of the tap;
 | K-E16 | NS-10 second-account row vs MOTION E-M57 "held block with Sign out only" | NS-10 says the app offers B their own book or a new one | no block: B lands on C-S10 or "No book here yet" with Start a book (E-S18) |
 | K-E09 | C25, C44 cited rows | first run and Plus rows are cited to F01, F14 which this pack did not re-lock; the brief asks for "every locked-pack change" | E treats only NS-10, NS-17-R1, NS-33, NS-35, D1, T2 as the changes; any other F01 or F14 change needs a card |
 
+### 10a. Card gaps answered by card 19 and the rulings (20 Nov)
+
+| Gap | Answer | Where in this file |
+|---|---|---|
+| K-E01 language waiting line | First sentence only; no "later update" line anywhere in first run (NS-43-R11) | E-S08.languages |
+| K-E02 signed-out phone with two accounts' books | Show the book of the account that signed out last (O-5) | E-S18 |
+| K-E03 storage card on Home | Not on Home; Listen and Me, Storage only (card 19 K-E03) | E-S17 |
+| K-E04 Erase everything with two accounts | Erases every book; the sheet says "every book on this phone" and names none (NS-45 section 5, O-5) | E-S18 |
+| K-E05 app update state | NS-45-R13 (required: a line in Me, never blocks), R14 (available: nothing) | E-S16 |
+| K-E06 crash body "safe" on a fresh install | `errors.crash.bodyNoBook` when no book is on the phone; the sentence only on the React boundary path | E-S13 |
+| K-E07 paused sync value | "Paused for now", agreed in principle; NS-10 owns it | E-ST05 |
+| K-E08 E screens in NS-33's AX5 lists | E-S02, E-S03, E-S04 to E-S08, E-S10, E-S14 are in card 19's AX5 rows (NS-40-R13, NS-41-R22, NS-42-R15, NS-43-R13, NS-45-R18); section 9 adds E-S24, E-S30 | section 9 |
+| K-E09 first run and Plus only "cited" | Closed: card 19 re-locks first run (NS-38 to NS-45) | section 0 |
+| K-E10 region | No in-app region question; the server refuses sign-up from refused places with E-S04.refused-region; E-S03.region is retired | J-E01 step 4 |
+| K-E11 silent disabled buttons | Reasons in words (NS-41-R8): `authCopy.email.needEmail`, `authCopy.code.digits` with `{n}` | E-S05, E-S06 |
+| K-E12 optional name | Optional everywhere (NS-43-R1); shown in words | E-S08, section 14.2 |
+| K-E13 two notification asks | Unchanged: whichever comes first; Days adds one more first-tick ask under RV-9 (see D-3) | E-S28 |
+| K-E14 information collected in one place | Card 19 "Information collected" tables (NS-40 to NS-45); E-S28 keeps the permissions order | E-S28 |
+| K-E15 blocking update screen | Held: no blocking screen (NS-45-R13); F2 `update required (becomes C8)` stays contradicted | E-S16, section 17 |
+| K-E16 second-account held block | Held: no block (NS-41-R6, O-5) | E-S18 |
+| CG1 to CG14 (WORDS section 10) | Answered in card 19 "Card gaps answered"; words changes (CG3, CG4, CG5, CG13) are content's | WORDS.md |
+| New K-E17 | Where "If you are struggling" lives and its id (E-S30, E-S31) | E-S30 |
+| New K-E18 | Whether a notice at collection sits above the Welcome's agreement line (PRV-24) | E-S02.notice |
+
 ## 11. Engineering gaps (with the backlog row each belongs to)
 
 | Id | Gap | Belongs to |
@@ -618,4 +670,290 @@ Disagreements returned to the motion lead (design wins per MOTION.md section 11,
 
 Returned to the system components lead: F2's `update required (becomes C8)` variant conflicts with K-E15; C8's `killSwitch` variant is used only when a paused feature's route is reached directly (an old link), otherwise the absent rule applies.
 
-Still open after this pass: `tokens.v2.json` was not on disk (FOUNDATIONS.md was read only for material names); NS-38 to NS-45 were not on disk. When they land, re-key J-E01 steps to the NS ids and replace v1 token names.
+Closed in v2 (20 Nov): `tokens.v2.json` and `FOUNDATIONS.md` are on the branch (token names `target.md`, `size.row`, `layout.*`, `material.*` are v2 names; `layout.rowMin` and `target.md` are still name requests in COMPONENTS section 9); NS-38 to NS-45 are on disk and J-E01 is re-keyed to them (section 3). Disagreement 1 above still holds and now rests on NS-41-R25 as well: there is no `E-S14.killswitch`; `killSwitches.signIn` is the one remote sign-in pause and it renders E-S14.signInPaused. The three E-M rows withdrawn here (E-M52 killswitch state, E-M56 update block, E-M57 held block) stay withdrawn.
+
+## 13. Consolidated state and error inventory for every new state (v2)
+
+One place for the states and errors that the final pack adds, so areas A to D point at ids, not prose. Render classes as section 6 (R0 silent, R1 absent, R2 SystemLine in place, R3 toast, R4 StateScreen or InlineState, R5 sheet, R6 PlainScreen). Motion ids are in `MOTION.md` section 4y. Every row obeys: no count, no streak, no red, no exclamation mark, and the book and recording, typing, saving, reading, playback, export and deletion stay open (LEGAL-REQ-040).
+
+### 13.1 New and changed system states
+
+| Id | State | Trigger | Render | Parent can | Card row and ruling | Motion |
+|---|---|---|---|---|---|---|
+| E-ST47 | Server restored | a restore from backup: sessions are not in the dump, so everyone is signed out once and phones re-upload | as E-ST17: R0 on Home; Me, Account shows `session_expired` once; Sync row "Paused for now" during the restore (E-ST05); the book stays (D1) | sign in again | OPS-07, REL-07, REL-18; NS-45-R3 | E-M58, E-M49 |
+| E-ST48 | Sign-in paused (`killSwitches.signIn`, PROPOSED) | the signed config says stop | R4 E-S14.signInPaused on first run with Start on this phone; signed-in sessions never touched | Start on this phone; try later | NS-41-R25, O-19 | E-M105 |
+| E-ST49 | Library of days paused (`killSwitches.libraryDays`, PROPOSED, one boolean, fail-open) | the signed config says stop; not deliverable in a servers-off build | R1 at the next focus: the library section, Browse, the ask slip and the day slip leave with no hole and no badge; library reminders cancelled; typed days stay on C-S24 | keep using typed days | RV-10, NS-46-R28 | E-M43 |
+| E-ST50 | Days store unreadable (`days_store_unavailable`, local) | the library file cannot be read | R2 SystemLine (`waiting`) in the library section of C-S24 only, with Try again; typed days still listed; no whole-screen state, no red | Try again | NS-46 section 6; design-systems F46-1 | E-M40 |
+| E-ST51 | Suspended account | back office suspends the account | R2 SystemLine on C-S02 (the book stays readable, sync waits, Save a copy and Delete account stay reachable); the words say what happens, never why | read, save a copy, delete | BKO-26; K15 | E-M40 |
+| E-ST52 | Quiet day today (Memorial Day, Veterans Day, Good Friday, Yom Kippur) | a ticked quiet day is today | R0 system-wise; on Home the quiet line replaces the prompt block, Speak and Type unchanged (RV-7); no question anywhere | speak or type as any day | RV-7, NS-46-R13, NS-50-R15 | none: drawn with Home |
+| E-ST53 | Day slip hidden by a higher slip | rank 1, 2 is due | R1: no day slip until the next visit; the cost is accepted (RV-6) | nothing needed | NS-50-R4, R5 | none |
+| E-ST54 | Quiet or hidden book | `bookIsQuiet` or hidden (BL-985) | R1: no day slip, no day reminder, no ask | nothing needed | NS-50-R8, NS-46-R25 | none |
+| E-ST55 | Suggestions picker unavailable | iOS below 17.2 (hidden below, Q-FD-32), flag off, entitlement not known, Android, Expo Go | R1 the "Pick from recent days" item is absent; Start from a photo opens Apple's picker directly (absent rule) | choose a photo | NS-49-R5, R28 | none |
+| E-ST56 | Suggestions cancelled, declined, empty or off | the app is told nothing (F49-2) | R0: Home as before, no draft, no file, no message | the menu is one tap away | NS-49-R11 as changed by design-systems F49-2 | none |
+| E-ST57 | Notifications not allowed and a day ticked | iOS permission off | R2 one line using the D-S06 `.denied` card wording and Open Settings; the tick is stored; no promise of a reminder | Open Settings | NS-46 state space; F46-4 | E-M40 |
+| E-ST58 | Day-name switch while App lock is on | App lock on | present and not ready: the switch is off and disabled with its reason line (mandatory); it does not come back on by itself | turn App lock off to use it | NS-47-R14, R36; F47-6 | none |
+| E-ST59 | Days store cleared | sign-out, Erase everything, Delete account | R0 plus one calm line on C-S03, C-S19, C-S20 | choose days again | NS-47-R15 to R17; Q-FD-12 | none |
+| E-ST60 | Reminders off, a day ticked | Reminders switch off | R2 one calm line on Reminders: chosen days still send a reminder | turn Reminders on or untick | RV-9; NS-46-R31 | E-M40 |
+| E-ST61 | Second account and the days store | A signs out, B signs in | A's store was cleared at sign-out; B sees nothing and is asked afresh | answer the ask | NS-47-R15 | none |
+| E-ST62 | Re-consent required | a new major Terms version | R5 E-S07.reconsent over a calm tab root before sync resumes; local use unaffected | Agree and continue; Not now | NS-42-R10, R11 | E-M104 |
+| E-ST63 | Sign-up refused for the region | the sign-up hook refuses | R4 E-S04.refused-region; nothing stored; existing accounts unaffected | Terms, Contact us | NS-40-R9, R11, R14 | E-M101 |
+| E-ST64 | Platform says a minor | Declared Age Range answers under 18 (when it ships) | R4 E-S03.platformMinor; nothing stored, logged or sent | none | NS-40-R5, R6; K5 | E-M100 |
+| E-ST65 | Account deleted elsewhere | the account was deleted on another phone | the phone keeps its letters (O-15); Me shows one line once and points to Erase everything; a claim after deletion is E-S24.accountDeleted | keep, or Erase everything | NS-45, O-15; LCY-11, LCY-19 | E-M107 |
+| E-ST66 | `upgrade_required` or `gone` from the server | server answer | R2 E-S16 (second wording) in Me; nothing on Home | Update | NS-45-R13 | E-M106 |
+| E-ST67 | Email to the account bounces | the sign-in address does not receive mail (MSG-05) | R2 a quiet row on C-S02: "We could not reach {email}" with Fix address; a relay address shows the method | Fix address | MSG-05, MSG-07 (assigned to C-S02, see section 17) | E-M40 |
+| E-ST68 | Speech download not possible | cellular only, no space, paused remotely, needs a newer app | E-S08.open and the Language rows say it in words: waiting for Wi-Fi, needs space, paused, needs the latest version | Try again later; keep recording | NS-39-R13; AIS rows | E-M103 |
+
+### 13.2 Error codes the final pack adds or changes
+
+| Code or kind | Card | Area | Render | Parent sees (intent; `content` words) |
+|---|---|---|---|---|
+| sign-up refusal (hook, no app code) | NS-40-R9 | E | R4 E-S04.refused-region | "{app} can't be set up from here." with Terms and Contact us |
+| `under_18`, platform minor | NS-40-R3, R5 | E | R4 E-S03.stop, platformMinor | one line in the same room |
+| `invalid_email`, empty email | NS-41-R8, R24 | E | inline, focus to the field | "Type your email to continue." and the invalid line |
+| code short; code length `{n}` | NS-41-R8, R10 | E | inline | "The code has {n} digits." |
+| `code_paused` (5 wrong in 15 min) | NS-41-R9 | E | E-S06.paused | newest link and Apple still work |
+| `email_wait` (429 on send) | NS-41-R12, R21 | E | E-S14.outage on first run | Sign in with Apple still open |
+| `other_phone`, `other_phone_spent`, `already_signed_in` | NS-41-R3, R4 | E | E-S06.refused-* | type the code instead; how to change accounts |
+| `consent_unavailable`, `SCCON` | NS-42 | E, D | E-S07.error-consent_unavailable | Try again |
+| `session_expired` (epoch, revoked, Apple revoked, restore) | NS-45-R3, R4 | E, C | once in Me, book stays | Sign in |
+| `upgrade_required`, `gone` | NS-45-R13 | E | E-S16 | the update line |
+| `deleted`, `purged` on a new phone | NS-10, NS-45 | C, E | E-S24.accountDeleted or C-S10 | keep these letters in this account? |
+| `days_store_unavailable` | NS-46 section 6 | C | E-ST50 | one line, Try again |
+| `libraryDays` paused | NS-46-R28 | C, A | R1 absent | nothing |
+| suggestion without a photo (`noPhoto`) | NS-49 (A-S03) | A | area A's line | "That one has no picture." (intent) |
+| speech model: needs space, paused, waiting for Wi-Fi, `needs_app_update` | NS-39-R13 | E, C | E-S08.open and Language | in words, never a percentage |
+| Delete account offline | NS-45-R15 | C | `deletion.offline`: nothing changed, a connection is needed | try again online |
+
+## 14. Foundations and tokens needed by the final pack
+
+Standing duty 2 (design systems): close token and component gaps. Area E names what it needs; the system files (`docs/design/system/COMPONENTS.md`, `FOUNDATIONS.md`, `tokens.v2.json`) are outside this folder, so every item below is paste-ready text for the coordinator to apply, not an edit made here.
+
+### 14.1 DoorNote (new shared component; answers design-systems F47-1, F-X2)
+- Purpose: the one sentence a parent must read before choosing, set where a choice is recorded: "your faith and origin stay on your phone", the sensitive-data answer, the backup consent door. It is a promise, not a hint (NS-47-R28, a promise, reason (a)).
+- Anatomy: a static block on `surface`, `radius.md`, 16 pt padding; text in `callout` colour `text` (not `textMuted`); a decorative lock glyph, hidden from VoiceOver; no title, no button, no chevron, no info glyph.
+- Variants: `short` (one sentence, under the question on the ask slip) and `full` (the whole call-out, at the top of C-S25 and C-S24).
+- Rules: never collapsed, never behind a glyph, never dismissible, never glass, never animated; in reading order before the first control that records a choice; wraps at AX5 and never truncates; every sentence has a claims row (NS-47-R22). The Shown, Records, Never and Decline lines (COORDINATION section 10) are spec lines in the design file, and the DoorNote shows only the sentence a parent needs.
+- A11y: one VoiceOver element, label equals the text; Voice Control n/a (not interactive); contrast `text` on `surface` above 4.5:1 in every scheme per FOUNDATIONS (quoted, not recomputed).
+- Used by in area E: E-S07 (the privacy body above "Agree and continue" and the sensitive-data step), E-S02.notice if counsel adds the notice at collection (D-5), C-S21 at the backup flip; by others: A-S01 askSlip, C-S24, C-S25, NS-10 sheets.
+- Implementation: `components/ui/door-note.tsx`; test `[NS-47-R28] call-out is visible, static and first`.
+
+### 14.2 Optional-field pattern (I1 `optional` slot and a paired-answers `decline` role; answers F47-2)
+- Words, not colour: the label is followed by the word "Optional" in `footnote` `textMuted` (never an asterisk, never placeholder-only); VoiceOver reads "{label}, optional"; Voice Control name equals the visible label.
+- Nothing is preselected; skipping writes nothing and prompts nothing later.
+- Two shapes. (a) A field inside a step that has a required control (E-S08: name is optional, date is required): Continue is the skip, and the step has no second "Skip" control. (b) A step made only of optional answers (the Days ask, C-S25): the accept and decline controls are the same style and size in one stack, stacked at every size, "Not now" never smaller or quieter than "Choose days" (NS-47-R25).
+- The reason line for a required neighbour stays in words under Continue (NS-43-R2).
+- Applies in area E: E-S08 name; any later optional field in Me. Does not apply to age, agreement or sensitive-data answers, which are required choices with equal answers (NS-42-R4).
+- Implementation: `optional` boolean on `components/ui/text-field.tsx`; the `decline` role in the D-S04 pattern; WCAG 3.3.2 is the likely criterion (UNVERIFIED).
+
+### 14.3 Home slip host: variants `daySlip` and `askSlip` and the order as data (C9 text for COMPONENTS)
+Paste into COMPONENTS C9 (replaces the Anatomy and States bullets; the order is RV-5 and RV-6, not the design-systems review's "2c"):
+- Order as data in `slip.logic.ts` with a test: 1 waiting set; 2 seal-opened line on its day; 2b a day the parent chose, today (`daySlip`); 3 Save a copy in the birthday week; 3b the Days ask (`askSlip`, once, capped at two showings, then it retires to Me, Days; NS-47-R31); 4 one past letter. At most one renders; absent means no space is kept. The reminder ask and the Plus line are not slips; the picture start is in the capture cluster, never a slip or a tile (NS-50-R10).
+- One placement: the slip slot sits directly above the prompt block (the same place whether Home opens by the icon or by a tap on the 09:00 reminder; NS-50-R4, RV-6). At AX5 the slip scrolls with the content above the prompt and never sits between the prompt and the capture cluster. Quiet day: the quiet line replaces the prompt block, and Speak and Type are unchanged (RV-7).
+- `daySlip` (rank 2b): `surfaceRaised`, `radius.md`, 16 pt padding; the day's name and one line in `callout` `text`; no destination, so the card is not a button; one non-interactive VoiceOver element labelled "{name}. {line}" with a custom action for the dismissal, plus a separate visible dismiss button of 44 pt or more reachable by Voice Control and Switch Control; at AX3 and above the button takes its own full-width row; no nested interactive child in an accessible group; the hint says the consequence ("Hides this until tomorrow") (NS-50-R7, R13). A day named only when it is today, never a list of upcoming days, never a count.
+- `askSlip` (rank 3b): a question in `callout`, the DoorNote `short` form under it, then "Choose days" and "Not now" as two `bordered` buttons of the same style and size (`size.control.md` 48, pending `target.md`), stacked at every size, neither `filled`. The hint on Not now says "Closes this question. You can still choose days in Me." On an SE 3 at the default text size with the ask showing, the prompt's full text is visible above the capture cluster without scrolling, or the ask moves below the prompt (device check, NS-50 risk checks).
+- Words: "Not now" means different things on the two slips (until tomorrow, versus final for Home); `content` decides whether the day slip uses another word (open question D-7).
+- Motion: cold launch `m.enter.group`; later visits already in place (T-RESUME); a dismissal `m.list.remove`; a day change removes it with no animation; under Reduce Motion each becomes `m.fade` or a jump; no haptic (NS-50-R12 as P1).
+- Layer: content; the Home glass budget is unchanged (tab bar and capture cluster stay the only glass).
+
+### 14.4 Other component and token gaps
+| Gap | Needed by | Proposal |
+|---|---|---|
+| I4 `multi` variant (list of tick rows) | C-S25 Browse (not area E) | row of at least `size.row` 52, check shape plus name, date in `footnote` `textMuted`, role checkbox, `m.select`, H-select on a change; no select all |
+| `target.md` 48 and `layout.rowMin` 52 | ask buttons, Browse rows, E-S30 rows | still open name requests in COMPONENTS section 9 and DS2-02; E rows use `size.row` 52 meanwhile |
+| F2 SystemLine placement | E-ST47, E-ST50, E-ST51, E-ST67 | header placement for screen-wide states; control placement for a result of an action; at most one per screen, priority order in F2 |
+| StateScreen `note` slot and heading ref | E-S14, E-S04.refused-region | as section 7, item 2 (G-E07) |
+| Selected-state shape on pills and the agreement box | E-S03 | check glyph and weight in addition to colour; `m.select` on change |
+| No new colour, type token or motion primitive | all of the above | uses `text`, `textMuted`, `surface`, `surfaceRaised`, `callout`, `footnote`, `m.select`, `m.enter.group`, `m.list.remove`, `m.fade`, `m.swap`, H-select |
+`destructive` equals `recording` (TDD 09 Q1) is unchanged and no new E state needs a destructive colour.
+
+## 15. Liquid Glass policy check for every new surface (`system/BRIEF.md` section 3)
+
+Rules applied: at most three glass surfaces on a screen; never glass on glass; information and state lines are content; sheets and bars are the system's glass; Reduce Transparency, Increase Contrast and iOS before 26 fall back to the solid twin (`surfaceRaised` fill, 1 pt `line` hairline, same shape and size).
+| New surface | Layer | Check |
+|---|---|---|
+| E-S04.refused-region, E-S03.platformMinor | content (StateScreen) | no glass; passes |
+| E-S14.signInPaused | content | no glass; passes |
+| E-S07.reconsent, E-S07.sensitive, E-S07.offline | the sheet is glass (1); inside: buttons `filled` or plain, DoorNote content | passes; no toast over the sheet |
+| E-S08 optional marker, why-we-ask line, speech card states | content | no glass; the speech card is a content card on paper; passes |
+| E-S16 (both wordings) | content line in Me (F2) | Me has the tab bar (1) and the navigation bar (2); the line is content; passes; no toast for the update |
+| E-S18 localOnly SystemLine, E-ST47, E-ST50, E-ST51, E-ST67 | content lines (F2) | never glass; passes |
+| E-S24.methodOnly, accountDeleted | content on a pushed screen in the sign-in modal (the modal is the system's glass; the screen content is paper) | passes |
+| E-S30, E-S31 | content | no glass; passes |
+| DoorNote (all uses) | content | never glass (NS-47-R28); passes |
+| daySlip, askSlip on A-S01 | content | Home keeps tab bar (1) and capture cluster (2) plus one transient (3); a slip is never the third glass element and never sits under a toast; passes |
+| C-S25 Browse sheet (area C), A-S16 one-photo sheet (area A) | the sheet is glass; rows and buttons inside plain or `bordered` | passes; no "Added" toast over a sheet for a tick (F46-5) |
+| Hosted SwiftUI suggestions button (A-S01 menu) | system-drawn, outside our material rules | UNVERIFIED that it can join a glass container; check under Reduce Transparency and AX5 on a device (design-systems section 9) |
+| Quiet-day line on Home | content | no glass; passes |
+Result: no new surface needs glass, none stacks glass, and every new surface has a solid fallback. The one open item is the hosted SwiftUI control, which is a device check, not a design change.
+
+## 15a. Round 2 additions: photo moments and media (founder direction 20 Nov, second round)
+
+Source: `26-founder-direction-photos-library-and-media.md` (committed f8eead016). Cards NS-51 (Photo moments, level 3) and NS-52 (Pictures and videos with a letter) are being written in `27-photo-moments-and-media.md`, which was not on disk when this was written, so every id below is PROPOSED and keyed by card name; re-key to row ids when 27 lands. The direction reverses three earlier positions (level 3 closed, no video, one picture per letter) and records them as RV-18 onward. Nothing here changes a card.
+
+What the founder direction keeps and design must hold: no caption, title, summary or story is ever written or pre-filled from a picture; a nudge never describes what a picture shows; analysis is on the phone only and metadata only (date, count, clustering; place names off by default; no faces); nothing counts or scolds ("you have 40 unwritten days" never appears); no count of library items anywhere, including the permission screens.
+
+### 15a.1 Permission order, rewritten (supersedes the Photos row of E-S28)
+1. First run through Home: no prompt of any kind (NS-39-R2 unchanged).
+2. Microphone: at the first Speak, after our primer (unchanged).
+3. Photos, level 1 and 2: no permission (Apple's picker and suggestions picker run out of process). Unchanged and still the default path; NS-52's attach from the picker needs none.
+4. Photos, level 3 (NS-51, PROPOSED): asked only from a parent-started door, never at launch, never in first run, never before a kept letter, never from a nudge. The order is: our primer first (one screen, content layer, says in words what the app will look at, that it stays on the phone, that limited access is fine and the app works with it, that no pictures are described or written about, and that it can be turned off in Me), then the iOS prompt only through the primer's Continue (same rule as the microphone, NS-39-R10), then the state the parent chose. The primer offers "Not now" at the same size and style as "Continue" (section 14.2 shape b). "Not now" is a full answer: it writes nothing, shows no repeat ask on Home, and the door stays in Me. It never asks twice from us (as NS-13 door lines).
+5. Notifications for a moments nudge: no new ask; a nudge is an existing budgeted class (NS-32) and follows the existing permission state (E-ST43 when off).
+6. Face ID: unchanged. Tracking, contacts, location, speech: never. Place names are off by default, and if turned on they use no location permission (metadata already in the picture) - flagged D-9.
+Door lines for the Photos primer (COORDINATION section 10): Shown: what is read (dates, counts and groupings of pictures, on this phone only); Records: the parent's choice (on, limited, off) and nothing about any picture; Never: a picture, filename, album name, place or date leaves the phone except by the parent's own act; a description or caption; face matching; Decline: Not now, nothing read, nothing stored, level 1 and 2 pickers unchanged.
+
+### 15a.2 States (proposed ids; render class as section 6)
+| Id | State | Trigger | Render | Parent can | Motion |
+|---|---|---|---|---|---|
+| E-S32 | Photos access primer (proposed; screen drawn with area A's moments surface) | the parent starts "Look at my pictures" from Me or the capture area | content screen or half sheet (N7) with the primer, then iOS's prompt | Continue; Not now | T-SHEET or T-PUSH, E-M120 |
+| E-ST69 | Photos access limited (iOS "Limited") | the parent chose Selected Photos | works: moments are found only among the chosen pictures; one calm line in Me and on the moments surface says "The app can see the pictures you chose" with Change what the app can see (opens iOS's picker for more); never an upgrade nag, never a count of what is missing | Change selection; carry on | E-M121 |
+| E-ST70 | Photos access denied or restricted (Screen Time, MDM) | the parent chose Don't Allow, or it is restricted | R4 inline state on the moments door only: one line, Open Settings (not shown when restricted, where it would not help), and "Choose a photo" still works because the picker needs no permission; nothing else on Home or the Book changes; no repeat ask | Open Settings; choose a photo | E-M121 |
+| E-ST71 | Photos access changed while the app is open | the parent flips it in Settings | the surface re-renders at the next focus; an index in progress stops; nothing is deleted from the book | none needed | E-M122 |
+| E-ST72 | iCloud original not downloaded | a chosen picture or video is optimised and the original is in iCloud | the attach row shows "Getting it from iCloud" in words with a Cancel; no percentage in text, no spinner loop (`m.progress.wait`, or `m.progress` only when bytes are measured); success attaches it; failure or offline: `iCloudOffline` (area A's A-S03 words) and the letter goes on without it | Cancel; choose another | E-M123 |
+| E-ST73 | No space for media | under 50 MB free for a picture (as E-S17) or the video's estimate plus margin | not attached, in place, with the space needed in words; the letter goes on without it; never blocks Keep | free space; choose smaller | E-M124 |
+| E-ST74 | Large video | over the length or size cap (defaults 60 seconds, size cap pending Q-PM-2) | the picker's choice is refused in place before anything is copied: one line says the limit in words; offers "Choose another"; trimming is the system's own editor, never ours; no count of videos left | choose another | E-M124 |
+| E-ST75 | Too many items on one letter | beyond the proposed 6 pictures and 2 videos | the add control reads in words that the letter holds as many as it can; no "4 of 6" counter anywhere, including VoiceOver | remove one to add another | none |
+| E-ST76 | Video audio | a video carries sound | nothing is transcribed by default (Q-PM-4); no state, no line; if the founder says yes later, the words state is area A's | none | none |
+| E-ST77 | Media waiting to upload | Q-PM-3 says media sync; offline or paused | R0 on Home; the Where your letters live row (C-S08) carries the waiting line; never a count; if media stays on the phone (the other Q-PM-3 answer), the Save a copy and export states carry the weight instead | none needed | none |
+| E-ST78 | Moments index off or removed | the parent turns moments off in Me | the on-phone index is deleted at once; Me confirms in one line; nothing in the book changes | turn on again | E-M122 |
+| E-ST79 | Media kill switch | `killSwitches.photos` (existing) pauses picture start; a video pause key is PROPOSED | R1 the add and moments doors absent; Erase, sweep and export intact (as E-ST07) | none | E-M43 |
+| E-ST80 | Moments nudge on a lock screen | a nudge from the existing budget | neutral wording only; never describes a picture; follows lock-screen rules (D-S10); with App lock on, neutral | open the app | system |
+Rule for all: the media states use SystemLine (F2) or InlineState, never glass, never a toast for a failure, and the book, recording, typing and export stay open. Error codes for media (corrupt, unreadable, `needs_rotation`, HEIC or Live Photo handling, video transcode failure, `no_space`) join section 13.2 when 27 gives them names; until then NS-01's codes apply to pictures and no code exists for video.
+
+### 15a.3 Foundations and tokens the media cards need
+| Need | Why | Proposal |
+|---|---|---|
+| A `PermissionPrimer` content pattern | microphone, Photos (level 3), Face ID and notifications each have a primer with the same anatomy | one shared anatomy: title, three plain sentences, DoorNote `full`, Continue and Not now as equal `bordered` buttons stacked at every size; one component, `components/ui/permission-primer.tsx`; the microphone primer in A-S04 adopts it |
+| Media attach row states | iCloud download, refused, no space, too large | a row in the C1 or form-row family with a leading thumbnail box (reserved, `PhotoFrame` C3), words, one text action; no ring or percentage text |
+| Thumbnail grid for several items | A-S16 pattern for many pictures and videos | cells at least 96 pt, VoiceOver "Picture 2" or "Video 1, 12 seconds" (a duration is a fact, never a description), `accessibilityIgnoresInvertColors`; no generated alt text; the parent's own words are the label if she typed any (NS-52 accessibility) |
+| Video badge on a cell | tells a video from a picture | a play glyph plus the word "Video" in the VoiceOver label; shape and word, never colour alone |
+| No new colour, type or motion token | all of the above reuse existing tokens | `m.swap`, `m.fade`, `m.progress.wait`, `m.progress` (only with measured bytes), `m.enter` |
+Liquid Glass check: the primer is content or an N7 sheet (the sheet is glass, inside is solid); the thumbnail grid and attach rows are content; a video viewer, if one is built, uses clear glass controls with a 35 percent dim as B-S08's picture viewer (system BRIEF section 3) and is area B's to draw; a nudge surface on Home is a slip-like card in content and is not a third glass element. All have solid fallbacks.
+Accessibility holds: AX5 stacks everything and truncates nothing; VoiceOver reads state then action; 44 pt targets; Reduce Motion replaces every move with `m.fade` or a jump; colour is never the only signal.
+
+## 16. Function needs accounted for
+
+Rows are the design-needs rows `FUNCTION-TRACE.md` section 6.5.1 assigns to area E (FR ids in `FR-<CODE>-nn` form; the trace prints them without the FR prefix) and the FRs of 6.5.2 whose design response is the FR text itself. "Designed" names where; "GAP" is an explicit gap.
+| FR | Screen and state | Where designed or gap |
+|---|---|---|
+| SUP-02 | E-S06.help, E-S01.recovery, E-S13.secondFault, E-S09 noBook and accountDeleted | Designed: "Write to us" text button, last and quietest, in section 5 E-S01, E-S13, E-S06; E-S09 states are area C's C-S10 (hand-off: add the button) |
+| SUP-18, SUP-17 | E-S02 link; E-S30, E-S31 | Designed (new screens E-S30, E-S31; quiet link below the doors). GAP: ids are not ruled (K-E17) |
+| support error-code rows (launch fault, repeated fatal, `deleted`, no book, 15-minute pause, `under_18`, refused links, restore nothing, `tooBig`, `print_pdf_failed`, `file_missing`, `quota_full`, `consent_required`, `upgrade_required`) | section 13.2 and 6.6 | Designed: one render each; `quota_full` stays HOLD (backup off); family-share codes are D's |
+| MKT-01, MKT-12, MKT-13 | E-S27 | GAP: a storyboard of up to 10 frames is a marketing artefact; E-S27 lists the rules (Asha only, claims row per frame, one dark frame) but draws no frames |
+| MKT-21, MKT-33 | E-S02 | Designed: no price, trial or tour; descriptor matches the store subtitle |
+| MKT-22, MKT-23 | E-S10, E-S26 | Designed as is: no testimonial, rating, count, discount or countdown; rule added: no rating request in a session where E-S10 showed (section 17 note) |
+| MKT-09, MKT-21 | E-S16 | Designed: the line never lists features |
+| OPS-01 | E-ST13c | Designed: seven keys withdrawn as pause keys; render "build flag only" |
+| OPS-07, OPS-14, REL-07, REL-18 | E-ST05, E-ST02, E-ST47 | Designed: "Paused for now" (G-E12); restricted-project case renders as an outage; E-ST47 added |
+| OPS-33, REL-03, REL-55 | E-S14 | Designed: Start on this phone for every outage kind; clock hint as help text; "or type the code" on the email |
+| OPS-25 | E-S16, E-ST18 | Designed: never blocks |
+| OPS-20, PRV-11 | E-S13 | Designed: safety sentence on the React boundary only; no path or name in error text |
+| OPS-30, DAT-15, CMP-06, QAL-07, QAL-09 | E-S23 | Designed in section 9 (rows added below) |
+| FIN-09, FIN-13 | E-S10, E-S12, E-S25, E-S26 | Designed as is: no price, trial, count or countdown; Redeem a code opens Apple's sheet only |
+| FIN-12, FIN-11 | E-S11 .grace, .retry, .ended | Designed: a quiet action to Apple's billing page, no price or countdown; `.ended` covers a refund with the same words as a lapse; `plan.refund` points to Apple. Words: `plan.retry` loses "safe" (CG5) |
+| FIN-10 | E-S27 | Rule: prices only from `pricing.ts`; no price in this folder |
+| FIN-07 | E-S04 to E-S06, E-S14 | Designed: provider cap shows the outage line with Sign in with Apple still offered |
+| DAT-03 | E-S10, E-S26, E-S11 | Designed: the allowance may be a fact, never a meter ("1 left", "2 of 2 used") |
+| PRV-24, PRV-32 | E-S02 | GAP: the notice at collection is drawn only as pending state E-S02.notice (K-E18); card 19 carries the "What we collect" link only |
+| PRV-04, PRV-25, PRV-26, LEG-04, LEG-09 | E-S03 | Designed: versioned links; agree line unchanged until FR-LEG-04's rewrite is approved |
+| PRV-27 | E-S05, E-S06 | Designed: no full email on any screen except the field; the method only |
+| PRV-28 | E-S07 | GAP: a line naming what syncs waits on counsel Q48; slot drawn in DoorNote `full` (D-5) |
+| PRV-16 | E-S08 and every letter field | Designed: "Writing Tools: off" stated for E-S08 signs-as; the why-we-ask line |
+| PRV-14, SEC-01, SEC-02, SEC-04 | E-S18 | Designed: K-E02 rule, signedInB-ownerMismatch, signedInB-localOnly |
+| PRV-30, CMP-20, CUL-08, CUL-23, QAL-03, QAL-20 | E-S27 | Rule only: privacy label as shipped; only declared accessibility features; Asha screenshots; Days screenshots use synthetic data |
+| CMP-07 | E-S03, E-S07, E-S10, E-S11 (and C, D, B screens) | Designed: AX5 with Bold Text and VoiceOver layouts for each (sections 5, 9); links announced as links; the walk is a device row |
+| CMP-09 | E-S05, E-S06 | Designed: paste and one-time-code autofill allowed; no disabled Continue without words |
+| CMP-15, CMP-13, LEG-20 | E-S03.platformMinor | Designed: same room as the stop, nothing stored (K5) |
+| SEC-24 | E-S06 | Designed: field draws 6 to 10 digits; paused state stands |
+| SEC-07, SEC-25, SEC-22 | E-S22, C-S03, Me | Designed: App lock offered in Me and on the sign-out sheet only; nothing at the end of first run (NS-39-R9) |
+| BKO-12 | C-S01, E-S01.recovery, E-S06 | Designed: reuse Help row and Write to us; no new parent screen |
+| BKO-26 | C-S02 new state | Designed as E-ST51 (SystemLine kind); the C-S02 state itself is area C's (hand-off) |
+| OPS-02, BKO-17, BKO-19 | E-ST05 to E-ST13c | Designed: one row per key; GAP: `bookSearch` absent in `kill-switches.ts` (G-E09) |
+| MSG-03, MSG-08, MSG-04, MSG-10, MSG-25 | E-S06.help, .noAddress | Designed: not-arriving help ordered as MSG-08 with the Hide My Email hint and Write to us at the same weight; checked at AX5 |
+| MSG-05, MSG-07 | Me account row | Designed as E-ST67; screen is C-S02 (hand-off) |
+| MSG-15, MSG-11 | E-S14 | Designed: names that Apple sign-in and the local start stay open when mail or the site is down |
+| MSG-19, MSG-20, MSG-16, MSG-17, MSG-22 | D-S04, D-S06.denied, E-S12.withAsk, E-S28 | Designed: "No" never asked again; E-S28 order in section 5 |
+| LOC-01, LOC-02, LOC-28, LOC-07, LOC-14, LOC-24 | E-S08 languages, E-ST08 | Designed: no teaser for an unshipped language; languages row only in multi-language builds; A-S10 and C-S18 own their rows |
+| REL-48, REL-37, AIS-44 | E-S17, A-S04.lowSpace, E-ST32 | Designed: under 1 GB line and the 0 bytes at Keep case; GAP: G-E04 (line not built) |
+| AIS-09, AIS-13, AIS-14, AIS-20 | E-S08.open speech card | Designed: size line read from the catalog; states ask, downloading, waitingWifi, verifying, stopped, pausedRemote, needsSpace, done |
+| RSH-04, RSH-10, RSH-12 | A-S01.first to E-S12 | GAP: the clickable first-run path exists (PROTOTYPE.html); print-ready read-aloud cards are a research artefact, not drawn here |
+| QAL-11 | E-S04 to E-S07, E-S14 | Designed: section 16a lists, per error kind, what VoiceOver announces and where focus lands |
+| QAL-05, QAL-06, QAL-22 | E-S01, E-S10, E-S14, E-S24, E-S26, E-S05, E-S06, E-S08 | Designed: each state has a reading order and focus target in section 5 and J-E08 |
+| LCY-11, LCY-19, CUL-04, CUL-07, SEC-05 | E-S24 | Designed: accountDeleted, methodOnly |
+| LCY-17, LCY-24, DAT-34, LCY-03, REL-02 | E-S16 | Designed: two wordings, one line |
+| LCY-02, LCY-01, LCY-05, REL-32, REL-59 | E-S01.recovery, E-ST37 | Designed: Export what's readable on every recovery state |
+| PRT-41, PRT-26, PRT-33, REL-21 | E-S13, E-S14 | Designed as a rule: order creation disabled offline with a line; area C draws it |
+| CUL-18 | E-S01 to E-S08 | Checked: no E screen gains a tradition or country field; E-S08 has none |
+| OPS-10, OPS-11, OPS-12, OPS-13, OPS-19, REL-01, REL-05, REL-10, REL-19, REL-22, REL-26, REL-28, REL-40, REL-41, REL-42, REL-44, REL-51, REL-52 | E-ST01 to E-ST05, E-S05, E-S06, E-S14 | Designed in the catalogue (6.1 to 6.2); each is an existing render |
+| OPS-03, REL-15, REL-59 | E-ST17 | Designed (J-E21) |
+| OPS-04 | E-ST29 | Designed (E-S18) |
+| OPS-16 | E-ST10, E-ST11 | Designed (6.2) |
+| OPS-31, MKT-06, MKT-08, MKT-10, MKT-11, MKT-15, MKT-17, MKT-18, MKT-30, LCY-16, PRT-19, RSH-21, QAL-20 | E-S27 | Rule only: Apple's surface; ours is claims and screenshots |
+| OPS-36 | E-S14, E-S04.refused-region | Designed |
+| DAT-21 | E-S26 | Designed: no count |
+| DAT-35, CMP-03, CMP-16, PRV-05 | E-S03, E-S04, E-S07 | Designed: declined states and record rules |
+| POL-07, MKT-04, SUP-12, CMP-18, MSG-09, LCY-26 | E-S03, E-S10, E-S11, E-S02 | Designed as the cited screens; no change beyond this file |
+| MSG-01, MSG-02, MSG-06, MSG-12, MSG-23, MSG-24, MSG-30, MSG-31, MSG-32, MSG-33, MSG-38, MSG-26 | E-S05, E-S06, E-S13, E-S20, E-S03, E-S27 | Designed: words are content's; screens as built |
+| BKO-07 | E-S06, E-S09 | Designed: no staff tool changes either screen |
+| LCY-10, PRT-17, PRT-18, PRT-24 | E-S18, E-S04, E-S07 | Designed: second-account rule, agreement rows |
+| LCY-15 | E-ST46 | Designed: iPad runs the iPhone layout, centred |
+| LCY-30, LCY-01 | E-S11, E-S01 | Designed as built |
+| REL-13, REL-14 | E-ST47 | Designed |
+| REL-33, REL-36, REL-43, REL-49 | E-ST35, E-ST36, E-ST38, E-ST39 | Designed (6.5) |
+| PRT-15, PRT-42 | E-S23, E-S17 | Designed: matrix row and export space check |
+
+### 16a. Announcements and focus for the sign-in error kinds (QAL-09, QAL-11)
+Each error is announced once when it appears; focus moves as stated.
+| Kind | VoiceOver announces | Focus lands |
+|---|---|---|
+| `cancelled` | nothing | stays on the door |
+| `provider` | the provider line | stays on the door tapped |
+| `invalid_email`, empty email | the line under the field | the email field |
+| code short, `wrong_code` | the line | the code field, digits kept |
+| `code_paused` | the line with the other ways | the heading of the paused block |
+| `rate_limited`, `expired` | the line | the code field (rate_limited); Send a new email (expired) |
+| `other_phone`, `other_phone_spent`, `already_signed_in` | the refused title, then the line | the title (heading) |
+| `consent_unavailable` | the line | Try again |
+| `refused-region` | the line | the heading |
+| `session_expired` | the line, once | the Sign in row in Me or the Welcome heading |
+| E-S14 outage, offline, signInPaused | title and body | the heading |
+
+## 17. Contradictions with a product ruling or between sources (flagged, not resolved)
+
+| Id | What conflicts | Sources | What this file does meanwhile |
+|---|---|---|---|
+| X-1 | Photos permission: E-S28 and council round 2 say "never a library permission"; `26-founder-direction-photos-library-and-media.md` makes level 3 (library read access) a card, reversing NS-49's "level 3 closed" | E-S28 v1 vs 26 section 1 | Section 15a draws the proposed order; the v1 row stays true for levels 1 and 2 |
+| X-2 | First Keep haptic: NS-44-R12 says the success haptic plays once; design system MOTION (via E-M09, E-M33) lists no haptic and retires `success` for first run | card 19 NS-44-R12 vs `system/MOTION.md` section 9 | Follow the card for A-S13's first Keep (one `success`); E-M09 stays "none" on E-S08.open. Needs Karma and the system motion lead |
+| X-3 | Refused-region state is keyed `E-S04.refused-region` (sheet used after first run) but the refusal arrives on the first-run path from the Welcome, not on the sign-in sheet | NS-40-R9 | Drawn as a StateScreen reachable from both; the id is kept as the card writes it |
+| X-4 | Name optional everywhere (NS-43-R1 wording is about "a birthday and no name") vs the servers-off path where `nameRequired` is built | NS-43-R1, K-E12 | Optional on every path; `nameRequired` stays for Me, Add a child |
+| X-5 | System F2 variant `update required (becomes C8)` and MOTION "block over everything" vs NS-45-R13 (never blocks) | `system/COMPONENTS.md` F2 vs NS-45 | Card wins; the system files need the variant removed |
+| X-6 | Home slip position: C9 says "above the prompt"; A-S01 first drew the slip after "Another thought"; design-systems F50-1 recommends directly above the prompt block | system COMPONENTS C9, area A, NS-50-R4 | CLOSED at INDEX time: area A's v2 file now draws the slot above the prompt block, matching section 14.3 |
+| X-7 | The K2 ruling pins one Plus line ("Reading, listening and your copy stay free"); WORDS.md still carries "Recording, reading and export stay free" | GAP-LOG K2 | WORDS.md delta below changes it; flagged for content |
+| X-8 | K9 names C-S23 and E-ST47 only; support's two "struggling" screens still have no ruled id | GAP-LOG K9 | E-S30 and E-S31 assigned here |
+| X-9 | MSG-05 and MSG-07 ask for "E-S11 or the Me account section"; the account row is C-S02 | trace 6.5.1 | Drawn as state E-ST67 (the line), screen left to area C |
+| X-10 | Level 3 needs a Photos permission string; E-S28's "no usage string" guard (G11-3) names photos | E-S28 vs 26 | Guard needs the photos string added only when NS-51 ships behind its flag |
+| X-11 | `killSwitches.libraryDays` and `killSwitches.signIn` are not in `kill-switches.ts` or ADR 0029; RV-10 and O-19 need the vocabulary change | RV-10, O-19 | Engineering gaps G-E14, G-E15 below |
+
+Engineering gaps added in v2: G-E14 `killSwitches.signIn` (disable-only) and its E-S14.signInPaused reader (BL-922 neighbours, ADR 0029); G-E15 `killSwitches.libraryDays` outside `mayRun` (RV-10); G-E16 `PermissionPrimer` shared component and the microphone primer adopting it; G-E17 `DoorNote` component; G-E18 SystemLine adopters for E-ST47, E-ST50, E-ST51, E-ST67; G-E19 `code.digits` with `{n}` and the 6 to 10 digit field (NS-41-R10).
+
+Section 9 matrix rows added in v2: NS-33-R4, R7, R16 gain E-S04.refused-region, E-S07.reconsent, E-S16, E-S24, E-S30, E-S31 (AX5 with Bold Text on an SE 3); NS-33-R11 gains the E-S30 rows (none carry pictures); NS-33-R12 and WCAG 1.4.1 apply to the E-S03 answer pills and the agreement tick (QAL-09); the system-state rows of FR-OPS-30 (offline, outage, paused, update, low storage, second account, server restored) are added as one row each (OPS-30); columns for phone, iOS, build, runs, p50, p95, unit, budget, met or missed (DAT-15); one column per declarable accessibility feature and the common tasks Apple names, first launch, sign-in, purchase, settings, pass or fail per task (CMP-06); the passes of Annex B are named in `docs/qa` (QAL-07).
+
+## 18. Open design questions (each with a default)
+
+| Id | Question | Default |
+|---|---|---|
+| D-1 | Does "If you are struggling" show on the Welcome, where no account exists, or only in Me, Help and legal? | A quiet link below the doors, because Me is not reachable before the first book (SUP-18) |
+| D-2 | Are E-S30 and E-S31 the right ids? | Yes, until Karma rules otherwise (K9 left them open) |
+| D-3 | Three notification asks can now exist (reminder ask, Plus confirmed, first day ticked). How do they coexist? | Whichever comes first asks iOS once; the others show no ask, only the result; a denied phone sees no Days ask (RV-9, K-E13) |
+| D-4 | Second sentence of the update line for `upgrade_required` and `gone` | "This version of {app} can no longer reach your account." with Update; content words it |
+| D-5 | Does a two-sentence notice at collection sit above the Welcome's agreement line? | No; Privacy links to "What we collect" (NS-42-R14); E-S02.notice stays a pending state until counsel Q20 answers |
+| D-6 | Day slip: above or below "Another thought"? | Directly above the prompt block, one place for every route (F50-1, RV-6); area A to confirm |
+| D-7 | Does the day slip use a word other than "Not now"? | `content` decides; default `en.common.notNowButton` with a hint that states the consequence |
+| D-8 | First Keep haptic: the card says success once, the system motion file says none (X-2) | Follow the card; one success haptic on A-S13 only |
+| D-9 | Place names in photo moments (Q-PM-5) | Off by default; no location permission is ever asked |
+| D-10 | Where does the Photos access primer start from? | Parent-started from Me, and from the picture start menu only after one kept letter with a picture; never from a nudge, never in first run |
+| D-11 | Limited access wording and action | "The app can see the pictures you chose" with Change what the app can see; no count, no nag |
+| D-12 | How is a video limit said? | In words ("up to a minute"), with no counter; the exact cap follows Q-PM-2 |
+| D-13 | Code field length | Draws 6 to 10 digits; default 8 (O-6); VoiceOver reads the length from `{n}` |
+| D-14 | Optional marker | The word "Optional" beside the label; never an asterisk or "(optional)" in placeholder |
+| D-15 | Does Start on this phone remain on the Welcome in a store build that requires sign-in? | Yes, outage-only fallback as built (O-22) |
+| D-16 | Re-consent summary: how long is the change summary? | Three plain sentences at most, in a block above the agree line; content keys it |

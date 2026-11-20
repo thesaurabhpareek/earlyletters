@@ -1,6 +1,6 @@
 # Area E. Foundations and system states: motion
 
-Status: DRAFT v3, 20 Nov 2026. Motion lead, area E. Keyed to the design system v2 motion file (`docs/design/system/MOTION.md`: primitives `m.*`, transitions `T-*`, haptics `H-*`; section 4z here) and re-keyed to `DESIGN.md` (design lead, area E) section 4 inventory: screens `E-S01` to `E-S26`, their per-screen state names, the waiting rule (DESIGN section 2 rule 5), the render classes R0 to R6 and the cross-area catalogue `E-ST01` onward (DESIGN section 6). Ids in this file (`MP-nn`, `E-Mnn`) are stable; no id is reused.
+Status: DRAFT v4, 20 Nov 2026 (v4 adds section 4y: moments for card 19, the days and Home-today cards, and the round 2 media states; first Keep haptic conflict X-2 in DESIGN section 17). Motion lead, area E. Keyed to the design system v2 motion file (`docs/design/system/MOTION.md`: primitives `m.*`, transitions `T-*`, haptics `H-*`; section 4z here) and re-keyed to `DESIGN.md` (design lead, area E) section 4 inventory: screens `E-S01` to `E-S26`, their per-screen state names, the waiting rule (DESIGN section 2 rule 5), the render classes R0 to R6 and the cross-area catalogue `E-ST01` onward (DESIGN section 6). Ids in this file (`MP-nn`, `E-Mnn`) are stable; no id is reused.
 
 Play every move in `MOTION-PROTOTYPE.html` (this folder): each primitive and each area E moment, with toggles for Reduce Motion, dark, Reduce Transparency and a slow-motion switch for review.
 
@@ -290,6 +290,35 @@ A SystemLine sits under the control it is about (DESIGN E-S15), never at a scree
 | E-M81 | tap the selected tab | the platform's scroll to top | platform | platform (UNVERIFIED for JS tabs; check on a phone) | none | |
 | E-M82 | first Book view this session | MOTION 5a: the cover settles, opacity 0.6 to 1, y 6 to 0, `gentle` (area B owns) | `gentle` | one fade | none | |
 
+### 4y. Moments added or changed in v2 (20 Nov, re-keyed to card 19 and the final pack)
+
+Keyed to DESIGN.md sections 5, 13 and 15a. Every row names the system transition (`T-*`) and primitive (`m.*`) from `docs/design/system/MOTION.md`, the Reduce Motion behaviour and the haptic. Nothing implies a streak or a count; no moment lasts over 300 ms except the system's named exceptions; every control is hittable from frame 1 (law 2). E-M14 now applies to the twins case only (`E-S08.name-waiting`); the optional name has no reason line and no motion.
+| Id | State | Trigger | Transition and primitives | RM | Haptic | Never |
+|---|---|---|---|---|---|---|
+| E-M100 | `E-S03.platformMinor` | the platform answers under 18 | T-STEP: `m.exit` of the question, `m.fade` of the stop line, same room, same light as E-M09a | `m.fade` only | none | no distinct styling from the stop; nothing about the answer is spoken beyond the stop line |
+| E-M101 | `E-S04.refused-region` | the sign-up hook refuses | `m.swap` from the loading block to the warm block in the same StateScreen | same | none | no shake, no red, no Try again |
+| E-M102 | `E-S08.name` optional marker; `E-S08.dateWaiting` reasons | step shown; Continue with no date | the "Optional" word is drawn with the label (static); a reason line enters by `m.swap` into its reserved slot, announced once | same | none | no animation of the marker; Continue never disabled |
+| E-M103 | `E-S08.open` speech card: ask, downloading, waitingWifi, verifying, stopped, pausedRemote, needsSpace, done | a tap on Download on Wi-Fi; the state changes | `m.swap` between states in one card; `m.progress` only when bytes are measured, otherwise `m.progress.wait`; words never a percentage | same; bar still | none | no count, no "0%", no celebration on done |
+| E-M104 | `E-S07.reconsent`, `.sensitive`, `.offline` | a new major Terms version; the second step | T-SHEET (`m.sheet`) over a calm tab root; the step change inside is T-STEP `m.fade`; Agree: `m.progress.wait` in the button | `m.fade` | H-select on an answer only | never mid-gesture; never over a recording |
+| E-M105 | `E-S14.signInPaused` | `killSwitches.signIn` and a door tapped | as E-M52: lamp leaves over `lamp.leaveMs`, StateScreen by `m.fade` | lamp at level | none | no text about a switch |
+| E-M106 | `E-S16.line` two wordings | config or server answer | `m.swap` on the words in the same box (T-SYSLINE if it appears while Me is open) | same | none | no pulse on Update |
+| E-M107 | `E-S18.signedInB-ownerMismatch`, `.signedInB-localOnly`; `E-S24.accountDeleted`, `.methodOnly` | B signs in; the claim path | filtering happens under the modal as E-M57; the localOnly line T-SYSLINE `m.enter`; claim screens T-PUSH, static | `m.fade`; instant | none | no row animates out in view |
+| E-M108 | `E-S30`, `E-S31` | tap the link; tap Lines in other countries | T-PUSH; the list is static | platform | none | no motion in the list |
+| E-M109 | `E-S03.default` answer pills and tick | tap an answer or the box | `m.select`: the check glyph and weight arrive with the choice | instant | H-select (as today's `tap`) | colour alone never signals the choice |
+| E-M110 | E-ST47 server restored | sessions gone after a restore | as E-M58 and E-M49 | same | none | nothing on Home |
+| E-M111 | E-ST49 `libraryDays` pause; E-ST54 quiet book; E-ST55 suggestions absent | signed config; focus | `m.fade` 200 on the next render, never mid-gesture (E-M43); the day slip leaves with `m.list.remove` only if it was in view at a day change, no animation otherwise | jump | none | no hole, no badge |
+| E-M112 | E-ST50, E-ST51, E-ST57, E-ST60, E-ST67 lines | the condition holds | T-SYSLINE: `m.enter` after `systemLine.showAfterMs` (offline only), `m.move` of content below; leaves by `m.exit` then `m.move` | `m.fade`; instant | none | never red, never a toast |
+| E-M113 | E-ST52 quiet day | Home renders on a quiet day | none: the quiet line is part of Home's first frame in place of the prompt block; arrives with Home's `m.enter.group` on a cold launch only | one fade | none | no ceremony, no candle, no tone beyond the words |
+Round 2 (media; proposed ids, keyed to `26-founder-direction-photos-library-and-media.md`; re-key to NS-51 and NS-52 row ids when `27-photo-moments-and-media.md` lands):
+| Id | State | Trigger | Transition and primitives | RM | Haptic | Never |
+|---|---|---|---|---|---|---|
+| E-M120 | `E-S32` Photos access primer | a parent-started door | T-SHEET (sheet) or T-PUSH; content static; Continue then iOS's prompt (system) | platform | none | nothing animates in; no picture shown |
+| E-M121 | E-ST69 limited, E-ST70 denied | the state is read | drawn with the surface; if it changes while open, `m.swap` on the line | same | none | no nag, no pulse |
+| E-M122 | E-ST71 changed in Settings; E-ST78 index off | return to the app; the switch | `m.fade` on the surface at the next focus; the index removal has no animation | jump | none | no "removed" toast with a count |
+| E-M123 | E-ST72 iCloud original | a chosen item is not on the phone | `m.progress.wait` on the row (indicator in place, words "Getting it from iCloud"); `m.swap` to the attached thumbnail; the thumbnail arrives by `m.fade` | still indicator | none | no percentage text, no spinner loop beyond the system indicator |
+| E-M124 | E-ST73 no space, E-ST74 large video | a refused choice | `m.swap` into the line in place; focus stays | same | none (no `warning`) | no shake, no red, no counter |
+Thumbnail cells and the video badge have no motion of their own.
+
 ### 4z. Every area E moment keyed to the design system v2
 
 System names from `docs/design/system/MOTION.md` (sections 4 to 9). "v2 change" is what the system file changes from the row in section 4; the system file wins.
@@ -343,6 +372,8 @@ System names from `docs/design/system/MOTION.md` (sections 4 to 9). "v2 change" 
 | E-M38c | T-SHEET | H-select on the reminder ask only if it is a choice; Save a copy none | ENG-M10 decides |
 | E-M90 | T-SHEET | none | native sheet |
 | E-M91 | `m.instant` on return; `m.enter.group` on cold launch | none | none |
+| E-M100 to E-M113 | see section 4y: each row names its T-* and m.* | per row | new in v2 |
+| E-M120 to E-M124 | see section 4y (round 2, proposed) | none | new in v2 |
 | E-M50, E-M51 | none; then T-LAUNCH | none | none |
 | E-M52 | `m.fade` block; lamp leave | none | none |
 | E-M53 | `m.swap` | none | none |

@@ -605,3 +605,35 @@ Every line in this file that makes a promise a parent or the public could hold u
 ## 13. How the strings were checked
 
 A node check (a throwaway script outside the repo, run in this session with no install) read the whole file for non-ASCII characters (0 found) and every new key in the section 9 table (38 rows, after the re-key withdrew the second-account screen and the separate update title) for: the test's fear words plus "lost" and "missing"; the AI-writing words; gendered words; daily rhythm and gap counts; the CR-25 internal words plus "server" and "error"; "safe"; "we" or "our"; the "stays on this phone" family; placeholders outside the test's list; buttons over 22 characters with `{app}` filled; and the stated character count. Result: no rule hits; seven character counts were off by one and are fixed. The REUSE lines were read by hand, not by the script; the ones that break a rule are flagged in sections 5 and 9 (`plan.retry` "safe", `tonight.plusLine` "always free", the full stops on five titles, "the app" in `family_share_consent`). `vitest` was not run, because nothing was written into `packages/content`.
+
+## 14. Delta v2 (20 Nov): words the design lead needs for the re-keyed states (PROPOSED, for `content` to word; intents are not final copy)
+
+Raised by design (area E, DESIGN.md v2) so the screens have a key to point at. `content` writes, counsel reads registered lines, the founder approves. Rules: no exclamation mark, "reminder" not "note", never "sign up", "log in" or "create account", no fear or guilt, no count.
+| State (DESIGN id) | PROPOSED key | Intent | VoiceOver and Voice Control |
+|---|---|---|---|
+| E-S04.refused-region | `system.region.title`, `system.region.body` | "{app} can't be set up from here." / "If you think this is wrong, contact us." (card 19 NS-40; never "sanctions", "blocked", "country") | heading first; actions "Terms", "Contact us" |
+| E-S03.platformMinor | reuse `errors.under_18` | same words as the stop | as the stop |
+| E-S08 optional marker | `onboarding.child.optionalMark` | "Optional" | label read as "Their name, optional" |
+| E-S08 why we ask | `onboarding.child.whyDate` | one line that the book's chapters follow the child's age | static text, read after the field |
+| E-S05.reason-empty | `authCopy.email.needEmail` | "Type your email to continue." | announced; focus to the field |
+| E-S06.reason-short | `authCopy.code.digits` | "The code has {n} digits." (replaces `sixDigits`) | the field reads its length |
+| E-S07.reconsent | `authCopy.consent.reconsent.title`, `.summary` | a title and at most three plain sentences saying what changed; then the existing agree line | modal, title focused |
+| E-S14.signInPaused | reuse `authCopy.outage.*` | same words as the outage; nothing about a pause | as E-S14.outage |
+| E-S14 help line (MSG-15) | `authCopy.outage.appleStillOpen` | Sign in with Apple and starting on this phone still work | read after the body |
+| E-S16 second wording | `system.update.lineGone` | "This version of {app} can no longer reach your account." | with the Update action |
+| E-S24.methodOnly | `authCopy.claim.methodHidden` | "Apple (email hidden)" | the method, never the relay address |
+| E-S24.accountDeleted | `authCopy.claim.accountDeleted.*` | says what happens to these letters if kept in this account; no fault | as E-S24 |
+| E-ST47 | reuse `errors.session_expired` | one line in Me, once | announced once |
+| E-ST49 | none | nothing is shown (absent) | none |
+| E-ST50 | `days.errors.storeUnavailable` | one line in the library section with Try again | polite, once |
+| E-ST51 | `authCopy.account.suspended` | what still works, never why | polite, once |
+| E-ST60 | `days.reminders.offLine` | chosen days still send a reminder while Reminders is off | static |
+| E-ST67 | `authCopy.account.emailUnreachable` | "We could not reach {email}" with Fix address; relay shows the method | polite, once |
+| E-S30, E-S31 | `help.struggling.*` | calm, not advice, lines by region, a Copy fallback when the phone cannot dial | rows read "Calls {name}" |
+| E-S12 and E-S26 Plus line (ruling K2) | `billingCopy.tonight.plusLine` | the pinned "Reading, listening and your copy stay free" replaces "Recording, reading and export stay free"; "stay free", never "always free" | static |
+| E-S32 Photos access primer (round 2, proposed) | `photos.access.primer.*` | what the app will look at (dates and groupings of pictures, on this phone only), that limited access works, that nothing is described or written, that it can be turned off in Me; Continue and Not now at equal weight | title focused; both buttons named by their words |
+| E-ST69 | `photos.access.limited` | "The app can see the pictures you chose." with Change what the app can see | polite, once |
+| E-ST70 | `photos.access.denied` | one line and Open Settings; Choose a photo still works | polite, once |
+| E-ST72 | `photos.media.fromICloud` | "Getting it from iCloud" with Cancel | state then action |
+| E-ST73, E-ST74 | `photos.media.noSpace`, `photos.media.tooLong` | the space needed, or the limit in words ("up to a minute", pending Q-PM-2); never a counter | polite, once |
+Claims check: none of these lines promises backup, speed, safety or "we find your best moments"; the media lines state what the phone reads and keeps, and are subject to NS-51 and NS-52 Claims once those cards land.

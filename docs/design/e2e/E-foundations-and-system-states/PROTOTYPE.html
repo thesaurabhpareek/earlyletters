@@ -248,7 +248,7 @@ S["E-S03"]={name:"Age gate and stop",states:{
  reasonNoTick:()=>ageGate("yes",false,"Check the box to continue."),
  ready:()=>ageGate("yes",true,""),
  stop:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">After 24 hours: "I answered by mistake" appears here (D-026).</p></div>`,
- region:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is not offered where you are. (PROPOSED, HOLD)</p><p class="sub muted" data-vo="1">Nothing was set up on this phone.</p></div></div><div class="footer"><p class="foot">HOLD: no in-app region check exists; availability is set per storefront in App Store Connect (card gap K-E10).</p></div>`,
+ platformMinor:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">E-S03.platformMinor (NS-40-R5): same room and words as the stop; nothing stored, logged or sent. Built later.</p></div>`,
  stopAfter24h:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer">${go("E-S03:default","I answered by mistake","quiet")}</div>`
 }};
 function ageGate(ans,tick,reason){
@@ -287,7 +287,8 @@ S["E-S04"]={name:"Sign in: choose a way",states:{
  default:()=>signIn(""),busy:()=>signIn("",true),
  errorProvider:()=>signIn("Nothing has changed. That sign-in did not finish. Try again, or try another way."),
  errorNotAvailable:()=>signIn("Nothing has changed. This way of signing in isn't available right now. Try another way."),
- errorNetwork:()=>signIn("Nothing has changed. Sign in once you are back online.")
+ errorNetwork:()=>signIn("Nothing has changed. Sign in once you are back online."),
+ refusedRegion:()=>stateScreen({art:ART.envelope,title:"Early Letters can't be set up from here.",body:"If you think this is wrong, contact us.",note:"E-S04.refused-region (NS-40-R9): no map or flag, no Try again, nothing stored. Words PROPOSED.",actions:go("E-S02:default","Terms","quiet")+go("E-S02:default","Contact us","quiet")})
 }};
 function signIn(err,busy){
   return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S02:default" data-vo="1" aria-label="Close">Close</button>
@@ -332,11 +333,12 @@ function codeScr(err,busy){
 }
 S["E-S07"]={name:"Agreements and consent at sign-in",states:{
  loading:()=>stateScreen({art:ART.moon,title:"Setting up your account",actions:go("E-S07:default","(account answered)","quiet")}),
- default:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.</p><p class="sub" data-vo="1">By continuing you agree to the ${lnk("E-S07:default","Terms of Service")} and the ${lnk("E-S07:default","Privacy Policy")}.</p></div><div class="footer">${go("E-S08:name","Agree and continue")}${go("C-S11:declined","Not now","quiet")}<p class="note">Returning account with a book: ${lnk("C-S10:loading","to C-S10")}. Already has a book on the phone: ${lnk("E-S24:default","claim")}</p></div></div>`,
+ default:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">Your letters are private to you. We never sell them, use them for ads or use them to train machine learning models.</p><p class="sub" data-vo="1">By continuing you agree to the ${lnk("E-S07:default","Terms of Service")} and the ${lnk("E-S07:default","Privacy Policy")}.</p></div><div class="footer">${go("E-S08:name","Agree and continue")}${go("C-S11:declined","Not now","quiet")}<p class="note">Returning account with a book: ${lnk("C-S10:loading","to C-S10")}. Already has a book on the phone: ${lnk("E-S24:default","claim")}</p></div></div>`,
+ reconsent:()=>`${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><div class="scroll"><h2 class="t2" style="margin-top:28px" data-vo="1">Before your book syncs</h2><p class="body" data-vo="1">(PROPOSED change summary, three plain sentences at most, words by content.)</p><p class="sub" data-vo="1">By continuing you agree to the updated Terms of Service.</p></div><div class="footer">${go("E-S02:default","Agree and continue")}${go("E-S02:default","Not now","quiet")}<p class="note">E-S07.reconsent (NS-42-R10). Recording, reading, playing and export work whatever the answer.</p></div></div>`,
  errorConsentUnavailable:()=>stateScreen({art:ART.envelope,title:"Setting up your account",extra:errline("Setting up your account did not finish. Try again."),actions:go("E-S07:default","Try again")})
 }};
 S["E-S08"]={name:"First book steps",states:{
- name:()=>step("Who is this book for?",`<label class="sub" for="nm" data-vo="1">Their name (you can add it later)</label><input id="nm" class="field serif" value="Asha"><p>${lnk("E-S08:twins","Add another")}</p>`,"E-S08:date"),
+ name:()=>step("Who is this book for?",`<label class="sub" for="nm" data-vo="1">Their name <span class="muted">Optional</span></label><input id="nm" class="field serif" value="Asha"><p>${lnk("E-S08:twins","Add another")}</p>`,"E-S08:date"),
  nameWaiting:()=>step("Who is this book for?",`<label class="sub" for="nm2">Their name</label><input id="nm2" class="field serif err" aria-invalid="true" value=""><div style="margin-top:8px">${errline("Add a name to continue.")}</div>`,"E-S08:nameWaiting"),
  twins:()=>step("Who is this book for?",`<input class="field serif" value="Asha" aria-label="First name"><input class="field serif" style="margin-top:8px" value="" placeholder="Another name" aria-label="Second name"><p class="foot">Each book is free.</p>`,"E-S08:date"),
  dateWaiting:()=>step("When is Asha's birthday?",`<div class="pills"><button class="pill sel" data-vo="1">Birthday</button><button class="pill" data-vo="1">Due date</button></div><div class="card" style="margin-top:12px;text-align:center" data-vo="1">Choose a date</div><div style="margin-top:8px">${errline("Choose Asha's birthday to continue.")}</div>`,"E-S08:dateWaiting"),
@@ -410,6 +412,7 @@ S["E-S13"]={name:"Something broke",states:{
 S["E-S14"]={name:"Sign-in outage and offline (first run)",states:{
  outage:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",actions:go("E-S02:default","Try again")}),
  outageWithLocal:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
+ signInPaused:()=>stateScreen({art:ART.envelope,title:"Sign-in cannot be reached right now.",body:"Try again in a moment.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account. (E-S14.signInPaused: killSwitches.signIn, PROPOSED; renders as the outage.)",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
  offline:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",actions:go("E-S02:default","Try again")}),
  offlineWithLocal:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",note:"Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.",actions:go("E-S02:default","Try again")+go("E-S08:name","Start on this phone","quiet")}),
  backOnline:()=>stateScreen({art:ART.envelope,title:"Sign-in needs a connection.",body:"Connect to the internet, then tap Try again.",extra:`<p class="sub" role="status" data-vo="1">(announced) You are back online.</p>`,actions:go("E-S02:default","(returns to the Welcome by itself)","quiet")})
@@ -497,7 +500,7 @@ const J=[
  ["J-E04 No connection at sign-in",["E-S02:default","E-S14:offlineWithLocal","E-S14:backOnline","E-S02:default"]],
  ["J-E05 Returning parent, new phone",["E-S02:lastMethod","E-S05:default","E-S06:default","E-S07:default","C-S10:loading"]],
  ["J-E06 Consent outstanding at relaunch",["E-S01:default","E-S09:table","C-S11:declined"]],
- ["J-E07 Under 18, and the region hold",["E-S03:default","E-S03:stop","E-S03:stopAfter24h","E-S03:region"]],
+ ["J-E07 Under 18 (and the platform signal)",["E-S03:default","E-S03:stop","E-S03:stopAfter24h","E-S03:platformMinor"]],
  ["J-E08 Sign-in errors in place",["E-S02:errorProvider","E-S04:errorProvider","E-S04:errorNotAvailable","E-S05:errorNotAvailable","E-S05:offline","E-S06:help","E-S05:errorInvalidEmail","E-S05:errorEmailWait","E-S06:errorWrongCode","E-S06:paused","E-S06:errorRateLimited","E-S06:errorExpired","E-S06:refusedOtherPhone","E-S06:refusedOtherPhoneSpent","E-S06:refusedAlreadySignedIn","E-S07:errorConsentUnavailable","E-S02:sessionExpired"]],
  ["J-E09 Kill switch at sign-in",["E-S02:serversOff","A-S01:default"]],
  ["J-E10 Third letter: the one Plus gate",["A-S07:third","E-S10:default","E-S10:opening","E-S12:default","A-S07:afterPlus","A-S13:kept"]],
