@@ -25,7 +25,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 14 (words wait; Q1 d
    apps/mobile/src/lib/first-run/new-phone.logic.ts:85-101   ARRIVAL_SETTING `newPhone.arrival`, PENDING and SHOWN, `arrivalToWrite`, `arrivalLineOwed`: gains the value `dismissed` (L2, phone only)
    apps/mobile/src/lib/first-run/new-phone.logic.ts:65         at 10 s the route already answers `arrived` when a page has landed (R2 needs only the `more` line)
    apps/mobile/src/lib/provenance.ts:41-47                     `provenanceLine`: gains a PROPOSED "not on this phone" clause for the parent's own spoken letter with no `audioUri`
-   apps/mobile/src/app/(tabs)/book.tsx:122-133                 the arrival line slot [U: the design cites these lines; re-open]
+   apps/mobile/src/app/(tabs)/book.tsx:122-133                 the arrival line slot [V :122-124]
 
 6. DATA AND SECURITY
    Data classes: L2 one setting value on the phone. New storage: none beyond that value. Nothing sent; nothing logged. Boundary: none new. Owner of the read: none beyond lens B (design-systems).

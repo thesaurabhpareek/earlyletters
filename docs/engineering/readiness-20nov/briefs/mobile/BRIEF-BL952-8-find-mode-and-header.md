@@ -31,7 +31,7 @@ Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wa
 4. READING PACK: Pack 2 items 1 to 7; docs/design/e2e area B DESIGN, WORDS, MOTION B-S06 (branch docs/e2e-ux-20nov, 9e78eecd); 11-foundations section 9 (Find is "record only").
 
 5. CODE ENTRY POINTS (develop 16e61549)
-   apps/mobile/src/lib/find/debounce.ts:10-30        `createQueryDebounce(run)`, `FIND_DEBOUNCE_MS = 150`; "held in memory only" (R14)
+   apps/mobile/src/lib/find/debounce.ts:9 (`FIND_DEBOUNCE_MS`), :26 `createQueryDebounce(run)`, `FIND_DEBOUNCE_MS = 150`; "held in memory only" (R14)
    apps/mobile/src/lib/find/search.ts:18, :28, :39   FindHit, FindResult, `searchLetters(db, raw, childId)`
    apps/mobile/src/lib/find/rebuild.ts:16            REBUILD_BATCH = 200; sources.ts:75 SEARCH_VIEW
    apps/mobile/src/app/(tabs)/book.tsx:433           the Months `AnimatedSectionList` the Find mode must not break
