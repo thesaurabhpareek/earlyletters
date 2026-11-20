@@ -1,39 +1,42 @@
-import sys; sys.path.insert(0,'/home/claude/trace-gen')
 from calc import *
 ENG=[]  # dict(file,label,text,owner,frs,bls,kind)
 for code,_ in FILES:
-    sec=D[code]['engsec']
-    if code=='DAT':
-        for l in sec.split('\n'):
-            m=re.match(r'- \*\*(.*?)\*\*:?\s*(.*)',l)
-            if m:
-                label=m.group(1).strip().rstrip(':'); text=m.group(2).strip()
-                if label.startswith('No app code'): continue
-                ENG.append(dict(file=code,label=label,text=text,owner='see label'))
-            elif l.startswith('- No app code'): pass
-        continue
-    for h,rs in tables(sec):
-        if h[0] in ('Card',): continue   # DAT events table etc
-        for r in rs:
-            label=r[0]
-            if len(r)>=3: text=r[1]; owner=r[2]
-            else: text=r[1] if len(r)>1 else ''; owner=''
-            # PRV/LEG/CMP use columns (Row, What, FR) ; OPS (Row, Add, Owner); fine
-            ENG.append(dict(file=code,label=label,text=text,owner=owner,rawcells=r))
-for e in ENG:
-    allt=e['label']+' '+e['text']+' '+(' '.join(e.get('rawcells',[])))
-    e['frs']=sorted(set(fr_ids(allt)))
-    e['bls']=sorted(set(re.findall(r'BL-\d+',e['label'])),key=lambda x:int(x[3:]))
-    lab=e['label']
-    if e['bls'] and re.match(r'(BL-|\#\d+|BL-\d+ pattern)',lab) : e['kind']='bl'
-    elif re.match(r'(New|\*\*New)',lab) or lab.lower().startswith('new'): e['kind']='new'
-    elif lab.startswith('BL-') : e['kind']='bl'
-    elif e['file']=='MKT' or lab.startswith('ADR 0031'): e['kind']='new'
-    else: e['kind']='other'
+    for r in D[code]['eng']:
+        e=dict(file=code,label=r['label'],text=r['text'],owner=r['owner'],rawcells=r['rawcells'])
+        ENG.append(e)
+def classify(e):
+    lab=e['label']; txt=e['text']; code=e['file']
+    allt=lab+' '+txt+' '+(' '.join(e.get('rawcells',[])))
+    e['frs']=sorted(set(fr_ids(allt,code)))
+    if code in FIRST:
+        e['bls']=sorted(set(re.findall(r'BL-\d+',lab)),key=lambda x:int(x[3:]))
+        if e['bls'] and re.match(r'(BL-|\#\d+|BL-\d+ pattern)',lab): e['kind']='bl'
+        elif re.match(r'(New|\*\*New)',lab) or lab.lower().startswith('new'): e['kind']='new'
+        elif lab.startswith('BL-'): e['kind']='bl'
+        elif code=='MKT' or lab.startswith('ADR 0031'): e['kind']='new'
+        else: e['kind']='other'
+        return
+    first_bl=re.findall(r'BL-\d+',txt)[:1]
+    alls=sorted(set(re.findall(r'BL-\d+',lab+' '+txt)),key=lambda x:int(x[3:]))
+    if re.match(r'(No row|No app code|None)\b',lab) or (lab=='Note' and not txt.startswith('`')):
+        e['kind']='other'; e['bls']=alls
+    elif re.match(r'(New|BL-new)',lab):
+        e['kind']='new'; e['bls']=alls
+    elif re.match(r'BL-\d+',lab):
+        e['kind']='bl'; e['bls']=sorted(set(re.findall(r'BL-\d+',lab)),key=lambda x:int(x[3:]))
+    elif lab=='Change':
+        e['kind']='bl'; e['bls']=first_bl or alls
+    elif re.search(r'BL-\d+ \(change\)',txt):
+        e['kind']='bl'; e['bls']=re.findall(r'BL-\d+(?= \(change\))',txt)
+    elif re.match(r'BL-\d+',txt.split(' | ')[-1].strip()) and not re.search(r'new row',txt,re.I):
+        e['kind']='bl'; e['bls']=re.findall(r'BL-\d+',txt.split(' | ')[-1])[:1]
+    else:
+        e['kind']='new'; e['bls']=alls
+for e in ENG: classify(e)
 GROUPS=[
  ('free-limits', r'free-limits|Storage and egress|weekly limits job', 'Weekly Free-limits job reads Storage and egress, and NOT CHECKED fails'),
  ('mailto', r'Mail URL test|Pin the support', 'Pin every support mail target (fixed subject, empty body, no ids)'),
- ('canary', r'log canary|Log canary', 'Log canary with new-field fixtures (Find queries, labels, From names, typed days, photo paths)'),
+ ('canary', r'log canary|Log canary|Canary: synthetic|canary extension', 'Log canary with new-field fixtures (Find queries, labels, From names, typed days, photo paths, suggestion titles, tradition and day keys)'),
  ('childinput', r'child-input', 'Tag the NS-16 flag child-input in the flag registry'),
  ('consentrec', r'record_policy_act|rendered_sha256|consent builder', 'Consent records: rendered text hash, app build, OS, locale, allowed method on every call site'),
  ('rulescan', r'rules\.test|rules scan|forbid scan|price scan', 'Content-rules scans extended (public-surface forbid list, price pattern, help content)'),
@@ -50,15 +53,14 @@ def gkey(e):
     for k,rx,_ in GROUPS:
         if re.search(rx,txt): return k
     return None
-ENTRIES={}  # key -> dict
+ENTRIES={}
 ordkeys=[]
 for i,e in enumerate(ENG):
     k=gkey(e) or ('X%d'%i)
     if k not in ENTRIES: ENTRIES[k]=dict(key=k,rows=[],kind=e['kind']); ordkeys.append(k)
     ENTRIES[k]['rows'].append(e)
-    if e['kind']=='new' or k in dict((g[0],1) for g in GROUPS): 
+    if e['kind']=='new' or k in dict((g[0],1) for g in GROUPS):
         if ENTRIES[k]['kind']!='new' and e['kind']=='new': ENTRIES[k]['kind']='new'
-# preflight group: is existing BL-958 but also new rows -> keep kind bl with note
 n=0
 for k in ordkeys:
     en=ENTRIES[k]
@@ -69,9 +71,9 @@ for k in ordkeys:
         t=r0['text']; lab=r0['label']
         body=t[:130]+('' if len(t)<=130 else ' [cont. in source]')
         en['title']=body if lab=='New' else lab+': '+body
-    else: en['title']=r0['label']
+    else: en['title']=r0['label'][:160]+('' if len(r0['label'])<=160 else ' [cont. in source]')
     en['bls']=sorted(set(b for r in en['rows'] for b in r['bls']),key=lambda x:int(x[3:]))
-    en['frs']=sorted(set(f for r in en['rows'] for f in r['frs']))
+    en['frs']=sorted(set(f for r in en['rows'] for f in r['frs']),key=lambda x:ORDER.index(x) if x in ORDER else 9999)
     en['files']=sorted(set(r['file'] for r in en['rows']),key=lambda c:[x[0] for x in FILES].index(c))
     if en['kind']=='new' and k!='preflight':
         n+=1; en['nr']='NR-%02d'%n

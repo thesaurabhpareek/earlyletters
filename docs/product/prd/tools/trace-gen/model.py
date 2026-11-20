@@ -73,3 +73,29 @@ def suggest_ns(text):
         for n in SCR2NS.get(base,[]):
             if n not in out: out.append(n)
     return out
+# FR ids a card itself names (the card's own "function requirements" mentions), per card number
+CARDFR={}
+CARD21ITEMS={}   # numbered items of "Conflicts and open items for Karma" in card 21 (if on disk)
+for f in CARDFILES:
+    t=open(f,encoding='utf-8').read()
+    heads=[(m.start(),int(m.group(1))) for m in re.finditer(r'^## NS-(\d+)\.',t,re.M)]
+    ends=[m.start() for m in re.finditer(r'^## ',t,re.M)]+[len(t)]
+    if heads:
+        for pos,n in heads:
+            end=min(e for e in ends if e>pos)
+            for x in fr_ids(t[pos:end]): CARDFR.setdefault(n,set()).add(x)
+    else:
+        m=re.match(r'# NS-(\d+)\b',t)
+        if m:
+            for x in fr_ids(t): CARDFR.setdefault(int(m.group(1)),set()).add(x)
+    # a card file's own trace table ("Trace: what each card carries") names the FR ids each card carries
+    for sec in blocks(t,r'^Trace',(2,)):
+        for l in sec.split('\n'):
+            if l.startswith('| NS-'):
+                c=cells(l); n=int(re.match(r'NS-(\d+)',c[0]).group(1))
+                for x in fr_ids(c[-1]): CARDFR.setdefault(n,set()).add(x)
+if os.path.exists(CARD21):
+    t=open(CARD21,encoding='utf-8').read()
+    m=re.search(r'^## Conflicts and open items for Karma.*?(?=^## |\Z)',t,re.M|re.S)
+    if m:
+        for mm in re.finditer(r'^(\d+)\. (.*)',m.group(0),re.M): CARD21ITEMS[int(mm.group(1))]=mm.group(2)

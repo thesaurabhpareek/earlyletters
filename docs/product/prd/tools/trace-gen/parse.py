@@ -124,6 +124,7 @@ def parse_qs(code,secs):
             qi=hidx(h,r'question'); di=hidx(h,r'default'); oi=hidx(h,r'^(To|Who)$'); ni=hidx(h,r'number')
             for r in rs:
                 qid=r[0]
+                if qid=='Existing numbers': continue   # PHS note row, not a question
                 if code=='OPS': qid='Q%s'%qid
                 c=r
                 if code in FIRST:
@@ -139,7 +140,7 @@ def parse_qs(code,secs):
                     if oi is not None and oi<len(c): owner=c[oi]
                     else:
                         m=re.match(r'(Counsel|Founder|Karma|Accountant|Founder and counsel)\b',question)
-                        owner=m.group(1).lower() if m else 'not stated (read as founder)'
+                        owner=m.group(1).lower() if m else ('counsel' if qid.startswith('Counsel') else 'not stated (read as founder)')
                 qs.append(dict(handle='%s %s'%(code,qid),cells=c,header=h,question=question,default=default,owner=owner,number=number,qid=qid))
     return qs
 def parse_design(code,secs):
