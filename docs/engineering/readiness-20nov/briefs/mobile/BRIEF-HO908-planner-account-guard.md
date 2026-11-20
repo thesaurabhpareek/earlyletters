@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:35 UTC). The handoff cites `listVisible` at `lib/store/repos/children.ts:26-27`: that path does not exist; it is `apps/mobile/src/lib/db/repos/children.ts:54` on develop [V]. The handoff names `currentPlan()` in `lib/reminders/scheduler.ts`: it is at `scheduler.ts:135` [V].
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). The handoff cites `listVisible` at `lib/store/repos/children.ts:26-27`: that path does not exist; it is `apps/mobile/src/lib/db/repos/children.ts:54` on develop [V]. The handoff names `currentPlan()` in `lib/reminders/scheduler.ts`: it is at `scheduler.ts:135` [V].
 Blocked until: #879 merged (BL-961 3 of 3): `bookVisibleNow` is not on develop. Handoff issue: #908 (karma to mobile). Nothing for the founder. NSC-03 stays "not yet" for reminders until this lands (review B on #879, note 2).
 
 ```
-BRIEF HO-908 (planner guard under a second account)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:35 UTC
+BRIEF HO-908 (planner guard under a second account)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (rides with BL-961)   Wave: 1
 
 1. GOAL: When account B signs in on a phone that holds A's book, the reminder plan is empty: no note names A's child and none is planned for A's books.
@@ -16,7 +16,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (rides wi
 
 3. FILES  Touch: apps/mobile/src/lib/reminders/scheduler.ts (the first line of `currentPlan()` only), one test in `test/reminders-session.test.ts` or `test/reminders-planner.test.ts`.
    Never: lib/store.ts (read `bookVisibleNow` only), lib/reminders/planner.ts, lib/billing/**.
-   Shared file rule: `scheduler.ts` with BL-966 (c) and BL-943 PR 3.
+   Shared file rule: `scheduler.ts` with BL-966 (c) and BL-943 PR 3 and PR 5.
 
 4. READING PACK: Pack 4 items 3, 5; Pack 3 pitfalls ("the planner guard lands in the BL-967 lane"); #879 body ("Reminders" row) and review B notes 1 and 2.
 

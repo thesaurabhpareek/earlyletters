@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:40 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
 Blocked until: #879 merged for case 1 (the first-run gate belongs to BL-961 until then; #904 left `lib/first-run/**` alone). Case 2 needs Karma's answer on one input: whether any build that carried reminders reached a tester before #904 (handoff #910: "a one-time launch rule, or a line in the release notes that it is accepted pre-release; your call which; say which in the PR"). Source read: no `ios-v*` tag exists (#835 review A), but S1-204 names "Build 12 (PR #764)" on TestFlight [V DEVICE_TEST_PLAN.md:31]: so testers may hold reminders. Do not guess; ask. Handoff issue: #910 (karma to mobile).
 
 ```
-BRIEF HO-910 (end reminders on account gone and on the upgrade path)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:40 UTC
+BRIEF HO-910 (end reminders on account gone and on the upgrade path)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13   Wave: 1
 
 1. GOAL: When an account is purged on another phone, or a parent upgrades from a build older than #904 and is signed out, no reminder of the earlier session survives to the next account.
@@ -17,7 +17,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13   Wave: 1
    Red on develop: `endReminderSession()` (`lib/reminders/session.ts:51`) is called only from `settleReminderSession` on the user id change or the mark; a purged account that ends with `SIGNED_OUT` is Unverified (design 1.3), and a phone with reminders on and no mark never ends.
    Mutants: remove the new call in the account-gone branch; ignore the "phone has held an account" fact in the launch rule.
 
-3. FILES  Touch: lib/account-deletion/first-run-gate.logic.ts or use-first-run-gate.ts (the "account gone" branch: locate with `git grep -niE "accountGone|deleted|gone" apps/mobile/src/lib/account-deletion` [U exact line]),
+3. FILES  Touch: apps/mobile/src/lib/account-deletion/first-run-gate.logic.ts `decideGate` (its `clear` output, where `noteIsDead` says the account is gone) and the hook that acts on it, `use-first-run-gate.ts` [V that both exist; U that `clear` is the branch the design means: confirm with Karma first],
    lib/reminders/session.ts (the one-time launch rule, case 2 only), test/reminders-session.test.ts (extend), docs/qa/DEVICE_TEST_PLAN.md (a BL-948 row, by `qa`).
    Never: lib/first-run/gate.logic.ts, lib/auth/**, lib/store.ts, planner or scheduler logic.
    Shared file rule: `session.ts` is #904's file (merged); `lib/account-deletion/**` is BL-961's area.
@@ -54,6 +54,6 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13   Wave: 1
 
 15. STOP AND ASK: the purged-account path ends in something other than `SIGNED_OUT` (Unverified); "has held an account" has no reliable source on the phone; counsel is needed on retention of the mark.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-ho910 agent:mobile -->`.
+16. HARNESS: claim row held by Karma for lib/reminders/** only; lib/account-deletion/** has none yet (Karma adds it). Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-ho910 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-ho910.md`. Comments start `<!-- agent:mobile -->`.
 ```

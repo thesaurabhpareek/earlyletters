@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:45 UTC). Already merged (do not redo): the never-list tests (#905: `reminders-never-list.test.ts`), reminders end with the session (#904: `reminders-session.test.ts`), quiet books (#901), and the consent-key fix (#903).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Already merged (do not redo): the never-list tests (#905: `reminders-never-list.test.ts`), reminders end with the session (#904: `reminders-session.test.ts`), quiet books (#901), and the consent-key fix (#903).
 Blocked until: BL-966 (a) to (c) merged (BL-943 edits `planner.ts` after 966b); founder Q2 order (Build 14 on); open questions for Karma and product: OQ-13.3 (is a `killSwitches.reminders` wanted: default none; NS-13-R26 says the kill switch does NOT touch reminders), OQ-13.4 (upgraders: a phone with reminders on and no `reminders.onSince` gets one once, per the design). NOTE for the backlog row: the plan lists BL-943's rows as R1 to R33, the backlog text lists R1 to R17: the card wins.
 
 ```
-BRIEF BL-943 (anchor, back-off, landing; 3 PRs plus a docs PR)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:45 UTC
+BRIEF BL-943 (anchor, back-off, landing; 3 PRs plus a docs PR)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 14 on   Wave: 2
 
 1. GOAL: When a parent has not opened the app, reminders step back to weekly after 7 days and stop after day 35 (one constant, PROPOSED); a letter made today cancels today's reminder;
@@ -22,7 +22,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 14 on   Wave
 3. FILES  Touch: lib/reminders/{backoff (new),landing (new),planner,prefs,scheduler,index}.ts, lib/db/repos/{entries,drafts}.ts (two SQL reads), lib/store.ts (two read exports), app/(tabs)/_layout.tsx (one hook),
    tests reminders-backoff, reminders-anchor (new), next-ask, reminders-planner; `docs/qa/DEVICE_TEST_PLAN.md` rows by `qa`; inventory row for `reminders.onSince` (L2) in the same PR (privacy).
    Never: app/_layout.tsx, lib/billing/** (plan notices), lib/first-run/**, packages/content words (the 31 neutral lines for R2b come from `content`).
-   Shared file rule: `planner.ts` with 966b first; `store.ts` with #835, #839, #879, #895; `scheduler.ts` with 966c and HO-908.
+   Shared file rule: `lib/db/repos/entries.ts` is also edited by #895 (Find row): whichever lands second merges develop. `planner.ts` with 966b first; `store.ts` with #835, #839, #879, #895; `scheduler.ts` with 966c and HO-908.
 
 4. READING PACK: Pack 4 items 1 to 6; `09-capture.md` (design) section 1.3 (anchor, back-off, landing) and section 1.9 (PR order), OQ-13.3 and OQ-13.4; `docs/design/NOTIFICATIONS.md`; PR #680 (fold in).
 
@@ -41,7 +41,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 14 on   Wave
 7. LIBRARIES: none. `expo-notifications ~57.0.21` (`getLastNotificationResponse` in `NotificationsEmitter.d.ts:83` [U re-check]); Intl and `tz.ts` (LD-18); no date library (PR #920).
 
 8. BUDGETS (PR #928): L-09 re-plan under 50 ms for 3 children (Node, BLOCK at 3x); a Node bench of `lastMadeAt` plus `planReminders` on `node:sqlite` with 1,000 entries and 3 children under 10 ms (PROPOSED);
-   L-01, L-03 no awaited work added at launch (`scheduler.ts` first re-plan stays `void`); B-03 at most 60 pending. Checked: Node; the phone by the NS-34 run sheet; tap to Home within 2 s is a device row.
+   L-01, L-03 no awaited work added at launch (`scheduler.ts` first re-plan stays `void`); B-03 at most 60 budgeted plus up to 4 plan notices, 64 in all (NS-13-R23 "never over sixty pending" covers the budgeted group; the total with plan notices is up to 64). Checked: Node; the phone by the NS-34 run sheet; tap to Home within 2 s is a device row.
 
 9. ACCEPTANCE  Experience: D-S04 reminder ask, D-S06 Me Reminders (off, on, denied, backedOff, lateClamp, appLock, ax5), D-S10 (PR #921); no screen says reminders slowed (card section 15). Test cases above.
    Done also means: red on old code and mutants; an injected clock for every cadence.
@@ -49,7 +49,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 14 on   Wave
 10. PR BREAKDOWN (design 1.9)
     PR 3: the anchor counts a made letter (R27, R8) | about 260 lines, 7 files | base develop after 966b | way back: revert, the next launch re-plans
     PR 4: pre-scheduled back-off (R3, R4, R18, R32, R23, R2; folds #680) | about 330, 3 | base PR 3 (or develop) | live behaviour change: a parent silent over 35 days stops getting reminders (by design)
-    PR 5: cold-start landing (R9), kill-switch test (R26), picker bounds (R30) | about 250, 6 | base develop after 966c
+    PR 5 (owns the cold-start landing; 966c and HO-908 refer to it as PR 5): cold-start landing (R9), kill-switch test (R26), picker bounds (R30) | about 250, 6 | base develop after 966c
     PR 6: device rows R1, R7, R9, R16, R25; J-N3, J-N4, J-N5, J-N19, J-N24 | docs, by `qa`
 
 11. LENSES: A principal-architect, B compliance-engineer (PR 3: data-steward / principal-architect; PR 5: security-architect / principal-architect).
