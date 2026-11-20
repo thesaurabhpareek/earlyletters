@@ -30,16 +30,16 @@ describe('[NS-02-R1] the switch defaults to off, and the pause only hides', () =
     for (const c of [undefined, null, { killSwitches: {} }, { killSwitches: { bookSearch: false } }]) expect(findPaused(c)).toBe(false);
     expect(findPaused({ killSwitches: { bookSearch: true } })).toBe(true);
     for (const paused of [true, false]) expect(findSurface({ build: false, paused, hasLetters: true })).toBe(false);
-    expect(findPausedNow(() => ({ getRemoteConfig: () => ({ killSwitches: { bookSearch: true } }) }))).toBe(true);
-    expect(findPausedNow(() => ({ getRemoteConfig: () => ({ killSwitches: { bookSearch: false } }) }))).toBe(false);
-    expect(findPausedNow(() => ({ getRemoteConfig: () => null }))).toBe(false);
+    expect(findPausedNow(() => ({ killSwitches: { bookSearch: true } }))).toBe(true);
+    expect(findPausedNow(() => ({ killSwitches: { bookSearch: false } }))).toBe(false);
+    expect(findPausedNow(() => null)).toBe(false);
     expect(findPausedNow(() => { throw new Error('not loaded'); })).toBe(false);
   });
 });
 
 describe('[NS-02-R22] the remote module', () => {
-  it('[NS-02-R22] the only Find file that names the remote module is the pause, which reads the config already on the phone', () => {
+  it('[NS-02-R22] no Find file names the remote module: the caller hands the pause its config reader', () => {
     const all = [...files(join(SRC, 'lib', 'find')), ...files(join(SRC, 'components', 'find'))];
-    expect(all.filter((p) => /remote/.test(strip(readFileSync(p, 'utf8')))).map((p) => relative(SRC, p))).toEqual([join('lib', 'find', 'pause.ts')]);
+    expect(all.filter((p) => /remote/.test(strip(readFileSync(p, 'utf8')))).map((p) => relative(SRC, p))).toEqual([]);
   });
 });
