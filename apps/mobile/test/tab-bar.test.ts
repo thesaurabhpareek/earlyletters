@@ -58,7 +58,9 @@ describe('the You tab', () => {
     // One title, in the tab's own header, and no Back: the tab group draws none and the screen sets no headerLeft.
     const block = layout.slice(layout.indexOf('name="you"'));
     expect(block).toMatch(/headerShown: true/);
-    expect(block).toMatch(/headerTitle: copy\.settings\.title/);
+    // NS-33-R2 replaces the old headerTitle line: the bar shows the tab's own title (a11y-headings.test.ts). The colon
+    // keeps headerTitleStyle, which only colours the title, out of the match.
+    expect(block).not.toMatch(/headerTitle:/);
     expect(block).not.toMatch(/headerLeft/);
   });
 

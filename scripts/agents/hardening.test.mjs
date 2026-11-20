@@ -72,3 +72,9 @@ test("verdictPhrase accepts exactly the red-team verdicts, at a word boundary, a
   assert.equal(verdictPhrase("Findings: Verdict: ship (quoted mid-line)"), "", "the verdict must start its line");
   assert.equal(verdictPhrase(undefined), "");
 });
+
+test("next ids go past BL-999 numerically and ignore five-digit numbers", () => {
+  assert.equal(nextIds(["#### BL-999 x\n#### BL-100 y\n"]).BL, "BL-1000");
+  assert.equal(nextIds(["#### BL-999 x\n#### BL-1000 y\n#### BL-1001 z\n"]).BL, "BL-1002");
+  assert.equal(nextIds(["#### BL-952 x\nsee BL-12345\n"]).BL, "BL-953");
+});

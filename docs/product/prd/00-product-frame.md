@@ -1,8 +1,12 @@
 # The product frame: how every requirement is chosen, designed, measured and kept cheap
 
-Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role; reviewed by the council roles named in section 10. Docs only.
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the principles, the three-tab IA, or the index of every card (NS-01 to NS-52).
 
-Read in this order: `docs/product/VISION.md` (why and for whom), this file (how we choose and what we optimise), the cards in `docs/product/prd/` (what to build), `13-engineering-plan.md` (size, skills, order), `14-test-plan.md` (how we prove it).
+Status: LOCKED 20 Nov 2026, requirements rev 2 (council round 2 and the founder's "Go with all default answers", 20 Nov). Changes after lock need an errata row (next free E number in `18-errata-after-lock.md`) that lists every changed id. Author: Karma with the Chief Product Officer role; reviewed by all twelve council roles in two rounds (section 10). Approved by the founder on 19 Nov 2026: "I approve all requirements." Docs only.
+
+Two layers (founder items 9 and 15 in `FOUNDER-MESSAGES-VERBATIM.md`): the product layer (this folder's cards, `VISION.md`, the one-reading spec) is written from the customer's need and does not depend on BL or PR ids; the execution layer (backlog, `FUNCTION-TRACE.md`, `13-engineering-plan.md`, `23`, `24`) carries BL and PR ids and maps back to NS and R ids. Ids are not stripped from product files by script; they are removed card by card in the next edit of that card (council Part 1 item 8, 20 Nov).
+
+Read in this order: `docs/product/VISION.md` (why and for whom), this file (how we choose and what we optimise), the cards in `docs/product/prd/` (what to build), `13-engineering-plan.md` (size, skills, order), `14-test-plan.md` (how we prove it). Added 20 Nov: card 19 (NS-38 to NS-45), card 21 (NS-46 to NS-50), the one-reading spec `22-final-holistic-spec.md`, and (being written) `23-dependency-map-and-plan.md` and `24-engineering-handoff.md`; cards NS-51 and NS-52 are being written from `26-founder-direction-photos-library-and-media.md`.
 
 ## 1. The people, in one line each
 
@@ -15,6 +19,7 @@ P1 the evening parent, one hand free, often in the dark. P2 the other parent, on
 3. **Five risks.** Value, usability, feasibility, viability (including legal and App Review), and the constitution: could this let the machine add meaning, or count a gap?
 4. **Confidence written down.** We have no evidence from our own families yet. Every Value score is a judgment, and confidence on parent behaviour is low. The cheapest way to raise it comes first: the pilot, the hand-sent measures, tester notes.
 5. **Appetite before solution.** The limit is review and the founder's time, not building. If an item does not fit its appetite, cut scope, not quality.
+6. **What Plus holds, and how it grows.** Plus holds one paid act: keeping each new letter beyond the free allowance (the first 2 letters). Each new card makes a kept letter worth more (a picture, findable, shareable, readable by year), so it raises the value of the one paid act without adding a second gate. Every capability that ships free in the 1.0.x line falls under principle 6 and never moves behind Plus (ruled 20 Nov, reversible by the founder). Public copy says nothing either way about the future.
 
 The opportunity tree in one view:
 
@@ -25,6 +30,7 @@ The opportunity tree in one view:
 | | "I want to go back to it" | NS-01 photo, NS-02 Find, NS-21 letter page, NS-22 calm header, NS-23 one past letter, NS-24 read the year back, NS-06 firsts and seals |
 | | "I want them to hear it too" | NS-03 pilot, NS-05 share one letter, NS-25 the other parent, NS-16 someone else speaks |
 | | "I want something to hold" | NS-07 print-ready file, NS-30 |
+| Families get to the first kept letter, and a day that matters is not missed | "I do not know where to start"; "I want to mark Mother's Day"; "I have a picture" | NS-38 to NS-45 first run (card 19), NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first, NS-50 Home today (card 21), NS-51 photo moments and NS-52 pictures and videos with a letter (card 27, being written) |
 
 ## 3. What we optimise, and how we will know
 
@@ -32,7 +38,9 @@ North Star candidate (`03-goals-and-principles.md` section 4.1): **weekly making
 
 Guardrails are hard stops, not weights: zero lost letters; zero charges outside their triggers; zero paywalls before a parent has seen their words; zero counts of gaps, streaks or guilt lines; zero child names on a lock screen by default.
 
-Analytics is off through the 1.0 line (D-124). So for each measure we say where it comes from today.
+Analytics is off through the 1.0 line (D-124). So for each measure we say where it comes from today. Sources available without analytics: App Store Connect installs and sales (wider than the usage metrics, which cover only users who share diagnostics; whether subscription reports cover every purchaser is UNVERIFIED); App Store ratings and public review text; a support inbox tally by fixed category (lost, confused, billing, other), content-free; tester answers by hand; and the export manifest's `counts` block, which a tester can read off and send as numbers only.
+
+Reporting rule: hand-sent numbers are reported as "x of n" and never as a percentage when n is under 20. Each tester round asks at most 5 questions, with fixed wording, versioned in `docs/research/` as aggregates only. Each card's Measures section names its own questions.
 
 | Measure | Serves | Source now | Target |
 |---|---|---|---|
@@ -47,7 +55,7 @@ Analytics is off through the 1.0 line (D-124). So for each measure we say where 
 | A recording sent to family in the pilot | NS-03 | The pilot sheet | set in NS-03 section 8 before it starts |
 | Speed on an SE 3 | NS-34 | The run sheet | the targets in NS-34 |
 
-Hand-sent measures: testers type numbers into their own message to the founder; the app composes nothing and sends nothing. The founder keeps them in one private sheet, deletes them 90 days after the tester round ends (PROPOSED), and the tester text says so (packet Q44). Every target above without a number is set only after a first reading. A target with no source in the build that ships is not a target.
+Hand-sent measures: testers type numbers into their own message to the founder; the app composes nothing and sends nothing. The founder keeps them in one private sheet, never in the repo or a Claude session, and deletes them 90 days after the tester round ends (ruled 20 Nov). Inventory row (outside the product): tester identity L3, numbers L2; where: the founder's private sheet; synced: no; retention: 90 days after the round; deletion: by the founder, with a dated note; logs: never. Counsel Q44 (tester text) and Q51. Every target above without a number is set only after a first reading. A target with no source in the build that ships is not a target.
 
 ## 4. Where everything lives (information architecture)
 
@@ -55,17 +63,21 @@ Three tabs, one verb each. Only Home starts a letter. Elsewhere you can only add
 
 | Tab | Verb | What lives there (this pack) |
 |---|---|---|
-| Home | Say | The prompt; speak, type, not much today; whose book (NS-14); one slip at a time: a waiting draft, Save a copy (NS-11), one past letter (NS-23); a picture first (NS-01) |
+| Home | Say | The prompt; speak, type, not much today; whose book (NS-14); one slip at a time: a waiting draft, a day the parent chose, today (NS-50), Save a copy (NS-11), one past letter (NS-23); a picture first (NS-01, NS-49) |
 | Book | Read | Month chapters; the calm header (NS-22) with Read together, the lens choice, Find (NS-02), Go to a month; the letter page as one list (NS-21) with Share (NS-05), a first, a picture, a seal, the day it is about, earlier versions; read the year back (NS-24) |
-| Me | Look after | Account, plan, reminders (NS-13, NS-18), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
+| Me | Look after | Account, plan, reminders (NS-13, NS-18), Days (NS-46, NS-47), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
 
-Never a tab: Family, Library, Share.
+Never a tab: Family, Library, Share. Cards NS-38 to NS-52 add no tab: Home Say, Book Read, Me Look after stand (`22-final-holistic-spec.md` section 1).
 
-Home shows one slip at a time, in this order: a waiting draft; Save a copy in the birthday week; a picture-first prompt; one past letter. A test pins the order (`[FRAME-SLIP] one slip, fixed priority`). Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
+No-duplication rule (IA-AUDIT, `docs/design/e2e/IA-AUDIT.md` on branch `docs/e2e-ux-20nov`; applied in `22` section 3): one owner per fact. A second door to a function is a link to the first, never a second list (Days page: R-IA-2; Home is one slip, not a strip: R-IA-3; the Me regroup waits for tree test T1: R-IA-4). Ownership: age math in `packages/core` (R-IA-1); the one-a-day reminder rule in `lib/reminders/budget.ts` (R-IA-6, X6).
+
+Home shows at most one slip, in this fixed order: (1) the existing waiting cards, in their existing order ("Waiting to be kept.", "Recorded before the app closed.", "A recording is ready to read back."); (2) the seal-opened line, on its opening day only (NS-06 B4); (2b) a day the parent chose, today (NS-50); (3) Save a copy, in the birthday week (NS-11); (3b) the Days ask, once, retired after two unanswered showings (NS-47, Q-FD-23); (4) one past letter (NS-23, which replaces the built "A month ago" card). Superseded: this list had ranks 1 to 4 only -> 2b and 3b added (`22-final-holistic-spec.md` section 3; `21-days-cultural-photos-home.md` NS-50). The reminder ask sheet and the Plus line (F14-REQ-040) are not slips and keep their own rules. The photo start belongs to the capture cluster and is never a slip. Test `[FRAME-SLIP]` loads a registry of every slip type, and the build fails when an unregistered type renders. Superseded: any reading that the slip host and registry exist -> not built, the registry is a backlog row (`tools/review/ns46-50/mobile.md` M-13). Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted, pending his merge; D-160 stands until then).
 
 ## 5. Standing inputs for design
 
-Every screen in every card is designed in these states before it is built: first use and empty; normal; many (1,000 letters); offline; slow; failed; the largest text size with Bold Text on an iPhone SE 3; VoiceOver; Reduce Motion; Increase Contrast; dark mode first; a Devanagari letter; a right-to-left letter once that language ships.
+Every screen in every card is designed in these states before it is built: first use and empty; normal; many (1,000 letters, 300 pictures); offline; slow; failed; interrupted (a call, Siri, an alarm, the baby: the app goes inactive mid-action); app killed and relaunched mid-flow; app updated between two steps; low storage (under 1 GB, under 50 MB, per 06-nfr 11.3); Low Power Mode; plan lapsed; signed out; a second account on the same phone; new phone (words present, recordings absent); two books; two parents; expecting parent (due date only); the largest text size with Bold Text on an iPhone SE 3; VoiceOver; Voice Control (visible labels are the commands); Switch Control; Reduce Motion; Increase Contrast; Smart Invert (pictures ignore invert); Differentiate Without Colour (recording state never shown by colour alone); dark mode first; a Devanagari letter; a right-to-left letter once that language ships. Each card's Scenario coverage table says what happens in each.
+
+Undo windows (ruled 20 Nov): every undo window stays open for its stated seconds, or until VoiceOver has finished reading the undo line plus that many seconds, whichever is later; with Switch Control on, until the parent moves on (WCAG 2.2.1; 06-nfr section 8).
 
 Rules from the design language: primary actions in the bottom third, at least 56 pt; targets at least 44 pt; the letter's words in the serif, the app's words small and unsigned; a button for every gesture; no confetti, badges, rings, streaks or celebration; no lock or shield imagery; Apple's control where Apple has one. Motion does less, not more: no ceremony on Find, Share, Firsts or seals.
 
@@ -81,9 +93,14 @@ These are the council roles' standing positions. They are not legal advice. Coun
 - **Door lines.** Any card that touches sign-in, an agreement, consent, age, deletion or support has Shown, Records, Never and Decline lines (COORDINATION section 10).
 - **Claims.** Every public sentence is true of the build that ships and has a row in the claims inventory, `docs/reviews/2026-10-claims-inventory.md` (section 2 row format), until a claims registry exists (D-123 deferred it). The CMO role keeps it and the CCO role checks each claim against the build (COUNCIL section 4). Claims this pack creates: the Let it go line (NS-09), no name on the lock screen by default (NS-13), languages named in the listing (NS-17), Read together has no limit (NS-24). While recording backup is off, no public surface may imply a recording survives a lost phone.
 - **The privacy label** changes in the same build as the behaviour that changes it, never before or after.
-- **Children.** The parent is the user; the child is the subject. No feature asks a child to speak or use the app. The open edges are a baby's voice on a recording and a child's picture (counsel packet Q4).
-- **Another adult's words.** A letter spoken by someone else, or shared with a second adult, carries another person's data (packet Q2). NS-16 and NS-25 wait on it.
-- **Open-ended promises on record.** Nothing free at v1.0 later moves behind Plus (principle 6); export is never gated; letters are never sold, never used for ads, never used to train models; the 90-day shutdown pledge. Each needs a claims row and is in counsel packet Q16. "Free forever" was replaced on 11 Nov and must not come back.
+- **Children.** The parent is the user; the child is the subject. No feature asks a child to speak or use the app. The open edges are a baby's voice on a recording and a child's picture (counsel packet Q45, packet 1.5.0).
+- **Another adult's words.** A letter spoken by someone else, or shared with a second adult, carries another person's data (packet Q48). NS-16 and NS-25 wait on it.
+- **System intelligence and writing tools (ruled 20 Nov).** No letter text, child name, picture or prompt is donated to Core Spotlight, NSUserActivity search, Siri suggestions or an App Intents entity (test `[X6-R1]`). System writing tools (rewrite, proofread) are off on every field whose text becomes a letter's words; if the platform cannot turn them off, that is a finding, not a pass.
+- **Sign-out (ruled 20 Nov).** Signing out keeps the book on the phone, because deleting it would remove the only copy of the voice while backup is off. The sign-out sheet says so and points to Erase everything. A second account never sees, claims or uploads the first account's letters (`[X4-R1]`), and its screens show nothing about them; the sign-out line is addressed to the person signing out, once (E49).
+- **Settings are not agreements.** For toggles, picks and settings: "Records: on the phone only; no PRIV-R21 row, because this is a setting, not an agreement."
+- **Inventory home.** Every new data row lands in the same PR in `docs/legal/data-policy.md` section 4 and `DATA_CLASSIFICATION.md`. Before the first row lands, `privacy` with `data-architect` brings data-policy section 4 to Build 12 facts, or the PR names `DATA_CLASSIFICATION.md` as the interim inventory.
+- **Counsel numbers** are packet 1.5.0 throughout: Q45 children, Q48 another adult, Q49 and Q50 shared books, Q51 retention, Q53 removing a co-parent, Q54 label, Q41 plan notices, Q43 claims, Q44 testers, Q40 Read together and Terms 8.4.
+- **Open-ended promises on record.** Nothing free at v1.0 later moves behind Plus (principle 6); export is never gated; letters are never sold, never used for ads, never used to train models; the 90-day shutdown pledge. Each needs a claims row and is in counsel packet Q16 and Q40. "Free forever" was replaced on 11 Nov and must not come back. Read together: internally it has no session limit and no Plus gate; public copy may say only that it is free, never "forever" or "never limited" (ruled 20 Nov). Claims this pack adds, each with an inventory row: "Pictures stay on this phone" (NS-01), "Find works without a connection" (NS-02), "Sends the words as text" (NS-05 Level 1), "Let it go removes the recording from this phone" (NS-09), "Your words follow you to a new phone" (NS-10, words only), "A copy in open formats" (NS-11). Drift to fix: BRAND.md says the book is shared with your co-parent at v1.0, which is false for store builds (owner `content`).
 
 ## 8. Keeping the cost of building and running low
 
@@ -96,7 +113,9 @@ These are the council roles' standing positions. They are not legal advice. Coun
 | Speech on the phone | No transcription bill per minute | Never per use; model hosting on our pack host is small |
 | Sync on Supabase, Free plan (D-159) | No monthly bill at the founder's expected few hundred users (8 Nov, relayed) | At the plan's limits (repo runbook `free-tier-ops.md`, read 8 Nov: 500 MB database, 1 GB storage, 5 GB egress, 50k monthly users). The weekly job checks database size and accounts only; storage and egress are read by hand; none of the three D-159 jobs is verified running |
 | Nightly database dump to GitHub artifacts | Free | The artifact quota (the runbook warns at 60 MB a file) |
-| No recording backup yet | Audio is the largest data by far | The day backup turns on (NS-08 sizes it first) |
+| No recording backup yet | Audio is the largest data by far | The day backup turns on. At the repo's own assumption of about 19 MB per active family per month (ADR 0005), the Free plan's 1 GB holds about 52 family-months, so 300 active families would fill it inside the first month: a flip on the Free plan is not an option (CFO, 20 Nov) |
+| Pictures (NS-01) and the Find index (NS-02) | On the phone only | Never on our side; the parent pays in phone space (stored copy plus two smaller copies per picture; size not yet measured) |
+| EAS builds | Free up to 15 iOS builds a month (D-092) | Native photo builds and release candidates count; past 15, Starter at $19 a month plus usage (price read 31 Oct or earlier, re-read) |
 | Packs on Cloudflare R2 | Free egress | Past the free storage tier |
 | Local notifications only | No push service | NS-26 would add one |
 | Export through the system share sheet | We store and send nothing | Never |
@@ -104,7 +123,7 @@ These are the council roles' standing positions. They are not legal advice. Coun
 | Email only for sign-in and account mail (Resend) | Free tier at this volume | Past its free sends; the limit is not stated here and must be read from Resend's page before relying on it |
 | The founder's phones and time for each device run | No cash if he owns the phones | Buying a test phone is his decision; which phones he holds is not recorded here |
 
-Prices and free-tier limits change. They were read on 10 Nov for the exec record and must be read again before any decision rests on them.
+Cards that add zero server cost: NS-01, 02, 05 Level 1, 06 A, 07, 09, 11, 13 to 15, 18, 21 to 24, 32 to 37. Every run-cost line must state its read date and whether it is per family, per month or per build (CFO ruling). Prices and free-tier limits change and must be read again before any decision rests on them.
 
 ## 9. The master index (every ranked item, tagged)
 
@@ -167,13 +186,25 @@ Rank and size come from `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.
 | 53 | C-35 | Gifts and lifetime | parked or refused | 12 | - | - | - | G Parked |
 | 54 | C-37 | A Share tab | parked or refused | 12 | - | - | - | G Parked |
 
+Added 20 Nov 2026 (index only; the cards own every row; ranks above are unchanged and these cards carry no rank in `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` until the founder rules, see its section 4b). Counts are P0 rows from `tools/review/p0.py` register mode. Drops are card 21 "Release line and cut" (A next build, B 1.0 only if every gate closes before freeze otherwise 1.1, C after 1.0 approval; founder decides, Q-FD-7).
+
+| Card | Item | File | P0 rows | Drop | Bucket |
+|---|---|---|---|---|---|
+| NS-38 to NS-45 (card 19) | From App Store page to first kept letter: store page, first launch, age and region, sign-in, agreements, first book, first letter and allowance, account life | 19 | 98 (8, 10, 11, 18, 15, 11, 10, 15) | none in the card; Karma to rule | H First run |
+| NS-46 | Days we mark | 21 | 22 | B (R14, R20 in C) | B Capture |
+| NS-47 | Cultural background | 21 | 27 | B store rules, C ask and traditions | B Capture |
+| NS-48 | Notification catalogue and rotation | 21 | 13 | A phase 1, B, C | B Capture |
+| NS-49 | Picture-first start and Journaling Suggestions | 21 | 21 | A level 1, C level 2 | B Capture |
+| NS-50 | Home today | 21 | 4 | B (R13 in A, R6 and R16 in C) | B Capture |
+| NS-51 | Photo moments (level 3, reverses "level 3 closed") | 27 (`27-photo-moments-and-media.md`; direction in `26-founder-direction-photos-library-and-media.md`) | 27 | C, spike first | C Reading and keepsakes |
+| NS-52 | Pictures and videos with a letter (limits proposed, founder confirms) | 27 | 26 | C, spike first | C Reading and keepsakes |
+
+All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7) plus NS-17-R11 and NS-17-R12 from K17 (298), and NS-51 and NS-52 add 53 (27 + 26). P0 rows in the pack by `p0.py` on 20 Nov: 1,050, of which 536 in NS-01 to NS-52 (298 + 98 + 87 + 53) and 514 in `functions/*.md`; 771 have no row-level backlog row (`BACKLOG-GAPS.md` section 1). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
+
 ## 10. Council review
 
-Reviewed on 19 Nov 2026 in two passes, each a separate Claude session playing the roles below from their skills (`15-council-review.md`). Independence is of method only (one account, one model family). Findings and how each was answered: `15-council-review.md`.
+Round 1 (19 Nov 2026): two passes covering the CPO, Chief Design Officer and CMO, then the Chief Privacy Officer, CCO, CLO, CFO, CTO and quality (`15-council-review.md`).
 
-| Role | Lens |
-|---|---|
-| Chief Product Officer, Chief Design Officer, Chief Marketing Officer (pass 1) | jobs, scope, measures, states, accessibility, information architecture, claims |
-| Chief Privacy Officer, Chief Compliance Officer, Chief Legal Officer, Chief Financial Officer, CTO and quality (pass 2) | what leaves the phone, consent, children, run cost, size, order, testability |
+Round 2 (20 Nov 2026, after the founder approved the requirements): three passes covering all twelve roles: CPO, Chief Design Officer, CMO and CBO; Chief Privacy Officer, CCO, CLO, CISO, CDO and CAIO; CFO, CTO and quality. About 90 findings per pass were debated, ruled on where roles disagreed, and applied by the product agents card by card (`16-council-review-round-2.md`). Each pass was a separate Claude session playing the roles from their skills. Independence is of method only (one account, one model family). No outside legal source was read by the reviewers; the Apple rules the cards rely on were read on 20 Nov by the main session and are recorded in section 16 of the round-2 record.
 
-The Chief Business Officer was not run.
+Cards 19 and 21 (added 20 Nov): no council round covers them. Card 21 had ten function reviews (`tools/review/ns46-50/`: analytics, compliance, content, design-systems, marketing, mobile, privacy, product, qa, security), recorded in `GAP-LOG.md` RV-1 to RV-17; card 19 has the two inputs under `inputs/`. Both are "Locked v1.0 candidate" pending Karma's rulings (`25-instruction-coverage-audit.md` row 1a). The founder's approval of 19 Nov covers the locked cards 01 to 18, not these.
