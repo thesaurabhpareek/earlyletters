@@ -1,5 +1,7 @@
 # Engineering plan: size, skills, order and dependencies (Karma, 19 Nov 2026)
 
+Status: Locked v1.0 with the pack, 20 Nov 2026. Council round 2 rescopes (NS-13, NS-15, NS-16, NS-23, NS-25, NS-32) are applied in section 3; the cards win wherever this file and a card differ.
+
 For the harness and the engineers. The product cards say what and why; this file says how big, who, and in what order. It sets no dates: release dates are the founder's. Sizes are estimates [E] and are re-sized by the engineer who picks the work.
 
 ## 1. How to read a size
@@ -45,10 +47,10 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 
 | Card | Size | Skills | Depends on | Gate |
 |---|---|---|---|---|
-| NS-13 Reminders proven | S to M | mobile, qa, content | none to start; re-run its device rows once NS-32 lands (NS-32 is small and already in review, so take it first when both are free) | device run with a time-zone change |
+| NS-13 Reminders proven | M (the back-off is pre-scheduled in the plan; sign-out must cancel; one note a day across books) | mobile, qa, content | NS-32 (ruled 20 Nov: NS-32 first) | device run with a time-zone change |
 | NS-14 Whose book | S | mobile, design-systems | none | none |
-| NS-15 Another day | L (a new synced field) | mobile, sync, data-architect, privacy | NS-36 rule; fills an NS-21 row | data inventory row |
-| NS-16 Someone else speaks | L (a counsel gate; a synced name about a non-user) | mobile, sync, content, privacy | none (it lives on Review) | counsel (packet Q2 and the COPPA question) |
+| NS-15 Another day | S (rescoped 20 Nov: `occurred_on` already stored, synced and exported; Review dateline opens the existing DateSheet; BL-944 superseded) | mobile | fills an NS-21 row | none |
+| NS-16 Someone else speaks | S to M (rescoped 20 Nov: `author_signs_as` exists, 1 to 30 characters, insert-only) | mobile, content, privacy | none (it lives on Review) | counsel (Q45, Q46, Q48, Q54(f)) |
 | NS-17 Second language | L per language | speech, content, qa | none | native reviewer and the founder |
 | NS-18 Typed days | S to M | mobile, content | NS-32 | none |
 | NS-19 Continue a draft | L | mobile, data-architect | NS-35 | constitution review |
@@ -63,7 +65,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | NS-22 Calm header | M | design-systems, mobile | NS-02 landed | none |
 | NS-01 Photo | L in total, split into five slices | mobile, security-architect, data-architect, privacy | slices 1 and 2: none; slice 3: NS-36; slice 4: NS-35; slice 5: NS-37; fills an NS-21 row | label line read by counsel for store builds |
 | NS-02 Find | M (built; a draft, #798) | mobile, privacy | NS-36 | device row |
-| NS-23 One past letter | S | mobile, content | NS-21 | none |
+| NS-23 One past letter | S (changes the built resurfaced card; reconcile open #721) | mobile, content | NS-21 | none |
 | NS-24 Read the year back | S to M | mobile | none | none |
 | NS-06 Firsts and seals | M (Firsts), L (seals) | mobile, sync, data-architect, legal | NS-05 Level 1 shipped; five-parent study; NS-36 seal clock (Part B); fills NS-21 rows | counsel on seals |
 | NS-07 Print-ready file | M | mobile | NS-36 export rule | proof-book spend for layout numbers |
@@ -75,7 +77,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 |---|---|---|---|---|
 | NS-03 Pilot | S (no code) | user-research, legal | none | counsel reads consent texts |
 | NS-05 Share one letter, text | S to M | mobile, content | NS-21 | words approved; no recording path |
-| NS-25 Other parent in store app | L (the rank file's "S to M" was for switching it on only; the gates make it L) | sync, mobile, data-architect, security | the co-parent backlog rows | counsel (Q29, Q2) and the founder |
+| NS-25 Other parent in store app | L (the rank file's "S to M" was for switching it on only; the gates make it L) | sync, mobile, data-architect, security | the co-parent backlog rows | counsel (Q49, Q48, Q53) and the founder |
 | NS-26, NS-27, NS-28 | L each | not started | NS-25 | X2 for NS-28 |
 
 ### F. Foundations
@@ -87,7 +89,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 | NS-35 One start | done (#828, `5f5dfaf4`) | mobile | none | none |
 | NS-36 Data follows the letter | S to M | data-architect, privacy, mobile | ADR 0028 accepted | data inventory rows |
 | NS-37 Book stays fast | M | mobile | NS-01 slice 2 (the native module) | device row |
-| NS-32 Notification budget | S (a draft, #758) | mobile | none | none |
+| NS-32 Notification budget | S to M (rework #758 without Memory Library classes; plan notices outside the budget; no backlog row yet) | mobile | none | none |
 
 ### E. Engineering only (no card)
 
@@ -106,7 +108,7 @@ The harness picks any row whose dependencies are done. This is the order of pref
 | 1 | NS-09 (#832 merged; BL-926 left), NS-34 run sheet, NS-33, NS-10, NS-32 (#758, a draft since 10 Nov), NS-03 kit, NS-01 photo as eight PRs, all slices (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
 | 2 | NS-13 device proof, NS-21, NS-02 lands, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
 | 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find: the rest of the reading and capture items, ordered by rank where dependencies allow |
-| 4 | NS-04 spike (first in this wave; X1 puts the spike after the pilot and leaves Share unordered, and the rank puts Share ahead; the spike starts the Monday after the Build 13 cut), NS-24, NS-07, NS-06 Part A, NS-18 | Reading back and the keepsake |
+| 4 | NS-04 spike (first in this wave; X1 puts the spike after the pilot and leaves Share unordered, and the rank puts Share ahead; the spike's start is set in the roadmap), NS-24, NS-07, NS-06 Part A, NS-18 | Reading back and the keepsake |
 | 5 | NS-06 Part B, NS-25, NS-16, NS-17 | Each behind a counsel or founder gate |
 
 Parallel lanes that never wait on each other: words (`content`), research (`user-research`), legal drafts (`legal`), test plans (`qa`). Engineers never wait on words: they build behind a flag with the PROPOSED key and the founder approves the words before the flag turns on.
