@@ -38,15 +38,16 @@ export function createOrientationBaker(native: BakeNative | null | undefined, fi
     async bake(_original, source) {
       const uri = source?.uri;
       if (!uri || !files.isPicked(uri)) return null;
-      const out = files.destination();
+      let out: string | undefined;
       try {
+        out = files.destination(); // a refused name is null, like any other failure
         // The native side resolves the destination it was given; anything else is not trusted.
         if ((await within(native.reencodeUpright(uri, out), timeoutMs)) !== out) return null;
         return await files.read(out);
       } catch {
         return null;
       } finally {
-        await files.remove(out).catch(() => {});
+        if (out !== undefined) await files.remove(out).catch(() => {});
       }
     },
   };

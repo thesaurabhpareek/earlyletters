@@ -37,12 +37,15 @@ describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and rem
     expect(await baker.bake(Uint8Array.of(1))).toBeNull(); // no uri: nothing to re-encode
     expect(createOrientationBaker(null, files)).toBeUndefined(); // no native module: no baker
   });
-  it('[C7] only a picked original is handed over, and an answer naming another file is never read (review N4)', async () => {
+  it('[C7] only a picked original is handed over, a refused destination name is null, and an answer naming another file is never read (review N4)', async () => {
     const files = memoryBaked();
     const calls: string[] = [];
-    const baker = createOrientationBaker({ reencodeUpright: async (s: string, d: string) => (calls.push(s), d) }, files)!;
+    const native = { reencodeUpright: async (s: string, d: string) => (calls.push(s), d) };
+    const baker = createOrientationBaker(native, files)!;
     const other = 'file:///c/Documents/ExpoAudio/take.m4a';
     for (const uri of [other, 'file:///c/ScribePhoto/0194-a.jpg', 'file:///c/ImagePicker/../x.img', 'u']) expect(await baker.bake(Uint8Array.of(1), { uri }), uri).toBeNull();
+    const refused = createOrientationBaker(native, { ...files, destination: () => { throw new Error('photo_temp_name_refused'); } })!;
+    expect(await refused.bake(Uint8Array.of(1), { uri: PICKED })).toBeNull();
     expect(calls).toEqual([]);
     files.disk.set(other, Uint8Array.of(1));
     const sneaky = createOrientationBaker({ reencodeUpright: async () => other }, files)!;
