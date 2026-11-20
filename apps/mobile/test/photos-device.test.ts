@@ -1166,7 +1166,7 @@ describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter,
   it('[NS-01-R17] the letter page draws the line from the content slot, above Add again, for the author only', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
-    expect(src).toMatch(/\{notSaved \? <Text[^>]*>\{photos\.book\.letter\.notSaved\}<\/Text> : null\}/);
+    expect(src).toMatch(/\{notSaved \? <SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\} testID="letter\.photo\.notSaved" \/> : null\}/);
     expect(src.indexOf('photos.book.letter.notSaved')).toBeLessThan(src.indexOf('photos.book.letter.addPhoto'));
     expect(src).toMatch(/return own && words \?/);
     expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);

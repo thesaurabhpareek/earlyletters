@@ -71,6 +71,12 @@ export const photosCopy = {
       a11yCard: 'Photo with this letter',
     },
   },
+  review: {
+    // Shown on Review when the photo chosen for this draft could not be stored (NS-01-R17; #839 review B). Nothing is kept
+    // yet on Review, so unlike book.letter.notSaved it never says the words are kept. Names no cause, asks for nothing.
+    // TODO(founder): PROPOSED, needs word approval
+    notStored: 'That photo did not come along. You can add it again.',
+  },
   a11y: {
     // The hint on Home's photo start.
     // TODO(founder): PROPOSED, needs word approval

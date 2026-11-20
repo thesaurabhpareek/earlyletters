@@ -265,6 +265,27 @@ describe('[NS-01-R20] new controls', () => {
     expect(body).toMatch(/if \(message\) announce\(message\);/);
     expect(body).toMatch(/accessibilityLiveRegion="polite"/);
   });
+  it('[NS-01-R7][NS-33] on Review the picture and its controls come after the letter, its view and small fixes, and before Let it go and Keep (#839 review B)', () => {
+    const review = readFileSync(join(SRC, 'app', 'review.tsx'), 'utf8');
+    const photo = review.indexOf('<ReviewPhoto draftId={draft.id} finalText={finalText} />');
+    expect(review.match(/<ReviewPhoto /g)).toHaveLength(1);
+    expect(photo).toBeGreaterThan(review.indexOf('</LetterSheet>'));
+    expect(photo).toBeGreaterThan(review.indexOf('testID="review.count"'));
+    expect(photo).toBeGreaterThan(review.indexOf('testID="review.edit"'));
+    expect(photo).toBeLessThan(review.indexOf('{inlineFooter ? footer : null}'));
+    expect(photo).toBeLessThan(review.indexOf('{inlineFooter ? keepFooter : null}'));
+    expect(photo).toBeLessThan(review.indexOf('</ScrollView>')); // the pinned footer is after the scroll
+  });
+  it('[NS-01-R17][NS-33] on a draft the not-stored line never says kept, and it and both openFailed lines are said aloud (#839 review B)', () => {
+    const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).toMatch(/<SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\}/);
+    expect(photos.review.notStored).not.toMatch(/\bke(pt|ep)/i);
+    const spoken = page.slice(page.indexOf('function SpokenLine'));
+    expect(spoken).toMatch(/useEffect\(\(\) => \{\s*announce\(text\);\s*\}, \[text\]\);/);
+    expect(spoken).toMatch(/accessibilityLiveRegion="polite"/);
+    expect(page.match(/<ErrorLine message=\{failed \|\| pick\.failed \? photos\.capture\.openFailed : null\} \/>/g)).toHaveLength(2);
+    expect(page).not.toMatch(/>\{photos\.capture\.openFailed\}</);
+  });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
     expect(src).toMatch(/variant="quiet"/);
