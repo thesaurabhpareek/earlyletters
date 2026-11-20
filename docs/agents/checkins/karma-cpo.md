@@ -1,0 +1,1 @@
+23:10 (19 Nov) karma-cpo | done: product vision, frame, cards NS-08 to NS-37, engineering and test plans, two council passes answered, BL-923 to BL-949 | next: two counted reviews on #829 | blocked/needs: founder word approvals listed per card
