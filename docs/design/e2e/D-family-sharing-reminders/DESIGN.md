@@ -452,7 +452,7 @@ Default:
  +---------------------------------------+
 ```
 - No character counter (a counter is a count shown while typing). Typing stops at 80 graphemes; a paste over 80 keeps every character, and Save shows `.error-typed_day_too_long` ("That is longer than fits here. A short line works best.") and waits. Nothing is cut silently.
-- Save is never disabled (the system v2 disabled-absent rule): Save with no words shows `.error-typed_day_empty` ("Add a few words about the day.").
+- Save follows the system v2 rule (COMPONENTS 1.2, "present and not ready"): with no words Save shows as an outline with `textMuted` label, VoiceOver reads "dimmed", and its hint is "Add a few words about the day." (`reminderCopy.typedDay.errorEmpty`). `.error-typed_day_empty` is that not-ready state; nothing is announced as an error.
 - The date picker starts at today; today is accepted only while today's reminder time is still ahead, else `.error-typed_day_past` ("Choose a day that is still to come."). Reconciled with WORDS.md G6; replaces this file's first default (tomorrow onward).
 - `.notAllowed`: the line "Notifications are off. This day is saved and will be sent once they are allowed." (intent) above Save; Save still works.
 - AX5: full height; fields stack; the toggle stacks label over switch; Save pinned.
@@ -799,14 +799,44 @@ Read `MOTION.md` (v1) and `WORDS.md` in this folder after both were written. Scr
 2. **Join sheet (WORDS G13).** D-S15 and D-S16 are one sheet. The sign-off field leaves the pre-agreement sheet and lives only in D-S17.joined, so the child is never named before agreement. `family.accept.signsAsLabelBeforeJoin` is not needed.
 3. **Link page expiry (WORDS `D-S14.expired`).** The web page is static and never sees the token server-side, so it cannot know an invite expired. `D-S14.expired` is not reachable; the expired line belongs to D-S15.error-expired (existing `family.errors.expired`). `site.invite.expiredBody` and the reuse of `onboarding.inviteExpired.title` on the page should be dropped from WORDS.md.
 4. **Share completion (MOTION G2).** The preview closes after the share sheet completes, in every outcome.
-5. **Typed day validation (WORDS G6).** Today allowed while its reminder time is ahead; Save never disabled; three local codes `typed_day_empty`, `typed_day_past`, `typed_day_too_long`.
+5. **Typed day validation (WORDS G6).** Today allowed while its reminder time is ahead; Save "present and not ready" with no words (system COMPONENTS 1.2); three local codes `typed_day_empty`, `typed_day_past`, `typed_day_too_long`.
 6. **Placeholders (WORDS G1, section D-S10.hidden).** One neutral line for every budgeted class; a separate line for plan. Keys `reminderCopy.placeholders.<class>` and `billing.reminders.placeholder`.
 7. **Brand placeholder.** `{app}` (WORDS.md) in docs and the prototype, rendered from `packages/brand`.
 8. **Ask position (MOTION G8).** Over the Book, after the saved moment lands (as built).
 9. **Over-300 ms items (MOTION section 6).** No design objection to the lamp, quiet-day dim and first-row wash. For the joined cover (item 5) design prefers keeping the built opening (it happens once per parent per book). The waiting bar (item 6) is the only loop; design accepts it while sync is genuinely running, still under Reduce Motion.
-10. **Glass (design system v2 brief, section 3).** Section 4a. Neither MOTION.md nor WORDS.md conflicts with it; MOTION's sheet and toast moments should take their curves from `docs/design/system/MOTION.md` once it exists. `docs/design/system/COMPONENTS.md`, `FOUNDATIONS.md` and `tokens.v2.json` did not exist at the end of this run, so this file still uses today's component and token names; Karma's reconciliation maps them.
+10. **Glass (design system v2 brief, section 3).** Section 4a, keyed to `docs/design/system/COMPONENTS.md` and `FOUNDATIONS.md` (read at the end of this run) in 12.4. Neither MOTION.md nor WORDS.md conflicts with the material policy. MOTION's sheet and toast moments take their curves from `docs/design/system/MOTION.md` (`m.sheet`, `m.toast`, `m.swap`).
 
-### 12.3 Open between the three files (for Karma)
+### 12.3 Names from `docs/design/system/` (design system v2) used for this area
+
+| This file said | System v2 name | Where in this area |
+|---|---|---|
+| `Sheet` (ui/sheet.tsx) | N7 Sheet (system, glass regular; `fit`, `half`, `full`) | D-S02 (`fit`, `full` at AX5 and long), D-S04 (`fit`, `dismissible={false}`), D-S08 (`half`), D-S13, D-S15 and D-S16 (one `half` sheet), D-S17 (`full`) |
+| `Button variant="secondary" size="lg"` for every equal pair | A1 Button `style="glass"` `size="lg"`, rendered `bordered` inside a sheet (no glass on glass); pairs in `ButtonRow`, stacking from AX1 | D-S02, D-S04, D-S13, D-S15/16 |
+| `Button primary` (Save, Keep it) | A1 `style="prominent"`, rendered `filled` in a sheet | D-S08 Save, D-S09 and D-S19 safe choice |
+| `Button quiet` | A1 `style="plain"` | Change the time, Not much today, Cancel |
+| D-S01 Share button | A1 `style="glass"` in the content layer, so `bordered`, `size="lg"`, leading `square.and.arrow.up` | D-S01 |
+| `ToggleRow` | I5 Toggle | D-S02, D-S06, D-S08 |
+| `ChoiceGroup`, `ChipGroup` | I4 Choice group | D-S06 |
+| system compact pickers | I3 Date sheet only for D-S08's date if a sheet is used; otherwise the system compact picker in the row | D-S07, D-S08 |
+| `AgreementRow` | I7 Agreement row | D-S16 |
+| `Toast` | F1 Undo toast (glass regular) | D-S04 results, D-S13.sent, D-S19.done |
+| thin waiting bar | F3 Progress | D-S15.loading, D-S17.arriving |
+| `ConfirmSheet` | F6 Confirmation, `simple` (native, from the control) | D-S09.confirm, D-S19 |
+| `NotificationPreview` (promote) | S1 Notification renderings, the preview variant | D-S06, D-S08 |
+| lock screen | S1 previews shown, previews hidden, typed day | D-S10 |
+| switcher blank snapshot | S2 Lock-screen privacy snapshot | D-S02.switcher |
+| `AppNote` | content text (no system component; FOUNDATIONS paper tokens) | D-S02 lines, D-S20, D-S22 |
+| solid fallback | `material.solid`: `glassFallback` (light #FFFFFF, dark #282421) with 1 pt `glassBorder` | every glass surface under Reduce Transparency (prototype toggle) |
+| dateline | C6 Dateline | D-S02 preview card, D-S18 |
+
+Conflicts with the system files (card wins, CR-66), for Karma:
+- **COMPONENTS F1 lists D-S21 (quiet day kept) as an undo toast.** NS-07 C5 section 3.4 puts "A quiet day, kept." with Undo in place of the link, and C5-6 meets T4 because the line has no timer and stays while Home stays. A toast with a 10 s window would end the Undo early. Design keeps the inline line (content layer); F1's "Used by" should drop D-S21.
+- **COMPONENTS S1 says hidden previews show "Notification" and our content does not matter.** NS-32-R13 and NS-13-R33 require a neutral `hiddenPreviewsBodyPlaceholder` per category, which iOS shows in place of "Notification". S1 should add the placeholder.
+- **COMPONENTS S1 groups by `threadIdentifier` per book.** Accepted (this file had per class); with one budgeted notification a day the grouping rarely shows.
+- **AUDIT 4.12** (where the ask shows): settled over the Book, as built; this file's skeleton line "sheet on Home" is corrected.
+- **COMPONENTS 1.1 rule 5 (0.5 pt hairline fallback) and FOUNDATIONS 2.3 (1 pt `glassBorder`)** differ; the prototype draws 1 pt.
+
+### 12.4 Open between the three files (for Karma)
 
 - WORDS.md `family.errors.not_allowed` is reused for SCPAR at D-S19; WORDS lists it for "any deep link to a removal after 72 hours". Same line; no conflict.
 - WORDS.md proposes `reminderCopy.typedDay.remindersOffNote` (G7) and design shows the section with reminders off (`.typedDays-remindersOff`); both depend on the CPO keeping NS-18's PROPOSED behaviour.

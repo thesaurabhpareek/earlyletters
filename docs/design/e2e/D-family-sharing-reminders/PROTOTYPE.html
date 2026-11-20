@@ -7,7 +7,7 @@
 <!--
   Area D end-to-end prototype (design lead, 20 Nov 2026). Self-contained: no network, no framework.
   Token values copied from packages/design-tokens/src/tokens.ts (light, dark, highContrast, radius, space, target).
-  Material policy: docs/design/system/BRIEF.md section 3 (glass only on navigation and control layer; solid under
+  Material policy: docs/design/system/BRIEF.md section 3, COMPONENTS.md 1.1 and FOUNDATIONS.md 2.3 (glass only on navigation and control layer; solid under
   Reduce Transparency). Screen ids match DESIGN.md. Fictional family only (Asha). Words are intent; WORDS.md owns them.
   ASCII only.
 -->
@@ -16,13 +16,13 @@
   --bg:#FBF8F3;--surface:#F5EFE7;--raised:#FFFFFF;--text:#2B2722;--muted:#6B645B;--accent:#8A5A3B;--accentSoft:#F1E6DC;
   --onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--caution:#94661A;--success:#3F7A55;--control:#8A8175;
   --destructive:#B5473A;--scrim:rgba(43,39,34,.32);
-  --glass:rgba(255,255,255,.62);--glassEdge:rgba(255,255,255,.7);
+  --glass:rgba(255,255,255,.62);--glassEdge:rgba(255,255,255,.7);--glassFallback:#FFFFFF;
   --k:1;
 }
 body.dark{
   --bg:#161412;--surface:#1B1917;--raised:#201D1A;--text:#F2ECE4;--muted:#B3AA9E;--accent:#D9A47E;--accentSoft:#3A2E25;
   --onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--caution:#E3B866;--success:#8CC9A0;--control:#857C70;
-  --destructive:#F08C7C;--scrim:rgba(0,0,0,.55);--glass:rgba(40,36,32,.6);--glassEdge:rgba(255,255,255,.12);
+  --destructive:#F08C7C;--scrim:rgba(0,0,0,.55);--glass:rgba(40,36,32,.6);--glassEdge:rgba(255,255,255,.12);--glassFallback:#282421;
 }
 body.hc{--muted:#524B43;--accent:#6E4529;--line:#6B645B;--control:#2B2722}
 body.dark.hc{--muted:#D6CEC3;--accent:#E8BC9A;--line:#B3AA9E;--control:#F2ECE4}
@@ -67,6 +67,7 @@ body.dark .note{background:#33302c}
 .btn.primary{background:var(--accent);color:var(--onAccent);border-color:var(--accent)}
 .btn.quiet{background:transparent;border-color:transparent;color:var(--accent);min-height:44px}
 .btn.sm{min-height:44px;width:auto;font-size:calc(16px*var(--k))}
+.btn.notready{background:transparent;color:var(--muted);border-color:var(--control)}
 .btn.destructive{color:var(--destructive);background:transparent;border-color:transparent}
 .btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .pair{display:flex;gap:12px}.pair>.btn{flex:1}
@@ -99,7 +100,7 @@ body.ax5 .row .grow{flex-basis:100%}
 .gbtn{min-height:44px;min-width:44px;padding:0 14px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:calc(16px*var(--k));cursor:pointer;color:var(--text)}
 /* glass: navigation and control layer only */
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--glassEdge);box-shadow:0 8px 24px rgba(43,39,34,.14)}
-body.rt .glass{background:var(--raised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+body.rt .glass{background:var(--glassFallback);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
 .scrim{position:absolute;inset:0;background:var(--scrim);z-index:5}
 .sheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:28px;z-index:6;display:flex;flex-direction:column;max-height:calc(100% - 24px)}
 .sheet.full{top:12px;left:0;right:0;bottom:0;border-radius:28px 28px 0 0}
@@ -304,7 +305,7 @@ S["D-S07"]={t:"Time picker (system compact)",states:{"default":"System picker, 1
   r:function(){return S["D-S06"].r("on")+'<div class="glass" style="position:absolute;right:16px;top:420px;width:220px;border-radius:16px;z-index:6;padding:10px;text-align:center">'+
     ["7:45 PM","8:00 PM","8:15 PM","<b>8:30 PM</b>","8:45 PM","9:00 PM","9:15 PM","9:30 PM"].map(function(t){return '<div class="t-sub" style="min-height:30px">'+t+'</div>'}).join("")+'</div>'}};
 S["D-S08"]={t:"Add a day",states:{
-  "default":"Date from today (today only while its reminder time is ahead); words field (writing tools off).","error-typed_day_empty":"Save with no words: one line; nothing saved.",
+  "default":"Date from today (today only while its reminder time is ahead); words field (writing tools off).","error-typed_day_empty":"Save present and not ready (outline, muted label, VoiceOver dimmed) with the hint shown; system COMPONENTS 1.2.",
   "filled":"Words typed; preview shows the fixed line (words hidden by default).",
   "showWords":"Switch on: preview shows the parent's words unchanged.",
   "error-typed_day_too_long":"Over 80 (a paste): every character kept; Save waits; one line, no counter.","error-typed_day_past":"The day has passed (or today after its time): one line.",
@@ -315,12 +316,12 @@ S["D-S08"]={t:"Add a day",states:{
     var body='<div style="display:flex;justify-content:space-between;align-items:center"><h2 class="t-title2">Add a day</h2><button class="btn quiet sm" onclick="go(\'D-S06\',\'on\')">Cancel</button></div>'+
       '<div class="t-cap" style="margin-top:16px">Date</div><div class="card t-body" role="button">Saturday 14 March 2026</div>'+
       '<div class="t-cap" style="margin-top:16px">Your words</div><div class="card t-body" style="min-height:52px;border-color:var(--control)" role="textbox" aria-label="Your words">'+(filled?(st==="error-typed_day_too_long"?"Nursery starts, and Nani arrives on the early train with the blue suitcase.":"Nursery starts"):'<span class="muted">Nursery starts</span>')+'</div>'+
-      (st==="error-typed_day_too_long"?warn("That is longer than fits here. A short line works best."):st==="error-typed_day_empty"?warn("Add a few words about the day."):st==="error-typed_day_past"?warn("Choose a day that is still to come."):'')+
+      (st==="error-typed_day_too_long"?warn("That is longer than fits here. A short line works best."):st==="error-typed_day_empty"?'<p class="t-foot">Add a few words about the day.</p>':st==="error-typed_day_past"?warn("Choose a day that is still to come."):'')+
       '<div class="list" style="margin-top:16px">'+row("Show my words in the notification","",sw(st==="showWords","Show my words in the notification",false,["D-S08",st==="showWords"?"filled":"showWords"]))+'</div>'+
       '<div class="t-cap" style="margin-top:16px">How it will look</div><div class="card"><div class="t-sub">'+(st==="showWords"?"Nursery starts":"A day you wanted to remember")+'</div></div>'+
       (st==="notAllowed"?'<p style="margin-top:12px">'+warn("Notifications are off. This day is saved and will be sent once they are allowed.")+'</p>':'')+
       (st==="error-schedule_failed"?'<p style="margin-top:12px">'+warn("Could not set reminders just now.")+'</p>':'');
-    var foot=btn(st==="error-schedule_failed"?"Try again":"Save","primary",st==="default"?["D-S08","error-typed_day_empty"]:["D-S06","on"]);
+    var nr=(st==="default"||st==="error-typed_day_empty");var foot=btn(st==="error-schedule_failed"?"Try again":"Save",nr?"notready":"primary",nr?["D-S08","error-typed_day_empty"]:["D-S06","on"],nr?'aria-disabled="true" title="Add a few words about the day."':"");
     return S["D-S06"].r("on")+sheet(body,foot,{ruled:true});
   }};
 S["D-S09"]={t:"A typed day: detail and Delete",states:{"default":"The day and the words; Delete this day.","confirm":"ConfirmSheet: safe default Keep it; Delete this day quiet and red. Deleting cancels its notification."},

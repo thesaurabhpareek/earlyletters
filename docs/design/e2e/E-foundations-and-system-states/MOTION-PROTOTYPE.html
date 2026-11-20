@@ -89,7 +89,8 @@ table.ix td,table.ix th{border-bottom:1px solid #0001;padding:3px 8px;text-align
   <label><input type="checkbox" id="dark"> Dark</label>
   <label><input type="checkbox" id="rt"> Reduce Transparency</label>
   <label><input type="checkbox" id="slow"> Slow motion x5 (review only)</label>
-  <span id="note" style="font-size:12px;opacity:.75">Every duration below is a token from tokens.motion; "proposed" marks MOTION.md section 7.</span>
+  <label><input type="checkbox" id="v2"> v2 spring.standard (0.30 s: 439, 38.5)</label>
+  <span id="note" style="font-size:12px;opacity:.75">Durations are today's tokens.motion; "proposed" marks MOTION.md section 7. Titles give the design system v2 names (docs/design/system/MOTION.md); "RETIRED in v2" marks today's moves that v2 proposes to remove.</span>
 </header>
 <main id="main"></main>
 <script>
@@ -198,7 +199,7 @@ function lit(scr, centre){ var l=h("div","lamp"+(centre?" center":"")); scr.appe
 function pad(scr){ var p=h("div","pad"); scr.appendChild(p); return p; }
 
 /* ---------- MP-01, MP-02 press ---------- */
-demo("MP-01 MP-02","Press: control and card","Press and hold. Control 0.97, card 0.98 on snappy. RM: opacity 0.9 over 90 ms, no scale. No haptic on a navigation press.",function(dm){
+demo("MP-01 MP-02 = m.tap","Press: control and card","Press and hold. Control 0.97, card 0.98 on snappy. RM: opacity 0.9 over 90 ms, no scale. No haptic on a navigation press.",function(dm){
   var p=pad(dm.scr);
   var card=h("div","card"); card.appendChild(h("div","small","Month 4")); card.appendChild(h("div","body","Asha laughed at the rain today. (sample)"));
   p.appendChild(card);
@@ -218,7 +219,7 @@ demo("MP-01 MP-02","Press: control and card","Press and hold. Control 0.97, card
 });
 
 /* ---------- MP-03 enter ---------- */
-demo("MP-03","Enter with stagger","Opacity 0 to 1, y 8 to 0, 280 ms, 30 ms stagger for the first 6; item 7 has no entrance. RM: one 200 ms fade. The button is there from frame 1.",function(dm){
+demo("MP-03 = m.enter.group","Enter with stagger","Opacity 0 to 1, y 8 to 0, 280 ms, 30 ms stagger for the first 6; item 7 has no entrance. RM: one 200 ms fade. The button is there from frame 1.",function(dm){
   var p=pad(dm.scr), items=[];
   ["Wednesday 20 November","Good evening","What made you smile today?","Line 4","Line 5","Line 6","Line 7: past staggerMax, no entrance"].forEach(function(t,i){ var e=h("div",i<3?"body":"small",t); e.style.opacity=0; p.appendChild(e); items.push(e); });
   var f=h("div","foot"); f.appendChild(h("button","btn","Speak")); dm.scr.appendChild(f);
@@ -226,7 +227,7 @@ demo("MP-03","Enter with stagger","Opacity 0 to 1, y 8 to 0, 280 ms, 30 ms stagg
 });
 
 /* ---------- MP-07 step hand-off (E-M09) ---------- */
-demo("MP-07 E-M13","First run step hand-off (E-S08)","Leaving words go up and out (160 ms), then the next step enters (280 ms, stagger). Lamp unchanged. Continue static and silent. RM: 200 ms fade out, 200 ms fade in.",function(dm){
+demo("MP-07 E-M13 = T-STEP m.step","First run step hand-off (E-S08)","Leaving words go up and out (160 ms), then the next step enters (280 ms, stagger). Lamp unchanged. Continue static and silent. RM: 200 ms fade out, 200 ms fade in.",function(dm){
   var l=lit(dm.scr); l.style.opacity=0.5;
   var p=pad(dm.scr), block=h("div"); p.appendChild(block);
   var steps=[["Who is this book for?","A name for the cover. (placeholder)"],["A birthday or a due date","(placeholder)"],["How you sign","Mama, Papa, or your name. (placeholder)"]], i=0;
@@ -241,7 +242,7 @@ demo("MP-07 E-M13","First run step hand-off (E-S08)","Leaving words go up and ou
 });
 
 /* ---------- MP-06 swap: wrong code (E-M16) ---------- */
-demo("MP-06 E-M22","Swap in place: a wrong code (E-S06.error-wrong_code)","The line under the field cross-fades in place (150 ms). No shake, no red, no haptic. The field keeps its digits.",function(dm){
+demo("MP-06 E-M22 = m.swap","Swap in place: a wrong code (E-S06.error-wrong_code)","The line under the field cross-fades in place (150 ms). No shake, no red, no haptic. The field keeps its digits.",function(dm){
   var p=pad(dm.scr);
   p.appendChild(h("div","h1","Enter the code"));
   p.appendChild(h("div","field","482 913"));
@@ -252,7 +253,7 @@ demo("MP-06 E-M22","Swap in place: a wrong code (E-S06.error-wrong_code)","The l
 });
 
 /* ---------- MP-08 dissolve ---------- */
-demo("MP-08","Route dissolve (Home to Listen)","Cross-dissolve 280 ms; RM 200 ms. Home's lamp leaves over 160 ms as the unlit room covers it, and returns over 280 ms.",function(dm){
+demo("MP-08 = T-COVER m.cover","Route dissolve (Home to Listen)","Cross-dissolve 280 ms; RM 200 ms. Home's lamp leaves over 160 ms as the unlit room covers it, and returns over 280 ms.",function(dm){
   var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
   var home=pad(dm.scr); home.appendChild(h("div","h1","Good evening")); home.appendChild(h("div","body","What made you smile today?"));
   var hf=h("div","foot"); hf.appendChild(h("button","btn","Speak")); dm.scr.appendChild(hf);
@@ -267,7 +268,7 @@ demo("MP-08","Route dissolve (Home to Listen)","Cross-dissolve 280 ms; RM 200 ms
 });
 
 /* ---------- MP-10 Keep gate sheet (E-M30 to E-M35) ---------- */
-demo("MP-10 E-M30..E-M35","The Keep gate sheet (E-S10, glass)","Rises on the standard spring over a scrim; the held card enters; buttons static from frame 1. RM: no travel, the glass animates its effect style (never opacity 0), content and scrim fade 200 ms. No lamp, no price motion, no pulse.",function(dm){
+demo("MP-10 E-M30..E-M35 = T-GATE m.sheet.own","The Keep gate sheet (E-S10, glass; v2 target is the native sheet)","Rises on the standard spring over a scrim; the held card enters; buttons static from frame 1. RM: no travel, the glass animates its effect style (never opacity 0), content and scrim fade 200 ms. No lamp, no price motion, no pulse.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","small","Review")); p.appendChild(h("div","body","Asha found the spoon again and would not let go. (sample)"));
   var rf=h("div","foot"); rf.appendChild(h("button","btn","Keep")); dm.scr.appendChild(rf);
   var scrim=h("div","scrim"); dm.scr.appendChild(scrim);
@@ -307,7 +308,7 @@ demo("MP-10 E-M30..E-M35","The Keep gate sheet (E-S10, glass)","Rises on the sta
 });
 
 /* ---------- E-M40 to E-M42 system line ---------- */
-demo("E-M40..E-M43","SystemLine under its control","In place under the control it is about (no global banner). A drop while the screen is open shows the line only if it holds 2 s (proposed); rows below reflow on standard and the line fades in. A new state swaps the words. Back for 1 s (proposed): fade, then reflow. No slide, no haptic. RM: instant reflow, fades.",function(dm){
+demo("E-M40..E-M43 = T-SYSLINE","SystemLine under its control","In place under the control it is about (no global banner). A drop while the screen is open shows the line only if it holds 2 s (proposed); rows below reflow on standard and the line fades in. A new state swaps the words. Back for 1 s (proposed): fade, then reflow. No slide, no haptic. RM: instant reflow, fades.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","h1","Account")); p.appendChild(h("div","card","Sync"));
   var sl=h("div","sysline"), si=h("div","in"), sw=h("div","swapbox"); sw.appendChild(h("span",null,"")); si.appendChild(sw); sl.appendChild(si); p.appendChild(sl);
   ["Sign out","Delete account"].forEach(function(t){ var r=h("div","card",t); p.appendChild(r); });
@@ -329,7 +330,7 @@ demo("E-M40..E-M43","SystemLine under its control","In place under the control i
 });
 
 /* ---------- E-M52 to E-M54 outage ---------- */
-demo("E-M52..E-M54","Sign-in outage and offline (E-S14)","The welcome's lamp leaves (160 ms) as the problem screen arrives in one 200 ms fade: no lamp, no breath. Offline to outage swaps the words. Try again: busy, then the block exits, the lamp returns (280 ms) and the welcome words enter.",function(dm){
+demo("E-M52..E-M54 = m.fade m.swap","Sign-in outage and offline (E-S14)","The welcome's lamp leaves (160 ms) as the problem screen arrives in one 200 ms fade: no lamp, no breath. Offline to outage swaps the words. Try again: busy, then the block exits, the lamp returns (280 ms) and the welcome words enter.",function(dm){
   var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
   var w=pad(dm.scr); var wh=h("div","h1","A book you fill by talking. (placeholder)"); w.appendChild(wh);
   var block=h("div"); block.style.cssText="position:absolute;inset:0;background:var(--bg);opacity:0;pointer-events:none";
@@ -348,7 +349,7 @@ demo("E-M52..E-M54","Sign-in outage and offline (E-S14)","The welcome's lamp lea
 });
 
 /* ---------- MP-15 cover, E-M70, E-M73 ---------- */
-demo("MP-15 E-M70 E-M73 (E-S22)","Privacy cover and unlock","Going to the background draws the cover at once (no fade in: the app switcher snapshot must never catch the book). Unlock fades it out over 200 ms onto an already rendered room. No check mark, no haptic.",function(dm){
+demo("MP-15 E-M70 E-M73 = T-LOCK","Privacy cover and unlock","Going to the background draws the cover at once (no fade in: the app switcher snapshot must never catch the book). Unlock fades it out over 200 ms onto an already rendered room. No check mark, no haptic.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","h1","Asha, month 4")); p.appendChild(h("div","body","You held my finger all the way home. (sample)"));
   var c=h("div","cover"); c.appendChild(h("div","mark","\"")); dm.scr.appendChild(c);
   dm.act("Background", function(){ c.getAnimations().forEach(function(a){a.cancel();}); c.style.opacity=1; });
@@ -356,7 +357,7 @@ demo("MP-15 E-M70 E-M73 (E-S22)","Privacy cover and unlock","Going to the backgr
 });
 
 /* ---------- MP-16 lamp ---------- */
-demo("MP-16","Lamp: arrive, leave, return, breath","Arrive 1200 ms (first lit room after a cold launch), leave 160 ms under an unlit room, return 280 ms, breath 9 s to 0.88. RM: the light is at its level, still. Never on Plus, errors or the system line.",function(dm){
+demo("MP-16 = lamp (system section 10, pending)","Lamp: arrive, leave, return, breath (breath RETIRED in v2, proposal)","Arrive 1200 ms (first lit room after a cold launch), leave 160 ms under an unlit room, return 280 ms, breath 9 s to 0.88. RM: the light is at its level, still. Never on Plus, errors or the system line.",function(dm){
   var l=lit(dm.scr); var p=pad(dm.scr); p.appendChild(h("div","h1","Good evening"));
   dm.act("Cold launch: arrive", function(){ setBreath(l,false); l.style.opacity=0; lampTo(l,1,T.lamp.arriveMs).then(function(){ setBreath(l,true); }); });
   dm.act("Unlit room covers", function(){ setBreath(l,false); lampTo(l,0,T.lamp.leaveMs); });
@@ -365,7 +366,7 @@ demo("MP-16","Lamp: arrive, leave, return, breath","Arrive 1200 ms (first lit ro
 });
 
 /* ---------- MP-17 + E-M20 to E-M22 ---------- */
-demo("MP-17 E-M20o..E-M22o","Opening your book (C-S10 via E-S09)","After 350 ms the moon breathes opacity 1 to 0.85 over 8 s; still under RM. At 10 s (C-S10.slow) two actions cross-fade into a slot reserved from frame 1 (no reflow) and the moon stops. A failed read swaps the words.",function(dm){
+demo("MP-17 E-M20o..E-M22o","Opening your book (C-S10 via E-S09); the breath is RETIRED in v2 (proposal): tick Reduce Motion to see the still form","After 350 ms the moon breathes opacity 1 to 0.85 over 8 s; still under RM. At 10 s (C-S10.slow) two actions cross-fade into a slot reserved from frame 1 (no reflow) and the moon stops. A failed read swaps the words.",function(dm){
   var p=pad(dm.scr); p.style.justifyContent="center"; p.style.alignItems="stretch";
   var moon=h("div","moon"); p.appendChild(moon);
   var t=h("div","swapbox h1"); t.appendChild(h("span",null,"Opening your book (placeholder)")); p.appendChild(t);
@@ -378,22 +379,23 @@ demo("MP-17 E-M20o..E-M22o","Opening your book (C-S10 via E-S09)","After 350 ms 
 });
 
 /* ---------- MP-18 busy ---------- */
-demo("MP-18 E-M17","Busy in a control","Target at every setting: the label swaps to its busy words (150 ms) and the other way disables at once; no spinner (DESIGN rule 5, NS-33-R5). Tick 'as built' to see today's ActivityIndicator, which also spins under RM (gap G-EM2).",function(dm){
+demo("MP-18 E-M17 = m.progress.wait + m.swap","Busy in a control","Three modes. Area E recommendation: busy words at every setting, no indicator (DESIGN rule 5). v2 system: indicator plus busy words, words only under RM. As built: indicator only, spinning under RM too (gap G-EM2, breaks NS-33-R5).",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","h1","Sign in"));
   var f=h("div","foot"), a=h("button","btn"), e=h("button","btn outline","Continue with email"); a.appendChild(h("span",null,"Sign in with Apple")); f.appendChild(a); f.appendChild(e); dm.scr.appendChild(f);
-  var asBuilt=false;
-  var cb=dm.act("As built: off", function(){ asBuilt=!asBuilt; cb.textContent="As built: "+(asBuilt?"on":"off"); });
+  var modes=["Area E recommendation","v2 system","As built"], mode=0;
+  var cb=dm.act("Mode: "+modes[0], function(){ mode=(mode+1)%3; cb.textContent="Mode: "+modes[mode]; });
   dm.act("Tap Sign in", function(g){
     dm.haptic("tap (provider button, as built)");
     e.style.opacity=0.45; var lab=a.firstChild;
-    if(!asBuilt){ var bx=h("span","swapbox"); bx.appendChild(h("span",null,"Sign in with Apple")); a.innerHTML=""; a.appendChild(bx); swap(bx,"Signing in (placeholder)"); }
+    var words = mode===0 || (mode===1) , spinner = (mode===1 && !S.rm) || mode===2;
+    if(words){ var bx=h("span","swapbox"); bx.appendChild(h("span",null,"Sign in with Apple")); a.innerHTML=""; a.appendChild(bx); swap(bx,"Signing in (placeholder)"); if(spinner) a.insertBefore(h("span","spin"), bx); }
     else { a.insertBefore(h("span","spin"), lab); }
     wait(1800).then(function(){ if(g!==dm.gen) return; a.innerHTML="<span>Sign in with Apple</span>"; e.style.opacity=1; });
   });
 });
 
 /* ---------- MP-19 placeholders ---------- */
-demo("MP-19 section 5","Waiting bands W0 to W2","Under 350 ms: nothing. Then static placeholders fade in (200 ms) and the content swaps in (150 ms). At 10 s: the held state with a way forward swaps in. Never shimmer, never a spinner.",function(dm){
+demo("MP-19 section 5 = m.fade","Waiting bands W0 to W2","Under 350 ms: nothing. Then static placeholders fade in (200 ms) and the content swaps in (150 ms). At 10 s: the held state with a way forward swaps in. Never shimmer, never a spinner.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","h1","Plan"));
   var region=h("div"); region.style.cssText="display:flex;flex-direction:column;gap:10px;position:relative;min-height:120px"; p.appendChild(region);
   var slowL=h("div","small"); slowL.style.opacity=0; p.appendChild(slowL);
@@ -416,14 +418,14 @@ demo("MP-19 section 5","Waiting bands W0 to W2","Under 350 ms: nothing. Then sta
 });
 
 /* ---------- MP-20 wash ---------- */
-demo("MP-20","Wash on a newly arrived letter","accentSoft fades out over 1600 ms. RM: shown, then fades (the fade is the fallback). Never on Plus, sign-in or an update.",function(dm){
+demo("MP-20 = m.mark","Wash on a newly arrived letter","accentSoft fades out over 1600 ms. RM: shown, then fades (the fade is the fallback). Never on Plus, sign-in or an update.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","small","Month 4"));
   var c=h("div","card"); c.appendChild(h("div","body","Asha met the neighbour's cat. (sample)")); p.appendChild(c);
   dm.act("Arrive", function(){ anim(c,[{background:getComputedStyle(dm.scr).getPropertyValue("--accentSoft").trim()},{background:getComputedStyle(dm.scr).getPropertyValue("--surfaceRaised").trim()}],T.newMarkMs,0,"linear"); });
 });
 
 /* ---------- MP-23 toast ---------- */
-demo("MP-23 MP-06","Toast and undo line (glass)","Enters 280 ms; without an action it leaves after 4 s (default; never while VoiceOver runs); with Undo it stays. A new toast swaps its words (150 ms). Exit: the glass animates its effect style, never opacity 0. Undo gives tap.",function(dm){
+demo("MP-23 = m.toast","Toast and undo line (glass)","Enters 280 ms; without an action it leaves after 4 s (default; never while VoiceOver runs); with Undo it stays. A new toast swaps its words (150 ms). Exit: the glass animates its effect style, never opacity 0. Undo gives tap.",function(dm){
   var p=pad(dm.scr); p.appendChild(h("div","h1","Book"));
   var t=h("div","toast glass none"), m=h("div","msg swapbox"), u=h("button","btn quiet","Undo"); u.style.width="auto"; u.style.display="none";
   m.appendChild(h("span",null,"")); t.appendChild(m); t.appendChild(u); dm.scr.appendChild(t); m.style.opacity=0;
@@ -442,7 +444,7 @@ demo("MP-23 MP-06","Toast and undo line (glass)","Enters 280 ms; without an acti
 });
 
 /* ---------- E-M09 finish ---------- */
-demo("E-M09 E-M15","The book is open (E-S08.open)","The lamp rises from the form light (0.5) to finish (1.0) over 1200 ms; the cover holds 300 ms, then cross-fades to the flyleaf with an 8 pt shift on standard. success once. RM: lamp at level, a 200 ms cross-fade, no shift.",function(dm){
+demo("E-M09 E-M15","The book is open (E-S08.open): today's build; the cover opening and its success haptic are RETIRED in v2","The lamp rises from the form light (0.5) to finish (1.0) over 1200 ms; the cover holds 300 ms, then cross-fades to the flyleaf with an 8 pt shift on standard. success once. RM: lamp at level, a 200 ms cross-fade, no shift.",function(dm){
   var l=lit(dm.scr); l.style.opacity=0.5;
   var p=pad(dm.scr); var bk=h("div","book"), front=h("div",null,"Asha"), fly=h("div",null,"The book is open. (placeholder)");
   front.style.background="var(--accent)"; front.style.color="var(--onAccent)"; fly.style.background="var(--surfaceRaised)"; fly.style.border="1px solid var(--line)"; fly.style.fontSize="18px"; fly.style.opacity=0;
@@ -460,7 +462,7 @@ demo("E-M09 E-M15","The book is open (E-S08.open)","The lamp rises from the form
 });
 
 /* ---------- E-M80 tabs ---------- */
-demo("E-M80","Tab switch","Native swap, no animation, no haptic; content never re-enters. The arriving tab's lamp starts at the last tab's light and settles over 280 ms (Home 1.0 evening, Book 0.6, Me no lamp). RM: light at its level.",function(dm){
+demo("E-M80 = T-TAB","Tab switch","Native swap, no animation, no haptic; content never re-enters. The arriving tab's lamp starts at the last tab's light and settles over 280 ms (Home 1.0 evening, Book 0.6, Me no lamp). RM: light at its level.",function(dm){
   var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
   var p=pad(dm.scr), title=h("div","h1","Good evening"); p.appendChild(title);
   var tabs=h("div","tabs glass"); var levels={Home:1,Book:0.6,Me:0}, words={Home:"Good evening",Book:"Asha's book",Me:"Me"};
@@ -469,13 +471,13 @@ demo("E-M80","Tab switch","Native swap, no animation, no haptic; content never r
 });
 
 /* ---------- MP-26 scheme ---------- */
-demo("MP-26 E-M76","Appearance change","The next frame is in the new scheme; nothing cross-fades; the lamp is at its level for the scheme. tap on the choice.",function(dm){
+demo("MP-26 E-M76 = m.instant","Appearance change","The next frame is in the new scheme; nothing cross-fades; the lamp is at its level for the scheme. tap on the choice.",function(dm){
   var l=lit(dm.scr); l.style.opacity=1; var p=pad(dm.scr); p.appendChild(h("div","h1","Appearance")); p.appendChild(h("div","card","Light / Dark / System"));
   dm.act("Switch scheme", function(){ dm.haptic("tap"); dm.scr.classList.toggle("dark"); });
 });
 
 /* ---------- E-M06 gate stop ---------- */
-demo("E-M09a","Age gate: the stop screen (E-S03.stop)","The question leaves (160 ms) and the stop line fades into the same room (200 ms). Same mark, same light. No red, no shake. tap only on the answer.",function(dm){
+demo("E-M09a = T-STEP","Age gate: the stop screen (E-S03.stop)","The question leaves (160 ms) and the stop line fades into the same room (200 ms). Same mark, same light. No red, no shake. tap only on the answer.",function(dm){
   var l=lit(dm.scr,true); l.style.opacity=0.6;
   var p=pad(dm.scr); p.style.alignItems="center"; p.appendChild(h("div","mark","\""));
   var q=h("div"); q.style.cssText="display:flex;flex-direction:column;gap:12px;align-items:center"; q.appendChild(h("div","body","Are you 18 or older? (placeholder)"));
@@ -488,6 +490,7 @@ demo("E-M09a","Age gate: the stop screen (E-S03.stop)","The question leaves (160
 var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 var rmBox=document.getElementById("rm"); if(mq && mq.matches){ rmBox.checked=true; S.rm=true; }
 rmBox.onchange=function(){ S.rm=rmBox.checked; demos.forEach(function(x){ x.reset(); }); };
+document.getElementById("v2").onchange=function(e){ T.springs.standard = e.target.checked ? [439,38.5,1] : [260,30,1]; demos.forEach(function(x){ x.reset(); }); };
 document.getElementById("slow").onchange=function(e){ S.slow=e.target.checked?5:1; demos.forEach(function(x){ x.reset(); }); };
 document.getElementById("dark").onchange=function(e){ document.body.classList.toggle("pagedark",e.target.checked); document.querySelectorAll(".screen").forEach(function(s){ s.classList.toggle("dark",e.target.checked); }); };
 document.getElementById("rt").onchange=function(e){ document.querySelectorAll(".screen").forEach(function(s){ s.classList.toggle("rt",e.target.checked); }); };
