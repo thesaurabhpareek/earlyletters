@@ -235,10 +235,15 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     }
     const touchesFiles = [...seen].filter((f) => specifiers(f).includes('expo-file-system')).map((f) => relative(SRC, f)).sort();
     expect(touchesFiles).toEqual([
+      'lib/backup/files.ts', // B5-5: a sign-out deletes the signed-out account's backup state file (below); never a recording
       'lib/days/store-file.ts', // sign-out clears the days store (NS-47-R15): only its own folder, `days/` in Application Support
       'lib/packs/app-support.ts', // names the packs folder in Application Support; deletes nothing
       'lib/remote/expo-adapter.ts', // the remote-config cache: remove(name) deletes only that cache file
     ]);
+    // The backup file's delete names only backup-<uuid>.db and its sidecars (isBackupFileName), never a recording or scribe.db.
+    const backupFiles = src('lib/backup/files.ts');
+    expect(backupFiles.match(/\.delete\(\)/g)).toHaveLength(1);
+    expect(backupFiles).not.toMatch(/ExpoAudio|\.m4a|listRecordingFiles/);
     const adapter = src('lib/remote/expo-adapter.ts');
     expect(adapter.match(/\.delete\(\)/g)).toHaveLength(1);
     expect(src('lib/packs/app-support.ts')).not.toMatch(/\.delete\(\)/);
