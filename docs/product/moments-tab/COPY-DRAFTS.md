@@ -4,6 +4,8 @@ Owner: `content`. Status: PROPOSED. Nothing here is shipped copy. Engineers buil
 
 Sources read: `docs/product/prd/28-moments-tab.md` (sections 13, 16.1, 17), `EXPERIENCE-AND-MOTION.md` (sections 2 to 4), `FREEZE-CHECKLIST.md` (O-48, O-55, Q8), `FACT-CHECK-PRIVACY-EAS.md`, `packages/content/VOICE.md`, `BRAND.md`, `WRITING-GUIDE.md`, `docs/agents/COORDINATION.md` section 10.
 
+Key names. `en.moments.*` is shorthand. The real home is `momentsCopy` in `packages/content/src/features/moments.en.ts` (not yet created), a nested object, each key marked `TODO(founder): PROPOSED`, and exported through `packages/content/src/features/index.ts`. Do not extend `strings.en.ts`.
+
 How to read a line. `{child}` and `{app}` are placeholders (the name comes from `packages/brand` only). Each line gives Option A and, where there is a real choice, Option B, with a one-line reason each. The first option is my pick unless I say otherwise. Marks: PROPOSED (words wait for the founder), PROPOSED-HELD (do not build until the named question is answered), UNVERIFIED (a fact I could not check in code or Apple's text).
 
 Rules I held every line to: no em or en dashes, curly quotes, ellipsis characters or emoji; no exclamation marks; no fear, guilt or loss words; no "we", "our" or "us" in a parent-facing line (PRD R159); no counts of what is missing; nothing that suggests the app writes; `{child}` never gendered; nothing says "private", "safe", "never", "only you", "stays on your phone" in a primer (PRD 16.1).
@@ -73,9 +75,9 @@ The decision to promote Not now to the face of the card is the design spec's, le
 | `en.moments.card.notThisOne.toast` | This day won't show again. | Okay. This one's off the list. |
 | Reason | States the real effect, in the plain voice. If the key is later undone in Me, "again" is still true. | Friendly, but "list" implies a list that exists. |
 | `en.moments.card.undo` | Undo | Put it back |
-| Reason | The design spec names it Undo and it already appears elsewhere in the app. | "Put it back" is the glossary's phrase for small fixes; reusing it here would blur two different undos. I pick A. |
+| Reason | The design spec names it Undo and it already appears elsewhere in the app. | "Put it back" is VOICE.md's phrase for small fixes (`packages/content/VOICE.md` line 53: "every small fix is marked, and you can put it back"). It is a voice example, not a BRAND.md glossary row. Reusing it here would blur two different undos. I pick A. |
 
-Accessibility labels: face button "Not now, {dateHeading}"; menu item "Not this one, {dateHeading}"; the toast is announced once, with its action named Undo. Menu items that sit beside it, unchanged: "Name this day", "Hide this day", "Keep this day close" (PRD 17).
+Accessibility labels (VoiceOver): face button "Not now, {dateHeading}"; menu item "Not this one, {dateHeading}"; the toast is announced once, with its action named Undo. Menu items that sit beside it, unchanged: "Name this day", "Hide this day", "Keep this day close" (PRD 17).
 
 Shown / Records / Never / Decline:
 - Shown: the keys above.
@@ -93,6 +95,8 @@ The quiet text row that opens Apple's picker directly. It works in every permiss
 |---|---|---|
 | `en.moments.door.label` | Choose pictures | Choose pictures yourself |
 | Reason | The PRD's one verb family ("Choose pictures"); short enough for the largest text size. | Tells a parent who just said Not now that this route does not need the other. A little long, and "yourself" can sound like a rebuke. |
+
+VoiceOver label: "Choose pictures", read as a button; hint none. It is the same words as the visible label so Voice Control "tap Choose pictures" works.
 
 Where it sits (first row after Not now, below the ask card before it, last row in Recent) is the design spec's call (O-56), not mine. No sub-line. No claim here: Apple's own panel explains what the picker shares, in Apple's words, and we put no copy of ours beside it (EXPERIENCE-AND-MOTION 2.6).
 
@@ -123,6 +127,16 @@ Apple's view inside the sheet is Apple's. Ours: the title row, the tray, the lim
 | `en.moments.pick.swap.toDays` | Back to days | Show days |
 | Reason | Plain verbs; "Browse" is an app word and "Show days" repeats the ask card. | |
 
+VoiceOver labels for the picker's controls:
+
+| Control | Label | Notes |
+|---|---|---|
+| Body swap, to all | "Show all pictures" | Button; the state change is announced as "Showing all pictures". |
+| Body swap, to days | "Back to days" | Button; announced as "Showing days". |
+| Chosen picture, remove | "Remove picture" | Add the position, "Remove picture 2 of {n}". |
+| Start | "Start" | Disabled until one picture is chosen; read as dimmed. |
+| Not now | "Not now" | Closes the sheet. |
+
 Shown / Records / Never / Decline for the picker: it is not an agreement. Records nothing until Start. Never: no copy of ours over or beside Apple's panel; no mention of other people in the pictures. Decline: Not now drops the picks and temporary copies with no dialog (EXPERIENCE-AND-MOTION 4.6).
 
 ---
@@ -150,12 +164,14 @@ Not for the shipped build and not for review packets until those three are clear
 | Key (proposed) | Option 1 | Option 2 |
 |---|---|---|
 | `en.moments.primer.b.body` | You can choose pictures yourself any time. If you would like suggestions, {app} can read the date and time of your pictures while Moments is open. | Choose pictures yourself any time. Or let {app} read the date and time of your pictures to suggest days to tell {child} about. |
-| Reason | Tells the parent the picker exists, which is B's whole point (it is the version that does not feel like a trap). Keeps the PRD's wording where it can. | Shorter, with the purpose (suggest days) stated and no "while open" limit I cannot prove. Gives up the PRD wording. I pick 2 if `mobile` cannot confirm the limit. |
+| Reason | Tells the parent the picker exists, which is B's whole point (it is the version that does not feel like a trap). Keeps the PRD's wording where it can. | Shorter, with the purpose (suggest days) stated and no "while open" limit I cannot prove. Gives up the PRD wording. **I now prefer 2.** It has no "Moments" inside a sentence, so the tab's name (Q1) can change without touching this line, and it carries no "while open" limit I cannot prove. Option 1 stays as the fallback only if `mobile` confirms the limit as a code fact. |
 | `en.moments.primer.title` | Show days from your pictures? | Suggestions from your pictures |
 | Reason | Repeats the ask card, so the sheet feels like the same question. | Names the sheet, but sounds like a setting. I pick the first. |
 | `en.moments.primer.continue` | Continue | Show days |
 | Reason | The design spec's word; Apple's alert follows. | Names the result but the alert is next, so "Continue" is the more honest verb. I pick the first. |
 | `en.moments.primer.decline` | Not now | Not now |
+
+VoiceOver labels for the primer: Continue reads "Continue"; Not now reads "Not now, show days from my pictures later" (matches the ask card pattern); the sheet is announced by its title, `en.moments.primer.title`, then the body in one swipe. Focus lands on the title when the sheet opens and returns to the ask card when it closes.
 
 When counsel clears place, a one-sentence extension is possible ("and the place" after the date and time). I have not written it into a shipped form.
 
@@ -211,6 +227,8 @@ The parent can name a day (up to 60 characters, typed, PRD 17). The label, and t
 | Reason | The verb says the result. | Shorter. |
 | `en.moments.label.disclosure` | Day names stay on this phone. They won't be on a new phone. | A name you give a day stays on this phone and doesn't move to a new one. |
 | Reason | Two short sentences; says the fact first. Plain "a new phone" matches the instruction ("typed day labels do not move to a new phone"). | One sentence, but longer, and "moves" is a little technical. |
+
+VoiceOver labels for the label surface: the field reads "Name this day, {dateHeading}" with the placeholder as its hint; the counter reads "{n} of 60" and is not announced on every keystroke; Save reads "Save name"; Remove name reads "Remove name, {dateHeading}".
 
 Where the disclosure appears: once, under the field the first time a parent names a day, and again in Me where the names are listed. No fear tone, no "you could lose" wording, and nothing about what to do about it. I considered adding a second line telling the parent their letters are unaffected; I left it out because I have not verified that claim for every restore path. If it is verified, "Your letters aren't affected." is the line, and the reason is that a parent will wonder.
 
@@ -278,13 +296,16 @@ Shown / Records / Never / Decline (the notification opt-in is the agreement; the
 
 Recorded here so it is not lost, and kept out of shipped copy until the founder answers O-48 (FREEZE-CHECKLIST: "No public line uses them before that"). It is not a key and no section above uses it.
 
-- Line one (recorded): "Pictures start the story. Your voice finishes it."
-- Line two (recorded): "We never write a word for you."
+Status of both lines below: UNPUBLISHED, pending counsel Q130 (G2 Q1 and Q8). Nothing here may be used on the store page, the website or in the app until counsel answers and the founder approves.
+
+- Line one (recorded, fallback): "Your words finish it"
+- Line two (recorded, current): "{app} never adds a word to your letter"
+- Superseded, withdrawn, not to be used: "We never write a word for you." Reasons: it says "we", against PRD D5-F3 (`docs/product/prd/28-moments-tab.md`, section 16, line 857), and it is wider than the live line "It never adds a word" (`packages/content/src/site.en.ts`, `store.en.ts`).
 
 Compliance note for whoever writes the final text:
-1. The second line must not say "we". The product promise is the product's, not a company's claim about itself, and the glossary keeps "we" for the sanctioned promises.
-2. It must not be wider than "It never adds a word". Any longer form (for example adding "to your letter" or "for you") widens the promise past what the constitution guarantees, since Word for word does remove and repair and does add punctuation and paragraph marks (see the council's finding on D-133 in `WRITING-GUIDE.md` section 1). Counsel to confirm the exact width.
-3. Line one uses "story", which the glossary bans in favour of "letter" (and writing-guide principle 11 on slogan rhythm applies). If the founder approves the idea, the word and the cadence are for the founder and the CMO to decide; I have not written a replacement, so that nothing here can be mistaken for the approved line.
+1. The second line must not say "we". It uses {app}, per D5-F3.
+2. "{app} never adds a word to your letter" is the recorded form, with fallback line one "Your words finish it" if counsel narrows or declines the claim. It keeps the live promise ("It never adds a word") and adds only "to your letter", which names the place the promise is about. Counsel (Q130, G2 Q1 and Q8) confirms that this width is true: Word for word does remove and repair and does add punctuation and paragraph marks (see the council's finding on D-133 in `WRITING-GUIDE.md` section 1). Anything longer, such as "for you", is not recorded.
+3. The earlier line one, "Pictures start the story. Your voice finishes it.", used "story", which the glossary bans in favour of "letter" (and writing-guide principle 11 on slogan rhythm applies). It is replaced by the fallback "Your words finish it". The word and the cadence remain for the founder and the CMO to decide.
 4. Store and website only after approval. Not in the app, a notification or an email.
 
 ---
