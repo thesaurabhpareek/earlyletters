@@ -173,6 +173,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
 
   it('the Next line and the preview come from the planner: real neutral words, recomputed on every change', async () => {
     await reminders.turnOnReminders();
+    reminders.writeOnSince(NOW - 3_600_000); // turn-on stamps the real clock; this test runs on NOW
     const next = reminders.nextReminder(NOW)!;
     expect(next).not.toBeNull();
     // Tuesday 20 Oct 2026 lands on the evening variant that names the weekday (planner.ts slotOrdinal, C-REQ-006), so

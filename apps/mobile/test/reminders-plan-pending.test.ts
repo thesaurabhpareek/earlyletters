@@ -34,6 +34,9 @@ vi.mock('../src/lib/reminders/prefs', async () => {
     readPrefs: () => ({ ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' }),
     plannerChildren: () => kids,
     lastOwnSaveAt: () => null,
+    anchorAt: () => null,
+    readOnSince: () => 0,
+    writeOnSince: () => {},
     writePrefs: () => {},
   };
 });
