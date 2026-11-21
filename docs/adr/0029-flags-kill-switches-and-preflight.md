@@ -21,6 +21,17 @@
 6. **The preflight list names every flag** with its hidden state, so the gate record shows which flags a build ships on. [Handoff draft A1 and C-6; not separately ruled, so a proposal of this ADR.]
 7. [Proposal] The remote `flags.lockScreenNamesDefault` (`packages/api/src/remote-config.ts`) never becomes a path to turn on day names (NS-47-R12); see ADR 0033.
 
+### Vocabulary added by CR-69 A5 (`packages/api/src/kill-switches.ts`, `NEW_SCOPE_KILL_SWITCH_KEYS`)
+
+| Key | Hides | Read as | Card row |
+|---|---|---|---|
+| `photoMoments` | the photo-library read and its index at next launch | build flag `EXPO_PUBLIC_PHOTO_MOMENTS` (planned, not built yet) and not paused | NS-51-R32 |
+| `videos` | video and the several-pictures limit | picture flag and `EXPO_PUBLIC_VIDEO` (planned, not built yet) and not paused | NS-52-R42 |
+| `signIn` | first-run and account sign-in; shows the outage screen with the local start; never ends a session | not paused | NS-41-R25 |
+| `libraryDays` | the days library, Browse and the ask slip; cancels pending library notes | `EXPO_PUBLIC_DAYS` and `!== true`, not `mayRun` | NS-46-R28 |
+
+All four are off in the bundled defaults and in any config signed before they existed. `photos` now reads "adding pictures".
+
 ## Consequences
 
 - Phone-only features can be tested on TestFlight with servers off. A pause arriving mid-session cancels pending notes within the debounce, where today nothing subscribes the scheduler to config.

@@ -7,8 +7,8 @@ Tags: [V] read in this session at `origin/develop`; [E] engineering inference; [
 ## 1. The short version
 
 1. The email may say three things about the sign-in: a device class word, a time, and the in-app path. Nothing else about the device or the place.
-2. The device record is a keyed hash of an app-made random id, a class word, and two dates. L3 as a row (the hash links to an account). Deleted with the account. A row not seen for 90 days is deleted.
-3. Supabase Auth already holds `auth.sessions` and a refresh-token table [V: `20261023000000_backup_server.sql:205-218` reads `auth.sessions` by id, user and `not_after`; DC:546 lists `auth.sessions` and `auth.refresh_tokens` as L4]. Their columns for IP and user agent [U] stay where they are. We read the session id and nothing else from them, and copy neither.
+2. The device record is a keyed hash of an app-made random id, a class word, and two dates. L3 as a row (the hash links to an account). The device row goes with the account (the audit row of a press is a separate record kept 12 months; see Q14). A row not seen for 90 days is deleted.
+3. Supabase Auth already holds `auth.sessions` and a refresh-token table [V: `20261023000000_backup_server.sql:205-218` reads `auth.sessions` by id, user and `not_after`; DC:560 lists `auth.sessions` and `auth.refresh_tokens` as L4]. Their columns for IP and user agent [U] stay where they are. We read the session id and nothing else from them, and copy neither.
 4. The "Not you?" token is random, hashed at rest, single-use, short-lived, bound to one session, carried in the URL fragment, and its use is audited.
 5. Cap: the E81 daily ceiling of 20 must not silently drop a real warning. Recommendation in section 9: the cap never drops A1; it folds, and the in-app line is a second path, not the only one.
 
@@ -17,9 +17,9 @@ Tags: [V] read in this session at `origin/develop`; [E] engineering inference; [
 | Thing | State | Evidence |
 |---|---|---|
 | Sign-in method | email code or link, Sign in with Apple, Sign in with Google; 15 minute access token; refresh rotation on | `supabase/config.toml:30-43, 63-75` [V] |
-| Auth sessions and refresh tokens | held by Supabase Auth in `auth.*`; L4 in DC; the app has no table of devices | DC:546; `20261023000000_backup_server.sql:205-218` [V] |
+| Auth sessions and refresh tokens | held by Supabase Auth in `auth.*`; L4 in DC; the app has no table of devices | DC:560; `20261023000000_backup_server.sql:205-218` [V] |
 | Any auth hook in the repo config | none in `config.toml`; the only hook is `public.hook_before_user_created`, a dashboard step | `config.toml` has no `hook` line [V]; `02i` F28 [V] |
-| `backup_devices` | one row per install for backup keys; random `device_id` (L3), public key (L3), `platform`, `enrolled_at`, `last_seen_at`, `revoked_*`; owner can read; **not** a sign-in record and only exists when backup is on | `20261023000000_backup_server.sql:251-260, 422-432`; DC:572 [V] |
+| `backup_devices` | one row per install for backup keys; random `device_id` (L3), public key (L3), `platform`, `enrolled_at`, `last_seen_at`, `revoked_*`; owner can read; **not** a sign-in record and only exists when backup is on | `20261023000000_backup_server.sql:251-260, 422-432`; DC:586 [V] |
 | `restore_requests.stop_token_hash` | the only token pattern in the repo: SHA-256 stored (32 bytes, unique), 7-day expiry, `stop_used_at`, one use; `backup_svc_stop` returns "stopped: false" for unknown, used or expired and reveals nothing | `20261023000000_backup_server.sql:323-326, 1621-1642` [V] |
 | Stop endpoint that ends sessions | the function returns the profile id so "the endpoint signs out every session"; that endpoint (S01) is not in `supabase/functions` | `ls supabase/functions`: analytics-forget, apple-token, config, content, escrow, invite-redeem, purge-worker, subscription-status [V] |
 | Sign out other devices (parent control) | exists: `signOut({ scope: 'others' })`; sends no email | `07-communication-2` row "A parent-facing control" [V, from `settings/account.tsx:181-186`] |
@@ -56,7 +56,7 @@ Proposed table (name per Q1): one row per account and device, service role only,
 Row level: **L3** (highest wins, DC 1.1 rule 1). This is the starting proposal in `02i` S10 and I agree with it. Not L4: no content, no secret, no child data. The hash is not a secret key, but anyone holding the hash and the HMAC key could test a guess of the id; so the key lives apart from the table (Q5).
 
 Not stored, ever, in this table or anywhere we control for this feature:
-- IP address, or a prefix of it, or a "city", "country" or "region" derived from it. (DC:547: the Auth audit log may hold IPs; we do not copy them. The compliance gate at sign-up reads the IP in memory and stores none, `02i` F28 [V].)
+- IP address, or a prefix of it, or a "city", "country" or "region" derived from it. (DC:561: the Auth audit log may hold IPs; we do not copy them. The compliance gate at sign-up reads the IP in memory and stores none, `02i` F28 [V].)
 - Precise location or any coordinates. Location permission is never asked for this feature.
 - User agent string, OS version, app build, model identifier (for example "iPhone15,2"), screen size, locale, time zone of the device.
 - The device's own name. On iOS the name a person gave their phone often holds a first name ("Asha's iPhone"). It is L3 and often a person's name; it never goes in the table, the email, a log or the page. [U] that iOS exposes it by an API; the rule holds either way.
@@ -116,10 +116,10 @@ Open: [U] Supabase's supported way for a service function to end one session by 
 
 | Item | Level | Kept | Why | Deleted by |
 |---|---|---|---|---|
-| Device row | L3 row | until `last_seen_day` is 90 days old, or the account is deleted, whichever first | a device not used for 90 days is a new device again, matching the 90-day rule of `backup_devices.last_seen_at` [V, DC:572] | a sweep (needs an owner: `data-architect` and `ops`) and `on delete cascade` from `profiles` |
+| Device row | L3 row | until `last_seen_day` is 90 days old, or the account is deleted, whichever first | a device not used for 90 days is a new device again, matching the 90-day rule of `backup_devices.last_seen_at` [V, DC:586] | a sweep (needs an owner: `data-architect` and `ops`) and `on delete cascade` from `profiles` |
 | Token row | L3 (hash) | until `expires_at` plus 7 days; then deleted | long enough to answer "already done" and to audit; short enough to be no history | sweep; cascade |
 | Alert-cap counters (S11) | L2 | the hour count 2 hours; the day count 2 days; no content | counters, no address, no id of the device | sweep; cascade |
-| Audit row of the press (`ops.security_events`) | L2 kind, count and time; `subject_hash` is L3 (keyed person hash, 16 bytes, from the caller) | 12 months by `ops_security_events_retention()` (D-021) [V in #1147]. Account deletion does not remove it today: see Q14 | proof the act was a person's press | its own retention |
+| Audit row of the press (`ops.security_events`) | L2 kind, count and time; `subject_hash` is L3 (keyed person hash, 16 bytes, from the caller) | 12 months by `ops_security_events_retention()` (D-021, only Recommended in `docs/DECISIONS.md`) [V in #1147]. Account deletion does not remove it today: see Q14 | proof the act was a person's press | its own retention |
 | Pending row; hook-failure counter; sign-out flag | see section 4a | 24 h; 30 days; 30 days | | sweep; cascade |
 | Queued email job | L3 | until sent or dropped; dropped if the account is deleted (T-27) | no mail after deletion | the sender |
 | Sent email at Resend | L3 | 30 days at the vendor [U: from `06:94`, "vendor roll-off", not read at Resend] | what Resend keeps is theirs | vendor |
@@ -198,7 +198,7 @@ Named `[NS-08-R21 ...]`, each with one mutant (BUILD-BRIEF). Fictional family "A
 | Q11 | Retention numbers: 90 days not seen; token plus 7 days | as written in section 7 | counsel (retention is counsel's), `privacy` proposes |
 | Q12 | Time zone of the account: where it is held | existing rule: account zone, else last synced device zone, else US Pacific | `sync` |
 | Q13 | (answered by 09 section 6, #1147 merged) Where the audit row goes | `ops.security_events`, kind `new_device_signed_out` added in the device migration; the token row also keeps `outcome` | answered |
-| Q14 | `security_events.subject_hash` is a person hash kept 12 months and stays after the account is deleted (the retention function only counts time). Is a pseudonymous hash held after deletion within the deletion promise, and for how long | none decided; I flag it. Option A: keep 12 months (the founder's D-021). Option B: delete the account's rows on deletion. Not decided by privacy | counsel, then `legal`; founder for the promise |
+| Q14 | `security_events.subject_hash` is a person hash kept 12 months and stays after the account is deleted (the retention function only counts time). Is a pseudonymous hash held after deletion within the deletion promise, and for how long | none decided; I flag it. Option A: keep 12 months (D-021, which is only Recommended in `docs/DECISIONS.md`, not decided). Option B: delete the account's rows on deletion. Not decided by privacy | counsel, then `legal`; founder for the promise |
 
 ## 13. Acceptance for the sender PR (for `sync`, the builder)
 

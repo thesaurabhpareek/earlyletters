@@ -461,6 +461,20 @@ Runbook access log (12 months, kept after account deletion as a security log), a
 | `target_entry` | L3 | letter id |
 | `detail` | L2 | enums and counts only, 512 bytes |
 
+##### `ops.security_events`
+
+Service only; 12 months; never part of an export (CR-71 C3; privacy confirms the period). The table is stored as L3 under rule 1 (`subject_hash` is L3, every other column L2).
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L2 | row id |
+| `at` | L2 | system timestamp |
+| `kind` | L2 | closed enum |
+| `n` | L2 | count |
+| `subject_hash` | L3 | 16-byte keyed hash of a person, made by the caller; never the id |
+| `request_id` | L2 | 12 hex |
+| `detail` | L2 | numbers and booleans only, 256 bytes |
+
 ##### `ops.forget_quota`
 
 | Column | Level | Note |
