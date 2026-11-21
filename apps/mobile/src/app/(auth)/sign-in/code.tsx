@@ -46,9 +46,14 @@ import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { AppleButton, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
 import { hasSessionState, recoverySet, shouldAnnounceRecovery } from '@/lib/first-run/handoff.logic';
+import { useIsAccessibilitySize } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
+/** At accessibility sizes the digits sit tight (no letter spacing) and the side padding is halved: 10 digits at the cap are
+ *  318 pt with spacing and about 258 pt without, in an inner field width of about 317 pt on a 375 pt screen (375 - 2 x 20 gutter - 2 x 8 padding - 2 x 1 border). The figures
+ *  are estimates from font metrics and tokens, not measured on a device (A11Y audit FE-9). The size does not change. */
+const CODE_SPACING_AX = 0;
 /** The code is set at title1's size (28 pt), so it takes title1's Dynamic Type cap: six digits stay on one line. */
 const CODE_TYPE = { fontSize: tokens.type.title1.fontSize, letterSpacing: 6, maxScale: tokens.type.title1.maxScale } as const;
 
@@ -74,6 +79,7 @@ export default function CodeStep() {
   // The has-a-book signal the sign-in sheet uses for its cover: "still on this phone" is true only with a book here.
   const { active } = useChildren();
   const c = useColors();
+  const ax = useIsAccessibilitySize();
   const ready = useFontsReady();
   const k = authCopy.code;
   const known = getPendingEmail();
@@ -294,9 +300,9 @@ export default function CodeStep() {
               borderRadius: tokens.radius.md,
               borderWidth: tokens.stroke.control,
               borderColor: c.controlBorder,
-              paddingHorizontal: tokens.space[4],
+              paddingHorizontal: ax ? tokens.space[2] : tokens.space[4],
               fontSize: CODE_TYPE.fontSize,
-              letterSpacing: CODE_TYPE.letterSpacing,
+              letterSpacing: ax ? CODE_SPACING_AX : CODE_TYPE.letterSpacing,
               fontVariant: ['tabular-nums'],
               ...(ready ? { fontFamily: tokens.fontFamily.sansSemiBold, fontWeight: 'normal' as const } : { fontWeight: '600' as const }),
             }}

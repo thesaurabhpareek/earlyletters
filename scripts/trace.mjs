@@ -522,14 +522,16 @@ export function renderTrace(m) {
 }
 
 // NS acceptance rows (BL-964, gate G0; grammar from eval C s3.2). Definitions are the acceptance
-// tables (`Id | Given, When, Then | Priority | Test title`) of the cards 00 to 12 next to the
+// tables (`Id | Given, When, Then | Priority | Test title`) of the cards 00 to 12, 19, 21 and 27 next to the
 // register (`14-test-plan.md`); its section 7 lists the P0 rows and names the cross-cutting ids.
 // A test counts only when its title cites the id in brackets and is not .skip, .todo or .fails;
 // `[stand-in]` in the title makes it partial (14 section 2). Report only: nothing here fails.
 export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
 const NS_ONLY = new RegExp(`^${NS_SOURCE}$`);
 const NS_TOK = String.raw`[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?(?![A-Za-z0-9-])`;
-const CARD_FILE = /^(?:0\d|1[0-2])-[^/\\]*\.md$/;
+// Cards 00 to 12, and the three added 20 Nov: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), the
+// cards p0.py reads for NS rows. Other cards above 12 (13 to 18, 20, 22 to 26) stay out: not acceptance cards.
+const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27)-[^/\\]*\.md$/;
 const uniq = (a) => [...new Set(a)];
 export const cmpNs = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
