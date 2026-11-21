@@ -97,7 +97,13 @@ export class ConsentStore {
     private readonly storage: KeyValueStorage,
     private readonly randomId: () => string,
     private readonly options: ConsentStoreOptions = {},
-  ) {}
+  ) {
+    // Fail closed: a version that does not parse as "major.minor" would otherwise skip the re-consent check and
+    // drop queued acts on restart. The message carries no value.
+    if (majorOf(options.currentVersion ?? CURRENT_CONSENT_VERSION) === null) {
+      throw new Error('@scribe/analytics: consentVersion must look like "1.0" (major.minor, digits only)');
+    }
+  }
 
   private pending: PendingConsentAct[] = [];
 
@@ -114,8 +120,12 @@ export class ConsentStore {
     return this.pending.map((a) => ({ ...a }));
   }
 
-  /** Drop the first `count` acts once the server has them. */
+  /**
+   * Drop the first `count` acts once the server has them. A count that is not a whole number of 0 or more (NaN,
+   * Infinity, negative, fractional) is ignored: the safe failure is to keep the evidence and upload it again.
+   */
   async acknowledgeActs(count: number): Promise<void> {
+    if (!Number.isInteger(count) || count < 0) return;
     this.pending = this.pending.slice(Math.max(0, count));
     await this.savePending();
   }
@@ -161,6 +171,8 @@ export class ConsentStore {
       retired = [];
     }
     this.pending = parsePending(await this.storage.get(STORAGE_KEYS.pendingActs));
+    // A major bump re-asks WITHOUT queueing a withdraw act: intended, the person did not act (the uploader spec says so).
+    // After an erase (no meta row) a build above major 1 reports unknown where a 1.0 build reports denied: deliberate.
     // A grant or decline from before versions existed counts as major 1.
     const answeredMajor = await this.answeredMajor();
     const currentMajor = majorOf(this.version) ?? 1;

@@ -150,3 +150,30 @@ describe('[BL-251] createAnalytics', () => {
     expect(next.pendingActs()).toEqual([]);
   });
 });
+
+describe('[BL-251] guards', () => {
+  it('an unparseable consent version throws without echoing it, in the store and in createAnalytics', () => {
+    for (const v of ['v2', '', '1.0.0', 'Asha']) {
+      expect(() => new ConsentStore(memoryStorage(), ids, { currentVersion: v })).toThrow(/major\.minor/);
+      expect(() => createAnalytics({ provider: recordingProvider(), consentVersion: v })).toThrow(/major\.minor/);
+      try {
+        new ConsentStore(memoryStorage(), ids, { currentVersion: v });
+      } catch (e) {
+        if (v) expect((e as Error).message).not.toContain(v);
+      }
+    }
+  });
+
+  it('acknowledgeActs ignores NaN, Infinity, negative and fractional counts and keeps every act', async () => {
+    const { s } = store();
+    await s.load();
+    await s.grant('settings');
+    await s.revoke('settings');
+    for (const bad of [NaN, Infinity, -Infinity, -1, 0.5]) {
+      await s.acknowledgeActs(bad);
+      expect(s.pendingActs()).toHaveLength(2);
+    }
+    await s.acknowledgeActs(1);
+    expect(s.pendingActs()).toHaveLength(1);
+  });
+});
