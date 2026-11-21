@@ -1,4 +1,4 @@
-import { clampGraphemes, CODE_POINTS_PER_GRAPHEME } from '@scribe/core';
+import { clampGraphemes } from '@scribe/core';
 import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from './types';
 import { photos } from './copy';
 
@@ -8,14 +8,12 @@ import { photos } from './copy';
  * only, so the cut never splits one. Migration 11's CHECK is only a ceiling in code points, 16 per grapheme (E84), which fits
  * every RGI emoji: the product cap is graphemes only and the ceiling never cuts them. Only a character longer than 16 code points
  * (a stack of marks) makes the cut stop before the ceiling, so the store never refuses what was kept. The app never fills the words in or suggests them, and never edits what is typed beyond
- * the ends and the length. The count is the one helper in packages/core (BL-957).
+ * the ends and the length. These two fields are local only, so the local ceiling (16 per character) is the only code point limit.
  */
 function capTyped(typed: string | null | undefined, max: number): string | null {
   const t = (typed ?? '').trim();
   return t ? clampGraphemes(t, max).trimEnd() || null : null;
 }
-/** Kept for callers that name the ceiling; the value lives in packages/core. */
-export const CODE_POINTS_PER_CHARACTER = CODE_POINTS_PER_GRAPHEME;
 export const normalizePhotoText = (typed: string | null | undefined): string | null => capTyped(typed, PHOTO_TEXT_MAX);
 
 /** The typed place (NS-01-R21): optional, at most 60 characters a person sees, only what the parent typed. */

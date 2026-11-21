@@ -26,7 +26,7 @@
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused and sends
  * nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
-import { SIGNS_AS_MAX, clampText } from '@scribe/core';
+import { SIGNS_AS_MAX, clampGraphemes } from '@scribe/core';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -180,7 +180,7 @@ function InviteCoParent() {
                     label={fill(k.signsAsLabel, { child })}
                     face="serif"
                     value={signsAs}
-                    onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
+                    onChangeText={(v) => setSignsAs(clampGraphemes(v, SIGNS_AS_MAX, SIGNS_AS_MAX))}
                     helper={k.signsAsHelp}
                     placeholder={k.signsAsPlaceholder}
                     autoCapitalize="words"

@@ -39,12 +39,13 @@ export function codePointCeiling(max: number): number {
 }
 
 /**
- * Cuts `s` to at most `max` characters a person sees, whole characters only. It also stops before the code point
- * ceiling, so the store never refuses what the field kept (only a stack of more than 16 code points in one character
- * can reach it).
+ * Cuts `s` to at most `max` characters a person sees, whole characters only. It also stops before `ceiling` code points
+ * (default: 16 per character, the local database's ceiling), so the store never refuses what the field kept.
+ *
+ * A field the server also checks passes the server's code point limit as `ceiling` (children.name 60, signs_as 30):
+ * nothing the app accepts may be refused by the server. The cut is then the smaller of the two, still on a whole character.
  */
-export function clampGraphemes(s: string, max: number): string {
-  const ceiling = codePointCeiling(max);
+export function clampGraphemes(s: string, max: number, ceiling: number = codePointCeiling(max)): string {
   let kept = '';
   let count = 0;
   let points = 0;
@@ -58,7 +59,7 @@ export function clampGraphemes(s: string, max: number): string {
   return kept;
 }
 
-/** True when `s` is within `max` characters a person sees and the code point ceiling. */
-export function fitsGraphemes(s: string, max: number): boolean {
-  return clampGraphemes(s, max) === s;
+/** True when `s` is within `max` characters a person sees and within `ceiling` code points. */
+export function fitsGraphemes(s: string, max: number, ceiling: number = codePointCeiling(max)): boolean {
+  return clampGraphemes(s, max, ceiling) === s;
 }

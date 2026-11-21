@@ -1,6 +1,6 @@
 // BL-957: one length rule for typed words (NS-01-R54, NS-06-A, NS-16-R1 and R6). Graphemes are the limit; the database ceiling stays in code points.
 import { describe, expect, it } from 'vitest';
-import { CODE_POINTS_PER_GRAPHEME, checkChildName, checkSignsAs, clampGraphemes, clampText, codePointCeiling, fitsGraphemes, graphemeLength, graphemes, graphemesByRule, textLength } from '../src';
+import { CODE_POINTS_PER_GRAPHEME, checkChildName, checkSignsAs, clampGraphemes, clampText, codePointCeiling, SIGNS_AS_MAX, fitsGraphemes, graphemeLength, graphemes, graphemesByRule, textLength } from '../src';
 
 // Each entry is one character a person sees. Devanagari and Arabic ones are several code points; CJK is one.
 const FIXTURES: Record<string, string[]> = {
@@ -38,14 +38,22 @@ describe('one length rule (BL-957)', () => {
     }
   }
 
-  it('a 30 character Devanagari name is not too long, though it has more than 30 code points', () => {
-    const name = 'क्षत्रिय'.repeat(10); // 3 characters x 10 = 30, 80 code points
-    expect(Array.from(name).length).toBeGreaterThan(30);
-    expect(textLength(name)).toBe(30);
-    expect(checkSignsAs(name)).toEqual({ ok: true, value: name });
-    expect(checkChildName(name + 'क')).toMatchObject({ ok: true });
-    expect(checkSignsAs(name + 'क')).toEqual({ ok: false, reason: 'tooLong' });
-    expect(clampText(name + 'क', 30)).toBe(name);
+  it('a field the server also checks is cut by the smaller of the two limits (children.name 60, signs_as 30, in code points)', () => {
+    const name = 'क्षत्रिय'.repeat(10); // 30 characters, 80 code points: the server would refuse it
+    const kept = clampText(name, SIGNS_AS_MAX);
+    expect(Array.from(kept).length).toBeLessThanOrEqual(30);
+    expect(name.startsWith(kept)).toBe(true);
+    expect(graphemesByRule(kept).length).toBe(graphemes(kept).length);
+    expect(checkSignsAs(name)).toEqual({ ok: false, reason: 'tooLong' });
+    expect(checkChildName('क्षत्रिय'.repeat(7))).toMatchObject({ ok: true }); // 56 code points
+    expect(checkChildName('क्षत्रिय'.repeat(8))).toEqual({ ok: false, reason: 'tooLong' }); // 64
+  });
+
+  it('a ZWJ family that would be split at the limit is dropped whole, never cut', () => {
+    const family = '👩‍👧'; // 3 code points, one character
+    expect(clampGraphemes('x'.repeat(28) + family, 30, 30)).toBe('x'.repeat(28));
+    expect(clampGraphemes('x'.repeat(27) + family, 30, 30)).toBe('x'.repeat(27) + family);
+    expect(clampText('x'.repeat(58) + family, 60)).toBe('x'.repeat(58));
   });
 
   it('a character with a stack of marks past the ceiling stops the cut before the database would refuse it', () => {
