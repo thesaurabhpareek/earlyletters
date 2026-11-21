@@ -7384,7 +7384,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 
 ## Bugs found by merged tests (21 Nov 2026, proposed)
 
-Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests already pin: each test is green today because it is written as `it.fails` (or a known-gap check), so the fix PR must flip it (BL-1468 is already fixed and flipped). Claims were checked against `develop` at `7f3890cdb993d1d8b584816f431a8ea72662aa4a` (the first pass was at `a122a9c9`; the evidence was re-read after merging `develop` `4fb93fdf`, and line numbers that moved were updated) unless marked unverified; BL-1468 reflects the state after #1128 merged. BL-1453 is on `develop`, BL-1473 is claimed by open PR #1335 and BL-1460 to BL-1465 by open PR #1346, so these rows start at BL-1466. No requirement text is copied or changed.
+Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests already pin: each test is green today because it is written as `it.fails` (or a known-gap check), so the fix PR must flip it (BL-1468 is already fixed and flipped). Claims were checked against `develop` at `7f3890cdb993d1d8b584816f431a8ea72662aa4a` (the first pass was at `a122a9c9`; the evidence was re-read after merging `develop` `4fb93fdf`, and line numbers that moved were updated) unless marked unverified; BL-1468 reflects the state after #1128 merged. BL-1453 is on `develop`, BL-1476 is claimed by open PR #1335 and BL-1460 to BL-1465 by open PR #1346, so these rows start at BL-1466. No requirement text is copied or changed.
 
 #### BL-1466 Erase everything: a failed backup delete must not leave the export ZIP, recovery ZIP, print PDF or frame copies on disk
 - Status: proposed (found by the NS-36 B5-4 test; Karma sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M12. Size: XS. Depends on: none.
@@ -7439,7 +7439,7 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Done when: the four `it.fails` cases `[FR-DAT-36-g1]` (four key-word groups, one case each), `[FR-DAT-36-g2]`, `[FR-DAT-36-g3]` and `[FR-DAT-36-g4]` in `allowlist-guards-narrow.test.ts` are plain `it` and pass, and the control `[FR-DAT-36-ctl]` still passes. Acceptance names those tests to flip.
 - Test: `packages/analytics/test/catalog.test.ts`, `packages/analytics/test/allowlist-guards-narrow.test.ts`.
 
-#### BL-1473 The backup leak scan names its known bypasses, and closes the cheap ones
+#### BL-1476 The backup leak scan names its known bypasses, and closes the cheap ones
 - Status: ready. Mode: agent. Owner: qa engineer, sync owner, security engineer. Milestone: M5. Size: S. Depends on: none.
 - Satisfies: F08-REQ-018, F08-REQ-020 (as BL-1417; not re-read here). Cited: review follow-ups on #1321 and #1322 (21 Nov 2026).
 - Problem: `firstLeak` in `apps/mobile/test/helpers/leak-scan.ts` does not find a recording written as hex with space or colon separators, hex with a `0x` prefix, percent-encoded bytes, base64 wrapped over lines, XOR-ed bytes, or a piece shorter than 16 bytes. The helper header now lists them, and the comment in `apps/mobile/test/backup-queue.test.ts` says the scan is not a proof, but nothing yet proves the cheap ones red.

@@ -8,12 +8,12 @@
  * private name and renamed, so two workers racing never read half a file. Nothing here is a fixture: the
  * server a test gets is the same as one built the long way.
  *
- * The folder is `scribe-pglite-<uid>` (mode 0700, and refused if it is a link or belongs to another user, in
+ * The folder is `scribe-pglite-<uid>` (mode 0700, tightened if it was looser, and refused if it is a link or belongs to another user, in
  * which case there is no cache and each run builds); each dump is mode 0600. After a write, dumps and leftover
  * private names older than a day are removed, so builds from old branches do not pile up. The cache key is unchanged.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
@@ -37,6 +37,7 @@ function cacheDir(): string | null {
     mkdirSync(dir, { recursive: true, mode: 0o700 });
     const st = lstatSync(dir);
     if (!st.isDirectory() || (uid !== undefined && st.uid !== uid)) return null;
+    if ((st.mode & 0o077) !== 0) chmodSync(dir, 0o700); // a folder made earlier with a looser mode is tightened, not trusted
     return dir;
   } catch {
     return null;
