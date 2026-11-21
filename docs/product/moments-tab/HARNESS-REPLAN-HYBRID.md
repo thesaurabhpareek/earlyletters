@@ -35,7 +35,7 @@ Fictional family Asha only. Labels: SOURCE-READ means I read the text this sessi
 | 16 | For you with no library, value view | `mobile` | 300 | 13, 14, 15 | C | No |
 | 17 | Primer, ask, Recent, day sheet (no album chooser, no grid) | `mobile` | 300 | 10, 16 | D | No |
 | 18a | `AttachRequest` type and the one stripper contract | `mobile` | 150 | none | A | Yes |
-| 18 | Copy-for-attach from library assets | `mobile` | 300 | 9, 18a | C | No |
+| 18 | Copy-for-attach from library assets: Swift `exportForAttach` in `scribe-library` (R220), then the existing `reencodeUpright` strips it; `scribe-photo` and its scan are not edited | `mobile` | 300 | 9, 18a | C | No |
 | 18b-1a | `scribe-picker`: modal multi-select of pictures in our sheet, native contract, temp lifecycle, scans, classification and threat rows | `mobile`, `security-architect` read | 250 | 18a; simulator read-out of G1a-P; Apple reference read (EXH-ENG-17) | B | After the simulator read-out |
 | 18b-1b | Date read with canary-GPS fixture | `mobile`, `security-architect` read | 120 | 18b-1a | B | After 18b-1a |
 | 18b-2 | Inline host (LATER) | `mobile` | 150 | G1a-P device read-out; G11a-photo | E | No |
@@ -102,7 +102,7 @@ PR #1296, branch `docs/moments-harness-handoff`. I read the rows on the branch a
 #### BL-1435 NS-53 Moments: scribe-library native module and thumbnail view (PRs 9, 10, 11, 18)
 - Status: blocked (BL-1434 G1a-L read-out; gate G3 to merge; G11a-lib). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: XL (four PRs, one concern each). Depends on: BL-1434, BL-NEW-8 for 18a.
 - Satisfies: NS-53-R110, NS-53-R220, NS-53-R222, NS-53-R226, NS-53-R228, NS-53-R233, NS-53-R236, NS-53-R277.
-- Scope: the function list of R220 (no picker functions; the picker is BL-NEW-8), the `ScribeLibraryThumbnail` view for cards and day tiles, the config-plugin usage string by profile and the build-time exclusion of `scribe-library` where F2 is off, the source scans and guard scripts, copy-for-attach from library assets in `scribe-photo` (PR 18, which depends on the PR 18a type). Follows the `expo-native-module` skill. Check `compliance/FENCE.json` before touching `app.config.ts`.
+- Scope: the function list of R220 (no picker functions; the picker is BL-NEW-8), the `ScribeLibraryThumbnail` view for cards and day tiles, the config-plugin usage string by profile and the build-time exclusion of `scribe-library` where F2 is off, the source scans and guard scripts, copy-for-attach from library assets (PR 18, which depends on the PR 18a type): the Swift function `exportForAttach(localId, plainName)` lives in `scribe-library` and writes the original to `Caches/ImagePicker`; the existing `reencodeUpright` in `scribe-photo` strips it; `scribe-photo` is not edited and has no PhotoKit (CH-ENG-2). Follows the `expo-native-module` skill. Check `compliance/FENCE.json` before touching `app.config.ts`.
 - Done when: the scans, the iOS compile job, the call-site reachability test and the binary and plist scan (no photo-library usage string or PhotoKit symbol in a profile where F2 is off) pass.
 
 #### BL-1436 NS-53 Moments: screens, flows and places (PRs 13 to 17, 19 to 23)
