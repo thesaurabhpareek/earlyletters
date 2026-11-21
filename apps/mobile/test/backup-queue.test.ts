@@ -420,6 +420,15 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     expect(r.backend.requests.filter((x) => x.kind === 'tus')).toEqual([]);
   });
 
+  it('a server detail outside the contract is never stored as lastError', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(1000);
+    r.backend.refuseRpc = { code: 'P0002', detail: 'Asha born 2025-04-12' };
+    await r.make().drain();
+    const stored = r.db().job(item.entryId)!;
+    expect(stored.lastError).toBe('P0002');
+  });
+
   it('the server lost the object before backup_confirm (P0002 object): sent again from the start, then confirmed', async () => {
     const r = rig();
     const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);

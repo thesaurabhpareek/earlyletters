@@ -451,6 +451,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
   language: 'the language picker; no per-file rule set written yet',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
+  newDevicePage: 'PROPOSED (E83, E-S34): the web confirm page for the new-device email; not built yet, so nothing is shown; the global rules read it through features; no per-file rule set until the page exists',
   packs: 'speech pack downloads; no per-file rule set written yet',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',

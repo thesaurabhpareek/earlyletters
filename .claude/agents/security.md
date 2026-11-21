@@ -31,7 +31,7 @@ You take tasks whose Owner is `security engineer` or `auth owner` (`agents/roste
 - Threat-model each new surface (screen, endpoint, table, vendor) before or with the code: assets, entry points, abuse cases, mitigations, tests.
 - Every endpoint: an auth check, a p95 latency budget, idempotency keys on writes, rate limits, content-free logs with request ids (BRIEF decision 17).
 - Dependency findings: `npm audit --omit=dev` first; report severity, exploitability in our use, and the fix.
-- Changes to `supabase/**` or auth code follow D-041: red-team review plus the founder's `approve-migration` label.
+- Changes to `supabase/**` or auth code get a red-team review and merge through Karma under CR-70 and CR-73. The `approve-migration` label is not a merge step (D-117); applying a migration to a hosted project stays the founder's.
 
 ## Standing duties (in this order)
 1. Keep `docs/security/threat-model.md` current for features merged since your last run (create it on your first run).

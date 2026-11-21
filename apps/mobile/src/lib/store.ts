@@ -26,7 +26,7 @@ import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
 import type { AgreementDocument, AgreementRow } from './agreements.logic';
 import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
@@ -114,9 +114,9 @@ export const DB_FILE_NAME = 'scribe.db';
 
 /** Opening failed before or during migration. Code only: SQLite text can quote values. */
 export class StoreOpenError extends Error {
-  constructor(cause: unknown) {
+  constructor() {
     super('local_db_open_failed');
-    this.cause = cause;
+    this.name = 'StoreOpenError';
   }
 }
 
@@ -166,7 +166,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   try {
     opened = (options.open ?? (() => openNativeDb(DB_FILE_NAME)))();
   } catch (e) {
-    return { ok: false, newer: false, error: new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: new StoreOpenError(), migration: null };
   }
   let migration: MigrationResult;
   try {
@@ -177,7 +177,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     } catch {
       // already failing; the migration error is the one to report
     }
-    return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
@@ -221,7 +221,7 @@ function ctx(): RepoContext {
   if (conn) return conn.ctx;
   const r = openStore();
   const c = conn as { ctx: RepoContext } | null; // openStore sets it on success
-  if (!c) throw r.error ?? new StoreOpenError(null);
+  if (!c) throw r.error ?? new StoreOpenError();
   return c.ctx;
 }
 

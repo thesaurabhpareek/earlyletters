@@ -20,7 +20,7 @@ import * as v from 'valibot';
 import { DocVersionSchema, IsoTimestampSchema, SemverSchema } from './common';
 import type { KillSwitchKey } from './kill-switches';
 
-export { KILL_SWITCH_KEYS, M14_KILL_SWITCH_KEYS, parseKillSwitchList, type KillSwitchKey } from './kill-switches';
+export { KILL_SWITCH_KEYS, M14_KILL_SWITCH_KEYS, NEW_SCOPE_KILL_SWITCH_KEYS, parseKillSwitchList, type KillSwitchKey } from './kill-switches';
 
 export const REMOTE_CONFIG_SCHEMA_VERSION = 1;
 
@@ -62,6 +62,10 @@ const KILL_SWITCHES_OFF: Record<KillSwitchKey, boolean> = {
   backupUploads: false,
   escrow: false,
   statusReport: false,
+  photoMoments: false,
+  videos: false,
+  signIn: false,
+  libraryDays: false,
   bookSearch: false,
 };
 
@@ -75,6 +79,10 @@ const KillSwitchesSchema = v.fallback(
     backupUploads: bool(false),
     escrow: bool(false),
     statusReport: bool(false),
+    photoMoments: bool(false),
+    videos: bool(false),
+    signIn: bool(false),
+    libraryDays: bool(false),
     bookSearch: bool(false),
   }),
   { ...KILL_SWITCHES_OFF },

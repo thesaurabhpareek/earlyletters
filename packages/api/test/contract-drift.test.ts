@@ -23,6 +23,9 @@ import {
   EntryStateSchema,
   ESCROW_ERROR_DETAILS,
   FIELD_GROUPS,
+  FIELD_GROUP_COLUMNS,
+  INSERT_ONLY_COLUMNS,
+  SHARED_GROUP_COLUMNS,
   HELD_DRAFT_DATA_KEYS,
   HELD_GONE_KINDS,
   INVITE_UNUSABLE_DETAILS,
@@ -52,7 +55,8 @@ import {
   type SyncPushArgs,
   type UndoJoinArgs,
 } from '../server';
-import { KILL_SWITCH_KEYS } from '../src/kill-switches';
+import { KILL_SWITCH_KEYS, M14_KILL_SWITCH_KEYS, NEW_SCOPE_KILL_SWITCH_KEYS } from '../src/kill-switches';
+import { contentTupleColumns, latestFunction, latestView, viewColumns } from './migration-latest';
 
 const MIGRATIONS = fileURLToPath(new URL('../../../supabase/migrations', import.meta.url));
 const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
@@ -115,6 +119,29 @@ describe('[ADR-0017] error codes equal the migrations', () => {
     for (const d of [...INVITE_UNUSABLE_DETAILS, ...CONSENT_KINDS, ...ESCROW_ERROR_DETAILS, ...KILL_SWITCH_KEYS, 'purged']) {
       expect(ERROR_DETAILS as readonly string[]).toContain(d);
     }
+  });
+});
+
+describe('[CR-69 A5] the kill-switch vocabulary has no second copy that can drift', () => {
+  const read = (rel: string) => readFileSync(join(__dirname, '..', '..', '..', rel), 'utf8');
+
+  it('[NS-46-R28] the README names every key and its count, and the ADR 0029 table names the five new ones', () => {
+    const readme = read('packages/api/README.md');
+    const line = readme.split('\n').find((l) => l.startsWith('**Kill switches.**')) ?? '';
+    for (const k of KILL_SWITCH_KEYS) expect(line, k).toContain('`' + k + '`');
+    // The count in words is derived, so a new key needs no edit here beyond the README itself.
+    const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen'];
+    expect(line).toContain(`${words[KILL_SWITCH_KEYS.length]} keys`);
+    // One explicit pin: the new-scope list.
+    expect([...NEW_SCOPE_KILL_SWITCH_KEYS]).toEqual(['photoMoments', 'videos', 'signIn', 'libraryDays', 'bookSearch']);
+    const adr = read('docs/adr/0029-flags-kill-switches-and-preflight.md');
+    for (const k of NEW_SCOPE_KILL_SWITCH_KEYS) expect(adr, k).toContain('| `' + k + '` |');
+  });
+
+  it('[NS-41-R25] the signed-config source lists every key, all off, and the new four are not M14', () => {
+    const src = JSON.parse(read('scripts/packs/remote-config.json')) as { killSwitches: Record<string, boolean> };
+    expect(Object.keys(src.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
+    for (const k of NEW_SCOPE_KILL_SWITCH_KEYS) expect(M14_KILL_SWITCH_KEYS).not.toContain(k);
   });
 });
 
@@ -610,5 +637,79 @@ describe('[ADR-0017] every live RPC is called with a parameter list one of its l
     const built = spec!.args.filter((a) => !(spec!.planned ?? []).includes(a));
     const wanted = [[...built].sort().join(','), [...spec!.args].sort().join(',')];
     expect(have.some((h) => wanted.includes(h)), `${fn}(${built.join(', ')}) is not a live overload; it has ${have.map((h) => `(${h})`).join(' ')}`).toBe(true);
+  });
+});
+
+/**
+ * [NS-36-R11] A column added to the sync contract must reach the consent tuple
+ * (entries_family_rules) and, unless author-only, the book_entries view. Both
+ * are read from the LATEST definition in supabase/migrations, never a line number.
+ */
+describe('[NS-36-R11] a synced column reaches the consent tuple and the book view', () => {
+  /** Each exemption has its reason. Anything else missing from the tuple or the view fails the test. */
+  const TUPLE_EXEMPT: Readonly<Record<string, string>> = {
+    in_book: 'own clause in the rules function: only putting a letter into the book needs consent (20261015030000)',
+    language: 'own guard (20261005000000); OQ-P3 (privacy) decides whether it joins the tuple',
+    words_reviewed_at: 'review mark, author-only; OQ-P3 (privacy) decides whether it joins the tuple',
+  };
+  /** `id` is the row key, not content; it is never a consent question. */
+  const synced = (): string[] => [
+    ...new Set([
+      ...Object.values(FIELD_GROUP_COLUMNS).flat(),
+      ...Object.keys(SHARED_GROUP_COLUMNS),
+      ...INSERT_ONLY_COLUMNS.filter((c) => c !== 'id'),
+    ]),
+  ];
+
+  /** The check itself, over any migration texts, so a synthetic one can prove the parser. */
+  function drift(files: { f: string; text: string }[], columns: readonly string[], authorOnly: readonly string[]) {
+    const tuple = contentTupleColumns(latestFunction(files, 'entries_family_rules'));
+    const view = viewColumns(latestView(files, 'book_entries'));
+    return {
+      tuple,
+      view,
+      notInTuple: columns.filter((c) => !(c in TUPLE_EXEMPT) && !tuple.includes(c)),
+      notInView: columns.filter((c) => !authorOnly.includes(c) && !view.includes(c)),
+    };
+  }
+
+  it('every synced column is in the latest consent tuple and (unless author-only) the latest book_entries view', () => {
+    const r = drift(sql, synced(), AUTHOR_ONLY_COLUMNS);
+    expect(r.tuple.length, 'the parser found no tuple').toBeGreaterThan(5);
+    expect(r.view.length, 'the parser found no view columns').toBeGreaterThan(5);
+    expect(r.notInTuple, 'in the sync contract but not in entries_family_rules').toEqual([]);
+    expect(r.notInView, 'in the sync contract, not author-only, but not in book_entries').toEqual([]);
+  });
+
+  it('every exemption names a real synced column (a stale exemption fails)', () => {
+    for (const c of Object.keys(TUPLE_EXEMPT)) expect(synced(), c).toContain(c);
+  });
+
+  it('positive control: a synthetic migration whose tuple and view lack a column is reported; one that holds it passes', () => {
+    const mig = (tupleCol: string, viewCol: string) => [{
+      f: 'x.sql',
+      text: `create or replace function public.entries_family_rules()
+returns trigger language plpgsql as $$
+begin
+  v_content := (new.final_text, new.kind${tupleCol}) is distinct from (old.final_text, old.kind${tupleCol.replace(/new\./g, 'old.')});
+end;
+$$;
+create or replace view public.book_entries as
+select e.id, e.final_text, e.kind${viewCol} from public.entries e;`,
+    }];
+    const missing = drift(mig('', ''), ['final_text', 'kind', 'new_col'], []);
+    expect(missing.notInTuple).toEqual(['new_col']);
+    expect(missing.notInView).toEqual(['new_col']);
+    const held = drift(mig(', new.new_col', ', e.new_col'), ['final_text', 'kind', 'new_col'], []);
+    expect(held.notInTuple).toEqual([]);
+    expect(held.notInView).toEqual([]);
+    // Author-only columns may be absent from the view.
+    expect(drift(mig(', new.new_col', ''), ['new_col'], ['new_col']).notInView).toEqual([]);
+  });
+
+  it('the latest definition is the last one in sort order (a restated function wins)', () => {
+    const older = { f: '1.sql', text: 'create or replace function public.f()\nreturns int as $$ select 1 $$\n$$;' };
+    const newer = { f: '2.sql', text: 'create or replace function public.f()\nreturns int as $$ select 2 $$\n$$;' };
+    expect(latestFunction([older, newer], 'f')).toContain('select 2');
   });
 });

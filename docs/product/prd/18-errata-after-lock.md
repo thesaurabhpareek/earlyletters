@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E83) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E86; E85 and E86 PROPOSED) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -16,7 +16,7 @@ Owner: Karma (CTO role, product side). Source: the engineering evaluation passes
 | E8 | NS-09 D7 | Assumes a server change | None needed: `held_discard` deletes the row and its words in the acknowledging request (`:771-788`). The card names the two cases that keep words: a stale base answered `kept: true`, and a legal hold |
 | E9 | NS-10 open question | Whether `sync_pull` serves rows while consent is outstanding | It does; it checks sign-in only (`:1305`). The decline rule is enforced on the phone; NS-10 gains a P0 row for it |
 | E10 | BL-957, NS-16 | Grapheme counting on every field would let a Devanagari From name pass the app and fail the server CHECK, rejecting the upload for good | Unit per field: the From name counts code points (as built, 30); photo words, place, Firsts label count graphemes in the app with a code-point ceiling in the database |
-| E11 | NS-01-R54 | #835 CHECK `length(photo_text) <= 140` and #836 `capTyped` count code points | Database ceilings 1,120 code points for photo words and 480 for place; the app limits 140 and 60 graphemes. Fix in #835 and #836 before merge |
+| E11 | NS-01-R54 | #835 CHECK `length(photo_text) <= 140` and #836 `capTyped` count code points | Database ceilings 1,120 code points for photo words and 480 for place; the app limits 140 and 60 graphemes. Fix in #835 and #836 before merge. Numbers changed by E84 (2,240 and 960) |
 | E12 | NS-06-A23 | 200 code points fails 40-grapheme labels with long sequences | Ceiling 320 code points |
 | E13 | NS-13-R23, section 3a vs NS-32-R4b, R7 | 60 in total vs 60 plus 4 | 60 pending in total, plan notices kept first within it |
 | E14 | BL-939, J-N11 vs NS-05-R18, R5b | Row says text only, byte-equal to the kept words | The card wins: the shared text is the wrapper (date, words, signature) and the optional picture is gated by counsel Q45. BL-939 and J-N11 corrected |
@@ -134,10 +134,13 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E81 | none for 1.0 (no alert sender is built); the alert cap binds NS-08-R21 and any later sender | `functions/risk-security.md` FR-SEC-36 | sync, security-architect |
 | E82 | BL-966 and the reminder copy PR add the names-off test; content swaps the birthday body when names are off | NS-13-R24, NS-32-R12 | mobile, content, design-systems |
 | E83 | the new-device sign-in email is built and read before the first outside family signs in (it also still gates the backup flip); the E78 proposed row changes its gate | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content, mobile |
+| E84 | none; #835 keeps its ceilings of 2,240 (photo words) and 960 (place) code points, 16 per grapheme, and #836 counts graphemes only (140 and 60); E11's numbers are superseded | card 01 NS-01-R54; BL-957 | mobile, data-architect |
+| E85 | PROPOSED: the day-name switch is off after sign-out and Erase; 0 `el.day.` notes pending or delivered after sign-out; one test, no new row | NS-47-R12, R14, R15, R16, R17, R37; ADR 0033 items 4, 6; BL-961, BL-1010, BL-1015 | mobile, privacy, qa |
+| E86 | PROPOSED: `culture.asked.<ownerKey>` is renamed `asks.daysAsked.<ownerKey>` and is L3; no new row | NS-47-R2, R4, R6, R11, R15, R16; ADR 0032 item 8; the files listed under E86; BL-1010, BL-1015 | mobile, privacy, data-architect, qa |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
-One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), E75 (no marketing email to app addresses, a promise to a user), E78 (no new-device email for 1.0, gated before the backup flip), E67 (eleven digest lines: writing tools, G1 grace, secret scan, label-guard copy, K3, plan Q3 to Q7, dependencies), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
+One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), E75 (no marketing email to app addresses, a promise to a user), E78 (no new-device email for 1.0, gated before the backup flip), E85 (the day-name switch after sign-out, PROPOSED), E67 (eleven digest lines: writing tools, G1 grace, secret scan, label-guard copy, K3, plan Q3 to Q7, dependencies), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
 
 ### E61: NS-49-R9 and the constitution (20 Nov, Karma with the Chief AI Officer lens)
 
@@ -348,3 +351,91 @@ Ruling: the founder's answer holds, and it replaces the timing in E78 and CL-155
 Edited in place: NS-08-R21 (08-keeping-and-trust.md), FR-SEC-36 (functions/risk-security.md), the E78 line of the founder digest (22-final-holistic-spec.md section 7). Plan delta: the sender, the device table, the stop page and the one-session sign-out lever move from "gated before the flip" to "gated before the first outside family"; the one proposed backlog row from E78 changes its gate; any scheduling is engineering's and the dates are the founder's; sync, security-architect, content, mobile.
 
 Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E83 changes the timing of the E78 line to the founder's own answer (CL-158); E78 was also CR-71 D1 (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
+
+## Seventh round, E84 (21 Nov, Karma with product, from the mobile agent's question on #835)
+
+### E84: the database ceilings for photo words and place are 2,240 and 960 code points (21 Nov, Karma with product; NS-01-R54, BL-957, E11; req-question NS-01-R54-ceilings on #835)
+
+Question: E11 says the database admits 1,120 code points of photo words and 480 of place (8 per grapheme). NS-01-R54 says 140 grapheme clusters "with emoji" are written whole and the ceiling "must admit it". The design and the head of #835 (`39cf30d3`) say 2,240 and 960 (16 per grapheme). With 8 per grapheme, a long emoji family or kiss sequence (10 or 11 code points) cannot be kept 140 times: words are cut whole at 112 or 101 clusters and place at 48 or 43. Which holds?
+
+Ruling: the card sentence holds and the E11 numbers change. The database ceilings are 2,240 code points for photo words and 960 for place, 16 per grapheme, a safety net against unbounded rows and never the product limit. The app limits stay 140 and 60 graphemes, counted by the one helper in `packages/core`, and the app never cuts a value that is within them. Text is stored as typed, so the new ceiling stores no more than a parent typed; the only cut left is the app's own limit, which removes whole clusters, never part of one. The card line NS-01-R54 is not edited. It shows less, stores nothing extra, sends nothing, and a parent's words are never dropped silently.
+
+Edited in place: the E11 row (numbers changed by E84); `17-engineering-project-plan.md` (the ceilings rows, closed, CL-159); a "superseded by E84" note in `tools/review/eng/A-data-and-sync.md` section 1.5 and `B-mobile-client.md` (`length.ts` row). Plan delta: #835 keeps `length(photo_text) <= 2240` and `place <= 960` (revert the one commit that lowered them); #836 `capTyped` counts graphemes against 140 and 60 and never cuts on the code point ceiling; the test `[NS-01-R54]` adds 140 emoji sequences of 11 code points kept whole in photo words and 60 in place, one over the limit refused by the app, and a mutant at 8 per grapheme that fails; mobile, data-architect. The first-label ceiling of 320 (40 x 8, NS-06-A23) has the same flaw for 11-code-point sequences and is raised with that card when it is built (proposal 640); not decided here. No founder line.
+
+## Eighth round, E85 to E86 (21 Nov, Karma with product, from the privacy agent's rows on #873 at `e332fe64`)
+
+Source: the privacy agent's two Planned rows in `docs/legal/DATA_CLASSIFICATION.md` 4.5 on PR #873 (BL-960), which each ask `product` for a card change: the day-name switch is not cleared at sign-out, and the key `culture.asked.<ownerKey>` trips the lint in NS-47-R4. Both are PROPOSED. Nothing here is accepted until Karma or the founder says so, no locked card is edited, and engineering builds to the card until then. Which text wins while these are PROPOSED: the card (card 21, NS-47) and the locked files win; this file changes nothing until E85 or E86 is accepted. PR #1116 (E84, CL-159, a ruling) is merged on develop, and the header above says highest E86 with E85 and E86 PROPOSED. The two rows below are PROPOSED and carry no CL closure row: no CL id is claimed until each is accepted. The founder decision here is question 1 under E85 only; no D-entry in `docs/DECISIONS.md` is changed or drafted. Numbering: E84 is the photo words ceilings ruling (#1116, CL-159, merged); E85 and E86 are the next free ids after it. Other open PRs may also add ids to this file, so re-check the open PR file lists before merging.
+
+### E85: the day-name switch goes back to off at sign-out and at Erase (20 Nov, Karma with product; NS-47-R12, R14, R15, R16, R17, R37; PROPOSED)
+
+Status: PROPOSED. Founder question 1 below.
+
+Question: `notifications.dayNames` is one value on the phone. It is not keyed to an account, and no card clears it at sign-out (R15 clears the days list and its notes, not the switch; the card's own section 11 row says it lasts "Until sign-out", which no rule makes true). A parent who left it on and signs out hands the next account's days a lock screen that shows day names without that person ever agreeing to it. Should it go back to off?
+
+Ruling (proposed): yes. It shows less, stores less and is undoable in one tap.
+1. At sign-out, by any path (the parent signs out, the under-18 stop, the system ends the session, another account signs in), the stored value is set to `off` in the same step that clears the days list (ADR 0032 item 3 order: the days file first, before any wait).
+2. At Erase everything and at Delete account (R17 on this phone), the key is deleted, which reads as `off`.
+3. At sign-out, every pending notification with the days identifier `el.day.<isoDate>` is cancelled and every delivered one is dismissed, in the same step. These are per account. R15 and ADR 0033 item 6 already say the scheduled and delivered notes go; this says it as a count a test can check, and it covers typed days as well, because typed days share the identifier.
+4. This matches what NS-13-R14 already does for `notifications.lockScreenNames`: it is cleared at sign-out. The day-name switch had been left out of that line.
+
+What a parent sees, in plain words. I sign out. When anyone signs in again, including me, the day-name switch on the Days page is off, and I turn it on again if I want it. The lock screen never shows a day's name until that person has turned it on, on that account. There is no new line, no warning and no message about it: the switch shows off, as it did the first time. The calm line that R15 already shows after a session the system ended says the list was cleared; it does not mention the switch.
+
+Given, When, Then, with numbers:
+- Test `[NS-47-R15] day-name switch is off and 0 el.day notes are left after sign-out`: Given account A has the switch `on`, App lock off, 3 pending day notes and 2 delivered ones, When A signs out, Then in the same step the stored value is `off`, 0 notes with an `el.day.` identifier are pending and 0 are delivered.
+- Folds into the same R15 test (second step): Given that, When account B signs in with 1 day ticked on the next 14 Feb, Then the switch on B's Days page reads off, and B's note for that day carries the neutral title and the neutral body (`days.lock.body.neutral`) with 0 day names in any string.
+- Folds into the same R15 test (third step): Given A signs back in on the same phone, Then the switch reads off and A turns it on in 1 tap if A wants it.
+- Folds into the same R15 test (run once with the parent signing out and once with the system ending the session): Given the switch is `on` and the system ends the session, Then the value is `off` before the next screen shows, the same as a sign-out by the parent.
+- Test `[NS-47-R16]` (the Erase test, which now lists the key): Given Erase everything on a phone with the switch `on`, When it finishes, Then the key is absent, the effective value is `off`, and a kill in the middle resumes and finishes (R16).
+
+Shown, Records, Never, Decline (PRIV-R21; the parent agrees to the switch, so the lines are restated):
+- Shown: the switch's own help line ("Anyone who sees your lock screen can read it.", intent, R14). Nothing new is shown at sign-out.
+- Records: one local setting, `on` or `off`, on this phone only. At sign-out the value written is `off`. No date, no count of how often it was on, no record that it ever was.
+- Never: sent to a server, put in Save a copy, an analytics event, a log, a crash report or a push payload; carried into another account.
+- Decline: leave it off (the default). Declining changes nothing else; day notes still arrive with the neutral title and body.
+
+Residual, stated plainly: the stored value is in the iPhone backup (it is in `settings`). A restored phone can bring back an `on` for an account that signs in there. That phone's days list is empty (ADR 0032, Consequences), and R14 shows the switch on the Days page whenever a day exists, so the parent sees it before any day name is planned. Not worth a key per account; if the founder prefers one, it is the alternative in question 1.
+
+Founder question 1 (the only founder decision in this file; it is a default that stands, one line in the founder digest, deadline Mon 23 Nov, and no D-entry is changed): when the same person signs out and back in on the same phone, should the day-name switch stay on? Default in E85: no, it goes back to off, the person turns it on again in 1 tap, and nothing about a name on a lock screen is ever carried to another account. The alternative is a switch kept per account (a key with a hash of the user id, like `asks.daysAsked.<ownerKey>`, L3), which keeps it on for the same person but stores one more person-keyed value. Not closed for good; nothing is needed from the founder before the build.
+
+Edited in place: none (PROPOSED). Plan delta: card 21 NS-47-R12 and R15 gain the reset and the count; R16 and R17 name the key; card 21 section 10 "Fields" and section 11 row "Day-name switch" (already reads "Until sign-out") are made true by these rows; `functions/cultural-background-data.md` FR-CUL-15 gains the switch and the cancel count; ADR 0033 item 4 and item 6 gain one sentence each; `docs/tdd/new-scope/13-days-culture-home.md` lines 89 and 91 and `14-days-planner-and-catalogue.md` line 78 add the switch to the sign-out and Erase rows; `docs/tdd/new-scope/16-days-tests.md` gains the test `[NS-47-R15] day-name switch is off and 0 el.day notes are left after sign-out` and the Erase test `[NS-47-R16]` lists the key; BL-961 (the `[X4-R1]` enumeration) and BL-1010 (sign-out and Erase wiring) gain `notifications.dayNames`; BL-1015 (the switch) gains the reset; the privacy agent's Planned row for `notifications.dayNames` in `docs/legal/DATA_CLASSIFICATION.md` 4.5 on #873 drops its "Not ruled here" sentence and says "Reset to off at sign-out and deleted by Erase everything" once this is accepted; no new backlog row, no re-size, no re-order; `mobile`, `privacy`, `qa`, `content` (none: no new words).
+
+### E86: a neutral name for the "was the days ask made" key (20 Nov, Karma with product; NS-47-R4, R2, R6, R11, R15, R16; ADR 0032 item 8; PROPOSED)
+
+Status: PROPOSED. No founder question.
+
+Question: NS-47-R4 and FR-CUL-04 fail the build on any column, view, RPC argument or setting key named like tradition, religion, faith, country, origin or culture. The card's own key is `culture.asked.<ownerKey>`. It would fail its own lint. What should it be called, and what class is it?
+
+Ruling (proposed): the key is `asks.daysAsked.<ownerKey>`.
+1. Why this name: no word on the lint list; it sits in the `asks.*` family that the card's own plan already uses for the other days ask keys (`asks.daysPermission`, `asks.daysAskShown`, `docs/tdd/new-scope/17-days-prs-and-amendments.md` line 106), so there is one family and one place to read; and it says only that a question was put, which is true after either button.
+2. The value stays `done`, the same after "Choose days" and after "Not now", so it cannot become "the parent chose days" (R2). The analytics reviewer's point (A-47-3) holds: "answered" is not derivable from it.
+3. The class is L3, not L2, per the privacy agent. The value alone would be L2. The key holds `ownerKey`, 16 hex characters of the SHA-256 of the user id, and that is a person identifier (the same reading as `copySlip.<child id>.<year>` and `family.seenCoParents.<child id>`). L3 only tightens handling. Everything else stays as the card has it: per account, in `settings` and so in the iPhone backup (a restored phone does not ask again, R6), kept at sign-out and keyed to the account that answered (R15), deleted by Erase everything (R16), never synced, never exported, never in analytics, logs or crash reports.
+4. The lint is about setting keys and the data. The copy keys `culture.ask.question`, `culture.ask.choose`, `culture.ask.notNow`, `culture.callout` and the rest of the `culture.*` family are words a parent reads, not data keys, and are not renamed here. The lint's scope line in R4 and FR-CUL-04 should say "setting key" means a key in `settings` and does not cover copy keys in `packages/content`. If `data-architect` reads the lint as covering copy keys too, that is a separate question for Karma and nothing here assumes it.
+5. Nothing has been built (`24-engineering-handoff.md` says a search for the days names over `apps`, `packages` and `supabase` returns nothing, not re-checked in code for this PR), so there is no stored key to migrate. A key written by a dev build under the old name is ignored, and that phone sees the ask once more.
+
+What a parent sees: nothing changes. The ask appears once, and neither button changes what is stored.
+
+Shown, Records, Never, Decline (PRIV-R21):
+- Shown: the one question on Home ("Would you like a reminder on the days that matter to your family?", intent) with two same-size buttons.
+- Records: one local setting, value `done`, under a key that holds a hash of the user id, on this phone only, until Erase everything or Delete account.
+- Never: which button was pressed, any tradition or country, any count of how many parents pressed either, a server row, an export, an event.
+- Decline: "Not now" writes the same value as "Choose days" and the same choices stay one tap away in Me, Days.
+
+Given, When, Then:
+- Test `[NS-47-R4] no request carries a day key` (gains the new key) and `[NS-47-R2]`: Given the lint of NS-47-R4 runs over the settings keys the build writes, When the ask is answered either way, Then 0 keys match the six lint words and exactly 1 key `asks.daysAsked.<ownerKey>` with the value `done` is written.
+- Folds into the R15 test (ask is per account): Given A answered and signs out and B signs in, Then B finds no `asks.daysAsked.` key for B's own `ownerKey` and is asked once (R15); A's key is still there, 1 key per account that answered.
+- Folds into the `[NS-47-R16]` Erase test: Given Erase everything, When it finishes, Then 0 keys start with `asks.daysAsked.` (R16).
+
+Every file that names the old key `culture.asked` (found with `git grep -n "culture\.asked"` on develop `55574906c` and on #873; lines are as of 20 Nov). Locked cards are listed, not edited:
+- Cards and requirements: `docs/product/prd/21-days-cultural-photos-home.md` lines 431, 445, 485, 489, 490, 494, 498, 502, 545 and 561 (R2, R6, R7, R11, R15, R19, the section 10 and 11 rows); `docs/product/prd/functions/cultural-background-data.md` lines 79, 88, 112, 121 and 221 (FR-CUL-02, FR-CUL-06, FR-CUL-15, FR-CUL-19, the data line); `docs/product/prd/24-engineering-handoff.md` lines 57, 101, 172 and 205; `docs/product/prd/18-errata-after-lock.md` line 45 (E37, history, left as written).
+- Review notes (history, left as written; this E-number is the pointer): `docs/product/prd/tools/review/ns46-50/analytics.md` line 58, `mobile.md` line 69, `privacy.md` line 33.
+- Decisions and designs: `docs/adr/0032-on-device-sensitive-store.md` line 22 (item 8); `docs/tdd/new-scope/13-days-culture-home.md` lines 4, 81, 84, 89, 91, 102 and 105; `15-home-and-picture-first.md` lines 38, 39 and 78; `16-days-tests.md` line 57 (the NS-47-R2 test); `17-days-prs-and-amendments.md` lines 105 and 106; `data-and-sync.md` line 50 (K12); `privacy.md` line 155.
+- Data brief: `docs/engineering/readiness-20nov/briefs/data/BRIEF-NS-47-days-store-outside-scribe-db.md` line 4 (names `culture.asked` in the question about a restored phone; the old key name there changes to `asks.daysAsked` once E86 is accepted).
+- Backlog: `docs/BACKLOG.md` line 4141 (BL-1010).
+- On #873 (not on develop yet): `docs/legal/DATA_CLASSIFICATION.md` 4.5, the Planned row for `culture.asked.<ownerKey>` (it already says its name "follows" this row), and any line of `docs/legal/data-policy.md` that repeats it.
+- Not searched here: the code and tests under `apps`, `packages` and `supabase`, `docs/engineering`, `docs/legal` on develop, and `docs/analytics`. The builder runs `git grep -n "culture\.asked"` over the whole repo before the first PR that writes the key.
+
+Edited in place: none (PROPOSED). Plan delta: card 21 (the ten lines above) and FR-CUL-02, 06, 15, 19 take the new name and L3 once accepted; NS-47-R4 and FR-CUL-04 gain the one-line scope note in point 4; ADR 0032 item 8 and the tdd files above change the name; the `[NS-47-R2]` test in `16-days-tests.md` line 57 asserts the new key; the key-name lint test (`[NS-47-R4] no request carries a day key`) gains "and the key `asks.daysAsked.<ownerKey>` passes it"; BL-1010 (names the key in its scope) and BL-1015 (the ask slip writes it) change one name; `docs/legal/DATA_CLASSIFICATION.md` 4.5 on #873 drops the "subject to an errata row" clause and names this key; no new backlog row, no re-size, no re-order; `mobile`, `privacy`, `data-architect`, `qa`.
+
+Founder note: E85 adds one line to the founder's digest (`22-final-holistic-spec.md` section 7), a default that stands, with no CL id until accepted. E86 adds none. Nothing here is counsel-only. No D-entry in `docs/DECISIONS.md` is touched.
+
+Signed: Karma (CTO role, product side) with product; renumbered by the product agent on 21 Nov.
