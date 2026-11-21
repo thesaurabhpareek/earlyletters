@@ -32,12 +32,28 @@ on:
   pull_request:
     # Every mobile change for `launch` (the app's JavaScript is apps/mobile and the packages it bundles). `compile`
     # keeps its native-only list through the `changes` job.
+    # Negated patterns drop files that cannot change the launched Release bundle: documentation, tests, the e2e
+    # and web-preview folders, and packages/emails (the app does not import it). A pull request that touches only
+    # these starts no run at all. Neither check here is a required status check (branch protection requires
+    # `required`, `compliance-fence` and `applied migrations unchanged`), so a run that never starts cannot hang
+    # a merge. docs/ops/proposed/ci-speed.md, change 2.
     paths:
       - apps/mobile/**
       - packages/**
       - package-lock.json
       - .github/workflows/ios-compile.yml
       - .github/scripts/sim-crash-report.sh
+      - '!**/*.md'
+      - '!apps/mobile/e2e/**'
+      - '!apps/mobile/e2e-web/**'
+      - '!apps/mobile/web-preview/**'
+      - '!apps/mobile/test/**'
+      - '!apps/mobile/vitest*.ts'
+      - '!apps/mobile/**/__tests__/**'
+      - '!**/*.test.ts'
+      - '!**/*.test.tsx'
+      - '!packages/*/test/**'
+      - '!packages/emails/**'
   workflow_dispatch:
 
 permissions:
