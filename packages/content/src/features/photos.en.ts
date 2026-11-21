@@ -12,6 +12,9 @@ export const photosCopy = {
     change: 'Change',
     // TODO(founder): PROPOSED, needs word approval
     openFailed: 'That photo could not be opened. Choose another.',
+    // Ready with a picture: the quiet Type beside Speak (NS-01-R20b). Its own key, not the microphone-off screen's.
+    // TODO(founder): PROPOSED, needs word approval
+    typeButton: 'Type',
   },
   book: {
     photos: {

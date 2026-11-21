@@ -3,6 +3,9 @@
 /** The thumbnail above the capture buttons is never taller than this on Ready (design spec 3.2). R3 sets no minimum. */
 export const THUMB_MAX_HEIGHT_PT = 160;
 
+/** From AX3 up the Ready thumbnail is at most this tall (NS-01-R39, PROPOSED) so Speak, Type and Change stay on screen. */
+export const THUMB_AX_MAX_HEIGHT_PT = 88;
+
 /**
  * Screens that show a picture draw nothing while App lock is on and the app is not in front, or before it is unlocked
  * (NS-01-R13, NX-39-R36), so the switcher snapshot and a cold open show no picture.

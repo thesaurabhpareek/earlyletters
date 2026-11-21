@@ -13,7 +13,7 @@ import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
-import { pictureHidden, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
 import { fixture, insertBook } from './helpers/store-fixture';
@@ -113,7 +113,7 @@ describe('[NS-01-R3] the prompt does not depend on the picture', () => {
   it('[NS-01-R3] the thumbnail is at most 160 pt tall and sits above the prompt on Listen and above the field on Write', () => {
     expect(THUMB_MAX_HEIGHT_PT).toBe(160);
     const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
-    expect(thumb).toMatch(/height=\{large \? undefined : THUMB_MAX_HEIGHT_PT\}/);
+    expect(thumb).toMatch(/height=\{boxHeight\}/);
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeGreaterThan(0);
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
@@ -243,7 +243,7 @@ describe('[NS-01-R20] new controls', () => {
   });
   it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, Change, prompt, Speak, Type (E40; #838 review B)', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
-    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
+    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{photos\.capture\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
     expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
     // E40: Change sits under the thumbnail, inside the thumbnail block, before the prompt; Change announces its state.
     const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
@@ -254,16 +254,38 @@ describe('[NS-01-R20] new controls', () => {
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });
-  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use ErrorLine, which announces it and is a live region (#838 review B)', () => {
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the photo ErrorLine, which announces it and is a live region (#838 review B)', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
       expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
       expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
     }
-    const line = readFileSync(join(SRC, 'lib', 'auth', 'ui.tsx'), 'utf8');
+    const line = readFileSync(join(SRC, 'components', 'photos', 'error-line.tsx'), 'utf8');
     const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
     expect(body).toMatch(/if \(message\) announce\(message\);/);
     expect(body).toMatch(/accessibilityLiveRegion="polite"/);
+  });
+  it('[NS-01-R20][review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx', 'error-line.tsx']) {
+      expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
+    }
+    expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/listen\.photo\.type[\s\S]{0,0}micDenied|micDenied\.typeButton\} onPress=\{typeInstead\}/);
+    for (const f of ['use-photo-start.ts', 'use-photo-pick.ts']) {
+      const src = readFileSync(join(SRC, 'lib', 'photos', f), 'utf8');
+      expect(src, f).not.toMatch(/registerPhotoDevice\(\)/);
+      expect(src, f).toMatch(/useRegisteredPhotoDevice\(\)/);
+    }
+    expect(readFileSync(join(SRC, 'lib', 'photos', 'use-registered.ts'), 'utf8')).toMatch(/useEffect\(\(\) => \{\s*registerPhotoDevice\(\);/);
+    const start = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(start).toMatch(/if \(!picker \|\| running\.current\) return;/); // one pick at a time
+    expect(start).toMatch(/\.catch\(\(\) => setFailed\(true\)\)/);
+  });
+  it('[NS-01-R39][NS-01-R42] the Ready thumbnail is at most 88 pt tall from AX3 and shows the whole picture (contain, never cover)', () => {
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb).toMatch(/large \? THUMB_AX_MAX_HEIGHT_PT : THUMB_MAX_HEIGHT_PT/);
+    expect(thumb).toMatch(/fit="contain"/);
+    expect(thumb).not.toMatch(/aspectRatio=/);
+    expect(THUMB_AX_MAX_HEIGHT_PT).toBe(88);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');

@@ -4,13 +4,13 @@
  * owns what happens next, and the picker's temporary original is removed by whoever reads it (pending.ts, attach).
  */
 import { useCallback, useRef, useState } from 'react';
-import { registerPhotoDevice } from './device';
 import { getPhotoPicker } from './registry';
+import { useRegisteredPhotoDevice } from './use-registered';
 import { runPick } from './session';
 import type { PickedAsset } from './types';
 
 export function usePhotoPick(onPicked: (asset: PickedAsset) => void | Promise<void>): { ready: boolean; busy: boolean; failed: boolean; pick: () => void } {
-  registerPhotoDevice(); // idempotent; nothing when the photos switch is off
+  const registered = useRegisteredPhotoDevice(); // after mount, never in the render body
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const running = useRef(false);
@@ -30,5 +30,5 @@ export function usePhotoPick(onPicked: (asset: PickedAsset) => void | Promise<vo
       }
     });
   }, [onPicked]);
-  return { ready: getPhotoPicker() !== null, busy, failed, pick };
+  return { ready: registered && getPhotoPicker() !== null, busy, failed, pick };
 }
