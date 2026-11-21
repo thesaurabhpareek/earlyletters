@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({ keychain: null as null | { getItem: (k: string) =>
 
 vi.mock('react-native', () => ({ AppState: { addEventListener: () => ({ remove: () => {} }) } }));
 vi.mock('react', () => ({ useCallback: (f: unknown) => f, useEffect: () => {}, useState: (v: unknown) => [v, () => {}] }));
+vi.mock('../src/lib/capabilities', () => ({ serverFeaturesEnabled: () => false }));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
 vi.mock('../src/lib/supabase/secure-storage', () => ({
   secureStorage: { getItem: (k: string) => h.keychain!.getItem(k), setItem: (k: string, v: string) => h.keychain!.setItem(k, v), removeItem: (k: string) => h.keychain!.removeItem(k) },
@@ -107,7 +108,16 @@ describe('[NS-39-R14] a No discards a held link', () => {
     expect(db.calls).toEqual([]);
   });
 
-  // FP-12-1: card F01-U06 also says the auth link held in memory is discarded after No. answerAgeGate does not clear it
-  // (lib/age-gate.ts, not an FP-12 file). Left as a todo until product and the owner of age-gate.ts answer.
-  it.todo('[NS-39-R14] a held email sign-in link in memory is also dropped on No (question FP-12-1)');
+  it('[NS-39-R14] a held email sign-in link in memory is also dropped on No, and a Yes keeps it', async () => {
+    const { setPendingAuthLink, takePendingAuthLink } = await import('../src/lib/auth/pending');
+    const { answerAgeGate } = await import('../src/lib/age-gate');
+    setPendingAuthLink({ tokenHash: 'h'.repeat(20), type: 'magiclink' });
+    answerAgeGate('yes');
+    const kept = takePendingAuthLink();
+    expect(kept).not.toBeNull();
+    setPendingAuthLink(kept!);
+    answerAgeGate('no');
+    expect(takePendingAuthLink()).toBeNull();
+    expect(net.calls).toEqual([]);
+  });
 });

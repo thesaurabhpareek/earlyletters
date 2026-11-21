@@ -79,6 +79,8 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   it('[NS-39-R2] nothing else the first-run screen imports, at any depth, asks or authenticates', () => {
     const graph = importGraph(ENTRY);
     expect(graph.length).toBeGreaterThan(20); // the walk really walked
+    // The lock offer and the lock controller (Face ID) must not be in the screen's tree at all.
+    expect(graph.map((f) => f.slice(SRC.length + 1)).filter((f) => f.startsWith('components/app-lock/') || f === 'lib/app-lock/controller.ts')).toEqual([]);
     expect(offenders(graph, PROMPT_PATTERN).sort()).toEqual(REACHED_NOT_CALLED);
   });
 });
