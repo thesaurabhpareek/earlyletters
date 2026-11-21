@@ -243,7 +243,7 @@ export const en = {
       stopButton: "Finish",
       saving: "Saving your words.",
       saved: "Saved.",
-      savedLetter: "Saved.",
+      savedLetter: "Saved and signed.",
       transcribing: "Writing down what you said.",
     },
     typing: {
@@ -439,7 +439,7 @@ export const en = {
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
     waiting: {
-      title: "Recording saved",
+      title: "Your voice is kept",
       body: "Your words will appear once the download finishes.",
     },
     // Development builds only: the sample transcriber's words are never saved.
@@ -501,7 +501,7 @@ export const en = {
       filedChip: "Kept in Month {month}",
       filedChipNewborn: "Kept in the first weeks",
       filedChipBefore: "Kept in Before You",
-      privateToast: "Saved as private.",
+      privateToast: "Kept private.",
       voiceOnlyToast: "Recording kept on this phone.",
     },
     addWordToDictionary: "Add \"{name}\" to your words",

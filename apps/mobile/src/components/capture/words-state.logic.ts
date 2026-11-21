@@ -9,7 +9,7 @@
  *   state        when                                      title                         primary            quiet
  *   writing      queued or being written down (S14)        Writing down what you said.   none               Read it back later, after 15 s with no progress
  *   ask          language not on this phone, no yes yet    Get your words ready          Download on Wi-Fi  Keep the recording
- *   downloading  language on its way, yes given (S15)      Recording saved              Keep the recording Use {size} of cellular on a Wi-Fi wait, else Type it instead
+ *   downloading  language on its way, yes given (S15)      Your voice is kept            Keep the recording Use {size} of cellular on a Wi-Fi wait, else Type it instead
  *   language     a language this build does not hear (#260) the waiting-for-language line Keep the recording Type it instead
  *   failed       the words could not be written (S16)      No words yet for this one     Try again          Keep the recording
  *   unsupported  this phone cannot write words down        No words yet for this one     Keep the recording Type it instead
