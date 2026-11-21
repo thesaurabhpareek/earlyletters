@@ -2,6 +2,8 @@
 
 Rule: this file is updated by Karma from merged PRs, at least every hour while work runs. One line per task. Status: QUEUED, BUILDING (branch or PR open), IN REVIEW, MERGED (sha), BLOCKED (on whom). The plan (`docs/product/prd/17-engineering-project-plan.md`, `17b-engineering-plan-new-scope.md`) holds the full task list and waves; this file only tracks what has moved. Freeze: develop 55574906c, errata E1 to E83, CL-001 to CL-158 (plans 17 and 17b are pinned one erratum behind, at dcbf70fc8 and E82; the E83 text is in 18-errata-after-lock.md). The current status is the canonical block below.
 
+See also: Delivery plan (why we are slow, dependency map and critical path, lanes and WIP, founder pack, process rules): `docs/engineering/readiness-20nov/DELIVERY-PLAN.md`.
+
 ## Canonical live status (develop `6d8e6aa3`, the #838 squash; newest, it wins over every block below)
 
 This is the ONE status block. Plans `17-engineering-project-plan.md` and `17b-engineering-plan-new-scope.md` point here and do not repeat it, so it cannot drift. Facts are from the GitHub REST pulls API (merged flag, merge_commit_sha, head sha, mergeable_state); GraphQL is blocked. [U] means not verified. Older blocks below keep their own times and are stale where they differ.
