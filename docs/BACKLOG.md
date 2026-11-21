@@ -7299,7 +7299,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 
 ## Bugs found by merged tests (21 Nov 2026, proposed)
 
-Written 21 Nov 2026 by the product agent, docs only, on `develop`. Six gaps that merged tests already pin: each test is green today because it is written as `it.fails` (or a known-gap check), so the fix PR must flip it. Every claim below was read in the code on `develop` unless marked unverified. BL-1453 is held by PR #1325, so these rows start at BL-1454. No requirement text is copied or changed.
+Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests already pin: each test is green today because it is written as `it.fails` (or a known-gap check), so the fix PR must flip it. Claims were checked against `develop` at `7f3890cdb993d1d8b584816f431a8ea72662aa4a` (the first pass was at `a122a9c9`) unless marked unverified; BL-1456 reflects the state after #1128 merged. BL-1453 is held by PR #1325, so these rows start at BL-1454. No requirement text is copied or changed.
 
 #### BL-1454 Erase everything: a failed backup delete must not leave the export ZIP, recovery ZIP, print PDF or frame copies on disk
 - Status: proposed (found by the NS-36 B5-4 test; Karma sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M12. Size: XS. Depends on: none.
