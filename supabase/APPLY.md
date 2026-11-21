@@ -1239,3 +1239,11 @@ What it changes: drops the insert and update policies on `storage.objects` for `
 **Before the tag (founder, Q8):** `select count(*) from entries where photo_path is not null;` Expected 0. If it is not 0, stop and tell the data architect: those rows stay readable and deletable, but should be reviewed.
 
 **Apply** after file 32. **Check:** `select polname from pg_policy where polname like 'entry_photos_%';` lists `entry_photos_author_delete` and `entry_photos_read` only; `select tgname from pg_trigger where tgname = 'entries_15_photo_closed';` returns one row. **Rollback:** forward-fix only; see the file header.
+
+## File 34: the Data API login role can no longer become insights_reader (S9, CR-71 C9)
+
+`20261111000000_insights_reader_not_via_api.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 33. Supersedes the "grants it to `authenticator`" line under file 11.
+
+What it changes: `revoke insights_reader from authenticator`. Nothing else: the role, its grants and the views stay; `service_role` still runs the weekly insights report. No column, no new grant.
+
+**Before the tag (founder):** if `SUPABASE_INSIGHTS_TOKEN` is an insights_reader JWT, switch that run to the service key first; that token stops working. **Check:** `select count(*) from pg_auth_members m join pg_roles r on r.oid = m.roleid join pg_roles g on g.oid = m.member where r.rolname = 'insights_reader' and g.rolname = 'authenticator';` returns 0. **Rollback:** forward-fix only; `grant insights_reader to authenticator;`.
