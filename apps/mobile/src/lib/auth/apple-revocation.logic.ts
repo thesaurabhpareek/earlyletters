@@ -40,3 +40,33 @@ export function createRevocationGate(deps: {
   };
   return { onForeground: run };
 }
+
+/**
+ * What a signed-in user sets up: the gate, a foreground listener and Apple's
+ * notification listener. Returns the function that removes all of them (sign-out).
+ * A revocation dispatches the sign-out request with the count of letters still
+ * waiting to upload, read at that moment (the R3 rule: sign-out waits for them).
+ */
+export function startAppleRevocationWatch(deps: {
+  check: () => Promise<boolean>;
+  pendingUploads: () => Promise<number>;
+  dispatchSignOut: (pendingUploads: number) => void;
+  onAppActive: (listener: () => void) => () => void;
+  onAppleRevoked: (listener: () => void) => () => void;
+  now: () => number;
+}): () => void {
+  let alive = true;
+  const signOut = async () => {
+    const n = await deps.pendingUploads();
+    if (alive) deps.dispatchSignOut(n);
+  };
+  const gate = createRevocationGate({ check: deps.check, onRevoked: signOut, now: deps.now });
+  void gate.onForeground();
+  const offApp = deps.onAppActive(() => void gate.onForeground());
+  const offApple = deps.onAppleRevoked(() => void signOut());
+  return () => {
+    alive = false;
+    offApp();
+    offApple();
+  };
+}

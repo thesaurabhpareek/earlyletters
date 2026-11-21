@@ -29,7 +29,7 @@ import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
-import { createRevocationGate } from './apple-revocation.logic';
+import { startAppleRevocationWatch } from './apple-revocation.logic';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -272,22 +272,17 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const signedInUser = isSignedIn(state) ? state.userId : null;
   useEffect(() => {
     if (!signedInUser) return;
-    let alive = true;
-    const signOut = async () => {
-      if (!alive) return;
-      dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: await pendingUploads() });
-    };
-    const gate = createRevocationGate({ check: appleCredentialRevoked, onRevoked: signOut, now: Date.now });
-    void gate.onForeground();
-    const app = AppState.addEventListener('change', (s) => {
-      if (s === 'active') void gate.onForeground();
+    return startAppleRevocationWatch({
+      check: appleCredentialRevoked,
+      pendingUploads,
+      dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
+      onAppActive: (l) => {
+        const sub = AppState.addEventListener('change', (st) => st === 'active' && l());
+        return () => sub.remove();
+      },
+      onAppleRevoked: watchAppleRevocation,
+      now: Date.now,
     });
-    const stop = watchAppleRevocation(() => void signOut());
-    return () => {
-      alive = false;
-      app.remove();
-      stop();
-    };
   }, [signedInUser]);
 
   // Sign-out: wait for the upload queue, then end the session on this phone only.

@@ -4,7 +4,7 @@
  * Apple's notification. Fictional family "Asha" only.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRevocationGate } from '../src/lib/auth/apple-revocation.logic';
+import { createRevocationGate, startAppleRevocationWatch } from '../src/lib/auth/apple-revocation.logic';
 
 const { signInAsync, store, listeners } = vi.hoisted(() => ({
   signInAsync: vi.fn(),
@@ -112,5 +112,48 @@ describe('[NS-45-R4] Apple revocation seen on foreground', () => {
     expect(onRevoked).toHaveBeenCalledTimes(1); // mutant: do not call onRevoked from the listener
     stop();
     expect(listeners).toHaveLength(0); // mutant: leave the listener registered
+  });
+});
+
+describe('[NS-45-R4] the signed-in effect sets up and removes its listeners', () => {
+  const setup = (uploads = 3) => {
+    const active: Array<() => void> = [];
+    const revoked: Array<() => void> = [];
+    const dispatchSignOut = vi.fn();
+    const check = vi.fn(async () => false);
+    const stop = startAppleRevocationWatch({
+      check,
+      pendingUploads: async () => uploads,
+      dispatchSignOut,
+      onAppActive: (l) => (active.push(l), () => void active.splice(active.indexOf(l), 1)),
+      onAppleRevoked: (l) => (revoked.push(l), () => void revoked.splice(revoked.indexOf(l), 1)),
+      now: () => 5_000_000,
+    });
+    return { active, revoked, dispatchSignOut, check, stop };
+  };
+
+  it('reads once at start, listens to foreground and to Apple, and removes both at sign-out', () => {
+    const h = setup();
+    expect(h.check).toHaveBeenCalledTimes(1);
+    expect(h.active).toHaveLength(1);
+    expect(h.revoked).toHaveLength(1);
+    h.stop();
+    expect(h.active).toHaveLength(0); // mutant: skip removing the AppState listener
+    expect(h.revoked).toHaveLength(0);
+  });
+
+  it('Apple notification asks sign-out with the uploads still waiting, not before they are counted', async () => {
+    const h = setup(3);
+    h.revoked[0]();
+    await vi.waitFor(() => expect(h.dispatchSignOut).toHaveBeenCalledWith(3)); // mutant: dispatch with 0
+  });
+
+  it('nothing is dispatched after sign-out', async () => {
+    const h = setup();
+    const l = h.revoked[0];
+    h.stop();
+    l();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(h.dispatchSignOut).not.toHaveBeenCalled();
   });
 });
