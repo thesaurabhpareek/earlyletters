@@ -62,7 +62,8 @@ const phone = vi.hoisted(() => {
     }),
   };
   const router = { navigate: vi.fn(), push: vi.fn(), replace: vi.fn() };
-  return { state, api, router };
+  const replan = vi.fn(async () => ({ ok: true }));
+  return { state, api, router, replan };
 });
 
 vi.mock('expo-notifications', () => ({
@@ -82,6 +83,7 @@ vi.mock('react-native', () => ({
 }));
 // The evening reminders' permission reader: the same answer the fake phone gives.
 vi.mock('../src/lib/reminders/scheduler', () => ({
+  rescheduleReminders: phone.replan,
   getReminderPermission: async () => {
     const p = phone.state.permissions;
     return p.granted ? 'granted' : p.status === 'undetermined' ? 'undetermined' : 'denied';
@@ -136,6 +138,7 @@ beforeEach(() => {
   plan = planOf();
   for (const fn of Object.values(phone.api)) fn.mockClear();
   for (const fn of Object.values(phone.router)) fn.mockClear();
+  phone.replan.mockClear();
 });
 
 afterEach(async () => {
@@ -327,5 +330,44 @@ describe('[G-15] permission is asked only from the "Remind me" tap', () => {
     expect(await askPlanReminderPermission()).toBe('denied');
     phone.api.getPermissionsAsync.mockRejectedValueOnce(new Error('no notifications here'));
     expect(await canAskForReminders()).toBe(false);
+  });
+});
+
+describe('[BL-966-PP4] the re-plan hook (CR-69 A1)', () => {
+  it('re-plans the evening reminders when plan notices are scheduled, and when they are cancelled', async () => {
+    stop = startPlanReminders(source);
+    await reschedulePlanReminders();
+    expect(ours().length).toBeGreaterThan(0);
+    expect(phone.replan).toHaveBeenCalledTimes(1);
+    // Auto-renew turned off in Apple's settings: the pending plan notices are cancelled, and the budget is told again.
+    plan = planOf({ willAutoRenew: false });
+    await reschedulePlanReminders();
+    expect(ours()).toHaveLength(0);
+    expect(phone.replan).toHaveBeenCalledTimes(2);
+  });
+  it('runs after the plan notices are in place, so the evening plan counts the real ones', async () => {
+    stop = startPlanReminders(source);
+    await reschedulePlanReminders();
+    phone.state.pending = phone.state.pending.filter((p) => !p.identifier.startsWith(PLAN_ID_PREFIX));
+    stop();
+    stop = startPlanReminders(source);
+    let seenAtReplan = -1;
+    phone.replan.mockImplementationOnce(async () => {
+      seenAtReplan = ours().length;
+      return { ok: true };
+    });
+    await reschedulePlanReminders();
+    expect(seenAtReplan).toBe(ours().length);
+    expect(seenAtReplan).toBeGreaterThan(0);
+  });
+  it('does nothing when nothing changed, and never throws into the app when the re-plan fails', async () => {
+    stop = startPlanReminders(source);
+    await reschedulePlanReminders();
+    phone.replan.mockClear();
+    await reschedulePlanReminders();
+    expect(phone.replan).not.toHaveBeenCalled();
+    plan = planOf({ willAutoRenew: false });
+    phone.replan.mockRejectedValueOnce(new Error('boom'));
+    await expect(reschedulePlanReminders()).resolves.toBeUndefined();
   });
 });

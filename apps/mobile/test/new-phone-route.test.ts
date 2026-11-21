@@ -90,10 +90,8 @@ describe('[NX-36-S17] the gate never shows the child step to a signed-in phone u
       expect(heldNewPhoneView(state, false), `${state.status} offline`).toBe(offline);
       for (const view of [online, offline]) expect(gate({ newPhone: view, online: view !== 'offline' }).step, `${state.status} ${view}`).not.toBe('childStep');
     }
-    // Cannot be sent a book (sync declined, or consent not yet answered: no pull can reach it while consent is outstanding),
-    // or no session: not held; the route then passes `new` as before.
+    // Cannot be sent a book (sync declined), or no session: not held; the route then passes `new` as before.
     const notHeld: AuthState[] = [
-      { status: 'needsConsent', ...u, method: null, steps: ['sensitive'] },
       { status: 'ready', ...u, sync: 'off' },
       { status: 'signingOut', ...u, reason: 'user', waitingForUploads: false, sync: 'off' },
       { status: 'ready', ...u, sync: 'on' }, // the hook asks here; the hold is not its stand-in
@@ -103,6 +101,10 @@ describe('[NX-36-S17] the gate never shows the child step to a signed-in phone u
       { status: 'awaitingCode', sentAt: 1 },
     ];
     for (const state of notHeld) for (const online of [true, false]) expect(heldNewPhoneView(state, online), `${state.status} ${online}`).toBeUndefined();
+    // BL-922a: consent still to give is held on its own screen, online or not (decided from auth state, no network).
+    for (const steps of [['terms'], ['sensitive']] as const) {
+      for (const online of [true, false]) expect(heldNewPhoneView({ status: 'needsConsent', ...u, method: null, steps: [...steps] }, online)).toBe('consent');
+    }
     // The gate side: `slow` and `offline` from the hold are the same screens the hook's answers draw.
     expect(gate({ newPhone: 'slow' }).step).toBe('slowBook');
     expect(gate({ newPhone: 'offline', online: false })).toMatchObject({ step: 'offlineBook', retryOnReconnect: true });
@@ -232,14 +234,14 @@ describe('[NX-36-S17] the screens', () => {
     expect(screens).toMatch(/import \{ useArrival \} from '@\/lib\/first-run\/use-arrival';/);
     expect(screens).toMatch(/useArrival\(block, title, screen\)/);
     expect(screens).toMatch(/<View ref=\{block\} collapsable=\{false\}/);
-    expect(screens.match(/<Arrives title=/g)).toHaveLength(4);
+    expect(screens.match(/<Arrives title=/g)).toHaveLength(5);
   });
   it('[NX-36-S17] Try another way signs out, and a sign-out that fails is not an unhandled rejection', () => {
     expect(read('app', 'onboarding.tsx')).toMatch(/const tryAnother = \(\) => \{\n\s+signOut\(\)\.catch\(\(\) => undefined\);\n\s+\};/);
   });
   it('[NX-36-S17] the route draws the four screens by name, the gate steps map to them, and the hook feeds the gate', () => {
     const o = read('app', 'onboarding.tsx');
-    for (const s of ['opening', 'slow', 'offlineBook', 'noBookHere']) expect(o).toContain(`route.screen === '${s}'`);
+    for (const s of ['opening', 'slow', 'offlineBook', 'noBookHere', 'finishSetup']) expect(o).toContain(`route.screen === '${s}'`);
     expect(o).toMatch(/if \(route\.arrivedFromAccount \|\| route\.screen === 'opening'\) return <OpeningBookScreen lettersComing=\{route\.accountHasBook\} \/>;/);
     const route = read('lib', 'first-run', 'use-first-run-route.ts');
     // The hook's answer first, then the hold for a session that cannot ask yet, then the earlier `new`; the hold never applies over a book on the phone.
@@ -247,7 +249,7 @@ describe('[NX-36-S17] the screens', () => {
     expect(route).toMatch(/newPhone: np\.view \?\? held \?\? 'new'/);
     expect(route).toMatch(/accountHasBook: np\.hasBook/);
     const base = { outage: null, restoring: false, pastWelcome: false } as const;
-    const map: Array<[FirstRunStep, string]> = [['openingBook', 'opening'], ['slowBook', 'slow'], ['offlineBook', 'offlineBook'], ['noBookHere', 'noBookHere']];
+    const map: Array<[FirstRunStep, string]> = [['openingBook', 'opening'], ['slowBook', 'slow'], ['offlineBook', 'offlineBook'], ['noBookHere', 'noBookHere'], ['finishSetup', 'finishSetup']];
     for (const [step, screen] of map) expect(firstRunScreen({ ...base, step })).toBe(screen);
   });
   it('[NX-36-S17] past the welcome step the steps hold: the account asked again never swaps a typed child step for the loading screen', () => {
@@ -284,7 +286,7 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
     expect(at).toBeGreaterThan(0);
     expect(book.slice(at - 200, at + 60)).not.toMatch(/numberOfLines/);
   });
-  it("[NX-36-S17] the new words are the spec's, six keys, none registered, no numeral and no child name", () => {
+  it("[NX-36-S17] the new words are the spec's, six spec keys and two PROPOSED, none registered, no numeral and no child name", () => {
     const p = authCopy.newPhone;
     expect(p).toEqual({
       loading: 'Opening your book.',
@@ -293,6 +295,9 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
       slowTitle: 'Your book is taking a while.',
       slowBody: 'Check your connection, then try again.',
       offlineTitle: 'Opening your book needs a connection.',
+      // BL-922a, PROPOSED (words packet 20 Nov rows 6 and 7): the held screen.
+      consentBody: 'Finish setting up to open your book here.',
+      nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
     });
     for (const v of Object.values(p)) {
       expect(v).not.toMatch(/\d|\{child\}|\b(we|our)\b|safe|backed up|restore|lost|missing|waiting for/i);

@@ -2,13 +2,23 @@
 
 Status: CURRENT, 21 Nov 2026 | Owner: `product` | Load when: someone asks "does this P0 row have a backlog row" (gate G0).
 
-Generated, not written by hand: `python3 -I docs/product/prd/tools/review/p0.py . --map`, then checked with `python3 -I docs/product/prd/tools/review/p0.py . --check-map docs/product/P0-TO-BL-20nov.md` (exit 0 means every P0 id is here, none maps to nothing, and every BL id has a heading in `docs/BACKLOG.md`). Pinned to `develop` `3efbaf7` plus BL-1021 to BL-1149. Nothing here changes a requirement.
+Generated, not written by hand: `python3 -I docs/product/prd/tools/review/p0.py . --map`, then checked with `python3 -I docs/product/prd/tools/review/p0.py . --check-map docs/product/P0-TO-BL-20nov.md` (exit 0 means every P0 id is here, none maps to nothing, and every BL id has a heading in `docs/BACKLOG.md`). Pinned to `develop` `bc143cc` plus BL-1158 to BL-1182 (the first split batch, `docs/product/P0-SPLIT-PLAN-21nov.md`). Nothing here changes a requirement.
 
 How to read the last column:
 - `named in a row`: a backlog row (not a proposed group row) lists the id or a range that holds it.
 - `cited in the requirement text`: the requirement's own text cites a BL row that exists.
 - `proposed group row`: only one of the 38 group rows filed from `BACKLOG-GAPS.md` names it. It has a BL id, but the row is `proposed`, often size L, and has to be split or set `ready` before it counts as built work. Strict G0 (a row of its own) is the `named in a row` and `cited` lines only.
 - `NONE`: nobody names it. There must be none.
+
+Counts of the table below (the generator's own output, 21 Nov 2026, 1,052 rows):
+
+| How | Rows |
+|---|---|
+| named in a row | 393 |
+| cited in the requirement text | 77 |
+| proposed group row | 582 |
+
+Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, before BL-1158 to BL-1182, the generator gives 292 named, 77 cited and 683 proposed group rows (369 of 1,052 strict, 683 not). Earlier text that says 368 and 684 (`READINESS-20nov.md`) came from an earlier head and could not be reproduced on `bc143cc`; the 101 rows moved by this batch are the difference between 683 and 582.
 
 | P0 id | Card or file | BL id | How |
 |---|---|---|---|
@@ -142,32 +152,32 @@ How to read the last column:
 | NS-07-C5-9 | 07-remaining-capability-rows.md | BL-974 | named in a row |
 | NS-07-G11-1a | 07-remaining-capability-rows.md | BL-975 | named in a row |
 | NS-07-G11-3 | 07-remaining-capability-rows.md | BL-975 | named in a row |
-| NS-08-R10 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R11 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R13 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R14 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R16 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R17 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R18 | 08-keeping-and-trust.md | BL-128 | proposed group row |
-| NS-08-R19 | 08-keeping-and-trust.md | BL-128 | proposed group row |
+| NS-08-R10 | 08-keeping-and-trust.md | BL-1179 | named in a row |
+| NS-08-R11 | 08-keeping-and-trust.md | BL-1179 | named in a row |
+| NS-08-R13 | 08-keeping-and-trust.md | BL-1179 | named in a row |
+| NS-08-R14 | 08-keeping-and-trust.md | BL-1179 | named in a row |
+| NS-08-R16 | 08-keeping-and-trust.md | BL-1180 | named in a row |
+| NS-08-R17 | 08-keeping-and-trust.md | BL-1180 | named in a row |
+| NS-08-R18 | 08-keeping-and-trust.md | BL-1180 | named in a row |
+| NS-08-R19 | 08-keeping-and-trust.md | BL-1180 | named in a row |
 | NS-08-R21 | 08-keeping-and-trust.md | BL-1048 | named in a row |
 | NS-08-R4 | 08-keeping-and-trust.md | BL-976, BL-290 | named in a row |
 | NS-08-R5 | 08-keeping-and-trust.md | BL-976 | named in a row |
 | NS-08-R6 | 08-keeping-and-trust.md | BL-976 | named in a row |
 | NS-08-R7 | 08-keeping-and-trust.md | BL-976 | named in a row |
 | NS-08-R9 | 08-keeping-and-trust.md | BL-976, BL-290 | named in a row |
-| NS-09-R1 | 08-keeping-and-trust.md | BL-181 | proposed group row |
+| NS-09-R1 | 08-keeping-and-trust.md | BL-1181 | named in a row |
 | NS-09-R10 | 08-keeping-and-trust.md | BL-977 | named in a row |
 | NS-09-R11 | 08-keeping-and-trust.md | BL-977 | named in a row |
 | NS-09-R12 | 08-keeping-and-trust.md | BL-977 | named in a row |
 | NS-09-R14 | 08-keeping-and-trust.md | BL-977 | named in a row |
 | NS-09-R15 | 08-keeping-and-trust.md | BL-977 | named in a row |
-| NS-09-R2 | 08-keeping-and-trust.md | BL-181 | proposed group row |
-| NS-09-R3 | 08-keeping-and-trust.md | BL-181 | proposed group row |
-| NS-09-R4a | 08-keeping-and-trust.md | BL-181 | proposed group row |
+| NS-09-R2 | 08-keeping-and-trust.md | BL-1181 | named in a row |
+| NS-09-R3 | 08-keeping-and-trust.md | BL-1181 | named in a row |
+| NS-09-R4a | 08-keeping-and-trust.md | BL-1181 | named in a row |
 | NS-09-R4b | 08-keeping-and-trust.md | BL-138 | named in a row |
-| NS-09-R7 | 08-keeping-and-trust.md | BL-181 | proposed group row |
-| NS-09-R8 | 08-keeping-and-trust.md | BL-181 | proposed group row |
+| NS-09-R7 | 08-keeping-and-trust.md | BL-1182 | named in a row |
+| NS-09-R8 | 08-keeping-and-trust.md | BL-1182 | named in a row |
 | NS-09-R9 | 08-keeping-and-trust.md | BL-977 | named in a row |
 | NS-10-R0 | 08-keeping-and-trust.md | BL-978 | named in a row |
 | NS-10-R1 | 08-keeping-and-trust.md | BL-978 | named in a row |
@@ -206,10 +216,10 @@ How to read the last column:
 | NS-13-R5 | 09-capture.md | BL-943 | named in a row |
 | NS-13-R6a | 09-capture.md | BL-943 | named in a row |
 | NS-13-R6b | 09-capture.md | BL-943 | named in a row |
-| NS-14-R11 | 09-capture.md | BL-181 | proposed group row |
+| NS-14-R11 | 09-capture.md | BL-1182 | named in a row |
 | NS-14-R3 | 09-capture.md | BL-941 | named in a row |
 | NS-14-R4 | 09-capture.md | BL-941 | named in a row |
-| NS-14-R8 | 09-capture.md | BL-181 | proposed group row |
+| NS-14-R8 | 09-capture.md | BL-1182 | named in a row |
 | NS-15-R11 | 09-capture.md | BL-945 | named in a row |
 | NS-15-R16 | 09-capture.md | BL-945 | named in a row |
 | NS-15-R18 | 09-capture.md | BL-945 | named in a row |
@@ -236,13 +246,13 @@ How to read the last column:
 | NS-18-R3 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R6 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R8 | 09-capture.md | BL-982 | named in a row |
-| NS-19-R1 | 09-capture.md | BL-183 | proposed group row |
-| NS-19-R4 | 09-capture.md | BL-183 | proposed group row |
-| NS-21-R11 | 10-reading-and-family.md | BL-183 | proposed group row |
+| NS-19-R1 | 09-capture.md | BL-1174 | named in a row |
+| NS-19-R4 | 09-capture.md | BL-1174 | named in a row |
+| NS-21-R11 | 10-reading-and-family.md | BL-1175 | named in a row |
 | NS-21-R12 | 10-reading-and-family.md | BL-962, BL-287 | named in a row |
-| NS-21-R13 | 10-reading-and-family.md | BL-183 | proposed group row |
+| NS-21-R13 | 10-reading-and-family.md | BL-1175 | named in a row |
 | NS-21-R4 | 10-reading-and-family.md | BL-937 | named in a row |
-| NS-21-R9 | 10-reading-and-family.md | BL-183 | proposed group row |
+| NS-21-R9 | 10-reading-and-family.md | BL-1175 | named in a row |
 | NS-22-R2 | 10-reading-and-family.md | BL-938 | named in a row |
 | NS-22-R3 | 10-reading-and-family.md | BL-938 | named in a row |
 | NS-23-R11 | 10-reading-and-family.md | BL-946 | named in a row |
@@ -250,7 +260,7 @@ How to read the last column:
 | NS-23-R17 | 10-reading-and-family.md | BL-946 | named in a row |
 | NS-23-R5 | 10-reading-and-family.md | BL-946 | named in a row |
 | NS-23-R8 | 10-reading-and-family.md | BL-946 | named in a row |
-| NS-24-R10 | 10-reading-and-family.md | BL-183 | proposed group row |
+| NS-24-R10 | 10-reading-and-family.md | BL-1175 | named in a row |
 | NS-24-R2 | 10-reading-and-family.md | BL-947 | named in a row |
 | NS-24-R3 | 10-reading-and-family.md | BL-947 | named in a row |
 | NS-25-R1 | 10-reading-and-family.md | BL-983 | named in a row |
@@ -270,45 +280,45 @@ How to read the last column:
 | NS-32-R11 | 11-foundations.md | BL-966 | named in a row |
 | NS-32-R12 | 11-foundations.md | BL-966 | named in a row |
 | NS-32-R14 | 11-foundations.md | BL-966 | named in a row |
-| NS-32-R1b | 11-foundations.md | BL-966 | named in a row |
-| NS-32-R4 | 11-foundations.md | BL-966 | named in a row |
-| NS-32-R4b | 11-foundations.md | BL-966, BL-163 | named in a row |
+| NS-32-R1b | 11-foundations.md | BL-966, BL-1152 | named in a row |
+| NS-32-R4 | 11-foundations.md | BL-966, BL-1152 | named in a row |
+| NS-32-R4b | 11-foundations.md | BL-966, BL-163, BL-1152 | named in a row |
 | NS-32-R8 | 11-foundations.md | BL-966 | named in a row |
-| NS-33-R1 | 11-foundations.md | BL-184 | proposed group row |
+| NS-33-R1 | 11-foundations.md | BL-1172 | named in a row |
 | NS-33-R10 | 11-foundations.md | BL-984, BL-139 | named in a row |
 | NS-33-R12 | 11-foundations.md | BL-984 | named in a row |
 | NS-33-R15 | 11-foundations.md | BL-954, BL-984 | named in a row |
 | NS-33-R16 | 11-foundations.md | BL-984, BL-162 | named in a row |
-| NS-33-R2 | 11-foundations.md | BL-184 | proposed group row |
+| NS-33-R2 | 11-foundations.md | BL-1172 | named in a row |
 | NS-33-R3 | 11-foundations.md | BL-931 | named in a row |
-| NS-33-R4 | 11-foundations.md | BL-184 | proposed group row |
-| NS-33-R5 | 11-foundations.md | BL-184 | proposed group row |
-| NS-33-R6 | 11-foundations.md | BL-184 | proposed group row |
-| NS-33-R7 | 11-foundations.md | BL-184 | proposed group row |
-| NS-33-R8 | 11-foundations.md | BL-184 | proposed group row |
+| NS-33-R4 | 11-foundations.md | BL-1172 | named in a row |
+| NS-33-R5 | 11-foundations.md | BL-1173 | named in a row |
+| NS-33-R6 | 11-foundations.md | BL-1172 | named in a row |
+| NS-33-R7 | 11-foundations.md | BL-1173 | named in a row |
+| NS-33-R8 | 11-foundations.md | BL-1173 | named in a row |
 | NS-33-R9 | 11-foundations.md | BL-984, BL-139 | named in a row |
 | NS-34-R2 | 11-foundations.md | BL-168 | named in a row |
 | NS-34-R5 | 11-foundations.md | BL-185 | proposed group row |
 | NS-34-R6 | 11-foundations.md | BL-1047, BL-168 | named in a row |
-| NS-35-R1 | 11-foundations.md | BL-183 | proposed group row |
-| NS-35-R3 | 11-foundations.md | BL-183 | proposed group row |
-| NS-35-R4 | 11-foundations.md | BL-183 | proposed group row |
+| NS-35-R1 | 11-foundations.md | BL-1174 | named in a row |
+| NS-35-R3 | 11-foundations.md | BL-1174 | named in a row |
+| NS-35-R4 | 11-foundations.md | BL-1174 | named in a row |
 | NS-35-R7 | 11-foundations.md | BL-952 | named in a row |
-| NS-36-R10 | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R11 | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R12 | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R1a | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R1b | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R1c | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R1d | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R2 | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R3 | 11-foundations.md | BL-186 | proposed group row |
+| NS-36-R10 | 11-foundations.md | BL-1178 | named in a row |
+| NS-36-R11 | 11-foundations.md | BL-1178 | named in a row |
+| NS-36-R12 | 11-foundations.md | BL-1178 | named in a row |
+| NS-36-R1a | 11-foundations.md | BL-1176 | named in a row |
+| NS-36-R1b | 11-foundations.md | BL-1176 | named in a row |
+| NS-36-R1c | 11-foundations.md | BL-1176 | named in a row |
+| NS-36-R1d | 11-foundations.md | BL-1176 | named in a row |
+| NS-36-R2 | 11-foundations.md | BL-1177 | named in a row |
+| NS-36-R3 | 11-foundations.md | BL-1177 | named in a row |
 | NS-36-R4 | 11-foundations.md | BL-959, BL-254 | named in a row |
-| NS-36-R5 | 11-foundations.md | BL-186 | proposed group row |
+| NS-36-R5 | 11-foundations.md | BL-1177 | named in a row |
 | NS-36-R6 | 11-foundations.md | BL-960, BL-254 | named in a row |
-| NS-36-R7 | 11-foundations.md | BL-186 | proposed group row |
-| NS-36-R8 | 11-foundations.md | BL-186 | proposed group row |
-| NS-37-R2 | 11-foundations.md | BL-183 | proposed group row |
+| NS-36-R7 | 11-foundations.md | BL-1177 | named in a row |
+| NS-36-R8 | 11-foundations.md | BL-1176 | named in a row |
+| NS-37-R2 | 11-foundations.md | BL-1174 | named in a row |
 | NS-37-R4 | 11-foundations.md | BL-956 | named in a row |
 | NS-37-R5 | 11-foundations.md | BL-956 | named in a row |
 | NS-38-R1 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
@@ -320,70 +330,70 @@ How to read the last column:
 | NS-38-R8 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
 | NS-38-R9 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
 | NS-39-R1 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
-| NS-39-R10 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
-| NS-39-R11 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
+| NS-39-R10 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
+| NS-39-R11 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
 | NS-39-R12 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
 | NS-39-R14 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
 | NS-39-R2 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
-| NS-39-R3 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
-| NS-39-R4 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
-| NS-39-R5 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
-| NS-39-R6 | 19-from-download-to-first-letter.md | BL-188 | proposed group row |
-| NS-40-R1 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R10 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R12 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R13 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R2 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R3 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
+| NS-39-R3 | 19-from-download-to-first-letter.md | BL-1170 | named in a row |
+| NS-39-R4 | 19-from-download-to-first-letter.md | BL-1170 | named in a row |
+| NS-39-R5 | 19-from-download-to-first-letter.md | BL-1170 | named in a row |
+| NS-39-R6 | 19-from-download-to-first-letter.md | BL-1170 | named in a row |
+| NS-40-R1 | 19-from-download-to-first-letter.md | BL-1168 | named in a row |
+| NS-40-R10 | 19-from-download-to-first-letter.md | BL-1169 | named in a row |
+| NS-40-R12 | 19-from-download-to-first-letter.md | BL-1169 | named in a row |
+| NS-40-R13 | 19-from-download-to-first-letter.md | BL-1168 | named in a row |
+| NS-40-R2 | 19-from-download-to-first-letter.md | BL-1168 | named in a row |
+| NS-40-R3 | 19-from-download-to-first-letter.md | BL-1168 | named in a row |
 | NS-40-R5 | 19-from-download-to-first-letter.md | BL-1031 | named in a row |
 | NS-40-R6 | 19-from-download-to-first-letter.md | BL-577, BL-1031 | named in a row |
 | NS-40-R7 | 19-from-download-to-first-letter.md | BL-577 | named in a row |
-| NS-40-R8 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-40-R9 | 19-from-download-to-first-letter.md | BL-198 | proposed group row |
-| NS-41-R1 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
+| NS-40-R8 | 19-from-download-to-first-letter.md | BL-1168 | named in a row |
+| NS-40-R9 | 19-from-download-to-first-letter.md | BL-1169 | named in a row |
+| NS-41-R1 | 19-from-download-to-first-letter.md | BL-1158 | named in a row |
 | NS-41-R10 | 19-from-download-to-first-letter.md | BL-1028 | named in a row |
 | NS-41-R11 | 19-from-download-to-first-letter.md | BL-1027 | named in a row |
-| NS-41-R13 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R14 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R16 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R18 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R19 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R2 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R20 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R22 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R23 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R3 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R4 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
-| NS-41-R5 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
+| NS-41-R13 | 19-from-download-to-first-letter.md | BL-1160 | named in a row |
+| NS-41-R14 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
+| NS-41-R16 | 19-from-download-to-first-letter.md | BL-1160 | named in a row |
+| NS-41-R18 | 19-from-download-to-first-letter.md | BL-1160 | named in a row |
+| NS-41-R19 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
+| NS-41-R2 | 19-from-download-to-first-letter.md | BL-1158 | named in a row |
+| NS-41-R20 | 19-from-download-to-first-letter.md | BL-1158 | named in a row |
+| NS-41-R22 | 19-from-download-to-first-letter.md | BL-1158 | named in a row |
+| NS-41-R23 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
+| NS-41-R3 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
+| NS-41-R4 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
+| NS-41-R5 | 19-from-download-to-first-letter.md | BL-1159 | named in a row |
 | NS-41-R6 | 19-from-download-to-first-letter.md | BL-961 | cited in the requirement text |
-| NS-41-R7 | 19-from-download-to-first-letter.md | BL-208 | proposed group row |
+| NS-41-R7 | 19-from-download-to-first-letter.md | BL-1158 | named in a row |
 | NS-41-R9 | 19-from-download-to-first-letter.md | BL-1026, BL-1027 | named in a row |
-| NS-42-R1 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
-| NS-42-R10 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
-| NS-42-R11 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
+| NS-42-R1 | 19-from-download-to-first-letter.md | BL-1166 | named in a row |
+| NS-42-R10 | 19-from-download-to-first-letter.md | BL-1166 | named in a row |
+| NS-42-R11 | 19-from-download-to-first-letter.md | BL-1166 | named in a row |
 | NS-42-R13 | 19-from-download-to-first-letter.md | BL-1023 | named in a row |
-| NS-42-R15 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
-| NS-42-R16 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
+| NS-42-R15 | 19-from-download-to-first-letter.md | BL-1166 | named in a row |
+| NS-42-R16 | 19-from-download-to-first-letter.md | BL-1166 | named in a row |
 | NS-42-R17 | 19-from-download-to-first-letter.md | BL-1040 | named in a row |
 | NS-42-R18 | 19-from-download-to-first-letter.md | BL-1022 | named in a row |
 | NS-42-R2 | 19-from-download-to-first-letter.md | BL-1022 | named in a row |
 | NS-42-R3 | 19-from-download-to-first-letter.md | BL-1022 | named in a row |
-| NS-42-R4 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
-| NS-42-R5 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
-| NS-42-R6 | 19-from-download-to-first-letter.md | BL-291 | proposed group row |
+| NS-42-R4 | 19-from-download-to-first-letter.md | BL-1167 | named in a row |
+| NS-42-R5 | 19-from-download-to-first-letter.md | BL-1167 | named in a row |
+| NS-42-R6 | 19-from-download-to-first-letter.md | BL-1167 | named in a row |
 | NS-42-R7 | 19-from-download-to-first-letter.md | BL-1022 | named in a row |
 | NS-42-R9 | 19-from-download-to-first-letter.md | BL-1023 | named in a row |
-| NS-43-R1 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
+| NS-43-R1 | 19-from-download-to-first-letter.md | BL-1164 | named in a row |
 | NS-43-R10 | 19-from-download-to-first-letter.md | BL-1033 | named in a row |
-| NS-43-R11 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R13 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R14 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R2 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R3 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R4 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
+| NS-43-R11 | 19-from-download-to-first-letter.md | BL-1165 | named in a row |
+| NS-43-R13 | 19-from-download-to-first-letter.md | BL-1165 | named in a row |
+| NS-43-R14 | 19-from-download-to-first-letter.md | BL-1165 | named in a row |
+| NS-43-R2 | 19-from-download-to-first-letter.md | BL-1164 | named in a row |
+| NS-43-R3 | 19-from-download-to-first-letter.md | BL-1164 | named in a row |
+| NS-43-R4 | 19-from-download-to-first-letter.md | BL-1164 | named in a row |
 | NS-43-R6 | 19-from-download-to-first-letter.md | BL-1033 | named in a row |
-| NS-43-R7 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
-| NS-43-R8 | 19-from-download-to-first-letter.md | BL-292 | proposed group row |
+| NS-43-R7 | 19-from-download-to-first-letter.md | BL-1164 | named in a row |
+| NS-43-R8 | 19-from-download-to-first-letter.md | BL-1165 | named in a row |
 | NS-44-R1 | 19-from-download-to-first-letter.md | BL-1034 | named in a row |
 | NS-44-R10 | 19-from-download-to-first-letter.md | BL-1034 | named in a row |
 | NS-44-R12 | 19-from-download-to-first-letter.md | BL-1034 | named in a row |
@@ -395,20 +405,20 @@ How to read the last column:
 | NS-44-R8 | 19-from-download-to-first-letter.md | BL-1034 | named in a row |
 | NS-44-R9 | 19-from-download-to-first-letter.md | BL-1034 | named in a row |
 | NS-45-R1 | 19-from-download-to-first-letter.md | BL-1036 | named in a row |
-| NS-45-R10 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R11 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R12 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
+| NS-45-R10 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
+| NS-45-R11 | 19-from-download-to-first-letter.md | BL-1163 | named in a row |
+| NS-45-R12 | 19-from-download-to-first-letter.md | BL-1163 | named in a row |
 | NS-45-R13 | 19-from-download-to-first-letter.md | BL-1035 | named in a row |
-| NS-45-R15 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R16 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R18 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R2 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R3 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
+| NS-45-R15 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
+| NS-45-R16 | 19-from-download-to-first-letter.md | BL-1161 | named in a row |
+| NS-45-R18 | 19-from-download-to-first-letter.md | BL-1163 | named in a row |
+| NS-45-R2 | 19-from-download-to-first-letter.md | BL-1161 | named in a row |
+| NS-45-R3 | 19-from-download-to-first-letter.md | BL-1161 | named in a row |
 | NS-45-R5 | 19-from-download-to-first-letter.md | BL-1036 | named in a row |
-| NS-45-R6 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
-| NS-45-R7 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
+| NS-45-R6 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
+| NS-45-R7 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
 | NS-45-R8 | 19-from-download-to-first-letter.md | BL-1039 | named in a row |
-| NS-45-R9 | 19-from-download-to-first-letter.md | BL-294 | proposed group row |
+| NS-45-R9 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
 | NS-46-R14 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
 | NS-46-R16 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
 | NS-46-R17 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |

@@ -108,7 +108,7 @@ export const ERROR_DETAILS = [
   'pending', 'restore_open', 'rotation', 'session_ended',
   // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
   'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
-  'photoMoments', 'videos', 'signIn', 'libraryDays',
+  'photoMoments', 'videos', 'signIn', 'libraryDays', 'bookSearch',
   // invite-redeem's global brake (F11-REQ-007)
   'codes_paused',
 ] as const;

@@ -29,6 +29,8 @@ import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
 import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
 import { REMINDER_SOURCE, reminderContent } from './payload';
+import { PLAN_ID_PREFIX } from '../billing/plan-reminders.logic';
+import { PLAN_MAX } from './budget';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
@@ -116,8 +118,9 @@ function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerIn
 }
 
 /** What the prefs plan on this phone now, whatever iOS allows (the Settings preview and Next line). Pure read. */
-export function intendedPlan(now = Date.now()): PlannedNotification[] {
+export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): PlannedNotification[] {
   return planReminders({
+    planPending,
     now,
     timeZone: deviceTimeZone(),
     prefs: readPrefs(),
@@ -133,18 +136,23 @@ export function nextReminder(now = Date.now()): PlannedNotification | null {
 }
 
 /** The current plan for this phone, or [] when reminders are off, paused or not allowed. */
-export async function currentPlan(now = Date.now()): Promise<PlannedNotification[]> {
+export async function currentPlan(now = Date.now(), planPending: number = PLAN_MAX): Promise<PlannedNotification[]> {
   const prefs = readPrefs();
   if (!prefs.enabled || prefs.paused) return [];
   if ((await getReminderPermission()) !== 'granted') return [];
-  return intendedPlan(now);
+  return intendedPlan(now, planPending);
+}
+
+/** How many plan notices (`plan.` ids, lib/billing) are pending now: they keep their slots inside the 60 (CR-69 A1). Ids only, never content. */
+function pendingPlanNotices(scheduled: readonly { identifier: string }[]): number {
+  return scheduled.filter((s) => s.identifier.startsWith(PLAN_ID_PREFIX)).length;
 }
 
 async function apply(): Promise<void> {
-  const plan = await currentPlan();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const plan = await currentPlan(Date.now(), pendingPlanNotices(scheduled));
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const s of scheduled) {
     if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) {
       await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
