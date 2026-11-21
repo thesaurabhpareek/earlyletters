@@ -20,23 +20,29 @@ export async function deviceIdOnce(): Promise<string | null> {
   }
 }
 
-/** One report in flight at a time: a second ask while one runs shares it (its first attempt may still be timing out). */
-let inFlight: Promise<void> | null = null;
+/** One report in flight per account: a second ask from the same account shares it (its first attempt may still be timing out). Another account never gets it. */
+const inFlight = new Map<string, Promise<void>>();
 
-export function reportNewDeviceFor(sb: SupabaseLike): Promise<void> {
-  if (inFlight) return inFlight;
-  const run = reportOnce(sb).finally(() => {
-    if (inFlight === run) inFlight = null;
+export function reportNewDeviceFor(sb: SupabaseLike, userId: string): Promise<void> {
+  const shared = inFlight.get(userId);
+  if (shared) return shared;
+  const run = reportOnce(sb, userId).finally(() => {
+    if (inFlight.get(userId) === run) inFlight.delete(userId);
   });
-  inFlight = run;
+  inFlight.set(userId, run);
   return run;
 }
 
-function reportOnce(sb: SupabaseLike): Promise<void> {
+function reportOnce(sb: SupabaseLike, userId: string): Promise<void> {
   return reportNewDevice({
     enabled: newDeviceEmailEnabled,
     deviceId: deviceIdOnce,
-    accessToken: async () => (await sb.auth.getSession()).data.session?.access_token ?? null,
+    accessToken: async () => {
+      const session = (await sb.auth.getSession()).data.session;
+      // The session may have moved to another account since this report was asked for: send nothing for the starter then.
+      if (session?.user?.id && session.user.id !== userId) return null;
+      return session?.access_token ?? null;
+    },
     deviceClass: deviceClassOf(Platform.OS),
     send: async ({ token, body }) => {
       // A timed-out attempt is cancelled, so the retry never overlaps it.

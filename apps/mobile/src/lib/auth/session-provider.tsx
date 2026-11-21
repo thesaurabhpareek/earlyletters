@@ -232,7 +232,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const next = nextReportMark(reportMark.current, state);
     reportMark.current = next.mark;
-    if (next.call && sb) void reportNewDeviceFor(sb);
+    if (next.call && sb && state.status === 'ready') void reportNewDeviceFor(sb, state.userId);
   }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
