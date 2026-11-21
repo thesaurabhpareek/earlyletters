@@ -218,14 +218,16 @@ export function useHiddenBehindCardPage() {
  * Where the page's opening block (the `opening` given to CardToPage) sits in the page's own layout. `lineHeight` is
  * the line height its body text renders at; it must equal the card's for the words to be carried.
  */
-export function PageOpening({ lineHeight, style }: { lineHeight: number; style?: StyleProp<ViewStyle> }) {
+export function PageOpening({ lineHeight, style, carry = true }: { lineHeight: number; style?: StyleProp<ViewStyle>; carry?: boolean }) {
   const { opening, focus, hidden, place } = useContext(CardPageContext);
   const ref = useRef<View>(null);
   return (
     <View
       ref={ref}
       collapsable={false}
-      onLayout={() => place(ref.current, lineHeight)}
+      // carry={false}: nothing is measured, so CardToPage takes its plain 200 ms hand-off (a block with a picture between
+      // its two parts cannot travel rigid; NS-01-C01-order).
+      onLayout={() => (carry ? place(ref.current, lineHeight) : undefined)}
       // Hidden while the carried copy stands in for it (and from screen readers, so nothing invisible is reachable).
       accessibilityElementsHidden={hidden}
       importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}

@@ -13,7 +13,7 @@ import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
-import { pictureHidden, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { LETTER_PICTURE_AX_MAX_PT, letterPictureSize, pictureHidden, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
 import { fixture, insertBook } from './helpers/store-fixture';
@@ -228,16 +228,52 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
     expect(files.writes + store.puts).toBe(0);
   });
-  it('[NS-01-R8][CL-116 C-01] the letter page draws the picture above the words: it comes before the opening (dateline and words), not after the signature', () => {
+  it('[NS-01-R8][CL-116 C-01] the picture sits between the dateline and the words', () => {
+    // Ruling NS-01-C01-order: in tree order the one level 1 dateline (testID letter.dateline), then the picture, then the
+    // words; the picture's name is the fixed phrase or the parent's own words, never derived from the picture. Source scan
+    // (a render of the page needs a phone), with three mutants that must fail.
     const page = readFileSync(join(SRC, 'app', 'letter', '[id].tsx'), 'utf8');
-    const photo = page.indexOf('<LetterPhoto ');
-    expect(photo).toBeGreaterThan(-1);
-    expect(page.split('<LetterPhoto ').length).toBe(2); // drawn once
-    expect(photo).toBeLessThan(page.indexOf('<PageOpening'));
-    expect(photo).toBeLessThan(page.indexOf('opening(ownOpening)'));
-    expect(photo).toBeLessThan(page.indexOf('<AudioPlayer'));
-    // It fades with the rest of the page and takes no room when the switch is off (a null child leaves no gap).
-    expect(page).toMatch(/<LetterPhoto [^>]*fade=\{restBody\}/);
+    const picture = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    const check = (p: string, pic: string): string[] => {
+      const out: string[] = [];
+      const open = p.slice(p.indexOf('function OpeningBlock'), p.indexOf('type PageProps'));
+      const at = [open.indexOf('asHeading={1}'), open.indexOf('{picture}'), open.indexOf('variant="letterBody"')];
+      if (!(at[0] > -1 && at[1] > at[0] && at[2] > at[1])) out.push(`order in OpeningBlock: ${at}`);
+      if (p.split('asHeading={1}').length !== 2) out.push('not exactly one level 1 heading');
+      if (!open.includes("testID={focusRef ? 'letter.dateline' : undefined}")) out.push('dateline testID');
+      if (p.split('<LetterPicture ').length !== 2) out.push('picture drawn other than once');
+      // The controls (LetterPhoto) come after the opening in the page body, never above it.
+      if (p.indexOf('<LetterPhoto ') < p.indexOf('<PageOpening')) out.push('controls above the opening');
+      if (!/label=\{photoA11yLabel\(photo\.text\)\}/.test(pic)) out.push('label is not R9a or R21c');
+      if (/label=\{(?!photoA11yLabel\(photo\.text\))[^}]*\}\s+width=/.test(pic)) out.push('another label');
+      return out;
+    };
+    expect(check(page, picture)).toEqual([]);
+    // Mutant 1: the slot above the dateline (Reading A).
+    const m1 = page.replace('      {picture}\n', '').replace('<View style={{ gap: CARD_TEXT_GAP }}>', '<View style={{ gap: CARD_TEXT_GAP }}>\n      {picture}');
+    expect(check(m1, picture).length, 'slot above dateline').toBeGreaterThan(0);
+    // Mutant 2: the slot after the words (the old #839).
+    const m2 = page.replace('      {picture}\n', '').replace('    </View>\n  );\n}\n\ntype PageProps', '      {picture}\n    </View>\n  );\n}\n\ntype PageProps');
+    expect(check(m2, picture).length, 'slot after words').toBeGreaterThan(0);
+    // Mutant 3: a label made from anything else.
+    const m3 = picture.replace('label={photoA11yLabel(photo.text)}', 'label={`Photo, ${photo.width} by ${photo.height}`}');
+    expect(check(page, m3).length, 'derived label').toBeGreaterThan(0);
+    // No slot, no gap for a letter without a picture: the slot is a null child, and the carry is kept for it.
+    expect(page).toMatch(/const picture = hasPicture \? <LetterPicture/);
+    expect(page).toMatch(/carried: !hasPicture && /);
+    expect(page).toMatch(/<PageOpening lineHeight=\{openingLineHeight\} carry=\{!hasPicture\} \/>/);
+  });
+  it('[NS-01-R8][CL-116 C-01] the picture is sized from its stored width and height, capped, one column at AX3 and up, never cropped', () => {
+    const wide = { columnWidth: 300, windowHeight: 667, aspect: 3 / 2, largeText: false };
+    const w = letterPictureSize(wide);
+    expect(w.height).toBeCloseTo(200); // column / aspect, under min(300 * 0.75, 667 * 0.4)
+    expect(w.width / w.height).toBeCloseTo(1.5);
+    const tall = letterPictureSize({ ...wide, aspect: 2 / 3 });
+    expect(tall.height).toBeCloseTo(Math.min(225, 266.8)); // capped
+    expect(tall.width / tall.height).toBeCloseTo(2 / 3); // kept in proportion: never stretched or cropped
+    const ax = letterPictureSize({ ...wide, largeText: true });
+    expect(ax.height).toBeLessThanOrEqual(LETTER_PICTURE_AX_MAX_PT);
+    expect(letterPictureSize({ ...wide, aspect: 5 }).width).toBeLessThanOrEqual(300); // a panorama fits the column
   });
   it('[NS-01-R19] off, the letter page and Review draw no photo control', () => {
     const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');

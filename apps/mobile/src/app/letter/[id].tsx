@@ -78,7 +78,10 @@ import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } 
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
-import { LetterPhoto } from '@/components/photos/letter-photo';
+import { LetterPhoto, LetterPicture } from '@/components/photos/letter-photo';
+import { useLetterPhoto } from '@/lib/photos/hooks';
+import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf } from '@/components/book/chapters';
 import { entryDateline, movedToast } from '@/components/book/date-change.logic';
@@ -129,6 +132,8 @@ function Letter() {
   const [size, setSize] = useState<ReadingSize>(getReadingSize);
   const [showOriginal, setShowOriginal] = useState(false);
   const fontScale = useFontScale();
+  const screenWidth = useWindowDimensions().width;
+  const storedPhoto = useLetterPhoto(entry?.id);
   useUnlitRoom();
 
   // The page follows the store: words that arrive while it is open appear without leaving and reopening (J10-01).
@@ -162,8 +167,13 @@ function Letter() {
   const monthOnly = entry.occurredPrecision === 'month';
   const dateline = entryDateline(child, entry);
   const spokenDateline = monthOnly ? dateline : letterDateline(child, entry.occurredOn);
+  // The picture sits between the dateline and the words (ruling NS-01-C01-order). A letter with a picture hands off with
+  // the plain 200 ms fade (the carry moves dateline and words as one rigid block); a letter without one carries as before.
+  const hasPicture =
+    !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
+  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
   const openingFor: Opening = (focus) => (
-    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} />
+    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} />
   );
 
   const page = (
@@ -180,6 +190,7 @@ function Letter() {
         onToggleOriginal={() => setShowOriginal((v) => !v)}
         opening={openingFor}
         openingLineHeight={lineHeightFor(shownNote ? 'footnote' : 'letterBody', fontScale, scale)}
+        hasPicture={hasPicture}
         words={words}
         onEntry={setEntry}
       />
@@ -206,6 +217,7 @@ function OpeningBlock({
   note,
   scale,
   swapKey,
+  picture,
 }: {
   focusRef: RefObject<any> | null;
   dateline: string;
@@ -214,6 +226,7 @@ function OpeningBlock({
   note: boolean;
   scale: number;
   swapKey: string;
+  picture?: ReactNode;
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
@@ -221,6 +234,8 @@ function OpeningBlock({
       <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
+      {/* The picture, when the letter has one: second in order, after the one level 1 heading and before the words. */}
+      {picture}
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
       <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(150).reduceMotion(ReduceMotion.Never) : undefined}>
         {note ? (
@@ -244,11 +259,12 @@ type PageProps = {
   onToggleOriginal: () => void;
   opening: Opening;
   openingLineHeight: number;
+  hasPicture: boolean;
   words: ReturnType<typeof letterWords>;
   onEntry: (e: Entry) => void;
 };
 
-function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, words, onEntry }: PageProps) {
+function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, hasPicture, words, onEntry }: PageProps) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -267,7 +283,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     const pageY = insets.top + 60;
     const column = { x: CARD_TEXT_INSET, y: pageY, width: screen.width - 2 * CARD_TEXT_INSET, height: Number.MAX_SAFE_INTEGER, lineHeight: openingLineHeight };
     return pageRestPlan({
-      carried: !!r && !reduced && canCarry(r.text, column),
+      carried: !hasPicture && !!r && !reduced && canCarry(r.text, column),
       holdMs: tokens.motion.cardToPage.holdMs,
       measureMs: MEASURE_MS,
       spring: tokens.motion.standard,
@@ -396,17 +412,12 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
         testID="letter.page">
         <View className="gap-6">
-          {/* The letter's picture sits ABOVE the words (CL-116 C-01, NS-01 section 3 row 3, B-S08): the card wins. It is drawn
-              above the card's carried opening so the carried words land where they are measured (PageOpening onLayout);
-              absent when the photos switch is off, and then nothing here takes room. DEFAULT pending req-question
-              NS-01-C01-order: B-S08 reads dateline, picture, words, which would split the carried opening. */}
-          {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} fade={restBody} /> : null}
           {showOriginal ? (
             <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
               {copy.review.originalLabel}
             </Text>
           ) : null}
-          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} /> : opening(ownOpening)}
+          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} carry={!hasPicture} /> : opening(ownOpening)}
           {showsSignature(words) || showOriginal ? (
             <Animated.View style={restSignature} className="self-end">
               <Text variant="signature" scale={tokens.readingScale[size]}>
@@ -417,6 +428,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         </View>
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
+        {/* The picture's controls (add, change, words, remove) stay after the words; the picture itself is drawn by the
+            opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
         {spoken && <AudioPlayer entryId={entry.id} />}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}

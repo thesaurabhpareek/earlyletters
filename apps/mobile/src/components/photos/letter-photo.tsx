@@ -5,13 +5,12 @@
  * Remove; the letter itself reads whole. None of this touches the letter's words, transcript or recording.
  * Absent when the photos switch is off.
  */
-import { useEffect, useState, type ComponentProps } from 'react';
-import { Alert, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { useEffect, useState } from 'react';
+import { Alert, View, useWindowDimensions } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { announce } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize } from '@/lib/a11y';
 import { ErrorLine } from '@/lib/auth/ui';
 import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
@@ -24,14 +23,14 @@ import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
 import { photosPausedNow } from '@/lib/photos/pause';
 import { useLetterPhoto } from '@/lib/photos/hooks';
 import { photoA11yLabel } from '@/lib/photos/text';
-import type { PickedAsset } from '@/lib/photos/types';
+import { letterPictureSize } from '@/lib/photos/surface';
+import type { PickedAsset, StoredPhoto } from '@/lib/photos/types';
 import { usePhotoPick } from '@/lib/photos/use-photo-pick';
 import { PhotoFrame } from './photo-frame';
 
-export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { entryId: string; finalText: string; own: boolean; draft?: boolean; fade?: ComponentProps<typeof Animated.View>['style'] }) {
+export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryId: string; finalText: string; own: boolean; draft?: boolean }) {
   const photo = useLetterPhoto(entryId);
   const toast = useToast();
-  const [missing, setMissing] = useState(false);
   const [failed, setFailed] = useState(false);
   const [editing, setEditing] = useState(false);
   const notSaved = usePhotoNotSaved(entryId);
@@ -75,7 +74,6 @@ export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { 
   };
   const pick = usePhotoPick((asset) => {
     setFailed(false);
-    setMissing(false);
     return run(asset, false);
   });
 
@@ -83,26 +81,15 @@ export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { 
   const words = draft || finalText.trim().length > 0;
   if (!photo) {
     return own && words ? (
-      <Animated.View className="items-start" style={fade} testID="letter.photo.add">
+      <View className="items-start" testID="letter.photo.add">
         {notSaved ? <SpokenLine text={draft ? photos.review.notStored : photos.book.letter.notSaved} testID="letter.photo.notSaved" /> : null}
         <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
         <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
-      </Animated.View>
+      </View>
     ) : null;
   }
-  const label = photoA11yLabel(photo.text);
   return (
-    <Animated.View className="gap-2" style={fade} testID="letter.photo">
-      {missing ? (
-        <View className="gap-1" testID="letter.photo.missing">
-          <Text variant="callout" tone="muted">{photos.book.letter.missing}</Text>
-          {own ? (
-            <Button variant="quiet" size="md" label={photos.book.letter.missingRemove} onPress={() => void removePhotoFromLetter(photoDeps(), entryId)} testID="letter.photo.missingRemove" />
-          ) : null}
-        </View>
-      ) : (
-        <PhotoFrame uri={photoUri(photo)} label={label} aspectRatio={photo.width && photo.height ? photo.width / photo.height : 4 / 3} onMissing={() => setMissing(true)} testID="letter.photo.frame" />
-      )}
+    <View className="gap-2" testID="letter.photo.controls">
       {editing && own ? (
         <View className="gap-3" testID="letter.photo.edit">
           {/* No length cap on the fields: a native cap counts UTF-16 units and could cut a character in half; editPhotoWords keeps 140 and 60 characters a person sees (BL-957). */}
@@ -110,12 +97,7 @@ export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { 
           <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { place: t })} testID="letter.photo.place" />
           <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="letter.photo.editDone" />
         </View>
-      ) : (
-        <>
-          {photo.text ? <Text variant="callout">{photo.text}</Text> : null}
-          {photo.place ? <Text variant="footnote" tone="muted">{photo.place}</Text> : null}
-        </>
-      )}
+      ) : null}
       {own ? (
         <View className="items-start">
           {!editing ? <Button variant="quiet" size="md" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
@@ -130,8 +112,46 @@ export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { 
           <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
         </View>
       ) : null}
-    </Animated.View>
+    </View>
   );
+}
+
+/**
+ * The picture itself on the letter page (NS-01-R7 to R9, CL-116 C-01, ruling NS-01-C01-order): drawn by the page's
+ * opening BETWEEN the dateline and the words, display only, with the parent's photo words and place under it. The
+ * controls (add, change, words, remove) stay in LetterPhoto below the words. Sized on first render from the width and
+ * height stored on its row, so nothing below it moves after open; its name is the fixed phrase or the parent's own
+ * words (R9a, R21c), never derived from the picture. Absent (no gap) when there is no picture or photos are off.
+ */
+export function LetterPicture({ entryId, own, columnWidth }: { entryId: string; own: boolean; columnWidth: number }) {
+  const photo = useLetterPhoto(entryId);
+  const large = useIsAccessibilitySize();
+  const { height: windowHeight } = useWindowDimensions();
+  const on = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
+  if (!on || !photo) return null;
+  const { width, height } = letterPictureSize({ columnWidth, windowHeight, aspect: photo.width && photo.height ? photo.width / photo.height : 4 / 3, largeText: large });
+  return (
+    <View className="gap-2" testID="letter.photo">
+      <PictureFrame key={photo.mediaId} photo={photo} own={own} width={width} height={height} />
+      {photo.text ? <Text variant="callout" testID="letter.photo.text">{photo.text}</Text> : null}
+      {photo.place ? <Text variant="footnote" tone="muted" testID="letter.photo.placeText">{photo.place}</Text> : null}
+    </View>
+  );
+}
+
+function PictureFrame({ photo, own, width, height }: { photo: StoredPhoto; own: boolean; width: number; height: number }) {
+  const [missing, setMissing] = useState(false);
+  if (missing) {
+    return (
+      <View className="gap-1" testID="letter.photo.missing">
+        <Text variant="callout" tone="muted">{photos.book.letter.missing}</Text>
+        {own ? (
+          <Button variant="quiet" size="md" label={photos.book.letter.missingRemove} onPress={() => void removePhotoFromLetter(photoDeps(), photo.entryId)} testID="letter.photo.missingRemove" />
+        ) : null}
+      </View>
+    );
+  }
+  return <PhotoFrame uri={photoUri(photo)} label={photoA11yLabel(photo.text)} width={width} height={height} onMissing={() => setMissing(true)} testID="letter.photo.frame" />;
 }
 
 /**
