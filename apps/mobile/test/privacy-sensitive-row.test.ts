@@ -23,6 +23,7 @@ import { authCopy } from '../src/lib/auth/copy';
 import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
 import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SyncGate } from '../src/lib/auth/machine.logic';
 import { registerSensitiveDataRow, sensitiveRowStatus } from '../src/lib/auth/sensitive-row';
+import { useRegisterSensitiveDataRow } from '../src/lib/auth/sensitive-row-hook';
 import { renderHook } from './helpers/mini-react';
 
 vi.mock('react', async () => (await import('./helpers/mini-react')).reactStandIn);
@@ -252,10 +253,26 @@ describe('[BL-485] source pins: who registers the row, and that it stays read-on
       return /\.(ts|tsx)$/.test(e.name) ? [p] : [];
     });
 
-  it('the session provider registers the source once, from an effect that runs on mount', () => {
+  it('mounting the registration hook registers a source whose read follows the auth snapshot (BL-508)', () => {
+    setSensitiveDataSource({ read: () => 'signed_out' });
+    publishAuth(STATES.on);
+    const mounted = renderHook(() => useRegisterSensitiveDataRow());
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.status).toBe('on');
+    publishAuth(STATES.declined);
+    expect(row.result.current.status).toBe('off');
+    publishAuth(STATES.signedOut);
+    expect(row.result.current.status).toBe('signed_out');
+    row.unmount();
+    mounted.unmount();
+  });
+
+  it('the session provider calls that hook in its body, formatting aside (BL-508)', () => {
     const provider = code('lib/auth/session-provider.tsx');
-    expect(provider).toMatch(/import \{ registerSensitiveDataRow \} from '\.\/sensitive-row';/);
-    expect(provider).toMatch(/useEffect\(\(\) => \{\s*registerSensitiveDataRow\(\);\s*\}, \[\]\);/);
+    expect(provider).toMatch(/import\s*\{\s*useRegisterSensitiveDataRow\s*\}\s*from\s*'\.\/sensitive-row-hook'/);
+    expect(provider).toMatch(/^\s*useRegisterSensitiveDataRow\(\s*\);/m);
+    // Not also registered by hand beside it: one path, the hook.
+    expect(provider).not.toMatch(/\bregisterSensitiveDataRow\b/);
   });
 
   it('it is the only caller of setSensitiveDataSource in the app', () => {
