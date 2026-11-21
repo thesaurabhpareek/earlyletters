@@ -300,3 +300,102 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Door: two-way. Way back: one line from the founder, recorded as a new entry.
 - Revisit when: the founder says so, or a locked decision is found to rest on a fact that was wrong.
 - Signed: Karma (CTO)
+
+
+### Council batch 1 verdicts, 21 Nov 2026: the next seven entries
+- These seven entries record the six verdicts of the council's first batch of 21 Nov 2026 (BL-421, BL-1486, BL-460, the photo claims, the photos-flag conditions, BL-412). They are locked under CR-144 (standing delegation), not approved by the founder one by one. Every seat ran from one account and one model family (CR-70), and each seat's input is the same session in a different voice, not an independent review. Each is two-way until its door line says otherwise, and the founder can overrule any in one line. The council's working file is outside this repository.
+- Numbers: renumbered from the working ids to the next free ones after checking develop and the patches of the open PRs on 21 Nov 2026 (CR-145 is taken by #1415, so the two Karma entries here are CR-146 and CR-147; CMO-1 to CMO-16 are used, so the claims entry is CMO-17). Not checked: the Project docs `infra/exec-rulings-*`.
+
+### CDesO-11 BL-421 is superseded; the Book keeps the per-card signature (21 Nov 2026, CDesO via Karma's exec review; with CPO)
+- Question: close BL-421 (month placeholder line, voice play glyph, author only when more than one writes) against the newer Book design, and should a one-writer book drop the signature?
+- Tier and type: T1; clear
+- Options considered: close as superseded and keep the signature; close and drop the signature in one-writer books; build the three asks
+- Ruling: close as superseded. Ask 1 is gone (BOOK_PAGE.md line 62: opener has no sentence); ask 2 is refused by BOOK_PAGE.md line 81 ("never a play button, the card is the one target"); ask 3 is refused by BOOK_PAGE.md line 63 and IA-FINAL row 6. Every letter card keeps "From {signsAs}".
+- Why: the signature feeds the VoiceOver card label (`letter-card.tsx:101`) and matches the page's own signature (IA-FINAL row 4). It does not feed the card-to-page carry (MOTION.md line 107: only the dateline and words are carried). Co-parent surfaces are alpha-only (D-162), so dropping it for one writer would unsign every 1.0 card and shift cards when a second writer arrives.
+- Door: two-way
+- Way back: reopen under a new BL with a design spec.
+- Revisit when: the co-parent screens (BL-886) reach a store build.
+- Signed: Chief Design Officer (Claude role)
+
+### CDesO-12 Keep "Add to this letter" until the "This letter" list is built (21 Nov 2026, CDesO via Karma's exec review; with CPO and CTO)
+- Question: does the #1365 heading `book.letter.addGroup` still hold now that IA-FINAL replaces the group with a "This letter" list and renames "Close this letter until a day" to "Hide until a day"?
+- Tier and type: T1; clear
+- Options considered: keep until the list exists; rename the heading now; build the list now
+- Ruling: keep. The heading is true while the group holds only add rows and renders only with the photos flag, which no profile sets. Replace the group with the "This letter" list when a second non-photo row has a build. The list's heading words are PROPOSED content keys, founder to approve. The rename to "Hide until a day" lands with the seal row (counsel Q107, default not built); the old name exists in no code.
+- Why: IA-FINAL lines 205, 216, 516, 527; CONFORMANCE F-20 ("wrap in the group when the second action lands"); packet Q107. Building a shell for off rows is gold-plating before the gate.
+- Door: two-way
+- Way back: one component and one key.
+- Revisit when: photos, firsts or the seal first go on in a build.
+- Signed: Chief Design Officer (Claude role)
+
+### CPO-18 BL-460 points 1 and 5: fix the retry flicker now; leave the later-step join as it is for 1.0 (21 Nov 2026, CPO via Karma's exec review; with CDesO and CTO)
+- Question: what should the join wait do when the joined sheet is closed at a later first-run step, and when Try again flickers?
+- Tier and type: T1; clear
+- Options considered: extend the wait and hand-over to every first-run step; close-as-open on later steps; leave point 1 and fix point 5 only
+- Ruling: point 5 is built: a retry-in-flight state holds the stalled view and the Try again button shows the existing busy state; no new words. Point 1 is recorded as left as it is for 1.0 because the join door shows only in alpha builds (D-162). When the co-parent screens put the door into a store build (BL-886), the intended behaviour is that Close on a later step takes the same road as Open once the book is here, and a quiet line plus a waiting Continue shows on whichever step is in front while it is on its way. CDesO checks that design before that build.
+- Why: `invite/index.tsx:169`, `join-wait.logic.ts:75-77`, `welcome-handoff.logic.ts`, `button.tsx:14-17`; D-162.
+- Door: two-way
+- Way back: remove the flag; point 1 stays recorded.
+- Revisit when: BL-886 is scheduled.
+- Signed: Chief Product Officer (Claude role)
+
+### CPrivO-12 Photo claims in 1.0: CPrivO-10 stands; the listing says nothing about pictures; hold list (21 Nov 2026, CPrivO via Karma's exec review; with CLO, CMO, CCO and CDesO; not counsel)
+- Question: is the locked "no whole-app Data Not Collected claim" complete, and what may the 1.0 store listing claim about photos?
+- Tier and type: T1 (holds); clear
+- Options considered: add to CPrivO-10; leave it; allow a per-type claim now
+- Ruling: CPrivO-10 stands and is supplemented. While `EXPO_PUBLIC_PHOTOS` is off, the listing, screenshots, website, email and in-app strings say nothing about pictures. The per-type "Photos or Videos: not collected" answer stays held until APPLY file 33 is applied, and then only with counsel's read (packet Q1, Q8, Q43). Held in every build: "Data Not Collected" for the whole app; picture feature claims; "never leave your phone", "private", "secure", "encrypted" or "we never see" for pictures; any backup claim for pictures beyond the policy line; "accessible" or "described" for pictures (CDesO-10); the bare policy sentence "We do not collect ... photos" once the flag is on. Notes for Review names the dormant picture module and the flag.
+- Why: CPrivO-10; D-157, D-160; label doc 2.2.0 and `app-store-connect-1.0.md` line 65; `notes-for-review-1.0.txt` lines 22 to 24; PRIVACY-CONTRADICTIONS C-2 to C-9; packet line 393. Apple rules [U]; counsel must confirm every reading.
+- Door: two-way
+- Way back: lift a hold when the build lists match the claim.
+- Revisit when: file 33 is applied, counsel answers Q43, or the flag is scheduled.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CMO-17 The claims inventory gains the held picture sentences (21 Nov 2026, CMO via Karma's exec review)
+- Question: how does marketing treat pictures in the 1.0 listing and site?
+- Tier and type: T1; clear
+- Options considered: mention pictures as coming soon; say nothing; say nothing and register the held sentences
+- Ruling: say nothing about pictures in any 1.0 surface; add each held sentence in CPrivO-12 as a row in the claims inventory marked "false or unverified for this build". Screenshots come from the release build.
+- Why: same-build rule; guideline 2.3.1(a) as cited in the repo [U]; D-161 ("nothing says coming soon").
+- Door: two-way
+- Way back: set a row to true with its evidence.
+- Revisit when: the photo flag is scheduled.
+- Signed: Chief Marketing Officer (Claude role)
+
+### CR-146 Conditions before `EXPO_PUBLIC_PHOTOS` is on in any store build (21 Nov 2026, Karma via the exec review; with CPrivO, CLO, CCO, CISO, CDO, CDesO, CMO)
+- Question: what must be true before the photos flag is on in any store build?
+- Tier and type: T2 (release config and data); complicated
+- Options considered: the Moments gate set only; the NS-01 requirement rows only; one combined table
+- Ruling: the twelve-row table below, copied into `docs/release/<x.y.z>.md` for the build that carries photos. No `eas.json` profile sets the flag until a PR cites that table with every row green, with two lens reviews. Whether and when photos ship is the founder's; rows 1, 4, 8, 9, 10 and 11 need his hands or approval.
+- The table (every date PROPOSED; every row needs a dated line under `docs/release/<x.y.z>.md`):
+
+| # | Condition | Evidence | Owner | Founder's hands? |
+|---|---|---|---|---|
+| 1 | Hosted migration `20261110000000_photo_bucket_closed.sql` (APPLY file 33) applied; founder checks `entries.photo_path` rows are zero first (the migration's own note) | `photo_bucket_closed.test.mjs` green; read-back after apply: insert into `entry-photos` refused (42501), a non-null `photo_path` refused (SCPHO). NS-01-R61: "Required before `EXPO_PUBLIC_PHOTOS` is on in `production`" | CDO and CISO prepare; founder applies (`approve-migration`, CI tag run, D-041). CDO-20 already orders the hosted catch-up | Yes (account action) |
+| 2 | `child-photos` bucket: confirm no client path writes a child photo, or close it the same way | Read of the bucket policies and a grep of mobile code; one line in the release doc | CISO with CDO | No (a read); a closing migration would be the founder's apply |
+| 3 | Pictures follow delete, restore and purge (brief P-5, R1a to R1c): letter erase, 30-day purge, Erase everything, sign-out; launch sweep | Tests green; device row D-3 (backup flag read-back and restore with attached pictures; MEDIA_THREAT_MODEL row P9, G7 in the Moments register) | mobile, data-architect, qa | Device run on his phone |
+| 4 | Export carries pictures: BL-868 (deletion and export spec: stored stripped copy only) merged by the founder, then BL-933 (export 1.7.0) | Export test with a picture; spec line matches code | data-architect and legal draft; founder merges BL-868 (legal text, D-125) | Yes (merge) |
+| 5 | DATA_CLASSIFICATION rows match the head: `entry_media`, folders, caches, derivative copies (the planned `-512` and `-1280` rows must read "built" when BL-932 lands), and the data-map row | Dated line with a commit (the Moments G11c wording) | CDO, data-architect | Founder-merge docs PR (CDO-19 pattern) |
+| 6 | Kill switch `killSwitches.photos` pauses the surfaces and cannot turn them on; data rights work with the flag off (NS-01-R19) | Test plus kill-harness media points (BRIEF-KILL-MEDIA) | mobile, qa, CISO | No |
+| 7 | Security read of the `scribe-photo` module and picker path: no network call, metadata stripped, no path or photo word in logs (NS-01-R51 canary), writing tools off on photo words and place (NS-01-R50: those fields not shown in any `production` profile unless the native setting exists, with the source test) | Dated line with a commit | CISO, security-architect | No |
+| 8 | AX5 and Increase Contrast device pass of every photo surface (BL-1485); findings filed as rows. Spec 01 edits (BL-1484: radius `sm`, `thumbMissing`) and strike "only" in spec 01 section 8 (CDesO-10) | Written pass result in the PR; spec lines changed | design-systems, qa | Yes (his phone) |
+| 9 | Privacy label answer for the build, matched to the binary and the production profile (Moments G11d wording: label, policy, usage strings, Notes for Review and privacy manifest all match) | Dated line with a commit; counsel's read on the per-type reading | CPrivO, legal, CCO | Yes (console answer) |
+| 10 | Legal text published in the same build: policy backup line (MR-1), policy line 45 reworded (C-2), Terms 4.2.0 and in-app disclosures 3.5.0 (C-9: parent confirms they may use the pictures they add, including other people's children) | Merged `docs/legal` text, counsel's written read or the founder's recorded acceptance of the residual | legal drafts; counsel must confirm; founder merges | Yes (D-125) |
+| 11 | Counsel Q-items answered or consciously defaulted: Q43 and Q54 (picture lines absent until read; label unchanged), BL-841's brief (CB-1 to CB-27, including the picture label read and Q79), Q129(c) (backup wording), Q45 only if a picture can leave by share. Not needed for this flag: Q107 (seal) and G8, G9 and G11b (Moments place data) | Written answer with a name and date, or the founder's recorded default | CLO prepares; founder sends | Yes (counsel is his) |
+| 12 | Store paperwork and claims: Notes for Review names the picture module and the flag; screenshots and listing say what the build does; claims inventory rows for every picture sentence marked true for this build; no accessibility claim for pictures (CDesO-10) | Rows in the claims inventory; the Moments G6 content-rule scan on picture strings | CMO, CCO | Founder approves listing |
+
+- Why: NS-01-R19, R50, R51, R61; CR-62 and CR-64; ADR 0028; BL-870, BL-868, BL-933, BL-1484, BL-1485; MR-1 (21 Nov); COUNSEL_PACKET Q43, Q54, Q129; FREEZE-CHECKLIST G5, G7, G11c, G11d.
+- Door: two-way
+- Way back: edit the table by a new entry.
+- Revisit when: the flag is scheduled, or counsel answers.
+- Signed: Karma (CTO)
+
+### CR-147 raw_transcript is immutable on the phone too: a set-once trigger with one scoped bypass for the pull (21 Nov 2026, Karma via the exec review; with CDO, CISO and CAIO)
+- Question: how do we enforce "raw_transcript is immutable" on the phone, given that `takeProvenance` replaces a phone's own non-empty raw with the server's in ADR 0025 row C?
+- Tier and type: T2 (database and sync); complicated
+- Options considered: A, trigger plus no replacement (breaks row C, changes D-111 item 10); B, narrow audited bypass; C, set-once trigger with the pull documented as the exception, unenforced
+- Ruling: B. Local triggers `BEFORE UPDATE OF raw_transcript` on `entries` and `drafts` that abort a change of a set value; the only bypass is a row-scoped `settings('raw_takeover')` entry set and cleared inside `takeProvenance` in the same transaction, and `takeProvenance` names the column only when the value differs. Scope is `raw_transcript` only; `captured_at`, `author_id`, `child_id` and `engine_version` have legitimate local writers and stay unguarded now, with a follow-up row for data-architect. Detail: two set-once triggers on `raw_transcript`, both `BEFORE UPDATE OF raw_transcript`, one on `entries` (bypass only for the row whose id is in `settings('raw_takeover')`) and one on `drafts` (no bypass); the bypass is scoped to one entry id inside `takeProvenance`, set and cleared in the same transaction; a source-scan test pins that no other code names `raw_takeover`; `settings` holds no `raw_takeover` key after any sync. Tests fail on the old code, and the whole two-phone sync table (row C cases) stays green. Scope is `raw_transcript` only. This is not a change to the constitution: it adds the missing local enforcement and keeps D-111 item 10 and row C as decided. If the founder wants no local writer at all (Option A), that amends D-111 item 10 and ADR 0025 row C and is his.
+- Why: `entries_guard_immutable` (`20260930000000_scribe_core.sql:195-207`); `merge.ts:267-290` and `:630`; ADR 0025 section 9 row C; D-111 item 10; DATA-REQ-040; `sync-two-phone` tests at lines 1439, 1470, 1505 of `sync-two-phone.test.ts`; `engine.ts:119`, `:301` (an abort retries the whole pull). Risk: a wrong trigger wedges sync (likelihood 2, impact 4); return: the constitution's local line becomes true and machine-checked.
+- Door: two-way with cost
+- Way back: a later local migration drops the two triggers; delete the flag writes.
+- Revisit when: a second writer of own rows ships to a store build, or counsel changes DATA-REQ-040's scope.
+- Signed: Karma (CTO)
