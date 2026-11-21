@@ -37,12 +37,14 @@ import {
   BackupServerError,
   MAX_OBJECT_BYTES,
   needsSignIn,
+  storedLastError,
   type BackupServer,
 } from './contract';
 import { BackupStopped, KEY_LEN, NONCE_PREFIX_LEN, SEGMENT_SIZE, encryptObject, objectLength, wrapAad } from './format';
 import type { KeyManager } from './keys';
 import type { BackupDb, JobSource, UploadJob } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
+import type { TokenStore } from './token-vault';
 import { tusUpload, type HttpLike } from './tus';
 
 /** A recording of mine on this phone that backup should hold (letters.ts and drafts, via runtime.ts). */
@@ -89,6 +91,8 @@ export interface QueueDeps {
   conditions: Conditions;
   clock: Clock;
   profileId: string;
+  /** Upload tokens (the Keychain, B5-6). Absent: held in memory only (tests). */
+  tokens?: TokenStore;
   source: BackupSource;
   random?: () => number;
   partBytes?: number;
@@ -111,7 +115,15 @@ const tmpName = (entryId: string) => `${entryId}.enc`;
  */
 export const MAX_JOB_ATTEMPTS = ENDPOINT_CLASSES.write_rpc.maxAttempts;
 
+function memoryTokens(): TokenStore {
+  const m = new Map<string, string>();
+  return { get: async (id) => m.get(id) ?? null, set: async (id, t) => void m.set(id, t), remove: async (id) => void m.delete(id) };
+}
+
 export function createUploadQueue(d: QueueDeps) {
+  const tokens = d.tokens ?? memoryTokens();
+  /** The token is dead with its upload: removed, never blocking (a left one goes with sign-out or Erase). */
+  const dropToken = (entryId: string) => void tokens.remove(entryId).catch(() => undefined);
   const random = d.random ?? Math.random;
   let onServer = new Map<string, boolean>();
   let running: Promise<StepOutcome | null> | null = null;
@@ -165,6 +177,7 @@ export function createUploadQueue(d: QueueDeps) {
   /** Back to the start: a new key and new ciphertext, and a fresh upload (the server replaces a pending row). */
   function reset(job: UploadJob, patch: Partial<UploadJob> = {}): void {
     discardTmp(job);
+    dropToken(job.entryId);
     d.db.updateJob(job.entryId, {
       state: 'queued',
       keyVersion: null,
@@ -186,7 +199,7 @@ export function createUploadQueue(d: QueueDeps) {
     if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
     d.db.updateJob(job.entryId, {
       attempts,
-      lastError: code,
+      lastError: storedLastError(code),
       nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, retryAfterSeconds),
     });
     return { kind: 'retry_later' };
@@ -215,6 +228,7 @@ export function createUploadQueue(d: QueueDeps) {
       // The upload refused us (an expired signed token, a session or policy change): ask backup_begin again.
       // It is idempotent on the entry id, so the job goes back to `sealed` with no upload URL.
       if ((job.state === 'begun' || job.state === 'uploading') && /^HTTP(400|401|403)$/.test(e.code)) {
+        dropToken(job.entryId);
         d.db.updateJob(job.entryId, { state: 'sealed', objectPath: null, uploadUrl: null, uploadToken: null, uploadOffset: 0 });
         return later(job, e.code);
       }
@@ -330,7 +344,10 @@ export function createUploadQueue(d: QueueDeps) {
       wrappedFileKey: job.wrappedFileKey!,
     });
     if (r.state === 'confirmed') return confirmed(job);
-    d.db.updateJob(job.entryId, { state: 'begun', objectPath: r.objectPath, uploadToken: r.uploadToken });
+    // B5-6: the token goes to the Keychain FIRST and the column stays null. If the Keychain refuses, the job stays
+    // `sealed` (the error is a retry; backup_begin is idempotent on the entry id), so a token is never in the file.
+    if (r.uploadToken) await tokens.set(job.entryId, r.uploadToken);
+    d.db.updateJob(job.entryId, { state: 'begun', objectPath: r.objectPath, uploadToken: null });
     return { kind: 'progressed' };
   }
 
@@ -363,7 +380,8 @@ export function createUploadQueue(d: QueueDeps) {
     if (tmp === 'stopped') return goneNow(job.entryId) ? { kind: 'progressed' } : { kind: 'gate', reason: await stopReason() };
     if (tmp === 'reset') return { kind: 'progressed' };
     const fresh = d.db.job(job.entryId)!;
-    const target = await d.server.uploadTarget(fresh.objectPath!, fresh.uploadToken);
+    // The Keychain first; a row an older build wrote still has its token in the column until the launch move runs.
+    const target = await d.server.uploadTarget(fresh.objectPath!, (await tokens.get(job.entryId)) ?? fresh.uploadToken);
     const result = await tusUpload({
       http: d.http,
       target,
@@ -385,6 +403,7 @@ export function createUploadQueue(d: QueueDeps) {
   function confirmed(job: UploadJob): StepOutcome {
     const at = new Date(d.clock.now()).toISOString();
     discardTmp(job);
+    dropToken(job.entryId);
     d.db.updateJob(job.entryId, { state: 'confirmed', confirmedAt: at, tmpUri: null, uploadUrl: null, uploadToken: null, attempts: 0, nextAttemptAt: null, lastError: null });
     d.db.setMeta(META.lastBackedUpAt, at);
     return { kind: 'progressed' };
@@ -403,7 +422,7 @@ export function createUploadQueue(d: QueueDeps) {
       if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && (e.detail === 'object' || !e.detail)) || (e.code === '22023' && e.detail === 'size'))) {
         const attempts = job.attempts + 1;
         if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
-        reset(job, { attempts, lastError: `${e.code}:${e.detail ?? 'none'}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
+        reset(job, { attempts, lastError: storedLastError(`${e.code}:${e.detail ?? 'none'}`), nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
         return { kind: 'retry_later' };
       }
       throw e;

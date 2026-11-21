@@ -168,7 +168,7 @@ describe('NS-48 phase 1: the planner seam and the built 8, re-keyed', () => {
       expect(n.key === undefined || typeof n.key === 'string').toBe(true);
       const content = reminderContent(n);
       expect(content.data).toEqual({ source: REMINDER_SOURCE, kind: n.kind });
-      expect(Object.keys(content).sort()).toEqual(['body', 'data', 'sound', 'title']);
+      expect(Object.keys(content).sort()).toEqual(['body', 'categoryIdentifier', 'data', 'interruptionLevel', 'sound', 'title']);
       expect(JSON.stringify(content.data)).not.toMatch(/floor|variant|key/);
     }
     // The scheduler schedules exactly this builder's output.

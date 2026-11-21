@@ -1,3 +1,4 @@
+import { REMINDER_CATEGORY, REMINDER_INTERRUPTION_LEVEL } from './categories';
 import type { PlannedNotification } from './planner';
 
 export const REMINDER_SOURCE = 'scribe.reminders';
@@ -11,6 +12,8 @@ export function reminderContent(p: PlannedNotification): {
   body: string;
   data: { source: string; kind: string };
   sound: false;
+  categoryIdentifier: typeof REMINDER_CATEGORY;
+  interruptionLevel: typeof REMINDER_INTERRUPTION_LEVEL;
 } {
   return {
     title: p.title,
@@ -18,5 +21,19 @@ export function reminderContent(p: PlannedNotification): {
     data: { source: REMINDER_SOURCE, kind: p.kind },
     // Silent: the evening nudge often lands near a sleeping baby.
     sound: false,
+    // Hidden-preview placeholder lives on the category; level `active` only (NS-32-R10, NS-13-R20).
+    categoryIdentifier: REMINDER_CATEGORY,
+    interruptionLevel: REMINDER_INTERRUPTION_LEVEL,
   };
+}
+
+/**
+ * Where a tap on one of our reminders opens the app: the evening nudge on Tonight, the month and birthday notes on the
+ * book. Pure, so the live listener and the cold-start read share one rule. Returns null for anything that is not ours.
+ */
+export function routeForReminder(data: unknown): '/' | '/book' | null {
+  if (!data || typeof data !== 'object') return null;
+  const d = data as { source?: unknown; kind?: unknown };
+  if (d.source !== REMINDER_SOURCE) return null;
+  return d.kind === 'evening' ? '/' : '/book';
 }

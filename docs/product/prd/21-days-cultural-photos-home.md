@@ -397,7 +397,7 @@ New key family `days.*` (PROPOSED), all under the rules test: `days.name.<id>`; 
 FR-DAY-23 (source licences; counsel must confirm; "needs a number from legal"), Q-DAY-6 and Q-DAY-11 (a ticked tradition day as data inferring religion; GDPR Article 9 reading; both are NS-47's). App Review Guideline 1.1.1 is about discriminatory or mean-spirited content about religion or origin (read by `regulatory-affairs`, 20 Nov), so the library names and prefills are read against it by `legal` and the tradition reviewer (DL-8); it does not regulate neutral day names. 4.5.4 names push, not local notes; the Apple Developer Program License Agreement Attachment 1 section 2.2 names local notifications for marketing and requires opt-in consent language and an opt-out (NS-46-R35); the default of treating 4.5.4 as applying stays because Apple lists religious belief as Sensitive Info (counsel confirms CUL-Q11). 5 U.S.C. 6103 lists Christmas Day and Columbus Day among federal holidays, which is why `publicTitleOk` is an allowlist (NS-46-R36). The compliance review fetched the licence and the statute through the session proxy with curl (public pages; see the GAP-LOG process note). No law, guideline or date was otherwise re-verified here. Add DPLA 3.3.3(H) and Attachment 1 section 2.2 to the compliance register by card (FR-CMP-01).
 
 ### 18. Label effect
-None expected, because nothing leaves the phone (NS-47-R4); the label is re-run per build (NS-47-R23).
+**Label effect.** None expected, because nothing leaves the phone (NS-47-R4); the label is re-run per build (NS-47-R23).
 
 ### 19. Claims enabled and forbidden
 Enables: "Pick the days you want a reminder on." and, only with a claims row, "The days you choose stay on this phone." Forbids: "every holiday", "all religions", "every culture", "for every family", "celebrate your culture", "the right date", "we know your traditions", "we ask your religion", "we never store your religion", "you pick the time" for a day reminder, any claim that the feature is free forever (T1).
@@ -604,7 +604,7 @@ Intent drafts (CLAUDE.md content rules only; `content` and the founder decide): 
 Apple App Privacy Details (data processed only on the device is not "collected"; Sensitive Info lists religious or philosophical beliefs; derived data sent off the device is considered separately), App Review 5.1.1(i) to (v) (5.1.1(iii) data minimisation, 5.1.1(iv) no manipulating consent and alternatives given, which the equal-weight "Not now" fits), 5.1.2(i), 1.1.1 and 4.5.4 (names push; the licence agreement Attachment 1 section 2.2 names local notifications for marketing; the default stays treating it as applying), GDPR Article 9(1) and 9(2)(a) (explicit consent for a specified purpose; the design is optional, explicit and withdrawable in one tap), the California sensitive-data list (secondary source only). Counsel questions (need numbers from legal): CUL-Q5 (export), Q6 (device-only sensitive data, including whether an app maker is a controller for data it never receives and Article 7), Q7 (label and Privacy Policy sentence), Q11 (4.5.4 and local notes). App Review's view of an optional faith or origin question found no source: UNVERIFIED; the fallback is a plain browse-and-tick list with no question (Notes for Review lead with the fallback as the default description and the ask slip as the optional entry; the store, site and Notes never describe the ask as a question about religion or country). Counsel must confirm all of it. Read 20 Nov by `regulatory-affairs`, through the session proxy with curl for two public pages (see the GAP-LOG process note).
 
 ### 18. Label effect
-None while NS-47-R4 holds; the Sensitive Info row stays as it is for the due date; a G11 check guards it; the Privacy Policy gains one sentence; the Notes for Review gain a section (NS-47-R23). Not verified against the current label rules.
+**Label effect.** None while NS-47-R4 holds; the Sensitive Info row stays as it is for the due date; a G11 check guards it; the Privacy Policy gains one sentence; the Notes for Review gain a section (NS-47-R23). Not verified against the current label rules.
 
 ### 19. Claims enabled and forbidden
 Enables: only the call-out sentences that have claims rows. Forbids: "we never show your faith" (the name can show behind the switch), "private by design" without a row, "we know your traditions", "we ask your religion", "tell us your religion", "your tradition", "for your faith", "know your culture", "personalised to your beliefs", "we never store your religion", any statement that App Review or a law has approved the feature.
@@ -796,7 +796,7 @@ No new screen. D-S06's "How it will look" preview shows one sample variant for t
 No counsel question of its own; the religion-on-the-lock-screen question belongs to NS-47 (counsel must confirm). Apple documents the category option `hiddenPreviewsShowTitle` ("show the title even if previews are disabled") and a placeholder for the body only, so a title shows with previews hidden only if a category sets that option (NS-47-R36; the default is confirmed on a device in J-CUL-01). DPLA Attachment 1 section 2.3 (no excessive local notifications) is helped by NS-48-R2.
 
 ### 18. Label effect
-None. All local; nothing new leaves the phone.
+**Label effect.** None. All local; nothing new leaves the phone.
 
 ### 19. Claims enabled and forbidden
 Enables: "Reminders change wording from time to time" and nothing else about variety. Forbids: "smart reminders", "personalised", "adapts to you", "keeps you on track", "keeps parents writing", "we do not track when you write", "not based on your habits", "we do not look at your letters" (true of the text, but read as covering kind and date), "we know when you are free", any claim about fewer or more notes.
@@ -1003,7 +1003,7 @@ Intent for `content`; none implies the app finds, chooses, writes or understands
 App Review 5.1.1(iii) (the out-of-process picker; counsel must confirm the reading) and 2.5.19 (no hidden, dormant or undocumented features, which is why the Notes for Review name the flag, the entitlement and a reviewer path; it is not about pickers); Apple Developer Program License Agreement 3.3.3(H) (read 20 Nov by `regulatory-affairs` through curl and the session proxy; the link Apple gives lands on a different anchor), NS-49-R35; counsel Q43 (label line), Q45 (a child's image), Q48 (another adult's picture), Q54 (Photos or Videos become collected if pictures sync). New counsel items need numbers from legal: whether the picker changes the label or Notes for Review; whether the wording above the picker is a notice; 5.1.3 for Health-derived suggestion items; a library permission for a child's pictures (level 3, not for 1.x). Apple's pages state no approval step for the entitlement beyond enabling the capability in Xcode or by Expo capability sync (UNVERIFIED that none exists).
 
 ### 18. Label effect
-None while the suggestion reaches the app in memory only, one photo is kept and nothing leaves the phone (NS-49-R27; Apple's on-device-not-collected reading; counsel must confirm). Stored pictures are in the iPhone backup, so "stays on the phone" is true of our servers, not of Apple's backup (NS-49-R33). Level 3 (NS-51, card 27) would change it and is not in 1.0.
+**Label effect.** None while the suggestion reaches the app in memory only, one photo is kept and nothing leaves the phone (NS-49-R27; Apple's on-device-not-collected reading; counsel must confirm). Stored pictures are in the iPhone backup, so "stays on the phone" is true of our servers, not of Apple's backup (NS-49-R33). Level 3 (NS-51, card 27) would change it and is not in 1.0.
 
 ### 19. Claims enabled and forbidden
 Enables: "Pick a photo from your recent days, then say what you want to say." Forbids: "we find your best moments", "we suggest", "smart", "AI", "memories", "your photos, organised", any count, any sentence that the app reads your photos.
@@ -1167,7 +1167,7 @@ Reuses NS-46's `days.landing.*`; adds one close key for the day slip ("Not today
 NS-47's: a day name on an unlocked Home shows to whoever holds the phone; that is the parent's choice, and the snapshot rule covers the switcher. Counsel must confirm anything touching a protected class (NS-47).
 
 ### 18. Label effect
-None.
+**Label effect.** None.
 
 ### 19. Claims enabled and forbidden
 Enables: nothing new. Forbids: "your day", "don't forget", any count or "waiting".

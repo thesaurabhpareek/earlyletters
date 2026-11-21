@@ -18,6 +18,7 @@ import { BackupServerError } from '../src/lib/backup/contract';
 import { ICLOUD_WAIT_MS } from '../src/lib/backup/keys';
 import { backupSource } from '../src/lib/backup/local-store';
 import { FakeBackend, FakeICloud, sha256Hex } from './helpers/backup-node';
+import { firstLeak, leakNote } from './helpers/leak-scan';
 import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText, type LiveSession, type Phone } from './helpers/backup-phone';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -71,20 +72,14 @@ describe('backup end to end against a fake bucket', () => {
 
     // [F08-REQ-018, F08-REQ-020] zero plaintext audio in any request, from any phone.
     const originals = [...all, papasLetter];
-    // The start of a recording is its MP4 `ftyp` box header: size, "ftyp", major brand, minor version (16 bytes).
-    // The four letters alone are no signature. A tus body is a part of the object (64 KiB parts here, 6 MiB in the app;
-    // the object is 112 bytes in clear, then AES-GCM ciphertext), so any 4 bytes of it equal "ftyp" by chance: about
-    // 1 in 2^32 per byte, about a million bytes per MB uploaded, and that scan failed on CI now and then. The same 16
-    // bytes of the real recording, at any offset of any body, cannot be chance (2^-128), and a leak of just the start
-    // of a take is still caught. Not covered: the scan is per request body, so a leak that straddles two parts is not
-    // matched (the recording's start sits at object offset 168, inside the first part, so it cannot straddle).
-    const START = 16;
+    // [BL-456] The scan takes 16-byte shingles of the whole take (header, middle and tail), each at every offset of
+    // every body: a 16-byte piece of the real recording cannot be chance (2^-128), and a 64-byte leak from anywhere in
+    // a take is caught (`helpers/leak-scan.ts`). The four letters "ftyp" alone are no signature (1 in 2^32 per byte).
+    // Not covered: the scan is per request body, so a leak that straddles two parts is not matched.
     for (const r of originals) expect(r.plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     for (const req of backend.requests) {
       for (const r of originals) {
-        expect(req.body.includes(r.plain.subarray(0, START)), `${req.kind} carries the start of a recording`).toBe(false);
-        const at = Math.min(2000, r.plain.length - 64); // past the fixed ftyp box, inside even the shortest take
-        expect(req.body.includes(r.plain.subarray(at, at + 64)), `${req.kind} carries part of a recording`).toBe(false);
+        expect(leakNote(req.kind, firstLeak(req.body, r.plain))).toBe(leakNote(req.kind, null));
         expect(req.body.includes(Buffer.from(sha256Hex(r.plain))), `${req.kind} carries an original's hash`).toBe(false);
         expect(req.body.includes(Buffer.from(sha256Hex(r.plain), 'hex')), `${req.kind} carries an original's hash`).toBe(false);
       }

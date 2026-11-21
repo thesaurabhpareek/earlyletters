@@ -661,6 +661,8 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - AX-10 NS-12 export of earlier versions: the founder decides (privacy: the author's export carries the author's versions, because export spec 4.2 promises them; card default: not exported). Until then, not exported.
   - AX-11 Undo: one clock, the toast's own dismissal (`11-foundations.md`), under ADR 0035's number.
   - AX-12 Second account on one phone (`[X4-R1]`, NS-10-R3): both halves, under ADR 0031: a screen cover beside `AppLockLayer`, and one `bookVisibleTo` check for store reads, the Find catch-up and the reminder planner. Owner BL-961.
+    - Erratum (21 Nov, Karma): AX-12 says "under ADR 0031" and AX-11 says "under ADR 0035's number". The ids were assigned in filing order (CR-69 A11), so those numbers now mean other ADRs: 0031 is the Home slip registry and 0035 is the one age function in core. The second-account ADR is the one `docs/adr/CROSSWALK-new-scope.md` maps to 0038, and the Undo windows ADR is not filed. The AX-11 and AX-12 rulings themselves stand; only the ADR numbers they cite are corrected, and the crosswalk is the lookup.
+    - Erratum (21 Nov, Karma): CR-69 A12 uses "Q-E7" for the line a parent reads. In `24-engineering-handoff.md` section 5, Q-E7 is the 366 versus 92 day horizon. The A12 rule that a parent-read line is PROPOSED content and needs the founder stands. The horizon question Q-E7 keeps the handoff's default (366 days, inside the ceiling). I did not find a separate id for the parent-read line; that label is still unassigned.
   - AX-13 Schema change ids: eval A's (L11 to L15, S1 to S5), plus H1, the hooks refactor, which is `data-and-sync.md`'s own id (eval A has none); designs cite those only.
   - AX-14 Seal facts: ADR 0028 D3a's three columns, and the error code `SCSEL`, not a second meaning for `22023` (API-R09).
   - AX-15 and AX-16: fact fixes in the next docs touch of `09-capture.md`; `11-foundations.md` is 367 lines, so no split.
@@ -781,6 +783,20 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way with cost until a migration is applied.
 - Way back: a new ruling supersedes this one; each implementing PR reverts by `git revert`.
 - Revisit when: the hosted project is read, the Pro plan is decided (the founder said later on 20 Nov), or counsel answers. Karma
+
+### CR-72 Development starts: the founder delegates technical calls and code merges to the CTO (Fri 20 Nov 2026, Karma, on the founder's words)
+- Status: recorded after the fact. CR-73 (merged 00:30 UTC 21 Nov on the founder's own words) cut the CR-70 founder-only path list, so Karma merges this PR under CR-73 with the security-lens condition (one of the two counted reviews from the `security` or `security-architect` lens, named in the log). Nothing in CR-72 widens CR-73.
+- Question: the founder said in chat on 20 Nov, in separate excerpts: "It's CTO call and not mine. Work with CTO for this and such tech questions moving forward." and "And start work when we can. Let's execute the project plan." and "Keep merging the code do not ask me for approval. Ask Ceo for approval." (the last word is the founder's, read as the CTO). What does that change?
+- Tier and type: T1 process ruling; the founder's own delegation, recorded.
+- Ruling:
+  - Wave 1 of the plan starts now: lanes and owners are in `docs/engineering/readiness-20nov/PROGRESS.md`. Each agent works from its brief, the cards, the designs and `BUILD-BRIEF.md`-style rules (CLAUDE.md, PRINCIPLES.md, the chapters).
+  - Technical questions are the CTO's. Size growth of the plan files and the stated sizes of the photo slices #835 to #840 and the H1 refactor are the CTO's call and are accepted, each a single concern (CODE-R02 in plan 17).
+  - Code merges without asking the founder once the CR-70 gates hold (two counted reviews at the exact head, green `required`, `compliance-fence` and `applied migrations unchanged`, clean dry-run merge). The store-profile Release launch is a watch item for app code (COORDINATION.md), not a gate.
+  - Questions are routed to the owning seat (product, design, compliance, privacy, security) through the feedback loop, and the answer is recorded in an erratum, a ruling or the decision record. Nobody guesses.
+  - What this does not change (the founder's own words earlier stand): no store build or TestFlight build without his explicit go; no hosted migration applied by an agent; no secret, account or money decision; legal text and `docs/DECISIONS.md` merge by him; no PROPOSED word shipped as approved; no dates.
+- Why: the founder asked for it in plain words and the list above is what the CTO skill reserves to him.
+- Door: two-way. Way back: one line from the founder narrows or revokes this, as for CR-70.
+- Revisit when: the first store build is proposed, or the founder changes it. Karma
 
 ### CR-73 Karma approves and merges every PR; the founder's list is cut to acts only he can do (Fri 20 Nov 2026, Karma, on the founder's words)
 - The founder's words, in chat, 20 Nov 2026, verbatim: "Please do not keep asking me to add these basic things. I approve all these next time. Any PR merge any comment on a beer and all of that you only work with the CTO can you please make sure the instructions for every engineer instruction in the harness instruction and Guha updated that you do not need my explicit approval. You just work with the CTO and CTO approves not me." Two words look like dictation slips ("a beer", "Guha"). I read "any comment on a PR" and "the guide", and I act only on the parts that are clear.

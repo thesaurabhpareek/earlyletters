@@ -35,6 +35,7 @@ import { APP_ENV } from '../build-env';
 import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { AccountChanged, backupDbFileFor, createAccountHost } from './account';
+import { backupAccountEnded, backupAccountStarted, openSecureBackupFile, registerBackupHandleCloser } from './files';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -44,6 +45,7 @@ import {
   type EscrowClient,
 } from './contract';
 import { BUNDLED_ESCROW_KEYS, escrowKeysFor } from './escrow-keys';
+import { createTokenStore } from './token-vault';
 import { openBackupDb, type BackupDb } from './local-db';
 import { backupSource, restoreLocal } from './local-store';
 import type { Aead, BookKeyRef, ByteSink, ByteSource, Conditions, FileIO, KeyVault, NetworkKind } from './ports';
@@ -414,16 +416,51 @@ function conditions(db: () => BackupDb | null): Conditions {
 // a session that is still consenting or ends with "Not my account" changes nothing here and opens no
 // escrow request; and one backup state file per account, so another account never turns this one off.
 const backupDbs = new Map<string, BackupDb>();
+const backupClosers = new Map<string, () => void>();
 let lastView: BackupView | null = null;
 const listeners = new Set<() => void>();
 
 function dbFor(profileId: string): BackupDb {
   let d = backupDbs.get(profileId);
   if (!d) {
-    d = openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, () => new Date().toISOString());
+    // B5-5: an account that signed out is not opened again (a pass already running would re-create the deleted file).
+    if (backupAccountEnded(profileId)) throw new Error('backup_account_ended');
+    const file = backupDbFileFor(profileId);
+    // B5-3: files.ts checks before and after the open and refuses (BackupFileNotExcluded) a file not excluded.
+    let close: () => void = () => {};
+    d = openSecureBackupFile(file, openNativeDb, (o) => {
+      close = o.close;
+      return openBackupDb(o.db, () => new Date().toISOString());
+    });
     backupDbs.set(profileId, d);
+    backupClosers.set(profileId, close);
   }
   return d;
+}
+
+/** B5-5: closes one account's backup handle and forgets it, so its file can be deleted. Safe to call when none is open. */
+export function closeBackupDb(profileId: string): void {
+  const close = backupClosers.get(profileId);
+  backupDbs.delete(profileId);
+  backupClosers.delete(profileId);
+  try {
+    close?.();
+  } catch {
+    // Already closed: the file is deleted next either way.
+  }
+}
+
+/** Erase everything: every open backup handle, before the files go. */
+export function closeAllBackupDbs(): void {
+  for (const id of [...backupClosers.keys()]) closeBackupDb(id);
+}
+
+registerBackupHandleCloser((id) => (id === null ? closeAllBackupDbs() : closeBackupDb(id)));
+
+/** Tests only: the one way the store opens an account's file (the same call the service makes). */
+export function openBackupDbForTests(profileId: string): BackupDb {
+  if (!process.env.VITEST) throw new Error('openBackupDbForTests is for tests only');
+  return dbFor(profileId);
 }
 
 async function session(sb: SupabaseClient): Promise<{ uid: string; token: string } | null> {
@@ -434,6 +471,7 @@ async function session(sb: SupabaseClient): Promise<{ uid: string; token: string
 
 let client: SupabaseClient | null = null;
 const host = createAccountHost<BackupService>((uid) => {
+  backupAccountStarted(uid); // a new service is a sign-in: this account may open its file again
   const sb = client!;
   // Only this account's session, never the next one's: a token read after another account signed in stops the call (account.ts).
   const mine = async () => {
@@ -445,6 +483,7 @@ const host = createAccountHost<BackupService>((uid) => {
   const vault = nativeVault();
   return createBackupService({
     db: dbFor(uid),
+    tokens: createTokenStore(uid),
     vault,
     aead: nativeAead,
     files: nativeFiles,
