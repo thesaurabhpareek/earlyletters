@@ -14,7 +14,7 @@ import { sweepPhotos } from './housekeeping';
 import { PendingPhoto } from './pending';
 import { createPhotoPicker } from './picker';
 import { registerPending, registerPhotoPicker } from './registry';
-import type { PhotoDeps, PickedFiles } from './types';
+import type { PhotoDeps, PickedFiles, StoredPhoto } from './types';
 
 const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 
@@ -49,6 +49,12 @@ export function photoDeps(): PhotoDeps {
   };
   return cached;
 }
+
+/**
+ * Where a stored picture can be drawn from, through the stored-name guard (review N3 on #841). An id that cannot make a
+ * stored name gives no uri, and the frame shows the picture as missing.
+ */
+export const photoUri = (p: Pick<StoredPhoto, 'mediaId'>): string => storedPhotoFile(p.mediaId)?.uri ?? '';
 
 /**
  * Registers Apple's system picker (scribe-photo's pickOne) and the pending picture, only when the photos switch is on
