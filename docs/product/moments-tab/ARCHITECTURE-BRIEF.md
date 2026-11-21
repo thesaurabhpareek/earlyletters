@@ -162,7 +162,7 @@ Where core's closed lists live (CODE-R13): my standards position, PROPOSED, no r
 | Primer answered flag; nudge opt-in flags | phone settings | L2 | until changed | 17 |
 | Coordinates, place ids for the window, home place, thumbnails | memory only | L4 | the session | 17 |
 | A picked original (temporary) | `Caches/ImagePicker` | L4 (a picture of a child with a location) | removed at the strip, on back-out, on lock, by the photos switch and Erase; launch sweep is backstop | 17, R272, R282 |
-| A kept letter's picture copies | app container, `entry_media` | L4 | with the letter | 17 (existing, ADR 0028). NOT excluded from iPhone backup today: R81, R235 and MEDIA_THREAT_MODEL P9 say so, and whether the policy line discloses it or the folder is excluded is the founder's call at O-44 (device row D-3). `moments.json` is excluded from backup; the picture copies are a different store and must not be assumed to be treated alike |
+| A kept letter's picture copies | app container, `entry_media` | L4 | with the letter | 17 (existing, ADR 0028). NOT excluded from iPhone backup today: R81, R235 and MEDIA_THREAT_MODEL P9 say so, and whether the policy line discloses it or the folder is excluded is the founder's call at O-44 (the device row is carried by gate G11, spec section 21). `moments.json` is excluded from backup; the picture copies are a different store and must not be assumed to be treated alike |
 
 `moments.json` contract (R221, 17.1): `{v, owner, dayKeys[], labels{}, hiddenPlaces[], homePlace}`; day key is a local ISO date with no zone; unknown fields preserved; a higher `v` reads as empty and writes nothing; write is temp file then rename; a corrupt file is deleted and the tab starts clean with no message; `owner` is an opaque local id, never a person id.
 
@@ -256,7 +256,7 @@ Which `source` value the hand-off passes to `startCapture` is open (Q-6). Today'
 
 ### 3.3 Notification timing from pictures: what we receive, scoped (13, R265, R280, R299)
 
-What reaches the planner in the first release is nothing library-derived. The library-timed reminder is F4, OFF, phase 2, behind counsel's answer on Q-X1-6 and the founder's O-02 (13.1 table, 13.3, 19.3). The design below is what the code must be ready for, so the planner needs no rewrite later.
+What reaches the planner in the first release is nothing library-derived. The library-timed reminder is F4, OFF, phase 2, behind counsel's answer on question 2 of spec 21.3 and the founder's O-02 (13.1 table, 13.3, 19.3). The design below is what the code must be ready for, so the planner needs no rewrite later.
 
 ```
 Phone-held facts only (first release):  typed day, ticked Day, date of birth, month day
@@ -611,7 +611,8 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 
 - `docs/security/` has no row today for `scribe-library`, `exportForAttach`, `moments.json` or the thumbnail view. Rows are owed before PR 9, 10 and 8 merge, in `docs/security/MEDIA_THREAT_MODEL.md` or a new file named in the PR 18b-0 style docs item; `security-architect` reads them. Picker rows live in 18b-0.
 - The app-switcher cover is specified for the sheet (4.2). The Moments tab itself holds library thumbnails in memory, so the existing app-lock and inactive cover must be checked to hide the tab body too, not only the sheet (new device row; UNVERIFIED).
-- Backup: the O-44 decision (policy line discloses stored picture copies in the iPhone backup, or the folder is excluded) is open and is not assumed by this brief (2.6; R81, R235; device row D-3). `Caches/ImagePicker` is a separate question and is UNVERIFIED against Apple's text.
+- OPEN, before PR 8: with app lock off, does the Moments tab (not only the sheet) show library thumbnails in the iOS app switcher? It needs a device row in gate G7 (spec section 21, switcher and App lock snapshot, R232) and a founder decision. Default if undecided: cover it, so the tab body is hidden in the switcher whether or not app lock is on.
+- Backup: the O-44 decision (policy line discloses stored picture copies in the iPhone backup, or the folder is excluded) is open and is not assumed by this brief (2.6; R81, R235; the device row that proves it is carried by gate G11 in spec section 21 and named at O-44). `Caches/ImagePicker` is a separate question and is UNVERIFIED against Apple's text.
 
 ### 10.3 What this brief does not do
 
