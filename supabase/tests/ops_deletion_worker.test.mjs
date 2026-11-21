@@ -50,6 +50,9 @@ const SERVICE_ONLY = [
   // 20261111010000 (CR-71 C3)
   `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
   `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
+  // 20261121000000 (NS-08-R21)
+  `select public.ops_end_session('${A}', '${A}')`, `select public.ops_new_device_sign_out(decode(repeat('00', 32), 'hex'))`,
+  `select public.ops_new_device_retention()`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

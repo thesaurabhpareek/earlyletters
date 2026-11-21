@@ -70,7 +70,7 @@ AGPL note: we run Metabase unmodified, for ourselves, and never offer it to user
 
 Reporting path, in order of cost:
 
-1. Tier 0 (no tool): Supabase SQL editor with saved snippets calling `public.insights_aggregates(p_weeks)` (exists) and the new views of section 5. A weekly job in the private ops repo may call the same function through PostgREST with an `insights_reader` JWT and commit a markdown read-out (decision-science owns the format). No database password leaves Supabase.
+1. Tier 0 (no tool): Supabase SQL editor with saved snippets calling `public.insights_aggregates(p_weeks)` (exists) and the new views of section 5. A weekly job in the private ops repo may call the same function with the `reporting_reader` login (an `insights_reader` JWT stops working through PostgREST at APPLY file 34) and commit a markdown read-out (decision-science owns the format). No database password leaves Supabase.
 2. Tier 1 (a dashboard): Metabase in Docker on the founder's laptop, connecting as `reporting_reader` (section 6), only while preparing a read-out. The password lives in the founder's keychain, never in the repo.
 3. PostHog dashboards cover everything from the phone. No second tool joins them to Postgres numbers; the read-out puts the two side by side and says they are not joined.
 

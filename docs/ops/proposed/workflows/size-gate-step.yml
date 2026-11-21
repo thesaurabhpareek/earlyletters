@@ -1,0 +1,41 @@
+# Proposed new job for .github/workflows/ci.yml, next to `seam-guard` (BRIEF CI-SIZEGATE; docs/ops/proposed/size-gate.md).
+# Advisory until the baseline file exists and the founder or Karma makes it required. It runs its own two exports
+# (about 3 to 4 minutes, in parallel with the other jobs); reusing seam-guard's export is possible only if that job keeps
+# the source map [U: not checked], so this is a separate job.
+# The PR body reaches the script only through the PR_BODY environment variable. The owner label is read from the issue
+# events (who applied it), never from the body. Fork PRs get a read-only token and are not checked.
+  size-gate:
+    name: size gate (bytecode, packages, dependencies)
+    needs: install
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Baseline as it is on the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git show "origin/$BASE_REF:docs/ops/size-baseline.json" > "$RUNNER_TEMP/base-baseline.json" || rm -f "$RUNNER_TEMP/base-baseline.json"
+      - name: Did the repository owner apply size:baseline-accepted?
+        id: owner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          ok="$(gh api --paginate "repos/$REPO/issues/$PR/events" --jq '[.[]|select((.event=="labeled" or .event=="unlabeled") and .label.name=="size:baseline-accepted")]|last|select(.event=="labeled" and .actor.login==env.OWNER)|"1"')"
+          echo "approved=${ok:-0}" >> "$GITHUB_OUTPUT"
+      - name: Measure and compare
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          APPROVED: ${{ steps.owner.outputs.approved }}
+        run: |
+          extra=""; [ "$APPROVED" = 1 ] && extra="--owner-approved"
+          npx tsx scripts/size/measure.ts --check --base-baseline "$RUNNER_TEMP/base-baseline.json" $extra
