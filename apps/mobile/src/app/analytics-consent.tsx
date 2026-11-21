@@ -13,10 +13,10 @@ import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { AnalyticsConsentContent } from '@/components/consent/analytics-consent-sheet';
-import { capabilities } from '@/lib/capabilities';
+import { analyticsAskAvailable, analyticsEnabled } from '@/lib/capabilities';
 
 export default function AnalyticsConsentScreen() {
-  const off = !capabilities.analytics;
+  const off = !analyticsAskAvailable(analyticsEnabled(), process.env.EXPO_PUBLIC_POSTHOG_KEY);
   useEffect(() => {
     if (off && router.canGoBack()) router.back();
   }, [off]);

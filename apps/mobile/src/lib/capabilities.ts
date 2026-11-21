@@ -177,6 +177,14 @@ export function postHogKeyForBuild(enabled: boolean, key: string | undefined | n
   return enabled ? (key ?? '').trim() : '';
 }
 
+/**
+ * The consent ask (sheet and /analytics-consent route) is offered only when analytics is on AND the build carries a
+ * PostHog key: with no key a yes would send nothing, so the ask would promise what the build cannot do.
+ */
+export function analyticsAskAvailable(enabled: boolean, key: string | undefined | null): boolean {
+  return postHogKeyForBuild(enabled, key) !== '';
+}
+
 /** True only in a build made with `EXPO_PUBLIC_SERVER_FEATURES=on`. */
 export function serverFeaturesEnabled(): boolean {
   return testOverride ?? BUILD_VALUE;

@@ -12,7 +12,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { analyticsEnabled, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
+import { analyticsAskAvailable, analyticsEnabled, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -21,6 +21,24 @@ describe('[D-088] analytics switch: off unless a build says on', () => {
   afterEach(() => {
     setAnalyticsForTests(null);
     setServerFeaturesForTests(null);
+  });
+
+  it('the consent ask needs the switch AND a PostHog key, and both mounts use that one check', () => {
+    expect(analyticsAskAvailable(true, 'phc_test_key')).toBe(true);
+    expect(analyticsAskAvailable(true, undefined)).toBe(false);
+    expect(analyticsAskAvailable(true, '   ')).toBe(false);
+    expect(analyticsAskAvailable(false, 'phc_test_key')).toBe(false);
+    for (const f of ['src/components/consent/consent-ask.tsx', 'src/app/analytics-consent.tsx']) {
+      expect(read(f), f).toMatch(/analyticsAskAvailable\(analyticsEnabled\(\), process\.env\.EXPO_PUBLIC_POSTHOG_KEY\)/);
+    }
+  });
+
+  it('no consent surface claims crash reports while crash capture is off', () => {
+    expect(read('../../packages/analytics/src/crash.ts')).toMatch(/enabled: false/);
+    const strings = read('../../packages/content/src/strings.en.ts');
+    const block = strings.slice(strings.indexOf('analyticsLabel:'), strings.indexOf('analyticsOffNote:'));
+    expect(block.toLowerCase()).not.toMatch(/crash|breaks/);
+    expect(read('src/components/consent/copy.ts')).not.toMatch(/analyticsSection: '[^']*crash/i);
   });
 
   it('is off in this process and does not follow the server switch', () => {
@@ -74,7 +92,7 @@ describe('[D-088] every analytics entry point follows the switch', () => {
   });
 
   it('the consent sheet is never mounted while off', () => {
-    expect(read('src/components/consent/consent-ask.tsx')).toMatch(/return capabilities\.analytics \? <ConsentAskWhenDue \/> : null;/);
+    expect(read('src/components/consent/consent-ask.tsx')).toMatch(/return analyticsAskAvailable\(analyticsEnabled\(\), process\.env\.EXPO_PUBLIC_POSTHOG_KEY\) \? <ConsentAskWhenDue \/> : null;/);
   });
 
   it('Settings, Privacy shows no usage switch while off', () => {
