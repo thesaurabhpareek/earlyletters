@@ -26,6 +26,12 @@ import { registerSensitiveDataRow, sensitiveRowStatus } from '../src/lib/auth/se
 import { useRegisterSensitiveDataRow } from '../src/lib/auth/sensitive-row-hook';
 import { renderHook } from './helpers/mini-react';
 
+// Counts how often the real auth store is subscribed to: every registration makes the row re-attach, so this counts them.
+const subscribeCalls = vi.hoisted(() => ({ n: 0 }));
+vi.mock('../src/lib/auth/auth-store', async (orig) => {
+  const real = await orig<typeof import('../src/lib/auth/auth-store')>();
+  return { ...real, subscribeAuth: (l: () => void) => ((subscribeCalls.n += 1), real.subscribeAuth(l)) };
+});
 vi.mock('react', async () => (await import('./helpers/mini-react')).reactStandIn);
 
 const ASHA_PARENT = '11111111-1111-4111-8111-111111111111';
@@ -267,9 +273,22 @@ describe('[BL-485] source pins: who registers the row, and that it stays read-on
     mounted.unmount();
   });
 
+  it('the hook registers once on mount, not on every render (BL-508)', () => {
+    const mounted = renderHook(() => {
+      useRegisterSensitiveDataRow();
+      return useSensitiveDataStatus();
+    });
+    const afterMount = subscribeCalls.n;
+    for (const s of [STATES.on, STATES.declined, STATES.signedOut]) publishAuth(s);
+    // A re-registration makes the row subscribe again; an effect with no deps list would do it on every render.
+    expect(subscribeCalls.n).toBe(afterMount);
+    mounted.unmount();
+  });
+
   it('the session provider calls that hook in its body, formatting aside (BL-508)', () => {
     const provider = code('lib/auth/session-provider.tsx');
-    expect(provider).toMatch(/import\s*\{\s*useRegisterSensitiveDataRow\s*\}\s*from\s*'\.\/sensitive-row-hook'/);
+    // Any import layout: one line or many, trailing comma, other names beside it.
+    expect(provider).toMatch(/import\s*\{[^}]*\buseRegisterSensitiveDataRow\b[^}]*\}\s*from\s*'\.\/sensitive-row-hook'/);
     expect(provider).toMatch(/^\s*useRegisterSensitiveDataRow\(\s*\);/m);
     // Not also registered by hand beside it: one path, the hook.
     expect(provider).not.toMatch(/\bregisterSensitiveDataRow\b/);

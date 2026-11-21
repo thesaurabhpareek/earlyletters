@@ -2365,7 +2365,7 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Done when: the plan row names the drill and its date; B2-13 says how it is run; the flip section names both conditions once the founder has confirmed them; a test on the preflight output for both profiles shows no PASS line for build 2's row.
 
 #### BL-508 The test that the session provider registers the Privacy row is a formatting-sensitive regex
-- Status: done (PR in review). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1252). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
