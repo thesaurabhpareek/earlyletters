@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
 import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
@@ -20,6 +20,17 @@ import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type
 const ROOT = path.resolve(__dirname, '..');
 const KEY = 'EXPO_PUBLIC_APP_ENV';
 const original = process.env[KEY];
+
+// BL-443: the first getConfig call pays the cold load of @expo/config and every plugin; the 5 s test timeout of
+// whichever test comes first used to pay it. It is paid here, under the hook timeout. An error is left for the
+// tests below, which call getConfig themselves and report it with their own names.
+beforeAll(() => {
+  try {
+    getConfig(ROOT, { skipSDKVersionRequirement: true, isPublicConfig: false });
+  } catch {
+    /* reported by the first test that needs the config */
+  }
+}, 60_000);
 
 afterEach(() => {
   if (original === undefined) delete process.env[KEY];
@@ -334,6 +345,14 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
 
     it('has a submit profile', () => {
       expect(eas.submit.testflight).toBeDefined();
+      // BL-442: the fields a TestFlight submission needs: the App Store Connect app id (digits) and the internal
+      // tester group the build goes to.
+      const ios = (eas.submit.testflight as { ios?: { ascAppId?: unknown; groups?: unknown } }).ios;
+      expect(ios, 'submit.testflight.ios').toBeDefined();
+      expect(ios!.ascAppId, 'ascAppId').toMatch(/^\d{6,}$/);
+      expect(Array.isArray(ios!.groups), 'groups').toBe(true);
+      expect((ios!.groups as unknown[]).length, 'groups').toBeGreaterThan(0);
+      for (const g of ios!.groups as unknown[]) expect(g, 'group name').toEqual(expect.any(String));
     });
 
     it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES, until the flip makes them equal', () => {

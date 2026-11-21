@@ -26,6 +26,7 @@ import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
+import { discardPendingPhotoOnLeaving } from '../photos/leaving';
 import { methodForEvent, nextReportMark, type ReportMark } from './new-device/report.logic';
 import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
@@ -50,6 +51,7 @@ import {
   initialAuthState,
   isSignedIn,
   readGateInOrder,
+  nothingPending,
   shouldFinishSignOut,
   shouldRecheckGate,
   signOutWouldWait,
@@ -61,7 +63,7 @@ import {
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
-import { registerSensitiveDataRow } from './sensitive-row';
+import { useRegisterSensitiveDataRow } from './sensitive-row-hook';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -215,6 +217,15 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       void settleBackupTokens(sweep.keep);
     }
   }, [sessionUser, authSettled]);
+  // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
+  // Its own effect, so the reminders and backup effect above keeps the shape its tests pin.
+  const photoUser = useRef<string | null>(null);
+  useEffect(() => {
+    if (!authSettled) return;
+    const before = photoUser.current;
+    photoUser.current = sessionUser;
+    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
+  }, [sessionUser, authSettled]);
   // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
   // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
   const reportMark = useRef<ReportMark>(null);
@@ -226,9 +237,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
-  useEffect(() => {
-    registerSensitiveDataRow();
-  }, []);
+  useRegisterSensitiveDataRow();
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
@@ -298,7 +307,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       check: appleCredentialRevoked,
       isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
       pendingUploads,
-      dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
+      dispatchSignOut: (p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: p }),
       onAppActive: (l) => onAppBecameActive((e, h) => AppState.addEventListener(e, h), l),
       onAppleRevoked: watchAppleRevocation,
       now: Date.now,
@@ -314,7 +323,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const poll = setInterval(() => {
       // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
       if (shouldRecheckGate(stateRef.current, false)) void checkGate();
-      void pendingUploads().then((n) => n === 0 && done());
+      void pendingUploads().then((p) => nothingPending(p) && done());
     }, 10_000);
     return () => {
       off();
@@ -372,7 +381,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
     if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
     if (step.signOut) {
-      void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
+      void discardPendingPhotoOnLeaving(); // BL-1444: a forced sign-out waits for uploads; the picture does not wait with it
+      void pendingUploads().then((p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p }));
     }
   }, [remoteEpoch, reauthPhase]);
   useEffect(() => {
@@ -421,7 +431,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (isSignedIn(cur)) confirmAccountClaim(cur.userId);
       },
       async notMyAccount() {
-        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for.
+        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never
+        // reads the probe, so the literal is a real count of 0, not an unreadable one (BL-1425).
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'switch_account', pendingUploads: 0 });
         await clearPendingEmailRequest();
       },

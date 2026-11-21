@@ -8,7 +8,7 @@
 import { useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { PhotoFrame } from './photo-frame';
-import { ErrorLine } from './error-line';
+import { ErrorLine } from '@/components/ui/error-line';
 import { useIsAccessibilitySize } from '@/lib/a11y';
 import { photos } from '@/lib/photos/copy';
 import { usePendingPhoto } from '@/lib/photos/hooks';

@@ -387,8 +387,6 @@ describe('Lamp gradient', () => {
     'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
     // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.
     'app/onboarding.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
-    // The photo screens' error line (#838): the same look as lib/auth/ui.tsx, its warning mark on its own bg-secondary chip beside the words.
-    'components/photos/error-line.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
   const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];

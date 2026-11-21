@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # NS-53 Moments tab: executive review, Chief Compliance Officer
 
 Reviewed: `docs/product/prd/28-moments-tab.md` on `wip/moments-prd` at 5bebd892, all 1187 lines, 21 Nov 2026.
