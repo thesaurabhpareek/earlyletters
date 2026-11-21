@@ -10,6 +10,9 @@ import { describe, expect, it } from 'vitest';
 import { removeBook, removeEverything } from '../src/lib/db/repos/wipe';
 import { applyPullPage } from '../src/lib/sync/merge';
 import type { PullResponse, PulledRow } from '../src/lib/sync/types';
+import { createSyncEngine } from '../src/lib/sync/engine';
+import { PULLED_LETTER as EL, pulledPage } from './helpers/pulled-page';
+import type { RpcResult, SupabaseLike } from '../src/lib/sync/types';
 import { fixture, insertBook } from './helpers/store-fixture';
 
 const NOW = '2026-10-20T09:00:00.000Z';
@@ -224,5 +227,34 @@ describe('[DATA-REQ-040] source scan: takeProvenance is the only writer of the b
   });
   it('no source writes the keys through the settings helpers or a dynamic key', () => {
     expect(walk(src).filter((p) => /['"`]raw_takeover/.test(readFileSync(p, 'utf8')) && !/migrations\.ts|sync\/merge\.ts/.test(p))).toEqual([]);
+  });
+});
+
+describe('[DATA-REQ-040] the engine: a refused row is reported, the cycle finishes, the next cycle is clean', () => {
+  it('report.rejected counts it, lastSyncedAt is written, no flag is left, and the next cycle does not throw', async () => {
+    const f = fixture();
+    f.db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", ME);
+    const server: SupabaseLike = {
+      rpc: (fn) => Promise.resolve({ data: fn === 'sync_pull' ? pulledPage(ME, [EL]) : { results: [] }, error: null, status: 200 } as RpcResult),
+    };
+    const engine = createSyncEngine({
+      db: f.db, supabase: server, userId: ME, newId: f.ctx.newId, now: () => Date.parse(NOW), random: () => 1,
+      setTimer: () => 0, clearTimer: () => {}, isActive: () => false,
+    });
+    const first = await engine.sync();
+    expect(first.rejected).toBe(0);
+    expect(rawOf(f, EL)).toBe('Asha laughed.');
+    expect(flag(f)).toBeNull();
+    f.db.exec(`CREATE TRIGGER t_hostile AFTER UPDATE OF synced_at ON entries WHEN NEW.id = '${EL}'
+      BEGIN UPDATE entries SET raw_transcript = 'tampered' WHERE id = NEW.id; END`);
+    const second = await engine.sync();
+    expect(second.rejected).toBe(1);
+    expect(second.pulled).toBe(1);
+    expect(rawOf(f, EL)).toBe('Asha laughed.');
+    expect(flag(f)).toBeNull(); // after every sync
+    await expect(engine.sync()).resolves.toMatchObject({ rejected: 1 });
+    expect(flag(f)).toBeNull();
+    engine.stop();
+    f.close();
   });
 });
