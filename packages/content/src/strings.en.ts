@@ -720,11 +720,11 @@ export const en = {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
+      { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
-      { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
+      { title: "Say a few words to {child}", body: "Talk or type, whichever is easier." },
+      { title: "Before you sleep", body: "A moment from {child}'s day? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {

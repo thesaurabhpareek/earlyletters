@@ -620,7 +620,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) The switch stays on; the Notifications are off card with Open Settings shows; Next reads "Not sending yet."; the choices stay editable. Off and on again shows no second alert.
   - (d) The card collapses, the toast says "Reminders are on. Next: ..." once, and the Next line appears.
   - (e) A line says "iPhone delivers these quietly, to Notification Center only." [unverified until this row is run: Deliver Quietly detection reads allowsDisplayOnLockScreen false, alertStyle none, Notification Center not off and sound not on]. With Notification Center also off, or sounds on, no line shows.
-  - (f) "Could not set reminders just now." with Try again; Try again clears it and the Next line holds.
+  - (f) "Couldn't set your reminders." with Try again; Try again clears it and the Next line holds.
   - (g) The row reads "Starts once a birth date is added."; the preview is neutral.
   - (h) VoiceOver: after the alert, focus is on the Reminders switch, and "Reminders are on. Next: ..." or "Notifications are off" is spoken; the next swipe lands on the denied card. After each change in (b), "Saved. Next: ..." is spoken once, about half a second after the last change, never as a modal. The preview is one element. Reduce Motion: the choices fade in with no slide and the Next line swaps with no fade. AX5: the preview, the Next line and every help line wrap and never truncate; the time label and the time stack; the evening chips wrap; every target is at least 44 pt.
   - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
@@ -698,7 +698,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) 30 s: no lock. 70 s: the cover and the system sheet once. Immediately: locks after 2 s.
   - (d) Cancel leaves the cover and Unlock and nothing else; no second sheet appears on its own. Unlock opens the sheet; success fades the cover (a fade under Reduce Motion too), no haptic, content within 1 s. At the end of the fade no frame of the cover comes back (no flash), with Reduce Motion on and off. VoiceOver reads the app name, focus lands on Unlock with its hint.
   - (e) The take is kept in full (plays to the second you left); the lock appears only after the take has ended, never during it.
-  - (f) "Confirm it is you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
+  - (f) "Confirm it's you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
   - (g) Names in notifications is off and dimmed, with "Names stay hidden while App lock is on."; a reminder that fires shows no name.
   - (h) The switch reads "Lock with passcode", the line "Face ID is off for <app> in iPhone Settings, so your passcode opens the book." and Open Settings; Unlock asks for the passcode.
   - (i) The book opens with no lock, one toast "The lock is off because this iPhone has no passcode. Set one to turn the lock on again."; the App lock switch is dimmed with the no-passcode line.
