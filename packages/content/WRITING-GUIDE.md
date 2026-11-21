@@ -228,6 +228,8 @@ Build every error from four parts, in this order, using as few as the case needs
 
 Rules: place it next to the problem; never blame ("You entered..."); no codes; no "Oops"; no "Something went wrong". If we can't give a next step, say so and say where help is.
 
+When we can't tell whether something saved or went through (a dropped connection, a payment that didn't confirm), say it's not known yet, and don't say it worked or failed. "It's not clear yet if that saved. Check your letters before you try again." Stripe's developer docs say to treat an unknown outcome as unknown (read in PR #1263, `docs/content/BENCHMARKS-2026-11.md`, not yet merged). Example wording only, not shipped text.
+
 | Don't | Do |
 | --- | --- |
 | "Could not set reminders just now." | "Couldn't set your reminders. Check Settings, then try again." |
@@ -307,7 +309,7 @@ Silence in this guide doesn't mean "anything goes". Status: DONE (a playbook abo
 | Co-parent | `content` | Warm | `VOICE.md` and the glossary: "co-parent" in settings and buttons, "{child}'s other parent" in prose. The only family role at v1.0 | PARTIAL |
 | Grandparents and wider family (v1.1) | `content` | Plain, one instruction per sentence | `VOICE.md` section "Writing for grandparents". No public promise before v1.1 | PARTIAL |
 | Month, birthday and moment messages | `content` | Quiet pleasure | The rules test holds moments to no comparing, no per-author totals, no mention of Plus | PARTIAL |
-| Localisation | `content`, CAIO | Plain | The app UI is English only at v1.0; seven languages are for speaking. If any string is translated, plurals, gender agreement and right-to-left need a translator brief first | TODO |
+| Localisation | `content`, CAIO | Plain | The first store build is English only (D-115, D-121; `eas.json` ENGLISH_ONLY). Other languages unlock one pack at a time, after a native reviewer. If any string is translated, plurals, gender agreement and right-to-left need a translator brief first | TODO |
 | System strings: share sheet, widgets, Shortcuts, app icon label, plain-text email | `content`, mobile | Plain | Same rules; list where each lives before launch | TODO |
 | Sample, placeholder and screenshot text | `content`, CMO | None | Principle 11 | DONE |
 | Humour | `content`, CMO, founder | Light, rare | Section 4 | PROPOSED |
