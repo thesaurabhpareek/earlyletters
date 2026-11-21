@@ -4,8 +4,8 @@
  *
  *   too big     "This book is too big for one file", and "Write to us" (mail, `settingsHome.helpSubject`) as the
  *               primary: exporting again would fail the same way
- *   low space   "The export didn't finish" / "This phone needs more free space. Free some up, then try again." and "Export again"
- *   other       "The export didn't finish" / `failedBody` and "Export again"
+ *   low space   "The export did not finish" / "This phone needs more free space first." and "Export again"
+ *   other       "The export did not finish" / `failedBody` and "Export again"
  * Export stays free in every plan state and is made on this phone (lib/export reads no network); an empty book shows
  * the outline button with `emptyNote` above it.
  */

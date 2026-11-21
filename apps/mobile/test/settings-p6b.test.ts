@@ -312,7 +312,7 @@ describe('[S42] Recordings', () => {
 describe('[S43] Export', () => {
   it('every failure names its cause with an action that can work: too big leads to "Write to us"', () => {
     expect(exportFailure('tooBig')).toEqual({ title: 'This book is too big for one file', body: null, action: 'writeToUs', label: 'Write to us' });
-    expect(exportFailure('lowSpace')).toEqual({ title: exportCopy.screen.failedTitle, body: 'This phone needs more free space. Free some up, then try again.', action: 'again', label: 'Export again' });
+    expect(exportFailure('lowSpace')).toEqual({ title: exportCopy.screen.failedTitle, body: 'This phone needs more free space first.', action: 'again', label: 'Export again' });
     expect(exportFailure('other')).toEqual({ title: exportCopy.screen.failedTitle, body: exportCopy.screen.failedBody, action: 'again', label: 'Export again' });
     const screen = code('app/settings/export.tsx');
     // mailTarget wraps supportMailto with the same subject, and falls back to the address to copy (F20-REQ-007).

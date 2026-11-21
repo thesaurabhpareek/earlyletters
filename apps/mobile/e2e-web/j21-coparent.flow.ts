@@ -218,7 +218,7 @@ test('[J21f] invitee: a server that does not answer is said plainly, and Try aga
   await btn(app, 'Continue').click();
   await btn(app, 'Sign in').click();
   await signInWithEmail(app, 'papa@example.invalid');
-  await expect(app.getByText("That didn't go through. Try again.")).toBeVisible();
+  await expect(app.getByText('That did not go through. Try again.')).toBeVisible();
   down = false;
   await btn(app, 'Try again').click();
   await expect(app.getByText('Invited by Mama')).toBeVisible();
