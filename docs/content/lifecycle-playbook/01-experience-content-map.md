@@ -113,7 +113,7 @@ The area words are in `docs/design/e2e/A-capture/WORDS.md`; the built lines are 
 | 5.17 After Keep: the saved moment (A-S13) | Keep | `en.tonight.afterSave.title`, `.body`, `.reviewButton`, `.doneButton`, `.anotherButton` | BUILT: "Kept." / "One more page for {child}." / "Read it back" / "Done for tonight" | Small; the success is the line | "Great job"; a total; "streak" | `strings.en.ts:281` |
 | 5.18 Keep gate (E-S10) | After the free letters, per phone (E59) | `billingCopy.keepGate.*` | BUILT. Title in IA.md: "Keep adding to {child}'s book". The gate is never named in copy; the recording is "Waiting to be kept." | Plain, no pressure; Plus is the plan | A price in app copy (D-083); "upgrade"; "unlock"; "you will lose"; "we will email you" | `features/billing.en.ts`; `in-app-disclosures.md` section 3 |
 | 5.19 Photo with a letter, Find, Share, Firsts, seals (flags) | Flag on | `photos.*`, `find.*`, `share.*` | PROPOSED (file): `words-packet-20nov.md` Part 2. Held until the flag and the counsel reads | Plain | "AI sees your photo"; a suggestion of a caption; "picture" and "photo" mixed (Q-FD-26: one word, "photo") | words packet Part 2 |
-| 5.20 Quick note, widget and Control Center doorways (A-S14) | System surfaces | `en.quickNote.*` | BUILT: "Quick note", "What just happened?", "Noted. It is in Month {month}." | Tiny | A letter text on a lock screen label; a name with App lock on | `strings.en.ts:517`; `quickNote.lockScreenLabel` is a widget label, never a notification |
+| 5.20 Quick note, widget and Control Center doorways (A-S14) | System surfaces | `en.quickNote.*` | BUILT: "Quick note", "What just happened?", "Added to Month {month}." | Tiny | A letter text on a lock screen label; a name with App lock on | `strings.en.ts:517`; `quickNote.lockScreenLabel` is a widget label, never a notification |
 
 ## 6. After the first letters: Plus, the plan and the Keep step (E-S10 to E-S12, E-S25, E-S26)
 
@@ -196,7 +196,7 @@ Area words: `docs/design/e2e/C-keeping-and-trust/WORDS.md`.
 | 10.6 Appearance and reading size (E-S21) | Me | `en.reader.*`, `settingsHome.appearance*` | BUILT | Plain | "dark mode is better for sleep" claims | `strings.en.ts:1244` |
 | 10.7 Help and legal | Me | `en.helpLinks.*`, `licences` | BUILT | Plain | "contact our team" (it is a person) | `strings.en.ts:1479` |
 | 10.8 If you are struggling, lines in other countries (E-S30, E-S31) | Always present (D-034) | `en.struggling.*`, `HELPLINES` | BUILT; never listed in analytics; helpline sources re-checked on a schedule | Kind, short, no diagnosis | A screen that implies the parent is unwell; a number that is out of date | `strings.en.ts:1458`, `helplines.ts`; `helplines.test.ts` |
-| 10.9 About: the "early version" note | Me, About | `en.settings.about.beta.*` | BUILT: "early version, can make mistakes" | One quiet note | "beta" anywhere else (D-060) | `rules.test.ts` "beta placement" |
+| 10.9 About: the "early version" note | Me, About | `en.settings.about.beta.*` | BUILT: "{app} is an early version, and it can make mistakes." | One quiet note | "beta" anywhere else (D-060) | `rules.test.ts` "beta placement" |
 
 ## 11. Empty states
 
@@ -245,22 +245,22 @@ Celebrate what exists. These are in-app only (moments never go to a lock screen)
 | 13.3 A month is in the book | A month with letters closes | `en.moments.firstMonthComplete` | BUILT: "Month {month} is in the book now." / "{count} letters, there for {child} to read one day." / "Read this month" | Celebrates what exists | "only {count}"; a target | `strings.en.ts:774` |
 | 13.4 Year complete | A twelve-month span is in the book | `en.moments.yearComplete` | missing. PROPOSED title "Year {year} is in the book." PROPOSED body "A full year of letters, there for {child} to read and hear for years." | Warm; time and love | "A whole year gone"; a total as a score | new key; the birthday lock-screen line is separate (12.5, 12.6) |
 | 13.5 First time reading together | First Read together | `en.moments.firstReadTogether` | BUILT (v1.1 marked): "You read it together." / "The letters are there to read together any time." | Quiet | "the first of many times" is a promise about the future and is out; "story" | `strings.en.ts:784` |
-| 13.6 Toasts | Small actions | `en.review.destination.addedToast`, `en.book.quietDay.removedToast`, `en.review.putBackToast`, `en.notMuch.savedToast` | BUILT: "Added to {child}'s book.", "Mark removed.", "Put back.", "A quiet day, kept." | Vary the ending; three toasts in a row should not all end in "kept" (VOICE.md) | "Success!" | various |
+| 13.6 Toasts | Small actions | `en.review.destination.addedToast`, `en.book.quietDay.removedToast`, `en.review.putBackToast`, `en.notMuch.savedToast` | BUILT: "Added to {child}'s book.", "Mark removed.", "Put back.", "Marked as a quiet day." | Vary the ending; three toasts in a row should not all end in "kept" (VOICE.md) | "Success!" | various |
 | 13.7 Export finished, Save a copy ready | A copy is made | `exportCopy.done.*` | BUILT | Plain | "Your data is ready" as a transaction | `features/export.en.ts` |
 | 13.8 Backup finished (when on) | Flip only | `backupCopy.done.*` | BUILT, not shown at 1.0 | Exact | "protected"; "safe" | `features/backup.en.ts` |
 
 ## 14. Errors and system states (E-S13 to E-S20, `en.errors`)
 
-Name what did not finish, and say what is true about the words. "Safe" is kept for a failed save and a crash, where the words are on the phone (VOICE.md "Words we lean on too much").
+Name what did not finish, and say what is true about the words. A failed save and a crash say the words are "still on this phone"; "safe" is not used for either now (VOICE.md "Words we lean on too much").
 
 | Surface | Trigger | Key | Line or brief | Tone | Never says | Source today |
 |---|---|---|---|---|---|---|
 | 14.1 Save failed | Local save error | `en.errors.saveFailed.*` | BUILT: "Not saved to the book yet" / "Your words are still on this phone." / "Try again now". No retry is promised: nothing retries by itself, and no screen reads this key yet (Review shows `en.review.saveFailed`) | Steady | "Error 5"; blame | `strings.en.ts:1167`; test "save failure reassurance" |
 | 14.2 Microphone off, busy, phone full | Listen | `en.errors.micDenied`, `.micBusy`, `.phoneFull` | BUILT: "The microphone is off" / "Turn it on in Settings, or type this one." | Offers the other way | "permission denied"; "fatal" | `strings.en.ts:1176-1189` |
 | 14.3 No words yet | Transcription did not finish | `en.errors.transcriptionFailed.*` | BUILT: "No words yet for this one" / "The recording is kept." | Says what is kept | "failed to transcribe" | `strings.en.ts:1190` |
-| 14.4 Offline | No network | `en.errors.offline.*` | BUILT: "You're offline" / "Keep talking. Everything is saved on this phone." | Calm | "No connection!" | `strings.en.ts:1195` |
+| 14.4 Offline | No network | `en.errors.offline.*` | BUILT: "You're offline" / "Keep talking. Recording doesn't need a connection." | Calm | "No connection!" | `strings.en.ts:1195` |
 | 14.5 Invite expired | An old link | `en.errors.inviteExpired.*` | BUILT: "This invite has expired" / "Ask {inviter} to send a new one." | Plain | Blame | `strings.en.ts:1199` |
-| 14.6 Something went wrong; the page did not open; nothing at this link | Generic and crash | `en.errors.generic`, `.crash`, `.notFoundPage` | BUILT: "Please try again. Nothing you saved has changed." / "Your letters and recordings are safe on this phone." | Steady | "Oops"; "fatal" | `strings.en.ts:1203-1219` |
+| 14.6 Something went wrong; the page did not open; nothing at this link | Generic and crash | `en.errors.generic`, `.crash`, `.notFoundPage` | BUILT: "Try again. Nothing you saved has changed." / "Your letters and recordings are still on this phone." | Steady | "Oops"; "fatal" | `strings.en.ts:1203-1219` |
 | 14.7 The book could not open (launch recovery) | Database cannot open | `en.errors.launch.*` | BUILT: "Export what's readable" and a README in the export | Honest | "corrupt"; "lost" | `strings.en.ts:1226-1239` |
 | 14.8 Sign-in outage and offline (E-S14), sign-in help | Servers-on builds | `authCopy.*`, `en.auth.troubleButton` | BUILT and PROPOSED (file) | Names the step that did not finish; "Nothing has changed." only when nothing did | "Your letters are still on this phone." in an error line a new phone also reads | E WORDS; VOICE.md |
 | 14.9 SystemLine and update line (E-S15, E-S16) | An app update is needed | keys as written in E WORDS | PROPOSED (file): E WORDS | One quiet line in Me | "Update now or lose access" | E WORDS |
