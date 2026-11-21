@@ -13,8 +13,8 @@
  * folds to one line on `standard`: "Getting ready, 40%" with a thin determinate line (track `controlBorder`) only
  * while bytes move; a wait (Wi-Fi, space, its turn), a check or a failure (with Try again) is said in words, never
  * as 0% (speech-consent-card.logic.ts). Under it, while the download is on its way, one still footnote: "You can
- * start now. Recording saved, and the words follow." (true: a recording made now waits as `waiting_for_pack` and
- * is kept). A failure a tap can help with leads with "The download stopped." Or "Recordings are saved either way."
+ * start now. Your voice is kept, and the words follow." (true: a recording made now waits as `waiting_for_pack` and
+ * is kept). A failure a tap can help with leads with "The download stopped." Or "Your voice is kept either way."
  */
 import { speechConsentCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';

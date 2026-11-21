@@ -23,7 +23,7 @@ export const wordsCopy = {
     keptToast: 'Recording saved. The words will follow.',
     // Shown when the person has not yet said yes to the one-time download (D-087). {size} is this phone's plan.
     askTitle: 'Get your {name} words ready',
-    askBody: 'Recording saved. To write down the words, this phone needs a one-time download of {size}.',
+    askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
     askButton: 'Download on Wi-Fi',
     // The Wi-Fi wait card: one time, this download only. US term (D-087). The button names the size from this
     // phone's plan (test/speech-consent.test.ts), and "Use cellular data {size}" is over the 22-character budget
