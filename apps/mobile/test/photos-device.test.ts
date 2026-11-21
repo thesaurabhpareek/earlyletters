@@ -247,6 +247,28 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     expect(picked.left()).toEqual([]);
     expect(await sweepPhotos(db, files, picked)).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 }); // repeat
   });
+  it('[NS-01-R36] a picture committed while the sweep runs keeps its file and its row (privacy review B on #835): rows are read before the folder is listed, and an orphan file is looked up again before it is removed', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    const files = memoryFiles();
+    const real = files.list.bind(files);
+    const commit = async (owner: string, media: string) => {
+      await files.write(`${media}.jpg`, Uint8Array.of(1)); // the file first, then its row, as commitPhoto writes them
+      entryMediaStore(db).put(row(owner, media));
+    };
+    files.list = async () => {
+      await commit('e1', 'mA'); // before the listing: a file with no row in the sweep's snapshot
+      const listed = await real();
+      await commit('e2', 'mB'); // after the listing: a row whose file the listing never saw
+      return listed;
+    };
+    const counts = await sweepPhotos(db, files, pickedMemory({}));
+    expect([...files.disk.keys()].sort()).toEqual(['mA.jpg', 'mB.jpg']);
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mA', 'mB']);
+    expect(counts).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
+  });
   it('[D5] an unreadable folder changes nothing; a file that will not go keeps its row for the next launch', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
