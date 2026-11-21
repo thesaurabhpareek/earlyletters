@@ -52,7 +52,7 @@ export const reminderCopy = {
     // "Message", never "note", for what the app sends (BRAND.md glossary).
     monthNotesLabel: 'Month and birthday messages',
     monthNotesHelp: 'A short message on the day a new month begins in each book, and on birthdays.',
-    namesHelpOff: 'Notifications leave names off the lock screen.',
+    namesHelpOff: 'Notifications leave child names off the lock screen.',
     namesHelpOn: 'Notifications can show names on the lock screen.',
     deniedTitle: 'Notifications are off',
     deniedBody: 'Turn them on in Settings to get these reminders.',
