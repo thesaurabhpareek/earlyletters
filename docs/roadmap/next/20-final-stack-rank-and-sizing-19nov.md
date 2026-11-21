@@ -1,6 +1,12 @@
 # Final stack rank, sizing and first work packages (19 Nov 2026)
 
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: section 2 In flight and the rank order for waves) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
 Owner: Karma (CTO role), with the Chief Product Officer role. Docs only. Read against develop `09a104da` (19 Nov, after #764 merged) and the open PRs listed in section 2, at 22:15 UTC.
+
+Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the order of work and each item's size and gate (rank 1 to 54, plus section 4b for cards added 20 Nov).
+
+Status: Locked v1.0, 20 Nov 2026 (council round 2). Rescoped items marked "Rescoped 20 Nov". Changes after lock need a PR that lists every changed id.
 
 What this is: the 55 candidates of the 19 Nov scope round (C-01 to C-42, N-01 to N-13), looked at again by the CPO against what develop holds now, debated with the owning roles, given a final order, sized by the CTO, and broken into backlog rows BL-923 to BL-941 for the first two waves.
 
@@ -87,15 +93,15 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 18 | 13 | C-18 | Share one letter, text first | 4 | S to M | BL-939, after BL-937. Level 1 only | Build 14 in the PRD. No recording path until security and counsel have read it. |
 | 19 | 19 | C-14 | Child switcher on Home | 3 | S | Requirement NS-14 written; build row BL-941 | A letter can land in the wrong book today with no control on Home. |
 | 20 | 21 | C-09 | Hands-free spike | 3 | spike S, build L | PRD 04; starts the Monday after the Build 13 cut | A spike, time-boxed. No doorway ships from it. |
-| 21 | 20 | C-20 | One past letter on Home | 3 | S | Not broken down | Shares the single Home slip. |
-| 22 | 22 | C-07 | A letter for another day | 3 | S to M | Not broken down | The app must never read a date out of the words. |
-| 23 | 25 | N-09 | One notification budget (taken before C-05 when both are free: reminders depend on it) | 2 | S | In flight: #758 | Gates every reminder class after it. |
+| 21 | 20 | C-20 | One past letter on Home | 3 | S | NS-23; BL-946. Rescoped 20 Nov: changes the built "A month ago" card (`resurfaced`) to the same day of an earlier month or year; one Home card rule with open PR #721 | Shares the single Home slip. |
+| 22 | 22 | C-07 | A letter for another day | 3 | S | NS-15; BL-945. Rescoped 20 Nov: the about-day (`occurred_on`) is already stored, synced and exported; the card adds the Review control and the two-day line; BL-944 superseded | The app must never read a date out of the words. |
+| 23 | 25 | N-09 | One notification budget (built before C-05: reminders depend on it; plan notices sit outside it) | 2 | S | #758 to be reworked without Memory Library classes; needs a backlog row | Gates every reminder class after it. |
 | 24 | 24 | N-12 | Doc and code drift | 1 | S | Needs its list copied into the repo first | Cheap; not urgent. |
 | 25 | 26 | C-23 | Firsts | 3 | M | Earliest Build 15 (PRD 06) | Tone risk: must not become milestones. |
 | 26 | 28 | C-25 | Read the year back | 3 | S to M | Not broken down | Read together is built; this is a thin layer. |
 | 27 | 31 | C-26 | Print-ready file | 3 | M | Structure only (PRD 07 3.2). Proof-book spend is the founder's | Up from 31: R6 names print as the best-evidenced gap [S]. No spend, no partner. |
 | 28 | 27 | C-21 | Co-parent turned on in store builds | 3 | S to M | D-162 draft keeps it alpha-only | A second adult sees every letter; needs the co-parent work BL-882 to BL-889. |
-| 29 | 29 | C-08 | Someone else speaks | 3 | M | Not broken down | Authorship and allowance rules. |
+| 29 | 29 | C-08 | Someone else speaks | 3 | M to L | NS-16. The name is the existing `author_signs_as` (30 characters, set before first upload); counsel Q48 and the sibling question first | Authorship and allowance rules. |
 | 30 | 30 | C-12 | Second spoken language (gate) | 3 | L per language | Native reviewer and the founder | A promise we keep only when the gate passes. |
 | 31 | 32 | C-24 | Sealed letters | 3 | L | Earliest Build 15; counsel on minors and open-on-a-day | Legal and sync. |
 | 32 | 33 | C-10 | Quick capture from a doorway | 3 | M | After the spike; Ready only (ruling 6) | Risk of an unmeant recording. |
@@ -121,6 +127,23 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 52 | 53 | C-41 | Paper sounds | 1 | M |  |  |
 | 53 | 54 | C-35 | Gifts and lifetime | 1 | L | Payments; banned word |  |
 | 54 | 55 | C-37 | A Share tab | 1 | M | Fails the founder's tab test |  |
+
+## 4b. Cards added 20 Nov 2026, proposed order (not ranks 55 and up: the founder rules, Q-FD-7)
+
+Source: `docs/product/prd/21-days-cultural-photos-home.md` "Release line and cut" for NS-46 to NS-50; `19-from-download-to-first-letter.md` for NS-38 to NS-45; `26-founder-direction-photos-library-and-media.md` for NS-51 and NS-52 (card 27, being written). Sizes and the build order are in `24-engineering-handoff.md` and `23-dependency-map-and-plan.md` (both being written); this table does not repeat them. No dates (ruling T5).
+
+| Order | Card | Item | Drop | First gate | Value and size |
+|---|---|---|---|---|---|
+| 1 | NS-48 phase 1 | Notification catalogue: day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage (NS-48-R28) | A | NS-01 on `testflight`; no planner change beyond words | not scored; card 21 |
+| 2 | NS-49 level 1 | Picture-first start (Apple's picker) as a first-class start | A | The A-S01 re-draw passes its AX5 test (NS-49-R1) | not scored |
+| 3 | NS-46 | Days we mark, US only, plain browse-and-tick list in Me | B | BL-966, BL-982, BL-963, BL-985; `budget.ts`; days store registered and Erase-scanned; counsel | not scored |
+| 4 | NS-47 | Cultural background, store rules only | B | Same as NS-46 (one release unit); counsel CUL-Q5 to Q7 and Q11 for the ask | not scored |
+| 5 | NS-50 | Home today, rank 2b in the slip | B | BL-963 slip registry (not built) | not scored |
+| 6 | NS-47, NS-48, NS-49 | Ask slip and traditions; recency and last-letter layers; Suggestions picker (level 2) | C | After 1.0 approval; J-CUL-01; weak-link launch run on iOS 17.0 to 17.2 and 26 | not scored |
+| 7 | NS-38 to NS-45 | First run: store page to account life (card 19; P0 96 rows) | founder rules (card 19 has no cut) | Karma's rulings on its open items | not scored |
+| 8 | NS-51, NS-52 | Photo moments (level 3); pictures and videos with a letter | not yet | Cards not written; the founder direction reverses three earlier rulings (level 3 closed, no video, one picture per letter) | not scored |
+
+Why the order is only proposed: the reviews found no single cut in the pack, and it stands on planner work that is unbuilt (`budget.ts`, the quiet reader BL-985, the slip registry BL-963; `tools/review/ns46-50/mobile.md` M-01, M-13). Superseded: "one note a day is enforced" (rank 5, C-05, and N-09 rank 23 read as if it were) -> enforced nowhere, `budget.ts` is the prerequisite (`mobile.md` M-01).
 
 Dropped from the rank: **C-22** (co-parent caption and sheet in store builds), on the founder's answer of 19 Nov. See section 6.
 

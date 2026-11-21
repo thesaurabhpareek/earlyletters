@@ -195,10 +195,12 @@ describe('12. Acceptance checks', () => {
     expect(child).toMatch(/title: name\.trim\(\) \? fill\(s\.title, \{ child: name \}\) : childRowTitle\(name\)/);
   });
 
-  it('Header "Settings" is heading 1 and VoiceOver does not start on "Back".', () => {
+  // NS-33-R2 (20 Nov) replaces "Settings" in this spec title: the header shows the tab's own title, "Me".
+  it('Header "Me" is heading 1 and VoiceOver does not start on "Back".', () => {
     const layout = code(read('app/(tabs)/_layout.tsx'));
     const block = layout.slice(layout.indexOf('name="you"'));
-    expect(block).toMatch(/headerTitle: copy\.settings\.title/);
+    expect(block).toMatch(/title: t\.you,/);
+    expect(block).not.toMatch(/headerTitle:/);
     expect(block).not.toMatch(/headerLeft/);
     // The tab button says what the tab holds, from content.
     // Only where the build has sign-in (Review B on #738): the layout asks you-tab-hint.ts, which reads the switch once.
