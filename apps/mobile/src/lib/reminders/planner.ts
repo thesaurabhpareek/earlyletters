@@ -16,8 +16,8 @@
  *   that does not exist (born on the 31st) falls on the month's last day,
  *   matching packages/core ageOn. Children with only a due date get none
  *   until they are born.
- * - At most one note a day: a month or birthday note replaces that day's
- *   evening nudge (F2 "not the birthday"; C-REQ-002 counts them apart).
+ * - At most one note a day, by rank (budget.ts `chooseOnePerDay`): a birthday beats a month note beats the evening
+ *   nudge on the same date (F2 "not the birthday"; NS-32-R1b). At most 60 pending in total, plan notices first.
  * - Copy rotates through the built evening variants by slot order (NS-48
  *   phase 1: `select`, `@scribe/core` notification-key; evening-worded ones
  *   only from 17:00), so no variant repeats within the pool and no title shows twice in a row (C-REQ-006).
@@ -33,6 +33,7 @@
 import { en } from '@scribe/content';
 import { eligibleFloorIndexes, floorIndexOfKey, selectNotificationKey, type KeySelector } from '@scribe/core';
 import { childLabel, fill } from '../copy';
+import { budgetedSlots, chooseOnePerDay, PLAN_MAX, TOTAL_MAX } from './budget';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -94,8 +95,14 @@ export interface PlanInput {
   horizonDays?: number;
   /** Month and birthday notes are planned this many days ahead (default 92). */
   monthHorizonDays?: number;
-  /** iOS keeps at most 64 pending local notifications; we stay under it (default 60). */
+  /** Fewer budgeted notes than the budget allows, for tests and narrow plans. Never more: the total stays at `TOTAL_MAX` (60). */
   maxNotifications?: number;
+  /**
+   * How many plan notices (trial and renewal, `plan.` ids, owned by lib/billing) are pending. They come first inside
+   * the 60 in total, so the planner leaves them their slots (CR-69 A1, NS-32-R4b). Default `PLAN_MAX` (4): the most they
+   * can be, so the total is at most 60 even before the scheduler passes the real count.
+   */
+  planPending?: number;
   /**
    * The hours reminders may use, in local minutes of the day (default 07:00 to
    * 21:30). Remote config may narrow it later (C-NFR-009); an invalid window
@@ -320,7 +327,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
 
   const horizon = Math.max(1, input.horizonDays ?? 21);
   const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? 92);
-  const max = input.maxNotifications ?? 60;
+  const max = Math.max(0, Math.min(input.maxNotifications ?? TOTAL_MAX, budgetedSlots(input.planPending ?? PLAN_MAX)));
   const window = normalizeWindow(input.window);
   const time = clampReminderTime(prefs.time, window).time;
   const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
@@ -351,8 +358,14 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       }
     }
   }
+  // One budgeted note a local day (NS-32-R1, R1b, R3): a birthday and a month-day on one date are one note, the
+  // birthday. The day's one note is chosen BEFORE the lead-time and quiet-hour drops, so a passed birthday note still
+  // holds its day and nothing of lower rank fills it in.
+  const chosenNotes = chooseOnePerDay(
+    [...notes.values()].map((note) => ({ source: note.kind, date: isoDate(note.date), note })),
+  );
   const noteDays = new Set<number>();
-  for (const note of notes.values()) {
+  for (const { note } of chosenNotes) {
     const t = note.kind === 'birthday' ? birthdayTime : time;
     const fireAt = at(note.date, t, timeZone);
     noteDays.add(dayNumber(note.date));
@@ -407,7 +420,9 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     }
   }
 
-  return out.sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id)).slice(0, max);
+  // The invariant, whatever produced `out`: one budgeted note a local day, then at most `max` of them, earliest kept.
+  const oneADay = chooseOnePerDay(out.map((n) => ({ source: n.kind, date: n.date, n }))).map((c) => c.n);
+  return oneADay.sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id)).slice(0, max);
 }
 
 /** A short fingerprint of a plan, so re-planning that changes nothing touches nothing. */

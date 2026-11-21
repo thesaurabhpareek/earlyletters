@@ -44,7 +44,7 @@ node scripts/agents/handoff.mjs reply --issue 123 --from privacy --status done -
 | Status | Meaning |
 |---|---|
 | `answered` | The answer is in the reply. |
-| `done` | The work is done; link the PR (it still needs the founder's merge). |
+| `done` | The work is done; link the PR (it still needs Karma's merge, CR-73). |
 | `declined` | You will not do it; say why, citing a rule or decision, and who should. |
 | `blocked` | You cannot finish; say on what. Open a handoff to that agent, or add `needs:founder` to the issue. |
 

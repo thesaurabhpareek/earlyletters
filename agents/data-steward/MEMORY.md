@@ -35,7 +35,7 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - `docs/legal/data-map.yaml` and `scripts/check-data-map.mjs` exist on no branch (checked all remotes 2026-10-03).
 - Device store: `apps/mobile/src/lib/store.ts` (clears `deleted_at` directly at line 547, MOB-03); migrator `apps/mobile/src/lib/db/migrations.ts` (`PRAGMA user_version`); WAL + `synchronous=FULL` in `db/expo-adapter.ts`.
 - Storage: only `entry-photos` exists (`scribe_core.sql:291`); path constraints `entries_photo_path_scoped`, `children_photo_path_scoped`.
-- (15 Oct) Merged since 3 Oct: #25 repo-hygiene, #27 mobile-config, #28 unicode, #29 mobile-store-sqldb, #31 analytics-enums. Still open: #26 db-harness (draft), #30 ci/hardening (founder merge), #32 db-pending-hardening (draft).
+- (15 Oct) Merged since 3 Oct: #25 repo-hygiene, #27 mobile-config, #28 unicode, #29 mobile-store-sqldb, #31 analytics-enums. Still open: #26 db-harness (draft), #30 ci/hardening (merge is Karma's now, CR-73), #32 db-pending-hardening (draft).
 
 ## Decisions and constraints I must respect
 - D-041: migrations only from CI on a tag; the `approve-migration` label is retired and no workflow reads it (D-117, `docs/DECISIONS.md:843`) (verified 2026-11-20).

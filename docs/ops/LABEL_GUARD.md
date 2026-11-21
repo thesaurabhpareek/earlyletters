@@ -27,3 +27,5 @@ Exit 0 is a pass, 1 is a finding, 2 means the guard itself could not run. Each F
 ## Turning it on (NS-07-G11-5)
 
 The job is `docs/ops/proposed/workflows/label-guard.yml`. It runs the base branch's copy of the guard, so a change to the guard takes effect only after it merges, and the job can only run once the guard is on `develop`. The founder copies it to `.github/workflows/label-guard.yml` (D-124: the Claude GitHub App cannot edit workflows) after the locked cards merge (#846), because the pre-lock cards on `develop` lack their label lines and G11-2 would fail every PR. When it has been green for a week, add `label guard` to the required checks on `develop`.
+
+State on 20 Nov 2026 (develop 3efbaf7a): the dry run in `docs/ops/proposed/label-guard-activation.md` shows G11-2 red on every PR, because cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`) have no `**Label effect.**` line. Copy the job only after product adds them, or every PR goes red for a reason no author can clear. `apps/mobile/test/label-guard-workflow.test.ts` reads the job file and, after the copy, follows it to `.github/workflows/`.

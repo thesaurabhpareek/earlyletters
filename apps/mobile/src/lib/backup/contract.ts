@@ -9,6 +9,7 @@
  * server's; the byte labels below are the server's `escrow/hpke.ts` (INFO, aad,
  * packV1), pinned in test/backup-keys.test.ts.
  */
+import { API_ERROR_CODES, ERROR_DETAILS } from '@scribe/api';
 import { concat, utf8ToBytes } from './bytes';
 
 export const BACKUP_BUCKET = 'entry-audio';
@@ -179,6 +180,54 @@ export const ESCROW_DETAILS = {
    */
   signInAgain: ['step_up_required', 'session_ended', 'reauth_required', 'unauthorized'],
 } as const;
+
+/**
+ * What the client may keep of a server answer: the closed lists of `@scribe/api` (`ERROR_DETAILS`,
+ * `API_ERROR_CODES`, the same ones the server's envelope is checked against) plus the few words
+ * this client raises itself. Anything else is dropped: the client never stores or logs free text
+ * from the server (PRIV-R21, TDD 01 4.2 rule 2).
+ */
+const KNOWN_DETAILS: readonly string[] = [...ERROR_DETAILS, ...ESCROW_DETAILS.stopped, ...ESCROW_DETAILS.signInAgain];
+
+/** Codes that are words, not SQLSTATEs or `HTTP<status>`: the contract's, and the client's own. */
+const KNOWN_WORD_CODES: readonly string[] = [
+  ...API_ERROR_CODES,
+  'error',
+  'missing',
+  'location',
+  'tus_restarts',
+  'bad_response',
+  'signed_out',
+  'not_configured',
+  'policy_version_missing',
+];
+
+/** The detail if it is one of the contract's words, else null. Anything else is dropped. */
+export function safeErrorDetail(detail: unknown): string | null {
+  return typeof detail === 'string' && KNOWN_DETAILS.includes(detail) ? detail : null;
+}
+
+/** The code if it is a SQLSTATE, `HTTP<status>` or a word the contract names; else `unknown`. Empty means `network`. */
+export function safeErrorCode(code: unknown): string {
+  if (code === '') return 'network';
+  if (typeof code !== 'string') return 'unknown';
+  if (/^[0-9A-Z]{5}$/.test(code) || /^HTTP\d{3}$/.test(code) || KNOWN_WORD_CODES.includes(code)) return code;
+  return 'unknown';
+}
+
+/**
+ * What a job's `lastError` may hold: `<code>` or `<code>:<detail>`, both from the closed sets above.
+ * Takes a code or an already joined `code:detail` and keeps only the parts that are known.
+ */
+export function storedLastError(codeOrJoined: unknown): string {
+  if (typeof codeOrJoined !== 'string') return 'error';
+  const cut = codeOrJoined.indexOf(':');
+  if (cut < 0) return safeErrorCode(codeOrJoined);
+  const rest = codeOrJoined.slice(cut + 1);
+  const detail = safeErrorDetail(rest) ?? (rest === 'none' ? 'none' : null);
+  const code = safeErrorCode(codeOrJoined.slice(0, cut));
+  return detail ? `${code}:${detail}` : code;
+}
 
 export type RestoreState = 'requested' | 'approved' | 'released' | 'cancelled' | 'expired';
 

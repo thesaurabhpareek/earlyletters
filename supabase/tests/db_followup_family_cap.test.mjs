@@ -4,6 +4,7 @@
 // (photo moved into another family's folder), asserted as fixed.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -183,11 +184,13 @@ check('after the hour the window starts again', (await one(A, `select public.rem
 // ── Photos cannot be moved into another family's book (PoC F6, review L2) ──
 const CB = await newChild(C);
 const own = `${CB}/${C}/0192d000-0000-7000-8000-0000000000aa.jpg`;
-await as(C, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [own]);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [own]);
 const moved = await codeOf(() => as(C, `update storage.objects set name = $1 where name = $2`, [`${SOLO}/${C}/x.jpg`, own]));
-check('[L2] renaming an own photo into another family\'s book folder is refused', moved === '42501'
+// 20261110000000: no update policy is left, so a rename changes no row (no error, zero rows).
+check('[L2] renaming an own photo into another family\'s book folder changes nothing', ['ok', '42501'].includes(moved)
   && (await sys(`select 1 from storage.objects where name=$1`, [own])).rows.length === 1);
-check('renaming within an own live book still works',
-  (await codeOf(() => as(C, `update storage.objects set name = $1 where name = $2`, [`${CB}/${C}/0192d000-0000-7000-8000-0000000000ab.jpg`, own]))) === 'ok');
+await codeOf(() => as(C, `update storage.objects set name = $1 where name = $2`, [`${CB}/${C}/0192d000-0000-7000-8000-0000000000ab.jpg`, own]));
+check('[BL-870] renaming within an own live book changes nothing either (the server takes no picture write)',
+  (await sys(`select 1 from storage.objects where name=$1`, [own])).rows.length === 1);
 
 done();
