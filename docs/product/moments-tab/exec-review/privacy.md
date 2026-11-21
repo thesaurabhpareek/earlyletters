@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Moments tab: executive review, Privacy (NS-53)
 
 Reviewer: Chief Privacy Officer (a role played by an AI session, not counsel). Nothing here is legal advice; every legal judgment is marked "counsel must confirm" and goes to the CLO for the counsel brief.

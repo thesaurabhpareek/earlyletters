@@ -9,6 +9,22 @@ Load when: you freeze the Moments spec, hand it to the harness, or file its back
 
 Fictional family Asha only. Every date below is PROPOSED and the founder's to set. D-121's target of Tue 1 Dec is UNVERIFIED as still current.
 
+## 0. What is frozen, what is not
+
+Said plainly, so nobody reads a freeze as more than it is.
+
+- **Frozen: the row text.** The wording of the 301 rows R1 to R301 (Given, When, Then, layer, priority, phase, Satisfies) is what the freeze fixes. Ids stay stable.
+- **NOT frozen: the PROPOSED row homes.** The PR home, gate home and device-or-script home of spec section 26b are the author's reading. `mobile` and `data-architect` still have to confirm them.
+- **NOT frozen: sizes.** Every size and file count in section 19.4 and in `HARNESS-REPLAN-HYBRID.md` is ASSUMED.
+- **NOT frozen: quality thresholds.** `BUSY_DAY`, `SESSION_GAP`, `RECENT_CAP`, `CANDIDATES`, the LRU size, the place radius, and the floors and margins of R204 are ASSUMED until G1a-L, G1b and the card sort set them as data.
+- **NOT frozen: anything Apple UNVERIFIED.** Every Apple platform, App Review and licence fact keeps its UNVERIFIED label until the CCO or `regulatory-affairs` reads the source and a spike or counsel answer is on file.
+- **NOT frozen: EX-ENG-4 is OPEN until G3-x.** Whether a per-profile autolinking exclusion really removes `scribe-library` from a profile with F2 off is UNVERIFIED until the G3-x read-out says which rule of R222 is live.
+- **NOT frozen: the value proposition text.** The proposed value proposition, first-run promise and store story of spec 16.1 wait for the founder's answer on O-48. No public line uses them before that.
+
+## 0a. Registers (what closes each item)
+
+Sections 1.5 to 1.8 list every gate, every founder decision, every counsel question and the row ids v2 cited, each with an owner, the evidence that closes it and a status. Status words: OPEN (nothing on file), PROPOSED (text or default drafted, not decided), CLOSED (decided in the spec), PARKED, DELETED. Nothing here is DONE: no read-out, counsel answer or founder signature is on file at 21 Nov 2026.
+
 ## 1. What remains before freeze
 
 The spec is freeze-ready in the sense that no BLOCKER is open without either an edit or a founder question carrying a recommended default. Three kinds of item remain, and none of them is something the spec can close alone.
@@ -107,9 +123,166 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 - [x] `EXPERIENCE-AND-MOTION.md` is read and folded (spec section 29); its open items O-56 to O-59 and O-27 await the founder.
 - [ ] The CPO freeze review has regraded priorities (EX-CPO-5; the spec deferred the regrade so row ids stay stable).
 - [ ] `legal` has the Moments section of packet 1.8.0 and the register rows of R239.
-- [x] The "836 of 845" claim is withdrawn as a coverage figure (it only says an id is written next to a row) and replaced by the honest measures of spec sections 26 and 26b, recomputed by `node docs/product/moments-tab/row-homes.mjs` (21 Nov 2026: 301 rows; 259 with a PR home; 141 with a gate home; 293 with a PR or a gate; 20 not built with a reason; 0 orphans; 0 with an automated test; 70 naming a device or manual script). `node scripts/trace.mjs` reads card 28 only after PR #1313 merges; until then use the row-homes script. The PR and gate homes of 26b are PROPOSED and wait for a read by `mobile` and `data-architect`.
+- [x] The "836 of 845" claim is withdrawn as a coverage figure (it only says an id is written next to a row) and replaced by the honest measures of spec sections 26 and 26b, recomputed by `node docs/product/moments-tab/row-homes.mjs` (21 Nov 2026: 301 rows; 260 with a PR home; 141 with a gate home; 293 with a PR or a gate; 20 not built with a reason; 0 orphans; 0 with an automated test; 70 naming a device or manual script). `node scripts/trace.mjs` reads card 28 only after PR #1313 merges; until then use the row-homes script. The PR and gate homes of 26b are PROPOSED and wait for a read by `mobile` and `data-architect`.
 - [ ] `mobile` and `data-architect` have read the row homes of 26b and corrected any they disagree with; after PR #1313 merges, `node scripts/trace.mjs --no-write` is run and its NS-53 P0 untested count (203 of 203 expected today) is recorded.
 - [ ] Content rules scan passes on the PRD (no em or en dashes, curly quotes, ellipsis characters or emoji).
+
+
+### 1.5 Gate register (spec section 21; every date PROPOSED)
+
+Evidence goes in `docs/release/<x.y.z>.md` as one dated line with a commit. Every gate is OPEN today.
+
+| Gate | Owner | Evidence that closes it | Decide by | Status | If it fails |
+|---|---|---|---|---|---|
+| G1a-L Early device spike, library | `mobile` with the founder's phone | Written read-out of the six unknowns in 1.3 (timings and rates only); input to PR 9 | Fri 27 Nov, before PR 9 merges | OPEN | The named unknown stays unbuilt |
+| G1a-P Picker spike, throwaway branch | `mobile`, founder's phone; `privacy` reads it | Dated read-out of unknowns (a) to (o) (yes or no, timings, rates); simulator part first, device part before 18b-2 and 18c | Simulator part now; device part Fri 27 Nov | OPEN | 18b-2 and 18c wait; modal picker still ships; door stays pictures-only |
+| G1b Full device run | `mobile` with the founder's phone | Written read-out with iPhone SE 3 numbers (scan, thumbnails, zone change, Limited and Full, 20,000 item script library, place table size); ASSUMED thresholds set as data | Mon 30 Nov | OPEN | Affected part stays dark (O-37) |
+| G2 Counsel read | `legal`, `privacy`, licensed counsel | A written answer from licensed counsel, with name and date, on each of Q1 to Q10 and sub-items (internal memo, agent review or silence does not count) | Mon 30 Nov | OPEN | Affected part stays dark |
+| G3 Approval of READ_SET_V1, with sub-task G3-x | `privacy`, `security-architect` | Signed set (location member signed separately, R241; picker identifier member "none permitted"); G3-x read-out of the autolinking exclusion per profile | Mon 30 Nov | OPEN (G3-x UNVERIFIED until run) | Narrow the set; store none and ship "Not this one" only |
+| G4 Five-parent check | `user-research` | Read-out against the section 20 bar, on city-level place lines (R219), with the v3 tasks T1 to T4 and the three primer variants | Mon 30 Nov | OPEN | Wording or design changes first; place lines off for that build if any parent did not expect it |
+| G5 Accessibility pass | `qa`, `design-systems` | Device rows W1 to W12 pass on iPhone SE 3 (a) our frame, (b) task completion through Apple's picker, recorded on device | Mon 30 Nov | OPEN | No ship |
+| G6 Content rules | `content` | `rules.test.ts` and glossary pass, plus the mode-scoped claim test and the D5-F4 absolute-claim scan on the host strings | Mon 30 Nov | OPEN | Fix the copy |
+| G7 Real-iPhone checks | `qa`, founder's phone | Dated read-out (timings and rates only): permission states, Limited, revoke, zone change, cold-start tap, switcher and App lock snapshot (R232), restore with attached pictures (D-3, R235), Reduce Motion frame times, and the v3 picker rows | Mon 30 Nov | OPEN | F2 or the affected part stays off |
+| G8 Place data flow (phase 2, not the first release) | licensed counsel, `privacy` | Written counsel answer and signed text, only if P-B (Apple geocoder) is wanted later | Not on the first-release path | OPEN (phase 2) | F3 stays off and uncompiled; P-A and P-C ship |
+| G9 Suggestions (K-SUG) | licensed counsel, `privacy`, `security-architect` | Written answer, only if the founder asks | n/a (O-32: NOT PLANNED) | NOT PLANNED | K-SUG not built |
+| G10 Founder signs | founder (`product` drafts the D-### entry as Proposed) | The D-### entry signed as four signatures plus RV-23 as a fifth | Mon 30 Nov | OPEN | The part is not built |
+| G11a-lib Security read, library (F2) | `security-architect` with the CISO role | Dated line with a commit: lockfile and prebuild diff against `NATIVE_MODULE_GATE.md` items 1 to 3, binary and plist scan, source read of `scribe-library` | Mon 30 Nov | OPEN | The part stays dark |
+| G11a-photo Security read, picker (F1) | `security-architect` with the CISO role | Dated line with a commit: source read of `scribe-picker`, scan list, plist, entitlements and privacy manifest diffs unchanged, device rows of R279; before the door's first store build | Before the door's first store build | OPEN | The door stays out of that build |
+| G11b Place table provenance and licence | `mobile`, `legal`, CFO, CBO | Dated line with a commit: named dataset, licence text read by licensed counsel (Q10), attribution, size, binary or signed download, `docs/security/PLACE_TABLE.md` | Mon 30 Nov | OPEN | No places in the first release |
+| G11c Data inventory | `data-architect` | Dated line with a commit: `DATA_CLASSIFICATION.md` 4.6 rows and data map row for the decisions store, merged with the code (R250); gains the temporary located original | Mon 30 Nov | OPEN | The part stays dark |
+| G11d Store paperwork parity | `legal` with `privacy` | Dated line with a commit: label, policy, usage string, Notes for Review and privacy manifest match the production profile, evidence index in `docs/release/<x.y.z>.md` (R240); applies to the door as well as the library read | Mon 30 Nov | OPEN | The part stays dark |
+
+### 1.6 Founder and owner decision register (spec section 23; one row per O-id)
+
+"Closes it" for a founder item is the founder's dated one-line answer, recorded in the D-### entry or the exec rulings log. For an item owned by someone else it is that owner's ruling in the exec rulings log. Every default below the spec states is a recommendation and applies to docs and test builds only until answered. Status OPEN unless stated.
+
+| Id | Owner | Subject | Closes it | Status |
+|---|---|---|---|---|
+| O-01 | Founder | Tab position | Founder answer, Tue 24 Nov | OPEN |
+| O-02 | Founder | Library-timed local reminder (RV-08) | Founder answer before G2; F4 off until Q2 is answered | OPEN |
+| O-03 | Founder | Lifecycle email (RV-09) | Founder answer, Fri 27 Nov | OPEN |
+| O-04 | CPO | Daily-return claim as hypothesis | CPO ruling, Tue 24 Nov | OPEN |
+| O-05 | Founder | When the library ask may appear | Founder answer, Fri 27 Nov | OPEN |
+| O-06 | CPO | One Home pointer after first kept letter | CPO ruling with O-01 | OPEN |
+| O-07 | Founder | Seasonal days beyond public holidays | Founder answer, Fri 27 Nov | OPEN |
+| O-08 | CTO with privacy | Apple's title on Route A | Ruling, Tue 24 Nov | OPEN |
+| O-09 | CTO with privacy | Index cache or date window rebuild | Ruling after G1 | OPEN |
+| O-10 | none | Recent: lone pictures or qualifying days | Same question as O-12 | DELETED |
+| O-11 | CPO | Age in months on a card | CPO ruling, Fri 27 Nov | OPEN |
+| O-12 | CPO | Recent tiers versus one card per day | CPO ruling, Tue 24 Nov | OPEN |
+| O-13 | Privacy and CTO at G3 | Stored picture identifier | Closed as No (R56 dropped, D6); founder may reverse | CLOSED |
+| O-14 | Privacy and CTO at G3 | Album title verbatim | Closed (R57 dropped, D6); founder may reverse | CLOSED |
+| O-15 | CTO with privacy | Approve READ_SET_V1 | G3 signature, Tue 24 Nov | OPEN |
+| O-16 | Founder | Kept day recurs each year | Founder answer, Fri 27 Nov | OPEN |
+| O-17 | Design | Choose-pictures row at head or foot | Design ruling | OPEN |
+| O-18 | Founder | Permission result as analytics event | Founder answer before the registry change | OPEN |
+| O-19 | CTO with privacy | After Keep, land on Book or Moments | Ruling, Tue 24 Nov | OPEN |
+| O-20 | none | Shared book under Variant A | Parked until co-parent ships (D-162) | PARKED |
+| O-21 | none | Country or region as coarser place | Superseded by 7a | DELETED |
+| O-22 | Design | Where a notification tap lands | Design ruling, Tue 24 Nov | OPEN |
+| O-23 | CPO | Any widget | CPO ruling after launch | OPEN |
+| O-24 | Design | Haptics and sound | Design ruling before sign-off | OPEN |
+| O-25 | Design | Lamp scene or plain paper | Design ruling | OPEN |
+| O-26 | Design | A3 settle or A1 tokens | Design ruling | OPEN |
+| O-27 | Design, founder | Card carries one thing into capture; tray flight | Design ruling, founder answer | OPEN |
+| O-28 | CLO and counsel | Moments as a name in store text | Counsel (Q5) | OPEN |
+| O-29 | Coordinator | Which reconciliation decisions the 21 Nov ruling closes | Coordinator housekeeping, not a founder matter | OPEN |
+| O-30 | Founder | Face recognition or naming people | Founder, when he chooses; OUT by default | OPEN (not decided here) |
+| O-31 | Founder | Offline city table only, or Apple geocoder too | Founder answer, Tue 24 Nov | OPEN |
+| O-32 | Founder | K-SUG scene or event inference | Founder answer after the real-library card sort | OPEN (K-SUG NOT PLANNED) |
+| O-33 | Founder | Which public holidays ship | Founder answer, Fri 27 Nov | OPEN |
+| O-34 | Design | Place line on every card or only away | Design ruling | OPEN |
+| O-35 | Founder | Recurring typed days, ticked Days, firsts | Founder answer, Fri 27 Nov | OPEN |
+| O-36 | none | iOS floor 17.0 or 17.2 | Parked with Route A (phase 3), D-098 | PARKED |
+| O-37 | Founder | Which slips if a gate is open | One-line answer Tue 24 Nov; invoked or not by Mon 30 Nov | OPEN |
+| O-38 | Founder | `source: moment` enum | Answer before the registry change | OPEN |
+| O-39 | Founder | CPO cut list and F2a/F2b split | Answer, Tue 24 Nov | OPEN |
+| O-40 | Founder | Engage licensed counsel (spend) | Answer and cap, Tue 24 Nov | OPEN |
+| O-41 | Founder | Store screenshots and the tab bar | Answer, Fri 27 Nov | OPEN |
+| O-42 | Founder | RV-01 to RV-22 as four signatures | Answer with G10 | OPEN |
+| O-43 | Chief Design Officer | For you and Recent switch | Design ruling | OPEN |
+| O-44 | Founder with Privacy | Picture copies in iPhone backup | Answer before G2 | OPEN |
+| O-45 | Founder | Postal address for lifecycle email | Answer with O-47; phase 2 | OPEN |
+| O-46 | Founder | Numbers of the measurable and the stop line | Answer before PR 16 | OPEN |
+| O-47 | Founder | Entity and individual publisher | Answer, Fri 27 Nov | OPEN |
+| O-48 | Founder | Value proposition, first-run promise, store story (16.1) | Founder approval before PR 12 content freezes and before any public line; counsel must confirm | OPEN |
+| O-49 | Founder | Enum for how a letter was started | Answer with O-38 | OPEN |
+| O-50 | Founder, with product and privacy | No child name or month number on Moments push and email | Answer before any Moments push copy is final | OPEN |
+| O-51 | CPO | Apple Journaling Suggestions (Route A) | CPO ruling after the F2a read-out | OPEN |
+| O-52 | CPO, founder told | Does the door pull the photo flag in | CPO ruling before PR 18b-1a merges | OPEN |
+| O-53 | Chief Design Officer | Host sheet Layout A or B | Design ruling after G1a-P | OPEN |
+| O-54 | Engineering lead with `content` | Per-type limit approach | Ruling after G1a-P, before 18b-1a strings | OPEN |
+| O-55 | Founder with `content` | Primer wording A or B | Answer with G4 | OPEN |
+| O-56 | Founder, with CPO and Design | Picker door in the never-asked state (and R106, R120, R144, R253 PROPOSED changes) | Answer before PR 14 and PR 17 are filed | OPEN |
+| O-57 | Chief Design Officer | Host sheet Layout A, B or C | Design ruling after G1a-P (DM-02) | OPEN |
+| O-58 | Design, founder for O-27 | Token `motion.carry` | With O-27; not added until yes | OPEN |
+| O-59 | `content` with the founder | "Not now" or "Not this one" on the card face | Answer before PR 12 words freeze | OPEN |
+| O-60 | Founder (the label), with Karma | `size:accepted` label for PR 0 | Label applied with a `Size exception:` body line before PR 0 merges | OPEN |
+| O-61 | Founder or Karma under CR-73; `security-architect` reads | Paste the second `ios-compile` leg (F2 on) | Pasted before PR 9 or PR 11c merges | OPEN |
+
+Also founder-facing and not O-ids: RV-23 (the door as a fifth signature at G10), the hybrid decisions D1 to D14 and KM1 to KM5 (spec 3.4; D10 and D11 are founder-visible), and any spend (spec 21.2).
+
+### 1.7 Counsel register (spec section 21.3)
+
+An item closes only on a written answer from licensed counsel with name and date, filed in `docs/release/<x.y.z>.md`; owner for all is `legal` with `privacy` and licensed counsel; status OPEN for all because counsel is not yet engaged (W0-13, O-40). The spec numbers the questions Q1 to Q10 with sub-items; there is no Q11.
+
+| Q | Blocks | Stays dark if silent |
+|---|---|---|
+| Q1 (and Q1 c, Q1 d) | G2 | Part stays dark; label and policy not changed |
+| Q2 | G2 | F4 off |
+| Q3 | G2, G3 | Place lines off, date-only cards |
+| Q4 (and Q4 b) | G2, G3 | Date-only cards |
+| Q5 | O-28, R194 | Fallback label in screenshots |
+| Q6 (and Q6 b) | G2 | Terms 4.2.0 not published; library read waits |
+| Q7 (and Q7 b) | G2 | Exclude the folder from backup, with a carve-out sentence |
+| Q8 (and Q8 b) | G2 | Say what we receive, never where it lives (H-11) |
+| Q9 | G10 | Founder starts an entity in parallel |
+| Q10 | G11b | No places; P-B not built |
+
+Note for the founder: the reconciliation request named counsel items Q123 to Q132. The spec has no such series. The only matches are "Q124" and "Q130" in the text of R135, which cite no definition anywhere in the spec or the docs. They are probably stray references. `product` has not guessed what they point to and has not invented two new questions; the spec author or the founder should say which of Q1 to Q10 R135 means, or the two citations should be corrected in the spec.
+
+### 1.8 Row ids the v2 checklist cited and v3 dropped from its text
+
+Home columns are the PROPOSED homes of spec 26b (not frozen, see section 0). All 36 rows keep their text; this table only restores the pointer. R255 is DROPPED (D6).
+
+| Row | What it says (start) | Pri | PR home | Gate home |
+|---|---|---|---|---|
+| R1 | the Moments flag on, When any build runs, Then the bar is Home, Moments, Book, Me in (cut) | P0 (c) | 6 | G10 |
+| R11 | any source, Then no card shows a machine-made title, caption, summary, story, mood, (cut) | P0 (a) | 12, 13 | G6 |
+| R16 | any card, Then its date heading is the weekday and date in the parent's locale (cut) | P0 (a) | 4, 13 | none |
+| R17 | a machine label, Then it renders in the machine slot and type style of R201, never in (cut) | P0 (a) | 13, 21 | G10 |
+| R36 | the source registry (`momentsFor`), Then each source lists its surfaces as data (cut) | P0 (a) | 4 | none |
+| R37 | the library module, When it scans, Then it reads only the closed `READ_SET_V1` (local (cut) | P0 (a) | 9 | G3, G1a-L |
+| R59 | the golden fixture `asha-lib-v1`, Then the output equals the committed golden for all (cut) | P0 (a) | 2 | none |
+| R107 | all fixtures, Then every picture and video is generated by script (Asha, synthetic) (cut) | P0 (a) | 2, 24 | none |
+| R110 | the native contract, Then it is one iOS-only optional module with the closed functions (cut) | P0 (a) | 9, 10, 18 | none |
+| R171 | F2 is set on, When the release owner prepares the build, Then each gate G1b to G7, G10 (cut) | P0 (b) | 11b, 25b | G1b, G7, G10, G11a-lib |
+| R172 | the router, Then the Moments tab is a tab screen under `(tabs)`, `moments/pick` is one (cut) | P0 (c) | 6 | none |
+| R192 | the primer, the purpose string, the Me row and the Notes for Review, Then each names (cut) | P0 (a) | 12 | G2, G6 |
+| R201 | the card model, Then it has two disjoint fields, `machineLines` (closed kinds: reason, (cut) | P0 (a) | 4, 13 | none |
+| R204 | the place resolver, Then the pass bars are written before G1a runs: abstain over (cut) | P0 (a) | 5 | G1a-L, G1b |
+| R208 | any card, Then no text sits over a photo except (a) one duration mark on a video tile (cut) | P0 (c) | 13 | G5 |
+| R215 | the fourth tab, Then it sits on today's paper bar, `tabLabel` is a token, the Large (cut) | P1 | 6 | G5 |
+| R220 | the native contract, Then `scribe-library` exposes exactly these functions and no (cut) | P0 (a) | 9, 10, 18 | none |
+| R221 | `moments.json` (17.1), Then it has `{v, owner, dayKeys[], labels{}, hiddenPlaces[], (cut) | P0 (a) | 8 | none |
+| R222 | any build, Then ONE rule holds (v3 fix CH-ENG-4, which resolves the contradiction of (cut) | P0 (b) | 11b, 11c, 25b | G3-x |
+| R223 | the fetch, Then it returns the UTC offset in seconds per asset from the system (cut) | P0 (c) | 2, 9 | none |
+| R225 | the test plan, Then an N layer exists: a generated Asha library script (synthetic (cut) | P1 | 24 | none |
+| R226 | the source scans, Then one scan script has a path scope (`modules/scribe-library`, (cut) | P0 (a) | 11b | none |
+| R228 | the place read, Then the table lookup runs in Swift inside `scribe-library` (the table (cut) | P0 (a) | 5b, 9 | G1a-L |
+| R232 | a borrowed or shared unlocked phone, Then Moments follows App lock exactly as the Book (cut) | P0 (a) | 15, 17 | G7 |
+| R233 | the permission API grants write access we do not use, Then a source scan for (cut) | P0 (b) | 11b | G11a-lib |
+| R236 | the release profile, Then the Apple geocoder adapter is not compiled in (a build-time (cut) | P0 (b) | 11b, 11c | G11a-lib |
+| R238 | the counsel packet 1.8.0, Then a Moments section lists the questions of 21.3 with the (cut) | P0 (b) | none | G2 |
+| R245 | the decisions store (17.2), Then each field has an expiry rule, a maximum count (cut) | P0 (a) | 8 | none |
+| R246 | revoke, downgrade and turn off, Then three operations are defined: (1) revoke or (cut) | P0 (a) | 8, 21 | none |
+| R253 | a book that is quiet, hidden, in a hard stretch or expecting-only, or any visible book (cut) | P0 (a) | 4, 15 | none |
+| R254 | a place line, Then place themes (runs of days) appear only in Recent and never in For (cut) | P0 (a) | 4, 22 | none |
+| R255 | DROPPED with R56 (v3, D6; "Hide this day" in the card menu replaces it, R275). Was: (cut) | P1 | none | none (not built: DROPPED with R56 (D6); "Hide this day" (R275) replaces it) |
+| R257 | the canary test of R162, Then it also covers the attach pipeline, Keep, the outbox, (cut) | P0 (a) | 19, 24 | none |
+| R262 | the gates, Then each of G1b, G2, G3, G5, G7, G10 and G11 has a decide-by date (21.1), (cut) | P0 (b) | none | G1b, G2, G3, G5, G7, G10, G11a-lib |
+| R265 | a notification tap or a link, Then `typedDay`, `birthday` and `monthAge` taps land on (cut) | P0 (c) | 23 | none |
+| R267 | the OPEN rows O-09, O-11, O-12, O-13, O-14, O-16, O-34 and O-35, Then the engine takes (cut) | P1 | 1, 2, 4, 5 | none |
 
 ## 2. Harness hand-off summary
 

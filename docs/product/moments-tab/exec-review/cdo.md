@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Executive review: Moments tab master requirements (NS-53), Chief Data Officer
 
 Reviewer: Chief Data Officer (Claude role). Not a lawyer or a privacy regulator; anything legal goes to the Chief Privacy Officer and counsel, and I mark it.

@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 Status: REVIEW (CFO seat; nothing here is decided, approved or spent; every money decision is the founder's)
 Date: 21 Nov 2026
 Reviewer: Chief Financial Officer (Claude role; not a CPA, not an adviser; no tax or legal advice)

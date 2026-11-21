@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Executive review: Chief AI Officer (Claude role)
 
 Status: PROPOSED review input for NS-53 (`docs/product/prd/28-moments-tab.md`, section 25.11). Nothing here is decided.

@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Executive review: Chief Business Officer (Claude role), NS-53 Moments tab
 
 Status: PROPOSED review input (nothing here is decided; every change is the founder's to sign)

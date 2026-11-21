@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # R1: Moments tab, five to eight parent study (plan, v2 reconciled)
 
 Status: PROPOSED. Draft by the user-research agent, 21 Nov 2026. This is v2: v1 was written from the brief only and marked every lead UNREAD. v2 is reconciled against the six lead docs and the repo docs named in section 2.

@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # NS-53 Moments tab: executive review, Chief Marketing Officer
 
 Reviewer: Chief Marketing Officer (Claude role, not a lawyer). Date: 21 Nov 2026.
