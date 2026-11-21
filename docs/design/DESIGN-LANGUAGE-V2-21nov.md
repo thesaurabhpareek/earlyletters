@@ -186,7 +186,7 @@ Spike-gated: this waits for SDK 58 and the device spike; Phosphor behind the `Ic
 
 Source: decision of record on #1221. Every step passes the screen gate in the block at the top. The set rule applies to steps 2 to 4: first run, empty Book, capture, Review and Keep, Book home and reading a letter move together or not at all.
 
-1. **Tokens T1 to T6**, then shared components C1 to C3 and C7 (card, prominent button, list row, section header in title case).
+1. **Tokens T1 to T6**, then shared components C1 to C3 and C7 (`ui/card`, `ui/button`, `ui/list-row` with `ui/section-header`, and `COMPONENTS.md` kept in step).
 2. **M2 with C5** (first run and empty, the book cover as the hero object), then **Review** (A-S07 card and Keep action).
 3. **Book home (B-S01) without the tab bar.** The paper tab bar stays.
 4. **M5 capture polish** with the glass ring stop control (A3), the Phosphor mic and the existing glow (symbol effects follow with C4), **M6 letter reading** (measure cap, paragraph rhythm), **M1 Settings** (side screen, may move on its own).
@@ -231,14 +231,26 @@ Source: `infra/exec-rulings-2026-11-21-design-uplift.md` (Karma with the CPO, CT
 
 ## 9. Key to ids used in this file
 
+Copied from issue #1221.
+
 | Id | Meaning |
 |---|---|
-| T1 to T6 | The token groups of section 4, in order: T1 colour (4.1, includes `glassFallback`), T2 type, T3 radius, T4 elevation and material, T5 spacing, T6 motion and haptics |
-| C1, C2, C3, C7 | Shared components: C1 card (shadow, highlight, concentric radius), C2 prominent button, C3 list row, C7 section header in title case |
-| C4, C5, C6 | C4 SF Symbols on iOS (section 4.7), C5 the book cover as the hero object (R5), C6 system sheets |
-| M1 to M6 | Screen work: M1 Settings (C-S01), M2 first run and empty (E-S02, B-S01.empty), M3 system tab bar, M4 Keep sheet (E-S10), M5 capture polish (A-S05), M6 letter reading (B-S08) |
-| W1 | The words rule: the only word change allowed is case (for example an all-caps kicker to title case). No word is added, removed or reworded; anything else goes to `content` and stays PROPOSED until cleared |
+| T1 to T6 | Token groups: T1 colour, T2 type, T3 radius, T4 elevation and material map, T5 spacing, T6 motion |
+| C1 | `ui/card` |
+| C2 | `ui/button` |
+| C3 | `ui/list-row` and `ui/section-header` |
+| C4 | Symbol component (SF Symbols on iOS, Phosphor elsewhere) |
+| C5 | `BookCover` as the empty and first-run hero |
+| C6 | System sheet wrapper via `@expo/ui` (after a device spike) |
+| C7 | `docs/design/COMPONENTS.md` kept in step |
+| M1 | Settings home and routes on the new list rows |
+| M2 | Empty and first-run screens with the cover |
+| M3 | System tab bar (native tabs, device spike first) |
+| M4 | Move A-S02, B-S07, E-S10 and DateSheet to the system sheet (after C6) |
+| M5 | Capture polish |
+| M6 | Letter reading |
+| W1 | Confirm case-only changes to kickers and section headers, plus the accessibility labels and Keep sheet action words |
 | A3 | The capture control spec in area A (`docs/design/e2e/A-capture/DESIGN.md`): a glass ring around the red disc. Not the audit finding A3 in section 2 |
 | Rulings 25 to 37 | `docs/design/e2e/RULINGS-20nov.md` |
 
-The T, C and M mapping is read from sections 4, 5 and 3.1 of this file and the build order on #1221; the backlog rows are the record if they differ.
+The council file's "T2" (for example "its own T2 change" for the SDK upgrade) means a change tier and is unrelated to token group T2 (type).
