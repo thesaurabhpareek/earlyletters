@@ -3,16 +3,10 @@
  * notifications are pending in all. The 60 counts the evening, month and
  * birthday notes AND the plan notices together; plan notices are kept first.
  *
- * Today two caps stack. The reminders planner keeps up to 60
- * (`reminders/planner.ts`, `maxNotifications ?? 60`) and the plan-notice
- * planner adds up to `MAX_PLAN_NOTIFICATIONS` (4, `billing/plan-reminders.logic.ts`)
- * on top, so the total can reach 64 (iOS keeps 64 in all).
- *
- * How to use this file (BL-966a owner): the `it.fails` cases below are red on
- * today's code on purpose, so CI stays green. When budget.ts makes the total 60,
- * these bodies pass, vitest reports "expected to fail" and the build goes red:
- * remove `.fails` from the two marked cases in the same PR. Keep the helper
- * `pendingAll` in step with whatever call site then joins the two planners.
+ * Regression guard since BL-966b (#1089): the planner caps notes at
+ * `min(maxNotifications ?? TOTAL_MAX, budgetedSlots(planPending ?? PLAN_MAX))`, so notes plus plan notices
+ * (`MAX_PLAN_NOTIFICATIONS`, 4) stay within 60 (iOS keeps 64 in all). These cases failed before #1089
+ * (60 + 3 or 4 = 63 or 64) and now pass; keep `PLAN_MAX` at or above `MAX_PLAN_NOTIFICATIONS`.
  *
  * Reach: the shipped call sites plan evenings 21 days ahead (scheduler.ts, no
  * `horizonDays`), so a phone only nears 60 when the horizon or the number of
@@ -27,6 +21,7 @@ import {
   planPlanReminders,
   type PlanReminderSubject,
 } from '../src/lib/billing/plan-reminders.logic';
+import { PLAN_MAX } from '../src/lib/reminders/budget';
 import { DEFAULT_PREFS, planReminders, type PlannerChild, type ReminderPrefs } from '../src/lib/reminders/planner';
 import { parseIsoDate, zonedToEpoch } from '../src/lib/reminders/tz';
 
@@ -80,8 +75,8 @@ describe('[NS-32-R4b] at most 60 pending notifications in all', () => {
     expect(notes.length).toBeGreaterThanOrEqual(56);
   });
 
-  // RED on today's code (60 + 3 plan notices = 63; 64 with a fourth). BL-966a: remove `.fails`.
-  it.fails('[NS-32-R4b] total pending never exceeds 60 and plan notices are kept, on every day of 92', () => {
+  // Regression guard (E13, CL-115, BL-966b/#1089). Before #1089 this was 60 + 3 plan notices = 63.
+  it('[NS-32-R4b] total pending never exceeds 60 and plan notices are kept, on every day of 92', () => {
     for (let day = 0; day < WIDE_DAYS; day++) {
       const now = start(day);
       const { plan, total } = pendingAll(now, WIDE_DAYS);
@@ -91,10 +86,14 @@ describe('[NS-32-R4b] at most 60 pending notifications in all', () => {
     }
   });
 
-  // RED on today's code (60 + 4 = 64). BL-966a: remove `.fails`. Catches a raised ceiling even when no fixture reaches it.
-  it.fails('[NS-32-R4b] the notes ceiling plus the plan-notice ceiling is at most 60', () => {
+  // Regression guard (BL-966b/#1089). Catches a raised ceiling even when no fixture reaches it.
+  it('[NS-32-R4b] the notes ceiling plus the plan-notice ceiling is at most 60', () => {
     const farAhead = planReminders({ now: start(0), timeZone: TZ, prefs, children: kids, horizonDays: 400, monthHorizonDays: 400 });
     expect(farAhead.length + MAX_PLAN_NOTIFICATIONS).toBeLessThanOrEqual(TOTAL_MAX);
+  });
+
+  it('[NS-32-R4b] the planner reserves at least as many slots as the plan notices can use', () => {
+    expect(PLAN_MAX).toBeGreaterThanOrEqual(MAX_PLAN_NOTIFICATIONS);
   });
 
   it('[NS-32-R4b] a cap of 60 in total passes: notes get what the plan notices leave', () => {
