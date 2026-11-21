@@ -314,7 +314,6 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
 
   // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
   // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
-  { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
   { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
   { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
   { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },
