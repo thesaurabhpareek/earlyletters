@@ -247,6 +247,7 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     const adapter = src('lib/remote/expo-adapter.ts');
     expect(adapter.match(/\.delete\(\)/g)).toHaveLength(1);
     expect(src('lib/packs/app-support.ts')).not.toMatch(/\.delete\(\)/);
+    expect(src('lib/days/store-file.ts').match(/\.delete\(\)/g)).toHaveLength(1); // one delete, inside the days folder's `remove`
     expect(src('lib/days/store-file.ts')).toMatch(/^(?![\s\S]*(Paths\.cache|recording))[\s\S]*DAYS_FOLDER = 'days'/); // its own folder only
   });
 });
