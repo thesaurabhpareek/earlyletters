@@ -94,3 +94,17 @@ const PINS: [
   Same<PlanState, PlanView['state']>,
 ] = [true, true, true];
 void PINS;
+
+/** NS-53 Moments card kinds (spec 5.2, the closed list; K-SUG is NOT PLANNED so it is absent). */
+export const MOMENT_KINDS = Object.freeze([
+  'typed_day', 'birthday', 'age_day', 'year_ago', 'question', 'picked', 'library_day', 'example', 'state',
+] as const);
+export type MomentKind = (typeof MOMENT_KINDS)[number];
+
+/** NS-53 the two parts of the tab (spec 5.1). */
+export const MOMENT_PARTS = Object.freeze(['for_you', 'recent'] as const);
+export type MomentPart = (typeof MOMENT_PARTS)[number];
+
+/** NS-53 For you slots in order (spec 5.1). */
+export const MOMENT_SLOTS = Object.freeze(['today', 'look_back', 'pictures', 'question'] as const);
+export type MomentSlot = (typeof MOMENT_SLOTS)[number];
