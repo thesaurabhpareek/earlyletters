@@ -474,9 +474,11 @@ test('[BL-964] nsOpen lists the untested P0 rows and the cited ids no card defin
 });
 
 test('[BL-964] nsRatchet: a new open id fails, a listed one passes, a cited one is only stale', () => {
-  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R2'], ['NS-01-R1', 'NS-01-R2'], null), { added: [], stale: [], grown: [] });
-  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R9'], ['NS-01-R1', 'NS-01-R2'], null), { added: ['NS-01-R9'], stale: ['NS-01-R2'], grown: [] });
-  assert.deepEqual(nsRatchet([], ['NS-01-R1', 'NS-01-R2'], ['NS-01-R1']), { added: [], stale: ['NS-01-R1', 'NS-01-R2'], grown: ['NS-01-R2'] });
+  const T = new Set(['NS-01-R2']);
+  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R2'], ['NS-01-R1', 'NS-01-R2'], null), { added: [], stale: [], gone: [], grown: [] });
+  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R9'], ['NS-01-R1', 'NS-01-R2'], null, T), { added: ['NS-01-R9'], stale: ['NS-01-R2'], gone: [], grown: [] });
+  assert.deepEqual(nsRatchet(['NS-01-R1'], ['NS-01-R1', 'NS-01-R2'], null), { added: [], stale: [], gone: ['NS-01-R2'], grown: [] });
+  assert.deepEqual(nsRatchet([], ['NS-01-R1', 'NS-01-R2'], ['NS-01-R1'], T), { added: [], stale: ['NS-01-R2'], gone: ['NS-01-R1'], grown: ['NS-01-R2'] });
 });
 
 test('[BL-964] --check passes when every open NS id is in the baseline, and lists them in report mode', () => {
@@ -551,4 +553,57 @@ test('[BL-964] deleting the baseline while the base branch has it fails --check'
   assert.match(out.join('\n'), /is missing but the base branch has it/);
   fs.rmSync(base);
   assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), () => {}), 0, 'absent on both sides is the first PR that adds it');
+});
+
+const REG = 'docs/product/prd/14-test-plan.md';
+const NS_FILE = 'docs/product/prd/01-demo.md';
+
+test('[BL-964] a baseline line whose card row was removed fails --check and names the update command', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const card = path.join(repo, NS_FILE);
+  fs.writeFileSync(card, fs.readFileSync(card, 'utf8').split('\n').filter((l) => !l.startsWith('| NS-90-R2 ')).join('\n'));
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /FAIL: NS-90-R2 is in docs\/ops\/trace-ns-baseline\.txt but is no longer an open P0 row.*--update-ns-baseline/);
+});
+
+test('[BL-964] a baseline line whose row was lowered from P0 to P1 fails --check', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const card = path.join(repo, NS_FILE);
+  fs.writeFileSync(card, fs.readFileSync(card, 'utf8').replace('| NS-90-R3 | Given Asha, Then it holds | P0 (a)', '| NS-90-R3 | Given Asha, Then it holds | P1'));
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /FAIL: NS-90-R3 is in .* no longer an open P0 row/);
+});
+
+test('[BL-964] a row closed by a test stays a stale note, and --update-ns-baseline then clears the failures', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  fs.appendFileSync(path.join(repo, 'apps/mobile/test/a.test.ts'), "\nit('[NS-90-R2] now tested', () => {});\n");
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 0);
+  assert.doesNotMatch(out.join('\n'), /FAIL/);
+  const card = path.join(repo, NS_FILE);
+  fs.writeFileSync(card, fs.readFileSync(card, 'utf8').split('\n').filter((l) => !l.startsWith('| NS-90-R3 ')).join('\n'));
+  assert.equal(main(NS_ARGS(repo), () => {}), 1);
+  assert.equal(main(['--no-write', '--repo', repo, '--register', REG, '--update-ns-baseline', 'docs/prd'], () => {}), 0);
+  assert.equal(main(NS_ARGS(repo), () => {}), 0);
+});
+
+test('[BL-964] a baseline with a base copy named but the base file missing fails --check', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', path.join(repo, 'no-base.txt')]), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /--ns-base file missing/);
+});
+
+test('[BL-964] baseline lines are read with CRLF, indentation and comments', () => {
+  const repo = nsRepo();
+  fs.mkdirSync(path.join(repo, 'docs/ops'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'docs/ops/trace-ns-baseline.txt'), `# c\r\n  ${OPEN.join('  \r\n\t')}  \r\n  FRAME-SLIP\r\n\r\n`);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 0, out.join('\n'));
 });

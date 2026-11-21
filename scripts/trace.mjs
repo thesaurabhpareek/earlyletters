@@ -789,9 +789,13 @@ export function ratchet(uncited, baseline) {
  * parallel PRs do not all edit one file); `grown` are baseline lines the base branch's copy lacks.
  */
 export const nsOpen = (ns) => [...ns.p0, ...ns.cross].filter((r) => r.status === 'untested').map((r) => r.id).concat(ns.strays.map((x) => x.id)).sort(cmpNs);
-export function nsRatchet(open, baseline, base) {
+export function nsRatchet(open, baseline, base, tested = new Set()) {
   const have = new Set(baseline), cur = new Set(open), was = base && new Set(base);
-  return { added: open.filter((id) => !have.has(id)), stale: baseline.filter((id) => !cur.has(id)), grown: was ? baseline.filter((id) => !was.has(id)) : [] };
+  const closed = baseline.filter((id) => !cur.has(id));
+  // A line may leave only because a test now cites its row. A row removed or downgraded, or a cited id
+  // that vanished, is `gone`: it fails until the author runs --update-ns-baseline (which only shrinks).
+  return { added: open.filter((id) => !have.has(id)), stale: closed.filter((id) => tested.has(id)), gone: closed.filter((id) => !tested.has(id)),
+    grown: was ? baseline.filter((id) => !was.has(id)) : [] };
 }
 const NS_BASELINE = 'docs/ops/trace-ns-baseline.txt';
 const NS_BASELINE_HEAD = '# NS P0 rows with no test title, and bracketed ids no card defines (BL-964, gate G0). One per line.\n' +
@@ -815,12 +819,14 @@ function nsGate({ repo, ns, args, log }) {
   if (!has) { if (!args.nsBaseline) return 0; log(`  FAIL: NS baseline missing: ${path.relative(repo, file)}. Create it with --update-ns-baseline.`); return 1; }
   const baseFile = args.nsBase && path.resolve(repo, args.nsBase);
   if (baseFile && !exists(baseFile)) { log(`  FAIL: --ns-base file missing: ${args.nsBase}`); return 1; }
-  const r = nsRatchet(open, nsLines(read(file)), baseFile ? nsLines(read(baseFile)) : null);
+  const tested = new Set([...ns.p0, ...ns.cross].filter((x) => x.status !== 'untested').map((x) => x.id));
+  const r = nsRatchet(open, nsLines(read(file)), baseFile ? nsLines(read(baseFile)) : null, tested);
   const rel = path.relative(repo, file).split(path.sep).join('/');
   for (const id of r.stale) log(`  stale baseline line: ${id} is tested or defined now; delete it from ${rel}.`);
+  for (const id of r.gone) log(`  FAIL: ${id} is in ${rel} but is no longer an open P0 row with no test (the row was removed or lowered, or the id is no longer cited). Run \`node scripts/trace.mjs --no-write --update-ns-baseline\`; it only shrinks.`);
   for (const id of r.added) log(`  FAIL: ${id} is open and not in ${rel} (a P0 row with no test title, or a cited id no card defines).`);
   for (const id of r.grown) log(`  FAIL: ${id} was added to the baseline; it may only shrink against ${args.nsBase}.`);
-  return r.added.length || r.grown.length ? 1 : 0;
+  return r.added.length || r.grown.length || r.gone.length ? 1 : 0;
 }
 
 function b1Scope({ repo, m, args, log }) {
