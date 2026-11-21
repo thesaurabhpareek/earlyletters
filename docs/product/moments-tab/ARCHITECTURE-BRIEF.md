@@ -52,12 +52,12 @@ Fictional family Asha only. Evidence labels, used on every claim: a spec row id;
 | Surface | Job | Route (file) | Status today |
 |---|---|---|---|
 | Tab (decides) | Reason, date, city or occasion, two actions; the ask card; the door row; the calm lines (EM section 3, line 163) | `apps/mobile/src/app/(tabs)/moments.tsx` (file name ASSUMED), a tab screen under `(tabs)` (R172); order: second of four with Home as landing (19.3 phase 1 row) | `(tabs)` holds `index.tsx`, `book.tsx`, `you.tsx` only (read: `apps/mobile/src/app/(tabs)`) |
-| Sheet (chooses) | Choose pictures in our day tiles or Apple's picker; tray; one Start; Not now (R269) | `moments/pick`, one row in `ROUTES` (`apps/mobile/src/lib/transitions.logic.ts:43`), a transparent modal with no platform animation so our surface can grow from the card (EM 4.1, line 186); file `apps/mobile/src/app/moments/pick.tsx` (ASSUMED) | No row yet. Existing rows use `presentation: 'modal'` or `'fullScreenModal'` and a `move` key (`transitions.logic.ts:43-57`); whether a transparent presentation fits the `Row` type is UNVERIFIED, PR 6 reads it |
-| Capture (speaks) | Talk or write; the pictures follow into Review; Keep (R85, 9.1) | `/listen` and `/write`, opened only by `startCapture` | Exists. `CAPTURE_ROUTES = ['/listen','/write']`, closed source list `speak, type, notMuchToday, photo` plus four doorways (`apps/mobile/src/lib/capture/start-capture.logic.ts:26-28`) |
+| Sheet (chooses) | Choose pictures in our day tiles or Apple's picker; tray; one Start; Not now (R269) | `moments/pick`, one row in `ROUTES` (`apps/mobile/src/lib/transitions.logic.ts:43`), a transparent modal with no platform animation so our surface can grow from the card (EM 4.1, line 186); file `apps/mobile/src/app/moments/pick.tsx` (ASSUMED) | No row yet. Existing rows use `presentation: 'modal'` or `'fullScreenModal'` and a `move` key (`transitions.logic.ts:43-56`); whether a transparent presentation fits the `Row` type is UNVERIFIED, PR 6 reads it |
+| Capture (speaks) | Talk or write; the pictures follow into Review; Keep (R85, 9.1) | `/listen` and `/write`, opened only by `startCapture` | Exists. `CAPTURE_ROUTES = ['/listen','/write']`, closed source list `speak, type, notMuchToday, photo` plus four doorways (`apps/mobile/src/lib/capture/start-capture.logic.ts:19-21` for the source lists and `:28` for `CAPTURE_ROUTES`) |
 
 Rule of thumb from EM line 181: the tab never chooses, the sheet never explains, capture never browses.
 
-Three tests today say the opposite of this design and must change in PR 6 and PR 19, each under the founder's RV-02 (line 95), which G10 signs: `[IA-N1]` (the bar is `index, book, you`, `apps/mobile/test/navigation-one-entry.test.ts:199`), `[IA-N4]` (no fourth tab, line 217) and NS-35-R1 "only Home starts" (`docs/product/prd/11-foundations.md:538`). A PR that edits any of them without the recorded decision id breaks PRINCIPLES item 2 (never loosen a test silently) and R277's last sentence. The test must be rewritten to the new fact (the one doorway is `startCapture`, and Moments imports no recorder, R83), not deleted.
+Three tests today say the opposite of this design and must change in PR 6 and PR 19, each under the founder's RV-01 (spec line 94, the three-tab reversal) and RV-02 (line 95, the one doorway), which G10 signs: `[IA-N1]` (the bar is `index, book, you`, `apps/mobile/test/navigation-one-entry.test.ts:199`), `[IA-N4]` (no fourth tab, line 217) and NS-35-R1 "only Home starts" (`docs/product/prd/11-foundations.md:538`). A PR that edits any of them without the recorded decision id breaks PRINCIPLES item 2 (never loosen a test silently) and R277's last sentence. The test must be rewritten to the new fact (the one doorway is `startCapture`, and Moments imports no recorder, R83), not deleted.
 
 ### 1.3 Component tree (PROPOSED; names are mine, files are PR 6, 13, 14, 16, 17)
 
@@ -120,7 +120,7 @@ Hard "nevers" for the Swift (each is a source-scan line, L1): no `includeHiddenA
 
 ### 2.4 `scribe-photo`: untouched except named PR 18d
 
-Today: two functions, `pickOne(destination)` and `reencodeUpright(source, destination)`, each writing only to a destination under its own Caches folder, one closed error code per failure (`photo_pick_failed`, `photo_reencode_failed`), no network, no library, no permission request (`apps/mobile/modules/scribe-photo/index.ts:1-27`). Pins: `apps/mobile/test/photos-device.test.ts` C5 (line 68; `pickOne` called in exactly one place, `lib/photos/picker.ts`, line 75) and C8 (line 971, the Swift read as source); also `photos-capture.test.ts` and `photos-surfaces.test.ts` (named by R271 and R296; not opened for this brief).
+Today: two functions, `pickOne(destination)` and `reencodeUpright(source, destination)`, each writing only to a destination under its own Caches folder, one closed error code per failure (`photo_pick_failed`, `photo_reencode_failed`), no network, no library, no permission request (`apps/mobile/modules/scribe-photo/index.ts:1-24`, the file is 24 lines). Pins: `apps/mobile/test/photos-device.test.ts` C5 (line 68; `pickOne` called in exactly one place, `lib/photos/picker.ts`, line 75) and C8 (line 971, the Swift read as source); also `photos-capture.test.ts` and `photos-surfaces.test.ts` (named by R271 and R296; not opened for this brief).
 
 Spec says "line 73" for the `pickOne` pin (R296, line 1339); the `it(` is at line 75 on `develop` (read). Doc drift, harmless; PR 18d re-cites.
 
@@ -280,7 +280,7 @@ What we receive from the library read for this: the planner receives one boolean
 Facts read this session that the PRs must reconcile:
 - `routeForReminder` returns `/` for `evening` and `/book` for everything else (`apps/mobile/src/lib/reminders/payload.ts:34-39`); R265 wants `typedDay`, `birthday`, `monthAge` on Moments. A routing change plus its tests is a PR 23 line.
 - `PlannedKind` has no `typedDay` (`planner.ts:136`), while `budget.ts` already defines the class `typedDay` (`budget.ts:23,40`). PR 23 adds the planner kind; whether the planner enforces cadence beneath the 60-in-92-days ceiling is UNVERIFIED (R299; `mobile` confirms).
-- R280 (stricter reading: no child name or month number on every setting) differs from the shipped planner when names are on (`planner.ts` `monthNoteCopy`, from line 296; the spec says "about lines 283 to 297"). Planner and key change is owed to `mobile` and `content`; no Moments push copy is final until O-50 is answered. Do not merge a Moments-class note before then.
+- R280 (stricter reading: no child name or month number on every setting) differs from the shipped planner when names are on (`planner.ts` `monthNoteCopy`, from line 295; the spec says "about lines 283 to 297"). Planner and key change is owed to `mobile` and `content`; no Moments push copy is final until O-50 is answered. Do not merge a Moments-class note before then.
 - Library-derived signals must not be read before access is granted (13.2 rule 1) and are never provenance-tagged on the wire (13.2 rule 4).
 
 ## 4. State machines
@@ -436,7 +436,7 @@ export function clearMoments(scope: 'revoke' | 'turnOff' | 'erase'): Promise<voi
 ### 5.2 Error codes: local only
 
 - No new analytics event, identifier or stored field; no event that varies by access state; no attach or photo event carries a picker-or-library source (R282, R87, R284).
-- New failure codes are local closed codes. The one wire code is `picker_unavailable`, with no count, type or state (`system.error.raised`, area `moments`, line 965; R282). It is still a new wire value, so it owes an allowlist row in `packages/analytics` and a data-map entry (PRIV-R01, DQ-R01) before PR 18b-1a merges, and it must be emitted in every access state or it leaks "access granted" (PRIV-R05); `library_unreadable` and `fallback_used` stay local (line 965).
+- New failure codes are local closed codes, and so is `picker_unavailable` (R282 as amended: `picker_unavailable` stays a LOCAL code, with no analytics wire code and no catalog row, so there is no `system.error.raised` event for it; reversible, a later wire code needs the founder's O-49 and a catalog change); `library_unreadable` and `fallback_used` stay local (line 965).
 - A native error is one closed `code` with no path, id, date, file name, type identifier or system text (R110, R272; today's pattern: `index.ts` header of `scribe-photo`).
 - Lint view (my standards read, not a spec row): these are client-local TypeScript codes. API-R09's SQLSTATE registry (`docs/engineering/02-api-and-contracts.md:49`) governs codes a client branches on that come from the server; none does here (no server surface, R116). So no registry entry is owed, and `docs/engineering/10-logging-and-observability.md` OBS-R02 applies to the client the same way: log `{name, code}`, never an id or a message.
 - `photo_limit` is named by R272; the others in `PickerErrorCode` and `LibraryErrorCode` are ASSUMED names for `mobile` to settle in PR 9 and PR 18b-1a, with a test that every thrown code is in a closed list.
@@ -487,7 +487,7 @@ The rest are MY proposed budgets, with no source, to be replaced by the G1b read
 | Host sheet with tray thumbnails | tray thumbnails dropped if DM-11 fails (EM 4.4) | DM-11 on SE 3, eight concurrent iCloud picks |
 | Frame time for EM-01 | 0 frames over 16.7 ms at 60 Hz on SE 3 | Instruments Animation Hitches or Core Animation FPS (tool and template names UNVERIFIED for this Xcode); DM-12 |
 | Multi-select copies | concurrency value set at G1b (R272) | spike: 6 originals, mixed HEIC and JPEG, peak memory |
-| Peak memory with a 150 MP decode next to audio enhance | UNVERIFIED (MEDIA_THREAT_MODEL P4, N-Q1) | device row D-8 |
+| Peak memory with a 150 MP decode next to audio enhance | UNVERIFIED (MEDIA_THREAT_MODEL P4, N-Q1) | the device row is carried by gate G1b (Full device run) in spec section 21; the spec names no row D-8 |
 | Moments does not slow cold start in a flag-off build | binary and launch parity with F1 off (R169: with F1 off the bar, routes and tests equal the build without Moments) | L1 parity test; launch trace |
 
 Rule: no number in this table becomes a test threshold until G1b writes its read-out into `docs/release/<x.y.z>.md` (G1b "ASSUMED thresholds ... are set as data").
@@ -598,7 +598,7 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 
 - Every Apple API behaviour: PhotoKit authorization, Limited, fetch options and predicates, location readability under Limited, `PHPickerConfiguration` options and its item provider output, whether a picker pick under SDK 57 raises a permission prompt, `PHPickerViewController` embedding and touch behaviour with non-opaque ancestors, interface-style override, iCloud download behaviour. I read no Apple page. Source of the unknown list: R290, G1a-L, G1a-P (lines 1113, 1333).
 - Whether a per-profile autolinking exclusion works for a local module on EAS (R222; `apps/mobile/package.json:96` is static).
-- Whether a transparent modal fits the existing `ROUTES` row type (`transitions.logic.ts:43-57`).
+- Whether a transparent modal fits the existing `ROUTES` row type (`transitions.logic.ts:43-56`).
 - Whether Caches is outside iPhone backup (MEDIA_THREAT_MODEL P2 says "Verified (vendor)"; R282 says UNVERIFIED against Apple's text; `mobile` confirms).
 - Whether a NS-01 scan pins callers of `PickedFiles.remove` (R272); the content of `photos-capture.test.ts` and `photos-surfaces.test.ts` (not opened).
 - Whether the planner enforces the parent's cadence beneath the 60-in-92-days ceiling (R299).
