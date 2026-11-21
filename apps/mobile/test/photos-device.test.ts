@@ -12,7 +12,7 @@ import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-medi
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
 import { commitPhoto } from '../src/lib/photos/session';
-import { normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
+import { CODE_POINTS_PER_CHARACTER, normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -249,25 +249,34 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
           expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
           expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
         }
-        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones) are longer than the
-        // 8 code points per character that E11 allows (1,120 and 480): the cut stops whole characters before the
-        // ceiling, so the store never refuses what the app kept. DEFAULT, pending req-question NS-01-R54-ceilings: card
-        // 01 R54 also asks that 140 emoji be kept whole, which 8 per character cannot do for these two.
+        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones): 140 in the words and 60
+        // in the place are kept whole and pass the CHECK (card 01 R54, E84: 16 code points per grapheme); one over the app
+        // limit is cut by the app, never refused by the database.
         const kiss = '\u{1F9D1}\u{1F3FB}\u200D\u2764\uFE0F\u200D\u{1F48B}\u200D\u{1F9D1}\u{1F3FC}';
         const family = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
-        for (const [g, nText, nPlace] of [[kiss, 112, 48], [family, 101, 43]] as const) {
+        for (const g of [kiss, family]) {
+          expect(Array.from(g).length).toBeGreaterThanOrEqual(10);
+          expect([normalizePhotoText(g.repeat(141)), normalizePhotoPlace(g.repeat(61))], engine).toEqual([g.repeat(140), g.repeat(60)]);
           expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(140), place: g.repeat(60) })).status, engine).toBe('stored');
-          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(nText), g.repeat(nPlace)]);
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(140), g.repeat(60)]);
         }
-        // A character longer than 8 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
+        // A character longer than 16 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
         // store never refuses what the app kept.
         const stack = 'a' + '\u0301'.repeat(20);
         expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: stack.repeat(140), place: stack.repeat(60) })).status, engine).toBe('stored');
-        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(53), stack.repeat(22)]);
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(106), stack.repeat(45)]);
       } finally {
         intl.Segmenter = seg;
       }
     }
+  });
+  it('[NS-01-R54] mutant guard: the app multiplier is the database ceiling per grapheme (2240 / 140 and 960 / 60 are both 16), so 8 per grapheme fails here and in the 11 code point fixtures', () => {
+    const sql = readFileSync(join(SRC, 'lib', 'db', 'migrations.ts'), 'utf8');
+    expect(sql).toMatch(/length\(photo_text\) <= 2240/);
+    expect(sql).toMatch(/length\(place\) <= 960/);
+    expect(CODE_POINTS_PER_CHARACTER).toBe(16);
+    expect(CODE_POINTS_PER_CHARACTER * 140).toBe(2240);
+    expect(CODE_POINTS_PER_CHARACTER * 60).toBe(960);
   });
   it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: [NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
     const { db } = nodeDb();
