@@ -15,11 +15,11 @@ const ENV: Record<string, string> = {
 };
 
 interface World {
-  pending: Record<string, unknown>[]; verdict: string; mintNull: boolean; mintThrows: boolean; resend: number[];
+  pending: Record<string, unknown>[]; verdict: string; rekey: string; mintNull: boolean; mintThrows: boolean; resend: number[];
   calls: { fn: string; args: Record<string, unknown> }[]; sent: Record<string, unknown>[]; events: Record<string, unknown>[]; eventsFail: boolean;
 }
 const world = (over: Partial<World> = {}): World => ({
-  pending: [{ session_id: ASHA.session, profile_id: ASHA.profile, class: 'apple', device_hash: '' }], verdict: 'new', mintNull: false, mintThrows: false,
+  pending: [{ session_id: ASHA.session, profile_id: ASHA.profile, class: 'apple', device_hash: '' }], verdict: 'new', rekey: 'rekeyed', mintNull: false, mintThrows: false,
   resend: [200], calls: [], sent: [], events: [], eventsFail: false, ...over,
 });
 
@@ -36,6 +36,7 @@ function run(w: World, env = ENV) {
     const fn = url.split('/rpc/')[1];
     w.calls.push({ fn, args: body });
     if (fn === 'ops_new_device_pending_take') return Promise.resolve(new Response(JSON.stringify(w.pending.splice(0, 1))));
+    if (fn === 'ops_new_device_rekey') return Promise.resolve(new Response(JSON.stringify(w.rekey)));
     if (fn === 'ops_new_device_record') return Promise.resolve(new Response(JSON.stringify(w.verdict)));
     if (fn === 'ops_new_device_token_mint') return Promise.resolve(w.mintThrows ? new Response('{}', { status: 500 }) : new Response(JSON.stringify(w.mintNull ? null : '2026-11-23T00:00:00Z')));
     if (fn === 'ops_security_event_write') {
@@ -187,4 +188,82 @@ Deno.test('the words come from packages/content: no link paragraph without a url
   assert.match(withUrl.text, /Opening it changes nothing by itself/);
   assert.ok(!/signed out\. Nothing is signed out/.test(withUrl.text));
   assert.ok(!/em dash|—|–/.test(withUrl.text));
+});
+
+const NEXT = 'device-hash-next-fixture-0123456789abcdef';
+const go2 = (w: World, env: Record<string, string>, auth: string | null = `Bearer ${SECRET}`) => {
+  const h = makeHandler((n) => env[n], { fetch: () => Promise.reject(new Error('no')), logSink: () => {} });
+  void w;
+  return h(new Request('https://fn.local/x', { method: 'POST', headers: auth === null ? {} : { Authorization: auth } }));
+};
+
+Deno.test('(a) a short key (current or next) answers misconfigured BEFORE any row is taken', async () => {
+  for (const env of [{ ...ENV, DEVICE_HASH_KEY: 'short-key' }, { ...ENV, DEVICE_HASH_KEY_NEXT: 'short-next' }]) {
+    const w = world();
+    const { res } = await run(w, env).go();
+    assert.equal(res.status, 503);
+    assert.equal(w.calls.length, 0, 'no take, so no row is lost');
+    assert.equal(w.pending.length, 1);
+  }
+});
+
+Deno.test('(c) no secret always answers 401, whatever the config; the config answer needs the secret', async () => {
+  const broken = { ...ENV, DEVICE_HASH_KEY: '', RESEND_API_KEY: '' };
+  for (const auth of [null, 'Bearer wrong', 'Bearer ']) assert.equal((await go2(world(), broken, auth)).status, 401);
+  assert.equal((await go2(world(), { ...ENV, NEW_DEVICE_SENDER_SECRET: '' }, 'Bearer ')).status, 401);
+  assert.equal((await go2(world(), broken)).status, 503);
+});
+
+Deno.test('(b) with a next key: rekey(old, new) runs BEFORE record, and record uses the new-key hash', async () => {
+  const w = world();
+  await run(w, { ...ENV, DEVICE_HASH_KEY_NEXT: NEXT }).go();
+  const names = w.calls.map((c) => c.fn);
+  assert.ok(names.indexOf('ops_new_device_rekey') > 0 && names.indexOf('ops_new_device_rekey') < names.indexOf('ops_new_device_record'));
+  const rk = w.calls.find((c) => c.fn === 'ops_new_device_rekey')!.args;
+  const rec = w.calls.find((c) => c.fn === 'ops_new_device_record')!.args;
+  const hexOf = (k: string) => hashDevice(k, ASHA.profile, `session:${ASHA.session}`).then((b) => `\\x${Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')}`);
+  assert.equal(rk.p_old_hash, await hexOf(KEY));
+  assert.equal(rk.p_new_hash, await hexOf(NEXT));
+  assert.equal(rec.p_device_hash, rk.p_new_hash);
+  assert.notEqual(rk.p_old_hash, rk.p_new_hash);
+  assert.ok(!names.some((n) => /delete|forget|purge/.test(n)), 'no delete path');
+});
+
+Deno.test('(b) without a next key there is no rekey call and record uses the current-key hash', async () => {
+  const w = world();
+  await run(w).go();
+  assert.ok(!w.calls.some((c) => c.fn === 'ops_new_device_rekey'));
+  assert.equal(w.calls.find((c) => c.fn === 'ops_new_device_record')!.args.p_device_hash, `\\x${Array.from(await hashDevice(KEY, ASHA.profile, `session:${ASHA.session}`), (x) => x.toString(16).padStart(2, '0')).join('')}`);
+});
+
+Deno.test('(b) a rekey that fails is counted and nothing is recorded or sent', async () => {
+  const w = world({ rekey: '' });
+  const failing = (n: string) => ({ ...ENV, DEVICE_HASH_KEY_NEXT: NEXT })[n];
+  const calls: string[] = [];
+  const h = makeHandler(failing, {
+    fetch: (url: string, init?: RequestInit) => {
+      const fn = String(url).split('/rpc/')[1];
+      if (fn) calls.push(fn);
+      if (String(url).includes('/auth/v1/')) return Promise.resolve(new Response(JSON.stringify({ id: ASHA.profile, email: ASHA.email })));
+      if (fn === 'ops_new_device_pending_take') return Promise.resolve(new Response(JSON.stringify(w.pending.splice(0, 1))));
+      if (fn === 'ops_new_device_rekey') return Promise.resolve(new Response('{}', { status: 500 }));
+      void init;
+      return Promise.resolve(new Response('1'));
+    },
+    logSink: () => {},
+  });
+  await h(new Request('https://fn.local/x', { method: 'POST', headers: { Authorization: `Bearer ${SECRET}` } }));
+  assert.ok(!calls.includes('ops_new_device_record'));
+  assert.ok(calls.includes('ops_security_event_write'));
+});
+
+// Mutants: the order of the three guards is a property of the source. Moving the config gate after the take, the bearer
+// check after the config gate, or record before rekey fails here even if a behaviour test were weakened.
+Deno.test('mutants: bearer check, then config gate, then take; rekey before record', async () => {
+  const src = await Deno.readTextFile(new URL('../handler.ts', import.meta.url));
+  const at = (needle: string) => { const i = src.indexOf(needle); assert.ok(i > 0, needle); return i; };
+  assert.ok(at('safeEqual(auth') < at('const badKey'));
+  assert.ok(at('const badKey') < at("'ops_new_device_pending_take'"));
+  assert.ok(at('MIN_KEY_CHARS') < at("'ops_new_device_pending_take'"));
+  assert.ok(at("'ops_new_device_rekey'") < at("'ops_new_device_record'"));
 });
