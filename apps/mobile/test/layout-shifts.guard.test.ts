@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const src = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
+const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 const write = src('app/write.tsx');
 const letter = src('app/letter/[id].tsx');
 const review = src('app/review.tsx');
