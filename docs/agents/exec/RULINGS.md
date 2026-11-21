@@ -148,3 +148,152 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back (filer): revert the build PR.
 - Revisit when (filer): the acceptance walk fails on a phone, or the CDesO's placement needs a new word.
 - Signed: Chief Product Officer (Claude role) for the ruling; filed by Karma
+
+### Founder approval of the exec decisions of 21 Nov 2026 (21 Nov 2026, recorded by Karma's session)
+- What he said, as relayed to this session by Karma, verbatim: "Decide for all 10 with exec team. I approve their decision. Same for 6 moments questions."
+- What it covers: the ten open items the product, data, legal and hosted-migration packs of 21 Nov 2026 put to him (GAP-04, F-21, F-08d, the two classification rows, the new-device email hold, the lock-screen rule, the whole-app label claim, the picture-discard rule, the mirror host, the hosted catch-up, and the four legal PRs), and the six Moments questions. Each entry below names the item it records and quotes this approval once, by pointing here. The six Moments decisions are recorded in the Moments spec set (`docs/product/prd/28-moments-tab.md`, `docs/product/moments-tab/FREEZE-CHECKLIST.md`) in a separate PR, and `CPO-17` below points to them.
+- Tier and type: T3 delegated by the founder; clear
+- Limits, as before: the council still never decides money, an account, a secret, a hosted apply, a store build or its submission, or legal text on its own. Where an entry needs his hands (a secret, an account, a merge of `docs/legal/**`), the entry says so and records the item as approved, not done. Words a parent reads stay PROPOSED content keys until he reads them in the app.
+- Door: two-way. He can overrule any entry in one line, recorded as a new entry that supersedes it.
+- Way back: a new entry that names the one it replaces.
+- Recorded by: Karma (CTO), from the founder's words as relayed
+
+### CDO-19 Classes for two local settings: `reminders.onSince` is L2, `app.lastPlannedVersion` is L1 (21 Nov 2026, CDO via the 21 Nov packs; not counsel; founder-approved, see the approval entry above)
+- Question: BL-943 and BL-966C each add a setting kept on the phone. What class does the data inventory give them?
+- Tier and type: T1; clear
+- Options considered: leave both unclassified until the inventory PR; L2 for both; L2 for `reminders.onSince` and L1 for `app.lastPlannedVersion`
+- Ruling: `reminders.onSince` is L2 (a local date, YYYY-MM-DD, that says when reminders were last turned on, not what anyone said). `app.lastPlannedVersion` is L1 (an app version string). Both stay on the phone, are not synced or exported, are never logged, and `reminders.onSince` clears with `reminders.*` (NS-13-R14). Each PR that adds one carries its inventory row. The `docs/legal/DATA_CLASSIFICATION.md` edit itself stays a founder-merge docs PR (D-125): this entry rules the class and edits no legal file. Not covered here: `scribe.auth.deviceId` and the new-device tables, which are new personal data with a retention clock (CPrivO proposes, the founder decides, counsel confirms Q9, Q11 and Q14).
+- Why: both classes are already written in `docs/product/prd/09-capture.md:220` and `docs/product/prd/tools/review/eng/B-mobile-client.md:98,105` and in the two briefs; neither adds a category of personal data, a promise or a retention clock.
+- Door: two-way
+- Way back: change the row; no data moves.
+- Revisit when: either value is ever synced, logged or sent.
+- Signed: Chief Data Officer (Claude role, not counsel)
+
+### CDO-20 Hosted migrations: one staging catch-up, pepper first, production only after staging is green (21 Nov 2026, CDO via the 21 Nov packs; founder-approved in principle, see the approval entry above)
+- Question: `.github/migrations-applied.txt` lists only files 1 and 2 and `supabase/APPLY.md` marks files 3 to 38 pending. How do they reach the hosted projects?
+- Tier and type: T3 delegated by the founder; complicated
+- Options considered: apply file by file as each is needed; one catch-up run of everything on `develop`, staging first; apply to production first
+- Ruling: approved in principle. Staging first, as one catch-up run of APPLY files 3 to 38 in filename order. The consent pepper (`app.consent_pepper`, APPLY Step 6) is set first, because files 14 and 30 need it (file 30 refuses without it). Before the run, the "Before counts" queries for files 22, 23 and 33 are read (a CHECK fails on bad rows for 23, and file 33 needs the photo-path count to be 0). Each APPLY check query is run after, and the smoke test must pass. Production gets a `db-v*` tag only after staging is green, on a commit on `main`. Exposed schemas stay `public` only. `NEW_DEVICE_EMAIL` stays off (CPrivO-8).
+- What is not done: the pepper is a secret and the apply is an account action, so both are the founder's hands. Status: approved, awaiting pepper and apply. Hosted state is UNVERIFIED: the Supabase `list_migrations` call was not available to the seat, so what each project holds is read from the repository only. Run `select version from supabase_migrations.schema_migrations order by 1` on each project before approving the run.
+- Why: files 1 to 25 have to land together on a new project (file 25 holds the explicit grants, without which sign-in, consent and sync answer 42501), CI applies from the tip of `develop` in filename order, and a servers-on build against a server missing files 3 to 17 fails at sign-in and sync.
+- Door: one-way for files 26, 33, 34 and 35 (forward-fix only), two-way for the rest (APPLY has rollback sections)
+- Way back: forward-fix migrations; the rollback sections of APPLY for files 4 to 16.
+- Revisit when: the founder has the pepper set, or `list_migrations` shows the hosted state differs from the repository's assumption.
+- Signed: Chief Data Officer (Claude role, not counsel)
+
+### CPrivO-8 `NEW_DEVICE_EMAIL` stays off until the fill call ships, the claim check is done and the pending table is cleared (21 Nov 2026, CPrivO via the 21 Nov packs; not counsel; founder-approved, see the approval entry above)
+- Question: the new-device email sender, its hardening and the fill function are merged and dark. When may anyone turn the flag on?
+- Tier and type: T1; clear
+- Options considered: allow it on staging now; hold until the conditions below; delete the feature
+- Ruling: nobody sets `NEW_DEVICE_EMAIL=on` on the function, or `EXPO_PUBLIC_NEW_DEVICE_EMAIL=on` in any build, until (1) the app call for fill has shipped, (2) the hosted JWT claim check is done and on file, (3) the pending table is cleared, and (4) the device-table class rows are in `docs/legal/DATA_CLASSIFICATION.md` and the label document and the founder has read the email and page words. The flag stays out of `eas.json` and the store profiles (gate G6). The flip itself is later and is the founder's (a hosted secret, hosted migrations, an account, user-facing words). Verify step: the store-flags test and the sender's 200-and-no-rows dark test.
+- Why: a live sender queues pending rows that hold session ids (L3) before the fill path drains them. Collecting nothing until the promise is true is the seat's call.
+- Door: two-way
+- Way back: lift the hold in one line here once the founder records the flip.
+- Revisit when: all four conditions hold, or counsel answers Q9, Q11 and Q14.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-9 A lock screen shows no name, age or kind of day; the neutral body is "Whenever you have a minute." (21 Nov 2026, CPrivO via the 21 Nov packs; not counsel; the wording is a founder-approved exec decision, see the approval entry above)
+- Question: what must a day, month-note or birthday reminder show on a locked phone, and what is the one neutral body (F-08d)? `days.lock.body.neutral` ("A day you chose to mark. A few words, if you like.") is untrue once the month note and the birthday reuse it.
+- Tier and type: T2 (user-visible words; changes a string the 20 Nov ruling fixed); clear
+- Options considered: keep the 20 Nov string for all three; one new string true for all three; a different string per kind
+- Ruling: (1) the constraint: any lock-screen title or body for a days, month-note or birthday reminder carries no child name, no age, no month number and nothing that tells the three kinds apart (E82; names off is the default). (2) the decision: the neutral lock-screen body is "Whenever you have a minute." for the day, the month note and the birthday reminder. This is a founder-approved exec decision and it supersedes the 20 Nov single string. The hidden-preview placeholder stays the longer sentence in the Days WORDS document. The title "Something for the book today" stays PROPOSED and is not decided here. (3) the string change is a separate content PR, a lane that is yet to be started; until it merges the key keeps its current value in the code. The content rules test (no "note", no "push" in the glossary) still applies to it, and counsel confirms that no fact about the child shows.
+- Why: a lock screen is read by people the parent did not choose. Showing less is the seat's; the wording is the founder's, and he has now approved it.
+- Door: two-way
+- Way back: a new entry with another string; one content key.
+- Revisit when: a device test shows a parent cannot tell the reminder is theirs.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-10 No whole-app "Data Not Collected" claim while Moments exists (21 Nov 2026, CPrivO via the 21 Nov packs; not counsel; founder-approved, see the approval entry above)
+- Question: may a store build, label draft or web page say "Data Not Collected" for the whole app while production builds have server features on and Moments reads the photo library?
+- Tier and type: T1; clear
+- Options considered: allow it; a claim per data type; hold the claim
+- Ruling: no store copy, label draft or website line says "Data Not Collected" for the whole app. A per-type line may say "Photos or Videos: not collected", and only while no picture leaves the phone and the closed-bucket migration (APPLY file 33) is applied. The privacy policy's "servers off" line and the `capabilities.ts` header are corrected before any servers-on build links them. The label of record is still decided with counsel (Q1 and Q8).
+- Why: `eas.json` production has server features on (per the privacy lens; read again before the claim is used); guideline 2.3.1(a); the same-build rule for promises.
+- Door: two-way
+- Way back: lift the hold when the build lists match the claim.
+- Revisit when: counsel answers Q1 and Q8.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-11 A pending photo is discarded on every change of the signed-in person, a plain account switch included (21 Nov 2026, CPrivO via the 21 Nov packs; not counsel; founder-approved, see the approval entry above)
+- Question: when the person using the phone changes, what happens to a picture a parent has chosen but not yet kept?
+- Tier and type: T1; clear
+- Options considered: discard only on sign-out and Erase everything; discard on every change of the session user; keep it for the next person
+- Ruling: the pending photo is discarded on every change of the session user, including a plain account switch. This matches what merged PR #1340 builds. No pending picture ever crosses from one signed-in person to the next.
+- Why: a chosen picture is a child's picture (L4) and belongs to the person who chose it. Keeping less is the seat's.
+- Door: two-way
+- Way back: a new entry; the discard is one call in the session change.
+- Revisit when: a device test shows a person losing a picture they meant to keep across a refresh of their own session (a refresh for the same person is not a change).
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPO-16 GAP-04: no taught-names screen in 1.0 (21 Nov 2026, CPO via the 21 Nov packs; founder-approved, see the approval entry above)
+- Question: `docs/design/DESIGN-GAPS-21nov.md:25` asks for a screen where a parent teaches, edits and removes names the speech step should spell correctly. No design and no route exists. Is it in 1.0?
+- Tier and type: T3 delegated by the founder (scope); complicated
+- Options considered: build the screen for 1.0; no screen in 1.0, with a 1.1 candidate after real mishearings show up
+- Ruling: no taught-names screen in 1.0. The engine keeps its protections (FR-AIS-34, `packages/core/src/lang/dictionary.ts`): the dictionary seeds only from names the parent already typed (the child's name and the From names). design-systems draws nothing for it. The PATH-12 and E80 design lines read "no screen". The built page keeps its name, "Your words" (`docs/design/specs/09-YOUR-WORDS-21nov.md`). GAP-03 is separate and stays the CPO's.
+- Why: a names screen adds a place where a child's name (L4) is typed and stored, which the device-only store schema has no table for, and it is a scope change for 1.0.
+- Door: two-way
+- Way back: a new entry; a 1.1 row.
+- Revisit when: real recordings show names being misheard often enough to need it.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-17 The six Moments questions are decided by the council and approved by the founder (21 Nov 2026, CPO via the 21 Nov packs; founder-approved, see the approval entry above)
+- Question: the founder said "Same for 6 moments questions". What was decided, and where is it written?
+- Tier and type: T3 delegated by the founder; complicated
+- Ruling: the six are recorded as decided by the council and approved by him in the Moments spec set (`docs/product/prd/28-moments-tab.md`, `docs/product/moments-tab/FREEZE-CHECKLIST.md`), in a separate PR. In one line each: (1) Moments is the second of four tabs (Home, Moments, Book, Me) and Home stays the landing tab; (2) the first Moments release reads the photo library in 1.0 (places and occasions in, faces and naming people out), the G6 production-flags guard is amended in the PR that adds the PHAsset use and its usage strings, and gates G1 to G11 apply before store submission, not before coding; (3) only the person's own photo metadata (date and place) is used, and no machine-written scene, face or people label is shown or stored as the family's words; (4) the picture copies stay in the iPhone backup as ADR 0028 D1 says and the policy discloses it; (5) no library-timed push and no Moments email in 1.0, both off; (6) no whole-app "Data Not Collected" claim (CPrivO-10). Words a parent reads stay PROPOSED.
+- Why: each follows the default the spec already followed, with the constitution winning where a machine label would add meaning.
+- Door: two-way for 1, 3, 5 and 6; one-way with cost for 2 once the usage strings are in a store build
+- Way back: a new entry; the spec set's dated lines.
+- Revisit when: counsel answers the library questions, or the first store build shows the tab order failing in a walk.
+- Signed: Chief Product Officer (Claude role), with the Chief Privacy Officer (Claude role, not counsel)
+
+### CDesO-10 F-21: 1.0 says plainly that a picture has no description of its own, and makes no accessibility claim for pictures (21 Nov 2026, CDesO via the 21 Nov packs; not counsel; founder-approved, see the approval entry above)
+- Question: NS-01-R50 hides the photo words and place fields in every production build, because iOS writing tools cannot be turned off per field. Spec 01 section 8 calls the typed words "the only text alternative". May 1.0 say plainly that a picture has no per-picture description in production, and say nothing about picture accessibility?
+- Tier and type: T2 (what users are told); clear
+- Options considered: claim the typed words as the description; say plainly there is none and claim nothing; hold the photos
+- Ruling: 1.0 says plainly that it has no per-picture description in production, and makes no accessibility claim for pictures (no "accessible" or "described" wording on the store page, the website or in the app for pictures) until the native setting ships and has been tested on a device. VoiceOver reads the fixed phrase and then the letter's own words; the app never generates a description (the constitution). The wording stays PROPOSED and goes through the content lane. Striking "only" in spec 01 section 8 follows this ruling in a separate docs PR.
+- Why: the hidden-field default is the constitution winning and needs no ruling; a claim that the product cannot back is what guideline 2.3.1(a) calls misleading.
+- Door: two-way
+- Way back: a new entry once the native setting ships and a device test passes.
+- Revisit when: the native setting ships.
+- Signed: Chief Design Officer (Claude role), with the Chief Privacy Officer (Claude role, not counsel)
+
+### CFO-14 BL-414 mirror host: not now (21 Nov 2026, CFO via the 21 Nov packs; not an accountant; founder-approved, see the approval entry above)
+- Question: should a second hostname and bucket for the model-download mirror be set up now?
+- Tier and type: T3 delegated by the founder (money, an account); complicated
+- Options considered: set up the mirror now; not now, keep the failover code, revisit after the first store build
+- Ruling: not now. The failover code stays in the app. Revisit after the first store build. A second hostname and bucket cost money, need an account, and add a new processor line to `docs/legal/DATA_CLASSIFICATION.md` section 4.8 and to the privacy policy, so setting it up is the founder's hands and a legal-file merge.
+- Why: the first build does not need the second host to work; the cost and the new processor line buy resilience nobody has needed yet.
+- Door: two-way
+- Way back: a new entry; the code is already there.
+- Revisit when: the first store build is out, or a download failure is seen.
+- Signed: Chief Financial Officer (Claude role, not an accountant), with the Chief Privacy Officer (Claude role, not counsel)
+
+### CLO-19 Four legal PRs: merge order and one wording (21 Nov 2026, CLO and CCO via the 21 Nov packs; not lawyers; founder-approved, see the approval entry above)
+- Question: four open PRs touch legal files (#1215, #1117, #799, #873). What happens to each, and what rule follows from "no model name as the author"?
+- Tier and type: T3 delegated by the founder (legal text, D-125); complicated
+- Options considered: merge all as they are; merge in the order below with the conditions; close all
+- Ruling: (1) #1215 (export spec 4.2, the picture copy is a re-encoded JPEG, not the original) merges after reviews at its current head. (2) #1117 is reworded so the revision row reads "prepared by the Chief Legal Officer (a Claude role, not a lawyer) for counsel review", then merges after reviews at its head. (3) #873 (the data inventory) merges after reviews at its new head; it names the nightly encrypted backup and folds in #799's row. (4) #799 closes after #873 merges and is not merged. (5) The founder's rule, as relayed by Karma: "no model name as the author of a doc". Its scope is the authorship lines of documents. The 45 "(Claude role)" sign-offs stay: they name the role first and keep the honest disclosure.
+- Why: #873 feeds the privacy label, the privacy policy and the subprocessor list; #799 is superseded by it, and merging both would collide.
+- State read through the REST API when this entry was written (21 Nov 2026): #1215 and #873 are already merged (22:10 and 22:08 UTC), #799 is closed and was not merged, and #1117 is open at head 7b1f03c2. So items (1), (3) and (4) are done and this entry records them as approved; item (2) and the authorship rule are still to do. Not checked: whether #1215 and #873 had reviews at their merged heads, and the reviews and checks on #1117. Karma's merge gate (CR-70) reads those. None of the four is on the D-125 item 7 list; counsel's answers gate the first binary, not these PRs.
+- Door: two-way
+- Way back: revert the PR.
+- Revisit when: counsel reads the wording of the backup clock and the picture-export promise.
+- Signed: Chief Legal Officer (Claude role, not a lawyer), with the Chief Compliance Officer (Claude role, not counsel)
+
+### CR-74 reading confirmed by the founder (21 Nov 2026, recorded by Karma's session)
+- `docs/agents/cto/RULINGS.md` CR-74 gave Karma's reading of the founder's words "Do all waiting for me. I approve." (approval to stop holding merges on the macOS wait where the risk allows) "for him to confirm or correct".
+- He has now said, verbatim, as relayed: "Decide for all 10 with exec team. I approve their decision. Same for 6 moments questions." This is recorded here as his confirmation of Karma's reading of CR-74, as Karma relayed it. CR-74 is unchanged and stays in Karma's log, which is append-only.
+- Door: two-way. Way back: one line from the founder, as CR-74 says.
+- Recorded by: Karma (CTO)
+
+### CR-144 Standing delegation, 21 Nov 2026 (21 Nov 2026, Karma, recorded in the exec log because it binds every council seat)
+- Why CR-144: develop shows CR-131 as the highest CR number cited (CR-999 is a test fixture) and open PRs cite up to CR-143, so CR-144 is the next free number. Not checked: the Project docs `infra/exec-rulings-*`, which this session cannot read.
+- The founder's words, as relayed to this session by the coordinator, verbatim: "Yes lock those decisions and when ever you need a decision do exec review with all and based on that lock that decision to continue working. Do as much as you can in parallel agents. Have atleast 20 agent threads in parallel all time."
+- Ruling:
+  1. The decisions recorded in this log on 21 Nov 2026 (the approval entry, CDO-19, CDO-20, CPrivO-8 to CPrivO-11, CPO-16, CPO-17, CDesO-10, CFO-14, CLO-19 and the CR-74 note) are LOCKED. Only a new entry can supersede one.
+  2. When Karma needs a decision that would otherwise go to the founder, Karma runs an exec review with all the council seats of COUNCIL section 4 (CPO, CDesO, CMO, CBO, CFO, CLO, CCO, CPrivO, CISO, CDO, CAIO, with Karma as CTO). The verdict is recorded as a ruling with each seat's input in one or two lines and any dissent, locked, and work continues.
+  3. This does not cover what needs the founder's own hands or is outside what a ruling can do: secrets and credentials (for example the consent pepper); account actions (hosted migration apply, the store, Apple, Expo, Vercel, domains); spending money; changing the constitution in `CLAUDE.md`; and publishing legal text that counsel must see before it goes live. For these Karma prepares everything and the founder only executes. The founder-only list in CR-73 stands.
+  4. Karma keeps at least 20 agent threads running in parallel, within the one-concern-per-PR and review rules (CR-70).
+- Door: two-way. Way back: one line from the founder, recorded as a new entry.
+- Revisit when: the founder says so, or a locked decision is found to rest on a fact that was wrong.
+- Signed: Karma (CTO)
