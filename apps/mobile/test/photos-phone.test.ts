@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
-import { erasePictureOf, photoDeps, registerPhotoDevice, sweepPhotosAtLaunch } from '../src/lib/photos/device';
+import { erasePictureOf, photoDeps, photoUri, registerPhotoDevice, sweepPhotosAtLaunch } from '../src/lib/photos/device';
 import { resetPhotoDeviceForTest } from './helpers/photo-device-reset';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { expoPhotoFiles, photosDirectory, storedPhotoFile } from '../src/lib/photos/files';
@@ -123,6 +123,9 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual([]);
     expect(storedPhotoFile('../../../Documents/notes')).toBeNull();
     expect(storedPhotoFile('m1')?.uri).toBe(`${photosDirectory().uri}m1.jpg`);
+    // The letter page and the Book lens draw a picture through the same guard.
+    expect(photoUri({ mediaId: 'm1' })).toBe(`${photosDirectory().uri}m1.jpg`);
+    expect(photoUri({ mediaId: '../../../Documents/notes' })).toBe('');
   });
 
 });
