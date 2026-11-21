@@ -14,7 +14,7 @@
  *   POSTHOG_PERSONAL_API_KEY   personal API key with the Query Read scope only
  *   SUPABASE_URL               https://<project>.supabase.co
  *   SUPABASE_PUBLISHABLE_KEY   the publishable (anon) key
- *   SUPABASE_INSIGHTS_TOKEN    bearer for role insights_reader (see INSIGHTS_LOOP.md 4)
+ *   SUPABASE_INSIGHTS_TOKEN    bearer for the read-only reporting login (planned reporting_reader, IN-DA-03); run locally, never the service key in CI (INSIGHTS_LOOP.md 4)
  * Either source may be missing; the report says which ones it used. With
  * neither, the run stops.
  *

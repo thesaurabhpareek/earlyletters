@@ -19,6 +19,7 @@
     "photoMoments": false,
     "videos": false,
     "signIn": false,
-    "libraryDays": false
+    "libraryDays": false,
+    "bookSearch": false
   }
 }

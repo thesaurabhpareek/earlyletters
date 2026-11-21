@@ -48,6 +48,11 @@ export const KILL_SWITCH_KEYS = [
    * library notes cancelled. Typed days and reminders stay. Read as `!== true`, not through `mayRun`.
    */
   'libraryDays',
+  /**
+   * Find in the Book (NS-02). Hides the Find action; the on-device index and the letters are untouched. It only
+   * ever hides: the build flag `EXPO_PUBLIC_BOOK_SEARCH` is the only thing that turns Find on. Phone only, no server part.
+   */
+  'bookSearch',
 ] as const;
 export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
 
@@ -58,7 +63,7 @@ export const M14_KILL_SWITCH_KEYS: readonly KillSwitchKey[] = ['backupUploads', 
  * Switches added for the new scope (E38, CL-111, CR-69 A5). Not in the M14 list: an older
  * signed config omits them and they parse as off, the same way. Additive only (API-R11).
  */
-export const NEW_SCOPE_KILL_SWITCH_KEYS: readonly KillSwitchKey[] = ['photoMoments', 'videos', 'signIn', 'libraryDays'];
+export const NEW_SCOPE_KILL_SWITCH_KEYS: readonly KillSwitchKey[] = ['photoMoments', 'videos', 'signIn', 'libraryDays', 'bookSearch'];
 
 /**
  * Server side for our JSON functions: `KILL_SWITCHES=invites,statusReport`
