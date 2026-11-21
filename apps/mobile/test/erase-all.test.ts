@@ -967,7 +967,7 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     const d = en.settings.delete;
     expect(d.bookBodyThisPhone).toBe("Every letter and recording in {child}'s book will be removed from this phone.");
     expect(d.bookEraseNowBody).toBe('Every letter and recording in it is erased for good.');
-    expect(d.bookEraseFailedToast).toBe("The book wasn't erased yet. It will finish the next time the app opens.");
+    expect(d.bookEraseFailedToast).toBe("The book wasn't erased yet. The erase will finish the next time the app opens.");
   });
 
   it('button labels stay at most 22 characters', () => {

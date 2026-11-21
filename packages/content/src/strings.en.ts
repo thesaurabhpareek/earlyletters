@@ -440,7 +440,7 @@ export const en = {
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
     waiting: {
-      title: "Your voice is kept",
+      title: "Recording kept",
       body: "Your words will appear once the download finishes.",
     },
     // Development builds only: the sample transcriber's words are never saved.
@@ -758,11 +758,11 @@ export const en = {
     },
     letters10: {
       title: "10 letters.",
-      body: "Ten letters for {child}, spoken by you.",
+      body: "Ten letters for {child}.",
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty letters of yours are in {child}'s book.",
+      body: "Fifty letters are in {child}'s book.",
     },
     letters100: {
       title: "100 letters.",
@@ -921,7 +921,7 @@ export const en = {
       bookEraseNowBody: "Every letter and recording in it is erased for good.",
       bookErasedToast: "Book erased.",
       // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
-      bookEraseFailedToast: "The book wasn't erased yet. It will finish the next time the app opens.",
+      bookEraseFailedToast: "The book wasn't erased yet. The erase will finish the next time the app opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -1167,7 +1167,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are still on this phone. The app will try again.",
+      body: "Your words are still on this phone.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
