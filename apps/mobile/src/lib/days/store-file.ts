@@ -27,7 +27,7 @@ export interface DaysPort {
 
 export type DaysRead =
   | { state: 'empty' }
-  | { state: 'foreign' } // a file of another owner: never read, adopted or merged (E73); a writer deletes it and starts empty
+  | { state: 'foreign'; owner: string } // another owner's file: never read, adopted or overwritten (E73, DAYS-4); a writer writes nothing
   | { state: 'ok' | 'newer'; file: DaysFile }
   | { state: 'unreadable' } // corrupt: no day, no crash, NOT deleted (a newer build may read it)
   | { state: 'unavailable' }; // exclusion reads false: the file was deleted and the store will not write
@@ -60,7 +60,7 @@ export function readDays(port: DaysPort, owner: string): DaysRead {
     }
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
-    return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign' };
+    return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign', owner: parsed.file.owner };
   } catch {
     return { state: 'unreadable' };
   }
