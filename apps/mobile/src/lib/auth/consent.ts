@@ -13,12 +13,16 @@
  * stored age or time).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
+import { CONSENT_LOCALE, consentShownText, type ConsentShownId } from '@scribe/content';
+import { sha256Hex } from '../sha256';
 import { idempotencyKey } from '../supabase/client';
 import { errorCode } from '../supabase/errors.logic';
 import { heldAnswers } from './consent-key.logic';
+import { buildConsentAct, type ConsentEnv } from './consent-record';
 import type { AuthMethod, ConsentStep, SyncGate } from './machine.logic';
 
 type PolicyDocument = 'terms' | 'sensitive-data';
@@ -84,6 +88,19 @@ function platform(): 'ios' | 'android' | 'web' {
   return Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 }
 
+/** What each sheet shows, by step (packages/content consent-shown.ts; the manifest hashes the same words). */
+const SHOWN: Record<ConsentStep, ConsentShownId> = { terms: 'terms', age: 'age', sensitive: 'sensitive' };
+
+function consentEnv(): ConsentEnv {
+  return {
+    sha256: sha256Hex,
+    appBuild: Application.nativeBuildVersion,
+    appVersion: Constants.expoConfig?.version ?? '0.0.0',
+    osVersion: Platform.Version,
+    platform: platform(),
+  };
+}
+
 /** Answers waiting for the server, each with one key (consent-key.logic.ts; NS-10-R7). */
 const answers = heldAnswers(idempotencyKey);
 
@@ -112,19 +129,23 @@ export async function recordConsent(
   const group = JSON.stringify([userId, document]);
   const held = answers.hold(group, answerId, () => new Date().toISOString());
   const { error } = await sb
-    .rpc('record_policy_act', {
-      p_document: document,
-      p_version: version,
-      p_action: accepted ? 'accept' : 'decline',
-      p_method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
-      p_surface: SURFACE[step],
-      p_app_version: (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32),
-      p_platform: platform(),
-      // The sheets are in English at v1.0 (BRIEF decision 6).
-      p_locale: 'en',
-      p_client_recorded_at: held.recordedAt,
-      p_context: context,
-    })
+    .rpc(
+      'record_policy_act',
+      buildConsentAct(
+        {
+          document,
+          version,
+          action: accepted ? 'accept' : 'decline',
+          method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
+          surface: SURFACE[step],
+          shownText: consentShownText(SHOWN[step]),
+          locale: CONSENT_LOCALE,
+          clientRecordedAt: held.recordedAt,
+          context,
+        },
+        consentEnv(),
+      ),
+    )
     .setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
   if (error) throw error;
   answers.confirmed(group);
