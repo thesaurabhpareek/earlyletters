@@ -14,13 +14,17 @@
  * `JSON.stringify(Array.from(bytes))` or a Buffer's JSON writes it) is decoded back to bytes and scanned like the
  * raw bytes; a decoded run is decoded once more, for a copy written twice over (base64 of hex, tus metadata around
  * a base64 value). [BL-1418] The URL, each header and each RPC's arguments of every request are scanned the same way.
+ * [BL-1419] Bodies are scanned one by one AND across every join of consecutive bodies (JOIN_WINDOW bytes either side),
+ * in recorded order and again per kind.
  *
- * Not covered: a leak shorter than 64 bytes that falls between shingles; a leak that straddles two request bodies, because
- * the callers scan one body at a time; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
- * decimal list with other separators, three or more layers of encoding).
+ * Not covered: a leak shorter than 64 bytes that falls between shingles; a piece that is split over bodies and wider
+ * than 2 x JOIN_WINDOW; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
+ * decimal list with other separators, or three or more layers of encoding).
  */
 import { createHash } from 'node:crypto';
 
+/** Bytes either side of a join of two consecutive bodies that the join scan reads (a 64-byte piece is at most 256 chars as a decimal list). */
+export const JOIN_WINDOW = 512;
 export const SHINGLE = 16;
 export const STRIDE = 48;
 
@@ -126,9 +130,21 @@ export function requestFields(req: ScannedRequest): Array<[string, Buffer]> {
   return out;
 }
 
+/** The windows across every join of consecutive bodies, ordered by position: [label, bytes]. */
+export function joinWindows(bodies: Buffer[], window = JOIN_WINDOW): Array<[string, Buffer]> {
+  const total = Buffer.concat(bodies);
+  const out: Array<[string, Buffer]> = [];
+  let at = 0;
+  for (let i = 0; i < bodies.length - 1; i++) {
+    at += bodies[i].length;
+    out.push([`bodies ${i} and ${i + 1}`, total.subarray(Math.max(0, at - window), at + window)]);
+  }
+  return out;
+}
+
 /**
  * Every failed check over a list of recorded requests, as notes (offsets only, never bytes). Empty means clean.
- * One call for the e2e loop and the queue test, so a scan that narrows is one edit, and tested.
+ * One call for the e2e loop and the queue test, so a scan that narrows (first body only) is one edit, and tested.
  */
 export function scanRequests(requests: ScannedRequest[], plains: Uint8Array[]): string[] {
   const notes: string[] = [];
@@ -145,5 +161,8 @@ export function scanRequests(requests: ScannedRequest[], plains: Uint8Array[]): 
     }
   };
   for (const req of requests) for (const [label, bytes] of requestFields(req)) check(label, bytes);
+  const streams: Array<[string, Buffer[]]> = [['all', requests.map((r) => r.body)]];
+  for (const kind of new Set(requests.map((r) => r.kind))) streams.push([kind, requests.filter((r) => r.kind === kind).map((r) => r.body)]);
+  for (const [name, bodies] of streams) for (const [label, bytes] of joinWindows(bodies)) check(`${name} ${label}`, bytes);
   return notes;
 }

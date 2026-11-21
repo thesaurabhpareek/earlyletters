@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { SEGMENT_SIZE } from '../src/lib/backup/format';
 import { fakeM4a } from './helpers/backup-node';
-import { SHINGLE, STRIDE, firstLeak, firstRawLeak, leakNote, scanRequests, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
+import { JOIN_WINDOW, SHINGLE, STRIDE, firstLeak, firstRawLeak, joinWindows, leakNote, scanRequests, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
 import { createHash, randomBytes } from 'node:crypto';
 
 const TAKE = 3 * SEGMENT_SIZE + 777;
@@ -238,3 +238,89 @@ describe('[BL-1418] the URL, each header, the tus metadata and an RPC argument a
   });
 });
 
+// ── [BL-1419] a piece split over two bodies, and the loop that scans them ─────────────────────────────────────────
+
+describe('[BL-1419] a piece split over two request bodies is found, and a loop over only the first body is caught', () => {
+  const plain = fakeM4a(TAKE);
+  const asRequests = (b: Buffer[]): ScannedRequest[] => b.map((body) => ({ kind: 'tus', body }));
+
+  /** One whole shingle of the take, at an offset the stride samples (so a leak of it alone is a leak the scan promises to find). */
+  const shingle = () => {
+    const at = shingleOffsets(plain.length).find((o) => o >= 100)!;
+    return plain.subarray(at, at + SHINGLE);
+  };
+
+  it('[BL-1419] a shingle cut 7 and 9 over two bodies is invisible body by body and found across the join', () => {
+    const w = shingle();
+    const x = Buffer.concat([randomBytes(2000), w.subarray(0, 7)]);
+    const y = Buffer.concat([w.subarray(7), randomBytes(2000)]);
+    expect(firstLeak(x, plain), 'first half alone').toBeNull();
+    expect(firstLeak(y, plain), 'second half alone').toBeNull();
+    const notes = scanRequests(asRequests([x, y]), [plain]);
+    expect(notes.length, 'across the join').toBeGreaterThan(0);
+    expect(notes.join('\n')).toMatch(/bodies 0 and 1 carries part of a recording \(plaintext offset \d+\)/);
+  });
+
+  it('[BL-1419] the same split in base64 and hex is found across the join', () => {
+    const w = shingle();
+    for (const [name, text] of [['base64', Buffer.from(Buffer.from(w).toString('base64'))], ['hex', Buffer.from(Buffer.from(w).toString('hex'))]] as const) {
+      const cut = Math.floor(text.length / 2);
+      const x = Buffer.concat([randomBytes(2000), text.subarray(0, cut)]);
+      const y = Buffer.concat([text.subarray(cut), randomBytes(2000)]);
+      expect(scanRequests([{ kind: 'tus', body: x }], [plain]), `${name} first half alone`).toEqual([]);
+      expect(scanRequests([{ kind: 'tus', body: y }], [plain]), `${name} second half alone`).toEqual([]);
+      expect(scanRequests(asRequests([x, y]), [plain]).length, name).toBeGreaterThan(0);
+    }
+  });
+
+  it('[BL-1419] a piece split over three bodies, the middle one short, is found', () => {
+    const w = shingle();
+    const rs = asRequests([Buffer.concat([randomBytes(900), w.subarray(0, 5)]), w.subarray(5, 9), Buffer.concat([w.subarray(9), randomBytes(900)])]);
+    expect(scanRequests(rs, [plain]).length).toBeGreaterThan(0);
+  });
+
+  it('[BL-1419] a piece that straddles two bodies of different kinds is found by the ordered scan, one that straddles two of one kind by the per-kind scan', () => {
+    const w = shingle();
+    const x = Buffer.concat([randomBytes(900), w.subarray(0, 8)]);
+    const y = Buffer.concat([w.subarray(8), randomBytes(900)]);
+    expect(scanRequests([{ kind: 'tus', body: x }, { kind: 'confirm', body: y }], [plain]).length).toBeGreaterThan(0);
+    // an RPC between two parts of one upload: only the per-kind stream joins them
+    const between: ScannedRequest = { kind: 'begin', body: randomBytes(4000) };
+    const far = [{ kind: 'tus', body: x }, between, { kind: 'tus', body: y }];
+    expect(scanRequests(far, [plain]).length).toBeGreaterThan(0);
+  });
+
+  it('[BL-1419] clean consecutive bodies stay clean across their joins', () => {
+    expect(scanRequests(asRequests([randomBytes(3000), randomBytes(3000), randomBytes(3000)]), [plain])).toEqual([]);
+  });
+
+  it('[BL-1419] joinWindows cuts a window of JOIN_WINDOW bytes either side of each join and none at the ends', () => {
+    const w = joinWindows([Buffer.alloc(2000, 1), Buffer.alloc(10, 2), Buffer.alloc(2000, 3)]);
+    expect(w).toHaveLength(2);
+    expect(w[0][1]).toHaveLength(2 * JOIN_WINDOW);
+    expect(w[0][1][JOIN_WINDOW]).toBe(2);
+    expect(w[1][1].subarray(JOIN_WINDOW - 1, JOIN_WINDOW + 1).toString('hex')).toBe('0203');
+  });
+
+  it('[BL-1419] the loop that scans only the first body passes a leak in the second: the shared loop does not', () => {
+    const start = shingleOffsets(plain.length).find((o) => o >= 100)!;
+    const w = plain.subarray(start, start + 64);
+    const rs = asRequests([randomBytes(3000), Buffer.concat([randomBytes(500), w, randomBytes(500)]), randomBytes(3000)]);
+    const firstOnly = (r: ScannedRequest[]) => scanRequests(r.slice(0, 1), [plain]);
+    expect(firstOnly(rs), 'the mutant').toEqual([]);
+    expect(scanRequests(rs, [plain]).length, 'the real loop').toBeGreaterThan(0);
+    // and a leak in the last body of a long run
+    const many = asRequests(Array.from({ length: 20 }, () => randomBytes(1500)));
+    many[19] = { kind: 'tus', body: Buffer.concat([randomBytes(100), w, randomBytes(100)]) };
+    expect(scanRequests(many, [plain]).length).toBeGreaterThan(0);
+  });
+
+  it('[BL-1419] mutant: scanning each body alone misses the split (the gap the row closes)', () => {
+    const w = shingle();
+    const rs = asRequests([Buffer.concat([randomBytes(900), w.subarray(0, 7)]), Buffer.concat([w.subarray(7), randomBytes(900)])]);
+    const oneByOne = rs.flatMap((r) => scanRequests([r], [plain]));
+    expect(oneByOne).toEqual([]);
+    expect(scanRequests(rs, [plain]).length).toBeGreaterThan(0);
+    expect(leakNote('x', null)).toContain('no part');
+  });
+});
