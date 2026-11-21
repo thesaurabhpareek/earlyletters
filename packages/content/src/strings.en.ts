@@ -243,7 +243,7 @@ export const en = {
       stopButton: "Finish",
       saving: "Saving your words.",
       saved: "Saved.",
-      savedLetter: "Saved and signed.",
+      savedLetter: "Saved.",
       transcribing: "Writing down what you said.",
     },
     typing: {
