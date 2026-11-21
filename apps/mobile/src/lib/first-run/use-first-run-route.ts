@@ -17,6 +17,7 @@ import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
 import { authUserId, isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { getRemoteConfig } from '@/lib/remote';
 import { currentUserId, listChildren, subscribe } from '@/lib/store';
 import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, heldNewPhoneView, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
 import { useNewPhone } from './use-new-phone';
@@ -149,6 +150,8 @@ export function useFirstRunRoute(): FirstRunRoute {
     online,
     newPhone: np.view ?? held ?? 'new',
     phoneOwner,
+    // FP-6: the cached signed config's `killSwitches.signIn`; only read with the switch on (hide-only, fail-open).
+    signInPaused: active && getRemoteConfig().killSwitches.signIn === true,
   });
   // Try again while the consent gate could not be read re-reads that gate (the provider's own read; sync on then asks the
   // account). Otherwise it is the account question again.

@@ -16,9 +16,14 @@ import { useRef } from 'react';
 import { View } from 'react-native';
 import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
+import { AppleButton } from '@/lib/auth/ui';
 import { useArrival } from '@/lib/first-run/use-arrival';
 
-export function OutageScreen({ variant, localStartOffered, onTryAgain, onLocalStart }: { variant: 'offline' | 'outage'; localStartOffered: boolean; onTryAgain: () => void; onLocalStart: () => void }) {
+/**
+ * FP-6 (NS-41-R12, R21): with `onApple` given (Apple sign-in is available and the variant is the outage, not offline), Apple's own
+ * button sits under the screen, so a person whose email send was rate limited can still sign in. No new words (the button is Apple's).
+ */
+export function OutageScreen({ variant, localStartOffered, onTryAgain, onLocalStart, onApple }: { variant: 'offline' | 'outage'; localStartOffered: boolean; onTryAgain: () => void; onLocalStart: () => void; onApple?: () => void }) {
   const t = authCopy.outage;
   const offline = variant === 'offline';
   const title = offline ? authCopy.offline.title : t.title;
@@ -35,6 +40,11 @@ export function OutageScreen({ variant, localStartOffered, onTryAgain, onLocalSt
         primary={{ label: t.retry, onPress: onTryAgain, testID: 'outage.tryAgain' }}
         quiet={localStartOffered ? [{ label: t.startLocal, onPress: onLocalStart, testID: 'outage.localStart' }] : undefined}
       />
+      {onApple && !offline ? (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+          <AppleButton signIn onPress={onApple} />
+        </View>
+      ) : null}
     </View>
   );
 }
