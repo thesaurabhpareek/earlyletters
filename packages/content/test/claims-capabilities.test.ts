@@ -309,13 +309,11 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
-  // "Exactly as you said it" in the store build's first run (D-133 decision 2). PR #502 changes both lines.
-  { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
+  // "Exactly as you said it" on the packaged first-run card (D-133 decision 2). PR #502 changes this line.
   { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
 
   // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
   // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
-  { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
   { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
   { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
   { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },

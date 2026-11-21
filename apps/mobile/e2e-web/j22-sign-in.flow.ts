@@ -22,7 +22,7 @@ import { MAMA, mockServer, type MockServer } from './support/mock-server';
 
 const ON = () => process.env.E2E_WEB_ON_URL!;
 const EMAIL = 'mama@example.invalid';
-const PRIVACY = 'Only you and the people you invite can read your letters. We never sell them or use them for ads.';
+const PRIVACY = 'Private by default. You decide what goes in the book.';
 const SAFE = 'Your letters are still on this phone.';
 const BODY = 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.';
 const TOKEN = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
