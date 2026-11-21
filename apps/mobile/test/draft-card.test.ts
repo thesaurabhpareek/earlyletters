@@ -335,7 +335,7 @@ describe('[S33] not much today, and the light', () => {
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
     expect(inline).toContain('label={copy.notMuch.undo}');
-    expect(en.notMuch.savedToast).toBe('A quiet day, kept.');
+    expect(en.notMuch.savedToast).toBe('Marked as a quiet day.');
     for (const f of ['app/(tabs)/index.tsx', 'components/tonight/quiet-day-inline.tsx', 'components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx']) {
       expect(code(f), f).not.toMatch(/\bsuccess\b|\bcaution\b|\bdestructive\b|tone="recording"|c\.recording/);
     }
