@@ -82,11 +82,11 @@ Home, Book, Me. Capture starts only from Home. A new row never becomes a tab, a 
 | Setting or consent | Lives in | Path from the tab bar | Taps | Default | Turn off |
 |---|---|---|---|---|---|
 | Analytics (share usage) | Me > Privacy, row "Share usage and crash reports" (`settings.privacy.analyticsLabel`), a switch | Me, Privacy, the row | 2 to reach, 1 to turn off | Off. Nothing is sent until the person says yes (`consent.ts` states `unknown`, `granted`, `denied`; read in matrix row 12). | One tap on the switch; takes effect at once (`settings.privacy.analyticsOffNote`). No confirm sheet. |
-| Analytics ask (the sheet) | `E-S33` PROPOSED, a sheet over a tab root, third ask, a later session after the first letter, at most twice if left unanswered | not a place a parent goes to | n/a | n/a | "Don't share" or Close |
+| Analytics ask (the sheet) | `E-S33` PROPOSED, a sheet over a tab root, third ask, a later session after the first letter, at most twice if left unanswered | not a place a parent goes to | n/a: a sheet that opens by itself, not a page to reach | n/a: it is an ask, not a setting; the setting is the row above, default Off | "Don't share" or Close |
 | Microphone | iOS popup after our primer (`listen.primer.*`), on the first Speak | Home > Speak | 1 | iOS asks once | iPhone Settings; our denied screen links there (`errors.micDenied.settingsButton`) |
 | Notifications | The Reminders switch goes straight to the iOS alert (CDesO-3); the page footer (`reminderCopy.priming.*`) is on screen first; the D-S04 card after the first letter | Me > Reminders, or the Book card | 1 | Off | Switch off, or iPhone Settings |
 | Face ID | iOS popup the first time App lock is turned on; one line of ours before it (CONTENT-NEEDED) | Me > App lock | 1 | Lock off | Switch off; passcode fallback |
-| Photos | Apple's picker, no permission | Home > Start from a photo (dark in Build 13) | 1 | n/a | Cancel the picker |
+| Photos | Apple's picker, no permission | Home > Start from a photo (dark in Build 13) | 1 | n/a: there is no switch, so nothing to default | Cancel the picker |
 | Terms and Privacy | Acceptance at sign-up (E-S02 footer, E-S07), re-readable in Me > Help and legal > Legal and Me > Privacy | first run; Me | | Unticked on the age screen; the agree line at sign-in | Not now keeps the book on this phone (E-S07 `declined`) |
 | New-device sign-in email | No setting. Not a switch: a security notice, not marketing. | email only | | on | none (E83) |
 | Marketing email | none exists (E75) | none | | | |
@@ -172,10 +172,29 @@ Outside the app (web)
 | OI-S6 | What the person sees after "Sign out other devices" | `product`, `content` |
 | OI-S7 | Copy mismatch on crash data (flag 1) | `analytics`, `content`, `legal` |
 | OI-S8 | #1033, #1054, #1055 and #1062 are merged. Rows that rest on PROPOSED text inside those files (heritage and regional layers, ToS 3.5) stay PROPOSED | Karma |
-| OI-S9 | Unhappy paths not yet written (listed, not drawn): Me > Account > Sign out other devices (E77: offline or failed call, nothing shown after the tap); C-S19 Erase; the heritage-months group in Browse (PATH-10: no states at all); "Add a name" failure (PATH-12) | `design-systems`, `product` |
-| OI-S10 | ADR 0032 and ADR 0033 states not in PATH-10 (listed, not drawn): a Days tick that cannot be saved (`C-S24.store-unavailable`), a restored or new phone (empty days list, does not ask again), App lock on (day names forced off), a paused family getting no day notes (E57(b)) | `design-systems`, `mobile` |
-| OI-S11 | Photo-access ids: A-S18 and E-S32 (Photos access primer) and `MA-62` stay out of Build 13 with NS-51 and are never drawn; the overlap in `docs/design/e2e/INDEX.md` pre-dates this PR | `design-systems` |
-| OI-S12 | E80 caveat: a new phone starts empty apart from any seed from the child's name (card 19, F03-REQ-010, unverified). PATH-12 EMP and the sync table say plain "empty" until that is settled | `product`, `mobile` |
-| OI-S13 | Ruling 31 citation: it retires `Breathe` in waiting states and keeps the lamp as the one ambient exception. DELTA 2.4 should cite COMPONENTS 2.15 for the empty-state illustration and ruling 31 only for waiting states | `design-systems` |
+| OI-S9 | OPEN. Four unhappy paths are listed and not drawn: Me > Account > Sign out other devices (E77: offline or failed call, nothing shown after the tap); C-S19 Erase; the heritage-months group in Browse (PATH-10: no states at all); "Add a name" failure (PATH-12). Next step: `design-systems` draws them in a later docs PR. The sign-out one waits for `product` to answer OI-S6. | `design-systems` (draws), `product` (answers OI-S6) |
+| OI-S10 | OPEN. States from ADR 0032 and ADR 0033 that PATH-10 does not draw: a Days tick that cannot be saved (`C-S24.store-unavailable`), a restored or new phone (empty days list, does not ask again), App lock on (day names forced off), a paused family getting no day notes (E57(b)). Next step: `design-systems` draws them; `mobile` says what a failed save does today (I did not read it). | `design-systems`, `mobile` |
+| OI-S11 | DECIDED. Photo-access ids A-S18 and E-S32 (Photos access primer) and `MA-62` stay out of Build 13 with NS-51 and are never drawn. Left to do: remove the overlap in `docs/design/e2e/INDEX.md`, which pre-dates this PR. | `design-systems` |
+| OI-S12 | OPEN, with a rule for now. A new phone may start empty apart from a seed from the child's name (card 19, F03-REQ-010, unverified). Until `product` settles it, PATH-12 EMP and the sync table say plain "empty", and `mobile` says what the build does. | `product` (decides), `mobile` (says what is built) |
+| OI-S13 | DECIDED and done. Ruling 31 retires `Breathe` in waiting states and keeps the lamp as the one ambient exception. DELTA 2.4 cites COMPONENTS 2.15 for the empty-state illustration and does not cite ruling 31 (checked 21 Nov); the audit cites ruling 31 only for waiting states (section 5). Nothing left. | `design-systems` |
 
-Signed: `design-systems`, 20 Nov 2026.
+### 5a. Questions for the Chief Design Officer
+
+Written down so they can be answered in one line each. Until answered, the screens stay as built and as ruled.
+
+**Q1. Tab bar labels ignore Dynamic Type (FE-1, ruling 32).**
+- What I know (READ): `(tabs)/_layout.tsx` sets `tabBarAllowFontScaling: false` at 13 pt. At AX5 body text is 64 pt, so a label is about a fifth of the text around it. `COMPONENTS.md` 0.1 says never set `allowFontScaling={false}`. Ruling 32 leaves the bar unchanged and lets a T-MIN device spike decide.
+- Options: (a) leave it and lean on the Large Content Viewer (Apple's pattern for fixed chrome; whether the React Native tab bar supports it is UNVERIFIED); (b) let the label scale to a cap of 1.3 (17 pt at AX5) with a `tabLabel` token and a line height from the token, plus the Large Content Viewer; (c) scale it fully, to 46 pt at AX5 (13 times 3.571); not drawn and not tested for fit in a three-tab bar.
+- My recommendation: (b). It ends the broken rule, costs one token, and keeps the bar usable. Please rule before the T-MIN spike so the spike tests one answer.
+
+**Q2. Capped titles end up smaller than the text under them at AX5 (FE-12).**
+- What I know (MEASURED from `tokens.type` at 3.571): `title2` 44 pt, `title1` 50 pt, `display` 54 pt, against body 64 pt. A sheet title is smaller than its first paragraph. Nothing clips.
+- Options: (a) raise the caps so a title is never below body (`title2` would need 2.92 and long titles would run to 4 or 5 lines); (b) keep the caps and hold the order with the serif face, weight, position and the heading trait.
+- My recommendation: (b), with Bold Text honoured. I do not adopt a rule that a title is at least as large as the text below it.
+
+**Q3. The switch sits far down the Privacy row at AX5 (new, 21 Nov).**
+- What I know (MEASURED, audit section 2): at AX5 the row's title is 4 lines and its help 10 lines, and `ToggleRow` puts the switch below both, about 1,030 pt down against about 560 pt visible. The component is shared, so the same shape shows on other rows with a help line.
+- Options: (a) leave it; (b) at AX1 and up, draw the switch directly under the title and the help under the switch, in the same order for VoiceOver.
+- My recommendation: (b). It is a change to the shared `ToggleRow` and `mobile` builds it.
+
+Signed: `design-systems`, 21 Nov 2026 (follow-up notes; the rest of this file is as signed on 20 Nov).
