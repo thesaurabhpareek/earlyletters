@@ -21,8 +21,8 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.any.laugh", text: "What made {child} laugh today? Describe the sound.", band: "any", kind: "opening" },
   { key: "opening.any.ordinary-minute", text: "Describe one ordinary minute from today, exactly as it was.", band: "any", kind: "opening" },
   { key: "opening.any.weather", text: "What was the weather like today, and where were you both?", band: "any", kind: "opening" },
-  { key: "opening.any.smell", text: "What does {child} smell like right now? Try to put it in words.", band: "any", kind: "opening" },
-  { key: "opening.any.window", text: "What can you see out the window tonight?", band: "any", kind: "opening" },
+  { key: "opening.any.smell", text: "What does {child} smell like right now?", band: "any", kind: "opening" },
+  { key: "opening.any.window", text: "What can you see out the window right now?", band: "any", kind: "opening" },
   { key: "opening.any.song", text: "What song was playing, or being sung, in your home today?", band: "any", kind: "opening" },
   { key: "opening.any.kitchen", text: "What was cooking in your kitchen today?", band: "any", kind: "opening" },
 
@@ -45,7 +45,7 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.4-6.bath", text: "What is bath time like right now?", band: "4-6", kind: "opening" },
 
   // Openings, 7-9 months
-  { key: "opening.7-9.first-food", text: "What food did {child} try this week? What was the face?", band: "7-9", kind: "opening" },
+  { key: "opening.7-9.first-food", text: "What food did {child} try this week? What did {child}'s face do?", band: "7-9", kind: "opening" },
   { key: "opening.7-9.sitting", text: "What does {child} see from sitting up that was out of reach before?", band: "7-9", kind: "opening" },
   { key: "opening.7-9.games", text: "What little game do you two play right now?", band: "7-9", kind: "opening" },
   { key: "opening.7-9.on-the-move", text: "Where did {child} try to go today?", band: "7-9", kind: "opening" },
@@ -61,7 +61,7 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.10-12.birthday-wish", text: "What do you hope year two feels like for {child}?", band: "10-12", kind: "opening" },
 
   // Openings, 13-18 months
-  { key: "opening.13-18.steps", text: "Where is {child} walking to these days? What is the hurry?", band: "13-18", kind: "opening" },
+  { key: "opening.13-18.steps", text: "Where is {child} walking to these days?", band: "13-18", kind: "opening" },
   { key: "opening.13-18.words", text: "Which words does {child} say now? Say them the way {child} does.", band: "13-18", kind: "opening" },
   { key: "opening.13-18.no", text: "What did {child} say no to today, and how?", band: "13-18", kind: "opening" },
   { key: "opening.13-18.helper", text: "How did {child} try to help today?", band: "13-18", kind: "opening" },
@@ -70,7 +70,7 @@ export const PROMPTS: Prompt[] = [
 
   // Openings, 19-24 months
   { key: "opening.19-24.sentence", text: "What is the funniest thing {child} said this week?", band: "19-24", kind: "opening" },
-  { key: "opening.19-24.mine", text: "What does {child} call mine right now?", band: "19-24", kind: "opening" },
+  { key: "opening.19-24.mine", text: "What does {child} say is \"mine\" these days?", band: "19-24", kind: "opening" },
   { key: "opening.19-24.pretend", text: "What did {child} pretend to be or do today?", band: "19-24", kind: "opening" },
   { key: "opening.19-24.dance", text: "Describe how {child} dances.", band: "19-24", kind: "opening" },
   { key: "opening.19-24.bedtime", text: "What does bedtime look like right now, step by step?", band: "19-24", kind: "opening" },
@@ -110,12 +110,12 @@ export const PROMPTS: Prompt[] = [
 
   // Gap: easy ways back in, never about time away
   { key: "gap.any.right-now", text: "What is {child} doing right now, this very minute?", band: "any", kind: "gap" },
-  { key: "gap.any.one-word", text: "One word for {child} lately. Then say why.", band: "any", kind: "gap" },
-  { key: "gap.any.new-thing", text: "What is something {child} does now that is new?", band: "any", kind: "gap" },
+  { key: "gap.any.one-word", text: "What is one word for {child} lately? Why that one?", band: "any", kind: "gap" },
+  { key: "gap.any.new-thing", text: "What is something new that {child} does?", band: "any", kind: "gap" },
   { key: "gap.any.this-week", text: "What has this week been like in your home?", band: "any", kind: "gap" },
   { key: "gap.any.favorite-lately", text: "What is {child}'s favorite thing lately?", band: "any", kind: "gap" },
   { key: "gap.any.one-picture", text: "Pick one photo on your phone of {child}. Tell the story behind it.", band: "any", kind: "gap" },
-  { key: "gap.any.small", text: "Tell {child} one small thing. That is a whole letter.", band: "any", kind: "gap" },
+  { key: "gap.any.small", text: "Tell {child} one small thing. That's enough for a letter.", band: "any", kind: "gap" },
 
   // Hard: honoring the work, never auditing
   { key: "hard.any.asked-of-you", text: "What did today ask of you?", band: "any", kind: "hard" },
@@ -145,7 +145,7 @@ export const PROMPTS: Prompt[] = [
   // Together: made with the child present
   { key: "together.any.hello", text: "Say hello to the book together. Let {child} add a sound.", band: "any", kind: "together" },
   { key: "together.0-3.lullaby", text: "Sing {child} the song you sing most. Let the recording catch the coos.", band: "0-3", kind: "together" },
-  { key: "together.7-9.babble", text: "Talk to {child} and leave pauses. Keep the babbling answers.", band: "7-9", kind: "together" },
+  { key: "together.7-9.babble", text: "Talk to {child} and leave little pauses. Let the babbling answer back.", band: "7-9", kind: "together" },
   { key: "together.13-18.name-things", text: "Point at things in the room. Let {child} name them.", band: "13-18", kind: "together" },
   { key: "together.19-24.favorite", text: "Ask {child}: what is your favorite food? Keep the answer.", band: "19-24", kind: "together" },
   { key: "together.25-36.today", text: "Ask {child}: what was the best part of today?", band: "25-36", kind: "together" },
@@ -153,7 +153,7 @@ export const PROMPTS: Prompt[] = [
   { key: "together.25-36.animal", text: "Ask {child}: if you were an animal, which one?", band: "25-36", kind: "together" },
   { key: "together.37-60.grown-up", text: "Ask {child}: what will you do when you are big?", band: "37-60", kind: "together" },
   { key: "together.37-60.older-self", text: "Ask {child} to say hello to the {child} who reads this later.", band: "37-60", kind: "together" },
-  { key: "together.37-60.tell-story", text: "Let {child} tell you a story. You just listen and keep it.", band: "37-60", kind: "together" },
+  { key: "together.37-60.tell-story", text: "Let {child} tell you a story. Your part is to listen.", band: "37-60", kind: "together" },
   { key: "together.37-60.about-you", text: "Ask {child}: what is something you know about me?", band: "37-60", kind: "together" },
   { key: "together.37-60.funny", text: "Ask {child}: what is the silliest thing that happened today?", band: "37-60", kind: "together" },
 ];
