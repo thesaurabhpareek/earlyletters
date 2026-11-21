@@ -50,6 +50,7 @@ import {
   initialAuthState,
   isSignedIn,
   readGateInOrder,
+  nothingPending,
   shouldFinishSignOut,
   shouldRecheckGate,
   signOutWouldWait,
@@ -296,7 +297,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       check: appleCredentialRevoked,
       isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
       pendingUploads,
-      dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
+      dispatchSignOut: (p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: p }),
       onAppActive: (l) => onAppBecameActive((e, h) => AppState.addEventListener(e, h), l),
       onAppleRevoked: watchAppleRevocation,
       now: Date.now,
@@ -312,7 +313,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const poll = setInterval(() => {
       // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
       if (shouldRecheckGate(stateRef.current, false)) void checkGate();
-      void pendingUploads().then((n) => n === 0 && done());
+      void pendingUploads().then((p) => nothingPending(p) && done());
     }, 10_000);
     return () => {
       off();
@@ -370,7 +371,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
     if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
     if (step.signOut) {
-      void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
+      void pendingUploads().then((p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p }));
     }
   }, [remoteEpoch, reauthPhase]);
   useEffect(() => {
@@ -419,7 +420,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (isSignedIn(cur)) confirmAccountClaim(cur.userId);
       },
       async notMyAccount() {
-        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for.
+        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never
+        // reads the probe, so the literal is a real count of 0, not an unreadable one (BL-1425).
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'switch_account', pendingUploads: 0 });
         await clearPendingEmailRequest();
       },
