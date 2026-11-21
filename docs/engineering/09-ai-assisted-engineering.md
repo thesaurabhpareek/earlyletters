@@ -120,7 +120,7 @@ Each rule below is new, from the 28 Oct retrospective. None is in force until th
 
 ### Review and merge practice (21 Nov, Karma under CR-73)
 
-These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge under CR-73 and are not part of the proposed set in the section above. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
+These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge under CR-73 and are not part of the proposed set in the section above. AIE-R40 to R43 are in `09a-review-and-merge-practice.md`. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
 
 **AIE-R32 (MUST)** A fix round is one commit that closes every open Must-fix item, pushed once, and reviewers are launched only after the head is stable. *Why:* a new commit voids both counted reviews (CR-70), so each extra push costs two fresh review runs. *Evidence:* #1029 took five rounds, #1031 three and #1032 two (rounds counted as heads with a CHANGES verdict, plus the final PASS). *Enforced by:* review only. A stale-review delta print for `merge-queue.mjs` is proposed as a patch in #1149 (merged as a proposal under `docs/ops/proposed/`, not applied).
 
@@ -137,14 +137,6 @@ These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 t
 **AIE-R38 (MUST)** The PR that records a policy ruling greps `docs/agents`, `.claude`, `agents/*/MEMORY.md` and `docs/engineering` for the old wording and fixes or lists every hit, naming what stays on purpose (legal text is still the founder's). *Why:* CR-73 merged in #1071 and harness-v2 drafts still said the founder merges until #1303. *Enforced by:* not yet (AIE-G15).
 
 **AIE-R39 (MUST)** The weekly measure in AIE-R23 adds reviews per PR, the share of PRs with a CHANGES verdict, and median hours from open to merge, each with its method stated. *Baseline, 21 Nov, last 30 merged PRs, counted before #1303 merged (a later recount reads one PASS more):* 116 counted reviews (105 PASS, 11 CHANGES on 7 PRs), median open to merge 1.3 hours, mean 6.1, maximum 37. Stacked PRs distort the time; queue wait is not separated out; cost per reviewer run is not measured. *Enforced by:* not yet (AIE-G8).
-
-**AIE-R40 (MUST)** A PR is not merged on required checks that ran on a base behind `develop` by commits touching a workspace the PR also touches: update the branch, wait for `required` again, and get fresh counted reviews (the update is a new commit). *Why:* a green run on an old base says nothing about the merged result. *Evidence:* #1128 had green checks from 05:23 UTC on a base about 13 hours old and merged at 18:42 UTC; it met #839 (merged about 16:46 UTC) and develop was red until #1353. Branch protection has `strict: false` (read 21 Nov); strict would force this but makes every merge re-run CI behind a queue that held 86 to 150 runs. *Enforced by:* `merge-queue.mjs` NEEDS-UPDATE verdict, pending #1356 (AIE-G16); until it merges, review only.
-
-**AIE-R41 (MUST)** When `develop` is red, one session owns the fix: before starting, search open and just-merged PRs for the failing test names, and post one comment on the PR that broke `develop` naming the fix PR. *Why:* two sessions fixed the same break. *Evidence:* #1353 (merged 19:19 UTC, two counted reviews) and #1354 (closed as a duplicate after two review rounds) fixed the same three failures from #1128 and #839. *Enforced by:* review only (AIE-G17).
-
-**AIE-R42 (MUST)** Reviewers who mutate files work in their own scratch worktree, never in the shared checkout and never two at once in the same one. *Why:* a mutation left in a shared tree reads as a defect in the PR. *Evidence:* on #1354 two reviewers edited `erase-picture.ts` in one checkout at the same time and one saw lines it had not added; the pushed head was clean. *Enforced by:* the reviewer brief; review only.
-
-**AIE-R43 (MUST)** A merge message states the real basis of approval: CR-70 and CR-73 for a PR Karma approved, or a quoted founder chat line for one that needs him. *Why:* a fixed template line said "founder approved" on merges he did not approve. *Evidence:* 7 merges after CR-73 (ae0c4e578, b0e422443, ace71fa05, 1e19e6439, 7ada1b30d, ee782b8f2, 9018cdf2a) carry the founder line; history is not rewritten and the record is `infra/develop-checks-and-corrections-2026-11-21.md` in the Project. *Enforced by:* not yet (AIE-G18).
 
 **Working notes (not rules).**
 - GraphQL is blocked here, so `gh pr create` fails: open PRs with `gh api repos/<owner>/<repo>/pulls`, and mark a draft ready with `POST .../ccr/ready_for_review`.
@@ -192,9 +184,6 @@ These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 t
 | AIE-G13 | A lint fails on scheduled prompts that hard-code dates, freezes or issue numbers as decisions (AIE-R26, AIE-R27) |
 | AIE-G14 | `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test (AIE-R34) |
 | AIE-G15 | A check fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires (AIE-R38) |
-| AIE-G16 | `merge-queue.mjs` gives NEEDS-UPDATE when the base is behind `develop` over a shared workspace (AIE-R40); pending #1356 |
-| AIE-G17 | The dispatcher or `check.mjs` flags two open PRs that fix the same failing test (AIE-R41) |
-| AIE-G18 | The merge helper builds the message from the PR's actual approval basis (AIE-R43) |
 
 ## Exceptions
 
