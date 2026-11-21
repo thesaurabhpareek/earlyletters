@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { SEGMENT_SIZE } from '../src/lib/backup/format';
 import { fakeM4a } from './helpers/backup-node';
-import { SHINGLE, STRIDE, firstLeak, firstRawLeak, leakNote, shingleOffsets } from './helpers/leak-scan';
+import { SHINGLE, STRIDE, firstLeak, firstRawLeak, leakNote, scanRequests, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
 import { createHash, randomBytes } from 'node:crypto';
 
 const TAKE = 3 * SEGMENT_SIZE + 777;
@@ -175,16 +175,66 @@ describe('[BL-1417] a recording written as base64, hex or a JSON byte list is fo
   it('[BL-1417] the failure note for an encoded copy prints an offset and never bytes or the encoded text', () => {
     for (const [, enc] of FORMS) {
       const text = enc(piece);
-      const note = leakNote('begin', firstLeak(around(text), plain));
-      expect(note).toMatch(/plaintext offset \d+\)$/);
-      expect(note).not.toContain(text.toString('latin1').slice(0, 20));
-      expect(note).not.toContain(piece.subarray(0, 16).toString('latin1'));
+      const notes = scanRequests([{ kind: 'begin', body: around(text) }], [plain]);
+      expect(notes).toHaveLength(1);
+      expect(notes[0]).toMatch(/plaintext offset \d+\)$/);
+      expect(notes[0]).not.toContain(text.toString('latin1').slice(0, 20));
+      expect(notes[0]).not.toContain(piece.subarray(0, 16).toString('latin1'));
     }
   });
 
   it('[BL-1417] mutant: the scan without the encoded step passes every planted form (this is the gap the row closes)', () => {
     const rawOnly = (b: Buffer) => firstRawLeak(b, plain);
     for (const [name, enc] of FORMS) expect(rawOnly(around(enc(piece))), name).toBeNull();
+  });
+});
+
+// ── [BL-1418] URL, headers, tus metadata, RPC arguments ──────────────────────────────────────────────────────────
+
+describe('[BL-1418] the URL, each header, the tus metadata and an RPC argument are scanned', () => {
+  const plain = fakeM4a(TAKE);
+  const piece = plain.subarray(100, 164);
+  const clean = (over: Partial<ScannedRequest> = {}): ScannedRequest => ({
+    kind: 'tus.create',
+    body: Buffer.alloc(0),
+    url: 'https://fake.storage/storage/v1/upload/resumable',
+    headers: { Authorization: 'Bearer asha-mama', 'Tus-Resumable': '1.0.0', 'Upload-Length': '4096', 'Upload-Metadata': `bucketName ${Buffer.from('backups').toString('base64')}` },
+    ...over,
+  });
+  const text = (b: Uint8Array) => Buffer.from(b).toString('latin1');
+
+  it('[BL-1418] the clean request is clean', () => {
+    expect(scanRequests([clean()], [plain])).toEqual([]);
+  });
+
+  const planted: Array<[string, ScannedRequest, RegExp]> = [
+    ['a header (raw bytes)', clean({ headers: { ...clean().headers, 'X-Trace': text(piece) } }), /header X-Trace carries/],
+    ['a header (hex)', clean({ headers: { ...clean().headers, 'Tus-Resumable': Buffer.from(piece).toString('hex') } }), /header Tus-Resumable carries/],
+    ['the URL (base64url)', clean({ url: `https://fake.storage/storage/v1/upload/resumable/${Buffer.from(piece).toString('base64url')}` }), /url carries/],
+    ['the URL (raw bytes in a query)', clean({ url: `https://fake.storage/x?q=${text(piece)}` }), /url carries/],
+    ['Upload-Metadata (tus wraps the value in base64)', clean({ headers: { ...clean().headers, 'Upload-Metadata': `bucketName ${Buffer.from('backups').toString('base64')},objectName ${Buffer.from(piece).toString('base64')}` } }), /header Upload-Metadata carries/],
+    ['Upload-Metadata (the value is already hex, then wrapped)', clean({ headers: { ...clean().headers, 'Upload-Metadata': `objectName ${Buffer.from(Buffer.from(piece).toString('hex')).toString('base64')}` } }), /header Upload-Metadata carries/],
+    ['an RPC argument (base64 string)', { kind: 'begin', body: Buffer.from('{}'), args: { entryId: 'e1', wrappedFileKey: Buffer.from(piece).toString('base64') } }, /begin arguments carries/],
+    ['an RPC argument (a byte array)', { kind: 'storeKey', body: Buffer.from('{}'), args: { wrapped: Array.from(piece) } }, /storeKey arguments carries/],
+    ['an RPC argument (a Buffer)', { kind: 'registerDevice', body: Buffer.from('{}'), args: { publicKey: Buffer.from(piece) } }, /registerDevice arguments carries/],
+  ];
+  for (const [name, req, re] of planted) {
+    it(`[BL-1418] a piece in ${name} turns the scan red`, () => {
+      const notes = scanRequests([clean(), req], [plain]);
+      expect(notes.length).toBeGreaterThan(0);
+      expect(notes.join('\n')).toMatch(re);
+      expect(notes.join('\n')).not.toContain(text(piece.subarray(0, 16)));
+    });
+  }
+
+  it('[BL-1418] mutant: a scan of the body alone passes every one of them (the gap the row closes)', () => {
+    for (const [name, req] of planted) expect(scanRequests([{ kind: req.kind, body: req.body }], [plain]), name).toEqual([]);
+  });
+
+  it('[BL-1418] a recording hash in a header is found, in hex and raw', () => {
+    const h = createHash('sha256').update(plain).digest();
+    expect(scanRequests([clean({ headers: { 'X-Hash': h.toString('hex') } })], [plain]).join()).toMatch(/hash/);
+    expect(scanRequests([clean({ headers: { 'X-Hash': h.toString('latin1') } })], [plain]).join()).toMatch(/hash/);
   });
 });
 

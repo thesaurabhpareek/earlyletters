@@ -13,12 +13,13 @@
  * hex (either case, either alignment) or a decimal list of bytes (`[1,2,3]`, with or without spaces, as
  * `JSON.stringify(Array.from(bytes))` or a Buffer's JSON writes it) is decoded back to bytes and scanned like the
  * raw bytes; a decoded run is decoded once more, for a copy written twice over (base64 of hex, tus metadata around
- * a base64 value).
+ * a base64 value). [BL-1418] The URL, each header and each RPC's arguments of every request are scanned the same way.
  *
  * Not covered: a leak shorter than 64 bytes that falls between shingles; a leak that straddles two request bodies, because
- * the callers scan one body at a time; the URL, headers and RPC arguments (not recorded yet); a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
+ * the callers scan one body at a time; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
  * decimal list with other separators, three or more layers of encoding).
  */
+import { createHash } from 'node:crypto';
 
 export const SHINGLE = 16;
 export const STRIDE = 48;
@@ -107,3 +108,42 @@ export function firstLeak(hay: Uint8Array, plain: Uint8Array): number | null {
 export const leakNote = (what: string, at: number | null) =>
   at === null ? `${what} carries no part of a recording` : `${what} carries part of a recording (plaintext offset ${at})`;
 
+/** What a fake backend records of one request (BL-1418): `body` as before, plus the URL, headers and RPC arguments. */
+export interface ScannedRequest {
+  kind: string;
+  body: Buffer;
+  url?: string | null;
+  headers?: Record<string, string> | null;
+  args?: unknown;
+}
+
+/** The parts of one request that are scanned: [label, bytes]. */
+export function requestFields(req: ScannedRequest): Array<[string, Buffer]> {
+  const out: Array<[string, Buffer]> = [[`${req.kind} body`, req.body]];
+  if (req.url) out.push([`${req.kind} url`, Buffer.from(req.url, 'latin1')]);
+  for (const [k, v] of Object.entries(req.headers ?? {})) out.push([`${req.kind} header ${k}`, Buffer.from(String(v), 'latin1')]);
+  if (req.args !== undefined && req.args !== null) out.push([`${req.kind} arguments`, Buffer.from(JSON.stringify(req.args))]);
+  return out;
+}
+
+/**
+ * Every failed check over a list of recorded requests, as notes (offsets only, never bytes). Empty means clean.
+ * One call for the e2e loop and the queue test, so a scan that narrows is one edit, and tested.
+ */
+export function scanRequests(requests: ScannedRequest[], plains: Uint8Array[]): string[] {
+  const notes: string[] = [];
+  const check = (label: string, bytes: Buffer) => {
+    const views = leakViews(bytes);
+    const indexes = views.map(windowIndex);
+    for (const plain of plains) {
+      for (const ix of indexes) {
+        const at = firstIndexedLeak(ix, plain);
+        if (at !== null) { notes.push(leakNote(label, at)); break; }
+      }
+      const hex = createHash('sha256').update(plain).digest('hex');
+      if (views.some((v) => v.includes(Buffer.from(hex)) || v.includes(Buffer.from(hex, 'hex')))) notes.push(`${label} carries a recording's hash`);
+    }
+  };
+  for (const req of requests) for (const [label, bytes] of requestFields(req)) check(label, bytes);
+  return notes;
+}
