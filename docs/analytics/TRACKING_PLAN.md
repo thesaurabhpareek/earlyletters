@@ -249,7 +249,7 @@ PostHog's free tier is 1M events a month (ADR 0008). The 100k-family cost is a f
 - **Trigger:** when the projected month exceeds 80% of the budget, set rates in remote config (audit-logged): `screen_view` 0.5, `app_backgrounded` 0.5, `letter_opened` 0.5, `playback_started` 0.5.
 - **Never sampled:** `analytics_opted_in`, `letter_saved`, capture and transcription events, family, languages, reminders, Plus, settings, children, errors.
 - Sampling is deterministic per analytics id and event name, so a person sends all or none of a sampled event. Kept events carry `sample_pct`.
-- Transport (PRD 7.7): our in-memory queue capped at 1 MB (oldest dropped first), flushed at most every 60 s in the foreground and when the app goes to the background; the SDK runs with `persistence: 'memory'` and `flushInterval: 0`, so it never writes to disk and has no timer of its own.
+- Transport (PRD 7.7): our in-memory queue capped at 1 MB (oldest dropped first), flushed at most every 60 s in the foreground and when the app goes to the background; the SDK runs with `persistence: 'file'` (founder decision, 20 Nov 2026) and `flushInterval: 0`. It is built only after a yes, so no file exists before consent; it then keeps its random id and queue in the app's own storage, and a withdrawal empties the queue, calls `optOut()` and `reset()`, so the file holds no id afterwards. It has no timer of its own.
 
 ---
 
@@ -358,7 +358,7 @@ Checked 3 Oct 2026 against Apple's "App privacy details" page (https://developer
 | Targeted advertising or ad measurement | No ads, no ad SDKs, no attribution SDKs (SDK denylist, BL-009) | No |
 | Shared with a data broker | No | No |
 | IDFA or AdSupport | Not used; `NSPrivacyTracking: false`; no ATT prompt | No |
-| Device identifiers | PostHog RN 4.78.4 reads no IDFV, IDFA or vendor id (checked in source). Its own random anonymous id (also used as `$device_id` on its config request) lives in memory only (`persistence: 'memory'`), so it is new on every launch, and the SDK exists only after consent | No device-level id |
+| Device identifiers | PostHog RN 4.87.1 reads no IDFV, IDFA or vendor id (checked in source). Its own random id is the consent-time id we bootstrap, kept in the app's own storage (`persistence: 'file'`) after a yes and cleared by `reset()` on a no or a withdrawal, and the SDK exists only after consent | No device-level id |
 
 **Conclusion (Recommendation): no "Data Used to Track You" section**, as `docs/legal/app-store-privacy-labels.md` 1.1 already states. Two points for counsel:
 1. Apple adds: "Personal Information and Personal Data, as defined under relevant privacy laws, are considered linked to the user." A persistent random id with behaviour can be personal information under CCPA (a "unique pseudonym"). "Not linked" for Usage Data and Diagnostics holds only if counsel accepts our de-identification (random id per consent period, never stored server-side, no IP, no person properties) plus a public no-reidentification commitment in the Privacy Policy and PostHog's DPA. Otherwise declare them Linked. Linked is not tracking: the tracking section stays empty either way.
