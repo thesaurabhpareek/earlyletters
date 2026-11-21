@@ -10,4 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
-| content-wave-b | content | fix/content-wave-b-copy | #1134 | packages/content/src/features/{auth,account-deletion,family,export,billing}.en.ts, packages/content/src/pricing.ts | 2026-11-21 00:59 | 2026-11-24 00:59 | copy rewrite wave B (PR read as open by REST 2026-11-21 00:59) |
+| content-wave-b | content | fix/content-wave-b-copy | 1134 | packages/content/src/features/{auth,account-deletion,family,export,billing}.en.ts, packages/content/src/pricing.ts | 2026-11-21T00:59Z | 2026-11-24T00:59Z | copy rewrite wave B (PR read as open by REST 2026-11-21T00:59Z) |
