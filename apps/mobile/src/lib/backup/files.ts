@@ -307,3 +307,17 @@ export function backupAccountEnded(profileId: string): boolean {
 export function backupAccountStarted(profileId: string): void {
   endedAccounts.delete(profileId.toLowerCase());
 }
+
+/**
+ * The name of this account's backup file, only if its main file EXISTS now and the account has not signed out since
+ * (the tombstone). For a caller that must open an existing file and never create one (the token move). Null otherwise.
+ */
+export function existingBackupFileFor(profileId: string): string | null {
+  const name = `backup-${profileId.toLowerCase()}.db`;
+  if (!isBackupFileName(name) || backupAccountEnded(profileId)) return null;
+  try {
+    return filesNamed(name)?.main.exists ? name : null;
+  } catch {
+    return null;
+  }
+}
