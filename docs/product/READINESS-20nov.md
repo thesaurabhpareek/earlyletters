@@ -1,10 +1,12 @@
 # Readiness to start development: evidence for Karma (20 Nov 2026)
 
-Status: CURRENT, 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: someone asks "are we ready to start" and you need the evidence, not a feeling.
+Status: CURRENT, 20 Nov 2026, refreshed 21 Nov 2026 | Owner: `product` | Replaces: none | Load when: someone asks "are we ready to start" and you need the evidence, not a feeling.
 
 Docs only. Nothing in this file is built, decided or dated. It answers the founder's ask of 20 Nov 2026: "confirm when we are ready to start development work and have all requirements and dependency mapping and project plan ready."
 
-Pinned to `develop` at `021ecdfea` (fetched 23:58 UTC). `develop` moves every few minutes today, so every count below says how it was run, and you can run it again. Where I could not check something it says NOT VERIFIED. I did not run `npm test`, a device, or any hosted service.
+Pinned to `develop` at `021ecdfea` (fetched 23:58 UTC on 20 Nov). Refreshed on 21 Nov 2026 against `develop` at `3450db9f` (REST `GET /repos/thesaurabhpareek/earlyletters/branches/develop`, 01:40 UTC). `develop` moves every few minutes, so every count below says how it was run, and you can run it again. Where I could not check something it says NOT VERIFIED. I did not run `npm test`, a device, or any hosted service.
+
+What the 21 Nov refresh re-derived, and what it did not: section 1 (every P0 count, both tables) and section 5 rows 3, 4, 6, 8, 9, 12 (agent scripts only) and 13 were re-run on `3450db9f`. The dependency map in section 2 was NOT rebuilt: it still has 243 rows and the same edges, and only the statuses that #1105, #1106 and #1110 made stale were corrected (section 2.1a, last list). Sections 2.2 to 2.9 and 2.11 statuses that read GitHub on 20 Nov (open PR heads, review passes), the CI line in row 11, the founder gates in 5.1 and everything in section 4 are NOT re-derived and are as of 20 Nov.
 
 ## 0. The short answer
 
@@ -12,12 +14,12 @@ Karma can confirm three things with evidence, and cannot yet confirm four.
 
 Can confirm:
 - The requirements are locked at rev 2 and every card, errata row and function file is accounted for (section 1).
-- The dependency map has 243 rows, no cycle and no row that names a blocker that is not in the map (section 2.13).
+- The dependency map has 243 rows, no cycle and no row that names a blocker that is not in the map (section 2.13). The check reads Depends on only; Blocks is not machine-checked (section 2.13).
 - The plan has an order, parallel limits, reviewers and a default for every founder gate (section 3).
 
 Cannot confirm yet (each is a NO or NOT VERIFIED line in section 5):
-- Every P0 requirement has a backlog row. 665 of 1,052 P0 rows have no row-level backlog row, so gate G0 is not met.
-- Every Wave 1 row has a brief. Three have none: BL-963, BL-985, BL-982.
+- Every P0 requirement has a backlog row. Strict G0 (a row names the id, or the id cites a row that exists) holds for 470 of 1,052 P0 rows: 393 with a row plus 77 that cite one (generator on `develop` at `71c4485`, after #1190 batch 1: `python3 docs/product/prd/tools/review/p0.py . --json`; before batch 1 it was 369, with 292 and 77). The other 582 map only to proposed group rows, which have to be split or set ready first. So gate G0 is not met. No P0 row is left without any BL id, and none is card-level only (`p0.py --check-map`: 1,052 P0 rows, 0 errors).
+- Every Wave 1 row has a brief. The three that had none (BL-963, BL-982, BL-985) have one since #1110 merged. Briefs for the first-run rows BL-1021 to BL-1046 are still not written.
 - Karma's execution map and review framework (the 20 Nov Project doc) match this file. I could not open that doc from this repo session, so I used the summary I was given. Where his map differs, his map wins and this file needs one edit.
 - The founder's words and counsel gates. No PROPOSED word is approved, and no counsel answer is on file.
 
@@ -44,124 +46,137 @@ All run from the repo root on `develop` at `021ecdfea`.
 | Highest erratum | E83 (new-device sign-in email before the first outside family, CL-158, #1051) | c1 |
 | NS cards | 52 of 52 have a heading (NS-01 to NS-52) | c3 |
 | Function files | 23 reviews plus `BRIEF.md` | c4 |
-| P0 rows, raw tool output | 1,062 | c5 |
-| P0 rows, real | 1,052 (537 in NS cards, 515 in function files) | the raw 1,062 minus 10 rows the tool reads out of `17-engineering-project-plan.md` (section 1.5, defect 2) |
-| P0 rows with a row-level BL row | 251 | c6 |
-| P0 rows cited to a BL row in their own text | 79 | c6 |
-| P0 rows named only at card level | 57 | c6 |
-| P0 rows with no BL row at all | 665 (225 NS, 440 function) | c6 |
+| P0 rows, tool output | 1,052 | c5 |
+| P0 rows, split | 1,052 (537 in NS cards, 515 in function files) | c5, counted by id prefix. On 20 Nov the tool printed 1,062 because it also read 10 rows out of plan 17; #1105 fixed that (section 1.5) |
+| P0 rows with a row-level BL row (tier row) | 393 (388 NS, 5 function) | c6 |
+| P0 rows cited to a BL row in their own text (tier cite) | 77 (3 NS, 74 function) | c6 |
+| P0 rows named only at card level | 0 | c6 |
+| Strict G0: tier row plus tier cite | 470 of 1,052 (generator on `develop` at `71c4485`, command `python3 docs/product/prd/tools/review/p0.py . --json`) | c6 |
+| P0 rows that map only to proposed group rows (tier proposed) | 582 (146 NS, 436 function) | c6 and c7 |
+| P0 rows with no BL id at all | 0 | c7 |
 
 ```
 c1  python3 -I -c "import re;t=open('docs/product/prd/18-errata-after-lock.md').read();i=set(int(m) for m in re.findall(r'^(?:[|]|#+\s)\s*[*]*E(\d+)\b',t,re.M));print(len(i),min(i),max(i))"
 c2  python3 -I -c "import re;t=open('docs/product/prd/GAP-LOG.md').read();i=set(int(m) for m in re.findall(r'\bCL-(\d+)',t));print(len(i),min(i),max(i))"
 c3  grep -hE '^#{1,4}[[:space:]]*NS-[0-9]{2}' docs/product/prd/[0-2][0-9]-*.md | grep -o 'NS-[0-9][0-9]' | sort -u | wc -l
 c4  ls docs/product/prd/functions | wc -l        (24, one of them BRIEF.md)
-c5  python3 -I docs/product/prd/tools/review/p0.py . --json
-c6  the same, with line 60 of p0.py changed from BL-\d{3} to BL-\d{3,4} in a copy under /tmp, rows from 17-engineering-project-plan.md dropped
+c5  python3 -I docs/product/prd/tools/review/p0.py . --json        (1,052 rows; tier per row)
+c6  the same --json output, rows counted by their "tier" field (row, cite, proposed)
+c7  python3 -I docs/product/prd/tools/review/p0.py . --map > /tmp/map.md; python3 -I docs/product/prd/tools/review/p0.py . --check-map /tmp/map.md
+    prints "map rows 1052, P0 rows 1052, errors 0" (exit 0)
 ```
 
-The P0 numbers equal the numbers `RESUME.md` gives for the lock (1,052, 537 NS, 515 FR). The tier split moved because the four-digit rows BL-1001 to BL-1020 now exist.
+The P0 totals equal the numbers `RESUME.md` gives for the lock (1,052, 537 NS, 515 FR). The tier split moved because the tool now reads four-digit ids and ranges, and because BL-1001 to BL-1049 exist. Two earlier figures in this file were wrong and are replaced: "665 of 1,052 have no BL row" (that counted the proposed group rows as nothing; every P0 id maps to at least one BL id) and the 20 Nov tiers (251 row, 79 cite, 57 card, 225 and 440 "none").
+
+Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cites BL-552; FR-BKO-10, FR-OPS-06, FR-REL-13, FR-SUP-14, FR-POL-07 and FR-SUP-28 cite BL-551; FR-LOC-10 and FR-LOC-30 cite BL-321; FR-MSG-14 cites BL-196). The tool lists them as `cited_missing` and does not count the cite. They still map to a proposed group row, so they sit in the 582 or the 77 as the tool places them. They are for `product` to repair.
 
 ### 1.3 Every NS card
 
-| Card | In file | P0 rows | Named by a BL row (row) | Cited in the row text (cite) | Card level only | No BL row at all | BL rows that cite the card |
+| Card | In file | P0 rows | Row | Cite | Proposed group row only | Card level only | No BL row at all | BL rows that cite the card (Satisfies lines) |
 |---|---|---|---|---|---|---|---|
-| NS-01 | 01 | 37 | 11 | 1 | 25 | 0 | BL-126, BL-287, BL-868, BL-931, BL-932, BL-933 +18 more |
-| NS-02 | 02 | 18 | 18 | 0 | 0 | 0 | BL-952, BL-958, BL-961, BL-962, BL-981, BL-989 |
-| NS-03 | 03 | 7 | 6 | 0 | 0 | 1 | BL-127, BL-129, BL-132, BL-991 |
-| NS-04 | 04 | 6 | 6 | 0 | 0 | 0 | BL-290, BL-972, BL-988 |
-| NS-05 | 05 | 17 | 2 | 0 | 15 | 0 | BL-126, BL-939, BL-981, BL-991 |
-| NS-06 | 06 | 31 | 31 | 0 | 0 | 0 | BL-287, BL-954, BL-957, BL-962, BL-968, BL-969 +6 more |
-| NS-07 | 07 | 14 | 14 | 0 | 0 | 0 | BL-299, BL-973, BL-974, BL-975, BL-990, BL-991 |
-| NS-08 | 08 | 14 | 5 | 0 | 0 | 9 | BL-128, BL-290, BL-976, BL-990 |
-| NS-09 | 08 | 13 | 7 | 0 | 0 | 6 | BL-138, BL-181, BL-977, BL-987, BL-988 |
-| NS-10 | 08 | 9 | 9 | 0 | 0 | 0 | BL-961, BL-965, BL-978, BL-987, BL-990 |
-| NS-11 | 08 | 5 | 2 | 0 | 3 | 0 | BL-126, BL-934, BL-942, BL-963, BL-965, BL-990 |
-| NS-12 | 08 | 5 | 5 | 0 | 0 | 0 | BL-949, BL-979, BL-990 |
-| NS-13 | 09 | 18 | 18 | 0 | 0 | 0 | BL-943, BL-965, BL-967, BL-982, BL-987, BL-991 +1 more |
-| NS-14 | 09 | 4 | 2 | 0 | 0 | 2 | BL-181, BL-940, BL-941, BL-988 |
-| NS-15 | 09 | 4 | 4 | 0 | 0 | 0 | BL-944, BL-945, BL-988 |
-| NS-16 | 09 | 8 | 8 | 0 | 0 | 0 | BL-949, BL-957, BL-965, BL-980, BL-988 |
-| NS-17 | 09 | 11 | 1 | 0 | 0 | 10 | BL-182, BL-327, BL-987, BL-988 |
-| NS-18 | 09 | 3 | 3 | 0 | 0 | 0 | BL-949, BL-982, BL-991 |
-| NS-19 | 09 | 2 | 0 | 0 | 0 | 2 | BL-183, BL-988 |
-| NS-20 | 09 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-21 | 10 | 5 | 2 | 0 | 0 | 3 | BL-183, BL-287, BL-937, BL-962, BL-989 |
-| NS-22 | 10 | 2 | 2 | 0 | 0 | 0 | BL-938, BL-985, BL-989 |
-| NS-23 | 10 | 5 | 5 | 0 | 0 | 0 | BL-946, BL-963, BL-965, BL-989 |
-| NS-24 | 10 | 3 | 2 | 0 | 0 | 1 | BL-183, BL-947, BL-987, BL-989 |
-| NS-25 | 10 | 13 | 13 | 0 | 0 | 0 | BL-983, BL-991 |
-| NS-26 | 10 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-27 | 10 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-28 | 10 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-29 | 10 | 0 | 0 | 0 | 0 | 0 | BL-986, BL-989 |
-| NS-30 | 10 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-31 | 10 | 0 | 0 | 0 | 0 | 0 | BL-966 |
-| NS-32 | 11 | 8 | 8 | 0 | 0 | 0 | BL-163, BL-949, BL-966, BL-991 |
-| NS-33 | 11 | 13 | 6 | 0 | 0 | 7 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
-| NS-34 | 11 | 3 | 2 | 0 | 0 | 1 | BL-168, BL-185, BL-329, BL-948, BL-992 |
-| NS-35 | 11 | 4 | 1 | 0 | 0 | 3 | BL-183, BL-952, BL-971, BL-988 |
-| NS-36 | 11 | 14 | 2 | 0 | 0 | 12 | BL-186, BL-254, BL-959, BL-960, BL-990 |
-| NS-37 | 11 | 3 | 2 | 0 | 0 | 1 | BL-183, BL-956, BL-989 |
-| NS-38 | 19 | 8 | 0 | 0 | 0 | 8 | BL-187, BL-994 |
-| NS-39 | 19 | 10 | 0 | 0 | 0 | 10 | BL-188 |
-| NS-40 | 19 | 11 | 2 | 0 | 0 | 9 | BL-198, BL-577 |
-| NS-41 | 19 | 18 | 0 | 1 | 0 | 17 | BL-208 |
-| NS-42 | 19 | 15 | 0 | 1 | 0 | 14 | BL-291 |
-| NS-43 | 19 | 11 | 0 | 0 | 0 | 11 | BL-292 |
-| NS-44 | 19 | 10 | 0 | 0 | 0 | 10 | BL-293 |
-| NS-45 | 19 | 15 | 0 | 0 | 0 | 15 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
-| NS-46 | 21 | 22 | 10 | 1 | 0 | 11 | BL-295, BL-1002, BL-1005, BL-1007, BL-1008, BL-1009 +3 more |
-| NS-47 | 21 | 27 | 8 | 0 | 0 | 19 | BL-296, BL-1002, BL-1005, BL-1009, BL-1010, BL-1015 |
-| NS-48 | 21 | 13 | 10 | 0 | 0 | 3 | BL-297, BL-1002, BL-1003, BL-1004, BL-1016 |
-| NS-49 | 21 | 21 | 6 | 0 | 0 | 15 | BL-298, BL-1001, BL-1006, BL-1017 |
-| NS-50 | 21 | 4 | 2 | 0 | 0 | 2 | BL-295, BL-1014 |
-| NS-51 | 27 | 27 | 4 | 0 | 0 | 23 | BL-045, BL-1001, BL-1019 |
-| NS-52 | 27 | 26 | 12 | 0 | 14 | 0 | BL-046, BL-1001, BL-1018, BL-1020 |
-| **52 cards** | | **537** | **251** | **4** | **57** | **225** | |
+| NS-01 | 01 | 37 | 11 | 1 | 25 | 0 | 0 | BL-126, BL-287, BL-868, BL-931, BL-932, BL-933 +18 more |
+| NS-02 | 02 | 18 | 18 | 0 | 0 | 0 | 0 | BL-952, BL-958, BL-961, BL-962, BL-981, BL-989 |
+| NS-03 | 03 | 7 | 6 | 0 | 1 | 0 | 0 | BL-127, BL-129, BL-132, BL-991 |
+| NS-04 | 04 | 6 | 6 | 0 | 0 | 0 | 0 | BL-290, BL-972, BL-988 |
+| NS-05 | 05 | 17 | 2 | 0 | 15 | 0 | 0 | BL-126, BL-939, BL-981, BL-991 |
+| NS-06 | 06 | 31 | 31 | 0 | 0 | 0 | 0 | BL-287, BL-954, BL-957, BL-962, BL-968, BL-969 +6 more |
+| NS-07 | 07 | 14 | 14 | 0 | 0 | 0 | 0 | BL-299, BL-973, BL-974, BL-975, BL-990, BL-991 |
+| NS-08 | 08 | 14 | 14 | 0 | 0 | 0 | 0 | BL-128, BL-290, BL-976, BL-990 |
+| NS-09 | 08 | 13 | 13 | 0 | 0 | 0 | 0 | BL-138, BL-181, BL-977, BL-987, BL-988 |
+| NS-10 | 08 | 9 | 9 | 0 | 0 | 0 | 0 | BL-961, BL-965, BL-978, BL-987, BL-990 |
+| NS-11 | 08 | 5 | 2 | 0 | 3 | 0 | 0 | BL-126, BL-934, BL-942, BL-963, BL-965, BL-990 |
+| NS-12 | 08 | 5 | 5 | 0 | 0 | 0 | 0 | BL-949, BL-979, BL-990 |
+| NS-13 | 09 | 18 | 18 | 0 | 0 | 0 | 0 | BL-943, BL-965, BL-967, BL-982, BL-987, BL-991 +1 more |
+| NS-14 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-181, BL-940, BL-941, BL-988 |
+| NS-15 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-944, BL-945, BL-988 |
+| NS-16 | 09 | 8 | 8 | 0 | 0 | 0 | 0 | BL-949, BL-957, BL-965, BL-980, BL-988 |
+| NS-17 | 09 | 11 | 1 | 0 | 10 | 0 | 0 | BL-182, BL-327, BL-987, BL-988 |
+| NS-18 | 09 | 3 | 3 | 0 | 0 | 0 | 0 | BL-949, BL-982, BL-991 |
+| NS-19 | 09 | 2 | 2 | 0 | 0 | 0 | 0 | BL-183, BL-988 |
+| NS-20 | 09 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
+| NS-21 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-183, BL-287, BL-937, BL-962, BL-989 |
+| NS-22 | 10 | 2 | 2 | 0 | 0 | 0 | 0 | BL-938, BL-985, BL-989 |
+| NS-23 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-946, BL-963, BL-965, BL-989 |
+| NS-24 | 10 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-947, BL-987, BL-989 |
+| NS-25 | 10 | 13 | 13 | 0 | 0 | 0 | 0 | BL-983, BL-991 |
+| NS-26 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
+| NS-27 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
+| NS-28 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
+| NS-29 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | BL-986, BL-989 |
+| NS-30 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
+| NS-31 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | BL-966 |
+| NS-32 | 11 | 8 | 8 | 0 | 0 | 0 | 0 | BL-163, BL-949, BL-966, BL-991 |
+| NS-33 | 11 | 13 | 13 | 0 | 0 | 0 | 0 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
+| NS-34 | 11 | 3 | 2 | 0 | 1 | 0 | 0 | BL-168, BL-185, BL-329, BL-948, BL-992 |
+| NS-35 | 11 | 4 | 4 | 0 | 0 | 0 | 0 | BL-183, BL-952, BL-971, BL-988 |
+| NS-36 | 11 | 14 | 14 | 0 | 0 | 0 | 0 | BL-186, BL-254, BL-959, BL-960, BL-990 |
+| NS-37 | 11 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-956, BL-989 |
+| NS-38 | 19 | 8 | 2 | 0 | 6 | 0 | 0 | BL-187, BL-994 |
+| NS-39 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-188 |
+| NS-40 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-198, BL-577 |
+| NS-41 | 19 | 18 | 17 | 1 | 0 | 0 | 0 | BL-208 |
+| NS-42 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-291 |
+| NS-43 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-292 |
+| NS-44 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-293 |
+| NS-45 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
+| NS-46 | 21 | 22 | 10 | 1 | 11 | 0 | 0 | BL-295, BL-1002, BL-1005, BL-1007, BL-1008, BL-1009 +3 more |
+| NS-47 | 21 | 27 | 8 | 0 | 19 | 0 | 0 | BL-296, BL-1002, BL-1005, BL-1009, BL-1010, BL-1015 |
+| NS-48 | 21 | 13 | 10 | 0 | 3 | 0 | 0 | BL-297, BL-1002, BL-1003, BL-1004, BL-1016 |
+| NS-49 | 21 | 21 | 6 | 0 | 15 | 0 | 0 | BL-298, BL-1001, BL-1006, BL-1017 |
+| NS-50 | 21 | 4 | 2 | 0 | 2 | 0 | 0 | BL-295, BL-1014 |
+| NS-51 | 27 | 27 | 5 | 0 | 22 | 0 | 0 | BL-045, BL-1001, BL-1019 |
+| NS-52 | 27 | 26 | 13 | 0 | 13 | 0 | 0 | BL-046, BL-1001, BL-1018, BL-1020 |
+| **52 cards** | | **537** | **388** | **3** | **146** | **0** | **0** | |
 
 Reading it:
 - 47 of 52 cards are named by at least one BL row. NS-20, NS-26, NS-27, NS-28 and NS-30 have none, by design: they are "why it waits" cards with 0 P0 rows. NS-29 and NS-31 are named only by a parked row (BL-986) and by BL-966's "no Memory Library classes" line.
-- Being named is weaker than being covered. NS-38 to NS-45 (first run) are named only by proposed group rows (BL-187, BL-188, BL-198, BL-208, BL-291 to BL-294) and have no build-step rows. Their PR list exists only in a design file (`docs/tdd/new-scope/12-first-run-5.md`, FP-1 to FP-20). I carry those PRs as FP rows in section 2 so they are in the map, but they have no BL id.
-- NS-46 to NS-52 got build-sequence rows BL-1001 to BL-1020 (#1028). Those rows cover 52 of 140 P0 rows by name. 73 still have none.
+- Being named is weaker than being covered. The first-run cards NS-38 to NS-45 now have build-step rows: #1106 filed BL-1021 to BL-1041 for FP-1 to FP-20, BL-1042 to BL-1044 for DA-1 to DA-3 and BL-1045 and BL-1046 for NSC-01 and NSC-02. All are status proposed, none is ready, and none has a brief. Section 2.10 still uses the FP, DA and NSC working ids, with each BL id in the Status column.
+- The column "BL rows that cite the card" is from the 20 Nov run (Satisfies lines) and was not rebuilt; the numeric columns were.
+- NS-46 to NS-52 got build-sequence rows BL-1001 to BL-1020 (#1028). With the tool fixed, 55 of their 140 P0 rows have a row or a cite (54 and 1) and 0 have none; the other 85 map to proposed group rows.
 
 ### 1.4 Every function file
 
-| Function file | P0 rows | Cited to a BL row in the row text | No BL row |
-|---|---|---|---|
-| ai-and-speech.md | 54 | 6 | 48 |
-| back-office.md | 17 | 4 | 13 |
-| compliance.md | 23 | 1 | 22 |
-| cultural-background-data.md | 23 | 1 | 22 |
-| data-and-measurement.md | 16 | 2 | 14 |
-| days-library.md | 18 | 5 | 13 |
-| feature-opportunities.md | 5 | 0 | 5 |
-| finance.md | 8 | 1 | 7 |
-| languages-and-localisation.md | 24 | 3 | 21 |
-| legal.md | 21 | 4 | 17 |
-| lifecycle-and-platforms.md | 24 | 0 | 24 |
-| marketing.md | 27 | 1 | 26 |
-| messaging-and-entry-points.md | 28 | 14 | 14 |
-| notification-catalogue.md | 17 | 0 | 17 |
-| operations.md | 19 | 4 | 15 |
-| photos-and-suggestions.md | 35 | 0 | 35 |
-| print-and-fulfilment.md | 8 | 1 | 7 |
-| privacy.md | 35 | 7 | 28 |
-| quality.md | 21 | 3 | 18 |
-| reliability.md | 24 | 6 | 18 |
-| research-validation.md | 17 | 4 | 13 |
-| risk-security.md | 22 | 4 | 18 |
-| support.md | 29 | 4 | 25 |
-| **23 files** | **515** | **75** | **440** |
+| Function file | P0 rows | Row | Cite | Proposed group row only |
+|---|---|---|---|---|
+| ai-and-speech.md | 54 | 0 | 6 | 48 |
+| back-office.md | 17 | 0 | 4 | 13 |
+| compliance.md | 23 | 1 | 1 | 21 |
+| cultural-background-data.md | 23 | 0 | 1 | 22 |
+| data-and-measurement.md | 16 | 1 | 1 | 14 |
+| days-library.md | 18 | 1 | 5 | 12 |
+| feature-opportunities.md | 5 | 0 | 0 | 5 |
+| finance.md | 8 | 0 | 1 | 7 |
+| languages-and-localisation.md | 24 | 0 | 3 | 21 |
+| legal.md | 21 | 0 | 4 | 17 |
+| lifecycle-and-platforms.md | 24 | 0 | 0 | 24 |
+| marketing.md | 27 | 2 | 1 | 24 |
+| messaging-and-entry-points.md | 28 | 0 | 14 | 14 |
+| notification-catalogue.md | 17 | 0 | 0 | 17 |
+| operations.md | 19 | 0 | 4 | 15 |
+| photos-and-suggestions.md | 35 | 0 | 0 | 35 |
+| print-and-fulfilment.md | 8 | 0 | 1 | 7 |
+| privacy.md | 35 | 0 | 7 | 28 |
+| quality.md | 21 | 0 | 3 | 18 |
+| reliability.md | 24 | 0 | 6 | 18 |
+| research-validation.md | 17 | 0 | 4 | 13 |
+| risk-security.md | 22 | 0 | 4 | 18 |
+| support.md | 29 | 0 | 4 | 25 |
+| **23 files** | **515** | **5** | **74** | **436** |
 
-None of the 515 function-file P0 rows is named in a BL row heading block. 75 cite a BL id in their own text. 440 have nothing. They are grouped into 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. That file still carries counts from before BL-1001 to BL-1020 existed.
+5 of the 515 function-file P0 rows have a row-level BL row (compliance, data-and-measurement, days-library and two in marketing), 74 cite a BL id in their own text, and 436 map only to the 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. Strict G0 for function files is therefore 79 of 515 (NS cards 391 of 537, overall 470 of 1,052). That generated file was not regenerated in this refresh and may still carry older counts; trust the table above and `p0.py --gaps`.
 
-### 1.5 Two defects in the counting tool (found while running it)
+Tables 1.3 and 1.4 are regenerated per card and per file from the generator on `develop` at `71c4485`, command `python3 -I docs/product/prd/tools/review/p0.py . --json`, counting each P0 row by its `tier` field (row, cite, proposed).
 
-1. `docs/product/prd/tools/review/p0.py` line 60 matches `BL-\d{3}`, so it cannot see BL-1001 to BL-1020. Fixing it to `\d{3,4}` moves the NS-46 to NS-52 P0 rows from 137 "none" to 73 "none". I ran a patched copy from `/tmp`; I did not edit the tool in this PR.
-2. The tool reads every `NN-*.md` for NN 00 to 27, and since #847 merged that includes `17-engineering-project-plan.md`. It reads 10 rows out of that plan (J-N1, J-N4, J-N9, J-N11, J-N21, J-N24, J-N27 and three NS rows it repeats). They are not requirements. They inflate the raw count by 10.
+### 1.5 The counting tool (both defects fixed by #1105)
 
-Both are one-line fixes. They belong in the next product PR together with a regenerated `BACKLOG-GAPS.md`, so the G0 number in the repo matches this file. Until then, trust the numbers here, not the generated file.
+The two defects found on 20 Nov are fixed and merged (#1105, `docs/product/prd/tools/review/p0.py`):
+
+1. It matched `BL-\d{3}` only, so it could not see BL-1001 and above. It now reads three or four digits and ranges such as "FR-DAY-01 to FR-DAY-05".
+2. It read 10 rows out of `17-engineering-project-plan.md`. It no longer counts them: the raw count and the real count are both 1,052.
+
+It also gained `--map` (every P0 id and the BL ids that name it) and `--check-map <file>` (exit 1 if a P0 id is missing, maps to nothing, or names a BL id with no heading). `p0_test.py` sits beside it. The section 1 numbers above are from the tool as merged, run on `develop`, not from a patched copy.
+
+Two limits remain. The tool counts a mention as coverage; it does not read whether the row really does the work. And a cite to a BL id that has no heading is dropped (the ten rows in section 1.2).
 
 ### 1.6 What is still owed on the requirements side
 
@@ -175,8 +190,8 @@ Both are one-line fixes. They belong in the next product PR together with a rege
 ### 2.1 How to read it
 
 One table per chain, 243 rows in all. Columns:
-- **Id**: a BL id where one exists. Rows with no BL id use the name their source uses: PR numbers for open PRs (`PR-835`), `FP-n` for the first-run PR list, `IN-...` for instrumentation. A suffix after a slash (`IN-08/an`) says which instrumentation file the working id comes from, because those files reuse the same working ids (section 2.15 item 4).
-- **Depends on / Blocks**: ids in this map only. A founder, counsel, device or word step is not a row: it is in **Gate**. Blocks is computed from Depends on, so the two always agree.
+- **Id**: a BL id where one exists. Rows with no BL id use the name their source uses: PR numbers for open PRs (`PR-835`), `IN-...` for instrumentation. The first-run rows (`FP-n`, `DA-n`, `NSC-nn`) keep those working ids in this table even though #1106 filed BL-1021 to BL-1046 for them; the Status column gives the BL id. The instrumentation rows have no BL id on `develop`: rows BL-1050 to BL-1149 are drafted in #1107 and #1108, which are open and not merged. A suffix after a slash (`IN-08/an`) says which instrumentation file the working id comes from, because those files reuse the same working ids (section 2.15 item 4).
+- **Depends on / Blocks**: ids in this map only. A founder, counsel, device or word step is not a row: it is in **Gate**. Blocks was written to match Depends on. Nothing machine-checks it (section 2.13).
 - **Lane**: the roster handle that takes the row (`agents/roster.json`, `backlog_owner_names`). `founder` means no agent can do it.
 - **Size**: S, M or L as the row or its source gives it. `-` where the source gives none.
 - **Drop**: A, B, C, D from card 21 or `D` for the first-run drop (E43). `IN (phase n)` is the instrumentation phase its file gives. `-` where card 21 sets none.
@@ -197,6 +212,14 @@ Plan 17 and plan 23 were true at their read times. Since then these merged, so t
 - Still open: #879 (BL-961 part 3), #873 (BL-960), #799, #894, #895, #835 to #840, #843, #1040, #1041, #1044, #1052, #1053 (Build 13 master test plan, draft), #1057 to #1061 (drafts).
 
 The statuses in the tables use the GitHub state, not the old plan text.
+
+Since the 20 Nov read (checked on 21 Nov, REST `GET /repos/.../pulls/<n>` for each number):
+- #1105 merged (`p0.py` reads four-digit ids and ranges, adds `--map` and `--check-map`; stack part 1 of 5).
+- #1106 merged (BL-1021 to BL-1049: the first-run build steps FP-1 to FP-20 as BL-1021 to BL-1041, DA-1 to DA-3 as BL-1042 to BL-1044, NSC-01 and NSC-02 as BL-1045 and BL-1046, the perf profile as BL-1047, and two missed P0 rows as BL-1048 and BL-1049; stack part 2 of 5). Highest backlog id on `develop` is BL-1049.
+- #1110 merged (briefs for BL-963, BL-982 and BL-985).
+- #1041, #1053, #1060 and #1061 merged; they were listed as open above.
+- Still open: #1107 (BL-1050 to BL-1099, instrumentation rows 1 to 50, part 3 of 5), #1108 (BL-1100 to BL-1149, rows 51 to 100, part 4 of 5, stacked on the #1107 branch) and #1109 (P0-TO-BL-20nov, every P0 id mapped to a BL id, part 5 of 5, stacked on the #1108 branch). None of them is on `develop`. Also still open: #879, #873, #799, #894, #895, #835 to #840, #843, #1040, #1044, #1052, #1057 to #1059 and #830 (draft, `develop` into `main`).
+- `node scripts/agents/next-id.mjs` prints BL-1150 because it counts open PRs as well as `develop`; on `develop` alone the next free id is BL-1050.
 
 ### 2.2 Release path and platform
 
@@ -220,7 +243,7 @@ The statuses in the tables use the GitHub state, not the old plan text.
 | BL-958 | Build profiles carry the new flags, and the free-space check is size plus 50 MB  | - | PR-1061 | ops | S | - | - | done (#896); row text says ready (stale) |
 | BL-961 | A second account never sees the first account's book, and sign-out says so (X4,  | PR-879 | BL-978, BL-1010, BL-1018, BL-1019, HO-908-910-911, FP-16a | mobile | M | - | G4 two-account device row | 2 of 3 merged (#869, #871); 3 of 3 #879 open |
 | BL-962 | Letter words stay out of system intelligence and system writing tools (X6, D2, D | - | - | mobile | S | - | - | done (#868); row text says ready (stale) |
-| BL-963 | Home slips: one registry, one fixed order (FRAME-SLIP) | - | BL-942, BL-946, BL-1014 | mobile | S | - | G4 | ready; no PR; NO brief |
+| BL-963 | Home slips: one registry, one fixed order (FRAME-SLIP) | - | BL-942, BL-946, BL-1014 | mobile | S | - | G4 | ready; no PR; brief merged (#1110) |
 | BL-978 | A new phone: close the last gap (NS-10) | BL-922, BL-961 | FP-6 | mobile | M | - | G4 S1-204; G3 words for 978b | ready; R7 part done (#903); no PR for the rest; briefs yes |
 | HO-908-910-911 | Account follow-ups: planner account guard, reminders on account gone and upgrade | BL-961, BL-967 | - | mobile | M | - | - | briefs yes; PR state NOT VERIFIED |
 | B5 | Backup file exclusion, erase, token to Keychain, preflight gate (CR-71) | - | - | mobile | M | - | G4 device row | brief merged (#1025); no PR |
@@ -234,8 +257,8 @@ The statuses in the tables use the GitHub state, not the old plan text.
 | BL-943 | Reminders proven on a phone, with back-off and stop (NS-13) | BL-966, BL-967 | BL-982 | mobile | M | - | G4 time-zone device run (J-N3, J-N4, J-N5, J-N24) | blocked by BL-966; brief yes |
 | BL-966 | One notification budget, with plan notices outside it (NS-32) | - | BL-943, BL-982, BL-1007, BL-1012, IN-PM4-03 | mobile | M | - | G2 counsel Q41 (plan-notice windows); G4 | ready; no PR; briefs 966A, B, C yes |
 | BL-967 | Signing out cancels reminders (NS-13) | - | BL-943, HO-908-910-911 | mobile | S | - | - | done (#904); row text says ready (stale) |
-| BL-982 | Typed days in reminders (NS-18) | BL-943, BL-966 | BL-1012 | mobile | S | - | G4 | blocked by BL-966, BL-943; NO brief |
-| BL-985 | Quiet this book has a home (F12-REQ-011, NS-22) | - | - | mobile | S | - | G4 | ready; no PR; NO brief; planner now reads a quiet book (#901, #902) |
+| BL-982 | Typed days in reminders (NS-18) | BL-943, BL-966 | BL-1012 | mobile | S | - | G4 | blocked by BL-966, BL-943; brief merged (#1110) |
+| BL-985 | Quiet this book has a home (F12-REQ-011, NS-22) | - | - | mobile | S | - | G4 | ready; no PR; brief merged (#1110); planner now reads a quiet book (#901, #902) |
 | BL-1003 | Content rules drift test: every key family is under ALL, notification scope path | - | - | content | S | A | - | done (#1031 merged); row text says in-review (stale) |
 | BL-1004 | NS-48 phase 1: pure key function, planner select seam, the built 8 re-keyed with | - | BL-1016 | mobile | M | A | - | done (#1032 merged); row text says in-review (stale) |
 | BL-1005 | Analytics tests: stems, enum values, event names, four never-reported kinds, var | - | - | analytics | S | - | - | done (#1027) |
@@ -314,7 +337,7 @@ The statuses in the tables use the GitHub state, not the old plan text.
 | BL-928 | Accessibility floor fixes on the letter page, Me and the Book header (N-02) | BL-927 | BL-937, BL-984 | mobile | S | - | G4 VoiceOver and AX5 walk | 2 slices merged (#892, #893); Book-header remainder NOT VERIFIED |
 | BL-929 | Device baseline run sheet for a small phone (N-01) | - | BL-948, IN-03/pm1 | qa | S | - | G4 founder phone and time | ready; no PR; brief yes (split into ASHA and PERF rows) |
 | BL-929-ASHA | Asha seeded book generator (half of BL-929) | - | - | qa | M | - | - | not written; brief yes |
-| BL-929-PERF | Perf profile with markers (other half of BL-929; needs a BL row) | - | IN-208, IN-10/pm1 | qa | M | - | - | not written; brief yes; no BL id yet |
+| BL-929-PERF | Perf profile with markers (other half of BL-929; now BL-1047) | - | IN-208, IN-10/pm1 | qa | M | - | - | not written; brief yes; filed as BL-1047 (#1106), status proposed |
 | BL-930 | Reword NFR rows 42 and 216 to what the built hand-offs can meet (N-01) | - | - | qa | S | - | founder merges | #880 merged (PROPOSED wording); edit of NFR rows 42 and 216 NOT VERIFIED |
 | BL-935 | Pilot kit for family-hears-it (C-19) | - | BL-972 | user-research | S | - | G2 counsel reads consent texts | ready; no PR (user-research does not auto-run) |
 | BL-936 | One roadmap, December 2026 to May 2027 | - | - | content | M | - | - | draft merged (#829); row text says in-review (stale) |
@@ -359,32 +382,32 @@ The statuses in the tables use the GitHub state, not the old plan text.
 
 | Id | Item | Depends on | Blocks | Lane | Size | Drop | Gate | Status |
 |---|---|---|---|---|---|---|---|---|
-| FP-1 | NS-38 listing test, review notes, D-161 text | - | FP-3, FP-8 | content | S | D | G3 words; founder ASC fields | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-5 | killSwitches.signIn (and libraryDays) in packages/api; same two files as KS-1, c | - | FP-6 | sync | S | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-17 | AUTH_SETTINGS register and AUTH_SETUP fix | - | - | ops | S | D | founder reads hosted values | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-2 | NS-42 consent builder and hash manifest | - | FP-3, FP-4, FP-19 | mobile | M | D | founder applies 20261108000000; counsel Q-D | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-3 | NS-42 versioned links, version pin | FP-1, FP-2 | - | mobile | M | D | counsel; founder publishes versions | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-15 | NS-45 update-line reader and Me line | - | - | sync | M | D | words; App Store id (founder) | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-12 | NS-39 lock offer removed, no-prompt and offline tests | - | FP-7, FP-13, FP-14 | mobile | M | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-7 | NS-41 one address form, reasons, pause | FP-12 | FP-8, FP-20 | mobile | M | D | G3 words (BL-965) | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-9 | NS-41, NS-45 Apple email-only scope, foreground revocation | - | - | mobile | M | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-6 | NS-40, NS-41 region_refused, signIn pause, Apple on outage | BL-922, BL-978, FP-5 | - | mobile | M | D | G3 words; File 28 applied by founder | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-13 | NS-43 addChildren in one transaction | FP-12, PR-879 | - | mobile | M | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-14 | NS-44 first-run no-Plus test, allowance titles | FP-12 | IN-05/pm5 | mobile | M | D | G3 words | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-16a | NS-45 deletion step 1 words | BL-961, BL-965 | - | mobile | M | D | counsel; G3 words | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-16b | FR-SEC-06 ownerCheck for Erase everything | - | - | mobile | S | D | OQ-F4 | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-18 | NS-45 purge-worker titles | - | - | sync | S | D | founder deploys the worker | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-4 | NS-42 local agreement rows reach the account | FP-2 | - | mobile | M | D | counsel Q-D | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-8 | NS-41 eight-digit code in one release | FP-1, FP-7 | - | mobile | M | D | founder dashboard otp_length same day | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-10a | NS-40 age-range Swift module and scan | NSC-01, NSC-02 | FP-10b | mobile | L | D | Mac with Xcode; founder App ID capability; Texas risk acceptance | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-10b | NS-40 signal at launch, entitlement, preflight | FP-10a | - | mobile | L | D | counsel Q46; founder entitlement path | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-19 | NS-42 sensitive-data withdrawal in Me | FP-2, DA-3 | - | mobile | M | D | counsel Q48 | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| FP-20 | NS-41 Turnstile bot check on email send | FP-7 | - | mobile | L | D | legal adds subprocessor row; founder Cloudflare and CAPTCHA setup | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| DA-1 | File 28 re-stamp and apply path | - | - | data-architect | M | D | founder applies | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| DA-2 | Purge of never-confirmed auth.users after 7 days | - | - | data-architect | M | D | approve-migration | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| DA-3 | withdraw_sensitive_data function | - | FP-19 | data-architect | M | D | approve-migration; counsel | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| NSC-01 | modules/REVIEWED.sha256 manifest | - | FP-10a | security-architect | S | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
-| NSC-02 | Entitlement allowlist in preflight | - | FP-10a | security-architect | S | D | - | not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-1 | NS-38 listing test, review notes, D-161 text | - | FP-3, FP-8 | content | S | D | G3 words; founder ASC fields | BL-1021 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-5 | killSwitches.signIn (and libraryDays) in packages/api; same two files as KS-1, c | - | FP-6 | sync | S | D | - | BL-1025 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-17 | AUTH_SETTINGS register and AUTH_SETUP fix | - | - | ops | S | D | founder reads hosted values | BL-1038 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-2 | NS-42 consent builder and hash manifest | - | FP-3, FP-4, FP-19 | mobile | M | D | founder applies 20261108000000; counsel Q-D | BL-1022 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-3 | NS-42 versioned links, version pin | FP-1, FP-2 | - | mobile | M | D | counsel; founder publishes versions | BL-1023 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-15 | NS-45 update-line reader and Me line | - | - | sync | M | D | words; App Store id (founder) | BL-1035 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-12 | NS-39 lock offer removed, no-prompt and offline tests | - | FP-7, FP-13, FP-14 | mobile | M | D | - | BL-1032 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-7 | NS-41 one address form, reasons, pause | FP-12 | FP-8, FP-20 | mobile | M | D | G3 words (BL-965) | BL-1027 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-9 | NS-41, NS-45 Apple email-only scope, foreground revocation | - | - | mobile | M | D | - | BL-1029 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-6 | NS-40, NS-41 region_refused, signIn pause, Apple on outage | BL-922, BL-978, FP-5 | - | mobile | M | D | G3 words; File 28 applied by founder | BL-1026 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-13 | NS-43 addChildren in one transaction | FP-12, PR-879 | - | mobile | M | D | - | BL-1033 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-14 | NS-44 first-run no-Plus test, allowance titles | FP-12 | IN-05/pm5 | mobile | M | D | G3 words | BL-1034 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-16a | NS-45 deletion step 1 words | BL-961, BL-965 | - | mobile | M | D | counsel; G3 words | BL-1036 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-16b | FR-SEC-06 ownerCheck for Erase everything | - | - | mobile | S | D | OQ-F4 | BL-1037 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-18 | NS-45 purge-worker titles | - | - | sync | S | D | founder deploys the worker | BL-1039 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-4 | NS-42 local agreement rows reach the account | FP-2 | - | mobile | M | D | counsel Q-D | BL-1024 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-8 | NS-41 eight-digit code in one release | FP-1, FP-7 | - | mobile | M | D | founder dashboard otp_length same day | BL-1028 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-10a | NS-40 age-range Swift module and scan | NSC-01, NSC-02 | FP-10b | mobile | L | D | Mac with Xcode; founder App ID capability; Texas risk acceptance | BL-1030 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-10b | NS-40 signal at launch, entitlement, preflight | FP-10a | - | mobile | L | D | counsel Q46; founder entitlement path | BL-1031 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-19 | NS-42 sensitive-data withdrawal in Me | FP-2, DA-3 | - | mobile | M | D | counsel Q48 | BL-1040 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| FP-20 | NS-41 Turnstile bot check on email send | FP-7 | - | mobile | L | D | legal adds subprocessor row; founder Cloudflare and CAPTCHA setup | BL-1041 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| DA-1 | File 28 re-stamp and apply path | - | - | data-architect | M | D | founder applies | BL-1042 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| DA-2 | Purge of never-confirmed auth.users after 7 days | - | - | data-architect | M | D | approve-migration | BL-1043 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| DA-3 | withdraw_sensitive_data function | - | FP-19 | data-architect | M | D | approve-migration; counsel | BL-1044 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| NSC-01 | modules/REVIEWED.sha256 manifest | - | FP-10a | security-architect | S | D | - | BL-1045 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
+| NSC-02 | Entitlement allowlist in preflight | - | FP-10a | security-architect | S | D | - | BL-1046 on `develop` (#1106), status proposed; not written; design merged (docs/tdd/new-scope/12-first-run-5.md); NO brief |
 
 ### 2.11 Instrumentation (all built dark; none blocks Wave 1)
 
@@ -561,11 +584,12 @@ Run by `docs/product/prd/tools/readiness-check.py`, which reads the Depends on c
 python3 -I docs/product/prd/tools/readiness-check.py docs/product/READINESS-20nov.md
 ```
 
-Result on this file: `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables
+Result on this file: `rows 243, edges 205, errors 0` (exit 0), re-run on 21 Nov after the edits in this refresh. Re-run it after any edit to the tables
 
 What the check proves and does not prove:
 - It proves the table is internally consistent: every id in Depends on is a row, there is no cycle, and no row outside the instrumentation chain depends on an instrumentation row.
-- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 665 P0 rows with no BL row (section 1) are the known hole.
+- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 582 P0 rows that map only to proposed group rows (section 1) are the known hole: the map has build rows for the stacks, not for each group.
+- It never reads the Blocks column. Blocks was written by hand to match Depends on, and a wrong Blocks cell would pass the check. On 21 Nov I compared Blocks with the inverse of Depends on in a throwaway script (not committed): 0 mismatches in the 243 rows, after setting aside the rows whose Blocks cell is cut short with "+n" (those cannot be compared). That is a one-off, not a gate.
 - Dependencies for the BL rows come from each row's `Depends on` line and the blockers named in its status. I added the ones plan 17 names and the backlog line leaves out: BL-978 on BL-922 and BL-961; BL-961 on PR-879 (its third part); BL-952 on FIND-8; BL-931 on PR-840; BL-933 on BL-868; BL-977 on BL-926; BL-984 on BL-928.
 
 ### 2.14 Critical path
@@ -587,9 +611,9 @@ Instrumentation: the longest chain is IN-01/an to IN-06/an and IN-08/an. It has 
 ### 2.15 Findings while mapping (for Karma to rule; none is mine to decide)
 
 1. **Build 13 and the database deploy disagree.** Plan 17 section 3a starts the release path with F4 (the production database secret) and the 29-migration deploy. The founder's answer 1 in `docs/engineering/readiness-20nov/DECISIONS-20nov.md` section 8 says Build 13 is servers off. If servers are off, F4, DBDEPLOY and P-7 are not on the Build 13 path. I kept them in the map, marked, and made nothing depend on them. Karma: which is it?
-2. **Backlog statuses that are behind the code.** On `develop`, the row text still says: BL-1002, BL-1003, BL-1004 in review (all merged), BL-927, BL-958, BL-962, BL-967, BL-975, BL-987 ready (all done), BL-936 in review (merged in #829). BL-925, BL-965 and BL-949 read as needing a decision or ready, but their PRs merged. BL-1009 and BL-1011 read blocked, but their only blocker (BL-1002) is done, so by the dispatcher's rule they count as ready (their other gates are counsel and a device run, not rows). `product` owns the fix. I did not edit `docs/BACKLOG.md` in this PR so it cannot collide with #843, which also edits statuses.
-3. **Two counting defects in `p0.py`** (section 1.5).
-4. **Instrumentation ids collide.** The ten instrumentation files each number their rows. `IN-01` to `IN-08` mean different things in `analytics.md`, PM1 and PM5. `IN-DS1` to `IN-DS6` (decision-science) look like `IN-DS-01` to `IN-DS-09` (data-steward). The tables above add a suffix to tell them apart. None of the 100 rows has a BL id yet. The next free id is BL-1021 (`node scripts/agents/next-id.mjs` prints BL-1021, D-163, ADR 0036).
+2. **Backlog statuses that are behind the code.** On `develop`, the row text still says: BL-1002, BL-1003, BL-1004 in review (all merged), BL-927, BL-958, BL-962, BL-967, BL-975, BL-987 ready (all done), BL-936 in review (merged in #829). BL-925, BL-965 and BL-949 read as needing a decision or ready, but their PRs merged. BL-1009 and BL-1011 read blocked, but their only blocker (BL-1002) is done, so by the dispatcher's rule they count as ready (their other gates are counsel and a device run, not rows). `product` owns the fix. I did not edit `docs/BACKLOG.md` in this PR so it cannot collide with #843, which also edits statuses. Not re-checked on 21 Nov.
+3. **Two counting defects in `p0.py`**: fixed and merged in #1105 (section 1.5). Ten P0 rows still cite BL ids that have no heading (section 1.2).
+4. **Instrumentation ids collide.** The ten instrumentation files each number their rows. `IN-01` to `IN-08` mean different things in `analytics.md`, PM1 and PM5. `IN-DS1` to `IN-DS6` (decision-science) look like `IN-DS-01` to `IN-DS-09` (data-steward). The tables above add a suffix to tell them apart. None of the 100 rows has a BL id on `develop`: #1107 (BL-1050 to BL-1099) and #1108 (BL-1100 to BL-1149) draft them and are open, not merged. The first-run rows did get ids (BL-1021 to BL-1046, #1106). On `develop` the highest id is BL-1049, so the next free id is BL-1050; `node scripts/agents/next-id.mjs` prints BL-1150 because it also counts the open PRs.
 5. **Instrumentation rows that are the same work.** Closed screen and control id lists: IN-01/pm1, IN-202, IN-DS-05, IN-03/pm5 and part of IN-K1. The perf marker harness: IN-ops-05, IN-10/pm1, IN-208, IN-04/pm5 and BL-929-PERF. The Asha seeded book: IN-06/pm5 and BL-929-ASHA. Five owners could build one thing five times. One owner each (`analytics` for the lists, `qa` for the harness and the Asha book) would fix it.
 6. **Rows still marked in progress after the lock.** BL-988 to BL-999 (design areas A to E, the design system, the first-run requirements, and the function reviews) say "in progress (interactive session)". The pack they feed is locked. They should be done or superseded. Not verified which.
 7. **`design-spec-sync`.** I was asked to include it. I could not find a PR, branch, backlog row or doc by that name (searched `docs/`, `agents/`, open PR titles, and `git branch -r`). The nearest items are IA-FINAL (#1033, merged) and the design specs under `docs/design/specs/`. NOT VERIFIED. If it is a row, give me its id and I will add it.
@@ -607,7 +631,7 @@ No calendar dates, except those a doc already holds. Sizes and review passes are
 The wave model is plan 17 section 4.3 and 17b section 1. Karma's execution map of 20 Nov (waves, chains, gates G0 to G6, Wave 1 builders W1-a to W1-i) is a Project doc; I could not open it from this repo session. I use the chain names from the summary I was given. If his builder letters differ, only the "who" changes, not the order below.
 
 | Wave | What | Rows | Holds the Build 13 cut? |
-|---|---|---|---|
+|---|---|---|---|---|
 | 0 (done) | Step 0.2 rows, ADRs 0029 to 0035 as Proposed, the content drift test, NS-48 phase 1, analytics tests | BL-1001 to BL-1005 (#1028, #1029, #1031, #1032, #1027) | no |
 | 1 | The floor and the cross-cutting P0 rows; the photo stack and Find merged dark; platform and release steps | Reminders: BL-966, BL-943. Account: PR-879, BL-922, BL-978. Words: BL-925 to BL-926 to BL-977. Keeping: P-4, BL-976 rest. Gates: BL-929-ASHA, BL-929-PERF, BL-964-RATCHET, PR-1060, PR-1061. Data: T1, T3, BL-959 amendment, BL-868. Platform: B13-CHECKS, B13-CUT, CI-SET, BL-976-WIRE. Dark, in review: PR-835 to PR-840, PR-894, PR-895, FIND-8 | the account rows, BL-925 to BL-926 and BL-966 hold it under plan 17's Q1 recommendation; the photo stack and Find do not (Q2 recommendation) |
 | 2 | Export and the picture residue; first run (Drop D); days stack A and B; the media spine | BL-933, BL-932, BL-953 to BL-957, BL-963, BL-984, BL-937, G1, H1; FP-1 to FP-20; BL-1007 to BL-1014 | no |
@@ -628,7 +652,7 @@ Review effort for the three stacks, plan 17 and 17b [E]: Wave 1 about 126 review
 Ready, with a brief:
 
 | Row | Lane | Brief | Note |
-|---|---|---|---|
+|---|---|---|---|---|
 | BL-966 | mobile | `BRIEF-BL966A`, `B`, `C` | first row on the reminders critical path |
 | BL-922 | mobile | `BRIEF-BL922`, data `BRIEF-BL-922a` | S1-204 needs two phones |
 | BL-978 | mobile | `BRIEF-BL978A`, `B` | after BL-922 and BL-961; 978b waits for words |
@@ -641,10 +665,12 @@ Ready, with a brief:
 | B5, HO-908-910-911 | mobile | mobile briefs | |
 | B13-CHECKS, B13-CUT, BL-976-WIRE, CI-SET, HG-MQ | ops | platform briefs | the founder pastes workflow patches |
 
-Ready, with no brief (NO in section 5):
-- BL-963 (Home slips: one registry). It blocks BL-1014, BL-942 and BL-946.
-- BL-985 (Quiet this book has a home). The row text is stale: the planner now reads a quiet book (#901, #902). The row needs its problem line rewritten before anyone picks it.
-- BL-982 (typed days in reminders) is blocked by BL-966 and BL-943 and has no brief either.
+Ready, with a brief since #1110 merged (it had none on 20 Nov):
+- BL-963 (Home slips: one registry), `BRIEF-BL963`. It blocks BL-1014, BL-942 and BL-946.
+- BL-985 (Quiet this book has a home), `BRIEF-BL985`. The row text is stale: the planner now reads a quiet book (#901, #902). Whether its problem line was rewritten is NOT VERIFIED.
+- BL-982 (typed days in reminders), `BRIEF-BL982`, is blocked by BL-966 and BL-943, so it is briefed and not startable.
+
+Still with no brief: the first-run rows BL-1021 to BL-1046 (status proposed, none ready).
 
 Waiting on a founder step, not on a row: BL-926 and BL-977 (G3 approval of #866's words), BL-1001 (the reversal ruling), BL-1006 (words, photo stack on TestFlight), BL-1007 (consent line), BL-1015 to BL-1020 (counsel, Apple, money).
 
@@ -755,20 +781,20 @@ Earliest turn-on: after the last line above. I give no date. It is a separate de
 YES means I checked it and the evidence is named. NO means I checked and it is not true. NOT VERIFIED means I could not check it.
 
 | # | Line | Answer | Evidence |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1 | Requirements locked | YES | Rev 2 LOCKED (`README.md`, `RESUME.md`); #934 merged as `88f3a975` at 20:37 UTC (REST `merged_at`). E1 to E83 and CL-001 to CL-158 present, none missing (section 1.2, c1 and c2) |
 | 2 | Every NS card and function file accounted for | YES | 52 of 52 card headings; 5 cards have 0 P0 rows and no BL row by design; 23 of 23 function files counted (sections 1.3 and 1.4) |
-| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. 665 of 1,052 P0 rows have no row-level BL row: gate G0 is not met. NS-38 to NS-45 have only proposed group rows. 100 instrumentation rows and 26 first-run rows have no BL id (section 2.15 item 4) |
-| 4 | The counting tool is right | NO | `p0.py` ignores four-digit ids and reads plan 17 (section 1.5). Numbers in this file are from a patched copy |
+| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. Strict G0 holds for 470 of 1,052 P0 rows (393 row, 77 cite; generator on `develop` at `71c4485`, `p0.py . --json`); 582 map only to proposed group rows (section 1.2, `p0.py --json`, 21 Nov). Every P0 id maps to at least one BL id (`--check-map`: 0 errors). First-run rows now have ids (BL-1021 to BL-1046, #1106), all proposed. The 100 instrumentation rows have no BL id on `develop`: #1107 and #1108 are open |
+| 4 | The counting tool is right | YES for ids and rows, with two limits | #1105 merged: four-digit ids, ranges, plan 17 no longer read, `--map` and `--check-map`. It counts a mention as coverage, and it drops a cite to a BL id with no heading (ten P0 rows, section 1.2) |
 | 5 | ADRs filed as Proposed | YES | ADRs 0029 to 0035 on `develop` (#1029 merged), each "Status: Proposed, 20 Nov 2026" (`git show origin/develop:docs/adr/0029-...`). None is Accepted, and only the founder accepts |
 | 6 | Dependency map: no cycle, no missing blocker | YES | `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables (section 2.13) |
 | 7 | Dependency map covers every work item | NOT VERIFIED | It covers every item the backlog, the plans and the instrumentation files name. It cannot cover an item no file names. `design-spec-sync` was not found (section 2.15 item 7) |
-| 8 | Wave 1 rows ready, with briefs | NO for three rows, YES for the rest | Briefs exist for BL-966, BL-922, BL-978, PR-879, BL-957, BL-929, BL-964, T1, T3, P-4, B5 and the release steps. None for BL-963, BL-985, BL-982 (section 3.2). `ls docs/engineering/readiness-20nov/briefs/*` |
-| 9 | Wave 1 rows can be handed out by the dispatcher | YES for BL ids, NO for the rest | #912 merged; `node scripts/agents/check.mjs` says "26 agents, 592 backlog tasks ... agent team is consistent". Rows with no BL id (instrumentation, FP, several release steps) cannot be dispatched |
+| 8 | Wave 1 rows ready, with briefs | YES for the Wave 1 rows; NO for the first-run rows | Briefs exist for BL-966, BL-922, BL-978, PR-879, BL-957, BL-929, BL-964, T1, T3, P-4, B5 and the release steps, and for BL-963, BL-982 and BL-985 since #1110 merged. No brief for BL-1021 to BL-1046. `ls docs/engineering/readiness-20nov/briefs/*` |
+| 9 | Wave 1 rows can be handed out by the dispatcher | YES for BL ids, NO for the rest | #912 merged; `node scripts/agents/check.mjs` says "26 agents, 621 backlog tasks ... agent team is consistent" (re-run 21 Nov on `develop` at `3450db9f`). Rows with no BL id (instrumentation, several release steps) cannot be dispatched; the first-run rows now have ids but are proposed, not ready |
 | 10 | Review framework | YES in the repo, NOT VERIFIED for Karma's | Counted reviews and CR-70 are in `COORDINATION.md`; `CHECKS-AND-BALANCES.md` exists. Karma's 20 Nov execution map and review framework are a Project doc I could not open here |
 | 11 | CI green on `develop` | YES for the last completed runs; head pending | The `CI` workflow (`ci.yml`) on `develop` is success on 32fc2f52f (23:29 UTC), f102aac39 (23:30), 55574906c (23:37) and c4ee026fe (23:42); the head 021ecdfea was pending at 23:52. Runs on commits pushed seconds apart are cancelled by the newer push, which is not red. I read workflow-run conclusions only, not the jobs inside (typecheck, test, db, iOS). One check is red: `compliance-fence` ("no cco approval for head") on the pull request whose head is `develop`, which I infer is #830 (develop into main); it sits on the Build 13 release path (section 2.2, PR-830). It is not a failure of develop's own CI. |
-| 12 | Tests pass | NOT VERIFIED for the product suites; YES for the agent scripts | `node scripts/agents/check.mjs` passes and `node --test 'scripts/agents/*.test.mjs'` passes 249 of 249 (these are the checks that parse the backlog). I did not run `npm test`, `typecheck`, `test:db` or `test:functions`: the disk had about 850 MB free |
-| 13 | Open-PR stock | 160 open (88 draft, 72 ready for review); 81 carry an `agent:` label; 5 `needs:founder`; 5 `review:changes-needed`; 144 target `develop`, 16 target `main` or a stacked branch.. Plan 23 counted 178 open at 17:08 UTC. Counted before this PR was opened | REST `GET /repos/.../pulls?state=open`, counted 23:56 UTC |
+| 12 | Tests pass | NOT VERIFIED for the product suites; YES for the agent scripts | `node scripts/agents/check.mjs` passes (621 backlog tasks on 21 Nov) and `node --test 'scripts/agents/*.test.mjs'` passed 249 of 249 on 20 Nov; on 21 Nov at `3450db9f` it passes 265 of 265 (these are the checks that parse the backlog). I did not run `npm test`, `typecheck`, `test:db` or `test:functions`: the disk had about 850 MB free |
+| 13 | Open-PR stock | NOT A GATE (count only) | 180 open on 21 Nov at 01:42 UTC: 98 draft, 82 ready for review; 103 carry an `agent:` label; 6 `needs:founder`; 5 `review:changes-needed`; 152 target `develop`, 5 target `main`, 23 target a stacked branch. Command: `gh api --paginate 'repos/thesaurabhpareek/earlyletters/pulls?state=open&per_page=100' --jq '.[]|[.number,.draft,.base.ref,([.labels[].name]|join(","))]|@tsv'`, then counted. Plan 23 counted 178 at 17:08 UTC on 20 Nov and this file counted 160 at 23:56 UTC; the three counts used different tools and times, and the number moves with every push |
 | 14 | Instrumentation does not block Wave 1 | YES | Section 4.3 and the check in 2.13 |
 | 15 | Production analytics may turn on | NO | Ten preconditions open (section 4.2) |
 | 16 | Words approved | NO | No PROPOSED word is approved (`DECISIONS-20nov.md` section 8) |
@@ -794,8 +820,9 @@ YES means I checked it and the evidence is named. NO means I checked and it is n
 
 ### 5.2 What I did not do
 
-- I did not edit `docs/BACKLOG.md`, the cards, the errata or `p0.py`. Status corrections (2.15 item 2) and the two tool fixes (1.5) go in the next product PR. #843 also edits backlog statuses and should land first.
-- I did not file BL rows for the 100 instrumentation items or the 26 first-run PRs. The next id is BL-1021. Filing them is the next product job, once Karma confirms which of them are Build 13 and which are later.
+- I did not edit `docs/BACKLOG.md`, the cards, the errata or `p0.py`. The tool fixes are done (#1105). Status corrections (2.15 item 2) still go in a product PR; #843 also edits backlog statuses and should land first.
+- The first-run PRs now have BL rows (BL-1021 to BL-1046, #1106). The 100 instrumentation items do not on `develop`: #1107 and #1108 draft BL-1050 to BL-1149 and are open. Which of them are Build 13 and which are later is still for Karma to confirm.
+- Refresh of 21 Nov: not re-derived are the dependency rows and edges (section 2), the CI line (row 11), the founder list (5.1), section 4, the Project-doc lines in 1.6 and row 20, and the columns "BL rows that cite the card" in 1.3.
 - I ran no tests and touched no device, store or hosted service.
 
 Signed: product.

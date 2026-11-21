@@ -71,7 +71,7 @@ import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firs
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { ARRIVAL_SETTING, arrivalToWrite } from '@/lib/first-run/new-phone.logic';
-import { NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
+import { HeldScreen, NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
@@ -687,6 +687,7 @@ function FirstRun() {
   if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen lettersComing={route.accountHasBook} />;
   if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} />;
   if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
