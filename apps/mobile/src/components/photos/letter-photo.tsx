@@ -1,9 +1,8 @@
 /**
- * The picture on a kept letter's page (NS-01-R7 to R9; design spec 4): shown above the parent's words (C-01), with the words
- * they typed about it and the place they typed. The letter's author can add, replace (asks first, the first stays until
- * they choose) and take it off, each with Undo for 10 seconds. A missing file reads "Not on this phone any more" with
- * Remove; the letter itself reads whole. None of this touches the letter's words, transcript or recording.
- * Absent when the photos switch is off.
+ * The picture's CONTROLS on a kept letter's page and on Review (NS-01-R7 to R9, R21): add, replace (asks first, the first
+ * stays until they choose), take off with Undo, and the words and place. The author only (letterPhotoControls). The
+ * picture itself is LetterPicture below, drawn by the letter page's opening between the dateline and the words
+ * (CL-116 C-01). None of this touches the letter's words, transcript or recording. Absent when the photos switch is off.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Alert, View, useWindowDimensions } from 'react-native';
