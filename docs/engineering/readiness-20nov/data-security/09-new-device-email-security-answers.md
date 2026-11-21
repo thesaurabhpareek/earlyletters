@@ -1,6 +1,6 @@
 # 09. New-device sign-in email: security answers (security-architect, 21 Nov 2026)
 
-Status: DRAFT answers to Q2, Q3, Q4, Q5 and Q13 of `08-new-device-email-privacy-read.md` section 12 (PR #1152, read at its head; file 08 is not edited here). Docs only. Nothing is built, applied or decided for the founder. Rule ids: IAM and SEC chapters (`docs/engineering/05-identity-and-access.md`, `06-security-engineering.md`).
+Status: DRAFT answers to Q2, Q3, Q4, Q5 and Q13 of `08-new-device-email-privacy-read.md` section 12 (PR #1152, read at its head; file 08 is not edited here). Docs only. Updated 21 Nov after #1147, #1176 and #1182 merged: the hook, `ops_end_session`, the sender functions and the two new kinds are on `develop` but not applied to hosted (the founder's step); the sender Edge Function and the `/not-you` page are not built. Nothing is decided for the founder. Rule ids: IAM and SEC chapters (`docs/engineering/05-identity-and-access.md`, `06-security-engineering.md`).
 
 Tags: [V] read this session, source named; [E] my inference; [U] not read, a hosted or outside fact the builder must prove. Network note: `supabase.com` did not resolve from this session (host blocked). The Supabase docs were read as the MDX files of the public docs repo, and the Auth server and `auth-js` as source, all from `raw.githubusercontent.com` on 21 Nov 2026, branch `master`. Hosted projects may run an older Auth build than `master`; so every statement about what the hosted project does is [U] until the proof in section 2 or 3 is run. Files read, under `https://raw.githubusercontent.com/supabase/`:
 - D1 `supabase/master/apps/docs/content/guides/auth/sessions.mdx` (canonical page: supabase.com/docs/guides/auth/sessions)
@@ -18,9 +18,11 @@ Tags: [V] read this session, source named; [E] my inference; [U] not read, a hos
 | Q3 | The admin API **cannot** end one session by id. The only documented lever, `POST /logout?scope=`, needs that session's own JWT [V]. The way is a definer function that deletes the one `auth.sessions` row; GoTrue's own local sign-out is exactly that delete [V], and the docs say sign-out destroys the refresh tokens [V]. Whether the hosted role may delete it, and whether the refresh token dies, is [U] and must be proved against real Auth (section 3.3). The access token lives on until it expires, 15 minutes here [V]. Fail-safe: section 3.4. |
 | Q4 | Accept **48 hours**, one constant. Reasons in section 4. Make the link a GET that shows a static page; the action is a POST from a button. |
 | Q5 | Key `DEVICE_HASH_KEY`: an Edge Function secret held by the one sender function, never in Postgres, the repo or the client. The founder sets and rotates it. Rotation uses an overlap key so no device becomes "new" (section 5). |
-| Q13 | Until `ops.security_events` merges (PR #1147, open): the token row (`used_at`, `outcome`). After: a `security_events` row. Its kind list is closed and has no press kind, so the migration must add one (section 6). |
+| Q13 | Since #1147 merged `ops.security_events`: both the token row (`used_at`, `outcome`) and a `security_events` row. The kind list is closed; migration 20261121000000 added `new_device_signed_out` and `new_device_hook_failed` (section 6). |
 
 Finding for the privacy owner: file 08 section 13 item 2 says no session id may be written to "any table, log, queue row" of this feature, while section 6 requires the token row to name one session, and the hook can only hand the session id to the sender through a row. Both cannot hold. My reading: the session id may live in exactly two rows, the pending row (minutes, deleted on pickup) and the token row (dies with the token). That needs file 08 item 2 reworded by `privacy`; I do not edit it.
+
+Class of the session id: the merged migrations put the pending and token tables at L3 but the `session_id` and `token_hash` columns at L4 (stricter; DATA_CLASSIFICATION rule 8). Ruling by Karma (CTO): L4 stands as built, and this file says L4. Merged file 08 says L3; `privacy` must align file 08 to L4. File 08 is not edited here.
 
 ## 2. Q2: how the server sees a new session
 
@@ -54,7 +56,11 @@ Finding for the privacy owner: file 08 section 13 item 2 says no session id may 
    - otherwise inserts one pending row (profile id, session id, time), `on conflict do nothing`, inside a `begin ... exception when others` block that counts the failure and still returns the claims. Fail open is the only safe choice for sign-in (SEC-R24 wants the failure seen, so the failure is counted in `ops` and read by the same alert read as the other `ops` counters).
 2. The hook must not read an IP or user agent: the event does not carry them in the shape D3 documents, and the function does not look at `auth.sessions` at all.
 3. Grants: `supabase_auth_admin` only; revoke from `public`, `anon`, `authenticated` (D4:65-66). It is not callable by a signed-in user, so IAM-R14's `require_user()` rule does not apply; the matrix needs its deny cell for `authenticated` and `anon` (IAM-R24) and a `supabase/tests/grants.mjs` row.
-4. The sender (Edge Function, its own single-function login role, `04-secrets-keys-and-endpoints.md:354`) drains the pending rows, decides new or not, mints the token, sends, then deletes the pending row. Pending rows older than 24 hours are swept.
+4. The sender (Edge Function, its own single-function login role, `04-secrets-keys-and-endpoints.md:354`) works in this order: take (pickup deletes the pending row, `ops_new_device_pending_take`, merged in #1182), decide new or not, mint, send. Conditions on the sender, from the #1182 security review [not yet enforced; the sender PR must test each]:
+   - **One pending row at a time.** The sender takes one row, finishes it, then takes the next.
+   - **A crash cannot leave a thief's device known with no email.** Send first, and call `ops_new_device_record` as late as possible; or, if the sender records before it sends, count a failure between record and send. The test: kill the sender after record and before send, and show the failure is counted.
+   - **A crash after pickup loses that one email.** The row is already deleted, so nothing retries it. It fails open (the sign-in is never blocked) and the loss is counted in an operator-visible counter, read by the same alert read as the other `ops` counters. The 24-hour sweep covers only rows that were never picked up.
+   - **A null mint.** The 21st token in a day for one person makes `ops_new_device_token_mint` return null and write one `alert_mail_ceiling` event. The email still goes out, without the not-you link (or folded into a summary email). The sender tests that it never sends a link built from a null mint.
 5. The app's optional call (JWT in the Authorization header, device id and class word in the body, never in a URL): the function checks the JWT's `session_id` equals the pending row's session and fills class and device id. A call with no match changes nothing. No call within a few minutes: the sender uses class `other` and a null device id (file 08 section 3 default). A client token calling the sender's URL for anything else gets 401 (07.2 rule 7).
 6. Edge case the builder must test: a second sign-in from a modified client that sends no device id, on an account whose first device did register, still gets the email; the "first device sends nothing" rule rests on "no device row and no earlier pending row ever for the account", not on a missing id.
 
@@ -85,9 +91,9 @@ A fake `auth.sessions` (as `supabase/functions/escrow/test/fakes.ts:40` uses) pr
 
 ### 3.2 Recommended lever
 
-A security definer function `ops`-private, callable only by the sender's/page function's login role:
+A security definer function, callable by `service_role` only:
 
-`end_session(p_profile uuid, p_session uuid) returns int` : `delete from auth.sessions where id = p_session and user_id = p_profile`, returns the row count. The user id check means a token row can never end another account's session. Called only after the token row is claimed (single use, expiry checked) in the same transaction as setting `used_at`, so a failure rolls back and the token stays usable.
+`ops_end_session(p_profile uuid, p_session uuid) returns int` (merged in #1182, migration 20261121000000) : `delete from auth.sessions where id = p_session and user_id = p_profile`, returns the row count. The user id check means a token row can never end another account's session. Called only after the token row is claimed (single use, expiry checked) in the same transaction as setting `used_at`, so a failure rolls back and the token stays usable.
 
 ### 3.3 Proof the builder writes against real Auth
 
@@ -96,12 +102,12 @@ Run against the local stack and, for the privilege question, once on hosted by t
 | # | Step | Passes when |
 |---|---|---|
 | A1 | sign in as the same fictional account ("Asha") on three sessions A, B, C; keep B's refresh token and access token | three rows in `auth.sessions` for her |
-| A2 | call `end_session` for B | returns 1; rows A and C remain (this is the "3 sessions, 2 live" test of file 08 section 6) |
+| A2 | call `ops_end_session` for B | returns 1; rows A and C remain (this is the "3 sessions, 2 live" test of file 08 section 6) |
 | A3 | refresh with B's refresh token | refused; record the exact error name from the real server |
 | A4 | count refresh-token rows of B | zero (proves the cascade; if not zero, section 3.4 applies) |
 | A5 | refresh with A's token | works, and A's session is unchanged |
 | A6 | use B's access token on a PostgREST call and on `backup_session_live` | the call works until `exp` (15 minutes, `config.toml:41`); `backup_session_live` is false at once. The page and email must not say "signed out at once" |
-| A7 | call `end_session` for a session of another account with the right id but the wrong profile | returns 0, nothing deleted |
+| A7 | call `ops_end_session` for a session of another account with the right id but the wrong profile | returns 0, nothing deleted |
 | A8 | call twice | second returns 0 and the page answers "already done" |
 | H1 (founder, hosted, read-only) | `select has_table_privilege('<the function owner role>', 'auth.sessions', 'DELETE')` | true. If false, the lever does not exist on hosted and 3.4 is the design [U] |
 
@@ -148,24 +154,24 @@ Scanners and prefetch (SEC-R17 spirit: a link never acts on load):
 
 ## 6. Q13: where the press audit row goes
 
-- **Now (before #1147 merges).** The token row: `used_at` and a closed `outcome` (`ended`, `already`, `noted`), written in the same statement that claims the token. No IP, no user agent, no address, no request detail beyond a 12-hex request id (file 08 section 6 "Audited, content-free"). Written on the press only, never on load.
-- **After.** A row in `ops.security_events` through `public.ops_security_event_write(p_kind, p_n, p_subject_hash, p_request_id, p_detail)` (`20261111010000_audit_writers_security_events.sql:153-156` in PR #1147 at `d61b777`). Details I read there:
-  - the kind list is a closed check: `wrong_code_burst`, `invite_pause_tripped`, `step_up_failed`, `restore_requested`, `deletion_refused`, `alert_mail_ceiling` (lines 117-118). **No press kind exists.** The device migration must add `new_device_signed_out` by changing that check in a new migration; it cannot ride in #1147;
+- **Token row.** The token row: `used_at` and a closed `outcome` (`ended`, `already`, `noted`), written in the same statement that claims the token. No IP, no user agent, no address, no request detail beyond a 12-hex request id (file 08 section 6 "Audited, content-free"). Written on the press only, never on load.
+- **Security events row (#1147 merged).** A row in `ops.security_events` through `public.ops_security_event_write(p_kind, p_n, p_subject_hash, p_request_id, p_detail)` (`20261111010000_audit_writers_security_events.sql:153-156`). Details I read there at the time:
+  - the kind list is a closed check: `wrong_code_burst`, `invite_pause_tripped`, `step_up_failed`, `restore_requested`, `deletion_refused`, `alert_mail_ceiling` (lines 117-118). No press kind existed. Migration `20261121000000_new_device_sign_in.sql:101` (merged, #1182) now extends the check with `new_device_signed_out` (the press) and `new_device_hook_failed` (the counted fail-open);
   - `subject_hash` is a 16-byte keyed hash of a person computed by the caller (line 120, comment line 133); use the person hash that file already defines, not `DEVICE_HASH_KEY`;
   - `detail` takes only numbers and booleans under keys of a-z and underscore (`ops.security_detail_ok`, lines 106-111), so the outcome goes in as `{"ended": true}` or a count, never as a string;
   - `request_id` is 12 hex characters (line 121); retention 12 months by `ops_security_events_retention()`;
   - `alert_mail_ceiling` already exists, so the E81 ceiling hit (file 08 section 9, item 4) needs no new kind.
-- **Cutover.** The sender writes the token row always; once the kind exists, it also writes the `security_events` row in the same transaction. Test: one row per press, none on load, none on a second press.
-- **Number collision.** `20261111010000` is the file name inside the open PR #1147; ids come from merge order (`BUILD-BRIEF`, migrations rule), so the device migration takes the next id after #1147 merges and must not reuse it.
+- **Cutover.** The sender writes the token row always; the kinds exist, so it also writes the `security_events` row in the same transaction. Test: one row per press, none on load, none on a second press.
+- **Numbers.** #1147 (`20261111010000`) and the device migrations (`20261121000000`, `20261121010000`) are merged; the next migration takes the next free id.
 - **Enforced by:** not yet.
 
 ## 7. Order of work and reviewers
 
 | Step | Who builds | What | Gate before the next step |
 |---|---|---|---|
-| 0 | Karma | PR #1147 merges (`security_events`), PR #1152 settles Q1, Q6 to Q12 | the kind list can be extended |
+| 0 | Karma | #1147 (`security_events`), #1176 and #1182 (hook, `ops_end_session`, sender functions, the two new kinds) are merged; PR #1152 settles Q1, Q6 to Q12 | done for the kinds; #1152 open |
 | 1 | `security`, `sync` | Real-Auth proof harness: the local-stack runs P1 to P6 and A1 to A8, as a test with its output pasted. Test-only; any CI job is a proposal under `docs/ops/proposed/`, not a workflow edit | A3 and A4 results recorded. If A4 fails, section 3.4 is the design |
-| 2 | `data-architect` (author), `data-steward` | Migration PR: pending table, device table (file 08 section 4), token table, the hook function, `end_session`, the added `security_events` kind, sweeps, `grants.mjs` rows, level comments, access-matrix rows with deny cells (IAM-R24, DB-R12 and the grants rules in `CLAUDE.md`) | `npm run test:db` green; `classification.test.mjs` passes |
+| 2 | `data-architect` (author), `data-steward` | Migration PR (largely merged as 20261121000000 and 20261121010000; check what remains): pending table, device table (file 08 section 4), token table, the hook function, `ops_end_session`, the added `security_events` kinds, sweeps, `grants.mjs` rows, level comments, access-matrix rows with deny cells (IAM-R24, DB-R12 and the grants rules in `CLAUDE.md`) | `npm run test:db` green; `classification.test.mjs` passes |
 | 3 | founder | Applies the migration to hosted (the founder applies hosted migrations); switches the hook on in the dashboard; sets `DEVICE_HASH_KEY`, the new Resend key and the sender login role secret; runs H1 | hosted proof H1 and P7 pasted back |
 | 4 | `sync` | Sender PR: the function, mail with PR #1077 words, cap (E81), `/not-you` page and its two POSTs, held line only after the lever is proved | file 08 section 13 and this file; each `[NS-08-R21 ...]` test has a mutant |
 | 5 | founder, with `privacy` | Capability flag on; the store label row and policy line go to `legal` first (file 08 section 11) | privacy read on record |
