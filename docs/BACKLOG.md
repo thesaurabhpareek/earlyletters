@@ -6951,17 +6951,17 @@ Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL
 - Status: proposed (not decided; design-systems sets it to ready). Mode: agent. Owner: design systems. Milestone: M12. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-33-R11 (the guard from #1097, merged); no new requirement.
-- Problem and evidence: the guard detects an `Image` by its import source from `react-native` or `expo-image`, and treats a component as safe by the `Button$` name suffix. Aliased or third-party images and bare `PictureCard` or `Avatar` call sites are not detected. Unverified: the exact current code of the test.
-- Scope: detect images by import source from `react-native` or `expo-image` including aliases; replace the `Button$` suffix with an explicit allowlist; decide whether bare `PictureCard` and `Avatar` call sites are checked, and say so in the test.
+- Problem and evidence: in `apps/mobile/test/smart-invert.test.ts` the guard matches JSX tag names with a `PICTURE_TAG` regex and reads no import source. So an aliased image under another name (`const Pic = RNImage`), a third-party image (`FastImage`) and bare `PictureCard` or `Avatar` call sites are missed. The `Button$` name suffix exemption arrived with #838 (squash 6d8e6aa3, read on develop when this was edited; it was on the #838 head before that).
+- Scope: PROPOSED fix: detect images by import source from `react-native` or `expo-image`, including aliases, instead of by tag name; replace the `Button$` suffix with an explicit allowlist; decide whether bare `PictureCard` and `Avatar` call sites are checked, and say so in the test.
 - Done when: a planted aliased image without the invert guard fails the test, and the allowlist is the only way a component passes.
 - Test: the NS-33-R11 test in `apps/mobile/test`.
 
 #### BL-1444 Photo wiring slice: discard pending photos on leaving, one adopt at a time, and the picture after a forced sign-out
 - Status: proposed (not decided; waits for the photo stack #838 to #840 to merge). Mode: agent. Owner: mobile engineer (photo). Milestone: M12. Size: S. Depends on: BL-931 slices 4b to 5.
-- Priority: Medium. Gate: after the photo stack.
+- Priority: Medium. Gate: after the photo stack. Release gate: gaps (1) and (3) must land, with tests, before `EXPO_PUBLIC_PHOTOS` is turned on in any build (today photos are dev-profile only and store-flags rejects the flag in store profiles).
 - Satisfies: none given (BL-931 is the parent row; no requirement id was checked).
 - Problem and evidence: three gaps found in review of the photo slices. (1) Pending photos are not discarded on sign-out, on an account switch or on Erase everything. (2) The adopt path's global `adopting` flag silently drops a second adopt. (3) A forced sign-out on an expired session leaves the in-memory picture until the next Home focus. Unverified: the exact code on the stack heads.
-- Scope: discard pending photos in those three paths, each with a test; make a second adopt wait or queue instead of being dropped; clear the in-memory picture on forced sign-out. Split into two PRs if it grows past one.
+- Scope: discard pending photos in those three paths, each with a test; make a second adopt wait or queue instead of being dropped, and drop that queue on sign-out so it does not conflict with gap (1); clear the in-memory picture on forced sign-out. Split into two PRs if it grows past one.
 - Done when: a test for each of the three paths fails with the fix removed.
 - Test: `apps/mobile/test` photo tests.
 
