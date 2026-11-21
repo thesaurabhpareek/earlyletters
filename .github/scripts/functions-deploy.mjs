@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
  * function's header and this list disagree, so changing a function's gateway
  * check also changes this file (a founder-reviewed path).
  */
-export const NO_VERIFY_JWT = ['config', 'content', 'purge-worker'];
+export const NO_VERIFY_JWT = ['config', 'content', 'purge-worker', 'new-device-email'];
 
 /**
  * Functions whose GET /<name>/health answers without a session (RA-07-06, #202),

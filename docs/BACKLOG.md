@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
 
 ---
 
@@ -5512,6 +5512,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 #### BL-1150 Backup is iOS only: a platform gate before the flag can turn on (B5)
 - Status: proposed (Lens B review on PR #1112, https://github.com/thesaurabhpareek/earlyletters/pull/1112; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, security engineer (security lens required). Milestone: M15. Size: S.
 - Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: setting `EXPO_PUBLIC_BACKUP` on (and so every backup flag step, BL-1151 and BL-1198).
 - Problem: HARD BLOCKER for setting `EXPO_PUBLIC_BACKUP` on. `apps/mobile/src/lib/capabilities.ts` gates backup on the build flag alone. On Android and in Expo Go `ScribeFiles` is null, so the exclusion read-back is always false: the state file is deleted at each launch and the store always refuses to open it.
 - Scope: one platform check in `lib/capabilities.ts` so backup is available only on iOS with the native file module present; the launch call in `lib/backup/gate.ts` and the store open in `runtime.ts` skip quietly when it is off. A test per case: iOS with the module, iOS without it, Android, Expo Go (flag on in each), none of them deletes or refuses anything.
 - Done when: with the flag on, Android and Expo Go never delete the state file and never refuse to open; iOS behaves as before; the security lens has read the diff.
@@ -5574,6 +5575,794 @@ Written 21 Nov 2026 by the product agent, docs only. One row, asked for on PR #8
 - Scope: regenerate `docs/legal/DATA_CLASSIFICATION.md` section 4.1 (Postgres, "generated from the column comments") from the column comments in `supabase/migrations`, so the tables added since 3 Oct appear with their level, and the Planned rows that the migrations have since made real move into 4.1. `privacy` reads the result for levels and retention. The file is under `docs/legal`, so the founder merges this PR (D-125). No migration, no code, no new claim to a parent.
 - Done when: section 4.1 matches the column comments on the day of the PR and says that date, `supabase/tests/classification.test.mjs` names the regeneration date and fails when 4.1 is older than the newest migration that changes a column comment, and `npm run test:db` passes.
 - Source: PR #873 comment of 21 Nov (product answer, "needs its own BL row"); `docs/legal/DATA_CLASSIFICATION.md` 4.1 and the line above 4.5 that says 4.1 is regenerated when a migration is applied.
+
+## Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Karma or the founder sets it to `ready`. Sources are the review comments and PR bodies named in each row. Rows marked `human` need a device, a hosted project, or the founder or counsel. A Blocks field names what a row gates.
+
+#### BL-1183 DATA_CLASSIFICATION lacks the three new-device sign-in tables
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: legal, privacy engineer (legal path: the founder or counsel merges). Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36, PRIV-R01.
+- Blocks: nothing.
+- Scope: add rows for `ops.account_sessions_seen`, `ops.new_device_pending` and `ops.new_device_tokens` to `docs/legal/DATA_CLASSIFICATION.md` with level and retention, drafted by privacy and decided by the founder or counsel.
+- Done when: the three tables have rows that match the migration's column comments and retention function, and the classification test passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1184 New-device hook: `when others` misses statement timeout 57014
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: `public.hook_new_device_sign_in` swallows errors with `when others`, which does not catch a statement timeout (SQLSTATE 57014); handle it in a new migration (the applied file is never edited), count it as `new_device_hook_failed`, and add a test that a timeout still lets the sign-in through.
+- Done when: a forced statement timeout inside the hook returns the claims unchanged and records one failure count, and `npm run test:db` passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1185 New-device refresh-token cascade is unproven on hosted
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: on the hosted project (founder account) prove that `ops_end_session` removing the `auth.sessions` row also ends the refresh tokens, with one scripted run and its result in the PR body; no secret goes into the repo.
+- Done when: a recorded hosted run shows the refresh token is refused after `ops_end_session`, or the gap is filed as a new row.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1186 `access_matrix` and `explicit_grants` do not guard new objects
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: extend the access tests so a new table, view or function in `ops` or `public` with no entry fails, including a grant to an API role the test does not list; today the new-device objects pass only because someone listed them.
+- Done when: a scratch object added without a grant row turns `npm run test:db` red, a grant to `anon` or `authenticated` on an `ops` object is caught, and the new-device tables and functions are named in both tests.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1187 A fail-open hook handler that adds a role claim stays green
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: add a test that the hook's returned claims equal its input claims in every branch, including the failure branch, so a handler that adds a role or other claim is caught.
+- Done when: a mutant that adds a role claim in the fail-open branch fails a test.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1188 Issued access tokens stay valid until they expire: privacy wording note, and any rule on validity is the founder's
+- Status: proposed (post-merge review B of PR #1176, item 6, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: privacy engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36 (the cited rows; the finding itself is a wording note, not a rule).
+- Blocks: nothing.
+- Scope: the post-merge Review B on #1176 (item 6) says: access JWTs already issued stay valid until they expire after the session is ended; state this in the user-facing wording. Privacy drafts that wording note (the new-device page and email copy say what ends and when). Nothing is built here. Any rule on token validity (shorter lifetimes, a revoke list, refusing on use) is a founder decision (what users are promised, CR-73); this row does not propose one and no agent builds one.
+- Done when: privacy has written the wording note and the founder has decided whether the stated window is enough; if the founder asks for a rule, a new row is filed from that decision.
+- Source: post-merge review B of PR #1176, item 6, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1189 Reminder scheduler reads pending notifications before checking reminders are off
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none (hardening of BL-966; the rows BL-966 meets are NS-32-R4b and NS-32-R7, which this row changes none of).
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/reminders/scheduler.ts` check that reminders are off before the pending-notification read, so an off state reads nothing.
+- Done when: a test with reminders off shows no pending-notification read, and the planner tests still pass.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1190 Plan reminders set `lastSignature` before the re-plan awaits
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none (hardening of BL-966; the rows BL-966 meets are NS-32-R4b and NS-32-R7, which this row changes none of).
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/billing/plan-reminders.ts` (line 94, to verify against the file when picked up) `lastSignature = signature` is set before `await rescheduleReminders()`; move it to after the re-plan has completed, so a failed re-plan is tried again on the next call. The evening scheduler in `reminders/scheduler.ts` already sets it after its work.
+- Done when: a test where the re-plan throws shows the next call plans again, and a mutant that sets the signature early fails.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1191 No DST test for the reminder planner
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: NS-32-R1, NS-32-R6 (one budgeted notification a local day; time zone change).
+- Blocks: None.
+- Scope: add planner tests across a spring-forward and a fall-back day so a reminder keeps its local clock time and the one-per-day rule holds.
+- Done when: tests for both DST days pass and a mutant using a fixed 24 hour step fails.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1192 Boundary scan: JSX text with `/*` hides later imports, and a backtick `require(` is missed
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: in `apps/mobile/test/helpers/import-reader.ts` handle `/*` inside JSX text and a `require(` inside a template literal, each with a self-test.
+- Done when: a file with `/*` in JSX text followed by a forbidden import is flagged, a backtick `require(` is flagged, and the scan of the real tree is unchanged.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1193 Boundary scan: `KNOWN_COUNT` lives in the same file as the entries it counts
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: keep the pinned counts apart from the KNOWN entries (a separate file or a reviewed fixture), so adding an entry and its count in one edit is visible in review.
+- Done when: the counts and the entries live in different files, and a self-test shows a new entry without a count change fails.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1194 Boundary scan: `unreadRoots` excludes `apps/web` and `lib` is unscanned
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: include `apps/web` in the unread-roots check and scan `lib`, or list each with a reason in `UNSCANNED_MOBILE` or `UNSCANNED_PACKAGE`.
+- Done when: a new folder under `apps/web` or `lib` that nothing scans fails the test, and every current folder is scanned or listed with a reason.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1195 No test pins the Apple revoke watch wiring in `session-provider.tsx`
+- Status: proposed (review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: NS-45-R4.
+- Blocks: None.
+- Scope: add a test that the Apple revoke path in `apps/mobile/src/lib/auth/session-provider.tsx` (`startAppleRevocationWatch`, lines 275 to 283) is reached from the foreground gate (`onAppActive`) and from the revoke listener (`onAppleRevoked: watchAppleRevocation`, which calls `AppleAuthentication.addRevokeListener` in `apps/mobile/src/lib/auth/apple.ts` line 94).
+- Done when: a mutant that removes the call fails a test.
+- Source: review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125.
+
+#### BL-1196 Confirm Apple's NOT_FOUND semantics for the revocation read
+- Status: proposed (review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, auth owner. Milestone: M15. Size: S.
+- Satisfies: NS-45-R4.
+- Blocks: None.
+- Scope: on a device, check what Apple's credential-state read returns for a revoked account and for an account never signed in on this device, and that `NOT_FOUND` is treated as the right one of the two; record the result.
+- Done when: the PR body records the device result, and the gate treats `NOT_FOUND` as the checked behaviour.
+- Source: review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125.
+
+#### BL-1197 Nothing reads the `signIn` kill switch yet
+- Status: proposed (review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, sync owner. Milestone: M15. Size: S.
+- Satisfies: NS-41-R25 (when built).
+- Blocks: None.
+- Scope: wire a reader for `killSwitches.signIn` in the sign-in entry (a switch hides, never turns on); `signIn` stays out of `KILL_SWITCH_FLAG` as `apps/mobile/test/capabilities.test.ts` line 308 pins (verified on develop).
+- Done when: with the switch set the sign-in entry is hidden and nothing else changes; unset, behaviour is as before.
+- Source: review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113.
+
+#### BL-1198 Backup: a locked Keychain that returns null reads as no session
+- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: backup flag on (`EXPO_PUBLIC_BACKUP`); decide the rule before the flag goes on.
+- Scope: needs a device check: with the phone locked, does the Keychain read return null instead of throwing, so the backup code treats it as no session; decide the rule (retry, defer or treat as unknown) before the flag goes on, and test it.
+- Done when: the device result is recorded, the chosen rule has a test, and a locked Keychain never deletes the state file.
+- Source: review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169.
+
+#### BL-1199 Backup: a session blob without a string user id reads as no session
+- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: None.
+- Scope: make a stored session blob with no string user id a distinct, content-free unknown state in the backup code rather than no session, so it cannot trigger an end-of-session delete.
+- Done when: a test with a blob lacking a string user id shows no delete, and a blob with a string id behaves as before.
+- Source: review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169.
+
+#### BL-1200 Days file: a size cap on read and tick validation
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R6 (a corrupt file fails closed); no NS-47 row names a size cap or a tick shape, so this is hardening and carries no P0 id.
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/days/store-file.ts` and `store.logic.ts` treat a file over a fixed size cap as corrupt, and validate each tick (slug-only ids, no duplicates, a limit on count).
+- Done when: an oversized or malformed file reads as corrupt and is replaced safely, with a test for each.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1201 Days file: assert the file protection class
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R6 (protection class no weaker than SEC-R15's).
+- Blocks: None.
+- Scope: add an assertion and test that the days file is written with the intended iOS file protection class beside the backup exclusion read-back.
+- Done when: a test fails when the protection class is missing or weaker than the one stated in the PR body.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1202 DATA_CLASSIFICATION has no row for the days file
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: human. Owner: legal, privacy engineer (legal path: the founder or counsel merges). Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R1 (the whole store is L4), PRIV-R01.
+- Blocks: None.
+- Scope: add a row for `days/days.v1.json` (level, retention, erased on sign-out and on Erase everything) to `docs/legal/DATA_CLASSIFICATION.md`, drafted by privacy and decided by the founder or counsel.
+- Done when: the days file has a classification row that matches the code, and the classification test passes.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1203 Hook grant is noted in `grants.mjs`
+- Status: done (the comment is in `supabase/tests/grants.mjs` lines 17 and 18, landed in PR #1182, https://github.com/thesaurabhpareek/earlyletters/pull/1182). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: a one-line comment in `supabase/tests/grants.mjs` saying that `public.hook_new_device_sign_in` (executable by `supabase_auth_admin` only) is asserted in `new_device_sign_in.test.mjs`. Found already on develop; kept as a record.
+- Done when: the comment is there and names the test file; no grant changes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; evidence PR #1182.
+
+#### BL-1204 New-device tokens: a database cap on `expires_at`
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: in a new migration (never edit the applied file) add `check (expires_at <= created_at + interval '7 days')` to `ops.new_device_tokens`, so a direct insert cannot make a long-lived token. The mint function `ops_new_device_token_mint` already refuses a ttl under 1 minute or over 7 days (PR #1182), so this is the table-level backstop; the 48 hour default stays in the mint function. The migration is written, never applied: it waits for `approve-migration` and the founder's apply step.
+- Done when: a test shows a token with `expires_at` beyond 7 days is refused and a 48 hour one is accepted, and `npm run test:db` passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1205 APPLY.md file 36: founder steps for the refresh-token cascade (A3 and A4)
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: `supabase/APPLY.md` File 36 lists H1 only; add the two checks from the cascade proof (a refresh with the ended session's token is refused, and refresh-token rows for that session are zero) beside H1, so "ended" is not trusted before the cascade is proved. Docs only; BL-1185 is the run itself.
+- Done when: File 36's founder steps name both checks and say the page must not say "signed out" until they hold.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1206 The file 09 brief that APPLY.md cites is not in the repo
+- Status: done (PR #1161, https://github.com/thesaurabhpareek/earlyletters/pull/1161, merged 21 Nov 2026 04:47 UTC as 2bb32424; the cited file is on develop). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: `supabase/APPLY.md` File 36 cites `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, which was not on develop when the row was filed (it was read from a branch). PR #1161 added that file, so the citation now resolves and no change to APPLY.md is needed.
+- Done when: the cited path exists on develop (yes: `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, from PR #1161).
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1207 Boundary scan: a scratch-tree test for `scan()`, and the `/*` test gets its closing `*/`
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards; no product row.
+- Blocks: nothing.
+- Scope: give `scan()` a root argument and add a scratch-tree test, so removing the `found.unresolved.push` lines or skipping `components` turns a test red; add the exact line `const s='/*'; import ...; const t='*/';` to the `/*` self-test in `apps/mobile/test/boundaries.test.ts` (the current one has no closing `*/` and stays green on the old reader).
+- Done when: the two reviewer mutants (unresolved push removed, `components` skipped) fail a test, and the `/*` self-test fails on the old reader.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1208 Days file: `writeDays` must not overwrite a newer file
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged and a writer in the ticking PR.
+- Satisfies: NS-47-R28.
+- Blocks: nothing.
+- Scope: when the ticking PR adds a writer, guard `writeDays` so a file with a higher unknown version is read for known keys and never rewritten or deleted (`apps/mobile/src/lib/days/store-file.ts`); the days page decides what the parent sees.
+- Done when: a test writes over a `newer` file and shows it is unchanged, and a mutant without the guard fails.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1269 Days file: a test that dropping the post-rename exclusion check goes red
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
+- Satisfies: NS-47-R6.
+- Blocks: nothing.
+- Scope: Review A on #1175 ran a mutant that forces the post-rename exclusion check true (`store-file.ts` line 76) and it stayed green; add a test where the rename drops the exclusion flag and the store reports it unavailable.
+- Done when: the mutant fails a test.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1270 Export README and inventory name the days file (before the days flag)
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
+- Satisfies: NS-47-R10, and SECURITY-OPEN-QUESTIONS C-6 (`docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md`).
+- Blocks: `EXPO_PUBLIC_DAYS` on.
+- Scope: the recovery export README and the inventory line must name the days file, which lives outside `scribe.db` (Review B on #1175 asked for this before the flag turns on); add a test that the export holds no day key, tradition or country.
+- Done when: the README and inventory name the file and the export test passes.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+## Split of the proposed group rows, batch 1 (21 Nov 2026, proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. Gate G0 is met only when a P0 row has a row of its own, and 683 of the 1,052 P0 rows map only to the proposed group rows filed from `docs/product/prd/BACKLOG-GAPS.md` (many of them size L). These 25 rows (BL-1158 to BL-1182) split eleven of those groups into rows of 2 to 6 P0 ids each, one PR per row: the first-run groups NS-39 to NS-45, then NS-33, NS-36, NS-08 (flip build), NS-09 and NS-14, and the stragglers of NS-19, NS-21, NS-24, NS-35 and NS-37. Each id on a Satisfies line below is one that only a group row named before; the group row itself is not edited by this batch. The count of every group, the split proposed for each and the later batches are in `docs/product/P0-SPLIT-PLAN-21nov.md`.
+
+Every row is `proposed`: Karma or the founder sets `ready`. Dependencies are the group row's, unchanged; a wait on a founder step is carried by the row it depends on. Nothing here copies or changes a requirement. Ids come from `node scripts/agents/next-id.mjs` (develop plus open PRs, 21 Nov: BL-1158 was the next free id).
+
+#### BL-1158 Sign-in screens: the two doors, same answer for any address, errors, VoiceOver
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 3 of BL-208; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: S. Depends on: BL-053, BL-961.
+- Satisfies: NS-41-R1, NS-41-R2, NS-41-R7, NS-41-R20, NS-41-R22.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: the Welcome doors, the identical screens and request for a known and an unknown address, the words for each AuthErrorKind, no Google or passkey control, VoiceOver focus. One PR. The card (NS-41) is the source of truth; nothing here changes a row. The rest of BL-208 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1159 Sign-in session rules: link on another phone, signed-in phone, unowned letters, new phone, Keychain, password refused
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 3 of BL-208; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: S. Depends on: BL-053, BL-961.
+- Satisfies: NS-41-R3, NS-41-R4, NS-41-R5, NS-41-R14, NS-41-R19, NS-41-R23.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: what a link, a session and a phone with no book may and may not do, and the Keychain class of the session. One PR. The card (NS-41) is the source of truth; nothing here changes a row. The rest of BL-208 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1160 Sign-in privacy: Apple code once, no identifiers in logs, Hide My Email
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 3 of BL-208; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: S. Depends on: BL-053, BL-961.
+- Satisfies: NS-41-R13, NS-41-R16, NS-41-R18.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: the Apple authorization code, the log and analytics canary for sign-in, and the Hide My Email path (the Apple relay step is a founder step, FT-07, FT-12, FT-13). One PR. The card (NS-41) is the source of truth; nothing here changes a row. The rest of BL-208 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1161 Sign out: unsent letters, a session ended elsewhere, servers off
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 3 of BL-294; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-237, BL-961.
+- Satisfies: NS-45-R2, NS-45-R3, NS-45-R16.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: Sign out with unsent letters, the phone signing out once after a session ends elsewhere, and no account rows when servers are off. One PR. The card (NS-45) is the source of truth; nothing here changes a row. The rest of BL-294 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1162 Delete account: the request, the scheduled screen, Cancel, offline, no Terms needed
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 3 of BL-294; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-237, BL-961.
+- Satisfies: NS-45-R6, NS-45-R7, NS-45-R9, NS-45-R10, NS-45-R15.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: request_account_deletion limits, Delete account without agreeing to new Terms, the scheduled screen on any phone, Cancel within 30 days, and the offline line. One PR. The card (NS-45) is the source of truth; nothing here changes a row. The rest of BL-294 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1163 Delete account: sealed letters, pictures on the phone, VoiceOver and AX5
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 3 of BL-294; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-237, BL-961.
+- Satisfies: NS-45-R11, NS-45-R12, NS-45-R18.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: what deletion does to a sealed letter and to pictures on the phone, and the sign-out and deletion screens at VoiceOver and AX5. One PR. The card (NS-45) is the source of truth; nothing here changes a row. The rest of BL-294 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1164 First book fields: birthday, name and signs-as, with their refusals
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-292; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-198, BL-291.
+- Satisfies: NS-43-R1, NS-43-R2, NS-43-R3, NS-43-R4, NS-43-R7.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: the Continue rules and the phone and server refusals for the birthday, the name and signs-as. One PR. The card (NS-43) is the source of truth; nothing here changes a row. The rest of BL-292 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1165 First book: returning account, English-only build, AX5 and VoiceOver, server refusal
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-292; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-198, BL-291.
+- Satisfies: NS-43-R8, NS-43-R11, NS-43-R13, NS-43-R14.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: when these screens are never shown, the absence of any language line in an English-only build, reachability at AX5, and a server refusal that deletes nothing. One PR. The card (NS-43) is the source of truth; nothing here changes a row. The rest of BL-292 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1166 Terms step: unticked box, a new version, a decline, Not now, AX5
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-291; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-577, BL-579.
+- Satisfies: NS-42-R1, NS-42-R10, NS-42-R11, NS-42-R15, NS-42-R16.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: the Terms screen and sheet states, including the new major version and a decline, with export and Delete account always reachable. One PR. The card (NS-42) is the source of truth; nothing here changes a row. The rest of BL-291 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1167 Sensitive-data step: equal answers, decline, the server refusal
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-291; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-577, BL-579.
+- Satisfies: NS-42-R4, NS-42-R5, NS-42-R6.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: the two equal answers, a decline that uploads nothing, and the phone pausing the outbox when the server raises SCCON. One PR. The card (NS-42) is the source of truth; nothing here changes a row. The rest of BL-291 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1168 Age gate: the first screen, Yes and No, the sheet step
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-198; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-965.
+- Satisfies: NS-40-R1, NS-40-R2, NS-40-R3, NS-40-R8, NS-40-R13.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: the age question as the first interactive screen on every entry, what Yes and No store, and the consent sheet age step. One PR. The card (NS-40) is the source of truth; nothing here changes a row. The rest of BL-198 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1169 Country hook: refusal after the code, each sign-up path, the daily counts (D-131)
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-198; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-965.
+- Satisfies: NS-40-R9, NS-40-R10, NS-40-R12.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: the hook behind its switch, a refusal shown only after the code, every sign-up path refused from a test location, and counts with no IP address, email or user id. One PR. The card (NS-40) is the source of truth; nothing here changes a row. The rest of BL-198 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1170 First launch: speech download, offline, servers off
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-188; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-39-R3, NS-39-R4, NS-39-R5, NS-39-R6.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the speech card that requests no model byte until the tap, a recording that waits for its words, the offline state, and the Welcome with servers off. One PR. The card (NS-39) is the source of truth; nothing here changes a row. The rest of BL-188 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1171 First launch: microphone primer and a database that cannot open
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-188; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-39-R10, NS-39-R11.
+- Scope: tests first, then code or words only where a test fails, for the 2 rows above: our primer before iOS asks for the microphone, and the recovery screen that deletes nothing. One PR. The card (NS-39) is the source of truth; nothing here changes a row. The rest of BL-188 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1172 Accessibility floor: headings, tab names, touch targets, VoiceOver path
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-184; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-927, BL-928, BL-984.
+- Satisfies: NS-33-R1, NS-33-R2, NS-33-R4, NS-33-R6.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the letter page and Me headings, 44 pt targets at the largest size on an iPhone SE 3, and a VoiceOver path from start to Keep. One PR. The card (NS-33) is the source of truth; nothing here changes a row. The rest of BL-184 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1173 Accessibility floor: Reduce Motion, Bold Text, Increase Contrast
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-184; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-927, BL-928, BL-984.
+- Satisfies: NS-33-R5, NS-33-R7, NS-33-R8.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: no moving loop under Reduce Motion, the largest text with Bold Text, and 4.5:1 text colours; the device checks are named in the row. One PR. The card (NS-33) is the source of truth; nothing here changes a row. The rest of BL-184 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1174 Capture and doorway stragglers: no new take outside Home, doorways, no decode while recording
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-183; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-947.
+- Satisfies: NS-19-R1, NS-19-R4, NS-35-R1, NS-35-R3, NS-35-R4, NS-37-R2.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: a kept letter taking no new audio, two takes each verified on their own, every doorway landing on Home or a reading screen, and no picture decoded during a recording. One PR. The card (NS-19, NS-21, NS-24, NS-35, NS-37) is the source of truth; nothing here changes a row. The rest of BL-183 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1175 Letter page stragglers: who can read it, other parent controls, no donation to Spotlight, a lapsed plan
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-183; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-947.
+- Satisfies: NS-21-R9, NS-21-R11, NS-21-R13, NS-24-R10.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the Who can read it row for one adult, no author-only control on another parent's letter, nothing donated to search or Siri, and a year read in full on a lapsed plan. One PR. The card (NS-19, NS-21, NS-24, NS-35, NS-37) is the source of truth; nothing here changes a row. The rest of BL-183 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1176 A letter with a picture: delete, restore, purge, no bucket object, Find index row
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 3 of BL-186; Karma or the founder sets it to ready). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: S. Depends on: BL-933, BL-959, BL-960, BL-952.
+- Satisfies: NS-36-R1a, NS-36-R1b, NS-36-R1c, NS-36-R1d, NS-36-R8.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: what is removed, brought back and purged with a letter on the phone, and the empty entry-photos bucket. One PR. The card (NS-36) is the source of truth; nothing here changes a row. The rest of BL-186 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1177 Export 1.7.0 and the seal clock: every part, schema rejection, two time zones
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 3 of BL-186; Karma or the founder sets it to ready). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: S. Depends on: BL-933, BL-959, BL-960, BL-952.
+- Satisfies: NS-36-R2, NS-36-R3, NS-36-R5, NS-36-R7.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the export of a letter with every part, the 1.7.0 picture path and schema, and a seal opening at one instant on two phones. One PR. The card (NS-36) is the source of truth; nothing here changes a row. The rest of BL-186 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1178 New columns: level comment, content trigger tuple, log canary
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 3 of BL-186; Karma or the founder sets it to ready). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: S. Depends on: BL-933, BL-959, BL-960, BL-952.
+- Satisfies: NS-36-R10, NS-36-R11, NS-36-R12.
+- Scope: tests first, then code or words only where a test fails, for the 3 rows above: a migration comment with its level, the content trigger tuple and view, and the log canary for new fields. One PR. The card (NS-36) is the source of truth; nothing here changes a row. The rest of BL-186 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1179 Recording backup, flip build: second phone, another account, retry key, kill switch
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-128; Karma or the founder sets it to ready). Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: BL-976.
+- Satisfies: NS-08-R10, NS-08-R11, NS-08-R13, NS-08-R14.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: a second phone downloading without duplicates, account B never uploading A's recordings, the same object key on retry, and uploads stopping on the kill switch. One PR. The card (NS-08 (flip build)) is the source of truth; nothing here changes a row. The rest of BL-128 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1180 Recording backup, flip build: deletion purge, lapsed plan, quota, stopping backup
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-128; Karma or the founder sets it to ready). Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: BL-976.
+- Satisfies: NS-08-R16, NS-08-R17, NS-08-R18, NS-08-R19.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the purge of every object and escrow wrap on deletion, backup continuing free on a lapsed plan, capture working at our quota, and stop-at-once. One PR. The card (NS-08 (flip build)) is the source of truth; nothing here changes a row. The rest of BL-128 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1181 Let it go: the launch sweep, a failing delete, the line shown once
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-181; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-925, BL-926, BL-977, BL-941.
+- Satisfies: NS-09-R1, NS-09-R2, NS-09-R3, NS-09-R4a.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: a draft marked discarding with its file, a delete that throws on the sweep, on Listen and in Review, and the line shown once per take (BL-923 and BL-924 are done: add the ids first, then test). One PR. The card (NS-09, NS-14) is the source of truth; nothing here changes a row. The rest of BL-181 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1182 Let it go on two phones and the child switcher: queued discard, no switcher on Listen, reset on sign-in
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-181; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-925, BL-926, BL-977, BL-941.
+- Satisfies: NS-09-R7, NS-09-R8, NS-14-R8, NS-14-R11.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the queued discard until the server acknowledges, the second phone holding neither row nor audio, no switcher while Listen is open, and A's selection reset when B signs in. One PR. The card (NS-09, NS-14) is the source of truth; nothing here changes a row. The rest of BL-181 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+## Analytics engineering requirements (21 Nov 2026, proposed)
+
+Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#1200; D-163 and E95 are merged). BL-1235 to BL-1268 are used. Rows A00 to A18 are stream A, B01 to B14 stream B, G01 the gate (no shared files, section 4 of the source). Milestone for every row: before the production readiness build. Founder hands FH-n are listed in section 11 of the source. Nothing here turns analytics on; the production value of `analytics.basicsPolicy` stays `ask_first`.
+
+#### BL-1235 Re-cut the PostHog adapter as the P1 to P8 stack of the split plan (ER-A00)
+- Status: ready (D-163 merged, hold on #1086 lifted). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: L. Depends on: none.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Rebuild the PostHog adapter under the size limit as eight PRs (P1 to P8 of the split plan): values, registry, crash reducer (off), send path, catalog shrink, validators, helpers and canary, from the #1086 head tree, no commit carrying the old name history. The opt-in wording in the #1086 comments is superseded by D-163: the policy is `basicsPolicy`, default `ask_first`. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: each PR passes npm test -w @scribe/analytics and npm run typecheck alone; sizes per adapter-split-plan-20nov.md section 3; the barrel exports every module the other stream needs.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A00.
+
+#### BL-1236 Analytics contract types: tier, basics policy, gate decision (ER-A01)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1235 (it adds the barrel exports).
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: contracts.ts with BasicsPolicy, EventTier, GateDecision, AnalyticsGate; the barrel exports what stream B imports; frozen after wave 0. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: typecheck passes and a contracts test over a fixture row passes; the test that every shipped registry row carries a tier is BL-1255's.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A01.
+
+#### BL-1237 Resolve analytics.basicsPolicy: ask_first default, tighten-only remote (ER-A02)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1236.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Pure resolveBasicsPolicy from the build value, profile, optional region map (empty by default) and remote value; unknown, empty, missing or non-production resolves to ask_first; remote can only tighten. Also creates docs/analytics/instrumentation/basics-policy-record.json (policy ask_first, founder_decision null, counsel_confirmation null), the machine-readable record BL-1238 reads. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: table test over every input including garbage and a remote loosen attempt passes.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A02.
+
+#### BL-1238 Policy-aware consent gate; the old no-send-before-yes test kept as the ask_first case (ER-A03)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1236, BL-1237, BL-1239.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: The client asks the gate instead of reading consent status. ask_first behaves as today. collect_by_default sends nothing until the in-app disclosure has been shown and recorded (dropped_disclosure_pending), then lets only tier basics through; other events are dropped_not_basics; the person's off switch wins. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: (1) the old no-send-before-yes build test runs unchanged as the ask_first case; (2) a send before consent happens only under collect_by_default, and analytics-policy.test.ts fails unless production resolves ask_first OR basics-policy-record.json holds a non-null founder_decision naming a D-number present in docs/DECISIONS.md and a non-null counsel_confirmation (the flip PR edits the record, not the test; privacy and Karma review any change to either); (3) a test-only fixture row with tier consented is dropped under collect_by_default; (4) off beats policy; (5) no event passes before the disclosure flag. Privacy reviews.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A03.
+
+#### BL-1239 Anonymous install id minted on first allowed event, retired on off (ER-A04)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1236.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Lowercase uuid, minted only when the gate first allows an event, never an account, device or advertising id, bootstrapped into the SDK with no identify; retire on off (cap 20), new id on a later on. At the cap the oldest retired id is never silently dropped: the cap triggers an analytics-forget call for that id, and the id leaves the list only after it is acknowledged (privacy to confirm this behavior). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: mint on first allowed event, none under ask_first before a yes, retire on off, new id on on, 21st toggle forgets the oldest retired id before removing it and keeps it in the list if the call is not acknowledged. Privacy reviews. The DATA_CLASSIFICATION.md row for the new on-device store (install id, retired-id list, SDK queue) is drafted by privacy and merged by the founder (docs/legal) before the flag goes on.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A04.
+
+#### BL-1240 PostHog adapter in one module with every SDK option pinned (ER-A05)
+- Status: ready (pair session; the dependency approval FH-6 is given there). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: posthog.ts as the only SDK importer; options per posthog-standard.md 3.4 including the three push options; dynamic import only when the gate first allows; no plugin. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V17 test pins every option and fails on a missing one; no SDK constructed before the gate allows.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A05.
+
+#### BL-1241 before_send as the last gate: tier, registry, property and PII checks (ER-A06)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238, BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Gate decision, V11, V12, V13, rebuild properties from the registry list plus the ten allowed dollar keys ($app_version, $app_build, $os_name, $os_version, $device_type, $lib, $lib_version, $session_id, $process_person_profile, $geoip_disable), count drops by reason only. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: positive and negative self-tests for V11 to V13; a non-basics event is dropped even if a caller bypasses the helper. Privacy reviews.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A06.
+
+#### BL-1242 Static validators V1 to V10 and V16, registry row fields reconciled (ER-A07)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Rename row fields to the standard, add owner, side, consent_gate, v, supersedes, funnels, sampling and tier, V8 exemption for server, store and support rows, settle grandfathered and heldNames. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: each rule has a positive and a negative self-test; V8 agrees registry, code and TRACKING_PLAN.md both ways.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A07.
+
+#### BL-1243 V17 SDK options test and V18 one-module lint rule and test (ER-A08)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: V17 pins options; V18 allows only posthog.ts to import the SDK or call capture, identify, screen, captureException, logs or surveys; no PostHogProvider. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a planted violation in a fixture fails each check.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A08.
+
+#### BL-1244 Off switch, withdrawal and Erase empty the queue, the id and the SDK file (ER-A09)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: optOut, reset, empty the SDK queue, retire the id, on off and on Erase everything, sending nothing. Erase must not clear the retired-id list: those ids are what the forget call needs. forgetPending is the retry marker; it stays set until the forget call is acknowledged, and a partial acknowledgement keeps the unacknowledged ids in the list. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: unit test of the call order; a test that Erase leaves the retired-id list and forgetPending in place, and that a partial acknowledgement keeps only the unacknowledged ids; named device check that no PostHog file in the app container keeps the id or a queued event after off and after Erase (qa adds the row to the device test sheet). Privacy reviews; the on-device store row in DATA_CLASSIFICATION.md is the same founder-merged row as BL-1239.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A09.
+
+#### BL-1245 Region, host and key checks (ER-A10)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: EXPO_PUBLIC_POSTHOG_REGION us or eu maps to two fixed hosts; other values mean no SDK; the key must start phc_; an optional proxy host override exists and is off. The real key is FH-1 and is not needed to merge. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: both hosts, an arbitrary host refused, a phx_ key refused, yes with no key sends nothing.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A10.
+
+#### BL-1246 PostHog-only error tracking: reducer fixes, caps and reportFault (ER-A11)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Run the PII and property checks on every kept dollar field of an exception; unknown class becomes other; cap 5 per foreground session and one per class and top frame; reportFault takes a closed code; autocapture limited to uncaught and unhandled, console empty, nativeCrashes false; crash capture stays off unless the founder says yes (FH-13). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests for each point with Asha strings; no message text of any exception or chained cause leaves. Privacy reviews.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A11.
+
+#### BL-1247 Exception canary and a real exception payload fixture (ER-A12)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1246.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Asha strings through the before_send path for exception entries with module, nested cause, long function name, context line and vars, on a hand-written fixture. The real payload is captured once by BL-1268, which commits exception-real.json; this row then adds one replay test on it. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: canary green on the hand fixture; the replay test is added when BL-1268 lands, and until then the real field names stay unverified.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A12.
+
+#### BL-1248 Remote flags off, own exposure event plumbing (ER-A13)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: No flag request and no flag event; the experiment arm is drawn on the phone and reported by our own exposure event. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a fake network sees no flag call in a full session.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A13.
+
+#### BL-1249 Production-only build gating and the replaced build test (ER-A14)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238, BL-1245.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Only the production profile can construct the SDK; analytics-off-v1.test.ts is replaced by analytics-policy.test.ts, not deleted. It keeps what D-095 still needs for other profiles: analytics off in each non-production profile, no key while off, and that nothing imports the PostHog SDK except lib/analytics/index.ts, reached only after the gate allows. The literal 'SDK is not a dependency' cannot hold once BL-1240 adds it (a dependency is not per profile), so the assertion becomes 'never imported or constructed in a non-production profile', reviewed by its owner and Karma, never weakened to pass. Adds: production resolves ask_first unless the record of BL-1238 says otherwise. The eas.json flip is the founder's; ops first rewrites the check analytics in apps/mobile/scripts/preflight-production.mjs and stillOff (near line 206) in apps/mobile/scripts/preflight-testflight.mjs. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests as stated pass; nothing in eas.json is edited by this row.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A14.
+
+#### BL-1250 Global properties build_kind and is_internal, hidden tester switch (ER-A15)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: build_kind and is_internal on every event; one local switch, off and unreachable in a store install (FH-10). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: both present on every event; the switch is unreachable in a store build. DATA_CLASSIFICATION.md row for the persisted tester switch (on-device flag, no content; privacy confirms class and level), in the same PR or the founder-merged row of BL-1239.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A15.
+
+#### BL-1251 Offline, flush timer and client caps (ER-A16)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: 60 s timer, background flush, SDK flushAt 20, client cap of 60 events a minute counted by reason. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: unit tests for the cap and timer; named device check: airplane mode, 150 events, restore, count arrivals (qa).
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A16.
+
+#### BL-1252 Deletion coverage for installs that never said yes (ER-A17)
+- Status: blocked (BL-1061 and BL-1062 are still proposed). Mode: agent. Owner: privacy engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1239, BL-1061, BL-1062.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Account deletion and Erase everything pass the current and every retired id to analytics-forget whatever the consent status; a person with no account has a route. Phone half: (a) allIds includes an id minted under collect_by_default; (b) the Erase and account-deletion callers (erase-everything.ts, account-deletion/api.ts) send it; (c) the local retired-id list is cleared on the forget acknowledgement and kept on failure so the request can be retried. Function half: (d) analytics-forget accepts ids from a signed-out withdrawal (BL-1062) and reads persons_queued_for_deletion and deletion_errors (BL-1061); (e) the staging drill (BL-1060) includes a never-consented id. Edits to consent.ts only in allIds and the acknowledgement, after BL-1239 merged, with the analytics engineer as required reviewer. Wording about withdrawal is counsel's. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: one test per point (a) to (e) passes.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A17.
+
+#### BL-1253 Stale vendor and version wording; remove the unused native plugin (ER-A18)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1235.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Reword the Sentry line in analytics index.ts and the 4.78.4 and native-plugin comments in posthog.ts to PostHog Error Tracking, one switch; drop @posthog/react-native-plugin from the dependency list until FH-13 says yes. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a grep test finds no Sentry, GlitchTip or the plugin in packages/analytics/src or apps/mobile/package.json.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A18.
+
+#### BL-1254 Id registry: screens, controls, elements, metrics (ER-B01)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: ids.ts and generated ids.md: the 29 routes plus the IA-FINAL extras, each with an area and an IA-FINAL id; a dynamic list is one element id. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V4 and V16 (300 per kind) self-tests; npm run plan renders ids.md.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B01.
+
+#### BL-1255 Rename the catalogue to wire names once and add tier to every row (ER-B02)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1254.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Rename 68 events, ok to is_ok and the other bool renames, add tier; basics is every screen view, click and element view plus a closed list of at most 12 funnel-step rows signed by privacy; perf stays consented. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V1, V2, V6 pass; a test that every shipped registry row carries a tier (moved here from BL-1236); a test pins the basics set and fails on a change without a registry bump.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B02.
+
+#### BL-1256 Typed helpers generated from the registry (ER-B03)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: trackScreen, tap, impress, perf and domain trackers; no free string. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V3 source scan finds no template-string name; helpers.test.ts passes.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B03.
+
+#### BL-1257 Screen views for the 29 routes (ER-B04)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: useScreenViews once in the root layout; no resolved path or param. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: test walks the route table: one view per route, none for an unregistered one; device check on a dev build: one screen, one event, registry properties only.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B04.
+
+#### BL-1258 Click wiring: capture and book areas (ER-B05)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Each tappable control calls tap(id); a VoiceOver activate counts as a click. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: per-screen test that registered controls fire once; source test that no control calls the SDK.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B05.
+
+#### BL-1259 Click and impression wiring: family, keeping, me, plus, notifications (ER-B06)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Same rules; no share destination, no birthday or seal timed surface. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: per-screen tests; source test.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B06.
+
+#### BL-1260 Impression hook with one dedupe rule (ER-B07)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: At least half visible for 1 second, once per element per foreground session, counter in memory only. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: hook tests with a fake clock.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B07.
+
+#### BL-1261 Domain and funnel-step events wired from registry constants (ER-B08)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255, BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Replace literal track calls with registry constants; wire the funnel-step events flagged in B02. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: source scan finds no literal event name outside the registry; each event fires once on its trigger.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B08.
+
+#### BL-1262 Funnel rows and saved PostHog insights (ER-B09)
+- Status: blocked (founder hands: FH-1 PostHog account). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Registry rows for the five funnels (2 to 8 steps, window enum) and one launch dashboard. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V9 self-test; a throwaway project renders each funnel with colon names.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B09.
+
+#### BL-1263 Canary and registry tests: every helper, every held event, no-key (ER-B10)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1241.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Asha strings through every helper and before_send; a loop over every held event counted under held_event apart from unknown_event; never-list tests. The yes-with-no-key test belongs to BL-1245 alone. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: all green in the unit job; Asha only in fixtures.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B10.
+
+#### BL-1264 Generated tracking plan, registry doc and the PR tracking-line script (ER-B11)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: npm run plan renders TRACKING_PLAN.md and registry.md; V8 both ways; reword the Sentry line; write the Tracking-line script (the .github job is FH-14). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: catalog.test.ts asserts the doc equals the render.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B11.
+
+#### BL-1265 Privacy manifest and label alignment, code half (ER-B12)
+- Status: blocked (founder hands: FH-5 S17 worksheet and label, FH-6; counsel on Q-005). Mode: pair. Owner: privacy engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: privacy-manifest.ts and PrivacyInfo.xcprivacy data follow the build switches (usage data, not used for tracking, no tracking domains); label-effect.mjs gets a founder-approved exception for posthog-react-native; the no-analytics-SDK test is updated by its owner through review in the same PR. Estimated under 400 lines; if the manifest data and the label-effect and test change together pass 400, split by layer at PR time. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: manifest test and label-effect test pass with rows that match the build; nothing under docs/legal is edited.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B12.
+
+#### BL-1266 Settings off switch and the in-app disclosure line placeholder (ER-B13)
+- Status: blocked (founder hands: FH-4 wording, FH-11 switch). Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: A switch in Settings, Privacy; it must exist whenever the resolved policy is collect_by_default. Under that policy the disclosure is shown before the first event: a persisted disclosure_shown flag with the text version, and the gate sends nothing until it is set (counsel must confirm that this suffices). The disclosure is a placeholder key marked CONTENT-NEEDED. Shown, Records, Never and Decline lines in the PR body, each marked counsel must confirm. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: switch exists under collect_by_default, off persists across relaunch, no consent sheet under that policy, no event before the disclosure flag, a code-matching test that each item the Never line promises maps to a V7 banned token or a global NOT rule and that the Decline line holds (off makes dropped_user_off), content rules pass. DATA_CLASSIFICATION.md row for the persisted off-switch state and disclosure_shown flag with text version (on-device settings; privacy confirms class and level), in the same PR.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B13.
+
+#### BL-1267 Ask sequencer and consent sheet only under ask_first (ER-B14)
+- Status: blocked (founder hands: FH-4 consent wording). Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: The sequencer shows the sheet only when the resolved policy is ask_first; two-offer cap kept; a dismissed sheet is not a yes. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: analyticsAskDue is false under collect_by_default; cap holds under ask_first.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B14.
+
+#### BL-1268 Throwaway-project verification pass (ER-G01)
+- Status: blocked (founder hands: FH-1 PostHog account). Mode: agent. Owner: qa engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Colon names in trends, funnel, retention and HogQL; retention on anonymous events; offline retry; the only capture of a real exception payload, committed as packages/analytics/test/fixtures/exception-real.json; a deliberate crash on a test build, symbolicated and matched to its maps; withdrawal then on gives a new id; IP discard and GeoIP transformation on. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: results in an evidence note under docs/analytics/instrumentation with no token and no real family data.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-G01.
+
+## Split of the proposed group rows, batch 2 (21 Nov 2026, proposed)
+
+Written 21 Nov 2026 by the product agent, docs only, on `develop` `0ee5339`. These 26 rows (BL-1300 to BL-1325) split seven more of the proposed group rows filed from `docs/product/prd/BACKLOG-GAPS.md` into rows of 1 to 7 P0 ids each, one PR per row: BL-298 (NS-49, FR-PHS, FR-OPP), BL-296 (NS-47, FR-CUL), BL-182 (NS-17, FR-LOC), BL-187 (NS-38, FR-CMP), BL-295 (NS-46, NS-50, FR-DAY), BL-297 (NS-48, FR-NTC) and BL-127 (NS-03). A row holds at most 8 ids and at most 6 of them card rows, and the ids that share a test file or a screen stay together. Each id on a Satisfies line below is one that only a group row named before; the group rows themselves are not edited by this batch and stay as they are until every id of a group has a split row and product sets it `superseded`. The count per group and the later batches are in `docs/product/P0-SPLIT-PLAN-21nov.md`.
+
+Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on are the group row's, unchanged; two rows that may touch `supabase/` (the migration lint of BL-1307, the held-draft sync rule of BL-1313) add the data architect, and none of the 26 rows adds a migration. A step that needs the founder, counsel or a native reviewer is named in the row as outside it and stays in `docs/FOUNDER_TASKS.md`. Nothing here copies, weakens or changes a requirement. Ids come from `node scripts/agents/next-id.mjs` (develop plus open PRs, 21 Nov: BL-1300 was the next free id).
+
+#### BL-1300 Suggestions pick: the system picker, one copy of the file, cancel does nothing
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: NS-49-R7, NS-49-R11, NS-49-R19, FR-PHS-11, FR-PHS-12, FR-PHS-17, FR-PHS-53.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the picker opens in Apple's process with no permission or usage string of our own, the first still is copied from the Apple file URL only if it is a regular file of an allowed type under the cap and the app deletes only its own copy, never the URL Apple returned, and cancel, dismiss or a declined first-use sheet leave Home as it was (0 files, no draft, no message). One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the picker and file-URL tests run against the module's fake; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1301 Suggestions pick: what is read, what shows, what the letter keeps
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: NS-49-R9, NS-49-R10, NS-49-R13, FR-PHS-14, FR-PHS-15, FR-PHS-20, FR-PHS-52.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the title and date label that the parent can edit or clear, the item types that are never read, and a kept letter that holds one stored copy and no suggestion detail, with a level 1 and a level 2 picture of the same input compared and found identical. One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a test compares a level 1 and a level 2 letter and export of the same input and finds no difference; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1302 Suggestions pick: locked phone, notification id, canary, no trace on Home
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: NS-49-R12, NS-49-R21, NS-49-R24, FR-PHS-04, FR-PHS-19, FR-PHS-33, FR-PHS-51.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: a result that returns while App lock is up is discarded with 0 files, the suggestion id from the notification tap is never logged or stored and is dropped after the picker, the canary title, place and workout give 0 hits in logs, breadcrumbs, crash payloads, analytics and URLs, and Home notes never mention the picture. One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the canary sweep (J-N18 pattern) covers the module; on a device, App lock up with the picker open shows no picture in the app switcher (named device check, one line in the PR); `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1303 Suggestions pick: entitlement, plain words, big text and voice, no network
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 4 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: NS-49-R15, NS-49-R16, NS-49-R17, NS-49-R33, FR-PHS-22, FR-PHS-23, FR-PHS-54.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the journal entitlement in the one entitlements block and only when the suggestions flag is on for the profile, the where-it-lives and privacy-policy lines in plain words, 44 pt controls at AX5 with VoiceOver, Voice Control and Switch Control, a network fake that sees 0 requests through the whole flow, and the privacy label effect as stated. One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a signed-profile config test checks the entitlement against the flag; VoiceOver and AX5 on a device are one named check in the PR; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1304 Suggestions pick: Apple licence, child and other adult pictures, App Review notes
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 5 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: NS-49-R23, NS-49-R35, FR-OPP-03, FR-OPP-09, FR-PHS-55, FR-PHS-56, FR-PHS-57.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the check that the licence duty (DPLA 3.3.3(H)) and the counsel reads are recorded before the flag turns on, no face, scene or person detection (the picture card face-detection scan extended), and the review notes naming the entitlement and a reviewer path. The counsel read itself is a founder step in docs/FOUNDER_TASKS.md, not in this row. One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the picture card face-detection source scan passes with the module in scope and a docs check fails when the flag is on and the licence record is absent; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1305 Photo library holds: no doorway before its exit, no level 3 in 1.x, no library nag
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 6 of 6 of BL-298; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: FR-OPP-05, FR-OPP-06, FR-PHS-40, FR-PHS-41, FR-PHS-43, FR-PHS-44, FR-PHS-50.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: a doorway control offered only after the NS-04 exit and locked-phone rule, no photo-library usage string or PhotoKit call in any 1.x build, the level 3 spike kept to its branch and test devices, library-derived nudges limited to facts a parent can check, no prompt about limited or denied access, and the three transient data inventory rows. One PR. The card (NS-49) is the source of truth; nothing here changes a row. The rest of BL-298 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a build-config test fails on a photo-library usage string or a PhotoKit symbol in a 1.x profile; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1306 Days we mark: what is stored, held in memory while choosing, nothing on the child
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R2, NS-47-R3, FR-CUL-01, FR-CUL-02, FR-CUL-03, FR-CUL-11.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: the store as class L4 holding only each ticked day and a moved date, a tradition or country picked in the sheet kept in memory until it closes, no column, key or label on a child, book, letter or share, and only the days module reading the store. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a test fails on any new key, column or label that names a tradition, faith, country or origin on child, book, letter or share; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1307 Days we mark: never synced or sent, outside the backup, claim and new phone
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer, data architect. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R4, NS-47-R7, NS-47-R10, FR-CUL-04, FR-CUL-06, FR-CUL-07.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: a network fake that sees 0 requests carrying a day, tradition or country, a migration lint in supabase/tests that fails on a name like tradition, faith or country, the store file outside the iPhone backup and not in the settings table, re-key on claim, an empty store on a new phone, and a Save a copy file that holds none of it. The lint is a test only; a migration, if one is ever needed, is its own row owned by the data architect. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the migration lint is in `npm run test:db` and passes; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1308 Days we mark: a tapped note is an ordinary prompt, the canary and analytics see nothing
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R5, NS-47-R8, NS-47-R9, FR-CUL-05, FR-CUL-08, FR-CUL-09.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: a tap on a library-day note opens an ordinary catalogue prompt with prompt_key, prompt_library_version and every synced entry field equal to an ordinary evening's, synthetic tradition and day keys (never a real tradition with Asha) giving 0 hits through ask, tick, move, clear, schedule, deliver and tap, and no analytics event, property, bucket or insight carrying a tradition, country or day. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the log canary and the analytics allowlist test both cover the new paths; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1309 Days we mark: sign out, Erase everything, Delete account, first run, two parents
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 4 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R15, NS-47-R16, NS-47-R17, NS-47-R18, NS-47-R24, FR-CUL-16.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: the store and its scheduled notes cleared on sign-out with the asked flag kept to that account, Erase everything leaving no store, flag or pending note (the Erase everything file scan, a kill mid-erase resumes), Delete account clearing this phone at once, no tradition field in first run (the first-run field-inventory test unchanged), and nothing on any shared surface about the other parent's days. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the Erase everything file scan covers the store file and the kill-mid-erase test passes; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1310 Days we mark: untick, Clear all, the call-out claims, the privacy label
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 5 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R21, NS-47-R22, NS-47-R23, FR-CUL-21, FR-CUL-22, FR-CUL-23.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: nothing pre-ticked, one-tap untick, Clear all with one confirm that removes every tick, cancels every pending note and dismisses every delivered one, every sentence of the call-out matched to a claims-inventory row true of the build, and the label re-run against the binary with a G11 check that fails on a new host or analytics property naming the store. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a claims-inventory test fails on a call-out sentence with no true row; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1311 Days we mark: blank snapshot, the static call-out, lock-screen words with a child name
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 6 of 6 of BL-296; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: S. Depends on: BL-961, BL-975.
+- Satisfies: NS-47-R26, NS-47-R29, NS-47-R38, FR-CUL-12.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: a blank app-switcher snapshot of Home and Me where the days surfaces appear (with App lock off too), the call-out as a static DoorNote never collapsed or dismissible, one neutral body string for every layer of day note, and no lock-screen title or body holding both a family, tradition or national day name and a child name. One PR. The card (NS-47) is the source of truth; nothing here changes a row. The rest of BL-296 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the lock-screen enumeration test fails on both tokens in one string; the blank snapshot is one named device check in the PR; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1312 Languages: only what is shipped is offered, one language to a letter held in Review
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 4 of BL-182; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-17-R1, NS-17-R5, NS-17-R10, NS-17-R12, FR-LOC-01, FR-LOC-02, FR-LOC-28.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: a language is in a picker, listing, keyword or help article only when it is in SPOKEN_LANGUAGES with a complete dossier, the first store build hears English only and promises no other, the one-tap mark as another language in Review, a held language never handed to the recogniser, a compact-tier phone not offered a language that passed only on the full tier, and what a pause or removal leaves untouched. One PR. The card (NS-17) is the source of truth; nothing here changes a row. The rest of BL-182 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a store-profile test fails on a language that is in a picker but not in SPOKEN_LANGUAGES; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1313 Languages: the chosen code on every call, never translate, a withheld take stays out
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 4 of BL-182; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer, data architect. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-17-R3, NS-17-R6, NS-17-R7, NS-17-R8, FR-LOC-08, FR-LOC-10, FR-LOC-29.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: every transcription call passing the author's language code and the transcribe task, no translation or transliteration surface, English interface with the spoken language a separate setting, a withheld take's machine output never shown, indexed, shared, printed, exported or synced (the server copy holds no words after the next push), and no language code, list or model name in analytics, logs, crash reports or email. The sync rule may reach supabase/; any migration is its own row owned by the data architect. One PR. The card (NS-17) is the source of truth; nothing here changes a row. The rest of BL-182 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a test asserts the language argument and task on every call; the held-draft push test in `npm run test:db` passes; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1314 Languages: the gate, native review of the pack, the dossier, the house style
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 4 of BL-182; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-17-R11, FR-LOC-03, FR-LOC-04, FR-LOC-05, FR-LOC-21, FR-LOC-26.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: the gate run on the shipped model, pack and engine with numbers-only evidence, the bars as fixed, native speaker and parent review of the filler, repeat and punctuation tables, the pack house style shown as an explicit check, the dossier file per language, and no line implying distress notice in a language that has not passed the distress-pattern gate of the language rules. The native review and the founder decision are founder or reviewer steps outside this row. One PR. The card (NS-17) is the source of truth; nothing here changes a row. The rest of BL-182 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a docs test fails when a language in a store profile has no dossier or no committed gate summary; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1315 Languages: store words, translated text only through counsel, rules file, prompt set
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 4 of 4 of BL-182; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: S. Depends on: BL-965, BL-958.
+- Satisfies: NS-17-R4, FR-LOC-13, FR-LOC-19, FR-LOC-20, FR-LOC-22, FR-LOC-23, FR-LOC-24.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the store listing naming only the language that ships, en-US only at 1.0, the frame of a non-English book (dateline, age sentence, labels, signature words) in its own language rules, the per-language rules file in npm test, the prompt set written by a native parent, the six draft translations kept unused, and Terms, Privacy and consents translated only through counsel. One PR. The card (NS-17) is the source of truth; nothing here changes a row. The rest of BL-182 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the per-language rules file runs in `npm test` and the store-listing test names only shipped languages; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1316 Store candidate: the App Store Connect answers, the label file, accessibility labels
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 3 of BL-187; Karma or the founder sets it to ready). Mode: agent. Owner: platform, content. Milestone: M15. Size: S. Depends on: BL-958, BL-965, BL-975.
+- Satisfies: NS-38-R1, NS-38-R3, NS-38-R4, NS-38-R9, FR-CMP-04, FR-CMP-05, FR-CMP-06.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the age rating, availability, category and subscriptions as the card says, the store name equal to brand.storeName, the App Privacy answers equal to the label file row for the build and to the privacy manifest (G5, a proxy capture), the Accessibility Nutrition Labels backed by the walk, and the export answer equal to counsel packet Q24. Entering the answers in App Store Connect is a founder step and stays in docs/FOUNDER_TASKS.md. One PR. The card (NS-38) is the source of truth; nothing here changes a row. The rest of BL-187 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the G5 comparison script exits 0 on the candidate and fails on a changed label row; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1317 Store candidate: the gate record, Notes for Review, flags, counsel reads, public claims
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 3 of BL-187; Karma or the founder sets it to ready). Mode: agent. Owner: platform, content. Milestone: M15. Size: S. Depends on: BL-958, BL-965, BL-975.
+- Satisfies: NS-38-R7, FR-CMP-01, FR-CMP-03, FR-CMP-11, FR-CMP-12, FR-CMP-18, FR-CMP-20.
+- Scope: tests first, then code or words only where a test fails, for the 7 rows above: the register section Obligations by card, the check that the Notes for Review match the flags on in the production profile, the gate record docs/legal/evidence/store/<version>-<build>/gates.md for G0 to G6, G2 reading the counsel reads that gate a flag, the account-based features named in the Notes, every public line with a claims-inventory row, and screenshots from the release build with the Asha book only. One PR. The card (NS-38) is the source of truth; nothing here changes a row. The rest of BL-187 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a check fails when a flag on in production has no Notes section or when a candidate has no gates.md; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1318 Store candidate: age gate before any account, Delete account visible, restored phone, age rating again
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 3 of BL-187; Karma or the founder sets it to ready). Mode: agent. Owner: platform, content. Milestone: M15. Size: S. Depends on: BL-958, BL-965, BL-975.
+- Satisfies: NS-38-R8, FR-CMP-07, FR-CMP-13, FR-CMP-15, FR-CMP-17, FR-CMP-19.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: the age gate answered before sign-in or accept on every path (invite with no install too), the age-range signal asked before the 18+ question and a minor signal treated as No, Delete account visible in Me and working without new terms, a phone restored from an iCloud backup showing the book signed out with no duplicate after sign-in, the age-rating questionnaire answered again when NS-05 or NS-25 is on, and the accessibility walk of the consent surfaces at AX5, Bold Text and VoiceOver. One PR. The card (NS-38) is the source of truth; nothing here changes a row. The rest of BL-187 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the AX5 and VoiceOver walk of E-S03 and the consent surfaces is one named device check recorded in gates.md, and a phone restored from an iCloud backup showing the book signed out with no duplicate after sign-in (NS-38-R8) is a second named device check recorded there; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1319 Days: the planner order, one note a day, nothing recurs, one slip at a time
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 4 of BL-295; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Satisfies: NS-46-R4, NS-46-R5, NS-46-R7, NS-46-R8, NS-50-R11.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: libraryDay as a source of the typedDay group with no new class, a typed day deleted the day after, the order of two notes on one date, two ticked days on one date resolved with synthetic ids zz-test-day-a and zz-test-day-b, and at most one slip rank on Home with no count of things waiting. One PR. The card (NS-46 and NS-50) is the source of truth; nothing here changes a row. The rest of BL-295 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the planner property test holds no local date with two budgeted notes; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1320 Days: ticks kept as ids, moving days say around, quiet days, nothing pre-ticked
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 4 of BL-295; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Satisfies: NS-46-R14, NS-46-R16, FR-DAY-02, FR-DAY-04, FR-DAY-06.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: a ticked day stored as an id with optional overrides and re-resolved after a table correction, moving days carrying an authority and precision about, Memorial Day, Veterans Day, Good Friday, Yom Kippur and war-named national days offered never pre-ticked in the quiet tone, and nothing ticked for a parent. One PR. The card (NS-46 and NS-50) is the source of truth; nothing here changes a row. The rest of BL-295 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a table test fails on a moving day without authority or precision, and on a pre-ticked row; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1321 Days: the words, the line before a first tick, no look-back, any date can be added
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 3 of 4 of BL-295; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Satisfies: NS-46-R17, NS-46-R22, NS-46-R35, FR-DAY-15, FR-DAY-25.
+- Scope: tests first, then code or words only where a test fails, for the 5 rows above: the days.landing, days.lock, days.picker, days.nextYear and days.door keys under the content rules, no title or body saying last year or again or showing what the parent wrote on that day before, the line before the first tick and the Reminders-off lines, and Add a day always open without any line saying a day is missing. One PR. The card (NS-46 and NS-50) is the source of truth; nothing here changes a row. The rest of BL-295 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the content rules test passes with the new keys; the note and slip tests find no last-year wording; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1322 Days: one library file for every phone, listing words, hidden books show no slip, no analytics
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 4 of 4 of BL-295; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Satisfies: NS-46-R46, NS-46-R48, NS-50-R8, FR-DAY-20.
+- Scope: tests first, then code or words only where a test fails, for the 4 rows above: the library as one file identical for every phone with a refresh that is one whole-library fetch with nothing derived from ticks or browsing, the listing and support page REMINDERS paragraph, no day slip for a quieted or hidden book or one with Include in my reminders off, and no analytics event, log line or crash report carrying a day, tradition, country or count of ticked days. One PR. The card (NS-46 and NS-50) is the source of truth; nothing here changes a row. The rest of BL-295 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a network fake asserts the library request carries no query, header or path derived from ticks; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1323 Notification words: the pure choice of a key, the same plan with the catalogue on or off
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 2 of BL-297; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966, BL-537.
+- Satisfies: FR-NTC-01, FR-NTC-02, FR-NTC-03, FR-NTC-04, FR-NTC-05, FR-NTC-10.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: the pure function in packages/core that returns a catalogue key from the inputs, the same (id, date, time, class) set with the catalogue on or off, every input computable at plan time, copy that gets shorter and more open as the gap grows and never names the gap, a question that follows the last letter's kind without repeating it, and the length and character limits. One PR. The card (NS-48) is the source of truth; nothing here changes a row. The rest of BL-297 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a packages/core property test passes for determinism and for on or off parity; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1324 Notification words: a ticked day takes the slot, lock-screen words, names off, quiet books
+- Status: blocked (docs/product/P0-SPLIT-PLAN-21nov.md, part 2 of 2 of BL-297; waits on the deferred BL-537 decision, then Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966, BL-537.
+- Satisfies: NS-48-R9, NS-48-R21, NS-48-R26, FR-NTC-08, FR-NTC-09, FR-NTC-11.
+- Scope: tests first, then code or words only where a test fails, for the 6 rows above: a parent-chosen day taking the one budgeted slot as a typedDay, the neutral lock-screen title and body for a family, faith or national day or names off, no child name unless Names in notifications is on and App lock is off, a quieted or hidden book contributing nothing to any key, and the one-a-day rule living only in budget.ts, with the NS-48-R26 property test proving no local date holds two budgeted notes across all sources. One PR. The card (NS-48) is the source of truth; nothing here changes a row. The rest of BL-297 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the lock-screen enumeration test passes; the neutral lock-screen words on a locked device are one named check in the PR; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+#### BL-1325 Pilot read-out file holds counts and the outcome only
+- Status: proposed (docs/product/P0-SPLIT-PLAN-21nov.md, part 1 of 1 of BL-127; Karma or the founder sets it to ready). Mode: agent. Owner: user researcher. Milestone: M15. Size: S. Depends on: BL-935.
+- Satisfies: NS-03-R3.
+- Scope: tests first, then code or words only where a test fails, for the 1 row above: the read-out file in the repo holding counts and the outcome only: 0 quotes, 0 participant codes joined to an answer and 0 names. One PR. The card (NS-03) is the source of truth; nothing here changes a row. The rest of BL-127 is in the other rows of this split.
+- Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the no-real-family-data hash test (`packages/content/test/no-real-family-data.test.ts`) passes on the PR that adds the file; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 ## Appendix: TDD proposal to BL mapping
 

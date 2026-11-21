@@ -1,8 +1,34 @@
 # Progress: wave 1 execution (Karma, started 20 Nov 2026, 23:50 UTC)
 
-Rule: this file is updated by Karma from merged PRs, at least every hour while work runs. One line per task. Status: QUEUED, BUILDING (branch or PR open), IN REVIEW, MERGED (sha), BLOCKED (on whom). The plan (`docs/product/prd/17-engineering-project-plan.md`, `17b-engineering-plan-new-scope.md`) holds the full task list and waves; this file only tracks what has moved. Freeze: develop 55574906c, errata E1 to E83, CL-001 to CL-158 (plans 17 and 17b are pinned one erratum behind, at dcbf70fc8 and E82; the E83 text is in 18-errata-after-lock.md). Started 20 Nov 2026, 23:50 UTC. Last refresh: 21 Nov 2026, 03:02 UTC, against develop `81d6dac15` (facts from the GitHub pulls API and `scripts/trace.mjs --no-write`; [U] means not verified).
+Rule: this file is updated by Karma from merged PRs, at least every hour while work runs. One line per task. Status: QUEUED, BUILDING (branch or PR open), IN REVIEW, MERGED (sha), BLOCKED (on whom). The plan (`docs/product/prd/17-engineering-project-plan.md`, `17b-engineering-plan-new-scope.md`) holds the full task list and waves; this file only tracks what has moved. Freeze: develop 55574906c, errata E1 to E83, CL-001 to CL-158 (plans 17 and 17b are pinned one erratum behind, at dcbf70fc8 and E82; the E83 text is in 18-errata-after-lock.md). Started 20 Nov 2026, 23:50 UTC. Last refresh: 21 Nov 2026, 06:09 UTC, against develop `e5b9f01bb` (the develop tip read at refresh time, the #1167 squash) (facts from the GitHub pulls API and `scripts/trace.mjs --no-write`; [U] means not verified).
 
-## What changed this hour (21 Nov 2026, 03:02 UTC)
+## What changed since the 05:06 refresh (21 Nov 2026, 06:09 UTC)
+
+MERGED since 05:06 UTC (merged flag true, squash sha 8 chars, merged_at) [V pulls API]: days store file foundation #1175 `6483ac75` (05:08Z); fill and re-key functions (NDS-2, NDS-5) #1218 `2d4a13a5` (05:34Z; migration file 38 is in develop, NOT applied to hosted); B5 PR 2 #1169 `1cf6806d` (05:39Z); backlog follow-ups #1192 `f275b018` (05:39Z); HO-911 #1087 `3be7ed21` (05:48Z); new-device sender hardening #1223 `21d1a456` (05:50Z); new-device-fill Edge Function #1224 `801516da` (05:51Z, DARK); BL-922b #1167 `e5b9f01b` (06:01Z); plan refresh #1214 `ade93efb` (05:21Z).
+- Corrections to the 05:06 text: #1175, #1169, #1087, #1167 and #1192 are no longer IN REVIEW; the re-key and fill migration is no longer BUILDING, it is MERGED #1218..
+- STILL OPEN (head 8 chars, GitHub mergeable_state): FP-2 #1159 `280d92a8` [blocked]; BL-978a #1173 `208d626f` [unstable]; BL-966c #1172 `7451091b` [unstable]; Apple session-read pin #1195 `a3213db9` [unstable]; FP-12 #1128 `c0820d12` [blocked]; FP-16b #1124 `631b5b5f` [unstable]; Find guard #1208 `20b421f8` [unstable]; photo stack #835 `4b186bab` (queued to merge first), #836 `836d5e89`, #837 `8e79a73b`, #838 `d31f431b`, #839 `71d270de`, #840 `a5e755c0` [all unstable; restacked twice; all six have two passing reviews [U: reviewer counts from the brief]; the rest merge one at a time after #835].
+- Waiting on the founder's explicit go, not merged (docs/legal; no approval is stated here): #1117 `99f20082` [clean], #799 `1fac1c6f` [dirty], #873 `e332fe64` [dirty].
+- BLOCKED ON THE FOUNDER: the CCO approval comments for #1159 (head `280d92a8`) and #1128 (head `c0820d12`) were blocked by the permission classifier from being posted by the session; he must post them or say go. CI bottleneck: the macOS launch-check queue (iOS compile workflow) had 79 queued runs at 05:24 UTC [U: not re-read]; this paces every mobile PR.
+- Hosted state: the founder applies hosted migrations. Files 33 to 38 are in develop and NOT applied [U]; the hosted early-letters project had only 2 migrations applied when read at 04:xx UTC [V list_migrations].
+- New-device group: sender #1206 and its hardening #1223 and the fill function #1224 are MERGED and DARK. Do NOT switch on NEW_DEVICE_EMAIL before (1) the app call for fill is built and shipped, (2) the hosted JWT claim check is done, and (3) the pending table is cleared. App call for fill: BUILDING [U], no PR. B5 PR 3: BUILDING [U], no PR. Days tick PR: BUILDING [U], no PR. Not-you page NOT STARTED [U].
+
+## What changed in the 05:06 refresh (21 Nov 2026, 05:06 UTC; older where it differs)
+
+Develop tip at refresh: `aa84dcba2`. Facts are from the GitHub pulls API (`gh api repos/thesaurabhpareek/earlyletters/pulls/<n>`: merged flag, merge_commit_sha, head sha, mergeable_state). Reviewer counts and anything not read from the API are [U].
+- MERGED, with squash sha and merged_at: Find 7/8 #895 `b606615e` (03:59Z); plan-notice re-plan hook and real planPending count #1174 `511c8db5` (04:00Z); the 03:56 refresh #1177 `0fd20eaf` (04:07Z); new-device sender definer functions #1182 `4805ff8c` (04:32Z); BL-961 store reads #879 `f31ce2a6` (04:41Z); security answers for the new-device email #1161 `2bb32424` (04:47Z); CI-LINT report-only repo lint with shrink-only baseline #1198 `c4bf6a40` (04:51Z); new-device sign-in email sender, dark #1206 `a47b2f6a` (04:59Z). Also verified MERGED just before the last stamp and not recorded then: the CR-72 delegation docs #1067 `64c7389f` (03:55Z), C9 #1144 `3eb50fcf` (03:54Z) and #1176 `2c077e36` (03:55Z). Squash shas are 8 chars here.
+- #895 is MERGED (merge flag true, 03:59Z). It was never held for the founder: it touches no docs/legal file. The earlier line saying it was held was wrong and is removed.
+- The new-device sender #1206 is DARK: it answers 200 and takes no rows unless `NEW_DEVICE_EMAIL=on`. Do not switch it on before the fill call (re-key and fill) has run and the pending table is cleared. The email and page words are PROPOSED (the founder has not read them).
+- IN REVIEW at 05:06: superseded by the block above (heads moved; #1175, #1169, #1087, #1167 and #1192 are MERGED).
+- In progress at 05:06, now superseded: the re-key and fill migration is MERGED #1218. Harness change: the keepalive supervisor [U: PR number and state not read].
+
+## What changed in the refresh before (21 Nov 2026, 03:56 UTC; older where it differs)
+
+Facts are from the GitHub pulls API (merged flag, merged_at, squash sha); [U] means not verified.
+- MERGED, with squash sha: BL-922a #1126 `8464ebd74` (03:03Z); FP-9 #1125 `2584a89e0` (03:27Z); privacy read of the device table #1152 `6131c7959` (03:05Z); architecture and chapter 02 sync #1158 `8359f86b4` (03:09Z); CI-COV proposal and G9 floors test #1157 `a0092223c` (03:11Z); CI-SIZEGATE #1162 `5b63e1273` (03:16Z); the 02:53 refresh #1153 `497d707fa` (03:23Z); ADRs 0036 to 0038 #1165 `638227e2a` (03:26Z, PROPOSED, the founder decides); privacy file 08 follow-up #1164 `24095765d` (03:31Z); Find 6/8 with the bookSearch kill-switch key #894 `ae3c1682c` (03:30Z); PERF markers ring and content-free test (BL-929 PR 1) #1155 `5b06b5eb8` (03:45Z); C9 insights_reader grant drop #1144 `3eb50fcf7` (03:54Z); new-device sign-in tables, token hook and session lever #1176 `2c077e366` (03:55Z). #1144 and #1176 are in develop, not applied to hosted (the founder applies hosted migrations) [U whether applied].
+- IN REVIEW at 03:56: superseded by the block above (heads moved; #879, #895, #1174 are MERGED).
+- Still open and unchanged: HO-911 #1087 [clean], FP-12 #1128, FP-16b #1124, HG-MQ #1149 [blocked], QA-TITLES #1151 [blocked], PostHog adapter #1086 [blocked], BL-960 #873, Find core #798 and #799.
+
+## What changed in the hour before (21 Nov 2026, 03:02 UTC)
 
 Since 23:45 UTC on 20 Nov, 68 PRs merged into develop [V pulls API, state closed, merged_at after 23:45Z, pages 1 to 3]. The ones that moved plan rows:
 - Still open, not merged (the earlier table was right): photo stack #835 to #840 (BL-931 slices 3a to 5; #835 is `blocked`, #836 to #840 `unstable`; stacked on one another), #879 (BL-961, `unstable`), #894 and #895 (BL-952 6/8, 7/8, both `clean`), #873 (BL-960, `dirty`: a merge conflict with develop), #798 and #799 (Find, `dirty`). S1 (BL-870) is now MERGED as #1115, which removes one of the two F1 gates on the photo slices; the plain statement of what leaves the phone is [U].
@@ -22,44 +48,64 @@ Status words: MERGED (PR, squash sha), IN REVIEW (PR, head sha; GitHub mergeable
 | reminders | BL-966a budget registry | mobile | MERGED | #1088 `952eac323` | test #1075 (NS-32-R4b) is a draft |
 | reminders | BL-966b one a day | mobile | MERGED | #1089 `3c0b57235` (head `436f36f8`) | 134 lines |
 | account | #871 cover | mobile | MERGED | #871 (22:37Z) | sha [U] |
-| account | BL-961 store reads | mobile | IN REVIEW [unstable] | #879 `6d22a523` | 414 lines; [X4-R1] partial (3 of 3); #871 merged |
-| account | HO-911 delete under a second account | mobile | IN REVIEW [unstable] | #1087 `709bbe28` | see PR |
-| photo | BL-931 slices 3a, 3b, 4a, 4b, 4c, 5 | mobile | IN REVIEW (stack) | #835 `76589e01` [blocked], #836 `e022a615`, #837 `6834adb9`, #838 `3604be26`, #839 `b6d30fd3`, #840 `d9ac2437` [unstable] | merge in order; per F1 only with S1 (now MERGED #1115) and the plain statement of what leaves the phone [U] |
-| find | BL-952 6/8, 7/8 | mobile | IN REVIEW [clean] | #894 `bdb95d98`, #895 `dd9a5342` | words PROPOSED; 8/8 NOT STARTED [U]; Find core #798 `7f36031a` and #799 `1fac1c6f` are `dirty` (conflict) |
+| account | BL-961 store reads | mobile | MERGED | #879 `f31ce2a6` (head `6d22a523`) | 04:41Z; 439 lines; BL-978 is now unblocked on this |
+| account | HO-911 delete under a second account | mobile | MERGED | #1087 `3be7ed21` (head `0183d28d`) | 05:48Z |
+| photo | BL-931 slices 3a, 3b, 4a, 4b, 4c, 5 | mobile | IN REVIEW (stack, restacked twice) | #835 `4b186bab` (queued), #836 `836d5e89`, #837 `8e79a73b`, #838 `d31f431b`, #839 `71d270de`, #840 `a5e755c0` [all unstable; two passing reviews each [U]] | merge in order; per F1 only with S1 (now MERGED #1115) and the plain statement of what leaves the phone [U] |
+| find | BL-952 6/8 and 7/8 MERGED | mobile | 6/8 MERGED; 7/8 MERGED | #894 `ae3c1682c` (head `cb721350`), #895 `b606615e` (head `1fb5391e`, 03:59Z) | words PROPOSED; 8/8 NOT STARTED [U]; second-account guard #1208 `20b421f8` IN REVIEW (draft); Find core #798 and #799 `1fac1c6f` are `dirty` (conflict; #799 touches docs/legal, waits on the founder) |
 | data | T1 synced-column guard | sync | MERGED | #1068 `8447a2589` | |
 | data | BL-959 ADR 0028 A5 and keeping server tests | sync, data-architect | MERGED | #1070 `4aa487c0b`, #1074 `e27c73599`, #1083 `d2a54aa49` | |
-| data | BL-960 data inventory | privacy | IN REVIEW [dirty] | #873 `e332fe64` | merge conflict; founder merges |
+| data | BL-960 data inventory | privacy | IN REVIEW [dirty] | #873 `e332fe64` | merge conflict; docs/legal: waiting on the founder's explicit go |
 | data | S1 / BL-870 server refuses a picture | data-architect | MERGED in develop, NOT applied to hosted | #1115 `dca49553c` | the founder applies hosted migrations; applied state [U] |
 | data | C3 audit writers, security_events store | data-architect | MERGED in develop, NOT applied to hosted | #1147 `81d6dac15` (head `d61b777b`) | 357 lines; the docs/legal classification block needed the founder's OK [U whether given]; founder applies the migration |
-| data | C9 drop insights_reader grant | data-architect | IN REVIEW [unstable] | #1144 `ea6a1db2` | NOT applied to hosted (founder applies) |
+| data | C9 drop insights_reader grant | data-architect | MERGED in develop, NOT applied to hosted | #1144 `3eb50fcf7` (head `83d2cfd0`) | founder applies; applied state [U] |
 | data | kill-switch PR (CR-69 A5) | sync | MERGED | #1113 `26e516e9b` (head `4b982dcb`) | signIn, libraryDays keys; this is the FP-5 key |
 | quality | T3 phone-class label check | qa | MERGED | #1069 `b00c3b1c7` | |
 | quality | test PRs G6, sync late pull, trace, Asha fixture | qa | MERGED | #1061 `80da04d08`, #1064 `d48b2a7fe`, #1060 `192452b41`, #1065 `d1d3e1843` | |
 | quality | G4 module boundaries | qa | MERGED | #1085 `52c7d0d4f` (head `c549a3fa`) | G5 #1090 `67aee7f03` and #1127 `6bc26383d` MERGED |
 | quality | P-4b NS-09 let-go rows | qa | MERGED | #1140 `674058229`, #1141 `3e342fa27` | |
-| backup | B5 PR 1 exclude backup state file | mobile | MERGED | #1112 `eab5edd35` (head `58529820`) | 447 lines (over 400, size exception [U]); PR 2, 3 NOT STARTED |
+| backup | B5 PR 1 exclude backup state file | mobile | MERGED | #1112 `eab5edd35` (head `58529820`) | 447 lines (over 400, size exception [U]); PR 2 (delete the state file on Erase and sign-out) MERGED #1169 `1cf6806d` (05:39Z); PR 3 BUILDING [U], no PR |
 | platform | CI: pins, label guard, secret scan, PR size, queue Q1, H3 | ops | MERGED (as proposals and scripts) | #1093 `0d1f55e6f`, #1095 `85b31b3a3`, #1094 `22fe9d7c2`, #1096 `3450db9fc`, #1150 `917a3d756`, #1148 `1a3fc85d1` | founder pastes workflow changes |
+| platform | CI-LINT report-only repo lint, shrink-only baseline | ops | MERGED | #1198 `c4bf6a40` (head `f64a9d5c`) | 04:51Z |
+| platform | harness change: keepalive supervisor | ops [U] | [U] | [U] | PR not read in this refresh |
 | platform | HG-MQ merge-queue patch | ops | IN REVIEW [blocked] | #1149 `a83d22cd` | |
-| platform | CI coverage, lint | ops | NOT STARTED | | no PR found [U] |
+| platform | CI coverage proposal and G9 floors test | ops | MERGED (as proposal and test) | #1157 `a0092223c` | founder pastes workflow changes; lint NOT STARTED [U] |
+| platform | CI-SIZEGATE size gate | ops | MERGED (as script, tests, proposed job) | #1162 `5b63e1273` | founder pastes workflow changes |
 | analytics | PostHog Cloud adapter | analytics | HELD (in review) | #1086 `07ba4a3a` | BLOCKED on the founder: words and the native plugin; 2,244 lines, split plan merged as #1091 |
 | first-run | FP-1 (NS-38 listing test) | content | MERGED | #1101 `3a7e7c204` | words wait for the founder |
 | first-run | FP-5 sign-in kill switch key | sync (not mobile) | MERGED | #1113 `26e516e9b` (head `4b982dcb`) | the key is built; the sign-in screen use of it is [U] |
-| first-run | FP-2 consent builder | mobile | BUILDING | | no PR yet; lands before any other consent.ts change |
-| quality | BL-929 PERF profile and markers (BL row owed from product) | qa | IN REVIEW [blocked] | #1155 `0d284513` (PR 1) | PR 2 BLOCKED on the founder approving a perf EAS profile |
+| first-run | FP-2 consent builder | mobile | IN REVIEW [blocked] | #1159 `280d92a8` | 417 lines; lands before any other consent.ts change; BLOCKED ON THE FOUNDER: the CCO approval comment was blocked by the permission classifier |
+| quality | BL-929 PERF profile and markers (BL row owed from product) | qa | PR 1 MERGED | #1155 `5b06b5eb8` (head `0d284513`) | PR 2 BLOCKED on the founder approving a perf EAS profile |
 | quality | QA-TITLES | qa | IN REVIEW [blocked] | #1151 `ac524eb9` | |
-| comms | privacy read of the device table (NS-08-R21) | privacy | IN REVIEW [blocked] | #1152 `eb35d294` | gates the sign-in email build |
-| comms | security answers PR (NS-08-R21) | security-architect | NOT STARTED | | no PR open yet [U] |
+| comms | privacy read of the device table (NS-08-R21) | privacy | MERGED | #1152 `6131c7959`; follow-up #1164 `24095765d` | gates the sign-in email build; now met |
+| comms | new-device sign-in tables, token hook, session lever (NS-08-R21) | data-architect | MERGED in develop, NOT applied to hosted | #1176 `2c077e366` (head `90e72116`) | founder applies; applied state [U] |
+| comms | ADRs 0036 PostHog only, 0037 Writing Tools, 0038 one phone two accounts | [U] | MERGED as PROPOSED | #1165 `638227e2a` | the founder decides |
+| comms | security answers PR (NS-08-R21) | security-architect | MERGED | #1161 `2bb32424` (head `ca98b593`) | 04:47Z |
 | first-run | FP-17 hosted auth register | ops | MERGED | #1121 `204b39f4f` | |
-| first-run | FP-12 NS-39 lock offer removed | mobile | IN REVIEW [blocked] | #1128 `098b7494` | |
-| first-run | FP-9 Apple email-only scope | mobile | IN REVIEW [unstable] | #1125 `b87325d1` | lens A: sync |
-| first-run | FP-16b owner check before Erase everything | mobile | IN REVIEW [blocked] | #1124 `9bd131e9` | |
+| first-run | FP-12 NS-39 lock offer removed | mobile | IN REVIEW [blocked] | #1128 `c0820d12` | BLOCKED ON THE FOUNDER: the CCO approval comment was blocked by the permission classifier |
+| first-run | FP-9 Apple email-only scope | mobile | MERGED | #1125 `2584a89e0` (head `f847f074`) | 03:27Z |
+| first-run | FP-16b owner check before Erase everything | mobile | IN REVIEW [unstable] | #1124 `631b5b5f` | |
 | first-run | FP-18 purge worker NS-45 titles | qa | MERGED | #1120 `2bb7504cd` | |
-| first-run | BL-922a held screen | mobile | IN REVIEW [unstable] | #1126 `1da68e6e` | queue head |
-| first-run | BL-922b, BL-978a, then FP-6 | mobile | QUEUED | | in this order, after 922a; BL-978 also after BL-961 (#879, 3 of 3, still IN REVIEW; #871 and #869 are the merged parts) |
-| comms | new-device sign-in email (NS-08-R21, E83) | sync, security-architect | QUEUED | | privacy read of the device table first; words fix #1077 MERGED `801390297` |
-| days, media (NS-46 to NS-52) | all code PRs | mobile | NOT STARTED | | docs and test support only: #1082 `c978eafb4` (NS-48-R28) MERGED |
+| first-run | BL-922a held screen | mobile | MERGED | #1126 `8464ebd74` (head `1da68e6e`) | 03:03Z |
+| first-run | BL-922b, BL-978a, then FP-6 | mobile | BL-922b MERGED #1167 `e5b9f01b` (06:01Z); BL-978a IN REVIEW [unstable] #1173 `208d626f`; FP-6 QUEUED | | in this order; BL-978 also after BL-961 (#879 now MERGED) |
+| comms | new-device sender definer functions (NS-08-R21) | data-architect | MERGED in develop, NOT applied to hosted | #1182 `4805ff8c` (head `41ab1006`) | founder applies; applied state [U] |
+| comms | new-device sign-in email sender, DARK (NS-08-R21, E83) | sync | MERGED, dark | #1206 `a47b2f6a` (head `1f3f17c9`) | answers 200 and takes no rows unless NEW_DEVICE_EMAIL=on. Do NOT switch on before the fill call and clearing the pending table. Words PROPOSED. Not-you page (PR 2) NOT STARTED [U] |
+| comms | fill and re-key migration and functions (NDS-2, NDS-5) | data-architect | MERGED in develop, NOT applied to hosted | #1218 `2d4a13a5` (head `5d101915`, 05:34Z) | file 38; founder applies; applied state [U] |
+| comms | new-device sender hardening (config gate, bearer first, key rotation rekey) | sync | MERGED, dark | #1223 `21d1a456` (head `a83618d8`, 05:50Z) | still dark |
+| comms | new-device-fill Edge Function (NDS-2, NDR-1) | sync | MERGED, dark | #1224 `801516da` (head `095d14dd`, 05:51Z) | do NOT switch on NEW_DEVICE_EMAIL before the app call, the hosted JWT claim check and clearing the pending table |
+| comms | app call for fill (client side) | mobile [U] | BUILDING [U] | no PR | the sender and fill function wait on it |
+| days, media (NS-46 to NS-52) | days store file foundation | mobile | MERGED | #1175 `6483ac75` (head `3f793cba`, 05:08Z) | 400 lines (NS-47-R6, R11, R15, R16, R28); days tick PR BUILDING [U], no PR; other code PRs NOT STARTED [U]; test support #1082 `c978eafb4` MERGED |
+| reminders | BL-966c, planPending hook | mobile | #1174 MERGED; #1172 IN REVIEW [unstable] | #1174 `511c8db5` (head `1b6bf8c6`, 04:00Z); #1172 `7451091b` | BL-966 payments half is #1174 |
+| find | second-account guard and build-flag check | mobile | IN REVIEW [unstable], DRAFT | #1208 `20b421f8` | Find account guard |
+| ops | backlog follow-ups BL-1183 to BL-1202 | product | MERGED | #1192 `f275b018` (05:39Z) | |
+| account | Apple session-read fail-safe test pin (#1125 follow-up) | mobile | IN REVIEW [unstable] | #1195 `a3213db9` | |
 
-## Dispatch and dependency map (Karma, 20 Nov 2026, 23:58 UTC; moves marked 21 Nov 03:02 UTC)
+## Dispatch and dependency map (Karma, 20 Nov 2026, 23:58 UTC; moves marked 21 Nov 06:09 UTC)
+
+Moved at 06:09 UTC: #1175, #1169, #1218, #1223, #1224, #1167, #1087 and #1192 are MERGED. New-device group: sender, hardening and the fill function are MERGED and dark; next is the app call for fill (BUILDING [U]), then the hosted JWT claim check and clearing the pending table, then the founder's words, then the flag; the not-you page is NOT STARTED [U]. B5 PR 3 and the days tick PR are BUILDING [U]. First-run queue: BL-978a #1173 is next in review, then FP-6; FP-2 #1159 and FP-12 #1128 wait on the founder's CCO comments. Photo stack: #835 first, then #836 to #840 one at a time. CI pacing: the macOS launch-check queue (79 queued at 05:24 UTC [U]). Open docs/legal PRs #873, #799, #1117 wait on the founder's explicit go.
+
+Moved at 05:06 UTC (older): BL-961 #879, Find 7/8 #895, planPending hook #1174, CI-LINT #1198, the security answers #1161, the sender definer functions #1182 and the dark sender #1206 are MERGED. Next in the new-device group: the re-key and fill migration (BUILDING [U]), then the fill call, then the founder's words, then the flag; the not-you page is NOT STARTED [U]. BL-978a #1173 is no longer waiting on BL-961. Find: second-account guard #1208 is an open draft; 8/8 NOT STARTED [U]. Open docs/legal PRs #873, #799, #1117 wait on the founder's explicit go. Nothing is in group C.
+
+Moved at 03:56 UTC: BL-922a #1126, FP-9 #1125, C9 #1144 and Find 6/8 #894 are MERGED. First-run lib queue: BL-922b #1167 and BL-978a #1173 are IN REVIEW, FP-2 #1159 is IN REVIEW (consent.ts first), FP-6 is QUEUED. B5 PR 2 #1169 is IN REVIEW; PR 3 NOT STARTED. Reminders: BL-966c #1172 and the planPending hook #1174 are IN REVIEW. Days: store file foundation #1175 is IN REVIEW (first code PR in group days). Group B new-device sign-in email: the privacy read (#1152) and the device tables (#1176) are MERGED; the security answers PR is NOT STARTED [U] and the email function is QUEUED. Find 7/8 #895 waits on the founder. Nothing is in group C.
 
 Moved at 03:02 UTC: every "A (next)" task now has a PR open or merged (kill-switch #1113 and B5 PR 1 #1112 MERGED, C3 #1147 (MERGED 03:00Z), C9 #1144, FP-9 #1125, FP-12 #1128, FP-16b #1124, HG-MQ #1149) except B5 PR 2, 3 (NOT STARTED); FP-5 key is in #1113 and FP-2 is BUILDING; S1 and FP-1, FP-17, FP-18 and the CI scripts are MERGED; T1 and T3 and the test PRs are MERGED. B group: BL-922a is IN REVIEW (#1126) and heads the first-run lib queue; BL-966b is IN REVIEW (#1089), so the planner UI row waits only on 966a, which is MERGED. Nothing is in group C.
 
@@ -68,18 +114,18 @@ Rule: one builder per lane. A lane owns the path globs in `docs/agents/CLAIMS.md
 | Group | Task | Owner | After | Globs it owns | Source |
 |---|---|---|---|---|---|
 | A (now) | reminders BL-966a (MERGED #1088), then 966b (MERGED #1089) | mobile | none | `apps/mobile/src/lib/reminders/**` | brief R1, CR-69 A1 |
-| A (now) | store reads #879 (#871 merged) | mobile | none | `apps/mobile/src/components/account/**`, `apps/mobile/src/lib/account-deletion/**` | HO-911 |
-| A (now) | photo stack #835 to #840 | mobile | F1: S1 (MERGED #1115) and the plain statement [U]; #835 now `blocked`, no conflict | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | BL-931 |
-| A (now) | Find #894, #895 | mobile | none | `apps/mobile/src/lib/find/**` | BL-952 |
+| A (now) | store reads #879 (MERGED `f31ce2a6`) | mobile | none | `apps/mobile/src/components/account/**`, `apps/mobile/src/lib/account-deletion/**` | HO-911 |
+| A (now) | photo stack #835 to #840 (IN REVIEW, restacked) | mobile | F1: S1 (MERGED #1115) and the plain statement [U]; #835 now `blocked`, no conflict | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | BL-931 |
+| A (now) | Find #894 (MERGED), #895 (MERGED); guard #1208 (IN REVIEW, draft) | mobile | none | `apps/mobile/src/lib/find/**` | BL-952 |
 | A (now) | T1 guard #1068, BL-959 | sync | none | exact files: the sync-t1 row in `docs/agents/CLAIMS.md` | plan T1 |
 | A (now) | T3 #1069, test PRs #1060 #1061 #1064 #1065 | qa | none | exact files: the qa-tests row in `docs/agents/CLAIMS.md` | quality catalogues |
 | A (next) | kill-switch PR (signIn, libraryDays), MERGED #1113 | sync | none | `packages/api/src/kill-switches.ts` | CR-69 A5 |
-| A (next) | B5 backup file PRs 1 to 3 | mobile | none | `apps/mobile/src/lib/backup/**` | BRIEF-B5 |
+| A (next) | B5 backup file PRs 1 to 3 (PR 1 MERGED #1112; PR 2 MERGED #1169; PR 3 BUILDING [U]) | mobile | none | `apps/mobile/src/lib/backup/**` | BRIEF-B5 |
 | A (next) | S1 photo policy migration, C3 audit writers, C9 grant drop | data-architect | none | `supabase/migrations/**` (new files), `supabase/tests/grants.mjs` | CR-71 |
 | A (next) | CI proposals | ops | none | `docs/ops/proposed/**` | CR-69 A5, F3 |
 | A (next) | first-run FP-1, FP-5, FP-17, FP-12, FP-9, FP-16b, FP-18 | mobile | none | `apps/mobile/src/components/onboarding/**` | 12-first-run-5.md section 2 |
 | B | reminders planner UI, notification settings | mobile | 966a merged | `apps/mobile/src/components/settings/**` | plan |
-| B | first-run lib queue BL-922a (IN REVIEW #1126), BL-922b, BL-978a, then FP-6 | mobile | in this order (17b line 25); BL-978 also after BL-961 (E27; #879 still IN REVIEW) | `apps/mobile/src/lib/first-run/**` | 17b, plan 17 rows BL-922, BL-978 |
+| B | first-run lib queue BL-922a (MERGED #1126), BL-922b (MERGED #1167), BL-978a (IN REVIEW #1173), then FP-6 | mobile | in this order (17b line 25); BL-978 also after BL-961 (E27; #879 MERGED) | `apps/mobile/src/lib/first-run/**` | 17b, plan 17 rows BL-922, BL-978 |
 | wave 2 | BL-943 (after BL-966 a to c); BL-953 to BL-955 (after BL-931) | mobile | their predecessors | tbd at dispatch | plan 17 |
-| B | new-device sign-in email | sync, security-architect | privacy read of the device table | `supabase/functions/**` (own function) | NS-08-R21, E83 |
+| B | new-device sign-in email: sender #1206 MERGED dark; re-key and fill MERGED #1218, fill function MERGED dark #1224, app call BUILDING [U]; not-you page next | sync, security-architect | privacy read of the device table (MERGED) | `supabase/functions/**` (own function) | NS-08-R21, E83 |
 | C | store build, TestFlight | founder go | all P0 lanes merged and green | none | founder only |

@@ -1265,3 +1265,16 @@ What it changes: three service-only tables in schema `ops` (`account_sessions_se
 **Founder steps (not done by this file):** after applying, switch the Custom Access Token hook on in the dashboard, pointing at `public.hook_new_device_sign_in`; run H1 of `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md` (`select has_table_privilege('postgres', 'auth.sessions', 'DELETE');` must be true, or the session lever does not exist on hosted). `ops` schedules `select public.ops_new_device_retention();` daily.
 
 **Check:** `select count(*) from ops.account_sessions_seen;` returns 0; `select has_function_privilege('supabase_auth_admin', 'public.hook_new_device_sign_in(jsonb)', 'execute');` is true and the same for `anon` and `authenticated` is false. **Rollback:** switch the hook off first; forward-fix only; see the file header.
+
+**Also prove on the hosted project [U] (file 09 section 3.3), after H1:** A3, refresh with the ended session's refresh token and record the exact error name (it must be refused); A4, count that session's refresh-token rows (must be zero, which proves the cascade; if not zero, file 09 section 3.4 applies). The press ends the session, not the access token already issued: that one lives out its 15 minutes (`jwt_expiry = 900`), so "signed out" means the next refresh fails, not that the current token stops at once. None of this is proved by the test suite.
+
+## File 37: the new-device sender's functions (NS-08-R21, E83, data-architect)
+
+`20261121010000_new_device_sender_functions.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 36. Adds three service-only definer functions (`ops_new_device_record`, `ops_new_device_pending_take`, `ops_new_device_token_mint`); no table, column or existing grant changes. **Check:** `select has_function_privilege('service_role', 'public.ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'execute');` is true, and false for `anon` and `authenticated`. **Rollback:** drop the three functions.
+
+
+## File 38: the new-device fill and re-key functions (NDS-2, NDS-5 of PR #1206, data-architect)
+
+`20261121020000_new_device_fill_rekey.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 37. Adds two service-only definer functions: `ops_new_device_pending_fill` (sets class and device hash on one pending row, once, for the named profile and session) and `ops_new_device_rekey` (DEVICE_HASH_KEY overlap rotation: `current`, `rekeyed` or `unknown`, never inserts). No table, column or existing grant changes. Nothing calls them yet: the app's fill call (a JWT-verified Edge Function) and the sender's use of the re-key are separate PRs. Do not turn `NEW_DEVICE_EMAIL` on before the fill call exists (NDS-2).
+
+**Check [U] (hosted, founder):** `select has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute');` and the same for `public.ops_new_device_rekey(uuid,bytea,bytea)` are true, and false for `anon` and `authenticated` [U]; `select proname from pg_proc where proname in ('ops_new_device_pending_fill','ops_new_device_rekey') and prosecdef;` returns two rows [U]. **Rollback:** drop the two functions.

@@ -31,10 +31,12 @@ import { sweepListeningCopies } from './audio-enhance';
 import { reloadAppLock } from './app-lock/controller';
 import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
 import { PENDING_REQUEST_KEY } from './auth/pending';
+import { closeBackupHandles, deleteBackupFiles } from './backup/files';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
+import { eraseDaysFile } from './days';
 import { clearPendingInvite } from './family/pending-invite';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
@@ -56,7 +58,25 @@ const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
  */
 export function eraseDeviceFiles(): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
+  closeBackupHandles(); // B5-4: an open backup handle closes before its file goes (below)
+  // First (NS-47-R16, ADR 0032 item 3). A file that will not go must not stop the other steps: it is thrown at the end, so the mark stays.
+  let daysLeft: unknown = null;
+  try {
+    eraseDaysFile();
+  } catch (e) {
+    daysLeft = e;
+  }
+  // B5-4: the backup state file (it holds a token, an upload URL and a wrapped key) goes next, so a recording that will
+  // not delete cannot leave it waiting for the retry. Synchronous, so no await can come before it. A failure is held
+  // until the recordings have been tried, then thrown, so the rows stay and the next try repeats everything.
+  let backupFailure: unknown = null;
+  try {
+    deleteBackupFiles();
+  } catch (e) {
+    backupFailure = e;
+  }
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
+  if (backupFailure) throw backupFailure;
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
   for (const name of CACHE_COPIES) {
@@ -67,6 +87,7 @@ export function eraseDeviceFiles(): void {
       // iOS may clear Caches itself; a copy here is never read back by the app.
     }
   }
+  if (daysLeft) throw daysLeft;
 }
 
 /**
