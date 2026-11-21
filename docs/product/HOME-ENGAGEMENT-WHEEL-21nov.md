@@ -2,9 +2,13 @@
 
 Status: PROPOSED (nothing here is decided, built or recorded in `DECISIONS.md`) | 21 Nov 2026 | Owner: `product` | Docs only | Answers the founder question of 21 Nov: did requirements account for photo access, and for a Home that picks which memories, photos, videos or occasions to nudge a parent to speak or write about, so that Home and Book do not look the same.
 
+Scope change folded in on 21 Nov (founder, 20 Nov, verbatim): "Basically learn from this and do what this does in a smarter way and relevant to my usecase. This is really critical for me. Doesn't need to be a half sheet but this can be one new tab like explore etc or suitable word." Then: "The default tab can be showcasing value props nicely and if not given permission for your photos then get that permission. If you gave them show relevant things like screenshots I provided." Section 7 proposes the tab (working name Moments). The founder's screenshots are not copied here and no real name or place from them is in the repo.
+
 Fictional family: Asha only. Words in quotes are intent for `content`, never final copy. UNVERIFIED marks anything I did not read in a source. I read these files in a depth 1 clone at `86eccfa` of `develop`; I could not read the Project doc `infra/cto-rulings-2026-11-10-memory-library.md` from this run (no Projects tool), so ML-1 to ML-12 are not quoted here. The repo carries ML-4, ML-13 and ML-14 (`docs/roadmap/next/03-requirements/NX-39-council-record-10nov.md` section 8.1) and the engineer's ten rulings in section 8; I cite those only.
 
 ## 1. Plain answers
+
+After the 21 Nov scope change: the answers below still hold for the first store build. The new tab (section 7) is a drop C or later item unless the founder answers Q-HEW-1 otherwise, and it needs four tab rules changed (7.1).
 
 **Question 2: is there ONE place that defines what Home shows each day?** No. The pieces exist and are good, but they are spread over seven files and none says "on this day, Home shows X". The gap, named:
 
@@ -87,17 +91,118 @@ Door lines for the library opt-in (PRIV-R21; PROPOSED, words by `content`, to be
 
 ## 5. Founder questions
 
-Q-HEW-1 (one question, deadline proposed). Should library-derived nudges (NS-51 photo moments, level 3) move earlier than drop C, that is, be built into a 1.x build before 1.0 approval?
+Q-HEW-1 (one question, deadline proposed). When should the Moments tab (section 7) and library-derived nudges ship: in the first store build, or after 1.0 approval (drop C)?
 
-- Recommendation: No. Keep drop C. Move the device spike (BL-843, a founder device step) and the counsel read (BL-841) earlier, so that drop C can start the day 1.0 is approved. For the first public build make the wheel honest with sources 1 to 4 and 7 (picker, typed days, ticked days, one past letter, prompt) and ship Home's job line. Reason: a library read adds a Photos permission string, a changed App Privacy answer, a children's pictures counsel read (X2), and a review risk right when the first build needs to pass App Review, with no evidence yet from our families (NS-51 section 2).
-- Default if unanswered: drop C stands, spike first (Q-PM-7).
-- Deadline: PROPOSED Mon 24 Nov 2026, so that the spike can be scheduled before Build 13 freeze. UNVERIFIED: I have not read the Build 13 freeze date.
-- Cost of saying yes: reword BL-1305 and FR-PHS-40 for a flagged build, add the usage string to one profile only, and take the counsel read onto the critical path before submission.
+- Option A (recommended): drop C, spike first, with a tab concept designed now. Move the device spike (BL-843, a founder device step), the counsel read (BL-841) and the entitlement check (Q-FD-11) earlier so drop C starts the day 1.0 is approved. The first build keeps three tabs and Home, made honest with wheel sources 1 to 4 and 7.
+- Option B: Moments tab in the first build, fed only by Apple's own suggestions picker (level 2), no photo library read. Needs the entitlement approved (UNVERIFIED), iOS 17.2 or later, NS-01 on TestFlight (it is dark today), a fourth tab (see 7.1) and a counsel read on a child's pictures. Many gates close at once, right when App Review is the risk.
+- Option C: own library read (level 3) in the first build. Not recommended: usage string, App Privacy label change, X2 counsel read, no spike data.
+- Why A: a Moments tab fed only by sources 2 to 4 (typed days, ticked days, past letter) would show what Home's slip already shows, which is exactly the "two tabs look the same" risk the founder raised. The tab earns its place only with picture sources (levels 2 and 3), and those are the gated ones.
+- Default if unanswered: A (drop C stands, spike first, Q-PM-7).
+- Deadline: PROPOSED Mon 24 Nov 2026, so the spike can be scheduled before Build 13 freeze. UNVERIFIED: I have not read the freeze date.
 
-Q-HEW-2 (for Karma, not the founder). Rule between NS-50-R10 and NX-39 BL-873 / ML-S10 on where a library moment may show (cluster menu only, as NS-51 says, or also one day card), and reword BL-1305 ("any 1.x build") to match the drop C line.
+Q-HEW-2 (for Karma, not the founder). Rule between NS-50-R10 and NX-39 BL-873 / ML-S10 on where a library moment may show, and reword BL-1305 ("any 1.x build") to match the drop C line. Under section 7 this becomes: a library moment shows in the Moments tab and the cluster menu, never as a Home slip.
+
+Q-HEW-3 (founder, because it changes what parents are promised). Does "get that permission" mean one parent-tapped ask, with no second ask after a No? Recommendation: yes, one ask on a tap, never re-asked, no nag after a No (FR-PHS-44, FR-PRV-38, Apple's ask-on-a-direct-action rule S2). Default: that.
 
 ## 6. Not done and not claimed
 
 - I did not read ML-1 to ML-12 (Project doc not reachable here) and did not read code. No statement here is a finding about what is built; "built" claims come from the reviews quoted in `22-final-holistic-spec.md` section 4.
+- The design concept, constitution analysis and feasibility documents are being written in parallel by the design, privacy and mobile agents. When their PRs are open, this file will link them and not repeat them. None was open when I looked (21 Nov, open PR list read by REST); do not read the absence as a decision.
 - No backlog task is added or changed in this PR. If the founder accepts this wheel, `product` will add tasks: a single Home source registry row (extends BL-963), the parent-label ruling (G4), and the BL-1305 reword.
 - Day 30 and day 80 states are derived from the cited rules; no parent has seen them.
+
+## 7. PROPOSED: a Moments tab (card NS-53, working name; the founder said "explore etc or suitable word")
+
+The word is for `content` and the founder. "Moments" is a working name only. The tab is where the wheel in section 3 becomes the main surface instead of one slip on Home. Ids: NS-53 is PROPOSED as the next free card id (confirm against the register; the one other mention in the repo is a count line in `docs/qa/test-plan-b13/03-photos-and-media-library.md`). FR rows below continue each function file's numbering and are PROPOSED, not added to those files.
+
+### 7.1 What the scope change collides with (named, not waived)
+
+| Existing rule | Collision | Proposed handling |
+|---|---|---|
+| IA-R1, navigation tests N1 and N4: exactly Home, Book, Me, "no screen for Family, Library, Photos or Share" (`docs/design/specs/06-HOME-BOOK-ME-IA-11nov.md` section 9) | A fourth tab breaks IA-R1 | `design-systems` approves a changed IA-R1 and N1; the IA spec says a new tab needs the Share-style test first. J12 (each tab removed leaves one job undone) must still hold for four tabs |
+| IA-R3, N3: one capture entry; a tab other than Home with a capture list fails N3(b); P2: a start from a photo is a mode of Home's entry | Moments hands off to capture | The hand-off calls the one start function with a new allow-listed `source` (`moment`), approved by `design-systems`; Moments has no recorder of its own |
+| IA-R4: Book starts nothing | none | Unchanged. Moments starts only through the hand-off |
+| FR-PHS-44, FR-PRV-38: no prompt about limited or denied access, no nag | "if not given permission then get that permission" | One ask, on a parent tap, never repeated (Q-HEW-3). After a No the tab shows the picker and typed days, with no line about access |
+| NS-50-R10, R-IA-3: no picture slip, tile or strip; no feed | A tab of moments is a feed if it is a list of things waiting | The tab shows a few of the parent's own pictures as an invitation, never a count, never "to do" wording, never more than one screen of items (NS-53-R9) |
+| FR-PHS-40 and BL-1305: no usage string or PhotoKit call in 1.x | Library tab needs a read | Gated by Q-HEW-1; flag off in every release profile until ruled |
+| Direction 26 section 3: no marketing claim like "we find your best moments"; NS-51 not in scope: "memories", "best" | "Showcasing value props" | Value props state what the parent does ("say something about a picture you chose"), never what the app finds or writes |
+
+### 7.2 Home versus Moments versus Book (PROPOSED line for `content`)
+
+"Home is where you start today's letter. Moments is where your own pictures and days wait for you to say something about them. The Book is where you read the ones you kept."
+
+| | Home (Say) | Moments (Look back and start) | Book (Read) |
+|---|---|---|---|
+| Owns | Today's prompt, Speak, Type, waiting drafts | Wheel sources 2 to 6: your marked days, your pictures, library days | Every kept letter |
+| Starts a letter | Yes, directly | Only by handing off to the one capture entry | Never (IA-R4) |
+| Lists kept letters | Never (IA-R9) | Never; one past letter only as a link to the Book | Always |
+| Day one | Prompt and cluster | Value props and the permission ask (7.3) | Closed cover, pointer to Home |
+| Day 30 | Prompt, cluster, one slip | A few of your pictures or days, or the quiet state | Months, Find, lenses |
+| 80 letters | Same as day 30 | Same shape; never a count of letters or moments | Where the volume is |
+
+If Moments and Home would show the same item on a given day, the item shows in Moments and Home shows only its slip order as today (NS-50-R5). One owner per fact (IA audit rule).
+
+### 7.3 States of the tab (PROPOSED; names for `design-systems`)
+
+| State | What the parent sees | Notes |
+|---|---|---|
+| M0 day one, before permission | Value props in plain words and fictional Asha examples; one button "Show my pictures" (words for `content`); a quiet "Pick one photo instead" that uses level 1 | No iOS sheet yet. No library read has happened. Marketing frames follow FR-MKT rules |
+| M1 asking | Apple's own sheet, after one plain sentence, only after the parent taps | Asked once. The system sheet is the only ask |
+| M2 allowed (all or limited) | A few days of the parent's own pictures (dates only, no place, no caption), plus any marked day today | Limited behaves like all; no line about what is missing (FR-PRV-38) |
+| M3 nothing to show | One calm line and the picker | Never "no moments yet" counts; never a gap |
+| M4 declined or off | The picker, typed days, ticked days and one past letter; no line about access | No nag, ever (FR-PHS-44) |
+| M5 quiet book | Nothing from that book | NS-23-R8 and R-IA-6 hold |
+
+### 7.4 Hand-off to capture (PROPOSED)
+
+The parent taps a day of pictures, chooses one or several, and the one capture start opens with those pictures attached and an empty words field (NS-49-R3, NS-52). Nothing is pre-filled from a picture. Date of the letter comes from the picture date only if the parent confirms it. The prompt shown is an ordinary prompt from the catalogue and does not depend on the picture (the "prompt does not depend on the picture" test, CHECKS-AND-BALANCES F6).
+
+### 7.5 Door lines for the permission ask (PRIV-R21; PROPOSED, words by `content`)
+
+- Shown: one plain sentence before Apple's sheet saying the app reads the dates of pictures on the phone to show your days, and that the pictures stay on the phone.
+- Records: the parent's yes with its time, on the phone. No picture, filename, album, place or count.
+- Never: reads or sends a picture the parent did not include, describes a picture, writes words, re-asks after a No.
+- Decline: "Not now" or a No in Apple's sheet changes nothing else; the picker, Home and Book work the same.
+
+### 7.6 Requirement rows PROPOSED for NS-53
+
+Each row's test title starts with its id in brackets. P0 reasons: (a) a promise, (b) a legal or store duty, (c) the core loop.
+
+| Id | Given / When / Then | Priority |
+|---|---|---|
+| NS-53-R1 | Given any build, Then the tab bar has Moments only where the flag is on and Q-HEW-1 allows it; with the flag off the bar is Home, Book, Me (IA-R1 as built) | P0 (a) |
+| NS-53-R2 | Given a first-run parent, When they open Moments before any permission, Then M0 shows value props and no iOS sheet appears and no library call is made | P0 (b) |
+| NS-53-R3 | Given M0, When the parent taps the one button, Then one sentence shows and then Apple's sheet; the sheet never appears at launch, in first run or from a notification (FR-PHS-58) | P0 (b) |
+| NS-53-R4 | Given a No, limited, or Not now, Then no screen of ours asks again or mentions access (FR-PHS-44) | P0 (a) |
+| NS-53-R5 | Given M2, Then only creation date and media type are read (FR-PHS-60); a source scan fails any location, face, scene, filename or album field | P0 (a) |
+| NS-53-R6 | Given any Moments item, Then it shows the parent's own pictures and a date; no caption, title, summary, place name or description of what a picture shows | P0 (a) |
+| NS-53-R7 | Given the tab, Then no count of moments, pictures, unwritten days or things waiting, no streak, no comparison | P0 (a) |
+| NS-53-R8 | Given any string in the tab, Then it does not say or imply the app found, chose, wrote or suggested words; content rules and the claims check pass | P0 (a) |
+| NS-53-R9 | Given M2, Then at most one screen of items shows, newest first by picture date, with no endless scroll | P1 |
+| NS-53-R10 | Given a tap on an item, Then the one capture start opens with the chosen pictures and an empty words field, `source` is `moment`, and Moments imports no recorder (N3) | P0 (c) |
+| NS-53-R11 | Given a day the parent marked (NS-18, NS-46) or a past letter (NS-23), Then it shows in Moments by the 7.2 rule and never on both tabs | P1 |
+| NS-53-R12 | Given a quiet or hidden book, Then nothing from it shows (NS-23-R8, R-IA-6) | P0 (a) |
+| NS-53-R13 | Given the parent turns Moments off in Me, Then the on-phone index is removed and the tab shows M4 | P0 (a) |
+| NS-53-R14 | Given airplane mode, Then Moments works the same (nothing needs the network) | P1 |
+| NS-53-R15 | Given VoiceOver and AX5, Then each item is one element read as date then "picture, N of M" and never describes content (FR-PHS-70); the tab works at AX5 | P1 |
+| NS-53-R16 | Given the founder's screenshots, Then no fixture, string, snapshot or doc in the repo holds a real name, place or picture from them; fixtures are Asha and synthetic | P0 (a) |
+
+### 7.7 FR rows PROPOSED by function (each function file owns its own numbering and adds them)
+
+| Function | Id | Row |
+|---|---|---|
+| photos-and-suggestions | FR-PHS-72 | The Moments tab reads the same moment engine as NS-51 (dates and counts only; ML-4, ML-13, ML-14 stand) and adds no second index |
+| photos-and-suggestions | FR-PHS-73 | If fed by Apple's suggestions picker (level 2) the tab launches Apple's sheet and receives only what the parent picks; it reads no library (UNVERIFIED how the API behaves inside a tab; `mobile` feasibility doc decides) |
+| privacy | FR-PRV-49 | Moments adds no persistent row beyond NS-51's index and decisions store; the permission act is recorded per 7.5 |
+| privacy | FR-PRV-50 | Analytics: no event for a Moments item, tap, count or permission answer (NS-50-R17 pattern) |
+| marketing | FR-MKT-45 | Value props in M0 and in store frames say what the parent does, never "we find your best moments"; no frame uses a real picture or a real place |
+| legal and compliance | FR-LEG-xx | Counsel confirms the permission sentence and the App Privacy answer before any profile turns the flag on (id left for the function owner) |
+| design-systems | IA-R12 (PROPOSED) | Four tabs change IA-R1, N1, N4 and J12 together, tested with five parents (J5) and a device pass (J11) |
+| content | CR (id for `content`) | One glossary word for the tab; the Home versus Moments versus Book line; BRAND.md bans "journal" in prose |
+| qa | FR-QA-xx | Device rows: limited, all, denied, iCloud-only, no pictures at all, an empty library of Asha fixtures only |
+| reliability | FR-REL-xx | Foreground bounded read only; no background mode (FR-PHS-61) |
+
+### 7.8 What I am not claiming
+
+- I have not seen the founder's screenshots and have not read how Apple's suggestions picker behaves; "smarter than Apple's picker" is a goal, not a finding. The smarter parts proposed here are: it is ours and relevant to {child}'s days (marked days and past letters sit beside the pictures), and it hands off to the capture the parent already knows. The design concept document decides how it looks.
+- Whether a first-run default tab of value props is better than Home is untested (J5, J11 are Open). Home stays the default in the first public build under Option A.
