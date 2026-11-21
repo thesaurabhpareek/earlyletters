@@ -782,12 +782,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Revisit when: the hosted project is read, the Pro plan is decided (the founder said later on 20 Nov), or counsel answers. Karma
 
 ### CR-72 Development starts: the founder delegates technical calls and code merges to the CTO (Fri 20 Nov 2026, Karma, on the founder's words)
-- Question: the founder said in chat on 20 Nov: "It's CTO call and not mine. Work with CTO for this and such tech questions moving forward. And start work when we can. Let's execute the project plan. ... Keep merging the code do not ask me for approval. Ask Ceo for approval." What does that change?
+- Status: this PR edits `docs/agents/**`, which CR-70 keeps founder-only, so the founder merges it (or names it). Karma does not merge it under CR-70. It is independent of the CR-73 PR (#1071); whichever lands second takes the textual merge of the two sections after the last ruling.
+- Question: the founder said in chat on 20 Nov, in separate excerpts: "It's CTO call and not mine. Work with CTO for this and such tech questions moving forward." and "And start work when we can. Let's execute the project plan." and "Keep merging the code do not ask me for approval. Ask Ceo for approval." (the last word is the founder's, read as the CTO). What does that change?
 - Tier and type: T1 process ruling; the founder's own delegation, recorded.
 - Ruling:
   - Wave 1 of the plan starts now: lanes and owners are in `docs/engineering/readiness-20nov/PROGRESS.md`. Each agent works from its brief, the cards, the designs and `BUILD-BRIEF.md`-style rules (CLAUDE.md, PRINCIPLES.md, the chapters).
-  - Technical questions are the CTO's. Size growth over the sizes accepted in F1 (plan 17 by 7 lines, 17b by 31 lines) is accepted; the photo slices #835 to #840 and the H1 refactor are accepted at their stated sizes (CODE-R02), each a single concern.
-  - Code merges without asking the founder once D-132 holds (two counted reviews at the exact head, green `required`, macOS store-profile launch for app code), as CR-70 says.
+  - Technical questions are the CTO's. Size growth of the plan files and the stated sizes of the photo slices #835 to #840 and the H1 refactor are the CTO's call and are accepted, each a single concern (CODE-R02 in plan 17).
+  - Code merges without asking the founder once the CR-70 gates hold (two counted reviews at the exact head, green `required`, `compliance-fence` and `applied migrations unchanged`, clean dry-run merge). The store-profile Release launch is a watch item for app code (COORDINATION.md), not a gate. CR-70's founder-only path list still applies until the founder narrows it.
   - Questions are routed to the owning seat (product, design, compliance, privacy, security) through the feedback loop, and the answer is recorded in an erratum, a ruling or the decision record. Nobody guesses.
   - What this does not change (the founder's own words earlier stand): no store build or TestFlight build without his explicit go; no hosted migration applied by an agent; no secret, account or money decision; legal text and `docs/DECISIONS.md` merge by him; no PROPOSED word shipped as approved; no dates.
 - Why: the founder asked for it in plain words and the list above is what the CTO skill reserves to him.
