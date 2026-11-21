@@ -689,9 +689,9 @@ function FirstRun() {
     signOut().catch(() => undefined);
   };
   if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen lettersComing={route.accountHasBook} />;
-  if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} method={method} />;
+  if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
-  if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} method={method} />;
+  if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} />;
   if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} method={method} />;
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;

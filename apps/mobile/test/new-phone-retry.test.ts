@@ -118,20 +118,33 @@ describe('[NS-10-R12] wrong account names the method', () => {
     expect(methodLine('passkey')).toBe(authCopy.account.signedInWith.other);
     expect(methodLine(null)).toBeNull();
   });
-  it('[NS-10-R12] never the address: the line takes a method only, and the three screens read no email', () => {
+  it('[NS-10-R12] never the address: the line takes a method only, and the screen file reads no email', () => {
     expect(methodLine('email')).not.toMatch(/@|\*/);
     const screens = src('components/onboarding/new-phone-screens.tsx');
-    const held = screens.slice(screens.indexOf('function withMethod'));
-    expect(/email|maskedEmail|account\.email/i.test(held.replace(/signedInWith/g, ''))).toBe(false);
+    expect(/email|maskedEmail|account\.email/i.test(screens.replace(/signedInWith/g, ''))).toBe(false);
   });
   it('[NS-10-R12] mutant: a line that interpolates the full email is caught', () => {
     const mutant = (m: string, email: string) => `${methodLine(m as never)} ${email}`;
     expect(mutant('email', 'asha.mama@example.com')).toMatch(/@/);
     expect(methodLine('email') ?? '').not.toMatch(/@/);
   });
-  it('[NS-10-R12] the slow, no-book and finish-setup screens carry it, from `lastMethod`', () => {
+  it('[NS-10-R12] the line is its own Text above the screen (header slot, read first), on No book here yet only, and never joined into a body', () => {
+    const screens = src('components/onboarding/new-phone-screens.tsx');
+    const noBook = screens.slice(screens.indexOf('export function NoBookHereScreen'), screens.indexOf('export function HeldScreen'));
+    expect(noBook).toContain('header={<MethodLead method={method} />}');
+    expect(screens).toMatch(/function MethodLead[\s\S]*?<Text [^>]*testID="newPhone\.method"/);
+    expect(screens.match(/<MethodLead /g)?.length).toBe(1);
+    // Not in the slow or held screens, and never appended to a body (the old shape, F-05).
+    expect(screens).not.toMatch(/\$\{method\}|body=\{[^}]*method/);
     const o = src('app/onboarding.tsx');
     expect(o).toContain('methodLine(lastMethod)');
-    for (const s of ['SlowBookScreen', 'NoBookHereScreen', 'HeldScreen']) expect(o).toMatch(new RegExp(`<${s}[^>]* method=\\{method\\}`));
+    expect(o).toMatch(/<NoBookHereScreen[^>]* method=\{method\}/);
+    expect(o).not.toMatch(/<SlowBookScreen[^>]*method=|<HeldScreen[^>]*method=/);
+  });
+  it('[NS-10-R12] mutant: the method appended to a body, or passed to the slow screen, is caught', () => {
+    const oldShape = (t: string) => /\$\{method\}|body=\{[^}]*method/.test(t);
+    expect(oldShape('body={withMethod(t.slowBody, method)}')).toBe(true);
+    expect(oldShape('return method ? `${body} ${method}.` : body;')).toBe(true);
+    expect(oldShape(src('components/onboarding/new-phone-screens.tsx'))).toBe(false);
   });
 });

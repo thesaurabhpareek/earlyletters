@@ -11,6 +11,7 @@
 import { useRef, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { copy as appCopy } from '@/lib/copy';
 import { capabilities } from '@/lib/capabilities';
 import { heldScreenModel } from '@/lib/first-run/held-screen.logic';
@@ -18,9 +19,19 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
 import { useArrival } from '@/lib/first-run/use-arrival';
 
-/** R12: the method line (never the address) closes the body, so a parent who finds the wrong account can tell which sign-in it was. */
-function withMethod(body: string, method: string | null): string {
-  return method ? `${body} ${method}.` : body;
+/**
+ * R12: the sign-in method (never the address) as its OWN line above the screen, in the header slot, so VoiceOver reads it
+ * first and as its own element (C-S10 wrong-account; F-05). Shown on No book here yet only, until design adds more screens.
+ */
+function MethodLead({ method }: { method: string | null }) {
+  if (!method) return null;
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, alignItems: 'center' }}>
+      <Text variant="footnote" tone="muted" style={{ textAlign: 'center' }} testID="newPhone.method">
+        {method}
+      </Text>
+    </View>
+  );
 }
 
 function Arrives({ title, screen, children }: { title: string; screen: string; children: ReactNode }) {
@@ -47,14 +58,14 @@ export function OpeningBookScreen({ lettersComing }: { lettersComing: boolean })
   );
 }
 
-export function SlowBookScreen({ onTryAgain, onTryAnother, method = null }: { onTryAgain: () => void; onTryAnother: () => void; method?: string | null }) {
+export function SlowBookScreen({ onTryAgain, onTryAnother }: { onTryAgain: () => void; onTryAnother: () => void }) {
   const t = authCopy.newPhone;
   return (
     <Arrives title={t.slowTitle} screen="slow">
       <StateScreen
         kind="error"
         title={t.slowTitle}
-        body={withMethod(t.slowBody, method)}
+        body={t.slowBody}
         primary={{ label: authCopy.outage.retry, onPress: onTryAgain, testID: 'newPhone.tryAgain' }}
         quiet={[{ label: authCopy.consent.noBook.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
       />
@@ -85,7 +96,8 @@ export function NoBookHereScreen({ onStartBook, onTryAnother, method = null }: {
       <StateScreen
         kind="empty"
         title={n.title}
-        body={withMethod(n.body, method)}
+        body={n.body}
+        header={<MethodLead method={method} />}
         primary={{ label: n.startBook, onPress: onStartBook, testID: 'newPhone.startBook' }}
         quiet={[{ label: n.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
       />
@@ -99,7 +111,7 @@ export function NoBookHereScreen({ onStartBook, onTryAnother, method = null }: {
  * the export are quiet and never ask for Terms (R4a, R4b). Decided from auth state alone: no network, no wait. The title
  * reuses state A's heading; the body and the export line are PROPOSED keys (auth.newPhone.consentBody and .nothingToCopy).
  */
-export function HeldScreen({ onTryAnother, method = null }: { onTryAnother: () => void; method?: string | null }) {
+export function HeldScreen({ onTryAnother }: { onTryAnother: () => void }) {
   const t = authCopy.newPhone;
   const m = heldScreenModel({ accountDeletion: capabilities.accountDeletion, hasLocalBook: false });
   const quiet = [
@@ -112,7 +124,7 @@ export function HeldScreen({ onTryAnother, method = null }: { onTryAnother: () =
       <StateScreen
         kind="empty"
         title={t.loading}
-        body={withMethod(m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody, method)}
+        body={m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody}
         primary={{ label: authCopy.account.finishSetup, onPress: () => router.push(m.finishSetup.route), testID: 'held.finishSetup' }}
         quiet={quiet}
       />
