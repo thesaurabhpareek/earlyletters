@@ -19,8 +19,8 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | enforced on develop (#28) | none |
 | CODE-R07 | MUST | review; `docs/GLOSSARY.md` | not yet (WS-17 not opened) | CODE-G4 |
 | CODE-R09 | MUST | review | enforced on develop (review only) | none |
-| CODE-R10 | MUST NOT | `types: []` in package tsconfigs; ESLint `no-restricted-imports` | partly (core only); rest not yet (MONO-02, WS-12); import-cycle gate G5 is on develop (`apps/mobile/test/import-graph.test.ts`, #1090, #1127), the G4 boundary scan is not | MONO-02 |
-| CODE-R11 | MUST NOT | ESLint `no-restricted-imports` for screens | not yet (WS-12) | MONO-01 |
+| CODE-R10 | MUST NOT | `types: []` in package tsconfigs; G4 source scan `apps/mobile/test/boundaries.test.ts` (#1085, ratchet with a `KNOWN` list); ESLint `no-restricted-imports` | partly: core has `types: []`; G4 scan on develop with known open gaps (a `qa` PR is fixing them); lint rule not yet (MONO-02, WS-12); import-cycle gate G5 on develop (`apps/mobile/test/import-graph.test.ts`, #1090, #1127) | MONO-02 |
+| CODE-R11 | MUST NOT | G4 source scan `apps/mobile/test/boundaries.test.ts` (#1085); ESLint `no-restricted-imports` for screens | partly: G4 scan on develop with known open gaps; lint rule not yet (WS-12) | MONO-01 |
 | CODE-R13 | MUST | `packages/core/src/domain.ts` plus CHECK-constraint parity test | enforced on develop (#31) | CORE-02 |
 | CODE-R14 | MUST | PR template; review | enforced on develop (review only) | CORE-06 |
 | CODE-R15 | MUST | review; lint rule against string throws | not yet | CORE-13 |
@@ -153,8 +153,8 @@ Gap ids defined here:
 | IAM-R23 | MUST NOT | review; no Supabase credentials in `agents.yml` | review | PINF-01, PINF-05 |
 | IAM-R24 | MUST | access matrix unlisted-function check; review | enforced on develop (functions); review (tables, views) | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
-| SEC-R02 | MUST | `docs/ops/SECRETS.md` | draft in this PR, founder reads | PINF-05, WS-18 |
-| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
+| SEC-R02 | MUST | `docs/ops/SECRETS.md` | file on develop (#1094); no check that every secret has a row | PINF-05, WS-18 |
+| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner (known misses, follow-ups in open #1163) scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
 | SEC-R04 | MUST | scoped deploy secrets in GitHub Environment | not yet | PINF-05, WS-14 |
 | SEC-R05 | MUST | incident runbook | not yet | PINF-09, WS-18 |
 | SEC-R06 | MUST | `npm ci` in `.github/actions/setup/action.yml` | enforced on develop | |
