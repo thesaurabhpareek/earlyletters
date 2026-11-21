@@ -148,3 +148,22 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back (filer): revert the build PR.
 - Revisit when (filer): the acceptance walk fails on a phone, or the CDesO's placement needs a new word.
 - Signed: Chief Product Officer (Claude role) for the ruling; filed by Karma
+
+### CCO-7 PR #1448 (compliance gates migration, a re-cut of #424) passes the compliance fence for merge into develop only (Sat 21 Nov 2026, CCO via Karma's session; not counsel)
+- Question: PR #1448 adds the sign-up compliance gates as files: migration `20261121030000_compliance_gates.sql` (`hook_before_user_created`, `ops.restricted_jurisdictions`, `geo_ip_ranges`, `compliance_check_counts`, `regulatory_watch`), their tests and grants, `supabase/APPLY.md` File 39 and the compliance scripts. Does it meet the CCO checklist in `compliance/README.md`, and for what?
+- Tier and type: T2 (database, a fenced path, a sign-up door); complicated.
+- Options considered: approve for merge into develop with the hook off and a list of conditions before anything is enabled or applied; hold the PR until every checklist line has its evidence; approve without conditions.
+- Ruling: approve the head of PR #1448 named on the `## CCO approval at <sha>` line, for merge into `develop` only. The hook stays off. Nothing is applied to a hosted project and the hook is not enabled until the conditions below hold. Checklist, line by line:
+  - Sign-up checks table: the hook is row 4 and the PR adds the door's code and tests. Cannot verify on a device or a local stack whether GoTrue rolls back the block count when the hook refuses a sign-up (File 39 step 4). This is a condition, not a finding.
+  - New personal data needs a DATA_CLASSIFICATION row: NOT MET, and I accept it as a condition before the hook is enabled, not before the files merge. The tables hold a day, a check, an outcome and, for a block, a country code; the IP is read in memory only; the tables stay empty until the hook is on. BL-555 adds the rows and the two-year retention entry before File 39 is applied.
+  - Legal and platform facts with a source and a date: met for the sanctions and export rows (`checked-facts.md`, read 31 Oct 2026, primary sources). The Syria rescission date is secondary-sourced.
+  - No promise change without the founder: met. No Terms, Privacy, listing or app copy is edited. The Privacy Policy line about IP use (D-136) is still unpublished, so the hook cannot be enabled before it is.
+  - No new door path without a row and a test: met. The web page stays deferred (D-055).
+  - DB-IP attribution link: NOT MET, and there is no screen for it yet (BL-553). A condition before the hook is enabled.
+  - Blocked places: KP, IR, CU, SY, RU and BY at country level, as the seed holds. D-131 (31 Oct 2026) records the founder's words and settles Iran and Cuba as blocked; only counsel's confirmation (Q57) is open. No name screening (CCO-5, D-137, a delegated default until counsel confirms). A change to the list stays the founder's.
+- Conditions, all before the hook is enabled or File 39 is applied to a hosted project: BL-553 (the app handles the 403 refusal and carries the DB-IP link), BL-554 (the regulatory watch is scheduled), BL-555 (DATA_CLASSIFICATION rows, register entry, claims rows), the local-stack check of the block count, the Privacy Policy IP disclosure approved by the founder, an ops alert on geo stale, unknown and error counts, and BL-552 (a suspend path) before any sign-in outside the family. Counsel's answer to Q57 is requested before the sign-up check is switched on.
+- Why: the files change no behaviour while the hook is off, and merging them keeps the work from drifting from `develop`. Evidence at the head: two counted reviews (Review A with the database lens, Review B with the tests lens, both PASS at this head), `npm run test:db` 55 files, `compliance/scripts` tests 9 of 9, and a mutation that moved one grant made `explicit_grants` fail. Evidence that is missing: counsel's answer, a device or local-stack run, and CI at the head before the approval is posted.
+- Door: two-way with cost. Merging is a revert away; applying File 39 to a hosted project and enabling the hook are the founder's steps and are not covered by this ruling.
+- Way back: revert PR #1448. The migration file, its tests and File 39 go, and develop returns to the state before it.
+- Revisit when: any condition above is met, counsel answers Q57, or the blocked list changes.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
