@@ -218,8 +218,9 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/scale=\{1\.75\}/);
   });
 
-  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines; whole at accessibility sizes (P4 critics S5)', () => {
-    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{large \? undefined : 3\}/);
+  it('S11: the prompt is the literary line in `prompt`, textMuted, and is shown whole at every text size (no line cap; P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen\.prompt">/);
+    expect(c).not.toMatch(/variant="prompt"[^>]*numberOfLines/);
     expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
   });
 

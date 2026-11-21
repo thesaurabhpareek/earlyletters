@@ -1,0 +1,11 @@
+{
+  "apps/mobile/src/lib/resilience/global-errors.ts": {
+    "no-console-in-app": 1
+  },
+  "packages/design-tokens/src/build-css.ts": {
+    "no-console-in-app": 1
+  },
+  "packages/design-tokens/src/build-grain.ts": {
+    "no-console-in-app": 1
+  }
+}

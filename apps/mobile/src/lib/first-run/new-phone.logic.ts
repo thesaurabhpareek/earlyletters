@@ -28,8 +28,10 @@ export const OPENING_WAIT_MS = ACCOUNT_BOOKS_WAIT_MS;
  *  - `arrived`  state B, leave for Tonight
  *  - `new`      the account has never made a book: the child step
  *  - `noBook`   a returning account with no book, or an answer that could not be read: "No book here yet"
+ *  - `consent`  consent is still to give (`needsConsent`), so the account cannot be asked and no book can arrive: the held
+ *               screen (BL-922a, NS-10-R0). Never produced by `openingView`; only `heldNewPhoneView` answers it.
  */
-export type OpeningView = 'opening' | 'slow' | 'offline' | 'arrived' | 'new' | 'noBook';
+export type OpeningView = 'opening' | 'slow' | 'offline' | 'arrived' | 'new' | 'noBook' | 'consent';
 
 /** Engine phases that mean the pull cannot run right now, while the phone has a connection: state C at once. */
 const STALLED_PHASES: ReadonlySet<SyncPhase> = new Set<SyncPhase>(['auth', 'paused_server', 'offline']);
