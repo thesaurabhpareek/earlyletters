@@ -251,16 +251,16 @@ Celebrate what exists. These are in-app only (moments never go to a lock screen)
 
 ## 14. Errors and system states (E-S13 to E-S20, `en.errors`)
 
-Name what did not finish, and say what is true about the words. "Safe" is kept for a failed save and a crash, where the words are on the phone (VOICE.md "Words we lean on too much").
+Name what did not finish, and say what is true about the words. A failed save and a crash say the words are "still on this phone"; "safe" is not used for either now (VOICE.md "Words we lean on too much").
 
 | Surface | Trigger | Key | Line or brief | Tone | Never says | Source today |
 |---|---|---|---|---|---|---|
-| 14.1 Save failed | Local save error | `en.errors.saveFailed.*` | BUILT: "Not saved to the book yet" / "Your words are safe on this phone. We will try again on our own." / "Try again now" | Steady | "Error 5"; blame | `strings.en.ts:1167`; test "save failure reassurance" |
+| 14.1 Save failed | Local save error | `en.errors.saveFailed.*` | BUILT: "Not saved to the book yet" / "Your words are still on this phone." / "Try again now". No retry is promised: nothing retries by itself, and no screen reads this key yet (Review shows `en.review.saveFailed`) | Steady | "Error 5"; blame | `strings.en.ts:1167`; test "save failure reassurance" |
 | 14.2 Microphone off, busy, phone full | Listen | `en.errors.micDenied`, `.micBusy`, `.phoneFull` | BUILT: "The microphone is off" / "Turn it on in Settings, or type this one." | Offers the other way | "permission denied"; "fatal" | `strings.en.ts:1176-1189` |
 | 14.3 No words yet | Transcription did not finish | `en.errors.transcriptionFailed.*` | BUILT: "No words yet for this one" / "The recording is kept." | Says what is kept | "failed to transcribe" | `strings.en.ts:1190` |
-| 14.4 Offline | No network | `en.errors.offline.*` | BUILT: "You're offline" / "Keep talking. Everything is saved on this phone." | Calm | "No connection!" | `strings.en.ts:1195` |
+| 14.4 Offline | No network | `en.errors.offline.*` | BUILT: "You're offline" / "Keep talking. Recording doesn't need a connection." | Calm | "No connection!" | `strings.en.ts:1195` |
 | 14.5 Invite expired | An old link | `en.errors.inviteExpired.*` | BUILT: "This invite has expired" / "Ask {inviter} to send a new one." | Plain | Blame | `strings.en.ts:1199` |
-| 14.6 Something went wrong; the page did not open; nothing at this link | Generic and crash | `en.errors.generic`, `.crash`, `.notFoundPage` | BUILT: "Please try again. Nothing you saved has changed." / "Your letters and recordings are safe on this phone." | Steady | "Oops"; "fatal" | `strings.en.ts:1203-1219` |
+| 14.6 Something went wrong; the page did not open; nothing at this link | Generic and crash | `en.errors.generic`, `.crash`, `.notFoundPage` | BUILT: "Try again. Nothing you saved has changed." / "Your letters and recordings are still on this phone." | Steady | "Oops"; "fatal" | `strings.en.ts:1203-1219` |
 | 14.7 The book could not open (launch recovery) | Database cannot open | `en.errors.launch.*` | BUILT: "Export what's readable" and a README in the export | Honest | "corrupt"; "lost" | `strings.en.ts:1226-1239` |
 | 14.8 Sign-in outage and offline (E-S14), sign-in help | Servers-on builds | `authCopy.*`, `en.auth.troubleButton` | BUILT and PROPOSED (file) | Names the step that did not finish; "Nothing has changed." only when nothing did | "Your letters are still on this phone." in an error line a new phone also reads | E WORDS; VOICE.md |
 | 14.9 SystemLine and update line (E-S15, E-S16) | An app update is needed | keys as written in E WORDS | PROPOSED (file): E WORDS | One quiet line in Me | "Update now or lose access" | E WORDS |
