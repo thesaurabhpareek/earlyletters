@@ -32,6 +32,7 @@ import { reloadAppLock } from './app-lock/controller';
 import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
 import { PENDING_REQUEST_KEY } from './auth/pending';
 import { closeBackupHandles, deleteBackupFiles } from './backup/files';
+import { removeAllBackupTokens } from './backup/token-vault';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
@@ -102,6 +103,7 @@ async function finish(): Promise<void> {
   await clearLedger(ledgerDb());
   await clearPendingInvite();
   for (const key of SIGN_IN_LEFTOVERS) await secureStorage.removeItem(key).catch(() => {});
+  await removeAllBackupTokens().catch(() => {}); // B5-6: the upload tokens (one Keychain item); safe to repeat
   await forgetReminders();
   finishEraseEverything();
 }

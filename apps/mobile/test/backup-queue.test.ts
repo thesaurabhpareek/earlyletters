@@ -22,6 +22,7 @@ import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../
 import { createKeyManager } from '../src/lib/backup/keys';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { Aead, Conditions, FileIO, NetworkKind } from '../src/lib/backup/ports';
+import type { TokenStore } from '../src/lib/backup/token-vault';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
@@ -112,12 +113,18 @@ function rig() {
     open: nodeAead.open,
   };
   const server = backend.serverFor(MAMA);
+  // B5-6: the Keychain stand-in the queue gets, and a token the server can hand out at backup_begin.
+  const keychain = new Map<string, string>();
+  const tokens: TokenStore = { get: async (id) => keychain.get(id) ?? null, set: async (id, t) => void keychain.set(id, t), remove: async (id) => void keychain.delete(id) };
+  const beginToken = { value: null as string | null, seenByUploadTarget: [] as (string | null)[] };
   const killableServer: BackupServer = Object.fromEntries(
     Object.entries(server).map(([name, fn]) => [
       name,
       async (...a: unknown[]) => {
         point(`before:${name}`);
-        const r = await (fn as (...x: unknown[]) => Promise<unknown>)(...a);
+        if (name === 'uploadTarget') beginToken.seenByUploadTarget.push((a[1] as string | null) ?? null);
+        let r = await (fn as (...x: unknown[]) => Promise<unknown>)(...a);
+        if (name === 'begin' && beginToken.value && (r as { state: string }).state === 'pending') r = { ...(r as object), uploadToken: beginToken.value };
         point(`after:${name}`);
         return r;
       },
@@ -149,6 +156,7 @@ function rig() {
       conditions,
       clock: { now: () => clock.t, sleep: async () => {} },
       profileId: MAMA,
+      tokens,
       source: { list: () => items, has: (id) => items.some((i) => i.entryId === id) },
       random: () => 0.5,
       partBytes: PART,
@@ -219,6 +227,8 @@ function rig() {
     serverPlaintext,
     settle,
     seals: () => seals,
+    keychain,
+    beginToken,
     tmpFiles: () => readdirSync(files.tmpDir),
     /** Runs after every resumable-upload call returns (before the queue sees the answer). */
     onHttp: (h: (method: string) => void) => void httpHooks.push(h),
@@ -250,6 +260,41 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
       expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
     }
     expect(r.backend.requests.filter((x) => x.kind === 'tus').length).toBeGreaterThan(5); // 6 MiB parts in the app; 64 KiB here
+  });
+
+  it('[B5-6] the upload token goes to the Keychain, the column stays null, the upload sends it, and confirmed removes it', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-upload-token-1';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    let seen = 0;
+    r.onHttp(() => {
+      const row = r.db().job(item.entryId)!;
+      if (row.state === 'confirmed') return;
+      seen += 1;
+      expect(row.uploadToken, 'the column never holds the token').toBeNull();
+      expect([...r.keychain.values()]).toEqual(['asha-upload-token-1']);
+    });
+    await r.make().drain();
+    expect(seen).toBeGreaterThan(0);
+    expect(r.beginToken.seenByUploadTarget).toContain('asha-upload-token-1');
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(r.db().job(item.entryId)!.uploadToken).toBeNull();
+    expect(r.keychain.size).toBe(0);
+  });
+
+  it('[B5-6] a Keychain that refuses the token leaves the job sealed and the file without a token', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-upload-token-2';
+    const { item } = await r.addRecording(SEGMENT_SIZE);
+    const refuse = new Error('keychain locked');
+    const q = r.make();
+    r.keychain.set = () => {
+      throw refuse;
+    };
+    await q.drain().catch(() => undefined);
+    const row = r.db().job(item.entryId)!;
+    expect(row.state).not.toBe('begun');
+    expect(row.uploadToken).toBeNull();
   });
 
   it('goes oldest first, one at a time', async () => {

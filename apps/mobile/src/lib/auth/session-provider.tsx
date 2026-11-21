@@ -22,6 +22,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { deleteBackupFilesExcept, endBackupFileFor } from '../backup/files';
+import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
 import { useRemoteConfig } from '../remote';
@@ -198,7 +199,10 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
     // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
-    if (before && before !== sessionUser) endBackupFileFor(before);
+    if (before && before !== sessionUser) {
+      endBackupFileFor(before);
+      void removeBackupTokensFor(before); // B5-6: and its upload tokens leave the Keychain
+    }
     // B5-5: and every settled run (a launch included) keeps only the signed-in account's file, so a session that ended
     // while the app was closed, a kill after sign-out and a failed delete are all caught and retried here.
     const sweep = backupSweepFor(sessionUser, before, storedRead.current);

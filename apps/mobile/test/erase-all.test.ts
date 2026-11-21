@@ -806,8 +806,8 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     const paths = ['src/lib/erase-everything.ts', 'src/lib/db/repos/wipe.ts', 'src/lib/store.ts', 'src/lib/billing/letter-ledger.ts'];
     for (const p of paths) {
       const s = src(p);
-      // B5: the one backup file erase-everything.ts may import is files.ts (the state file's delete; no keys, no runtime).
-      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/files'/g, ''))]).toEqual([p, false]);
+      // B5: the only backup files erase-everything.ts may import are files.ts (the state file's delete) and token-vault.ts (the upload-token item); no keys, no runtime.
+      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/(files|token-vault)'/g, ''))]).toEqual([p, false]);
       expect([p, /deleteBookKeys|deleteDeviceKey|KeyVault/.test(s)]).toEqual([p, false]);
     }
   });
