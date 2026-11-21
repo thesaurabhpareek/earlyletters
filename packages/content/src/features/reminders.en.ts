@@ -13,11 +13,11 @@ export const reminderCopy = {
     evening: [
       { title: 'A minute to write?', body: 'One thing about today is plenty. A sentence will do.' },
       { title: 'A letter tonight?', body: 'What made you smile today? Say it out loud and keep it.' },
-      { title: 'A minute for the book?', body: 'Anything to tell your little one today? A line is plenty.' },
+      { title: 'A minute for the book?', body: "Say whatever's on your mind. A line is plenty." },
       { title: 'A few words tonight?', body: 'A line or two for the book is plenty.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
       { title: 'Say a few words', body: 'A minute is plenty. Your recording stays with the letter.' },
-      { title: 'Before you sleep', body: 'Something they did or said? Or tap Not much today.' },
+      { title: 'Before you sleep', body: 'A moment from today? Or tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
     // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
