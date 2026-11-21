@@ -18,3 +18,7 @@ export * from './notification-key';
 export * from './plan';
 export * from './domain';
 export * from './lang';
+export * from './moments/holidays';
+export * from './moments/occasions';
+export * from './moments/registry';
+export * from './moments/slots';
