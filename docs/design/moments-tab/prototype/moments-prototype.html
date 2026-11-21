@@ -115,6 +115,8 @@ h1,h2,h3,p{margin:0}
 .more{flex:none;width:44px;height:44px;margin:-8px -8px 0 0;display:grid;place-items:center;border-radius:22px;color:var(--muted)}
 .more svg{width:22px;height:22px}
 .clabel{margin-top:2px;color:var(--text)}
+.placeline{display:flex;align-items:center;gap:6px;margin-top:2px}
+.placeline svg{width:16px;height:16px;flex:none}
 .kicker{color:var(--muted)}
 .cta{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:12px;padding:0 18px 0 14px;border-radius:9999px;background:var(--accentSoft);color:var(--text);transition:transform var(--snappy-dur) var(--snappy-ease),opacity var(--snappy-dur) var(--snappy-ease)}
 .tinted .cta{background:var(--raised)}
@@ -481,6 +483,7 @@ const I = {
   refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>',
   crescent:'<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="draw" d="M62 14a34 34 0 1 0 20 50A28 28 0 0 1 62 14z"/></svg>',
   crescentSm:'<svg class="ageart" viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M62 14a34 34 0 1 0 20 50A28 28 0 0 1 62 14z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   letter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7l8 6 8-6"/></svg>'
 };
 function tile(p){
@@ -502,10 +505,10 @@ function reveal(rootEl){
    Data: fictional Asha only
    ========================================================================== */
 const DAYS = {
-  day1:{ id:"day1", date:"Saturday 14 June", label:"At the park with Nani", letter:false,
+  day1:{ id:"day1", date:"Saturday 14 June", label:"At the park with Nani", place:"Maple Park", letter:false,
     photos:[{s:1},{s:2},{s:3},{s:4,v:"0:14"},{s:5},{s:6},{s:7},{s:8},{s:9}] },
-  day2:{ id:"day2", date:"Thursday 12 June", label:"", letter:false, photos:[{s:10},{s:11},{s:12},{s:13},{s:14}] },
-  day3:{ id:"day3", date:"Sunday 8 June", label:"Asha's first mango", letter:true, photos:[{s:15},{s:16}] },
+  day2:{ id:"day2", date:"Thursday 12 June", label:"", place:"Lakeside Market", letter:false, photos:[{s:10},{s:11},{s:12},{s:13},{s:14}] },
+  day3:{ id:"day3", date:"Sunday 8 June", label:"Asha's first mango", place:"Nani's garden", letter:true, photos:[{s:15},{s:16}] },
   day4:{ id:"day4", date:"Tuesday 3 June", label:"", letter:false, photos:[{s:17,v:"0:42"}] }
 };
 const PROMPTS = ["What makes Asha laugh?","What did Asha do today that surprised you?","What is Asha holding on to these days?","What would you tell Asha about this week?"];
@@ -515,7 +518,7 @@ const KEY_DAYS = ["day1","day2","day3","day4"];
    State
    ========================================================================== */
 const S = { perm:"undetermined", part:"foryou", empty:false, mode:"talk", tab:"moments", pos:"second",
-  aside:new Set(), letters:new Set(["day3"]), scroll:{foryou:0,recent:0}, limitedExtra:false,
+  aside:new Set(), hiddenPlaces:new Set(), lastHide:null, letters:new Set(["day3"]), scroll:{foryou:0,recent:0}, limitedExtra:false,
   promptIdx:0, expanded:null, lastAside:null, ts:1, cold:true };
 
 /* ==========================================================================
@@ -527,20 +530,24 @@ function collage(d){
   return '<button class="collage c'+n+'" data-open="'+d.id+'" aria-label="Photos from '+d.date+(vid?", includes a video":"")+'">'+ph.map(tile).join("")+'</button>';
 }
 function dayCard(part, d){
+  if(d.place && S.hiddenPlaces.has(d.place)) return '';
   const hasLetter = S.letters.has(d.id);
   return '<article class="card day" data-key="'+part+':'+d.id+'" data-kind="day" data-day="'+d.id+'" aria-labelledby="h-'+part+d.id+'">'
     + collage(d)
     + '<div class="cbody"><div class="chead"><h3 class="t-title2 ctitle" id="h-'+part+d.id+'">'+d.date+'</h3>'+more("More for "+d.date)+'</div>'
+    + (d.place?'<p class="t-sub muted placeline" data-place="'+d.place+'">'+I.pin+'<span>'+d.place+'</span></p>':'')
     + (d.label?'<p class="t-body clabel">'+d.label+'</p>':'')
     + '<div class="letterrow" data-letterrow'+(hasLetter?'':' hidden')+'>'+I.letter+'<span class="t-sub">A letter is here</span><button class="textbtn" data-readletter>Read it'+I.right+'</button></div>'
     + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Write about this</span></button></div></article>';
 }
-function occCard(part){
-  return '<article class="card rule" data-key="'+part+':occ" data-kind="occ" aria-labelledby="h-'+part+'occ"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">A day you marked</p><h3 class="t-title2" id="h-'+part+'occ" style="margin-top:2px">Asha\'s birthday</h3></div>'+more("More for Asha's birthday")+'</div>'
+const OCC = { occ:["A day you marked","Asha's birthday"], holiday:["A day you ticked","Diwali"] };
+function occCard(part,id){
+  id = id||"occ"; const o = OCC[id];
+  return '<article class="card rule" data-key="'+part+':'+id+'" data-kind="occ" aria-labelledby="h-'+part+id+'"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">'+o[0]+'</p><h3 class="t-title2" id="h-'+part+id+'" style="margin-top:2px">'+o[1]+'</h3></div>'+more("More for "+o[1])+'</div>'
     + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Tell Asha</span></button></div></article>';
 }
 function monthCard(part){
-  return '<article class="card rule" data-key="'+part+':month" data-kind="month" aria-labelledby="h-'+part+'month"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">A day that belongs to Asha</p><h3 class="t-title2" id="h-'+part+'month" style="margin-top:2px">Asha is Month 14</h3></div>'+more("More for Asha is Month 14")+'</div>'
+  return '<article class="card rule" data-key="'+part+':month" data-kind="month" aria-labelledby="h-'+part+'month"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">Monthiversary</p><h3 class="t-title2" id="h-'+part+'month" style="margin-top:2px">Asha is Month 14</h3></div>'+more("More for Asha is Month 14")+'</div>'
     + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Tell Asha</span></button></div></article>';
 }
 function yagoCard(part){
@@ -554,22 +561,23 @@ function promptCard(part){
     + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px"><button class="cta t-label" data-compose data-press>'+I.plus+'<span>Answer out loud</span></button><button class="textbtn" data-another style="margin-top:12px">'+I.refresh+'<span>Another question</span></button></div></div></article>';
 }
 function cardFor(part,id){
-  if(id==="occ") return occCard(part);
+  if(id==="occ"||id==="holiday") return occCard(part,id);
   if(id==="month") return monthCard(part);
   if(id==="yago") return yagoCard(part);
   if(id==="prompt") return promptCard(part);
   return dayCard(part, DAYS[id]);
 }
+const okPlace = id => !(DAYS[id].place && S.hiddenPlaces.has(DAYS[id].place));
 function order(part){
   if(part==="foryou"){
-    const l = ["occ","month","yago"];
+    const l = ["occ","month","holiday","yago"];
     if(S.empty){ return ["month","prompt"]; }
-    if(S.perm==="full") l.push("day1"); else if(S.perm==="limited") l.push("day2");
+    if(S.perm==="full"){ const d=KEY_DAYS.find(okPlace); if(d) l.push(d);} else if(S.perm==="limited"){ if(okPlace("day2")) l.push("day2"); }
     l.push("prompt"); return l;
   }
   if(S.empty) return [];
-  if(S.perm==="full") return KEY_DAYS.slice();
-  if(S.perm==="limited") return (S.limitedExtra?["day1"]:[]).concat(["day2","day3"]);
+  if(S.perm==="full") return KEY_DAYS.filter(okPlace);
+  if(S.perm==="limited") return (S.limitedExtra?["day1"]:[]).concat(["day2","day3"]).filter(okPlace);
   return [];
 }
 const live = () => S.perm==="full" || S.perm==="limited";
@@ -869,13 +877,14 @@ function switchPart(part){
 function openMenu(card, anchor){
   closeMenu();
   const m = document.createElement("div"); m.className="menu"; m.setAttribute("role","menu");
-  m.innerHTML = '<button role="menuitem" data-aside>Not now</button>';
+  const pl = card.dataset.day && DAYS[card.dataset.day].place;
+  m.innerHTML = '<button role="menuitem" data-aside>Not this one</button>'+(pl?'<button role="menuitem" data-hideplace>Hide this place</button>':'');
   const sr = $("#screen").getBoundingClientRect(), ar = anchor.getBoundingClientRect(), k=getK();
   m.style.top = ((ar.bottom-sr.top)/k+4)+"px"; m.style.right = "16px";
   $("#screen").appendChild(m);
   A(m,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs});
   $("button",m).focus();
-  m.onclick = ()=>{ closeMenu(); setAside(card); };
+  m.onclick = ev=>{ const hp = ev.target.closest('[data-hideplace]'); closeMenu(); if(hp) hidePlace(DAYS[card.dataset.day].place); else setAside(card); };
   m._off = ev=>{ if(!m.contains(ev.target)) closeMenu(); };
   setTimeout(()=>document.addEventListener("pointerdown",m._off,true),0);
   m._esc = ev=>{ if(ev.key==="Escape"){ closeMenu(); anchor.focus(); } };
@@ -904,7 +913,21 @@ async function setAside(card){
   }
   toast("Set aside.","Undo");
 }
+async function hidePlace(place){
+  S.hiddenPlaces.add(place); S.lastHide = place; S.lastAside = null;
+  const cards = $$(".card.day").filter(c=>DAYS[c.dataset.day].place===place);
+  say("Hidden from here."); 
+  await Promise.all(cards.map(async c=>{
+    const h=c.offsetHeight; c.inert=true;
+    if(M.rm){ await A(c,[{opacity:1},{opacity:0}],{d:T.motion.fadeMs,fill:"forwards"}); }
+    else { await A(c,[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"}); c.style.overflow="hidden"; await A(c,[{height:h+"px",marginBottom:"16px",padding:"8px"},{height:"0px",marginBottom:"0px",padding:"0px"}],{d:SP.standard.d,e:SP.standard.e,fill:"forwards"}); }
+    c.remove();
+  }));
+  mlog("MT-T4-R15","place hidden: its days fade "+(M.rm?T.motion.fadeMs:T.motion.exitMs)+" ms, gaps close; nothing says how many");
+  toast("Hidden from here.","Undo");
+}
 function undoAside(){
+  if(S.lastHide){ const p=S.lastHide; S.lastHide=null; S.hiddenPlaces.delete(p); const keep=scrollEl.scrollTop; render({cold:false}); scrollEl.scrollTop=keep; mlog("MT-T4-R16","place shown again; days return in place"); say("Back where it was."); return; }
   const l = S.lastAside; if(!l) return;
   S.aside.delete(l.key); S.lastAside=null;
   const partEl = $("#part-"+l.part); if(!partEl) return;
@@ -1186,7 +1209,7 @@ function goState(k){
   if(C.open){ $("#L-cap").hidden=true; C.open=false; stopTalk(); }
   setInert(false);
   if(toastEl){ toastEl.remove(); toastEl=null; }
-  S.aside.clear(); S.lastAside=null; S.limitedExtra=false; S.empty=false; S.seenEx=new Set(); S.expanded=null; SEEN.clear();
+  S.aside.clear(); S.hiddenPlaces.clear(); S.lastHide=null; S.lastAside=null; S.limitedExtra=false; S.empty=false; S.seenEx=new Set(); S.expanded=null; SEEN.clear();
   S.tab="moments"; $("#pane-moments").hidden=false; $("#pane-other").hidden=true; drawTabs(false);
   if(k==="value"||k==="primer"){ S.perm="undetermined"; }
   else if(k==="empty"){ S.perm="full"; S.empty=true; S.part="recent"; }

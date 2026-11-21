@@ -4,7 +4,7 @@ File: `moments-prototype.html`. One self-contained file, no network, no build. O
 
 Status: PROPOSED design prototype. It changes no token, component or screen in the repo.
 
-Founder ruling of 21 Nov applied: the first Moments release ships with the photo library read. So the prototype's main path is the library path: value view, ask on tap (primer, then the phone's own alert), Not now, Limited, denied. No state is drawn as a later phase. Rules kept: no machine titles, no place, no counts, no people or scene guesses.
+Founder ruling of 21 Nov applied: the first Moments release ships with the photo library read. So the prototype's main path is the library path: value view, ask on tap (primer, then the phone's own alert), Not now, Limited, denied. No state is drawn as a later phase. Founder ruling of 21 Nov also applied: places and special occasions are part of Moments. Day cards show a place label (fictional: Maple Park, Lakeside Market, Nani's garden) and occasion cards show a birthday, a monthiversary, a ticked holiday, and parent-marked days. The card menu offers Not this one and Hide this place. No faces, no people names, no counts, no gaps, no streaks, no machine titles. Place labels reverse ML-6 and the earlier no-place rule; the founder owns that reversal, and where a real place name comes from (typed by the parent, or read from the photo and reverse geocoded) is still open for security and counsel.
 
 ## What is real
 - Colours (light and dark), radii, spacing, type sizes and line heights, elevation, and every duration, spring and curve value are copied from `packages/design-tokens/src/tokens.ts`. The two springs are sampled from the token stiffness and damping into a CSS `linear()` easing.
@@ -40,6 +40,7 @@ Each play is also written in the live "Motion that just played" list in the pane
 | For you and Recent switch | cross-fade 150 ms in place | same | MT-A1-R10 |
 | Another question | words cross-fade 150 ms, height on standard | height at once | MT-A1-R10, MT-A2-R23, R24 |
 | Set aside | fade 160 ms, gap closes on standard | 200 ms fade, gap at once | MT-T4-R15, MT-A1-R14 |
+| Hide this place | its days fade 160 ms, gaps close on standard; Undo restores | 200 ms fade, gaps at once | MT-T4-R15, R16 |
 | Undo | returns to its slot with enter 280 ms | 200 ms fade | MT-T4-R16 |
 | Card tap opens pick pictures | sheet rises on standard | 200 ms fade | D3 7.1 |
 | Pick, Add: capture opens | talk dissolves 280 ms; write rises on standard | 200 ms fade | MT-A4 M3, M4, R9 |
