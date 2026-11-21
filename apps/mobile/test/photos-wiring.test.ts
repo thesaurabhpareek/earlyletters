@@ -145,7 +145,7 @@ describe('[BL-1444-1] the pending picture goes when its person leaves', () => {
   });
   it('[BL-1444-1] the wiring: an ended or replaced session, a forced sign-out and Erase everything each call it', () => {
     const sp = read('lib/auth/session-provider.tsx');
-    expect(sp).toMatch(/if \(before && before !== sessionUser\) void discardPendingPhotoOnLeaving\(\);/);
+    expect(sp).toMatch(/const before = photoUser\.current;\s*photoUser\.current = sessionUser;\s*if \(before && before !== sessionUser\) void discardPendingPhotoOnLeaving\(\);/);
     expect(sp).toMatch(/if \(step\.signOut\) \{\n\s+void discardPendingPhotoOnLeaving\(\);/); // gap 3: before the uploads finish
     const er = read('lib/erase-everything.ts');
     const call = er.indexOf('await discardPendingPhotoOnLeaving()');

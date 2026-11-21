@@ -203,8 +203,6 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
-    // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
-    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
     // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
     if (before && before !== sessionUser) {
       endBackupFileFor(before);
@@ -218,6 +216,15 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       // B5-6, B5-9: after the sweep, tokens of any other account leave the Keychain and the kept account's old rows move.
       void settleBackupTokens(sweep.keep);
     }
+  }, [sessionUser, authSettled]);
+  // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
+  // Its own effect, so the reminders and backup effect above keeps the shape its tests pin.
+  const photoUser = useRef<string | null>(null);
+  useEffect(() => {
+    if (!authSettled) return;
+    const before = photoUser.current;
+    photoUser.current = sessionUser;
+    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
   }, [sessionUser, authSettled]);
   // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
   // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
