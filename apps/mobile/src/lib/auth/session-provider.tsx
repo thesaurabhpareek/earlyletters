@@ -247,6 +247,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // Keychain only, so it is safe inside this callback (no Supabase call).
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
+        methodRef.current = null; // a signed-out run keeps no method for the next session
       }
     });
     const stopRefresh = startAutoRefreshWhileActive();
