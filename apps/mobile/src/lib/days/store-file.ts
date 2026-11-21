@@ -1,9 +1,8 @@
 /**
  * The days store file (ADR 0032 items 1 to 4; NS-47-R6, R28): one versioned JSON file in Application Support, excluded
  * from the backup and read back, never in scribe.db. ONLY lib/days/** imports this file (NS-47-R11).
- * Write order, so nothing sensitive is on disk before the exclusion is proven: create an EMPTY temp, set the exclusion,
- * read it back (false: delete and stop), write the bytes, rename, read back again. Every open reads back first: a file
- * that lost the attribute (a restore, a copy) is deleted and never used. Nothing here logs a path, a day id or contents.
+ * Write order: create an EMPTY temp, set the exclusion, read it back (false: delete and stop), write, rename, read back
+ * again; every open reads back first (a restore or copy that lost it is deleted, never used). Nothing here logs a path or contents.
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import { ScribeFiles } from '../../../modules/scribe-files';

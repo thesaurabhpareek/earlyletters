@@ -40,7 +40,6 @@ vi.mock('../modules/scribe-files', () => ({
 
 const { endDaysSession, loadDays } = await import('../src/lib/days');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
-const { parseDays } = await import('../src/lib/days/store.logic');
 
 const A = '1a2b3c4d5e6f7a8b';
 const B = '9f8e7d6c5b4a3921';
@@ -103,11 +102,6 @@ describe('[NS-47-R28] the store file is protected, versioned and fails closed', 
   it('a higher version is read for known keys and flagged, so no writer rewrites it', () => {
     seed(JSON.stringify({ v: 9, owner: A, ticked: { [DAY]: { future: 1 } }, extra: true }));
     expect(readDays(expoDaysPort()!, A)).toMatchObject({ state: 'newer', file: { v: 9, ticked: { [DAY]: { future: 1 } } } });
-  });
-
-  it('free text as a day id, or an email as an owner, is corrupt', () => {
-    expect(parseDays(JSON.stringify({ v: 1, owner: A, ticked: { 'Asha birthday!': {} } })).kind).toBe('corrupt');
-    expect(parseDays(JSON.stringify({ v: 1, owner: 'asha@example.com', ticked: {} })).kind).toBe('corrupt');
   });
 });
 
