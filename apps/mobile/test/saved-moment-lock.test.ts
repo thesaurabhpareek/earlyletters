@@ -2,7 +2,7 @@
 /**
  * The saved moment's lock chip (S21). The lock icon sits beside text that already says what it means ("Kept private."),
  * so it is decorative: hidden from VoiceOver and TalkBack, and the chip is announced once, by its words (WRITING-GUIDE
- * section 8, "Decorative icons say nothing to a screen reader"). Read as source text; nothing here loads React Native.
+ * section 10, "Decorative icons say nothing to a screen reader"). Read as source text; nothing here loads React Native.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
