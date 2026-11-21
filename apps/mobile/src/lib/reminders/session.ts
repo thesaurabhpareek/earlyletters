@@ -10,6 +10,7 @@
  * reminders to the next account. While a session is signed in, the phone keeps a mark (`reminders.session`, a flag with
  * no id). A launch that settles with no session and finds the mark ends the reminders then (NS-13-R13; review B on #904).
  */
+import { endDaysSession } from '../days';
 import { deleteSetting, getSetting, setSetting } from '../store';
 import { REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS } from './prefs';
 import { forgetReminders } from './scheduler';
@@ -25,6 +26,8 @@ export function sessionEnded(previousUserId: string | null, userId: string | nul
  * reminders. Never throws.
  */
 export async function settleReminderSession(previousUserId: string | null, userId: string | null): Promise<void> {
+  // The days file goes FIRST and synchronously, before any await (NS-47-R15, ADR 0032 item 3).
+  if (sessionEnded(previousUserId, userId)) endDaysSession();
   let marked = false;
   try {
     marked = getSetting(REMINDER_SESSION_KEY) === 'on';
@@ -32,6 +35,7 @@ export async function settleReminderSession(previousUserId: string | null, userI
     return; // no store open: nothing to settle
   }
   const end = sessionEnded(previousUserId, userId) || (userId === null && marked);
+  if (end) endDaysSession(); // a kill between sign-out and here: the mark brings us back, so the file goes now
   // endReminderSession clears the settings (the mark too) before its first await, so the new mark below stays.
   const ending = end ? endReminderSession() : null;
   if (userId !== null && (end || !marked)) {

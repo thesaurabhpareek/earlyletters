@@ -191,12 +191,23 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
 
   it('a note that arrives after See Plus is scrolled into view and announced, its static words only (#370 delta)', () => {
     const gate = code('components/child/plus-gate.tsx');
-    const effect = gate.slice(gate.indexOf('const openingNote = React.useRef(view.note);'), gate.indexOf('}, [view.note]);'));
+    const from = gate.indexOf('const openingNote = React.useRef(view.note);');
+    const to = gate.indexOf('}, [view.note]);');
+    // A missing anchor makes indexOf return -1, which would slice to almost the whole file and let every match pass (BL-457).
+    expect(from).toBeGreaterThanOrEqual(0);
+    expect(to).toBeGreaterThan(from);
+    const effect = gate.slice(from, to);
     expect(effect.length).toBeGreaterThan(0);
+    // The effect re-runs on a new note only: the dependency array is exactly [view.note].
+    expect(gate).toMatch(/\}, \[view\.note\]\);/);
+    expect(gate.match(/\}, \[view\.note\]\);/g)).toHaveLength(1);
+    // The note goes through the repo's announce(), not AccessibilityInfo directly (a no-op on Android, where the live region reads it).
+    expect(gate).toMatch(/import \{ announce, [^}]*\} from '@\/lib\/a11y';/);
+    expect(gate).not.toMatch(/AccessibilityInfo/);
     // A new note only (one already there when the sheet opens is read in order), after layout, with no animation.
     expect(effect).toMatch(/if \(!note \|\| note === openingNote\.current\) return;/);
     expect(effect).toMatch(
-      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/,
+      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*announce\(note\);\s*\} catch/,
     );
     expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
     expect(gate).toMatch(/<ScrollView ref=\{scroll\}/);
