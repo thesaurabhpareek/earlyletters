@@ -30,13 +30,13 @@ export const speechSettingsCopy = {
    * so a line never asks for a tap that cannot help; where a tap can help it says so.
    */
   downloadFailures: {
-    no_manifest: 'Not ready yet. It tries again by itself.',
-    not_in_manifest: 'Not ready yet. It tries again by itself.',
-    downloads_paused: 'Downloads are paused for now. It tries again by itself.',
+    no_manifest: 'Not ready yet. It tries again on its own.',
+    not_in_manifest: 'Not ready yet. It tries again on its own.',
+    downloads_paused: 'Downloads are paused for now. It tries again on its own.',
     offline: "It carries on when you're back online.",
-    download_failed: "The download stopped. It'll try again on its own, or tap Try again.",
-    storage_error: "The download couldn't be saved. It'll try again on its own, or tap Try again.",
-    hash_mismatch: "The download didn't finish properly. It'll try again on Wi-Fi, or tap Try again.",
+    download_failed: 'The download stopped. It tries again on its own, or tap Try again.',
+    storage_error: "The download couldn't be saved. It tries again on its own, or tap Try again.",
+    hash_mismatch: "The download didn't finish properly. It tries again on Wi-Fi, or tap Try again.",
     needs_app_update: 'Needs the latest version of the app.',
     // After several automatic tries on a link that kept stopping (download-retry.ts MAX_STOPPED_RUNS): it waits for a tap.
     download_stopped: 'The download stopped. Tap Try again when the Wi-Fi is steady.',
