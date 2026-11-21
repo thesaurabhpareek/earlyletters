@@ -8,7 +8,7 @@ import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, withdrawAnalyti
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
-import { currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
+import { bookVisibleNow, currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
 import {
   cancelDeletion, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
   type AnalyticsIds, type DeletionClient, type FlagStore,
@@ -50,7 +50,10 @@ export function useAccountDeletion() {
       // What the server says about the open request is remembered on this phone, so a phone that lists no book
       // (a sole parent's book goes with the request) shows the deletion screen and never the welcome (open-request.ts).
       // For the account that asked: an answer that lands after another account has signed in is dropped.
-      recordStatus(s.value, userId);
+      // Not while another account is signed in on a phone that holds the owner's book (HO-911, E49, E54): this screen is
+      // B's own (B can still delete B's account), but the note on the phone is A's, and "none" for B would write it away.
+      // bookVisibleNow() is false when the owner cannot be read, so an unreadable owner writes nothing either.
+      if (bookVisibleNow()) recordStatus(s.value, userId);
     } else setError(s.reason);
     if (b.ok) setBooks(b.value);
     // A forget that failed earlier (offline at request time) is finished here.
