@@ -65,7 +65,7 @@ Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven lang
 
 ## How to write a notification
 
-- One idea, one line, under 60 characters if possible.
+- One idea, one line. The rules test enforces a title of 40 characters or fewer and a body of 110 or fewer; the house target is a body under 60 (WRITING-GUIDE.md section 5).
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
@@ -124,7 +124,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
 
 - **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save and a crash, where the words are on the phone). Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
-- **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
+- **"That did not work this time".** Name what did not finish: "That didn't save", "That sign-in didn't finish", "That didn't go through".
 - **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
 - **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
 - **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
@@ -135,7 +135,7 @@ A line that sounds automatic stops being heard. These earned their place once an
 
 - Transactional only, and only when something happened: a sign-in link or code, an invite, a security change, a deletion step, an export, a billing reminder the law asks for.
 - Subject says what happened, in plain words. Preview text adds the one useful next fact.
-- One action at most. Calm about security: "Did not ask for this? You can ignore it."
+- One action at most. Calm about security: "Didn't ask for this? You can ignore it."
 - No child's name, no letter text, nothing from the book. Nothing loads from a server: the logo travels inside the email as an inline attachment, there are no web fonts, no tracking pixels and no tracked links.
 - Where an email states the privacy promise, it uses `en.trust` word for word (D-061).
 - Signed "Warmly," then the brand name. Every email has a plain-text version. Copy lives in `packages/content/src/emails/*.en.ts`, one file per group, each email an `EmailCopy` (`emails/types.ts`). Catalog: `docs/emails/CATALOG.md`.
