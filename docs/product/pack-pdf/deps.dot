@@ -1,0 +1,45 @@
+digraph G {
+  rankdir=LR; bgcolor="white"; fontname="DejaVu Sans";
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10, color="#5b5b5b", fillcolor="#f4f1ea"];
+  edge [color="#7a7a7a", arrowsize=0.6];
+  subgraph cluster_g { label="Gates (founder, counsel, decisions)"; style="dashed"; color="#b08a5a"; fontsize=10;
+    FW [label="Founder word\napprovals", fillcolor="#fbe9d0"];
+    CO [label="Counsel reads\n(BL-949, packet)", fillcolor="#fbe9d0"];
+    X2 [label="X2: security + counsel\nbefore voice or picture\nleaves the phone", fillcolor="#fbe9d0"];
+    FS [label="Founder: storage spend,\nbackup flip", fillcolor="#fbe9d0"];
+    DEV [label="Founder device runs\n(SE 3 run sheet)", fillcolor="#fbe9d0"];
+  }
+  subgraph cluster_f { label="F  Foundations"; color="#7c9a7e"; fontsize=10;
+    N33 [label="NS-33\nAccessibility floor"]; N34 [label="NS-34\nSpeed baseline"]; N35 [label="NS-35\nOne capture start\n(done)", fillcolor="#e3efe2"];
+    N36 [label="NS-36\nData follows the letter\n(ADR 0028, PR #797)"]; N37 [label="NS-37\nBook stays fast"]; N32 [label="NS-32\nNotification budget"];
+  }
+  subgraph cluster_a { label="A  Keeping"; color="#7c9a7e"; fontsize=10;
+    N09 [label="NS-09\nLet it go finishes\n(sweep done)"]; N10 [label="NS-10\nNew phone"]; N08 [label="NS-08\nBackup readiness"]; N11 [label="NS-11\nSave a copy"]; N12 [label="NS-12\nEarlier versions"];
+  }
+  subgraph cluster_c { label="C  Reading and keepsakes"; color="#7c9a7e"; fontsize=10;
+    P2 [label="NS-01 photo\nslice 2: native module"]; P3 [label="NS-01 photo\nslice 3: store"]; P4 [label="NS-01 photo\nslice 4: capture + Review"]; P5 [label="NS-01 photo\nslice 5: Photos lens"];
+    N02 [label="NS-02\nFind"]; N21 [label="NS-21\nLetter page list"]; N22 [label="NS-22\nCalm Book header"]; N23 [label="NS-23\nOne past letter"]; N24 [label="NS-24\nRead the year back"];
+    N06A [label="NS-06 A\nFirsts"]; N06B [label="NS-06 B\nSealed letters"]; N07 [label="NS-07\nPrintable book (PDF)"];
+  }
+  subgraph cluster_b { label="B  Capture"; color="#7c9a7e"; fontsize=10;
+    N13 [label="NS-13\nReminders proven"]; N14 [label="NS-14\nWhose book"]; N15 [label="NS-15\nAnother day"]; N16 [label="NS-16\nSomeone else speaks"]; N17 [label="NS-17\nSecond language"]; N18 [label="NS-18\nTyped days"]; N04 [label="NS-04\nHands-free spike"];
+  }
+  subgraph cluster_d { label="D  Family"; color="#7c9a7e"; fontsize=10;
+    N03 [label="NS-03\nPilot (no build)"]; N05 [label="NS-05\nShare one letter"]; N25 [label="NS-25\nOther parent\nin store app"]; N28 [label="NS-28\nFamily link"];
+  }
+  X1 [label="X1 order:\nphoto + Find first", shape=note, fillcolor="#efe6f5"];
+  N33 -> N21; N21 -> N05; N21 -> N12; N21 -> N23;
+  N35 -> P4; N35 -> N04;
+  N36 -> P3; N36 -> N02; N36 -> N06A; N36 -> N06B; N36 -> N07;
+  P2 -> P3 -> P4 -> P5; P2 -> N37 -> P5;
+  N02 -> N22;
+  N32 -> N13; N32 -> N18;
+  N05 -> N06A; N06A -> N06B;
+  P4 -> X1; N02 -> X1;
+  X1 -> N11; X1 -> N14; X1 -> N05; X1 -> N15; X1 -> N23; X1 -> N24;
+  N15 -> N21 [style=dashed, label="fills a row", fontsize=8];
+  FW -> N09; FW -> N11; FW -> N05; FW -> N23;
+  CO -> N03; CO -> N16; CO -> N06B; CO -> N25; CO -> N12;
+  X2 -> N28; FS -> N08; DEV -> N34; DEV -> N10;
+  N25 -> N28;
+}

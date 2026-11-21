@@ -1,12 +1,13 @@
 /**
- * The picture on a kept letter's page (NS-01-R7 to R9; design spec 4): shown beside the parent's words, with the words
+ * The picture on a kept letter's page (NS-01-R7 to R9; design spec 4): shown above the parent's words (C-01), with the words
  * they typed about it and the place they typed. The letter's author can add, replace (asks first, the first stays until
  * they choose) and take it off, each with Undo for 10 seconds. A missing file reads "Not on this phone any more" with
  * Remove; the letter itself reads whole. None of this touches the letter's words, transcript or recording.
  * Absent when the photos switch is off.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { Alert, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
@@ -27,7 +28,7 @@ import type { PickedAsset } from '@/lib/photos/types';
 import { usePhotoPick } from '@/lib/photos/use-photo-pick';
 import { PhotoFrame } from './photo-frame';
 
-export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryId: string; finalText: string; own: boolean; draft?: boolean }) {
+export function LetterPhoto({ entryId, finalText, own, draft = false, fade }: { entryId: string; finalText: string; own: boolean; draft?: boolean; fade?: ComponentProps<typeof Animated.View>['style'] }) {
   const photo = useLetterPhoto(entryId);
   const toast = useToast();
   const [missing, setMissing] = useState(false);
@@ -82,16 +83,16 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
   const words = draft || finalText.trim().length > 0;
   if (!photo) {
     return own && words ? (
-      <View className="items-start" testID="letter.photo.add">
+      <Animated.View className="items-start" style={fade} testID="letter.photo.add">
         {notSaved ? <SpokenLine text={draft ? photos.review.notStored : photos.book.letter.notSaved} testID="letter.photo.notSaved" /> : null}
         <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
         <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
-      </View>
+      </Animated.View>
     ) : null;
   }
   const label = photoA11yLabel(photo.text);
   return (
-    <View className="gap-2" testID="letter.photo">
+    <Animated.View className="gap-2" style={fade} testID="letter.photo">
       {missing ? (
         <View className="gap-1" testID="letter.photo.missing">
           <Text variant="callout" tone="muted">{photos.book.letter.missing}</Text>
@@ -129,7 +130,7 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
           <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
         </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 

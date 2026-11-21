@@ -228,6 +228,17 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
     expect(files.writes + store.puts).toBe(0);
   });
+  it('[NS-01-R8][CL-116 C-01] the letter page draws the picture above the words: it comes before the opening (dateline and words), not after the signature', () => {
+    const page = readFileSync(join(SRC, 'app', 'letter', '[id].tsx'), 'utf8');
+    const photo = page.indexOf('<LetterPhoto ');
+    expect(photo).toBeGreaterThan(-1);
+    expect(page.split('<LetterPhoto ').length).toBe(2); // drawn once
+    expect(photo).toBeLessThan(page.indexOf('<PageOpening'));
+    expect(photo).toBeLessThan(page.indexOf('opening(ownOpening)'));
+    expect(photo).toBeLessThan(page.indexOf('<AudioPlayer'));
+    // It fades with the rest of the page and takes no room when the switch is off (a null child leaves no gap).
+    expect(page).toMatch(/<LetterPhoto [^>]*fade=\{restBody\}/);
+  });
   it('[NS-01-R19] off, the letter page and Review draw no photo control', () => {
     const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).toMatch(/const on = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.addActions;/);
@@ -247,10 +258,16 @@ describe('[NS-01-R20] new controls', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
   });
-  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, prompt, Speak, Type (#838 review B)', () => {
+  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, Change, prompt, Speak, Type (E40; #838 review B)', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
     expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
+    // E40: Change sits under the thumbnail, inside the thumbnail block, before the prompt; Change announces its state.
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb.indexOf('<PhotoFrame')).toBeGreaterThan(-1);
+    expect(thumb.indexOf('testID="ready.photo.change"')).toBeGreaterThan(thumb.indexOf('<PhotoFrame'));
+    expect(thumb).toMatch(/testID="ready.photo.change"[^>]*\/>/);
+    expect(thumb).toMatch(/disabled=\{pick\.busy\}/);
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });
