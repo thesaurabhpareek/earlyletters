@@ -18,7 +18,7 @@ Can confirm:
 - The plan has an order, parallel limits, reviewers and a default for every founder gate (section 3).
 
 Cannot confirm yet (each is a NO or NOT VERIFIED line in section 5):
-- Every P0 requirement has a backlog row. Strict G0 (a row names the id, or the id cites a row that exists) holds for 368 of 1,052 P0 rows: 290 with a row plus 78 that cite one. The other 684 map only to proposed group rows, which have to be split or set ready first. So gate G0 is not met. No P0 row is left without any BL id, and none is card-level only (`p0.py --check-map`: 1,052 P0 rows, 0 errors).
+- Every P0 requirement has a backlog row. Strict G0 (a row names the id, or the id cites a row that exists) holds for 470 of 1,052 P0 rows: 393 with a row plus 77 that cite one (generator on `develop` at `71c4485`, after #1190 batch 1: `python3 docs/product/prd/tools/review/p0.py . --json`; before batch 1 it was 369, with 292 and 77). The other 582 map only to proposed group rows, which have to be split or set ready first. So gate G0 is not met. No P0 row is left without any BL id, and none is card-level only (`p0.py --check-map`: 1,052 P0 rows, 0 errors).
 - Every Wave 1 row has a brief. The three that had none (BL-963, BL-982, BL-985) have one since #1110 merged. Briefs for the first-run rows BL-1021 to BL-1046 are still not written.
 - Karma's execution map and review framework (the 20 Nov Project doc) match this file. I could not open that doc from this repo session, so I used the summary I was given. Where his map differs, his map wins and this file needs one edit.
 - The founder's words and counsel gates. No PROPOSED word is approved, and no counsel answer is on file.
@@ -48,11 +48,11 @@ All run from the repo root on `develop` at `021ecdfea`.
 | Function files | 23 reviews plus `BRIEF.md` | c4 |
 | P0 rows, tool output | 1,052 | c5 |
 | P0 rows, split | 1,052 (537 in NS cards, 515 in function files) | c5, counted by id prefix. On 20 Nov the tool printed 1,062 because it also read 10 rows out of plan 17; #1105 fixed that (section 1.5) |
-| P0 rows with a row-level BL row (tier row) | 290 (287 NS, 3 function) | c6 |
-| P0 rows cited to a BL row in their own text (tier cite) | 78 (3 NS, 75 function) | c6 |
+| P0 rows with a row-level BL row (tier row) | 393 (388 NS, 5 function) | c6 |
+| P0 rows cited to a BL row in their own text (tier cite) | 77 (3 NS, 74 function) | c6 |
 | P0 rows named only at card level | 0 | c6 |
-| Strict G0: tier row plus tier cite | 368 of 1,052 | c6 |
-| P0 rows that map only to proposed group rows (tier proposed) | 684 (247 NS, 437 function) | c6 and c7 |
+| Strict G0: tier row plus tier cite | 470 of 1,052 (generator on `develop` at `71c4485`, command `python3 docs/product/prd/tools/review/p0.py . --json`) | c6 |
+| P0 rows that map only to proposed group rows (tier proposed) | 582 (146 NS, 436 function) | c6 and c7 |
 | P0 rows with no BL id at all | 0 | c7 |
 
 ```
@@ -68,7 +68,7 @@ c7  python3 -I docs/product/prd/tools/review/p0.py . --map > /tmp/map.md; python
 
 The P0 totals equal the numbers `RESUME.md` gives for the lock (1,052, 537 NS, 515 FR). The tier split moved because the tool now reads four-digit ids and ranges, and because BL-1001 to BL-1049 exist. Two earlier figures in this file were wrong and are replaced: "665 of 1,052 have no BL row" (that counted the proposed group rows as nothing; every P0 id maps to at least one BL id) and the 20 Nov tiers (251 row, 79 cite, 57 card, 225 and 440 "none").
 
-Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cites BL-552; FR-BKO-10, FR-OPS-06, FR-REL-13, FR-SUP-14, FR-POL-07 and FR-SUP-28 cite BL-551; FR-LOC-10 and FR-LOC-30 cite BL-321; FR-MSG-14 cites BL-196). The tool lists them as `cited_missing` and does not count the cite. They still map to a proposed group row, so they sit in the 684 or the 78 as the tool places them. They are for `product` to repair.
+Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cites BL-552; FR-BKO-10, FR-OPS-06, FR-REL-13, FR-SUP-14, FR-POL-07 and FR-SUP-28 cite BL-551; FR-LOC-10 and FR-LOC-30 cite BL-321; FR-MSG-14 cites BL-196). The tool lists them as `cited_missing` and does not count the cite. They still map to a proposed group row, so they sit in the 582 or the 77 as the tool places them. They are for `product` to repair.
 
 ### 1.3 Every NS card
 
@@ -81,23 +81,23 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-05 | 05 | 17 | 2 | 0 | 15 | 0 | 0 | BL-126, BL-939, BL-981, BL-991 |
 | NS-06 | 06 | 31 | 31 | 0 | 0 | 0 | 0 | BL-287, BL-954, BL-957, BL-962, BL-968, BL-969 +6 more |
 | NS-07 | 07 | 14 | 14 | 0 | 0 | 0 | 0 | BL-299, BL-973, BL-974, BL-975, BL-990, BL-991 |
-| NS-08 | 08 | 14 | 6 | 0 | 8 | 0 | 0 | BL-128, BL-290, BL-976, BL-990 |
-| NS-09 | 08 | 13 | 7 | 0 | 6 | 0 | 0 | BL-138, BL-181, BL-977, BL-987, BL-988 |
+| NS-08 | 08 | 14 | 14 | 0 | 0 | 0 | 0 | BL-128, BL-290, BL-976, BL-990 |
+| NS-09 | 08 | 13 | 13 | 0 | 0 | 0 | 0 | BL-138, BL-181, BL-977, BL-987, BL-988 |
 | NS-10 | 08 | 9 | 9 | 0 | 0 | 0 | 0 | BL-961, BL-965, BL-978, BL-987, BL-990 |
 | NS-11 | 08 | 5 | 2 | 0 | 3 | 0 | 0 | BL-126, BL-934, BL-942, BL-963, BL-965, BL-990 |
 | NS-12 | 08 | 5 | 5 | 0 | 0 | 0 | 0 | BL-949, BL-979, BL-990 |
 | NS-13 | 09 | 18 | 18 | 0 | 0 | 0 | 0 | BL-943, BL-965, BL-967, BL-982, BL-987, BL-991 +1 more |
-| NS-14 | 09 | 4 | 2 | 0 | 2 | 0 | 0 | BL-181, BL-940, BL-941, BL-988 |
+| NS-14 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-181, BL-940, BL-941, BL-988 |
 | NS-15 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-944, BL-945, BL-988 |
 | NS-16 | 09 | 8 | 8 | 0 | 0 | 0 | 0 | BL-949, BL-957, BL-965, BL-980, BL-988 |
 | NS-17 | 09 | 11 | 1 | 0 | 10 | 0 | 0 | BL-182, BL-327, BL-987, BL-988 |
 | NS-18 | 09 | 3 | 3 | 0 | 0 | 0 | 0 | BL-949, BL-982, BL-991 |
-| NS-19 | 09 | 2 | 0 | 0 | 2 | 0 | 0 | BL-183, BL-988 |
+| NS-19 | 09 | 2 | 2 | 0 | 0 | 0 | 0 | BL-183, BL-988 |
 | NS-20 | 09 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-21 | 10 | 5 | 2 | 0 | 3 | 0 | 0 | BL-183, BL-287, BL-937, BL-962, BL-989 |
+| NS-21 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-183, BL-287, BL-937, BL-962, BL-989 |
 | NS-22 | 10 | 2 | 2 | 0 | 0 | 0 | 0 | BL-938, BL-985, BL-989 |
 | NS-23 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-946, BL-963, BL-965, BL-989 |
-| NS-24 | 10 | 3 | 2 | 0 | 1 | 0 | 0 | BL-183, BL-947, BL-987, BL-989 |
+| NS-24 | 10 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-947, BL-987, BL-989 |
 | NS-25 | 10 | 13 | 13 | 0 | 0 | 0 | 0 | BL-983, BL-991 |
 | NS-26 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
 | NS-27 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
@@ -106,19 +106,19 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-30 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
 | NS-31 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | BL-966 |
 | NS-32 | 11 | 8 | 8 | 0 | 0 | 0 | 0 | BL-163, BL-949, BL-966, BL-991 |
-| NS-33 | 11 | 13 | 6 | 0 | 7 | 0 | 0 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
+| NS-33 | 11 | 13 | 13 | 0 | 0 | 0 | 0 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
 | NS-34 | 11 | 3 | 2 | 0 | 1 | 0 | 0 | BL-168, BL-185, BL-329, BL-948, BL-992 |
-| NS-35 | 11 | 4 | 1 | 0 | 3 | 0 | 0 | BL-183, BL-952, BL-971, BL-988 |
-| NS-36 | 11 | 14 | 2 | 0 | 12 | 0 | 0 | BL-186, BL-254, BL-959, BL-960, BL-990 |
-| NS-37 | 11 | 3 | 2 | 0 | 1 | 0 | 0 | BL-183, BL-956, BL-989 |
+| NS-35 | 11 | 4 | 4 | 0 | 0 | 0 | 0 | BL-183, BL-952, BL-971, BL-988 |
+| NS-36 | 11 | 14 | 14 | 0 | 0 | 0 | 0 | BL-186, BL-254, BL-959, BL-960, BL-990 |
+| NS-37 | 11 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-956, BL-989 |
 | NS-38 | 19 | 8 | 2 | 0 | 6 | 0 | 0 | BL-187, BL-994 |
-| NS-39 | 19 | 10 | 4 | 0 | 6 | 0 | 0 | BL-188 |
-| NS-40 | 19 | 11 | 3 | 0 | 8 | 0 | 0 | BL-198, BL-577 |
-| NS-41 | 19 | 18 | 3 | 1 | 14 | 0 | 0 | BL-208 |
-| NS-42 | 19 | 15 | 7 | 0 | 8 | 0 | 0 | BL-291 |
-| NS-43 | 19 | 11 | 2 | 0 | 9 | 0 | 0 | BL-292 |
+| NS-39 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-188 |
+| NS-40 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-198, BL-577 |
+| NS-41 | 19 | 18 | 17 | 1 | 0 | 0 | 0 | BL-208 |
+| NS-42 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-291 |
+| NS-43 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-292 |
 | NS-44 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-293 |
-| NS-45 | 19 | 15 | 4 | 0 | 11 | 0 | 0 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
+| NS-45 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
 | NS-46 | 21 | 22 | 10 | 1 | 11 | 0 | 0 | BL-295, BL-1002, BL-1005, BL-1007, BL-1008, BL-1009 +3 more |
 | NS-47 | 21 | 27 | 8 | 0 | 19 | 0 | 0 | BL-296, BL-1002, BL-1005, BL-1009, BL-1010, BL-1015 |
 | NS-48 | 21 | 13 | 10 | 0 | 3 | 0 | 0 | BL-297, BL-1002, BL-1003, BL-1004, BL-1016 |
@@ -126,7 +126,7 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-50 | 21 | 4 | 2 | 0 | 2 | 0 | 0 | BL-295, BL-1014 |
 | NS-51 | 27 | 27 | 5 | 0 | 22 | 0 | 0 | BL-045, BL-1001, BL-1019 |
 | NS-52 | 27 | 26 | 13 | 0 | 13 | 0 | 0 | BL-046, BL-1001, BL-1018, BL-1020 |
-| **52 cards** | | **537** | **287** | **3** | **247** | **0** | **0** | |
+| **52 cards** | | **537** | **388** | **3** | **146** | **0** | **0** | |
 
 Reading it:
 - 47 of 52 cards are named by at least one BL row. NS-20, NS-26, NS-27, NS-28 and NS-30 have none, by design: they are "why it waits" cards with 0 P0 rows. NS-29 and NS-31 are named only by a parked row (BL-986) and by BL-966's "no Memory Library classes" line.
@@ -142,14 +142,14 @@ Reading it:
 | back-office.md | 17 | 0 | 4 | 13 |
 | compliance.md | 23 | 1 | 1 | 21 |
 | cultural-background-data.md | 23 | 0 | 1 | 22 |
-| data-and-measurement.md | 16 | 0 | 2 | 14 |
+| data-and-measurement.md | 16 | 1 | 1 | 14 |
 | days-library.md | 18 | 1 | 5 | 12 |
 | feature-opportunities.md | 5 | 0 | 0 | 5 |
 | finance.md | 8 | 0 | 1 | 7 |
 | languages-and-localisation.md | 24 | 0 | 3 | 21 |
 | legal.md | 21 | 0 | 4 | 17 |
 | lifecycle-and-platforms.md | 24 | 0 | 0 | 24 |
-| marketing.md | 27 | 1 | 1 | 25 |
+| marketing.md | 27 | 2 | 1 | 24 |
 | messaging-and-entry-points.md | 28 | 0 | 14 | 14 |
 | notification-catalogue.md | 17 | 0 | 0 | 17 |
 | operations.md | 19 | 0 | 4 | 15 |
@@ -161,9 +161,11 @@ Reading it:
 | research-validation.md | 17 | 0 | 4 | 13 |
 | risk-security.md | 22 | 0 | 4 | 18 |
 | support.md | 29 | 0 | 4 | 25 |
-| **23 files** | **515** | **3** | **75** | **437** |
+| **23 files** | **515** | **5** | **74** | **436** |
 
-3 of the 515 function-file P0 rows have a row-level BL row (FR-CMP, FR-DAY and FR-MKT, one each), 75 cite a BL id in their own text, and 437 map only to the 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. Strict G0 for function files is therefore 78 of 515. That generated file was not regenerated in this refresh and may still carry older counts; trust the table above and `p0.py --gaps`.
+5 of the 515 function-file P0 rows have a row-level BL row (compliance, data-and-measurement, days-library and two in marketing), 74 cite a BL id in their own text, and 436 map only to the 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. Strict G0 for function files is therefore 79 of 515 (NS cards 391 of 537, overall 470 of 1,052). That generated file was not regenerated in this refresh and may still carry older counts; trust the table above and `p0.py --gaps`.
+
+Tables 1.3 and 1.4 are regenerated per card and per file from the generator on `develop` at `71c4485`, command `python3 -I docs/product/prd/tools/review/p0.py . --json`, counting each P0 row by its `tier` field (row, cite, proposed).
 
 ### 1.5 The counting tool (both defects fixed by #1105)
 
@@ -586,7 +588,7 @@ Result on this file: `rows 243, edges 205, errors 0` (exit 0), re-run on 21 Nov 
 
 What the check proves and does not prove:
 - It proves the table is internally consistent: every id in Depends on is a row, there is no cycle, and no row outside the instrumentation chain depends on an instrumentation row.
-- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 684 P0 rows that map only to proposed group rows (section 1) are the known hole: the map has build rows for the stacks, not for each group.
+- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 582 P0 rows that map only to proposed group rows (section 1) are the known hole: the map has build rows for the stacks, not for each group.
 - It never reads the Blocks column. Blocks was written by hand to match Depends on, and a wrong Blocks cell would pass the check. On 21 Nov I compared Blocks with the inverse of Depends on in a throwaway script (not committed): 0 mismatches in the 243 rows, after setting aside the rows whose Blocks cell is cut short with "+n" (those cannot be compared). That is a one-off, not a gate.
 - Dependencies for the BL rows come from each row's `Depends on` line and the blockers named in its status. I added the ones plan 17 names and the backlog line leaves out: BL-978 on BL-922 and BL-961; BL-961 on PR-879 (its third part); BL-952 on FIND-8; BL-931 on PR-840; BL-933 on BL-868; BL-977 on BL-926; BL-984 on BL-928.
 
@@ -782,7 +784,7 @@ YES means I checked it and the evidence is named. NO means I checked and it is n
 |---|---|---|---|---|
 | 1 | Requirements locked | YES | Rev 2 LOCKED (`README.md`, `RESUME.md`); #934 merged as `88f3a975` at 20:37 UTC (REST `merged_at`). E1 to E83 and CL-001 to CL-158 present, none missing (section 1.2, c1 and c2) |
 | 2 | Every NS card and function file accounted for | YES | 52 of 52 card headings; 5 cards have 0 P0 rows and no BL row by design; 23 of 23 function files counted (sections 1.3 and 1.4) |
-| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. Strict G0 holds for 368 of 1,052 P0 rows (290 row, 78 cite); 684 map only to proposed group rows (section 1.2, `p0.py --json`, 21 Nov). Every P0 id maps to at least one BL id (`--check-map`: 0 errors). First-run rows now have ids (BL-1021 to BL-1046, #1106), all proposed. The 100 instrumentation rows have no BL id on `develop`: #1107 and #1108 are open |
+| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. Strict G0 holds for 470 of 1,052 P0 rows (393 row, 77 cite; generator on `develop` at `71c4485`, `p0.py . --json`); 582 map only to proposed group rows (section 1.2, `p0.py --json`, 21 Nov). Every P0 id maps to at least one BL id (`--check-map`: 0 errors). First-run rows now have ids (BL-1021 to BL-1046, #1106), all proposed. The 100 instrumentation rows have no BL id on `develop`: #1107 and #1108 are open |
 | 4 | The counting tool is right | YES for ids and rows, with two limits | #1105 merged: four-digit ids, ranges, plan 17 no longer read, `--map` and `--check-map`. It counts a mention as coverage, and it drops a cite to a BL id with no heading (ten P0 rows, section 1.2) |
 | 5 | ADRs filed as Proposed | YES | ADRs 0029 to 0035 on `develop` (#1029 merged), each "Status: Proposed, 20 Nov 2026" (`git show origin/develop:docs/adr/0029-...`). None is Accepted, and only the founder accepts |
 | 6 | Dependency map: no cycle, no missing blocker | YES | `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables (section 2.13) |
