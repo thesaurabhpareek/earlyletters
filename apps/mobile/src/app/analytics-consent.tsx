@@ -4,9 +4,10 @@
  * `grantAnalytics` / `declineAnalytics` (lib/analytics). Two choices of equal weight; closing without choosing is
  * not a no and not a yes (the ask may return once, MAX_ANALYTICS_CONSENT_OFFERS); saying no changes nothing else.
  *
- * Route: /analytics-consent. It is opened by the ask sequencer (`lib/analytics/ask`, `components/consent/consent-ask`)
- * once the build has analytics on (production only, `EXPO_PUBLIC_ANALYTICS`); in every other build the route
- * redirects back at once and nothing is shown. Not listed in ROUTE_MAP: it sends no screen event.
+ * Route: /analytics-consent. The screen exists and shows the same content as the Sheet that `components/consent/
+ * consent-ask.tsx` still mounts; switching the ask to `router.push('/analytics-consent')` is a one-line follow-up for
+ * `mobile` (not run on a device here). In a build without analytics (every profile but production, `EXPO_PUBLIC_ANALYTICS`)
+ * the route goes back at once and shows nothing. Not listed in ROUTE_MAP: it sends no screen event.
  */
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
