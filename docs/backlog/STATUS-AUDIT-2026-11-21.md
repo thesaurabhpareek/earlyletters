@@ -14,7 +14,7 @@ Status words used, from the file's own vocabulary: `done (evidence)`, `supersede
 
 | Auditor verdict | Rows | Changed here | Left unchanged |
 |---|---|---|---|
-| DONE | 37 | 37 (27 done, 10 partly done after the re-read and the review of PR 1213) | 0 |
+| DONE | 37 | 37 (26 done, 11 partly done after the re-read, the review of PR 1213 and the BL-371 ruling) | 0 |
 | PARTIAL | 46 | 46 | 0 |
 | BLOCKED | 15 | 15 | 0 |
 | SUPERSEDED | 8 | 5 (4 superseded, BL-453 partly done) | 3 (BL-369, BL-406, BL-845 not reproduced) |
@@ -22,7 +22,7 @@ Status words used, from the file's own vocabulary: `done (evidence)`, `supersede
 | OPEN | 71 | 0 | 71 |
 | Total | 188 | 103 | 85 |
 
-Final lines by new status: done 27, superseded 4, blocked or needs-founder 15, partly done 57 (46 audited PARTIAL, 10 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
+Final lines by new status: done 26, superseded 4, blocked or needs-founder 15, partly done 58 (46 audited PARTIAL, 11 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
 
 ## Verdicts overturned or not applied
 
@@ -33,6 +33,7 @@ Final lines by new status: done 27, superseded 4, blocked or needs-founder 15, p
 | BL-394 | DONE | partly done | Done-when asks for 3:1 and 4.5:1 checks on every captured route in J18. `apps/mobile/e2e-web/j18-dark-mode.flow.ts` only checks the screen is dark. |
 | BL-594, BL-358, BL-334, BL-357 | DONE | partly done | Review of PR 1213: BL-594's S0 acceptance is a live staging check, and the BL-358 and BL-334 migrations are Pending in `supabase/APPLY.md`; BL-357 depends on BL-358. A hosted apply is not done because the code is merged. |
 | BL-563, BL-380, BL-324 | DONE | partly done | Their acceptance or Done-when is a device result (S1-39, BL-279, FT-22), not yet run. |
+| BL-371 | DONE | partly done | Same standard as BL-509, BL-510 and BL-394: the Done-when is read literally. It says "Undo is a button on the page for as long as the page is open", and the code has an Undo toast on the Book (S36, `book.tsx`), not a page button. Everything else in the row is built, so the remainder is small: product and design either reconcile the row with S36 or the button is built. |
 | BL-453 | SUPERSEDED | partly done | Points 1 to 3 lost their surface when BL-870 closed the photo bucket, but points 4 and 6 are still real work. |
 | BL-369 | SUPERSEDED | unchanged | D-071 chose final-a, but the row is the founder's optional parent test. Founder decides whether to retire it. |
 | BL-406 | SUPERSEDED | unchanged | The code no longer matches the row (Write says "Add to {child}'s book"), but no D or BL id records the choice. Needs a design or product decision id first. |
@@ -56,7 +57,7 @@ All rows were `ready`.
 | BL-357 | partly done | `apps/mobile/src/lib/billing/plan-store.ts` and `apps/mobile/test/billing-status-report.test.ts` merged; waits on the BL-358 hosted apply and the flag-on step |
 | BL-358 | partly done | migration `20261016001000_subscription_status.sql` and `supabase/functions/subscription-status/handler.ts` merged; the migration is Pending in `supabase/APPLY.md` file 18, hosted apply is a founder step |
 | BL-370 | done | PR #801, `apps/mobile/src/app/_layout.tsx` ErrorBoundary, `apps/mobile/test/resilience.test.ts` |
-| BL-371 | done | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/app/settings/recently-deleted.tsx`, `purgeExpired` in `apps/mobile/src/lib/store.ts`; Undo is a toast on the Book per S36, not a button on the page |
+| BL-371 | partly done | confirm, Recently deleted and the 30-day purge built (`apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/app/settings/recently-deleted.tsx`, `purgeExpired`); the Done-when asks for an Undo button on the page, the code has the S36 toast on the Book |
 | BL-375 | done | `apps/mobile/src/components/speech/speech-consent-card.tsx`, `apps/mobile/src/components/settings/speech-row.tsx`, `apps/mobile/src/lib/packs/__tests__/engine.test.ts` |
 | BL-380 | partly done | `apps/mobile/src/lib/resilience/keep-awake.ts`, `apps/mobile/test/keep-awake.test.ts`; the Done-when is Auto-Lock 30 s on a device, row in BL-279 |
 | BL-382 | done | `apps/mobile/src/lib/capture/probe.ts`, `apps/mobile/test/sweep.playable.test.ts` |
@@ -150,7 +151,7 @@ All rows were `ready`.
 
 ## Side effects on the dispatcher
 
-- `node scripts/agents/dispatch.mjs` reads the first word of the status. `partly` is neither ready nor done, so the 50 partly done rows are skipped and their dependents stay blocked. The remainder of each is named in its status line, but nothing picks it up until product splits it into a new `ready` row. That is the next product task for the rows with agent work left (for example BL-110, BL-117, BL-363, BL-364, BL-402, BL-408, BL-427, BL-430, BL-466). BL-408 matters most: BL-434 waits on it.
+- `node scripts/agents/dispatch.mjs` reads the first word of the status. `partly` is neither ready nor done, so the 58 partly done rows are skipped and their dependents stay blocked. The remainder of each is named in its status line, but nothing picks it up until product splits it into a new `ready` row. That is the next product task for the rows with agent work left (for example BL-110, BL-117, BL-363, BL-364, BL-402, BL-408, BL-427, BL-430, BL-466). BL-408 matters most: BL-434 waits on it.
 - The existing phrase "done in part" would have counted as `done` for dependents, which is why it was not used.
 - Eligible agent tasks by the dispatcher's own rules: 165 before, 79 after. Newly eligible: BL-928 (its blocker BL-927 is now done). BL-359 stays blocked because BL-358 is partly done.
 - Stale claim rows: `find-lane` (PR 895) and `account-lane` (PR 879) point at merged PRs. Their owner removes them.
@@ -187,3 +188,11 @@ Wait for an open PR first: BL-412 after PR 835; BL-414 after PR 1086; BL-452 and
 - The "what remains" part of about 40 PARTIAL rows, and the file evidence behind them, is the auditors' and was not re-read.
 - No test suite was run against the code behind any DONE verdict; "done" means the code and test exist on `origin/develop` and the merged PR was read, not that a device or hosted check happened. Device rows (FT-22, S1-39, BL-279) and hosted applies (BL-870, BL-594 staging) are separate and said so in the status lines.
 - The BL-002 evidence is the script, the report and the `npm test` hook. `--check` currently exits 1 and is not run by CI.
+
+## Partly done rows to split first (58)
+
+Product splits each remainder into new `ready` rows in this order. Until then the dispatcher skips these rows and their dependents.
+
+1. BL-408 first. BL-434 is blocked on it, and the remainder is plain agent work: the on-device 2,000-letter test `apps/mobile/test/perf.sql.test.ts` and the Maestro timing.
+2. Agent work left, no outside dependency (split next, in this order): BL-110, BL-117, BL-378, BL-379, BL-381, BL-388, BL-392, BL-400, BL-401, BL-402, BL-403, BL-404, BL-417, BL-425, BL-426, BL-427, BL-428, BL-430, BL-431, BL-363, BL-364, BL-466, BL-479, BL-489, BL-453, BL-454, BL-394, BL-397, BL-371, BL-922, BL-929, BL-952, BL-958, BL-964, BL-965, BL-966, BL-978, BL-987, BL-565, BL-507.
+3. Remainder waits on a founder step, a device run, a decision or another PR, so split only when that clears: BL-334, BL-358 and BL-357 (hosted apply, FT-10), BL-594 (staging check), BL-324, BL-380 and BL-563 (device rows FT-22, BL-279, S1-39), BL-341 and BL-354 (founder or Mac), BL-509 and BL-510 (next release snapshot to `main`), BL-377 (BL-148), BL-376, BL-396, BL-398 and BL-362 (decide first whether the remainder is wanted), BL-961 (device row).
