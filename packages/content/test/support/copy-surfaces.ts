@@ -454,6 +454,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
   newDevicePage: 'PROPOSED (E83, E-S34): the web confirm page for the new-device email; not built yet, so nothing is shown; the global rules read it through features; no per-file rule set until the page exists',
   packs: 'speech pack downloads; no per-file rule set written yet',
+  photos: 'photo with a letter (NS-01); its rules are pinned in test/photos-copy.test.ts',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   screenStates: 'PROPOSED (#1207): words drafted in the area A, B and D WORDS files, nothing reads them yet; the global rules read them through features',
