@@ -333,10 +333,26 @@ describe('daylight saving', () => {
   });
 });
 
+/**
+ * BL-443: the day stride of the synthetic year. Pull requests check every 15th day (about a third of the work of
+ * the former every-5th-day sweep, which took 69 s of its own 120 s on a CI runner); the nightly sets
+ * SCRIBE_REMINDER_STRIDE=1 to check every day of the year, like SCRIBE_FUZZ_RUNS for the verifier fuzz. A stride
+ * that is not a whole number of days between 1 and 15 is refused, so a typo cannot quietly shrink the sweep.
+ */
+const STRIDE = (() => {
+  const raw = process.env.SCRIBE_REMINDER_STRIDE;
+  if (raw === undefined || raw === '') return 15;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 15) throw new Error(`SCRIBE_REMINDER_STRIDE must be a whole number from 1 to 15, got ${raw}`);
+  return n;
+})();
+
 describe('a synthetic year: every E, every zone, every plan', () => {
-  it('holds every invariant and always finds the legally required slot when planned early', { timeout: 120_000 }, () => {
+  // Own timeout, scaled to the days swept: 120 s at the PR stride, about 12 minutes for every day (the former
+  // every-5th-day sweep took 69 s on a CI runner, so every day is about five times that, 345 s).
+  it(`holds every invariant and always finds the legally required slot when planned early`, { timeout: Math.max(120_000, Math.ceil(366 / STRIDE) * 2_000) }, () => {
     let checked = 0;
-    for (let day = 0; day < 366; day += 5) {
+    for (let day = 0; day < 366; day += STRIDE) {
       for (const hour of [0, 13, 23]) {
         const E = Date.parse('2027-01-01T00:00:00Z') + day * DAY_MS + hour * HOUR + 17 * 60_000;
         const subjects: PlanReminderSubject[] = [
@@ -357,7 +373,10 @@ describe('a synthetic year: every E, every zone, every plan', () => {
         }
       }
     }
-    expect(checked).toBeGreaterThan(3500);
+    // Every day of the sweep ran for every hour, zone and plan: 3 hours x 4 plans x 4 zones per day (the former
+    // every-5th-day sweep was 3,552 checks; every 15th day is 1,200, every day is 17,568).
+    expect(checked).toBe(Math.ceil(366 / STRIDE) * 3 * 4 * 4);
+    expect(checked).toBeGreaterThanOrEqual(1200);
   });
 
   it('re-planning before the windows changes nothing (stable ids and signature)', () => {

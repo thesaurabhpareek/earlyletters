@@ -66,7 +66,10 @@ export type AuthErrorKind =
 
 export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth';
 
-/** 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': not checked yet (offline at launch). */
+/**
+ * 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': the gate is not read yet (still checking at
+ * launch, or offline); a wait that starts here, such as an Apple revocation at launch (BL-450), reads the gate before it decides.
+ */
 export type SyncMode = 'on' | 'off' | 'unknown';
 
 export type AuthState =

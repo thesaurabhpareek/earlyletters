@@ -13,6 +13,7 @@ import {
   shouldRecheckGate,
   type AuthEvent,
   type AuthState,
+  type PendingUploads,
   type SyncGate,
 } from '../src/lib/auth/machine.logic';
 import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey, looksLikeEmail, normaliseCode } from '../src/lib/auth/errors.logic';
@@ -288,7 +289,7 @@ describe('auth state machine: signing out never loses a letter (PRD A F6.4, A-RE
 
   describe('[A-REQ-033, BL-450] Apple revoked, noticed at launch before the consent gate is read', () => {
     const launching = run([{ type: 'RESTORED', userId: U }]);
-    const revoke = (pendingUploads: Parameters<typeof authReducer>[1] extends infer E ? (E extends { pendingUploads: infer P } ? P : never) : never) =>
+    const revoke = (pendingUploads: PendingUploads | number) =>
       authReducer(launching, { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads });
 
     it('with letters queued it waits, and reads the gate before deciding', () => {
