@@ -44,6 +44,18 @@ const NOW = '2026-11-20T09:00:00.000Z';
 let n = 0;
 const id7 = () => `0199a000-0000-7000-8000-${String(++n).padStart(12, '0')}`;
 const ctx = { now: NOW, newId: id7 };
+/**
+ * For `it.fails`: vitest counts ANY throw as the expected failure, so a broken arrange step would pass silently. This
+ * rethrows only an assertion whose message matches `red`; any other throw returns normally, which makes `it.fails`
+ * report "expected to fail" and the suite goes red. A fix that makes the body pass also goes red, as before.
+ */
+const redOnly = (red: RegExp, body: () => void) => () => {
+  try {
+    body();
+  } catch (e) {
+    if (e instanceof Error && red.test(e.message)) throw e;
+  }
+};
 const asB = () => auth.publishAuth({ status: 'ready', userId: B, sync: 'on' });
 
 afterEach(() => {
@@ -66,16 +78,16 @@ describe('[X4-R1] Find: B never finds A\'s words', () => {
     expect(found.status === 'done' ? found.hits : null).toEqual([]);
   });
 
-  it.fails('production: B signed in over A\'s phone, a search of A\'s book returns nothing (setIndexableBooks is never registered outside tests)', () => {
+  it.fails('production: B signed in over A\'s phone, a search of A\'s book returns nothing (setIndexableBooks is never registered outside tests)', redOnly(/to deeply equal \[\]/, () => {
     const f = findFixture();
     f.add({ text: 'Asha, you laughed at the rain today.' });
     writeSetting(f.db, SYNC_SETTING.owner, A);
     asB();
     const r = searchLetters(f.db, 'rain', 'child-asha');
     expect(r.status === 'done' ? r.hits : null).toEqual([]);
-  });
+  }));
 
-  it.fails('the seam is wired: some file outside lib/find registers setIndexableBooks', () => {
+  it.fails('the seam is wired: some file outside lib/find registers setIndexableBooks (the fixing PR deletes or rewrites this test, not only the .fails)', redOnly(/to not deeply equal \[\]/, () => {
     const walk = (d: string): string[] => readdirSync(d).flatMap((f) => {
       const p = join(d, f);
       return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(f) ? [p] : [];
@@ -83,7 +95,7 @@ describe('[X4-R1] Find: B never finds A\'s words', () => {
     const root = join(__dirname, '../src');
     const callers = walk(root).filter((p) => !p.includes('/lib/find/') && /setIndexableBooks\(/.test(readFileSync(p, 'utf8')));
     expect(callers).not.toEqual([]);
-  });
+  }));
 });
 
 describe('[X4-R1] the reminder planner input: B\'s planner is not handed A\'s books', () => {
@@ -106,11 +118,11 @@ describe('[X4-R1] the reminder planner input: B\'s planner is not handed A\'s bo
     expect(plannerChildren().map((c) => c.id)).toEqual([BOOK]);
   });
 
-  it.fails('B signed in on A\'s phone: plannerChildren() is empty (it names Asha today, nothing filters by session)', () => {
+  it.fails('B signed in on A\'s phone: plannerChildren() is empty (it names Asha today, nothing filters by session)', redOnly(/to deeply equal \[\]/, () => {
     asB();
     expect(bookVisibleTo({ owner: store.currentUserId(), sessionUser: authUserId(auth.getAuthSnapshot()) })).toBe(false);
     expect(plannerChildren()).toEqual([]);
-  });
+  }));
 });
 
 describe('[X4-R1][NS-10-R5] outbox, claim and uploads: B never claims or sends A\'s letters', () => {

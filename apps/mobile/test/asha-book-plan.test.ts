@@ -17,8 +17,13 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const sha = (p: string) => createHash('sha256').update(readFileSync(p)).digest('hex');
 // Kept apart from VOCAB on purpose, so adding a word to the generator turns this test red.
 const ENGLISH = new Set("asha laughed rain window dal nani papa mama morning blanket spoon giggle sleepy garden shoes bath song kitten bubbles walked clapped sunny cuddle story yellow cup puddle".split(" "));
-const NON_LATIN = /^[\p{Script=Devanagari}\p{Script=Arabic}\p{Script=Han}]+$/u;
-const allowed = (w: string) => ENGLISH.has(w) || NON_LATIN.test(w);
+// Pinned word for word, as escapes, so a new Hindi, Arabic or Chinese word in the generator turns this red too.
+const NON_LATIN = new Set([
+  '\u092a\u094d\u092f\u093e\u0930', '\u092c\u093f\u091f\u093f\u092f\u093e', '\u0906\u091c', '\u0939\u0901\u0938\u0940', // hi
+  '\u062d\u0628', '\u0627\u0644\u064a\u0648\u0645', '\u0636\u062d\u0643\u0629', '\u0645\u0627\u0645\u0627', // ar
+  '\u7231', '\u4eca\u5929', '\u7b11', '\u5b9d\u5b9d', // zh
+]);
+const allowed = (w: string) => ENGLISH.has(w) || NON_LATIN.has(w);
 
 describe('[NS-34-R5] seeded book is generated and fictional', () => {
   it('[NS-34-R5] same seed gives the same plan and the same database bytes; another seed differs', () => {
