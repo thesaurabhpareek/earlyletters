@@ -8,11 +8,11 @@
 import { router, usePathname, useRootNavigationState } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { authUserId } from '../auth/machine.logic';
-import { getAuthSnapshot } from '../auth/auth-store';
+import { getAuthSnapshot, subscribeAuth } from '../auth/auth-store';
 import { PLUS_ALPHA } from '../billing/alpha';
 import { serverFeaturesEnabled } from '../capabilities';
 import { inviteDestination } from './entry.logic';
-import { clearPendingInvite, readPendingInvite } from './pending-invite';
+import { clearPendingInvite, clearReadPendingInvite, readPendingInvite } from './pending-invite';
 
 export function PendingInviteWatcher() {
   const nav = useRootNavigationState();
@@ -29,9 +29,21 @@ export function PendingInviteWatcher() {
       void clearPendingInvite();
       return;
     }
-    if (pathname.startsWith('/invite')) return;
-    void readPendingInvite(Date.now(), !!authUserId(getAuthSnapshot())).then((p) => {
-      if (p) router.push('/invite');
+    // CISO-2: whether a session exists is only known once it is no longer restoring. Reading earlier could
+    // drop (or mark) a token for the wrong reason, so wait for the settled state.
+    const open = () => {
+      const userId = authUserId(getAuthSnapshot());
+      if (!userId) void clearReadPendingInvite(); // a token a past session read does not outlive it
+      if (pathname.startsWith('/invite')) return;
+      void readPendingInvite(Date.now(), userId).then((p) => {
+        if (p) router.push('/invite');
+      });
+    };
+    if (getAuthSnapshot().status !== 'restoring') return open();
+    const stop = subscribeAuth((s) => {
+      if (s.status === 'restoring') return;
+      stop();
+      open();
     });
   }, [ready, pathname]);
 
