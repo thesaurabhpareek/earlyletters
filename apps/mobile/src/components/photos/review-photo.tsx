@@ -7,7 +7,8 @@
  */
 import { useEffect } from 'react';
 import { usePendingPhoto, adoptPendingPhoto } from '@/lib/photos/hooks';
-import { LetterPhoto } from './letter-photo';
+import { useWindowDimensions, View } from 'react-native';
+import { LetterPhoto, LetterPicture } from './letter-photo';
 
 export function ReviewPhoto({ draftId, finalText }: { draftId: string; finalText: string }) {
   const pending = usePendingPhoto();
@@ -15,5 +16,12 @@ export function ReviewPhoto({ draftId, finalText }: { draftId: string; finalText
   useEffect(() => {
     if (uri) void adoptPendingPhoto(draftId, finalText, false);
   }, [uri, draftId, finalText]);
-  return <LetterPhoto entryId={draftId} finalText={finalText} own draft />;
+  const { width } = useWindowDimensions();
+  // The picture itself first, then its controls (NS-01-R7): the parent sees the picture they are changing or taking off.
+  return (
+    <View className="gap-2" testID="review.photo">
+      <LetterPicture entryId={draftId} own columnWidth={width - 48} />
+      <LetterPhoto entryId={draftId} finalText={finalText} own draft />
+    </View>
+  );
 }

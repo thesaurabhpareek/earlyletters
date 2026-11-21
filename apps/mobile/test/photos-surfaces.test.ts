@@ -6,16 +6,22 @@ import ts from 'typescript';
 import { selectPrompt } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tonightPromptInput } from '../src/components/tonight/prompt.logic';
-import { applyPullPage } from '../src/lib/sync/merge';
+import { applyEntryState, applyPullPage } from '../src/lib/sync/merge';
 import { entrySnapshot, SYNC_SETTING, writeSetting, type LocalEntryRow } from '../src/lib/sync/outbox';
 import type { PullResponse } from '../src/lib/sync/types';
 import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
-import { LETTER_PICTURE_AX_MAX_PT, letterPictureSize, pictureHidden, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { coveredForAppState, LETTER_PICTURE_AX_MAX_PT, letterPhotoControls, letterPictureSize, pictureCovered, pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { photoStartShows } from '../src/lib/photos/start-shows';
+import { PendingPhoto } from '../src/lib/photos/pending';
+import { registerPhotoPicker, registerPending } from '../src/lib/photos/registry';
+import { setPhotosForTest } from '../src/lib/photos/flag';
+import { planCapture } from '../src/lib/capture/start-capture.logic';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
+import { PHOTO_WORDS_WRITING_TOOLS_OFF, photoWordsFieldsShown } from '../src/lib/photos/words-setting';
 import { fixture, insertBook } from './helpers/store-fixture';
 import { deps, makeJpeg } from './photos-helpers';
 
@@ -98,22 +104,43 @@ describe('[NS-01-R2][NX-39-R2] the photo start asks no library question', () => 
   });
 });
 
+describe('[NS-01-R4][NX-39-R14] backing out writes nothing (behaviour)', () => {
+  it('[NS-01-R4][NX-39-R14] a pending picture that is discarded leaves no file, no row and no held picture, whichever way the parent leaves', async () => {
+    for (const leave of ['Close', 'Let it go', 'swipe back to Home']) {
+      const removed: string[] = [];
+      const files = { read: async () => Uint8Array.of(1), remove: async (u: string) => void removed.push(u), sweep: async () => undefined };
+      const p = new PendingPhoto(files);
+      await p.set({ uri: 'file:///c/ImagePicker/one.jpg' });
+      expect(p.source?.uri, leave).toBe('file:///c/ImagePicker/one.jpg');
+      await p.discard(); // what Close, Let it go and Home's focus all call (discardPendingPhoto)
+      expect([p.source, removed], leave).toEqual([null, ['file:///c/ImagePicker/one.jpg']]);
+    }
+  });
+});
+
 describe('[NS-01-R3] the prompt does not depend on the picture', () => {
-  it('[NS-01-R3] with 3 different pictures and one fixed state the chosen prompt is identical', () => {
+  it('[NS-01-R3] the prompt does not depend on the picture', () => {
     const state = { birthday: '2026-04-01', today: '2026-11-11', daysSinceLastEntry: 2, recentKeys: [], shuffle: 0, leftKey: null, childName: 'Asha' };
     const picked: string[] = [];
     for (const uri of ['picker://a', 'picker://b', 'picker://c']) {
       const s = new PhotoSession();
       s.pick({ uri });
       picked.push(selectPrompt(tonightPromptInput(state), PROMPTS).key); // the input has no place for the picture
+      // The session is held while the plan is made: the route the photo start takes carries the same prompt params as Speak
+      // and Type for that prompt, whatever was picked (the request has no field a picture could ride in).
+      const prompt = { key: picked[picked.length - 1], libraryVersion: 3 };
+      expect(s.source?.uri).toBe(uri);
+      expect(planCapture({ source: 'photo', prompt })).toEqual({ kind: 'photo', pathname: '/listen', params: { promptKey: prompt.key, promptLibraryVersion: '3' } });
     }
+    const first = planCapture({ source: 'speak', prompt: { key: picked[0], libraryVersion: 3 } });
+    expect(first.kind === 'route' && first.params).toEqual({ promptKey: picked[0], promptLibraryVersion: '3' });
     expect(new Set(picked).size).toBe(1);
     expect(Object.keys(state).some((k) => /photo|picture|uri/i.test(k))).toBe(false);
   });
   it('[NS-01-R3] the thumbnail is at most 160 pt tall and sits above the prompt on Listen and above the field on Write', () => {
     expect(THUMB_MAX_HEIGHT_PT).toBe(160);
     const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
-    expect(thumb).toMatch(/height=\{large \? undefined : THUMB_MAX_HEIGHT_PT\}/);
+    expect(thumb).toMatch(/height=\{boxHeight\}/);
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeGreaterThan(0);
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
@@ -186,6 +213,35 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id = 'e1'")?.final_text).toBe('Hi, Asha.'); // the pull did run
     expect(media()).toEqual(before);
   });
+  it('[NS-01-R15] a push answer never creates, changes or deletes an entry_media row: applyEntryState (which applyPushResponse calls for every ok op) leaves the table as it was, a deleted letter included, and the sync layer never names the table', () => {
+    // Mutant: add `DELETE FROM entry_media WHERE entry_id = ?` (or an UPDATE) to applyEntryState in sync/merge.ts: this turns red.
+    const ME = '11111111-1111-1111-1111-111111111111';
+    const NOW = '2026-10-03T09:00:00.000Z';
+    const db = fixture().db;
+    insertBook(db, { id: 'c1', name: 'Asha', signsAs: 'Mama', serverState: 'synced' });
+    writeSetting(db, SYNC_SETTING.owner, ME);
+    writeSetting(db, SYNC_SETTING.epoch, '1');
+    for (const id of ['e1', 'e2']) {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text,
+           in_book, updated_at, child_id, author_id, server_version, server_updated_at, server_epoch, sync_state)
+         VALUES (?, 'letter', '2026-10-01', ?, 'typed', 'verbatim', 5, 'Hi.', '[]', 'Hi.', 1, ?, 'c1', ?, '100', ?, 1, 'synced')`,
+        id, NOW, NOW, ME, NOW,
+      );
+    }
+    const store = entryMediaStore(db);
+    for (const [owner, media] of [['e1', 'm1'], ['e2', 'm2']]) {
+      store.put({ entryId: owner, mediaId: media, ext: 'jpg', bytes: 3, sha256: 'ab', width: 4, height: 4, text: 'Rain boots', place: 'the back step', addedAt: NOW, deletedAt: null });
+    }
+    const media = () => db.all('SELECT * FROM entry_media ORDER BY id');
+    const before = media();
+    const state = (id: string, deleted: string | null) => ({ id, v: '130', updated_at: NOW, approval: null, in_book: true, deleted_at: deleted }) as unknown as Parameters<typeof applyEntryState>[1];
+    applyEntryState(db, state('e1', null), 1, NOW);
+    applyEntryState(db, state('e2', NOW), 1, NOW); // the server says deleted
+    expect(db.get<{ v: string }>("SELECT server_version AS v FROM entries WHERE id = 'e1'")?.v).toBe('130'); // it did run
+    expect(media()).toEqual(before);
+    expect(readFileSync(join(SRC, 'lib', 'sync', 'merge.ts'), 'utf8')).not.toMatch(/entry_media/);
+  });
   it('[NS-01-R15] the photo code never imports the sync layer or the network', () => {
     for (const f of walk(join(SRC, 'lib', 'photos'))) {
       expect(importsOf(parse(f)).filter((m) => /sync|supabase|fetch|api/.test(m)), rel(f)).toEqual([]);
@@ -218,7 +274,7 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
   });
   it('[NS-01-R19] the Home start is guarded by the switch and a registered picker (absent, not dead)', () => {
-    const hook = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'start-shows.ts'), 'utf8');
     expect(hook).toMatch(/photoSurfaces\(\{ build: photosBuildEnabled\(\), paused \}\)\.start && getPhotoPicker\(\) !== null/);
     expect(readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8')).toMatch(/photoStart\.show \? <PhotoStartButton/);
   });
@@ -275,6 +331,53 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(ax.height).toBeLessThanOrEqual(LETTER_PICTURE_AX_MAX_PT);
     expect(letterPictureSize({ ...wide, aspect: 5 }).width).toBeLessThanOrEqual(300); // a panorama fits the column
   });
+  it('[NS-01-R9c] only the author changes the picture', () => {
+    // Another parent's letter: no add, change, take off or edit control, with or without a picture and words.
+    for (const hasPhoto of [true, false]) {
+      for (const hasWords of [true, false]) expect(letterPhotoControls({ own: false, hasPhoto, hasWords }), `${hasPhoto}/${hasWords}`).toEqual({ add: false, change: false, remove: false, editWords: false });
+    }
+    expect(letterPhotoControls({ own: true, hasPhoto: true, hasWords: true })).toEqual({ add: false, change: true, remove: true, editWords: true });
+    expect(letterPhotoControls({ own: true, hasPhoto: false, hasWords: true }).add).toBe(true);
+    expect(letterPhotoControls({ own: true, hasPhoto: false, hasWords: false }).add).toBe(false); // a mark has no words (R5, R25)
+    // The component draws its controls only through that rule. Mutant: "author-only controls always visible" (a bare `true`
+    // or `own`-free condition in the controls) fails these pins.
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).toMatch(/const controls = letterPhotoControls\(\{ own, hasPhoto: !!photo, hasWords: words \}\);/);
+    expect(src).toMatch(/return controls\.add \? \(/);
+    expect(src).toMatch(/\{controls\.change \? \(/);
+    expect(src).toMatch(/\{editing && controls\.editWords && photoWordsFieldsShown\(\) \? \(/);
+    expect(src).toMatch(/letterPhotoControls\(\{ own, hasPhoto: true, hasWords: true \}\)\.remove/);
+    expect(src).not.toMatch(/\{own \?|own && /);
+  });
+  it('[NS-01-R50] writing tools are off on photo words and place', () => {
+    // OPEN, never green by silence (E41): React Native 0.86 has no prop for iOS writing tools and the native setting of ADR 0039
+    // is not built. This row stays red-by-design until PHOTO_WORDS_WRITING_TOOLS_OFF is true (the PR that builds the setting).
+    expect(PHOTO_WORDS_WRITING_TOOLS_OFF, 'OPEN: R50 needs the native setting; see R50b for what ships meanwhile').toBe(false);
+  });
+  it('[NS-01-R50b] the fields stay off in production until the setting exists', () => {
+    expect(photoWordsFieldsShown('production', false)).toBe(false);
+    expect(photoWordsFieldsShown('preview', false)).toBe(true);
+    expect(photoWordsFieldsShown('development', false)).toBe(true);
+    expect(photoWordsFieldsShown(null, false)).toBe(true); // an unknown value resolves to development, as build-env does
+    expect(photoWordsFieldsShown('production', true)).toBe(true); // the setting exists
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src.match(/photoWordsFieldsShown\(\)/g)?.length).toBe(2); // the fields and the button that opens them
+    // Mutant: show the fields in production (drop the gate) fails the two pins above.
+  });
+  it('[review B on #839] the words are written on blur and Done, not per keystroke; the caption is not read twice; Review draws the picture; the controls follow the player', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).not.toMatch(/onChangeText=\{\(t\) => editPhotoWords/);
+    expect(src.match(/onBlur=\{flush\}/g)?.length).toBe(2);
+    expect(src).toMatch(/useEffect\(\(\) => flush, \[\]\)/); // leaving the page writes what was typed
+    expect(src).toMatch(/accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="letter\.photo\.text"/);
+    const review = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
+    expect(review.indexOf('<LetterPicture')).toBeGreaterThan(-1);
+    expect(review.indexOf('<LetterPicture')).toBeLessThan(review.indexOf('<LetterPhoto '));
+    const page = readFileSync(join(SRC, 'app', 'letter', '[id].tsx'), 'utf8');
+    expect(page.indexOf('<LetterPhoto ')).toBeGreaterThan(page.indexOf('<AudioPlayer'));
+    const hooks = readFileSync(join(SRC, 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hooks).toMatch(/setPhoto\(\(prev\) => \(samePhoto\(prev, next\) \? prev : next\)\)/);
+  });
   it('[NS-01-R19] off, the letter page and Review draw no photo control', () => {
     const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).toMatch(/const on = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.addActions;/);
@@ -301,9 +404,10 @@ describe('[NS-01-R20] new controls', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
   });
-  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, Change, prompt, Speak, Type (E40; #838 review B)', () => {
+  it('[NS-01-R20b] VoiceOver order on Ready', () => {
+    // E40: thumbnail, Change, prompt, Speak, Type; Type keeps the picture.
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
-    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
+    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{photos\.capture\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
     expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
     // E40: Change sits under the thumbnail, inside the thumbnail block, before the prompt; Change announces its state.
     const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
@@ -314,13 +418,13 @@ describe('[NS-01-R20] new controls', () => {
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });
-  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use ErrorLine, which announces it and is a live region (#838 review B)', () => {
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the photo ErrorLine, which announces it and is a live region (#838 review B)', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
       expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
       expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
     }
-    const line = readFileSync(join(SRC, 'lib', 'auth', 'ui.tsx'), 'utf8');
+    const line = readFileSync(join(SRC, 'components', 'photos', 'error-line.tsx'), 'utf8');
     const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
     expect(body).toMatch(/if \(message\) announce\(message\);/);
     expect(body).toMatch(/accessibilityLiveRegion="polite"/);
@@ -345,6 +449,65 @@ describe('[NS-01-R20] new controls', () => {
     expect(spoken).toMatch(/accessibilityLiveRegion="polite"/);
     expect(page.match(/<ErrorLine message=\{failed \|\| pick\.failed \? photos\.capture\.openFailed : null\} \/>/g)).toHaveLength(2);
     expect(page).not.toMatch(/>\{photos\.capture\.openFailed\}</);
+  });
+  it('[NS-01-R20][review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx', 'error-line.tsx']) {
+      expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
+    }
+    expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/listen\.photo\.type[\s\S]{0,0}micDenied|micDenied\.typeButton\} onPress=\{typeInstead\}/);
+    for (const f of ['use-photo-start.ts', 'use-photo-pick.ts']) {
+      const src = readFileSync(join(SRC, 'lib', 'photos', f), 'utf8');
+      expect(src, f).not.toMatch(/registerPhotoDevice\(\)/);
+      expect(src, f).toMatch(/useRegisteredPhotoDevice\(\)/);
+    }
+    expect(readFileSync(join(SRC, 'lib', 'photos', 'use-registered.ts'), 'utf8')).toMatch(/useEffect\(\(\) => \{\s*registerPhotoDevice\(\);/);
+    const start = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(start).toMatch(/if \(!picker \|\| running\.current\) return;/); // one pick at a time
+    expect(start).toMatch(/\.catch\(\(\) => setFailed\(true\)\)/);
+  });
+  it('[NS-01-R39][NS-01-R42] the Ready thumbnail is at most 88 pt tall from AX3 and shows the whole picture (contain, never cover)', () => {
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb).toMatch(/large \? THUMB_AX_MAX_HEIGHT_PT : THUMB_MAX_HEIGHT_PT/);
+    expect(thumb).toMatch(/fit="contain"/);
+    expect(thumb).not.toMatch(/aspectRatio=/);
+    expect(THUMB_AX_MAX_HEIGHT_PT).toBe(88);
+  });
+  it('[NS-01-R13a][NX-39-R36] the switcher snapshot shows no picture', () => {
+    // The phase mapping the hook uses: only 'active' draws a picture; inactive (the snapshot moment), background and anything
+    // else cover it. The mutant `usePictureCovered returns false` fails the source pins below.
+    expect(coveredForAppState('active')).toBe(false);
+    for (const phase of ['inactive', 'background', 'unknown', '']) expect(coveredForAppState(phase), phase).toBe(true);
+    const hooks = readFileSync(join(SRC, 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hooks).toMatch(/export function usePictureCovered\(\): boolean \{\s*const phase = useAppPhase\(\);\s*return coveredForAppState\(phase\);\s*\}/);
+    // Every Image goes through PhotoFrame, which draws the opaque box when covered, at once.
+    const frame = readFileSync(join(SRC, 'components', 'photos', 'photo-frame.tsx'), 'utf8');
+    expect(frame).toMatch(/const covered = usePictureCovered\(\);/);
+    expect(frame).toMatch(/if \(covered \|\| failed\) return <View [^>]*accessibilityLabel=\{label\} \/>;/);
+    for (const f of walk(join(SRC, 'components', 'photos')).filter((x) => /\.tsx$/.test(x) && !/photo-frame\.tsx$/.test(x))) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/<Image\b/);
+    }
+  });
+  it('[NS-01-R13b] no picture before unlock', () => {
+    // pictureCovered with the lock on and not yet unlocked covers a picture even in front. No caller passes `unlocked` today
+    // (surface.ts takes the always-blank ruling instead): a follow-up when App lock state is read here.
+    expect(pictureHidden({ lockOn: true, unlocked: false, phase: 'active' })).toBe(true);
+    expect(pictureHidden({ lockOn: true, unlocked: true, phase: 'active' })).toBe(false);
+    expect(pictureCovered('active', true, false)).toBe(true);
+  });
+  it('[NS-01-R59] no picker, no photo controls', () => {
+    // No native module: nothing registered, so no start, no Change, no Add; absent, never dead.
+    setPhotosForTest(true);
+    try {
+      registerPhotoPicker(null);
+      registerPending(null);
+      expect(photoStartShows(false)).toBe(false);
+    } finally {
+      setPhotosForTest(null);
+    }
+    const pick = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-pick.ts'), 'utf8');
+    expect(pick).toMatch(/ready: registered && getPhotoPicker\(\) !== null/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8')).not.toMatch(/disabled=/);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');

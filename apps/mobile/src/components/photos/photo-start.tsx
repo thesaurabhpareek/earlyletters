@@ -5,7 +5,7 @@
  */
 import { ImageIcon } from 'phosphor-react-native/src/icons/Image';
 import { Button } from '@/components/ui/button';
-import { ErrorLine } from '@/lib/auth/ui';
+import { ErrorLine } from './error-line';
 import { fill } from '@/lib/copy';
 import { photos } from '@/lib/photos/copy';
 

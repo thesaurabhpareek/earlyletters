@@ -8,7 +8,7 @@
  *   crosses as the closed code `failed` and the native error text is dropped;
  * - an answer naming any file but that destination is a failure, never read.
  * One pick at a time: a second `open` while one runs answers `cancelled` at once and opens nothing. `cancel` ends the
- * wait at once (NS-01-R17). The native copy may still land afterwards (an iCloud-only picture keeps downloading), and
+ * wait at once (NS-01-R17) but does not free the picker: it stays busy until the native copy has finished. The native copy may still land afterwards (an iCloud-only picture keeps downloading), and
  * such a copy is removed, as is one that lands while the app lock is up: the parent picks again once it is open.
  * scribe-photo reports no download progress yet, so `onProgress` is never called.
  */
@@ -34,7 +34,6 @@ export function createPhotoPicker(native: Pick<ScribePhotoNative, 'pickOne'>, de
       const settle = (o: PickOutcome): boolean => {
         if (answered) return false;
         answered = true;
-        busy = false;
         answer(o);
         return true;
       };
@@ -45,9 +44,11 @@ export function createPhotoPicker(native: Pick<ScribePhotoNative, 'pickOne'>, de
           out = destination();
           uri = await native.pickOne(out);
         } catch {
+          busy = false; // the native call is over
           settle({ status: 'failed' });
           return;
         }
+        busy = false; // only now: a Cancel ends the wait, not the native copy, so no second pick starts under a running one
         if (uri === null) settle({ status: 'cancelled' });
         else if (uri !== out) settle({ status: 'failed' });
         else if (lockedNow(hooks) || !settle({ status: 'picked', asset: { uri } })) {

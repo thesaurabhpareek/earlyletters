@@ -1208,6 +1208,22 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(second), mediaRows()]).toEqual([false, []]);
   });
 
+  it('[NS-01-R16][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
+    let app = await launch();
+    const f = family(app);
+    const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
+    const file = picture(typed.id, 'mT');
+    app.store.setDraftPictureEraser(() => {
+      throw new Error('disk');
+    });
+    expect(() => app.store.deleteDraft(typed.id)).not.toThrow();
+    expect(app.store.getDraft(typed.id)).toBeFalsy(); // the draft is gone
+    expect([has(file), mediaRows()]).toEqual([true, ['mT']]); // the picture is not: yet
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    await vi.waitFor(() => expect([has(file), mediaRows()]).toEqual([false, []]));
+  });
+
   it('[ADR 0028 D1] Keep moves a draft\'s picture to the letter inside the letter\'s own transaction: a failed Keep leaves it the draft\'s', async () => {
     const app = await launch();
     const asha = app.store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;

@@ -3,6 +3,9 @@
 /** The thumbnail above the capture buttons is never taller than this on Ready (design spec 3.2). R3 sets no minimum. */
 export const THUMB_MAX_HEIGHT_PT = 160;
 
+/** From AX3 up the Ready thumbnail is at most this tall (NS-01-R39, PROPOSED) so Speak, Type and Change stay on screen. */
+export const THUMB_AX_MAX_HEIGHT_PT = 88;
+
 /**
  * The picture's size on the letter page (CL-116 C-01, ruling NS-01-C01-order). PROPOSED numbers, to become a design
  * token with a pair test (design-systems): below AX3 no taller than the text column times 0.75 and no taller than 40
@@ -38,6 +41,21 @@ export function pictureHidden(input: { lockOn: boolean; unlocked: boolean; phase
 export const PHOTO_BLANK_WITHOUT_APP_LOCK = true;
 
 /** True when a picture must not be drawn right now: the app is not in front (inactive covers the snapshot moment). */
+/** The hook's phase mapping, pure so it can be pinned: only a phone in front ('active') shows a picture; 'inactive' (the switcher
+ * snapshot is taken), 'background', 'unknown' and any other state cover it (NS-01-R13a). */
+export function coveredForAppState(phase: string): boolean {
+  return pictureCovered(phase === 'active' || phase === 'inactive' ? phase : 'background');
+}
+
+/**
+ * Which controls the letter page and Review draw for a picture (NS-01-R9c): only the letter's author adds, changes, takes
+ * off or edits the words; another parent only sees the picture. A picture needs words on the letter to be added (R5).
+ */
+export function letterPhotoControls(a: { own: boolean; hasPhoto: boolean; hasWords: boolean }): { add: boolean; change: boolean; remove: boolean; editWords: boolean } {
+  const author = a.own === true;
+  return { add: author && !a.hasPhoto && a.hasWords, change: author && a.hasPhoto, remove: author && a.hasPhoto, editWords: author && a.hasPhoto };
+}
+
 export function pictureCovered(phase: 'active' | 'inactive' | 'background', lockOn = false, unlocked = true): boolean {
   return pictureHidden({ lockOn: lockOn || PHOTO_BLANK_WITHOUT_APP_LOCK, unlocked, phase });
 }

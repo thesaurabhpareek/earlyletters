@@ -9,7 +9,7 @@ import { photoNotSaved, subscribePhotoNotSaved } from './failures';
 import { photosLens, type LensLetter, type PhotosLens } from './lens';
 import type { PendingPhoto } from './pending';
 import { getPending } from './registry';
-import { pictureCovered } from './surface';
+import { coveredForAppState } from './surface';
 import type { StoredPhoto } from './types';
 
 const noopSubscribe = () => () => {};
@@ -27,7 +27,7 @@ export function useAppPhase(): AppStateStatus {
 /** True while a picture must be blank (NS-01-R13, NX-39-R36; Karma's ruling in surface.ts). */
 export function usePictureCovered(): boolean {
   const phase = useAppPhase();
-  return pictureCovered(phase === 'active' || phase === 'inactive' ? phase : 'background');
+  return coveredForAppState(phase);
 }
 
 /** The pending picture, re-rendering when it changes. Null when none is registered (switch off). */
@@ -36,6 +36,8 @@ export function usePendingPhoto(): PendingPhoto | null {
   useSyncExternalStore(p ? p.subscribe : noopSubscribe, p ? p.getVersion : () => 0);
   return p;
 }
+
+const samePhoto = (a: StoredPhoto | null, b: StoredPhoto | null): boolean => a === b || (!!a && !!b && JSON.stringify(a) === JSON.stringify(b));
 
 /** The kept letter's picture, not while its letter waits in Recently deleted. */
 export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto | null {
@@ -50,8 +52,12 @@ export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto 
   }, [entryId]);
   const [photo, setPhoto] = useState<StoredPhoto | null>(read);
   useEffect(() => {
-    setPhoto(read());
-    return subscribeStore(() => setPhoto(read()));
+    const update = () => {
+      const next = read();
+      setPhoto((prev) => (samePhoto(prev, next) ? prev : next)); // the same picture keeps its reference: no re-render per store event
+    };
+    update();
+    return subscribeStore(update);
   }, [read]);
   return photo;
 }

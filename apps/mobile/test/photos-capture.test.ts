@@ -107,15 +107,57 @@ describe('[NS-01-R6] the last guard reads marker segments, never the compressed 
     expect([stripJpeg(clean).ok, carriesMetadata(clean)]).toEqual([true, false]);
     expect((await commitPhoto(deps().d, { ...ONE, bytes: clean })).status).toBe('stored');
     const exif = sigs('Exif\0\0MM');
-    const planted = Uint8Array.from([0xff, 0xd8, 0xff, 0xf0, 0, exif.length + 2, ...exif, ...makeJpeg({ seed: 5 }).slice(2)]);
+    // An Exif signature inside a segment the strip keeps (an ICC profile) is still refused by the last guard.
+    const icc = [...sigs('ICC_PROFILE\0'), ...exif];
+    const planted = Uint8Array.from([0xff, 0xd8, 0xff, 0xe2, 0, icc.length + 2, ...icc, ...makeJpeg({ seed: 5 }).slice(2)]);
     const { d, files } = deps();
     expect((await commitPhoto(d, { ...ONE, bytes: planted })).status).toBe('failed');
     expect(files.disk.size).toBe(0);
   });
 });
 
+describe('[NS-01-R6][NX-39-R8] the strip is an allow list (privacy review B on #836)', () => {
+  const sigs = (s: string) => Array.from(s, (c) => c.charCodeAt(0));
+  const seg = (m: number, payload: number[]) => [0xff, m, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
+  const text = (b: Uint8Array) => Array.from(b, (c) => String.fromCharCode(c)).join('');
+  it('[NS-01-R6] a synthetic JPEG with real Exif, GPS and XMP (and IPTC, a comment, a thumbnail): the output carries none of the three', () => {
+    const src = makeJpeg({ exif: true, xmp: true, iptc: true, comment: true, jfifThumb: true, mpf: true, seed: 3 });
+    const out = stripJpeg(src);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const t = text(out.bytes);
+    for (const needle of ['Exif', 'GPSLatitudeRef', '37.7749', 'iPhone', 'http://ns.adobe.com/xap', 'xmpmeta', 'Photoshop 3.0', '8BIM', 'taken at the park', 'MPF']) expect(t, needle).not.toContain(needle);
+    expect(carriesMetadata(out.bytes)).toBe(false);
+    expect(carriesMetadata(src)).toBe(true); // the judge is not blind
+  });
+  it('[NS-01-R6] reserved and unknown markers carrying a payload are dropped, not copied through: C8, DC, DE, DF, F0 to FD, 02, BF', () => {
+    const payload = sigs('GPS 37.7749 -122.4194 secret');
+    for (const m of [0xc8, 0xdc, 0xde, 0xdf, 0xf0, 0xf5, 0xfd, 0x02, 0xbf]) {
+      const base = makeJpeg({ seed: 2 });
+      const src = Uint8Array.from([0xff, 0xd8, ...seg(m, payload), ...base.slice(2)]);
+      const out = stripJpeg(src);
+      expect(out.ok, m.toString(16)).toBe(true);
+      if (!out.ok) continue;
+      expect(text(out.bytes), m.toString(16)).not.toContain('GPS');
+      expect(carriesMetadata(out.bytes), m.toString(16)).toBe(false);
+      expect(carriesMetadata(src), `judge ${m.toString(16)}`).toBe(true); // a marker outside the allow list is metadata to the judge
+    }
+  });
+  it('[NS-01-R6] kept on purpose: the colour profile and the Adobe colour flag; an APP2 that is not a profile and an APP14 that is not Adobe are dropped', () => {
+    const base = makeJpeg({ seed: 4 });
+    const withApps = Uint8Array.from([0xff, 0xd8, ...seg(0xe2, [...sigs('ICC_PROFILE\0'), 1, 1, 9]), ...seg(0xee, sigs('Adobe\x00d\x00\x00\x00\x00\x01')), ...seg(0xee, sigs('Other secret')), ...seg(0xe2, sigs('FPXR secret')), ...base.slice(2)]);
+    const out = stripJpeg(withApps);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const t = text(out.bytes);
+    expect(t).toContain('ICC_PROFILE');
+    expect(t).toContain('Adobe');
+    expect(t).not.toContain('secret');
+  });
+});
+
 describe('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
-  it('[NS-01-R4][NX-39-R14] a picked picture that is let go writes 0 rows and 0 files', () => {
+  it('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
     const { store, files } = deps();
     const s = new PhotoSession();
     s.pick({ uri: 'picker://one' });
@@ -203,7 +245,7 @@ describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
     // The letter page offers Add only on a letter with words; a mark has none (D-084), so it draws nothing.
     const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).toMatch(/const words = draft \|\| finalText\.trim\(\)\.length > 0;/);
-    expect(page).toMatch(/return own && words \?/);
+    expect(page).toMatch(/return controls\.add \? \(/); // author and words, through letterPhotoControls
   });
 });
 
@@ -218,7 +260,7 @@ describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed l
     expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
     expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
   });
-  it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
+  it('[NS-01-R9a] the picture has a fixed label: [NS-01-R9] no typed words, the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
   });
@@ -311,7 +353,7 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     expect(calls.cancel).toBe(1);
     expect((await run.done).status).toBe('cancelled');
   });
-  it('[NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
+  it('[NS-01-R17c] only the still of a Live Photo: [NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
     const { p } = picker('picked', { paired: true });
     const r = await runPick(p).done;
     if (r.status !== 'picked') throw new Error('not picked');
