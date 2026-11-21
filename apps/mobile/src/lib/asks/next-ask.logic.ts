@@ -5,7 +5,7 @@
  *
  * The order at launch (DR-12 B, the spec default in `docs/prd/v2/09-decisions-and-risks.md`):
  *   1. `reminder_prime`: the first ask slot after the first saved letter. At most 2 primes ever
- *      (C-REQ-001 Rev); the second one (after the first month chapter, F13 6.2 B row 4c) is not built.
+ *      (C-REQ-001 Rev); the second one comes once after the first month chapter (F13 6.2 B row 4c, BL-518), below.
  *   2. `keep_book`: the account sheet, on the first save in session 2 or the second saved letter,
  *      whichever comes first; offered once here (the "after the third letter if Later" re-offer is not built).
  *   3. Analytics consent stays with its own sequencer (lib/analytics/ask.ts) and is off in the 1.0 line (D-124 item 3).
@@ -18,6 +18,9 @@ export type NextAsk = 'reminder_prime' | 'keep_book' | null;
 
 /** C-REQ-001 Rev: "Given No reminders twice, Then the card never shows a third time". */
 export const MAX_REMINDER_PRIMES = 2;
+
+/** The first month chapter is done 30 days after the first letter (BL-518). */
+export const FIRST_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** A session starts at a cold start or at a return after 30 minutes or more away (F02 6.1, the analytics lifecycle). */
 export const ASK_SESSION_GAP_MS = 30 * 60 * 1000;
@@ -43,6 +46,13 @@ export interface AskFacts {
   askShownThisSession: boolean;
   /** An ask (any) already appeared on this local calendar day. */
   askShownToday: boolean;
+  /** The first month chapter is done (`firstMonthDone`). */
+  firstMonthDone: boolean;
+}
+
+/** True once the first month has passed since the first letter; false when the first letter's time is unknown. */
+export function firstMonthDone(firstLetterAt: number | null, now: number): boolean {
+  return firstLetterAt !== null && now - firstLetterAt >= FIRST_MONTH_MS;
 }
 
 /** Whether another prime may ever show (the cap alone; the slot rule is in `nextAsk`). */
@@ -61,6 +71,8 @@ export function nextAsk(f: AskFacts): NextAsk {
     const laterSession = f.firstLetterSession === null || f.session !== f.firstLetterSession;
     if (f.lettersSaved >= 2 || laterSession) return 'keep_book';
   }
+  // 3. The second and last prime, once, after the first month chapter (cap of 2; the first has its own slot above).
+  if (!f.firstLetter && f.firstMonthDone && f.primesShown === 1 && primeAllowed(f.primesShown) && !f.remindersOn) return 'reminder_prime';
   return null;
 }
 
