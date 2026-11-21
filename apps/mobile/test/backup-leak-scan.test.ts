@@ -5,8 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { SEGMENT_SIZE } from '../src/lib/backup/format';
 import { fakeM4a } from './helpers/backup-node';
-import { SHINGLE, STRIDE, firstLeak, shingleOffsets } from './helpers/leak-scan';
-import { randomBytes } from 'node:crypto';
+import { SHINGLE, STRIDE, firstLeak, firstRawLeak, leakNote, shingleOffsets } from './helpers/leak-scan';
+import { createHash, randomBytes } from 'node:crypto';
 
 const TAKE = 3 * SEGMENT_SIZE + 777;
 
@@ -120,3 +120,71 @@ describe('[BL-456] negative control and mutants', () => {
     expect(note).not.toContain(plain.subarray(100, 116).toString('latin1'));
   });
 });
+
+// ── [BL-1417] encoded copies ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The three written forms of a piece, as the bytes of a haystack. */
+const FORMS: Array<[string, (b: Uint8Array) => Buffer]> = [
+  ['base64', (b) => Buffer.from(Buffer.from(b).toString('base64'))],
+  ['base64url', (b) => Buffer.from(Buffer.from(b).toString('base64url'))],
+  ['hex', (b) => Buffer.from(Buffer.from(b).toString('hex'))],
+  ['HEX', (b) => Buffer.from(Buffer.from(b).toString('hex').toUpperCase())],
+  ['a JSON byte list', (b) => Buffer.from(JSON.stringify(Array.from(b)))],
+  ['a JSON byte list with spaces', (b) => Buffer.from(JSON.stringify(Array.from(b)).replace(/,/g, ', '))],
+  ['a Buffer written as JSON', (b) => Buffer.from(JSON.stringify(Buffer.from(b)))],
+];
+
+/** Random bytes with `text` written at `at`, so the copy sits in the middle of ciphertext. */
+const around = (text: Buffer, at = 700, size = 4096) => plant(text, at, size);
+
+describe('[BL-1417] a recording written as base64, hex or a JSON byte list is found', () => {
+  const plain = fakeM4a(TAKE);
+  const piece = plain.subarray(100, 164);
+
+  for (const [name, enc] of FORMS) {
+    it(`[BL-1417] bytes 100..164 as ${name} turn the scan red, the raw-only scan stays blind`, () => {
+      const hay = around(enc(piece));
+      expect(firstRawLeak(hay, plain), 'the old scan').toBeNull();
+      expect(firstLeak(hay, plain)).not.toBeNull();
+    });
+  }
+
+  for (const off of [0, 1, 2, 3]) {
+    it(`[BL-1417] base64 at byte alignment ${off} (the copy starts ${off} byte(s) into a 3-byte group) is found`, () => {
+      const wide = Buffer.concat([randomBytes(off), piece]);
+      const text = Buffer.from(wide.toString('base64'));
+      expect(firstLeak(around(text), plain)).not.toBeNull();
+    });
+  }
+
+  it('[BL-1417] a copy written twice over (base64 of hex) is found', () => {
+    const twice = Buffer.from(Buffer.from(piece).toString('hex')).toString('base64');
+    expect(firstLeak(around(Buffer.from(twice)), plain)).not.toBeNull();
+  });
+
+  it('[BL-1417] random bytes with ordinary base64, hex and list text in them are clean (decoding is not over-eager)', () => {
+    const noise = [randomBytes(64).toString('base64'), randomBytes(32).toString('hex'), JSON.stringify(Array.from(randomBytes(40)))].join(' ');
+    expect(firstLeak(around(Buffer.from(noise), 300, 8192), plain)).toBeNull();
+  });
+
+  it('[BL-1417] a list with one number above 255 is cut there, and the part that holds the copy is still found', () => {
+    const list = `[${Array.from(piece).join(',')},999,1,2]`;
+    expect(firstLeak(around(Buffer.from(list)), plain)).not.toBeNull();
+  });
+
+  it('[BL-1417] the failure note for an encoded copy prints an offset and never bytes or the encoded text', () => {
+    for (const [, enc] of FORMS) {
+      const text = enc(piece);
+      const note = leakNote('begin', firstLeak(around(text), plain));
+      expect(note).toMatch(/plaintext offset \d+\)$/);
+      expect(note).not.toContain(text.toString('latin1').slice(0, 20));
+      expect(note).not.toContain(piece.subarray(0, 16).toString('latin1'));
+    }
+  });
+
+  it('[BL-1417] mutant: the scan without the encoded step passes every planted form (this is the gap the row closes)', () => {
+    const rawOnly = (b: Buffer) => firstRawLeak(b, plain);
+    for (const [name, enc] of FORMS) expect(rawOnly(around(enc(piece))), name).toBeNull();
+  });
+});
+
