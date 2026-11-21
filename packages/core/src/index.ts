@@ -6,6 +6,7 @@ export * from './repeats';
 export * from './verify';
 export * from './meaning';
 export * from './pipeline';
+export * from './author-edits';
 export * from './edit-provider';
 export * from './punctuation';
 export * from './model-edits';
