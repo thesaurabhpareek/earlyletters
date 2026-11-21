@@ -30,17 +30,27 @@ describe('[BL-1489-1] a late adopt does not drop a fresh pick', () => {
     const f = files();
     const p = new PendingPhoto(f);
     await p.set({ uri: A });
+    p.setText('Asha at the park');
+    p.setPlace('The park');
     const { d, store } = deps();
     f.hold();
     const adopting = adoptPending(p, () => d, 'e1', WORDS, true);
     await flush(); // A is being read
     await p.set({ uri: B });
     p.setText('Rain boots again');
+    p.setPlace('Back garden');
     f.release();
     await adopting;
     expect(store.rows.get('e1')?.mediaId).toBeTruthy(); // A was stored for its letter
     expect(p.source?.uri).toBe(B); // B was not discarded
     expect(p.typedText).toBe('Rain boots again');
+    expect(p.typedPlace).toBe('Back garden');
+    const row = store.rows.get('e1');
+    expect(row?.text).toBe('Asha at the park'); // A's own words and place, fixed when the commit began
+    expect(row?.place).toBe('The park');
+    expect(JSON.stringify(row)).not.toContain('Rain boots again'); // B's words never reach A's letter
+    expect(JSON.stringify(row)).not.toContain('Back garden');
+    expect(p.canUndo).toBe(false); // Undo cannot bring back A, whose original is gone
     expect(f.left()).toContain(B);
     expect(f.left()).not.toContain(A);
   });
