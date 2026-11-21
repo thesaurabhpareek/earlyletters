@@ -31,15 +31,14 @@ function databaseDirectory(): Directory | null {
   }
 }
 
-/** Every backup state file now in the database folder (names only; no file is opened). */
+/**
+ * Every backup state file now in the database folder (names only; no file is opened). A folder that exists but
+ * cannot be listed THROWS: an empty answer there would read as "nothing to secure" (fail open).
+ */
 export function listBackupFiles(): File[] {
   const dir = databaseDirectory();
   if (!dir) return [];
-  try {
-    return dir.list().filter((i): i is File => i instanceof File && isBackupFileName(i.name));
-  } catch {
-    return [];
-  }
+  return dir.list().filter((i): i is File => i instanceof File && isBackupFileName(i.name));
 }
 
 /** Set the exclusion on one file and read it back. False on any doubt (module absent, call threw, read false). */
@@ -53,11 +52,13 @@ function excludeAndReadBack(file: File): boolean {
   }
 }
 
-function deleteQuietly(file: File): void {
+/** True when the file is gone afterwards. A failure is counted by the caller (no name or path is kept or logged). */
+function deleteFile(file: File): boolean {
   try {
     if (file.exists) file.delete();
+    return !file.exists;
   } catch {
-    // Left for the next launch's check, which fails the same way and tries again.
+    return false; // left for the next launch's check, which fails the same way and tries again
   }
 }
 
@@ -71,39 +72,93 @@ function families(files: File[]): Map<string, File[]> {
   return out;
 }
 
-function secureFamilies(files: File[]): { kept: number; deleted: number } {
+export interface SecureResult {
+  kept: number;
+  deleted: number;
+  /** Files that failed the check and could not be deleted (a count only). */
+  failed: number;
+  /** The folder exists but could not be listed, so nothing was checked. */
+  listFailed: boolean;
+}
+
+function secureFamilies(files: File[]): { kept: number; deleted: number; failed: number } {
   let kept = 0;
   let deleted = 0;
+  let failed = 0;
   for (const members of families(files).values()) {
     if (members.every(excludeAndReadBack)) {
       kept += members.length;
     } else {
-      for (const m of members) deleteQuietly(m);
-      deleted += members.length;
+      for (const m of members) {
+        if (deleteFile(m)) deleted += 1;
+        else failed += 1;
+      }
     }
   }
-  return { kept, deleted };
+  return { kept, deleted, failed };
 }
 
 /**
  * Launch step (after the first frame, never awaited: a folder listing and a call per file). Every backup file that
- * exists is excluded and read back, on every install, new and old; one that reads false is deleted. Never throws.
+ * exists is excluded and read back, on every install, new and old; one that reads false is deleted. Never throws;
+ * `failed` and `listFailed` are content-free signals the caller may surface.
  */
-export function secureBackupFilesAtLaunch(): { kept: number; deleted: number } {
+export function secureBackupFilesAtLaunch(): SecureResult {
   try {
-    return secureFamilies(listBackupFiles());
+    return { ...secureFamilies(listBackupFiles()), listFailed: false };
   } catch {
-    return { kept: 0, deleted: 0 };
+    return { kept: 0, deleted: 0, failed: 0, listFailed: true };
   }
+}
+
+/** The named database file and its sidecars, built from exact names (no folder listing), those that exist. */
+function filesNamed(name: string): { files: File[]; main: File } | null {
+  const dir = databaseDirectory();
+  if (!dir) return null;
+  const base = name.replace(SIDECAR, '');
+  const main = new File(dir, base);
+  const all = [main, ...['-wal', '-shm', '-journal'].map((s) => new File(dir, base + s))];
+  return { files: all.filter((f) => f.exists), main };
 }
 
 /**
  * Before the store opens a file (and again after it opens, which is when a new file first exists): true only if
  * that file, if present, is excluded and reads back so. False means it was deleted and must not be opened.
+ * Fail closed: the files are found by exact name, so a folder that cannot be listed changes nothing; any throw is
+ * false; after the open (`opened`) the main file must exist.
  */
-export function backupFileIsSecure(name: string): boolean {
+export function backupFileIsSecure(name: string, opened = false): boolean {
   if (!isBackupFileName(name)) return false;
-  const family = name.replace(SIDECAR, '').toLowerCase();
-  const mine = listBackupFiles().filter((f) => f.name.replace(SIDECAR, '').toLowerCase() === family);
-  return secureFamilies(mine).deleted === 0;
+  let found: ReturnType<typeof filesNamed>;
+  try {
+    found = filesNamed(name);
+  } catch {
+    return false;
+  }
+  if (!found) return !opened; // no database folder yet: nothing to exclude before the open, impossible after it
+  if (opened && !found.main.exists) return false;
+  const r = secureFamilies(found.files);
+  return r.deleted === 0 && r.failed === 0;
+}
+
+/** The store was refused a backup file because its exclusion could not be set or read back (the file was deleted). */
+export class BackupFileNotExcluded extends Error {
+  constructor() {
+    super('backup_file_not_excluded');
+  }
+}
+
+/**
+ * The one way the store opens the file (B5-3): check before, open, check again (a new file first exists after the
+ * open, and SQLite may have re-created sidecars). A failed check refuses with `BackupFileNotExcluded`, closing the
+ * handle if it was opened. Wal and shm files SQLite creates after this are marked at the next check or launch.
+ */
+export function openSecureBackupFile<T extends { close: () => void }>(name: string, open: (name: string) => T): T {
+  if (!backupFileIsSecure(name)) throw new BackupFileNotExcluded();
+  const opened = open(name);
+  if (!backupFileIsSecure(name, true)) {
+    opened.close();
+    throw new BackupFileNotExcluded();
+  }
+  return opened;
 }

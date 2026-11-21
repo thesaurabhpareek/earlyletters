@@ -11,7 +11,7 @@
  * them.
  */
 import { capabilities } from '../capabilities';
-import { secureBackupFilesAtLaunch } from './files';
+import { secureBackupFilesAtLaunch, type SecureResult } from './files';
 
 type Runtime = typeof import('./runtime');
 
@@ -30,10 +30,12 @@ export function backupInBuild(): boolean {
 }
 
 /** Root layout: starts backup once, after the first frame. A no-op without the flag. */
-export function startBackup(): void {
+export function startBackup(): SecureResult {
   // B5 (CR-71): a data right, so it runs with the flag off too: an old install may hold a backup file.
-  secureBackupFilesAtLaunch();
+  // The result is counts only (failed deletes, a folder that could not be listed); no name or path.
+  const secured = secureBackupFilesAtLaunch();
   loadBackup()?.startBackupRuntime();
+  return secured;
 }
 
 /** Tests only: forget the loaded runtime. */

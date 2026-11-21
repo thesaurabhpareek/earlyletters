@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { backupDbFileFor } from '../src/lib/backup/account';
-import { backupFileIsSecure, isBackupFileName, listBackupFiles, secureBackupFilesAtLaunch } from '../src/lib/backup/files';
+import { BackupFileNotExcluded, backupFileIsSecure, openSecureBackupFile, isBackupFileName, listBackupFiles, secureBackupFilesAtLaunch } from '../src/lib/backup/files';
 import { folderFor } from '../src/lib/resilience/recovery-export.logic';
 import { createDisk, iosContainer, layOutApp, put, type Disk } from './helpers/expo-fs-standin';
 
@@ -60,13 +60,13 @@ describe('[B5-1] an existing backup file is excluded from the backup and read ba
   it('an old install with an unexcluded file: after the launch step it is excluded, and the file is kept', () => {
     put(h.disk, at(FILE), 2048);
     expect(h.excluded.has(at(FILE))).toBe(false);
-    expect(secureBackupFilesAtLaunch()).toEqual({ kept: 1, deleted: 0 });
+    expect(secureBackupFilesAtLaunch()).toEqual({ kept: 1, deleted: 0, failed: 0, listFailed: false });
     expect(h.excluded.has(at(FILE))).toBe(true);
     expect(present(FILE)).toBe(true);
   });
 
   it('a phone with no backup file does nothing and sets nothing', () => {
-    expect(secureBackupFilesAtLaunch()).toEqual({ kept: 0, deleted: 0 });
+    expect(secureBackupFilesAtLaunch()).toEqual({ kept: 0, deleted: 0, failed: 0, listFailed: false });
     expect(h.setCalls).toEqual([]);
   });
 });
@@ -100,7 +100,7 @@ describe('[B5-3] a file whose exclusion reads false is deleted and the store ref
       h.mode = mode;
       put(h.disk, at(FILE), 64);
       put(h.disk, at(`${FILE}-wal`), 64);
-      expect(secureBackupFilesAtLaunch()).toEqual({ kept: 0, deleted: 2 });
+      expect(secureBackupFilesAtLaunch()).toEqual({ kept: 0, deleted: 2, failed: 0, listFailed: false });
       expect(present(FILE) || present(`${FILE}-wal`)).toBe(false);
       expect(present('scribe.db')).toBe(true);
     });
@@ -125,15 +125,80 @@ describe('[B5-3] a file whose exclusion reads false is deleted and the store ref
     expect(h.excluded.has(at(FILE))).toBe(true);
   });
 
-  it('runtime.ts checks before it opens and again after', () => {
-    const src = readFileSync(join(__dirname, '../src/lib/backup/runtime.ts'), 'utf8');
-    const body = src.slice(src.indexOf('function dbFor'));
-    const first = body.indexOf('backupFileIsSecure(file)');
-    const open = body.indexOf('openNativeDb(file)');
-    const second = body.indexOf('backupFileIsSecure(file)', open);
-    expect(first).toBeGreaterThan(-1);
-    expect(open).toBeGreaterThan(first);
-    expect(second).toBeGreaterThan(open);
+  it('fail closed: the folder cannot be listed and the file is there and unexcluded: refused and deleted, not opened', () => {
+    h.mode = 'ignore';
+    put(h.disk, at(FILE), 64);
+    put(h.disk, at(`${FILE}-wal`), 64);
+    h.disk.unreadable.add(dir());
+    expect(backupFileIsSecure(FILE)).toBe(false);
+    expect(present(FILE) || present(`${FILE}-wal`)).toBe(false);
+  });
+
+  it('fail closed: the folder cannot be listed and the file is excluded: still secure (found by exact name)', () => {
+    put(h.disk, at(FILE), 64);
+    h.disk.unreadable.add(dir());
+    expect(backupFileIsSecure(FILE)).toBe(true);
+    expect(h.excluded.has(at(FILE))).toBe(true);
+  });
+
+  it('after the open the main file must exist, or the check is false', () => {
+    expect(backupFileIsSecure(FILE, true)).toBe(false);
+    put(h.disk, at(FILE), 64);
+    expect(backupFileIsSecure(FILE, true)).toBe(true);
+  });
+
+  it('the launch step with an unlistable folder says so (a flag, no names) and throws nothing', () => {
+    h.disk.unreadable.add(dir());
+    expect(secureBackupFilesAtLaunch()).toEqual({ kept: 0, deleted: 0, failed: 0, listFailed: true });
+  });
+
+  it('a delete that fails is counted, and the file is refused at open', () => {
+    h.mode = 'ignore';
+    put(h.disk, at(FILE), 64);
+    h.disk.undeletable.add(at(FILE));
+    expect(backupFileIsSecure(FILE)).toBe(false);
+    expect(secureBackupFilesAtLaunch()).toMatchObject({ deleted: 0, failed: 1 });
+    expect(present(FILE)).toBe(true);
+  });
+
+  it('close and re-open: sidecars SQLite re-creates are re-marked by the check after the open', () => {
+    put(h.disk, at(FILE), 64);
+    put(h.disk, at(`${FILE}-wal`), 64);
+    put(h.disk, at(`${FILE}-shm`), 64);
+    expect(backupFileIsSecure(FILE, true)).toBe(true);
+    // Clean close: SQLite removes the sidecars; the next open re-creates them with no attribute.
+    h.disk.files.delete(at(`${FILE}-wal`));
+    h.disk.files.delete(at(`${FILE}-shm`));
+    h.excluded.delete(at(`${FILE}-wal`));
+    h.excluded.delete(at(`${FILE}-shm`));
+    expect(backupFileIsSecure(FILE)).toBe(true);
+    put(h.disk, at(`${FILE}-wal`), 64);
+    put(h.disk, at(`${FILE}-shm`), 64);
+    expect(h.excluded.has(at(`${FILE}-wal`))).toBe(false);
+    expect(backupFileIsSecure(FILE, true)).toBe(true);
+    for (const x of ['', '-wal', '-shm']) expect(h.excluded.has(at(FILE + x)), x).toBe(true);
+  });
+
+  it('the store opens through the check: an unexcluded file is refused, never opened; an excluded one opens; the handle is closed on a refusal after the open', () => {
+    const opened: string[] = [];
+    let closed = 0;
+    const open = (n: string) => {
+      opened.push(n);
+      put(h.disk, at(n), 64);
+      return { close: () => void (closed += 1) };
+    };
+    h.mode = 'ignore';
+    put(h.disk, at(FILE), 64);
+    expect(() => openSecureBackupFile(FILE, open)).toThrow(BackupFileNotExcluded);
+    expect(opened).toEqual([]);
+    expect(present(FILE)).toBe(false);
+    // A new file: clean before, the OS refuses the mark once it exists: opened, then closed and refused.
+    expect(() => openSecureBackupFile(FILE, open)).toThrow(BackupFileNotExcluded);
+    expect(opened).toEqual([FILE]);
+    expect(closed).toBe(1);
+    h.mode = 'stick';
+    expect(() => openSecureBackupFile(FILE, open)).not.toThrow();
+    expect(h.excluded.has(at(FILE))).toBe(true);
   });
 
   it('the launch step is called from startBackup with the flag off (gate.ts)', () => {
