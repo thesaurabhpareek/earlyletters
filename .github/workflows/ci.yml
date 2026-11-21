@@ -50,7 +50,7 @@ jobs:
     name: tests and content rules
     needs: install
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10 # the engine step takes about 3m30s on a quiet runner and was cut off at 5m06s on loaded ones (runs 44882037339, 44894142294)
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./.github/actions/setup

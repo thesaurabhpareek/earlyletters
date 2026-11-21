@@ -1,0 +1,28 @@
+/**
+ * "Start from a photo" (NS-01-R1, design spec 3.1): the one quiet photo start, on Home only. A text button with a
+ * leading image glyph; never larger than Speak, Type or "Not much today". Absent, not greyed, when the switch is off
+ * or no picker is registered. Every word comes from packages/content.
+ */
+import { ImageIcon } from 'phosphor-react-native/src/icons/Image';
+import { Button } from '@/components/ui/button';
+import { ErrorLine } from './error-line';
+import { fill } from '@/lib/copy';
+import { photos } from '@/lib/photos/copy';
+
+export function PhotoStartButton({ child, onPress, failed = false }: { child: string; onPress: () => void; failed?: boolean }) {
+  return (
+    <>
+    <Button
+      variant="quiet"
+      size="md"
+      icon={ImageIcon}
+      label={photos.capture.startButton}
+      accessibilityHint={fill(photos.a11y.startHint, { child })}
+      onPress={onPress}
+      className="self-center"
+    />
+    {/* Said aloud when it appears, and a polite live region (WCAG 4.1.3; spec 01 section 6 names ErrorLine). */}
+    <ErrorLine message={failed ? photos.capture.openFailed : null} />
+    </>
+  );
+}

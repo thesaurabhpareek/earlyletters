@@ -33,6 +33,7 @@ import { Linking, Platform, TextInput, View } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { announce } from '@/lib/a11y';
 import { appleSignInAvailable } from '@/lib/auth/apple';
+import { RegionRefusedScreen } from '@/components/onboarding/region-refused-screen';
 import { Button } from '@/components/ui/button';
 import { useFontsReady } from '@/components/ui/fonts';
 import { Text } from '@/components/ui/text';
@@ -217,6 +218,9 @@ export default function CodeStep() {
       router.replace('/sign-in/consent');
     } else if (r.error !== 'cancelled') setError(r.error);
   };
+
+  // FP-6: refused after the code step (E62): the refused-region screen, never a line under the field or an outage.
+  if (error === 'region_refused') return <RegionRefusedScreen />;
 
   return (
     <SheetFrame

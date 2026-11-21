@@ -1,5 +1,7 @@
 # Writing style for harness documents
 
+This guide covers harness documents. Words a customer reads follow `packages/content/WRITING-GUIDE.md`.
+
 This page tells every agent how to write harness documents, pull request text, rulings, journal entries and status notes. It applies to everything under `docs/agents/` and to anything the founder reads. Section 9 of `COORDINATION.md` covers status reports and still applies; this page adds the tone.
 
 The rule comes from the founder's instruction of 10 Nov 2026: use plain words, no em dashes, no short catchy sentences, and do not sound like an AI. I have that instruction only as it was relayed to me, and no sample of his own writing, so the rules below are my reading of it and are unverified against anything he wrote. If he corrects a rule, change this page first and then the documents.
