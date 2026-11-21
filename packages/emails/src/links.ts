@@ -30,6 +30,10 @@ export const SITE_ROUTES = {
       emails: 'trial-started, plus-started (subscriptionTermsUrl)',
       when: 'before the reminder emails ship (D-121 step b); or point subscriptionTermsUrl at /terms if the legal lane folds them in (SUB-10)',
     },
+    '/not-you': {
+      emails: 'new-device-sign-in (notYouUrl, token after #; the page changes nothing until a button on it is pressed, E83)',
+      when: 'before the new-device sign-in email is sent (E83: built and read before the first outside family signs in)',
+    },
     '/delete-account/confirm': {
       emails: 'deletion-confirm (Ops only; not sent until the page exists, CATALOG section 8)',
       when: 'before the D-042 email route takes requests from people who cannot open the app',
