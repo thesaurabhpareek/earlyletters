@@ -550,5 +550,5 @@ test('[BL-964] deleting the baseline while the base branch has it fails --check'
   assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), (l) => out.push(l)), 1);
   assert.match(out.join('\n'), /is missing but the base branch has it/);
   fs.rmSync(base);
-  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), () => {}), 1, 'a named base file that does not exist still fails');
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), () => {}), 0, 'absent on both sides is the first PR that adds it');
 });
