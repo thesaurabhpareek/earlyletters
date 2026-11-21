@@ -10,3 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| wave-f-content | content | fix/content-wave-f-prompts | #1132 | packages/content/src/prompts.ts | 2026-11-21 00:58 | 2026-11-24 00:58 | copy rewrite wave F (PR read as open by REST at 2026-11-21 00:58) |
