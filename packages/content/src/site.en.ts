@@ -93,7 +93,7 @@ export const site = {
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "That is fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
+      a: "That's fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
     },
     {
       q: "Which languages can I use?",
@@ -116,8 +116,8 @@ export const site = {
   waitlist: {
     label: "Your email",
     button: "Join the waitlist",
-    success: `Thank you. We will write when ${brand.name} is ready for you.`,
-    error: "That did not go through. Please check your email address and try again.",
+    success: `Thank you. We'll write when ${brand.name} is ready for you.`,
+    error: "That didn't go through. Check your email address and try again.",
   },
 } as const;
 

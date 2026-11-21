@@ -84,7 +84,7 @@ export const pages = {
         heading: "Who makes it",
         paragraphs: [
           `${brand.name} is made and run by an independent maker in California, not a large company. Because it is published by an individual, the maker's legal name appears where the law asks for it: on the App Store listing and in the Terms and Privacy Policy.`,
-          `If ${brand.name} ever closes, you will hear at least 90 days ahead, and export will keep working the whole time.`,
+          `If ${brand.name} ever closes, you'll hear at least 90 days ahead, and export will keep working the whole time.`,
           "Questions, ideas or a kind word are all welcome at hello@earlyletters.com. A person reads every message.",
         ],
       },
@@ -107,16 +107,16 @@ export const pages = {
       {
         heading: "A book you fill by talking",
         paragraphs: [
-          "Baby books ask a lot of tired people. Blanks to fill, firsts to date, a pen to find, a quiet hour that the early years rarely give. Many stop after a few pages, and that is nobody's failing. The format simply asks for time that is spent elsewhere, usually on the child.",
+          "Baby books ask a lot of tired people. Blanks to fill, firsts to date, a pen to find, a quiet hour that the early years rarely give. Many stop after a few pages, and that's nobody's failing. The format asks for time that is spent elsewhere, usually on the child.",
           `Some parents find their own way. They write to an email address set up just for their child, or talk into a voice memo in the car, and plan to hand it all over one day. ${brand.name} is made for that instinct. Talk to {child} for a minute, and your words are kept as a letter in a book, filed under {child}'s age that month and signed with your name.`,
         ],
       },
       {
         heading: "It stays in your words",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
-          "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",
-          "You do not need to say it well. An ordinary day, said your way, is the one worth keeping.",
+          "At the centre of everything is one promise: we never rewrite your words. We don't make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it's easier to read, and less true.",
+          "You don't need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
       },
       {
@@ -130,7 +130,7 @@ export const pages = {
         heading: "Small days count",
         paragraphs: [
           "There is no right amount to say. A minute is plenty. On a quiet day, Not much today is a complete answer. Nothing counts days or keeps score.",
-          "The book does not ask to be finished. It stays open for the next thing you want to tell {child}, whether that is tomorrow or next month.",
+          "The book doesn't ask to be finished. It stays open for the next thing you want to tell {child}, whether that is tomorrow or next month.",
         ],
       },
       {
@@ -143,13 +143,13 @@ export const pages = {
       {
         heading: "Kept with care",
         paragraphs: [
-          "Words this close to a family deserve care. Letters are private by default. There are no ads, and your data is never sold. You can export the whole book, free, whenever you like, in plain formats that open anywhere. The letters are yours.",
+          "Letters are private by default. There are no ads, and your data is never sold. You can export the whole book, free, whenever you like, in plain formats that open anywhere. The letters are yours.",
         ],
       },
       {
         heading: "Said once. Heard for years.",
         paragraphs: [
-          "Talk to {child} today, in your own words and your own voice. Written early, read for years, and one day {child} will know exactly how it sounded when you said it.",
+          "Talk to {child} today, in your own words and your own voice. One day {child} can read it, and hear how you sounded.",
         ],
       },
     ],
@@ -171,18 +171,18 @@ export const pages = {
       {
         heading: "What to write about",
         paragraphs: [
-          "Help with the app: signing in, inviting a co-parent, export or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
+          "Help with the app: signing in, inviting a co-parent, export or anything that isn't working the way you expect. Tell us what kind of phone you use and what you tapped, and we'll take it from there.",
           "Someone else in your account? Put Not me in the subject. We answer those first, within 1 business day.",
           "You never need to send us a letter or a recording to get help.",
-          "Ideas and kind words are welcome too. They are read, every one.",
+          "Ideas and kind words are welcome too. We read every one.",
         ],
       },
       {
         heading: "Trouble signing in",
         paragraphs: [
-          "If a sign-in link opened on a different device, use the 6-digit code from the same email instead. If you joined with Google, tap Sign in with Google in the app. If you signed in with Apple and chose Hide My Email, your account uses the private address Apple made for you, so tell us that when you write and we will help you find your way back in.",
+          "If a sign-in link opened on a different device, use the 6-digit code from the same email instead. If you joined with Google, tap Sign in with Google in the app. If you signed in with Apple and chose Hide My Email, your account uses the private address Apple made for you, so tell us that when you write and we'll help you find your way back in.",
           "No email arrived? Wait a minute, then check Spam, Junk or Promotions for an email from hello@earlyletters.com. Still nothing? Use Sign in with Apple or Sign in with Google, or write to us.",
-          "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email. If your letters are still missing, write to us and we will help you find the right account.",
+          "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email. If your letters are still missing, write to us and we'll help you find the right account.",
         ],
       },
       {
@@ -204,7 +204,7 @@ export const pages = {
       {
         heading: "Press",
         paragraphs: [
-          `Writing about ${brand.name}? Email hello@earlyletters.com with Press in the subject line and we will reply as soon as we can.`,
+          `Writing about ${brand.name}? Email hello@earlyletters.com with Press in the subject line and we'll reply as soon as we can.`,
         ],
       },
     ],
@@ -228,8 +228,8 @@ export const pages = {
       {
         heading: "Or ask by email",
         paragraphs: [
-          "If you cannot use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
-          "Before we act, we confirm it is you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you do not need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
+          "If you can't use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
+          "Before we act, we confirm it is you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you don't need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
           "If you signed in with Apple and chose Hide My Email, say so in your message and we will help you confirm it is you.",
           "We reply within 10 business days. Once you confirm, your request follows the same steps and timeline as a deletion from the app.",
         ],
@@ -261,13 +261,13 @@ export const pages = {
       {
         heading: "If you have Plus",
         paragraphs: [
-          "Deleting your account does not cancel Plus. Billing continues through Apple until you cancel it in your Apple Account subscription settings. You can cancel before or after deleting your account.",
+          "Deleting your account doesn't cancel Plus. Billing continues through Apple until you cancel it in your Apple Account subscription settings. You can cancel before or after deleting your account.",
         ],
       },
       {
         heading: "Only want to remove some letters?",
         paragraphs: [
-          "You do not have to delete your account to remove a letter. Delete it from the letter itself, and it waits in Recently deleted for 30 days in case you change your mind. A parent can also delete a whole book from that child's page in Settings.",
+          "You don't have to delete your account to remove a letter. Delete it from the letter itself, and it waits in Recently deleted for 30 days in case you change your mind. A parent can also delete a whole book from that child's page in Settings.",
           "If you never made an account, your letters and recordings are only on your phone. Deleting the app removes them from it.",
         ],
       },
@@ -277,13 +277,13 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: `This page is not in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
+    metaDescription: `This page isn't in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
     sections: [
       {
-        heading: "We looked under every month. This page is not in the book.",
+        heading: "This page isn't in the book.",
         paragraphs: [
-          "The link may be old, or a letter in the address slipped. It happens to the best of us, usually while holding someone.",
-          "Head back to the home page, or write to hello@earlyletters.com and tell us where you were going. We will point the way.",
+          "The link may be old, or the address may have a typo.",
+          "Head back to the home page, or write to hello@earlyletters.com and tell us where you were going. We'll point you the right way.",
         ],
       },
     ],
