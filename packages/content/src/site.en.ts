@@ -36,8 +36,8 @@ export const site = {
       body: "Word for word: transcription happens on your phone. It takes out the ums and accidental repeats, spells your names your way, and marks each fix. You can undo any fix. We never rewrite your words.",
     },
     {
-      title: "The recording stays with the letter",
-      body: "The original recording stays with each letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
+      title: "A spoken letter keeps its recording",
+      body: "The original recording stays with each spoken letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
     },
     {
       title: "A minute is plenty",

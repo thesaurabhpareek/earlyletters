@@ -12,7 +12,7 @@ export const wordsCopy = {
   listeningA11y: 'Writing down what you said, part {n} of {count}',
   pack: {
     title: 'Your {name} words are on their way',
-    body: 'Your voice is kept now. The words will follow as soon as this phone is ready for {name}.',
+    body: 'Recording kept. The words will follow as soon as this phone is ready for {name}.',
     progress: 'Getting ready, {n}%',
     waitingForWifi: 'Getting ready when you are on Wi-Fi.',
     noSpace: 'This phone needs a little more free space first.',
@@ -62,7 +62,7 @@ export const wordsCopy = {
     cancelButton: 'Not now',
   },
   unavailable: {
-    title: 'Your voice is kept',
+    title: 'Recording kept',
     body: 'Words cannot be written down on this phone yet. Keep the recording now and the words can come later. You can also type it.',
   },
 };

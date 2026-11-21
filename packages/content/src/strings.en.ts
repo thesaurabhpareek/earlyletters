@@ -439,7 +439,7 @@ export const en = {
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
     waiting: {
-      title: "Your voice is kept",
+      title: "Recording kept",
       body: "Your words will appear once the download finishes.",
     },
     // Development builds only: the sample transcriber's words are never saved.
