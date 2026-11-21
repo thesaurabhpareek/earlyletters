@@ -65,6 +65,12 @@ import { MonthOpener } from '@/components/book/month-opener';
 import { compactMonth, coverAge, jumpTarget, monthRows, runJump, showsMonthsButton, topChapterKey, type MonthRow } from '@/components/book/book-page.logic';
 import { bookCopy } from '@/components/book/copy';
 import { CoverBand } from '@/components/book/cover-band';
+import { LensCard, LensRow, type LensMode } from '@/components/photos/photos-lens';
+import { photos } from '@/lib/photos/copy';
+import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photoChapters } from '@/lib/photos/lens';
+import { photosPausedNow } from '@/lib/photos/pause';
+import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
@@ -331,6 +337,28 @@ export default function Book() {
     [insets.top, listFade, runPendingJump],
   );
 
+  // The Photos lens (NS-01-R10 to R12): offered only once a kept, open letter has a picture; absent when the switch is off.
+  const [lensMode, setLensMode] = useState<LensMode>('months');
+  const lens = usePhotosLens(active?.id ?? null);
+  const lensOn = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).lens && lens.visible;
+  // A kept letter arriving lands on it in Months, whose sections the arrival scroll indexes; a lens that goes away
+  // leaves Months chosen, so a later picture never opens the Book straight into Photos (R12).
+  const showPhotos = lensOn && lensMode === 'photos' && !params.arrived;
+  useEffect(() => {
+    if (params.arrived || !lensOn) setLensMode('months');
+  }, [params.arrived, lensOn]);
+  // Both lenses are the one SectionList below with different sections, so the header and its lens row stay mounted
+  // across the switch and VoiceOver keeps its place on the option just chosen (NS-33-R3).
+  const sections = useMemo(() => (showPhotos ? photoChapters(chapters, lens.photos) : chapters), [showPhotos, chapters, lens.photos]);
+
+  // Switching lens starts the list at the top: the other lens has other rows, so the old offset means nothing (review B on #840).
+  const lensScrolled = useRef(showPhotos);
+  useEffect(() => {
+    if (lensScrolled.current === showPhotos) return;
+    lensScrolled.current = showPhotos;
+    (listRef.current as unknown as { getScrollResponder?: () => { scrollTo?: (o: { y: number; animated: boolean }) => void } } | null)?.getScrollResponder?.()?.scrollTo?.({ y: 0, animated: false });
+  }, [showPhotos]);
+
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;
 
   const child = active.name;
@@ -349,7 +377,12 @@ export default function Book() {
   const entering = (id: string) => (stagger ? enter(indexOf.get(id) ?? 99) : undefined);
 
   const canRead = readableInBook(entries).length > 0;
-  const months = showsMonthsButton(rows) ? { label: bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) } : null;
+  // Months goes to a month of the whole Book, so it is not offered while Photos shows. While the lens row is there its
+  // name differs from the lens option "Months" (Voice Control, NS-01-R20e): a PROPOSED key for the founder.
+  const months =
+    !showPhotos && showsMonthsButton(rows)
+      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) }
+      : null;
   const openSettings = () => router.push('/settings');
   const header = (
     <Settle run={firstView && !params.arrived} reduced={reduced}>
@@ -372,6 +405,13 @@ export default function Book() {
             {authCopy.newPhone.arrivedPlain}
           </Text>
         ) : null}
+        {/* The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
+            shown only while a kept, open letter has a picture (NS-01-R10). */}
+        {lensOn ? (
+          <View className="pt-2">
+            <LensRow mode={lensMode} onChange={setLensMode} />
+          </View>
+        ) : null}
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
             recordings come back to a new phone. It lands with P8c's file. */}
       </View>
@@ -381,7 +421,7 @@ export default function Book() {
   // The inline bar after scroll (book-page.md 2): the title, Months and the gear, then the compact month at the top of
   // the list, which wraps and never truncates. It cross-fades in with the scroll; while it is out, nothing in it takes a
   // touch or is read (the band is in view with the same buttons).
-  const compact = compactMonth(chapters, topKey ?? chapters[0]?.key ?? null);
+  const compact = compactMonth(sections, topKey ?? sections[0]?.key ?? null); // the list on screen, so the bar's month is one of its sections (N4)
   const topBar = (
     <Animated.View
       pointerEvents={barUp ? 'box-none' : 'none'}
@@ -432,7 +472,7 @@ export default function Book() {
             <Animated.View className="flex-1" style={listStyle}>
             <AnimatedSectionList
               ref={listRef as never}
-              sections={chapters}
+              sections={sections}
               keyExtractor={(e: Entry) => e.id}
               ListHeaderComponent={header}
               ListFooterComponent={EndOfBook}
@@ -453,9 +493,11 @@ export default function Book() {
                   ?.getScrollResponder?.()
                   ?.scrollTo?.({ y: info.averageItemLength * info.index, animated: false });
               }}
-              renderSectionHeader={({ section }: { section: Chapter }) => <MonthOpener opener={openerOf(section)} first={section.key === chapters[0].key} />}
+              renderSectionHeader={({ section }: { section: Chapter }) => <MonthOpener opener={openerOf(section)} first={section.key === sections[0].key} />}
               renderItem={({ item }: { item: Entry }) =>
-                isQuietMark(item) ? (
+                showPhotos ? (
+                  <LensCard entry={item} picture={lens.photos.get(item.id)} child={active} onOpen={open} />
+                ) : isQuietMark(item) ? (
                   <QuietDayRow entry={item} child={active} reduced={reduced} entering={entering(item.id)} onRemove={removeMark} />
                 ) : (
                   <BookRow entering={entering(item.id)} reduced={reduced}>
@@ -473,7 +515,7 @@ export default function Book() {
             />
             </Animated.View>
             {topBar}
-            <MonthsSheet open={monthsOpen} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} />
+            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} />
           </>
         )}
       </Animated.View>
