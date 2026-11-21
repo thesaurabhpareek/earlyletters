@@ -956,7 +956,7 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
 
   it('the three wording edits, word for word, and the lines that must not change', () => {
     expect(e.backups).toBe('Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.');
-    expect(e.failed).toBe("Erasing didn't finish. Try again now, or let the app finish it the next time it opens. That erases anything you add before then.");
+    expect(e.failed).toBe('Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.');
     // The account-deletion screen's Plus card says the same, with its own first words.
     expect(e.plusStays).toBe('Erasing does not cancel Plus. Billing continues through Apple until you cancel.');
     expect(accountDeletionCopy.subscription.body).toBe(`Deleting your account ${e.plusStays.slice('Erasing '.length)}`);

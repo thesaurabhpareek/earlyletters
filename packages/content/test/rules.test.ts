@@ -280,7 +280,9 @@ describe('length limits', () => {
 
 describe('save failure reassurance', () => {
   it('tells people their words are still on the phone', () => {
-    expect(JSON.stringify(en.errors)).toMatch(/still on this phone/i);
+    // Pinned on the two lines that carry the claim: a match over all of en.errors passes on any other line that says it.
+    expect(en.errors.saveFailed.body).toMatch(/still on this phone/i);
+    expect(en.errors.crash.body).toMatch(/still on this phone/i);
   });
 });
 

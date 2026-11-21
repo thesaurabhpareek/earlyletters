@@ -969,7 +969,7 @@ export const en = {
       // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
       // finishes it too, and it erases every row then present, so a letter added in between goes as well
       // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
-      failed: "Erasing didn't finish. Try again now, or let the app finish it the next time it opens. That erases anything you add before then.",
+      failed: "Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
@@ -1194,7 +1194,7 @@ export const en = {
     },
     offline: {
       title: "You're offline",
-      body: "Keep talking. Your words are saving on this phone.",
+      body: "Keep talking. Recording doesn't need a connection.",
     },
     inviteExpired: {
       title: "This invite has expired",
