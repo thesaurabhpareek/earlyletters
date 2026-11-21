@@ -715,10 +715,9 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     expect(h.asked).toHaveLength(1);
   });
 
-  it('[NX-36-S17] a session that cannot be sent a book (sync declined, or consent not yet answered) asks nothing and keeps the earlier route: nothing can pull a book to it', async () => {
+  it('[NX-36-S17] a session that cannot be sent a book (sync declined) asks nothing and keeps the earlier route: nothing can pull a book to it', async () => {
     const declined = [
       { status: 'ready', userId: 'u1', sync: 'off' },
-      { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] },
       { status: 'signingOut', userId: 'u1', reason: 'user', waitingForUploads: false, sync: 'off' },
     ];
     for (const state of declined) {
@@ -728,6 +727,22 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
       expect(h.syncListeners.size, String(state.status)).toBe(0);
       run.unmount();
     }
+  });
+
+  it('[NS-10-R0] a returning account never meets the child step: consent still to give is the held screen, with nothing asked and no network wait', async () => {
+    for (const steps of [['terms'], ['sensitive']]) {
+      const run = await signedIn({ status: 'needsConsent', userId: 'u1', method: null, steps });
+      expect(run.result.current, steps.join()).toMatchObject({ step: 'finishSetup', screen: 'finishSetup', mayBeginBook: false });
+      // Decided from auth state alone: the account is not asked (one sync_books read per launch is BL-922b's), nothing is pulled.
+      expect(h.asked, steps.join()).toHaveLength(0);
+      expect(h.syncNowCalls, steps.join()).toBe(0);
+      run.unmount();
+    }
+    // With a book on the phone the held screen never shows: the book opens (R22).
+    h.books = [{ id: 'asha' }];
+    const withBook = await signedIn({ status: 'needsConsent', userId: 'u1', method: null, steps: ['terms'] });
+    expect(withBook.result.current).toMatchObject({ step: 'openTonight' });
+    h.books = [];
   });
 
   it('[NX-36-S17] relaunch while the consent gate is read (checkingConsent): held on the opening screen with no body, nothing asked yet, never the child step; sync on then asks [M8]', async () => {

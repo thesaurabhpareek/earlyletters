@@ -37,6 +37,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // erase-everything reaches the days store (NS-47-R16)
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {

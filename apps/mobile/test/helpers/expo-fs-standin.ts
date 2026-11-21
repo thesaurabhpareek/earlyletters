@@ -200,6 +200,20 @@ export function expoFileSystem(current: () => Disk) {
       if (!f) throw new Error('ERR_FILE_NOT_FOUND');
       return f.data.slice();
     }
+    textSync(): string {
+      const f = current().files.get(this.uri);
+      if (!f) throw new Error('ERR_FILE_NOT_FOUND');
+      return new TextDecoder().decode(f.data);
+    }
+    /** Rename: the bytes (and so any exclusion kept by uri in a stand-in) move to the destination; overwrite replaces. */
+    async move(to: { uri: string }, opts: { overwrite?: boolean } = {}): Promise<void> {
+      const disk = current();
+      const f = disk.files.get(this.uri);
+      if (!f) throw new Error('ERR_FILE_NOT_FOUND');
+      if (disk.files.has(to.uri) && !opts.overwrite) throw new Error('ERR_FILE_EXISTS');
+      disk.files.delete(this.uri);
+      disk.files.set(to.uri, f);
+    }
     create(opts: { overwrite?: boolean } = {}): void {
       const disk = current();
       if (disk.dirs.has(this.uri)) {
