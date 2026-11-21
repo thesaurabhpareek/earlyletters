@@ -8,20 +8,9 @@
  * Token: 32 bytes from crypto.getRandomValues. Only its SHA-256 goes to the database. The plain token is returned once,
  * for the link, and nowhere else.
  */
-export const MIN_KEY_CHARS = 32;
-const enc = new TextEncoder();
-
-export const toHex = (b: Uint8Array): string => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-/** PostgREST bytea text. */
-export const byteaOf = (b: Uint8Array): string => `\\x${toHex(b)}`;
+import { byteaOf, hashDevice, MIN_KEY_CHARS, toHex } from '../_shared/device/hash.ts';
+export { byteaOf, hashDevice, MIN_KEY_CHARS, toHex };
 export const b64url = (b: Uint8Array): string => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-export async function hashDevice(key: string, profileId: string, deviceId: string): Promise<Uint8Array> {
-  if (typeof key !== 'string' || key.length < MIN_KEY_CHARS) throw Object.assign(new Error('key'), { code: 'config' });
-  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const mac = await crypto.subtle.sign('HMAC', k, enc.encode(`earlyletters.device.v1|${profileId}|${deviceId}`));
-  return new Uint8Array(mac).slice(0, 16);
-}
 
 /** [current, next?] hashes of one id, for overlap rotation. */
 export async function hashDeviceAll(keys: { current: string; next?: string }, profileId: string, deviceId: string): Promise<Uint8Array[]> {
