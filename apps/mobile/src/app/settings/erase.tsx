@@ -13,9 +13,7 @@ import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { usePlan } from '@/lib/billing';
 import { copy } from '@/lib/copy';
 import { eraseEverything } from '@/lib/erase-everything';
-import { whileSharing } from '@/lib/app-lock/controller';
 import { haptic } from '@/lib/haptics';
-import { ownerCheck } from '@/lib/security/owner-check';
 import { localDeletionAllowed } from '@/lib/store';
 
 const PAGE = 'gap-7 px-5 pb-12 pt-4';
@@ -28,9 +26,9 @@ const PAGE = 'gap-7 px-5 pb-12 pt-4';
  * no swipe, and Android's back is held. lib/erase-everything.ts removes every book, letter, recording and setting,
  * resets the free-letter count and clears our reminders; the age question then replaces every screen by itself
  * (lib/age-gate.ts re-reads its setting), and the done line is announced. Nothing goes to Recently deleted and
- * nothing is sent. Device owner authentication runs after "Erase" and before the Erasing screen (FR-SEC-06, FP-16b:
- * lib/security/owner-check.ts; cancelled changes nothing; no passcode means the confirm stands alone). The lock itself
- * is reset by the erase (lib/erase-everything.ts).
+ * nothing is sent. Device owner authentication before erase (design 2.12, F17 6.2 F) is deferred to the 1 Dec build
+ * by the CTO ruling of 8 Nov (the app lock, #640, is in the build; asking it here is the follow-up). The lock itself is
+ * reset by the erase (lib/erase-everything.ts).
  *
  * An erase that does not finish brings the page back at the top (the Erasing screen was another tree), so its one
  * failure line, the one that says it did not finish, is the first thing on the page, above the heading: seen without
@@ -80,8 +78,6 @@ export default function EraseEverything() {
     haptic('warning');
     const d = eraseConfirmDialog(e, () => {
       void runEraseEverything({
-        // FR-SEC-06: Face ID, Touch ID or passcode after "Erase"; the app lock waits while the system sheet is up.
-        ownerCheck: () => whileSharing(ownerCheck),
         erase: () => eraseEverything(),
         setPhase,
         setFailed,
