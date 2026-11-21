@@ -41,8 +41,7 @@ vi.mock('expo-sqlite', () => ({
     return `${h.disk.documents}SQLite`;
   },
 }));
-vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null }));
-vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // erase-everything reaches the days store (NS-47-R16)
+vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // also: erase-everything reaches the days store (NS-47-R16)
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {
@@ -1192,6 +1191,43 @@ describe('[B5-4] Erase everything deletes every backup state file inside eraseDe
     h.disk.undeletable.add(rec);
     expect(() => app.all.eraseDeviceFiles()).toThrow();
     expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+  });
+
+  // Two steps that each hold their own failure (NS-47-R16 days file, B5-4 backup file): one failing must never skip the other.
+  describe('a days file and a backup file together: one that will not go never skips the other', () => {
+    const daysFile = () => `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/days/days.v1.json`;
+    const backupLeft = () => namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'));
+
+    it('the days file will not go: the backup file and the recording are still deleted, the erase throws, and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      const rec = take('A1');
+      h.disk.undeletable.add(daysFile());
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(backupLeft()).toEqual([]);
+      expect(has(rec)).toBe(false);
+      expect(has(daysFile())).toBe(true);
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      expect(() => app.all.eraseDeviceFiles()).toThrow(); // and a direct call throws
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles(); // the retry finishes
+      expect(has(daysFile())).toBe(false);
+    });
+
+    it('the backup file will not go: the days file is still erased, the erase throws (backup_file_delete), and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(sqlite(ASHA_A));
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(has(daysFile())).toBe(false);
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles();
+      expect(has(sqlite(ASHA_A))).toBe(false);
+    });
   });
 
   it('a phone with no backup file erases as before', async () => {
