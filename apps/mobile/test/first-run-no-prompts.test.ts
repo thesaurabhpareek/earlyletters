@@ -71,16 +71,26 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
     expect(offenders(FIRST_RUN_FILES.map((f) => join(SRC, f)), PROMPT_PATTERN)).toEqual([]);
   });
 
-  // Import reach is coarser than a call. These four are imported by the screen's graph and ask only on a person's tap
+  // Import reach is coarser than a call. These five are imported by the screen's graph and ask only on a person's tap
   // elsewhere (Apple sign-in on its button; turnOnReminders from Settings). They are named so a fifth, or the lock code,
   // shows up red. The call-level proof is the device run (D13). Question FP-12-2 on the PR.
-  const REACHED_NOT_CALLED = ['lib/auth/apple.ts', 'lib/auth/ui.tsx', 'lib/billing/plan-reminders.ts', 'lib/reminders/scheduler.ts'];
+  const REACHED_NOT_CALLED = ['lib/app-lock/controller.ts', 'lib/auth/apple.ts', 'lib/auth/ui.tsx', 'lib/billing/plan-reminders.ts', 'lib/reminders/scheduler.ts'];
 
   it('[NS-39-R2] nothing else the first-run screen imports, at any depth, asks or authenticates', () => {
     const graph = importGraph(ENTRY);
     expect(graph.length).toBeGreaterThan(20); // the walk really walked
-    // The lock offer and the lock controller (Face ID) must not be in the screen's tree at all.
-    expect(graph.map((f) => f.slice(SRC.length + 1)).filter((f) => f.startsWith('components/app-lock/') || f === 'lib/app-lock/controller.ts')).toEqual([]);
+    const rel = graph.map((f) => f.slice(SRC.length + 1));
+    // The lock offer must not be in the screen's tree at all.
+    expect(rel.filter((f) => f.startsWith('components/app-lock/'))).toEqual([]);
+    // The lock controller (Face ID) is reached only through the photo picker's lazy read of "is the lock up"
+    // (lib/photos/device.ts appLocked, a require inside a function: it returns in-memory state and never authenticates).
+    // Any other way in, or a call to authenticate from that file, shows up red.
+    const importers = graph.filter((f) => /app-lock\/controller['"]/.test(read(f))).map((f) => f.slice(SRC.length + 1));
+    expect(importers).toEqual(['lib/photos/device.ts']);
+    const device = read(join(SRC, 'lib/photos/device.ts'));
+    expect(device).toMatch(/function appLocked\(\)[^}]*require\('\.\.\/app-lock\/controller'\)[^}]*getAppLockState\(\)\.locked/);
+    expect(device).not.toMatch(/^\s*import[^;]*app-lock/m);
+    expect(device).not.toMatch(/authenticateAsync|unlock\w*\(/);
     expect(offenders(graph, PROMPT_PATTERN).sort()).toEqual(REACHED_NOT_CALLED);
   });
 });
