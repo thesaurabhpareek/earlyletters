@@ -4,7 +4,7 @@
  * Apple's notification. Fictional family "Asha" only.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRevocationGate, startAppleRevocationWatch } from '../src/lib/auth/apple-revocation.logic';
+import { createRevocationGate, isAppleSession, startAppleRevocationWatch } from '../src/lib/auth/apple-revocation.logic';
 
 const { signInAsync, store, listeners } = vi.hoisted(() => ({
   signInAsync: vi.fn(),
@@ -116,13 +116,14 @@ describe('[NS-45-R4] Apple revocation seen on foreground', () => {
 });
 
 describe('[NS-45-R4] the signed-in effect sets up and removes its listeners', () => {
-  const setup = (uploads = 3) => {
+  const setup = (uploads = 3, apple = true) => {
     const active: Array<() => void> = [];
     const revoked: Array<() => void> = [];
     const dispatchSignOut = vi.fn();
     const check = vi.fn(async () => false);
     const stop = startAppleRevocationWatch({
       check,
+      isAppleSession: async () => apple,
       pendingUploads: async () => uploads,
       dispatchSignOut,
       onAppActive: (l) => (active.push(l), () => void active.splice(active.indexOf(l), 1)),
@@ -155,5 +156,18 @@ describe('[NS-45-R4] the signed-in effect sets up and removes its listeners', ()
     l();
     await new Promise((r) => setTimeout(r, 5));
     expect(h.dispatchSignOut).not.toHaveBeenCalled();
+  });
+
+  it('an Apple revocation does not end an email session', async () => {
+    const h = setup(0, false);
+    h.revoked[0]();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(h.dispatchSignOut).not.toHaveBeenCalled(); // mutant: remove the isAppleSession check
+  });
+
+  it('reads the provider from the session', () => {
+    expect(isAppleSession({ user: { app_metadata: { provider: 'apple' } } })).toBe(true);
+    expect(isAppleSession({ user: { app_metadata: { provider: 'email' } } })).toBe(false);
+    expect(isAppleSession(null)).toBe(false);
   });
 });

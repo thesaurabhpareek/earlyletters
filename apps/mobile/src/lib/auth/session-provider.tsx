@@ -29,7 +29,7 @@ import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
-import { startAppleRevocationWatch } from './apple-revocation.logic';
+import { isAppleSession, startAppleRevocationWatch } from './apple-revocation.logic';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -274,6 +274,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     if (!signedInUser) return;
     return startAppleRevocationWatch({
       check: appleCredentialRevoked,
+      isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
       pendingUploads,
       dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
       onAppActive: (l) => {
@@ -283,7 +284,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       onAppleRevoked: watchAppleRevocation,
       now: Date.now,
     });
-  }, [signedInUser]);
+  }, [signedInUser, sb]);
 
   // Sign-out: wait for the upload queue, then end the session on this phone only.
   const waiting = state.status === 'signingOut' && state.waitingForUploads;

@@ -49,6 +49,8 @@ export function createRevocationGate(deps: {
  */
 export function startAppleRevocationWatch(deps: {
   check: () => Promise<boolean>;
+  /** A revoked Apple ID ends only an Apple session; an email session is never signed out by it. */
+  isAppleSession: () => Promise<boolean>;
   pendingUploads: () => Promise<number>;
   dispatchSignOut: (pendingUploads: number) => void;
   onAppActive: (listener: () => void) => () => void;
@@ -57,6 +59,7 @@ export function startAppleRevocationWatch(deps: {
 }): () => void {
   let alive = true;
   const signOut = async () => {
+    if (!(await deps.isAppleSession().catch(() => false))) return;
     const n = await deps.pendingUploads();
     if (alive) deps.dispatchSignOut(n);
   };
@@ -69,4 +72,9 @@ export function startAppleRevocationWatch(deps: {
     offApp();
     offApple();
   };
+}
+
+/** True when the session's sign-in provider is Apple (Supabase `app_metadata.provider`). Email and Google sessions are not. */
+export function isAppleSession(session: { user?: { app_metadata?: { provider?: unknown } } } | null | undefined): boolean {
+  return session?.user?.app_metadata?.provider === 'apple';
 }
