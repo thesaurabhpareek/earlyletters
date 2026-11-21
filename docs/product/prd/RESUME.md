@@ -25,7 +25,7 @@ Still to do:
 ## Evening pass, 20 Nov (rulings 1 to 24 on engineering's questions, reviews A and B)
 
 Done on this branch, by `product` for Karma:
-- Errata E43 to E96 (`18-errata-after-lock.md`), one per ruling or tight group, each ending "Plan delta:"; closures CL-117 to CL-158 in `GAP-LOG.md` (CL-001 to CL-158 now). E30 to E32 got Plan delta lines; E23's line cites are corrected.
+- Errata E43 to E96 (`18-errata-after-lock.md`), one per ruling or tight group, each ending "Plan delta:"; closures CL-117 to CL-160 in `GAP-LOG.md` (CL-001 to CL-160 now). E30 to E32 got Plan delta lines; E23's line cites are corrected.
 - Card edits in place: 01 (R36, R61), 05 (picture gated by Q45 and the security read), 08 and frame (X4-R1), 09 (NS-18-R3), 11 (NS-34, NS-37), 19 (NS-40-R8, R9, NS-42-R17, R18, NS-45 R13 to R17, O-13), 21 (Drop D, level 3 wording, NS-46-R25, NS-47-R14, R37, R38, no Days ask flag), 22 (Drop D, founder digest, ids moved out), 27 (position and poster name, R10 floor), FR-PRV-25, FR-LCY-13, FR-SEC-06, FR-QAL-02 and BL-577's last criterion.
 - Founder digest in `22-final-holistic-spec.md` section 7: E43, E46, E47, E56, E59 and the acceptance lines for CL-008, 015, 052, 097, 099, 103 (default in force, deadline Mon 23 Nov).
 - Counts now equal `p0.py`: 1,052 P0 rows (537 NS, 515 FR); 198 row-covered, 81 cite-covered, 44 card-level only, 729 none; 773 without a row-level backlog row (E75 and E78 each added one P0 row, FR-MKT-44 and NS-08-R21). Re-run `tools/trace-gen` (parse, gen, check: all passed, 949 FR rows) and `tools/review/p0.py`.
