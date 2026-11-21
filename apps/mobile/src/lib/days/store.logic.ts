@@ -17,8 +17,6 @@ export const DAY_ID = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 const OWNER = /^(local|[0-9a-f]{16})$/;
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
-export const emptyDays = (owner: string): DaysFile => ({ v: DAYS_FILE_VERSION, owner, ticked: {} });
-
 /** A higher version is read for known keys and flagged `newer` (never rewritten, NS-47-R28). Anything off-shape is `corrupt`. */
 export function parseDays(text: string): ParsedDays {
   let o: unknown;
@@ -38,11 +36,3 @@ export function parseDays(text: string): ParsedDays {
 }
 
 export const serializeDays = (file: DaysFile): string => JSON.stringify(file);
-
-/** An id that is not a slug is refused (null), never stored. */
-export const tickDay = (file: DaysFile, id: string): DaysFile | null => (DAY_ID.test(id) ? { ...file, ticked: { ...file.ticked, [id]: file.ticked[id] ?? {} } } : null);
-
-export function untickDay(file: DaysFile, id: string): DaysFile {
-  const { [id]: _gone, ...rest } = file.ticked;
-  return { ...file, ticked: rest };
-}
