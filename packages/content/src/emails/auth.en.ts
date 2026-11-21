@@ -17,6 +17,7 @@
  *   {code}        6-digit one-time code               (Supabase .Token)
  *   {expiresIn}   human duration, e.g. "1 hour"; L3 sets the values
  *   {device}      plain device name, e.g. "an iPhone"; never a location
+ *   {notYouUrl}   link to the Not you confirm page (new-device-sign-in only); opening it changes nothing (E83)
  *   {when}        date and time of the event, in words, in the account holder's time zone with
  *                 its short name, e.g. "Saturday, October 3, 2026 at 9:14 pm ET" (CUS-19)
  *
@@ -188,15 +189,21 @@ export const authEmails = {
   },
 
   // No Supabase template exists for this one; it needs a custom sender.
+  // E83 (docs/product/prd/18-errata-after-lock.md): email only, no push, no button and no one-tap sign-out. The one link
+  // ({notYouUrl}) opens the confirm page (features/new-device.en.ts), which changes nothing until a button on it is pressed.
+  // E78: the line that says that device will be signed out stays OUT of this email until the one-session lever and the
+  // page both exist; it is held in newDevicePageCopy.heldEmailLine (features/new-device.en.ts) and added by the sender only then.
   'new-device-sign-in': {
     id: 'new-device-sign-in',
     subject: "A new sign-in to your account",
-    preheader: "If this was you, there is nothing to do. If not, reply with Not me.",
+    preheader: "If this was you, there is nothing to do. If not, you can look at it here.",
     heading: "Did you just sign in on {device}?",
     body: [
       `Your ${brand.name} account was signed in on {device}, {when}.`,
       "If that was you, there is nothing to do.",
-      "If it was not, reply to this email with Not me in the subject. We will sign that device out and help you secure your account.",
+      "If it was not, open this link: Not you? {notYouUrl}. Opening it changes nothing by itself. It shows you a page, and you decide there.",
+      "You can also manage your devices in the app. Go to Me, then Account, then Sign out other devices.",
+      "You sign in with a code or a link sent to your email, so it is also worth checking the security settings of your email account.",
     ],
     safety: "We will never ask for a sign-in code or a password, by email, phone, text or chat.",
     category: 'auth',

@@ -51,9 +51,8 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { authCopy } from '@/lib/auth/copy';
 import type { ConsentStep } from '@/lib/auth/machine.logic';
-import { getSignInTrigger } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
-import { afterConsent, claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
+import { claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
 import { readAccountBooks } from '@/lib/first-run/account-books';
 import { consentHandoff } from '@/lib/first-run/handoff.logic';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -89,12 +88,11 @@ export default function ConsentSteps() {
   const auth = useAuth();
   const close = useCloseSheet();
   const params = useLocalSearchParams<{ step?: string }>();
-  const { children, active } = useChildren();
+  const { active } = useChildren();
   const [busy, setBusy] = useState<{ step: ConsentStep; accepted: boolean } | null>(null);
   const [turnOnError, setTurnOnError] = useState<string | null>(null);
   // Set before the first await, so a second tap in the same frame (Agree, then Keep) records nothing more.
   const inFlight = useRef(false);
-  const [noBook, setNoBook] = useState(false);
   // What `sync_books` says about the account while the claim screen is up; null until it answers or times out.
   const [claimKind, setClaimKind] = useState<AccountKind | null>(null);
   const switching = useRef(false);
@@ -124,22 +122,11 @@ export default function ConsentSteps() {
       close();
       return;
     }
-    if (getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client || s.sync !== 'on') {
-      close();
-      return;
-    }
-    // New account (first_run_open, no book): on to the promise step and the child step. Returning with no book, or any
-    // failure or a wait past ACCOUNT_BOOKS_WAIT_MS: "No book here yet" (account-books.logic.ts; the fail-safe direction).
-    let alive = true;
-    void readAccountBooks(auth.client).then((kind) => {
-      if (!alive) return;
-      if (afterConsent(kind) === 'close') close();
-      else setNoBook(true);
-    });
-    return () => {
-      alive = false;
-    };
-    // Runs when the state settles; close and children are stable enough for this one-shot decision.
+    // BL-922b: done. A phone with no book is asked about its account by the first-run route (use-new-phone.ts, the one reader
+    // of `sync_books` there): a new account goes to the child step, a returning one with no book to "No book here yet" on the
+    // route. The sheet reads nothing for it; the claim screen below is the only other read, and only with a book on the phone.
+    close();
+    // Runs when the state settles; close is stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.status, claiming, syncMode]);
 
@@ -189,33 +176,6 @@ export default function ConsentSteps() {
       setBusy(null);
     }
   };
-
-  if (noBook) {
-    const n = k.noBook;
-    return (
-      <StepFade step="noBook">
-        <SheetFrame
-          footer={
-            <>
-              <Button
-                size="lg"
-                fullWidth
-                variant="outline"
-                label={n.tryAnother}
-                onPress={() => {
-                  switching.current = true;
-                  void auth.signOut().then(() => router.replace({ pathname: '/sign-in', params: { trigger: 'sign_in' } }));
-                }}
-              />
-              <Button size="lg" fullWidth label={n.startBook} onPress={close} />
-            </>
-          }>
-          <SheetTitle>{n.title}</SheetTitle>
-          <SheetBody muted>{n.body}</SheetBody>
-        </SheetFrame>
-      </StepFade>
-    );
-  }
 
   if (claiming) {
     const c = authCopy.claim;

@@ -7,6 +7,8 @@ Usage (from the repo root or anywhere):
   python3 -I p0.py <repo-root> --md       the gap list (gap and card-level rows) as markdown
   python3 -I p0.py <repo-root> --groups   gap rows per proposed group (see BACKLOG-GAPS.md)
   python3 -I p0.py <repo-root> --json     every P0 row with its coverage, as JSON
+  python3 -I p0.py <repo-root> --map      every P0 id and the BL ids that name it, as a markdown table
+  python3 -I p0.py <repo-root> --check-map <file>   exit 1 if the file misses a P0 id, maps one to nothing, or names a BL id that has no heading
 
 What it reads
   Cards docs/product/prd/NN-*.md for NN 00 to 27 (27 holds NS-51 and NS-52) and docs/product/prd/functions/*.md
@@ -25,10 +27,12 @@ Coverage tiers, strongest first
   3 card    only the whole card is named by a backlog block's Satisfies line.
             A band of the gap list, not counted as covered: gate G0 needs each
             P0 row to name a backlog row.
+  proposed  only a proposed group row filed from BACKLOG-GAPS.md names it. It maps to a BL id (--map)
+            but is not counted as covered: the group row has to be split or set ready first.
   gap       none of the above.
 
 The dispatcher (scripts/agents/lib.mjs) reads headings matching
-`^#### (BL-\\d{3})\\s+` only, so only headings count as existing backlog rows.
+`^#### (BL-\\d{3,4})\\s+`, so only headings count as existing backlog rows.
 """
 import re, sys, glob, os, json, collections
 
@@ -36,6 +40,9 @@ ROW_ID = re.compile(r'^\[?([A-Z][A-Z0-9]*(?:-[A-Za-z0-9]+)+)\]?$')
 BL = re.compile(r'\bBL-(\d{3,4})\b')
 # NS row ids: NS-06-A2a, NS-01-R9b, NS-07-C5-3, NS-07-G11-1a
 NSID = re.compile(r'NS-(\d+)-([A-Z])(\d+)(?:-(\d+))?([a-z])?')
+
+FR_ID = re.compile(r'FR-[A-Z]{3}-\d+[a-z]?')
+FR_RANGE = re.compile(r'(FR-[A-Z]{3}-)(\d+)[a-z]? to (?:FR-[A-Z]{3}-)?(\d+)')
 
 
 def norm(card, letter, d1, d2, suf):
@@ -57,7 +64,7 @@ def read_backlog(root):
     for line in text:
         if line.startswith('## '):
             cur = None
-        m = re.match(r'^#### (BL-\d{3})\s+(.*)$', line)
+        m = re.match(r'^#### (BL-\d{3,4})\s+(.*)$', line)
         if m:
             cur = m.group(1)
             blocks[cur] = {'title': m.group(2), 'lines': [], 'status': ''}
@@ -82,6 +89,13 @@ def mentions(lines):
     """Return (exact_ns_ids set of tuples, ranges list, literal ids set, cards set)."""
     exact, ranges, lits, cards = set(), [], set(), set()
     for line in lines:
+        # function-file ids: FR-PHS-04, and ranges "FR-PHS-11 to FR-PHS-12" (or "to 12"); a range is every number between
+        for m in FR_RANGE.finditer(line):
+            lo, hi = int(m.group(2)), int(m.group(3))
+            for n in range(lo, hi + 1):
+                lits.add('%s%02d' % (m.group(1), n))
+        for m in FR_ID.finditer(line):
+            lits.add(m.group(0))
         last = None  # last full NS id tuple on this line
         toks = [(m.start(), m.end(), m.group(0)) for m in TOK.finditer(line)]
         i = 0
@@ -133,7 +147,9 @@ def mentions(lines):
 def row_covered(rid, exact, ranges, lits):
     ns = parse_ns(rid.strip('[]'))
     if ns is None:
-        return rid in lits or rid.strip('[]') in lits
+        bare = rid.strip('[]')
+        # a mention without a letter suffix covers the lettered rows, as for NS ids
+        return bare in lits or re.sub(r'[a-z]$', '', bare) in lits
     card, grp, num, suf = ns
     for e in exact:
         if e[:3] == ns[:3] and (e[3] == suf or e[3] == ''):
@@ -146,7 +162,8 @@ def row_covered(rid, exact, ranges, lits):
 
 def read_rows(root):
     base = os.path.join(root, 'docs/product/prd')
-    files = [f for f in sorted(glob.glob(os.path.join(base, '[0-9][0-9]-*.md'))) if int(os.path.basename(f)[:2]) <= 27 and os.path.basename(f)[:2] != '14']
+    # 14 is the test plan (holds the register, not acceptance rows); 17 is the engineering project plan (its tables list work items J-N*, not requirements)
+    files = [f for f in sorted(glob.glob(os.path.join(base, '[0-9][0-9]-*.md'))) if int(os.path.basename(f)[:2]) <= 27 and os.path.basename(f)[:2] not in ('14', '17')]
     files += [f for f in sorted(glob.glob(os.path.join(base, 'functions', '*.md'))) if not f.endswith('BRIEF.md')]
     rows = []
     card_text_bl = {}
@@ -228,12 +245,17 @@ def analyse(root):
         cites = sorted({'BL-' + m for m in BL.findall(r['cells'])})
         existing = [c for c in cites if c in blocks]
         missing = [c for c in cites if c not in blocks]
+        prop = [b for b in by if from_gaps(blocks[b])]
         by = [b for b in by if usable(blocks[b])]
         existing = [c for c in existing if usable(blocks[c])]
         if by:
             tier = 'row'
         elif existing:
             tier = 'cite'
+        elif prop:
+            # only a proposed group row from BACKLOG-GAPS.md names it: mapped to a BL id, not yet a row of its own
+            tier = 'proposed'
+            by = prop
         else:
             weak = set(card_named.get(card_of(r['id']), ()))
             if weak:
@@ -293,6 +315,40 @@ def card_key(c):
     return (0, int(m.group(1)), '') if m else (1, 0, c)
 
 
+TIER_WORDS = {'row': 'named in a row', 'cite': 'cited in the requirement text', 'proposed': 'proposed group row',
+              'card-only': 'card level only', 'gap': 'NONE'}
+
+
+def print_map(out):
+    """Markdown table: every P0 id and the BL ids that name it. Reads the backlog only; writes nothing."""
+    print('| P0 id | Card or file | BL id | How |')
+    print('|---|---|---|---|')
+    for r in sorted(out, key=lambda r: (card_key(r['card']), r['file'], r['id'])):
+        print(f"| {r['id']} | {r['file']} | {', '.join(r['bl']) or '-'} | {TIER_WORDS[r['tier']]} |")
+
+
+def check_map(out, blocks, path):
+    """Fail (return 1) if a P0 id is missing from the map file, is mapped to nothing, or names a BL id with no heading."""
+    seen = {}
+    for line in open(path, encoding='utf-8').read().split('\n'):
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if line.startswith('| ') and len(cells) >= 4 and ROW_ID.match(cells[0]):
+            seen[(cells[0], cells[1])] = cells[2]
+    errors = []
+    for r in out:
+        bl = seen.get((r['id'], r['file']))
+        if bl is None:
+            errors.append('not in the map: %s (%s)' % (r['id'], r['file']))
+        elif bl == '-':
+            errors.append('mapped to nothing: %s' % r['id'])
+        else:
+            errors += ['%s names %s, which has no heading in docs/BACKLOG.md' % (r['id'], b) for b in bl.split(', ') if b not in blocks]
+    print('map rows %d, P0 rows %d, errors %d' % (len(seen), len(out), len(errors)))
+    for e in errors[:50]:
+        print('ERROR', e)
+    return 1 if errors else 0
+
+
 def main():
     root = sys.argv[1]
     mode = sys.argv[2] if len(sys.argv) > 2 else ''
@@ -304,15 +360,20 @@ def main():
     for r in sorted(out, key=lambda r: (card_key(r['card']), 0)):
         cards.setdefault(r['card'], []).append(r)
     if mode == '--gaps':
-        print('| Card | P0 rows | Row-covered | Cite-covered | Card-only (weak) | Gap |')
-        print('|---|---|---|---|---|---|')
+        print('| Card | P0 rows | Row-covered | Cite-covered | Proposed group row | Card-only (weak) | Gap |')
+        print('|---|---|---|---|---|---|---|')
         t = collections.Counter()
         for c, rs in cards.items():
             n = collections.Counter(r['tier'] for r in rs)
-            print(f"| {c} | {len(rs)} | {n['row']} | {n['cite']} | {n['card-only']} | {n['gap']} |")
+            print(f"| {c} | {len(rs)} | {n['row']} | {n['cite']} | {n['proposed']} | {n['card-only']} | {n['gap']} |")
             t.update(n)
-        print(f"| TOTAL | {len(out)} | {t['row']} | {t['cite']} | {t['card-only']} | {t['gap']} |")
+        print(f"| TOTAL | {len(out)} | {t['row']} | {t['cite']} | {t['proposed']} | {t['card-only']} | {t['gap']} |")
         return
+    if mode == '--map':
+        print_map(out)
+        return
+    if mode == '--check-map':
+        sys.exit(check_map(out, blocks, sys.argv[3]))
     if mode == '--groups':
         g = collections.OrderedDict()
         for r in out:

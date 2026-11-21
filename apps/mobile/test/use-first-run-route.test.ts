@@ -39,6 +39,8 @@ const h = vi.hoisted(() => ({
   sync: { phase: 'idle', lastSyncedAt: null as string | null },
   syncListeners: new Set<(s: unknown) => void>(),
   syncNowCalls: 0,
+  /** FP-6: the cached signed config's kill switches (lib/remote getRemoteConfig). */
+  kill: { signIn: false },
 }));
 
 vi.mock('react', async () => {
@@ -46,6 +48,7 @@ vi.mock('react', async () => {
   // A faithful useCallback: the same function while the dependencies hold.
   return { ...m, useCallback: <T,>(fn: T, deps: readonly unknown[]) => m.useMemo(() => fn, deps) };
 });
+vi.mock('../src/lib/first-run/sign-in-pause', () => ({ signInPaused: () => h.kill.signIn }));
 vi.mock('@/lib/auth/session-provider', () => ({ useAuth: () => h.auth }));
 vi.mock('@/lib/a11y', () => ({ announce: (m: string) => void h.spoken.push(m) }));
 vi.mock('@/lib/store', () => ({
@@ -108,6 +111,7 @@ const networkEvent = (s: Record<string, unknown>) => {
 const failed = (): { status: string; error: string } => ({ status: 'signedOut', error: 'network' });
 
 beforeEach(() => {
+  h.kill = { signIn: false };
   h.auth = { state: { status: 'signedOut' }, configured: true };
   h.books = [];
   h.listChildrenCalls = 0;
@@ -666,8 +670,20 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
   });
 
+  it('[NS-41-R25] the cached signIn kill switch puts a phone with no session on the outage with the local start; a session is untouched', async () => {
+    h.kill = { signIn: true };
+    h.auth = { state: { status: 'signedOut' }, configured: true };
+    const none = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(none.result.current).toMatchObject({ step: 'outage', screen: 'outage', localStartOffered: true });
+    none.unmount();
+    const withSession = await signedIn({ status: 'ready', userId: 'u1', sync: 'off' });
+    expect(withSession.result.current.step).not.toBe('outage');
+    withSession.unmount();
+  });
+
   it('[NX-36-S17] a returning account with no book, or an answer that could not be read: No book here yet; Start a book is the child step', async () => {
-    for (const kind of ['returningNoBook', 'unknown'] as const) {
+    for (const kind of ['returningNoBook'] as const) {
       const run = await signedIn();
       h.asked[h.asked.length - 1](kind);
       await flush();
@@ -676,6 +692,24 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
       expect(run.result.current, kind).toMatchObject({ step: 'childStep', screen: 'steps' });
       run.unmount();
     }
+  });
+
+  it('[NX-36-S17] an answer that could not be read: opening, one automatic re-ask inside the same 10 seconds, then No book here yet (R11)', async () => {
+    vi.useFakeTimers();
+    h.auth = { state: { ...ready }, configured: true, client };
+    const run = renderHook(() => useFirstRunRoute());
+    await vi.advanceTimersByTimeAsync(0);
+    h.asked[0]('unknown');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.asked).toHaveLength(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', mayBeginBook: false });
+    h.asked[1]('unknown');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.asked).toHaveLength(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook' });
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS + 100);
+    expect(run.result.current).toMatchObject({ step: 'noBookHere', screen: 'noBookHere' });
+    run.unmount();
   });
 
   it('[NX-36-S17] no book at 10 seconds: the slow screen; Try again asks the account again and nudges the pull', async () => {
@@ -691,7 +725,8 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     run.result.current.retryOpening();
     expect(h.asked).toHaveLength(2);
     expect(h.syncNowCalls).toBe(2);
-    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+    // R11 (BL-978a): Try again does not restart the 10 second clock, so the slow screen stays until an answer lands.
+    expect(run.result.current).toMatchObject({ step: 'slowBook', screen: 'slow' });
   });
 
   it('[NX-36-S17] no connection before the book exists: the connection screen, asked again by itself when the connection returns, and "back online" is not said (that line is the outage screen\'s)', async () => {
@@ -715,10 +750,9 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     expect(h.asked).toHaveLength(1);
   });
 
-  it('[NX-36-S17] a session that cannot be sent a book (sync declined, or consent not yet answered) asks nothing and keeps the earlier route: nothing can pull a book to it', async () => {
+  it('[NX-36-S17] a session that cannot be sent a book (sync declined) asks nothing and keeps the earlier route: nothing can pull a book to it', async () => {
     const declined = [
       { status: 'ready', userId: 'u1', sync: 'off' },
-      { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] },
       { status: 'signingOut', userId: 'u1', reason: 'user', waitingForUploads: false, sync: 'off' },
     ];
     for (const state of declined) {
@@ -728,6 +762,22 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
       expect(h.syncListeners.size, String(state.status)).toBe(0);
       run.unmount();
     }
+  });
+
+  it('[NS-10-R0] a returning account never meets the child step: consent still to give is the held screen, with nothing asked and no network wait', async () => {
+    for (const steps of [['terms'], ['sensitive']]) {
+      const run = await signedIn({ status: 'needsConsent', userId: 'u1', method: null, steps });
+      expect(run.result.current, steps.join()).toMatchObject({ step: 'finishSetup', screen: 'finishSetup', mayBeginBook: false });
+      // Decided from auth state alone: the account is not asked (one sync_books read per launch is BL-922b's), nothing is pulled.
+      expect(h.asked, steps.join()).toHaveLength(0);
+      expect(h.syncNowCalls, steps.join()).toBe(0);
+      run.unmount();
+    }
+    // With a book on the phone the held screen never shows: the book opens (R22).
+    h.books = [{ id: 'asha' }];
+    const withBook = await signedIn({ status: 'needsConsent', userId: 'u1', method: null, steps: ['terms'] });
+    expect(withBook.result.current).toMatchObject({ step: 'openTonight' });
+    h.books = [];
   });
 
   it('[NX-36-S17] relaunch while the consent gate is read (checkingConsent): held on the opening screen with no body, nothing asked yet, never the child step; sync on then asks [M8]', async () => {

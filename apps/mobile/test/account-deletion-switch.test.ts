@@ -331,7 +331,8 @@ describe('the Settings row and the route honour it', () => {
 
   it('nothing else opens the page: Settings home is the only screen that names the route, and the link allowlist never lets a link reach it', () => {
     const namers = walk(SRC).filter((f) => /['"`]\/settings\/delete-account['"`]/.test(code(readFileSync(f, 'utf8'))));
-    expect(namers.map((f) => relative(SRC, f))).toEqual(['app/settings/index.tsx']);
+    // BL-922a: the held screen's Delete account link (NS-10-R4a) names it in one pure file, shown only with the switch on (test/held-screen-routes.test.ts).
+    expect(namers.map((f) => relative(SRC, f)).sort()).toEqual(['app/settings/index.tsx', 'lib/first-run/held-screen.logic.ts']);
     // The row's tap is the only push to it.
     expect(home.match(/ROUTES\.deleteAccount/g)?.length).toBe(1);
     expect(src('lib/family/entry.logic.ts')).not.toMatch(/delete-account/);
