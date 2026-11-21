@@ -62,7 +62,7 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
-import { findBuildEnabled } from './find/flag';
+import { findBuildEnabled, findSurface } from './find/flag';
 import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, setIndexableBooks, type EnsureResult } from './find/lifecycle';
 import { rebuildSearchIndex } from './find/rebuild';
 import { searchLetters, type FindResult } from './find/search';
@@ -235,6 +235,23 @@ export function startFindCatchUp(): void {
   findCatchUpFor = conn;
   if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
   void ensureFindIndex();
+}
+
+/**
+ * Account A returned (B signed out, or A signed in again): the seam skipped whatever was written into A's book meanwhile
+ * (NS-02-R24, [X4-R1]), so the once-per-store catch-up runs again now, not at the next launch. Find off: nothing.
+ */
+export function resumeFindCatchUp(): void {
+  findCatchUpFor = null;
+  startFindCatchUp();
+}
+
+/**
+ * The one gate of Find's screen (BL-952 slice 8): the build switch on, the remote pause off, a kept letter to find, and
+ * this phone's book shown to the signed-in account. False anywhere else: the Find action is absent, not greyed (R1).
+ */
+export function findAvailableNow(input: { paused: boolean; hasLetters: boolean }): boolean {
+  return bookVisibleNow() && findSurface({ build: findBuildEnabled(), paused: input.paused, hasLetters: input.hasLetters });
 }
 
 /** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
