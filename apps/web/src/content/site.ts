@@ -206,7 +206,7 @@ export const site = {
       points: [
         'Your recordings are kept on the phone that made them.',
         'No ads. We never sell your data.',
-        'Your letters are never used to train AI.',
+        'Your letters and recordings are private. We never sell them and never use them for ads.',
         'Export your letters whenever you want.',
         'Delete any letter, any time.',
       ],
@@ -289,7 +289,7 @@ export const site = {
     promises: [
       'We never rewrite your words.',
       'Each letter you speak keeps its original recording, unchanged.',
-      'Your letters and recordings stay on your iPhone. No ads, and we never sell your data.',
+      'No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
