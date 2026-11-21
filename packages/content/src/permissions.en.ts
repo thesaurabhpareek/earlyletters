@@ -10,8 +10,8 @@
 export const permissions = {
   // NSMicrophoneUsageDescription
   microphone:
-    // v1.0 uploads no recordings and has no cloud transcription (D-059); counsel to confirm (privacy labels 4).
-    "{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.",
+    // First sentence only (counsel, labels 1.4.0 section 5): a purpose string must be true whatever the person's backup setting is.
+    "{app} uses the microphone to record the letters you speak to your child.",
   // NSFaceIDUsageDescription, only because the app lock ships (founder F1; CPO-2, CISO-1). Draft pending counsel:
   // content.md section 3 option 2, true whether or not the lock is on (LEGAL-REQ-007 amendment, F17 Q3).
   faceId: '{app} uses Face ID to open your book and confirm it is you.',

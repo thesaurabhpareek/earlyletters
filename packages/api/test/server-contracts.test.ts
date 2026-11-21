@@ -331,6 +331,18 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(r.ok).toBe(true);
   });
 
+  it('[NX-31-R3] a book with an empty name still parses (the first book may have no name)', () => {
+    const r = parseSyncBooks({
+      epoch: 1, first_run_open: false,
+      books: [{
+        id: ASHA_CHILD, role: 'parent', name: '', nickname: null, date_of_birth: '2026-03-01', birthday_md: '03-01', due_date: null,
+        family_can_read: false, created_by_me: true, joined_at: '2026-03-02T00:00:00Z', auto_add: true, my_signs_as: 'Papa',
+        members: [], invites: [],
+      }],
+    });
+    expect(r.ok).toBe(true);
+  });
+
   it('[F16-REQ-002] the batch size is counted as Postgres counts octet_length(p_ops::text), not in UTF-16 units', () => {
     const ops = [
       { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: null,

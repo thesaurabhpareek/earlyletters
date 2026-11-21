@@ -33,6 +33,7 @@ const { allowanceSourceFor, isAlphaBuild, plusLineFor } = await import('../src/l
 const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
 const { planScreen } = await import('../src/components/settings/plan.logic');
 const { planRow } = await import('../src/components/settings/settings-home.logic');
+const { eraseNoteKeys } = await import('../src/components/settings/wipe.logic');
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -158,6 +159,23 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
   it('the note follows the content rules this test can see: short, no count, no price, no trial', () => {
     expect(NOTE).toBe('Plus is not part of this test. Every letter is free while you test.');
     expect(NOTE).not.toMatch(/\d|\$|trial|[–—‘’“”…]/);
+  });
+
+  it('Erase everything in alpha: the Plus line and the free-letters-start-again line are left out, even when Plus is on (#552; Review A on #520; council 8 Nov)', () => {
+    const src = read('src/app/settings/erase.tsx');
+    expect(src).toMatch(/import \{ PLUS_ALPHA \} from '@\/lib\/billing\/alpha';/);
+    // Both store-build lines reach the page only through eraseNoteKeys, which is given the build's PLUS_ALPHA; the page
+    // never names them itself, so neither can be shown unguarded.
+    expect(src).toMatch(/eraseNoteKeys\(\{ alpha: PLUS_ALPHA, plan: plan\.details \}\)/);
+    expect(src).not.toMatch(/\be\.(freeLetters|plusStays)\b/);
+    const none = { status: 'none', willAutoRenew: null, ownership: null };
+    const plusOn = { status: 'active', willAutoRenew: true, ownership: 'purchased' };
+    for (const plan of [none, plusOn]) {
+      expect(eraseNoteKeys({ alpha: true, plan })).toEqual(['backups', 'onThisPhone', 'speechStays']);
+    }
+    // The store build keeps them, so the guard is the build and nothing else.
+    expect(eraseNoteKeys({ alpha: false, plan: none })).toContain('freeLetters');
+    expect(eraseNoteKeys({ alpha: false, plan: plusOn })).toContain('plusStays');
   });
 
   it('Welcome footnote and Settings Plan row: the note in alpha, the store words otherwise', () => {

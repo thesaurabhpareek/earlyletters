@@ -4,7 +4,7 @@
   {"id": "03-letter", "screen": "letter", "headline": "Your voice stays with each letter.", "sub": "The original recording is kept unchanged.", "bg": "dawn"},
   {"id": "04-book", "screen": "book", "headline": "A book that grows by month.", "sub": "Each letter goes into your child's month of age.", "bg": "paperwarm"},
   {"id": "05-letter-night", "screen": "letternight", "headline": "Read together at bedtime.", "sub": "One letter at a time, oldest first.", "bg": "night"},
-  {"id": "06-privacy", "screen": "privacy", "headline": "Your book stays on your phone.", "sub": "Private by default. Never sold, never used for ads.", "bg": "paper"},
+  {"id": "06-privacy", "screen": "privacy", "headline": "Your book is private.", "sub": "Private by default. Never sold, never used for ads.", "bg": "paper"},
   {"id": "07-quiet-day", "screen": "quietday", "headline": "Quiet days are fine.", "sub": "Tap Not much today. That is enough.", "bg": "dusk"},
   {"id": "08-listening", "screen": "listening", "headline": "Pause, laugh, start again.", "sub": "Take your time. Say it however it comes.", "bg": "night"}
 ]

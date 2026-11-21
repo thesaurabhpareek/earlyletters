@@ -437,7 +437,7 @@ describe('[S56] Account', () => {
     const out = between(account, 'if (!auth.signedIn) {', 'const provider');
     expect(out).toMatch(/<BookCover name=\{active\.name\} size="sm"/);
     expect(out).toMatch(/\{a\.signedOutTitle\}/);
-    expect(out).toMatch(/fill\(a\.signedOutBody, \{ child: active\?\.name \?\? authCopy\.consent\.childFallback \}\)/);
+    expect(out).toMatch(/fill\(a\.signedOutBody, \{ child: active\?\.name \|\| authCopy\.consent\.childFallback \}\)/);
     expect(out).toMatch(/errors\.session_expired/);
   });
 

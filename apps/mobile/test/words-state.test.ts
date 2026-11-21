@@ -17,6 +17,7 @@ import {
   recordingKept,
   stopLine,
   takeFile,
+  isShortTake,
   waitingHints,
   wordsActionLabel,
   wordsActions,
@@ -169,7 +170,7 @@ describe('S15: the language is not on this phone yet', () => {
   it('yes given: "Your voice is kept", the real cause, the status line, Keep the recording first', () => {
     const c = card(EVERY.downloading);
     expect(c).toMatchObject({ state: 'downloading', title: en.review.waiting.title, body: en.review.waiting.body, primary: 'keep', quiet: 'type', still: true });
-    expect(c.body).toBe('Your words follow once the download is done.');
+    expect(c.body).toBe('Your words will appear once the download finishes.');
     expect(c.note).toBe('Getting ready, 40%');
     expect(c.bar).toBe(0.4);
   });
@@ -330,5 +331,40 @@ describe('Review uses the card (source)', () => {
     const inline = code(src('components/ui/state-screen.tsx'));
     expect(inline).toMatch(/<Breathe paused=\{!focused \|\| still\}>/);
     expect(inline).toMatch(/<LineArt name=\{drawing\} width=\{96\} animate=\{false\}/);
+  });
+});
+
+describe('[BL-379] a take that was very short says so and can be let go', () => {
+  it('[BL-379] under one second is short; a second and longer is not; unknown is not', () => {
+    expect(isShortTake(0)).toBe(true);
+    expect(isShortTake(999)).toBe(true);
+    expect(isShortTake(1000)).toBe(false);
+    expect(isShortTake(null)).toBe(false);
+  });
+
+  it('[BL-379] a short take that failed or heard nothing shows the short-take card, Let it go first, not the failed heading', () => {
+    for (const j of [job({ phase: 'failed', failure: 'transcribe_failed' }), job({ phase: 'done', outcome: 'no_speech' })]) {
+      const c = card({ shortTake: true, job: j });
+      expect(c.state).toBe('shortTake');
+      expect(c.title).toBe('That was very short');
+      expect(c.primary).toBe('letGo');
+      expect(c.quiet).toBe('keep');
+      expect(wordsActionLabel('letGo')).toBe('Let it go');
+    }
+  });
+
+  it('[BL-379] a short take whose words are still being written, or a missing file, is not changed', () => {
+    expect(card({ shortTake: true }).state).toBe('writing');
+    expect(card({ shortTake: true, job: job({ phase: 'failed', failure: 'file_missing' }) }).state).toBe('fileMissing');
+    expect(card({ shortTake: false, job: job({ phase: 'failed', failure: 'transcribe_failed' }) }).state).toBe('failed');
+  });
+
+  it('[BL-379] Review asks before it removes the row and the audio, and nothing else there deletes audio', () => {
+    const review = code(src('app/review.tsx'));
+    expect(review).toMatch(/Alert\.alert\(copy\.listen\.discardTitle[\s\S]*?onPress: \(\) => \{[\s\S]*?letItGo\(id, uri/);
+    expect(review).not.toContain('deleteDraft');
+    expect((review.match(/\.delete\(\)/g) ?? []).length).toBe(0); // the only file delete is deleteIfPresent below
+    expect((review.match(/deleteIfPresent\(new File\(/g) ?? []).length).toBe(1); // behaviour is run in test/let-it-go.test.ts
+    expect(review).toContain('shortTake: isShortTake(draft.audioDurationMs)');
   });
 });

@@ -3,7 +3,7 @@
  * in Node; plus-gate.tsx draws it.
  *
  * What the sheet says follows where the held letter waits and how it is kept:
- *   heldOn 'tonight'  a draft: it waits on Tonight, and the line names this phone (`keepGate.heldNote`). Signed in
+ *   heldOn 'tonight'  a draft: it waits on Home (the first tab, once Tonight), and the line names this phone (`keepGate.heldNote`). Signed in
  *                     with sync on it also syncs as an author-only held row (store.holdDraft queues it in the same
  *                     transaction), which `keepGate.heldNoteSynced` says; that sentence is a data-handling claim held
  *                     for counsel (C10), so it shows only once SYNCED_HELD_NOTE_CLEARED is switched on, and until then

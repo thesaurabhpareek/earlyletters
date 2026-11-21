@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   afterForeground,
   elapsedClock,
+  afterFinish,
   finishWithin,
   FINISH_TIMEOUT_MS,
   isMicProblem,
@@ -217,8 +218,9 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/scale=\{1\.75\}/);
   });
 
-  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines; whole at accessibility sizes (P4 critics S5)', () => {
-    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{large \? undefined : 3\}/);
+  it('S11: the prompt is the literary line in `prompt`, textMuted, and is shown whole at every text size (no line cap; P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen\.prompt">/);
+    expect(c).not.toMatch(/variant="prompt"[^>]*numberOfLines/);
     expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
   });
 
@@ -342,6 +344,18 @@ describe('a long take does not grow memory (#480)', () => {
   });
 });
 
+describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+    const c = code(listen);
+    const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
+    // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
+    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });');
+    expect(c.match(/\bletItGo\(/g)).toHaveLength(1);
+    expect(c.match(/deleteIfPresent\(/g)).toHaveLength(1);
+    expect(c).not.toMatch(/\.delete\(\)|deleteDraft/);
+  });
+});
+
 describe('[BL-563] Listen never sticks on "finishing", and never offers Let it go there', () => {
   it('finishing offers no discard: the only control left never deletes the take', () => {
     expect(listenRoom('finishing').discard).toBe(false);
@@ -375,5 +389,33 @@ describe('[BL-563] Listen never sticks on "finishing", and never offers Let it g
     const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
     expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
     expect(end).not.toMatch(/deleteDraft|abandonTake/);
+  });
+
+  it('a slow save (timeout) still opens Review on the known draft id', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('a slow save keeps the honest reason line for background and interruption', () => {
+    expect(afterFinish('d1', 'background', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'background' } });
+    expect(afterFinish('d1', 'interruption', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'interruption' } });
+  });
+
+  it('a save that worked opens Review', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: { id: 'd1' } })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('only a save that threw leaves early', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'failed' })).toEqual({ to: 'leave' });
+  });
+
+  it('a save that finished with no row (the take was let go meanwhile) leaves, so Review never opens on a missing draft', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: null })).toEqual({ to: 'leave' });
+  });
+
+  it('the screen routes through afterFinish and does not read the draft from the wait', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/afterFinish\(id, reason, kept\)/);
+    expect(end).not.toMatch(/kept\.value/);
   });
 });

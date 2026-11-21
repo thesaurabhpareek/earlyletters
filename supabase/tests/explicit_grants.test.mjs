@@ -71,7 +71,7 @@ const heldRows = [...byRel].map(([k, l]) => `${k} ${[...l].sort((a, b) => 'SIUD?
 for (const v of heldRows.filter((x) => !grantRows().includes(x))) console.log(`      held, not in grants.mjs: ${v}`);
 for (const v of grantRows().filter((x) => !heldRows.includes(x))) console.log(`      in grants.mjs, not held: ${v}`);
 check('every public table and view grants exactly the rows in grants.mjs (nothing more, nothing less)', JSON.stringify(heldRows) === JSON.stringify(grantRows()));
-check('service_role executes exactly the 42 functions an earlier file granted it, in both worlds',
+check(`service_role executes exactly the ${SERVICE_ROLE_FUNCTIONS.length} functions an earlier file granted it, in both worlds`,
   JSON.stringify(here.functions.filter((v) => v.startsWith('service_role ')).map((v) => v.slice(13)).sort()) === JSON.stringify([...SERVICE_ROLE_FUNCTIONS].sort())
   || console.log(`      got ${here.functions.filter((v) => v.startsWith('service_role ')).length}`));
 check('and with the same defaults: later tables, sequences and functions in public give anon, authenticated and service_role nothing',

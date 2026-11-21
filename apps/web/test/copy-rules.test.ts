@@ -17,7 +17,7 @@ import * as siteModule from '../src/content/site';
 type Leaf = { path: string; text: string; lang?: string; meta?: boolean };
 
 const WEB_ROOT = fileURLToPath(new URL('..', import.meta.url));
-const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal'];
+const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal', 'src/lib/support'];
 const COPY_FILE = /(^|[-.])copy\.tsx?$/;
 const META_KEYS = new Set(['lang', 'dir', 'href']);
 const NON_PROSE = /^(\/|#|https?:|mailto:|ltr$|rtl$|[a-z]{2}(-[A-Za-z]{2,4})?$)/;

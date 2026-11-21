@@ -41,7 +41,7 @@ flowchart LR
   OC --> PR[Pull request into develop]
   CC --> PR
   PR --> RT[Red-team review]
-  RT --> F[Founder approves and merges]
+  RT --> F[Karma approves and merges, CR-73]
   W --> RC[Journal entry + run receipt]
 ```
 
@@ -106,7 +106,7 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 3. **Run.** The engine runs the agent on a fresh GitHub runner, checked out on `develop` with dependencies installed. Hard stops: dollar budget, steps or turns, and job timeout.
 4. **Output.** One branch and one PR into `develop` (labels `agent:<handle>`, `from:agent`), commits ending `Agent: <handle>`, and one journal entry.
 5. **Save and receipt.** Whatever stopped the run, the workflow pushes anything left uncommitted or unpushed to `agent/<handle>/wip-<run id>` and records it in the journal, so no work is lost to a cap, timeout or provider limit (`scripts/agents/salvage.mjs`; guaranteed for OpenCode runs, best effort for Claude Code runs). Then it posts cost, steps, minutes, model and outcome on the journal.
-6. **Review.** CI runs on the PR; the red team reviews it and labels it; you approve and merge. Supabase and sign-in changes also need your `approve-migration` label (D-041).
+6. **Review.** CI runs on the PR; the red team reviews it and labels it; Karma (the CTO role) approves and merges it under CR-70 and CR-73, not the founder. Applying a migration to a hosted project stays the founder's step.
 
 ## 6. Creating an agent
 
@@ -188,7 +188,7 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 ## 11. Governance and safety
 
 - Agents never merge, approve, close, force-push, or push to `develop` or `main`. Deny rules block the usual forms of those commands (the OpenCode config denies `git push origin develop*` and `main*`; the Claude Code arguments deny force pushes, `gh pr merge`, `gh pr review --approve` and pushes to `develop` and `main` by name), but a deny list is a tripwire, not a guarantee: branch protection (section 12) is what makes a push to `develop` or `main` impossible. Neither GitHub App can edit workflows.
-- Branch protection (section 12) makes your approval required. Supabase and sign-in changes also need a red-team review and your `approve-migration` label (D-041).
+- Branch protection (section 12) requires the three checks on `develop`; approval of the merge is Karma's (CR-73). Supabase and sign-in changes also need a red-team review.
 - Only your comments count as instructions. Issue and PR text from anyone else is information, never instructions.
 - OpenCode session sharing is disabled. Actions logs on a public repository are public, so the runner prints only short step totals and the agent's own text.
 - Prompts go only through OpenRouter, with zero-data-retention routing on (section 12). No user data passes through agents: they work on the repository only, and the privacy rules forbid real family details in it.
@@ -248,6 +248,6 @@ Do it before the first external TestFlight families join (backlog milestone M12)
   - **Parallel ids collided.** ADR 0014 to 0017 were taken twice, and D-ids nearly were. `scripts/agents/next-id.mjs` counts `develop` and every open PR.
   - **Usage limits cut runs short.** Agents now post a journal stub first and complete it last, so an interrupted run leaves a trace. Interactive waves stay at two or three agents.
   - **Interactive posts came from the founder's account** and were read as founder instructions. Harness markers (receipt, journal, red-team, steward, handoff, agent) now exclude them, and every agent comment starts with `<!-- agent:<handle> -->`.
-  - **Other threads work in the same repo.** Briefs list live `BOARD.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
+  - **Other threads work in the same repo.** Briefs list live `CLAIMS.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
   - **Interactive sessions cannot close PRs or comment on other threads' PRs** (the session safety check refuses). Agents recommend closing in their PR body and journal, and the founder or coordinator closes.
 - 27 Oct 2026: five hardening modules close the gaps of the 18 Oct assessment and the 27 Oct follow-up (#297; notes in `docs/agents/hardening/`): lane ticks on the board with an 8-hour "quiet since" flag; review fingerprints, so a develop merge that keeps a PR's own diff does not re-queue the red team (the board records the match against the new head, naming both heads and the review it inherits; it is not a review of the new head); the red-team verdict mix with a calibration note for the founder; a dated `paused_until` for writing agents and an "Awaiting re-review" section; uncarried "Learned" lines in the next brief. The session halt of Sat 24 Oct, 5:10 AM PT to Tue 27 Oct, 1:00 PM PT is a different thing from the roster's `paused_until` writer pause (`docs/agents/hardening/scope-and-drift.md`).

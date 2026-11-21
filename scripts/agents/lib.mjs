@@ -49,7 +49,9 @@ export function externalOwners(roster) {
 
 // ---------- backlog ----------
 
-const BL_RE = /\bBL-\d{3}\b/g;
+// Backlog ids have 3 or 4 digits (BL-001 to BL-9999), the same width id-collisions.mjs and hardening.mjs accept.
+// The trailing \b keeps a 5-digit number like BL-12345 from matching as BL-1234.
+const BL_RE = /\bBL-\d{3,4}\b/g;
 
 /** Parse docs/BACKLOG.md into task records. Unknown fields are left undefined. */
 export function parseBacklog(text) {
@@ -71,7 +73,7 @@ export function parseBacklog(text) {
       section = line.replace(/^## /, "").trim();
       continue;
     }
-    const h = line.match(/^#### (BL-\d{3})\s+(.*)$/);
+    const h = line.match(/^#### (BL-\d{3,4})\s+(.*)$/);
     if (h) {
       flush(i);
       cur = { id: h[1], title: h[2].trim(), section, start: i, line: i + 1 };
@@ -138,7 +140,7 @@ export function takenIds(openPRs) {
   const taken = new Set();
   for (const pr of openPRs) {
     for (const s of [pr.head?.ref ?? "", pr.title ?? ""]) {
-      for (const m of s.matchAll(/bl-(\d{3})/gi)) taken.add(`BL-${m[1]}`);
+      for (const m of s.matchAll(/bl-(\d{3,4})\b/gi)) taken.add(`BL-${m[1]}`);
     }
   }
   return taken;

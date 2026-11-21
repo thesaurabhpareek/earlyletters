@@ -13,6 +13,9 @@
 #         every pull request that changes supabase/**. GitHub runs this file only
 #         once it is on the default branch (main); until then db-cli.yml is the
 #         proof.
+#   reminders  the plan-reminders synthetic year, every day of it. Pull requests check every 15th
+#         day (BL-443); this job sets SCRIBE_REMINDER_STRIDE=1 so apps/mobile/test/billing-plan-reminders.test.ts
+#         sweeps all 366 days (30 s on a laptop; the test's own timeout allows 12 minutes).
 #   report  a red scheduled run opens one `nightly` issue with the run link, or
 #         comments on the one already open (never a second); a green scheduled
 #         run closes it (RA-20-19; AUTOMATION.md 2.8; B2-22).
@@ -112,6 +115,22 @@ jobs:
           SCRIBE_DEFAULT_GRANTS: legacy
         run: npm run test:db
 
+  # BL-443. The same test file as pull requests, at stride 1. The test refuses a stride outside 1 to 15, so a typo
+  # here fails the job instead of quietly shrinking the sweep. Own job so a slow runner here does not delay the others.
+  reminders:
+    name: plan reminders (every day of the year)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Plan reminders, stride 1 (366 days x 3 hours x 4 zones x 4 plans)
+        env:
+          SCRIBE_REMINDER_STRIDE: '1'
+        run: npm test -w @scribe/mobile -- test/billing-plan-reminders.test.ts
+
   # RA-20-19. Scheduled runs only, or a dispatch with report_issue on. No checkout and no install: the script
   # below is the whole job, run by the image's Node. The default GITHUB_TOKEN here holds issues: write and nothing
   # else (job permissions replace the workflow's). It touches only open `nightly` issues this job opened
@@ -120,7 +139,7 @@ jobs:
   # script against a stand-in for the GitHub API.
   report:
     name: nightly issue (opened on red, closed on green)
-    needs: [fuzz, db, perf, legacy-grants]
+    needs: [fuzz, db, perf, legacy-grants, reminders]
     if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.report_issue) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5

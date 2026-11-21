@@ -249,8 +249,18 @@ describe('[S09] the dateline and what VoiceOver reads', () => {
     const d = tonightDateline('Asha', '7 months', dayDate('2026-10-17'));
     expect(d.text).toBe('Asha · 7 months');
     expect(d.a11y).toBe('Asha, 7 months');
-    // With no age at all (the Family tab, which has no stage) it is still the day's date, as before.
+    // With no age at all (a caller that has no stage) it is still the day's date. Tonight and the Family tab never pass null.
     expect(tonightDateline('Asha', null, dayDate('2026-10-17'))).toEqual({ text: dayDate('2026-10-17'), a11y: dayDate('2026-10-17') });
+  });
+
+  it('the Family tab reads like Tonight: a before-birth book shows its name and "Before You", not the day (BL-473)', () => {
+    const d = tonightDateline('Asha', tonightStageLabel(null, '2026-10-17'), dayDate('2026-10-17'));
+    expect(d).toEqual({ text: 'Asha · Before You', a11y: 'Asha, Before You' });
+    expect(tonightDateline('Asha', tonightStageLabel('2027-01-05', '2026-10-17'), dayDate('2026-10-17')).text).toBe('Asha · Before You');
+    expect(tonightDateline('Asha', tonightStageLabel('2026-03-28', '2026-10-17'), dayDate('2026-10-17')).text).toBe('Asha · 6 months and 2 weeks');
+    const family = code('app/family.tsx');
+    expect(family).toContain('tonightDateline(child, tonightStageLabel(active.birthday, today), dayDate(today))');
+    expect(family).not.toMatch(/ageText\(/);
   });
 
   it('whole calendar days, across a clock change', () => {
@@ -284,29 +294,31 @@ describe('[S09] A month ago', () => {
     ...over,
   });
   const TODAY = '2026-10-17';
+  /** A book this person has not quieted; the quiet case is test/month-ago-quiet.test.ts. */
+  const AWAKE = { quiet: false };
 
   it('the newest letter in the book dated 28 to 35 days ago, one card, with its words and how VoiceOver reads it', () => {
-    const pick = resurfaced([letter('a', '2026-09-12'), letter('b', '2026-09-19'), letter('c', '2026-09-14')], TODAY, 0);
+    const pick = resurfaced([letter('a', '2026-09-12'), letter('b', '2026-09-19'), letter('c', '2026-09-14')], TODAY, 0, AWAKE);
     expect(pick?.id).toBe('b'); // 28 days ago, the newest in the window
     expect(pick?.kicker).toBe('A month ago');
     expect(pick?.a11yLabel).toBe(`A month ago. ${letter('b', '2026-09-19').finalText} A letter from ${dayDate('2026-09-19')}. Opens the letter.`);
     expect(RESURFACE_DAYS).toEqual({ from: 28, to: 35 });
-    expect(resurfaced([letter('edge', '2026-09-12')], TODAY, 0)?.id).toBe('edge'); // 35 days
+    expect(resurfaced([letter('edge', '2026-09-12')], TODAY, 0, AWAKE)?.id).toBe('edge'); // 35 days
   });
 
   it('never when a draft is waiting, never a private letter, a quiet-day mark, a letter with no words, or outside the window', () => {
-    expect(resurfaced([letter('b', '2026-09-19')], TODAY, 1)).toBeNull();
-    expect(resurfaced([letter('p', '2026-09-19', { inBook: false })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('q', '2026-09-19', { kind: 'not_much', finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0)).toBeNull(); // 27 and 36 days
+    expect(resurfaced([letter('b', '2026-09-19')], TODAY, 1, AWAKE)).toBeNull();
+    expect(resurfaced([letter('p', '2026-09-19', { inBook: false })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('q', '2026-09-19', { kind: 'not_much', finalText: '' })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0, AWAKE)).toBeNull(); // 27 and 36 days
   });
 
   it('[F09-REQ-003] never a letter dated to a month only: "A month ago" and its date would state a day nobody gave', () => {
     const month = { ...letter('m', '2026-09-19'), occurredPrecision: 'month' as const };
-    expect(resurfaced([month], TODAY, 0)).toBeNull();
+    expect(resurfaced([month], TODAY, 0, AWAKE)).toBeNull();
     // A day letter in the window still comes back, and the month-only one never takes its place.
-    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0)?.id).toBe('d');
+    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0, AWAKE)?.id).toBe('d');
   });
 });
 
@@ -324,13 +336,16 @@ describe('[S33] not much today, and the light', () => {
 
   it('the mark stores no words, and the kept line is the line in text with the Moon, never a count or a success colour (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toContain('newQuietMark(');
-    expect(screen).toContain('markOn(listEntries(), day)');
+    // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
+    expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
+    const oneEntry = code('lib/capture/start-capture.ts');
+    expect(oneEntry).toContain('newQuietMark(');
+    expect(oneEntry).toContain('markOn(listEntries(), day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
     expect(inline).toContain('label={copy.notMuch.undo}');
-    expect(en.notMuch.savedToast).toBe('A quiet day, kept.');
+    expect(en.notMuch.savedToast).toBe('Marked as a quiet day.');
     for (const f of ['app/(tabs)/index.tsx', 'components/tonight/quiet-day-inline.tsx', 'components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx']) {
       expect(code(f), f).not.toMatch(/\bsuccess\b|\bcaution\b|\bdestructive\b|tone="recording"|c\.recording/);
     }
@@ -448,7 +463,8 @@ describe('[P3] whole-line excerpts at every Dynamic Type size, xSmall, Small and
     const src = code('components/motion/excerpt-fade.tsx');
     // The clip and the drawn text share one line height, from lineHeightFor with the same variant, fontScale and scale.
     expect(src).toContain('const lh = lineHeightFor(variant, fontScale, scale ?? 1);');
-    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]}>");
+    // (The container also measures its width, for the word ending's fade, BL-659.)
+    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]} onLayout=");
     expect(src).toMatch(/<Text variant=\{variant\} scale=\{scale\}/);
     // Callers cannot pass numberOfLines (it is left out of the props), and the component sets no ellipsis itself.
     expect(src).toContain("Omit<TextProps, 'children' | 'variant' | 'numberOfLines'>");
@@ -569,7 +585,7 @@ describe('[S2] a book that is not born yet: the dateline names the child, and th
   it('the dateline reads "Asha", the dot, "Before You", with Review\'s words, and "Asha, Before You" aloud: no count of weeks, no gap', () => {
     const stage = tonightStageLabel(preBirthBook.birthday, TODAY);
     const d = tonightDateline(preBirthBook.name, stage, dayDate(TODAY));
-    expect(d.text).toBe(`Asha ${DOT} Before You`);
+    expect(d.text).toBe('Asha · Before You');
     expect(d.a11y).toBe('Asha, Before You');
     expect(d.a11y).not.toContain(DOT);
     expect(d.text).not.toMatch(/\d|week|day|month|due|born/i);
@@ -636,7 +652,7 @@ describe('[S2] a book that is not born yet: the dateline names the child, and th
 
   it('the screen builds its prompt and its dateline from these (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toContain('selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS)');
+    expect(screen).toContain('selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey, childName }), PROMPTS)');
     expect(screen).toContain('tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today))');
     // The old input, which turned a missing birthday into month 0, is gone.
     expect(screen).not.toMatch(/ageMonths:/);
@@ -675,8 +691,9 @@ describe('[S4] "Another thought" never shows the prompt that is on screen', () =
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/haptic\('tap'\);\s*setLeftKey\(prompt\.key\);\s*setShuffle\(\(s\) => s \+ 1\);/);
     expect(screen).toContain('const [leftKey, setLeftKey] = useState<string | null>(null);');
-    // it is a dependency of the memo, so the draw sees it
-    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey\]/);
+    // both are dependencies of the memo, so the draw sees them: a draw without childName would keep a prompt chosen
+    // for the old name (or for no name) after the name changes
+    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey, childName\]/);
   });
 });
 

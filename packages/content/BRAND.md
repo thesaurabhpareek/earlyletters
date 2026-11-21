@@ -27,11 +27,11 @@ Your words, never ours.
 - On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
 - We never rewrite your words. Every sentence is one the person actually said.
-- Every language stays as spoken: seven languages at v1.0, each in its own script, never translated. Hindi and English in one sentence arrives in v1.1.
+- Every language stays as spoken, each in its own script, never translated. Seven languages is the plan (D-056); the first store build is English only (D-121), and each language appears after its own gate (D-125 item 2). Don't promise one in public copy until it ships. Hindi and English in one sentence arrives in v1.1.
 
 ### 2. A voice to come back to
 Read it, and hear it.
-- The original recording is kept with each letter, on your phone by default, with optional encrypted backup that only you can restore or play (D-073). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
+- The original recording is kept with each letter, on your phone by default, with optional encrypted backup. We hold a recovery key, and the copy says so (D-102). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
 - Read together plays your letters in your own voice at bedtime. The moving word highlight arrives in v1.1.
 - Free PDF export any time. Printed books, starting with Early Letters: Year One, come later.
 
@@ -43,6 +43,8 @@ Love from everyone, pressure from no one.
 - Organised by month of age.
 
 ## Contrast lines
+
+Website and store only, never in the app, an email or a push. Owner: CMO. Open for the CMO (`WRITING-GUIDE.md` section 1): these lines use "not X, Y" and "Just talk", which the writing guide lists as tells, and "Every sentence is one you actually said" was found false under D-133 by the council review. Not edited here.
 
 **Versus fill-in-the-blank baby books:** "No blanks to fill. Just talk, and the page is yours."
 "Not 'First word: ____'. The whole story of the first word, told by the person who heard it."

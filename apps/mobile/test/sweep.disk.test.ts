@@ -15,8 +15,10 @@
 import { createHash } from 'node:crypto';
 import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { deleteIfPresent, letItGo } from '../src/lib/capture/let-it-go.logic';
 import { RECORDING_FILES, recordingContainerFor } from '../src/lib/capture/recording-file';
 import type { SqlDb } from '../src/lib/db/sql';
+import type { PullResponse } from '../src/lib/sync/types';
 import {
   androidContainer,
   createDisk,
@@ -272,6 +274,170 @@ describe('[TDD-01 3.2.4] recordings with no row', () => {
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({});
     expect(namesIn(h.disk, recorderDir(h.disk))).toEqual(['recording-5D2E0F11-0000-4000-8000-0000000057A3.m4a']);
+  });
+});
+
+describe('[BL-923] the launch sweep finishes a draft left discarding (F04-REQ-009)', () => {
+  /** A draft whose Let it go stopped after step 1 (a kill, or a file that would not delete): marked, file and row still here. */
+  function letGoPartWay(app: App, asha: string, audioUri: string) {
+    const d = app.store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri, audioDurationMs: 4000, state: 'ready' });
+    expect(app.store.beginDiscard(d.id)).toBe(true);
+    return d.id;
+  }
+
+  it('[NS-09-R1][BL-923] a draft left discarding with its recording: the next launch deletes the file, then the row', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C1.m4a`, 20_000);
+    const id = letGoPartWay(app, asha, uri);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(id)).toBeNull();
+    expect(h.disk.files.has(uri)).toBe(false);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({}); // nothing left to re-attach
+    expect(app.store.listDrafts(asha)).toEqual([]);
+  });
+
+  it('[NS-09-R2][BL-923] a recording that still will not delete keeps the row, marked and hidden, with no crash; the next launch finishes it', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C2.m4a`, 20_000);
+    const stray = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C3.m4a`, 9_000);
+    const id = letGoPartWay(app, asha, uri);
+    h.disk.undeletable.add(uri);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1, reattach: 1 }); // the rest of the sweep still ran
+    expect(app.store.getDraft(id)?.state).toBe('discarding');
+    expect(h.disk.files.has(uri)).toBe(true);
+    expect(app.store.listDrafts(asha).map((d) => d.audioUri)).toEqual([stray]); // the let-go recording is never re-attached
+    expect(app.store.listOrphanAudio()).toEqual([]);
+    h.disk.undeletable.clear();
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(id)).toBeNull();
+    expect(h.disk.files.has(uri)).toBe(false);
+  });
+
+  it("[BL-923] a kept letter's recording is never deleted, even one a let-go draft of the same id names; a missing file still finishes", async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const kept = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C4.m4a`, 31_000);
+    const same = letGoPartWay(app, asha, kept);
+    // The letter kept on another phone under the draft's id (sync/merge.ts adoptHeldDraft leaves a let-go draft be).
+    app.store.saveEntry(letter({ id: same, childId: asha, audioUri: kept, audioSha256: sha256(bytesAt(kept)), audioBytes: 31_000 }));
+    const gone = letGoPartWay(app, asha, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C5.m4a`);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 2 });
+    expect(app.store.getDraft(same)).toBeNull();
+    expect(app.store.getDraft(gone)).toBeNull();
+    expect(app.store.getEntry(same)).toMatchObject({ audioUri: kept, audioSha256: sha256(bytesAt(kept)), finalText: 'Asha, you laughed at the rain today.' });
+  });
+
+  it('[BL-923] after an update moved the container, the let-go recording is deleted where it is now and never comes back', async () => {
+    h.disk = createDisk(OLD);
+    layOutApp(h.disk);
+    let app = await launch();
+    const asha = addAsha(app);
+    const id = letGoPartWay(app, asha, put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C6.m4a`, 20_000));
+    moveContainer(h.disk, NEW);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(id)).toBeNull();
+    expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDrafts(asha)).toEqual([]);
+  });
+
+  it('[BL-923] a recording another draft also names stays when one of them is let go; only the let-go row goes', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C7.m4a`, 20_000);
+    const other = app.store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: uri, audioDurationMs: 4000, state: 'ready' });
+    const id = letGoPartWay(app, asha, uri);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(id)).toBeNull();
+    expect(app.store.getDraft(other.id)).toMatchObject({ state: 'ready', audioUri: uri });
+    expect(h.disk.files.has(uri)).toBe(true);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDrafts(asha).map((d) => d.id)).toEqual([other.id]);
+  });
+
+  it('[BL-923] a pull that returns a let-go draft to ready while the sweep is working keeps the draft and its recording', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C8.m4a`, 20_000);
+    const id = letGoPartWay(app, asha, uri);
+    // A take a kill cut off: the sweep probes it, so it waits after reading the rows and before finishing the let-go.
+    const take = await app.recorder.beginTake(recorderFor(h.disk) as never, { childId: asha, promptKey: null });
+    app = await launch();
+    const { applyPullPage } = await import('../src/lib/sync/merge');
+    const sweeping = app.sweep.runLaunchSweep();
+    // Meanwhile a pull: the server kept the draft (its words changed on another phone), so it is ready here again
+    // (sync/merge.ts applyHeldRows).
+    const now = new Date().toISOString();
+    const held = {
+      id, child_id: asha, kind: 'held_letter', capture_mode: 'spoken', created_at: now, occurred_on: '2026-10-03', occurred_precision: 'day',
+      language: null, base_direction: 'ltr', prompt_key: null, in_book_choice: true, raw_transcript: null, final_text: null, machine_edits: null,
+      edit_level: null, author_edits: null, locked_spans: null, typed_text: 'Asha, you clapped along today.', engine_version: null, pack_ref: null,
+      audio_kept_on_device: true, updated_at: now, v: '850',
+    };
+    applyPullPage(db, {
+      reset: false, epoch: 1, epoch_started_at: now, books: [], gone: [], more: false,
+      held: { rows: [held] as NonNullable<PullResponse['held']>['rows'], cursor: '900:00000000-0000-0000-0000-000000000000', more: false },
+    }, now);
+    expect(app.store.getDraft(id)?.state).toBe('ready');
+    expect(await sweeping).toEqual({ 'finalize-recording': 1, 'finish-discard': 1 }); // planned from the rows read before the pull
+    expect(app.store.getDraft(id)).toMatchObject({ state: 'ready', audioUri: uri, typedText: 'Asha, you clapped along today.' });
+    expect(h.disk.files.has(uri)).toBe(true);
+    expect(app.store.listDrafts(asha).map((d) => d.id).sort()).toEqual([id, take.id].sort());
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(h.disk.files.has(uri)).toBe(true);
+    expect(app.store.getDraft(id)).toMatchObject({ state: 'ready', audioUri: uri });
+  });
+});
+
+describe('[BL-924] Discard on Listen keeps the draft when the recording cannot be deleted (F04-REQ-009)', () => {
+  /** A take begun and stopped as Listen does, then Listen's confirmed Discard: the steps listen.tsx passes (pinned in test/listen.test.ts). */
+  async function discardOnListen(app: App, asha: string, before: (uri: string) => void) {
+    const { File } = await import('expo-file-system');
+    const rec = recorderFor(h.disk);
+    const take = await app.recorder.beginTake(rec as never, { childId: asha, promptKey: null });
+    await app.recorder.abandonTake(rec as never, take.id);
+    before(rec.uri!);
+    const gone = letItGo(take.id, rec.uri, { beginDiscard: app.store.beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard: app.store.finishDiscard });
+    return { id: take.id, uri: rec.uri!, gone };
+  }
+
+  // NS-09-R3 is proven by this set together, each citing it: sweep.disk.test.ts:417 (Listen's Discard steps with a delete that throws keep the row, marked discarding) and listen.test.ts:347 (Listen's confirmed Discard runs exactly those steps, and nothing else there deletes).
+  it('[NS-09-R3][BL-924] a delete that throws keeps the draft row, marked and hidden, with its recording; the next launch finishes both', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const t = await discardOnListen(app, asha, (uri) => h.disk.undeletable.add(uri));
+    expect(t.gone).toBe(false);
+    expect(app.store.getDraft(t.id)?.state).toBe('discarding');
+    expect(h.disk.files.has(t.uri)).toBe(true);
+    expect(app.store.listDrafts(asha)).toEqual([]);
+    h.disk.undeletable.clear();
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(t.id)).toBeNull();
+    expect(h.disk.files.has(t.uri)).toBe(false);
+  });
+
+  it('[BL-924] a recording that is already gone still lets the draft go', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const t = await discardOnListen(app, asha, (uri) => h.disk.files.delete(uri));
+    expect(t.gone).toBe(true);
+    expect(app.store.getDraft(t.id)).toBeNull();
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDrafts(asha)).toEqual([]);
   });
 });
 

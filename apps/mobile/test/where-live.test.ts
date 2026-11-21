@@ -93,7 +93,7 @@ describe('[CCO-8, CPrivO-4] Where your letters live', () => {
     const home = code('app/settings/index.tsx');
     expect(home).toMatch(/<ListRow title=\{h\.whereLive\} trailing="chevron" onPress=\{go\(ROUTES\.whereLive\)\}/);
     expect(home).not.toMatch(/recordingsLabel|ROUTES\.recordings/);
-    expect(home.indexOf('h.whereLive')).toBeGreaterThan(home.indexOf('h.sections.data'));
+    expect(home.indexOf('h.whereLive')).toBeGreaterThan(home.indexOf('h.sections.letters'));
   });
 });
 
@@ -118,7 +118,7 @@ describe('Your words: two named choices replace the Word for word switch', () =>
     const home = code('app/settings/index.tsx');
     expect(home).toMatch(/<ListRow title=\{h\.yourWords\} trailing="chevron" onPress=\{go\(ROUTES\.yourWords\)\}/);
     expect(home.indexOf('h.yourWords')).toBeGreaterThan(home.indexOf('h.sections.writing'));
-    expect(home.indexOf('h.yourWords')).toBeLessThan(home.indexOf('h.sections.data'));
+    expect(home.indexOf('h.yourWords')).toBeLessThan(home.indexOf('h.sections.letters'));
   });
 });
 
