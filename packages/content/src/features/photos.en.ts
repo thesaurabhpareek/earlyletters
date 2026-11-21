@@ -31,6 +31,21 @@ export const photosCopy = {
     placeHint: 'Up to 60 characters. Only what you type is kept.',
   },
   book: {
+    lens: {
+      // What VoiceOver reads for the Months / Photos choice (one radio group, NS-33-R3).
+      // TODO(founder): PROPOSED, needs word approval
+      label: 'Show letters by',
+      // TODO(founder): PROPOSED, needs word approval
+      months: 'Months',
+      // TODO(founder): PROPOSED, needs word approval
+      photos: 'Photos',
+      // The cover band's and the bar's Months button while the lens row shows, so the two controls have different names
+      // for Voice Control and the rotor (#840 review A). It says what the Months sheet does, and is that sheet's title
+      // (book.months.title). Without the lens the button keeps book.months.button. Renaming the lens option instead is
+      // the other way; the founder chooses.
+      // TODO(founder): PROPOSED, needs word approval
+      monthsButton: 'Go to a month',
+    },
     letter: {
       // TODO(founder): PROPOSED, needs word approval
       addPhoto: 'Add a photo to this letter',
@@ -62,6 +77,9 @@ export const photosCopy = {
       // words are kept; the line names no cause and asks for nothing. Never describes the picture.
       // TODO(founder): PROPOSED, needs word approval
       notSaved: 'The photo did not come along with this letter. Your words are kept, and you can add it again.',
+      // The heading over the letter page's quiet add rows (spec 06 section 4a, `book.letter.addGroup`; a level 2 heading).
+      // TODO(founder): PROPOSED, needs word approval
+      addGroup: 'Add to this letter',
       // The picture's file is gone (design spec 01 section 6): the letter reads whole.
       // TODO(founder): PROPOSED, needs word approval
       missing: 'Not on this phone any more',

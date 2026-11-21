@@ -248,5 +248,9 @@ Gap ids defined here:
 | AIE-R37 | MUST | review | review only | none |
 | AIE-R38 | MUST | review | not yet | AIE-G15 |
 | AIE-R39 | MUST | weekly aggregation (AIE-R23) | not yet | AIE-G8 |
+| AIE-R40 | MUST | `merge-queue.mjs` NEEDS-UPDATE verdict (#1356); review | on `develop` since #1356; advisory output, not a blocking check | AIE-G16 |
+| AIE-R41 | MUST | review | not yet | AIE-G17 |
+| AIE-R42 | MUST | reviewer brief; review | review only | none |
+| AIE-R43 | MUST | review | not yet | AIE-G18 |
 
-Gap ids added 21 Nov (AIE-R32 to R39): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.
+Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in `09a-review-and-merge-practice.md`): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.

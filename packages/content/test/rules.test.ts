@@ -1175,6 +1175,39 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
     // A row points at the copy it names.
     for (const s of SURFACES) expect(s.copy, s.name).toBe(features[s.feature]);
   });
+
+  // BL-462 point 2: the hand-kept button lists are pinned by size, so a label dropped from a list is a visible change.
+  it('pins the size of the auth, family and deletion button lists', () => {
+    const size = (f: string) => SURFACES.find((s) => s.feature === f)!.buttons.length;
+    expect(size('auth')).toBe(28);
+    expect(size('family')).toBe(17);
+    expect(size('accountDeletion')).toBe(8);
+    for (const s of SURFACES) expect(new Set(s.buttons).size, s.name).toBe(s.buttons.length);
+  });
+
+  // BL-462 point 3: a copy file in features/ that index.ts does not export is invisible to the key check above.
+  it('has every features/*.en.ts file exported by features/index.ts', () => {
+    const dir = join(__dirname, '..', 'src', 'features');
+    const index = readFileSync(join(dir, 'index.ts'), 'utf8');
+    const files = readdirSync(dir).filter((f) => f.endsWith('.en.ts'));
+    expect(files.length).toBeGreaterThan(10);
+    expect(files.filter((f) => !index.includes(`from './${f.replace(/\.ts$/, '')}'`))).toEqual([]);
+  });
+
+  // BL-462 point 4: where an opt-out file says "we", its reason names the line, so the exception is written down.
+  it('names the "we" lines of the backup and billing opt-outs in their reasons', () => {
+    for (const key of ['backup', 'billing'] as const) {
+      const weLines = leaves(features[key]).filter((l) => /\b(?:we|our|us)\b/i.test(l.text) && !/^\s*\*/.test(l.text));
+      expect(weLines.length, key).toBeGreaterThan(0);
+      const reason = SURFACE_OPT_OUT[key]!;
+      expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p)), key).toEqual([]);
+    }
+  });
+
+  // BL-462 point 5 (mutant B07): the deletion screen names the child where the book stays.
+  it('keeps {child} in the deletion "stays" line when no letters leave it', () => {
+    expect(features.accountDeletion.what.staysNone).toContain('{child}');
+  });
 });
 
 describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as const))('%s', (_title, surface) => {
@@ -1208,7 +1241,8 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
   it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
     expect(surface.buttons.length).toBeGreaterThan(0);
     // The list cannot fall behind the file: every leaf named ...Button or ...Cta is on it.
-    const named = ALL.filter((l) => /(?:button|cta)$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
+    // BL-462 point 1: the same pattern as the P0 test, so a ...CtaShort or ...Action leaf cannot bypass the list.
+    const named = ALL.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
     expect(named.filter((p) => !surface.buttons.includes(p))).toEqual([]);
     for (const key of surface.buttons) {
       const label = get(surface.copy, key);

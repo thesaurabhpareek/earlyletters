@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Moments tab: executive review, engineering lead (section 25.12)
 
 Status: REVIEW, PROPOSED (nothing here is decided). Date: 21 Nov 2026.

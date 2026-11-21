@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 Status: PROPOSED review input (nothing here is decided; every acceptance of a residual risk is the founder's)
 Date: 21 Nov 2026
 Reviewer: CISO (Claude role, not an auditor, not a penetration tester)
