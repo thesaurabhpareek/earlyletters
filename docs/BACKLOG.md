@@ -1644,10 +1644,10 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: a test with two accounts (A queues and signs out, B signs in with sync on and signs out) shows B's sign-out does not wait on A's rows, and A's rows are still queued.
 
 #### BL-450 An Apple revocation noticed at launch waits for unsynced letters before signing out
-- Status: in-review (PR #1332; BL-449 is done in PR #1273, so this can proceed; the sign-out probe it touches now counts only the signed-in account's rows, `lib/sync/index.ts:266-271`). Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1332, merged as 7c9023a0f: from `checkingConsent` an `apple_revoked` request takes `sync: 'unknown'`, so the existing blind-wait path starts; nine cases in `apps/mobile/test/auth-machine.test.ts` from line 290, four of which failed on the old code; the provider side is not tested, that is BL-1460; what the person sees during the wait is BL-1461; the offline time cap is BL-1462; BL-449 is done in PR #1273, and the sign-out probe counts only the signed-in account's rows, `lib/sync/index.ts:266-271`). Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
 - Priority: Medium.
 - Satisfies: A-REQ-033 (P0, `docs/prd/v2/features/F02-account.md:213`: "Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync").
-- Why: an Apple revocation noticed at launch signs out without waiting for unsynced letters. The state at that point is `checkingConsent`, and the sign-out request maps it to sync off (`apps/mobile/src/lib/auth/machine.logic.ts:181-183`), so no wait starts. A-REQ-033 is not met for that case. Letters are kept, not sent. Pre-existing. From the #359 review (lens A N1).
+- Why: an Apple revocation noticed at launch signs out without waiting for unsynced letters. The state at that point is `checkingConsent`, and the sign-out request maps it to sync off (`apps/mobile/src/lib/auth/machine.logic.ts:181-183`), so no wait starts (before PR #1332 the mapping was at `apps/mobile/src/lib/auth/machine.logic.ts:181-183`; the line that now decides it is `:211-214`). A-REQ-033 is not met for that case. Letters are kept, not sent. Pre-existing. From the #359 review (lens A N1).
 - Scope: meet A-REQ-033 for a revocation noticed at launch. If that needs a change to the requirement, the PR body drafts it for the founder; the requirement is not edited here.
 - Done when: a test of a revoked credential at launch with letters queued shows sign-out happens only after they sync, or the PR body states why it cannot and the founder has decided.
 
@@ -1702,14 +1702,14 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: V-06 has the double-tap row; the `storedWords` order test exists and fails if the order is swapped; the answers to points 1 and 2 are recorded here.
 
 #### BL-455 Delete account page clean-up from the #358 review
-- Status: in-review (PR #1333). Mode: agent. Owner: mobile engineer (S14: the page and its hook), content (the strings and the purge-worker copy). Milestone: M9. Size: S. Depends on: none.
+- Status: partly done (point 2 after BL-446; points 1, 3 and 4 merged in PR #1333 as af0de7e7e: `settings.delete.accountScheduledBody` retired, the ten `deleteAccount.*` test ids on the page, and a test that a false cancel answer while the status is `held` is `{ ok: false, reason: 'failed' }`, shown to fail with the mutant; the Maestro flow itself was not run on a build). Mode: agent. Owner: mobile engineer (S14: the page and its hook), content (the strings and the purge-worker copy). Milestone: M9. Size: S. Depends on: none.
 - Priority: Medium. Point 4 is Low.
 - Satisfies: none given.
 - Why and where (from the #358 lens A delta and lens B; #358 merged as 8301ac8):
-  1. `packages/content/src/strings.en.ts:820`, `settings.delete.accountScheduledBody` ("Until then you can export everything, or cancel and keep your account just as it is."), has no consumer. Retire it.
+  1. `settings.delete.accountScheduledBody` in `packages/content/src/strings.en.ts` ("Until then you can export everything, or cancel and keep your account just as it is.", at line 820 before PR #1333) has no consumer. Retire it. Done in PR #1333.
   2. `supabase/functions/purge-worker/copy.ts:16` (the contributor notice) points contributors to Export everything after the book is tombstoned. That follows the same code path as the account-deletion export gap (BL-446). Contributors are hidden in v1.0, so it matters when they ship (unverified).
-  3. The E2E-09 Maestro flow needs `deleteAccount.*` test ids the page does not have (`apps/mobile/e2e/TESTID_REQUESTS.md:149`).
-  4. A surviving mutant from #358's lens B: no test pins that a request in `held` counts as not cancelled in `cancelDeletion` (`apps/mobile/src/lib/account-deletion/api.ts:80-84`, where only the status `none` counts as cancelled).
+  3. The E2E-09 Maestro flow needs `deleteAccount.*` test ids the page does not have (`apps/mobile/e2e/TESTID_REQUESTS.md:154` lists them). Done in PR #1333.
+  4. A surviving mutant from #358's lens B: no test pins that a request in `held` counts as not cancelled in `cancelDeletion` (`apps/mobile/src/lib/account-deletion/api.ts:98`, in `cancelDeletion`, where only the status `none` counts as cancelled; the lines were `:80-84` before PR #1333's base). Done in PR #1333.
 - Scope: retire the string (1); after BL-446 ships, check the contributor notice's promise against it (2); add the test ids the request file lists (3); add the test that kills the mutant (4).
 - Done when: no unused `accountScheduledBody` remains; the Maestro flow finds every `deleteAccount.*` id it uses; a test fails if `held` is treated as cancelled; the PR body says what was checked for point 2.
 
@@ -2453,7 +2453,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 - Done when: `test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it.
 
 #### BL-519 Keep the book re-offer after the third letter when the person chose Later
-- Status: in-review (PR #1331). Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
+- Status: done (PR #1331, merged as 63d210e1c: `next-ask.logic.ts` rule 4 and `asks.keepBookReoffered` in `asks/index.ts`; `test/next-ask.test.ts` covers offer, Later, re-offer, no third offer, the caps, signed in and the prime order; not run on a device; the unpinned guard, the two edges of the Later inference and the trigger reported are BL-1463 and BL-1464). Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: build 2 (the sheet needs `auth.configured`).
 - Problem and evidence: F02 6.1 offers Keep the book again after the third letter if the person tapped Later; `next-ask.logic.ts:10` offers it once ("the re-offer is not built", SET-01).
 - Scope: one re-offer after the third saved letter when the first was declined, never more, within the session and day caps.
@@ -7208,6 +7208,54 @@ Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL
 - Scope: `photo-frame.tsx` uses `mediaFrame` and `tokens.stroke.control`; `surface.ts` reads `tokens.picture`; `error-line.tsx` is replaced by the shared `ErrorLine` in `components/ui`. No new words.
 - Done when: no raw border width or duplicated picture literal is left in those files, and the photo tests still pass.
 - Test: `apps/mobile/test` photo tests and the token tests.
+
+## Review follow-ups after PRs #1331 to #1333 (21 Nov 2026; BL-1460 to BL-1464)
+
+Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`. BL-1460 to BL-1464 file the findings of the reviews of PR #1331 (BL-519) and PR #1332 (BL-450). The first free id was BL-1460: BL-1432 to BL-1459 are taken on `develop` or in open PRs (#1338 files BL-1453 to BL-1459). Line cites were read at `af0de7e7e`. Nothing here decides a question: the two `needs-decision` rows name who decides, and the words in BL-1461 are the founder's. BL-1431 is unchanged and stays `proposed`.
+
+#### BL-1460 A provider-level test for the Apple revocation wait at launch (the gate read, the 10 s poll, the account-scoped recount)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M5. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: A-REQ-033 (P0, `docs/prd/v2/features/F02-account.md:213`).
+- Problem and evidence: PR #1332 (BL-450) fixed the launch case in the reducer, and `apps/mobile/test/auth-machine.test.ts` from line 290 covers it. The three things the wait then depends on live in `apps/mobile/src/lib/auth/session-provider.tsx` and have no test of their own: the blind gate read (`waitingBlind`, line 326, and `checkGate`), the 10 s poll that re-reads the gate and re-counts the queue (`setInterval` at lines 313 to 317, `GATE_TIMEOUT_MS` at line 124), and the account-scoped recount (the first `pendingUploads` count at dispatch time, line 299, is taken while `currentAuthUserId()` is still null; the poll counts again once the wait is released). The #1332 body says this is code reading, not run.
+- Scope: a test that mounts the provider (or the smallest seam that holds those three effects) with a revoked Apple credential at launch and letters queued, and shows: the gate is read once the wait starts; while it is unreadable the person stays signed in and the poll tries again at 10 s; once the gate answers `on` the letters upload and the sign-out follows; once it answers `off` the sign-out follows and the letters stay on the phone; and the recount after the wait counts only the signed-in account's rows. Fictional family only (Asha), no entry text.
+- Done when: the test fails if the gate is not read in the wait, if the poll is removed, or if the recount is not account-scoped (each shown with a mutant), and passes on `develop`.
+- Test: a new file beside `apps/mobile/test/auth-machine.test.ts`.
+
+#### BL-1461 What the person sees while the Apple revocation wait runs (the busy screen gives no reason)
+- Status: needs-decision (founder: the words are his, per CR-73 and `packages/content/VOICE.md`; a copy question, nothing is written until he rules). Mode: agent. Owner: mobile engineer, content. Milestone: M5. Size: XS. Depends on: BL-450 (done).
+- Priority: Low. Gate: none.
+- Satisfies: none given. Related: A-REQ-033, BL-451.
+- Problem and evidence: since PR #1332 a revocation noticed at launch can wait for unsent letters, and while it waits the person sees the busy screen with no reason. The waiting row that explains a sign-out the person asked for (`packages/content/src/features/auth.en.ts:188`, shown on the Account view) is not on screen at launch, and no line says why the app has not moved on. Not run on a device.
+- Question for the founder: does the person see a line while that wait runs, and if so what does it say (it must not blame them, and must say the letters are safe on the phone)? Or is a short wait with no line acceptable until BL-1462 settles how long it can last?
+- Scope after the ruling: the line in `packages/content`, shown by the launch screen while `state.status === 'signingOut'` and `state.reason === 'apple_revoked'`, with a test that it shows only then.
+- Done when: the founder's words are recorded as a D-### or in this row, and the screen test passes.
+
+#### BL-1462 Offline at launch the Apple revocation wait has no time cap
+- Status: needs-decision (founder: a cap changes what the app promises about letters; any cap must keep the letters on the phone). Mode: agent. Owner: auth owner (S01), security engineer. Milestone: M5. Size: S. Depends on: BL-450 (done).
+- Priority: Medium. Gate: none.
+- Satisfies: none given. Related: A-REQ-033 (the row's words are "only after unsynced letters sync").
+- Problem and evidence: with PR #1332, offline at launch with the gate unreadable and letters queued, the person stays signed in with a revoked Apple credential until the phone is online or the queue is empty: the poll at `apps/mobile/src/lib/auth/session-provider.tsx:313-317` retries every 10 s and nothing ends the wait. That matches the requirement's words, and the #1332 body offers a draft line for a cap that the founder may want to rule on. A cap must never discard a letter: letters stay on the phone, sync off, as the `off` path already does.
+- Question for the founder: no cap (the requirement as written), or a cap, and how long, with what the person is told when it ends (that is words, so BL-1461)? Any change to A-REQ-033 is the founder's and goes through the gate.
+- Scope after the ruling: if a cap, an event on the machine (`machine.logic.ts`) that ends the wait with letters kept, and a test.
+- Done when: the ruling is recorded; if a cap, a test shows the sign-out at the cap with every letter still on the phone.
+
+#### BL-1463 Pin the `getSetting(K.keepBook) === 'on'` guard in the Keep the book ask
+- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none given. Related: BL-519 (done in PR #1331).
+- Problem and evidence: `apps/mobile/src/lib/asks/index.ts:102`, `if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');`, is what marks the second offer. A mutant of that guard survived the review of #1331, so no test pins it: without it the first offer would also set `asks.keepBookReoffered` and the re-offer would never happen. `test/next-ask.test.ts` tests the pure rule (`next-ask.logic.ts:80`), not this store write.
+- Scope: a test over the asks entry point with the settings store faked: the first offer sets `asks.keepBook` and leaves `asks.keepBookReoffered` unset; the second sets both; a third offer is not made. Fictional family only.
+- Done when: removing or inverting the `=== 'on'` guard makes the test fail.
+- Note for product (not a task, nothing decided): the re-offer's "Later" is inferred as offered before and still signed out, because the sheet records no explicit dismissal. It differs from a literal Later tap in two edges, by code reading. (a) The flag is set when the ask is decided (`asks/index.ts:101-103`), not when the sheet is shown or closed, so an offer the person never saw (the sheet is pushed after a delay at `apps/mobile/src/app/review.tsx:528`) counts as a Later. (b) A person who took the offer, signed in, and later signed out before the third letter is signed out and offered-before, so they are asked again though they never tapped Later. Whether either matters is the founder's call on what the person is promised; if it does, it needs an explicit dismissal record (a new device setting, no text or names).
+
+#### BL-1464 The Keep the book re-offer reports trigger `first_letter` because `third_letter` is not in the analytics allowlist
+- Status: ready. Mode: agent. Owner: analytics engineer, mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none given. Related: BL-519 (done in PR #1331).
+- Problem and evidence: the sign-in sheet is opened with `trigger: 'first_letter'` at `apps/mobile/src/app/review.tsx:528`, and the allowlist `SIGN_IN_TRIGGER` has `first_letter`, `invite`, `invite_create`, `sign_in` and `settings` only (`packages/analytics/src/catalog.ts:95`, `packages/analytics/src/values.ts:78`, `apps/mobile/src/lib/auth/pending.ts:61-63`). So the re-offer after the third letter reports as `first_letter`, and the insights loop cannot tell the first offer from the re-offer. Adding a value changes the schema, so the catalog's version header (`catalog.ts:209` onward lists each bump) takes a new line.
+- Scope: add `third_letter` to `SIGN_IN_TRIGGER` in both files and to `pending.ts`, bump the catalog schema version with its changelog line, pass it from `review.tsx` when the ask was the re-offer, and keep the sheet's behaviour for the `first_letter` set (`sign-in/index.tsx:42` and `:75`) the same for the new value (decide in the PR whether `noteAskShown` and the about-this-book text apply: both do for the re-offer, since it is the same ask). No entry text, transcript or child name in any property.
+- Done when: the analytics catalog and values tests pass with the new value and the new version; a test shows the re-offer reports `third_letter` and the first offer still reports `first_letter`; the analytics allowlist test (no free text) still passes.
 
 ## NS-53 Moments tab: harness hand-off rows, hybrid design v3 (21 Nov 2026, proposed)
 
