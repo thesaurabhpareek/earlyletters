@@ -279,8 +279,8 @@ describe('length limits', () => {
 });
 
 describe('save failure reassurance', () => {
-  it('tells people their words are safe on the phone', () => {
-    expect(JSON.stringify(en.errors)).toMatch(/safe on this phone/i);
+  it('tells people their words are still on the phone', () => {
+    expect(JSON.stringify(en.errors)).toMatch(/still on this phone/i);
   });
 });
 

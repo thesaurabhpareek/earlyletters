@@ -286,7 +286,7 @@ describe('[S6] Erase now fails with a word', () => {
   });
 
   it('the line says what did not happen, then what is true, and claims nothing about the recording', () => {
-    expect(d.eraseFailedToast).toBe('The letter was not erased. It is still in Recently deleted.');
+    expect(d.eraseFailedToast).toBe("That letter wasn't erased. It's still in Recently deleted.");
     expect(d.eraseFailedToast).not.toMatch(/recording|file|try again|sorry|error|fail/i);
     expect(d.eraseFailedToast).not.toBe(d.erasedToast);
   });

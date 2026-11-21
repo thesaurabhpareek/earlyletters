@@ -895,7 +895,7 @@ export const en = {
       erasedToast: "Letter erased.",
       // Erase now when the recording's file could not be removed: the letter was not erased, the row stays for another try
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
-      eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
+      eraseFailedToast: "That letter wasn't erased. It's still in Recently deleted.",
       bookTitle: "Delete the whole book?",
       bookBody: "Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
@@ -920,7 +920,7 @@ export const en = {
       bookEraseNowBody: "Every letter and recording in it is erased for good.",
       bookErasedToast: "Book erased.",
       // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
-      bookEraseFailedToast: "The book was not erased yet. The app finishes the next time it opens.",
+      bookEraseFailedToast: "The book wasn't erased yet. It will finish the next time the app opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -969,7 +969,7 @@ export const en = {
       // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
       // finishes it too, and it erases every row then present, so a letter added in between goes as well
       // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
-      failed: "Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.",
+      failed: "Erasing didn't finish. Try again now, or wait: it will finish the next time the app opens, and that erases anything you add before then.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
@@ -1134,7 +1134,7 @@ export const en = {
     sharing: {
       pickerTitle: "Which books?",
       oneBookNote: "This invite is for {child}'s book only.",
-      separateNote: "Each child's book has its own family list. Inviting someone to one book does not open the others.",
+      separateNote: "Each child's book has its own family list. Inviting someone to one book doesn't open the others.",
     },
   },
 
@@ -1166,7 +1166,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are safe on this phone. We will try again on our own.",
+      body: "Your words are still on this phone. It will try again on its own.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
@@ -1194,21 +1194,21 @@ export const en = {
     },
     offline: {
       title: "You're offline",
-      body: "Keep talking. Everything is saved on this phone.",
+      body: "Keep talking. Your words are saving on this phone.",
     },
     inviteExpired: {
       title: "This invite has expired",
       body: "Ask {inviter} to send a new one.",
     },
     generic: {
-      title: "Something went wrong",
-      body: "Please try again. Nothing you saved has changed.",
+      title: "That didn't work",
+      body: "Try again. Nothing you saved has changed.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.
     crash: {
-      title: "This page did not open",
-      body: "Your letters and recordings are safe on this phone.",
+      title: "This page didn't open",
+      body: "Your letters and recordings are still on this phone.",
       tryAgainButton: "Try again",
       tonightButton: "Go to Home",
     },
@@ -1224,17 +1224,17 @@ export const en = {
     // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was
     // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
-      title: "The book could not open",
+      title: "The book couldn't open",
       body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       // The Try again button's words while it opens the book again, and the line after an open that did not work.
       tryingAgainButton: "Trying again",
-      stillClosed: "It did not open this time either.",
+      stillClosed: "It didn't open this time either.",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "Export has nothing to put in a file right now.",
-      exportFailed: "That export did not work. Your files are still on this phone.",
+      exportNothing: "There's nothing to export right now.",
+      exportFailed: "The export didn't finish. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
     },
@@ -1281,7 +1281,7 @@ export const en = {
       birthdayFuture: "Choose today or an earlier day.",
       birthdayMissing: "Choose a date to save.",
       dueDateRange: "Choose a due date from today up to ten months ahead.",
-      dateInvalid: "That date does not look right. Try again.",
+      dateInvalid: "That date doesn't look right. Try again.",
       // The due-date card once the due date has passed (S46). It never presumes a birth and never celebrates:
       // no count of days, never a notification, never on Tonight. "Hide" hides it until the Due date row is opened.
       born: {
@@ -1492,7 +1492,7 @@ export const en = {
     numberCopied: "Number copied",
     // When Mail cannot open: our address to copy.
     noMailTitle: "Write to us",
-    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    noMailBody: "Mail didn't open on this device. Copy our address and write from any email app.",
     copyAddress: "Copy address",
     addressCopied: "Address copied",
   },
