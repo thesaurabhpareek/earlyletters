@@ -9,7 +9,7 @@ Why: strict gate G0 means a P0 row has a backlog row of its own (a row that name
 - I ran `p0.py . --map` and `p0.py . --check-map` on `bc143cc` (exit 0, 1,052 map rows, 0 errors) and `p0.py . --json`: 292 row, 77 cite, 683 proposed. The mapping file already held those table counts; it was written for `3efbaf7` and differed only in three NS-32 rows that gained BL-1152.
 - An earlier count of 290 row, 78 cite and 684 proposed (strict 368), also written in `READINESS-20nov.md`, did not reproduce on `bc143cc`. I did not find which row moves between tiers (the clone is depth 1, so I could not diff earlier heads). Treat 369 and 683 as the generator's figure for `bc143cc`, and ask the owner of the earlier run for the head it used.
 - After batch 1 below (BL-1158 to BL-1182) the generator gives 393 named, 77 cited, 582 proposed: strict G0 holds for 470 of 1,052.
-- After batch 2 (BL-1269 to BL-1294, 26 rows, 155 ids, written on `develop` `0ee5339`) the generator gives 548 named, 77 cited, 427 proposed: strict G0 holds for 625 of 1,052. The generator counts any id a row mentions as named, so batch 2 Scope and Done-when text carries no id the row does not build (four ids, FR-LOC-18, FR-PRV-24, NS-01-R33 and FR-PRV-34, were worded out of the text for that reason).
+- After batch 2 (BL-1300 to BL-1325, 26 rows, 155 ids, written on `develop` `0ee5339`) the generator gives 548 named, 77 cited, 427 proposed: strict G0 holds for 625 of 1,052. The generator counts any id a row mentions as named, so batch 2 Scope and Done-when text carries no id the row does not build (four ids, FR-LOC-18, FR-PRV-24, NS-01-R33 and FR-PRV-34, were worded out of the text for that reason).
 - A new split row counts as a row of its own for the tool because only the 38 rows filed from `BACKLOG-GAPS.md` are excluded (`usable()` in `p0.py`). The group row still names the same ids; it is not edited by batch 1.
 
 ## 2. The rule for a split row
@@ -74,8 +74,8 @@ Notes on the table:
 
 - Free on 21 Nov: BL-1158 onward (`node scripts/agents/next-id.mjs`, which counts `develop` and every open PR, gave BL-1158; BL-1150 to BL-1157 are on `develop`, BL-1157 came with #1168). Ids BL-1021 to BL-1149 are the first-run, instrumentation and review rows. BL-055 to BL-099 are never used.
 - Batch 1: BL-1158 to BL-1182 (25 rows), written by #1190.
-- Batch 2: BL-1269 to BL-1294 (26 rows), written by the PR that carries this text. The first run of `next-id.mjs` gave BL-1183, but PR #1192 (review follow-ups) took BL-1183 to BL-1210 and the analytics PRs #1200 and #1201 took BL-1235 to BL-1268 before this PR merged, so the rows were renumbered twice: `next-id.mjs` on fresh `develop` then gave BL-1269, and a scan of the patches of every open PR for any BL id from BL-1183 up found nothing at BL-1269 or above.
-- Later batches are estimated starts, not reservations. Other PRs take ids in the meantime, so each batch PR runs `next-id.mjs` and takes the next free range. Batch 3 about BL-1295 and 33 rows; batch 4 33 rows. In all, 117 split rows for 683 P0 ids.
+- Batch 2: BL-1300 to BL-1325 (26 rows), written by the PR that carries this text. The first run of `next-id.mjs` gave BL-1183, but other PRs took ids first, so the rows moved twice. Karma then ruled on the reserved blocks (21 Nov): #1192 keeps BL-1183 to BL-1208 and also BL-1269 and BL-1270; the analytics PR #1201 holds BL-1235 to BL-1268; this batch takes BL-1300 to BL-1325; batch 3 and later start at BL-1326.
+- Later batches are estimated starts, not reservations. Other PRs take ids in the meantime, so each batch PR runs `next-id.mjs` and takes the next free range. Batch 3 about BL-1326 and 33 rows; batch 4 33 rows. In all, 117 split rows for 683 P0 ids.
 
 ## 5. Batch 1 (written, BL-1158 to BL-1182)
 
@@ -99,7 +99,7 @@ All 25 rows are `proposed`, size S, milestone M15. Together they carry 101 P0 id
 
 ## 6. Later batches (listed, not written)
 
-- Batch 2 (written, BL-1269 to BL-1294, 26 rows), agent-mode NS groups with function rows beside them: BL-298 (BL-1269 to BL-1274), BL-296 (BL-1275 to BL-1280), BL-182 (BL-1281 to BL-1284), BL-187 (BL-1285 to BL-1287), BL-295 (BL-1288 to BL-1291), BL-297 (BL-1292 to BL-1293), BL-127 (BL-1294). A row holds at most 8 ids and at most 6 card rows. Owner and Depends on are the group row's; BL-1276 (migration lint) and BL-1282 (held-draft sync rule) add the data architect because they may touch `supabase/`, and no row adds a migration. The founder, counsel and native-review steps inside these groups (App Store Connect entry, the DPLA read, the language gate decision) are named as outside the rows. The days and cultural-background cards (NS-46 to NS-50) build behind flags that are off, so they can follow the first-run rows.
+- Batch 2 (written, BL-1300 to BL-1325, 26 rows), agent-mode NS groups with function rows beside them: BL-298 (BL-1300 to BL-1305), BL-296 (BL-1306 to BL-1311), BL-182 (BL-1312 to BL-1315), BL-187 (BL-1316 to BL-1318), BL-295 (BL-1319 to BL-1322), BL-297 (BL-1323 to BL-1324), BL-127 (BL-1325). A row holds at most 8 ids and at most 6 card rows. Owner and Depends on are the group row's; BL-1307 (migration lint) and BL-1313 (held-draft sync rule) add the data architect because they may touch `supabase/`, and no row adds a migration. The founder, counsel and native-review steps inside these groups (App Store Connect entry, the DPLA read, the language gate decision) are named as outside the rows. The days and cultural-background cards (NS-46 to NS-50) build behind flags that are off, so they can follow the first-run rows.
 - Batch 3 (33 rows), function-file groups, agent mode: BL-018 (4), BL-017 (3), BL-029 (3), BL-028 (3), BL-026 (2), BL-185 (2), BL-027 (2), BL-019 (2), BL-328 (2), BL-038 (2), BL-008 (2), BL-025 (2), BL-039 (2), BL-006 (1), BL-007 (1).
 - Batch 4 (33 rows), `pair` groups: BL-047 (18), BL-126 (8), BL-045 (4), BL-046 (3). Written in a session with the founder.
 
@@ -107,6 +107,6 @@ Each batch stays at or under 40 rows and about 350 lines of backlog text, inside
 
 ## 7. What to do next
 
-1. Karma or the founder reads batch 1 and sets rows `ready` as their dependencies allow. Rows whose Depends on names a deferred row (BL-577, BL-579 under BL-291; BL-053 under BL-208) cannot start until that is settled. In batch 2, BL-1288 to BL-1293 (days and notification words) depend on deferred BL-537 and cannot start until that is settled.
+1. Karma or the founder reads batch 1 and sets rows `ready` as their dependencies allow. Rows whose Depends on names a deferred row (BL-577, BL-579 under BL-291; BL-053 under BL-208) cannot start until that is settled. In batch 2, BL-1319 to BL-1324 (days and notification words) depend on deferred BL-537, so they are `blocked`, not `proposed`, until that is settled.
 2. Product writes batch 3 once the batch 2 PR merges, takes the next free range from `next-id.mjs`, then regenerates the mapping file (`p0.py . --map`, then `--check-map`).
 3. When a batch closes a group, product sets the group row `superseded`. Batch 2 covers every id the generator listed on 21 Nov for BL-298, BL-296, BL-182, BL-187, BL-295, BL-297 and BL-127; those group rows are set `superseded` once Karma or the founder has read the batch, not before.
