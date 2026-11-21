@@ -20,16 +20,40 @@ export async function deviceIdOnce(): Promise<string | null> {
   }
 }
 
+/** One report in flight at a time: a second ask while one runs shares it (its first attempt may still be timing out). */
+let inFlight: Promise<void> | null = null;
+
 export function reportNewDeviceFor(sb: SupabaseLike): Promise<void> {
+  if (inFlight) return inFlight;
+  const run = reportOnce(sb).finally(() => {
+    if (inFlight === run) inFlight = null;
+  });
+  inFlight = run;
+  return run;
+}
+
+function reportOnce(sb: SupabaseLike): Promise<void> {
   return reportNewDevice({
     enabled: newDeviceEmailEnabled,
     deviceId: deviceIdOnce,
     accessToken: async () => (await sb.auth.getSession()).data.session?.access_token ?? null,
     deviceClass: deviceClassOf(Platform.OS),
     send: async ({ token, body }) => {
-      const call = sb.functions.invoke(NEW_DEVICE_FUNCTION, { method: 'POST', body, headers: { Authorization: `Bearer ${token}` } });
-      const timeout = new Promise<{ error: unknown }>((resolve) => setTimeout(() => resolve({ error: 'timeout' }), REPORT_TIMEOUT_MS));
-      return !(await Promise.race([call, timeout])).error;
+      // A timed-out attempt is cancelled, so the retry never overlaps it.
+      const ctl = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<{ error: unknown }>((resolve) => {
+        timer = setTimeout(() => {
+          ctl.abort();
+          resolve({ error: 'timeout' });
+        }, REPORT_TIMEOUT_MS);
+      });
+      try {
+        const call = sb.functions.invoke(NEW_DEVICE_FUNCTION, { method: 'POST', body, headers: { Authorization: `Bearer ${token}` }, signal: ctl.signal });
+        return !(await Promise.race([call, timeout])).error;
+      } finally {
+        clearTimeout(timer);
+      }
     },
   });
 }
