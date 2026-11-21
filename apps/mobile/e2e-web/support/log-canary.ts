@@ -30,11 +30,14 @@ export const SEED_TEXT_FRAGMENTS: readonly string[] = [
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 
+/**
+ * A finding names WHAT was found and WHERE, never the text: a failed run prints this value into the Playwright
+ * message, the report and the CI log, so it must not carry the line or the fixture (LEGAL-REQ-014).
+ * `label` is `child-name`, `seed:<index>` or `typed:<index>`; `line` is the 0-based index of the captured line.
+ */
 export interface Leak {
-  /** The captured line, cut to 120 characters. */
-  line: string;
-  /** Which fixture it held. */
-  fixture: string;
+  label: string;
+  line: number;
 }
 
 /** Fixtures a journey registers at run time (a letter it typed), at least 8 characters so a stray word cannot trip it. */
@@ -43,15 +46,22 @@ export function runtimeFixture(text: string): string | null {
   return t.length >= 8 ? t : null;
 }
 
-/** Every captured line that holds the child name or any fixture text. `typed` are the letters this journey typed. */
+/**
+ * Every captured line that holds the child name or any fixture text. `typed` are the letters this journey typed.
+ * Known gap: Playwright's `m.text()` shows an object argument as `JSHandle@object`, so a letter logged inside an
+ * object is not seen.
+ */
 export function findLeaks(lines: readonly string[], typed: readonly string[] = []): Leak[] {
-  const phrases = [...SEED_TEXT_FRAGMENTS, ...typed].map(norm).filter((p) => p.length >= 8);
+  const phrases = [
+    ...SEED_TEXT_FRAGMENTS.map((p, i) => ({ label: `seed:${i}`, p: norm(p) })),
+    ...typed.map((p, i) => ({ label: `typed:${i}`, p: norm(p) })),
+  ].filter((x) => x.p.length >= 8);
   const name = new RegExp(`(^|[^\\p{L}\\p{N}])${CHILD_NAME}([^\\p{L}\\p{N}]|$)`, 'iu');
   const leaks: Leak[] = [];
-  for (const line of lines) {
+  lines.forEach((line, at) => {
     const n = norm(line);
-    const hit = name.test(line) ? CHILD_NAME : phrases.find((p) => n.includes(p));
-    if (hit) leaks.push({ line: line.slice(0, 120), fixture: hit });
-  }
+    const label = name.test(line) ? 'child-name' : phrases.find((x) => n.includes(x.p))?.label;
+    if (label) leaks.push({ label, line: at });
+  });
   return leaks;
 }

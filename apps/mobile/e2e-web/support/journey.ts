@@ -106,7 +106,7 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
     ).toEqual([]);
     // BL-415: no entry text, transcript or child name in any log line. No allow-list on purpose.
     expect(
-      findLeaks(everyLog, TYPED.get(page) ?? []),
+      findLeaks(everyLog, TYPED.get(page) ?? []).map((l) => `${l.label}@line${l.line}`), // labels only: never the text
       'a console line or page error held the child name or a letter (LEGAL-REQ-014): fix the logging, never this check',
     ).toEqual([]);
     const allowed = ALLOWED.get(page) ?? [];

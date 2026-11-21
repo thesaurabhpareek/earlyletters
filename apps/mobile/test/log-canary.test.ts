@@ -13,7 +13,7 @@ const squash = (s: string) => s.replace(/\s+/g, ' ').toLowerCase();
 
 describe('[BL-415] log canary rules', () => {
   it('flags the child name as a whole word in any case', () => {
-    expect(findLeaks(['saved for Asha']).map((l) => l.fixture)).toEqual(['Asha']);
+    expect(findLeaks(['ok', 'saved for Asha']).map((l) => `${l.label}@${l.line}`)).toEqual(['child-name@1']);
     expect(findLeaks(['child=asha;']).length).toBe(1);
     expect(findLeaks(['{"name":"ASHA"}']).length).toBe(1);
   });
@@ -38,8 +38,28 @@ describe('[BL-415] log canary rules', () => {
     expect(findLeaks(['[e2e-boot] Error: database is locked', 'Warning: Each child in a list'], ['hi'])).toEqual([]);
   });
 
-  it('cuts the reported line to 120 characters', () => {
-    expect(findLeaks([`Asha ${'x'.repeat(300)}`])[0].line.length).toBe(120);
+  it('reports labels and positions only, never the line or the fixture text', () => {
+    const typed = [runtimeFixture('You laughed at the rain.')!];
+    const lines = [`Asha ${'x'.repeat(300)}`, 'note: Your Nani made dal', 'draft: you laughed at the rain.'];
+    const leaks = findLeaks(lines, typed);
+    expect(leaks.map((l) => l.label)).toEqual(['child-name', 'seed:1', 'typed:0']);
+    const shown = JSON.stringify(leaks) + String(leaks.map((l) => `${l.label}@line${l.line}`));
+    for (const secret of ['asha', 'nani', 'dal', 'laughed', 'rain', 'xxxx']) expect(shown.toLowerCase()).not.toContain(secret);
+  });
+
+  it('the failure message a journey raises holds no text (plant the name and a seeded phrase)', () => {
+    const j = read('e2e-web/support/journey.ts');
+    expect(j).toMatch(/findLeaks\(everyLog, TYPED\.get\(page\) \?\? \[\]\)\.map\(\(l\) => `\$\{l\.label\}@line\$\{l\.line\}`\)/);
+    const planted = findLeaks(['Asha saved', 'the whole house is quiet'], []).map((l) => `${l.label}@line${l.line}`);
+    let message = '';
+    try {
+      expect(planted).toEqual([]);
+    } catch (e) {
+      message = String((e as Error).message);
+    }
+    expect(message).toContain('child-name@line0');
+    expect(message.toLowerCase()).not.toContain('asha');
+    expect(message.toLowerCase()).not.toContain('house');
   });
 });
 
