@@ -113,6 +113,16 @@ describe('[S2] the welcome while a joined book is on its way', () => {
     store.named('book-asha', 'Asha');
     expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
   });
+
+  it('the store: a join started with no name does not inherit the previous book\'s name (BL-459)', () => {
+    const store = createJoinWaitStore();
+    store.start('book-asha', 'Asha', 5);
+    // Production starts a wait with a null name; the name arrives later through named().
+    store.start('book-other', null, 40);
+    expect(store.get()).toEqual({ childId: 'book-other', name: null, since: 40 });
+    store.named('book-other', 'Ravi');
+    expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
+  });
 });
 
 describe('[S2] the screens', () => {
