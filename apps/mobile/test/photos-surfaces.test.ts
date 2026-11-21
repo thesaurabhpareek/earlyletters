@@ -349,10 +349,12 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(src).toMatch(/letterPhotoControls\(\{ own, hasPhoto: true, hasWords: true \}\)\.remove/);
     expect(src).not.toMatch(/\{own \?|own && /);
   });
-  it('[NS-01-R50] writing tools are off on photo words and place', () => {
-    // OPEN, never green by silence (E41): React Native 0.86 has no prop for iOS writing tools and the native setting of ADR 0039
-    // is not built. This row stays red-by-design until PHOTO_WORDS_WRITING_TOOLS_OFF is true (the PR that builds the setting).
-    expect(PHOTO_WORDS_WRITING_TOOLS_OFF, 'OPEN: R50 needs the native setting; see R50b for what ships meanwhile').toBe(false);
+  // KNOWN GAP (E41, ruling D2): `it.fails` keeps CI green while the gap is open and the row says so in the report. React Native
+  // 0.86 has no prop for iOS writing tools and the native setting of ADR 0039 (PROPOSED) is not built. When the setting exists
+  // and PHOTO_WORDS_WRITING_TOOLS_OFF is true, this assertion passes, `it.fails` turns red, and the next person changes it to a
+  // plain `it` (as #1064 did for its own known gap). R50b below is what ships meanwhile.
+  it.fails('[NS-01-R50] writing tools are off on photo words and place', () => {
+    expect(PHOTO_WORDS_WRITING_TOOLS_OFF, 'OPEN: R50 needs the native setting of ADR 0039').toBe(true);
   });
   it('[NS-01-R50b] the fields stay off in production until the setting exists', () => {
     expect(photoWordsFieldsShown('production', false)).toBe(false);
