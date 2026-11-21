@@ -251,7 +251,7 @@ Intent for `content`; banned: memory, moment, album as a heading, best, smart, A
 App Review 5.1.1 (S5); the library permission for a child's pictures is a counsel item without a number from legal yet; counsel Q43, Q45, Q48, Q54; DPLA 3.3.3(H) is not engaged (that is level 2); a biometric-law read is not needed while NS-51-R33 holds (Illinois and Texas laws not read; UNVERIFIED); GDPR and children's rules for on-device derived data: counsel (the earlier privacy review's O1 reading is that on-device-only is not "collected").
 
 ### 18. Label effect
-None while nothing leaves the phone (NS-51-R26, R30); App Privacy treats data processed only on device as not collected (S5, counsel must confirm). The new permission string is a store-review item, not a label row. If any later door sends a picture, Photos or Videos becomes collected (Q54).
+**Label effect.** None while nothing leaves the phone (NS-51-R26, R30); App Privacy treats data processed only on device as not collected (S5, counsel must confirm). The new permission string is a store-review item, not a label row. If any later door sends a picture, Photos or Videos becomes collected (Q54).
 
 ### 19. Claims enabled and forbidden
 Enables: "Turn on photo moments and your phone shows you days you took pictures. Nothing leaves your phone." Forbids: "we find your best moments", "smart", "AI", "memories", any count, "we read your photos" (it reads dates), any sentence implying faces or scenes, any claim an unwritten day exists. Every sentence has a claims-inventory row.
@@ -467,7 +467,7 @@ Intent for `content`; banned: memory, album, best, highlight, story, reel, AI, s
 Counsel: Q45 (a child's image), Q48 (another adult), Q54 (Photos or Videos become collected under Variant B), X2 and E23 (security read and counsel read before any picture or video leaves the phone), children's video and consent (no number from legal yet), retention of children's media, COPPA reading is the earlier privacy review's (S5 lists FTC guidance that audio of a child's voice is personal information; for video of a child: counsel must confirm). Apple App Review 5.1.1 for the picker path is unchanged (S2: no authorisation). A biometric-law read is not needed while no face or voice matching is built.
 
 ### 18. Label effect
-Variant A: none; "Photos or Videos: not collected" holds while NS-52-R19 holds, and the policy and label say the iPhone backup is Apple's. Variant B: Photos or Videos collected, linked to the user, in the same build, with counsel's read. Videos in the iPhone backup are Apple's, not ours.
+**Label effect.** Variant A: none; "Photos or Videos: not collected" holds while NS-52-R19 holds, and the policy and label say the iPhone backup is Apple's. Variant B: Photos or Videos collected, linked to the user, in the same build, with counsel's read. Videos in the iPhone backup are Apple's, not ours.
 
 ### 19. Claims enabled and forbidden
 Enables (A): "Keep pictures and videos with your letter. They stay on your phone." Enables (B, only after gates): "...kept safe for your family". Forbids: "we organise your photos", "we make a movie", "memories", "AI", "we describe your pictures", any statement of how safe a video is, any "unlimited". Each sentence has a claims-inventory row.

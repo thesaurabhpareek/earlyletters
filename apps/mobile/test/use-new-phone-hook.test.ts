@@ -152,7 +152,7 @@ describe('[NX-36-S17] useNewPhone, run', () => {
     expect(h.listeners.size).toBe(0);
   });
 
-  it('Try again asks the account again, nudges the pull, and starts the 10 seconds over', async () => {
+  it('Try again asks the account again and nudges the pull; the 10 seconds are not started over (R11)', async () => {
     const run = renderHook(() => useNewPhone(base));
     h.asked[0]('hasBook');
     await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS + 100);
@@ -160,10 +160,11 @@ describe('[NX-36-S17] useNewPhone, run', () => {
     run.result.current.retry();
     expect(h.asked).toHaveLength(2);
     expect(h.syncNowCalls).toBe(2);
-    expect(run.result.current.view).toBe('opening');
+    expect(run.result.current.view).toBe('slow'); // the clock ran out before Try again and is not restarted
     h.asked[1]('unknown');
     await flush();
     expect(run.result.current.view).toBe('noBook');
+    expect(h.asked).toHaveLength(2); // past the window: no automatic re-ask either
     run.unmount();
   });
 
@@ -174,7 +175,7 @@ describe('[NX-36-S17] useNewPhone, run', () => {
     h.asked[0]('new'); // the stale one
     await flush();
     expect(run.result.current.view).toBe('opening');
-    h.asked[1]('unknown');
+    h.asked[1]('returningNoBook');
     await flush();
     expect(run.result.current.view).toBe('noBook');
     run.unmount();
@@ -233,7 +234,7 @@ describe('[NX-36-S17] useNewPhone, run', () => {
 
   it('"Start a book" on No book here yet moves on to the child step', async () => {
     const run = renderHook(() => useNewPhone(base));
-    h.asked[0]('unknown');
+    h.asked[0]('returningNoBook');
     await flush();
     expect(run.result.current.view).toBe('noBook');
     run.result.current.startBook();

@@ -6,6 +6,9 @@
  *   npx tsx scripts/size/measure.ts --ipa build.ipa          # plus the IPA from `eas build` (approximate)
  *   npx tsx scripts/size/measure.ts --thinning-report "App Thinning Size Report.txt"   # close to the App Store number
  *   npx tsx scripts/size/measure.ts --skip-export            # reuse dist/size from the last run
+ *   npx tsx scripts/size/measure.ts --check [--base-baseline <file>] [--body-file <file>] [--owner-approved]
+ *                                                            # compare with docs/ops/size-baseline.json (exit 1 on a limit)
+ *   npx tsx scripts/size/measure.ts --write-baseline         # write docs/ops/size-baseline.json from this measurement
  *
  * What it does:
  *  1. `expo export --platform ios` twice: with Hermes bytecode (what ships)
@@ -23,6 +26,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { checkSize, hasSizeChangeLine, type Baseline } from './lib';
 import { bytesPerSource, groupByOwner, ipaBreakdown, listZip, mb, parseThinningReport, unusedDependencies, verdict } from './lib';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -141,4 +145,32 @@ writeFileSync(
   JSON.stringify({ verdict: v, hbcBytes: hbc.length, hbcGzipBytes: gz, jsBytes: total, assetsBytes, owners: owners.slice(0, 100), unused, fonts, images, ipa, thinning }, null, 2),
 );
 process.stdout.write(`${lines.slice(0, 14).join('\n')}\n\nFull report: dist/size/report.md\n`);
+
+// BRIEF CI-SIZEGATE: the baseline is bytes and package names only. `--check` compares with the BASE branch's copy.
+const BASELINE = join(ROOT, 'docs/ops/size-baseline.json');
+const commit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
+const current: Baseline = {
+  commit,
+  hbcBytes: hbc.length,
+  hbcGzipBytes: gz,
+  assetsBytes,
+  fontBytes: fonts.reduce((n, f) => n + f.bytes, 0),
+  dependencyCount: deps.length,
+  owners: owners.slice(0, 20),
+};
+if (flag('write-baseline')) {
+  writeFileSync(BASELINE, `${JSON.stringify(current, null, 2)}\n`);
+  process.stdout.write('wrote docs/ops/size-baseline.json\n');
+}
+if (flag('check')) {
+  const baseFile = opt('base-baseline');
+  const reference = baseFile && existsSync(baseFile) ? (JSON.parse(readFileSync(baseFile, 'utf8')) as Baseline) : null;
+  const head = existsSync(BASELINE) ? (JSON.parse(readFileSync(BASELINE, 'utf8')) as Baseline) : null;
+  const bodyFile = opt('body-file');
+  const body = bodyFile ? readFileSync(bodyFile, 'utf8') : (process.env.PR_BODY ?? '');
+  const sameNumbers = (a: Baseline | null) => !!a && a.hbcBytes === current.hbcBytes && a.dependencyCount === current.dependencyCount && JSON.stringify(a.owners) === JSON.stringify(current.owners);
+  const r = checkSize({ current, reference, body, baselineUpdated: sameNumbers(head) && JSON.stringify(head) !== JSON.stringify(reference), ownerApproved: flag('owner-approved') });
+  process.stdout.write(`${r.lines.join('\n')}${hasSizeChangeLine(body) ? '\n(Size-change line present)' : ''}\n`);
+  process.exit(r.pass ? 0 : 1);
+}
 process.exit(v.pass ? 0 : 1);

@@ -7,6 +7,7 @@ export { Button, ButtonRow, IconButton, LARGE_CONTENT, type ButtonProps, type Ic
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, type CardProps } from './card';
 export { Chip, ChipGroup, ChoiceGroup, type ChipProps, type ChoiceGroupProps, type ChoiceOption } from './choice-group';
 export { EmptyState, EmptyStateView, type EmptyStateProps } from './empty-state';
+export { ErrorLine } from './error-line';
 export { fontsReady, loadFonts, useFontsReady } from './fonts';
 export { LineArt, LINE_ART, type LineArtName } from './line-art';
 export { ListRow, ListSection, ToggleRow, type ListRowProps } from './list-row';
