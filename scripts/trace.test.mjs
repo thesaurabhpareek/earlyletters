@@ -541,3 +541,14 @@ test('[BL-964] --update-ns-baseline writes the open set once and then only when 
   assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', '--update-ns-baseline', 'docs/prd'], () => {}), 1);
   assert.equal(fs.readFileSync(file, 'utf8'), '# h\nNS-90-R2\n');
 });
+
+test('[BL-964] deleting the baseline while the base branch has it fails --check', () => {
+  const repo = nsRepo();
+  const base = path.join(repo, 'base.txt');
+  fs.writeFileSync(base, OPEN.join('\n') + '\n');
+  const out = [];
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /is missing but the base branch has it/);
+  fs.rmSync(base);
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), () => {}), 1, 'a named base file that does not exist still fails');
+});

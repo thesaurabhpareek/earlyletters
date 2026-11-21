@@ -810,6 +810,8 @@ function nsGate({ repo, ns, args, log }) {
     log(`  NS baseline written: ${open.length} ids.`);
     return 0;
   }
+  // Deleting the baseline must not pass: when the base branch has a copy, a missing one fails.
+  if (!has && args.nsBase && exists(path.resolve(repo, args.nsBase))) { log(`  FAIL: ${path.relative(repo, file)} is missing but the base branch has it (${args.nsBase}); it may only shrink, not be deleted.`); return 1; }
   if (!has) { if (!args.nsBaseline) return 0; log(`  FAIL: NS baseline missing: ${path.relative(repo, file)}. Create it with --update-ns-baseline.`); return 1; }
   const baseFile = args.nsBase && path.resolve(repo, args.nsBase);
   if (baseFile && !exists(baseFile)) { log(`  FAIL: --ns-base file missing: ${args.nsBase}`); return 1; }
