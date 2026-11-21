@@ -280,7 +280,9 @@ describe('length limits', () => {
 
 describe('save failure reassurance', () => {
   it('tells people their words are still on the phone', () => {
-    expect(JSON.stringify(en.errors)).toMatch(/still on this phone/i);
+    // Pinned on the two lines that carry the claim: a match over all of en.errors passes on any other line that says it.
+    expect(en.errors.saveFailed.body).toMatch(/still on this phone/i);
+    expect(en.errors.crash.body).toMatch(/still on this phone/i);
   });
 });
 
@@ -1289,5 +1291,21 @@ describe('claims that must be true of what the first build does', () => {
   it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
     const overclaim = /grammar|we was|misheard word/i;
     expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
+  });
+});
+
+describe('push and saved-moment wording (wave 2)', () => {
+  it('"plenty" is not the closing word of every push: at most three of the evening and gentle-return lines use it', () => {
+    const lines = [...en.notifications.evening.map((v) => v.body), en.notifications.gentleReturn.body];
+    expect(lines.length).toBe(9);
+    expect(lines.filter((b) => /\bplenty\b/i.test(b)).length).toBeLessThanOrEqual(3);
+  });
+
+  it('the Tonight saved card has no title: a private letter reaches it too, so "the book" would be false for it', () => {
+    expect(Object.keys(en.tonight.afterSave)).not.toContain('title');
+  });
+
+  it('the welcome body names what is kept, so "It" never stands alone', () => {
+    expect(en.onboarding.welcome.body).not.toMatch(/(^|\. )It('s| is)? /);
   });
 });

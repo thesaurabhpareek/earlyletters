@@ -69,7 +69,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
-      body: "Talk for a minute, or type a few lines. It's there for {child} to read and hear for years.",
+      body: "Talk for a minute, or type a few lines. Each letter is there for {child} to read and hear for years.",
       // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
       // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
       freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
@@ -243,7 +243,7 @@ export const en = {
       stopButton: "Finish",
       saving: "Saving your words.",
       saved: "Saved.",
-      savedLetter: "Saved.",
+      savedLetter: "Saved and signed.",
       transcribing: "Writing down what you said.",
     },
     typing: {
@@ -278,8 +278,9 @@ export const en = {
       kicker: "A month ago",
       a11y: "A letter from {date}. Opens the letter.",
     },
+    // No title here: a private letter reaches this moment too, so a line saying "the book" would be false for it.
+    // The saved moment's own line is review.destination.* (rules.test.ts pins that this card has no title).
     afterSave: {
-      title: "Saved to the book.",
       body: "One more page for {child}.",
       reviewButton: "Read it back",
       doneButton: "Done for tonight",
@@ -439,7 +440,7 @@ export const en = {
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
     waiting: {
-      title: "Recording saved",
+      title: "Your voice is kept",
       body: "Your words will appear once the download finishes.",
     },
     // Development builds only: the sample transcriber's words are never saved.
@@ -501,7 +502,7 @@ export const en = {
       filedChip: "Kept in Month {month}",
       filedChipNewborn: "Kept in the first weeks",
       filedChipBefore: "Kept in Before You",
-      privateToast: "Saved as private.",
+      privateToast: "Kept private.",
       voiceOnlyToast: "Recording kept on this phone.",
     },
     addWordToDictionary: "Add \"{name}\" to your words",
@@ -718,18 +719,18 @@ export const en = {
 
   notifications: {
     evening: [
-      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
+      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence will do." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Anything to tell {child}?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
       { title: "A few words tonight?", body: "A line or two for {child}'s book is plenty." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Say a few words", body: "A minute is plenty, and {child} can hear it later." },
+      { title: "Say a few words to {child}", body: "A minute is plenty. Your recording stays with the letter." },
       { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
-      body: "Open it whenever you like. A minute is plenty.",
+      body: "Open it whenever you like. A few words are enough.",
     },
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
@@ -757,11 +758,11 @@ export const en = {
     },
     letters10: {
       title: "10 letters.",
-      body: "That's ten for {child}, all in your words.",
+      body: "Ten letters for {child}, spoken by you.",
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty now, each one in your words.",
+      body: "Fifty letters of yours are in {child}'s book.",
     },
     letters100: {
       title: "100 letters.",
@@ -969,7 +970,7 @@ export const en = {
       // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
       // finishes it too, and it erases every row then present, so a letter added in between goes as well
       // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
-      failed: "Erasing didn't finish. Try again now, or wait: it will finish the next time the app opens, and that erases anything you add before then.",
+      failed: "Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
@@ -1166,7 +1167,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are still on this phone. It will try again on its own.",
+      body: "Your words are still on this phone. The app will try again.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
@@ -1194,7 +1195,7 @@ export const en = {
     },
     offline: {
       title: "You're offline",
-      body: "Keep talking. Your words are saving on this phone.",
+      body: "Keep talking. Recording doesn't need a connection.",
     },
     inviteExpired: {
       title: "This invite has expired",

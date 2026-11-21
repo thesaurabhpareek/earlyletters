@@ -203,13 +203,13 @@ describe('the saved moment (S21)', () => {
     expect(savedMoment({ kind: 'book', childName: 'Asha', month: null }).chip).toBe('Kept in Before You');
   });
 
-  it('kept private: the lock chip "Saved as private.", no line', () => {
-    expect(savedMoment({ kind: 'private', childName: 'Asha', month: 7 })).toEqual({ chip: 'Saved as private.', lock: true, line: null });
+  it('kept private: the lock chip "Kept private.", no line', () => {
+    expect(savedMoment({ kind: 'private', childName: 'Asha', month: 7 })).toEqual({ chip: 'Kept private.', lock: true, line: null });
   });
 
   it('a recording kept before its words: the lock chip, true at this moment', () => {
     expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7 })).toEqual({ chip: 'Recording kept on this phone.', lock: true, line: null });
-    expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7, keptForWords: true }).chip).toBe('Recording saved. The words will follow.');
+    expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7, keptForWords: true }).chip).toBe('Recording kept. The words will follow.');
   });
 
   it('never counts anything: no number but the month in any chip or line', () => {
@@ -221,7 +221,7 @@ describe('the saved moment (S21)', () => {
 
   it('VoiceOver hears the chip, then the line, as one announcement; the lock chip alone when there is no line', () => {
     expect(momentAnnouncement('Kept in Month 7', "Added to Asha's book.")).toBe("Kept in Month 7. Added to Asha's book.");
-    expect(momentAnnouncement('Saved as private.', null)).toBe('Saved as private.');
+    expect(momentAnnouncement('Kept private.', null)).toBe('Kept private.');
   });
 
   it('with a screen reader on, the moment holds about 3 s so the announcement is heard before the Book', () => {

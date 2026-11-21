@@ -296,7 +296,7 @@ Existing; the Keep gate sheet (E-S10) is area E's.
 | Key | St | Text | Shows on | VoiceOver | Voice Control | Card |
 |---|---|---|---|---|---|---|
 | `review.destination.filedChip` / `filedChipNewborn` / `filedChipBefore` | E | "Kept in Month {month}" / "Kept in the first weeks" / "Kept in Before You" | A-S13.saved, .savedPhoto | announced | n/a | NS-14-R3, NS-15-R2 |
-| `review.destination.addedToast` / `privateToast` / `voiceOnlyToast` | E | "Added to {child}'s book." / "Saved as private." / "Recording kept on this phone." | A-S13.saved, .savedPrivate, .voiceOnly | announced | n/a | as built |
+| `review.destination.addedToast` / `privateToast` / `voiceOnlyToast` | E | "Added to {child}'s book." / "Kept private." / "Recording kept on this phone." | A-S13.saved, .savedPrivate, .voiceOnly | announced | n/a | as built |
 | `book.waitingForWords` | E | "A recording, waiting for its words." | A-S13.voiceOnly, A-S10.keptWaiting in the Book | same | n/a | D-103 |
 | `features.billing.keepGate.heldNote` and the rest of `keepGate` | E | (area E) | A-S13.held, A-S13.gate | area E | area E | D-082 |
 

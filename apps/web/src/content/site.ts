@@ -164,7 +164,7 @@ export const site = {
       headline: 'Your voice comes with it.',
       support: 'Each spoken letter keeps its original recording, unchanged, tired end-of-day voice and all.',
       /** tonight.states.savedLetter */
-      appKept: 'Signed and kept.',
+      appKept: 'Saved and signed.',
     },
     s06: {
       label: 'The book',
