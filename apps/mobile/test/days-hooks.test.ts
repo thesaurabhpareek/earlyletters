@@ -19,6 +19,7 @@ vi.mock('../src/lib/audio-enhance', () => ({ sweepListeningCopies: () => h.calls
 vi.mock('../src/lib/app-lock/controller', () => ({ reloadAppLock: () => true }));
 vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'a', PENDING_NAME_KEY: 'b' }));
 vi.mock('../src/lib/auth/pending', () => ({ PENDING_REQUEST_KEY: 'c' }));
+vi.mock('../src/lib/backup/files', () => ({ closeBackupHandles: () => {}, deleteBackupFiles: () => {} })); // B5-4: not under test here
 vi.mock('../src/lib/billing/letter-ledger', () => ({ clearLedger: async () => {} }));
 vi.mock('../src/lib/capture/adts-file', () => ({ removeWholeFrameCopies: () => h.calls.push('copies') }));
 vi.mock('../src/lib/capture/erase', () => ({ eraseAudioFile: () => {} }));

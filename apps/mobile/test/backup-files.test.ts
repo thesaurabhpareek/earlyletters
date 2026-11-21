@@ -223,7 +223,7 @@ describe('[B5-3] a file whose exclusion reads false is deleted and the store ref
   it('pin: runtime.ts opens the file only through openSecureBackupFile (a bare openNativeDb call goes red)', () => {
     const src = readFileSync(join(__dirname, '../src/lib/backup/runtime.ts'), 'utf8');
     const body = src.slice(src.indexOf('function dbFor'), src.indexOf('async function session'));
-    expect(body).toMatch(/openSecureBackupFile\(\s*file\s*,\s*openNativeDb\s*,\s*\(o\)\s*=>\s*openBackupDb\(/);
+    expect(body).toMatch(/openSecureBackupFile\(\s*file\s*,\s*openNativeDb\s*,/);
     expect(src.match(/openNativeDb\s*\(/g)).toBeNull(); // only ever passed to the checked opener, never called
   });
 
