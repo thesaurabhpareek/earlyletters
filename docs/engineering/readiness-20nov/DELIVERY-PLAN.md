@@ -68,7 +68,7 @@ Already merged and no longer holding the cut [V PROGRESS, plan 17 3a]: BL-922 he
 | Chain | Order | Blocked by | Mark |
 |---|---|---|---|
 | Photo stack (BL-931) | #839 (4c) -> #840 (5) -> BL-1444 photo wiring (pending photos discarded on leave, one adopt at a time, picture cleared on forced sign-out; gaps 1 and 3 must land before `EXPO_PUBLIC_PHOTOS` is on in any build) -> BL-1445 design-conformance swap (XS, after the stack). The deletedAt test (a letter in Recently deleted shows no picture; review mutant M5 survived on #839) is asked on #839 and lands there or in BL-1444 [U which] | #839 waits on its restack; #840 is based on #839's branch [V]; each hop queues a macOS run; plus counsel read of the photo label, photo words, BL-868 export spec #1215, BL-960 #873, ADR Q4 before photo is on | later (photo is dark in Build 13 under Q2) |
-| New-device email | #1242 NDA-1 (link sign-in fresh in the report; reviewer notes BL-1442) -> app call for fill (no PR found [U]) -> hosted JWT claim check -> clear the pending table -> founder reads words -> flag `NEW_DEVICE_EMAIL` stays off. The pending hosted migration files (PROGRESS.md: files 33 to 38; numbering [U], see ask 5) are in develop, not applied: the founder applies them and must give an explicit go (founder ask 3). Not-you page not started [U] | Founder go on migrations; sender #1206, #1223 and fill #1224 are merged and dark [V PROGRESS] | CPOF (before the first outside family); not Build 13 |
+| New-device email | #1242 NDA-1 (link sign-in fresh in the report; reviewer notes BL-1442) -> app call for fill (no PR found [U]) -> hosted JWT claim check -> clear the pending table -> founder reads words -> flag `NEW_DEVICE_EMAIL` stays off. The pending hosted migration files (Files 33 to 38 in `supabase/APPLY.md` and PROGRESS.md; exact list and hosted state [U], see ask 5) are in develop, not applied: the founder applies them and must give an explicit go (founder ask 3). Not-you page not started [U] | Founder go on migrations; sender #1206, #1223 and fill #1224 are merged and dark [V PROGRESS] | CPOF (before the first outside family); not Build 13 |
 | B5 backup | BL-1439 (job for an erased or deleted letter drops its Keychain token; test first, low severity) -> B5 PR 3 (no PR found [U]) -> backup flip gate (NS-08-R21 second gate) | BL-1439 is `proposed` | CPOF-adjacent; not CP13 |
 | Days | days tick PR (no PR found [U]) -> days code PRs NS-46 to NS-50 (not started [U]) | Counsel packet 1.8.0 and register rows (drafts #1056 to #1058) | later |
 | Find part 2 | BL-1440 gates (rowLabel `$&` mangling, query clears on hide, Cancel clears, fallback to content, no-analytics grep) -> Book-header slice mounts Find; Find 8/8; second-account guard #1208 | BL-1440 must land before mount; #799 (docs/legal) and #873 wait on the founder's go | later (Build 14, Q2) |
@@ -83,7 +83,7 @@ Moments waves and their blockers, for the CTO:
 
 | Wave | PRs | Starts with no founder answer | Waits for |
 |---|---|---|---|
-| A | 1 to 4, 5 (synthetic table), 6, 8, 12 | Yes (pure TypeScript and tab shell behind a flag; BL-1432, BL-1433) | Nothing but the spec reaching develop (#1294 open) |
+| A | 1 to 4, 5 (synthetic table), 6, 8, 12 | Yes (pure TypeScript and tab shell behind a flag; BL-1432, BL-1433) | Nothing but the spec reaching develop (#1294 is merged) |
 | A spike | G1a device read-out (BL-1434, pair) | No: needs his phone or a simulator with a script-made Asha library | His phone |
 | B | 2, 3, 7, 13, 14 yes; 9 and 5b no | Partly | 9: G1a read-out and G3; 5b: licence read (G11b); 7: O-38 |
 | C to D | 10, 11, 15, 16, 17, 18 to 24 | No (native and flows) | Wave B, O-01 tab position, O-39 flag split, O-46 numbers before PR 16 |
@@ -103,7 +103,7 @@ Roster WIP (per agent, `roster.json`): mobile 3, qa 3, sync 2, analytics 2, cont
 
 | Lane | In flight (open PRs) | Next 3 ready, no open PR | WIP limit |
 |---|---|---|---|
-| mobile | #1128, #1159 (founder-gated), #1242, #1266, #1273, #1274, #1285, #1290, #798; photo stack #839, #840 (one slot) | BL-1424, BL-1425, BL-1406; then BL-1446 (new, after BL-925 words) | 4 non-draft; the first two founder-gated PRs do not use review time, so 2 more may start |
+| mobile | #1128, #1159 (founder-gated), #1242, #1266, #1273, #1274, #1290, #798; photo stack #839, #840 (one slot) | BL-1424, BL-1425, BL-1406; then BL-1446 (new, after BL-925 words) | 4 non-draft; the first two founder-gated PRs do not use review time, so 2 more may start |
 | sync, backend | #1289 (sync); #1215 export spec (data-architect, founder) | BL-1417, BL-1418, BL-1419 (backup scan, test-only) | 2 |
 | analytics | #1259, #1260, #1261 (P4 stack, one slot); #1086 held | none startable until the P4 stack merges (BL-1236 depends on BL-1235); then BL-1236, BL-1237, BL-1239 | 1 stack plus 1 |
 | qa | #1151, #1252, #1293 | BL-1402, BL-1403, BL-442 | 3 |
@@ -111,7 +111,7 @@ Roster WIP (per agent, `roster.json`): mobile 3, qa 3, sync 2, analytics 2, cont
 | design-systems | #1251 (tokens v2); Moments docs #1277, #1278, #1281 (PROPOSED); #1270 draft | BL-418, BL-421, BL-891 (BL-1443 proposed) | 2 |
 | ops, platform | #1117 (founder); ops CI proposal in flight (#1303 and #1304 are merged) | BL-1414, BL-897 (only two ready) | 1 |
 | privacy | #873 (founder), #1267 (Moments, PROPOSED) | BL-414, BL-415, BL-850 | 2 |
-| product | #1253, #1264, #1280, #1282, #1294, #1296 | n/a | 2 non-draft; the six Moments and split docs are already over it, so no new product PR until two merge |
+| product | #1253, #1264, #1280, #1282, #1296 | n/a | 2 non-draft; the six Moments and split docs are already over it, so no new product PR until two merge |
 | other (not asked, for the CTO) | security: BL-1404, BL-1411; payments: BL-1421, BL-441; speech: BL-148, BL-432 | each lane has two or three startable rows | 2 each |
 
 ### Ready rows that are stale or already done (status lines to fix)
@@ -142,7 +142,7 @@ Every open ask, each with the default that stands until he answers and what it u
 | 2 | Approve or change the BL-925 line (let-go not finished) | Not approved; BL-926, BL-977 and BL-1446 stay blocked | The keeping floor, the biggest CP13 block |
 | 3 | Release path: name #830 with its full sha, say which phones he holds, approve the `app-store` environment, approve the BL-929 perf EAS profile, run the device sheet, submit | Nothing happens without him | Release PR, RC tag, EAS build, submission |
 | 4 | CCO approval comments for #1159 (FP-2) and #1128 (FP-12), or say go | Both stay blocked | The consent builder, which lands before any other `consent.ts` change, and the first-run queue behind it |
-| 5 | Hosted migrations: explicit go to apply the pending migration files to `scribe-staging` first (PROGRESS.md calls them files 33 to 38; `supabase/APPLY.md` numbers only to 32 and the tree has 37 migration files, so which numbering is meant is [U]: apply the files listed in `supabase/APPLY.md` and the later files in `supabase/migrations`) (agents prepare the plan, never apply); hosted state not re-read [U] | Hold; servers off for Build 13 | New-device email chain, S1, C3, C9, fill and re-key (CPOF) |
+| 5 | Hosted migrations: explicit go to apply the pending migration files to `scribe-staging` first (PROGRESS.md and `supabase/APPLY.md` both call the pending ones Files 33 to 38; those are APPLY.md numbers, not a count, and the tree holds 37 migration files in total; data-architect names the exact list, and which are already applied on the hosted project is [U], before the founder is asked for a go) (agents prepare the plan, never apply); hosted state not re-read [U] | Hold; servers off for Build 13 | New-device email chain, S1, C3, C9, fill and re-key (CPOF) |
 | 6 | docs/legal PRs: go or hold on #873 (data inventory), #799 (Find index row), #1117 (no model name as author), and export spec #1215 | Hold | BL-960 and Find on, BL-933 export; photo on (Build 14) |
 | 7 | Decisions with a recommended default: GAP-04 (taught-names screen in 1.0; product recommends no), F-21 (say plainly there is no per-picture description in 1.0; recommends yes), F-08d (neutral lock-screen body; one fixed string, candidate "Whenever you have a minute." is PROPOSED) | Recommendation, not in effect; nothing is decided until he says | Days and reminder words, photo copy |
 | 8 | DECISIONS rows he must paste or confirm: E26 delegated D-entry quoting his words, the allowance per phone entry (D-082 amendment), ADRs 0036 to 0038 (PROPOSED) | Stay PROPOSED | Agent readiness, allowance enforcement |
