@@ -94,7 +94,7 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 
 ### 1.3a Pending inputs not yet landed
 
-- `EXPERIENCE-AND-MOTION.md` on `origin/wip/moments-experience`: a design agent is writing it; it was not on the remote when this edit was made. When it lands, `product` folds its findings into section 14 and the host sheet rows and updates this list.
+- `EXPERIENCE-AND-MOTION.md` on `origin/wip/moments-experience`: a design agent is writing it; it was not on the remote when this edit was made. At a last check the branch held a design prototype commit (73e845b0: tab states, host sheet, expand, tray hand-off) whose README I read and whose 1,444 line HTML I did not read; it is not the written document, so it is not folded in either. When it lands, `product` folds its findings into section 14 and the host sheet rows and updates this list.
 - The market benchmark landed (`MARKET-BENCHMARK.md`, `origin/wip/moments-benchmark`, head 18c27847) and is folded in (spec 27c, experiments E8 to E11).
 - An independent challenger read of EXH-ENG-1, EXH-ENG-4 and EXH-ENG-7 (see `HARNESS-REPLAN-HYBRID.md` section 4).
 
