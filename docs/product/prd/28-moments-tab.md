@@ -13,7 +13,7 @@ Conventions. Row id: `NS-53-R<n>`. Priority: P0 (a) a promise, (b) a legal or st
 
 Founder ruling of 21 Nov (his words: "No it needs to ship with photo library read."). The first release of Moments includes the photo library read. This replaces the earlier default of a first build with no library everywhere in this file. Work that was "before engineering" is now a release gate: it must pass before store submission, not before coding starts (section 21). If a gate fails, the flag stays off for that build and the tab ships on its no-library content; that is a fallback, not the plan. Which part slips when a gate does not close (the date, or only the library part) is the founder's question O-37, answered before the first gate read-out and not at the gate (EX-CPO-1). The ruling closes the reconciliation pack's founder decision 3 (first public build holds the tab with no library: now B, wait for the library part is overruled in favour of shipping it) and the route-order and wheel-timing rows 14 and 30 in part. The coordinator named decisions 2 and 5; in the pack as I read it those are "Moments is not the landing tab" and "after Keep land on the Book", which this ruling does not touch, so I treat 3 as the one closed and ask the coordinator to confirm the numbering (O-29).
 
-How this file was built. I read all 29 lead documents that exist (D7 exists on `origin/wip/moments-d7`, head `abffeecd2f643d6cfe5c5ae356fcfb1c46cc2d3f`; it is the HTML prototype and its README, read in round 1 and recorded in section 24 as C-30 to C-33; P6 and the reconciliation pack arrived after the first draft and are folded in). Where leads disagreed I chose and said why (section 24). Where the choice is the founder's I wrote OPEN and gave a default. Facts about Apple and the law are as the leads read them (their URLs are in their files); this file read none of them again and marks them as the leads' findings.
+How this file was built. I read all 29 lead documents that exist (D7 exists on `origin/wip/moments-d7`, head `abffeecd2f643d6cfe5c5ae356fcfb1c46cc2d3f`; it is the HTML prototype and its README, read in round 1 and recorded in section 24 as C-30 to C-33; P6 and the reconciliation pack arrived after the first draft and are folded in). Row count after round 1 (counted from the tables, R268): 268 rows in all (R1 to R191 from the first draft, R192 to R268 from the review); phase 1 (the first release) 253, phase 2 12, phase 3 2, not planned 1 (R67). Where leads disagreed I chose and said why (section 24). Where the choice is the founder's I wrote OPEN and gave a default. Facts about Apple and the law are as the leads read them (their URLs are in their files); this file read none of them again and marks them as the leads' findings.
 
 ## 1. The customer problem and the job
 
@@ -34,6 +34,8 @@ Asha's parent is tired. It is 9:40 at night. The baby is asleep. There are four 
 When I am tired and the days blur together, I want to see the days and pictures that are already mine and pick one to tell {child} about, so that a letter takes a minute to start and never feels like homework.
 
 Short form for the tab (verb: choose; P1 section 3, D6): "I go to Moments to choose a day to tell {child} about."
+
+Which ranked job this serves (EX-CPO-11): the tab serves job 5 (start a letter from something already in hand) and, through the day sheet, job 2 (a few minutes). Jobs 1 and 2 are guarded by R86, R98 and R126 so that the tab never makes starting a letter harder. If the founder wants the customer file `02-customers.md` re-ranked, that is a founder-visible change to the PRD v2 customer file and is not made here.
 
 ### 1.4 What the customer problem is not
 
@@ -62,6 +64,8 @@ It is not "the app should write the letter". The constitution stands: the machin
 - No account-level photo sync (NS-52 Variant B is a separate decision and changes the label; MT-X4-R22).
 - No music, mood or health cards from Apple's sheet (privacy read, element table).
 - No paid feature depends on the library (MT-X4-R11).
+- Any later move to Variant B, or to any server holding pictures, needs a CFO sizing note and a founder money decision before it is specified, because the per-family run cost target would change (EX-CFO-13).
+- No print, gift, keepsake or "make a book from this day" is specified here; the attach resize keeps a print-quality original (R261, EX-CBO-6).
 
 ## 3. Principles as proposed, and where a current ruling is amended
 
@@ -879,7 +883,7 @@ Not proposed: the permission result (allowed, limited, denied), any count of day
 
 ### 19.1 Modules (X3)
 
-One pure moment engine in `packages/core/src/moments` (types, exclude, group, rules, occasions, place, collage, rank, plan) with three callers: the tab (`use-moments` hook), the local push planner (one boolean plus a day key) and, in phase 2, a server email job that sees only server-held facts. One native module `scribe-library` reads the library (five closed functions, NS-51-R29); `scribe-photo` keeps the picker and the attach pipeline and gains the Route A door in phase 3. Screens call `apps/mobile/src/lib` only (CODE-R11). The type has no words in it; enums are defined once; no id travels in a route; flags only narrow; one `momentsFor` registry holds each source's surfaces as data. The router adds a fourth tab and the `moments/pick` modal route; a test pins tab order and the route table. An ADR is drafted when the founder signs (number to check; X3 section 21 holds the draft).
+One pure moment engine in `packages/core/src/moments` (types, exclude, group, rules, occasions, place, collage, rank, plan) with three callers: the tab (`use-moments` hook), the local push planner (one boolean plus a day key) and, in phase 2, a server email job that sees only server-held facts. One native module `scribe-library` reads the library (the function list of R220, which replaces the five closed functions of NS-51-R29); `scribe-photo` keeps the picker and the attach pipeline and gains the Route A door in phase 3. Screens call `apps/mobile/src/lib` only (CODE-R11). The type has no words in it; enums are defined once; no id travels in a route; flags only narrow; one `momentsFor` registry holds each source's surfaces as data. The router adds a fourth tab and the `moments/pick` modal route; a test pins tab order and the route table. An ADR is drafted when the founder signs (number to check; X3 section 21 holds the draft).
 
 ### 19.2 Flags and switches
 
@@ -897,7 +901,7 @@ One pure moment engine in `packages/core/src/moments` (types, exclude, group, ru
 |---|---|---|
 | 1 First release | The tab (second of four, Home landing), For you (typed days, ticked Days, birthdays and month days, public holidays by date, a year ago from letters and pictures, the 111 prompts, pictures already picked), the permission ask on the parent's tap, the own library read (Route B, Limited honoured), Recent, day cards with the parent's own pictures and the weekday and date, places from the offline table, teaching verbs, capture hand-off and attach, local reminders from phone-held facts, F1 and F2 ON in the release profile | Release gates G1b to G7, G10 and G11 (section 21), after the G1a spike |
 | 2 | The library-timed local reminder (F4); the lifecycle email on a parent-chosen date (dark first); the Apple geocoder (F3) if G8 is signed; run cards if the card sort says so | Counsel on Q-X1-6; E75 and CATALOG ruling; written counsel answer on G8 |
-| 3 | Route A (Apple's journaling suggestions picker) as an optional door; K-SUG; any widget | Entitlement answer, DPLA read, spike D1; G9 |
+| 3 | Route A (Apple's journaling suggestions picker) as an optional door; any widget (K-SUG is not planned, O-32) | Entitlement answer, DPLA read, spike D1 |
 
 If a gate in phase 1 fails, the part it guards stays dark in that build and the release record names it (MT-P5-R8). Whether the date or the library part slips is the founder's question O-37 (recommended: the library part only for G2 and G8, which need a written licensed-counsel answer; the date for the others), asked now and not at the gate (EX-CPO-1, R262). Silence from counsel is never a pass: a part whose gate needs counsel stays dark.
 
@@ -963,7 +967,7 @@ HYPOTHESIS, stated once: that Moments is a daily-return driver. No parent eviden
 | E1 | Value first, then ask, or ask first? | Moderated, order swapped across five, Asha examples | Fewer than three of five prefer value first |
 | E2 | Does Moments in second position help or hurt starting a letter? | Two TestFlight builds, F1 different, n of at least 20 per group before any percentage | The group with the tab starts fewer letters |
 | E3 | Route A and Route B in the same frame | Same five parents see both | Route A makes a parent think the app wrote the title |
-| E4 | Is the daily reason real? | Two-week diary, tester question 1 | Fewer than half of n say they opened it unprompted |
+| E4 | Is the daily reason real? Did the second prompt surface help or crowd Home's question (EX-CPO-12)? | Two-week diary, tester question 1 and one added sub-question | Fewer than half of n say they opened it unprompted, or the second question crowds |
 | E5 | Pressure | Tester question 3 | Any parent says yes in a way traceable to a card or a push (blocks launch until the copy changes) |
 | E6 | Does a local nudge help without nagging? | Existing classes only | People turn notifications off after a Moments-related line |
 | E7 | Do places and occasions help or feel like watching? | Five-parent card sort on the real-library trial (P6 6.10) | Any parent says "I did not expect it to know" (halts that signal) |
@@ -1096,7 +1100,7 @@ These rows complete the motion, transition, layout and permission detail that th
 
 ## 22b. Rows added by the executive review (round 1)
 
-These rows continue the numbering from R191. Each names the review findings it carries in Satisfies (section 27 is the disposition table). A row marked phase 2 is not in the first release.
+These rows continue the numbering from R191. Each names the review findings it carries in Satisfies (section 27 is the disposition table). Existing rows that a finding changed carry the finding ids and the new text in their own row, marked "Review (ids)". A row marked phase 2 is not in the first release.
 
 | Id | Given / When / Then | Layer | Pri | Phase | Satisfies |
 |---|---|---|---|---|---|
@@ -1398,11 +1402,13 @@ Common questions for every reviewer: Is the first release too large to ship safe
 ### 25.13 Review log
 | Round | Date | Reviewers | Rows changed | Open items |
 |---|---|---|---|---|
-| 1 | | | | |
+| 1 | 21 Nov 2026 | CMO, CAIO, Design, Engineering, CISO, CCO, CDO, Privacy, CPO, CFO, CLO, CBO (all ACCEPT-WITH-CHANGES) | 35 existing rows amended; R192 to R268 added (77 rows); 17.1, 17.2, 19.4, 19.5, 20.1, 21.1 to 21.3, 22b, 23.1, 23.2 added; section 27 records every finding | Founder decisions O-37 to O-47 and the open O rows of section 23; counsel on the ten questions of 21.3; the G1a spike; the freeze review of priorities (EX-CPO-5) |
+
+Round 1 verdicts and where each reviewer's answer lives: the first twelve review answers are the findings of section 27; the verdict for every role is ACCEPT-WITH-CHANGES, with the changes listed there. The Privacy Officer recommends APPROVE WITH CHANGES on READ_SET_V1 (G3) and the CAIO's conflict of interest (an AI session reviewing an AI-written spec) stands, so a challenger who is neither the author nor a reviewer should read the freeze copy (EX-AI conflict note).
 
 ## 26. Traceability: every lead-document requirement id
 
-Every id below is either carried by the NS-53 rows named, or marked "not carried" with a reason. Each id is shown as id:row number, where "+n" means n further NS-53 rows also carry it and "nc" means not carried. The lead documents are P1 to P6, D1 to D6, A1 to A5, T1 to T5, X1 to X6, B1 and R1; ids of the form Q-P1-n, OQ-P4-n and P6-Qn are open questions carried in section 23. Coverage is computed by script from the Satisfies column when this file is assembled: 836 of 845 ids are carried by at least one row, 9 are marked not carried, 0 are unmapped.
+Every id below is either carried by the NS-53 rows named, or marked "not carried" with a reason. Each id is shown as id:row number, where "+n" means n further NS-53 rows also carry it and "nc" means not carried. The lead documents are P1 to P6, D1 to D6, A1 to A5, T1 to T5, X1 to X6, B1 and R1; ids of the form Q-P1-n, OQ-P4-n and P6-Qn are open questions carried in section 23. Coverage was computed by script from the Satisfies column when the first draft was assembled: 836 of 845 ids are carried by at least one row, 9 are marked not carried, 0 are unmapped. That figure is carried forward unchanged and not recomputed in round 1 (the trace script needs the lead-document branches; UNVERIFIED this round): rows R192 to R268 carry review finding ids (EX-...) and no new lead-document id, and no amendment removed a lead id from a row. Review coverage is a second measure: 184 of 184 findings are dispositioned in section 27 and each ACCEPTED or PARTIAL one names a row or section that exists.
 
 | Lead doc | id : NS-53 row number (+n further rows; nc = not carried, reason in the not-carried list below) |
 |---|---|
@@ -1451,14 +1457,226 @@ Not carried (intentionally), with reasons:
 | MT-D3-Q1 | A question about the tab name. Settled by D6 and PR #1276 (Moments, in-app only). |
 | MT-P6-R13 | Reserved id in P6 with no requirement (keeps numbering aligned). Nothing to carry. |
 
-## 27. What is VERIFIED, UNVERIFIED and a guess
+## 27. Executive review disposition (round 1)
+
+Twelve reviews were folded in: CMO, CAIO, Design, Engineering, CISO, CCO, CDO, Privacy, CPO, CFO, CLO, CBO. Every verdict was ACCEPT-WITH-CHANGES. Each finding is decided ACCEPTED (the spec changed, the row or section is named), PARTIAL (part applied, the rest stated) or REJECTED (one-line reason). Where a finding is the founder's (scope cuts, the F2a/F2b split, O-37, the `source: moment` event, the machine-label boundary record, faces and people, the K-SUG drop, any spend, counsel engagement, tab position) the spec shows it as a founder question with a recommended default and applies nothing silently. Every BLOCKER is fixed by an edit or raised as a founder question with a default: the BLOCKER list is EX-CMO-1 to 3, EX-AI-1, EX-DES-1 to 3, EX-ENG-1, 3, 4, 5, EX-SEC-1 to 3, EX-CCO-1, 2, EX-CDO-1, EX-PRV-1, 2, EX-CPO-1, 2 and EX-CLO-1, 2.
+
+Counts: 184 findings (BLOCKER 23, MAJOR 95, MINOR 66): ACCEPTED 168, PARTIAL 15, REJECTED 1.
+
+| Role | Findings | Accepted | Partial | Rejected |
+|---|---|---|---|---|
+| CMO | 16 | 16 | 0 | 0 |
+| CAIO | 13 | 12 | 1 | 0 |
+| Design | 21 | 17 | 3 | 1 |
+| Engineering | 21 | 20 | 1 | 0 |
+| CISO | 12 | 11 | 1 | 0 |
+| CCO | 14 | 13 | 1 | 0 |
+| CDO | 18 | 17 | 1 | 0 |
+| Privacy | 14 | 12 | 2 | 0 |
+| CPO | 15 | 11 | 4 | 0 |
+| CFO | 13 | 13 | 0 | 0 |
+| CLO | 18 | 17 | 1 | 0 |
+| CBO | 9 | 9 | 0 | 0 |
+
+| Finding id | Role | Severity | Decision | Where in the spec, or the reason |
+|---|---|---|---|---|
+| EX-CMO-1 | CMO | BLOCKER | ACCEPTED | R192, 8.5, section 16 |
+| EX-CMO-2 | CMO | BLOCKER | ACCEPTED | R193, R240 |
+| EX-CMO-3 | CMO | BLOCKER | ACCEPTED | R194, R8, O-41 |
+| EX-CMO-4 | CMO | MAJOR | ACCEPTED | R195, G4 |
+| EX-CMO-5 | CMO | MAJOR | ACCEPTED | 13.3 (bullet deleted), R196 |
+| EX-CMO-6 | CMO | MAJOR | ACCEPTED | 13.6, R197, R188 |
+| EX-CMO-7 | CMO | MAJOR | ACCEPTED | R193 |
+| EX-CMO-8 | CMO | MAJOR | ACCEPTED | R193; entries proposed in FREEZE-CHECKLIST.md, CLAIMS.md not edited |
+| EX-CMO-9 | CMO | MAJOR | ACCEPTED | R193, R260 |
+| EX-CMO-10 | CMO | MAJOR | ACCEPTED | R8, R194 |
+| EX-CMO-11 | CMO | MINOR | ACCEPTED | R260 |
+| EX-CMO-12 | CMO | MINOR | ACCEPTED | R198 |
+| EX-CMO-13 | CMO | MINOR | ACCEPTED | R192 |
+| EX-CMO-14 | CMO | MINOR | ACCEPTED | R260 |
+| EX-CMO-15 | CMO | MINOR | ACCEPTED | R200 |
+| EX-CMO-16 | CMO | MINOR | ACCEPTED | R199 |
+| EX-AI-1 | CAIO | BLOCKER | ACCEPTED | R201, 3.3 id notes (F3 replaced) |
+| EX-AI-2 | CAIO | MAJOR | PARTIAL | K-SUG marked NOT PLANNED (7a.4, R67, R203, O-32) and RSN-SUGGEST removed; R67 stays in the table as a marked row so ids stay stable, and the decision is the founder's at O-32 |
+| EX-AI-3 | CAIO | MAJOR | ACCEPTED | H-10 (proposed; the founder signs it in the G10 entry, O-42) |
+| EX-AI-4 | CAIO | MAJOR | ACCEPTED | R204, G1a |
+| EX-AI-5 | CAIO | MAJOR | ACCEPTED | R205 |
+| EX-AI-6 | CAIO | MINOR | ACCEPTED | 6.4a, R203, R205 |
+| EX-AI-7 | CAIO | MINOR | ACCEPTED | R36 |
+| EX-AI-8 | CAIO | MINOR | ACCEPTED | R206 |
+| EX-AI-9 | CAIO | MINOR | ACCEPTED | R202 (K5), R236, 7a.1 |
+| EX-AI-10 | CAIO | MINOR | ACCEPTED | R202, R201 |
+| EX-AI-11 | CAIO | MINOR | ACCEPTED | R207 |
+| EX-AI-12 | CAIO | MINOR | ACCEPTED | R203 |
+| EX-AI-13 | CAIO | MINOR | ACCEPTED | 21.3 Q3 and G2; the children's image analysis question is carried at G9 |
+| EX-DES-1 | Design | BLOCKER | ACCEPTED | R208 |
+| EX-DES-2 | Design | BLOCKER | ACCEPTED | R209 |
+| EX-DES-3 | Design | BLOCKER | ACCEPTED | R219, 7a.1, C-30 |
+| EX-DES-4 | Design | MAJOR | ACCEPTED | R210 |
+| EX-DES-5 | Design | MAJOR | ACCEPTED | R211 |
+| EX-DES-6 | Design | MAJOR | PARTIAL | R212: one target and the filled-button rule accepted; the text-weight verb at the card foot is left to the component spec of R13 |
+| EX-DES-7 | Design | MAJOR | PARTIAL | R212 takes four verbs as a design default; the CPO cut list differs (keeps "Not today"), so the choice is the founder's at O-39 (23.2) |
+| EX-DES-8 | Design | MAJOR | REJECTED | R10 and R177 depend on the switch; the never-stack-at-AX1 constraint is accepted (R211); the single-page alternative goes to the Chief Design Officer as O-43 |
+| EX-DES-9 | Design | MAJOR | ACCEPTED | R209 |
+| EX-DES-10 | Design | MAJOR | ACCEPTED | R195, R204 |
+| EX-DES-11 | Design | MAJOR | ACCEPTED | R210, G4 |
+| EX-DES-12 | Design | MAJOR | ACCEPTED | R213 |
+| EX-DES-13 | Design | MAJOR | ACCEPTED | R214 |
+| EX-DES-14 | Design | MINOR | ACCEPTED | R215 |
+| EX-DES-15 | Design | MINOR | ACCEPTED | R216, C-31 |
+| EX-DES-16 | Design | MINOR | ACCEPTED | R216, C-32 |
+| EX-DES-17 | Design | MINOR | ACCEPTED | R217 |
+| EX-DES-18 | Design | MINOR | ACCEPTED | R216, C-33 |
+| EX-DES-19 | Design | MINOR | PARTIAL | R201 accepted (parent words in the letter face, machine lines in the interface face); the date heading style is left to the component spec of R13 |
+| EX-DES-20 | Design | MINOR | ACCEPTED | R218 |
+| EX-DES-21 | Design | MINOR | ACCEPTED | R206 |
+| EX-ENG-1 | Engineering | BLOCKER | ACCEPTED | R220 |
+| EX-ENG-3 | Engineering | BLOCKER | ACCEPTED | R221, 17.1 |
+| EX-ENG-4 | Engineering | BLOCKER | ACCEPTED | R222, R169 |
+| EX-ENG-5 | Engineering | BLOCKER | ACCEPTED | 19.4 (26 PRs, five waves) |
+| EX-ENG-2 | Engineering | MAJOR | ACCEPTED | R220 |
+| EX-ENG-6 | Engineering | MAJOR | ACCEPTED | R267, R247 |
+| EX-ENG-7 | Engineering | MAJOR | ACCEPTED | G1a and G1b (section 21) |
+| EX-ENG-8 | Engineering | MAJOR | ACCEPTED | R228, R229 |
+| EX-ENG-9 | Engineering | MAJOR | ACCEPTED | R223 |
+| EX-ENG-10 | Engineering | MAJOR | ACCEPTED | R224 |
+| EX-ENG-11 | Engineering | MAJOR | ACCEPTED | R227, R87 (default; O-38 stays the founder's) |
+| EX-ENG-12 | Engineering | MAJOR | ACCEPTED | R225 |
+| EX-ENG-13 | Engineering | MAJOR | ACCEPTED | R226 |
+| EX-ENG-14 | Engineering | MAJOR | ACCEPTED | R222, R171 |
+| EX-ENG-15 | Engineering | MINOR | ACCEPTED | R224 |
+| EX-ENG-16 | Engineering | MINOR | ACCEPTED | R224 |
+| EX-ENG-17 | Engineering | MINOR | PARTIAL | R268 states the first-release count and lists the later rows; the Phase column already separates them, so no second table was created |
+| EX-ENG-18 | Engineering | MINOR | ACCEPTED | R225 |
+| EX-ENG-19 | Engineering | MINOR | ACCEPTED | R225 |
+| EX-ENG-20 | Engineering | MINOR | ACCEPTED | R220, C-38 |
+| EX-ENG-21 | Engineering | MINOR | ACCEPTED | R206, R230 |
+| EX-SEC-1 | CISO | BLOCKER | ACCEPTED | R230, 17.1 |
+| EX-SEC-2 | CISO | BLOCKER | ACCEPTED | R222, R231, G11 |
+| EX-SEC-3 | CISO | BLOCKER | ACCEPTED | R229, G11b |
+| EX-SEC-4 | CISO | MAJOR | ACCEPTED | R228 |
+| EX-SEC-5 | CISO | MAJOR | ACCEPTED | R221, 17.1, 17.2 |
+| EX-SEC-6 | CISO | MAJOR | ACCEPTED | R232, R237 |
+| EX-SEC-7 | CISO | MAJOR | ACCEPTED | R233, R226 |
+| EX-SEC-8 | CISO | MAJOR | ACCEPTED | 13.3, R234, C-35 |
+| EX-SEC-9 | CISO | MAJOR | ACCEPTED | R197 |
+| EX-SEC-10 | CISO | MAJOR | PARTIAL | R235 and O-44: default disclose plus device row D-3; the CLO's alternative (exclude the folder) is recorded and is the counsel default |
+| EX-SEC-11 | CISO | MINOR | ACCEPTED | R236 |
+| EX-SEC-12 | CISO | MINOR | ACCEPTED | R237 |
+| EX-CCO-1 | CCO | BLOCKER | ACCEPTED | R238, 21.3 |
+| EX-CCO-2 | CCO | BLOCKER | ACCEPTED | R239 |
+| EX-CCO-3 | CCO | MAJOR | ACCEPTED | G11d, R240 |
+| EX-CCO-4 | CCO | MAJOR | ACCEPTED | R240 |
+| EX-CCO-5 | CCO | MAJOR | PARTIAL | R241: a separate `PLACE_READ` constant and a separately signed location member in G3; the F2a/F2b build flag split is the founder's at O-39 |
+| EX-CCO-6 | CCO | MAJOR | ACCEPTED | R242, H-2 |
+| EX-CCO-7 | CCO | MAJOR | ACCEPTED | 13.3, R196 |
+| EX-CCO-8 | CCO | MAJOR | ACCEPTED | R197, R142 |
+| EX-CCO-9 | CCO | MAJOR | ACCEPTED | 19.5, R243 |
+| EX-CCO-10 | CCO | MAJOR | ACCEPTED | R244 |
+| EX-CCO-11 | CCO | MINOR | ACCEPTED | R87, R227, O-38 |
+| EX-CCO-12 | CCO | MINOR | ACCEPTED | R240 |
+| EX-CCO-13 | CCO | MINOR | ACCEPTED | R236 |
+| EX-CCO-14 | CCO | MINOR | ACCEPTED | Section 28: carried legal facts keep their labels; every legal fact stays UNVERIFIED until the CCO or regulatory-affairs reads it |
+| EX-CDO-1 | CDO | BLOCKER | ACCEPTED | Section 18, R251 |
+| EX-CDO-2 | CDO | MAJOR | PARTIAL | R87 stands as the default and the send-an-enum ruling of the CDO is the recorded alternative at O-38 (the founder's) |
+| EX-CDO-3 | CDO | MAJOR | ACCEPTED | Section 18, R251 |
+| EX-CDO-4 | CDO | MAJOR | ACCEPTED | Section 18, R251 |
+| EX-CDO-5 | CDO | MINOR | ACCEPTED | Section 18, R251 |
+| EX-CDO-6 | CDO | MAJOR | ACCEPTED | R250, G11c |
+| EX-CDO-7 | CDO | MAJOR | ACCEPTED | R245, 17.2 |
+| EX-CDO-8 | CDO | MAJOR | ACCEPTED | R246 |
+| EX-CDO-9 | CDO | MAJOR | ACCEPTED | R247, O-13, O-14 |
+| EX-CDO-10 | CDO | MAJOR | ACCEPTED | R229, R248 |
+| EX-CDO-11 | CDO | MAJOR | ACCEPTED | R204 |
+| EX-CDO-12 | CDO | MINOR | ACCEPTED | R249 |
+| EX-CDO-13 | CDO | MINOR | ACCEPTED | R206, R229 |
+| EX-CDO-14 | CDO | MAJOR | ACCEPTED | R197, R188 (phase 2, smaller shape) |
+| EX-CDO-15 | CDO | MAJOR | ACCEPTED | R252, 20.1 |
+| EX-CDO-16 | CDO | MINOR | ACCEPTED | R228 |
+| EX-CDO-17 | CDO | MINOR | ACCEPTED | R221, R250 |
+| EX-CDO-18 | CDO | MINOR | ACCEPTED | R200, R257 |
+| EX-PRV-1 | Privacy | BLOCKER | ACCEPTED | R192 |
+| EX-PRV-2 | Privacy | BLOCKER | ACCEPTED | R253 |
+| EX-PRV-3 | Privacy | MAJOR | ACCEPTED | R228 |
+| EX-PRV-4 | Privacy | MAJOR | ACCEPTED | R236 |
+| EX-PRV-5 | Privacy | MAJOR | ACCEPTED | R254, R195, R204 |
+| EX-PRV-6 | Privacy | MAJOR | PARTIAL | R247: store none by default (O-13, O-14); the five controls apply only if the founder signs a stored identifier |
+| EX-PRV-7 | Privacy | MAJOR | ACCEPTED | Section 18, R251, R87 |
+| EX-PRV-8 | Privacy | MAJOR | ACCEPTED | R240, R235, R81 |
+| EX-PRV-9 | Privacy | MINOR | PARTIAL | R255: tile menu with Undo accepted; whether the default fetch excludes Recently Deleted is UNVERIFIED and is a G1a line |
+| EX-PRV-10 | Privacy | MINOR | ACCEPTED | R256, R192 |
+| EX-PRV-11 | Privacy | MINOR | ACCEPTED | R197, 13.6 |
+| EX-PRV-12 | Privacy | MINOR | ACCEPTED | R200 |
+| EX-PRV-13 | Privacy | MINOR | ACCEPTED | R226 |
+| EX-PRV-14 | Privacy | MINOR | ACCEPTED | R257 |
+| EX-CPO-1 | CPO | BLOCKER | ACCEPTED | O-37, R262, 19.3, 21.1 |
+| EX-CPO-2 | CPO | BLOCKER | ACCEPTED | R87, section 18, G-2, R251, O-38 |
+| EX-CPO-3 | CPO | MAJOR | PARTIAL | The cut list is shown as a recommendation at O-39 (23.2) and is not applied to the rows (founder-only scope cut) |
+| EX-CPO-4 | CPO | MAJOR | PARTIAL | R241 and O-39: the flag split is a recommendation; the code-level `PLACE_READ` constant is applied |
+| EX-CPO-5 | CPO | MAJOR | PARTIAL | R268 and the "x of n" wording accepted; the regrade of existing rows is deferred to the freeze review, and no 28b file or row merges, because row ids must stay stable and the Phase column separates phases |
+| EX-CPO-6 | CPO | MAJOR | PARTIAL | R36, O-11 and the S3 text accepted; merging R58 into R64 is not applied (ids stay stable) |
+| EX-CPO-7 | CPO | MAJOR | ACCEPTED | 13.4, R265, O-22 |
+| EX-CPO-8 | CPO | MAJOR | ACCEPTED | R258 |
+| EX-CPO-9 | CPO | MAJOR | ACCEPTED | 7a.4, O-32 reframed |
+| EX-CPO-10 | CPO | MAJOR | ACCEPTED | Section 23 owner column, O-42, G10 |
+| EX-CPO-11 | CPO | MINOR | ACCEPTED | 1.3 and 2.1 sentences |
+| EX-CPO-12 | CPO | MINOR | ACCEPTED | E4 sub-question, R265 |
+| EX-CPO-13 | CPO | MINOR | ACCEPTED | Header, section 24 C-30 to C-33, section 29 |
+| EX-CPO-14 | CPO | MINOR | ACCEPTED | 6.4a, R194, 21.3 Q5 |
+| EX-CPO-15 | CPO | MINOR | ACCEPTED | Section 23 (weekdays corrected) |
+| EX-CFO-1 | CFO | MAJOR | ACCEPTED | 21.2, R263 |
+| EX-CFO-2 | CFO | MAJOR | ACCEPTED | 21.2, 21.3, R263 |
+| EX-CFO-3 | CFO | MAJOR | ACCEPTED | R229, G11b |
+| EX-CFO-4 | CFO | MAJOR | ACCEPTED | 21.2 effort, R264, R262 |
+| EX-CFO-5 | CFO | MAJOR | ACCEPTED | 20.1, R252, R264 |
+| EX-CFO-6 | CFO | MAJOR | ACCEPTED | 21.2, O-47 |
+| EX-CFO-7 | CFO | MAJOR | ACCEPTED | R197, 13.6 |
+| EX-CFO-8 | CFO | MINOR | ACCEPTED | 21.2 (EAS builds) |
+| EX-CFO-9 | CFO | MINOR | ACCEPTED | R167, R251 |
+| EX-CFO-10 | CFO | MINOR | ACCEPTED | R236 |
+| EX-CFO-11 | CFO | MINOR | ACCEPTED | 21.2 (Route A entitlement) |
+| EX-CFO-12 | CFO | MINOR | ACCEPTED | 21.2 (name filing) |
+| EX-CFO-13 | CFO | MINOR | ACCEPTED | 2.2 non-goal line |
+| EX-CLO-1 | CLO | BLOCKER | ACCEPTED | R193, R266, 21.3 |
+| EX-CLO-2 | CLO | BLOCKER | ACCEPTED | R238, O-40 |
+| EX-CLO-3 | CLO | MAJOR | ACCEPTED | R238, G2 |
+| EX-CLO-4 | CLO | MAJOR | ACCEPTED | R192 |
+| EX-CLO-5 | CLO | MAJOR | ACCEPTED | R242, H-2 |
+| EX-CLO-6 | CLO | MAJOR | ACCEPTED | 21.3 Q4, R229; the DPLA 3.3.3(F) text is UNVERIFIED until legal reads it |
+| EX-CLO-7 | CLO | MAJOR | ACCEPTED | R229, G11b |
+| EX-CLO-8 | CLO | MAJOR | ACCEPTED | R236, 7a.1, G8 |
+| EX-CLO-9 | CLO | MAJOR | ACCEPTED | R194, R239, R8 |
+| EX-CLO-10 | CLO | MAJOR | ACCEPTED | R266, 21.3 Q6 |
+| EX-CLO-11 | CLO | MAJOR | PARTIAL | R235 and O-44: default disclose; the CLO's preferred exclusion is recorded and is the counsel default (Q7) |
+| EX-CLO-12 | CLO | MAJOR | ACCEPTED | H-11, R193 |
+| EX-CLO-13 | CLO | MAJOR | ACCEPTED | R266, O-47 |
+| EX-CLO-14 | CLO | MINOR | ACCEPTED | H-3 |
+| EX-CLO-15 | CLO | MINOR | ACCEPTED | R249 |
+| EX-CLO-16 | CLO | MINOR | ACCEPTED | R240 |
+| EX-CLO-17 | CLO | MINOR | ACCEPTED | R260 |
+| EX-CLO-18 | CLO | MINOR | ACCEPTED | R197, R266 |
+| EX-CBO-1 | CBO | MAJOR | ACCEPTED | R258 |
+| EX-CBO-2 | CBO | MAJOR | ACCEPTED | R259, 20.1 |
+| EX-CBO-3 | CBO | MAJOR | ACCEPTED | R252, R260 |
+| EX-CBO-4 | CBO | MAJOR | ACCEPTED | R262, 21.1, O-37 |
+| EX-CBO-5 | CBO | MAJOR | ACCEPTED | R229, G11b |
+| EX-CBO-6 | CBO | MAJOR | ACCEPTED | R261 |
+| EX-CBO-7 | CBO | MINOR | ACCEPTED | R197 |
+| EX-CBO-8 | CBO | MINOR | ACCEPTED | R193 (public wording about the parent's words) |
+| EX-CBO-9 | CBO | MINOR | ACCEPTED | R194, R8; O-28 stays at its default |
+
+Two founder-visible results of the fold are worth saying here. First, the fallback if a gate does not close is now an explicit question (O-37), not a quiet default, and silence from counsel never passes a gate. Second, the first release keeps the library read, the places and the occasions as ruled; what changed is how each is proved and how each can go dark on its own.
+
+## 28. What is VERIFIED, UNVERIFIED and a guess
 
 VERIFIED (read this session by this author): the 29 lead documents plus P6, the reconciliation pack and the principles review, on the branches named in section 1; PRs #1264, #1267, #1269, #1270, #1276 and their files; `docs/product/prd/27-photo-moments-and-media.md` structure and NS-51-R1, R3 and R5; COORDINATION section 10; TDD 09 layers. Facts about Apple, the law and the repo that the leads read (App Review 5.1.1, 5.1.2, 4.5.4, the journaling entitlement, `CLGeocoder` needing the network, the CAN-SPAM guide, BIPA and RCW 19.373, the PhotoKit property pages) are carried as their findings with their sources; this author did not re-read them. From the coordinator, not re-read: the fact check of privacy and EAS (commit c65c39f4), the founder rulings of 21 Nov (library read in the first release; places and occasions in), the P6 head (357ef84d) and the principles review head (66bcc4f0).
 
 UNVERIFIED: whether `asset.location` is readable under Limited access and without a Core Location permission; the offline place table's size, licence and accuracy; the PhotoKit fetch behaviours listed in 10.1 (source-type default, subtype predicate, delivery options); Apple's logging of a geocode request and whether a map tile sends the region; whether Apple reviews the journaling entitlement; the production `eas.json` state at submission; the live status of migration `20261110000000`; ML numbering; the Build 13 freeze date; every performance number (none is stated here); the founder's screenshots (not seen, not in the repo).
 
+Added in round 1: every legal and store-rule fact in the reviews (App Review 5.1.2(v) and (vi), DPLA 3.3.3(F), CAN-SPAM, state age-assurance dates, the dataset licence, the trademark position) is carried with the reviewer's own label and stays UNVERIFIED until the CCO or `regulatory-affairs` reads it, and no founder recommendation rests on an UNVERIFIED rule (EX-CCO-14). Also UNVERIFIED: D-121's target of Tue 1 Dec as still current; the open gates of D-163; whether `app.config.ts` is a fenced path; the arithmetic of the effort range; the Resend 100 a day allowance; whether the default PhotoKit fetch excludes Recently Deleted.
+
 A GUESS: the likelihood and impact judgments in section 22; the effort ranges quoted from the reconciliation pack; that a place line shown only when away is the right default; that public holidays by date help.
 
-## 28. Lead documents not found, and what I did not do
+## 29. Lead documents not found, and what I did not do
 
-Not found on 21 Nov: D7 (no `wip/moments-d7` branch; the coordinator's list named it); a local clone `mt-d7` of another agent existed but was not read. The `wip/moments-principles`, `wip/moments-recon` and `wip/moments-factcheck` documents were read or taken from the coordinator as noted. Not done: no edit to `docs/agents/CLAIMS.md`, `docs/BACKLOG.md`, `docs/legal/**`, `packages/content/BRAND.md` or any other file; no PR; no code; no migration; no decision recorded in `DECISIONS.md`; no screenshot opened. Decision entries (D-###) for RV-01 to RV-22 are for `product` to draft as Proposed after the review round.
+Corrected in round 1 (EX-CPO-13): D7 exists. `origin/wip/moments-d7`, head `abffeecd2f643d6cfe5c5ae356fcfb1c46cc2d3f`, holds `docs/design/moments-tab/prototype/README.md` and `moments-prototype.html`; it was read in round 1 and its differences from this file are C-30 to C-33. No lead is now recorded as not found. The `wip/moments-principles`, `wip/moments-recon` and `wip/moments-factcheck` documents were read or taken from the coordinator as noted. Not done: no edit to `docs/agents/CLAIMS.md`, `docs/BACKLOG.md`, `docs/legal/**`, `packages/content/BRAND.md` or any other file; no PR; no code; no migration; no decision recorded in `DECISIONS.md`; no screenshot opened. Decision entries (D-###) for RV-01 to RV-22 are for `product` to draft as Proposed after the review round.
