@@ -1812,7 +1812,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: a lowercase "read together" in the scanned Plus copy fails the guard; counsel's answer on `en.plus.legal` is recorded here; the listed documents no longer name keys or files that do not exist, or are marked as dated.
 
 #### BL-464 Find the cause of the web e2e boot flake `local_db_migration_failed:1`, then harden the seeded flows
-- Status: ready (#382 merged as 66e6d5a; the finding is in its body). Mode: agent. Owner: qa engineer, sync owner (S03: the migration). Milestone: M12. Size: M. Depends on: none.
+- Status: partly done (scope 1 in PR #1293, in review: the report now names the error; scope 5 done in #382; cause not found and not reproduced, so scopes 2 to 4 are open and unsupported: the web build's sync cap is 30 s of wall time, so `Sync operation timeout` is unlikely; see the PR). Mode: agent. Owner: qa engineer, sync owner (S03: the migration). Milestone: M12. Size: M. Depends on: none.
 - Priority: Medium.
 - Gate: none.
 - Satisfies: none given.
