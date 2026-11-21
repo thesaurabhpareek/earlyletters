@@ -156,6 +156,11 @@ export const authCopy = {
     slowBody: 'Check your connection, then try again.',
     // State D. Its sentence reuses offline.body.
     offlineTitle: 'Opening your book needs a connection.',
+    // BL-922a, NS-10-R0 and R4b: the held screen for an account with consent still to give. PROPOSED (words packet 20 Nov rows
+    // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
+    // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
+    consentBody: 'Finish setting up to open your book here.',
+    nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
   },
 
   verify: {

@@ -35,7 +35,7 @@ import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXP
 import { EXPORT_FORMAT } from './schema';
 import { readOpenRequest } from '../account-deletion/open-request';
 import { deletionRequestOpen, exportScope } from './scope.logic';
-import { verifyExport, type RandomAccess } from './verify';
+import { ExportCheckFailedError, verifyExport, type RandomAccess } from './verify';
 
 export { ExportCancelledError, ExportTooLargeError } from './pack';
 
@@ -46,13 +46,7 @@ export class ExportLowSpaceError extends Error {
   }
 }
 
-export class ExportCheckFailedError extends Error {
-  /** Paths and codes only. */
-  constructor(readonly problems: string[]) {
-    super('export_check_failed');
-    this.name = 'ExportCheckFailedError';
-  }
-}
+export { ExportCheckFailedError };
 
 export interface ExportProgress {
   phase: ExportPhase;

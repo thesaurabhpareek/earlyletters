@@ -34,6 +34,10 @@ const TEXT_PAIRS: [keyof C, keyof C][] = [
   ['onAccent', 'accent'], ['onDestructive', 'destructive'], ['bg', 'text'],
   ['destructive', 'bg'], ['destructive', 'surfaceRaised'],
   ['recording', 'bg'], ['success', 'bg'], ['caution', 'bg'], ['focus', 'bg'],
+  // Status words on every surface they can sit on (A11Y audit 20 Nov): a notice on surface, a selected row on accentSoft.
+  ...(['success', 'caution', 'recording', 'destructive', 'focus'] as (keyof C)[]).flatMap((f) =>
+    (['bg', 'surface', 'surfaceRaised', 'accentSoft'] as (keyof C)[]).map((b) => [f, b] as [keyof C, keyof C]),
+  ),
 ];
 /** Non-text pairs: 3:1 (WCAG 1.4.11): control boundaries, focus, edit marks, filled controls. */
 const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised'];
