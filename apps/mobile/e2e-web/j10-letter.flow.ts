@@ -148,7 +148,7 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
 test('[J10d] a letter that does not exist', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 11, 'J10-01');
   await seeded(app, 'asha', '/letter/does-not-exist');
-  await expect(app.getByText('This letter is not in the book')).toBeVisible();
+  await expect(app.getByText("This letter isn't in the book")).toBeVisible();
   await expect(btn(app, 'Back to the book')).toBeVisible();
   await expect(app.getByText(/does-not-exist/)).toHaveCount(0);
   await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter is not in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
