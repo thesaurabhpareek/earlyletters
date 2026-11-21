@@ -36,7 +36,7 @@ import { serverFeaturesEnabled } from '../capabilities';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase/client';
 import { createSyncEngine, type SyncEngine } from './engine';
-import { SYNC_SETTING, conflictCount, pendingCount, readSetting, rejectedUnseenCount } from './outbox';
+import { SYNC_SETTING, conflictCount, pendingCount, pendingForAccount, readSetting, rejectedUnseenCount } from './outbox';
 import { AccountMismatchError, releaseEmptyOwner, takeOwnership } from './ownership';
 import { onOutboxChange } from './signal';
 import type { RpcResult, SupabaseLike, SyncReport, SyncStatus } from './types';
@@ -264,7 +264,11 @@ export function startSync(): () => void {
   });
   unsubs.push(() => app.remove());
   unsubs.push(registerUploadQueue({
-    pendingCount: () => pendingCount(localSqlDb()),
+    // The sign-out wait counts only the signed-in account's rows (BL-449).
+    pendingCount: () => {
+      const userId = currentAuthUserId();
+      return userId ? pendingForAccount(localSqlDb(), userId) : pendingCount(localSqlDb());
+    },
     onDrained: (listener) => {
       drainedListeners.add(listener);
       return () => {

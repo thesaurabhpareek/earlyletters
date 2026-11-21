@@ -85,6 +85,11 @@ export interface FirstRunGateInput {
    * Absent counts as visible, as every caller before BL-961 meant.
    */
   bookVisible?: boolean;
+  /**
+   * FP-6 (NS-41-R25, O-19): `killSwitches.signIn` is on (signed config, hide-only, fail-open). A person with NO session who has no book
+   * meets the outage screen with the local start instead of the Welcome; a session, and a phone with a book, are never touched.
+   */
+  signInPaused?: boolean;
 }
 
 export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere' | 'otherAccount' | 'finishSetup';
@@ -142,6 +147,8 @@ export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
   if (input.ageAnswered === 'no') return result('stop');
   if (input.hasSession) return result('childStep', { mayBeginBook: true });
   if (input.localStartChosen && localStartAllowed(input.ageAnswered, constant)) return result('childStep', { mayBeginBook: true });
+  // The sign-in pause renders as the outage with the local start (E-S14.signInPaused); the words say nothing of a switch or a pause.
+  if (input.signInPaused) return result('outage', { outage: 'outage', localStartOffered: localStartAllowed(input.ageAnswered, constant), retryOnReconnect: true });
 
   if (!input.online || input.signInFailed) {
     return result('outage', {
@@ -220,6 +227,8 @@ export function gateInputsFromAuth(args: {
   online?: boolean;
   /** BL-961: `sync.ownerId` (store `currentUserId()`), the account that owns this phone's book; null before the first claim. */
   phoneOwner?: string | null;
+  /** FP-6: `killSwitches.signIn` (lib/remote getRemoteConfig); read from the cached config, never the network. */
+  signInPaused?: boolean;
 }): FirstRunGateInput {
   const s = args.authState;
   return {
@@ -234,6 +243,7 @@ export function gateInputsFromAuth(args: {
     localStartFallback: LOCAL_START_FALLBACK,
     localStartChosen: args.localStartChosen,
     newPhone: args.newPhone,
+    signInPaused: args.signInPaused,
     bookVisible: bookVisibleTo({ owner: args.phoneOwner ?? null, sessionUser: authUserId(s) }),
   };
 }

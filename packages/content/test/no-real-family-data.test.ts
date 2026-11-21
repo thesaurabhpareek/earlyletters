@@ -33,7 +33,9 @@
  *    a date followed by a letter, digit or underscore (YYYY-MM-DD_notes),
  *    EXIF dates in photos (YYYY:MM:DD), DD-Mon-YYYY, D/M/YY, YYYYMMDD and
  *    "YYYY Month D";
- *  - names glued to other letters or digits, anywhere.
+ *  - names glued to other letters or digits, anywhere;
+ *  - a name split by a line break (or a hyphen at a wrap): the parts are
+ *    separate tokens, so neither part hashes to the name.
  *
  * The scan fails when the file list lacks the root CLAUDE.md or this file at
  * its root path (an empty list, or the wrong root), and when a listed file
@@ -107,7 +109,17 @@ const SHOWN_EXTS = [
 ];
 const NONE = new Set<string>();
 
-const sha = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
+// BL-443: the same few thousand words recur across the repository's files; hashing each once is the same
+// answer as hashing it every time.
+const SHA_MEMO = new Map<string, string>();
+const sha = (s: string) => {
+  let h = SHA_MEMO.get(s);
+  if (h === undefined) {
+    h = createHash('sha256').update(s, 'utf8').digest('hex');
+    SHA_MEMO.set(s, h);
+  }
+  return h;
+};
 const pad = (n: string | number) => String(n).padStart(2, '0');
 const iso = (y: string | number, m: string | number, d: string | number) => `${y}-${pad(m)}-${pad(d)}`;
 
@@ -129,12 +141,17 @@ export function dateCandidates(text: string): string[] {
   return out;
 }
 
+const ASCII_WORD = /^[\x00-\x7f]+$/;
+
 /** Lowercase NFC word tokens, plus a copy with combining marks removed. */
 export function tokens(text: string): string[] {
   const out: string[] = [];
   for (const m of text.normalize('NFC').matchAll(/[\p{L}\p{M}\p{N}]+/gu)) {
     const t = m[0].toLowerCase();
     out.push(t);
+    // BL-443: an ASCII word has no combining marks, so its bare copy is itself; this skips three string passes
+    // for nearly every word of the repository.
+    if (ASCII_WORD.test(t)) continue;
     const bare = t.normalize('NFD').replace(/\p{M}/gu, '').normalize('NFC');
     if (bare !== t) out.push(bare);
   }

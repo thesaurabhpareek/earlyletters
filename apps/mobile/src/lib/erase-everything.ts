@@ -38,12 +38,13 @@ import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
-import { photosDirectory } from './photos/files';
+import { BAKED_CACHE_FOLDER, PICKER_CACHE_FOLDER, photosDirectory } from './photos/files';
 import { eraseDaysFile } from './days';
 import { clearPendingInvite } from './family/pending-invite';
+import { discardPendingPhotoOnLeaving } from './photos/leaving';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
-import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb } from './store';
+import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb, localDeletionAllowed } from './store';
 
 export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 
@@ -52,7 +53,7 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
  * PDF expo-print writes to `Caches/Print/<uuid>.pdf` while an export renders the whole book (export/device.ts deletes
  * it afterwards, but a kill mid-render leaves it, and `cleanupExports` does not look there).
  */
-const CACHE_COPIES = ['exports', 'recovery-export', 'Print', 'ImagePicker', 'ScribePhoto'] as const; // ImagePicker: the photo picker's originals
+const CACHE_COPIES = ['exports', 'recovery-export', 'Print', PICKER_CACHE_FOLDER, BAKED_CACHE_FOLDER] as const; // the photo picker's originals and the re-encode's JPEGs
 
 /**
  * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.
@@ -139,6 +140,8 @@ export async function eraseEverything(): Promise<EraseEverythingResult> {
       // Analytics off or not started: nothing to stop.
     }
   }
+  // BL-1444: the picture held in memory goes before its file does. Not when the erase will be refused (signed in): nothing changes then.
+  if (localDeletionAllowed()) await discardPendingPhotoOnLeaving();
   const r = eraseEverythingLocal(eraseAudioFile, eraseDeviceFiles);
   if (r !== 'erased') return r;
   resetAppLockInMemory();

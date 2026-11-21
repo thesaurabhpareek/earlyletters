@@ -15,9 +15,10 @@
  * anchored edits, while no migration defines held_drafts (`heldStandIn`).
  * Fictional family "Asha" only (CLAUDE.md).
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { PGlite } from '@electric-sql/pglite';
+import { migratedServer } from './migrated-server';
 import type { RpcResult, SupabaseLike } from '../../src/lib/sync/types';
 import { SYNC_PULL_ERASE_EDITS, SYNC_PUSH_ERASE_EDITS, SYNC_PUSH_HELD_EDITS, patchSyncPush } from './sync-v1-standin';
 
@@ -41,15 +42,8 @@ export interface SyncServer {
   sensitiveConsent: (uid: string, act: 'accept' | 'withdraw') => Promise<void>;
 }
 
-function migrationsDir(): string {
-  for (const p of [resolve(process.cwd(), '../../supabase/migrations'), resolve(process.cwd(), 'supabase/migrations')]) {
-    if (existsSync(p)) return p;
-  }
-  throw new Error('supabase/migrations not found');
-}
-
 export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' | 'v1' }): Promise<SyncServer> {
-  const pg = new PGlite();
+  const pg = await migratedServer();
   let lock: Promise<unknown> = Promise.resolve();
   /** PGlite has one connection: role switches and the call must not interleave. */
   const serial = <T>(fn: () => Promise<T>): Promise<T> => {
@@ -68,23 +62,7 @@ export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' |
     }
   };
 
-  await pg.exec(`
-    create role authenticated nologin; create role anon nologin; create role service_role nologin bypassrls;
-    create schema auth; create table auth.users (id uuid primary key);
-    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-    grant usage on schema auth to authenticated, anon;
-    create schema storage;
-    create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-    create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
-    create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'),1)-1] $$;
-    alter table storage.objects enable row level security;
-    grant usage on schema storage to authenticated, anon; grant all on storage.objects to authenticated, anon;
-    grant usage on schema public to authenticated, anon;
-    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
-  `);
-  const dir = migrationsDir();
-  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) await pg.exec(readFileSync(join(dir, f), 'utf8'));
-
+  // Setup and every migration, from a dump shared with sync-e2e.test.ts when one exists (BL-443).
   let standIn = false;
   let heldStandIn = false;
   let eraseStandIn = false;
