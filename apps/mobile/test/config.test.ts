@@ -240,7 +240,8 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         expect(env.EXPO_PUBLIC_ACCOUNT_DELETION, name).toBe(alpha ? undefined : 'on');
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();
         expect(env.EXPO_PUBLIC_DOCS_BASE_URL).toBe('https://packs.earlyletters.app');
-        expect(env.EXPO_PUBLIC_ANALYTICS).toBe('off');
+        // FOUNDER APPROVAL (20 Nov 2026): analytics is on in the production profile only.
+        expect(env.EXPO_PUBLIC_ANALYTICS, name).toBe(name === 'production' ? 'on' : 'off');
         expect(env.EXPO_PUBLIC_BACKUP).toBe('off');
         expect(env.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
         expect(['on', 'off']).toContain(env.EXPO_PUBLIC_SERVER_FEATURES);
@@ -377,12 +378,12 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     expect(withChannel, 'these profiles name an update channel; eas build would install expo-updates (D-091)').toEqual([]);
   });
 
-  it('production is on (build 12 runs servers on against the production backend, founder 8 Nov 2026), with backup, the status report and analytics still off', () => {
+  it('production is on (build 12 runs servers on against the production backend, founder 8 Nov 2026), with backup and the status report still off and analytics on (founder, 20 Nov 2026: PostHog Cloud, opt-in)', () => {
     const env = eas.build.production.env;
     expect(env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
     expect(env?.EXPO_PUBLIC_BACKUP).toBe('off');
     expect(env?.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
-    expect(env?.EXPO_PUBLIC_ANALYTICS).toBe('off');
+    expect(env?.EXPO_PUBLIC_ANALYTICS).toBe('on');
     const extra = configForProfile('production').extra;
     expect(extra?.serverFeatures).toBe(true);
     expect(extra?.backup).toBe(false);

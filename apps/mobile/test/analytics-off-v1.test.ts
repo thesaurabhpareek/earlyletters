@@ -30,9 +30,9 @@ describe('[D-088] analytics switch: off unless a build says on', () => {
     expect(capabilities.analytics).toBe(false);
   });
 
-  it('is off in every EAS build profile and for local development', () => {
+  it('[FOUNDER APPROVAL, 20 Nov 2026] is on in the production EAS profile only, and off for every other profile and for local development', () => {
     const eas = JSON.parse(read('eas.json')) as { build: Record<string, { env?: Record<string, string> }> };
-    for (const [name, profile] of Object.entries(eas.build)) expect(profile.env?.EXPO_PUBLIC_ANALYTICS, name).toBe('off');
+    for (const [name, profile] of Object.entries(eas.build)) expect(profile.env?.EXPO_PUBLIC_ANALYTICS, name).toBe(name === 'production' ? 'on' : 'off');
     expect(read('.env.development').split('\n')).toContain('EXPO_PUBLIC_ANALYTICS=off');
   });
 
