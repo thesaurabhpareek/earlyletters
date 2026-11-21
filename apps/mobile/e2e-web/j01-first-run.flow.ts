@@ -129,9 +129,9 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(app.getByText(/You can do this later in Settings/)).toHaveCount(0);
   await step('happy', 'The book is open, and one ask about the speech download', 'The cover opens to its flyleaf, signed "From Mama", and the light comes up. One line, then one quiet card: "Get your words ready", the real size for this phone, a bordered "Download on Wi-Fi" and "Not now". The one filled button is "Write the first one". Nothing downloads until the person taps. The download itself is native and cannot run on web; on a phone this needs a real iPhone check.');
   await btn(app, 'Not now').click();
-  await expect(app.getByText('Recordings are saved either way.', { exact: true })).toBeVisible();
+  await expect(app.getByText('Your voice is kept either way.', { exact: true })).toBeVisible();
   await expect(btn(app, 'Download on Wi-Fi')).toHaveCount(0);
-  await step('happy', 'Not now is a calm answer', 'The card folds to one line: "Recordings are saved either way." The first Review will offer the same button if words are waiting.');
+  await step('happy', 'Not now is a calm answer', 'The card folds to one line: "Your voice is kept either way." The first Review will offer the same button if words are waiting.');
 
   await btn(app, /Write the first one/).click();
   await expect(app.getByRole('heading', { level: 1 })).toBeVisible();

@@ -59,7 +59,7 @@ export function doneLine(mb: number): ConsentLine {
 }
 
 /**
- * "You can start now. Recording saved, and the words follow." under the progress. True while the download is on
+ * "You can start now. Your voice is kept, and the words follow." under the progress. True while the download is on
  * its way: a recording made now is kept and waits for its words (`waiting_for_pack`), and they come when the
  * download lands. Not once the words are here (nothing to wait for), not after a failure (they follow only after a
  * tap), and not when the phone needs space (they follow only after the person frees some).
