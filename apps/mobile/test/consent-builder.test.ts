@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { CONSENT_LOCALE, consentShownText } from '@scribe/content';
+import { CONSENT_LOCALE, consentShownText, en } from '@scribe/content';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 
 vi.mock('react-native', () => ({ Platform: { OS: 'ios', Version: '17.4.1' } }));
@@ -66,6 +66,21 @@ describe('consent builder', () => {
       expect(r.renderedSha256).toBe(manifest.entries['agreement-line']);
       expect(Object.keys(r).join(' ')).not.toMatch(/age|birth/i);
     }
+  });
+
+  it('[PRIV-R21] the local row hashes the sentence the age-gate screen shows (beforeBegin.agree), not another one', () => {
+    // age-gate-screen.tsx passes `copy.beforeBegin.agree` to acceptBeforeYouBegin; the manifest must hash that same sentence.
+    expect(consentShownText('agreement-line')).toBe(en.beforeBegin.agree);
+    expect(sha256Hex(en.beforeBegin.agree)).toBe(manifest.entries['agreement-line']);
+    const gate = readFileSync(join(__dirname, '..', 'src', 'components', 'gate', 'age-gate-screen.tsx'), 'utf8');
+    expect(gate).toMatch(/acceptBeforeYouBegin\(\s*b\.agree\b/);
+    expect(gate).toMatch(/const b = copy\.beforeBegin\b/);
+  });
+
+  it('[NS-42-R7] consent.tsx draws the keys the terms hash joins (title, body, agreeLine)', () => {
+    const sheet = readFileSync(join(__dirname, '..', 'src', 'app', '(auth)', 'sign-in', 'consent.tsx'), 'utf8');
+    for (const key of ['title', 'body', 'agreeLine']) expect(sheet).toContain(`{t.${key}}`);
+    expect(sheet).toMatch(/const t = authCopy\.consent\.terms;/);
   });
 
   it('[NS-42-R3] the Terms record before any sync: one terms accept with context.auth and age_attested', async () => {

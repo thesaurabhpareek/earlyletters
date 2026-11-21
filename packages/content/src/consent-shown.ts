@@ -8,7 +8,7 @@ import { en } from './strings.en';
 /** The language of every sheet at v1.0 (BRIEF decision 6). The phone sends this, never a literal of its own (FS-22). */
 export const CONSENT_LOCALE = 'en';
 
-/** `agreement-line` is the Welcome and age screen sentence the local rows hash (agreements.logic.ts). */
+/** `agreement-line` is the sentence the age-gate screen shows and the local rows hash: `beforeBegin.agree` (age-gate-screen.tsx, PRIV-R21). */
 export type ConsentShownId = 'terms' | 'age' | 'sensitive' | 'agreement-line';
 
 export function consentShownText(id: ConsentShownId): string {
@@ -22,7 +22,7 @@ export function consentShownText(id: ConsentShownId): string {
     case 'sensitive':
       return [s.title, s.body, s.use, s.declineHelp, s.changeLater].join('\n');
     case 'agreement-line':
-      return t.agreeLine;
+      return en.beforeBegin.agree;
   }
 }
 

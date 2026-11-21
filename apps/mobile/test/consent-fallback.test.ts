@@ -9,7 +9,9 @@ import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 vi.mock('react-native', () => ({ Platform: { OS: 'ios', Version: '17.4' } }));
 vi.mock('expo-application', () => ({ nativeBuildVersion: '42' }));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
-vi.mock('../src/lib/supabase/client', () => ({ idempotencyKey: () => '0199a5b0-0000-7000-8000-00000000c001' }));
+// A new value on every call, so a retry that mints a fresh key instead of reusing the held one fails the same-key check.
+let keyN = 0;
+vi.mock('../src/lib/supabase/client', () => ({ idempotencyKey: () => `0199a5b0-0000-7000-8000-00000000c${String(++keyN).padStart(3, '0')}` }));
 vi.mock('@scribe/content', async (orig) => ({ ...(await orig<object>()), CONSENT_LOCALE: 'xx' }));
 
 const { recordConsent } = await import('../src/lib/auth/consent');
