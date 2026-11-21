@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
-import { testflightCopy } from '../src';
+import { en, testflightCopy } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -16,13 +16,15 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
-const { whatToTest, invitation, groupLines, feedbackEmailPlaceholder } = testflightCopy;
+const { whatToTest, invitation, groupLines, feedbackEmailPlaceholder, deleteAccountLine } = testflightCopy;
 const ALL = leaves(testflightCopy, 'testflight').filter((l) => l.path !== 'testflight.feedbackEmailPlaceholder');
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
 const WHAT_TO_TEST: Leaf[] = [
   { path: 'whatToTest.build1', text: whatToTest.build1 },
   { path: 'whatToTest.build2', text: whatToTest.build2 },
+  // Build 2 for a build with the Delete account row on (D-129). It gets every check the other texts get.
+  { path: 'whatToTest.build2WithDeleteRow', text: whatToTest.build2WithDeleteRow },
 ];
 /** Texts a tester reads before sending feedback: each must carry the ask (B1-11, B2-20). */
 const ASKED: Leaf[] = [...WHAT_TO_TEST, ...leaves(invitation, 'invitation')];
@@ -74,7 +76,8 @@ describe('[RA-16-01] TestFlight texts: content rules', () => {
   });
 
   it('uses the glossary: one descriptor, "Not much today" in quotes, sign-in link, the other parent in prose', () => {
-    expect(testflightCopy.betaAppDescription.startsWith(`${brand.name}, the baby memory book you fill by talking.`)).toBe(true);
+    // D-139: the descriptor changed with the founder's positioning decision.
+    expect(testflightCopy.betaAppDescription.startsWith(`${brand.name}: letters to your child, in your own words and voice.`)).toBe(true);
     expect(offenders(ALL, /\b(?:the|a) memory book you fill by talking\b/i)).toEqual([]);
     expect(offenders(ALL, /(?<!")Not much today(?!")/)).toEqual([]);
     expect(offenders(ALL, /\b(magic link|log ?in|login|log out|co-?parent|partner|spouse|journal|diary|entry|entries|voice note)\b/i)).toEqual([]);
@@ -148,14 +151,16 @@ describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on 
   });
 
   it('build 2 (servers on) says what reaches the test server, that the policies apply, and claims no on-device-only letters', () => {
-    expect(whatToTest.build2).toMatch(/stored on our test server/);
-    expect(whatToTest.build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
-    // Backup is not in build 2 (EXPO_PUBLIC_BACKUP off in eas.json), so no text may offer to turn it on.
-    expect(whatToTest.build2).toMatch(/Recordings are not uploaded in this test/);
-    expect(whatToTest.build2).not.toMatch(/\bbackup\b|turn it on/i);
-    expect(whatToTest.build2).toMatch(/Export your book/);
-    expect(whatToTest.build2).toMatch(/Delete account/);
-    for (const t of [whatToTest.build2, invitation.friendsServersOn]) {
+    // Both forms of build 2 (D-129): the default, and the one for a build with the Delete account row on.
+    for (const build2 of [whatToTest.build2, whatToTest.build2WithDeleteRow]) {
+      expect(build2).toMatch(/stored on our test server/);
+      expect(build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
+      // Backup is not in build 2 (EXPO_PUBLIC_BACKUP off in eas.json), so no text may offer to turn it on.
+      expect(build2).toMatch(/Recordings are not uploaded in this test/);
+      expect(build2).not.toMatch(/\bbackup\b|turn it on/i);
+      expect(build2).toMatch(/Export your book/);
+    }
+    for (const t of [whatToTest.build2, whatToTest.build2WithDeleteRow, invitation.friendsServersOn]) {
       expect(t).not.toMatch(/stays? (?:only )?on (?:this|your) phone|only on (?:this|your) phone|backed up|encrypt/i);
     }
     // Never that letters carry over to the App Store version (5.2).
@@ -164,5 +169,86 @@ describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on 
 
   it('the beta app description holds for both builds: no sign-in, sync, sharing or on-device-only claim', () => {
     expect(testflightCopy.betaAppDescription).not.toMatch(/\bsync|sign-in|sign in|invite|share|sharing|everything on your phone|only on|stay on/i);
+  });
+});
+
+describe('[D-129] build 2 and the Delete account row: the sentence is in the text only for a build where the row is on', () => {
+  const { build2, build2WithDeleteRow } = whatToTest;
+
+  it('the sentence names the row as Settings has it', () => {
+    expect(deleteAccountLine).toMatch(/\buse Settings, /);
+    expect(deleteAccountLine.endsWith(`Settings, ${en.settingsHome.deleteAccountLabel}.`)).toBe(true);
+  });
+
+  it('the default build 2 text does not say it, and promises no other way to delete an account', () => {
+    expect(build2).not.toContain(deleteAccountLine);
+    expect(build2).not.toMatch(/Delete account|delete your account|its letters, use/i);
+  });
+
+  it('the text for a build with the row on has the sentence exactly once, ending the paragraph about the App Store version', () => {
+    expect(build2WithDeleteRow.split(deleteAccountLine)).toHaveLength(2);
+    expect(build2WithDeleteRow).toContain(`Export your book, now and then. ${deleteAccountLine}\n\n`);
+  });
+
+  it('the two forms differ by that sentence and nothing else', () => {
+    expect(build2WithDeleteRow).not.toBe(build2);
+    expect(build2WithDeleteRow.replace(` ${deleteAccountLine}`, '')).toBe(build2);
+  });
+
+  it('nothing else the file says mentions the row: build 1 has no account, and the invitations and the description say nothing about deleting one', () => {
+    const others = ALL.filter((l) => !['testflight.deleteAccountLine', 'testflight.whatToTest.build2WithDeleteRow'].includes(l.path));
+    expect(others.length).toBeGreaterThanOrEqual(8);
+    expect(offenders(others, /Delete account|delete your account/i)).toEqual([]);
+  });
+});
+
+describe('[CMO 9 Nov] build 1 and the description say what the build has, and nothing the build does not do', () => {
+  const { build1 } = whatToTest;
+  const description = testflightCopy.betaAppDescription;
+
+  it('names "Another thought", and the Months button with the condition under which it shows', () => {
+    expect(build1).toContain(`"${en.tonight.newPromptButton}"`);
+    expect(build1).toMatch(/Once the book has letters in two months, the "Months" button opens a list of them\./);
+  });
+
+  it('places Your words, App lock and Recently deleted under the Settings groups that hold them, and does not call them groups', () => {
+    const s = en.settingsHome.sections;
+    const placed: [string, string][] = [
+      [en.settingsHome.yourWords, s.writing],
+      ['App lock', s.privacy],
+      [en.settings.delete.recentlyDeleted, s.letters],
+    ];
+    for (const [row, group] of placed) expect(build1).toContain(`${row} under ${group}`);
+    // A row is not a group: if a label ever becomes a group title, the sentence has to be read again.
+    for (const [row] of placed) expect(Object.values(s)).not.toContain(row);
+    expect(build1).not.toMatch(/arranged in groups/);
+  });
+
+  it('says the lock is offered at the end of setting up and stays off until it is turned on', () => {
+    expect(build1).toMatch(/At the end of setting up, the app offers [^]*it also offers a lock for the book[^]*The lock stays off until you turn it on/);
+    // The offer is on first setup only, so the text says where the row is for a phone that installed over an earlier build.
+    expect(build1).toContain(`or later in Settings, ${en.settingsHome.sections.privacy}, App lock.`);
+  });
+
+  it('gives the export path as Settings, Your letters, Export your book', () => {
+    expect(build1).toContain(`Settings, ${en.settingsHome.sections.letters}, ${en.settingsHome.exportLabel}`);
+    expect(build1).not.toMatch(/Settings, Export your book/);
+  });
+
+  it('says plainly that the Erase row removes every book, letter and recording, cannot be undone, and a copy comes first', () => {
+    expect(build1).toMatch(/Erase row, the last row of Your letters in Settings, removes every book, letter and recording from this phone\. It cannot be undone, so save a copy first\./);
+  });
+
+  it('never reuses the Erase screen\'s own lines, or the free-letter count, outside that screen (D-144, CCO-6)', () => {
+    const erase = en.settings.erase;
+    for (const l of [...WHAT_TO_TEST, ...FRIENDS_READ]) {
+      for (const line of [erase.body, erase.freeLetters, erase.onThisPhone, erase.backups, erase.speechStays]) expect(l.text, l.path).not.toContain(line);
+      expect(l.text, l.path).not.toMatch(/We hold no copy|Nothing is sent anywhere|free letters start again/i);
+    }
+  });
+
+  it('does not promise the words are exactly as said: raw text is machine output until the English speech gate runs (D-125 item 9, D-133)', () => {
+    expect(offenders(ALL, /exactly as you said|as you said them|never adds a word/i)).toEqual([]);
+    expect(description).toMatch(/kept as a letter, in your own words, with the recording beside it/);
   });
 });

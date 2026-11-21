@@ -5,6 +5,7 @@
  * co-parent stays with them; a sole parent's book goes with the account),
  * PRD C-REQ-019 (export first, subscription notice, 30-day undo, type to confirm).
  */
+import { fill } from '../copy';
 import { accountDeletionCopy as c } from './copy';
 
 /** A book as `sync_books()` describes it (20261004100000_sync_engine.sql, section 8b). */
@@ -34,7 +35,8 @@ export function bookImpacts(books: SyncBook[], myLetters: (childId: string) => n
   });
 }
 
-const fillIn = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
+// A book with no name reads "your child" (NX-31-R3): shown only, the stored name stays empty.
+const fillIn = fill;
 
 /** The plain lines of "What happens", one or two per book, then the copies note. */
 export function impactLines(impacts: BookImpact[]): string[] {
@@ -78,13 +80,17 @@ export function localDay(iso: string): string {
 export type ServerStatus =
   | { state: 'none' }
   | { state: 'scheduled' | 'held'; requestId: string; scheduledFor: string }
-  | { state: 'executing'; requestId: string };
+  /** `scheduledFor` is the request's own date (the server's row always has one); it dates the phone's note (open-request.ts). */
+  | { state: 'executing'; requestId: string; scheduledFor?: string };
 
 /** The caller's open account request (deletion_requests is readable for your own rows only). */
 export function parseStatus(rows: unknown): ServerStatus {
   const r = Array.isArray(rows) ? (rows[0] as { id?: unknown; status?: unknown; scheduled_for?: unknown } | undefined) : undefined;
   if (!r || typeof r.id !== 'string') return { state: 'none' };
-  if (r.status === 'executing') return { state: 'executing', requestId: r.id };
+  if (r.status === 'executing') {
+    const dated = typeof r.scheduled_for === 'string' && !Number.isNaN(Date.parse(r.scheduled_for));
+    return dated ? { state: 'executing', requestId: r.id, scheduledFor: r.scheduled_for as string } : { state: 'executing', requestId: r.id };
+  }
   if ((r.status === 'scheduled' || r.status === 'held') && typeof r.scheduled_for === 'string') {
     return { state: r.status, requestId: r.id, scheduledFor: r.scheduled_for };
   }

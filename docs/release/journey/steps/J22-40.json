@@ -1,0 +1,36 @@
+{
+  "id": "J22-40",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Terms",
+  "note": "The registered words as they are, each document a row that opens in the in-app browser, and the agree line right above \"Agree and continue\" (LEGAL-REQ-001).",
+  "from": "J22-31",
+  "shot": "screens/J22-40.png",
+  "route": "/sign-in/consent",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Before your book syncs Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models. Terms of Service Privacy Policy Consumer Health Data Privacy Policy By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy. Agree and continue Not now",
+  "lines": [
+    "Before your book syncs",
+    "Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.",
+    "Terms of Service",
+    "Privacy Policy",
+    "Consumer Health Data Privacy Policy",
+    "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.",
+    "Agree and continue",
+    "Not now"
+  ]
+}

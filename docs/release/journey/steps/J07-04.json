@@ -2,10 +2,11 @@
   "id": "J07-04",
   "journey": "typed-letter",
   "kind": "happy",
-  "title": "Saved to the book",
-  "note": "The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap).",
+  "title": "On the Book",
+  "note": "The person lands on the Book, on the new letter in its month (5.8 row 5a).",
   "from": "J07-03",
-  "route": "/review",
+  "shot": "screens/J07-04.png",
+  "route": "/book",
   "viewport": {
     "width": 402,
     "height": 874
@@ -21,9 +22,19 @@
     }
   },
   "scrolls": false,
-  "text": "You put both hands on the window today and watched the rain. Added to Asha's book.",
+  "text": "Asha's book Read together This month The first weeks 1 letter · From Mama October 30 to November 29 Friday, October 30, 2026 You put both hands on the window today and watched the rain. From Mama Tonight Book Family",
   "lines": [
+    "Asha's book",
+    "Read together",
+    "This month",
+    "The first weeks",
+    "1 letter · From Mama",
+    "October 30 to November 29",
+    "Friday, October 30, 2026",
     "You put both hands on the window today and watched the rain.",
-    "Added to Asha's book."
+    "From Mama",
+    "Tonight",
+    "Book",
+    "Family"
   ]
 }

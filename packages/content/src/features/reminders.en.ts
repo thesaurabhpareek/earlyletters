@@ -8,33 +8,40 @@
  * a child. Variant order matches `copy.notifications.evening`, so a variant id
  * means the same idea with or without names.
  */
+const NEUTRAL_TITLE = 'Something for the book today';
+const LOCK_BODY_NEUTRAL = 'A day you chose to mark. A few words, if you like.';
+
 export const reminderCopy = {
   neutral: {
     evening: [
       { title: 'A minute to write?', body: 'One thing about today is plenty. A sentence will do.' },
-      { title: "Tonight's letter", body: 'What made you smile today? Say it out loud and we will keep it.' },
-      { title: 'Dear little one,', body: 'Your words, kept. Today, and long after.' },
+      { title: 'A letter tonight?', body: 'What made you smile today? Say it out loud and keep it.' },
+      { title: 'Dear little one,', body: 'Anything to tell your little one today? A line or two is enough.' },
       { title: 'The house is quiet', body: 'A good moment for a few words to your little one.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
-      { title: 'Your voice, kept', body: 'Talk for a minute. It will be heard one day, just as you said it.' },
+      { title: 'Your voice, kept', body: 'Talk for a minute. One day it can be heard, just as you sounded.' },
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
-      { title: 'A page for {weekday}', body: 'Whatever today held, it belongs in the book.' },
+      { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
-    monthOpen: { title: 'Month {month} begins', body: 'A new chapter in the book is open.' },
-    birthday: { title: 'A birthday today', body: 'A year of letters. Want to read them together today?' },
-    birthdays: { title: 'Birthdays today', body: 'A year of letters. Want to read them together today?' },
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; E45, E82, G-D21 default). With names off a month or birthday
+    // note carries no month number, age, "A year of letters." or "birthday": one fixed title and one fixed body
+    // (`days.lock.body.neutral`, no {child} in any switch state). Names on use `en.notifications` (NS-13-R24).
+    lockBody: LOCK_BODY_NEUTRAL,
+    monthOpen: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    birthday: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    birthdays: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {
-    monthTitle: 'New chapters today',
-    monthBodyNames: 'New chapters for {child} are open.',
-    monthBodyNeutral: 'A new chapter is open in each book.',
+    // Each book's own new month (BRAND.md glossary: month, never chapter); the title is used when the month numbers differ.
+    monthTitle: 'A new month begins',
+    monthBodyNames: 'A new month is open for {child}.',
+    monthBodyNeutral: 'A new month is open in each book.',
   },
   /**
-   * The sheet before the iOS permission alert (Apple HIG, Privacy, pre-alert
-   * screens: one button, titled Continue, that opens the alert; no way to
-   * skip it). Title and body reuse `onboarding.reminder.permissionTitle` and
-   * `.permissionBody`; the button reuses `common.continueButton`.
+   * The two reassurance lines. Once a sheet in front of the iOS alert; since CDesO-3 (1 Nov 2026) the switch goes
+   * straight to the alert and these lines are the Reminders page footer, on screen before the switch is turned on
+   * (CCO-10, LEGAL-REQ-007 "an in-app explanation" first; reminders-settings.md 1).
    */
   priming: {
     privacyLine: 'Notifications never show what you write. Names stay off the lock screen unless you turn them on.',
@@ -44,8 +51,6 @@ export const reminderCopy = {
     enabledLabel: 'Reminders',
     howOftenTitle: 'How often',
     eveningsTitle: 'Which evenings',
-    eveningsHelp: 'Pick the evenings that suit you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the chips speak for themselves)
-    eveningHelp: 'Pick the evening that suits you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7
     timeTitle: 'Time',
     timeLabel: 'Reminder time',
     lateNightClamp: 'Late nights stay quiet.',
@@ -55,14 +60,31 @@ export const reminderCopy = {
     monthNotesHelp: 'A short message on the day a new month begins in each book, and on birthdays.',
     namesHelpOff: 'Notifications say "your little one" and show no names on the lock screen.',
     namesHelpOn: 'Notifications can show names on the lock screen.',
-    pausedHelp: 'Nothing is sent while reminders are paused. Your choices are kept.',
     deniedTitle: 'Notifications are off',
     deniedBody: 'Turn them on in Settings to get these reminders.',
     openSettingsButton: 'Open Settings',
-    // After returning from Settings with permission granted (S34).
+    // After returning from Settings with permission granted (S34), and after "Yes, evenings" on the card.
     onToast: 'Reminders are on.',
+    // The action on that toast after the card: opens Settings, Reminders.
+    changeButton: 'Change',
+    // Inline choices (reminders-settings.md 2): iOS settings save on change, so the page says so once.
+    savesAsYouGo: 'Changes save as you go.',
+    previewTitle: 'How it will look',
+    // From the planner's first planned notification; recomputed on every change.
+    nextLine: 'Next: {weekday} at {time}.',
+    // VoiceOver only, before the Next line, 600 ms after the last change.
+    saved: 'Saved.',
+    // Reminders on, iOS says no: the intent is kept, nothing is scheduled.
+    notSendingYet: 'Not sending yet.',
+    // rescheduleReminders could not schedule (it no longer swallows the error).
+    scheduleFailed: 'Could not set reminders just now.',
+    // The month row while no included book has a birth date yet.
+    birthDateNote: 'Starts once a birth date is added.',
+    // iOS Provisional or Deliver Quietly: allowed, but not on the lock screen.
+    quietDelivery: 'iPhone delivers these quietly, to Notification Center only.',
+    // account-security content.md 4.10, verbatim: with App lock on, names are off and the switch is disabled.
+    lockNames: 'Names stay hidden while App lock is on.',
     offSummary: 'Off',
-    pausedSummary: 'Paused',
     channelName: 'Reminders',
   },
   /** For VoiceOver and chips. Index = Date.getDay(). */

@@ -31,6 +31,8 @@ export interface SentEmail {
   to: string;
   subject: string;
   text: string;
+  html?: string;
+  attachments?: { filename: string; content: string; content_type: string; content_id: string }[];
   idempotencyKey: string | null;
 }
 
@@ -69,6 +71,8 @@ export class FakeWorld {
   appleResponse: { status: number; body?: unknown } = { status: 200 };
   emails: SentEmail[] = [];
   resendStatus = 200;
+  /** An RPC name that answers 503 (a transient database failure). */
+  failRpc: string | null = null;
   contactDeletes: string[] = [];
   /** Every request the worker made: url, method and body text (for the canary scan). */
   traffic: { url: string; method: string; body: string }[] = [];
@@ -130,7 +134,7 @@ export class FakeWorld {
       if (this.resendStatus !== 200) return json(this.resendStatus, { name: 'error', message: 'fake failure for asha.parent@example.invalid' });
       const b = JSON.parse(body);
       const headers = new Headers(init.headers);
-      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, idempotencyKey: headers.get('Idempotency-Key') });
+      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, html: b.html, attachments: b.attachments, idempotencyKey: headers.get('Idempotency-Key') });
       return json(200, { id: 'email-1' });
     }
     if (input.startsWith('https://api.resend.com/contacts/')) {
@@ -146,6 +150,7 @@ export class FakeWorld {
       const fn = path.slice('/rest/v1/rpc/'.length);
       const args = body ? JSON.parse(body) : {};
       this.rpcCalls.push({ fn, args });
+      if (fn === this.failRpc) return json(503, { code: 'PGRST000', message: 'unavailable' });
       try {
         return json(200, this.rpc(fn, args));
       } catch (e) {

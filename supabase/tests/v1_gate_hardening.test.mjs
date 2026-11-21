@@ -209,7 +209,7 @@ await join(N, 'contributor', child, A);
 {
   const own = await newChild(C, 'Kiran', '2025-03-03');
   const foreign = await newChild(S, 'Dev', '2025-04-04');
-  await as(C, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${own}/${C}/x.jpg`]);
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${own}/${C}/x.jpg`]);
   const code = await codeOf(() => as(C, `update storage.objects set name = $1 where name = $2`, [`${foreign}/${C}/x.jpg`, `${own}/${C}/x.jpg`]));
   const moved = (await sys(`select count(*)::int n from storage.objects where name = $1`, [`${foreign}/${C}/x.jpg`])).rows[0].n;
   check(`[F6] an object cannot be moved into another family's book folder (${code})`, moved === 0);

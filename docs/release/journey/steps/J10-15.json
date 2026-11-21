@@ -3,8 +3,9 @@
   "journey": "letter-detail",
   "kind": "unhappy",
   "title": "Erased",
-  "note": "The letter and its recording are gone from this phone at once, and the shelf is empty. (On a phone the recording file is removed first, then the row; the web preview has no recording files.)",
+  "note": "The letter and its recording are gone for good, the shelf is empty, and the toast says \"Letter erased.\" (it replaces any toast before it, so no \"Back in Asha's book.\" is left showing). On a phone the recording file is removed first, then the row; the web preview has no recording files.",
   "from": "J10-14",
+  "shot": "screens/J10-15.png",
   "route": "/settings/recently-deleted",
   "viewport": {
     "width": 402,
@@ -21,15 +22,13 @@
     }
   },
   "scrolls": false,
-  "text": "Recently deleted Recently deleted Nothing here. Letters you delete wait here for 30 days. Letter restored. Erase this letter now? Close The letter and its recording will be erased from this phone, at once. Keep it Erase now",
+  "text": "Recently deleted No deleted letters. Letter erased. Erase this letter now? The letter and its recording are erased for good. Keep it Erase now",
   "lines": [
     "Recently deleted",
-    "Recently deleted",
-    "Nothing here. Letters you delete wait here for 30 days.",
-    "Letter restored.",
+    "No deleted letters.",
+    "Letter erased.",
     "Erase this letter now?",
-    "Close",
-    "The letter and its recording will be erased from this phone, at once.",
+    "The letter and its recording are erased for good.",
     "Keep it",
     "Erase now"
   ]

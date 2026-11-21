@@ -1,0 +1,110 @@
+/**
+ * One child's book settings (EXPERIENCE_PASS_2026-10 S46, package P6): the rules app/settings/children/[id].tsx draws,
+ * pure so test/children-settings.test.ts runs them in Node.
+ *
+ * The due-date card. Once the due date has passed, a quiet card offers to set the birthday. A passed due date can be
+ * hard news, so the card never presumes a birth and never celebrates: no "was born", no drawing, no count of days,
+ * never a notification and never on Tonight. "Hide" puts it away on this phone until the person opens the Due date
+ * row again.
+ *
+ * Hiding the book. "Hide this book" is not destructive (nothing is deleted), and in a book with two parents its footer
+ * says hiding is only for you (`children.settings.hideShared`, with the other parent's own signature).
+ *
+ * "Write this book together". Only where this build has the flow: one parent, the row opens the invite sheet; two
+ * parents, its value is the other parent's signature ("Papa") and it opens the family page. Anywhere else there is no row.
+ */
+import { checkChildName, dueDatePassed } from '@scribe/core';
+import { familyCopy } from '@scribe/content';
+import { childLabel, copy, fill } from '@/lib/copy';
+import { inviteDestination } from '@/lib/family/entry.logic';
+
+/**
+ * The title of a book's row in Settings, Children (NX-36 S14, audit table): the name as stored, or, for a book made
+ * without one (NX-31-R3), the fallback "your child" with a capital, as a row title starts a line. The stored name is
+ * never changed.
+ */
+export function childRowTitle(name: string | null | undefined): string {
+  const label = childLabel(name);
+  return name?.trim() ? label : label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/**
+ * The line under the Name field in Settings, the book, Name: why the name cannot be saved, or null. A book made without
+ * a name (NX-31-R3) opens this field empty, and that is not a mistake: this row is how a name gets added later. So
+ * nothing is said until the field differs from what it opened with. Clearing a name that was there still says so.
+ */
+export function nameEditorError(stored: string, draft: string): string | null {
+  if (draft === stored) return null;
+  return checkChildName(draft).ok ? null : copy.childrenExtra.edit.nameEmpty;
+}
+
+/** Per-book setting on this phone: the due-date card was put away with "Hide". Holds the due date it was hidden for. */
+export const BORN_CARD_HIDDEN_PREFIX = 'child.bornCardHidden.';
+export const bornCardHiddenKey = (childId: string) => `${BORN_CARD_HIDDEN_PREFIX}${childId}`;
+
+/**
+ * Whether the due-date card shows: no birthday yet, the due date has gone by, and the person has not put it away for
+ * this due date (`hiddenFor` is the due date it was hidden for, so a new due date brings it back on its own day).
+ */
+export function bornCardShown(input: { birthday: string | null; dueDate: string | null; today: string; hiddenFor: string | null }): boolean {
+  if (input.birthday || !input.dueDate) return false;
+  if (!dueDatePassed(input.dueDate, input.today)) return false;
+  return input.hiddenFor !== input.dueDate;
+}
+
+/** The card's words: a title naming the child's birthday, and one gentle line. Never "was born", never a number. */
+export function bornCard(childName: string): { title: string; body: string; setButton: string; hideButton: string } {
+  const b = copy.childrenExtra.edit.born;
+  return { title: fill(b.title, { child: childName }), body: b.offerBody, setButton: b.confirm, hideButton: b.hideButton };
+}
+
+/** The other parents of a book, as the last pull listed them (store.listMembers). */
+export type CoParentLike = { role: 'parent' | 'contributor'; signsAs: string };
+
+/**
+ * The book's other parent, by their own signature, or null for a book with one parent (or only on this phone). The
+ * list holds the other members only (store.listMembers leaves me out), so any parent in it is a co-parent, signed or
+ * not: one who never set a signature (the server's signs_as is null) is "Your co-parent", as the Family tab names them.
+ */
+export function coParentOf(members: readonly CoParentLike[]): string | null {
+  const parents = members.filter((m) => m.role === 'parent');
+  if (parents.length === 0) return null;
+  const signed = parents.find((m) => m.signsAs.trim().length > 0);
+  return signed ? signed.signsAs.trim() : familyCopy.members.invitedName;
+}
+
+/** "Hide this book"'s footer: what hiding does, and, with a co-parent, that it is only for you. */
+export function hideFooter(childName: string, coParent: string | null): string {
+  const s = copy.children.settings;
+  const body = fill(s.hideBody, { child: childName });
+  return coParent ? `${body} ${fill(s.hideShared, { coParent, child: childName })}` : body;
+}
+
+/** Null: there is no row (no flow in this build). A row is only ever the real thing. */
+export type BookRow = { value?: string; href: string };
+
+/** The book's two parents are shown on /family, a pushed route and not a tab (founder, 11 Nov 2026). */
+export const FAMILY_TAB_HREF = '/family';
+
+/**
+ * Whether the page asks the server which invites this book still has pending (lib/family/invites.ts listPendingInvites,
+ * an RPC to sync_books). Only where the row can exist: the same join-door rule the row itself follows (inviteDestination
+ * 'settings_child'), so a servers-on store build, where `bookRow` is always null, never makes the call. Also only while
+ * signed in with sync available, and only for one parent: with a co-parent the row already opens the family page.
+ */
+export function asksPendingInvites(input: { serverFeatures: boolean; alpha: boolean; signedIn: boolean; coParent: string | null }): boolean {
+  return inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'flow' && input.signedIn && !input.coParent;
+}
+
+/**
+ * "Write this book together": the invite (one parent, no invite pending) or the family page (two parents, or one parent
+ * while an invite is pending, so Share again and Cancel invite stay reachable; Karma ruling, 11 Nov 2026), only where this build has the flow
+ * (inviteDestination). Where it does not, there is NO row: no "Coming soon" value, no footer, no chevron, no screen.
+ * `invite` is where the invite entry leads in this build (lib/family/entry.logic.ts inviteHref).
+ */
+export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string; /** An invite the server still lists for this book (open or expired). Absent: none. */ pendingInvites?: boolean }): BookRow | null {
+  if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') return null;
+  if (input.coParent) return { value: input.coParent, href: FAMILY_TAB_HREF };
+  if (input.pendingInvites) return { href: FAMILY_TAB_HREF };
+  return { href: input.invite };
+}

@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
 import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
@@ -20,6 +20,17 @@ import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type
 const ROOT = path.resolve(__dirname, '..');
 const KEY = 'EXPO_PUBLIC_APP_ENV';
 const original = process.env[KEY];
+
+// BL-443: the first getConfig call pays the cold load of @expo/config and every plugin; the 5 s test timeout of
+// whichever test comes first used to pay it. It is paid here, under the hook timeout. An error is left for the
+// tests below, which call getConfig themselves and report it with their own names.
+beforeAll(() => {
+  try {
+    getConfig(ROOT, { skipSDKVersionRequirement: true, isPublicConfig: false });
+  } catch {
+    /* reported by the first test that needs the config */
+  }
+}, 60_000);
 
 afterEach(() => {
   if (original === undefined) delete process.env[KEY];
@@ -166,8 +177,16 @@ const PROFILE_VARIABLES = [
  * Named only in the two alpha profiles (D-111 item 4: the alpha offers English only). Every other profile
  * leaves it unset, which reads as off (lib/capabilities.ts; pinned per profile in capabilities.test.ts).
  */
-const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY'] as const;
+const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SPOKEN_LANGUAGES'] as const;
 const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
+
+/**
+ * The opposite of ALPHA_ONLY_VARIABLES: written (`on`) in every profile EXCEPT the two alpha ones (founder, 30 Oct 2026). The alpha
+ * profiles leave it unwritten on purpose, so the EAS "preview" environment on expo.dev can set it after the freeze without a change
+ * to eas.json or app.config.ts, and a build made without it hides the Delete account row (lib/capabilities.ts; pinned per profile
+ * in account-deletion-switch.test.ts).
+ */
+const NON_ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ACCOUNT_DELETION'] as const;
 
 /** Project values that come only from EAS environment variables (docs/release/TESTFLIGHT.md step 7). */
 const FROM_EAS_ONLY = [
@@ -187,7 +206,7 @@ const FROM_EAS_ONLY = [
  */
 function configForProfile(name: string, opts: { easBuild?: boolean; extra?: Record<string, string> } = {}): ExpoConfig {
   const env = { ...(easFile.build[name]?.env ?? {}), ...(opts.extra ?? {}), ...(opts.easBuild ? { EAS_BUILD_PROFILE: name } : {}) };
-  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
@@ -211,10 +230,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
   });
 
   for (const env of APP_ENVS) {
-    it(`profile "${env}" sets EXPO_PUBLIC_APP_ENV, channel and EAS environment to ${env}`, () => {
+    it(`profile "${env}" sets EXPO_PUBLIC_APP_ENV and EAS environment to ${env}`, () => {
       const p = eas.build[env];
       expect(p.env?.[KEY]).toBe(env);
-      expect(p.channel).toBe(env);
       expect(p.environment).toBe(env);
     });
   }
@@ -224,8 +242,13 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       it(`${name}: names only the build switches, writes each one out, and keeps project values in EAS`, () => {
         const env = eas.build[name].env ?? {};
         const alpha = ALPHA_PROFILES.includes(name);
-        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(alpha ? ALPHA_ONLY_VARIABLES : [])].sort());
-        expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(alpha ? 'on' : undefined);
+        // D-121: production (the staged 1.0 store build) is English only too, and still shows Delete account.
+        const englishOnly = alpha || name === 'production';
+        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(englishOnly ? ALPHA_ONLY_VARIABLES : []), ...(alpha ? [] : NON_ALPHA_ONLY_VARIABLES)].sort());
+        expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(englishOnly ? 'on' : undefined);
+        // D-125 item 2: the spoken-language list sits next to it and names English alone, so these builds hear as before.
+        expect(env.EXPO_PUBLIC_SPOKEN_LANGUAGES, name).toBe(englishOnly ? 'en' : undefined);
+        expect(env.EXPO_PUBLIC_ACCOUNT_DELETION, name).toBe(alpha ? undefined : 'on');
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();
         expect(env.EXPO_PUBLIC_DOCS_BASE_URL).toBe('https://packs.earlyletters.app');
         expect(env.EXPO_PUBLIC_ANALYTICS).toBe('off');
@@ -240,14 +263,18 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         expect(exp.extra?.serverFeatures).toBe(on);
         expect(exp.extra?.backup).toBe(false);
         expect(exp.extra?.statusReport).toBe(false);
+        // Needs the server switch too, so it reads false wherever servers are off; in the alpha profiles it is false because the profile leaves it unwritten.
+        // Production writes it on and has servers on (build 12), so it reads true there; it was false while production was servers off.
+        if (name === 'production') expect(exp.extra?.accountDeletion).toBe(true);
+        else expect(exp.extra?.accountDeletion).toBe(on && eas.build[name].env?.EXPO_PUBLIC_ACCOUNT_DELETION === 'on');
       });
     }
   });
 
-  it('server features are on in preview, and in testflight only after the R-17 flip; never production or development', () => {
+  it('server features are on in preview and production (build 12, founder 8 Nov 2026), and in testflight only after the R-17 flip; never development', () => {
     const on = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
     // The flip (docs/release/TESTFLIGHT.md, "The flip") is the testflight line alone; this test passes either side of it.
-    expect(on).toEqual(TESTFLIGHT_FLIPPED ? ['preview', 'testflight'] : ['preview']);
+    expect(on).toEqual(TESTFLIGHT_FLIPPED ? ['preview', 'production', 'testflight'] : ['preview', 'production']);
   });
 
   describe('preview profile (alpha build 2: servers on, staging, TestFlight)', () => {
@@ -268,6 +295,14 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       expect(exp.extra?.serverFeatures).toBe(true);
       expect(exp.extra?.backup).toBe(false);
       expect(exp.extra?.statusReport).toBe(false);
+      expect(exp.extra?.accountDeletion).toBe(false);
+    });
+
+    it('takes the Delete account switch from the environment alone: the EAS "preview" variable turns it on with no change to eas.json or app.config.ts (founder, 30 Oct 2026)', () => {
+      expect(configForProfile('preview', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'on' } }).extra?.accountDeletion).toBe(true);
+      expect(configForProfile('preview', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'off' } }).extra?.accountDeletion).toBe(false);
+      // Build 1 shares that environment; with servers off the variable changes nothing.
+      expect(configForProfile('testflight', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'on' } }).extra?.accountDeletion).toBe(false);
     });
 
     it('a build flag set on its own in the shell cannot turn on backup in an off profile', () => {
@@ -293,7 +328,6 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     it('is a store build that is a preview build in every other respect', () => {
       expect(tf.distribution).toBe('store');
       expect(tf.env?.[KEY]).toBe('preview');
-      expect(tf.channel).toBe('preview');
       expect(tf.environment).toBe('preview');
     });
 
@@ -311,6 +345,14 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
 
     it('has a submit profile', () => {
       expect(eas.submit.testflight).toBeDefined();
+      // BL-442: the fields a TestFlight submission needs: the App Store Connect app id (digits) and the internal
+      // tester group the build goes to.
+      const ios = (eas.submit.testflight as { ios?: { ascAppId?: unknown; groups?: unknown } }).ios;
+      expect(ios, 'submit.testflight.ios').toBeDefined();
+      expect(ios!.ascAppId, 'ascAppId').toMatch(/^\d{6,}$/);
+      expect(Array.isArray(ios!.groups), 'groups').toBe(true);
+      expect((ios!.groups as unknown[]).length, 'groups').toBeGreaterThan(0);
+      for (const g of ios!.groups as unknown[]) expect(g, 'group name').toEqual(expect.any(String));
     });
 
     it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES, until the flip makes them equal', () => {
@@ -332,7 +374,7 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         easText.replace(/("testflight": \{[\s\S]*?"EXPO_PUBLIC_SERVER_FEATURES": )"off"/, '$1"on"'),
       ) as typeof eas;
       expect(flipped.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
-      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
       const { env: a, ...restA } = flipped.build.testflight;
       const { env: b, ...restB } = flipped.build.preview;
       expect(restA).toEqual(restB);
@@ -340,19 +382,30 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     });
   });
 
-  it('builds 1 and 2 may share the "preview" update channel only while the app has no update client', () => {
-    // The switches are inlined at bundle time, so an over-the-air update made for build 2 (servers on) would turn
-    // servers on in build 1 if both listened on one channel. Today nothing listens: expo-updates is not installed.
-    // Adding it means giving testflight and preview their own channels first.
+  it('no over-the-air updates in v1.0 (D-091): no update client, and no build profile names an update channel', () => {
+    // A "channel" on a build profile makes `eas build` install and configure expo-updates (EAS Update), which D-091
+    // rules out for v1.0. It did exactly that on the first local testflight build (1 Nov 2026). The switches are
+    // also inlined at bundle time, so a shared channel would let an update made for build 2 (servers on) reach build 1.
+    // production keeps its channel only until the post-9-Nov production edit (D-124 item 1, S-12b) removes it.
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as Record<string, Record<string, string> | undefined>;
     const hasUpdates = ['dependencies', 'devDependencies'].some((k) => pkg[k]?.['expo-updates'] !== undefined);
-    const shared = eas.build.testflight.channel === eas.build.preview.channel;
-    expect(hasUpdates && shared, 'expo-updates is installed: give testflight and preview their own channels').toBe(false);
+    expect(hasUpdates, 'expo-updates is installed, against D-091').toBe(false);
+    const withChannel = Object.entries(eas.build as Record<string, { channel?: string }>)
+      .filter(([name, p]) => p.channel !== undefined && name !== 'production')
+      .map(([name]) => name);
+    expect(withChannel, 'these profiles name an update channel; eas build would install expo-updates (D-091)').toEqual([]);
   });
 
-  it('production stays off (store submission is re-planned after the alpha, D-106)', () => {
-    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-    expect(configForProfile('production').extra?.serverFeatures).toBe(false);
+  it('production is on (build 12 runs servers on against the production backend, founder 8 Nov 2026), with backup, the status report and analytics still off', () => {
+    const env = eas.build.production.env;
+    expect(env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env?.EXPO_PUBLIC_BACKUP).toBe('off');
+    expect(env?.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
+    expect(env?.EXPO_PUBLIC_ANALYTICS).toBe('off');
+    const extra = configForProfile('production').extra;
+    expect(extra?.serverFeatures).toBe(true);
+    expect(extra?.backup).toBe(false);
+    expect(extra?.statusReport).toBe(false);
   });
 
   it('development stays off (a dev client on the founder desk talks to no server unless .env.development.local says so)', () => {
@@ -395,8 +448,9 @@ describe('e2e seams stay out of every uploadable build (TESTID_REQUESTS.md B-1, 
 
   it('e2e names the build switches plus EXPO_PUBLIC_E2E=1, with the development app env and servers off', () => {
     const env = eas.build[E2E_PROFILE].env ?? {};
-    expect(Object.keys(env).sort()).toEqual([...PROFILE_VARIABLES, 'EXPO_PUBLIC_E2E'].sort());
+    expect(Object.keys(env).sort()).toEqual([...PROFILE_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, 'EXPO_PUBLIC_E2E'].sort());
     expect(env.EXPO_PUBLIC_E2E).toBe('1');
+    expect(env.EXPO_PUBLIC_ACCOUNT_DELETION).toBe('on'); // the Delete account row stays as it was in the simulator build (founder, 30 Oct 2026)
     expect(env[KEY]).toBe('development');
     expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
     for (const k of FROM_EAS_ONLY) expect(env[k], k).toBeUndefined();
@@ -462,11 +516,15 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
   }
 
   for (const name of Object.keys(easFile.build)) {
-    it(`${name}: the introspected entitlements carry no aps-environment and keep the other three`, async () => {
+    // The store build (production, servers off) has no sign-in, so it also carries neither sign-in entitlement
+    // (guideline 2.5.19; app.config.ts signInCapable; test/store-sign-in-capabilities.test.ts). Every other build keeps them.
+    const store = name === 'production' && String(easFile.build[name]?.env?.EXPO_PUBLIC_SERVER_FEATURES ?? '').toLowerCase() !== 'on';
+    it(`${name}: the introspected entitlements carry no aps-environment and keep ${store ? 'only data protection' : 'the other three'}`, async () => {
       const ent = await introspectedEntitlements(name);
-      expect(Object.keys(ent).sort(), name).toEqual(['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', DATA_PROTECTION_KEY].sort());
+      const expected = store ? [DATA_PROTECTION_KEY] : ['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', DATA_PROTECTION_KEY];
+      expect(Object.keys(ent).sort(), name).toEqual(expected.sort());
       expect(ent[DATA_PROTECTION_KEY]).toBe(DATA_PROTECTION_CLASS);
-      expect(ent['com.apple.developer.associated-domains']).toEqual([`applinks:${brand.publisher.domain}`]);
+      if (!store) expect(ent['com.apple.developer.associated-domains']).toEqual([`applinks:${brand.publisher.domain}`]);
     }, 60_000);
   }
 
@@ -476,7 +534,7 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
 });
 
 describe('.env.development', () => {
-  it('sets development and nothing else (the server-features and analytics switches may only be off)', () => {
+  it('sets development and nothing else (the server-features and analytics switches may only be off; the Delete account switch is never written here)', () => {
     const lines = fs
       .readFileSync(path.join(ROOT, '.env.development'), 'utf8')
       .split('\n')

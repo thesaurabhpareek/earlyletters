@@ -20,7 +20,7 @@ const ASHA = 'a5a5a5a5-0000-4000-8000-000000000001';
 afterEach(cleanupPhones);
 
 describe('which account backup runs for', () => {
-  it('only the session that is released to sync (consent complete, and "Keep them here" when asked)', () => {
+  it('only the session that is released to sync (consent complete, and "Keep in this account" when asked)', () => {
     expect(backupAccountFor(MAMA, MAMA)).toBe(MAMA);
     expect(backupAccountFor(PAPA, null)).toBeNull(); // still consenting, or on the claim screen
     expect(backupAccountFor(PAPA, MAMA)).toBeNull();

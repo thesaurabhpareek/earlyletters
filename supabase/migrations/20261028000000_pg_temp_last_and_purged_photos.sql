@@ -1,0 +1,106 @@
+-- Two small closures found by re-checking PR #51 (open, draft) against develop on 28 Oct 2026.
+--
+-- PENDING: not yet applied. Apply after 20261023060000_explicit_grants.sql (supabase/APPLY.md, "File 26").
+-- Safe to run twice (create or replace, alter policy, alter role). Changes no row.
+--
+-- 1. pg_temp last. #51 finding 1 (a stranger's temp table shadowing child_members or purge_ledger inside a
+--    definer function or an RLS helper) is already closed in the end state: 20261015000000 section 7 re-pins
+--    every function that existed then, and every later file writes `pg_catalog, public, pg_temp`. The
+--    sweep in supabase/tests/v1_gate_search_path.test.mjs and the proconfig check in
+--    supabase/tests/pg_temp_search_path.test.mjs prove it for all schemas. No function needs an ALTER here.
+--    The one setting left without pg_temp is a role default: escrow_svc (20261023000000) was given
+--    `search_path = pg_catalog, public`. Postgres searches the session's temp schema first for relations
+--    unless pg_temp is named, so it is named last (section 1 below).
+--
+-- 2. A purged letter's photo stays purged. #51 finding 2. Erasing a letter removes its photo object (via
+--    storage_purge_queue) and records the letter's id (purge_ledger, sync_private.entry_erasures), so the
+--    letter can never be uploaded again. The Storage insert policy entry_photos_author_insert, though, only
+--    checks the folder, membership, a live book and consent, so the author could put the photo back under
+--    {book}/{author}/{letter id}.{ext} after the erasure. The object would belong to no letter and no purge
+--    would ever look for it. The policy now refuses a path whose file name is a letter id the caller erased.
+--    The rule is inlined in public.photo_entry_is_purged (below) and is author-scoped, so it differs from
+--    entries_not_purged, which refuses a letter write on the bare ledger. The function reads ids only and
+--    answers false for any path without a uuid file name (no cast error).
+--    Red-team round on #311 closed four holes in the first cut: (a) a rename: Storage upsert and move go
+--    through UPDATE, so entry_photos_author_update gets the same condition; (b) odd file names: the uuid is
+--    matched as the start of the file name (so `{id}`, `{id}.x.jpg` and `{id}-1.jpg` are caught), and a path
+--    deeper than {book}/{author}/{file} is refused on insert and update; (c) the helper answered for any
+--    path, so any signed-in person could ask whether a given letter id was erased: it now answers false
+--    unless the path's second folder is the caller's own id.
+--    Ruling D2 of the CTO review (#325) closed the rest of (c): even inside their own folder a stranger or
+--    co-parent gets false for another author's erased letter, because the answer no longer rests on the
+--    author-less purge_ledger alone (see the function). One person's erasure therefore never refuses
+--    another's upload.
+--    Residual, by design: an id that is in purge_ledger with no author trail anywhere answers true to any
+--    signed-in person for a path in their own folder. That state is not only a restore replay of a letter the
+--    restored database never held. An ordinary whole-book purge, an account purge, and the purge of the
+--    letters of a non-kept author in a kept-book purge leave it too: sync_private.entry_erasures goes with
+--    the book and the author (foreign-key cascade, or the explicit delete in purge_book_keep_authors) while
+--    purge_ledger keeps the id for 60 days. It affects a stranger who already knows the uuid: for up to 60
+--    days they get true for {their own folder}/{that id}.jpg. That is no more than sync_push entry.upsert
+--    with that id already tells them (SCDEL, gone: true, on develop). The author is refused as well, which
+--    is what the ledger is for. When purge_due trims the ledger at 60 days the answer is false again for
+--    everyone except an author who still has their own record, which is kept as long as the book and the
+--    author exist (supabase/tests/pg_temp_search_path.test.mjs, section 4).
+--
+-- Locks. The two alter policy statements on storage.objects take ACCESS EXCLUSIVE on that table until the
+--    file commits, and while they wait every Storage read and write queues behind them. So the file first sets
+--    lock_timeout to 5 s, local to its transaction (as 20261023040000 does): on a busy table it fails with
+--    Postgres's own 55P03 (lock_not_available), nothing changed and nothing recorded, and APPLY.md File 26
+--    says to retry.
+--
+-- New SQLSTATEs: none (a Storage policy refusal is a 403 to the client, as for consent). No new column, so no
+-- classification label. Fictional family "Asha" only.
+
+-- --- 0. Never wait long for a lock ------------------------------------------------
+select set_config('lock_timeout', '5s', true);
+
+-- --- 1. escrow_svc: pg_temp named last -----------------------------------------
+alter role escrow_svc set search_path = pg_catalog, public, pg_temp;
+
+-- --- 2. Purged letters' photos ---------------------------------------------------
+create or replace function public.photo_entry_is_purged(p_name text)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  -- Author-scoped (ruling D2 of the CTO review, #325): true only when the caller is the author on record.
+  -- purge_ledger has no author_id (entity_type, entity_id, purged_at only), so the ledger alone would answer
+  -- true for anyone holding the id. The caller's own erasure record or 'erased' marker answers; the bare
+  -- ledger counts only for an id with no other person's trail (letter_id_taken false: no entry, held draft,
+  -- marker or erasure of another author). That is the case where the author's own record is gone: a restore
+  -- replay, and also an ordinary whole-book or account purge, where entry_erasures cascades away with the
+  -- book or the author and purge_ledger keeps the id for 60 days. The caller's own entry_erasures row is
+  -- what keeps the answer after the ledger is trimmed.
+  with t as (
+    select (substring(p_name from '^[^/]+/[^/]+/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'))::uuid as id
+  )
+  select coalesce(
+    split_part(p_name, '/', 2) = auth.uid()::text
+    and (select t.id is not null and (
+           exists (select 1 from sync_private.entry_erasures x where x.entry_id = t.id and x.author_id = auth.uid())
+        or exists (select 1 from public.held_drafts_gone g where g.id = t.id and g.author_id = auth.uid() and g.gone = 'erased')
+        or (exists (select 1 from public.purge_ledger l where l.entity_type = 'entry' and l.entity_id = t.id::text)
+            and not sync_private.letter_id_taken(t.id, auth.uid()))
+         ) from t), false);
+$$;
+revoke execute on function public.photo_entry_is_purged(text) from public, anon;
+grant execute on function public.photo_entry_is_purged(text) to authenticated;
+
+-- The insert policy of 20261003000000, restated with two more conditions.
+alter policy entry_photos_author_insert on storage.objects with check (
+  bucket_id = 'entry-photos'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+  and array_length(storage.foldername(name), 1) = 2
+  and public.is_child_member(((storage.foldername(name))[1])::uuid)
+  and public.child_is_live(((storage.foldername(name))[1])::uuid)
+  and public.can_write_content()
+  and not public.photo_entry_is_purged(name)
+);
+
+-- The update policy of 20261005000000 (renames, moves and upserts), restated with the same two conditions.
+alter policy entry_photos_author_update on storage.objects
+  using (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text)
+  with check (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text
+              and array_length(storage.foldername(name), 1) = 2
+              and public.is_child_member(((storage.foldername(name))[1])::uuid)
+              and public.child_is_live(((storage.foldername(name))[1])::uuid)
+              and public.can_write_content()
+              and not public.photo_entry_is_purged(name));

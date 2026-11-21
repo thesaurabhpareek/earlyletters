@@ -12,14 +12,14 @@
  *   {deletionDate}     date the 30-day grace ends and deletion runs
  *   {completedDate}    date deletion finished
  *   {backupClearDate}  date backups no longer hold the data (completed + 7 days)
- *   {appUrl}           universal link that opens the app
+ *   {appUrl}           universal link that opens the app (https://earlyletters.com/open; the website page and the
+ *                      AASA path are still to build, docs/emails/CATALOG.md section 14)
  *   {confirmDeleteUrl} one-time web link that opens /delete-account/confirm (deletion-confirm; works in any browser)
  *   {coParentName}     display name of the co-parent who is deleting their account (coparent-left; E-2)
  *   {exportUrl}        signed download link for a server export (v1.1)
  *   {expiresIn}        how long a link works, in words, e.g. "7 days"
  *   {documentName}     "Privacy Policy", "Terms of Service", ...
- *   {documentUrl}      the new version, published
- *   {changesUrl}       the changes page for that version
+ *   {documentUrl}      the new version, published (its page lists what changed; no separate changes page, TPL-06)
  *   {changeSummary}    the plain-language summary approved with the version (POLICY_VERSIONING s.5)
  *   {effectiveDate}    effective_at of the new version
  */
@@ -40,13 +40,16 @@ export const accountEmails = {
   'account-deletion-scheduled': {
     id: 'account-deletion-scheduled',
     subject: "Your account is set to be deleted",
-    preheader: "On {deletionDate}. Until then you can save a copy, or change your mind.",
+    // No export after the request (DATA-REQ-053 is not met yet: the phone's next sync moves the person's own letters to
+    // Recently deleted, which Export leaves out), and no "we have let them know": nothing sends coparent-left or shows
+    // the coParentLeft card yet (BL-361). The app offers Export on the step before Confirm (S64).
+    preheader: "On {deletionDate}. Until then you can change your mind.",
     heading: "We have your request",
     body: [
       `You asked to delete your ${brand.name} account on {requestDate}. Request number: {requestId}.`,
       "Your account, letters and recordings will be deleted from our servers on {deletionDate}. Our backups clear 7 days after that, and our service providers delete their copies within 45 days of your request.",
-      "Until then, you can sign in to export a copy of everything, free, or to cancel the request. Both are in Settings, Your data.",
-      "If you share a book with a co-parent, your letters and recordings have left it, so they can no longer read them. The book stays with them, and we have let them know. If you would like them to keep a copy, export yours before {deletionDate} and share it.",
+      "Until then, you can sign in and cancel the request in Settings, Delete account.",
+      "If you share a book with a co-parent, your letters and recordings have left it, so they can no longer read them. The book stays with them.",
       PLUS_NOT_CANCELLED,
       RECORDS_KEPT,
     ],
@@ -141,12 +144,12 @@ export const accountEmails = {
     id: 'deletion-request-received',
     subject: "We have your deletion request",
     preheader: "One more step to confirm it is you. Nothing is deleted until then.",
-    heading: "Thank you, we have your request",
+    heading: "We have your request",
     body: [
       `We received a request to delete the ${brand.name} account for this email address. Request number: {requestId}.`,
       "To make sure it is really you, we will send a separate email to this address with a link that confirms it. It works in any web browser, so you do not need the app. Nothing is deleted until you confirm.",
       "Once you confirm, your account is set to be deleted 30 days later. Until then you can change your mind.",
-      "If you can open the app, you can also do this yourself: Settings, Your data, Delete account.",
+      "If you can open the app, you can also do this yourself: Settings, Delete account.",
     ],
     safety: "Did not ask for this? You can ignore this email. Nothing happens without your confirmation.",
     category: 'account',
@@ -154,7 +157,8 @@ export const accountEmails = {
   },
 
   // L2 review: CUS-14. Second step of the D-042 email route, sent after deletion-request-received.
-  // The link opens /delete-account/confirm on earlyletters.com (web route still to build), which shows the
+  // Ops only, and not sent at all until /delete-account/confirm exists on the website (TPL-06; CATALOG section 14):
+  // until then support confirms identity by reply. The link opens that page on earlyletters.com, which shows the
   // date and one button. Pressing it files the request with source 'support' (DATA-REQ-021); the normal
   // account-deletion-scheduled receipt follows. Works with no app and on any device.
   'deletion-confirm': {
@@ -204,7 +208,7 @@ export const accountEmails = {
     id: 'privacy-request-received',
     subject: "We have your privacy request",
     preheader: "A person is on it. We reply within 45 days, and usually much sooner.",
-    heading: "Thank you, we have your request",
+    heading: "We have your request",
     body: [
       "We received your request about your information. Request number: {requestId}.",
       "We answer within 45 days. If we need longer, we will tell you before then, and finish within 45 more.",
@@ -243,11 +247,11 @@ export const accountEmails = {
     preheader: "What is changing, in plain words, and the date it takes effect.",
     heading: "Our {documentName} changes on {effectiveDate}",
     body: [
-      "We are updating our {documentName}. Here is what changes, in plain words:",
+      "We are updating our {documentName}. What changes, in plain words:",
       "{changeSummary}",
-      "The new version takes effect on {effectiveDate}. You can read it in full at {documentUrl}, and see every change at {changesUrl}.",
+      "The new version takes effect on {effectiveDate}. The button below opens it in full, with a list of what changed.",
       "If the change needs your agreement, the app will ask you once, on or after {effectiveDate}.",
-      "You can export everything or delete your account at any time, in Settings, Your data.",
+      "You can export everything at any time in Settings, Your data, and delete your account in Settings, Delete account.",
     ],
     cta: { label: "Read the new version", urlVar: "{documentUrl}" },
     fallback: FALLBACK,

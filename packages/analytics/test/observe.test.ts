@@ -65,6 +65,13 @@ describe('auth observer', () => {
     expect(under18).toEqual([]);
   });
 
+  it('[BL-597] a forced re-sign-in is reported as session_lost, so the allowlist gains no value', async () => {
+    const { analytics, sent } = await granted();
+    const see = createAuthObserver(analytics, { hasLocalLetters: () => true, onUnder18: () => undefined });
+    for (const s of [{ status: 'ready' }, { status: 'signingOut', reason: 'force_reauth' }, { status: 'signedOut' }] as AuthLike[]) see(s);
+    expect((await sent()).filter(([e]) => e === 'signed_out')).toEqual([['signed_out', { reason: 'session_lost' }]]);
+  });
+
   it('never sends an under-18 answer, and asks the app to stop analytics', async () => {
     const { analytics, sent } = await granted();
     const under18: string[] = [];

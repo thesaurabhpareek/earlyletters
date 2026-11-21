@@ -25,7 +25,7 @@ echo "container: $DATA"
 echo "database:  $DB"
 
 count() { sqlite3 -readonly "$DB" "select count(*) from $1;" 2>/dev/null || echo "missing"; }
-for t in children entries drafts orphan_audio sync_outbox; do
+for t in children entries drafts orphan_audio sync_outbox agreements; do
   n="$(count "$t")"
   if [[ "$MODE" == "gate-stopped" ]]; then
     [[ "$n" == "0" || "$n" == "missing" ]] || fail "table $t has $n rows after a No"
@@ -49,6 +49,10 @@ if [[ "$MODE" == "gate-stopped" ]]; then
   [[ "$V" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || fail "ageGate.stoppedAt is not an ISO time: $V"
   sqlite3 -readonly "$DB" "select key from settings where key='ageGate.passed';" | grep -q . && fail "ageGate.passed is set after a No"
 else
+  # F2: Yes plus the box records one terms and one privacy accept, with no age column (PR #597 2.1).
+  A="$(sqlite3 -readonly "$DB" "select group_concat(document, ',') from (select document from agreements where action='accept' order by document);")"
+  [[ "$A" == "privacy,terms" ]] || fail "agreements after Yes are '$A', expected 'privacy,terms'"
+  sqlite3 -readonly "$DB" "pragma table_info(agreements);" | cut -d'|' -f2 | grep -i -E 'age|birth|dob' && fail "agreements has an age-like column"
   V="$(sqlite3 -readonly "$DB" "select value from settings where key='ageGate.passed';")"
   [[ "$V" == "1" ]] || fail "ageGate.passed is '$V', expected '1'"
   sqlite3 -readonly "$DB" "select key from settings where key='ageGate.stoppedAt';" | grep -q . && fail "ageGate.stoppedAt kept after Yes"

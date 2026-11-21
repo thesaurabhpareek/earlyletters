@@ -3,8 +3,9 @@
   "journey": "typed-letter",
   "kind": "happy",
   "title": "Kept private",
-  "note": "Keep private saves the letter outside the book. It stays on the phone and can be added later.",
+  "note": "Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.",
   "from": "J07-03",
+  "shot": "screens/J07-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,8 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "A private one, only for us.",
+  "text": "To Asha · The first weeks From Mama A private one, only for us.",
   "lines": [
+    "To Asha · The first weeks",
+    "From Mama",
     "A private one, only for us."
   ]
 }

@@ -44,7 +44,50 @@ import { brand } from '@scribe/brand';
  * sync stack before develop's 1.1.0 and 1.2.0 landed; no export from the stack has
  * left a phone, so it joins 1.2.0 here.
  */
-export const EXPORT_SCHEMA_VERSION = '1.2.0';
+/**
+ * 1.3.0 (BL-323, LEGAL-REQ-034; proposed as 1.2.0 in PR #161, renumbered
+ * because ADR 0027 landed 1.2.0 first): account.json gains `consent_history`
+ * (the server's consent record: every act in `policy_acceptances` and the
+ * latest per document from `my_policy_state`, when it could be read) and
+ * `dictionary` (the names and words the transcriber spells your way, as kept
+ * on this phone).
+ * `memberships[].role` and `manifest.scope.exporter_role` now say the real
+ * role. Both fields are optional in the schema, so every earlier v1 export
+ * still validates; this version always writes them. The same one-way rule
+ * applies: the 1.2.0 schema rejects a 1.3.0 account.json.
+ */
+/**
+ * 1.4.0 (BL-529, LEGAL-REQ-034 "profile fields"): account.json gains
+ * `profile`, the person's own `profiles` row (the name they chose, their
+ * default signature, when the account was made), read from the server when
+ * signed in, with its own `status` like `consent_history`. Optional in the
+ * schema, so every earlier v1 export still validates; this version always
+ * writes it. The 1.3.0 schema rejects a 1.4.0 account.json.
+ */
+/**
+ * 1.5.0 (RT-BK-05, SR-C-10; F09-REQ-003, F04-REQ-015): each entry gains
+ * `occurred_precision`, `day` or `month`. A `month` letter's `occurred_on` is
+ * only where that month of age starts, never a day the parent gave: readers
+ * show the month alone ("Sometime in Month 3"), as the app, the letter files,
+ * index.html and the printable book do, and its letter file name carries no
+ * day. Optional in the schema, so every earlier v1 export still validates
+ * (a missing value means `day`); this version always writes it. The same
+ * one-way rule applies: the 1.4.0 schema closes entries, so it rejects a
+ * 1.5.0 entries.json; read each export with the schema it carries.
+ */
+/**
+ * 1.6.0 (PL-2, F14-REQ-039, F15-REQ-018; founder decision F5 of 1 Nov; data design
+ * docs/data/account-experience-schema.md section 5, E-1): letters that are waiting go
+ * in the export too. `waiting/<id>.txt` holds each one's own words (typed, or exactly
+ * as heard; never a machine-tidied version, since nothing was kept yet) and
+ * `waiting/<id>.m4a` or `.aac` its original recording, byte for byte.
+ * `data/waiting.json` lists them, present only when there is at least one. A waiting
+ * letter is one held at the Keep step, one waiting to be read back, or a typed one not
+ * kept yet; a take being let go or still recording is not. A new optional file, so every
+ * earlier v1 export still validates; the 1.5.0 schema has no `waitingFile`, so read each
+ * export with the schema it carries.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.6.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -81,6 +124,8 @@ export interface ExportEntry {
   author: { signs_as: string; is_exporter: boolean };
   kind: 'letter' | 'note' | 'not_much';
   occurred_on: string;
+  /** Since 1.5.0. `month`: the parent named a month of age, not a day; `occurred_on` is that month's first day. */
+  occurred_precision?: 'day' | 'month';
   captured_at: string;
   capture_mode: 'spoken' | 'typed' | 'mixed';
   edit_level: 'clean' | 'verbatim';
@@ -143,6 +188,83 @@ export interface AccountFile {
   memberships: { child_id: string; role: 'parent' | 'contributor'; signs_as: string }[];
   /** Since 1.1.0. */
   consent_on_this_phone: ExportPhoneConsent;
+  /** Since 1.3.0. */
+  consent_history: ExportConsentHistory;
+  /** Since 1.3.0. */
+  dictionary: ExportDictionaryTerm[];
+  /** Since 1.4.0. */
+  profile: ExportProfile;
+}
+
+/**
+ * The person's own `profiles` row (LEGAL-REQ-034 "profile fields"). The phone
+ * keeps no copy, so it is read while the export is made; `status` works as in
+ * `ExportConsentHistory`, and only `included` carries values.
+ */
+export interface ExportProfile {
+  status: 'included' | 'not_signed_in' | 'different_account' | 'unavailable';
+  /** When it was read; null unless `included`. */
+  read_at: string | null;
+  /** The name the person chose for their account. */
+  display_name: string | null;
+  /** Their default signature ("Papa"); each book's own is in memberships. */
+  signs_as: string | null;
+  /** When the account was made. */
+  created_at: string | null;
+}
+
+export type PolicyAction = 'accept' | 'decline' | 'withdraw' | 'acknowledge';
+
+/** One row of the server's consent record (`policy_acceptances`), without the account id. */
+export interface ExportPolicyAct {
+  id: string;
+  /** `terms`, `sensitive-data`, `analytics`, ... (POLICY_VERSIONING.md). */
+  document: string;
+  version: string;
+  action: PolicyAction;
+  method: string;
+  surface: string;
+  /** Server time of the act. */
+  at: string;
+  client_recorded_at: string | null;
+  app_version: string;
+  platform: 'ios' | 'android' | 'web';
+  locale: string | null;
+  /** SHA-256 of the text shown, when the app sent one. */
+  rendered_sha256: string | null;
+  /** Enums only, as stored (sign-in method, `age_attested`). */
+  context: Record<string, unknown>;
+}
+
+/**
+ * The server's consent record (LEGAL-REQ-034: `my_policy_state` and the full
+ * acceptance rows). It lives on the server and the phone keeps no copy, so it
+ * is read while the export is made. `status` says whether it is here:
+ *  - `included`: read for the signed-in account that owns this phone's letters;
+ *  - `not_signed_in`: no account on this phone, so there is no server record;
+ *  - `different_account`: the signed-in account does not own this phone's letters;
+ *  - `unavailable`: signed in, but it could not be read (offline, timeout, error).
+ * Only `included` carries rows. The phone's own answers are in `consent_on_this_phone`.
+ */
+export interface ExportConsentHistory {
+  status: 'included' | 'not_signed_in' | 'different_account' | 'unavailable';
+  /** When the record was read; null unless `included`. */
+  read_at: string | null;
+  /** Latest act per document (`my_policy_state`), by document. */
+  current: { document: string; version: string; action: PolicyAction; at: string }[];
+  /** Every act, oldest first. */
+  acts: ExportPolicyAct[];
+}
+
+/** A name or word the transcriber spells your way (DictionaryTerm in packages/core). */
+export interface ExportDictionaryTerm {
+  /** The book it belongs to; null for a word kept for every book. */
+  child_id: string | null;
+  term: string;
+  kind: 'child' | 'nickname' | 'family' | 'word' | 'place' | 'self';
+  heard_as: string[];
+  /** `phone`: kept on this phone (each book's child name and your signature). `server` is for a server-built export (DATA-REQ-054); the phone never writes it. */
+  source: 'phone' | 'server';
 }
 
 /**
@@ -182,6 +304,43 @@ export interface OtherVersionsFile {
   versions: ExportOtherVersion[];
 }
 
+/** Why a letter is waiting (1.6.0). */
+export type WaitingReason = 'held_at_keep' | 'waiting_for_words' | 'not_read_back' | 'typed_draft' | 'unrecoverable';
+
+/** A waiting letter's recording; the same as `ExportAudio` but under `waiting/`. */
+export type ExportWaitingAudio = ExportAudio;
+
+/** One waiting letter in `data/waiting.json` (1.6.0). The person's own words only. */
+export interface ExportWaitingLetter {
+  id: string;
+  child_id: string;
+  reason: WaitingReason;
+  kind: 'letter' | 'note';
+  created_at: string;
+  /** The date the parent chose; null means the day it was made (`created_at`). */
+  occurred_on: string | null;
+  occurred_precision: 'day' | 'month';
+  capture_mode: 'spoken' | 'typed' | 'mixed';
+  language: string | null;
+  /** Words the person typed. */
+  typed_text: string | null;
+  /** Exactly as heard, when the words have been written down. */
+  raw_transcript: string | null;
+  /** The person's own words from Review's Change words, when they changed any (v9 local draft, #522); else null. */
+  changed_words: string | null;
+  text_file: string;
+  audio: ExportWaitingAudio | null;
+  /** `empty`: the take's file held no sound (an unrecoverable take). */
+  audio_missing: { reason: 'not_on_this_device' | 'empty' } | null;
+}
+
+/** `data/waiting.json`, present only when at least one letter is waiting (1.6.0). */
+export interface WaitingFile {
+  schema_version: string;
+  format: string;
+  waiting: ExportWaitingLetter[];
+}
+
 export interface ManifestFile {
   path: string;
   bytes: number;
@@ -205,6 +364,7 @@ export interface Manifest {
 const isoDate = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 const isoDateOrNull = { type: ['string', 'null'], pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 const sha256 = { type: 'string', pattern: '^[0-9a-f]{64}$' } as const;
+const policyAction = { enum: ['accept', 'decline', 'withdraw', 'acknowledge'] } as const;
 const header = {
   schema_version: { type: 'string', pattern: '^1\\.\\d+\\.\\d+$' },
   format: { const: EXPORT_FORMAT },
@@ -214,7 +374,8 @@ export const exportJsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: `${brand.web.origin}/export-format/v1.schema.json`,
   title: `${brand.name} export, format 1`,
-  description: 'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json (when present) and manifest.json in an export.',
+  description:
+    'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json and data/waiting.json (each when present) and manifest.json in an export.',
   $defs: {
     audio: {
       type: 'object',
@@ -234,6 +395,72 @@ export const exportJsonSchema = {
       if: { type: 'object', properties: { media_type: { const: 'audio/aac' } } },
       then: { type: 'object', properties: { path: { type: 'string', pattern: '\\.aac$' } } },
       else: { type: 'object', properties: { path: { type: 'string', pattern: '\\.m4a$' } } },
+    },
+    // Since 1.6.0: a waiting letter's recording, under waiting/ (otherwise as `audio`).
+    waitingAudio: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['path', 'sha256', 'bytes', 'duration_ms', 'codec', 'media_type', 'integrity', 'recorded_sha256'],
+      properties: {
+        path: { type: 'string', pattern: '^waiting/[^/]+\\.(m4a|aac)$' },
+        sha256,
+        bytes: { type: 'integer', minimum: 0 },
+        duration_ms: { type: ['integer', 'null'], minimum: 0 },
+        codec: { const: 'aac-lc' },
+        media_type: { enum: ['audio/mp4', 'audio/aac'] },
+        integrity: { enum: ['ok', 'mismatch', 'unchecked'] },
+        recorded_sha256: { anyOf: [sha256, { type: 'null' }] },
+      },
+      if: { type: 'object', properties: { media_type: { const: 'audio/aac' } } },
+      then: { type: 'object', properties: { path: { type: 'string', pattern: '\\.aac$' } } },
+      else: { type: 'object', properties: { path: { type: 'string', pattern: '\\.m4a$' } } },
+    },
+    // Since 1.6.0: data/waiting.json.
+    waitingFile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schema_version', 'format', 'waiting'],
+      properties: {
+        ...header,
+        waiting: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'id', 'child_id', 'reason', 'kind', 'created_at', 'occurred_on', 'occurred_precision', 'capture_mode', 'language',
+              'typed_text', 'raw_transcript', 'changed_words', 'text_file', 'audio', 'audio_missing',
+            ],
+            properties: {
+              id: { type: 'string', minLength: 1 },
+              child_id: { type: 'string', minLength: 1 },
+              reason: { enum: ['held_at_keep', 'waiting_for_words', 'not_read_back', 'typed_draft', 'unrecoverable'] },
+              kind: { enum: ['letter', 'note'] },
+              created_at: { type: 'string', minLength: 10 },
+              occurred_on: isoDateOrNull,
+              occurred_precision: { enum: ['day', 'month'] },
+              capture_mode: { enum: ['spoken', 'typed', 'mixed'] },
+              language: { type: ['string', 'null'] },
+              typed_text: { type: ['string', 'null'] },
+              raw_transcript: { type: ['string', 'null'] },
+              changed_words: { type: ['string', 'null'] },
+              text_file: { type: 'string', pattern: '^waiting/[^/]+\\.txt$' },
+              audio: { anyOf: [{ $ref: '#/$defs/waitingAudio' }, { type: 'null' }] },
+              audio_missing: {
+                anyOf: [
+                  {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['reason'],
+                    properties: { reason: { enum: ['not_on_this_device', 'empty'] } },
+                  },
+                  { type: 'null' },
+                ],
+              },
+            },
+          },
+        },
+      },
     },
     edit: {
       type: 'object',
@@ -266,6 +493,8 @@ export const exportJsonSchema = {
         },
         kind: { enum: ['letter', 'note', 'not_much'] },
         occurred_on: isoDate,
+        // Since 1.5.0; optional so every earlier v1 export still validates (missing means day).
+        occurred_precision: { enum: ['day', 'month'] },
         captured_at: { type: 'string', minLength: 10 },
         capture_mode: { enum: ['spoken', 'typed', 'mixed'] },
         edit_level: { enum: ['clean', 'verbatim'] },
@@ -400,6 +629,87 @@ export const exportJsonSchema = {
             usage_sharing: { enum: ['granted', 'denied', 'not_answered'] },
           },
         },
+        // Since 1.3.0; optional so every earlier v1 export still validates.
+        consent_history: { $ref: '#/$defs/consentHistory' },
+        // Since 1.4.0; optional so every earlier v1 export still validates.
+        profile: { $ref: '#/$defs/profile' },
+        dictionary: { type: 'array', items: { $ref: '#/$defs/dictionaryTerm' } },
+      },
+    },
+    profile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status', 'read_at', 'display_name', 'signs_as', 'created_at'],
+      properties: {
+        status: { enum: ['included', 'not_signed_in', 'different_account', 'unavailable'] },
+        read_at: { type: ['string', 'null'] },
+        display_name: { type: ['string', 'null'] },
+        signs_as: { type: ['string', 'null'] },
+        created_at: { type: ['string', 'null'] },
+      },
+      // Only a profile that was read carries values and a read time.
+      if: { type: 'object', properties: { status: { const: 'included' } } },
+      then: { type: 'object', properties: { read_at: { type: 'string' } } },
+      else: { type: 'object', properties: { read_at: { type: 'null' }, display_name: { type: 'null' }, signs_as: { type: 'null' }, created_at: { type: 'null' } } },
+    },
+    consentHistory: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status', 'read_at', 'current', 'acts'],
+      properties: {
+        status: { enum: ['included', 'not_signed_in', 'different_account', 'unavailable'] },
+        read_at: { type: ['string', 'null'] },
+        current: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['document', 'version', 'action', 'at'],
+            properties: { document: { type: 'string' }, version: { type: 'string' }, action: policyAction, at: { type: 'string' } },
+          },
+        },
+        acts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'id', 'document', 'version', 'action', 'method', 'surface', 'at', 'client_recorded_at', 'app_version', 'platform',
+              'locale', 'rendered_sha256', 'context',
+            ],
+            properties: {
+              id: { type: 'string' },
+              document: { type: 'string' },
+              version: { type: 'string' },
+              action: policyAction,
+              method: { type: 'string' },
+              surface: { type: 'string' },
+              at: { type: 'string' },
+              client_recorded_at: { type: ['string', 'null'] },
+              app_version: { type: 'string' },
+              platform: { enum: ['ios', 'android', 'web'] },
+              locale: { type: ['string', 'null'] },
+              rendered_sha256: { anyOf: [sha256, { type: 'null' }] },
+              context: { type: 'object' },
+            },
+          },
+        },
+      },
+      // Only a record that was read carries rows and a read time.
+      if: { type: 'object', properties: { status: { const: 'included' } } },
+      then: { type: 'object', properties: { read_at: { type: 'string' } } },
+      else: { type: 'object', properties: { read_at: { type: 'null' }, current: { type: 'array', maxItems: 0 }, acts: { type: 'array', maxItems: 0 } } },
+    },
+    dictionaryTerm: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['child_id', 'term', 'kind', 'heard_as', 'source'],
+      properties: {
+        child_id: { type: ['string', 'null'] },
+        term: { type: 'string', minLength: 1 },
+        kind: { enum: ['child', 'nickname', 'family', 'word', 'place', 'self'] },
+        heard_as: { type: 'array', items: { type: 'string' } },
+        source: { enum: ['phone', 'server'] },
       },
     },
     manifest: {
@@ -446,6 +756,7 @@ export const exportJsonSchema = {
     { $ref: '#/$defs/entriesFile' },
     { $ref: '#/$defs/childrenFile' },
     { $ref: '#/$defs/accountFile' },
+    { $ref: '#/$defs/waitingFile' },
     { $ref: '#/$defs/manifest' },
   ],
 } as const;

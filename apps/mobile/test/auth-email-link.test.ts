@@ -60,6 +60,27 @@ describe('[F02-REQ-018] [F02-REQ-020] when an opened link may be used', () => {
     expect(decideEmailLink({ pending: { at: NOW }, signedIn: false })).toBe('verify');
   });
 
+  it('[TPL-04] an email_change link opens only while signed in (it confirms that account\'s new address), whatever the note', () => {
+    expect(decideEmailLink({ pending: null, signedIn: true, type: 'email_change' })).toBe('verify');
+    expect(decideEmailLink({ pending: 'expired', signedIn: true, type: 'email_change' })).toBe('verify');
+    expect(decideEmailLink({ pending: null, signedIn: false, type: 'email_change' })).toBe('not_this_phone');
+    expect(decideEmailLink({ pending: { at: NOW }, signedIn: false, type: 'email_change' })).toBe('not_this_phone');
+    // Every sign-in type keeps the old rule.
+    for (const type of ['email', 'magiclink', 'signup'] as const) expect(decideEmailLink({ pending: { at: NOW }, signedIn: true, type })).toBe('signed_in');
+  });
+
+  it('[TPL-04] openEmailLink: an email_change link goes through PKCE as email_change and leaves a sign-in note alone', async () => {
+    const exchange = vi.fn(async () => U);
+    const clearPending = vi.fn(async () => {});
+    const deps = (signedIn: boolean) => ({ readPending: async () => ({ at: NOW }), signedIn: () => signedIn, exchange, clearPending });
+    expect(await openEmailLink({ tokenHash: HASH, type: 'email_change' }, deps(false))).toEqual({ ok: false, error: 'other_phone' });
+    expect(exchange).not.toHaveBeenCalled();
+    expect(await openEmailLink({ tokenHash: HASH, type: 'email_change' }, deps(true))).toEqual({ ok: true, userId: U });
+    expect(exchange).toHaveBeenCalledWith(HASH, 'email_change');
+    expect(clearPending).not.toHaveBeenCalled();
+    expect(verifyTypesFor('email_change')).toEqual(['email_change']);
+  });
+
   it('a note over an hour old: never verified; it reads as an expired link, and the signed-in refusal still wins', () => {
     expect(decideEmailLink({ pending: 'expired', signedIn: false })).toBe('expired');
     expect(decideEmailLink({ pending: 'expired', signedIn: true })).toBe('signed_in');

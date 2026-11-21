@@ -53,7 +53,9 @@ describe('S20: a typed letter keeps from Write with one tap (the keep intent)', 
 
   it('Write arms it after the words are on the phone, then hands over to Review: no second Keep step', () => {
     const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
-    expect(keep).toMatch(/if \(!persist\(text\) \|\| !draftId\.current\) return;\s*armKeep\(draftId\.current, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: draftId\.current \} \}\)/);
+    // session.keep() writes the newest words and answers the draft, or null when they are not on the phone
+    // (write-session.logic.ts; run against the real store in test/write-session.test.ts).
+    expect(keep).toMatch(/const id = session\.keep\(\);\s*if \(!id\) return;\s*armKeep\(id, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: id \} \}\)/);
     expect(write).not.toMatch(/keepGateFor|keepLetterGate|saveLetterFromDraft|decideKeepLetter/);
   });
 
@@ -227,8 +229,11 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(land).not.toMatch(/router\.back\(\)/);
   });
 
-  it('5.8 row 5b: the first-letter sign-in sheet rises over the Book after the landing, never in place of Review', () => {
-    expect(review).toMatch(/offerSignIn\.current = firstLetter && auth\.configured && auth\.state\.status === 'signedOut'/);
+  // SET-01 (docs/reviews/2026-10-31/setup.md): this test used to pin the sheet to the first letter, which encoded the
+  // bug (DR-12 B puts Keep the book on the second letter or session 2). The order is now lib/asks, test/next-ask.test.ts.
+  it('5.8 row 5b: the Keep the book sheet rises over the Book after the landing, never in place of Review, when lib/asks says so', () => {
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/if \(askAfterLanding\.current === 'keep_book'\) \{/);
     expect(review).toMatch(/setTimeout\(\(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'first_letter' \} \}\), signInAfterLandingMs\(motion\.reduced\)\)/);
     expect(review).not.toMatch(/router\.replace\(\{ pathname: '\/sign-in'/);
   });
@@ -244,11 +249,14 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(arrivalToastDelayMs(false)).toBe(tokens.motion.route.dissolveMs);
     expect(arrivalToastDelayMs(true)).toBe(tokens.motion.fadeMs);
     const book = code(src('app/(tabs)/book.tsx'));
-    const arrival = book.slice(book.indexOf('const arrival = arrivalOf('), book.indexOf('router.setParams({ arrived: undefined, secondFree: undefined });') + 80);
-    expect(arrival).toMatch(/if \(secondFreeOnArrival\(params\.secondFree\)\) \{\s*secondFreeTimer\.current = setTimeout\(\(\) => toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\), arrivalToastDelayMs\(reduced\)\);/);
+    const arrival = book.slice(book.indexOf('const [arrivalGate] = useState(createArrivalGate)'), book.indexOf('}, step.afterMs);') + 20);
+    // It waits with the wash: the gate's `afterMs` is arrivalToastDelayMs(reduced), the route's dissolve (book.logic, p5-critics.test.ts).
+    expect(arrival).toMatch(/const secondFree = secondFreeOnArrival\(params\.secondFree\);/);
+    expect(arrival).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{[\s\S]*?if \(secondFree\) toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\);[\s\S]*?\}, step\.afterMs\);/);
     // No action, so it leaves on its own; cleared with `arrived`, so Back and tab taps never replay it.
     expect(arrival).not.toMatch(/secondFreeNote[^)]*action/);
-    expect(arrival).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
+    expect(arrival).toMatch(/navigation\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
+    expect(arrival).toMatch(/clearArrivalParams\(\);\s*\}, step\.afterMs\);/);
   });
 });
 
@@ -280,7 +288,7 @@ describe('S17: Review reads as a letter', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
     expect(footer.indexOf('{r.saveFailed}')).toBeGreaterThan(-1);
     expect(footer.indexOf('{r.saveFailed}')).toBeLessThan(footer.indexOf('savePrimaryLabel('));
-    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    expect(en.review.saveFailed).toBe("That didn't save. Your words are still here.");
     // Said aloud too (iOS VoiceOver ignores live regions).
     expect(review).toMatch(/useEffect\(\(\) => \{\s*if \(saveFailed\) announce\(r\.saveFailed\);\s*\}, \[saveFailed, r\.saveFailed\]\);/);
   });
@@ -352,21 +360,61 @@ describe('S19: Write', () => {
   });
 
   it('words that cannot be written to this phone keep Write open; a pending autosave is written on any way out', () => {
+    // The rule itself (Close deletes an empty typed draft, keeps a recording draft, stays when the words cannot be
+    // written; Keep writes first; unmount flushes a pending write once) lives in write-session.logic.ts and runs with
+    // fake timers against the real store in test/write-session.test.ts, including the last keystrokes inside the pause.
     const close = write.slice(write.indexOf('const close = () =>'), write.indexOf('const keep = (inBook: boolean)'));
-    expect(close).toMatch(/else if \(text\.trim\(\) && !persist\(text\)\) return;\s*router\.back\(\);/);
-    expect(write).toMatch(/timer\.current = setTimeout\(\(\) => \{\s*timer\.current = null;\s*persist\(value\);/);
-    expect(write).toMatch(/latest\.current = value;/);
+    expect(close).toMatch(/if \(session\.close\(\)\) router\.back\(\);/);
+    expect(write).toMatch(/session\.change\(value\);/);
     // Unmount (a swipe down within the pause): the pending autosave is flushed with the newest words, not dropped.
-    expect(write).toMatch(/useEffect\(\s*\(\) => \(\) => \{\s*if \(timer\.current\) \{\s*clearTimeout\(timer\.current\);\s*timer\.current = null;\s*persistRef\.current\(latest\.current\);/);
-    // Close and Keep write now and disarm the timer, so the flush never writes twice or brings back a deleted draft.
-    expect(close).toMatch(/timer\.current = null;/);
+    expect(write).toMatch(/useEffect\(\(\) => \(\) => session\.unmount\(\), \[session\]\);/);
+    // One timer, in the session: Close and Keep disarm it there, so the flush never writes twice or brings back a deleted draft.
+    expect(write).not.toMatch(/setTimeout\(|clearTimeout\(/);
     const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
-    expect(keep).toMatch(/timer\.current = null;/);
+    expect(keep).toMatch(/session\.keep\(\)/);
+  });
+
+  it('the page is the keyboard\'s: uncontrolled, never written back into while typing or composing (TestFlight build 1, D-057)', () => {
+    const field = write.slice(write.indexOf('<TextField'), write.indexOf('</ScrollView>'));
+    // No `value`: a controlled multiline input re-applies its text on every change, which can break marked text
+    // (Hindi, dictation), autocorrect and QuickType, and move the caret.
+    expect(field).not.toMatch(/\svalue=/);
+    expect(field).toMatch(/defaultValue=\{initialText\}/);
+    expect(field).toMatch(/onChangeText=\{onChange\}/);
+    // The keyboard's own autocorrect and capitalisation stay on: nothing turns them off, limits length or submits.
+    expect(field).not.toMatch(/autoCorrect=|autoCapitalize=|spellCheck=|maxLength=|blurOnSubmit|submitBehavior|returnKeyType|keyboardType|smartInsertDelete/);
+    expect(write).not.toMatch(/setNativeProps|\.setSelection\(|selection=\{/);
+    // A keystroke renders Write only when the page goes from empty to words or back.
+    const onChange = write.slice(write.indexOf('const onChange = (value: string) =>'), write.indexOf('useEffect(() => () => session.unmount()'));
+    expect(onChange).toMatch(/if \(pageEmptinessChanged\(session\.latest\(\), value\)\) setText\(value\);\s*session\.change\(value\);/);
+    expect(onChange.match(/setText\(/g)).toHaveLength(1);
+    // Close and Keep read the newest words from the session, not a render's copy.
+    expect(write).not.toMatch(/persist\(text\)/);
+  });
+
+  it('nothing on Write reads the store on a render: the child and the draft are read once, when it opens', () => {
+    expect(write).toMatch(/const \[child\] = useState\(getActiveChild\);/);
+    expect(write).toMatch(/const \[existing\] = useState\(\(\) => \(params\.draftId \? getDraft\(params\.draftId\) : null\)\);/);
+    expect(write.match(/getActiveChild\(/g)).toBeNull();
+    expect(write.match(/getDraft\(/g)).toHaveLength(2); // the one at open, and Close's check for a recording
+  });
+
+  it('the page and both destinations sit above the keyboard, and the line being written stays in view', () => {
+    expect(write).toMatch(/keyboardVerticalOffset=\{keyboardOffset\}/);
+    expect(write).toMatch(/const keyboardOffset = sheetKeyboardOffset\(screen\.height, sheetHeight\);/);
+    expect(write).toMatch(/onLayout=\{\(e\) => setSheetHeight\(e\.nativeEvent\.layout\.height\)\}/);
+    const field = write.slice(write.indexOf('<TextField'), write.indexOf('</ScrollView>'));
+    expect(field).toMatch(/scrollEnabled=\{false\}/);
+    expect(field).toMatch(/className="mt-3 flex-none"\s*inputClassName="flex-none"/);
+    expect(field).toMatch(/onContentSizeChange=\{onContentSizeChange\}/);
+    // Pinned footer: scroll to the end of the content, as before. With the footer inline (accessibility sizes) the scroll
+    // follows the end of the field instead (test/write-footer-large-text.test.ts).
+    expect(write).toMatch(/if \(!inlineFooter && followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
   });
 
   it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {
     // Every write goes through writeWords; its answer sets the autosave line, which the swipe reads.
-    const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const latest = useRef'));
+    const persist = write.slice(write.indexOf('const persist = (value: string, quiet = false): boolean =>'), write.indexOf('const persistRef = useRef(persist)'));
     expect(persist).toMatch(/const r = writeWords\(\{ create, update: setDraftTyped \}, draftId\.current, value\);\s*draftId\.current = r\.draftId;/);
     expect(persist).toMatch(/if \(r\.saveState\) setSaveState\(r\.saveState\);/);
     expect(persist).toMatch(/if \(!r\.ok\) return false;/);

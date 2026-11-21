@@ -382,14 +382,13 @@ describe('Lamp gradient', () => {
   // Tonight allows none: since P3 (S33) "A quiet day, kept." is in `text` with the Moon in textMuted, so Tonight and
   // every file it renders (the draft cards, "A month ago", the quiet line) must use no status colour at all.
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
-    // "We'll tell you" on the Family tab: a check mark on its own chip.
-    'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
+    // coparent-soon.tsx: none since SET-08 removed "Tell me when it's here" and its check mark.
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
     'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
     // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.
     'app/onboarding.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
-  const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
   const PRIMITIVES = /^components\/(ui|motion|platform)\//;
 
@@ -531,7 +530,7 @@ describe('Lamp gradient', () => {
     expect(resolveImport('components/book/quiet-day-row.tsx', './chapters')).toBe('components/book/chapters.ts');
     expect(resolveImport('components/book/shelf.logic.ts', '../../lib/dates')).toBe('lib/dates.ts');
     // The scan follows a room into everything it renders, @/lib and relative imports included.
-    expect(renderedBy('app/(tabs)/family.tsx')).toEqual(expect.arrayContaining(['components/family/coparent-soon.tsx', 'lib/auth/ui.tsx']));
+    expect(renderedBy('app/family.tsx')).toEqual(expect.arrayContaining(['lib/auth/ui.tsx']));
     expect(renderedBy('app/(tabs)/book.tsx')).toEqual(expect.arrayContaining(['components/book/quiet-day-row.tsx', 'components/book/chapters.ts']));
   });
 
@@ -749,7 +748,7 @@ const LAMP = /<Lamp(View)?[\s/>]/;
 
 describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
   /** The rooms with a scene: first run (gate, welcome, promise, naming, signing, the book opens), Tonight, Write, the Book, Read together at night. */
-  const ALLOWED = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const ALLOWED = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx', 'components/onboarding/welcome-sign-in.tsx'];
 
   it('is mounted only in rooms that have a scene', () => {
     const used = mounts(LAMP);
@@ -773,7 +772,9 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
   it('the quotation pair sits only on the gate, first run and the empty states, never on a voice screen', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
-    for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
+    // The end of the Book carries the mark once, after the oldest chapter (book-page.md 2 "End of book"); it is not a
+    // voice screen and holds no heading, so the pair stays decorative there.
+    for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx', 'components/book/end-of-book.tsx'], f).toContain(f);
     // The empty Book leads with the book cover instead (S24): the closed cover at 160 x 214, with the child's name and
     // "From {signsAs}", and no quotation pair through the empty state's device.
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');

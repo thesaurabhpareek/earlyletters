@@ -3,8 +3,9 @@
   "journey": "letter-detail",
   "kind": "unhappy",
   "title": "A recording with no words",
-  "note": "The page shows the app's own small note instead of words, and no \"From Mama\" signature under it (the signature is only under words a person said); the recording is still there and can be kept.",
+  "note": "The page shows the app's own small note instead of words, and no \"From Mama\" signature under it (the signature is only under words a person said); the recording is still there and can be kept, and \"Write the words\" opens the words sheet so the person can put the words with it. \"Record again\" is gone from this page: it started a separate letter.",
   "from": "J10-01",
+  "shot": "screens/J10-10.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,16 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Aa Sunday, October 11, 2026. Asha is 6 months and 4 weeks old. Private No words in this one. The recording is kept just as it is. Hear Mama 0:00 0:18 Record again Add to book Delete",
+  "text": "Aa Wednesday, October 28, 2026 No words in this one. The recording is kept just as it is. Hear Mama 0:18 Write the words Add to book Delete",
   "lines": [
     "Aa",
-    "Sunday, October 11, 2026. Asha is 6 months and 4 weeks old.",
-    "Private",
+    "Wednesday, October 28, 2026",
     "No words in this one. The recording is kept just as it is.",
     "Hear Mama",
-    "0:00",
     "0:18",
-    "Record again",
+    "Write the words",
     "Add to book",
     "Delete"
   ]

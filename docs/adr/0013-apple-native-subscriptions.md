@@ -2,6 +2,8 @@
 
 Status: **Accepted, decided by the founder** (brief decision 3, `docs/agents/BRIEF-2026-10-03.md`, 3 Oct 2026). This version records the decision as made and the implementation chosen for it.
 Date: 2026-10-03.
+
+> **Status note (31 Oct 2026): prices superseded by D-082.** The prices in Decision item 5 ($3.99 a month, $29.99 a year) are the 3 Oct prices, kept here as the historical record. D-082 (founder, 4 Oct 2026) set them to **US $4.99 a month and US $49.99 a year**, with the same free trials. Current prices: `docs/DECISIONS.md` D-082, `packages/content/src/pricing.ts`, `apps/mobile/storekit/EarlyLetters.storekit`. D-082 also replaced what Plus gates (first 2 letters free, then Plus to keep adding letters). The rest of this ADR stands.
 Supersedes: the earlier draft of this ADR (StoreKit 2 with App Store Server Notifications V2, the App Store Server API and a server entitlement ledger), and the digital-purchase half of ADR 0007 (RevenueCat). ADR 0007's printed-book half stays as future roadmap (PRD K-32).
 Related: TDD 08 (payments; its server, notice and RevenueCat sections are superseded by this ADR, see "What changes elsewhere"), `packages/core/src/plan.ts` (the rules engine, unchanged), `supabase/migrations/20261004000000_plus_on_device_only.sql`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
 

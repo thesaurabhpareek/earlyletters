@@ -93,7 +93,7 @@ const isIso = (v: unknown): v is string => typeof v === 'string' && v.length <= 
 /**
  * The account a report goes to: a `ready` session whose claim on this phone's letters is
  * settled (PR #139, BL-347), on a phone no other account owns. While the claim screen waits
- * for "Keep them here", the session may be someone else's account, so this phone's purchase
+ * for "Keep in this account", the session may be someone else's account, so this phone's purchase
  * is not reported to it; the report goes once the person confirms, or at once when no claim
  * is needed. When another account already owns the phone's letters (`phoneOwner`, the store's
  * `currentUserId`), no claim screen appears and sync refuses that session

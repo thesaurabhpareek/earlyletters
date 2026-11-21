@@ -1,0 +1,32 @@
+{
+  "id": "J22-30",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Account, signed out",
+  "note": "The small closed cover, \"Not signed in\", the sign-in sheet's own sentence and Sign in (S56).",
+  "shot": "screens/J22-30.png",
+  "route": "/settings/account",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Account Asha Not signed in Your letters come with you to a new phone, and Asha's other parent can write in the same book. Sign in",
+  "lines": [
+    "Account",
+    "Asha",
+    "Not signed in",
+    "Your letters come with you to a new phone, and Asha's other parent can write in the same book.",
+    "Sign in"
+  ]
+}

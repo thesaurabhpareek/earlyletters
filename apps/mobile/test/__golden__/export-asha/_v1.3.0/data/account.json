@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.3.0",
+  "format": "early-letters-export",
+  "signed_in": false,
+  "plan": "free",
+  "exported_from": "phone",
+  "memberships": [
+    {
+      "child_id": "child-asha-0001",
+      "role": "parent",
+      "signs_as": "Mama"
+    },
+    {
+      "child_id": "child-dev-0002",
+      "role": "parent",
+      "signs_as": "Mama"
+    }
+  ],
+  "consent_on_this_phone": {
+    "age_confirmed": true,
+    "usage_sharing": "not_answered"
+  },
+  "consent_history": {
+    "status": "not_signed_in",
+    "read_at": null,
+    "current": [],
+    "acts": []
+  },
+  "dictionary": [
+    {
+      "child_id": "child-asha-0001",
+      "term": "Asha",
+      "kind": "child",
+      "heard_as": [],
+      "source": "phone"
+    },
+    {
+      "child_id": "child-asha-0001",
+      "term": "Mama",
+      "kind": "self",
+      "heard_as": [],
+      "source": "phone"
+    },
+    {
+      "child_id": "child-dev-0002",
+      "term": "Dev",
+      "kind": "child",
+      "heard_as": [],
+      "source": "phone"
+    },
+    {
+      "child_id": "child-dev-0002",
+      "term": "Mama",
+      "kind": "self",
+      "heard_as": [],
+      "source": "phone"
+    }
+  ]
+}

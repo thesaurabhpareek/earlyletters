@@ -26,7 +26,7 @@ Keychain item name, key material, a Supabase key, or a push token. Use the ficti
 | Build lane and profile | TestFlight `testflight` (build 1, servers off) / TestFlight `preview` (build 2, servers on) / EAS development |
 | Commit | short SHA the build was made from (EAS build page) |
 | Server switch | `EXPO_PUBLIC_SERVER_FEATURES` = off / on |
-| Build flags | `EXPO_PUBLIC_BACKUP` = off / on; `EXPO_PUBLIC_STATUS_REPORT` = off / on; `EXPO_PUBLIC_ANALYTICS` = off |
+| Build flags | `EXPO_PUBLIC_BACKUP` = off / on; `EXPO_PUBLIC_STATUS_REPORT` = off / on; `EXPO_PUBLIC_ANALYTICS` = off; `EXPO_PUBLIC_ACCOUNT_DELETION` = on / not set (not set = no Delete account row; say which, and how it was set: EAS `preview` environment, Metro in the shell, or an `eas.json` profile) |
 | Backend | none / staging (`scribe-staging`) / production |
 | Escrow project | none / `scribe-escrow-staging` with the drill key |
 

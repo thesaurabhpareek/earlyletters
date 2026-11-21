@@ -28,13 +28,13 @@ test('[J08] a quiet day: "Not much today" keeps a mark with no words', async ({ 
   // The evening light, settled after its arrival (tokens.atmosphere.daypart.evening, 1).
   await expect.poll(() => lampLevel(app)).toBeCloseTo(1, 2);
   await btn(app, 'Not much today').click();
-  await expect(app.getByText('A quiet day, kept.')).toBeVisible();
+  await expect(app.getByText('Marked as a quiet day.')).toBeVisible();
   await expect(btn(app, 'Undo')).toBeVisible();
   // The line is in the reading colour, the greeting's own `text`, never success green (S33).
-  expect(await colorOf(app, 'A quiet day, kept.')).toBe(await colorOf(app, /^Good evening, Mama\.$/));
+  expect(await colorOf(app, 'Marked as a quiet day.')).toBe(await colorOf(app, /^Good evening, Mama\.$/));
   // Lights down: in the evening the lamp eases to 70 percent of its level over 1.2 s.
   await expect.poll(() => lampLevel(app)).toBeCloseTo(0.7, 2);
-  await step('happy', 'Kept, with no guilt', 'The link gives way to the Moon and one line, "A quiet day, kept.", with Undo beside it, and in the evening the lamp lowers to 70 percent: lights down. The app stores a mark for the day with no words at all: it never writes a sentence for the person. The mark is not counted as a letter.');
+  await step('happy', 'Kept, with no guilt', 'The link gives way to the Moon and one line, "Marked as a quiet day.", with Undo beside it, and in the evening the lamp lowers to 70 percent: lights down. The app stores a mark for the day with no words at all: it never writes a sentence for the person. The mark is not counted as a letter.');
   await tab(app, 'Book').click();
   await expect(app.getByText(/'s book/).first()).toBeVisible();
   await expect(app.getByText('A quiet day')).toBeVisible();
@@ -53,18 +53,18 @@ test('[J08b] Undo restores the link and the lamp; a second tap the same day adds
   await expect.poll(() => lampLevel(app)).toBeCloseTo(0.7, 2);
   await btn(app, 'Undo').click();
   await expect(btn(app, 'Not much today')).toBeVisible();
-  await expect(app.getByText('A quiet day, kept.')).toHaveCount(0);
+  await expect(app.getByText('Marked as a quiet day.')).toHaveCount(0);
   await expect.poll(() => lampLevel(app)).toBeCloseTo(1, 2);
   await step('unhappy', 'Undo on the kept line', 'Undo takes the mark back at once: the quiet link returns, the lamp comes back up, and nothing is left behind.');
   await tab(app, 'Book').click();
   await expect(app.getByText('A quiet day')).toHaveCount(0);
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await btn(app, 'Not much today').click();
-  await expect(app.getByText('A quiet day, kept.')).toBeVisible();
+  await expect(app.getByText('Marked as a quiet day.')).toBeVisible();
   await tab(app, 'Book').click();
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   // Leaving Tonight takes the line away; the mark stays, and a second tap adds nothing.
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Not much today')).toBeVisible();
   await btn(app, 'Not much today').click();
   await tab(app, 'Book').click();
@@ -77,7 +77,7 @@ test('[J08d] in the morning the light stays; with Reduce Motion the evening ligh
   // The morning's own level (tokens.atmosphere.daypart.morning, 0.7); a quiet morning leaves it as it is.
   await expect.poll(() => lampLevel(app)).toBeCloseTo(0.7, 2);
   await btn(app, 'Not much today').click();
-  await expect(app.getByText('A quiet day, kept.')).toBeVisible();
+  await expect(app.getByText('Marked as a quiet day.')).toBeVisible();
   // Longer than the lamp's 1.2 s change: had it dimmed, it would be at 0.49 by now.
   await app.waitForTimeout(1600);
   expect(await lampLevel(app)).toBeCloseTo(0.7, 2);
@@ -86,15 +86,28 @@ test('[J08d] in the morning the light stays; with Reduce Motion the evening ligh
   await app.clock.setFixedTime(EVENING);
   await app.reload();
   await expect(btn(app, 'Not much today')).toBeVisible();
-  // The morning's mark is today's: the evening room opens with its lights already down.
-  expect(await lampLevel(app)).toBeCloseTo(0.7, 2);
+  // The morning's mark is today's: the evening room opens with its lights already down. Wait until the lamp shows any light
+  // (the read is null before it is mounted and 0 before its opacity is applied), then require the FIRST light seen to be the
+  // dimmed level. With Reduce Motion there is no fade, so that is 0.7 at once; a fade, or a flash of the evening 1 first,
+  // would show another value first. (A poll for 0.7 alone would pass after any fade.)
+  const seen: number[] = [];
+  await expect
+    .poll(async () => {
+      const level = (await lampLevel(app)) ?? 0;
+      if (level > 0) seen.push(level);
+      return level;
+    })
+    .toBeGreaterThan(0);
+  expect(seen[0]).toBeCloseTo(0.7, 2);
 });
 
 test('[J08c] marks saved by older builds: the old sentence is never shown, and a mark can be removed', async ({ app, record }) => {
   const step = journey(record, 'J08', 'quiet-day', 5, 'J08-03');
   await seeded(app, 'asha-marks');
   await tab(app, 'Book').click();
-  await expect(app.getByText('Month 6')).toBeVisible();
+  // The month opener draws "MONTH" and the numeral as separate texts (P5), so it is found by the one VoiceOver header it
+  // is, as j09 and j11 do: "Month 6. ..." (or "This month, Month 6. ...").
+  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. / })).toBeVisible();
   // Two old marks exist: one on a day with a letter (hidden), one on a day without (listed).
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   await expect(app.getByText(/ordinary day|Just Asha, and us/)).toHaveCount(0);

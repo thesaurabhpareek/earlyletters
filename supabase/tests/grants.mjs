@@ -14,17 +14,23 @@ export const COLUMNS = {
   child_keys: 'child_id,created_at,escrow_key_version,key_check,key_version,profile_id,rewrapped_at',
   children: 'book_look,created_at,created_by,deleted_at,deletion_request_id,family_can_read,hidden_at,id,name,nickname,photo_path,updated_at',
 };
+// hook_new_device_sign_in(jsonb) is executable by supabase_auth_admin only, so it is not below; its grants are asserted in
+// new_device_sign_in.test.mjs ([NS-08-R21 hook]).
 // The only public functions service_role may execute (explicit grants in earlier files).
 export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)', 'backup_svc_stop(bytea)',
   'backup_svc_sweep(timestamp with time zone,integer)', 'backup_svc_unwraps_between(timestamp with time zone,timestamp with time zone,integer)',
   'consent_pepper_ready()', 'content_gate_state(uuid)', 'dictionary_forms_valid(jsonb)', 'finalize_account_deletion(uuid,jsonb)',
-  'has_active_consent(uuid,text)', 'insights_aggregates(integer)', 'is_anonymous()', 'ops_alert_claim(text,integer)', 'ops_alert_reset(text)',
+  'has_active_consent(uuid,text)', 'insights_aggregates(integer)',
+  'invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])', 'is_anonymous()', 'ops_alert_claim(text,integer)', 'ops_alert_reset(text)',
   'ops_apple_token_delete(uuid)', 'ops_apple_token_get(uuid)', 'ops_apple_token_put(uuid,text,integer,text)',
-  'ops_audit_write(text,text,text,text,uuid,uuid,uuid,jsonb)', 'ops_consume_forget_quota(uuid,integer)', 'ops_deletion_contributors(uuid)',
-  'ops_deletion_request_status(uuid)', 'ops_deletion_residue(uuid,text)', 'ops_deletion_sla(timestamp with time zone)',
+  'ops_audit_write(text,text,text,text,uuid,uuid,uuid,jsonb)', 'ops_consume_forget_quota(uuid,integer)', 'ops_deletion_consent_records(uuid)', 'ops_deletion_contributors(uuid)',
+  'ops_deletion_request_status(uuid)', 'ops_end_session(uuid,uuid)', 'ops_new_device_retention(timestamp with time zone)', 'ops_new_device_sign_out(bytea,text)',
+  'ops_new_device_record(uuid,bytea,text)', 'ops_new_device_pending_take(uuid,integer)', 'ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'ops_new_device_rekey(uuid,bytea,bytea)', 'ops_deletion_residue(uuid,text)', 'ops_deletion_sla(timestamp with time zone)',
   'ops_deletion_work(integer)', 'ops_incident_scope(jsonb)', 'ops_ledger_between(timestamp with time zone,timestamp with time zone,integer)',
   'ops_merge_deletion_receipt(uuid,jsonb)', 'ops_raw_sha(jsonb,integer,timestamp with time zone)', 'ops_replay_ledger(jsonb)',
-  'ops_retention(timestamp with time zone)', 'ops_row_counts()', 'ops_schema_health()', 'ops_set_child_photo_path(uuid,text,text)',
+  'ops_retention(timestamp with time zone)', 'ops_row_counts()', 'ops_schema_health()',
+  'ops_security_event_write(text,integer,bytea,text,jsonb)', 'ops_security_events_check(timestamp with time zone)',
+  'ops_security_events_retention(timestamp with time zone)', 'ops_support_access(text,text,text,text,uuid,uuid)', 'ops_set_child_photo_path(uuid,text,text)',
   'ops_storage_owned_by(uuid,integer)', 'ops_storage_queue_due(integer,uuid)', 'ops_storage_residue(uuid,integer)',
   'prepare_account_purge(uuid)', 'purge_due(timestamp with time zone,integer)', 'record_deletion_step(uuid,text,text,text)',
   'record_purge_attempt(bigint,boolean,text)', 'subscription_retention_purge(timestamp with time zone)',

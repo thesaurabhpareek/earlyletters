@@ -1,0 +1,33 @@
+{
+  "id": "J21-04",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Ask before joining",
+  "note": "Signed in, the sheet looks first (peek_invite) and shows only who sent it, by the name the child calls them. Never the child's name. Nothing joins until Join is tapped; Not now forgets the link (BL-322, security review H2).",
+  "from": "J21-03",
+  "shot": "screens/J21-04.png",
+  "route": "/invite",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Join this book as a parent? Invited by Mama You will both read every letter in the book. Join only if you know who sent you this link. Join the book Not now",
+  "lines": [
+    "Join this book as a parent?",
+    "Invited by Mama",
+    "You will both read every letter in the book. Join only if you know who sent you this link.",
+    "Join the book",
+    "Not now"
+  ]
+}

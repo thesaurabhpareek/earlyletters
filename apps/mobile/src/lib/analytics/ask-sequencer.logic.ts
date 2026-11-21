@@ -15,10 +15,10 @@
  * - Only on a calm surface: a tab root (Tonight, Book, Family). Recording,
  *   Review, Write, export, sign-in, onboarding, a letter and every sheet route
  *   count as blocking, so the ask never interrupts a task.
- * - Keep the book is offered once, straight after the first letter (Review
- *   hands over to the sign-in sheet in that same session), and the reminder
- *   prime appears only when someone turns reminders on in Settings. Neither
- *   waits for a later session, so neither is ever "pending" here.
+ * - The reminder card (after the first letter) and Keep the book (second
+ *   letter, or the first save of a later session) are sequenced by
+ *   `lib/asks` (DR-12 B) at the save itself; each marks the session's one ask
+ *   through `noteAskShown()`, so neither is ever "pending" here.
  */
 import { analyticsConsentDue, type AnalyticsAskVerdict, type ConsentStatus } from '@scribe/analytics';
 

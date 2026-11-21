@@ -1,0 +1,33 @@
+{
+  "id": "J21-02",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Paste the invite",
+  "note": "The link from the message is pasted here. The clipboard is read only from what is pasted, never on its own (A-REQ-029). Build 2 invites are links only, so a typed code is not read.",
+  "from": "J21-01",
+  "shot": "screens/J21-02.png",
+  "route": "/invite",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Join a book Invite link Open the message with the invite, copy the link and paste it here. Continue",
+  "lines": [
+    "Close",
+    "Join a book",
+    "Invite link",
+    "Open the message with the invite, copy the link and paste it here.",
+    "Continue"
+  ]
+}

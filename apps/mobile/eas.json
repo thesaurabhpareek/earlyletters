@@ -8,7 +8,6 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development",
       "environment": "development",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
@@ -16,7 +15,8 @@
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
-        "EXPO_PUBLIC_ANALYTICS": "off"
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on"
       }
     },
     "e2e": {
@@ -33,13 +33,13 @@
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
-        "EXPO_PUBLIC_ANALYTICS": "off"
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on"
       }
     },
     "preview": {
       "distribution": "store",
       "autoIncrement": true,
-      "channel": "preview",
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
@@ -48,26 +48,28 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production",
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_SERVER_FEATURES": "on",
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
-        "EXPO_PUBLIC_ANALYTICS": "off"
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "testflight": {
       "distribution": "store",
       "autoIncrement": true,
-      "channel": "preview",
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
@@ -76,13 +78,28 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     }
   },
   "submit": {
-    "production": {},
-    "preview": {},
-    "testflight": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6829377245"
+      }
+    },
+    "preview": {
+      "ios": {
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
+      }
+    },
+    "testflight": {
+      "ios": {
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
+      }
+    }
   }
 }

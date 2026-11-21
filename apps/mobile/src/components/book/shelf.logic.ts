@@ -11,9 +11,9 @@
  * erase exists (WP-F16-13, F17-REQ-025): store.eraseEntry refuses in a sync build today, so the honest shelf shows
  * Restore and the date line, and the letter goes at the server purge.
  */
-import { dateLocale, isoOf, longDate } from '../../lib/dates';
+import { dateLocale, isMonthOnly, isoOf, longDate, monthOnlyDateline } from '../../lib/dates';
 import { SHELF_DAYS } from '../../lib/shelf-days';
-import type { Entry } from '../../lib/store';
+import type { Child, Entry } from '../../lib/store';
 import { letterWords } from './letter-words.logic';
 
 export { SHELF_DAYS };
@@ -51,7 +51,7 @@ export interface ShelfRowView {
   fullText: string | null;
   /** 'waiting' | 'nobodySpoke' | 'words' */
   words: ReturnType<typeof letterWords>;
-  /** "September 29, 2026": the day the letter is about. */
+  /** "September 29, 2026": the day the letter is about; "Sometime in Month 3" for a letter dated to a month only. */
   letterDate: string;
   /** The day it was deleted, in the phone's local day. */
   deletedDate: string;
@@ -63,7 +63,11 @@ export interface ShelfRowView {
   keptUntilDay: string;
 }
 
-export function shelfRow(e: Entry & { deletedAt: string }, locale?: string): ShelfRowView {
+/**
+ * `child` is the letter's book: a letter dated to a month only shows that month (F09-REQ-003), never the stored day,
+ * which is only where its month of age starts.
+ */
+export function shelfRow(e: Entry & { deletedAt: string }, locale?: string, child?: Pick<Child, 'birthday'> | null): ShelfRowView {
   const words = letterWords(e);
   const erases = new Date(Date.parse(e.deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
   const deletedISO = isoOf(new Date(e.deletedAt));
@@ -74,12 +78,21 @@ export function shelfRow(e: Entry & { deletedAt: string }, locale?: string): She
     words,
     excerpt: words === 'words' ? firstWords(e.finalText) || null : null,
     fullText: text || null,
-    letterDate: longDate(e.occurredOn, locale),
+    letterDate: isMonthOnly(e) && child ? monthOnlyDateline(child, e.occurredOn) : longDate(e.occurredOn, locale),
     deletedDate: longDate(deletedISO, locale),
     erasesDate: longDate(erasesISO, locale),
     deletedDay: monthDay(deletedISO, locale),
     keptUntilDay: monthDay(erasesISO, locale),
   };
+}
+
+/**
+ * A deleted book on the shelf (BL-387, F17 6.2 D step 5): the same two days as a letter, the book's deletion time plus
+ * the shelf days, in the phone's own day. Never a count of letters or of days left.
+ */
+export function shelfBookDays(deletedAt: string, locale?: string): Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay'> {
+  const erases = new Date(Date.parse(deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
+  return { deletedDay: monthDay(isoOf(new Date(deletedAt)), locale), keptUntilDay: monthDay(isoOf(erases), locale) };
 }
 
 /**
@@ -98,4 +111,29 @@ export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay
  */
 export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
   return { restore: true, eraseNow: !build.sync || build.serverErase === true };
+}
+
+/**
+ * What the shelf says after Restore (S38): "Back in Asha's book." naming the letter's book, or the open one. When no
+ * book can be named at all, the same line without a name, so it never reads "Back in 's book." (P5 critics' pass, L9).
+ */
+export function restoredLine(words: { restoredToast: string; restoredToastNoName: string }, bookName: string | null | undefined): string {
+  const name = bookName?.trim();
+  return name ? words.restoredToast.replace('{child}', () => name) : words.restoredToastNoName;
+}
+
+/**
+ * What Erase now did, from what the store answered and what the shelf holds afterwards (P5 critics' pass, S6).
+ *   erased  the letter and its recording are gone: "Letter erased."
+ *   kept    the store refused (the recording's file could not be removed, so the row stays for another try, D-085) and the
+ *           letter is still on the shelf: say so, and say that the letter was not erased (nothing about the file: part of it
+ *           may be gone).
+ *   gone    refused, but the letter is no longer on the shelf either (restored or erased on another phone while the
+ *           sheet was open): nothing to say, the card has already left.
+ */
+export type EraseOutcome = 'erased' | 'kept' | 'gone';
+
+export function eraseOutcome(erased: boolean, stillOnShelf: boolean): EraseOutcome {
+  if (erased) return 'erased';
+  return stillOnShelf ? 'kept' : 'gone';
 }

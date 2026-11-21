@@ -1,0 +1,33 @@
+{
+  "id": "J05-10",
+  "journey": "voice-capture",
+  "kind": "unhappy",
+  "title": "The microphone is in use",
+  "note": "A start that fails while permission is granted names the real cause: \"The microphone is in use. A call or another app has it right now.\" Try again first, Type instead quiet. It never says the microphone is off, which Settings could not fix (S13).",
+  "from": "J05-01",
+  "shot": "screens/J05-10.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close The microphone is in use A call or another app has it right now. Try again Type instead",
+  "lines": [
+    "Close",
+    "The microphone is in use",
+    "A call or another app has it right now.",
+    "Try again",
+    "Type instead"
+  ]
+}

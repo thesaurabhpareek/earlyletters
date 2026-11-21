@@ -29,6 +29,7 @@ import {
   reminderWindows,
   subjectOf,
   trialDays,
+  trialDaysOf,
   type PlannedPlanReminder,
   type PlanReminderSubject,
 } from '../src/lib/billing/plan-reminders.logic';
@@ -197,6 +198,32 @@ describe('which reminders, by plan and trial length', () => {
   });
 });
 
+describe('[SUB-05] a free period from an offer code gets the trial reminders, not renewal ones', () => {
+  const coded = (startIso: string, endIso: string, freePeriod: boolean) => {
+    const t = { productId: 'plus.monthly', expiresAt: endIso, purchasedAt: startIso, ownership: 'purchased' as const, environment: 'production' as const, isTrial: false, isUpgraded: false, offerType: 'offer_code' as const, freePeriod };
+    return planFromSnapshot(sanitizeSnapshot({ entitlements: [t], statuses: [{ ...t, state: 'subscribed', willAutoRenew: true }], checkedAt: startIso }));
+  };
+
+  it('1 month free (31 days or less): trial week and trial final', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-01-01T12:00:00.000Z', true);
+    expect(p.details.status).toBe('trial');
+    expect(offsetKinds(subjectOf(p))).toEqual(['trialWeek', 'trialFinal']);
+  });
+
+  it('3 months free (over 31 days): the long-trial notice, then trial final', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-03-01T12:00:00.000Z', true);
+    expect(p.details.status).toBe('trial');
+    expect(trialDaysOf(p)).toBeGreaterThan(LONG_TRIAL_DAYS);
+    expect(offsetKinds(subjectOf(p))).toEqual(['trialLong', 'trialFinal']);
+  });
+
+  it('a paid offer-code period is a plain monthly plan (no trial reminders)', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-01-01T12:00:00.000Z', false);
+    expect(p.details.status).toBe('active');
+    expect(offsetKinds(subjectOf(p))).toEqual([]);
+  });
+});
+
 describe('LEGAL-REQ-047 worked examples', () => {
   it('annual renewing 1 March 00:00 UTC: long inside 29 to 30 January UTC, short inside 21 to 23 February, in every zone', () => {
     const s = subject();
@@ -306,10 +333,26 @@ describe('daylight saving', () => {
   });
 });
 
+/**
+ * BL-443: the day stride of the synthetic year. Pull requests check every 15th day (about a third of the work of
+ * the former every-5th-day sweep, which took 69 s of its own 120 s on a CI runner); the nightly sets
+ * SCRIBE_REMINDER_STRIDE=1 to check every day of the year, like SCRIBE_FUZZ_RUNS for the verifier fuzz. A stride
+ * that is not a whole number of days between 1 and 15 is refused, so a typo cannot quietly shrink the sweep.
+ */
+const STRIDE = (() => {
+  const raw = process.env.SCRIBE_REMINDER_STRIDE;
+  if (raw === undefined || raw === '') return 15;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 15) throw new Error(`SCRIBE_REMINDER_STRIDE must be a whole number from 1 to 15, got ${raw}`);
+  return n;
+})();
+
 describe('a synthetic year: every E, every zone, every plan', () => {
-  it('holds every invariant and always finds the legally required slot when planned early', { timeout: 120_000 }, () => {
+  // Own timeout, scaled to the days swept: 120 s at the PR stride, about 12 minutes for every day (the former
+  // every-5th-day sweep took 69 s on a CI runner, so every day is about five times that, 345 s).
+  it(`holds every invariant and always finds the legally required slot when planned early`, { timeout: Math.max(120_000, Math.ceil(366 / STRIDE) * 2_000) }, () => {
     let checked = 0;
-    for (let day = 0; day < 366; day += 5) {
+    for (let day = 0; day < 366; day += STRIDE) {
       for (const hour of [0, 13, 23]) {
         const E = Date.parse('2027-01-01T00:00:00Z') + day * DAY_MS + hour * HOUR + 17 * 60_000;
         const subjects: PlanReminderSubject[] = [
@@ -330,7 +373,10 @@ describe('a synthetic year: every E, every zone, every plan', () => {
         }
       }
     }
-    expect(checked).toBeGreaterThan(3500);
+    // Every day of the sweep ran for every hour, zone and plan: 3 hours x 4 plans x 4 zones per day (the former
+    // every-5th-day sweep was 3,552 checks; every 15th day is 1,200, every day is 17,568).
+    expect(checked).toBe(Math.ceil(366 / STRIDE) * 3 * 4 * 4);
+    expect(checked).toBeGreaterThanOrEqual(1200);
   });
 
   it('re-planning before the windows changes nothing (stable ids and signature)', () => {

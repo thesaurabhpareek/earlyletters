@@ -300,6 +300,16 @@ export interface ChunkRunOptions {
 }
 
 /**
+ * The run's share written down (0..1) from the parts done, the part count and the recogniser's 0 to 100 within the
+ * current part. Pure (test/decode-progress.test.ts).
+ */
+export function runFraction(done: number, total: number, withinPct: number): number {
+  if (!(total > 0)) return 0;
+  const within = Number.isFinite(withinPct) ? Math.min(100, Math.max(0, withinPct)) / 100 : 0;
+  return Math.min(1, Math.max(0, (Math.min(done, total) + (done < total ? within : 0)) / total));
+}
+
+/**
  * Decodes every chunk of the plan in order and joins what was heard. Each
  * chunk keeps only speech: non-speech tags, an echo of the seed and an echo
  * of the name list are dropped and counted in `meta`. A chunk that loops is

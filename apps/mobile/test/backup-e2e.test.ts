@@ -17,7 +17,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { BackupServerError } from '../src/lib/backup/contract';
 import { ICLOUD_WAIT_MS } from '../src/lib/backup/keys';
 import { backupSource } from '../src/lib/backup/local-store';
-import { FakeBackend, FakeICloud, sha256Hex } from './helpers/backup-node';
+import { FakeBackend, FakeICloud, sha256Hex, type RecordedRequest } from './helpers/backup-node';
+import { randomBytes } from 'node:crypto';
+import { scanRequests } from './helpers/leak-scan';
 import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText, type LiveSession, type Phone } from './helpers/backup-phone';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -71,14 +73,27 @@ describe('backup end to end against a fake bucket', () => {
 
     // [F08-REQ-018, F08-REQ-020] zero plaintext audio in any request, from any phone.
     const originals = [...all, papasLetter];
-    for (const req of backend.requests) {
-      expect(req.body.includes(Buffer.from('ftyp')), req.kind).toBe(false);
-      for (const r of originals) {
-        const at = Math.min(2000, r.plain.length - 64); // past the fixed ftyp box, inside even the shortest take
-        expect(req.body.includes(r.plain.subarray(at, at + 64)), `${req.kind} carries part of a recording`).toBe(false);
-        expect(req.body.includes(Buffer.from(sha256Hex(r.plain))), `${req.kind} carries an original's hash`).toBe(false);
-        expect(req.body.includes(Buffer.from(sha256Hex(r.plain), 'hex')), `${req.kind} carries an original's hash`).toBe(false);
-      }
+    // [BL-456] The scan takes 16-byte shingles of the whole take (header, middle and tail), each at every offset of
+    // every body: a 16-byte piece of the real recording cannot be chance (2^-128), and a 64-byte leak from anywhere in
+    // a take is caught (`helpers/leak-scan.ts`). The four letters "ftyp" alone are no signature (1 in 2^32 per byte).
+    // [BL-1417 to BL-1419] The same scan also reads a recording written as base64, hex or a byte list, the URL, every header
+    // (Upload-Metadata too) and each RPC's arguments, and the joins of consecutive bodies. Not covered: see the header of
+    // `helpers/leak-scan.ts`.
+    for (const r of originals) expect(r.plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
+    const scanAll = (reqs: RecordedRequest[]) => scanRequests(reqs, originals.map((r) => r.plain));
+    expect(backend.requests.some((q) => q.kind === 'tus.create' && q.headers?.['Upload-Metadata']), 'the tus metadata is recorded').toBe(true);
+    expect(backend.requests.some((q) => q.kind === 'begin' && q.args), 'an RPC argument is recorded').toBe(true);
+    expect(scanAll(backend.requests)).toEqual([]);
+    {
+      // [BL-1419] The loop is itself tested: a leak in a LATER body, and one split over two bodies, turn it red.
+      const mid = Math.floor(originals[2].plain.length / 2);
+      const piece = originals[2].plain.subarray(mid, mid + 64);
+      const later = [...backend.requests, { kind: 'tus', body: Buffer.concat([randomBytes(500), piece, randomBytes(500)]) }];
+      expect(scanAll(later).length, 'a leak in the last body').toBeGreaterThan(0);
+      expect(scanAll(backend.requests.slice(0, 1).concat(later.slice(-1))).length, 'a leak in the second body').toBeGreaterThan(0);
+      const w = originals[0].plain.subarray(mid, mid + 64);
+      const split = [...backend.requests, { kind: 'tus', body: Buffer.concat([randomBytes(500), w.subarray(0, 6)]) }, { kind: 'tus', body: Buffer.concat([w.subarray(6), randomBytes(500)]) }];
+      expect(scanAll(split).length, 'a piece split over two bodies').toBeGreaterThan(0);
     }
 
     // Phone B: same Apple Account, iCloud Keychain on. Sign in; text syncs; recordings return.

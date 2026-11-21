@@ -16,6 +16,8 @@ What the app expects, in one table:
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview` (TestFlight alpha builds), `.dev` (development builds; no universal links) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
+Every hosted value this guide sets, and the repo value that goes with it, is listed in [AUTH_SETTINGS.md](AUTH_SETTINGS.md): read it back there and record the date. Nothing in this guide proves what the dashboard holds.
+
 Do the sections in order. Sections 1 to 6 are needed before anyone but you signs in. Section 7 (passkeys) can wait.
 
 ---
@@ -27,7 +29,7 @@ Dashboard: your project (`early-letters`, us-west-1).
 1. **Project Settings > API Keys**: copy the **Project URL** and the **publishable key** (`sb_publishable_...`; older projects call it the `anon` key). Both are public by design and go into the app (section 8). Never copy the `service_role` or secret key anywhere near the app.
 2. **Authentication > Sign In / Providers > Auth settings** (labels as of Oct 2026):
    - Allow new users to sign up: **on**.
-   - Allow manual linking: **on** (needed later for "Ways to sign in", A-REQ-019).
+   - Allow manual linking: **off** (matches `supabase/config.toml:47`, `supabase/tests/auth_config.test.mjs:89` and the first-run card; turn it on only in the change that ships "Ways to sign in", A-REQ-019).
    - Allow anonymous sign-ins: **off**. The app never uses them; the web contribution page that might is v1.1.
    - Confirm email: **on** (an address is an account only after its owner uses the link or code).
 3. **Authentication > Sessions** (or Project Settings > JWT): leave refresh token rotation on (default). Recommended JWT expiry: **900 seconds** (TDD 04 3.1: shorter window for a stolen token; the app refreshes in the foreground). Leave "time-box sessions" and "inactivity timeout" off: this is a local-first memory book, and a forced sign-out helps nobody.
@@ -119,7 +121,7 @@ Supabase > Authentication > Sign In / Providers > **Google**: enable.
 - **Skip nonce check: ON.** Required. The free Google sign-in library the app uses (`@react-native-google-signin/google-signin` 16.1.5, MIT) has no nonce parameter (Verified in its installed types), while Google's iOS SDK puts its own nonce in the ID token, which Supabase then cannot match. What still protects the exchange: Google's signature, the audience (only our client ids), and the token's one-hour life. The paid "Universal" module supports a nonce but is not open source, so it does not meet BRIEF decision 1. Revisit if the free module adds it.
 
 ### 3.5 Build settings
-Per EAS profile (section 8): `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the iOS client for that profile's bundle id). Without both, the Google button is hidden and the Google config plugin is left out of the build.
+Per EAS profile (section 8), not in the alpha profiles: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the iOS client for that profile's bundle id). Without both, the Google button is hidden and the Google config plugin is left out of the build.
 
 ## 4. Email through Resend
 
@@ -143,17 +145,17 @@ Supabase > Authentication > **Emails** > SMTP Settings > Enable custom SMTP (Ver
 | Minimum interval between emails | `60` seconds (matches the app's "You can send another in a minute", A-REQ-025) |
 
 ### 4.3 Rate limits
-Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch. Leave the token verification limit at its default (about 30 per 5 minutes per IP).
+Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch. Leave the token verification limit at its default (about 30 per 5 minutes per IP). O-6 later lowers it to 15, with the 8-digit code (4.4; register row 4).
 
 ### 4.4 Email provider
 Supabase > Authentication > Sign In / Providers > **Email**:
 - Enable Email provider: on. Confirm email: on. Secure email change: on.
 - **Email OTP expiration**: `900` seconds (link and code live 15 minutes; PRD V2 F02 A-REQ-018 Rev). Confirmed by code: every generated template in `supabase/templates/` tells people "15 minutes", and the export script that writes them says the words must match an expiry of 900 (`packages/emails/scripts/export-supabase.ts`); `supabase/auth-email.md` 3.2 says 900. No file sets the hosted value (`supabase/config.toml` is the local stack only, and `supabase/templates/management-api.json` carries templates, not the expiry), so read it in the dashboard after you set it. The app does not depend on it: it refuses its own pending email request after one hour at most (4.6), which covers 900. Updated 15 Oct 2026 from 3600; if you ever change it, re-export the templates with the same wording (`supabase/templates/README.md`).
-- **Email OTP length**: `6` today. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (confirmed by code: the app reads 6 to 10 and falls back to 6, `apps/mobile/src/lib/auth/email.ts`). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). PRD V2 A-REQ-018 Rev and TDD 04 OQ-S1 ask for **8**; that is an open founder decision (PRD V2 F02 Q2, WP-F02-14, FOUNDER_TASKS FT-04 item 8). For 8: set it here and `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS environment of every build that talks to this project, together.
+- **Email OTP length**: `6` today. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (confirmed by code: the app reads 6 to 10 and falls back to 6, `apps/mobile/src/lib/auth/email.ts`). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). The first-run card (O-6) moves it to **8**, together with the per-IP token verification limit from 30 to 15 (4.3), in one release: the build with `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` first, then the dashboard the same day (FP-8, OQ-F6). Target code length 8 (O-6, FS-18). The repo and hosted value stay 6; the dashboard flips the same day FP-8 ships, never before. For 8: set it here and `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS environment of every build that talks to this project, together.
 
 ### 4.6 PKCE for email links (BL-347, security review H1, ADR 0023)
 
-Nothing to set in the dashboard, and no template change. The app runs Supabase Auth with `flowType: 'pkce'`: when this phone asks for an email it keeps a code verifier in its Keychain and a note that it asked (the time only, no address, one hour at most). An opened link is used only if this phone asked and nobody is signed in on it; then the app calls `GET /auth/v1/verify` (redirects not followed), which answers with an auth code that only this phone's verifier can exchange. A link someone else asked for, or a link opened while signed in, is never used: the person is offered the code from the same email instead. After any sign-in, consent comes first, then "Keep your letters in this account?" with the account's email masked (`a***@example.com`); nothing on the phone joins the account or uploads before "Keep them here".
+Nothing to set in the dashboard, and no template change. The app runs Supabase Auth with `flowType: 'pkce'`: when this phone asks for an email it keeps a code verifier in its Keychain and a note that it asked (the time only, no address, one hour at most). An opened link is used only if this phone asked and nobody is signed in on it; then the app calls `GET /auth/v1/verify` (redirects not followed), which answers with an auth code that only this phone's verifier can exchange. A link someone else asked for, or a link opened while signed in, is never used: the person is offered the code from the same email instead. After any sign-in, consent comes first, then "Keep your letters in this account?" with the account's email masked (`a***@example.com`); nothing on the phone joins the account or uploads before "Keep in this account".
 
 What must stay as it is:
 - The redirect URL `https://earlyletters.com/auth/callback` in the allow list (5.1): Supabase puts the auth code on it, and the app reads it from the redirect without loading the page.
@@ -166,10 +168,10 @@ Assumptions, each checked by device test 11.10: Supabase answers `GET /verify` f
 ### 5.1 Supabase URL configuration
 Supabase > Authentication > **URL Configuration**:
 - Site URL: `https://earlyletters.com`
-- Redirect URLs (exactly these two, A-NFR-010): `https://earlyletters.com/auth/callback` and `scribe://auth/callback`.
-  - `https://earlyletters.com/auth/callback`: confirmed by code. It is the only redirect any code sends: the app passes it as `emailRedirectTo` when it asks for an email and as `redirect_to` when it opens a link with PKCE (`apps/mobile/src/lib/auth/email.ts`), and Supabase puts the auth code on it (4.6).
-  - `scribe://auth/callback`: unverified. No code sends it as a redirect (the scheme only opens the code screen). It stays from the 3 Oct list until S01 decides; `supabase/auth-email.md` 3.4 says leave the scheme out, since any app can claim it.
-  - `https://earlyletters.com/auth/confirm`: not listed. No code sends it yet. Add it in the same change that moves the app and the templates to `/auth/confirm` (PRD V2 F02 6.3; F02-REQ-012 allows only `https://earlyletters.com/**` and the brand scheme).
+- Redirect URLs: exactly one, `https://earlyletters.com/auth/callback` (SIGN-09, 31 Oct 2026; `supabase/auth-email.md` 3.4).
+  - `https://earlyletters.com/auth/callback`: confirmed by code. It is the only redirect any code sends: the app passes it as `emailRedirectTo` when it asks for an email and as `redirect_to` when it opens a link with PKCE (`apps/mobile/src/lib/auth/email.ts`), and Supabase puts the auth code on it (4.6). `supabase/config.toml` holds the same single URL, checked by `supabase/tests/auth_config.test.mjs`.
+  - Not listed: `scribe://auth/callback`. No code sends it as a redirect (the scheme only opens the code screen), and any app can claim a custom scheme. The 3 Oct list had it; it is removed.
+  - Not listed: `https://earlyletters.com/auth/confirm`. The app accepts links on that path (SIGN-04), but no code sends it as a redirect. Add it only in the change that moves the templates to `/auth/confirm` (PRD V2 F02 6.3; F02-REQ-012 allows only `https://earlyletters.com/**` and the brand scheme).
 
 The email template (section 6) builds the link itself, so these mostly guard against someone passing another redirect.
 
@@ -251,14 +253,14 @@ If test 11.7 fails or Supabase changes the beta API, leave the flag off: that is
 
 ## 8. App build settings (environment variables)
 
-All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text") or in `eas.json` under `build.<profile>.env`. Locally, put them in `apps/mobile/.env.development.local` (git-ignored).
+All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text"), never in `eas.json` (the config tests and the preflight fail on a Supabase value there). For the alpha, follow `docs/release/TESTFLIGHT.md` step 9 for names and visibility: the `preview` environment, which both alpha builds read, holds only the Supabase URL, the publishable key and the code length, never a Google client id. Locally, for `expo start` or a development build only, put them in `apps/mobile/.env.development.local` (git-ignored), and move that file away before `preflight:testflight` or `preflight:alpha`: the preflight FAILs on any value in `apps/mobile/.env*` other than `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SERVER_FEATURES=off` and `EXPO_PUBLIC_ANALYTICS=off` (`apps/mobile/scripts/preflight-testflight.mjs` section 4).
 
 | Variable | Value | Without it |
 |---|---|---|
 | `EXPO_PUBLIC_SUPABASE_URL` | Project URL from 1.1 | App runs local-only; sign-in sheet says sign-in is not available in this build |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from 1.1 (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also accepted) | Same |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 | Google button hidden |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id | Google button hidden, Google plugin not in the build |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 (not in `preview` during the alpha) | Google button hidden |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id (not in `preview` during the alpha: it adds the Google plugin to both alpha builds) | Google button hidden, Google plugin not in the build |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | Same as 4.4 (default 6) | 6 |
 | `EXPO_PUBLIC_PASSKEYS` | `1` only after section 7 | Passkeys hidden |
 
@@ -269,7 +271,7 @@ Changing a Google id needs a new build (it changes a native URL scheme); the oth
 1. The person signs in (Apple, Google, email link or code, or a passkey). An email link works only on the phone that asked for it and only while nobody is signed in there; otherwise the app offers the code. After Apple sign-in the app also sends Apple's one-time code to `apple-token` in the background (2.7).
 2. The app reads `my_sync_gate()`. If Terms are not current, it shows the Terms sheet with "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy" and records `record_policy_act('terms', ..., context {auth, age_attested: true})`. If Terms are current without the attestation, it asks "Are you 18 or older?" once; No ends the session and shows the 18+ stop screen.
 3. Then the sensitive-data sheet ("Before your book syncs"). "Agree and sync" records an accept and sync may start. "Keep on this phone" records a decline; the person stays signed in, letters stay on the phone, and Family or Account offers "Agree and sync" later.
-3a. If this phone's books and letters belong to no account yet: "Keep your letters in this account?" with the account's email masked. "Keep them here" lets them join the account; "Not my account" ends the session and nothing changes. A session left on this screen syncs nothing; Family and Settings > Account show "Finish setting up".
+3a. If this phone's books and letters belong to no account yet: "Keep your letters in this account?" with the account's email masked. "Keep in this account" lets them join the account; "Not my account" ends the session and nothing changes. A session left on this screen syncs nothing; Family and Settings > Account show "Finish setting up".
 4. Nothing syncs before step 3 is accepted (and 3a, when shown): the app checks, and the server refuses content writes with `SCCON` anyway.
 5. Sign-out waits until queued letters have uploaded, then ends the session on this phone only. Local letters are never deleted by signing out.
 
@@ -296,7 +298,7 @@ Run on a real iPhone with a preview build that has every variable from section 8
 7. **Passkeys (only for section 7):** Settings > Account > Add a passkey shows Face ID and succeeds; sign out; "Use a passkey" signs back in. Supabase shows the passkey under the user.
 8. **Revocation:** iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using. Relaunch: the app signs out after letters upload.
 9. **Apple token capture (2.7):** with a production-bundle build, sign in with Apple on a fresh account. Within a minute, SQL Editor: `select count(*), max(key_version) from ops.apple_tokens;` shows one more row (never select the ciphertext). Then delete that account in the app and let the purge worker run: the receipt says `apple: revoked`, and iOS Settings > Apple Account > Sign in with Apple no longer lists Early Letters.
-10. **A link from someone else (security review H1, ADR 0023):** phone A signed out, with a book and a letter, has not asked for an email. On phone B ask for an email and open that link on phone A: phone A says "Type the code from the email on this phone instead." and nothing signs in. Then on phone A ask for an email, close the app completely, and open the link: it signs in, shows the consent sheets, then "Keep your letters in this account?" with the address masked. "Not my account" leaves the letter on the phone and unsynced (Supabase shows no rows for it); sign in again and "Keep them here" syncs it. Also: open a link while signed in: "This link can't be used here" over "You're already signed in on this phone. To use another account, sign out, then type the code from the email."; and a typed code still signs in on any phone.
+10. **A link from someone else (security review H1, ADR 0023):** phone A signed out, with a book and a letter, has not asked for an email. On phone B ask for an email and open that link on phone A: phone A says "Type the code from the email on this phone instead." and nothing signs in. Then on phone A ask for an email, close the app completely, and open the link: it signs in, shows the consent sheets, then "Keep your letters in this account?" with the address masked. "Not my account" leaves the letter on the phone and unsynced (Supabase shows no rows for it); sign in again and "Keep in this account" syncs it. Also: open a link while signed in: "This link can't be used here" over "You're already signed in on this phone. To use another account, sign out, then type the code from the email."; and a typed code still signs in on any phone.
 
 ## 12. What only the founder can still do (15 Oct 2026)
 
@@ -305,8 +307,8 @@ The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an ag
 | Order | Task | Steps here | Blocks |
 |---|---|---|---|
 | 1 | **FT-07** Apple identifiers, Team ID, Sign in with Apple key, email relay | 2.1, 2.2, 2.4, 2.5 (one `.p8` serves sign-in, capture and revocation; `docs/ops/SECURITY.md` 5) | 2, 4, the AASA Team ID, every Apple sign-in |
-| 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking on, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider (OTP expiry **900** seconds, the "15 minutes" every template says; the 3600 written earlier contradicted them, and review M4 recommends 900 too); 5.1 redirect URLs (exactly two); 6 templates as `supabase/templates/README.md` lists them. Code length stays 6 until the M4 work package (FT-04 item 8). PKCE needs no setting (4.6) | All sign-in; device checks 11 |
-| 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
+| 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking off, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider (OTP expiry **900** seconds, the "15 minutes" every template says; the 3600 written earlier contradicted them, and review M4 recommends 900 too); 5.1 redirect URLs (exactly one); 6 templates as `supabase/templates/README.md` lists them. Target code length 8 (O-6, FS-18): the repo and hosted value stay 6, and the dashboard flips the same day FP-8 ships, never before. PKCE needs no setting (4.6) | All sign-in; device checks 11 |
+| 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile, not in the alpha profiles (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
 | 4 | **FT-11** `apple-token` | Apply migration `20261004200000` through `deploy-db.yml` if it is not applied yet, and S02's `20261015000000` (the database half of the apple-token limit, `rate_hit('apple_token')`) when its PR merges; set `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`, `TOKEN_KEK_V1` (2.7; the purge worker reads the same); leave `APPLE_EXTRA_CLIENT_IDS` unset (not read yet; see 2.7); `npx supabase functions deploy apple-token --use-api` | Apple token revocation at deletion (App Store 5.1.1(v)) |
 | 5 | Device checks on a switch-on preview build, founding family only | 11.1, 11.3, 11.9 (needs a production-bundle build until the purge worker reads `APPLE_EXTRA_CLIENT_IDS`), 11.10 | The R-17 sign-off |
 | 6 | Read and sign the R-17 auth items, with S02's items, in one shared review | `docs/security/REVIEW_R17_AUTH.md` | Anyone outside the family signing in (D-100) |

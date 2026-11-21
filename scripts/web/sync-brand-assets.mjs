@@ -1,0 +1,262 @@
+#!/usr/bin/env node
+/**
+ * Copies the approved brand files (the registry masters in packages/brand/assets) into apps/web, so the website
+ * never draws a logo of its own and the two never drift.
+ *
+ *   node scripts/web/sync-brand-assets.mjs                     copy, then rewrite the lock file
+ *   node scripts/web/sync-brand-assets.mjs --check             change nothing; exit 1 if a web copy or the lock differs
+ *   node scripts/web/sync-brand-assets.mjs --masters=<dir>     read packages/brand from another checkout (e.g. develop)
+ *
+ * What is copied is decided by the registry, never by file name (docs/brand/BRAND_SYSTEM.md 2): every asset of the
+ * contexts in CONTEXTS goes to apps/web/public at the path its `url` names ("files with a url are served on
+ * earlyletters.com at that path"). Next.js metadata files need two more copies in src/app (APP_COPIES). The other
+ * addresses the site already answers (/apple-icon, /opengraph-image, /favicon.ico) are served by routes that read
+ * these same public files, so there is one copy of each picture on disk. The header lockup (context web.header, an
+ * inline SVG in currentColor) is written as a generated module, src/components/brand/lockup.generated.ts, whose paths
+ * rebuild the master SVG exactly (the script refuses a master it cannot rebuild).
+ *
+ * The lock file, apps/web/src/lib/brand/web-assets.json, records each asset's registry id, version, size and
+ * SHA-256. The site reads urls and sizes from it, and apps/web/test/brand-assets.test.ts checks every copy against it
+ * (and, where the masters exist, runs this script with --check).
+ *
+ * The masters live on `develop` (packages/brand/registry.json and assets). Where they are absent, as on `main` until
+ * the brand package ships there, the script says so and exits 0 without touching anything.
+ * Plain Node 22, no dependencies.
+ */
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const WEB = 'apps/web';
+const LOCK = `${WEB}/src/lib/brand/web-assets.json`;
+
+/** The touchpoints the website and its emails use (packages/brand/registry.ts CONTEXTS). */
+export const CONTEXTS = ['web.favicon', 'web.apple-touch', 'web.og-image', 'email.header.light', 'email.header.dark'];
+
+/** Extra copies inside src/app for the Next.js metadata file conventions (icon.svg first, then the PNG fallback). */
+export const APP_COPIES = {
+  'favicon.svg': [`${WEB}/src/app/icon.svg`],
+  'favicon.png32': [`${WEB}/src/app/icon1.png`],
+};
+
+/**
+ * Contexts whose rule is an inline SVG drawn in currentColor (web.header: "Inline SVG with fill currentColor, 28 px
+ * tall"). Their paths go into a generated TypeScript module, never a hand copy; the brand name is not written there
+ * (components read it from @scribe/brand).
+ */
+export const INLINE = {
+  'web.header': { module: `${WEB}/src/components/brand/lockup.generated.ts`, exportName: 'lockupHorizontal' },
+};
+
+const sha256 = (buffer) => createHash('sha256').update(buffer).digest('hex');
+
+const SVG_SHAPE = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="([^"]+)" role="img" aria-label="([^"]+)"><title>([^<]+)<\/title>((?:<path [^>]*\/>)+)<\/svg>\n?$/;
+const PATH_SHAPE = /<path fill="(#[0-9A-F]{6})"(?: transform="([^"]+)")? d="([^"]+)"\/>/g;
+
+/** The SVG text the master must be, rebuilt from its parts: proof that the module draws exactly the master. */
+export function lockupSvg({ viewBox, fill, paths }, label) {
+  const body = paths.map((p) => `<path fill="${fill}"${p.transform ? ` transform="${p.transform}"` : ''} d="${p.d}"/>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" role="img" aria-label="${label}"><title>${label}</title>${body}</svg>\n`;
+}
+
+function parseLockup(id, text) {
+  const m = SVG_SHAPE.exec(text);
+  if (!m || m[2] !== m[3]) throw new Error(`asset "${id}": the SVG is not the one-colour lockup shape this script knows`);
+  const parts = [...m[4].matchAll(PATH_SHAPE)];
+  const fills = new Set(parts.map((p) => p[1]));
+  if (fills.size !== 1) throw new Error(`asset "${id}": expected one fill colour, found ${[...fills].join(', ')}`);
+  const drawing = {
+    viewBox: m[1],
+    fill: parts[0][1],
+    paths: parts.map((p) => (p[2] ? { transform: p[2], d: p[3] } : { d: p[3] })),
+  };
+  if (lockupSvg(drawing, m[2]) !== text) throw new Error(`asset "${id}": rebuilding the SVG from its paths does not give the master back`);
+  return drawing;
+}
+
+function moduleText(e) {
+  const d = e.drawing;
+  const [, , width, height] = d.viewBox.split(/\s+/).map(Number);
+  const paths = d.paths.map((p) => `    { ${p.transform ? `transform: ${JSON.stringify(p.transform)}, ` : ''}d: ${JSON.stringify(p.d)} },`).join('\n');
+  return [
+    `// GENERATED by scripts/web/sync-brand-assets.mjs from ${e.master}`,
+    `// (registry ${e.id} ${e.version}, sha256 ${e.sha256}). Do not edit by hand.`,
+    `// Context ${e.context}: drawn inline in currentColor. The paths are the symbol (the two opening quotation marks), then the wordmark.`,
+    `export const ${INLINE[e.context].exportName} = {`,
+    `  id: ${JSON.stringify(e.id)},`,
+    `  viewBox: ${JSON.stringify(d.viewBox)},`,
+    `  width: ${width},`,
+    `  height: ${height},`,
+    `  /** The master's one colour (ink); components draw in currentColor instead. */`,
+    `  fill: ${JSON.stringify(d.fill)},`,
+    `  paths: [`,
+    paths,
+    `  ],`,
+    `} as const;`,
+    '',
+  ].join('\n');
+}
+
+function args(argv) {
+  const masters = argv.find((a) => a.startsWith('--masters='));
+  return { check: argv.includes('--check'), masters: masters ? resolve(masters.slice('--masters='.length)) : ROOT };
+}
+
+/** The plan: one entry per registry asset, with where its master is and every place the website keeps a copy. */
+export function plan(mastersRoot = ROOT) {
+  const registryFile = join(mastersRoot, 'packages/brand/registry.json');
+  if (!existsSync(registryFile)) return null;
+  const registry = JSON.parse(readFileSync(registryFile, 'utf8'));
+  const byId = new Map(registry.assets.map((a) => [a.id, a]));
+  const entries = [];
+  for (const context of CONTEXTS) {
+    const ctx = registry.contexts[context];
+    if (!ctx) throw new Error(`registry has no context "${context}"`);
+    for (const id of ctx.assets) {
+      if (entries.some((e) => e.id === id)) continue;
+      const a = byId.get(id);
+      if (!a) throw new Error(`context "${context}" names unknown asset "${id}"`);
+      if (a.status !== 'primary') throw new Error(`context "${context}" uses non-primary asset "${id}"`);
+      if (!a.path || !a.url) throw new Error(`asset "${id}" has no file or no url, so the website cannot serve it`);
+      const bytes = readFileSync(join(mastersRoot, a.path));
+      entries.push({
+        id,
+        context,
+        version: a.version,
+        date: a.date,
+        master: a.path,
+        url: a.url,
+        format: a.format,
+        ...(a.dimensions ? { dimensions: a.dimensions } : {}),
+        bytes: bytes.length,
+        sha256: sha256(bytes),
+        copies: [`${WEB}/public${a.url}`, ...(APP_COPIES[id] ?? [])],
+        content: bytes,
+      });
+    }
+  }
+  const inline = [];
+  for (const [context, target] of Object.entries(INLINE)) {
+    const ctx = registry.contexts[context];
+    if (!ctx) throw new Error(`registry has no context "${context}"`);
+    for (const id of ctx.assets) {
+      const a = byId.get(id);
+      if (!a || a.status !== 'primary' || a.format !== 'svg' || !a.path) throw new Error(`context "${context}" needs a primary SVG, got "${id}"`);
+      const bytes = readFileSync(join(mastersRoot, a.path));
+      inline.push({
+        id,
+        context,
+        version: a.version,
+        date: a.date,
+        master: a.path,
+        format: a.format,
+        dimensions: a.dimensions,
+        bytes: bytes.length,
+        sha256: sha256(bytes),
+        module: target.module,
+        drawing: parseLockup(id, bytes.toString('utf8')),
+      });
+    }
+  }
+  return { registryVersion: registry.version, entries, inline };
+}
+
+export function lockJson(p) {
+  const assets = Object.fromEntries(p.entries.map(({ content, id, ...rest }) => [id, rest]));
+  const inline = Object.fromEntries(p.inline.map(({ drawing, id, ...rest }) => [id, rest]));
+  return (
+    JSON.stringify(
+      {
+        $comment: 'GENERATED by scripts/web/sync-brand-assets.mjs from packages/brand/registry.json. Do not edit by hand.',
+        registryVersion: p.registryVersion,
+        contexts: [...CONTEXTS, ...Object.keys(INLINE)],
+        assets,
+        inline,
+      },
+      null,
+      2,
+    ) + '\n'
+  );
+}
+
+/** Folders under public/ that hold nothing but brand copies: a file there that the plan does not name is stale. */
+function managedDirs(p) {
+  return [...new Set(p.entries.map((e) => dirname(e.copies[0])))];
+}
+
+export function differences(p) {
+  const out = [];
+  for (const e of p.entries) {
+    for (const copy of e.copies) {
+      const file = join(ROOT, copy);
+      if (!existsSync(file)) out.push(`missing   ${copy} (${e.id})`);
+      else if (sha256(readFileSync(file)) !== e.sha256) out.push(`differs   ${copy} from ${e.master} (${e.id})`);
+    }
+  }
+  const named = new Set(p.entries.flatMap((e) => e.copies));
+  for (const dir of managedDirs(p)) {
+    if (!existsSync(join(ROOT, dir))) continue;
+    for (const name of readdirSync(join(ROOT, dir))) {
+      if (!named.has(`${dir}/${name}`)) out.push(`stale     ${dir}/${name} (no registry asset)`);
+    }
+  }
+  for (const e of p.inline) {
+    const file = join(ROOT, e.module);
+    if (!existsSync(file)) out.push(`missing   ${e.module} (${e.id})`);
+    else if (readFileSync(file, 'utf8') !== moduleText(e)) out.push(`differs   ${e.module} from ${e.master} (${e.id})`);
+  }
+  const lockFile = join(ROOT, LOCK);
+  if (!existsSync(lockFile)) out.push(`missing   ${LOCK}`);
+  else if (readFileSync(lockFile, 'utf8') !== lockJson(p)) out.push(`differs   ${LOCK} (run the script without --check)`);
+  return out;
+}
+
+function write(p) {
+  for (const e of p.entries) {
+    for (const copy of e.copies) {
+      mkdirSync(dirname(join(ROOT, copy)), { recursive: true });
+      writeFileSync(join(ROOT, copy), e.content);
+    }
+  }
+  const named = new Set(p.entries.flatMap((e) => e.copies));
+  for (const dir of managedDirs(p)) {
+    for (const name of readdirSync(join(ROOT, dir))) {
+      if (!named.has(`${dir}/${name}`)) rmSync(join(ROOT, dir, name));
+    }
+  }
+  for (const e of p.inline) {
+    mkdirSync(dirname(join(ROOT, e.module)), { recursive: true });
+    writeFileSync(join(ROOT, e.module), moduleText(e));
+  }
+  mkdirSync(dirname(join(ROOT, LOCK)), { recursive: true });
+  writeFileSync(join(ROOT, LOCK), lockJson(p));
+}
+
+function main() {
+  const { check, masters } = args(process.argv.slice(2));
+  const p = plan(masters);
+  if (!p) {
+    console.log(
+      `sync-brand-assets: skipped: ${relative(process.cwd(), join(masters, 'packages/brand/registry.json')) || 'packages/brand/registry.json'} is absent, ` +
+        'so the brand masters are not on this branch (they live on develop). The committed copies and the lock are unchanged.',
+    );
+    return 0;
+  }
+  if (check) {
+    const diff = differences(p);
+    if (diff.length) {
+      console.error(`sync-brand-assets: ${diff.length} difference(s) from the registry masters:\n  ${diff.join('\n  ')}`);
+      return 1;
+    }
+    console.log(`sync-brand-assets: ok: ${p.entries.length + p.inline.length} assets, every web copy matches its master (registry ${p.registryVersion}).`);
+    return 0;
+  }
+  write(p);
+  const files = p.entries.reduce((n, e) => n + e.copies.length, 0) + p.inline.length;
+  console.log(`sync-brand-assets: wrote ${files} files for ${p.entries.length + p.inline.length} assets and ${LOCK}.`);
+  return 0;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = main();

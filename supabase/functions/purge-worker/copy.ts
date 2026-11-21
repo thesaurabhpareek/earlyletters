@@ -4,20 +4,9 @@
 //
 // Content rules apply (CLAUDE.md): no em or en dashes, curly quotes, ellipsis or emoji;
 // no fear, guilt or loss language; never a child's name, a letter or anything from a book.
-// Placeholders: {app}, {date}, {email}, {kind}, {count}, {runbook}, {run}, {time}.
+// Placeholders: {kind}, {count}, {runbook}, {run}, {time}.
 
 export const workerCopy = {
-  // Sent to family members when a sole parent deletes a book they write in
-  // (DATA-REQ-014). Contributors are hidden in v1.0, so this goes out only once they ship.
-  contributorNotice: {
-    subject: "A book you write in is scheduled for deletion",
-    body: [
-      "A parent asked us to delete a book on {app} that you write letters in. It will be deleted on {date}.",
-      "Your letters are yours. To keep a copy, open {app} before then and choose Settings, Your data, Export everything.",
-      "Questions? Write to us at {email}.",
-    ],
-  },
-
   // Internal alert to the founder (hello@). Counts and runbook names only.
   alert: {
     subject: "Deletion pipeline needs attention",

@@ -210,7 +210,7 @@ StoreKit lists current entitlements on the first launch after install, so Plus u
 | Row | Shows | Copy key | Build |
 |---|---|---|---|
 | Status | Free line; Plus is on, free until {date}, with cancel-by date; Plus renews on {date}; Plus stays on until {date}; grace line; retry line; Shared with you through Apple Family Sharing; period Monthly or Yearly | `billingCopy.plan.*` | Built |
-| Footer | The promise: first two letters free; every kept letter stays yours to read, play and export | `plus.promise` | Built |
+| Footer | The promise: first two letters free; every kept letter stays yours to read, play and export | `billingCopy.store.promise` (registered; `plus.promise` was deleted in P7) | Built |
 | See what Plus adds | Opens Apple's view (only while Plus is off) | `plan.seePlans` | Built |
 | Redeem a code | Apple's offer code sheet (only while Plus is off) | `plan.redeem`, `redeemHelp` | Built |
 | Manage subscription | Apple's sheet | `plan.manage` | Built |

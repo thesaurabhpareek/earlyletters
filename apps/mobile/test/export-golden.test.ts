@@ -125,7 +125,7 @@ describe('Asha export (golden)', () => {
     const { zip } = await makeExport();
     const entries = JSON.parse(strFromU8(unzipSync(zip)['data/entries.json'])) as EntriesFile;
     expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
-    expect(entries.entries).toHaveLength(13);
+    expect(entries.entries).toHaveLength(14); // 13, plus e11 (month only) since 1.5.0
     const e2 = entries.entries.find((e) => e.id === 'e2')!;
     expect(e2.raw_transcript).toBe('Asha, um, you are four days old and the whole house is quiet.');
     expect(e2.final_text).toBe('Asha, you are four days old and the whole house is quiet.');
@@ -167,15 +167,75 @@ describe('Asha export (golden)', () => {
     expect(asha).not.toContain('Not much today');
     expect(asha).not.toContain('ordinary day');
     expect(asha).toContain('You laughed today. A real one.');
-    expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
+    expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([9, 1]); // 8, plus e11 (month only, in the book) since 1.5.0
   });
 
-  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone, and no server history (since 1.1.0)', async () => {
-    // The version itself is pinned in export-recording-format.test.ts (1.2.0, ADR 0027).
+  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone (since 1.1.0)', async () => {
     const account = accountOf((await makeExport()).zip);
-    expect(account.schema_version).toBe(EXPORT_SCHEMA_VERSION);
     expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
-    expect(Object.keys(account)).not.toContain('consent_history');
+  });
+
+  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (since 1.3.0)', async () => {
+    const signedOut = accountOf((await makeExport()).zip);
+    expect(signedOut.consent_history).toEqual({ status: 'not_signed_in', read_at: null, current: [], acts: [] });
+    expect(signedOut.dictionary.map((d) => [d.child_id, d.term, d.kind, d.source])).toEqual([
+      ['child-asha-0001', 'Asha', 'child', 'phone'],
+      ['child-asha-0001', 'Mama', 'self', 'phone'],
+      ['child-dev-0002', 'Dev', 'child', 'phone'],
+      ['child-dev-0002', 'Mama', 'self', 'phone'],
+    ]);
+    const act = {
+      id: 'a1', document: 'terms', version: '1.0.0', action: 'accept' as const, method: 'signin_sheet', surface: 'signin.terms',
+      at: '2027-01-02T03:04:05.000Z', client_recorded_at: null, app_version: '1.0.0', platform: 'ios' as const, locale: 'en-US',
+      rendered_sha256: null, context: { auth: 'apple', age_attested: true },
+    };
+    const consentHistory = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', current: [{ document: 'terms', version: '1.0.0', action: 'accept' as const, at: act.at }], acts: [act] };
+    const signedIn = accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, consentHistory })).zip);
+    expect(signedIn.consent_history).toEqual(consentHistory);
+  });
+
+  it('[LEGAL-REQ-034, BL-529] account.json carries the profile, or why it is not here (since schema 1.4.0)', async () => {
+    const signedOut = accountOf((await makeExport()).zip);
+    expect(signedOut.schema_version).toBe(EXPORT_SCHEMA_VERSION);
+    expect(signedOut.profile).toEqual({ status: 'not_signed_in', read_at: null, display_name: null, signs_as: null, created_at: null });
+    const profile = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', display_name: 'Mama', signs_as: 'Mama', created_at: '2026-03-01T00:00:00+00:00' };
+    expect(accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, profile })).zip).profile).toEqual(profile);
+  });
+
+  it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
+    // Since 1.5.0; 1.6.0 added waiting letters (PL-2). Exact, so the next bump updates this line on purpose.
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.6.0');
+    const { zip } = await makeExport();
+    const files = unzipSync(zip);
+    const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
+    expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
+    const e11 = entries.entries.find((e) => e.id === 'e11')!;
+    expect(e11).toMatchObject({ occurred_on: '2026-07-08', occurred_precision: 'month', text_file: 'letters/Asha/2026-07/2026-07_e11.txt' });
+    expect(entries.entries.find((e) => e.id === 'e3')!.occurred_precision).toBe('day');
+    // The letter file: the month only, no weekday and no day.
+    const text = strFromU8(files['letters/Asha/2026-07/2026-07_e11.txt']);
+    expect(text).toContain('Date: Sometime in Month 4');
+    expect(text).not.toMatch(/Wednesday|July 8|8 July/);
+    // The offline reader and the printable book's HTML.
+    const reader = strFromU8(files['index.html']);
+    const article = (html: string) => html.slice(html.indexOf('Sometime in Month 4') - 40, html.indexOf('you found your feet'));
+    expect(reader).toContain('<p class="date">Sometime in Month 4</p>');
+    expect(article(reader)).not.toMatch(/July|Wednesday/);
+    const book = [...renderedHtml.values()].find((h) => h.includes('you found your feet'))!;
+    expect(book).toContain('<p class="date">Sometime in Month 4</p>');
+    expect(article(book)).not.toMatch(/July|Wednesday/);
+  });
+
+  it('[BL-323] memberships and the manifest say the real role', async () => {
+    const snap = ashaSnapshot();
+    const mixed = { ...snap, children: snap.children.map((c, i) => ({ ...c, role: i === 0 ? ('contributor' as const) : ('parent' as const) })) };
+    const { zip } = await makeExport(mixed);
+    expect(accountOf(zip).memberships.map((m) => m.role)).toEqual(['contributor', 'parent']);
+    const manifest = JSON.parse(strFromU8(unzipSync(zip)['manifest.json'])) as Manifest;
+    expect(manifest.scope.exporter_role).toBe('parent');
+    const onlyContributor = { ...snap, children: snap.children.map((c) => ({ ...c, role: 'contributor' as const })) };
+    const m2 = JSON.parse(strFromU8(unzipSync((await makeExport(onlyContributor)).zip)['manifest.json'])) as Manifest;
+    expect(m2.scope.exporter_role).toBe('contributor');
   });
 
   it('[G-19] reads the usage choice as stored, and anything unknown as not answered', async () => {
@@ -198,19 +258,21 @@ describe('Asha export (golden)', () => {
       expect(files[f.path].length, f.path).toBe(f.bytes);
     }
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
-    expect(manifest.counts).toEqual({ entries: 13, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
+    expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
-    expect(check).toEqual({ ok: true, problems: [], filesChecked: Object.keys(files).length });
+    expect(check).toEqual({ ok: true, problems: [], problemCounts: {}, filesChecked: Object.keys(files).length });
   });
 
-  it('catches a damaged file when checking, by path only', async () => {
+  it('catches a damaged file when checking, by code and count only (never a path)', async () => {
     const { zip, result } = await makeExport();
     const entry = (await readCentralDirectory(access(zip))).find((e) => e.name === 'audio/e2.m4a')!;
     const damaged = zip.slice();
     damaged[entry.localOffset + 30 + entry.name.length + 1000] ^= 0xff;
     const check = await verifyExport(access(damaged), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check.ok).toBe(false);
-    expect(check.problems).toEqual(['hash:audio/e2.m4a']);
+    expect(check.problems).toEqual(['hash']);
+    expect(check.problemCounts).toEqual({ hash: 1 });
+    expect(JSON.stringify(check)).not.toContain('e2.m4a');
   });
 
   it('is identical when made twice from the same phone state', async () => {

@@ -45,7 +45,7 @@ describe('(3) one back/close idiom per context', () => {
   });
 
   it('every modal screen draws Close with ModalHeader (top right) and none draws it top-left or at the bottom', () => {
-    const modals = ['app/write.tsx', 'app/review.tsx', 'app/read-together.tsx', 'components/family/coparent-soon.tsx', 'lib/auth/ui.tsx'];
+    const modals = ['app/write.tsx', 'app/review.tsx', 'app/read-together.tsx', 'lib/auth/ui.tsx'];
     for (const f of modals) expect(read(f), f).toMatch(/ModalHeader/);
     // listen's only own header is the denied state's, which goes through StateScreen's header slot
     expect(read('app/listen.tsx')).toMatch(/header=\{<ModalHeader/);
@@ -87,7 +87,8 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
       ['app/read-together.tsx', /<StateScreen kind="empty"/], // J11-07
       ['app/letter/[id].tsx', /<StateScreen kind="notFound"/], // J10-11
       ['app/listen.tsx', /<StateScreen[\s\S]*kind="empty"/], // J05-04: microphone off
-      ['app/+not-found.tsx', /<EmptyState[\s\S]*router\.replace/], // Expo's default 404 (#93's screen: one way back to Tonight)
+      // Expo's default 404 (#93's screen: one way back to Tonight), on StateScreen with the window drawing (P6c, S49)
+      ['app/+not-found.tsx', /<StateScreen kind="notFound" art="window"[\s\S]*router\.replace/],
       ['app/_layout.tsx', /export function ErrorBoundary[\s\S]*<RootErrorBoundary/], // the blank crash (#93's boundary, not a second one)
     ];
     for (const [f, re] of uses) expect(read(f), `${f} ${re}`).toMatch(re);
@@ -111,7 +112,7 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
   });
 
   it('loading never uses a spinner on the screens that moved', () => {
-    for (const f of ['app/review.tsx', 'components/ui/state-screen.tsx']) expect(read(f), f).not.toMatch(/ActivityIndicator/);
+    for (const f of ['app/review.tsx', 'components/ui/state-screen.tsx', 'components/resilience/plain-screen.tsx']) expect(read(f), f).not.toMatch(/ActivityIndicator/);
   });
 });
 

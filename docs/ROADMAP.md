@@ -1,5 +1,8 @@
 # Roadmap: the 30-day path to App Store submission
 
+> **Superseded.** D-101 (13 Oct 2026) replaced this plan's 2 Nov target; the plan of record is PRD V2 `docs/prd/v2/08-delivery.md`, and D-106 re-plans submission after the alpha.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: lead PM (coordinator merges). **Version 2.1, 3 Oct 2026 (evening)**, by the backlog-consolidation PM. Supersedes 2.0 of the same day: same target, reconciled with what the 3 Oct waves actually built (`docs/BACKLOG.md` v1.0, checked in code), the security review (`docs/reviews/2026-10-04-security-privacy.md`), legal-alignment's Q-003 memo, and one ordered founder list (`docs/FOUNDER_TASKS.md`). After v1.0: `docs/backlog/FUTURE.md`. Who is doing what right now: `docs/agents/BOARD.md`.
 
 **Target: submit to App Review in the week of Mon 2 Nov 2026 (Mon 2 Nov at the earliest, Fri 6 Nov at the latest). Release on approval, planned for Mon 16 Nov, with 9 to 20 Nov as the buffer for one rejection cycle.** The 30 days run from Mon 5 Oct to Wed 4 Nov.
@@ -115,7 +118,7 @@ Every link in this chain is either a founder step, an Apple queue, counsel or a 
 ## 8. After v1.0
 
 Ranked in `docs/backlog/FUTURE.md`:
-- **v1.0.1 (by Mon 7 Dec 2026):** review ask (G-03), offer codes (G-16), age signal if counsel says so (T5-15), the "co-parent uses Android" counter (FAM-14 part 6).
+- **v1.0.1 (by Mon 7 Dec 2026):** review ask (G-03), age signal if counsel says so (T5-15), the "co-parent uses Android" counter (FAM-14 part 6). Offer codes (G-16) are not here: "Redeem a code" ships in v1.0, in Settings, Plan and on the Keep sheet (SUB-06, 31 Oct 2026).
 - **v1.1 (about mid January 2027):** shared voice, word highlight, Hindi-English with "not written down" markers (if the golden corpus clears it by 30 Nov), On this day, family-letter notifications, the "we never make a voice" promise with its guards, the safety classifier only with a clinician's sign-off.
 - **v1.2 (about mid March 2027):** web platform and web deletion, family members as authors with the safety floor, invites where relatives are, guest author, the web contribution page, names that learn, remote config matured, ways to sign in.
 - **v1.3 (about early May 2027):** Plus follows the book, Android for co-parents if its gates are met, realtime co-parent updates, the Year page with birthdays and firsts, prompts v3.

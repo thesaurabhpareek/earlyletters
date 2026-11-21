@@ -68,9 +68,9 @@ export const familyEmails = {
   // Only to people who received family-book-closing for the same request.
   'family-book-restored': {
     id: 'family-book-restored',
-    subject: "Good news about the book",
+    subject: "The book is staying",
     preheader: "{parentName} is keeping the book after all. Your letters are right where they were.",
-    heading: "The book is staying",
+    heading: "Nothing will be deleted",
     body: [
       "{parentName} has decided to keep the book you write to. Nothing will be deleted.",
       "Your letters are back in it, and you can keep writing whenever you like.",

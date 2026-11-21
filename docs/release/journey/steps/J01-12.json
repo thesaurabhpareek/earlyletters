@@ -3,8 +3,9 @@
   "journey": "first-run",
   "kind": "unhappy",
   "title": "A second name left empty",
-  "note": "Twins or more: an empty second field keeps Continue off, and the line says to fill it in or remove it.",
+  "note": "Twins or more: a second row (\"Another child's name\") and a second cover fanned behind the first. An empty second field keeps Continue waiting, and the line says to fill it in or remove it.",
   "from": "J01-07",
+  "shot": "screens/J01-12.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,20 +22,19 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday Born today We sort letters by Asha's month of age. Fill in or remove this name to continue. Continue",
+  "text": "Back Who is this book for? Asha Name Another child's name Twins or more? Each child gets their own book. Add another child Birthday Not here yet Birthday Born today Fill in or remove this name to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
-    "Their name 1",
-    "Their name 2",
-    "Twins or more? Add them now. Each child gets their own book.",
+    "Asha",
+    "Name",
+    "Another child's name",
+    "Twins or more? Each child gets their own book.",
     "Add another child",
     "Birthday",
     "Not here yet",
     "Birthday",
     "Born today",
-    "We sort letters by Asha's month of age.",
-    "Fill in or remove this name to continue.",
-    "Continue"
+    "Fill in or remove this name to continue."
   ]
 }
