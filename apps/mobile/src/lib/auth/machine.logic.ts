@@ -19,6 +19,17 @@ export type AuthMethod = 'apple' | 'google' | 'email' | 'passkey';
 /** The sheets shown after sign-in, in order. 'age' only when Terms are current but the attestation is missing. */
 export type ConsentStep = 'terms' | 'age' | 'sensitive';
 
+/**
+ * How many letters, books and settings are still to upload (BL-1425): a count, or unknown when the queue could not
+ * be read. Unknown is never read as 0: sign-out treats it as unsynced and waits.
+ */
+export type PendingUploads = { kind: 'count'; n: number } | { kind: 'unknown' };
+
+/** True only for a counted zero (a plain number is a count too). Unknown is not nothing. */
+export function nothingPending(p: PendingUploads | number): boolean {
+  return typeof p === 'number' ? p <= 0 : p.kind === 'count' && p.n <= 0;
+}
+
 /** What `my_sync_gate()` returns, camel-cased. */
 export interface SyncGate {
   termsCurrent: boolean;
@@ -86,7 +97,7 @@ export type AuthEvent =
   | { type: 'GATE_UNAVAILABLE' }
   | { type: 'CONSENT_RECORDED'; step: ConsentStep; accepted: boolean }
   | { type: 'CONSENT_FAILED'; error: AuthErrorKind }
-  | { type: 'SIGN_OUT_REQUESTED'; reason: SignOutReason; pendingUploads: number }
+  | { type: 'SIGN_OUT_REQUESTED'; reason: SignOutReason; pendingUploads: PendingUploads | number }
   | { type: 'UPLOADS_DRAINED' }
   /** "Stay signed in" while a sign-out waits for uploads (S01): back to signed in; nothing deleted, nothing sent. */
   | { type: 'SIGN_OUT_WAIT_CANCELLED' }
@@ -194,7 +205,8 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       if (state.status !== 'ready' && state.status !== 'needsConsent' && state.status !== 'checkingConsent') return state;
       const sync: SyncMode = state.status === 'ready' ? state.sync : 'off';
       // Never discard unsynced letters (PRD A F6.4, A-REQ-033): wait while uploads are queued and sync can run.
-      const waiting = event.pendingUploads > 0 && sync !== 'off';
+      // BL-1425: a queue that could not be read is unsynced too: it waits as a non-zero count does.
+      const waiting = !nothingPending(event.pendingUploads) && sync !== 'off';
       return { status: 'signingOut', userId: state.userId, reason: event.reason, waitingForUploads: waiting, sync };
     }
 
@@ -273,7 +285,7 @@ export async function readGateInOrder(
 }
 
 /** Whether Sign out now waits for queued letters: the machine's own SIGN_OUT_REQUESTED rule, not canSync (S01). */
-export function signOutWouldWait(s: AuthState, pendingUploads: number): boolean {
+export function signOutWouldWait(s: AuthState, pendingUploads: PendingUploads | number): boolean {
   const next = authReducer(s, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads });
   return next.status === 'signingOut' && next.waitingForUploads;
 }

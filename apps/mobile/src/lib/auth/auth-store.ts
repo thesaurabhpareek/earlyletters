@@ -21,7 +21,9 @@
  * state, for the screens.
  */
 import { needsAccountClaim } from './account-claim.logic';
-import { authUserId, canSync, initialAuthState, type AuthState } from './machine.logic';
+import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
+
+export type { PendingUploads } from './machine.logic';
 
 /** For lib/sync (releaseEmptyOwner): the claim screen's own "does this phone hold anything" question, so sync reads it from here. */
 export { phoneHoldsAnyRow } from './account-claim.logic';
@@ -184,12 +186,15 @@ export function registerUploadQueue(p: UploadQueueProbe): () => void {
   };
 }
 
-/** 0 when no sync engine is registered (nothing can be queued for the server then). */
-export async function pendingUploads(): Promise<number> {
+/**
+ * A count of 0 when no sync engine is registered (nothing can be queued for the server then). A probe that cannot be
+ * read is unknown, never 0: sign-out waits for it as it does for letters not yet up (BL-1425).
+ */
+export async function pendingUploads(): Promise<PendingUploads> {
   try {
-    return probe ? await probe.pendingCount() : 0;
+    return { kind: 'count', n: probe ? await probe.pendingCount() : 0 };
   } catch {
-    return 0;
+    return { kind: 'unknown' };
   }
 }
 
