@@ -1245,10 +1245,13 @@ describe('[NS-01-R19] the remote pause hides the new surfaces and never turns th
     expect(photosPausedNow(() => { throw new Error('no remote'); })).toBe(false);
   });
   it('[NS-01-R19] the data rights never read the switch or the pause: the store, the sweep and every eraser', () => {
-    for (const f of ['lib/photos/housekeeping.ts', 'lib/photos/entry-media.ts', 'lib/erase-everything.ts', 'lib/capture/erase.ts', 'lib/capture/sweep.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).not.toMatch(/photosPausedNow|photosBuildEnabled/);
-    const device = readFileSync(join(SRC, 'lib', 'photos', 'device.ts'), 'utf8');
-    for (const fn of ['sweepPhotosAtLaunch', 'erasePictureOf']) {
-      const body = device.slice(device.indexOf(`export function ${fn}`), device.indexOf('\n}\n', device.indexOf(`export function ${fn}`)));
+    for (const f of ['lib/photos/housekeeping.ts', 'lib/photos/entry-media.ts', 'lib/erase-everything.ts', 'lib/capture/erase.ts', 'lib/capture/sweep.ts', 'lib/photos/erase-picture.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).not.toMatch(/photosPausedNow|photosBuildEnabled/);
+    for (const [file, fn] of [['device.ts', 'sweepPhotosAtLaunch'], ['erase-picture.ts', 'erasePictureOf']] as const) {
+      const src = readFileSync(join(SRC, 'lib', 'photos', file), 'utf8');
+      const start = src.indexOf(`export function ${fn}`);
+      const body = src.slice(start, src.indexOf('\n}\n', start));
+      expect(start, `${fn} is defined in ${file}`).toBeGreaterThanOrEqual(0);
+      expect(body.length, `${fn} body is not empty`).toBeGreaterThan(0);
       expect(body, fn).not.toMatch(/photosPausedNow|photosBuildEnabled/);
     }
   });
