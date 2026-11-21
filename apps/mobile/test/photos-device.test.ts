@@ -1,24 +1,288 @@
 /// <reference types="node" />
 // Device-side pieces of Photo with a letter that run in Node: the file layer over the expo-file-system stand-in (C7,
-// C9), the orientation baker (C7), and the scribe-photo Swift module read as source (C8). What only a phone can show
-// is listed as device checks in the PR.
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+// C9), the picker adapter (C5, C6), the entry_media table and the launch sweep (ADR 0028 D1, D5), the orientation baker
+// (C7), and the scribe-photo Swift module read as source (C8). What only a phone can show is listed as device checks in
+// the PR.
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
+import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { adoptPending } from '../src/lib/photos/adopt';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, undoPhotoChange, type UndoTicket } from '../src/lib/photos/attach';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
-import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
+import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-media';
+import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
+import { photosPausedNow } from '../src/lib/photos/pause';
+import { photos } from '../src/lib/photos/copy';
+import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, pickerDestination, withinFolder } from '../src/lib/photos/files';
+import { sweepPhotos } from '../src/lib/photos/housekeeping';
+import { PendingPhoto } from '../src/lib/photos/pending';
+import { createPhotoPicker } from '../src/lib/photos/picker';
+import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
+import { pictureCovered, PHOTO_BLANK_WITHOUT_APP_LOCK } from '../src/lib/photos/surface';
+import { CODE_POINTS_PER_CHARACTER, normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
+import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
-import { makeJpeg } from './photos-helpers';
+import { nodeDb } from './helpers/node-db';
+import { deps, makeJpeg, memoryFiles } from './photos-helpers';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
+
+const SRC = join(__dirname, '..', 'src');
+const walk = (dir: string): string[] =>
+  readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
+  });
+
+// ---- C5: the system picker is reached only through scribe-photo's pickOne, from one file ----------------------------
+
+const BANNED_NAMES = [
+  'launchCameraAsync', 'launchImageLibraryAsync', 'requestCameraPermissionsAsync', 'getCameraPermissionsAsync', 'requestMediaLibraryPermissionsAsync',
+  'getMediaLibraryPermissionsAsync', 'useCameraPermissions', 'useMediaLibraryPermissions', 'requestMediaLibraryWriteOnlyPermissionsAsync',
+];
+const BANNED_MODULES = /^(expo-image-picker|expo-media-library|expo-camera|react-native-image-picker|react-native-vision-camera)(\/|$)/;
+
+/** Everything the scan reports for one source text: banned modules (aliases and dynamic imports included), banned names, pickOne calls. */
+export function scanPickerUse(source: string, file = 'x.ts'): { banned: string[]; pickCalls: number } {
+  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const out = { banned: [] as string[], pickCalls: 0 };
+  const visit = (n: ts.Node): void => {
+    if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier) && BANNED_MODULES.test(n.moduleSpecifier.text)) out.banned.push(n.moduleSpecifier.text);
+    if (ts.isCallExpression(n) && n.arguments.length > 0 && ts.isStringLiteralLike(n.arguments[0])) {
+      const callee = n.expression.getText(sf);
+      if ((callee === 'require' || n.expression.kind === ts.SyntaxKind.ImportKeyword) && BANNED_MODULES.test(n.arguments[0].text)) out.banned.push(n.arguments[0].text);
+    }
+    if (ts.isIdentifier(n) && BANNED_NAMES.includes(n.text)) out.banned.push(n.text);
+    if (ts.isStringLiteralLike(n) && BANNED_NAMES.includes(n.text)) out.banned.push(n.text); // P['launchCameraAsync']
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'pickOne') out.pickCalls++;
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return out;
+}
+
+describe('[NS-01-R2][NS-01-R22][C5] the only picker is Apple\'s, through scribe-photo pickOne, called from one file', () => {
+  const files = walk(SRC);
+  const scans = files.map((f) => ({ f: relative(SRC, f), s: scanPickerUse(readFileSync(f, 'utf8'), f) }));
+
+  it('[NS-01-R2][NS-01-R22][C5] no file imports a picker, camera or media-library package, or names a camera, permission or library call', () => {
+    expect(scans.flatMap((x) => x.s.banned.map((b) => `${x.f}: ${b}`))).toEqual([]);
+  });
+  it('[NS-01-R22][C5] pickOne is called in exactly one place, lib/photos/picker.ts', () => {
+    expect(scans.filter((x) => x.s.pickCalls > 0).map((x) => [x.f, x.s.pickCalls])).toEqual([['lib/photos/picker.ts', 1]]);
+  });
+  it('[NS-01-R22][C5] positive control: each banned thing in a fixture makes the scan fail', () => {
+    const bad = [
+      "import * as P from 'expo-image-picker';",
+      "import { requestMediaLibraryPermissionsAsync as ask } from 'expo-media-library'; ask();",
+      "const P = require('expo-image-picker'); P['getMediaLibraryPermissionsAsync']();",
+      "const C = await import('expo-camera');",
+      'launchCameraAsync({});',
+      'P.launchImageLibraryAsync({});',
+      "import { useCameraPermissions } from 'react-native-vision-camera';",
+    ];
+    for (const src of bad) expect(scanPickerUse(src).banned.length, src).toBeGreaterThan(0);
+    expect(scanPickerUse('ScribePhoto.pickOne(dest);').pickCalls).toBe(1);
+  });
+});
+
+// ---- C6: the picker port keeps only the uri of the file it asked for ------------------------------------------------
+
+describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
+  const DEST = 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/ImagePicker/0194-a.img';
+  /** The picker's hooks: what it removed, and whether the app lock is up. */
+  const hooks = (gone: string[] = [], locked: () => boolean = () => false) => ({ discard: async (u: string) => void gone.push(u), locked });
+  it('[C6] a pick yields the destination it asked for and nothing else; the session keeps only the uri', async () => {
+    const asked: string[] = [];
+    const picker = createPhotoPicker({ pickOne: async (d: string) => (asked.push(d), d) }, () => DEST, hooks());
+    const r = await picker.open({}).done;
+    expect(asked).toEqual([DEST]);
+    expect(r).toEqual({ status: 'picked', asset: { uri: DEST } });
+    const s = new PhotoSession();
+    s.pick({ ...(r.status === 'picked' ? r.asset : { uri: '' }), pairedVideoUri: 'file:///x/live.mov' });
+    expect(Object.keys(s.source!)).toEqual(['uri']);
+  });
+  it('[C6] a failure crosses as a closed code with no native text', async () => {
+    const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    try {
+      const picker = createPhotoPicker({ pickOne: async () => { throw new Error('CANARY-/private/var/mobile/IMG_4521-Berkeley.HEIC'); } }, () => DEST, hooks());
+      const r = await picker.open({}).done;
+      expect(r).toEqual({ status: 'failed' });
+      expect(JSON.stringify(r) + spies.flatMap((s) => s.mock.calls.map((c) => c.map(String).join(' '))).join('')).not.toContain('CANARY');
+    } finally {
+      for (const s of spies) s.mockRestore();
+    }
+  });
+  it('[C6] Cancel, an answer naming another file and a cancel by the app are told apart and keep nothing', async () => {
+    const run = (answer: string | null) => createPhotoPicker({ pickOne: async () => answer }, () => DEST, hooks()).open({}).done;
+    expect(await run(null)).toEqual({ status: 'cancelled' });
+    expect(await run('file:///var/mobile/Containers/Data/Application/ASHA/Documents/ExpoAudio/take.m4a')).toEqual({ status: 'failed' });
+    const gone: string[] = [];
+    const p = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone)).open({});
+    p.cancel();
+    expect(await p.done).toEqual({ status: 'cancelled' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]); // the copy that landed after the cancel is removed
+  });
+  it('[NS-01-R17][C6] one pick at a time, and Cancel ends the wait at once: a copy that lands later is removed', async () => {
+    let land!: (uri: string | null) => void;
+    const calls: string[] = [];
+    const gone: string[] = [];
+    const picker = createPhotoPicker({ pickOne: (d: string) => (calls.push(d), new Promise<string | null>((r) => (land = r))) }, () => DEST, hooks(gone));
+    const first = picker.open({});
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' }); // a second tap opens nothing
+    expect(calls).toEqual([DEST]);
+    first.cancel(); // an iCloud download still running natively
+    expect(await first.done).toEqual({ status: 'cancelled' });
+    // Cancel ends the wait, not the native copy: the picker is not free while it still runs (privacy review B on #837).
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(calls).toEqual([DEST]); // nothing was opened under the running copy
+    land(DEST);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]);
+    picker.open({}); // free once the native copy has finished
+    expect(calls).toEqual([DEST, DEST]);
+  });
+  it('[NS-01-R22] no reset function ships in the bundle: resetPhotoDeviceForTest lives only under test/', () => {
+    const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+    for (const f of walk(join(__dirname, '..', 'src')).filter((x) => /\.tsx?$/.test(x))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/resetPhotoDeviceForTest|nativeForTest/);
+  });
+  it('[NS-01-R47] a pick under App lock is dropped: [C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
+    const gone: string[] = [];
+    let locked = true;
+    const picker = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => locked));
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(gone).toEqual([DEST]);
+    const broken = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => { throw new Error('lock'); }));
+    expect(await broken.open({}).done).toEqual({ status: 'cancelled' }); // a lock that cannot be read counts as up
+    locked = false;
+    expect(await picker.open({}).done).toEqual({ status: 'picked', asset: { uri: DEST } });
+    expect(gone).toEqual([DEST, DEST]);
+    // The phone's picker reads the real lock state, and discards through the picker folder's remover.
+    const device = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'device.ts'), 'utf8');
+    expect(device).toContain('{ discard: (uri) => picked.remove(uri), locked: appLocked }');
+    expect(device).toContain(".getAppLockState().locked;");
+  });
+  it('[C6] the destination is a new plain file in Caches/ImagePicker, where the reader, the remover and the launch sweep look', () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000003'));
+    const dest = pickerDestination('0194-a');
+    expect(dest).toBe(`${h.disk.caches}ImagePicker/0194-a.img`);
+    expect(withinFolder(dest, `${h.disk.caches}ImagePicker/`)).toBe(true);
+    expect(() => pickerDestination('../x')).toThrow();
+  });
+});
+
+// ---- C7: no temporary original survives ----------------------------------------------------------------------------
+
+function pickedMemory(initial: Record<string, Uint8Array>): PickedFiles & { left: () => string[]; sweeps: number } {
+  const m = new Map(Object.entries(initial));
+  const f = {
+    sweeps: 0,
+    left: () => [...m.keys()],
+    async read(uri: string) {
+      const b = m.get(uri);
+      if (!b) throw new Error('gone');
+      return b;
+    },
+    async remove(uri: string) {
+      m.delete(uri);
+    },
+    async sweep() {
+      f.sweeps++;
+      m.clear();
+    },
+  };
+  return f;
+}
+
+describe('[NX-39-R53][C7] no temporary original survives an interrupted attach', () => {
+  const URI = 'file:///c/ImagePicker/a.jpg';
+  const WORDS = 'Asha and the rain boots.';
+  it('[C7] after a successful strip the original is gone', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('stored');
+    expect(files.left()).toEqual([]);
+    expect(stored.disk.size).toBe(1);
+    expect(p.source).toBeNull();
+  });
+  it('[C7] after a failed strip (not a picture, damaged, or a failing disk) the original is gone and nothing is stored', async () => {
+    for (const bytes of [Uint8Array.of(1, 2, 3, 4, 5), makeJpeg().slice(0, 12)]) {
+      const files = pickedMemory({ [URI]: bytes });
+      const p = new PendingPhoto(files);
+      await p.set({ uri: URI });
+      const { d, files: stored } = deps();
+      expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('unreadable');
+      expect(files.left()).toEqual([]);
+      expect(stored.disk.size).toBe(0);
+    }
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps({ files: memoryFiles({ failWrite: true }) });
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('failed');
+    expect(files.left()).toEqual([]);
+    expect(stored.disk.size).toBe(0);
+  });
+  it('[C7] a read that fails while the original is still there also ends with the original removed and nothing stored', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    files.read = async () => {
+      throw new Error('io'); // the file is there, but it cannot be read
+    };
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored, store } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('failed');
+    expect([files.left(), stored.disk.size, store.all().length, p.source]).toEqual([[], 0, 0, null]);
+  });
+  it('[C7] a cancel (discard) removes the original, and so does a replace after the Undo window and a take-off after it', async () => {
+    let t = 0;
+    const files = pickedMemory({ [URI]: makeJpeg(), 'file:///c/ImagePicker/b.jpg': makeJpeg() });
+    const p = new PendingPhoto(files, () => t);
+    await p.set({ uri: URI });
+    await p.set({ uri: 'file:///c/ImagePicker/b.jpg' }); // replace: the first waits for Undo
+    expect(files.left().sort()).toEqual([URI, 'file:///c/ImagePicker/b.jpg']);
+    expect(p.canUndo).toBe(true);
+    await p.settle();
+    expect(files.left()).toEqual(['file:///c/ImagePicker/b.jpg']);
+    p.remove();
+    t = 11_000;
+    expect(p.canUndo).toBe(false);
+    expect(await p.undo()).toBe(false);
+    await p.discard();
+    expect(files.left()).toEqual([]);
+  });
+  it('[C7] Undo brings the earlier picture back and removes the replacement\'s original', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg(), 'file:///c/ImagePicker/b.jpg': makeJpeg() });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    await p.set({ uri: 'file:///c/ImagePicker/b.jpg' });
+    expect(await p.undo()).toBe(true);
+    expect(p.source?.uri).toBe(URI);
+    expect(files.left()).toEqual([URI]);
+  });
+  it('[C7] a picture with no words is not read into a copy and stays pending', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg() });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: '  ' }))?.status).toBe('needs_words');
+    expect(stored.disk.size).toBe(0);
+    expect(files.left()).toEqual([URI]);
+  });
+});
 
 describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuses to touch anything else', () => {
   beforeEach(() => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000001'));
   });
-  it('[C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
     const cache = h.disk.caches;
     put(h.disk, `${cache}ImagePicker/a.jpg`, 100);
     put(h.disk, `${cache}ImagePicker/b.heic`, 100);
@@ -120,10 +384,307 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
 });
 
 
+// ---- entry_media (ADR 0028 D1) and the sweep ------------------------------------------------------------------------
+
+const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
+const row = (entryId: string, mediaId: string, over: Partial<StoredPhoto> = {}): StoredPhoto => ({
+  entryId, mediaId, ext: 'jpg', bytes: 10, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over,
+});
+const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string | null = null) =>
+  db.run(
+    `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text, in_book, updated_at, deleted_at)
+     VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, 'x', '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
+    id, deleted,
+  );
+
+describe('[NS-01-R8] picture changes never touch words or recording', () => {
+  it('[NS-01-R8] add, replace, Undo, remove and editing the words about the picture leave the letter\'s entries row as it was, against the real store', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    db.run(
+      "UPDATE entries SET capture_mode = 'spoken', raw_transcript = 'she laughed um', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
+    );
+    const row = () => db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', 'e1');
+    const before = row();
+    const d = { ...deps().d, store: entryMediaStore(db) };
+    const one = { entryId: 'e1', finalText: 'She laughed.', text: 'Rain boots', place: 'the back step' };
+    expect((await addPhotoToLetter(d, { ...one, bytes: makeJpeg({ seed: 1 }) })).status).toBe('added');
+    const replaced = await addPhotoToLetter(d, { ...one, bytes: makeJpeg({ seed: 2 }) }, true);
+    expect(replaced.status).toBe('replaced');
+    expect(await undoPhotoChange(d, (replaced as { ticket: UndoTicket }).ticket)).toBe(true);
+    expect(editPhotoWords(d, 'e1', { text: 'Asha in the rain', place: 'the park' })).toBe(true);
+    expect(removePhotoFromLetter(d, 'e1')).not.toBeNull();
+    expect(row()).toEqual(before);
+    expect(before).toMatchObject({ final_text: 'She laughed.', raw_transcript: 'she laughed um', audio_sha256: 'abc', audio_bytes: 24000 });
+  });
+});
+
+describe('[ADR 0028 D1] entry_media: local migration 11', () => {
+  it('[D1] the migration adds the table and its three indexes only, and the newest version is 11', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    expect(LATEST_VERSION).toBe(11);
+    expect(MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    const cols = db.all<{ name: string }>('PRAGMA table_info(entry_media)').map((c) => c.name);
+    expect(cols).toEqual(['id', 'entry_id', 'draft_id', 'kind', 'ext', 'bytes', 'sha256', 'width', 'height', 'photo_text', 'place', 'added_at']);
+    expect(cols).not.toContain('deleted_at');
+    expect(db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='entry_media' AND name NOT LIKE 'sqlite_%'").map((i) => i.name).sort())
+      .toEqual(['entry_media_draft_idx', 'entry_media_entry_idx', 'entry_media_one_photo_idx']);
+    expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')?.n).toBe(0);
+  });
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: it queues nothing for sync and a phone on 10 gains the table without touching a letter', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.slice(0, 10));
+    letter(db, 'e1');
+    const outboxBefore = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE name LIKE '%outbox%'").length;
+    const countOutbox = () => (outboxBefore ? db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')?.n ?? 0 : 0);
+    const before = countOutbox();
+    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(countOutbox()).toBe(before);
+    expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id='e1'")?.final_text).toBe('She laughed.');
+  });
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: every column of every row is byte-identical afterwards (whole-row equality, Asha\'s letters)', () => {
+    // Mutants (run by hand, each turns this red; the final_text-only check above passes the first two): add to migration 11
+    //   UPDATE entries SET updated_at = '2030-01-01T00:00:00Z';   UPDATE entries SET in_book = 0;   UPDATE entries SET final_text = final_text || ' ';
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.slice(0, 10));
+    letter(db, 'e1');
+    letter(db, 'e2', '2026-11-12T00:00:00Z'); // in Recently deleted
+    letter(db, 'e3');
+    db.run("UPDATE entries SET in_book = 0, updated_at = '2026-07-01T10:00:00Z', final_text = 'Asha said \"da\" today.', machine_edits = '[{\"type\":\"filler\"}]' WHERE id = 'e3'");
+    db.run("UPDATE entries SET occurred_on = '2026-03-03', captured_at = '2026-03-04T08:15:00Z', capture_mode = 'spoken', raw_transcript = 'um da da' WHERE id = 'e1'");
+    const before = db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id');
+    expect(before.length).toBe(3);
+    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id')).toEqual(before);
+  });
+  it('[D1] the checks hold: photo only, jpg only, 140 and 60 characters, an owner that is either a letter or a draft, one picture per owner', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const ins = (id: string, entry: string | null, draft: string | null, over: Record<string, string | number | null> = {}) =>
+      db.run(
+        'INSERT INTO entry_media (id, entry_id, draft_id, kind, ext, bytes, sha256, photo_text, place, added_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        id, entry, draft, (over.kind as string) ?? 'photo', (over.ext as string) ?? 'jpg', 1, 'h', (over.text as string | null) ?? null, (over.place as string | null) ?? null, 't',
+      );
+    ins('m1', 'e1', null);
+    expect(() => ins('m2', 'e1', null)).toThrow(); // one per letter
+    expect(() => ins('m3', null, null)).toThrow(); // an owner is required
+    expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
+    expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
+    expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
+    // The CHECKs are ceilings in code points, 16 per grapheme a person sees (E84: 2,240 and 960), never the product limit (BL-957): they
+    // admit the longest words and place the app keeps, and refuse one code point more.
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(2241) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(961) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(2240), place: 'y'.repeat(960) });
+  });
+  it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const store = entryMediaStore(db);
+    store.put(row('e1', 'm1', { text: 'Rain boots', place: 'the back step' }));
+    expect(store.get('e1')).toMatchObject({ mediaId: 'm1', text: 'Rain boots', place: 'the back step', deletedAt: null, ext: 'jpg' });
+    store.put(row('e1', 'm2'));
+    expect(db.all('SELECT id FROM entry_media')).toEqual([{ id: 'm2' }]);
+    db.run("UPDATE entries SET deleted_at = '2026-11-12T00:00:00Z' WHERE id = 'e1'");
+    expect(store.get('e1')?.deletedAt).toBe('2026-11-12T00:00:00Z'); // the letter's own deleted_at
+    db.run("UPDATE entries SET deleted_at = NULL WHERE id = 'e1'");
+    expect(store.get('e1')?.deletedAt).toBeNull(); // restore needed no picture write
+    expect(store.all().length).toBe(1);
+    store.remove('e1');
+    expect(store.get('e1')).toBeNull();
+  });
+  it('[NS-01-R54] caps count graphemes and the database agrees: [NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const d = { ...deps().d, store: entryMediaStore(db) };
+    const kinds: Record<string, string> = {
+      'a Devanagari conjunct': '\u0915\u094D\u0937',
+      'Devanagari ki': '\u0915\u093F',
+      'a decomposed accent': 'e\u0301',
+      'an emoji ZWJ family': '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}',
+      'a flag': '\u{1F1EE}\u{1F1F3}',
+    };
+    const intl = Intl as { Segmenter?: unknown };
+    const seg = intl.Segmenter;
+    for (const engine of ['with Segmenter', 'as on Hermes']) {
+      if (engine === 'as on Hermes') delete intl.Segmenter;
+      try {
+        for (const [kind, g] of Object.entries(kinds)) {
+          const at = `${engine}, ${kind}`;
+          expect([normalizePhotoText(g.repeat(140)), normalizePhotoText(g.repeat(141))], at).toEqual([g.repeat(140), g.repeat(140)]);
+          expect([normalizePhotoPlace(g.repeat(60)), normalizePhotoPlace(g.repeat(61))], at).toEqual([g.repeat(60), g.repeat(60)]);
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
+        }
+        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones): 140 in the words and 60
+        // in the place are kept whole and pass the CHECK (card 01 R54, E84: 16 code points per grapheme); one over the app
+        // limit is cut by the app, never refused by the database.
+        const kiss = '\u{1F9D1}\u{1F3FB}\u200D\u2764\uFE0F\u200D\u{1F48B}\u200D\u{1F9D1}\u{1F3FC}';
+        const family = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
+        for (const g of [kiss, family]) {
+          expect(Array.from(g).length).toBeGreaterThanOrEqual(10);
+          expect([normalizePhotoText(g.repeat(141)), normalizePhotoPlace(g.repeat(61))], engine).toEqual([g.repeat(140), g.repeat(60)]);
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(140), place: g.repeat(60) })).status, engine).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(140), g.repeat(60)]);
+        }
+        // A character longer than 16 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
+        // store never refuses what the app kept.
+        const stack = 'a' + '\u0301'.repeat(20);
+        expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: stack.repeat(140), place: stack.repeat(60) })).status, engine).toBe('stored');
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(106), stack.repeat(45)]);
+      } finally {
+        intl.Segmenter = seg;
+      }
+    }
+  });
+  it('[NS-01-R54] mutant guard: the app multiplier is the database ceiling per grapheme (2240 / 140 and 960 / 60 are both 16), so 8 per grapheme fails here and in the 11 code point fixtures', () => {
+    const sql = readFileSync(join(SRC, 'lib', 'db', 'migrations.ts'), 'utf8');
+    expect(sql).toMatch(/length\(photo_text\) <= 2240/);
+    expect(sql).toMatch(/length\(place\) <= 960/);
+    expect(CODE_POINTS_PER_CHARACTER).toBe(16);
+    expect(CODE_POINTS_PER_CHARACTER * 140).toBe(2240);
+    expect(CODE_POINTS_PER_CHARACTER * 60).toBe(960);
+  });
+  it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: [NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store: entryMediaStore(db) };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    db.run("CREATE TRIGGER full BEFORE INSERT ON entry_media BEGIN SELECT RAISE(ABORT, 'database or disk is full'); END");
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([entryMediaStore(db).get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    db.run('DROP TRIGGER full');
+    // The owner went (a let-go draft) between the write and the row: put and the restore both refuse; still no throw.
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    const store = entryMediaStore(db);
+    const racing = { ...d, store: { ...store, put: (p: Parameters<typeof store.put>[0]) => (db.run("DELETE FROM drafts WHERE id = 'd1'"), store.put(p)) } };
+    await expect(commitPhoto(racing, { entryId: 'd1', finalText: '', bytes: makeJpeg({ seed: 3 }), text: null, requireWords: false })).resolves.toEqual({ status: 'failed' });
+    expect([...files.disk.keys()]).toEqual(['m1.jpg']);
+  });
+  it('[NS-01-R17] a row committed and then failed after is taken back: the earlier picture comes back, or none stays, and the commit never throws (#836 review B)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    let fail = false;
+    // The row is committed by put's own transaction; the change notice after it throws, as a later step would.
+    const store = entryMediaStore(db, () => {
+      if (fail) throw new Error('after the row');
+    });
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    fail = true;
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    await expect(commitPhoto(d, { entryId: 'e2', finalText: 'Words.', bytes: makeJpeg({ seed: 3 }), text: 'Only' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e2'), [...files.disk.keys()]]).toEqual([null, ['m1.jpg']]);
+  });
+  it('[D1] put refuses an owner that is neither a letter nor a draft, with a typed error, and writes nothing (DQ-R07)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    expect(() => store.put(row('nobody', 'm1'))).toThrow(PhotoOwnerUnknown);
+    expect(db.all('SELECT id FROM entry_media')).toEqual([]);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    store.put(row('d1', 'm2'));
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'm2')).toEqual({ entry_id: null, draft_id: 'd1' });
+  });
+});
+
+describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
+  it('[NS-01-R36] a kill leaves no orphan after the sweep: a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'live');
+    letter(db, 'shelf', '2026-11-12T00:00:00Z'); // in Recently deleted: kept
+    const store = entryMediaStore(db);
+    store.put(row('live', 'mLive'));
+    store.put(row('shelf', 'mShelf'));
+    letter(db, 'gone');
+    store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
+    letter(db, 'live2');
+    store.put(row('live2', 'mNoFile')); // a letter whose picture file is gone
+    const files = memoryFiles();
+    for (const n of ['mLive.jpg', 'mShelf.jpg', 'mGone.jpg', 'stray.jpg', 'half.jpg.part']) await files.write(n, Uint8Array.of(1));
+    const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': Uint8Array.of(1) });
+    const counts = await sweepPhotos(db, files, picked);
+    expect([...files.disk.keys()].sort()).toEqual(['half.jpg.part', 'mLive.jpg', 'mShelf.jpg']);
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mLive', 'mShelf']);
+    expect(counts).toEqual({ orphanFiles: 1, orphanRows: 1, missingFileRows: 1 });
+    expect(picked.left()).toEqual([]);
+    expect(await sweepPhotos(db, files, picked)).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 }); // repeat
+  });
+  it('[NS-01-R36] a picture committed while the sweep runs keeps its file and its row (privacy review B on #835): rows are read before the folder is listed, and an orphan file is looked up again before it is removed', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    const files = memoryFiles();
+    const real = files.list.bind(files);
+    const commit = async (owner: string, media: string) => {
+      await files.write(`${media}.jpg`, Uint8Array.of(1)); // the file first, then its row, as commitPhoto writes them
+      entryMediaStore(db).put(row(owner, media));
+    };
+    files.list = async () => {
+      await commit('e1', 'mA'); // before the listing: a file with no row in the sweep's snapshot
+      const listed = await real();
+      await commit('e2', 'mB'); // after the listing: a row whose file the listing never saw
+      return listed;
+    };
+    const counts = await sweepPhotos(db, files, pickedMemory({}));
+    expect([...files.disk.keys()].sort()).toEqual(['mA.jpg', 'mB.jpg']);
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mA', 'mB']);
+    expect(counts).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
+  });
+  it('[D5] an unreadable folder changes nothing; a file that will not go keeps its row for the next launch', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    letter(db, 'gone');
+    store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
+    const broken = { ...memoryFiles(), list: async () => { throw new Error('read'); } };
+    const rows = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')!.n;
+    expect(await sweepPhotos(db, broken, pickedMemory({}))).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
+    expect(rows()).toBe(1);
+    const stubborn = memoryFiles();
+    await stubborn.write('mGone.jpg', Uint8Array.of(1));
+    stubborn.remove = async () => { throw new Error('busy'); };
+    await sweepPhotos(db, stubborn, pickedMemory({}));
+    expect(rows()).toBe(1);
+  });
+});
+
+describe('[NS-01-R13][NX-39-R36][C10] the switcher snapshot is blank (Karma ruling: with or without App lock)', () => {
+  it('[NS-01-R13][C10] a photo on screen is covered whenever the app is not in front, App lock on or off', () => {
+    expect(PHOTO_BLANK_WITHOUT_APP_LOCK).toBe(true);
+    for (const lockOn of [true, false]) {
+      expect(pictureCovered('inactive', lockOn)).toBe(true);
+      expect(pictureCovered('background', lockOn)).toBe(true);
+      expect(pictureCovered('active', lockOn)).toBe(false);
+    }
+    expect(pictureCovered('active', true, false)).toBe(true); // locked cold open
+  });
+  it('[NS-01-R13][C10] every component that draws a stored or pending picture goes through PhotoFrame, which asks the cover', () => {
+    const dir = join(SRC, 'components', 'photos');
+    const drawsImage = walk(dir).filter((f) => /<Image\b/.test(readFileSync(f, 'utf8'))).map((f) => relative(dir, f));
+    expect(drawsImage).toEqual(['photo-frame.tsx']);
+    expect(readFileSync(join(dir, 'photo-frame.tsx'), 'utf8')).toMatch(/usePictureCovered\(\)[\s\S]*if \(covered \|\| failed\)/);
+  });
+});
+
 // ---- Application Support folder, the native step's temporary files ------------------------------------------------
 
 describe('[C9] where the stored copy lives', () => {
-  it('[C9] iOS: <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
+  it('[NS-01-R34] pictures live in Application Support: iOS <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000009'));
     expect(photosDirectory().uri).toBe(`${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/photos/`);
     h.disk = createDisk(androidContainer());
@@ -216,11 +777,22 @@ describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and rem
     expect([...h.disk.files.keys()]).toEqual([other]);
     expect(() => expoBakedFiles(() => '../x').destination()).toThrow();
   });
-  it('[C7] the launch sweep empties Caches/ScribePhoto too', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] the launch sweep empties Caches/ScribePhoto too', async () => {
     put(h.disk, `${h.disk.caches}ScribePhoto/left.jpg`, 10);
     put(h.disk, `${h.disk.caches}ImagePicker/left.jpg`, 10);
     await expoPickedFiles().sweep();
     expect([...h.disk.files.keys()].filter((u) => /ScribePhoto|ImagePicker/.test(u))).toEqual([]);
+  });
+  it('[C8] a baker wired into commit turns a rotated picture upright using the picked file\'s uri', async () => {
+    const seen: (string | undefined)[] = [];
+    const files = pickedMemory({ 'file:///c/ImagePicker/r.jpg': makeJpeg({ exif: true, orientation: 6 }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: 'file:///c/ImagePicker/r.jpg' });
+    const { d, files: stored } = deps();
+    d.orientation = { bake: async (_o, s) => (seen.push(s?.uri), makeJpeg({ seed: 4 })) };
+    expect((await p.commit(d, { entryId: 'e1', finalText: 'Words.' }))?.status).toBe('stored');
+    expect(seen).toEqual(['file:///c/ImagePicker/r.jpg']);
+    expect(stored.disk.size).toBe(1);
   });
 });
 
@@ -399,7 +971,7 @@ export function swiftProblems(swift: string): string[] {
 describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () => {
   const dir = join(__dirname, '..', 'modules', 'scribe-photo');
   const swift = readFileSync(join(dir, 'ios', 'ScribePhotoModule.swift'), 'utf8');
-  it('[NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
+  it('[NS-01-R22] the system picker is the only source and returns one photo: [NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
     const sources = compiledSources(join(dir, 'ios'));
     expect(sources).toEqual(['ScribePhotoModule.swift']);
     for (const f of sources) expect(swiftProblems(readFileSync(join(dir, 'ios', f), 'utf8')), f).toEqual([]);
@@ -544,6 +1116,140 @@ describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () 
     for (const name of ['expo-image-picker', 'expo-image-loader', 'expo-media-library', 'expo-camera', 'react-native-vision-camera', 'react-native-image-picker']) {
       expect(app.dependencies[name], name).toBeUndefined();
       expect(lock, name).not.toContain(`node_modules/${name}"`);
+    }
+  });
+});
+
+// ---- draft-owned pictures, words editing, the not-saved line, the pause ---------------------------------------------
+
+describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
+  it('[D1] the row is draft-owned while only a draft exists, hidden from the lens, and moves to the letter with Keep', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    store.put(row('d1', 'mD1')); // no entries row: owned by the draft
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: null, draft_id: 'd1' });
+    expect(store.get('d1')?.mediaId).toBe('mD1');
+    expect(store.all()).toEqual([]); // not a kept letter yet
+    letter(db, 'd1'); // Keep: the letter takes the draft's id
+    db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', 'd1'); // store.saveLetterFromDraft
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
+    expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
+  });
+  it('[NS-01-R16c] purge and let-go remove the picture file: the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'kept'); // the letter exists, the move did not run
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('live', 'c', 'typed', 't')");
+    const store = entryMediaStore(db);
+    store.put(row('kept', 'mKept'));
+    db.run("UPDATE entry_media SET entry_id = NULL, draft_id = 'kept' WHERE id = 'mKept'");
+    store.put(row('live', 'mLive'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('letgo', 'c', 'typed', 't')");
+    store.put(row('letgo', 'mGone'));
+    db.run("DELETE FROM drafts WHERE id = 'letgo'"); // let go
+    const files = memoryFiles();
+    for (const n of ['mKept.jpg', 'mLive.jpg', 'mGone.jpg']) await files.write(n, Uint8Array.of(1));
+    await sweepPhotos(db, files, pickedMemory({}));
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mKept', 'mLive']);
+    expect(db.get('SELECT entry_id FROM entry_media WHERE id = ?', 'mKept')).toEqual({ entry_id: 'kept' });
+    expect([...files.disk.keys()].sort()).toEqual(['mKept.jpg', 'mLive.jpg']);
+  });
+  it('[D1] a draft\'s picture needs no words, a kept letter\'s does', async () => {
+    const { d, files } = deps();
+    expect((await commitPhoto(d, { entryId: 'd1', finalText: '', bytes: makeJpeg(), text: null, requireWords: false })).status).toBe('stored');
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: '', bytes: makeJpeg(), text: null })).status).toBe('needs_words');
+    expect(files.disk.size).toBe(1);
+  });
+});
+
+describe('[NS-01-R21] the parent edits the words and the place of a kept picture', () => {
+  it('[NS-01-R21] only what is typed is stored, trimmed and cut to 140 and 60; empty clears; the other field is left alone', async () => {
+    const { d, store } = deps();
+    await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'first', place: 'the park' });
+    expect(editPhotoWords(d, 'e1', { text: `  ${'x'.repeat(200)}  ` })).toBe(true);
+    expect(store.get('e1')!.text!.length).toBe(140);
+    expect(store.get('e1')!.place).toBe('the park');
+    editPhotoWords(d, 'e1', { place: 'y'.repeat(90) });
+    expect(store.get('e1')!.place!.length).toBe(60);
+    editPhotoWords(d, 'e1', { text: '   ', place: '' });
+    expect(store.get('e1')).toMatchObject({ text: null, place: null });
+    expect(editPhotoWords(d, 'nobody', { text: 'x' })).toBe(false);
+  });
+  it('[NS-01-R21] the sqlite store keeps an edit across put (same media id, same file)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const { d } = deps({ store: entryMediaStore(db) as never });
+    d.store.put(row('e1', 'm1'));
+    editPhotoWords(d, 'e1', { text: 'Rain boots', place: 'the back step' });
+    expect(d.store.get('e1')).toMatchObject({ mediaId: 'm1', text: 'Rain boots', place: 'the back step' });
+  });
+});
+
+describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
+  const WORDS = 'Asha and the rain boots.';
+  beforeEach(() => {
+    clearPhotoNotSaved('e1');
+  });
+  it('[NS-01-R17] a failing disk marks the letter; a later success clears it; a picture with no words marks nothing', async () => {
+    const URI = 'file:///c/ImagePicker/a.jpg';
+    const run = async (opts: { failWrite?: boolean; text?: string }) => {
+      const picked = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+      const p = new PendingPhoto(picked);
+      await p.set({ uri: URI });
+      const { d } = deps({ files: memoryFiles({ failWrite: opts.failWrite }) });
+      await adoptPending(p, () => d, 'e1', opts.text ?? WORDS, true);
+      return picked.left();
+    };
+    expect(await run({ failWrite: true })).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(true);
+    expect(await run({})).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(false);
+    clearPhotoNotSaved('e1');
+    expect(await run({ text: '' })).toEqual([URI]); // needs words: still pending, nothing marked
+    expect(photoNotSaved('e1')).toBe(false);
+  });
+  it('[NS-01-R17] a throwing store is caught and marked, never rethrown', async () => {
+    const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': makeJpeg() });
+    const p = new PendingPhoto(picked);
+    await p.set({ uri: 'file:///c/ImagePicker/a.jpg' });
+    await expect(adoptPending(p, () => { throw new Error('db'); }, 'e1', WORDS, true)).resolves.toBeUndefined();
+    expect(photoNotSaved('e1')).toBe(true);
+  });
+  it('[NS-01-R17] the letter page draws the line from the content slot, above Add again, for the author only', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
+    expect(src).toMatch(/\{notSaved \? <SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\} testID="letter\.photo\.notSaved" \/> : null\}/);
+    expect(src.indexOf('photos.book.letter.notSaved')).toBeLessThan(src.indexOf('photos.book.letter.addPhoto'));
+    expect(src).toMatch(/return controls\.add \? \(/); // the author-only rule: add needs the author and words (letterPhotoControls)
+    expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);
+    expect(photos.book.letter.notSaved).toMatch(/words are kept/);
+  });
+  it('[NS-01-R17] Review stores a Home pick with the draft and the letter page and Review share the same controls', () => {
+    const rv = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
+    expect(rv).toMatch(/adoptPendingPhoto\(draftId, finalText, false\)/);
+    expect(rv).toMatch(/<LetterPhoto entryId=\{draftId\} finalText=\{finalText\} own draft \/>/);
+    expect(readFileSync(join(SRC, 'app', 'review.tsx'), 'utf8')).toMatch(/<ReviewPhoto draftId=\{draft\.id\} finalText=\{finalText\} \/>/);
+  });
+});
+
+describe('[NS-01-R19] the remote pause hides the new surfaces and never turns them on', () => {
+  it('[NS-01-R19] killSwitches.photos true pauses; absent, false, a missing config or an unreadable one do not', () => {
+    const at = (cfg: unknown) => photosPausedNow(() => ({ getRemoteConfig: () => cfg as never }));
+    expect(at({ killSwitches: { photos: true } })).toBe(true);
+    expect(at({ killSwitches: { photos: false } })).toBe(false);
+    expect(at({ killSwitches: { sync: true } })).toBe(false);
+    expect(at(null)).toBe(false);
+    expect(photosPausedNow(() => { throw new Error('no remote'); })).toBe(false);
+  });
+  it('[NS-01-R19] the data rights never read the switch or the pause: the store, the sweep and every eraser', () => {
+    for (const f of ['lib/photos/housekeeping.ts', 'lib/photos/entry-media.ts', 'lib/erase-everything.ts', 'lib/capture/erase.ts', 'lib/capture/sweep.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).not.toMatch(/photosPausedNow|photosBuildEnabled/);
+    const device = readFileSync(join(SRC, 'lib', 'photos', 'device.ts'), 'utf8');
+    for (const fn of ['sweepPhotosAtLaunch', 'erasePictureOf']) {
+      const body = device.slice(device.indexOf(`export function ${fn}`), device.indexOf('\n}\n', device.indexOf(`export function ${fn}`)));
+      expect(body, fn).not.toMatch(/photosPausedNow|photosBuildEnabled/);
     }
   });
 });

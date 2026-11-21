@@ -87,3 +87,37 @@ describe('Notes for App Review, servers-on build', () => {
     expect(notes).not.toMatch(/\b(beta|alpha|preview|early access)\b/i);
   });
 });
+
+/** NS-38-R5: what the Notes for Review must say, and never say. Returns what is missing or wrong. */
+function r5Gaps(text: string): string[] {
+  const gaps: string[] = [];
+  if (!/An account keeps the words of a parent's letters with them on a new phone/.test(text)) gaps.push('reason for the account');
+  if (!/DEMO ACCOUNT/.test(text) || !text.includes(demoEmail)) gaps.push('demo sign-in path');
+  if (!text.includes(`answer "${authCopy.consent.age.body}" with ${authCopy.consent.age.yes}`)) gaps.push('18+ answer');
+  if (!/first two letters are free/.test(text) || !/asked for at Keep/.test(text)) gaps.push('two free letters then Plus at Keep');
+  if (!/Nothing else is behind Plus/.test(text)) gaps.push('nothing else gated');
+  if (!text.includes(`"${authCopy.outage.startLocal}"`) || !/outage/.test(text)) gaps.push('local start named as outage-only');
+  if (/\bno (sign-in|sign in|account)\b|\bno account is needed\b/i.test(text)) gaps.push('says no account');
+  return gaps;
+}
+
+describe('[NS-38-R5] review notes match the build', () => {
+  it('names the reason, the demo path, the 18+ answer, two free letters then Plus at Keep, nothing else gated, and the outage-only start', () => {
+    expect(r5Gaps(notes)).toEqual([]);
+  });
+
+  const mutants: Array<[string, (t: string) => string, string]> = [
+    ['drop the reason', (t) => t.replace('An account keeps the words', 'Letters keep the words'), 'reason for the account'],
+    ['drop the demo account', (t) => t.replace('DEMO ACCOUNT', 'EXAMPLE'), 'demo sign-in path'],
+    ['drop the Yes answer', (t) => t.replace(`with ${authCopy.consent.age.yes}`, 'with anything'), '18+ answer'],
+    ['drop "asked for at Keep"', (t) => t.replace('asked for at Keep', 'asked for later'), 'two free letters then Plus at Keep'],
+    ['drop "nothing else is behind Plus"', (t) => t.replace('Nothing else is behind Plus', 'Other things may follow'), 'nothing else gated'],
+    ['drop the local start', (t) => t.replace(`"${authCopy.outage.startLocal}"`, 'a button'), 'local start named as outage-only'],
+    ['say no account is needed', (t) => `${t}\nNo account is needed.`, 'says no account'],
+  ];
+  for (const [label, mutate, gap] of mutants) {
+    it(`[mutant] ${label}`, () => {
+      expect(r5Gaps(mutate(notes))).toContain(gap);
+    });
+  }
+});

@@ -32,7 +32,7 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - PR #30 (`ci/hardening`) adds `fence.yml` (pull_request_target, reads file list only), `security.yml` (gitleaks 8.30.1 checksum-verified, npm audit gate), `dependabot.yml`, `audit-ignore.json` (4 Expo build-tool advisories, expire 2027-01-03), SHA pins.
 - (15 Oct) Harness workflows pin `actions/checkout` and `actions/setup-node` by SHA; `anthropics/claude-code-action@v1` and `actions/create-github-app-token@v3` are still tag pins.
 - `claude.yml` acts only on `author_association == 'OWNER'`; `isFounderComment` in `scripts/agents/lib.mjs`. (15 Oct) Agent messages and verdicts count only from `isTrusted` authors (#39).
-- (15 Oct) Auth code lives in `apps/mobile/src/lib/auth`; `expo-secure-store` and `@supabase/supabase-js` are `apps/mobile` dependencies. BL-347 and BL-330 fixes are open PR #139 (founder merge).
+- (15 Oct) Auth code lives in `apps/mobile/src/lib/auth`; `expo-secure-store` and `@supabase/supabase-js` are `apps/mobile` dependencies. BL-347 and BL-330 fixes are open PR #139 (merge is Karma's now, CR-73).
 - Deep-link scheme is `scribe` (`scheme` in `packages/brand/index.ts`; line 93 on 15 Oct).
 - PR #27 (merged 4 Oct) adds `com.apple.developer.default-data-protection` = `NSFileProtectionCompleteUntilFirstUserAuthentication` in `app.config.ts`.
 - Missing on 3 Oct: `docs/security/threat-model.md`, `security_events` table, `book_access` table. (15 Oct) `SECURITY.md` and `docs/ops/SECRETS.md` arrive with PR #35.

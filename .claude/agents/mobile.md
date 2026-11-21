@@ -16,6 +16,7 @@ A calm, fast, premium iOS app where capture never loses a word, built on standar
 - `apps/mobile/**`, except `apps/mobile/src/components/ui/**` (`design-systems`) and payment and Plus feature code (`payments`).
 
 ## You read first
+- `packages/content/WRITING-GUIDE.md`: how every customer-facing line should sound. Read it before writing or changing any string, email, push or store copy; run `npm run lint:copy`.
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/tdd/01-mobile-client.md`, `docs/ARCHITECTURE.md`, `docs/adr/0101-ui-component-library.md`.
 - `docs/design/DESIGN_LANGUAGE.md`, `MOTION.md`, `COMPONENTS.md`.
