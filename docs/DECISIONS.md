@@ -116,7 +116,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-009 | Read together: 3 free sessions per Free book, then Plus; the number is remote config | PRD-REQ-020 |
 | D-010 | Digital only in v1; printed books are a future launch | K-32 |
 | D-011 | Beta ends only when the founder says so (placement amended by D-030, pending) | K-13 |
-| D-012 | Plus $3.99 a month (1-month trial) or $29.99 a year (2-month trial); lifetime about $99.99 later; Plus per account, books inherit it from any parent | K-28, C-REQ-021 |
+| D-012 | Plus $3.99 a month (1-month trial) or $29.99 a year (2-month trial); lifetime about $99.99 later; Plus per account, books inherit it from any parent (prices superseded by D-082) | K-28, C-REQ-021 |
 | D-013 | US App Store first, iOS only at launch, every pattern Android-portable | PRD 1 |
 | D-014 | Multiple children, one book each; additional books are Plus; L1 to L4 data classification; analytics volume accepted | K-12, 7.10, K-01 |
 
@@ -342,7 +342,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-023 | Sync engine v1.0: outbox push plus cursor pull on expo-sqlite and Supabase | **Decided (founder)**; supersedes the "needs founder OK" status | Yes | 2026-10-03 |
 | D-051 | Standard over custom: Apple and well-known open-source first; our finishing touches on top | Decided (founder) | Yes | 2026-10-03 |
 | D-052 | Quality bar: premium and calm, benchmarked on Airbnb, Calm, Headspace, Day One and Apple; motion and components from proven libraries | Decided (founder) | Yes | 2026-10-03 |
-| D-053 | Payments: Apple only, on device (StoreKit 2, Apple's subscription screen, restore and manage sheets, `currentEntitlements`); no server sees purchases; Family Sharing on; $3.99/month with 1 month free, $29.99/year with 2 months free. Plus gates only Read together after 3 free sessions per book, and books for more children | Decided (founder); supersedes D-001's server half | Yes | 2026-10-03 |
+| D-053 | Payments: Apple only, on device (StoreKit 2, Apple's subscription screen, restore and manage sheets, `currentEntitlements`); no server sees purchases; Family Sharing on; $3.99/month with 1 month free, $29.99/year with 2 months free. Plus gates only Read together after 3 free sessions per book, and books for more children | Decided (founder); supersedes D-001's server half; prices superseded by D-082 | Yes | 2026-10-03 |
 | D-054 | Sign-in: Apple, Google and email magic link; passkeys can be added after sign-in; no passwords | Decided (founder); supersedes D-044 | Yes | 2026-10-03 |
 | D-055 | Family at launch: co-parent only; contributors and the web page later (database keeps contributors) | Decided (founder); supersedes D-002 | Yes | 2026-10-03 |
 | D-056 | Spoken languages at v1.0: English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese; correct script and punctuation per language; phonetics for taught names; UI in English, ready for localisation | Decided (founder) | Yes | 2026-10-03 |
