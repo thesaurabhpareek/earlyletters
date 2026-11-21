@@ -1,9 +1,10 @@
 /**
  * Sign in with Apple, native (PRD A-REQ-016, TDD 04 3.1.1) through
  * expo-apple-authentication and Supabase signInWithIdToken, with a hashed
- * nonce. Apple shares the name only on the first sign-in, so it is kept in
- * the Keychain until Terms are accepted and then written to
- * profiles.display_name (consent.ts), never logged.
+ * nonce. Only the email scope is requested (O-8, NX-31-R9, FP-9): no screen
+ * uses Apple's name, so it is never asked for and never kept. A name left by
+ * an older build is dropped at the next sign-in. O-8 DEFAULT, reversible:
+ * add FULL_NAME back here if privacy rules otherwise.
  *
  * The Apple user identifier is kept in the Keychain so launch can ask Apple
  * whether the credential was revoked (A-REQ-033).
@@ -38,17 +39,11 @@ export async function appleSignInAvailable(): Promise<boolean> {
   }
 }
 
-function fullName(n: AppleAuthentication.AppleAuthenticationFullName | null): string | null {
-  if (!n) return null;
-  const s = [n.givenName, n.middleName, n.familyName].filter((p): p is string => !!p && p.trim().length > 0).join(' ').trim();
-  return s ? s.slice(0, 60) : null; // profiles.display_name is at most 60 characters
-}
-
 /** Resolves with the Supabase user id. Rejects with the provider or Supabase error (errors.logic maps it). */
 export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   const { raw, hashed } = await makeNonce();
   const credential = await AppleAuthentication.signInAsync({
-    requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+    requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
     nonce: hashed,
   });
   if (!credential.identityToken) throw Object.assign(new Error('apple_no_identity_token'), { code: 'bad_oauth_callback' });
@@ -59,15 +54,13 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   // BL-330: in the background; sign-in is already done whatever this returns.
   if (credential.authorizationCode) void captureAppleToken(sb, credential.authorizationCode).catch(() => 'failed');
   await secureStorage.setItem(APPLE_USER_KEY, credential.user).catch(() => {});
-  const name = fullName(credential.fullName);
-  if (name) await secureStorage.setItem(PENDING_NAME_KEY, name).catch(() => {});
+  await clearPendingAppleName(); // O-8: no name is kept; drop one an older build left
   return userId;
 }
 
-/** The name Apple shared at first sign-in, if not yet written to the profile. */
+/** O-8: nothing writes a pending name any more; this stays so a leftover is read as empty and cleared. */
 export async function takePendingAppleName(): Promise<string | null> {
-  const name = await secureStorage.getItem(PENDING_NAME_KEY).catch(() => null);
-  return name && name.trim() ? name : null;
+  return null;
 }
 
 export async function clearPendingAppleName(): Promise<void> {
@@ -75,8 +68,10 @@ export async function clearPendingAppleName(): Promise<void> {
 }
 
 /**
- * A-REQ-033: true when Apple says this phone's Apple sign-in was revoked or
- * no longer exists. False when not an Apple user, not iOS, or unknown.
+ * A-REQ-033: true only when Apple says this phone's Apple sign-in was REVOKED.
+ * False for AUTHORIZED, TRANSFERRED and NOT_FOUND (pinned by test, open
+ * question for the CTO in PR 1125), when not an Apple user, not iOS, or when
+ * the read fails: a network error must never sign a person out.
  */
 export async function appleCredentialRevoked(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
@@ -88,6 +83,16 @@ export async function appleCredentialRevoked(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * NS-45-R4, O-18: Apple's own revocation notification (JS only, expo-apple-authentication
+ * addRevokeListener). Returns the function that removes it; call it at sign-out.
+ */
+export function watchAppleRevocation(onRevoked: () => void): () => void {
+  if (Platform.OS !== 'ios') return () => {};
+  const sub = AppleAuthentication.addRevokeListener(() => onRevoked());
+  return () => sub.remove();
 }
 
 export async function forgetAppleUser(): Promise<void> {

@@ -8,6 +8,7 @@ export { billingCopy } from './billing.en';
 export { contentBlocksCopy } from './content-blocks.en';
 export { exportCopy } from './export.en';
 export { familyCopy } from './family.en';
+export { findCopy } from './find.en';
 export { languageCopy } from './language.en';
 export { licences } from './licences.en';
 export { newDevicePageCopy } from './new-device.en';
@@ -24,6 +25,7 @@ import { billingCopy } from './billing.en';
 import { contentBlocksCopy } from './content-blocks.en';
 import { exportCopy } from './export.en';
 import { familyCopy } from './family.en';
+import { findCopy } from './find.en';
 import { languageCopy } from './language.en';
 import { licences } from './licences.en';
 import { newDevicePageCopy } from './new-device.en';
@@ -42,6 +44,7 @@ export const features = {
   contentBlocks: contentBlocksCopy,
   export: exportCopy,
   family: familyCopy,
+  find: findCopy,
   language: languageCopy,
   licences,
   newDevicePage: newDevicePageCopy,
