@@ -194,7 +194,7 @@ export const familyCopy = {
     used: "This invite has already been used. Ask for a new one if that wasn't you.",
     revoked: 'This invite was cancelled. Ask for a new one.',
     already_member: "You're already part of this book.",
-    not_found: 'That link does not open an invite. Check it and try again.',
+    not_found: "That link doesn't open an invite. Check it and try again.",
     not_parent: "Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",
     rate_limited: "That's a lot of invites for one day. You can send more tomorrow.",
     consent_needed: 'Finish setting up your account first.',

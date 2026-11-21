@@ -258,7 +258,7 @@ describe('[S59] failures are said plainly, and the person can always go on', () 
     expect(joinFailure('network')).toEqual({ line: 'This phone is offline. Try again once it is back online.', action: 'tryAgain' });
     expect(joinFailure('paused').action).toBe('tryAgain');
     for (const k of ['expired', 'used', 'revoked', 'not_found', 'already_member', 'book_full'] as const) expect(joinFailure(k).action, k).toBe('pasteAnother');
-    expect(joinFailure('not_found').line).toBe('That link does not open an invite. Check it and try again.');
+    expect(joinFailure('not_found').line).toBe("That link doesn't open an invite. Check it and try again.");
     expect(joinFailure('consent_needed').line).toBe('To join, choose Agree and sync in Settings, Account.');
     expect(code(SHEET)).toMatch(/failure\.action === 'pasteAnother' \? \(\s*<QuietButton label=\{a\.pasteAnother\} onPress=\{pasteAnother\} \/>/);
   });

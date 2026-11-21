@@ -69,7 +69,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
-      body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
+      body: "Talk for a minute, or type a few lines. It's there for {child} to read and hear for years.",
       // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
       // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
       freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
@@ -135,7 +135,7 @@ export const en = {
       spokenAddress: "{first}, hidden, at {domain}",
       spokenAddressNoFirst: "hidden, at {domain}",
       useAnother: "Use another account",
-      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
+      useAnotherHint: "Signs out and goes back to the start. Your book isn't made yet.",
       cta: "Continue",
     },
 
@@ -279,7 +279,7 @@ export const en = {
       a11y: "A letter from {date}. Opens the letter.",
     },
     afterSave: {
-      title: "Kept.",
+      title: "Saved to the book.",
       body: "One more page for {child}.",
       reviewButton: "Read it back",
       doneButton: "Done for tonight",
@@ -720,16 +720,16 @@ export const en = {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
+      { title: "Anything to tell {child}?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book is plenty." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
-      { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
+      { title: "Say a few words", body: "A minute is plenty, and {child} can hear it later." },
+      { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
-      body: "Whenever you like, there is a page for today. Just talk.",
+      body: "Open it whenever you like. A minute is plenty.",
     },
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
@@ -1225,7 +1225,7 @@ export const en = {
     // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book couldn't open",
-      body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
+      body: "Export saves a copy of the recordings and book files it can read, as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       // The Try again button's words while it opens the book again, and the line after an open that did not work.

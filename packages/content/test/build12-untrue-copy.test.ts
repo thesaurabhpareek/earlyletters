@@ -151,7 +151,7 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
     // on a fresh install or a restored phone too, so none may say the letters are on this phone.
     expect(authCopy.code.lettersSafe).toBe('Your letters are still on this phone.');
     for (const l of leaves(authCopy.errors, 'errors')) expect(l.text, l.path).not.toMatch(/\bletters?\b.*\bon this phone\b|\bon this phone\b.*\bletters?\b/i);
-    expect(authCopy.errors.network).toBe('Nothing has changed. Sign in once you are back online.');
+    expect(authCopy.errors.network).toBe("Nothing has changed. Sign in once you're back online.");
     expect(authCopy.errors.session_expired).toBe('You were signed out. Sign in again to carry on.');
   });
 

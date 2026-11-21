@@ -119,7 +119,7 @@ export const authCopy = {
    */
   firstRun: {
     errors: {
-      provider: 'That sign-in did not finish. Try again, or try another way.',
+      provider: "That sign-in didn't finish. Try again, or try another way.",
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
@@ -174,7 +174,7 @@ export const authCopy = {
   claim: {
     title: 'Keep your letters in this account?',
     body: 'Your letters on this phone will be kept in the account {email}.',
-    noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
+    noEmail: 'Your letters on this phone will be kept in the account you signed in to.',
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
     // BL-488: 'Keep them here' read as this phone; the choice is this account. Names it, 20 characters (a button may have 22).
     keep: 'Keep in this account',
@@ -198,7 +198,7 @@ export const authCopy = {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: 'Nothing has changed. Sign in once you are back online.',
+    network: "Nothing has changed. Sign in once you're back online.",
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
@@ -206,14 +206,14 @@ export const authCopy = {
     // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
     // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
     // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
-    email_wait: "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    email_wait: "Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",
     rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
     provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: 'Setting up your account did not finish. Try again.',
+    consent_unavailable: "Setting up your account didn't finish. Try again.",
     unknown: 'That did not go through. Nothing has changed.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
