@@ -45,6 +45,7 @@ import {
   type EscrowClient,
 } from './contract';
 import { BUNDLED_ESCROW_KEYS, escrowKeysFor } from './escrow-keys';
+import { createTokenStore } from './token-vault';
 import { openBackupDb, type BackupDb } from './local-db';
 import { backupSource, restoreLocal } from './local-store';
 import type { Aead, BookKeyRef, ByteSink, ByteSource, Conditions, FileIO, KeyVault, NetworkKind } from './ports';
@@ -482,6 +483,7 @@ const host = createAccountHost<BackupService>((uid) => {
   const vault = nativeVault();
   return createBackupService({
     db: dbFor(uid),
+    tokens: createTokenStore(uid),
     vault,
     aead: nativeAead,
     files: nativeFiles,

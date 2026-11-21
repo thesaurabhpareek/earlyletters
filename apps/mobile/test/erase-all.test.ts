@@ -27,6 +27,8 @@ const h = vi.hoisted(() => ({
   calls: [] as string[],
   /** The Keychain, as a map that outlives a kill (it survives a reinstall on a real phone). */
   keychain: new Map<string, string>(),
+  /** A Keychain key whose removal fails (B5-6), or null. */
+  failRemoveKey: null as string | null,
   /** What `appLock.enabled` read when the app lock was asked to read its settings again (null: erased). */
   lockReloads: [] as (string | null)[],
   /** A setting as the store's database holds it right now (set in beforeEach, once the database exists). */
@@ -68,7 +70,10 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({
   secureStorage: {
     getItem: async (k: string) => h.keychain.get(k) ?? null,
     setItem: async (k: string, v: string) => void h.keychain.set(k, v),
-    removeItem: async (k: string) => void h.keychain.delete(k),
+    removeItem: async (k: string) => {
+      if (h.failRemoveKey === k) throw new Error('keychain locked');
+      h.keychain.delete(k);
+    },
   },
 }));
 vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'scribe.auth.appleUser', PENDING_NAME_KEY: 'scribe.auth.pendingName' }));
@@ -160,6 +165,7 @@ beforeEach(() => {
   h.calls = [];
   h.lockReloads = [];
   h.keychain = new Map();
+  h.failRemoveKey = null;
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -413,6 +419,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const printPdf = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`, 12_000);
     h.keychain.set('scribe.auth.pendingName', 'Mama'); // an Apple sign-in that never finished
     h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
+    h.keychain.set('scribe.auth.deviceId', 'ab'.repeat(32)); // NDR-1: the new-device email's install id; Erase everything clears it
     return { app, f, stray, frames, zip, recovery, printPdf };
   }
 
@@ -806,8 +813,8 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     const paths = ['src/lib/erase-everything.ts', 'src/lib/db/repos/wipe.ts', 'src/lib/store.ts', 'src/lib/billing/letter-ledger.ts'];
     for (const p of paths) {
       const s = src(p);
-      // B5: the one backup file erase-everything.ts may import is files.ts (the state file's delete; no keys, no runtime).
-      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/files'/g, ''))]).toEqual([p, false]);
+      // B5: the only backup files erase-everything.ts may import are files.ts (the state file's delete) and token-vault.ts (the upload-token item); no keys, no runtime.
+      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/(files|token-vault)'/g, ''))]).toEqual([p, false]);
       expect([p, /deleteBookKeys|deleteDeviceKey|KeyVault/.test(s)]).toEqual([p, false]);
     }
   });
@@ -892,6 +899,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     const { runEraseEverything } = await import('../src/components/settings/wipe.logic');
     const log: string[] = [];
     const r = await runEraseEverything({
+      ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         log.push('erase');
         return 'erased';
@@ -920,6 +929,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     ] as const) {
       const log: string[] = [];
       await runEraseEverything({
+        ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
         erase: async () => outcome,
         setPhase: (p) => log.push(`phase:${p}`),
         setFailed: (f) => log.push(`failed:${f}`),
@@ -929,6 +940,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     }
     const log: string[] = [];
     await runEraseEverything({
+      ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         throw new Error('disk');
       },
@@ -1228,6 +1241,21 @@ describe('[B5-4] Erase everything deletes every backup state file inside eraseDe
       app.all.eraseDeviceFiles();
       expect(has(sqlite(ASHA_A))).toBe(false);
     });
+  });
+
+  it('[B5-6] a Keychain that will not drop the upload tokens holds the erase: the rest runs, the mark stays, finish is not reached, and a retry finishes', async () => {
+    const app = await launch();
+    const tokens = await import('../src/lib/backup/token-vault');
+    h.keychain.set(tokens.BACKUP_TOKENS_KEY, '{"a:b":"asha-token"}');
+    h.failRemoveKey = tokens.BACKUP_TOKENS_KEY;
+    await expect(app.all.eraseEverything()).rejects.toThrow('keychain locked');
+    expect(app.store.eraseEverythingPending()).toBe(true); // finishEraseEverything was not reached
+    expect(h.calls).toContain('reminders:forget'); // the other steps still ran
+    expect(h.keychain.has(tokens.BACKUP_TOKENS_KEY)).toBe(true);
+    h.failRemoveKey = null;
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(h.keychain.has(tokens.BACKUP_TOKENS_KEY)).toBe(false);
   });
 
   it('a phone with no backup file erases as before', async () => {

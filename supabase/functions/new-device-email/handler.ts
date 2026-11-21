@@ -10,7 +10,7 @@ import { createLogger, type LogSink } from '../_shared/log/log.ts';
 import { safeEqual, ServiceError, type FetchFn } from '../purge-worker/lib/http.ts';
 import { sendEmail } from '../purge-worker/lib/resend.ts';
 import { createServiceClient, type ServiceClient } from '../purge-worker/lib/service.ts';
-import { byteaOf, hashDevice, newToken } from './device.ts';
+import { byteaOf, hashDeviceAll, MIN_KEY_CHARS, newToken, toHex } from './device.ts';
 import { composeEmail, notYouUrl } from './mail.ts';
 
 export const MAX_PER_RUN = 25;
@@ -32,16 +32,20 @@ export function makeHandler(env: (n: string) => string | undefined, opts: Handle
     const fail = (code: ApiErrorCode, retryable: boolean, status = httpStatusFor(code)) => reply(status, failure({ code, retryable }, log.reqId));
 
     if (req.method !== 'POST') return fail('bad_request', false, 405);
+    // (c) The bearer check comes first: a caller without the secret always gets 401, never a config answer (no oracle).
     const secret = v('NEW_DEVICE_SENDER_SECRET');
-    const needed = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'DEVICE_HASH_KEY'].filter((n) => !v(n));
-    if (secret.length < 32 || needed.length) {
-      log.error('request.failed', { code: 'config', counts: { failed: needed.length + (secret.length < 32 ? 1 : 0) } });
-      return fail('unavailable', true);
-    }
     const auth = req.headers.get('authorization') ?? '';
-    if (!safeEqual(auth.startsWith('Bearer ') ? auth.slice(7) : '', secret)) {
+    if (secret.length < 32 || !safeEqual(auth.startsWith('Bearer ') ? auth.slice(7) : '', secret)) {
       log.warn('request.refused', { code: 'unauthorized', status: 401 });
       return fail('unauthorized', false);
+    }
+    // (a) The config gate answers BEFORE any row is taken: a short or missing key would fail every row after pickup deleted it.
+    const keyNext = v('DEVICE_HASH_KEY_NEXT');
+    const needed = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'DEVICE_HASH_KEY'].filter((n) => !v(n));
+    const badKey = v('DEVICE_HASH_KEY').length < MIN_KEY_CHARS || (keyNext.length > 0 && keyNext.length < MIN_KEY_CHARS);
+    if (needed.length || badKey) {
+      log.error('request.failed', { code: 'config', counts: { failed: needed.length + (badKey ? 1 : 0) } });
+      return fail('unavailable', true);
     }
     if (v('NEW_DEVICE_EMAIL') !== 'on') {
       log.info('device.dark', { outcome: 'skipped' });
@@ -79,14 +83,21 @@ export function makeHandler(env: (n: string) => string | undefined, opts: Handle
       counts.taken++;
       let stage: number = STAGE.hash;
       try {
-        const hash = HEX32.test(row.device_hash ?? '')
-          ? row.device_hash
+        let hash: string;
+        let oldHash: string | null = null;
+        if (HEX32.test(row.device_hash ?? '')) hash = row.device_hash;
+        else {
           // No id from the app: each sign-in counts as its own device, so it is never "known" by accident (file 08 section 3).
-          : (await hashDevice(v('DEVICE_HASH_KEY'), row.profile_id, `session:${row.session_id}`)).reduce((a, b) => a + b.toString(16).padStart(2, '0'), '');
+          const all = await hashDeviceAll({ current: v('DEVICE_HASH_KEY'), next: keyNext || undefined }, row.profile_id, `session:${row.session_id}`);
+          hash = toHex(all[all.length - 1]); // the new-key hash when a next key is set, else the current one
+          if (all.length > 1) oldHash = toHex(all[0]);
+        }
         stage = STAGE.user;
         const user = await client.auth.getUser(row.profile_id);
         if (!user?.email) throw new ServiceError('auth', 0, 'no_address');
         stage = STAGE.record;
+        // NDR-2: with a next key, move an old-key row to the new hash BEFORE record. If both exist the old row rolls off; nothing is deleted.
+        if (oldHash) await client.rpc<string>('ops_new_device_rekey', { p_profile: row.profile_id, p_old_hash: `\\x${oldHash}`, p_new_hash: `\\x${hash}` });
         const verdict = await client.rpc<Verdict>('ops_new_device_record', { p_profile: row.profile_id, p_device_hash: `\\x${hash}`, p_class: row.class === 'apple' ? 'apple' : 'other' });
         if (verdict !== 'new') {
           counts.skipped++;

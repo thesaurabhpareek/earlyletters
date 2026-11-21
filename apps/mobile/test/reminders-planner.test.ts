@@ -306,8 +306,9 @@ describe('month notes and birthdays (C-REQ-011)', () => {
     const twin = { ...asha, id: 'child-twin', name: 'Dev' };
     const p = plan({ children: [asha, twin], prefs: { cadence: 'off' }, monthHorizonDays: 40 });
     expect(p.map((n) => n.date)).toEqual(['2026-10-08', '2026-11-08']);
-    expect(p[0].title).toBe('Month 7 begins');
-    expect(p[0].body).toBe(reminderCopy.together.monthBodyNeutral);
+    // Names off: no month number on a lock screen (E82).
+    expect(p[0].title).toBe(reminderCopy.neutral.monthOpen.title);
+    expect(p[0].body).toBe(reminderCopy.neutral.lockBody);
     const named = plan({ children: [asha, twin], prefs: { cadence: 'off', namesOnLockScreen: true }, monthHorizonDays: 40 });
     expect(named[0].body).toBe('A new month is open for Asha and Dev.');
   });

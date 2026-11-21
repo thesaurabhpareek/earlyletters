@@ -58,11 +58,6 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   return userId;
 }
 
-/** O-8: nothing writes a pending name any more; this stays so a leftover is read as empty and cleared. */
-export async function takePendingAppleName(): Promise<string | null> {
-  return null;
-}
-
 export async function clearPendingAppleName(): Promise<void> {
   await secureStorage.removeItem(PENDING_NAME_KEY).catch(() => {});
 }
