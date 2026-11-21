@@ -209,7 +209,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     const failed = await reminders.rescheduleReminders();
     expect(failed).toEqual({ ok: false });
     expect(reminders.lastScheduleResult()).toEqual({ ok: false });
-    expect(logic.turnOnOutcome({ permission: 'granted', scheduled: failed }, null)).toEqual({ message: "Couldn't set your reminders just now.", action: 'tryAgain' });
+    expect(logic.turnOnOutcome({ permission: 'granted', scheduled: failed }, null)).toEqual({ message: "Couldn't set your reminders.", action: 'tryAgain' });
     os.failSchedule = false;
     // The signature was not recorded on failure, so the same plan is tried in full again.
     expect(await reminders.rescheduleReminders()).toEqual({ ok: true });
