@@ -26,6 +26,7 @@ import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
+import { discardPendingPhotoOnLeaving } from '../photos/leaving';
 import { methodForEvent, nextReportMark, type ReportMark } from './new-device/report.logic';
 import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
@@ -202,6 +203,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
+    // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
+    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
     // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
     if (before && before !== sessionUser) {
       endBackupFileFor(before);
@@ -371,6 +374,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
     if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
     if (step.signOut) {
+      void discardPendingPhotoOnLeaving(); // BL-1444: a forced sign-out waits for uploads; the picture does not wait with it
       void pendingUploads().then((p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p }));
     }
   }, [remoteEpoch, reauthPhase]);
