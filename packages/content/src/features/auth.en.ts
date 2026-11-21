@@ -199,6 +199,15 @@ export const authCopy = {
     keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 
+  // FP-6 (NS-40-R9, R14), PROPOSED, HOLD for counsel and the founder: the refused-region screen (system.region.*). No reason is
+  // given, and nothing here says where the person is or why. Terms and Get in touch are its two quiet actions (not "Contact us": rules.test.ts allows "us" only in registered disclosures).
+  region: {
+    title: "{app} can't be set up from here.",
+    body: 'If you think this is wrong, get in touch.',
+    terms: 'Terms',
+    contact: 'Get in touch',
+  },
+
   errors: {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
@@ -219,6 +228,8 @@ export const authCopy = {
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',
+    // FP-6, PROPOSED (E-S04.refused-region; the full screen is `region` below). Never names a reason, a place or a rule.
+    region_refused: "{app} can't be set up from here.",
     unknown: 'That did not go through. Nothing has changed.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
