@@ -717,6 +717,9 @@ export const en = {
   },
 
   notifications: {
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; NS-32-R13, NS-13-R33; words-packet row 18, option A). The
+    // one line iOS shows for a reminder when previews are hidden. No name, count, day or brand.
+    previewPlaceholder: "Something for the book, whenever you have a minute.",
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },

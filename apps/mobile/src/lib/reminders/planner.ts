@@ -293,8 +293,9 @@ function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: st
   const t = reminderCopy.together;
   const sameMonth = note.children.every((c) => c.months === months);
   return {
-    title: sameMonth ? fill(en.notifications.monthOpen.title, { month: months }) : t.monthTitle,
-    body: names ? fill(t.monthBodyNames, { child: childNames }) : t.monthBodyNeutral,
+    // Names off: no month number on a lock screen, the age would leak (E82, NS-32-R12).
+    title: names ? (sameMonth ? fill(en.notifications.monthOpen.title, { month: months }) : t.monthTitle) : reminderCopy.neutral.monthOpen.title,
+    body: names ? fill(t.monthBodyNames, { child: childNames }) : reminderCopy.neutral.lockBody,
   };
 }
 

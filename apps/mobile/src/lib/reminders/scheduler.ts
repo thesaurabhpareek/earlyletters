@@ -24,11 +24,13 @@
 import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { AppState, Platform } from 'react-native';
-import { subscribe } from '../store';
+import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
 import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
 import { REMINDER_SOURCE, reminderContent } from './payload';
+import { registerReminderCategory } from './categories';
+import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
@@ -49,6 +51,16 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
 let lastResult: ScheduleResult = OK;
 const resultListeners = new Set<(r: ScheduleResult) => void>();
+
+/** The running app version. Read late so boot and tests that never need it do not load expo-constants. */
+function currentAppVersion(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return (require('expo-constants').default.expoConfig?.version as string | undefined) ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
 
 function deviceTimeZone(): string {
   try {
@@ -253,6 +265,20 @@ export function startReminders(): () => void {
       // Router not mounted yet (cold start): the app opens on Tonight anyway.
     }
   });
+
+  void registerReminderCategory(Notifications.setNotificationCategoryAsync);
+  // First launch after an update: plan everything again, after the first frame and not awaited (NS-32-R16, L-03).
+  setTimeout(() => {
+    void replanAfterUpdate({
+      current: currentAppVersion(),
+      read: () => getSetting(LAST_PLANNED_VERSION_KEY),
+      write: (v) => setSetting(LAST_PLANNED_VERSION_KEY, v),
+      replan: () => {
+        lastSignature = null;
+        return rescheduleReminders();
+      },
+    });
+  }, 0);
 
   void rescheduleReminders();
 
