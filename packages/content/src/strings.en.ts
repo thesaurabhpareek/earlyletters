@@ -79,10 +79,10 @@ export const en = {
     },
 
     promise: {
-      title: "Exactly as you said it.",
-      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
-      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
-      body2: "We never rewrite your words, shorten them or write for you.",
+      title: "It stays in your words.",
+      // S04, directly under the title: the D-133 line (title, then its second sentence), then the two other claims.
+      // "Exactly as you said it" is not used: the default view removes ums and repeats and a speech model can mishear (D-133).
+      body2: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -420,10 +420,10 @@ export const en = {
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     // Zero fixes, three honest wordings.
-    noChanges: "Nothing to fix. This is exactly what you said.",
-    noChangesAfterUndo: "Every fix put back. This is exactly what you said.",
+    noChanges: "Nothing to fix.",
+    noChangesAfterUndo: "Every fix put back.",
     // A language with no fix rules yet: never a "nothing needed fixing" claim there.
-    noChangesNoRules: "Exactly as you said it.",
+    noChangesNoRules: "Nothing was fixed.",
     originalLabel: "Exactly what you said",
     cardYouSaid: "You said",
     cardNowReads: "Now it reads",
@@ -687,7 +687,7 @@ export const en = {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the red circle and talk, in the language you speak.",
+      howStep1: "Tap the red circle and talk.",
       howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
@@ -1510,7 +1510,7 @@ export const en = {
     // Sign-in screen, under the buttons (Apple, Google, email link).
     signIn: {
       why: "An account keeps your book safe when you change phones.",
-      privacy: "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+      privacy: "Private by default. You decide what goes in the book.",
       email: "We use your email only to sign you in and to write to you about your account.",
     },
     // Once, the first time someone records (a quiet line on Listening or under the first Review).

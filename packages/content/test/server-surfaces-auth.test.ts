@@ -148,7 +148,7 @@ const BL_488: Record<string, string> = {
  * /health-privacy page, and the sheet links to the Terms and the Privacy Policy only.
  */
 const REGISTERED: Record<string, string> = {
-  'sheet.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
+  'sheet.privacy': 'Private by default. You decide what goes in the book.',
   'sheet.emailUse': 'We use your email only to sign you in and to write to you about your account.',
   'sheet.why': 'An account keeps your book safe when you change phones.',
   'consent.terms.title': 'Before your book syncs',
