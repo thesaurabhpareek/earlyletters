@@ -40,6 +40,14 @@ export const TEASER_PATTERN = /\bbillingCopy\b|familyCopy\.soon|\bstories\b|stor
 const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const read = (f: string) => strip(readFileSync(f, 'utf8'));
 
+/**
+ * Type-only references are erased by the compiler and load nothing: `import type ... from '...'` and a type written
+ * `typeof import('...')`. The walk drops them so it follows only what the bundle can evaluate. A runtime `import` or
+ * `from` is still followed.
+ */
+export const withoutTypeOnly = (src: string) =>
+  src.replace(/typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown').replace(/^\s*(?:import|export)\s+type\b[^;]*;/gm, '');
+
 /** Every local file the entry reaches through `@/` or relative imports, itself included. */
 export function importGraph(entry: string): string[] {
   const seen = new Set<string>();
@@ -48,7 +56,7 @@ export function importGraph(entry: string): string[] {
     const file = stack.pop()!;
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const m of read(file).matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)) {
+    for (const m of withoutTypeOnly(read(file)).matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)) {
       const spec = m[1]!;
       const base = spec.startsWith('@/') ? join(SRC, spec.slice(2)) : spec.startsWith('.') ? resolve(dirname(file), spec) : null;
       if (!base) continue;
@@ -65,6 +73,13 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   it('[NS-39-R2] the scan flags a module that asks (positive control)', () => {
     expect(PROMPT_PATTERN.test('await Notifications.requestPermissionsAsync()')).toBe(true);
     expect(PROMPT_PATTERN.test("import * as LocalAuthentication from 'expo-local-authentication'")).toBe(true);
+  });
+
+  it('[NS-39-R2] the walk drops a type-only reference but keeps a runtime one (positive control)', () => {
+    const typed = "const f = require('../a') as typeof import('../app-lock/controller');\nimport type { X } from './x';";
+    expect(withoutTypeOnly(typed)).not.toMatch(/app-lock\/controller|\.\/x/);
+    expect(withoutTypeOnly("import { y } from '../app-lock/controller';")).toMatch(/app-lock\/controller/);
+    expect(withoutTypeOnly("const m = await import('../app-lock/controller');")).toMatch(/app-lock\/controller/);
   });
 
   it('[NS-39-R2] no first-run module asks for a permission or authenticates', () => {
