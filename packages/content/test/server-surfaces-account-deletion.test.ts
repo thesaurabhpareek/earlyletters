@@ -41,9 +41,9 @@ const CHANGED: Record<string, string> = {
   'exportFirst.body': 'Export everything, free: the book as a PDF, your letters as text and your recordings.',
   'scheduled.emailNote': 'A confirmation is on its way to your email.',
   // Not S64's words (#672 claim 2): "Everything stays on this phone" was untrue for an account made on another phone.
-  notConfigured: `Accounts aren't available on this phone right now, so you can't delete one here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
+  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
   'errors.offline': 'Nothing has changed. Deleting an account needs a connection.',
-  'errors.failed': "That didn't go through. Nothing has changed.",
+  'errors.failed': 'That did not go through. Nothing has changed.',
 };
 
 /**
