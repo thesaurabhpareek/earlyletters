@@ -6,7 +6,7 @@ Evidence tags: [V] read from the GitHub REST API or a file on develop while writ
 
 ## 1. Why we are slow
 
-Demand did not drop: many PRs wait (198 open at read time, 85 of them not draft, 127 numbered below #1000) [V]. Throughput fell because merges stopped being cheap.
+Demand did not drop: many PRs wait (about 200 open at read time, about 116 of them drafts, 127 numbered below #1000) [V]. Throughput fell because merges stopped being cheap.
 
 | # | Cause | Evidence | Effect |
 |---|---|---|---|
@@ -19,7 +19,7 @@ Demand did not drop: many PRs wait (198 open at read time, 85 of them not draft,
 | 7 | Reviewers re-run the full suite | CI already runs apps/mobile vitest; the sandbox shows 9 known failing files and 79 tests on clean develop, reconciled in every review [M] | Review time spent on noise |
 | 8 | Status refresh PRs | #1284, #1300 and #1301 each cost two reviews [M] | Review capacity spent on bookkeeping |
 | 9 | Founder gates wait hours | #1302 about 3 hours; CCO comments for #1159 and #1128 much longer [M]; both PRs are still `blocked` [V] | Gated PRs sit while branches behind them go stale |
-| 10 | Thin real ready queue | 118 rows say `ready` [M], but about 15 already have an open PR and the analytics rows are one serial chain: BL-1236 waits on BL-1235, BL-1237 on BL-1236, BL-1238 on BL-1236, BL-1237 and BL-1239, BL-1240 (a `pair` row) on BL-1235 and BL-1238, and 8 more on BL-1240 [V BACKLOG] | An agent can show "ready" and still have nothing startable |
+| 10 | Thin real ready queue | 118 rows say `ready` [M], but about 15 already have an open PR and the analytics rows are one serial chain: BL-1236 waits on BL-1235, BL-1237 on BL-1236, BL-1238 on BL-1236, BL-1237 and BL-1239, BL-1240 (a `pair` row) on BL-1235 and BL-1238, and 7 more on BL-1240 [V BACKLOG] | An agent can show "ready" and still have nothing startable |
 | 11 | Dead weight in the open list | 127 open PRs numbered below #1000, 113 drafts overall [V]; the dispatcher stops new agent work when 10 agent PRs are open (`roster.json` limits `max_open_agent_prs`) [V] | Noise in every scan, every id check and every cap |
 
 ### Ranked speed actions
@@ -33,8 +33,8 @@ Demand did not drop: many PRs wait (198 open at read time, 85 of them not draft,
 | 5 | Avoid stacks; where unavoidable merge with the merge method (merge commits are allowed, squash too, rebase not, auto-merge off [V]) so later slices need no rebuild | CTO | Ends rebuild rounds like the photo stack | No |
 | 6 | Put the founder pack (section 4) in front of him once, in unblock order | CTO | Removes the longest waits | He answers |
 | 7 | Feed the on-path queue first: BL-926, BL-1446 (new row), the NS-32-R12 test and the BL-929 run sheet (section 2) | product, CTO | Agents build what the first store build needs | BL-925 words |
-| 8 | Close or label the 127 old open PRs (stale drafts, superseded debates) | CTO | Clean scans, honest caps; no new work lost, each is reopenable | No (CTO) |
-| 9 | Refresh PROGRESS.md at wave edges, not hourly; one reviewer pass for a status-only edit (proposed; it touches the review rule, so the CTO decides) | CTO | Frees review passes | No |
+| 8 | Close or label old open PRs that are stale or superseded (about 127 are numbered below #1000), each with a posted reason and the branch kept. Excluded: any founder-pack, docs/legal, CCO-gated or `needs:founder` PR (for example #873, #799, #1117, #1215, #1159, #1128, #830); closing or relabelling those is on the founder's explicit go only | CTO | Clean scans, honest caps; no work lost, each is reopenable | No for the sweep; yes for the excluded PRs |
+| 9 | Refresh PROGRESS.md at milestones and wave edges, not hourly (adopted, two counted reviews unchanged); one reviewer pass for a status-only edit is PROPOSED, NOT ADOPTED (it would change the two-counted-reviews rule; the CTO decides) | CTO | Frees review passes | No |
 | 10 | Small rows fit in one PR without a restack: assign BL-1417 to BL-1419, BL-1424, BL-1425 first | product | Easy merges keep the rate up | No |
 
 ## 2. Dependency map and critical path
@@ -45,11 +45,14 @@ Reading guide. "First store build" is Build 13 in plan 17. Under plan 17 section
 
 ```
 founder words BL-925 (#866 merged as PROPOSED, status needs-decision)
-   |--> BL-926 (NS-09-R4a, R4b; blocked on BL-925) --> BL-977 (NS-09 rest; blocked)
+   |--> BL-926 (NS-09-R4a, R4b; blocked on BL-925) --> BL-977 (NS-09 rest; blocked; whether it holds the cut is the founder's call, Q1)
    |--> BL-1446 NS-09-R6 stuck delete in Storage (NEW row; P1, holds the cut; no other row built it)
-NS-32-R12 never-list test (BL-966; test not found merged [U])
+NS-32-R12 never-list test (BL-966; test not found merged [U]) and the NS-32-R1b decision (two
+        notifications on one day; settled or not is [U]): both hold the cut under the Q1 recommendation
 BL-928 remainder (two slices merged #892, #893; rest [U])
-BL-929 PR 2 perf EAS profile (founder approves the profile) + SE 3 run sheet (not written)
+BL-929 PR 2 perf EAS profile (founder approves the profile) + SE 3 run sheet (not written);
+the device sheet also needs BL-930 (#880 is merged, but the row still says blocked on the NS-34 rows
+merging into 06-nfr.md: status line to be fixed by qa) and BL-964's ratchet
         |
         v
 Q1 and Q2 answered (founder) --> release path: #830 conflict named by the founder with its sha
@@ -65,7 +68,7 @@ Already merged and no longer holding the cut [V PROGRESS, plan 17 3a]: BL-922 he
 | Chain | Order | Blocked by | Mark |
 |---|---|---|---|
 | Photo stack (BL-931) | #839 (4c) -> #840 (5) -> BL-1444 photo wiring (pending photos discarded on leave, one adopt at a time, picture cleared on forced sign-out; gaps 1 and 3 must land before `EXPO_PUBLIC_PHOTOS` is on in any build) -> BL-1445 design-conformance swap (XS, after the stack). The deletedAt test (a letter in Recently deleted shows no picture; review mutant M5 survived on #839) is asked on #839 and lands there or in BL-1444 [U which] | #839 waits on its restack; #840 is based on #839's branch [V]; each hop queues a macOS run; plus counsel read of the photo label, photo words, BL-868 export spec #1215, BL-960 #873, ADR Q4 before photo is on | later (photo is dark in Build 13 under Q2) |
-| New-device email | #1242 NDA-1 (link sign-in fresh in the report; reviewer notes BL-1442) -> app call for fill (no PR found [U]) -> hosted JWT claim check -> clear the pending table -> founder reads words -> flag `NEW_DEVICE_EMAIL` stays off. Hosted migrations files 33 to 38 are in develop, not applied: the founder applies them and must give an explicit go (founder ask 3). Not-you page not started [U] | Founder go on migrations; sender #1206, #1223 and fill #1224 are merged and dark [V PROGRESS] | CPOF (before the first outside family); not Build 13 |
+| New-device email | #1242 NDA-1 (link sign-in fresh in the report; reviewer notes BL-1442) -> app call for fill (no PR found [U]) -> hosted JWT claim check -> clear the pending table -> founder reads words -> flag `NEW_DEVICE_EMAIL` stays off. The pending hosted migration files (PROGRESS.md: files 33 to 38; numbering [U], see ask 5) are in develop, not applied: the founder applies them and must give an explicit go (founder ask 3). Not-you page not started [U] | Founder go on migrations; sender #1206, #1223 and fill #1224 are merged and dark [V PROGRESS] | CPOF (before the first outside family); not Build 13 |
 | B5 backup | BL-1439 (job for an erased or deleted letter drops its Keychain token; test first, low severity) -> B5 PR 3 (no PR found [U]) -> backup flip gate (NS-08-R21 second gate) | BL-1439 is `proposed` | CPOF-adjacent; not CP13 |
 | Days | days tick PR (no PR found [U]) -> days code PRs NS-46 to NS-50 (not started [U]) | Counsel packet 1.8.0 and register rows (drafts #1056 to #1058) | later |
 | Find part 2 | BL-1440 gates (rowLabel `$&` mangling, query clears on hide, Cancel clears, fallback to content, no-analytics grep) -> Book-header slice mounts Find; Find 8/8; second-account guard #1208 | BL-1440 must land before mount; #799 (docs/legal) and #873 wait on the founder's go | later (Build 14, Q2) |
@@ -106,7 +109,7 @@ Roster WIP (per agent, `roster.json`): mobile 3, qa 3, sync 2, analytics 2, cont
 | qa | #1151, #1252, #1293 | BL-1402, BL-1403, BL-442 | 3 |
 | content | #1129, #1276; 12 drafts (waves, #1286 held) | BL-422, BL-424, BL-462 | 2 non-draft; drafts stay draft |
 | design-systems | #1251 (tokens v2); Moments docs #1277, #1278, #1281 (PROPOSED); #1270 draft | BL-418, BL-421, BL-891 (BL-1443 proposed) | 2 |
-| ops, platform | #1117 (founder); #1303, #1304 (docs); ops CI proposal in flight | BL-1414, BL-897 (only two ready) | 1 |
+| ops, platform | #1117 (founder); ops CI proposal in flight (#1303 and #1304 are merged) | BL-1414, BL-897 (only two ready) | 1 |
 | privacy | #873 (founder), #1267 (Moments, PROPOSED) | BL-414, BL-415, BL-850 | 2 |
 | product | #1253, #1264, #1280, #1282, #1294, #1296 | n/a | 2 non-draft; the six Moments and split docs are already over it, so no new product PR until two merge |
 | other (not asked, for the CTO) | security: BL-1404, BL-1411; payments: BL-1421, BL-441; speech: BL-148, BL-432 | each lane has two or three startable rows | 2 each |
@@ -135,13 +138,13 @@ Every open ask, each with the default that stands until he answers and what it u
 
 | # | Ask | Default if no answer | Unblocks |
 |---|---|---|---|
-| 1 | Plan 17 Q1 and Q2: which P0 rows the first store build must meet, and whether it waits for photo and Find; plus whether first run (Drop D) is in it | The plan's recommendations: BL-922, BL-925, BL-926, BL-928, BL-961, NS-09-R6 and NS-32-R12 hold the cut; photo and Find ship dark | Fixes the path in section 2.1; every builder's priority |
+| 1 | Plan 17 Q1 and Q2: which P0 rows the first store build must meet, and whether it waits for photo and Find; plus whether first run (Drop D) is in it | The plan's recommendations: BL-922, BL-925, BL-926, BL-928, BL-961, NS-09-R6, NS-32-R12 and the NS-32-R1b decision hold the cut, and BL-977 is the founder's call under Q1; photo and Find ship dark | Fixes the path in section 2.1; every builder's priority |
 | 2 | Approve or change the BL-925 line (let-go not finished) | Not approved; BL-926, BL-977 and BL-1446 stay blocked | The keeping floor, the biggest CP13 block |
 | 3 | Release path: name #830 with its full sha, say which phones he holds, approve the `app-store` environment, approve the BL-929 perf EAS profile, run the device sheet, submit | Nothing happens without him | Release PR, RC tag, EAS build, submission |
 | 4 | CCO approval comments for #1159 (FP-2) and #1128 (FP-12), or say go | Both stay blocked | The consent builder, which lands before any other `consent.ts` change, and the first-run queue behind it |
-| 5 | Hosted migrations: explicit go to apply files 33 to 38 to `scribe-staging` first (agents prepare the plan, never apply); hosted state not re-read [U] | Hold; servers off for Build 13 | New-device email chain, S1, C3, C9, fill and re-key (CPOF) |
+| 5 | Hosted migrations: explicit go to apply the pending migration files to `scribe-staging` first (PROGRESS.md calls them files 33 to 38; `supabase/APPLY.md` numbers only to 32 and the tree has 37 migration files, so which numbering is meant is [U]: apply the files listed in `supabase/APPLY.md` and the later files in `supabase/migrations`) (agents prepare the plan, never apply); hosted state not re-read [U] | Hold; servers off for Build 13 | New-device email chain, S1, C3, C9, fill and re-key (CPOF) |
 | 6 | docs/legal PRs: go or hold on #873 (data inventory), #799 (Find index row), #1117 (no model name as author), and export spec #1215 | Hold | BL-960 and Find on, BL-933 export; photo on (Build 14) |
-| 7 | Decisions with a recommended default: GAP-04 (taught-names screen in 1.0; product recommends no), F-21 (say plainly there is no per-picture description in 1.0; recommends yes), F-08d (neutral lock-screen body; one fixed string, candidate "Whenever you have a minute." is PROPOSED) | The recommendations, but nothing is decided until he says | Days and reminder words, photo copy |
+| 7 | Decisions with a recommended default: GAP-04 (taught-names screen in 1.0; product recommends no), F-21 (say plainly there is no per-picture description in 1.0; recommends yes), F-08d (neutral lock-screen body; one fixed string, candidate "Whenever you have a minute." is PROPOSED) | Recommendation, not in effect; nothing is decided until he says | Days and reminder words, photo copy |
 | 8 | DECISIONS rows he must paste or confirm: E26 delegated D-entry quoting his words, the allowance per phone entry (D-082 amendment), ADRs 0036 to 0038 (PROPOSED) | Stay PROPOSED | Agent readiness, allowance enforcement |
 | 9 | Read PROPOSED words: Find (12 lines in #894), photo keys, share words, new-device email and page, content waves 2, 3, C, D, E, #1286 (with counsel), Moments label | None approved | Each feature's flag |
 | 10 | Counsel: send the BL-949 packet; engage licensed California counsel (spend, O-40); photo label read; entity and publisher (O-47) | Not engaged; features dark | Photo on, Share, Moments F2 |
@@ -158,10 +161,10 @@ Recorded as given to `product`; the CTO owns them.
 
 1. Draft until the final head. A PR is ready for review only when its head will not move again.
 2. After Ready, push only for a must-fix. A push voids two counted reviews and restarts the 54 minute macOS run.
-3. CI is the full-suite authority. Reviewers read the diff and run targeted mutants; they do not re-run the full suite.
+3. CI is the full-suite authority. Reviewers read the diff and run targeted mutants; they do not re-run the full suite. Carve-out: security and privacy lens reviews still run `packages/content` vitest and `node scripts/lint/lint.mjs`.
 4. Never trust `git merge-tree`. Check `git diff origin/develop HEAD --stat` and `--diff-filter=D` against a fresh fetch (a clean merge once hid a revert of #1205).
 5. Avoid stacks. Where one is unavoidable, merge with the merge method (merge commits are allowed [V]) so later slices are not rebuilt.
-6. One status block (PROGRESS.md), refreshed at wave edges; no new status files.
+6. ADOPTED by the CTO: PROGRESS.md is refreshed at milestones and wave edges, not hourly, with the two counted reviews unchanged (CR-70); no new status files. PROPOSED, NOT ADOPTED, a CTO decision: one reviewer pass for a status-only edit (it would change the two-counted-reviews rule).
 7. Backlog ids: do not renumber. The next free id after develop's highest (BL-1445) and the open PRs' rows (#1253: BL-1366 to BL-1401; #1296: BL-1432 to BL-1438) is BL-1447; this PR adds BL-1446 [V all open PR patches to `docs/BACKLOG.md`].
 
 ## Not verified
