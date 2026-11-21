@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -13,14 +13,14 @@ const run = (id, name, conclusion, status = "completed") => ({ id, name, status,
 const good = [run(1, "required", "success"), run(2, "compliance-fence", "success"), run(3, "applied migrations unchanged", "success")];
 const PROT = { required_status_checks: { contexts: ["applied migrations unchanged", "required", "compliance-fence"] } };
 
-function fake({ comments = [], runs = good, pushedMin = 60, state = "clean", extraPrs = [], calls = [], files = ["docs/x.md"], protection = PROT } = {}) {
+function fake({ changedFiles, comments = [], runs = good, pushedMin = 60, state = "clean", extraPrs = [], calls = [], files = ["docs/x.md"], protection = PROT } = {}) {
   return async (path, opts = {}) => {
     calls.push({ path, method: opts.method });
     const p = path.split("?")[0];
     if (p.endsWith("/pulls")) return [{ number: 7, draft: false, head: { sha: HEAD }, base: { ref: "develop" } }, { number: 8, draft: true, head: { sha: OLD }, base: { ref: "develop" } }, ...extraPrs];
     if (p.includes("/branches/") && p.endsWith("/protection")) { if (!protection) throw new Error("403"); return protection; }
     if (p.endsWith("/pulls/7/files")) return files.map((filename) => ({ filename }));
-    if (p.endsWith("/pulls/7")) return { mergeable_state: state };
+    if (p.endsWith("/pulls/7")) return { mergeable_state: state, changed_files: changedFiles === undefined ? files.length : changedFiles };
     if (p.endsWith("/issues/7/comments")) return comments;
     if (p.endsWith(`/commits/${HEAD}/check-runs`)) return { check_runs: runs };
     if (p.endsWith(`/commits/${HEAD}`)) return { commit: { committer: { date: ago(pushedMin) } } };
@@ -172,14 +172,27 @@ const LENS = (name) => `Lens: ${name}\n`;
 const secFiles = ["scripts/agents/merge-queue.mjs"];
 const both = (extraA = "", extraB = "", assocB = "MEMBER") => [review("A", HEAD, extraA), review("B", HEAD, extraB, assocB)];
 
-test("CR-73 security lens: every trigger path is caught, and ordinary paths are not", () => {
-  const hit = [".github/workflows/ci.yml", "scripts/agents/dispatch.mjs", "scripts/release/cut.mjs", "scripts/ops/x.sh", "scripts/packs/p.mjs", "scripts/insights/i.mjs", "scripts/founder/f.mjs",
-    "packages/api/src/keys.ts", "packages/api/src/server/a.ts", "packages/emails/generated/a.html", "supabase/migrations/1.sql", "supabase/tests/grants.mjs",
-    "apps/mobile/modules/x/y.swift", "apps/mobile/version.json", "apps/mobile/eas.json", "apps/mobile/app.config.ts", ".env.production", "apps/web/.env.local", ".npmrc", "apps/mobile/.easignore",
-    ".eas/build/a.yml", "apps/mobile/.eas/x", "patches/a.patch", "babel.config.js", "apps/mobile/babel.config.js", "package-lock.json", "package.json", "packages/core/package.json", "apps/mobile/package.json",
-    "apps/web/next.config.mjs", "vercel.json", "apps/web/vercel.json", "apps/web/src/app/api/x/route.ts"];
-  for (const f of hit) assert.equal(touchesSecurityLens([f]), true, f);
-  const miss = ["docs/a.md", "scripts/ops-notes.md", "scripts/agentsx/a.mjs", "scripts/trace.mjs", "scripts/x.mjs", "packages/api/src/client.ts", "packages/api/src/serverless.ts", "apps/mobile/src/a.ts", "apps/web/src/app/page.tsx", "packages/emails/src/a.tsx", "supabase-notes.md", "docs/package.json.md"];
+/** One row per path class in the CR-73 list: [class name, example paths that must hit]. */
+const CLASS_ROWS = [
+  [".github", [".github/workflows/ci.yml", ".github/CODEOWNERS"]], ["scripts/agents", ["scripts/agents/dispatch.mjs"]], ["docs/agents", ["docs/agents/cto/RULINGS.md"]], ["compliance", ["compliance/privacy.md"]],
+  ["scripts/release", ["scripts/release/cut.mjs"]], ["scripts/ops", ["scripts/ops/x.sh"]], ["scripts/packs", ["scripts/packs/p.mjs"]], ["scripts/insights", ["scripts/insights/i.mjs"]], ["scripts/founder", ["scripts/founder/f.mjs"]],
+  ["api keys", ["packages/api/src/keys.ts"]], ["api server", ["packages/api/src/server/a.ts"]], ["emails generated", ["packages/emails/generated/a.html"]],
+  ["app.config build inputs", ["apps/mobile/src/lib/build-env.ts", "apps/mobile/src/lib/permission-copy.ts", "apps/mobile/src/lib/privacy-manifest.ts", "packages/design-tokens/fonts/index.ts"]],
+  ["metro", ["apps/mobile/metro.config.js"]], ["store config", ["apps/mobile/store.config.json"]], ["mobile scripts", ["apps/mobile/scripts/preflight-lib.mjs"]],
+  ["eas.json", ["apps/mobile/eas.json"]], ["app.config", ["apps/mobile/app.config.ts"]], ["native modules", ["apps/mobile/modules/x/y.swift"]], ["version.json", ["apps/mobile/version.json"]],
+  [".npmrc", [".npmrc"]], [".yarnrc", [".yarnrc", ".yarnrc.yml"]], [".easignore", ["apps/mobile/.easignore"]], [".eas", [".eas/build/a.yml", "apps/mobile/.eas/x"]], ["patches", ["patches/a.patch"]],
+  ["babel", ["babel.config.js", "apps/mobile/babel.config.js", ".babelrc"]], [".env", [".env.production", "apps/web/.env.local"]], ["lockfile", ["package-lock.json"]],
+  ["package.json", ["package.json", "packages/core/package.json", "apps/mobile/package.json"]], ["next.config", ["apps/web/next.config.ts", "apps/web/next.config.mjs"]], ["vercel.json", ["vercel.json", "apps/web/vercel.json"]],
+  ["web scripts", ["apps/web/scripts/a.mjs"]], ["web api", ["apps/web/src/app/api/x/route.ts"]], ["supabase", ["supabase/migrations/1.sql", "supabase/tests/grants.mjs"]],
+  ["engine files", ["packages/core/src/verify.ts", "packages/core/src/meaning.ts", "packages/core/src/types.ts", "packages/core/src/pipeline.ts", "packages/core/src/plan.ts"]],
+];
+
+test("CR-73 security lens: every trigger path class is caught, and ordinary paths are not", () => {
+  const hit = CLASS_ROWS.flatMap(([, paths]) => paths);
+  for (const [name, paths] of CLASS_ROWS) for (const f of paths) assert.equal(touchesSecurityLens([f]), true, `${name}: ${f}`);
+  assert.deepEqual(SECURITY_LENS_CLASSES.map((c) => c.name).sort(), CLASS_ROWS.map(([n]) => n).sort(), "table and test rows cover the same classes");
+  assert.ok(hit.length >= 45);
+  const miss = ["docs/a.md", "docs/engineering/a.md", "packages/core/src/verifier.ts", "packages/core/src/age.ts", "apps/mobile/src/lib/other.ts", "apps/web/src/lib/a.ts", "compliance-notes.md", "scripts/ops-notes.md", "scripts/agentsx/a.mjs", "scripts/trace.mjs", "scripts/x.mjs", "packages/api/src/client.ts", "packages/api/src/serverless.ts", "apps/mobile/src/a.ts", "apps/web/src/app/page.tsx", "packages/emails/src/a.tsx", "supabase-notes.md", "docs/package.json.md"];
   for (const f of miss) assert.equal(touchesSecurityLens([f]), false, f);
   assert.equal(touchesSecurityLens([]), false);
 });
@@ -432,4 +445,52 @@ test("a fresh PR with unknown mergeability is not STALE-UNKNOWN, and an unknown 
 test("a clean old PR is not STALE-UNKNOWN", async () => {
   const comments = [review("A", HEAD), review("B", HEAD)];
   assert.equal((await verdict({ comments, state: "clean", pushedMin: STALE_UNKNOWN_MINUTES * 3 })).verdict, "READY");
+});
+
+test("CR-73 security lens: only the security names clear it; red-team and correctness alone do not", async () => {
+  assert.deepEqual([...SECURITY_LENS_NAMES].sort(), ["security", "security-architect"]);
+  for (const name of ["red-team", "correctness", "red-team, correctness", "Review A", "ops"]) {
+    const r = await verdict({ comments: both(LENS(name)), files: secFiles });
+    assert.equal(r.verdict, "NEEDS-REVIEW", name);
+    assert.equal(r.reason, "security lens missing", name);
+  }
+});
+
+test("CR-73 security lens: a Lens line inside a code fence or a quoted line is not a lens", async () => {
+  assert.deepEqual(namedLenses("```\nLens: security\n```\n"), []);
+  assert.deepEqual(namedLenses("~~~md\nLens: security\n~~~\nLens: correctness"), ["correctness"]);
+  assert.deepEqual(namedLenses("> Lens: security\n>Lens: security-architect"), []);
+  assert.deepEqual(namedLenses("```\nLens: security\n"), [], "an unclosed fence hides the rest");
+  assert.deepEqual(namedLenses("```js\nx\n```\nLens: security"), ["security"]);
+  for (const body of ["```\nLens: security\n```", "> Lens: security", "Quoting the PR:\n> Lens: security-architect"]) {
+    const r = await verdict({ comments: both(body + "\n"), files: secFiles });
+    assert.equal(r.verdict, "NEEDS-REVIEW", body);
+  }
+});
+
+test("CR-73 security lens: a file list that does not match changed_files is NEEDS-REVIEW, file list incomplete", async () => {
+  const comments = both(LENS("security"));
+  const r = await verdict({ comments, files: ["docs/a.md"], changedFiles: 2 });
+  assert.equal(r.verdict, "NEEDS-REVIEW");
+  assert.equal(r.reason, "file list incomplete");
+  assert.equal(r.mergeNote, undefined);
+  assert.match(formatTable([r]), /note: #7 file list incomplete/);
+  assert.equal((await verdict({ comments, files: ["docs/a.md"], changedFiles: 1 })).verdict, "READY");
+  assert.equal((await verdict({ comments, files: ["docs/a.md"], changedFiles: null })).reason, "file list incomplete", "no count to compare is not READY");
+});
+
+test("CR-73 security lens: a file listing that stops at the page cap is NEEDS-REVIEW, file list incomplete", async () => {
+  const notices = [];
+  const api = fake({ comments: both(LENS("security")), changedFiles: 3000 });
+  const w = async (path, o) => (path.split("?")[0].endsWith("/pulls/7/files") ? Array.from({ length: 100 }, (_, i) => ({ filename: `docs/f${i}.md` })) : api(path, o));
+  const r = (await buildQueue({ api: w, now: NOW, notices }))[0];
+  assert.equal(r.verdict, "NEEDS-REVIEW");
+  assert.equal(r.reason, "file list incomplete");
+});
+
+test("CR-73 security lens: padding the file list with harmless files cannot hide a trigger path", async () => {
+  const comments = both();
+  const api = fake({ comments, changedFiles: 101 });
+  const w = async (path, o) => (path.split("?")[0].endsWith("/pulls/7/files") ? Array.from({ length: 100 }, (_, i) => ({ filename: `docs/f${i}.md` })) : api(path, o));
+  assert.notEqual((await buildQueue({ api: w, now: NOW }))[0].verdict, "READY");
 });

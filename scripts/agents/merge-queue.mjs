@@ -47,7 +47,9 @@
 // - Security lens (CR-73): if an otherwise ready PR touches the trigger list (SECURITY_LENS_PATHS,
 //   the CR-70 founder-only path list) and no counted review at head has a `Lens:` line naming
 //   `security` or `security-architect`, the verdict is NEEDS-REVIEW with `reason: "security lens
-//   missing"` and a note under the table. It is a report; nothing here merges.
+//   missing"` and a note under the table. If the PR's file list is incomplete (count differs from
+//   changed_files, or paging hit its cap) the verdict is NEEDS-REVIEW, reason "file list incomplete".
+//   It is a report; nothing here merges.
 // - Claims: lines of docs/agents/CLAIMS.md (if present, not required) that mention
 //   `#<pr>`. Holder = the cell after the PR in a table row, else `by <x>`, `holder: <x>`
 //   or `@<x>` on the line (U: the file's format is not fixed anywhere yet).
@@ -89,14 +91,24 @@ export const touchesNative = (files) => files.some((f) => [f.filename ?? f, f.pr
  * longer routes a PR to the founder; it sets one condition instead (a counted review that names the
  * `security` or `security-architect` lens). A report only: nothing here merges or blocks a merge call.
  */
-export const SECURITY_LENS_PATHS = [
-  /^\.github\//, /^scripts\/(?:agents|release|ops|packs|insights|founder)\//,
-  /^packages\/api\/src\/keys\.ts$/, /^packages\/api\/src\/server\//, /^packages\/emails\/generated\//, /^supabase\//,
-  /^apps\/mobile\/modules\//, /(?:^|\/)version\.json$/, /(?:^|\/)eas\.json$/, /(?:^|\/)app\.config\.(?:ts|js|mjs|cjs)$/,
-  /(?:^|\/)\.env(?:[.\w-]*)$/, /(?:^|\/)\.npmrc$/, /(?:^|\/)\.easignore$/, /(?:^|\/)\.eas\//, /^patches\//,
-  /(?:^|\/)(?:babel\.config\.(?:js|cjs|mjs|json|ts)|\.babelrc(?:\.(?:js|json))?)$/,
-  /^package-lock\.json$/, /(?:^|\/)package\.json$/, /^apps\/web\/next\.config\./, /(?:^|\/)vercel\.json$/, /^apps\/web\/src\/app\/api\//,
+export const SECURITY_LENS_CLASSES = [
+  { name: ".github", re: /^\.github\// },
+  { name: "scripts/agents", re: /^scripts\/agents\// }, { name: "docs/agents", re: /^docs\/agents\// }, { name: "compliance", re: /^compliance\// },
+  { name: "scripts/release", re: /^scripts\/release\// }, { name: "scripts/ops", re: /^scripts\/ops\// }, { name: "scripts/packs", re: /^scripts\/packs\// },
+  { name: "scripts/insights", re: /^scripts\/insights\// }, { name: "scripts/founder", re: /^scripts\/founder\// },
+  { name: "api keys", re: /^packages\/api\/src\/keys\.ts$/ }, { name: "api server", re: /^packages\/api\/src\/server\// }, { name: "emails generated", re: /^packages\/emails\/generated\// },
+  { name: "app.config build inputs", re: /^(?:apps\/mobile\/src\/lib\/(?:build-env|permission-copy|privacy-manifest)\.ts|packages\/design-tokens\/fonts\/index\.ts)$/ },
+  { name: "metro", re: /^apps\/mobile\/metro\.config\.js$/ }, { name: "store config", re: /^apps\/mobile\/store\.config\.json$/ }, { name: "mobile scripts", re: /^apps\/mobile\/scripts\// },
+  { name: "eas.json", re: /(?:^|\/)eas\.json$/ }, { name: "app.config", re: /(?:^|\/)app\.config\.(?:ts|js|mjs|cjs)$/ }, { name: "native modules", re: /^apps\/mobile\/modules\// },
+  { name: "version.json", re: /(?:^|\/)version\.json$/ }, { name: ".npmrc", re: /(?:^|\/)\.npmrc$/ }, { name: ".yarnrc", re: /(?:^|\/)\.yarnrc[\w.-]*$/ },
+  { name: ".easignore", re: /(?:^|\/)\.easignore$/ }, { name: ".eas", re: /(?:^|\/)\.eas\// }, { name: "patches", re: /^patches\// },
+  { name: "babel", re: /(?:^|\/)(?:babel\.config\.(?:js|cjs|mjs|json|ts)|\.babelrc(?:\.(?:js|json))?)$/ }, { name: ".env", re: /(?:^|\/)\.env(?:[.\w-]*)$/ },
+  { name: "lockfile", re: /^package-lock\.json$/ }, { name: "package.json", re: /(?:^|\/)package\.json$/ },
+  { name: "next.config", re: /^apps\/web\/next\.config\./ }, { name: "vercel.json", re: /(?:^|\/)vercel\.json$/ },
+  { name: "web scripts", re: /^apps\/web\/scripts\// }, { name: "web api", re: /^apps\/web\/src\/app\/api\// }, { name: "supabase", re: /^supabase\// },
+  { name: "engine files", re: /^packages\/core\/src\/(?:verify|meaning|types|pipeline|plan)\.ts$/ },
 ];
+export const SECURITY_LENS_PATHS = SECURITY_LENS_CLASSES.map((c) => c.re);
 /** Pure: the changed paths (new name or old name of a rename) that are on the security-lens trigger list, in order, once each. */
 export const securityLensHits = (files) => {
   const hits = [];
@@ -108,11 +120,16 @@ export const securityLensHits = (files) => {
 };
 export const touchesSecurityLens = (files) => securityLensHits(files).length > 0;
 export const SECURITY_LENS_NAMES = ["security", "security-architect"];
-/** Lens names a review body gives on `Lens: a, b` lines (bold, bullet or quote marks allowed). Exact names only. */
+/** Lens names a review body gives on `Lens: a, b` lines (bold or bullet marks allowed). Lines inside a code fence (an unclosed fence hides the rest) and `>` quoted lines never count. Exact names only. */
 export function namedLenses(body) {
   const out = [];
-  for (const m of String(body ?? "").replace(/\r/g, "").matchAll(/^[ \t>*_#-]*lens(?:es)?[ \t*_]*:[ \t*_]*(.*)$/gim)) {
-    for (const item of m[1].split(/[,;/&]|\band\b/i)) out.push(item.trim().replace(/^[`*_ \t]+|[`*_ \t.]+$/g, "").toLowerCase());
+  let fence = null;
+  for (const line of String(body ?? "").replace(/\r/g, "").split("\n")) {
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+    if (f) { if (!fence) fence = f[1][0]; else if (f[1][0] === fence) fence = null; continue; }
+    if (fence || /^\s*>/.test(line)) continue;
+    const m = /^[ \t*_#-]*lens(?:es)?[ \t*_]*:[ \t*_]*(.*)$/i.exec(line);
+    if (m) for (const item of m[1].split(/[,;/&]|\band\b/i)) out.push(item.trim().replace(/^[`*_ \t]+|[`*_ \t.]+$/g, "").toLowerCase());
   }
   return out;
 }
@@ -244,8 +261,8 @@ export function verdictFor(row, quietMinutes) {
     if (red) return `WATCH-RED ${red[0]}`;
     if (mac.length < MACOS_CHECKS.length || mac.some(([, v]) => v !== "success")) return "WAIT-CI";
   }
-  if (row.reason === "security lens missing") return "NEEDS-REVIEW"; // CR-73: reported, not a gate
   if (!["clean", "unstable"].includes(row.mergeable_state)) return "WAIT-CI";
+  if (row.reason) return "NEEDS-REVIEW"; // CR-73: reported, not a gate
   if (!(row.pushAgeMinutes >= quietMinutes)) return "WAIT-QUIET"; // unknown age (null) is not quiet
   return "READY";
 }
@@ -260,6 +277,7 @@ async function paged(api, path, notices = []) {
     out.push(...items);
     if (items.length < 100) return out;
   }
+  out.capped = true;
   notices.push(`notice: pagination cap of ${PAGE_CAP} pages hit for ${clean(path.split("?")[0])}; results may be incomplete`);
   return out;
 }
@@ -314,7 +332,8 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
       const files = await paged(get, `repos/${repo}/pulls/${p.number}/files`, notices);
       row.native = touchesNative(files);
       const hits = securityLensHits(files);
-      if (hits.length && !row.reviews.named.some((n) => SECURITY_LENS_NAMES.includes(n))) {
+      if (files.capped || !Number.isInteger(full?.changed_files) || files.length !== full.changed_files) row.reason = "file list incomplete";
+      else if (hits.length && !row.reviews.named.some((n) => SECURITY_LENS_NAMES.includes(n))) {
         row.reason = "security lens missing";
         row.securityHits = hits.slice(0, 5).map(clean);
       }
@@ -343,7 +362,7 @@ export function formatTable(allRows) {
   const line = (cells) => cells.map((c, i) => c.padEnd(w[i])).join("  ").trimEnd();
   const blockedNotes = rows.filter((r) => Object.keys(r.reviews.blocked).length).map((r) => `note: #${r.number} review not met, newest at head: ${Object.entries(r.reviews.blocked).map(([l, w]) => `${l}=${clean(w)}`).join(", ")}`);
   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
-  const lensNotes = rows.filter((r) => r.reason === "security lens missing").map((r) => `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`);
+  const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
   const asks = rows.filter((r) => r.mergeNote).map((r) => r.mergeNote);
   const days = (r) => Math.floor(r.pushAgeMinutes / 1440);
   const parked = stale.length
