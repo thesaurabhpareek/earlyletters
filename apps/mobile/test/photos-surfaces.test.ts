@@ -614,6 +614,14 @@ describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot 
     expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/copy', '@/lib/photos/flag', '@/lib/photos/hooks', '@/lib/photos/lens', '@/lib/photos/pause']);
     expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
   });
+  it('[NS-01-R23b] the lens cannot start a letter', () => {
+    // The lens components and the lens hook import nothing that starts a capture, opens the picker or holds a pending picture.
+    for (const f of [join(SRC, 'components', 'photos', 'photos-lens.tsx'), join(SRC, 'components', 'book', 'letter-card.tsx')]) {
+      const src = readFileSync(f, 'utf8');
+      expect(src, rel(f)).not.toMatch(/startCapture|start-capture|use-photo-start|use-photo-pick|photos\/(picker|pending|session|registry)|armListenStart|Add photos|Start from a photo/);
+    }
+    expect(Object.keys(photos.book.lens).filter((k) => /add|start/i.test(k))).toEqual([]);
+  });
   it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
     expect(JSON.stringify(photos.book.lens)).not.toMatch(/add/i);
   });
