@@ -158,7 +158,7 @@ describe('crash capture: built, off, and one flip from on', () => {
   const exceptionEvent = (err: Error) => ({
     event: '$exception',
     uuid: '0190a000-0000-7000-8000-000000000000',
-    $set: { name: 'Meera' },
+    $set: { name: 'Asha' },
     properties: {
       distinct_id: ID,
       $app_version: '1.0.0',
@@ -166,14 +166,14 @@ describe('crash capture: built, off, and one flip from on', () => {
       $os_name: 'iOS',
       $os_version: '26.0',
       $device_type: 'Mobile',
-      $device_name: "Meera's iPhone",
+      $device_name: "Asha's iPhone",
       $locale: 'en-US',
       $exception_level: 'error',
       $exception_message: err.message,
       $exception_values: [err.message],
       $exception_steps: [{ message: err.message }],
       // Properties a caller attached to captureException():
-      child_name: 'Meera',
+      child_name: 'Asha',
       note: 'first steps on 2025-03-04',
       $exception_list: [
         {
@@ -185,7 +185,7 @@ describe('crash capture: built, off, and one flip from on', () => {
             frames: (err.stack ?? '')
               .split('\n')
               .slice(1, 4)
-              .map((l, i) => ({ platform: 'hermes', filename: '/var/containers/Bundle/Application/7B1F2C3D-0000-4000-8000-00000000AAAA/app.bundle', abs_path: `/Users/meera.parent/dev/${l.trim()}`, function: `saveLetter${i}`, lineno: 10 + i, colno: 3, in_app: true, context_line: err.message, vars: { name: 'Meera' } })),
+              .map((l, i) => ({ platform: 'hermes', filename: '/var/containers/Bundle/Application/7B1F2C3D-0000-4000-8000-00000000AAAA/app.bundle', abs_path: `/Users/asha.parent/dev/${l.trim()}`, function: `saveLetter${i}`, lineno: 10 + i, colno: 3, in_app: true, context_line: err.message, vars: { name: 'Asha' } })),
           },
         },
       ],
@@ -195,15 +195,15 @@ describe('crash capture: built, off, and one flip from on', () => {
   it('a thrown Error holding a date and a name leaves the client with neither', () => {
     let err: Error;
     try {
-      throw new Error('Could not save the letter Meera wrote on 2025-03-04 (born 04/03/2025)');
+      throw new Error('Could not save the letter Asha wrote on 2025-03-04 (born 04/03/2025)');
     } catch (e) {
       err = e as Error;
     }
-    err.name = 'MeeraError';
+    err.name = 'AshaError';
     const out = posthogBeforeSend(undefined, { crashEnabled: true })(exceptionEvent(err))!;
     expect(out).not.toBeNull();
     const wire = JSON.stringify(out);
-    for (const leak of ['Meera', '2025-03-04', '04/03/2025', 'meera.parent', 'Could not save', 'first steps', 'child_name', '7B1F2C3D', '$set', 'context_line', 'abs_path']) {
+    for (const leak of ['Asha', '2025-03-04', '04/03/2025', 'asha.parent', 'Could not save', 'first steps', 'child_name', '7B1F2C3D', '$set', 'context_line', 'abs_path']) {
       expect(wire, leak).not.toContain(leak);
     }
     const props = out.properties as Record<string, unknown>;
