@@ -28,6 +28,7 @@ const facts = (over: Partial<AskFacts> = {}): AskFacts => ({
   remindersOn: false,
   signInOffered: true,
   keepBookOffered: false,
+  keepBookReoffered: false,
   firstLetterSession: S1,
   session: S1,
   askShownThisSession: false,
@@ -103,7 +104,7 @@ describe('[DR-12 B, F02 6.1] Keep the book: the second letter, or the first save
 
 describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, after the first month chapter', () => {
   const later = (over: Partial<AskFacts> = {}) =>
-    facts({ firstLetter: false, lettersSaved: 6, primesShown: 1, keepBookOffered: true, session: S2, firstMonthDone: true, ...over });
+    facts({ firstLetter: false, lettersSaved: 6, primesShown: 1, keepBookOffered: true, keepBookReoffered: true, session: S2, firstMonthDone: true, ...over });
 
   it('the first month is done: the second save after it offers reminder_prime again, once', () => {
     expect(nextAsk(later())).toBe('reminder_prime');
@@ -137,6 +138,52 @@ describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, a
     expect(firstMonthDone(null, t)).toBe(false);
     expect(firstMonthDone(t, t + FIRST_MONTH_MS - 1)).toBe(false);
     expect(firstMonthDone(t, t + FIRST_MONTH_MS)).toBe(true);
+  });
+});
+
+describe('[F02 6.1, BL-519] Keep the book comes once more after the third letter when the person chose Later', () => {
+  // Offered before (the first offer, Later: still signed out), a later session, no card due.
+  const offered = (over: Partial<AskFacts> = {}): AskFacts =>
+    facts({ firstLetter: false, lettersSaved: 3, primesShown: 1, keepBookOffered: true, session: S2, ...over });
+
+  it('offer: the second letter is the first offer', () => {
+    expect(nextAsk(facts({ firstLetter: false, lettersSaved: 2, primesShown: 1 }))).toBe('keep_book');
+  });
+
+  it('Later: the first offer taken and still signed out, a second letter does not offer again', () => {
+    expect(nextAsk(offered({ lettersSaved: 2 }))).toBeNull();
+  });
+
+  it('re-offer: the third saved letter offers it once more', () => {
+    expect(nextAsk(offered())).toBe('keep_book');
+  });
+
+  it('no third offer: once the re-offer is made, no later letter brings it back', () => {
+    for (const n of [3, 4, 9]) expect(nextAsk(offered({ lettersSaved: n, keepBookReoffered: true })), String(n)).toBeNull();
+  });
+
+  it('a third letter whose slot was taken by another ask offers it on a later save, still once', () => {
+    expect(nextAsk(offered({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(offered({ lettersSaved: 4 }))).toBe('keep_book');
+  });
+
+  it('the session and day caps hold for the re-offer', () => {
+    expect(nextAsk(offered({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(offered({ askShownToday: true }))).toBeNull();
+  });
+
+  it('never when the person signed in or servers are off (signInOffered false)', () => {
+    expect(nextAsk(offered({ signInOffered: false }))).toBeNull();
+  });
+
+  it('the second reminder prime keeps its slot ahead of the re-offer (BL-518)', () => {
+    expect(nextAsk(offered({ lettersSaved: 6, firstMonthDone: true }))).toBe('reminder_prime');
+  });
+
+  it('wiring: the re-offer is remembered on the phone and reuses the same sheet', () => {
+    const asks = readFileSync(join(__dirname, '..', 'src', 'lib/asks/index.ts'), 'utf8');
+    expect(asks).toMatch(/keepBookReoffered:\s*getSetting\(K\.keepBookReoffer\) === 'on'/);
+    expect(asks).toMatch(/setSetting\(K\.keepBookReoffer, 'on'\)/);
   });
 });
 
