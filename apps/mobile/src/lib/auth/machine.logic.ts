@@ -66,7 +66,10 @@ export type AuthErrorKind =
 
 export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth';
 
-/** 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': not checked yet (offline at launch). */
+/**
+ * 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': the gate is not read yet (still checking at
+ * launch, or offline); a wait that starts here, such as an Apple revocation at launch (BL-450), reads the gate before it decides.
+ */
 export type SyncMode = 'on' | 'off' | 'unknown';
 
 export type AuthState =
@@ -203,7 +206,12 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
 
     case 'SIGN_OUT_REQUESTED': {
       if (state.status !== 'ready' && state.status !== 'needsConsent' && state.status !== 'checkingConsent') return state;
-      const sync: SyncMode = state.status === 'ready' ? state.sync : 'off';
+      // BL-450: an Apple revocation noticed at launch meets `checkingConsent`, where the gate is not read yet. Sync may be
+      // allowed, so it is not 'off' but 'unknown': the wait starts and the provider reads the gate (GATE_LOADED then lets
+      // the letters upload, or ends the wait if sync can never run). A sign-out the person asked for keeps 'off' there.
+      const sync: SyncMode = state.status === 'ready' ? state.sync
+        : state.status === 'checkingConsent' && event.reason === 'apple_revoked' ? 'unknown'
+        : 'off';
       // Never discard unsynced letters (PRD A F6.4, A-REQ-033): wait while uploads are queued and sync can run.
       // BL-1425: a queue that could not be read is unsynced too: it waits as a non-zero count does.
       const waiting = !nothingPending(event.pendingUploads) && sync !== 'off';
