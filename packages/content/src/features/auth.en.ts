@@ -119,7 +119,7 @@ export const authCopy = {
    */
   firstRun: {
     errors: {
-      provider: 'That sign-in did not finish. Try again, or try another way.',
+      provider: "That sign-in didn't finish. Try again, or try another way.",
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
@@ -213,7 +213,7 @@ export const authCopy = {
     provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: 'Setting up your account did not finish. Try again.',
+    consent_unavailable: "Setting up your account didn't finish. Try again.",
     unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',

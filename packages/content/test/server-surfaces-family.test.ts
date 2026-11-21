@@ -43,7 +43,7 @@ const CHANGED: Record<string, string> = {
   'bookRow.label': 'Write this book together',
   // S58 Invite a co-parent
   'create.done': 'The invite waits until they join.',
-  'errors.not_found': 'That link does not open an invite. Check it and try again.',
+  'errors.not_found': "That link doesn't open an invite. Check it and try again.",
   'errors.network': 'This phone is offline. Try again once it is back online.',
   'errors.unknown': "That didn't go through. Try again.",
   'errors.retry_new_invite': "That didn't go through. Try again.",

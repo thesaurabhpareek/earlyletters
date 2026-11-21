@@ -345,11 +345,11 @@ describe('auth error kinds: a server that answered is not a connection that fail
       expect(authErrorKind(retryable(status), 'passkey'), String(status)).toBe('provider');
       for (const context of ['send', 'code', 'link'] as const) expect(authErrorKind(retryable(status), context), `${status} in ${context}`).toBe('unknown');
     }
-    // The words are the copy lane's (provider: "That sign-in did not finish.", unknown: "That did not go through."); here: the kinds' own lines.
+    // The words are the copy lane's (provider: "That sign-in didn't finish.", unknown: "That did not go through."); here: the kinds' own lines.
     for (const context of CONTEXTS) {
       const kind = authErrorKind(retryable(503), context);
       expect(authErrorMessage(kind)).toBe(authErrorMessage(context === 'provider' || context === 'passkey' ? 'provider' : 'unknown'));
-      expect(authErrorMessage(kind)).toMatch(/^(?:Nothing has changed|Your letters are still on this phone|You were signed out|Setting up your account did not finish)\.|\. Nothing has changed\.$/);
+      expect(authErrorMessage(kind)).toMatch(/^(?:Nothing has changed|Your letters are still on this phone|You were signed out|Setting up your account didn't finish)\.|\. Nothing has changed\.$/);
     }
     // The old reading, which a 503 must no longer get.
     expect(authErrorMessage(authErrorKind(retryable(503), 'send'))).not.toMatch(/back online|Sign in/);
