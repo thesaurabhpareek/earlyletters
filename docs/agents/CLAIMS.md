@@ -10,6 +10,7 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| content-prompts-v2 | content | fix/content-prompts-v2 | 1171 | `packages/content/src/prompts.ts`, `packages/content/test/prompts.preBirth.test.ts`, `packages/content/test/prompts.retired.test.ts` | 2026-11-21T03:19Z | 2026-11-24T03:19Z | prompt library v5, 13 rewrites under new keys; PR read as open 2026-11-21T03:19Z |
 | photo-lane | mobile | feat/mobile-photo-3-store | 835 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | slices 835 to 840 (4b and 4c also touch Review and the letter page); REST open check 00:05Z |
 | find-lane | mobile | feat/mobile-bl-952-7-wiring | 895 | `apps/mobile/src/lib/find/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | 894 and 895; REST open check 00:05Z |
 | account-lane | mobile | fix/mobile-bl-961-store-reads | 879 | `apps/mobile/src/lib/account-deletion/**`, `apps/mobile/src/components/account/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | REST open check 00:05Z |
