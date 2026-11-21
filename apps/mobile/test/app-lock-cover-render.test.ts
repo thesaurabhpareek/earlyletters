@@ -7,7 +7,9 @@
  * switcher: that stays the device row D-1 in docs/qa/DEVICE_TEST_PLAN.md.
  */
 import { createElement as h, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createRequire } from 'node:module';
+// react-dom ships no types here and no dependency is added for them: a typed require keeps tsc clean.
+const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as { renderToStaticMarkup: (e: unknown) => string };
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const env = vi.hoisted(() => ({
@@ -16,8 +18,11 @@ const env = vi.hoisted(() => ({
 }));
 
 // Native edges, as plain tags that keep testID, so the markup shows what is drawn.
-type P = { children?: ReactNode; testID?: string };
-const tag = (name: string) => (p: P) => h('div', { 'data-kind': name, 'data-testid': p.testID }, p.children);
+type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string };
+/** Flattens a style array, so the markup carries the background and opacity the real view would be given. */
+const flat = (st: unknown): Record<string, unknown> => (Array.isArray(st) ? Object.assign({}, ...st.map(flat)) : ((st as Record<string, unknown>) ?? {}));
+const tag = (name: string) => (p: P) =>
+  h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-style': JSON.stringify(flat(p.style)), 'data-label': p.accessibilityLabel }, p.children);
 
 vi.mock('../src/lib/store', () => ({
   getSetting: (k: string) => env.settings.get(k) ?? null,
@@ -40,7 +45,7 @@ vi.mock('react-native-reanimated', () => ({
   default: { View: tag('animated') },
   cancelAnimation: () => {},
   ReduceMotion: { Never: 'never' },
-  useAnimatedStyle: () => ({}),
+  useAnimatedStyle: (f: () => object) => f(),
   useSharedValue: (v: number) => ({ value: v }),
   withTiming: (v: number) => v,
 }));
@@ -63,7 +68,15 @@ vi.mock('@/lib/a11y', () => ({
 
 const COVER = 'data-testid="appLock.cover"';
 const NAME_OF_A_CHILD = 'Asha';
+const labelOf = (html: string, testid: string) => new RegExp(`<div[^>]*data-testid="${testid}"[^>]*>`).exec(html)?.[0].match(/data-label="([^"]*)"/)?.[1];
+const styleOf = (html: string, testid: string) => {
+  const tagHtml = new RegExp(`<div[^>]*data-testid="${testid}"[^>]*>`).exec(html)?.[0] ?? '';
+  const raw = /data-style="([^"]*)"/.exec(tagHtml)?.[1] ?? '{}';
+  return JSON.parse(raw.replace(/&quot;/g, '"')) as { backgroundColor?: string; opacity?: number };
+};
+const textOf = (html: string) => html.replace(/<[^>]*>/g, '');
 
+const { appLockCopy } = await import('../src/lib/app-lock/copy');
 const { writeAppLock } = await import('../src/lib/app-lock/prefs');
 const controller = await import('../src/lib/app-lock/controller');
 const { AppLockLayer } = await import('../src/components/app-lock/app-lock-layer');
@@ -91,7 +104,14 @@ describe('[NX-39-R36] the app switcher snapshot is covered while App lock is on'
     expect(html).toContain(COVER);
     expect(html).toContain('data-testid="appLock.cover.mark"');
     expect(html).not.toContain('data-testid="appLock.unlock"'); // a cover, not yet a lock screen
+    // Opaque: the cover is the page colour with no transparency, and the layer holding it starts fully opaque.
+    expect(styleOf(html, 'appLock.cover').backgroundColor).toBe('#fff');
+    expect(styleOf(html, 'appLock.cover').opacity ?? 1).toBe(1);
+    expect(html).toMatch(/<div data-kind="animated"[^>]*data-style="[^"]*&quot;opacity&quot;:1/);
+    // No text on it, no child name anywhere; VoiceOver reads only the app name.
+    expect(textOf(html)).toBe('');
     expect(html).not.toContain(NAME_OF_A_CHILD);
+    expect(labelOf(html, 'appLock.cover.mark')).toBe(appLockCopy.coverLabel);
   });
 
   it('[NX-39-R36] the cover stays through the background and comes down in front within the grace', () => {
