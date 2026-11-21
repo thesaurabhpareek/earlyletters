@@ -61,7 +61,7 @@ No fear, no pressure, no counting. No deadlines, no warnings about what might sl
 
 Families speak how they speak. Hindi and English in the same sentence is a feature, not an error. Never call it "mixed" or "broken" language. Never promise translation. Say: "Your words stay in the language you said them." Use examples from real code-switching families, and keep relationship names as families use them: Nani, Dadi, Papa, Amma.
 
-At v1.0 (founder, 3 Oct 2026, D-056) letters can be spoken in seven languages: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
+Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven languages. The first store build is English only (D-121), and a language appears in the picker only after its own gate; don't promise others in public copy before then. The seven: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
 
 ## How to write a notification
 
