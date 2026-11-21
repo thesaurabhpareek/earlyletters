@@ -1,6 +1,6 @@
 # Early Letters voice guide
 
-> How a sentence should sound, with before and after pairs, tone by moment and the review checklist: `WRITING-GUIDE.md`. Read it first for any copy change.
+> How a sentence should sound, with before and after pairs, tone by moment and the review checklist: `WRITING-GUIDE.md`. Read it first for any copy change. If this file and the guide disagree, stop and ask `content` (guide section 1). Open conflicts are listed there; none is edited away here.
 
 Scope: every word outside the app.
 
@@ -12,7 +12,7 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 **Warm.** We sound like a kind friend, not a brand.
 **Calm.** Short sentences. No hurry, no hype.
-**Literary, lightly.** A little care in the phrasing, and sometimes a smile.
+**Literary, lightly.** A little care in the phrasing, and sometimes a smile. (Where a smile is allowed is a PROPOSED policy in `WRITING-GUIDE.md` section 4, humour; the CMO and founder have not ruled on it.)
 
 ## Brand idea in one sentence
 
@@ -69,10 +69,11 @@ Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven lang
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
-- At most one exclamation mark per month across all notifications.
+- At most one exclamation mark per month across all notifications. The rules test budget is stricter (none in notifications, Q-NTC-7), so use none.
 
-Good: "Anything to tell {child} today?"
-Good: "A minute before bed? {child}'s book is open."
+Good: "Anything to tell {child} today?" (only where the parent has turned names on for the lock screen)
+Good: "A minute before bed? {child}'s book is open." (same: names on only)
+Good, no name: "A minute for the book?"
 Bad: "7 days in a row. Keep it going."
 
 ## Writing for grandparents
@@ -128,6 +129,7 @@ A line that sounds automatic stops being heard. These earned their place once an
 - **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
 - **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
 - **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"A minute is plenty." and "A line is plenty."** Two lines, not a template. Rotate them, and keep a repeated line to one surface.
 - **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
 - **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
 

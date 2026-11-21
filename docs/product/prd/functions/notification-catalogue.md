@@ -212,6 +212,17 @@ Notes on the samples:
 - Rotation is by shape as well as by topic, following Design B (question, invitation, observation, tiny task, quote-a-line; `NOTIFICATIONS.md:55`): authors tag each variant with a shape, and the test forbids the same shape three times in a row.
 - A variant is retired if testers turn reminders off within a day of seeing it. While analytics is off this is measured by the tester sheet (direction 4.2), not by any event. Retiring means removing the key from content; the fallback chain (3.4) covers a thinned pool.
 - Tone words (VOICE.md): warm, calm, literary lightly. Friday may smile, Sunday goes slower, Monday stays small. Never hype.
+
+### 7.1 Humour policy (PROPOSED, pending the founder's answer)
+
+Consistent with the closed ruling Q-FD-27 (CL-032: a little playfulness on Friday and Saturday notes; Monday and Sunday small and slow) and the founder's 21 Nov ask for copy that is "fun, witty, engaging, empathetic" (relayed in the brief for this change; not found written in the repo). Full policy: `packages/content/WRITING-GUIDE.md` section 4. Nothing here changes a shipped or locked line.
+
+- Wit lives only in celebrations, light nudges (Friday and Saturday first) and first-run delight. One small, dry thing, once.
+- Never in errors, money, deletion, safety, grief or hard seasons.
+- Never at the parent's expense: no joke about being tired, late or behind.
+- No puns on the child's name.
+- No two notes in a row share a joke shape (the shape rule in this section already forbids three of one shape).
+- Zero exclamation marks still holds (Q-NTC-7). Every sample passes `npm test -w @scribe/content` before it ships, and the founder approves the words before wit turns on.
 - The 8 built variants are migrated into the key scheme as the floor, with their existing evening wording kept (their tests pass today).
 
 ## 8. What the planner and its neighbours must change
@@ -339,6 +350,7 @@ No counsel question is raised by this file on its own; the religion on the lock 
 | Q-NTC-7 | Exclamation marks in notifications | Zero; correct `VOICE.md:70` CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
 | Q-NTC-8 | Ship the full set at freeze, or the floor at freeze and the rest in a content drop | Floor at freeze, rest as a content drop (Design B already planned this, `NOTIFICATIONS.md:59`) CLOSED 20 Nov, see GAP-LOG Closures CL-041 |
 | Q-NTC-9 | Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages) | Use the age the Book shows; a corrected-age family is a separate ruling CLOSED 20 Nov, see GAP-LOG Closures CL-041 |
+| Q-NTC-10 | Humour in the catalogue (section 7.1): wit only in celebrations, light nudges and first-run delight; never in errors, money, deletion, safety, grief or hard seasons; never at the parent's expense; no puns on the child's name | PROPOSED: yes, as written. Pending the founder's answer. Extends Q-FD-27 (CL-032) |
 
 ## 14. What I did not verify
 
