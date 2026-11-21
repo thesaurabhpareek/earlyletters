@@ -21,7 +21,7 @@ const BAD_DATE = '2025-13-45';
 describe('thrown errors hold a fixed code, never the value', () => {
   const cases: Array<[string, () => unknown]> = [
     ['ageOn parse', () => ageOn(BAD_WITH_NAME, '2026-04-12')],
-    ['ageOn on-date', () => ageOn('2025-04-12', BAD_DATE)],
+    ['ageOn on-date', () => ageOn('2025-04-12', 'Asha 2026-04-12')],
     ['addDaysISO shape', () => addDaysISO(BAD_WITH_NAME, 1)],
     ['addDaysISO roll-over', () => addDaysISO('2025-02-31', 1)],
     ['daysBetweenISO', () => daysBetweenISO('2025-04-12', BAD_DATE)],
