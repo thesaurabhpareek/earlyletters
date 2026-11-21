@@ -255,7 +255,7 @@ Name what did not finish, and say what is true about the words. "Safe" is kept f
 
 | Surface | Trigger | Key | Line or brief | Tone | Never says | Source today |
 |---|---|---|---|---|---|---|
-| 14.1 Save failed | Local save error | `en.errors.saveFailed.*` | BUILT: "Not saved to the book yet" / "Your words are safe on this phone. We will try again on our own." / "Try again now" | Steady | "Error 5"; blame | `strings.en.ts:1167`; test "save failure reassurance" |
+| 14.1 Save failed | Local save error | `en.errors.saveFailed.*` | BUILT: "Not saved to the book yet" / "Your words are still on this phone." / "Try again now". No retry is promised: nothing retries by itself, and no screen reads this key yet (Review shows `en.review.saveFailed`) | Steady | "Error 5"; blame | `strings.en.ts:1167`; test "save failure reassurance" |
 | 14.2 Microphone off, busy, phone full | Listen | `en.errors.micDenied`, `.micBusy`, `.phoneFull` | BUILT: "The microphone is off" / "Turn it on in Settings, or type this one." | Offers the other way | "permission denied"; "fatal" | `strings.en.ts:1176-1189` |
 | 14.3 No words yet | Transcription did not finish | `en.errors.transcriptionFailed.*` | BUILT: "No words yet for this one" / "The recording is kept." | Says what is kept | "failed to transcribe" | `strings.en.ts:1190` |
 | 14.4 Offline | No network | `en.errors.offline.*` | BUILT: "You're offline" / "Keep talking. Everything is saved on this phone." | Calm | "No connection!" | `strings.en.ts:1195` |

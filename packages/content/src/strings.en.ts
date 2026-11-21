@@ -920,7 +920,7 @@ export const en = {
       bookEraseNowBody: "Every letter and recording in it is erased for good.",
       bookErasedToast: "Book erased.",
       // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
-      bookEraseFailedToast: "The book wasn't erased yet. It will finish the next time the app opens.",
+      bookEraseFailedToast: "The book wasn't erased yet. The erase will finish the next time the app opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -1166,7 +1166,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are still on this phone. The app will try again.",
+      body: "Your words are still on this phone.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
