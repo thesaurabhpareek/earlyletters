@@ -260,30 +260,7 @@ describe('[NS-01-R18][NX-39-R58] pictures are never gated', () => {
   });
 });
 
-describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights', () => {
-  it('[NS-01-R19][NX-39-R37] off (the default), or paused remotely, nothing new draws; only "on" turns it on', () => {
-    expect(parsePhotosFlag(undefined)).toBe(false);
-    for (const v of ['', 'off', 'true', '1', 'yes']) expect(parsePhotosFlag(v)).toBe(false);
-    expect(parsePhotosFlag('on')).toBe(true);
-    expect(photoSurfaces({ build: false, paused: false })).toEqual({ start: false, lens: false, addActions: false });
-    expect(photoSurfaces({ build: true, paused: true })).toEqual({ start: false, lens: false, addActions: false });
-    expect(photoSurfaces({ build: true, paused: false })).toEqual({ start: true, lens: true, addActions: true });
-    // the remote can pause, and a config with nothing in it never pauses and never turns anything on
-    expect(photosPaused({ killSwitches: { photos: true } })).toBe(true);
-    expect(photosPaused(null)).toBe(false);
-    expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
-  });
-  it('[NS-01-R19] the Home start is guarded by the switch and a registered picker (absent, not dead)', () => {
-    const hook = readFileSync(join(SRC, 'lib', 'photos', 'start-shows.ts'), 'utf8');
-    expect(hook).toMatch(/photoSurfaces\(\{ build: photosBuildEnabled\(\), paused \}\)\.start && getPhotoPicker\(\) !== null/);
-    expect(readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8')).toMatch(/photoStart\.show \? <PhotoStartButton/);
-  });
-  it('[NS-01-R19] off, Listen, Write and Review gain nothing: the thumbnail needs a pending picture, and Keep stores nothing without one', async () => {
-    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
-    const { d, files, store } = deps();
-    await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
-    expect(files.writes + store.puts).toBe(0);
-  });
+describe('[NS-01-R8][CL-116 C-01] the picture on the letter page', () => {
   it('[NS-01-R8][CL-116 C-01] the picture sits between the dateline and the words', () => {
     // Ruling NS-01-C01-order: in tree order the one level 1 dateline (testID letter.dateline), then the picture, then the
     // words; the picture's name is the fixed phrase or the parent's own words, never derived from the picture. Source scan
@@ -330,6 +307,32 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     const ax = letterPictureSize({ ...wide, largeText: true });
     expect(ax.height).toBeLessThanOrEqual(LETTER_PICTURE_AX_MAX_PT);
     expect(letterPictureSize({ ...wide, aspect: 5 }).width).toBeLessThanOrEqual(300); // a panorama fits the column
+  });
+});
+
+describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights', () => {
+  it('[NS-01-R19][NX-39-R37] off (the default), or paused remotely, nothing new draws; only "on" turns it on', () => {
+    expect(parsePhotosFlag(undefined)).toBe(false);
+    for (const v of ['', 'off', 'true', '1', 'yes']) expect(parsePhotosFlag(v)).toBe(false);
+    expect(parsePhotosFlag('on')).toBe(true);
+    expect(photoSurfaces({ build: false, paused: false })).toEqual({ start: false, lens: false, addActions: false });
+    expect(photoSurfaces({ build: true, paused: true })).toEqual({ start: false, lens: false, addActions: false });
+    expect(photoSurfaces({ build: true, paused: false })).toEqual({ start: true, lens: true, addActions: true });
+    // the remote can pause, and a config with nothing in it never pauses and never turns anything on
+    expect(photosPaused({ killSwitches: { photos: true } })).toBe(true);
+    expect(photosPaused(null)).toBe(false);
+    expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
+  });
+  it('[NS-01-R19] the Home start is guarded by the switch and a registered picker (absent, not dead)', () => {
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'start-shows.ts'), 'utf8');
+    expect(hook).toMatch(/photoSurfaces\(\{ build: photosBuildEnabled\(\), paused \}\)\.start && getPhotoPicker\(\) !== null/);
+    expect(readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8')).toMatch(/photoStart\.show \? <PhotoStartButton/);
+  });
+  it('[NS-01-R19] off, Listen, Write and Review gain nothing: the thumbnail needs a pending picture, and Keep stores nothing without one', async () => {
+    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
+    const { d, files, store } = deps();
+    await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
+    expect(files.writes + store.puts).toBe(0);
   });
   it('[NS-01-R9c] only the author changes the picture', () => {
     // Another parent's letter: no add, change, take off or edit control, with or without a picture and words.
@@ -510,6 +513,23 @@ describe('[NS-01-R20] new controls', () => {
     expect(pick).toMatch(/ready: registered && getPhotoPicker\(\) !== null/);
     expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
     expect(readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8')).not.toMatch(/disabled=/);
+  });
+  it('[NS-01-R59] the photo start draws only when a picker is registered: `show` is registered && photoStartShows() (mutant `show: true` fails)', () => {
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(hook).toMatch(/return \{ show: registered && photoStartShows\(\), failed, start \};/);
+    expect(hook).not.toMatch(/show: true/);
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    expect(home).toMatch(/\{photoStart\.show \? <PhotoStartButton /);
+  });
+  it('[NS-01-R3] Home passes the same prompt to Speak, Type and the photo start: the one `prompt.key` on screen, nothing else (mutant: another key fails)', () => {
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    // The photo start's plan input and the Speak and Type input are built from the prompt Home shows, never from the picture.
+    expect(home).toMatch(/usePhotoStart\(\(\) => startCapture\(\{ source: 'photo', prompt: \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \} \}\)\)/);
+    expect(home).toMatch(/const promptParam = \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \};/);
+    expect(home).toMatch(/startCapture\(\{ source: 'speak', prompt: promptParam \}\)/);
+    expect(home).toMatch(/startCapture\(\{ source: 'type', prompt: promptParam \}\)/);
+    // No prompt key literal reaches a capture start from Home.
+    expect(home).not.toMatch(/startCapture\(\{[^}]*key: ['"`]/);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
