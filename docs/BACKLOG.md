@@ -6828,3 +6828,81 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Scope: one new migration file and its tests, never an edit of an applied migration: a service-role function that limits one member's read of one book's server rows (reversible, never deletes a letter, writes one `access_limit` audit row) and a lever that suspends sign-in for an account without touching the account or its letters. The new functions and any table carry their own grants in the same migration and a line in `supabase/tests/grants.mjs`. The rows BL-1330 and BL-1363 hold the runbook and phone side and name the ids.
 - Done when: the migration file exists with its grants line; `supabase/tests` shows the limit reversing, one audit row per use and no letter deleted, and the suspend lever leaving every letter in place; the file is listed for the founder in `supabase/APPLY.md`; the founder applies it (docs/FOUNDER_TASKS.md).
 
+
+## Review follow-ups: sign-out, the upload probe and the asks (21 Nov 2026; BL-1424 and BL-1425 triaged ready by Karma, 21 Nov 2026 (PR #1292 comment 7060294784); BL-1431 sourced from #1293; the rest proposed or blocked as each row says)
+
+Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL-1424 to BL-1431 file eight findings from the reviews of PRs #1273, #1274 and #1289 (all open when written). Anything that exists only in one of those PRs is marked unverified: this file was checked against `develop`, not against the PR heads. BL-458's Status is not changed here: #1287 had not merged when this was written.
+
+#### BL-1424 Sign-out clears the join wait, so the next account's welcome cannot show the previous child's name
+- Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
+- Priority: High until reproduced (privacy: a child's name staying in memory across accounts). The leak is in memory only: the store is never written to disk, so it ends when the app process ends. Gate: none.
+- Satisfies: none given (the child-name rule in `CLAUDE.md` Privacy rules is the nearest; no requirement id was checked).
+- Problem and evidence: found by Lens B on #1289. `joinWait` is a module-level store (`apps/mobile/src/components/family/join-wait.logic.ts:123`) that holds `{ childId, name, since }`. Its only `clear()` calls are in `join-wait.tsx:40` and `:43`, which run only while the welcome's `useWelcomeJoinWait` hook is mounted. Nothing under `apps/mobile/src/lib/auth` calls `joinWait.clear()` (searched `apps/mobile/src`: `joinWait` appears only in `components/family/join-wait*` and `app/invite/index.tsx:40,174,177`). `session-provider.tsx` `signOut()` (`:559-564`) dispatches `SIGN_OUT_REQUESTED` and clears nothing of the wait. So if sign-out happens while no welcome hook is mounted, the name from the previous account stays in memory and could appear in the next account's welcome line (`joinWaitLine`). Whether the next welcome really reads it was not run: unverified.
+- Scope: clear the join wait when the account signs out, for every sign-out reason (user, apple_revoked, force_reauth, switch_account), in the sign-out path rather than only in the welcome hook. No change to the wait's other rules.
+- Done when: a test signs in as account A, starts a wait with a name, signs out with no welcome mounted, signs in as account B and reads no name (the wait is null); the test fails with the new clear removed.
+- Test: `apps/mobile/test/join-wait.test.ts` plus an auth-side test. Depends on nothing else.
+
+#### BL-1425 `pendingUploads()` treats a failed read as unsynced, with a typed result
+- Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: found by Lens A on #1273. `pendingUploads()` in `apps/mobile/src/lib/auth/auth-store.ts:188-194` returns 0 when the probe throws, which tells sign-out nothing is waiting when the store could not be read. That is the opposite of fail-safe: sign-out could proceed and drop letters that were never uploaded. Its callers read a number: `apple-revocation.logic.ts:54-63`, `session-provider.tsx:299,316,374,560`, and the literal `pendingUploads: 0` at `:424` (switch_account, which never reads the probe), and the reducer's `waiting` line at `machine.logic.ts:195`. The 0 for "no sync engine registered" is correct and stays.
+- Scope: return a typed result (for example `{ kind: 'count', n } | { kind: 'unknown' }`) and treat `unknown` as unsynced in the sign-out reducer and in the revocation and force-reauth paths, so sign-out waits as it does for a non-zero count. The way out of an endless wait is `cancelSignOutWait()` (`session-provider.tsx:566-568`, which dispatches `SIGN_OUT_WAIT_CANCELLED`); keep it reachable when the result is `unknown`. `unknown` never reaches a dispatch as `pendingUploads: 0`: every dispatch site above either passes the typed result on or treats it as unsynced; the `:424` literal is reviewed and either kept with a comment saying why or routed through the same read. The sync side's own `countOr0` (`apps/mobile/src/lib/sync/index.ts:61-67`, for the status line) is a separate read and is not changed here.
+- Done when: a test with a probe that throws shows sign-out waiting, not completing; a test with no probe still shows 0 pending; every caller above compiles against the typed result.
+- Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
+
+#### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
+- Status: blocked (PR #1273 merging; the probe it pins is #1273's change and is not on `develop`). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Priority: Medium. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` the registration is `registerUploadQueue({ pendingCount: () => pendingCount(localSqlDb()), ... })` at `:266-274`; the changed probe is unverified until #1273 merges.
+- Scope: one test that starts the sync module, reads `pendingUploads()` through the registered probe and expects what #1273's probe counts that plain `pendingCount` does not; mutate the probe back and see the test fail.
+- Done when: reverting the probe to plain `pendingCount` makes exactly this test fail.
+- Test: `apps/mobile/test/sync-*.test.ts`.
+
+#### BL-1427 BL-518 web half: a web journey that shows the second reminder prime
+- Status: blocked (PR #1274 merging; it builds the mobile half of BL-518 only). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-518.
+- Priority: Medium. Gate: none.
+- Satisfies: none given (same source as BL-518: C-REQ-001 Rev, F13 6.2 B row 4c).
+- Problem and evidence: BL-518's Done-when says "`test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it". #1274 builds the mobile half: the second prime after the first month chapter, the cap of 2 and the tests. No web journey step for it exists on `develop` (searched `docs/BACKLOG.md` and `apps/mobile/test` for a journey naming the second prime: none found). What remains on BL-518 once #1274 merges: only the web journey.
+- Scope: add the web journey step that reaches the second showing after the first month chapter and records what it shows. Instruction for the status: when #1274 merges, BL-518's Status must read `partly done (web journey)`, and the product agent sets it in the PR that records the merge; this row is then set to `ready`. This PR does not edit BL-518.
+- Done when: the web journey shows the second prime once, after the first month chapter, and shows no third; BL-518 is changed to `done (<evidence>)` in the PR that merges this.
+- Test: the web journey run (`docs/qa`), plus the existing `test/next-ask.test.ts`.
+
+#### BL-1428 BL-458 part 3: how the Book catches an `entries` event between its first read and its subscribe
+- Status: needs-decision (the mobile engineer picks between the two options; no D- or Q- id yet). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: BL-458 point 3. The Book reads its letters in the `useState` initialiser and subscribes in an effect, so an `entries` event between the two is missed until the next event (BL-458 Problem (3); unverified on a device). BL-458 stays `partly done` after #1287 merges; this row is the open part.
+- Options for the mobile engineer: (A) a store change counter: the store increments a number on every `entries` event; the Book records the number at its initial read and, in the effect, compares it and re-reads on a difference. Trade-off: one small addition to the store's public surface and a counter every subscriber could misuse, but one cheap integer compare and no extra read when nothing changed. (B) one extra read in the effect: after subscribing, read the list again and set state only if it differs from the initialiser's. Trade-off: no store change and the smallest diff, but a full list read on every Book mount, which costs more for a large book, and a "differs" compare that has to be cheap and correct.
+- Scope: decide A or B, record the choice in this row, then implement it in the same PR.
+- Done when: the chosen option is written here; a test shows an `entries` event between the initialiser read and the subscribe is picked up at once.
+- Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
+
+#### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
+- Status: blocked (PR #1274 merging; the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
+- Satisfies: none given.
+- Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. On `develop` the prime tracks `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47`, correct for the only showing that exists there. Unverified: how #1274 labels the second.
+- Scope: give the second showing its own source value (for example `first_month`), added to the analytics allowlist in `packages/analytics` with its test, and nothing else in the event.
+- Done when: a test shows the first showing sends `first_letter` and the second sends the new value; the allowlist test passes with the value and fails without it.
+- Data map: the new `source` value is an analytics field value, so check the data map entry beside the allowlist test (DATA-REQ-001).
+- Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
+
+#### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
+- Status: needs-decision (founder or Karma; product's recommendation is in the Problem line). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Priority: Low. Gate: none.
+- Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
+- Problem and evidence: Lens B on #1274. On `develop` there is no second prime: `apps/mobile/src/lib/asks/next-ask.logic.ts:58` is the first-prime rule only (`firstLetter && primesShown === 0 && !remindersOn`), and the cap is `MAX_REMINDER_PRIMES = 2` at `:20`. The question arises only if #1274 makes the second prime eligible for someone who said Yes to the first and later turned reminders off in Settings (unverified: this lives only in #1274 and was not read). Whether that matches F13 6.2 B row 4c was not checked either. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
+- Scope: record the decision as a D-### proposal in the PR body and either keep the behaviour with a test that names it, or add a rule that a person who ever said Yes is never primed again, with its test.
+- Done when: the decision is recorded and `test/next-ask.test.ts` has a case named for it.
+- Test: `apps/mobile/test/next-ask.test.ts`.
+
+#### BL-1431 The `j18-dark-mode` web flow: reported failing on #1293 (unverified on develop), it expects "Month 6. 2 letters, from Mama." and the Book shows "6 months"
+- Status: proposed (Lens B on #1293; the flow has not been run on `develop`, so the failure is unconfirmed; QA or Karma sets it to ready once it is run there). Mode: agent. Owner: qa engineer. Milestone: M4. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: none given. Related: BL-464 (the web e2e flake and seeded flows), #1293.
+- Problem and evidence: found by Lens B on #1293. The `j18-dark-mode` flow is reported failing: it expects a heading matching `/^(This month, )?Month 6\. 2 letters, from Mama\. /` (`apps/mobile/e2e-web/j18-dark-mode.flow.ts:45`) and the Book shows "6 months". The same regex is at `apps/mobile/e2e-web/j09-book.flow.ts:33` as reported (the line was not re-read here). Cause unverified: a copy change in `packages/content`, or the date-dependent "This month" and month-number wording that j09, j11 and j18 already hedge. The failure itself was not re-run here.
+- Scope: find the cause by running the flow; fix the flow's expectation (or the copy, if the copy change was a mistake) in both j18 and j09, keeping the existing alternation for the date-dependent prefix.
+- Done when: `j18-dark-mode` and `j09-book` pass on `develop`; a changed heading would fail them.
+- Test: `apps/mobile/e2e-web/j18-dark-mode.flow.ts`, `j09-book.flow.ts`.
