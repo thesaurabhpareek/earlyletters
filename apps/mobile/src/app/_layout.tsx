@@ -8,6 +8,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
+import { AccountLayer } from '@/components/account/account-layer';
 import { AppLockLayer } from '@/components/app-lock/app-lock-layer';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
@@ -36,7 +37,7 @@ import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
 import { useRouteTransitions } from '@/lib/motion';
-import { getFamily, getSetting, subscribe, subscribeTo } from '@/lib/store';
+import { getFamily, getSetting, startFindCatchUp, subscribe, subscribeTo } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -107,6 +108,7 @@ function startServices(launchedAt: number): void {
   setFreeLettersAllowanceSource(allowanceSourceFor(PLUS_ALPHA, () => effectiveFreeLetters(getRemoteConfig())));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
+  safely(startFindCatchUp); // Find's index caught up in batches (NS-02-R35); nothing with Find off and no index
   // After packs: the queue registers the speech plan as a language resolver on the
   // platform pack facade (models/speech-packs.ts uses it by default; no bind needed).
   safely(() => startTranscriptionQueue());
@@ -238,6 +240,9 @@ function Root() {
             <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
+            {/* BL-961: another signed-in account on a phone that holds this owner's book sees one screen, Sign out, over
+                every route; it only covers (components/account). Under the app lock, which stays on top. */}
+            <AccountLayer />
             {/* App lock: the cover and the lock screen over every screen and sheet, last so it is on top. It only
                 covers; nothing under it unmounts, so a take being kept finishes underneath (components/app-lock). */}
             <AppLockLayer />

@@ -248,3 +248,79 @@ export function verdict(m: { thinningMaxCompressed?: number | null; ipaBytes?: n
 export function mb(n: number): string {
   return `${(n / 1e6).toFixed(1)} MB`;
 }
+
+// ---------------------------------------------------------------------------
+// Size gate (BRIEF CI-SIZEGATE; NFR Z-02, Z-05, Z-06): compare a measurement with the committed baseline
+// ---------------------------------------------------------------------------
+
+export interface Baseline {
+  commit: string;
+  hbcBytes: number;
+  hbcGzipBytes: number;
+  assetsBytes: number;
+  fontBytes: number;
+  dependencyCount: number;
+  /** The 20 largest packages in the JS bundle, by minified bytes. */
+  owners: { owner: string; bytes: number }[];
+}
+
+/** Relative limits (BRIEF CI-SIZEGATE section 1): 100 KB or 1 percent of the bytecode, 50 KB per top-20 package. */
+export const LIMITS = { bytecodeBytes: 100_000, bytecodeShare: 0.01, ownerBytes: 50_000 } as const;
+
+export interface GateInput {
+  current: Baseline;
+  /** The BASE branch's copy of the baseline: the reference. Null when it cannot be read. */
+  reference: Baseline | null;
+  /** The PR body (an untrusted string). */
+  body: string;
+  /** The baseline file in this PR's tree equals the current measurement (the author updated it). */
+  baselineUpdated: boolean;
+  /** The repository owner applied the baseline label (read by the workflow from the issue events, not from the body). */
+  ownerApproved: boolean;
+}
+
+export interface GateResult {
+  pass: boolean;
+  lines: string[];
+}
+
+export const hasSizeChangeLine = (body: string): boolean => /^Size-change:\s*\S/m.test(body ?? '');
+
+/**
+ * The hard budgets (12 MB bytecode, 3 MB JS assets) have no waiver: `Size-change:` only moves the relative baseline.
+ * A relative growth passes only with all three of: a `Size-change:` line, the baseline updated in the same PR, and the
+ * owner's label. Output carries numbers and package names, never bundle content.
+ */
+export function checkSize(g: GateInput): GateResult {
+  const lines: string[] = [];
+  const hard: string[] = [];
+  if (g.current.hbcBytes > JS_BUNDLE_BUDGET_BYTES) hard.push(`bytecode ${mb(g.current.hbcBytes)} is over its ${mb(JS_BUNDLE_BUDGET_BYTES)} sub-budget (no waiver)`);
+  if (g.current.assetsBytes > JS_ASSETS_BUDGET_BYTES) hard.push(`JS assets ${mb(g.current.assetsBytes)} are over their ${mb(JS_ASSETS_BUDGET_BYTES)} sub-budget (no waiver)`);
+  const growth: string[] = [];
+  const ref = g.reference;
+  if (ref) {
+    const d = g.current.hbcBytes - ref.hbcBytes;
+    lines.push(`bytecode ${mb(g.current.hbcBytes)} (${d >= 0 ? '+' : ''}${d} bytes vs base)`);
+    if (d > LIMITS.bytecodeBytes || d > ref.hbcBytes * LIMITS.bytecodeShare) growth.push(`bytecode grew ${d} bytes (limit ${LIMITS.bytecodeBytes} bytes or 1 percent)`);
+    const before = new Map(ref.owners.map((o) => [o.owner, o.bytes]));
+    for (const o of g.current.owners) {
+      const was = before.get(o.owner) ?? 0;
+      if (o.bytes - was > LIMITS.ownerBytes) growth.push(`${o.owner} grew ${o.bytes - was} bytes (limit ${LIMITS.ownerBytes})`);
+    }
+    if (g.current.dependencyCount > ref.dependencyCount) growth.push(`app dependencies ${ref.dependencyCount} to ${g.current.dependencyCount}`);
+  } else {
+    lines.push('no base baseline to compare: only the hard budgets are checked');
+  }
+  for (const h of hard) lines.push(`FAIL ${h}`);
+  if (growth.length) {
+    const waived = hasSizeChangeLine(g.body) && g.baselineUpdated && g.ownerApproved;
+    for (const x of growth) lines.push(waived ? `notice: ${x}, accepted` : `FAIL ${x}`);
+    if (!waived) {
+      if (!hasSizeChangeLine(g.body)) lines.push('no "Size-change: <reason, owner>" line in the PR body');
+      else if (!g.baselineUpdated) lines.push('the baseline file was not updated in this PR');
+      else lines.push('the owner has not applied the baseline label');
+    }
+    return { pass: hard.length === 0 && waived, lines };
+  }
+  return { pass: hard.length === 0, lines };
+}

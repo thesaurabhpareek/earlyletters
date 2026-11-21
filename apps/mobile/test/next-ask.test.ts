@@ -10,6 +10,8 @@ import { en } from '@scribe/content';
 import {
   ASK_SESSION_GAP_MS,
   MAX_REMINDER_PRIMES,
+  FIRST_MONTH_MS,
+  firstMonthDone,
   localDay,
   nextAsk,
   primeAllowed,
@@ -30,6 +32,7 @@ const facts = (over: Partial<AskFacts> = {}): AskFacts => ({
   session: S1,
   askShownThisSession: false,
   askShownToday: false,
+  firstMonthDone: false,
   ...over,
 });
 
@@ -95,6 +98,45 @@ describe('[DR-12 B, F02 6.1] Keep the book: the second letter, or the first save
 
   it('nothing without a letter', () => {
     expect(nextAsk(facts({ lettersSaved: 0 }))).toBeNull();
+  });
+});
+
+describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, after the first month chapter', () => {
+  const later = (over: Partial<AskFacts> = {}) =>
+    facts({ firstLetter: false, lettersSaved: 6, primesShown: 1, keepBookOffered: true, session: S2, firstMonthDone: true, ...over });
+
+  it('the first month is done: the second save after it offers reminder_prime again, once', () => {
+    expect(nextAsk(later())).toBe('reminder_prime');
+  });
+
+  it('not before the first month is done', () => {
+    expect(nextAsk(later({ firstMonthDone: false }))).toBeNull();
+  });
+
+  it('only a second prime: not when none was shown (the first has its own slot), never a third (the cap of 2)', () => {
+    expect(nextAsk(later({ primesShown: 0 }))).toBeNull();
+    expect(nextAsk(later({ primesShown: MAX_REMINDER_PRIMES }))).toBeNull();
+  });
+
+  it('not when reminders are on, and not on the first letter', () => {
+    expect(nextAsk(later({ remindersOn: true }))).toBeNull();
+    expect(nextAsk(later({ firstLetter: true, lettersSaved: 1 }))).toBeNull();
+  });
+
+  it('one ask per session and per day still hold', () => {
+    expect(nextAsk(later({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(later({ askShownToday: true }))).toBeNull();
+  });
+
+  it('the account sheet keeps its earlier slot when both are due', () => {
+    expect(nextAsk(later({ keepBookOffered: false }))).toBe('keep_book');
+  });
+
+  it('the first month is 30 days after the first letter; unknown is not done', () => {
+    const t = 1_000_000;
+    expect(firstMonthDone(null, t)).toBe(false);
+    expect(firstMonthDone(t, t + FIRST_MONTH_MS - 1)).toBe(false);
+    expect(firstMonthDone(t, t + FIRST_MONTH_MS)).toBe(true);
   });
 });
 

@@ -1,0 +1,9 @@
+diff --git a/.github/workflows/ios-compile.yml b/.github/workflows/ios-compile.yml
+index 721271b6..ba96d2ab 100644
+--- a/.github/workflows/ios-compile.yml
++++ b/.github/workflows/ios-compile.yml
+@@ -307,3 +307,3 @@ jobs:
+           if [ "$EVENT" = pull_request ] && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
+-            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.ts$|apps/mobile/package\.json$|apps/mobile/ios/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
++            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.ts$|apps/mobile/eas\.json$|apps/mobile/package\.json$|apps/mobile/ios/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
+               native=false

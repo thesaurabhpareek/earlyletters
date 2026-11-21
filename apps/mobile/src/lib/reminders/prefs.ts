@@ -13,13 +13,15 @@
  * | `reminders.time` | `HH:MM`, 07:00 to 21:30 in 15-minute steps | `20:30` |
  * | `reminders.monthNotes` | `on` / `off` | `on` |
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
+ * | `reminders.onSince` | epoch ms, when reminders were last turned on (the anchor's second half, NS-13 R27) | absent |
+ * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
  *
  * While the app lock is on, names are off whatever that key says (F17-REQ-015; CDesO and CCO rule): the stored choice
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
  * the store listeners reschedule with the new answer (scheduler.ts).
  */
 import { appLockOn } from '../app-lock/prefs';
-import { currentUserId, getSetting, listChildren, listEntriesForChild, setSetting } from '../store';
+import { currentUserId, getSetting, listChildren, listDrafts, listEntriesForChild, setSetting } from '../store';
 import {
   clampReminderTime,
   DEFAULT_DAYS,
@@ -48,7 +50,15 @@ const K = {
   time: 'reminders.time',
   monthNotes: 'reminders.monthNotes',
   names: 'notifications.lockScreenNames',
+  session: 'reminders.session',
+  onSince: 'reminders.onSince',
 } as const;
+
+/** Every reminder setting above: cleared when the session ends (session.ts; NS-13-R14). */
+export const REMINDER_SETTING_KEYS: readonly string[] = Object.values(K);
+
+/** `on` while the reminders on this phone were set up inside a signed-in session (session.ts). */
+export const REMINDER_SESSION_KEY = K.session;
 
 const onOff = (key: string, fallback: boolean): boolean => {
   const v = getSetting(key);
@@ -111,21 +121,47 @@ export function lockScreenNamesOn(): boolean {
   return onOff(K.names, LOCK_SCREEN_NAMES_DEFAULT);
 }
 
-/** Visible books, with each child's "Include in my reminders" switch. Hidden books are never reminded. */
+/**
+ * Visible books, with each child's "Include in my reminders" switch and "Quiet this book" (`child_member_prefs.quiet_at`,
+ * read as `Child.quiet`). Hidden books are never reminded; the planner gives a quiet book nothing (planner.ts).
+ */
 export function plannerChildren(): PlannerChild[] {
-  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn }));
+  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn, quiet: c.quiet === true }));
 }
 
-/** Newest save by this phone's user across visible books (smart quiet, F2). Null when nothing is saved yet. */
+/**
+ * Newest letter made by this phone's user across visible books: a kept letter's `captured_at`, or a draft waiting at
+ * Keep or held (`listDrafts` never lists one being recorded or marked `discarding`), by its `createdAt` (NS-13-R8,
+ * R27). Smart quiet and the anchor both read it. Null when nothing is made yet.
+ */
 export function lastOwnSaveAt(): number | null {
   const me = currentUserId();
   let newest: number | null = null;
+  const see = (iso: string) => {
+    const t = Date.parse(iso);
+    if (Number.isFinite(t) && (newest === null || t > newest)) newest = t;
+  };
   for (const child of listChildren()) {
-    for (const e of listEntriesForChild(child.id)) {
-      if (e.authorId && me && e.authorId !== me) continue;
-      const t = Date.parse(e.capturedAt);
-      if (Number.isFinite(t) && (newest === null || t > newest)) newest = t;
-    }
+    for (const e of listEntriesForChild(child.id)) if (!(e.authorId && me && e.authorId !== me)) see(e.capturedAt);
+    for (const d of listDrafts(child.id)) see(d.createdAt);
   }
   return newest;
+}
+
+/** When reminders were last turned on (epoch ms), or null. */
+export function readOnSince(): number | null {
+  const n = Number(getSetting(K.onSince));
+  return getSetting(K.onSince) !== null && Number.isFinite(n) ? n : null;
+}
+
+/** Stamps the moment reminders were turned on; the back-off counts from it when no letter is newer (R27). */
+export function writeOnSince(at: number): void {
+  setSetting(K.onSince, String(Math.round(at)));
+}
+
+/** The anchor (NS-13 section 3a): the later of the newest made letter and `reminders.onSince`; null when neither exists. */
+export function anchorAt(): number | null {
+  const a = lastOwnSaveAt();
+  const b = readOnSince();
+  return a === null ? b : b === null ? a : Math.max(a, b);
 }

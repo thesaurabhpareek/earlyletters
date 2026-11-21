@@ -21,6 +21,7 @@ For any requirement id, anyone can see which test proves it, and every test that
 ## You read first
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/tdd/07-quality-test-strategy.md`, `.github/README.md` (CI layout and time budget), `docs/adr/0011-requirements-and-agent-workflow.md` (traceability chain).
+- New scope (on `develop` since #829): `docs/product/prd/14-test-plan.md` (levels, journeys J-N1 to J-N27, device matrix, P0 register), `docs/qa/DEVICE_TEST_PLAN.md` (the device run sheet you keep and the founder runs), and your rows BL-929, BL-930 and BL-948. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `QA engineer`.

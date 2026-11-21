@@ -2,8 +2,10 @@
 // the ops runbook scripts (20261004200000_ops_deletion_worker.sql).
 // Fictional family "Asha" only (CLAUDE.md). Run all DB tests: npm run test:db
 import { createDb, users } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, asAnon, sys, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, N, S, C } = users;
 // Supabase's storage.objects has owner (uuid, deprecated), owner_id (text) and created_at; the harness stub does not.
 await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now()`);
@@ -45,6 +47,18 @@ const SERVICE_ONLY = [
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
   `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
+  // 20261111010000 (CR-71 C3)
+  `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
+  `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
+  // 20261121000000 (NS-08-R21)
+  `select public.ops_end_session('${A}', '${A}')`, `select public.ops_new_device_sign_out(decode(repeat('00', 32), 'hex'))`,
+  `select public.ops_new_device_retention()`,
+  // 20261121010000 (NS-08-R21 sender)
+  `select public.ops_new_device_record('${A}', decode(repeat('00', 16), 'hex'), 'other')`, `select public.ops_new_device_pending_take()`,
+  `select public.ops_new_device_token_mint('${A}', '${A}', decode(repeat('00', 32), 'hex'))`,
+  // 20261121020000 (NDS-2 fill, NDS-5 re-key)
+  `select public.ops_new_device_pending_fill('${A}', '${A}', 'other', decode(repeat('00', 16), 'hex'))`,
+  `select public.ops_new_device_rekey('${A}', decode(repeat('00', 16), 'hex'), decode(repeat('01', 16), 'hex'))`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

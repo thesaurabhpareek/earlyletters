@@ -8,6 +8,9 @@
  *
  * The order, first match wins:
  *  1. server features off                -> `unchanged`
+ *  1a. another account is signed in on a phone that holds this owner's book -> `otherAccount` (BL-961, NS-10-R3,
+ *     `[X4-R1]`; lib/auth/account-scope.logic.ts): no book, no child step, no new-phone question. The screen cover
+ *     (components/account/account-layer.tsx) offers sign-out over every route; the route itself draws nothing.
  *  2. the phone holds a book             -> `openTonight` (R22: an ended session never locks a person out of reading,
  *     recording or export; sign-in is offered, not required). Only the under-18 stop beats it, and that stop is the
  *     root age gate's, which sits above every route and is not changed here.
@@ -15,7 +18,8 @@
  *  4. a session exists                   -> the account is asked first (NX-36-S17, `newPhone`): `openingBook`, `slowBook`,
  *     `offlineBook` or `noBookHere` until the account says it has no book; `childStep` only for `new`. A signed-in
  *     parent is never sent back to sign-in (R4), and never shown "Who is this book for?" while the book may be on its
- *     way. Step 2 still wins once the book is on the phone, except that `newPhone` holds the loading screen until the
+ *     way. Consent still to give (`needsConsent`) with no book is `finishSetup`, the held screen (BL-922a, NS-10-R0): never
+ *     the child step. Step 2 still wins once the book is on the phone, except that `newPhone` holds the loading screen until the
  *     first pull cycle is done or 10 seconds have passed.
  *  5. the local start was chosen         -> `childStep`, only if it was allowed (age Yes + constant on)
  *  6. offline, or sign-in failed or timed out -> `outage` (variant `offline` or `outage`); the local start is offered
@@ -27,7 +31,8 @@
  * switch is ever added, the CISO's condition is that it is disable-only: a remote value may turn the local start off,
  * never on, signed through ADR 0016.
  */
-import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
+import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
+import { authUserId, type AuthErrorKind, type AuthState } from '@/lib/auth/machine.logic';
 import type { OpeningView } from './new-phone.logic';
 
 /**
@@ -75,9 +80,19 @@ export interface FirstRunGateInput {
    * has not answered: the safe reading is "still opening", never the child step.
    */
   newPhone?: OpeningView;
+  /**
+   * BL-961: false while another account is signed in on a phone that holds this owner's book (account-scope.logic.ts).
+   * Absent counts as visible, as every caller before BL-961 meant.
+   */
+  bookVisible?: boolean;
+  /**
+   * FP-6 (NS-41-R25, O-19): `killSwitches.signIn` is on (signed config, hide-only, fail-open). A person with NO session who has no book
+   * meets the outage screen with the local start instead of the Welcome; a session, and a phone with a book, are never touched.
+   */
+  signInPaused?: boolean;
 }
 
-export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere';
+export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere' | 'otherAccount' | 'finishSetup';
 
 export interface FirstRunGateResult {
   step: FirstRunStep;
@@ -108,6 +123,9 @@ function localStartAllowed(ageAnswered: AgeAnswer, constant: boolean): boolean {
 
 export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
   if (!input.serverFeatures) return NOTHING;
+  // BL-961: never the owner's book, and never a new one either (it would be written into the owner's store and sent
+  // under the owner's account at their next sign-in).
+  if (input.bookVisible === false) return result('otherAccount');
   const constant = input.localStartFallback ?? LOCAL_START_FALLBACK;
 
   // A signed-in phone is being asked about its account (NX-36-S17). Only the under-18 stop beats it.
@@ -117,6 +135,7 @@ export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
     if (view === 'slow') return result('slowBook');
     if (view === 'offline') return result('offlineBook', { retryOnReconnect: true });
     if (view === 'noBook' && !input.hasLocalBook) return result('noBookHere');
+    if (view === 'consent' && !input.hasLocalBook) return result('finishSetup');
     if (view === 'arrived') return result('openTonight', { mayBeginBook: true, arrivedFromAccount: true });
   }
 
@@ -128,6 +147,8 @@ export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
   if (input.ageAnswered === 'no') return result('stop');
   if (input.hasSession) return result('childStep', { mayBeginBook: true });
   if (input.localStartChosen && localStartAllowed(input.ageAnswered, constant)) return result('childStep', { mayBeginBook: true });
+  // The sign-in pause renders as the outage with the local start (E-S14.signInPaused); the words say nothing of a switch or a pause.
+  if (input.signInPaused) return result('outage', { outage: 'outage', localStartOffered: localStartAllowed(input.ageAnswered, constant), retryOnReconnect: true });
 
   if (!input.online || input.signInFailed) {
     return result('outage', {
@@ -180,20 +201,18 @@ export function hasSessionIn(s: AuthState): boolean {
  *  - `checkingConsent`, and `signingOut` with sync `on` or `unknown`: the loading screen;
  *  - `ready` with sync `unknown`: the slow screen, or the connection screen with no connection; Try again there re-reads
  *    the consent gate (the route calls the provider's `refreshGate`), and sync on then asks the account.
- * A session that cannot be sent a book is `undefined`, so the route keeps the earlier answer (`new`, the child step): `ready`
- * or `signingOut` with sync `off` (sync declined), and `needsConsent`, where consent is not yet answered (the Terms or the
- * sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version bumped since the last acceptance;
- * `my_sync_gate()` is per account). No pull can reach any of them (canSync is false and the engine is stopped), so no book
- * lands while consent is outstanding. Known gap, accepted by CR-61 (17 Nov 2026, amended) and held in BL-922: nothing pushes
- * the consent sheet again at relaunch, so a `needsConsent` session with no local book keeps the child step. A book made
- * there has no owner (takeOwnership runs only from onSignedIn), so when setup is finished (Settings > Account > Finish
- * setup) the claim screen shows first (consentHandoff: askClaim); it joins the account as a second book only after Keep in
- * this account, and in build 13 the extra book can be hidden (Hide this book), not deleted, until F17-REQ-026 ships; no
- * letter lost. No session is `undefined` too. Pure; the route calls it only with the switch on.
+ * `needsConsent` (the Terms or the sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version
+ * bumped since the last acceptance; `my_sync_gate()` is per account) is `consent`, the held screen (BL-922a, NS-10-R0; CR-61
+ * amended): Finish setup, Try another way, Delete account and the export, never the child step. It is decided from auth state
+ * alone, so the 10 second limit holds by construction, and no pull can reach it (canSync is false and the engine is stopped).
+ * A session that cannot be sent a book and is not held is `undefined`, so the route keeps the earlier answer (`new`, the
+ * child step): `ready` or `signingOut` with sync `off` (sync declined). No session is `undefined` too. Pure; the route calls
+ * it only with the switch on.
  */
 export function heldNewPhoneView(s: AuthState, online: boolean): OpeningView | undefined {
   if (s.status === 'checkingConsent') return 'opening';
   if (s.status === 'ready' && s.sync === 'unknown') return online ? 'slow' : 'offline';
+  if (s.status === 'needsConsent') return 'consent';
   if (s.status === 'signingOut' && s.sync !== 'off') return 'opening';
   return undefined;
 }
@@ -206,6 +225,10 @@ export function gateInputsFromAuth(args: {
   newPhone?: OpeningView;
   /** From the connectivity source (use-online.ts). Omitted means unknown, which counts as online. */
   online?: boolean;
+  /** BL-961: `sync.ownerId` (store `currentUserId()`), the account that owns this phone's book; null before the first claim. */
+  phoneOwner?: string | null;
+  /** FP-6: `killSwitches.signIn` (lib/remote getRemoteConfig); read from the cached config, never the network. */
+  signInPaused?: boolean;
 }): FirstRunGateInput {
   const s = args.authState;
   return {
@@ -220,6 +243,8 @@ export function gateInputsFromAuth(args: {
     localStartFallback: LOCAL_START_FALLBACK,
     localStartChosen: args.localStartChosen,
     newPhone: args.newPhone,
+    signInPaused: args.signInPaused,
+    bookVisible: bookVisibleTo({ owner: args.phoneOwner ?? null, sessionUser: authUserId(s) }),
   };
 }
 

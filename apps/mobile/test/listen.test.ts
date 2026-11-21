@@ -218,8 +218,9 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/scale=\{1\.75\}/);
   });
 
-  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines; whole at accessibility sizes (P4 critics S5)', () => {
-    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{large \? undefined : 3\}/);
+  it('S11: the prompt is the literary line in `prompt`, textMuted, and is shown whole at every text size (no line cap; P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen\.prompt">/);
+    expect(c).not.toMatch(/variant="prompt"[^>]*numberOfLines/);
     expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
   });
 
@@ -344,7 +345,7 @@ describe('a long take does not grow memory (#480)', () => {
 });
 
 describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
-  it('[BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
     const c = code(listen);
     const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
     // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].

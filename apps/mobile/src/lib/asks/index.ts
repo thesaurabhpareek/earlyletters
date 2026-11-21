@@ -11,6 +11,7 @@
  * | `asks.reminderPrimes` | times the reminder prime was shown, from any source (cap MAX_REMINDER_PRIMES) |
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
+ * | `asks.firstLetterAt` | time (ms epoch) of the first letter, for the second prime after the first month (BL-518) |
  * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
  *
  * Sessions are tracked here, not by the analytics lifecycle, because analytics is off in the whole 1.0 line
@@ -21,7 +22,7 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
-import { localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+import { firstMonthDone, localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
 
 export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
@@ -29,6 +30,7 @@ const K = {
   primes: 'asks.reminderPrimes',
   keepBook: 'asks.keepBookOffered',
   firstLetterSession: 'asks.firstLetterSession',
+  firstLetterAt: 'asks.firstLetterAt',
   lastAskDay: 'asks.lastAskDay',
 } as const;
 
@@ -77,6 +79,8 @@ export function noteReminderPrimeShown(): void {
 export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean }, now = Date.now()): NextAsk {
   try {
     if (input.firstLetter && getSetting(K.firstLetterSession) === null) setSetting(K.firstLetterSession, String(session));
+    if (input.firstLetter && getSetting(K.firstLetterAt) === null) setSetting(K.firstLetterAt, String(now));
+    const at = Number(getSetting(K.firstLetterAt));
     const stored = Number(getSetting(K.firstLetterSession));
     const ask = nextAsk({
       lettersSaved: lettersOnPhone(),
@@ -89,6 +93,7 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       session,
       askShownThisSession: askSession === session,
       askShownToday: getSetting(K.lastAskDay) === localDay(now),
+      firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
     if (ask === 'keep_book') {
       setSetting(K.keepBook, 'on');

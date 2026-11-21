@@ -36,6 +36,7 @@ import {
 } from '../src';
 import { alternateStories } from '../src/stories.en';
 import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
+import { NOTIFICATION_PATH } from './support/notification-scope';
 
 type Leaf = { path: string; text: string };
 
@@ -158,7 +159,7 @@ describe('characters', () => {
   // again and again, and VOICE.md allows at most one exclamation mark a month across all notifications.
   it('uses at most 3 exclamation marks across all product copy, within a budget per surface', () => {
     const count = (items: Leaf[]) => items.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
-    const isNotification = (l: Leaf) => /^(en\.notifications|features\.reminders\.(neutral|together))\./.test(l.path);
+    const isNotification = (l: Leaf) => NOTIFICATION_PATH.test(l.path);
     const surfaces = {
       notifications: IN_APP.filter(isNotification),
       inApp: IN_APP.filter((l) => !isNotification(l)),
@@ -236,11 +237,12 @@ describe('prompts', () => {
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
     // readme; cancelBy: trial end; coParent: deletion summary; time: a reminder time ("8:30 PM");
     // first, domain: the masked address as VoiceOver says it (onboarding.child.spokenAddress).
+    // device, when: the new-device confirm page (newDevicePage, E83), the same two the new-device email fills.
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent', 'time', 'first', 'domain',
+      'percent', 'format', 'cancelBy', 'coParent', 'time', 'first', 'domain', 'device', 'when',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
@@ -293,7 +295,7 @@ describe('no daily rhythm, streaks or gap counts', () => {
   // no rhythm for the parent. Everything the product says about itself is in scope.
   const RHYTHM_CHECKED = EVERY.filter((l) => !l.path.startsWith('prompt.'));
   // Anything that reminds, notifies or celebrates.
-  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path));
+  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path) || NOTIFICATION_PATH.test(l.path));
   const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
   // "one day" is left out on purpose: it means "someday", which VOICE.md's legacy rule asks for.
   const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;

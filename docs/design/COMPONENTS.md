@@ -410,9 +410,9 @@ type EmptyStateProps = {
 
 ### 2.15a StateScreen and InlineState (loading, empty, error, not found)
 Added after the QA journey critique (J05-03, J05-04, J06-13, J10-11, J11-07 and the "_journey" entry found six treatments for one job). Built on `EmptyState`; the rules are data in `state-screen.logic.ts`.
-- **Shape:** a picture, a heading, one plain sentence, then the way forward as a full-width 56 pt button pinned at the bottom (thumb zone), with at most quiet 44 pt options beneath it. Never red, never a spinner, never a count of what is missing.
+- **Shape:** a picture, a heading, one plain sentence, then the way forward as a full-width 56 pt button at the bottom of the content (thumb zone), with at most quiet 44 pt options beneath it. RULE (PATH-05, `SCREEN-PATHS-20nov.md`; ruling 20 Nov 2026): below AX1 the button is pinned at the bottom; from AX1 up it scrolls with the content, last, and is not pinned. Built today: `state-screen.tsx` keeps the actions outside the `ScrollView` at every size (READ, lines 121 to 141), so it still pins at AX1 and up. That is a gap for `mobile`; this file states the rule, not the code. Never red, never a spinner, never a count of what is missing.
 - **Layout (Oct 16, EXPERIENCE_PASS S13, S23, S37, S49):** the block is centred with 20 pt gutters (`STATE_LAYOUT`), the title in `title2`, the sentence in `body` `textMuted`. The picture is one of three slots: `art` (a line drawing, shown complete), `glyph` (a Phosphor icon, Light 40 pt in `textMuted`, in a 72 pt `accentSoft` circle: MicrophoneSlash, WarningCircle), or `drawing` (any picture the screen brings: the book cover, the held letter). The block arrives with one 200 ms fade; nothing else moves except a loading drawing's breath (`stateVisual`).
-- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off). A crash is `PlainScreen`'s, not this one's (see Root below). Content scrolls, actions stay put, so nothing clips at AX5. A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
+- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off). A crash is `PlainScreen`'s, not this one's (see Root below). Content scrolls, so nothing clips at AX5; the actions stay put below AX1 and join the end of the scroll from AX1 (see Shape). A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
 - **`InlineState`:** the same words as a calm card for one region of a screen that has other content (Review while words are on their way, a failed transcription). `children` hold a progress line.
 - **`loading`:** the drawing breathes (the slowest loop we own, off under Reduce Motion) and the region is announced as busy. It never carries a primary action; a way out (Type instead) is quiet.
 - **Root:** `app/+not-found.tsx` uses `StateScreen` with the window drawing (S49). The root `ErrorBoundary` and launch recovery use `PlainScreen` (`components/resilience/plain-screen.tsx`, S50, S51). It draws the same block without providers, motion or navigation, because those may be what failed. The error text is never shown or logged.
@@ -576,6 +576,14 @@ type PhotoFrameProps = {
 - **Motion:** image fade-in; pager dots on `snappy`.
 - **Builds on:** `expo-image` (already installed; `placeholder` blurhash, `contentFit`), horizontal paging ScrollView or FlashList horizontal. Web: `next/image` + CSS scroll-snap.
 - **Android later:** same code. Check that horizontal paging inside a vertical FlashList does not steal the card tap or vertical scroll on Android.
+- **Frame and sizes (21 Nov 2026, conformance F-12, F-19):** the frame is `stroke.control` (1 pt) in the colour token `mediaFrame` (ruling 27: dark `#716A62`, 3.15:1 or better on bg, surface and surfaceRaised; light keeps `line`; Increase Contrast uses the `line` override), never a raw width or `line`. Maximum boxes are `tokens.picture`: Ready thumbnail `thumbMaxPt` 160, `thumbAxMaxPt` 88 from AX3, lens list copy `lensThumbPt` 72 (long side), letter page `letterColumnRatio` 0.75 and `letterWindowRatio` 0.4, `letterAxMaxPt` 88 from AX3. The last three are PROPOSED [U] for design to confirm: no design file sets them; mobile drew 120 for the large-text cap, and 88 is the existing step. The picture is fitted, never cropped (R42).
+- **Radius (F-26, recommendation, no token change):** `radius.sm` for the 72 pt lens thumbnail (B-S04 draws it; `DESIGN_LANGUAGE` 4 says `sm` is for thumbnails and a 14 pt corner on a 72 pt box reads as a pill), `radius.md` for the letter page picture and Ready. Spec 01 says `md` for all, so it needs one line changed (design to confirm); mobile then adds a `radius` prop to `PhotoFrame`. Until then the code draws `md` everywhere.
+
+### 2.23a ErrorLine (built 21 Nov 2026, `components/ui/error-line.tsx`)
+- **Purpose:** one calm line for a failure the person can act on while the page keeps working: the error kind of `Notice` (DESIGN-SYSTEM-DELTA 2.3). Extracted from the sign-in `ErrorLine` with the same look and behaviour and none of its imports, so photo screens can use it.
+- **Look:** a 20 pt `WarningCircle` in `caution` and the words in `subhead` on the `secondary` chip, `rounded-2xl`, 16 x 12 padding. Words never truncate. Red is never used.
+- **A11y:** one element, the words are the label, glyph not read; a polite live region (Android) and `announce()` (iOS), so it is read once on each platform; never assertive. Rules and tests in `error-line.logic.ts`.
+- **Motion:** opacity fade over `motion.swapMs`, the same fade under Reduce Motion.
 
 ---
 
@@ -588,6 +596,12 @@ type PhotoFrameProps = {
 - **Motion:** a new name cross-fades (`fadeMs`; first run debounces typing itself). A new signature cross-fades on the front's foot line on `snappy` (S06: a chip fills the field and the foot line together; a typed one arrives after first run's pause), and a removed one fades out. Opening: the front holds `motion.cover.holdMs` (300 ms), then cross-fades to the flyleaf with a `cover.dx` (8 pt) shift on `standard`, no 3D flip; `openOnMount` plays it on arrival. `animate={false}` jumps to the end (a tap that skips). Reduce Motion: no cross-fade, the open state at once.
 - **A11y:** decorative (hidden) unless given `accessibilityLabel`, then one image. Its type does not grow with Dynamic Type: it is artwork with a measured layout, like the app icon, and the same name is always real, scalable text on the screen around it.
 - **Android later:** same code.
+
+### 2.25 Notice (PROPOSED, 20 Nov 2026)
+An inline message for a condition the person can act on while the page stays usable (a sign-in code that ran out, notifications off, one choice that did not save). Kinds: info, caution, error, offline. Never red; the glyph carries the kind and the words stay in `text`; one polite live region; no auto-dismiss for error or offline; no count prop. Full spec and states table: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.3. Not built.
+
+### 2.26 PermissionPrimer (PROPOSED, 20 Nov 2026)
+One short note of ours before Apple's own permission alert, extracted from the microphone primer in `app/listen.tsx` when the Face ID line is built. No Allow or Don't allow buttons of ours; Continue is the only path to the iOS alert; shown once while the system has not asked. Spec and states: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.2. Not built.
 
 ## 3. Build order (smallest set that ships the capture loop)
 

@@ -51,6 +51,7 @@ import { markOn } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { HeldRow } from '@/components/tonight/held-row';
+import { PhotoStartButton } from '@/components/photos/photo-start';
 import { PlusLine } from '@/components/tonight/plus-line';
 import {
   draftCards,
@@ -76,10 +77,12 @@ import { startCapture } from '@/lib/capture/start-capture';
 import { copy, fill } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { usePhotoStart } from '@/lib/photos/use-photo-start';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import {
   deleteEntry,
+  getActiveChild,
   getActiveChildId,
   getFamily,
   listDrafts,
@@ -94,15 +97,22 @@ import {
 const M = tokens.motion;
 
 /**
- * What Tonight shows: the book, every waiting draft (listDrafts, all of them), the book's entries, and the moment they
- * were read. The day, the greeting's daypart, the lamp's tone and each card's dateline all come from `at`, so a room read
- * again (on focus, on a change in the store, on coming back from the background) is never stale.
+ * What Tonight shows: the book, whether this person quieted it, every waiting draft (listDrafts, all of them), the
+ * book's entries, and the moment they were read. The day, the greeting's daypart, the lamp's tone and each card's
+ * dateline all come from `at`, so a room read again (on focus, on a change in the store, on coming back from the
+ * background) is never stale.
  */
-type Room = { family: Family | null; drafts: Draft[]; entries: Entry[]; at: Date };
+type Room = { family: Family | null; quiet: boolean; drafts: Draft[]; entries: Entry[]; at: Date };
 
 function readRoom(): Room {
   const childId = getActiveChildId();
-  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries(), at: new Date() };
+  return {
+    family: getFamily(),
+    quiet: getActiveChild()?.quiet === true,
+    drafts: childId ? listDrafts(childId) : [],
+    entries: listEntries(),
+    at: new Date(),
+  };
 }
 
 export default function Tonight() {
@@ -197,7 +207,15 @@ export default function Tonight() {
   // The held list also closes when the person leaves Tonight (blur).
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
-  const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
+  // A quieted book brings nothing back (NS-23-R8, J-N19).
+  const monthAgo = useMemo(
+    () => resurfaced(room?.entries ?? [], today, cards.length, { quiet: !!room?.quiet }),
+    [room?.entries, room?.quiet, today, cards.length],
+  );
+
+  // Photo-first (NS-01, behind EXPO_PUBLIC_PHOTOS): the one place a photo can start a letter, through the one capture
+  // entry once the system picker has returned a picture. Absent when off.
+  const photoStart = usePhotoStart(() => startCapture({ source: 'photo', prompt: { key: prompt.key, libraryVersion: PROMPT_LIBRARY_VERSION } }));
 
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
@@ -249,6 +267,7 @@ export default function Tonight() {
         <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => startCapture({ source: 'speak', prompt: promptParam })} />
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
+      {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} failed={photoStart.failed} /> : null}
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
       ) : (

@@ -122,8 +122,8 @@ public class ScribePhotoModule: Module {
 
   @MainActor
   private func presentPicker() async throws -> NSItemProvider? {
-    // A sheet that was shown and is gone without answering (dismissed by code) is answered here as a Cancel.
-    if let open = PickerSession.current, open.shown, open.host?.presentingViewController == nil { open.cancel() }
+    // A sheet that is gone (freed, or shown and no longer presented) without answering is answered here as a Cancel.
+    if let stale = PickerSession.current, stale.host == nil || (stale.shown && stale.host?.presentingViewController == nil) { stale.cancel() }
     // One picker at a time, as scribe-store's StoreSheet: a second call is refused at once and presents nothing.
     guard PickerSession.current == nil else { throw ScribePhotoException.pick }
     // A presenter on its way out, or already showing something, would refuse the picker and never call back.
@@ -252,9 +252,10 @@ private final class PickerSession: NSObject, PHPickerViewControllerDelegate {
     PickerSession.current = self
   }
 
+  /// Answers first, then closes the sheet, so its going away can never answer before the pick.
   func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-    host?.dismiss(animated: true)
     finish(.success(results.first?.itemProvider))
+    host?.dismiss(animated: true)
   }
 
   /// No picture: the sheet went away without a pick, or the next call found this session stale.
@@ -277,8 +278,10 @@ private final class PickerSession: NSObject, PHPickerViewControllerDelegate {
 
 /// The picker's sheet: PHPickerViewController embedded as its only child, presented in its place. Whatever makes it go
 /// away (Cancel, a pick, a swipe-down, or react-native-screens dismissing every modal by code, which no delegate hears)
-/// ends with viewDidDisappear, which answers a Cancel if nothing answered yet (scribe-store's onDisappear). It holds
-/// the session, so the picker's buttons keep working for as long as it is on screen.
+/// ends with viewDidDisappear, which answers a Cancel if nothing answered yet (scribe-store's onDisappear). It answers
+/// only when the sheet is leaving (being dismissed, or no longer presented, as react-native-screens' own screens
+/// check); a cover over it answers nothing, and the stale check catches anything else. It holds the session, so the
+/// picker's buttons keep working for as long as it is on screen.
 private final class PickerHost: UIViewController {
   let session: PickerSession
   private let picker: PHPickerViewController
@@ -304,6 +307,6 @@ private final class PickerHost: UIViewController {
 
   override func viewDidDisappear(_ animated: Bool) {
     super.viewDidDisappear(animated)
-    session.cancel()
+    if isBeingDismissed || presentingViewController == nil { session.cancel() }
   }
 }

@@ -301,8 +301,26 @@ export const en = {
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
+    // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R9). Replaces discardBody on Review and Listen
+    // once approved; BL-977 switches both screens and retires discardBody. Option A, recommended: the claim NS-09
+    // section 19 enables, plus the R9 clause. "From this phone" matches the experience pass's ON_DEVICE_ONLY pattern,
+    // which covers only that pass's keys; C avoids it. Every option's "cannot be brought back" meets TDD 08 K2: when
+    // the server keeps a let-go held draft (newer words from another phone, or a legal hold:
+    // 20261016000000_sync_v1_server.sql:782-784), the phone returns it as ready with its words (sync/merge.ts:585-591).
+    // The recording file is gone, but the draft comes back. So counsel reads every option until K2 is ruled.
+    // B: "It will be removed, and it cannot be brought back." (no place: also promises the account copy goes).
+    // C: "It will be removed from the phone, and it cannot be brought back." (e2e area A).
+    discardBodyNoUndo: "It will be removed from this phone, and it cannot be brought back.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
+    // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R6). One row per recording whose let-go has not
+    // finished after 3 launches, with Remove now; the same words stay if Remove now does not finish either. Kept here
+    // with the other let-it-go words, so the row reads the same whichever screen shows it (Storage, as the card says,
+    // or Where your letters live: TDD 08 K3). Option A, recommended (e2e area A): no count, and two rows never both
+    // say "One". B: "One recording is still on this phone." (the card's intent; reads as a count).
+    letGoStuck: "A recording you let go is still on this phone.",
+    removeNowButton: "Remove now",
+    removeNowA11yHint: "Tries again to remove this recording.",
     // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
     // it into the letter when it flips (F04-REQ-041); "Paused." is said once the recording has stopped.
     toggleA11y: "Pause or keep talking",
@@ -368,6 +386,18 @@ export const en = {
       title: "That was very short",
       body: "Keep it, or let it go?",
     },
+    // TODO(founder): PROPOSED, needs word approval (BL-925; NS-09-R4a, R4b). Let it go was confirmed but the phone
+    // would not remove the file yet: one muted line under the words, once for that recording on that Review visit,
+    // read by VoiceOver once the screen settles (BL-926). Shown only when the row is still marked discarding (the
+    // delete threw); letItGo also returns false for a missing draft or a row removal that failed after the file went.
+    // What the code does: the launch sweep tries again once per launch, after the first frame (sweep.ts:152-153).
+    // The failure counter (NS-09-R15) and the Storage row (R6) are not built, and Remove now can fail again.
+    // No "we" (only the sanctioned promises say it), and none of "failed", "error", "deleted everywhere", "instantly".
+    // Option A, recommended: says only what the sweep does. B: "This recording is still on this phone. {app} will
+    // finish removing it." (the card's intent; a promise of completion the code retries but cannot ensure).
+    // C: "This recording is not removed yet. {app} tries again each time it opens." (e2e area A; the sweep runs at
+    // launch, not each time the app comes back from the background).
+    letGoPending: "This recording is still on this phone. {app} will try again the next time it starts.",
     emptyTake: {
       title: "Nothing was recorded",
       body: "The recording ended before any sound came in.",
@@ -687,6 +717,9 @@ export const en = {
   },
 
   notifications: {
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; NS-32-R13, NS-13-R33; words-packet row 18, option A). The
+    // one line iOS shows for a reminder when previews are hidden. No name, count, day or brand.
+    previewPlaceholder: "Something for the book, whenever you have a minute.",
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
@@ -1078,9 +1111,17 @@ export const en = {
       cta: "Add {child}'s book",
       // Before a name is typed, or when the filled `cta` would pass 22 characters.
       ctaShort: "Add this book",
+      // PROPOSED (spec 10, AB-1, 21 Nov 2026): the local write failed. The page stays, the typed name and date are kept.
+      // Shown in a notice with the common Try again button. A full phone uses errors.phoneFull.
+      saveFailed: "This book did not save. What you typed is still here.",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me row that opens this page. The built title "Add a child" is unchanged until
+      // the founder approves the new words; nothing reads this key yet.
+      rowLabel: "Add a book",
     },
     settings: {
       sectionTitle: "Children",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me group title for the books. Nothing reads this key until the founder approves it.
+      booksSectionTitle: "Books",
       title: "{child}'s book",
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
@@ -1362,6 +1403,9 @@ export const en = {
     helpSubject: "Help with the app",
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
+    // PROPOSED (spec 08, L1, 21 Nov 2026): a Terms or Privacy link the iPhone could not open. ST-NOTICE above the list,
+    // with the common Try again button. Says what did not happen, no cause.
+    legalOpenFailed: "That page did not open. Nothing has changed.",
     versionLabel: "Version",
     // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
     // registered note under About already says it once (CLO-5, 1 Nov 2026).
@@ -1414,6 +1458,8 @@ export const en = {
       line: "Every um and false start stays in.",
     },
     footer: "Either way, we never rewrite your words.",
+    // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
+    saveFailed: "That choice did not save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
