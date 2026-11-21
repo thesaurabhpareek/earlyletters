@@ -28,7 +28,7 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R01 (MUST)** A PR has one concern: one backlog item, one finding fix or one refactor, never a refactor mixed with a behaviour change. *Why:* mixed PRs cannot be reverted cleanly and reviewers miss the behaviour change. *Enforced by:* review (principal-architect); `CLAUDE.md` "Branches and commits"; PR template.
 
-**CODE-R02 (MUST)** A PR changes at most 400 lines and 20 files, not counting the lockfile, generated files and test data files (golden corpora, fixtures). Above that, split it, or write `Size exception: <reason>` in the PR body for the founder to accept. *Why:* review quality collapses with size; Google's guidance puts about 100 lines as reasonable and 1000 as usually too large. *Enforced by:* not yet: gap CODE-G1 (a CI size check reading `gh api .../pulls/<n>/files`). For reference, PR #29 has 1,668 insertions and 445 deletions across 17 files.
+**CODE-R02 (MUST)** A PR changes at most 400 lines and 20 files, not counting the lockfile, generated files and test data files (golden corpora, fixtures). Above that, split it, or write `Size exception: <reason>` in the PR body for the founder to accept. *Why:* review quality collapses with size; Google's guidance puts about 100 lines as reasonable and 1000 as usually too large. *Enforced by:* the check is written but not running: `scripts/guards/pr-size.mjs` with tests (#1096), and a proposed job in `docs/ops/proposed/pr-size.md` that runs only when the founder pastes the workflow (agents cannot edit `.github/workflows/`). Gap CODE-G1 stays open until then. For reference, PR #29 has 1,668 insertions and 445 deletions across 17 files.
 
 **CODE-R03 (MUST NOT)** A PR does not weaken, skip or delete a test to make it pass; a test that is wrong is fixed in its own commit with the reason in the PR body. *Why:* tests are the specification (principle 5). *Enforced by:* review; `docs/agents/OPERATING_MODEL.md` section 4.
 
@@ -50,6 +50,8 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R10 (MUST NOT)** Code under `packages/*/src` does not import `react-native`, `expo*`, `node:*` or any platform global; package `src` compiles with `types: []`, tests in a separate config. *Why:* the same code runs in Deno Edge Functions and Next.js (ADR 0010, MONO-02). *Enforced by:* partly: `packages/core/tsconfig.json` has `types: []` today; `analytics`, `content` and `design-tokens` include `node` types (MONO-02); lint rule not yet (MONO-01, WS-12).
 
+Import cycles are checked, though no rule number names them yet: `apps/mobile/test/import-graph.test.ts` (gate G5; #1090, hardened in #1127) walks the value-import graph of `apps/mobile/src`, `packages/core`, `api`, `content` and `analytics` with Tarjan's algorithm and fails on any cycle (ratchet at zero). A dynamic `import()` is not an edge, and the app uses one on purpose in `lib/billing/plan-store.ts`. The planned boundary scan for CODE-R10 and CODE-R11 (gate G4, `boundaries.test.ts`) is not on `develop`: `apps/mobile/test/` has no such file.
+
 **CODE-R11 (MUST NOT)** Screens and components do not import `expo-sqlite`, `apps/mobile/src/lib/db/*` or native audio and file modules; they call `apps/mobile/src/lib` functions. *Why:* one data-access layer that tests can cover (MOB-04). *Enforced by:* not yet: WS-12 `no-restricted-imports` (MONO-01, MOB-08). PR #29 removes `expo-sqlite` from `store.ts`.
 
 **CODE-R12 (SHOULD)** A new package has an `exports` map and imports that work without a bundler; the module format is settled by the MONO-04 ADR before the first Edge Function imports a package. *Why:* raw TS with extensionless imports breaks Deno and Next.js consumers (MONO-04). *Enforced by:* not yet: MONO-04.
@@ -64,7 +66,7 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R15 (MUST)** Errors that callers branch on are typed: an `Error` subclass with a stable `code` string, or a result union (`{ ok: true, ... } | { ok: false, code }`); callers never match on message text. *Why:* messages change; codes are contracts (CORE-13; the same reason Postgres says to test SQLSTATE, not text). *Enforced by:* review; not yet as lint (CORE-13). Good examples: `MigrationError` (`apps/mobile/src/lib/db/migrations.ts`), `TranscriberUnavailable` (`apps/mobile/src/lib/transcribe.ts`).
 
-**CODE-R16 (MUST NOT)** Error messages do not include user data. *Why:* messages reach logs and crash reports (chapter 07, LEGAL-REQ-014). Today `packages/core/src/age.ts` line 15 puts the input date (a child's date of birth is L4) into the message: gap CODE-G2. *Enforced by:* review; log canary (chapter 10, OBS-R10).
+**CODE-R16 (MUST NOT)** Error messages do not include user data. *Why:* messages reach logs and crash reports (chapter 07, LEGAL-REQ-014). `packages/core/src/age.ts` throws `InvalidIsoDateError`, whose message is the fixed code `invalid_iso_date` and never the date (#1118, #1146); a child's date of birth is L4. Gap CODE-G2 is closed for `age.ts`; other throw sites are still found by review. *Enforced by:* review; log canary (chapter 10, OBS-R10).
 
 ### Dependencies
 

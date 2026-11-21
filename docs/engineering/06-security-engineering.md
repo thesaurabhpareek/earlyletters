@@ -30,9 +30,9 @@ This chapter covers everything around identity that keeps a family's letters saf
 
 ### Secrets
 
-**SEC-R02 (MUST)** Every secret has a row in `docs/ops/SECRETS.md`: name, store (Supabase function secrets, GitHub Actions secret or Environment, EAS env, founder password manager), who reads it, owner, rotation interval, revocation steps. Never a value. *Why:* PINF-05, LEGAL-REQ-026, TDD 04 3.9. *Enforced by:* not yet: WS-18 (`docs/ops/SECRETS.md`), no PR open.
+**SEC-R02 (MUST)** Every secret has a row in `docs/ops/SECRETS.md`: name, store (Supabase function secrets, GitHub Actions secret or Environment, EAS env, founder password manager), who reads it, owner, rotation interval, revocation steps. Never a value. *Why:* PINF-05, LEGAL-REQ-026, TDD 04 3.9. *Enforced by:* review. `docs/ops/SECRETS.md` is on `develop` (#1094); nothing checks that every secret has a row.
 
-**SEC-R03 (MUST NOT)** Commit a secret, put one in `EXPO_PUBLIC_*`, or embed one in the app bundle. Public identifiers (Supabase URL and publishable key, PostHog project key, Sentry DSN) are listed as public so scanners allow them. *Enforced by:* GitHub secret scanning (on, per the review); gitleaks full-history job in `.github/workflows/security.yml`, pending PR #30; not yet: `.ipa` bundle scan (TDD 04 8.3, release gate).
+**SEC-R03 (MUST NOT)** Commit a secret, put one in `EXPO_PUBLIC_*`, or embed one in the app bundle. Public identifiers (Supabase URL and publishable key, PostHog project key, Sentry DSN) are listed as public so scanners allow them. *Enforced by:* GitHub secret scanning (on, per the review); the repo scanner `scripts/packs/secret-scan.mjs` and `apps/mobile/test/secret-scan.test.ts` (#1094; keys, private key blocks and tokens; it runs in the `unit` job, and its own CI step is proposed in `docs/ops/proposed/secret-scan.md`); gitleaks full-history job in `.github/workflows/security.yml`, pending PR #30; not yet: `.ipa` bundle scan (TDD 04 8.3, release gate).
 
 **SEC-R04 (MUST)** Credentials are scoped to one project and one job: project-scoped Supabase database URLs or secret keys per environment, one secret key per backend component, never an account-wide Supabase personal access token in CI (PINF-05, WS-14). Deploy secrets live in a GitHub Environment with required approval. *Enforced by:* not yet: WS-14 (`deploy-db.yml`, `docs/ops/DEPLOY.md`).
 

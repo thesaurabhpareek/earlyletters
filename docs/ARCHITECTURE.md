@@ -299,7 +299,7 @@ Open questions: Does a meaningful share of target families code-switch? Is the L
 
 ## 12. Decisions index
 
-ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh), 0013 Apple-native subscriptions (StoreKit 2 direct; supersedes 0007's digital half), 0101 UI component library. Dated product and architecture decisions: `docs/DECISIONS.md`. Milestones: `docs/ROADMAP.md`.
+ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh), 0013 Apple-native subscriptions (StoreKit 2 direct; supersedes 0007's digital half), 0101 UI component library. ADRs 0014 to 0035 also exist, most of them Proposed (0029 to 0035 filed on 20 Nov 2026 for the new scope); read each file's `Status` line, and `docs/adr/CROSSWALK-new-scope.md` for the id map. Dated product and architecture decisions: `docs/DECISIONS.md`. Milestones: `docs/ROADMAP.md`.
 
 ## Sources (opened 1 Oct 2026)
 
