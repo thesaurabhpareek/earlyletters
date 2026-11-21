@@ -50,6 +50,13 @@
 //   missing"` and a note under the table. If the PR's file list is incomplete (count differs from
 //   changed_files, or paging hit its cap) the verdict is NEEDS-REVIEW, reason "file list incomplete".
 //   It is a report; nothing here merges.
+// - Stale base: for an otherwise ready PR, REST compare `<base>...<head>` gives behind_by. If behind_by > 0 and the
+//   files changed on the base since the merge-base (compare `<head>...<base>`) share a top-level workspace with the
+//   PR's own files (workspaceOf: apps/<x>, packages/<x>, docs/<x>, else the first directory; a root file is
+//   "(root)"), the verdict is NEEDS-UPDATE: green checks and reviews were earned on an old base (strict status checks
+//   are off, so GitHub does not stop it; 21 Nov, #1128 and #839). behind_by > 0 with no shared workspace stays READY and
+//   prints a note with the count. If either compare call fails, is not a number, or the base file list may be cut
+//   off (300 files), the verdict is NEEDS-REVIEW with reason "base compare failed", never READY.
 // - Claims: lines of docs/agents/CLAIMS.md (if present, not required) that mention
 //   `#<pr>`. Holder = the cell after the PR in a table row, else `by <x>`, `holder: <x>`
 //   or `@<x>` on the line (U: the file's format is not fixed anywhere yet).
@@ -65,6 +72,7 @@
 //                  PASS WITH NOTES (BLOCKED, CHANGES, FAIL, ...); a later pass clears it
 //   NEEDS-REVIEW   a counted PASS is missing and no older-sha review exists, or the PR touches the
 //                  security-lens trigger list and no counted review names that lens (reason)
+//   NEEDS-UPDATE   otherwise ready, but the base is behind and the new base commits touch a workspace the PR touches
 //   STALE-REVIEW   a counted PASS is missing at head, and one exists at an older sha
 //   CI-FAIL        a required context concluded with something other than success
 //   WATCH-RED      native/lockfile PR and a macOS check is red (names the check)
@@ -158,6 +166,23 @@ export function effectiveVerdict(word, body) {
   if (rests.some((r) => !/^none\b/i.test(r))) return `${word} (open Must fix)`;
   if (word === "PASS WITH NOTES" && rests.length === 0 && !NO_MUST_FIX.test(String(body ?? ""))) return `${word} (no "Must fix: none" line)`;
   return word;
+}
+
+/** Compare lists at most this many files; a list this long may be cut off and cannot prove "no overlap". */
+export const COMPARE_FILE_CAP = 300;
+/** Pure: the top-level workspace a path belongs to: apps/<x>, packages/<x>, docs/<x> (docs for a file directly in docs/), else the first directory (scripts, supabase, ...); a root file is "(root)". */
+export const workspaceOf = (path) => {
+  const parts = String(path ?? "").split("/");
+  if (parts.length < 2) return "(root)";
+  if (["apps", "packages"].includes(parts[0])) return parts.length > 2 ? `${parts[0]}/${parts[1]}` : parts[0];
+  if (parts[0] === "docs") return parts.length > 2 ? `docs/${parts[1]}` : "docs";
+  return parts[0];
+};
+const workspacesOf = (files) => [...new Set(files.flatMap((f) => [f?.filename ?? f, f?.previous_filename]).filter((n) => typeof n === "string").map(workspaceOf))];
+/** Pure: { behindBy, shared } where shared = workspaces touched both by the PR files and by the base files since the merge-base. */
+export function staleBase({ behindBy, prFiles, baseFiles }) {
+  const mine = new Set(workspacesOf(prFiles));
+  return { behindBy, shared: behindBy > 0 ? workspacesOf(baseFiles).filter((w) => mine.has(w)).sort() : [] };
 }
 
 /** Strip ANSI escape sequences and control characters from anything printed. */
@@ -273,6 +298,7 @@ export function verdictFor(row, quietMinutes) {
   }
   if (!["clean", "unstable"].includes(row.mergeable_state)) return "WAIT-CI";
   if (row.reason) return "NEEDS-REVIEW"; // CR-73: reported, not a gate
+  if (row.staleBase?.shared.length) return "NEEDS-UPDATE";
   if (!(row.pushAgeMinutes >= quietMinutes)) return "WAIT-QUIET"; // unknown age (null) is not quiet
   return "READY";
 }
@@ -338,14 +364,29 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
     };
     const reviewed = row.reviews.A && row.reviews.B;
     const green = required.every((n) => row.checks[n] === "success");
+    let files = [];
     if (reviewed && green) {
-      const files = await paged(get, `repos/${repo}/pulls/${p.number}/files`, notices);
+      files = await paged(get, `repos/${repo}/pulls/${p.number}/files`, notices);
       row.native = touchesNative(files);
       const hits = securityLensHits(files);
       if (files.capped || !Number.isInteger(full?.changed_files) || files.length !== full.changed_files) row.reason = "file list incomplete";
       else if (hits.length && !row.reviews.named.some((n) => SECURITY_LENS_NAMES.includes(n))) {
         row.reason = "security lens missing";
         row.securityHits = hits.slice(0, 5).map(clean);
+      }
+    }
+    if (row.native !== null && !row.reason) {
+      try {
+        const behind = (await get(`repos/${repo}/compare/${encodeURIComponent(p.base.ref)}...${head}`))?.behind_by;
+        if (!Number.isInteger(behind) || behind < 0) throw new Error("no behind_by");
+        let baseFiles = [];
+        if (behind > 0) {
+          baseFiles = (await get(`repos/${repo}/compare/${head}...${encodeURIComponent(p.base.ref)}`))?.files;
+          if (!Array.isArray(baseFiles) || baseFiles.length >= COMPARE_FILE_CAP) throw new Error("base files unreadable or possibly cut off");
+        }
+        row.staleBase = staleBase({ behindBy: behind, prFiles: files, baseFiles });
+      } catch {
+        row.reason = "base compare failed";
       }
     }
     row.verdict = verdictFor(row, quietMinutes);
@@ -372,13 +413,16 @@ export function formatTable(allRows) {
   const line = (cells) => cells.map((c, i) => c.padEnd(w[i])).join("  ").trimEnd();
   const blockedNotes = rows.filter((r) => Object.keys(r.reviews.blocked).length).map((r) => `note: #${r.number} review not met, newest at head: ${Object.entries(r.reviews.blocked).map(([l, w]) => `${l}=${clean(w)}`).join(", ")}`);
   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
-  const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
+  const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "base compare failed" ? `note: #${r.number} base compare failed: could not read how far the base moved, so a stale base cannot be ruled out` : r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
+  const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0).map((r) => (r.staleBase.shared.length
+    ? `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits that touch ${r.staleBase.shared.map(clean).join(", ")}: update the branch, wait for required, and get fresh reviews (a new commit voids both)`
+    : `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits, none in a workspace this PR touches; still ready`));
   const asks = rows.filter((r) => r.mergeNote).map((r) => r.mergeNote);
   const days = (r) => Math.floor(r.pushAgeMinutes / 1440);
   const parked = stale.length
     ? ["", `stale-unknown (${stale.length}): mergeability unknown and head older than 7 days; not in the table above, no ready line`, ...stale.map((r) => `  #${r.number} base ${r.base}, last push ${days(r)} days ago, head ${r.head}`)]
     : [];
-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...lensNotes, ...asks, ...parked].join("\n");
+  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...lensNotes, ...baseNotes, ...asks, ...parked].join("\n");
 }
 
 function ghApi(path, { method = "GET" } = {}) {
