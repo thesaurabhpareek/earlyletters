@@ -114,7 +114,7 @@ export const pages = {
       {
         heading: "It stays in your words",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. We don't make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "At the centre of everything is one promise: we never rewrite your words. We don't make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. Every word in the book is one you said.",
           "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it's easier to read, and less true.",
           "You don't need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
