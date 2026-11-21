@@ -121,7 +121,7 @@ describe('[BL-456] negative control and mutants', () => {
   });
 });
 
-// ── [BL-1417] encoded copies ─────────────────────────────────────────────────────────────────────────────────────
+// -- [BL-1417] encoded copies
 
 /** The three written forms of a piece, as the bytes of a haystack. */
 const FORMS: Array<[string, (b: Uint8Array) => Buffer]> = [
@@ -189,7 +189,7 @@ describe('[BL-1417] a recording written as base64, hex or a JSON byte list is fo
   });
 });
 
-// ── [BL-1418] URL, headers, tus metadata, RPC arguments ──────────────────────────────────────────────────────────
+// -- [BL-1418] URL, headers, tus metadata, RPC arguments
 
 describe('[BL-1418] the URL, each header, the tus metadata and an RPC argument are scanned', () => {
   const plain = fakeM4a(TAKE);
@@ -238,7 +238,7 @@ describe('[BL-1418] the URL, each header, the tus metadata and an RPC argument a
   });
 });
 
-// ── [BL-1419] a piece split over two bodies, and the loop that scans them ─────────────────────────────────────────
+// -- [BL-1419] a piece split over two bodies, and the loop that scans them
 
 describe('[BL-1419] a piece split over two request bodies is found, and a loop over only the first body is caught', () => {
   const plain = fakeM4a(TAKE);
