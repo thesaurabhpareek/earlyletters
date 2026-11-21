@@ -10,4 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
-| wave-d-content | content | fix/content-wave-d-emails | 1133 | packages/content/src/emails/*.en.ts, packages/emails/src/templates/** | 2026-11-21 | 2026-11-24 | copy rewrite wave D; PR read as open by REST 2026-11-21 |
+| wave-d-content | content | fix/content-wave-d-emails | 1133 | packages/content/src/emails/*.en.ts, packages/emails/src/templates/** | 2026-11-21T01:00Z | 2026-11-24T01:00Z | copy rewrite wave D; PR read as open by REST 2026-11-21 |
