@@ -57,8 +57,11 @@ export function makeHandler(env: (n: string) => string | undefined, opts: Handle
       log.info('fill.dark', { outcome: 'skipped' });
       return ok();
     }
-    const key = v('DEVICE_HASH_KEY');
-    if (!v('SUPABASE_URL') || !v('SUPABASE_SERVICE_ROLE_KEY') || key.length < 32) {
+    // While a NEXT key is set the app-supplied hash is written under it, so the sender needs no rekey for it. Both must be 32+.
+    const next = v('DEVICE_HASH_KEY_NEXT');
+    const current = v('DEVICE_HASH_KEY');
+    const key = next ? next : current;
+    if (!v('SUPABASE_URL') || !v('SUPABASE_SERVICE_ROLE_KEY') || current.length < 32 || (next !== '' && next.length < 32)) {
       log.error('request.failed', { code: 'config', counts: { failed: 1 } });
       return fail('unavailable', true);
     }

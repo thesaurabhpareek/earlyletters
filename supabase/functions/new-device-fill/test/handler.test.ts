@@ -120,6 +120,26 @@ Deno.test('a missing or short key answers 503 and never hashes or calls', async 
   await assert.rejects(() => sharedHash(undefined as unknown as string, ASHA.profile, ASHA.device));
 });
 
+Deno.test('the key used: NEXT while it is set, else DEVICE_HASH_KEY; a short one of either is the misconfigured answer', async () => {
+  const NEXT = 'next-hash-key-fixture-0123456789abcdefgh';
+  const hashArg = async (env: Record<string, string>) => {
+    const t = run(true, env);
+    const { res } = await t.post(GOOD_BODY);
+    return { res, arg: t.calls[0]?.args.p_device_hash };
+  };
+  const withNext = await hashArg({ ...ENV, DEVICE_HASH_KEY_NEXT: NEXT });
+  assert.equal(withNext.arg, byteaOf(await sharedHash(NEXT, ASHA.profile, ASHA.device)));
+  assert.notEqual(withNext.arg, byteaOf(await sharedHash(KEY, ASHA.profile, ASHA.device)));
+  const unset = await hashArg(ENV);
+  assert.equal(unset.arg, byteaOf(await sharedHash(KEY, ASHA.profile, ASHA.device)));
+  assert.equal((await hashArg({ ...ENV, DEVICE_HASH_KEY_NEXT: '   ' })).arg, unset.arg);
+  for (const env of [{ ...ENV, DEVICE_HASH_KEY_NEXT: 'short' }, { ...ENV, DEVICE_HASH_KEY: 'short', DEVICE_HASH_KEY_NEXT: NEXT }]) {
+    const r = await hashArg(env);
+    assert.equal(r.res.status, 503);
+    assert.equal(r.arg, undefined);
+  }
+});
+
 Deno.test('a database error answers 503 (retryable), and the next call can fill', async () => {
   const t = run('error');
   assert.equal((await t.post(GOOD_BODY)).res.status, 503);
