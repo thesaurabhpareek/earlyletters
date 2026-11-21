@@ -124,7 +124,7 @@ PRD NS-01-R11 (EVIDENCE, read at PR #795, merged as `6a11c808`): the lens "lists
 | First run, no photo ever | "Start from a photo" visible when the build switch is on; nothing else about photos | Add button only | Add action only | Lens absent |
 | Loading | Picker is the system's; thumbnail appears with a flat `surface` box, no blur animation | "Adding" label under the strip (ML-S5) | Flat `surface` until ready | Cards fill in, no skeleton |
 | Offline | Local photos work. iCloud-only items say so in the chooser (ML-S4) | Same | Same | Fully local |
-| Error | `ErrorLine` under the thumbnail: "That photo could not be opened. Choose another." (slot); Speak and Type still work | ML-S5 failed line | ML-S8 missing-file box | Missing-file box on the card thumbnail |
+| Error | `ErrorLine` under the thumbnail: "That photo could not be opened. Choose another." (slot); Speak and Type still work | ML-S5 failed line | ML-S8 missing-file box | A card with no thumbnail and no words (B-S04 `thumbMissing`); the box stays on the letter page only |
 | Photo access | Build 13: not applicable, the system picker needs none; the app never asks. Post-Build 13: unchanged button; system picker or chooser per ML 1.4; no mention of access | Same | Same | Lens never reads the camera roll |
 | Missing file | n/a | n/a | "Not on this phone any more" box with a quiet Remove | A card with no thumbnail and no words (B-S04 `thumbMissing`); the box stays on the letter page only |
 | Long letter | Words whole; thumbnail never covers text | Words never move | Words whole; media after | Cards only |
