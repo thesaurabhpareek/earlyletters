@@ -18,3 +18,4 @@ export * from './notification-key';
 export * from './plan';
 export * from './domain';
 export * from './lang';
+export * as moments from './moments';
