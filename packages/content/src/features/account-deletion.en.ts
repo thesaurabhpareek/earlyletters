@@ -23,7 +23,7 @@ export const accountDeletionCopy = {
     deletedNone: "{child}'s book will be deleted.",
     deletedOne: "{child}'s book will be deleted, with your letter in it.",
     deletedMany: "{child}'s book will be deleted, with your {count} letters in it.",
-    deletedFamily: 'Family members who write in it can save a copy of their own letters first. We will email them.',
+    deletedFamily: "Family members who write in it can save a copy of their own letters first. We'll email them.",
     contributor: 'Your letters to {child} will be removed.',
     coParentFallback: 'your co-parent',
     noBooks: 'You have no books on your account yet.',
@@ -103,11 +103,11 @@ export const accountDeletionCopy = {
   // servers-on build the person may still have an account, with letters on our servers, made on another phone, so this
   // line claims nothing about the servers and gives the email route (Privacy Policy 8, docs/legal/delete-account-page.md).
   // Not "everything": the iPhone backup, exports and the Keychain letter count are not on this phone's storage (#672).
-  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
+  notConfigured: `Accounts aren't available on this phone right now, so you can't delete one here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
 
   // Each failure says first, or says plainly, that nothing has changed.
   errors: {
     offline: 'Nothing has changed. Deleting an account needs a connection.',
-    failed: 'That did not go through. Nothing has changed.',
+    failed: "That didn't go through. Nothing has changed.",
   },
 } as const;

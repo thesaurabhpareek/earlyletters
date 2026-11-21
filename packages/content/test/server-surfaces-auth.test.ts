@@ -26,7 +26,7 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.bodies.settings': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
   'sheet.bodies.invite': 'Sign in on this phone to carry on.',
   'sheet.bodies.invite_create': 'Sign in on this phone to carry on.',
-  'sheet.notConfigured': 'Signing in is not available right now. Nothing on this phone has changed.',
+  'sheet.notConfigured': "Signing in isn't available right now. Nothing on this phone has changed.",
   'errors.network': 'Nothing has changed. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
   // Led with "Your letters are safe." in the S52 table (amended 28 Oct, #360); Build 12 leads with "Nothing has changed." instead.
@@ -36,10 +36,10 @@ const CHAPTER_7: Record<string, string> = {
   'errors.rate_limited': 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
   'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
-  'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+  'errors.provider': "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
   'errors.session_expired': 'You were signed out. Sign in again to carry on.',
   'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
-  'errors.unknown': 'That did not go through. Nothing has changed.',
+  'errors.unknown': "That didn't go through. Nothing has changed.",
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
   // S54
@@ -290,7 +290,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe|^Nothing has changed/);
     for (const kind of Object.keys(errors)) expect(errors[kind], kind).not.toMatch(/\bsafe\b/);
     // The four the ruling changed keep their table words after the new first sentence.
-    expect(errors.provider).toBe('Nothing has changed. That sign-in did not finish. Try again, or try another way.');
+    expect(errors.provider).toBe("Nothing has changed. That sign-in didn't finish. Try again, or try another way.");
     expect(authCopy.sheet.notConfigured).toContain('Nothing on this phone has changed.');
   });
 
