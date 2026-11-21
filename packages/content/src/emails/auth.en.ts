@@ -252,7 +252,7 @@ export const authEmails = {
       "The code works once, for {expiresIn}.",
     ],
     code: { label: "Your code", codeVar: "{code}" },
-    safety: `Didn't ask for this? Don't enter or share the code. Your account stays exactly as it is. ${NEVER_ASK}`,
+    safety: `Didn't ask for this? Don't enter or share the code. Your account stays as it is. ${NEVER_ASK}`,
     category: 'auth',
     kind: 'transactional',
   },
