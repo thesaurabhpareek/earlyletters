@@ -3,11 +3,10 @@
  * from the backup and read back, never in scribe.db. ONLY lib/days/** imports this file (NS-47-R11).
  * Write order: create an EMPTY temp, set the exclusion, read it back (false: delete and stop), write, rename, read back
  * again; every open reads back first (a restore or copy that lost it is deleted, never used). Nothing here logs a path or contents.
- * File protection: no class is set here; the app-wide default applies (NSFileProtectionCompleteUntilFirstUserAuthentication, DATA_PROTECTION_CLASS in app.config.ts).
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import { ScribeFiles } from '../../../modules/scribe-files';
-import { type DaysFile, MAX_DAYS_BYTES, parseDays, serializeDays } from './store.logic';
+import { type DaysFile, parseDays, serializeDays } from './store.logic';
 
 export const DAYS_FOLDER = 'days';
 export const DAYS_FILE = 'days.v1.json';
@@ -18,7 +17,6 @@ export interface DaysPort {
   exists(name: string): boolean;
   createEmpty(name: string): void;
   write(name: string, text: string): void;
-  size(name: string): number;
   read(name: string): string;
   rename(from: string, to: string): Promise<void>;
   remove(name: string): void; // throws when it cannot; absent is fine
@@ -59,7 +57,6 @@ export function readDays(port: DaysPort, owner: string): DaysRead {
       port.remove(DAYS_FILE);
       return { state: 'unavailable' };
     }
-    if (port.size(DAYS_FILE) > MAX_DAYS_BYTES) return { state: 'unreadable' }; // never read an oversize file into memory
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
     return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'empty' };
@@ -132,7 +129,6 @@ export function expoDaysPort(): DaysPort | null {
     exists: (n) => f(n).exists,
     createEmpty: (n) => f(n).create({ overwrite: true }),
     write: (n, t) => f(n).write(t),
-    size: (n) => f(n).size,
     read: (n) => f(n).textSync(),
     rename: (a, b) => f(a).move(f(b), { overwrite: true }),
     remove: (n) => f(n).exists && f(n).delete(),

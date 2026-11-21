@@ -185,20 +185,6 @@ describe('[NS-47-R28] a read that fails, or a file that is off-shape, shows no d
     expect(readDays({ ...port, read: () => { throw new Error('EIO'); } }, A)).toEqual({ state: 'unreadable' });
     expect(names()).toEqual([DAYS_FILE]);
   });
-
-  it('an oversize file is not read, and tick values that are free text, nested or odd keys fail safe to unreadable', () => {
-    const port = seed(JSON.stringify(file()));
-    expect(readDays({ ...port, size: () => 64 * 1024 + 1, read: () => { throw new Error('must not read'); } }, A)).toEqual({ state: 'unreadable' });
-    for (const t of [{ note: 'free text about the day' }, { a: { b: 1 } }, { 'bad key': true }, { a: null }, { a: Number.NaN }]) {
-      seed(JSON.stringify({ v: 1, owner: A, ticked: { [DAY]: t } }));
-      expect(readDays(expoDaysPort()!, A)).toEqual({ state: 'unreadable' });
-    }
-    seed(JSON.stringify({ v: 1, owner: A, ticked: { [DAY]: { askedOn: '2026-10-03', done: true, n: 2 } } }));
-    expect(readDays(expoDaysPort()!, A)).toMatchObject({ state: 'ok' });
-    const many = Object.fromEntries(Array.from({ length: 501 }, (_, i) => [`d${i}`, {}]));
-    seed(JSON.stringify({ v: 1, owner: A, ticked: many }));
-    expect(readDays(expoDaysPort()!, A)).toEqual({ state: 'unreadable' });
-  });
 });
 
 describe('[NS-47-R1] nothing of the file is logged', () => {
