@@ -10,13 +10,13 @@ Labels: **[V]** read in this repo or run in the local test database on 21 Nov. *
 
 **What counts: 35 files, not 36.** There is no File 28. Files 3 to 27 are 25 files and Files 29 to 38 are 10, so the run applies 35 files on top of Files 1 and 2, and the folder holds 37 in all [V: `git ls-tree origin/develop supabase/migrations/`, 37 on 21 Nov].
 
-**This run is not harmless to the app on the live project.** File 5 turns on the server consent gate. From the moment it applies, the app on `early-letters` answers `SCCON` for everyone, you included, until the policy versions are published and your acceptances are recorded (Part E, point 5). Decide that before you press Approve, not after. [V: APPLY.md Step 8]
+**This run is not harmless to the app on the live project.** File 5 turns on the server consent gate. From the moment it applies, the app on `early-letters` answers `SCCON` for everyone, you included, until the policy versions are published and your acceptances are recorded (Part E, point 5). Decide that before you press Approve, not after. **If the app on that project is in real use (yours or anyone else's), do not approve.** [V: APPLY.md Step 8]
 
 **A run may already be waiting.** Every merge of a migration to `develop` starts a "deploy to staging" run that waits for approval (DEPLOY.md, "Tagging flow" steps 1 and 2); Files 36 to 38 merged recently, so GitHub is probably holding one now. Approving that one applies the same 35 files but skips the "manual run is on develop" job and could happen before Parts A and B are done. In GitHub > Actions > Deploy database, if a run shows "Waiting", leave it unapproved until Part B is finished, then approve exactly one run (either that one or a manual one from C1; if you start a manual one, cancel the waiting one). Never approve two. [U] whether one is waiting.
 
 **The job has a 15 minute limit** (`timeout-minutes: 15`, covering the push and the smoke) [V: `deploy-db.yml` line 119]. If 35 files take longer, the run is cancelled mid-file: that file rolls back, earlier files stay applied. A run cancelled at about 15 minutes is not a failed migration; run Part C again.
 
-**You are told what to paste back.** Numbers, true or false, file names, and error codes only. Never a row, a letter, a name, an email, a key, a URL with a password in it, or the pepper. If a screen shows any of those, crop it out before you share it.
+**You are told what to paste back.** Numbers, true or false, file names, and error codes only. Never a row, a letter, a name, an email, a key, a URL with a password in it, or the pepper. Take no screenshot of the Connect page or any secrets page. If a screen shows any of those, crop it out before you share it.
 
 **The approval comes before the dry run.** The staging job in `.github/workflows/deploy-db.yml` waits for your approval first. After you approve, it runs the dry run and the real push back to back, with no pause for you in between [V: lines 120 to 164]. So every check in Part A happens before you press Approve, not after reading the dry run. The dry run is still useful: if it fails (for example, because the history looks wrong), nothing has been applied.
 
@@ -36,17 +36,31 @@ Labels: **[V]** read in this repo or run in the local test database on 21 Nov. *
 
 ## Part A. Pre-flight (before you approve anything)
 
+### A0. Is this project really staging? (gate, before anything else)
+
+`early-letters` is the only project. If anyone other than you and your own test accounts has data in it, it is production, and this sheet is not the right tool: stop and tell Karma. Dashboard > SQL Editor > New query, read-only, numbers only:
+
+```sql
+select (select count(*) from auth.users) as accounts, (select count(*) from public.entries) as letters;
+```
+
+Write down both numbers and how many accounts and letters are yours or test ones. Paste back: the two numbers and the count that are yours.
+Stop if: `accounts` is higher than the accounts you made yourself, or you are not sure whose they are. A project holding other people's words is production and goes through the production path (Part H), not a casual catch-up.
+
 ### A1. Which project is staging, and which is production
 
 Only one hosted project exists today: `early-letters` (project ref `fpkxggtzwoumdghwzlsl`, us-west-1) [V: DEPLOY.md; APPLY.md]. DEPLOY.md still names `scribe-staging` and `scribe-prod`, which do not exist yet. So today the word "staging" means: the database whose connection string is stored in the GitHub Environment `staging`. The dashboard cannot tell you that, so you set it yourself and then check it:
 
 1. GitHub > repository > Settings > Environments > `staging`. Look at the list of secret names (names only; GitHub never shows values). You need all four: `SUPABASE_DB_URL_STAGING`, `SUPABASE_STAGING_URL`, `SUPABASE_STAGING_PUBLISHABLE_KEY`, `SUPABASE_STAGING_PROJECT_REF`. Check that "Deployment branches" is `develop` only and that you are a required reviewer.
 2. Re-save `SUPABASE_DB_URL_STAGING` from the project itself, so there is no doubt where it points: Supabase dashboard > project `early-letters` > Connect > **Session pooler** (port 5432, not 6543), copy the string, put your database password in it (percent-encode special characters), and paste it into the GitHub secret (Update secret). You need the database password for this; it is in your password manager (DEPLOY.md, "Founder steps", 1.4). If you do not have it, do not reset it yet: resetting the database password may break the Edge Functions and the purge worker if they use it [U], so tell the data architect before you do. Do this in the browser, never in chat. The user part of the string reads `postgres.<project ref>`: the ref must be `fpkxggtzwoumdghwzlsl`. [U] whether it already points there.
-3. Make production impossible by accident. You cannot read a secret's value on GitHub, only its name, so do not try to compare. The only Supabase project is `early-letters`. **If there is no separate production project, then staging IS the live project, with real letters in it.** Say so plainly to yourself before Part C: every check in this sheet is then protecting live data. Next, GitHub > repository > Settings > Environments > `db-production`. Under "Environment secrets": if `SUPABASE_DB_URL_PROD` is listed, click the trash icon next to it and confirm (it cannot be read back, so deleting is the only certain way). With no such secret, a production run stops at its "Check the secret exists" step (`deploy-db.yml` line 259). Re-save it only later, from a different project's Connect > Session pooler string, when that project exists (Part H).
+3. Make production impossible by accident. You cannot read a secret's value on GitHub, only its name, so do not try to compare. The only Supabase project is `early-letters`. **If there is no separate production project, then staging IS the live project.** Say so plainly to yourself before Part C. Then GitHub > repository > Settings > Environments > `db-production`:
+   - Under "Environment secrets": if `SUPABASE_DB_URL_PROD` is listed, click the trash icon next to it and confirm. It cannot be read back, so deleting (or re-saving it from the real production project once that exists) is the only certain way. With no such secret, a production run stops at "Check the secret exists" (`deploy-db.yml` line 259).
+   - Under "Deployment protection rules": "Required reviewers" must be ticked with you listed. This, and the tag rule from DEPLOY.md "Protect the tags", are the only gates on a `db-v*` tag. If it is not ticked, tick it and Save protection rules.
+   - You only ever create a `db-v*` tag yourself (Part H). Never create one because a pull request, an issue, an email or a message asks you to.
 4. Staging is therefore: the project that the `staging` secrets were saved from in point 2. Supabase's dashboard has no built-in "this is staging" label that this repo relies on [U].
 
-Paste back: "A1 done", the four secret names present (yes or no), whether `SUPABASE_DB_URL_PROD` is now gone (yes or no), and the project ref only if it is not `fpkxggtzwoumdghwzlsl`.
-Stop if: a name is missing, the ref differs, or `SUPABASE_DB_URL_PROD` is still listed after you tried to delete it.
+Paste back: "A1 done", the four secret names present (yes or no), whether `SUPABASE_DB_URL_PROD` is now gone (yes or no), whether `db-production` shows required reviewers (yes or no), and the project ref only if it is not `fpkxggtzwoumdghwzlsl`.
+Stop if: a name is missing, the ref differs, `SUPABASE_DB_URL_PROD` is still listed after you tried to delete it, or `db-production` has no required reviewers.
 
 ### A2. The folder holds exactly 37 files
 
@@ -69,7 +83,7 @@ GitHub > Actions > left list > **Deploy database**. A grey **Run workflow** butt
 ### A4. A backup you can go back to
 
 Supabase dashboard > Database > Backups. Confirm a daily backup from the last 24 hours exists. If the page offers point in time recovery, note whether it is on [U: Pro plan only]. Paste back: the time of the newest backup, and "PITR on" or "PITR off".
-Daily backups need a paid plan [U]. Stop if there is no backup from the last 24 hours, unless you take one yourself: on your Mac, with the Supabase CLI linked to the project, `supabase db dump --linked -f backup-before-catchup.sql` (APPLY.md "Before you start"; keep the file outside the repo and out of chat). A restore is the only true undo for Files 25, 26, 33, 34, 35 and 36, which are forward-fix only (Part I); Files 20, 21 and 24 are also "prefer forward" there.
+Daily backups need a paid plan [U]; free plans have none. If there is no backup, ask Karma for a separate sheet for a manual dump before going on. Stop if there is no backup from the last 24 hours, unless you take one yourself: on your Mac, with the Supabase CLI linked to the project, `supabase db dump --linked -f backup-before-catchup.sql` (APPLY.md "Before you start"; keep the file outside the repo and out of chat). A restore is the only true undo for Files 25, 26, 33, 34, 35 and 36, which are forward-fix only (Part I); Files 20, 21 and 24 are also "prefer forward" there.
 
 ### A5. What the project holds today (read-only)
 
@@ -90,7 +104,7 @@ New query, paste this whole box, run it. Read-only. It is the "Before counts" of
 ```sql
 select n, what, got, expect from (values
  (1,  'Postgres major version', (current_setting('server_version_num')::int / 10000)::text, '17'),
- (2,  'letters stored (write the number down)', (select count(*) from public.entries)::text, 'any number'),
+ (2,  'letters stored (write the number down)', (select count(*) from public.entries)::text, 'any number; a stop if more than the letters you wrote yourself (A0)'),
  (3,  'File 23 guard: letters whose machine_edits is not a list', (select count(*) from public.entries where jsonb_typeof(machine_edits) <> 'array')::text, '0'),
  (4,  'File 33 guard: letters with a picture path', (select count(*) from public.entries where photo_path is not null)::text, '0'),
  (5,  'File 4 check: picture paths in the wrong shape', (select count(*) from public.entries where photo_path is not null and photo_path !~ ('^' || child_id || '/' || author_id || '/' || id || '\.(jpg|jpeg|heic|png)$'))::text, '0'),
@@ -100,6 +114,8 @@ select n, what, got, expect from (values
  (9,  'File 22 guard: held_drafts table already exists', (to_regclass('public.held_drafts') is not null)::text, 'false'),
  (10, 'Migrating role sees every storage object (BYPASSRLS)', (select rolbypassrls from pg_roles where rolname = current_user)::text, 'true'),
  (11, 'Automatic grants on new objects: tables, sequences, functions', (select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELECT') || '|' || count(*) filter (where d.defaclobjtype = 'S' and a.privilege_type = 'USAGE') || '|' || count(*) filter (where d.defaclobjtype = 'f' and a.privilege_type = 'EXECUTE') from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole)), '0|0|0 or 3|3|3'),
+ (13, 'File 8 drops these three store tables for good: how many already exist', (select count(*) from (select to_regclass('public.store_notifications') as t union all select to_regclass('public.store_subscriptions') union all select to_regclass('public.app_account_tokens')) x where t is not null)::text, '0'),
+ (14, 'Accounts in auth.users (A0)', (select count(*) from auth.users)::text, 'only yours'),
  (12, 'Consent pepper already long enough (value never shown)', (char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32)::text, 'false before Part B, true after')
 ) as t(n, what, got, expect) order by n;
 ```
@@ -109,11 +125,13 @@ How to read it:
 | Row | Why | If not as expected |
 |---|---|---|
 | 1 | The project must run Postgres 17 (`supabase/config.toml`) | Stop; tell the data architect |
-| 2 | Just a number to write down | Never a stop |
+| 2 | The number of letters. The founder's own alpha letters are expected | **A stop** if it is more than the letters you wrote yourself (A0): other people's words mean this is production |
 | 3 | **Guard G1, File 23.** Any letter with `machine_edits` that is not a list stops File 23 and everything after it | Stop. Do not touch the row (it is a person's words). Paste back the number only; the data architect and the coordinator decide |
 | 4 | **Guard G2, File 33.** Must be 0 | Stop; tell the data architect. Those rows stay readable and deletable but need review |
 | 5 | File 4 adds a picture-path rule as NOT VALID, so it still applies | Not a stop; paste back the number so the rule can be validated later (APPLY.md Step 5) |
-| 6 | File 4 deletes `safety_events` on purpose (a health inference the product decided not to keep) | Not a stop; paste back the number |
+| 6 | File 4 deletes `safety_events` on purpose (a health inference the product decided not to keep) | Not a stop; paste back the number. The rows cannot be undone: only a backup brings them back |
+| 13 | **Guard G8, File 8.** File 8 runs `drop table` on `store_notifications`, `store_subscriptions` and `app_account_tokens` with no guard [V: `20261004000000` lines 123 to 125]. File 6 creates them inside this same run, so on a project with only Files 1 and 2 they do not exist yet and the answer is 0 | If not 0, stop: someone created them by hand. Their rows are gone for good once File 8 runs; only a restore from backup (A4) brings them back |
+| 14 | Same as A0 | Stop if it is more than the accounts that are yours |
 | 7 | File 4 needs the three names free | Stop if `false` |
 | 8 | File 6 needs every book to have a date; a book with none is flagged for repair | Not a stop; paste back the number |
 | 9 | **File 22 count.** `held_drafts` is created by File 17 inside this same run, so it starts empty and has nothing to count. `false` is the expected answer | If `true`, File 17 is somehow already in: stop (A5 should have shown it) |
@@ -121,7 +139,7 @@ How to read it:
 | 11 | Informational. `3\|3\|3` is the old automatic grants, `0\|0\|0` the new. Both are fine: File 25 sets the end state in this same run | Anything else: stop |
 | 12 | Before Part B this should be `false` (or `true` if you set it earlier) | Informational |
 
-Paste back: the twelve "got" values, one per line.
+Paste back: the fourteen "got" values, one per line.
 
 Also run the index check (APPLY.md "Hosted checks", c). It reads names only:
 
@@ -151,15 +169,15 @@ What the pepper guards, honestly: File 14 and File 30 do **not** refuse to apply
 If you have no pepper yet for this project, make one. This writes it to a file only you can read, outside the repo, and shows nothing:
 
 ```bash
-umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt"
+( umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
-Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file as the second copy.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and then delete the file once it is saved there (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
 ```bash
-umask 077; mkdir -p "$HOME/el-secrets"; printf 'Pepper: '; read -rs P; echo; printf '%s\n' "$P" > "$HOME/el-secrets/consent-pepper-early-letters.txt"; unset P; wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt"
+( umask 077; mkdir -p "$HOME/el-secrets"; printf 'Pepper: '; read -rs P; echo; printf '%s\n' "$P" > "$HOME/el-secrets/consent-pepper-early-letters.txt"; unset P; wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
 `read -rs` hides what you paste, and this form is meant to work in both zsh (the Mac default) and bash (tested here in bash only; zsh was not available [U]). The pepper must be at least 32 characters. The number printed is its length plus one: a 64 character pepper prints `65`, and any pepper you already have prints its length plus 1, at least `33`. If it prints less than `33`, the pepper is too short: stop.
@@ -174,7 +192,7 @@ umask 077; mkdir -p "$HOME/el-secrets"; printf 'Pepper: '; read -rs P; echo; pri
    show log_min_duration_statement;
    ```
    Expect `none` and `-1`. The smoke accepts `ddl` for the first (`scripts/ops/lib/smoke.ts` line 423), but `ddl` would write the `alter database` statement, pepper included, into the Postgres logs. If `log_statement` is anything but `none` (`ddl`, `mod`, `all`), or the second is not `-1`, **stop**: do not run the pepper line. Turn logging off first (docs/ops/SECURITY.md section 4; ask Supabase support if the dashboard has no switch [U]), or tell the data architect.
-1. Copy the file's contents to the clipboard (macOS), without printing them:
+1. Get the value onto the clipboard once. Best: open it in your password manager and copy it there (a password manager clears the clipboard itself [U]; this skips `pbcopy`). Or, from the file:
    ```bash
    tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
    ```
@@ -182,12 +200,13 @@ umask 077; mkdir -p "$HOME/el-secrets"; printf 'Pepper: '; read -rs P; echo; pri
    ```sql
    alter database postgres set app.consent_pepper = '';
    ```
-   Run it. Expect "Success. No rows returned".
+   Run it. Expect "Success. No rows returned". Do not use the Supabase Assistant or any AI panel for this line, and do not click Save or Run-and-save on it. Afterwards close the tab and discard the snippet without saving.
 3. Clear the clipboard and remove the secret from the editor. Before step 1, also turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy. If you did not, open each manager and delete the entry that holds the pepper. Then:
    ```bash
    printf '' | pbcopy
    ```
-   Then delete the query from the SQL Editor (clear the tab, and delete the saved snippet or history entry if the editor kept one). Whether Supabase keeps SQL Editor history that shows the value is [U]; delete anything that does, and also be aware the owner role can read the setting by design (APPLY.md Step 6).
+   That clears only the current clipboard. It does not remove the value from a clipboard-history manager, nor from other devices: with Universal Clipboard on, a nearby iPhone or iPad may have received it, so clear the clipboard there too (copy any harmless word on that device).
+   Afterwards, if statement logging was ever on for this project, look in Dashboard > Logs for the value and tell the data architect if it appears [U]. Then delete the query from the SQL Editor (clear the tab, and delete the saved snippet or history entry if the editor kept one). Whether Supabase keeps SQL Editor history that shows the value is [U]; delete anything that does, and also be aware the owner role can read the setting by design (APPLY.md Step 6).
 4. Check, new query (this shows only true or false, never the value):
    ```sql
    select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
@@ -205,7 +224,7 @@ GitHub > Actions > **Deploy database** > **Run workflow** > branch **develop** >
 
 ### C2. Approve
 
-Repeat the A2 count first. Then click Review deployments > tick `staging` > Approve and deploy. This is the moment the apply starts. It is your hand, and the only one in this part.
+Repeat the A2 count first. **Last check: from the moment you approve, your own phone on `early-letters` gets `SCCON` until `policy_versions` has published rows and your acceptances are recorded (Part E point 5). If the app is in real use, stop and do not approve.** Approve only the run you started yourself (check its "Run workflow" actor and time): if Karma merges a migration meanwhile, a second pending "Review deployments" appears, and it is not yours to approve. Then click Review deployments > tick `staging` > Approve and deploy. This is the moment the apply starts. It is your hand, and the only one in this part.
 
 ### C3. Watch, and read the summary
 
@@ -327,6 +346,7 @@ These are database settings, not migrations, so CI does not apply them.
 | G4. File 30 pepper | `finalize_account_deletion` refuses (`55000`, nothing changed) without a 32-character pepper | Not at apply. At the first account deletion, and as a red smoke line `consent pepper`, and the alert `pepper_missing` from the purge worker | Part B again; then re-check `pepper_ready`. Never set a different value later |
 | G5. Re-run refusals | Most files refuse a second run (`55000`): at least 13, 14, 15, 17, 20, 21, 22, 23, 24, 25, 27, 29, 30, 31, 33, 35 and 36 [V: "already applied" in the files] | Only if the history row is missing while the objects exist | Stop. Do not rerun by hand. The data architect reads A5 and the Verify table and decides |
 | G6. File 25 in the same run | Without File 25 every table answers `42501` to the app | Verify rows 5, 6 and 7 | Files 3 to 24 are applied but the app is shut. Run Part C again; if File 25 itself failed, paste the error |
+| G8. File 8 drops tables | `store_notifications`, `store_subscriptions`, `app_account_tokens` are dropped for good | A6 row 13, before approving | Stop if not 0; only a backup restores them |
 | G7. Photo-path trigger `SCPHO` (File 33) | A new picture path is refused by the server | After the run, from a build with photos on | Expected. The server is closed to pictures on purpose until the photo design ships |
 
 If the failure is not in this table: stop, paste the failing step's name and the SQLSTATE, and nothing else.
@@ -381,7 +401,7 @@ The honest rule: after a run, the only complete undo is restoring a backup (Part
 | 3 | Recreate the two old SELECT policies, drop `entries_select` (a transaction, in APPLY.md) | APPLY.md Step 1 |
 | 4 | "Rolling back step 3 after it committed" | APPLY.md |
 | 5 to 7 | "Rolling back files 5 to 7" | APPLY.md |
-| 8 | Drops the server entitlement tables; they hold nothing [U]; no reversal needed; forward-fix | APPLY.md File 8 section |
+| 8 | Drops the three store tables for good (guard G8, A6 row 13). Data cannot be restored except from a backup; no other reversal | APPLY.md File 8 section |
 | 9 to 11 | Tables and functions only; `drop schema ops cascade` and `drop schema insights cascade` before any real use; File 9 adds two columns with defaults | APPLY.md Step 14 |
 | 12 | "Rolling back file 12" | APPLY.md |
 | 13 to 16 | "Rolling back files 13 to 16": partial switches, each safe (revoke the new invite call, revoke the undo call, raise a limit) | APPLY.md |
@@ -401,7 +421,7 @@ The honest rule: after a run, the only complete undo is restoring a backup (Part
 | 31 | See the file header | APPLY.md File 31 |
 | 32 | Only while no book has an empty name; restore the 1 to 60 check and re-create two functions as written in APPLY.md | APPLY.md File 32 |
 | 33 | **Forward-fix only** | APPLY.md File 33 |
-| 34 | **Forward-fix only:** `grant insights_reader to authenticator;` restores the old path | APPLY.md File 34 |
+| 34 | **Forward-fix only:** `grant insights_reader to authenticator;` restores the old path, but never as a quick fix: it reopens the Data API's path to the analytics role | APPLY.md File 34 |
 | 35 | **Forward-fix only**; refuses a second run | APPLY.md File 35 |
 | 36 | Switch the hook **off first**, then forward-fix; refuses a second run | APPLY.md File 36 |
 | 37 | Drop the three functions | APPLY.md File 37 |
