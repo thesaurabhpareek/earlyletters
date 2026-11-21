@@ -1,7 +1,9 @@
 // PROPOSED (#1207, written 21 Nov 2026, read by nobody yet). The words the area A, B and D design files drafted for
 // five screens, now as code so the design canvas can read them from here. Nothing in the app reads these keys yet and
 // no built word changes. Source rows: docs/design/e2e/A-capture/WORDS.md 7.3 and 7.4, B-book-and-reading/WORDS.md 9,
-// D-family-sharing-reminders/WORDS.md D-S19 and D-S20, docs/design/SCREEN-PATHS-20nov.md PATH-09.
+// D-family-sharing-reminders/WORDS.md D-S19 and D-S20.
+// PATH-09 (photo picker off, error and slow words) is not here: those rows stay CONTENT-NEEDED in
+// docs/design/SCREEN-PATHS-20nov.md until a draft with a named source exists.
 // Placeholders: {signsAs}, {child}, {coParent}. Never: invite, speaker, translate, detect, mixed, broken, or a promise of
 // when a language arrives.
 export const screenStates = {
@@ -14,7 +16,7 @@ export const screenStates = {
     ask: 'Ask before you record someone else.',
     recentTitle: 'Names used on this phone',
     useMineButton: 'Use my name',
-    doneButton: 'Done',
+    doneButton: 'Done', // same words as the built common.doneButton (strings.en.ts); read that key when this is wired
     tooLong: 'That name is longer than 30 characters. A shorter one will fit.',
   },
 
@@ -25,7 +27,7 @@ export const screenStates = {
     setAsideToast: 'Words set aside.',
     waiting: 'The words for this recording are waiting. You can type them yourself.',
     typeButton: 'Type the words',
-    keepRecordingButton: 'Keep the recording',
+    keepRecordingButton: 'Keep the recording', // same words as the built review.voiceOnlyButton (strings.en.ts)
     // Ready if the founder prefers a confirm to the Undo toast (W8).
     confirmTitle: 'Set these words aside?',
     confirmBody:
@@ -48,7 +50,7 @@ export const screenStates = {
   undoJoin: {
     title: 'Undo the join?',
     body: "{coParent}'s phone stops receiving this book. Their letters leave the book and stay theirs.",
-    cantTakeBack: "Letters already on {coParent}'s phone or in an export can't be taken back.",
+    cantTakeBack: "Letters already on {coParent}'s phone or in an export can't be taken back.", // same words as the built family.leave.cantTakeBack (features/family.en.ts)
     keep: 'Keep them in the book',
     keepHintA11y: 'Nothing changes.',
     confirm: 'Undo join',
@@ -57,13 +59,5 @@ export const screenStates = {
     closed: 'This can no longer be undone in the app.',
     failed: 'The undo did not finish. Nothing has changed. Try again.',
     undoneNote: 'This book is no longer shared with you. Your own letters stay yours, to read, export or delete.',
-  },
-
-  // PATH-09 Photo picker, no permission, so no primer (NS-01, PERMISSIONS-AND-DISCLOSURE-MATRIX row 4).
-  photoPicker: {
-    couldNotOpen: 'That photo could not be opened. You can choose another, or go on without one.',
-    chooseAnotherButton: 'Choose another',
-    iCloudOffline: 'This photo is in iCloud and needs a connection. You can go on without it.',
-    iCloudProgress: 'Getting the photo from iCloud',
   },
 } as const;
