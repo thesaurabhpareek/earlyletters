@@ -1,550 +1,1354 @@
 /**
- * Versioned schema for the local database (TDD 01 3.2.1, BL-M02).
+ * Review (DESIGN_LANGUAGE 12, COMPONENTS 2.19, MOTION 5d and 5e).
  *
- * The version lives in `PRAGMA user_version`. Each migration runs in its own
- * transaction together with the version bump, so a failure leaves the
- * database exactly as it was before that step (TDD 01 F-09). Migrations are
- * append-only: never edit one that has shipped; add the next number.
+ * Shows what was said with every machine edit marked: removed words struck
+ * through, changed words dotted. Each fix explains itself in plain words and
+ * can be put back (withoutEdit). One control, "With small fixes | Exactly as
+ * said", is both the view and the choice for this letter until it is saved;
+ * choosing Exactly as said keeps the fixes in state, so it is reversible
+ * (D-086, review-view.logic.ts). The person's own choices (fixes put back,
+ * the view, their words from Change words) are written to the draft as they
+ * happen and come back when Review reopens, so a kill before Keep loses none
+ * of them (SR-C-06, CR-39; lib/capture/review-persist.logic.ts). The raw
+ * transcript is set once on the draft and never changed. Saving writes the
+ * entry locally first, then the success haptic, then the saved moment, which
+ * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
  *
- * Installs created before this migrator have user_version 0 but may already
- * have every table and column (the old "add column if missing" code), so
- * steps 1 and 2 are written to be safe on those databases too.
+ * Save is one transaction (DATA-REQ-048): the audio is hashed first, then
+ * the letter is inserted and the draft removed together. When words are not
+ * available (no transcriber, model not ready, failure) the parent can keep
+ * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
+ * words (development builds) are never saved as a transcript.
  *
- * Pure: no React Native imports. Tested in Node (test/migrations.test.ts).
- * New columns need a row in docs/legal/DATA_CLASSIFICATION.md 4.5 (DATA-REQ-001).
+ * The Keep gate (D-082, D-083): the first 2 letters are free, then keeping another needs
+ * Plus. It runs here, at the Keep buttons (spoken or typed), after the recording is hashed
+ * and BEFORE anything is saved. M17 (D-103): it asks only when the letter's words are on
+ * screen; a voice kept without words never counts and never opens the sheet. When Plus is needed, the
+ * sheet opens and nothing is written: the draft stays exactly where it is, so a closed
+ * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
+ * shows again and the person taps Keep themselves.
+ *
+ * A letter whose words arrived later (F14 6.1 :129, 6.2 B2): the letter page never counts its words and never
+ * shows a Plus sheet; it opens Review with the letter's `entryId` instead. The letter is already saved, so Review
+ * shows its words exactly as stored (no fix, no Change words), and the same Keep step decides: keepNeedsPlus, then
+ * keepReviewedWords counts it and puts it where the person chose, then countAfterSave (later-words.logic.ts).
+ *
+ * Words come from the transcription queue (src/lib/transcription-queue),
+ * never from a transcriber called here, so reopening Review never starts a
+ * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
+ * queue, or the language download's own percentage. While the author's
+ * language is still downloading, the voice can be kept now and its words
+ * follow when the phone is ready (ADR 0015).
  */
-import { enqueueEntryUpsert } from '../sync/outbox';
-import type { SqlDb } from './sql';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { router, useLocalSearchParams } from 'expo-router';
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
+import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
+import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import {
+  ENGINE_VERSION,
+  describeEdit,
+  finalText as languageFinalText,
+  segments as toSegments,
+  toNFC,
+  withoutEdit,
+  type Edit,
+  type EditKind,
+  type EditLevel,
+  type RejectedEdit,
+} from '@scribe/core';
+import { tokens } from '@scribe/design-tokens';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
+import { laterWordsDraft } from '@/components/capture/later-words.logic';
+import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
+import { LetterSheet } from '@/components/capture/letter-sheet';
+import { SavedMoment } from '@/components/capture/saved-moment';
+import { Transcript } from '@/components/capture/transcript';
+import { monthFor } from '@/components/book/chapters';
+import {
+  DEFAULT_VIEW_SETTING,
+  arrivalParams,
+  countLine,
+  letterHeader,
+  primaryDestination,
+  putBackNoteShows,
+  reviewHasOwnChanges,
+  reviewHeading,
+  savePrimaryLabel,
+  savedMoment,
+  signInAfterLandingMs,
+  typedFinalText,
+  fixesInForce,
+  rowShows,
+  setAsideAtSave,
+  showViewControl,
+  viewFromSetting,
+  type ReviewView,
+} from '@/components/capture/review-view.logic';
+import { clockOf } from '@/components/tonight/draft-card.logic';
+import {
+  isShortTake,
+  lengthA11y,
+  progressClock,
+  recordingKept,
+  stopLine,
+  takeFile,
+  waitingHints,
+  wordsActionLabel,
+  wordsCard,
+  type WordsAction,
+  type WordsCard,
+} from '@/components/capture/words-state.logic';
+import { isPreviewAudioPresent } from '@/dev/preview-audio';
+import { isOwnEntry } from '@/components/child/child-store';
+import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
+import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
+import { Button, ButtonRow } from '@/components/ui/button';
+import { useUnlitRoom } from '@/components/ui/lamp';
+import { TextField } from '@/components/ui/text-field';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { InlineState, StateScreen } from '@/components/ui/state-screen';
+import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { billingCopy } from '@scribe/content';
+import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
+import { setAudioMode } from '@/lib/audio-mode';
+import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
+import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
+import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
+import { copy, fill, pendingCopy, plural } from '@/lib/copy';
+import { devShortcutsAllowed } from '@/lib/build-env';
+import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
+import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
+import { clearReadItBack } from '@/lib/read-it-back';
+import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
+import { useAuth } from '@/lib/auth/session-provider';
+import { afterLetterKept, type KeepGate } from '@/lib/billing';
+import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
+import { useMotion } from '@/lib/motion';
+import {
+  dictionaryFor,
+  getChild,
+  getDraft,
+  getDraftReview,
+  getEntry,
+  getSetting,
+  beginDiscard,
+  finishDiscard,
+  holdDraft,
+  keepReviewedWords,
+  listChildren,
+  listEntriesForChild,
+  listHiddenChildren,
+  saveLetterFromDraft,
+  saveVoiceOnlyFromDraft,
+  setActiveChildId,
+  setDraftChild,
+  setDraftReview,
+  setSetting,
+  todayISO,
+  type Draft,
+} from '@/lib/store';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload } from '@/lib/transcription-queue';
+import { showReviewAsk } from '@/lib/models/speech-consent.logic';
+import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
+import { formatBytes } from '@/lib/packs/copy';
+import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
+import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
+import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
+import { footerPlacement } from '@/lib/review-layout.logic';
 
-export interface MigrationContext {
-  /** ISO time, injected so tests are deterministic. */
-  now: string;
-  /** New row id (UUIDv7 in the app). */
-  newId: () => string;
+/** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
+const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
+  filler: 'filler',
+  false_start: 'falseStart',
+  repeat: 'repeat',
+  stt_fix: 'misheardName',
+  punctuation: 'punctuation',
+  agreement: 'grammarSlip',
+  paragraph: 'paragraph',
+  script: 'script',
+};
+
+/**
+ * Keep a letter whose words arrived later, after the gate allowed it: the review mark, the count and the place the
+ * person chose, in one transaction (store keepReviewedWords). Then the letter page's card goes. Throws when the
+ * letter no longer has words waiting (deleted, or kept on another screen), so Review says the save did not work.
+ */
+function keepLaterLetter(id: string, inBook: boolean): void {
+  if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
+  clearReadItBack(id);
 }
 
-export interface Migration {
-  version: number;
-  name: string;
-  up(db: SqlDb, ctx: MigrationContext): void;
+/** Any letter on this phone yet, in any book (hidden books count). */
+function hasAnyLetter(): boolean {
+  return [...listChildren(), ...listHiddenChildren()].some((c) => listEntriesForChild(c.id).length > 0);
 }
 
-function columns(db: SqlDb, table: string): Set<string> {
-  return new Set(db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name));
-}
+/**
+ * transcribing: words for this recording are on their way (queued, being written down, waiting for the
+ * language download, failed or nobody spoke: WordsStatus shows which). waiting: the take is unrecoverable, either
+ * empty (no bytes) or with sound the phone could not open (words-state.logic `takeFile`).
+ */
+type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
-function addColumns(db: SqlDb, table: string, cols: [string, string][]): void {
-  const have = columns(db, table);
-  for (const [name, type] of cols) if (!have.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
-}
+export default function Review() {
+  const c = useTheme().c;
+  const inlineFooter = footerPlacement(useIsAccessibilitySize()) === 'inline';
+  const r = copy.review;
+  const motion = useMotion();
+  // A room with no lamp (5.2): the light underneath leaves while Review is up and returns after (5.8 rows 4 and 4a).
+  useUnlitRoom();
+  const { draftId, entryId, stopped } = useLocalSearchParams<{ draftId?: string; entryId?: string; stopped?: string }>();
+  // A letter whose words arrived later, opened from the letter page (see the header); null for every draft.
+  const [later] = useState<Draft | null>(() => (!draftId && entryId ? laterWordsDraft(getEntry(entryId), isOwnEntry) : null));
+  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : later));
+  const [childId, setChildId] = useState(draft?.childId ?? '');
+  const child = childId ? getChild(childId) : null;
 
-/** Legacy single-child setting, before multi-child. Parsed defensively: a bad value must never brick launch. */
-function parseLegacyFamily(value: string): { childName: string; childBirthday: string | null; childDueDate: string | null; signsAs: string } | null {
-  try {
-    const f = JSON.parse(value) as Record<string, unknown>;
-    if (!f || typeof f !== 'object' || typeof f.childName !== 'string' || !f.childName.trim()) return null;
-    return {
-      childName: f.childName,
-      childBirthday: typeof f.childBirthday === 'string' ? f.childBirthday : null,
-      childDueDate: typeof f.childDueDate === 'string' ? f.childDueDate : null,
-      signsAs: typeof f.signsAs === 'string' ? f.signsAs : '',
+  const typed = draft?.typedText != null && draft.typedText.trim().length > 0;
+  const spoken = !!draft?.audioUri;
+  const captureMode = typed && spoken ? 'mixed' : typed ? 'typed' : 'spoken';
+
+  const [phase, setPhase] = useState<Phase>(
+    typed || draft?.rawTranscript ? 'ready' : draft?.state === 'unrecoverable' ? 'waiting' : 'transcribing',
+  );
+  const language = draft ? languageFor(draft.id) : 'en';
+  const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
+  const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
+  const [saveFailed, setSaveFailed] = useState(false);
+  // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
+  const [gate, setGate] = useState<KeepGate | null>(null);
+  const toast = useToast();
+  // The calm line on the saved card after the second free letter (once: the count passes it once).
+  const [secondFree, setSecondFree] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [voiceOnly, setVoiceOnly] = useState(false);
+  const [keptForWords, setKeptForWords] = useState(false);
+  const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
+  // The person's choices from an earlier visit (a kill, or Close and reopen), on these same words only (SR-C-06).
+  // A letter whose words arrived later has no draft row, so nothing is stored or restored for it.
+  const [mounted] = useState(() =>
+    mountReview({
+      saved: draftId && !later ? getDraftReview(draftId) : null,
+      words: raw,
+      defaultView: typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)),
+    }),
+  );
+  const [isSample, setIsSample] = useState(false);
+  const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
+  const [applied, setApplied] = useState<Edit[]>([]);
+  const [openEdit, setOpenEdit] = useState<number | null>(null);
+  const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
+  const [wash, setWash] = useState(false);
+  // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
+  // The view the person chose on an earlier visit (SR-C-06), else the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(mounted.view);
+  // The view Review opened with: choosing the other one is a change of the person's, kept on the draft until Keep (S1).
+  const [openedView] = useState(view);
+  // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
+  const [proposed, setProposed] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [userText, setUserText] = useState<string | null>(mounted.userText);
+  const [wordsArrived, setWordsArrived] = useState(false);
+  const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
+  const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
+  // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
+  const [fixesOpen, setFixesOpen] = useState(false);
+  // With a screen reader on the rows are the path to every mark, so they start open (P4 critics' pass S3).
+  const screenReader = useScreenReader();
+  useEffect(() => {
+    if (screenReader) setFixesOpen(true);
+  }, [screenReader]);
+  // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
+  // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
+  // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
+  // ordinary Review for the letter (the person taps Keep themselves after Plus starts, as everywhere else). No Close
+  // while it runs, by design: a typed letter has no recording to hash, and the gate reads this phone's own ledger.
+  const [keeping, setKeeping] = useState(() => typed && peekKeep(draftId) !== null);
+
+  const dictionary = useMemo(
+    () => (child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : []),
+    [child?.name, child?.signsAs], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // The recording's language with the author's script (Chinese) and its installed text-rules pack (ADR 0014).
+  const letterLanguage = useMemo(() => spokenFor(language), [language]);
+  const rules = useMemo(() => rulesForLanguage(letterLanguage), [letterLanguage]);
+  const labelOf = (e: Edit) => r.edits[EDIT_COPY[describeEdit(e, rules)]];
+
+  // Clean once per raw transcript, in the recording's language: the engine proposes, the verifier decides.
+  // What the verifier refused is counted once at save (machine_edit_rejected: type, source, reason only).
+  const rejected = useRef<RejectedEdit[]>([]);
+  const reverted = useRef(0);
+  // The fixes the person put back, as the engine proposed them; stored on the draft (SR-C-06).
+  const putBacks = useRef<Edit[]>(mounted.putBack);
+  useEffect(() => {
+    if (!raw || typed) return;
+    const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
+    rejected.current = result.rejected;
+    // Only leaves out what the person put back: every fix shown is one the verifier just accepted (constitution).
+    const kept = restoreApplied(result.applied, putBacks.current);
+    putBacks.current = kept.putBack;
+    reverted.current = kept.putBack.length;
+    setApplied(kept.applied);
+    setProposed(result.applied.length);
+  }, [raw, typed, dictionary, language, letterLanguage]);
+
+  // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
+  // at most 300 ms after the first change, however long the editing goes on (F04-REQ-011, F06-REQ-036), and at once
+  // when the app leaves the foreground, at Done and at Close.
+  // Sample words (development builds) are never saved, so nothing is stored for them either.
+  const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
+  persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
+  const [writer] = useState(() =>
+    reviewWriter((patch) => {
+      if (draftId && persist.current.on) setDraftReview(draftId, persist.current.base, patch);
+    }),
+  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') writer.flush();
+    });
+    return () => {
+      sub.remove();
+      writer.flush();
     };
-  } catch {
-    return null;
-  }
-}
+  }, [writer]);
+  // Every change of the person's words goes to the draft within 300 ms; the words restored on mount are already there.
+  const lastWords = useRef(userText);
+  useEffect(() => {
+    if (userText === lastWords.current) return;
+    lastWords.current = userText;
+    writer.text(userText);
+  }, [userText, writer]);
+  // Done writes the words at once.
+  useEffect(() => {
+    if (!editing) writer.flush();
+  }, [editing, writer]);
 
-export const MIGRATIONS: Migration[] = [
-  {
-    version: 1,
-    name: 'baseline tables',
-    up(db) {
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
-        CREATE TABLE IF NOT EXISTS entries (
-          id TEXT PRIMARY KEY NOT NULL,
-          kind TEXT NOT NULL,
-          occurred_on TEXT NOT NULL,
-          captured_at TEXT NOT NULL,
-          capture_mode TEXT NOT NULL,
-          edit_level TEXT NOT NULL,
-          prompt_key TEXT,
-          engine_version INTEGER NOT NULL,
-          raw_transcript TEXT NOT NULL,
-          machine_edits TEXT NOT NULL,
-          final_text TEXT NOT NULL,
-          in_book INTEGER NOT NULL DEFAULT 0,
-          sounds_like_me INTEGER,
-          updated_at TEXT NOT NULL,
-          deleted_at TEXT,
-          synced_at TEXT
-        );
-        CREATE INDEX IF NOT EXISTS entries_occurred ON entries (occurred_on) WHERE deleted_at IS NULL;
-        CREATE TABLE IF NOT EXISTS children (
-          id TEXT PRIMARY KEY NOT NULL,
-          name TEXT NOT NULL,
-          birthday TEXT,
-          due_date TEXT,
-          signs_as TEXT NOT NULL,
-          reminders_on INTEGER NOT NULL DEFAULT 1,
-          family_can_read INTEGER NOT NULL DEFAULT 0,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
-          hidden_at TEXT
-        );
-        CREATE TABLE IF NOT EXISTS drafts (
-          id TEXT PRIMARY KEY NOT NULL,
-          child_id TEXT NOT NULL,
-          capture_mode TEXT NOT NULL,
-          prompt_key TEXT,
-          created_at TEXT NOT NULL,
-          audio_uri TEXT,
-          audio_duration_ms INTEGER,
-          raw_transcript TEXT,
-          typed_text TEXT
-        );
-      `);
-    },
-  },
-  {
-    version: 2,
-    name: 'multi-child and audio columns; legacy family becomes the first child',
-    up(db, ctx) {
-      addColumns(db, 'entries', [
-        ['child_id', 'TEXT'],
-        ['author_id', 'TEXT'],
-        ['author_signs_as', 'TEXT'],
-        ['audio_uri', 'TEXT'],
-        ['audio_duration_ms', 'INTEGER'],
-      ]);
-      db.exec('CREATE INDEX IF NOT EXISTS entries_child ON entries (child_id, occurred_on) WHERE deleted_at IS NULL');
+  // Ask the queue for words (idempotent: a reopened Review joins the same job).
+  useEffect(() => {
+    // A slow save on Listen opens Review while the take is still being kept (state 'recording', no length or hash):
+    // wait for that save, show the finished row, and only then ask for words (BL-563; review-settle.logic).
+    if (phase !== 'transcribing' || !draft?.audioUri) return;
+    let live = true;
+    void settleDraft(draft.id, { getDraft, running: finishingTake, waitMs: null }).then((settled) => {
+      if (!live || !settled) return;
+      if (settled !== draft) setDraft(settled);
+      if (settled.state !== 'recording') requestWords(settled.id);
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      const childCount = db.get<{ n: number }>('SELECT COUNT(*) AS n FROM children')?.n ?? 0;
-      const legacy = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', 'family');
-      if (childCount > 0 || !legacy) return;
-      const f = parseLegacyFamily(legacy.value);
-      if (!f) return; // keep the unreadable value; never throw on launch, never drop data
-      const id = ctx.newId();
-      db.run(
-        'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        id, f.childName, f.childBirthday, f.childDueDate, f.signsAs, ctx.now, ctx.now,
-      );
-      db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'activeChildId', id);
-      db.run('UPDATE entries SET child_id = ? WHERE child_id IS NULL', id);
-      db.run('DELETE FROM settings WHERE key = ?', 'family');
-    },
-  },
-  {
-    version: 3,
-    name: 'crash-safe capture, voice-only letters, orphan audio, age gate boolean',
-    up(db) {
-      // Drafts are created when recording starts (TDD 01 3.4): state tracks the take.
-      // recording: mic was live; ready: audio closed (or typed); unrecoverable: file empty or unreadable, kept anyway.
-      addColumns(db, 'drafts', [
-        ['state', "TEXT NOT NULL DEFAULT 'ready'"],
-        ['audio_sha256', 'TEXT'],
-        ['audio_bytes', 'INTEGER'],
-        ['recovered_at', 'TEXT'],
-      ]);
-      // transcript_status 'waiting': a spoken letter kept without words yet (TDD 03 #1, FM-9).
-      addColumns(db, 'entries', [
-        ['audio_sha256', 'TEXT'],
-        ['audio_bytes', 'INTEGER'],
-        ['transcript_status', 'TEXT'],
-      ]);
-      // Audio files found with no draft or letter row while no book exists to attach them to.
-      // Reported in Settings, never deleted (TDD 01 3.2.4). Keyed by file name: iOS changes the
-      // app container path across updates, so absolute URIs are not stable identifiers.
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS orphan_audio (
-          file_name TEXT PRIMARY KEY NOT NULL,
-          bytes INTEGER,
-          found_at TEXT NOT NULL
-        );
-      `);
-      // 18+ gate: a boolean only (PRD-REQ-019, DECISIONS D-026). Older installs stored
-      // ageAttested='yes' and ageAttestedAt; keep the Yes as ageGate.passed, drop the time.
-      db.run("INSERT OR REPLACE INTO settings (key, value) SELECT 'ageGate.passed', '1' FROM settings WHERE key = 'ageAttested' AND value = 'yes'");
-      db.run("DELETE FROM settings WHERE key IN ('ageAttested', 'ageAttestedAt')");
-    },
-  },
-  {
-    version: 4,
-    name: 'sync: outbox, rejected writes, per-book cursors, server versions on letters and books',
-    up(db) {
-      // Letters (own and, after sync, other people's). entries.synced_at (v1) is the
-      // time this phone last confirmed the row with the server.
-      //   server_version     L2  sync_xid of the server state this phone knows; null = never on the server
-      //   server_updated_at  L2  the server's updated_at of that state (re-upload known_at after a restore)
-      //   server_epoch       L2  restore epoch in which that state was seen
-      //   sync_state         L2  local | pending | synced | rejected | held | gone
-      //   approval           L2  family review state from the server (not_needed, pending, added, set_aside)
-      addColumns(db, 'entries', [
-        ['server_version', 'TEXT'],
-        ['server_updated_at', 'TEXT'],
-        ['server_epoch', 'INTEGER'],
-        ['sync_state', "TEXT NOT NULL DEFAULT 'local'"],
-        ['approval', 'TEXT'],
-      ]);
-      db.exec('CREATE INDEX IF NOT EXISTS entries_sync ON entries (child_id, sync_state)');
-      // Books. role and created_by_me come from the server (L2); nickname is book-level (L4).
-      //   server_state  L2  local | pending | synced | refused | left | deleted
-      addColumns(db, 'children', [
-        ['role', 'TEXT'],
-        ['created_by_me', 'INTEGER'],
-        ['nickname', 'TEXT'],
-        ['server_state', "TEXT NOT NULL DEFAULT 'local'"],
-      ]);
-      db.exec(`
-        -- Ordered upload queue (lane 0: restore re-uploads first). payload is the op
-        -- exactly as sent (L4: it can hold letter text); never logged.
-        CREATE TABLE IF NOT EXISTS sync_outbox (
-          seq INTEGER PRIMARY KEY AUTOINCREMENT,
-          op_id TEXT NOT NULL UNIQUE,
-          lane INTEGER NOT NULL DEFAULT 1,
-          type TEXT NOT NULL,
-          entity_id TEXT NOT NULL,
-          book_id TEXT,
-          payload TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          attempts INTEGER NOT NULL DEFAULT 0,
-          next_attempt_at TEXT,
-          sent_at TEXT
-        );
-        CREATE INDEX IF NOT EXISTS sync_outbox_entity ON sync_outbox (entity_id);
-        -- Ops the server refused for good (DATA-REQ-043): kept with their SQLSTATE,
-        -- content stays on the phone and in export; the person is told once.
-        CREATE TABLE IF NOT EXISTS rejected_writes (
-          op_id TEXT PRIMARY KEY NOT NULL,
-          type TEXT NOT NULL,
-          entity_id TEXT NOT NULL,
-          payload TEXT NOT NULL,
-          code TEXT NOT NULL,
-          rejected_at TEXT NOT NULL,
-          seen_at TEXT
-        );
-        -- One row per book this phone pulls: cursor, access signature, settings hash
-        -- and the members list from the server (L3: person ids and signatures).
-        CREATE TABLE IF NOT EXISTS sync_books (
-          child_id TEXT PRIMARY KEY NOT NULL,
-          cursor TEXT,
-          access TEXT,
-          meta_hash TEXT,
-          members TEXT,
-          birthday_md TEXT,
-          state TEXT NOT NULL DEFAULT 'live',
-          want_ids INTEGER NOT NULL DEFAULT 0
-        );
-      `);
-    },
-  },
-  {
-    version: 5,
-    name: 'quiet-day marks carry no sentence (D-084)',
-    up(db, ctx) {
-      // Older builds saved a template sentence as the words of "Not much today". The app never writes
-      // a person's words, so those rows are blanked. raw_transcript is not touched (it never changes,
-      // the server trigger enforces it too); every screen decides by `kind` and ignores the text.
-      // Same path as any edit: the change goes through the sync outbox (enqueueEntryUpsert, field
-      // group 'text'), in this transaction, so the server copy follows and the old text stays in the
-      // server's entry_versions. enqueueEntryUpsert does nothing before the first sign-in claimed
-      // this phone's data (the first upload then reads the blanked row), skips other people's
-      // letters and tombstoned rows (a restore sends the current words again).
-      const marks = db.all<{ id: string }>("SELECT id FROM entries WHERE kind = 'not_much' AND final_text <> ''");
-      for (const { id } of marks) {
-        db.run("UPDATE entries SET final_text = '', updated_at = ? WHERE id = ?", ctx.now, id);
-        enqueueEntryUpsert(db, id, ['text'], ctx);
-      }
-    },
-  },
-  {
-    version: 6,
-    name: 'draft kind, occurred date and precision, letter language and base direction (WP-F04-03, G-26)',
-    up(db) {
-      // PRD V2 F04 section 11.3, number fixed by 08-delivery.md section 4. Columns only: every
-      // existing row keeps its values and gains the defaults below (a letter, dated by its day,
-      // left to right, language unknown). Nothing is queued: no letter changes.
-      //   drafts.kind                note | letter (L2). Speak and Type start a letter; the widget a note.
-      //   drafts.occurred_on         YYYY-MM-DD the parent chose (L3); null means the local date of created_at.
-      //   drafts.occurred_precision  day | month (L2); entries.occurred_precision the same once saved.
-      //   drafts.language            BCP-47 tag of the take (L4, a person's language); null is the author's default.
-      //   entries.language           the letter's language (L4, G-26). Syncs as field group `language`, own
-      //                              letters only, mapped to the server's seven codes (sync/outbox.ts wireLanguage).
-      //   drafts/entries.base_direction  ltr | rtl (L2, layout only; never changes the words).
-      // drafts.state gains the value 'discarding' (Let it go confirmed, F04-REQ-009): a text value, no DDL.
-      addColumns(db, 'drafts', [
-        ['kind', "TEXT NOT NULL DEFAULT 'letter'"],
-        ['occurred_on', 'TEXT'],
-        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
-        ['language', 'TEXT'],
-        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
-      ]);
-      addColumns(db, 'entries', [
-        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
-        ['language', 'TEXT'],
-        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
-      ]);
-    },
-  },
-  {
-    version: 7,
-    name: "per-person book preferences move to child_member_prefs; the book's creator and first-run batch (WP-F12-02)",
-    up(db, ctx) {
-      // PRD V2 F12-REQ-004, number fixed by 08-delivery.md section 4. `children` keeps book-level
-      // columns only; what one person chooses for a book lives in `child_member_prefs`, one row per
-      // book for the person this phone belongs to (one account per install, F16 6.2 G):
-      //   signs_as       L3  what this child calls me (was children.signs_as)
-      //   reminders_on   L2  include this book in my reminders (was children.reminders_on)
-      //   hidden_at      L2  "Hide this book" for me only (was children.hidden_at, set only from this phone)
-      //   quiet_at       L2  "Quiet this book" for me only (F12-REQ-011), new
-      // children.hidden_at stays for the book-level support path (F12 6.2 D), empty on the phone.
-      //   children.created_by       L3  the account that started the book, when known
-      //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
-      // Values move in this one transaction; nothing is queued (nothing changed for the server).
-      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (one cut before #166; both planned builds are v8)
-      // reads them by name, and the "update the app" screen (MOB-09) does not exist yet, so dropping them would
-      // leave a tester who rolls back with a Book that cannot list its books. The app reads them from
-      // child_member_prefs only, and writes the prefs value into them as a mirror (db/repos/children.ts
-      // upsertPrefs), so the older build sees the current signature and reminder choice. The columns go in
-      // the first schema version after MOB-09 ships.
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS child_member_prefs (
-          child_id TEXT PRIMARY KEY NOT NULL,
-          signs_as TEXT NOT NULL DEFAULT '',
-          reminders_on INTEGER NOT NULL DEFAULT 1,
-          hidden_at TEXT,
-          quiet_at TEXT,
-          updated_at TEXT NOT NULL
-        );
-      `);
-      addColumns(db, 'children', [
-        ['created_by', 'TEXT'],
-        ['first_run_batch', 'TEXT'],
-      ]);
-      const have = columns(db, 'children');
-      if (have.has('signs_as')) {
-        db.run(
-          `INSERT OR IGNORE INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at)
-           SELECT id, COALESCE(signs_as, ''), COALESCE(reminders_on, 1), hidden_at, COALESCE(updated_at, ?) FROM children`,
-          ctx.now,
-        );
-        db.run('UPDATE children SET hidden_at = NULL WHERE hidden_at IS NOT NULL');
-      }
-      // Books started here belong to the account that owns this phone's letters (set at the first sign-in).
-      const owner = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'sync.ownerId'")?.value ?? null;
-      if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);
-    },
-  },
-  {
-    version: 8,
-    name: 'held drafts sync as author-only rows: held kind, the destination chosen, the server version (WP-F14-22)',
-    up(db, ctx) {
-      // PRD V2 F16 6.2 I and F14-REQ-039, number fixed by 08-delivery.md section 4. A letter held at
-      // the Keep gate, and a voice-only letter waiting for its words, of a signed-in author sync as
-      // an author-only held_drafts row on the server. A draft that was never held never gets one.
-      //   drafts.held_kind       L2  null (never held: stays on this phone) | held_letter | held_words
-      //   drafts.in_book_choice  L2  where the author chose to put it when held: 1 the book, 0 private, null not chosen
-      //   drafts.held_v          L2  server version of its held_drafts row; null = not on the server
-      //   drafts.held_typed      L4  the typed words as the server last had them (so only a real words change is sent as one)
-      //   entries.held_v         L2  the same for a voice-only letter waiting for its words (sent as waiting_letter)
-      // Existing drafts were never held, so none of them is queued.
-      addColumns(db, 'drafts', [
-        ['held_kind', 'TEXT'],
-        ['in_book_choice', 'INTEGER'],
-        ['held_v', 'TEXT'],
-        ['held_typed', 'TEXT'],
-      ]);
-      addColumns(db, 'entries', [['held_v', 'TEXT']]);
-      // A phone that already signed in: its voice-only letters waiting for words go up now as held rows
-      // (enqueueEntryUpsert sends a waiting letter as held.upsert), in this transaction, like any upload.
-      const waiting = db.all<{ id: string }>(
-        "SELECT id FROM entries WHERE transcript_status = 'waiting' AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
-      );
-      for (const { id } of waiting) enqueueEntryUpsert(db, id, ['text'], ctx);
-    },
-  },
-  {
-    version: 9,
-    name: "Review's own choices survive a kill: put-backs, the view, the person's typed words (SR-C-06, BL-377, WP-F06-08b)",
-    up(db) {
-      // CR-39. What the person chose in Review lives on the draft until Keep, so a reopened Review shows the
-      // same final text. Never synced and not in the app's export (Settings > Export); like typed_text, it is
-      // carried by the recovery export and the iOS device backup of the database. The synced machine_edits shape
-      // is unchanged (the letter still stores only the fixes in force at Keep). Kept until Keep (the draft row
-      // goes) or Let it go (cleared at step 1, then the row goes).
-      //   drafts.review_put_back  L4  JSON array of the machine fixes the person put back (each exactly as the
-      //                               engine proposed it). On reopen the fixes are proposed and verified again
-      //                               and only these are left out: the machine adds nothing from storage.
-      //   drafts.review_view      L2  fixes | exact; null = the Settings default
-      //   drafts.review_text      L4  the person's own words from Change words; null = not changed
-      //   drafts.review_base      L4  fingerprint (hash) of the person's words those choices were made on
-      //                               (review-persist.logic; DATA_CLASSIFICATION 1.1.2: a hash of words is L4);
-      //                               a mismatch (typed words changed since) means the choices no longer apply
-      // Existing drafts gain nulls: nothing chosen yet. Nothing is queued.
-      addColumns(db, 'drafts', [
-        ['review_put_back', 'TEXT'],
-        ['review_view', 'TEXT'],
-        ['review_text', 'TEXT'],
-        ['review_base', 'TEXT'],
-      ]);
-    },
-  },
-  {
-    version: 10,
-    name: 'agreements: the Terms and Privacy accept made at Before you begin, kept on this phone (F2, PR #597 L-A)',
-    up(db) {
-      // PR #597 docs/data/account-experience-schema.md 2.1 (step L-A). Number: v10, the next free one after
-      // #522 took v9 (coordinator, 8 Nov 2026; no gaps, append-only).
-      // Every column is L2. No age column, ever: the age answer stays settings.ageGate.passed (D-026).
-      // No backfill: an install that passed the old gate never saw the agreement, so it gets no row and the
-      // app shows the agreement once (legal-consent 3, counsel Q-C). A record is never made up from use.
-      //   id               L2  UUIDv7
-      //   document         L2  'terms' | 'privacy'
-      //   version          L2  document version shown (build constant)
-      //   action           L2  'accept' | 'acknowledge'
-      //   surface          L2  'first_run.before_you_begin' | 'update.agreement'
-      //   recorded_at      L2  device time of the tap
-      //   app_version      L2
-      //   rendered_sha256  L2  hex SHA-256 of the agreement sentence shown
-      //   uploaded_at      L2  when record_policy_act returned (1.1); null until then
-      //   server_act_id    L2  policy_acceptances.id (1.1)
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS agreements (
-          id TEXT PRIMARY KEY NOT NULL,
-          document TEXT NOT NULL,
-          version TEXT NOT NULL,
-          action TEXT NOT NULL,
-          surface TEXT NOT NULL,
-          recorded_at TEXT NOT NULL,
-          app_version TEXT NOT NULL,
-          rendered_sha256 TEXT NOT NULL,
-          uploaded_at TEXT,
-          server_act_id TEXT
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS agreements_once ON agreements (document, version, action);
-      `);
-    },
-  },
-  {
-    version: 11,
-    name: 'entry_media: the one picture kept with a letter, on this phone only (NS-01, ADR 0028 D1)',
-    up(db) {
-      // ADR 0028 D1. Number: the ADR proposed 10; agreements took 10 first, so this is 11 (append-only, no gaps).
-      // A table and indexes only: no existing row changes, and nothing is queued to the sync outbox. Pull and push
-      // never read or write this table; the push mapper sends photo_path null (NS-01-R15). The picture file is
-      // `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere; the media id, no entry id
-      // in the name); the row decides who owns it.
-      //   id          L2  media id (UUIDv7 made on the phone)
-      //   entry_id    L3  the kept letter (a letter id, as entries.id); null while only a draft owns it
-      //   draft_id    L3  the draft (as drafts.id); null once kept
-      //   kind, ext   L2  'photo' and 'jpg' only (no video in Build 13); enums, as entries.kind
-      //   bytes       L2  size of the stripped copy (as audio_bytes)
-      //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
-      //   width, height L2
-      //   photo_text  L4  the parent's own words about the picture: the app keeps at most 140 characters a person
-      //                   sees (grapheme clusters); the CHECK is only a ceiling in code points, 16 per grapheme, E84 (NS-01-R54)
-      //   place       L4  typed by the parent: at most 60 characters a person sees, ceiling 960 code points, 16 per grapheme, E84. Never
-      //                   read from the picture.
-      //   added_at    L2
-      // No deleted_at: the row is hidden while its letter's entries.deleted_at is set, by join (ADR 0028 D1).
-      // One picture per letter is the unique index, not the table shape (a later build drops that one index).
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS entry_media (
-          id TEXT PRIMARY KEY NOT NULL,
-          entry_id TEXT,
-          draft_id TEXT,
-          kind TEXT NOT NULL CHECK (kind = 'photo'),
-          ext TEXT NOT NULL CHECK (ext = 'jpg'),
-          bytes INTEGER NOT NULL,
-          sha256 TEXT NOT NULL,
-          width INTEGER,
-          height INTEGER,
-          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 2240),
-          place TEXT CHECK (place IS NULL OR length(place) <= 960),
-          added_at TEXT NOT NULL,
-          CHECK ((entry_id IS NULL) <> (draft_id IS NULL))
-        );
-        CREATE INDEX IF NOT EXISTS entry_media_entry_idx ON entry_media (entry_id) WHERE entry_id IS NOT NULL;
-        CREATE INDEX IF NOT EXISTS entry_media_draft_idx ON entry_media (draft_id) WHERE draft_id IS NOT NULL;
-        CREATE UNIQUE INDEX IF NOT EXISTS entry_media_one_photo_idx ON entry_media (COALESCE(entry_id, draft_id));
-      `);
-    },
-  },
-  {
-    version: 12,
-    name: 'raw_transcript is set once on this phone: two triggers (BL-412, DATA-REQ-040, ADR 0025 section 9 row C)',
-    up(db) {
-      // The server refuses any change of a set raw_transcript (entries_guard_immutable); this is the phone's copy of
-      // that rule, for raw_transcript only (captured_at, author_id, child_id, engine_version have local writers).
-      // Empty (or NULL on a draft) to the first words stays allowed; naming the column with the same value passes.
-      // The one exception is a pulled own row taking the first keep's raw (merge.ts takeProvenance): it sets
-      // settings('raw_takeover') to that one entry id and deletes it in the same transaction, so the trigger lets
-      // that entry's raw change and no other. Drafts have no exception. The message holds no words.
-      db.exec(`
-        DELETE FROM settings WHERE key = 'raw_takeover';
-        CREATE TRIGGER IF NOT EXISTS entries_raw_transcript_set_once
-        BEFORE UPDATE OF raw_transcript ON entries
-        WHEN OLD.raw_transcript <> ''
-          AND NEW.raw_transcript IS NOT OLD.raw_transcript
-          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'raw_takeover')
-        BEGIN
-          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
-        END;
-        CREATE TRIGGER IF NOT EXISTS drafts_raw_transcript_set_once
-        BEFORE UPDATE OF raw_transcript ON drafts
-        WHEN OLD.raw_transcript IS NOT NULL AND OLD.raw_transcript <> ''
-          AND NEW.raw_transcript IS NOT OLD.raw_transcript
-        BEGIN
-          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
-        END;
-      `);
-    },
-  },
-];
+  // Words arrived: the queue set the draft's raw transcript once (or, in development, sample words).
+  useEffect(() => {
+    if (phase !== 'transcribing' || !draft || job?.phase !== 'done' || job.outcome !== 'ok') return;
+    const samplePart = sampleWordsFor(draft.id);
+    const stored = getDraft(draft.id)?.rawTranscript ?? null;
+    const words = stored ?? samplePart?.raw ?? null;
+    if (!words) return;
+    setIsSample(!stored && !!samplePart);
+    setRaw(toNFC(words)); // the queue stores NFC; sample words get the same form
+    setWordsArrived(true); // the letter fades in once, never word by word (MOTION 5c)
+    setPhase('ready');
+  }, [phase, draft, job?.phase, job?.outcome]);
 
-export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
+  // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
+  useEffect(() => {
+    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+  }, [job?.phase]);
 
-export class MigrationError extends Error {
-  readonly code = 'local_db_migration_failed';
-  /**
-   * A fixed code and the step's version only (TDD 01 4.2 rule 2). The original error is deliberately not
-   * kept, not even as `cause`: SQLite messages can quote stored values (a name, a date), and an error with a
-   * `cause` is serialised whole by crash reporters and loggers.
-   */
-  constructor(public version: number) {
-    super(`local_db_migration_failed:${version}`);
-    this.name = 'MigrationError';
-  }
-}
+  // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
+  // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
+  const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
+  const shownAt = useRef(Date.now());
+  // A new part, or a whole percent more within one, is progress (whisper.rn reports within a part).
+  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}:${Math.floor((job?.progress?.fraction ?? 0) * 100)}`;
+  const progress = useRef({ key: progressKey, at: Date.now() });
+  progress.current = progressClock(progress.current, progressKey, Date.now());
+  const laterOffered = useRef(false);
+  const [, setWaitTick] = useState(0);
+  useEffect(() => {
+    if (!writingNow) return;
+    const id = setInterval(() => setWaitTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [writingNow]);
 
-export interface MigrationResult {
-  from: number;
-  to: number;
-  /** The file was written by a newer build (for example after an update was rolled back). Left untouched. */
-  newer: boolean;
-}
+  const tryAgain = () => {
+    if (!draft) return;
+    haptic('tap');
+    // retryWords also re-listens to a take where nobody spoke; requestWords joins a job that is already there.
+    if (job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech')) retryWords(draft.id);
+    else requestWords(draft.id);
+  };
 
-export function userVersion(db: SqlDb): number {
-  return db.get<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
-}
+  // "Record again": the take stays as a draft, untouched (the only path that deletes audio is a confirmed Discard).
+  const recordAgain = () => {
+    haptic('tap');
+    router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
 
-/** Brings the database to LATEST_VERSION, one transaction per step. */
-export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[] = MIGRATIONS): MigrationResult {
-  const from = userVersion(db);
-  const latest = migrations[migrations.length - 1]?.version ?? 0;
-  if (from > latest) return { from, to: from, newer: true };
-  let to = from;
-  for (const m of migrations) {
-    if (m.version <= from) continue;
-    try {
-      db.transaction(() => {
-        m.up(db, ctx);
-        db.exec(`PRAGMA user_version = ${m.version}`);
-      });
-    } catch {
-      throw new MigrationError(m.version);
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
+  };
+
+  // Mini player for the recording ("Hear it").
+  // The web design preview's seeded recordings cannot load in a browser (always false on a phone).
+  const player = useAudioPlayer(draft?.audioUri && !isPreviewAudioPresent(draft.audioUri) ? draft.audioUri : null);
+  const playStatus = useAudioPlayerStatus(player);
+  const togglePlay = async () => {
+    if (playStatus.playing) {
+      player.pause();
+      await setAudioMode('idle');
+    } else {
+      track('review_action', { action: 'play_back' });
+      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
+      await setAudioMode('playback');
+      if (playStatus.didJustFinish || playStatus.currentTime >= playStatus.duration) player.seekTo(0);
+      player.play();
     }
-    to = m.version;
+  };
+  useEffect(() => {
+    if (playStatus.didJustFinish) setAudioMode('idle').catch(() => {});
+  }, [playStatus.didJustFinish]);
+  useEffect(() => () => void setAudioMode('idle').catch(() => {}), []);
+
+  // Display: the person's words plus edits; a just-restored span is marked as an identity edit.
+  // In "Exactly as said" no fix is in force; the fixes themselves stay in `applied`, so the choice is reversible.
+  const inForce = useMemo(() => fixesInForce(view, applied), [view, applied]);
+  const marker = restored && view === 'fixes' ? applied.length : null;
+  const segs = useMemo(() => {
+    const all = restored && view === 'fixes' ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : inForce;
+    return toSegments(raw, all, typed ? undefined : rules);
+  }, [raw, applied, inForce, restored, view, typed, rules]);
+  // Typed words are kept exactly as typed (S19; F04-REQ-012, F06-REQ-037): trimmed, no character swapped. Spoken text
+  // uses its language's final-text rule.
+  const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
+  const finalText = userText ?? cleanedText;
+
+  const putBack = (index: number) => {
+    const edit = applied[index];
+    const next = withoutEdit(raw, applied, index, rules);
+    haptic('tap');
+    reverted.current++;
+    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    putBacks.current = [...putBacks.current, edit];
+    writer.putBack(putBacks.current);
+    setApplied(next.applied);
+    setRestored({ edit, index });
+    setOpenEdit(null);
+    setWash(true);
+    setTimeout(() => setWash(false), 1600);
+  };
+
+  const undoPutBack = () => {
+    if (!restored) return;
+    haptic('tap');
+    reverted.current = Math.max(0, reverted.current - 1);
+    const next = [...applied];
+    next.splice(restored.index, 0, restored.edit);
+    putBacks.current = withoutPutBack(putBacks.current, restored.edit);
+    writer.putBack(putBacks.current);
+    setApplied(next);
+    setRestored(null);
+  };
+
+  /** The view control. Reversible: nothing is discarded by choosing Exactly as said. */
+  const chooseView = (next: ReviewView) => {
+    if (next === view) return;
+    haptic('tap');
+    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    writer.view(next);
+    setView(next);
+    setRestored(null);
+    setOpenEdit(null);
+    setWash(false);
+  };
+
+  const pickChild = () => {
+    if (listChildren().length < 2 || !draft || later) return; // a saved letter stays in its book
+    haptic('tap');
+    setPickerOpen(true);
+  };
+  const chooseChild = (id: string) => {
+    if (!draft) return;
+    track('review_action', { action: 'change_child' });
+    setDraftChild(draft.id, id);
+    setChildId(id);
+  };
+
+  // Save: commit, haptic, then animate (MOTION principle 3). The saved moment (components/capture/saved-moment.tsx)
+  // files the letter into its month and then lands on the Book (S21, 5.8 row 5).
+  // After the save, one ask at most, in the decided order (DR-12 B, F02 6.1, F13-REQ-023; lib/asks/next-ask.logic):
+  // the reminder card after the first letter, then Keep the book (the sign-in sheet, servers on and signed out) on
+  // the second letter or the first save of a later session. Either rises over the Book once the letter is seen in
+  // its place, never in place of Review (5.8 row 5b), and "Not now" / "No reminders" always work (local-first).
+  const auth = useAuth();
+  const askAfterLanding = useRef<NextAsk>(null);
+  const left = useRef(false);
+  const land = () => {
+    if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
+    left.current = true;
+    // The Book, on the book the letter was kept in (Review can move a draft to another book), on the new letter:
+    // one navigation back to the tabs selects the Book tab under Review as Review dissolves away over it, so Tonight
+    // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
+    setActiveChildId(child.id);
+    router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
+    if (askAfterLanding.current === 'keep_book') {
+      setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
+    } else if (askAfterLanding.current === 'reminder_prime') {
+      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
+    }
+  };
+  const finishSave = (inBook: boolean, firstLetter: boolean) => {
+    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
+    haptic('success');
+    setSavedTo(inBook ? 'book' : 'private');
+    setPhase('saved');
+  };
+
+  // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
+  const devPass = useRef(false);
+  /**
+   * True when the Keep sheet opened instead: the caller returns without saving. Never throws.
+   * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText`.
+   * The rule (no words on screen: no gate, no sheet) lives in lib/billing/keep-step.ts, tested there.
+   */
+  const keepNeedsPlus = async (wordsOnScreen: string): Promise<boolean> => {
+    if (devPass.current) return false;
+    const g = await keepSheetFor(wordsOnScreen);
+    if (g === null) return false;
+    if (g.decision.kind === 'hold') {
+      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PLS-10): hold the letter exactly as
+      // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
+      // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
+      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses. A second
+      // tap does nothing (holdWithoutSheet: one hold, one line, one back). No letter_held event: that one counts holds
+      // chosen at the Keep sheet, and no sheet was shown here (keepSheetFor notes nothing for a hold either).
+      holdWithoutSheet(holding, {
+        hold: () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })),
+        say: () => toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote }),
+        leave: () => (router.canGoBack() ? router.back() : router.replace('/')),
+      });
+      return true;
+    }
+    setGate(g);
+    return true;
+  };
+
+  const saving = useRef(false);
+  // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
+  // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
+  const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
+  const save = async (inBook: boolean) => {
+    if (!draft || !child || saving.current || isSample) return; // sample words are never saved
+    saving.current = true;
+    heldInBook.current = inBook;
+    writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
+    player.pause();
+    // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
+    // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
+    await setAudioMode('idle').catch(() => {});
+    setSaveFailed(false);
+    try {
+      const audio = await ensureAudioHash(draft);
+      if (await keepNeedsPlus(finalText)) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
+      // The row as it is now: a save that finished after Review opened has the real length and file (BL-563).
+      const live = getDraft(draft.id) ?? draft;
+      const firstLetter = !hasAnyLetter();
+      // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
+      if (later) keepLaterLetter(draft.id, inBook);
+      else saveLetterFromDraft(
+        draft.id,
+        {
+          id: draft.id,
+          kind: 'letter',
+          occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
+          capturedAt: draft.createdAt,
+          captureMode,
+          editLevel: view === 'exact' ? 'verbatim' : level,
+          promptKey: draft.promptKey,
+          engineVersion: ENGINE_VERSION,
+          rawTranscript: raw,
+          machineEdits: inForce,
+          finalText,
+          inBook,
+          soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
+          childId: child.id,
+          authorSignsAs: child.signsAs,
+          audioUri: live.audioUri,
+          audioDurationMs: live.audioDurationMs,
+          audioSha256: audio.sha256,
+          audioBytes: audio.bytes,
+        },
+        audio.exists,
+      );
+      // letter_saved went when the recording was kept; keeping its words later is not a second letter.
+      if (!later) trackLetterSaved({
+        mode: typed ? 'typed' : 'spoken',
+        inBook,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(draft.promptKey),
+        audioMs: live.audioDurationMs,
+        wordCount: wordCountOf(finalText),
+        machineEdits: inForce.length,
+        editsReverted: reverted.current + setAsideAtSave(view, applied),
+        editsRejected: typed ? undefined : rejected.current.length,
+        engine: typed ? 'none' : 'on_device',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
+      if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The picture chosen with this letter (NS-01), stored now that the letter exists. A picture that cannot be stored
+      // never un-keeps the letter (NS-01-R17); with the photos switch off nothing is pending.
+      await commitPendingPhoto(draft.id, finalText);
+      // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
+      if (await countAfterSave(finalText)) setSecondFree(true);
+      finishSave(inBook, firstLetter);
+    } catch {
+      saving.current = false;
+      track('error_shown', { code: 'save_failed' });
+      setSaveFailed(true); // the draft is intact; nothing was half-saved
+    }
+  };
+
+  /** Keep the recording as a letter waiting for its words (private until the parent adds it). */
+  const keepRecordingOnly = async () => {
+    if (!draft || !child || saving.current) return;
+    saving.current = true;
+    player.pause();
+    await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
+    setSaveFailed(false);
+    try {
+      // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
+      // (BL-563). The take stays; the words wait in Review starts when the save ends.
+      const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
+      if (!settled) {
+        saving.current = false;
+        // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
+        // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
+        if (isFinishing(draft.id)) toast.show({ message: copy.review.keepStillSaving });
+        return;
+      }
+      const audio = await ensureAudioHash(settled);
+      // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
+      // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
+      // It counts later, at the save where its words are first on screen.
+      const firstLetter = !hasAnyLetter();
+      const fresh = getDraft(draft.id) ?? draft;
+      saveVoiceOnlyFromDraft(
+        { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
+        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
+      );
+      trackLetterSaved({
+        mode: 'spoken',
+        inBook: false,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(fresh.promptKey),
+        audioMs: fresh.audioDurationMs,
+        wordCount: 0,
+        machineEdits: 0,
+        editsReverted: 0,
+        engine: 'pending',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
+      setDraft(fresh);
+      setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
+      setVoiceOnly(true);
+      await afterLetterKept(); // never counted (M17), so never the second-free line or free_allowance_reached
+      finishSave(false, firstLetter);
+    } catch {
+      saving.current = false;
+      setSaveFailed(true);
+    }
+  };
+
+  useEffect(() => {
+    if (gate || saveFailed) setKeeping(false);
+  }, [gate, saveFailed]);
+
+  /** The person's choice of where the letter goes; "Try again" after a failed save keeps it where they chose (S17). */
+  const lastDestination = useRef(true);
+  const keepTo = (inBook: boolean) => {
+    lastDestination.current = inBook;
+    void save(inBook);
+  };
+
+  // A typed letter keeping from Write (S20, 5.8 row 5a): the person already chose where it goes, so the one Keep step
+  // runs at once, with no "Read it back" screen. Only Write's tap arms it, for this draft (lib/capture/keep-intent.ts).
+  useEffect(() => {
+    const intent = consumeKeep(draftId);
+    if (intent && phase === 'ready' && typed) keepTo(intent.inBook);
+    else setKeeping(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A save that did not work is said aloud as well as shown (iOS VoiceOver ignores live regions): the words are safe
+  // first, then what happened (S17, VOICE).
+  useEffect(() => {
+    if (saveFailed) announce(r.saveFailed);
+  }, [saveFailed, r.saveFailed]);
+
+  const dismissFirstNote = () => {
+    setSetting('review.firstNoteSeen', '1');
+    setFirstNote(false);
+  };
+
+  if (!draft || !child) {
+    // Opened with nothing to read back (a stale link, S23): not an error, nothing to try again. The page drawing,
+    // still; one way on to the book; Close in the header.
+    return (
+      <StateScreen
+        kind="notFound"
+        title={r.noDraft.title}
+        header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
+        primary={{ label: r.noDraft.button, onPress: () => router.dismissTo('/book'), testID: 'review.noDraft.book' }}
+      />
+    );
   }
-  return { from, to, newer: false };
+
+  const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+  const countText =
+    line === 'count'
+      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
+      : line === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : line === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+
+  // The letter sheet's header (S17): the month it files into, from the day it was said.
+  const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
+  const month = monthFor(child, occurredOn);
+  const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
+  const openE = openEdit !== null ? applied[openEdit] : null;
+  const many = listChildren().length > 1;
+
+  // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
+  const ask = job?.phase === 'waiting_for_pack' ? speechAskFor(language) : null;
+  const hints = waitingHints({ elapsedMs: Date.now() - shownAt.current, sinceProgressMs: Date.now() - progress.current.at, laterOffered: laterOffered.current });
+  // An unrecoverable take is empty only with no bytes (Tonight's rule); with bytes it is a kept recording the phone
+  // could not open (the launch sweep's unplayable take), never "Nothing was recorded".
+  const file = takeFile(draft);
+  if (writingNow && hints.later) laterOffered.current = true;
+  const card =
+    phase === 'transcribing' || phase === 'waiting'
+      ? wordsCard({
+          emptyFile: file === 'empty',
+          unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
+          job,
+          download: {
+            ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
+            progress: download.progress,
+            hold: download.hold,
+            lowSpace: ask?.kind === 'low_space',
+            // The size comes from this phone's plan, never a typed number (D-087).
+            size: ask ? formatBytes(ask.bytes) : '',
+            mb: ask ? Math.round(ask.bytes / 1e6) : 0,
+            neededSize: ask ? formatBytes(ask.neededBytes) : '',
+          },
+          hints,
+          playing: playStatus.playing,
+        })
+      : null;
+  // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
+  const hasSound = spoken && file !== 'empty' && !(job?.phase === 'failed' && job.failure === 'file_missing');
+  // "Everything before that is kept." only above a recording that was kept (S16).
+  const stopNote = stopLine({ stopped, recoveredAt: draft.recoveredAt, spoken, kept: recordingKept(card) });
+  const runWordsAction: Record<WordsAction, () => void> = {
+    retry: tryAgain,
+    keep: () => void keepRecordingOnly(),
+    type: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    // The person writes the words for this recording; the app never fills them in (S16).
+    write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    recordAgain,
+    letGo,
+    download: () => void startSpeechDownload(language),
+    // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
+    cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
+    // Review closes; the queue carries on, and Tonight shows the recording waiting for its words (S14).
+    later: () => (router.canGoBack() ? router.back() : router.replace('/')),
+  };
+
+  // The Keep sheet rises over this Review (S22, 5.8 row 5c), drawn last in its screen; the letter stays underneath.
+  let keepSheet: ReactNode = null;
+  if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
+    keepSheet = (
+      <PlusGate
+        variant="keep_letter"
+        childName={child.name}
+        lapsed={gate.decision.lapsed}
+        lettersKept={gate.lettersKept}
+        heldOn={later ? 'letter' : 'tonight'}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
+        onHold={() => {
+          // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
+          // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          router.back();
+        }}
+        onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+        onDismiss={() => setGate(null)} // back to the letter, nothing held or kept
+        onContinueDev={
+          devShortcutsAllowed
+            ? () => {
+                devPass.current = true;
+                setGate(null);
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
+  // One primary (56 pt), one quiet 44 pt: the footer is about 100 pt, not 130 (QA journey J06-01). While the
+  // letter is being edited the footer is just "Done", so the only way out of the most committing task is a primary.
+  const footerShell = (children: ReactNode) => (
+    <View className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}>{children}</View>
+  );
+  // "Add to Asha's book" (primary; "Add to the book" when the name makes it long) and "Keep private" (quiet). A save
+  // that did not work keeps the letter, says so directly above the primary, and the primary reads "Try again" (S17).
+  const footer =
+    phase === 'ready' && !isSample
+      ? footerShell(
+          editing ? (
+            <Button size="lg" fullWidth label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
+          ) : (
+            <>
+              {saveFailed && (
+                <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive" className="pb-1 text-center" testID="review.saveFailed">
+                  {r.saveFailed}
+                </Text>
+              )}
+              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+                <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
+              </Button>
+              {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
+                <Text>{r.destination.privateButton}</Text>
+              </Button>
+            </>
+          ),
+        )
+      : null;
+  // Sample words (development builds) are never saved: the footer keeps the recording itself. Every other state that
+  // can keep the recording carries "Keep the recording" in its own card (S15, S16), so there is never a second one here.
+  const keepFooter =
+    spoken && phase === 'ready' && isSample
+      ? footerShell(
+          <Button size="lg" fullWidth onPress={keepRecordingOnly} testID="review.keepVoice">
+            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
+          </Button>,
+        )
+      : null;
+
+  // The saved moment (S21), and, for a typed letter keeping from Write (S20), the same sheet holding still while the
+  // one Keep step runs: the moment starts from exactly what the person saw.
+  const keepingFromWrite = keeping && phase === 'ready' && !saveFailed && !gate;
+  if (phase === 'saved' || keepingFromWrite) {
+    const moment = savedMoment({ kind: voiceOnly ? 'voice' : savedTo === 'private' ? 'private' : 'book', childName: child.name, month, keptForWords });
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <SavedMoment
+          header={header}
+          words={voiceOnly ? pendingCopy.book.waitingForWords : finalText}
+          chip={moment.chip}
+          lock={moment.lock}
+          line={moment.line}
+          committed={phase === 'saved'}
+          onDone={land}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
+  // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
+  const markCard = openE ? (
+    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+      <Text variant="labelSmall">{labelOf(openE).label}</Text>
+      <Text variant="subhead">{labelOf(openE).explain}</Text>
+      {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
+      {openE.original.trim() !== '' && (
+        <>
+          <Text variant="footnote">{r.cardYouSaid}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
+        </>
+      )}
+      {openE.replacement.trim() !== '' ? (
+        <>
+          <Text variant="footnote">{r.cardNowReads}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+        </>
+      ) : (
+        <Text variant="footnote">{r.cardTakenOut}</Text>
+      )}
+      <ButtonRow>
+        <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
+          <Text>{r.undoEditButton}</Text>
+        </Button>
+        <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+          <Text tone="muted">{copy.common.closeButton}</Text>
+        </Button>
+      </ButtonRow>
+    </Animated.View>
+  ) : null;
+
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <ModalHeader
+        onClose={() => {
+          writer.flush();
+          router.back();
+        }}
+        // The person's own changes (Change words, a fix put back, the other view) are written to the draft as they
+        // happen (SR-C-06), but the hint still steps aside while any is there (P4 critics' pass S1): whether Close
+        // should now say "Saved on this phone" over them is a design and copy call, handed off (W6b PR).
+        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
+        leading={
+          editing ? (
+            // Done sits in the header while editing (S18), and above the keyboard on iOS.
+            <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
+          ) : hasSound ? (
+            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
+              {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
+              <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
+            </Button>
+          ) : null
+        }
+      />
+
+      {/* While words are changed the footer's Done rides above the keyboard (S18), and the letter scrolls clear of it. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
+          {/* The title, then the letter on its sheet. No reassurance line: the marks speak for themselves (S17). */}
+          <Text variant="title1" asHeading>
+            {reviewHeading({ typedOnly: typed && !spoken })}
+          </Text>
+          {isSample && (
+            <View className="rounded-2xl border border-caution p-3">
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleBanner}
+              </Text>
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleNotSaved}
+              </Text>
+            </View>
+          )}
+
+          {firstNote && phase === 'ready' && (
+            <Animated.View
+              entering={motion.enter()}
+              exiting={FadeOut.duration(motion.reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}
+              layout={motion.layout()}>
+              {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
+              <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text variant="headline" className="flex-1">
+                    {r.firstNote.title}
+                  </Text>
+                  <Button variant="quiet" size="sm" label={r.firstNote.dismissButton} onPress={dismissFirstNote} testID="review.firstNote.dismiss" />
+                </View>
+                <Text variant="subhead" className="pr-2">
+                  {r.firstNote.body}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
+          {stopNote && (
+            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
+              {stopNote}
+            </Text>
+          )}
+
+          {card && (
+            // The words are on their way, or they did not come (S14 to S16). The card enters just after Listen dissolves in (5.8 row 4).
+            <Animated.View entering={motion.enter(3)}>
+              <WordsStatus card={card} size={ask ? formatBytes(ask.bytes) : ''} lengthMs={draft.audioDurationMs} run={runWordsAction} />
+            </Animated.View>
+          )}
+
+          {/* A keep that did not work before the words were there: the words are safe first (VOICE), then what happened. */}
+          {saveFailed && phase !== 'ready' && (
+            <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
+              {r.saveFailed}
+            </Text>
+          )}
+
+          {phase === 'ready' && (
+            <>
+              {/* The letter on its sheet (S17), arriving with one fade when its words have just come (MOTION 5c). */}
+              <Animated.View layout={motion.layout()} entering={wordsArrived ? FadeIn.duration(tokens.motion.swapMs) : undefined}>
+                <LetterSheet
+                  header={header}
+                  editing={editing}
+                  onChangeBook={many && !later ? pickChild : undefined}
+                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  {editing ? (
+                    // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
+                    // is the accent line. The system draws Full Keyboard Access's own focus ring.
+                    <TextField
+                      variant="letter"
+                      label={pendingCopy.write.label}
+                      labelHidden
+                      value={finalText}
+                      onChangeText={setUserText}
+                      multiline
+                      autoFocus
+                      inputClassName="min-h-40"
+                      testID="review.editField"
+                    />
+                  ) : userText !== null ? (
+                    <Text variant="letterBody" selectable>
+                      {userText}
+                    </Text>
+                  ) : (
+                    // "With small fixes" and "Exactly as said" cross-fade (S17: 150 ms, swapMs; a fade is also the Reduce Motion form).
+                    <Animated.View key={view} entering={FadeIn.duration(tokens.motion.swapMs)}>
+                    <Transcript
+                      segments={segs}
+                      edits={view === 'fixes' ? applied : undefined}
+                      openEdit={openEdit}
+                      restoredIndex={wash ? marker : null}
+                      card={openE && view === 'fixes' ? markCard : null}
+                      accessibilityLabel={finalText}
+                      onPressEdit={(i) => {
+                        if (i >= applied.length) return;
+                        haptic('tap');
+                        setOpenEdit(openEdit === i ? null : i);
+                      }}
+                    />
+                    </Animated.View>
+                  )}
+
+                  {putBackNoteShows({ restored: !!restored, editing, userText }) && (
+                    <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
+                      <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
+                      <Button size="sm" variant="quiet" onPress={undoPutBack}>
+                        <Text>{copy.common.undoButton}</Text>
+                      </Button>
+                      <Button size="sm" variant="quiet" onPress={() => setRestored(null)}>
+                        <Text tone="muted">{copy.common.closeButton}</Text>
+                      </Button>
+                    </View>
+                  )}
+                </LetterSheet>
+              </Animated.View>
+
+              {!typed && userText === null && !editing && (
+                <View className="gap-3">
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
+                  {line === 'count' ? (
+                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                    <Pressable
+                      onPress={() => {
+                        haptic('tap');
+                        setFixesOpen((o) => !o);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityLiveRegion="polite"
+                      className="min-h-12 flex-row items-center justify-between gap-3"
+                      testID="review.count">
+                      <Text variant="subhead">{countText}</Text>
+                      {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+                    </Pressable>
+                  ) : (
+                    <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
+                      {countText}
+                    </Text>
+                  )}
+                  {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
+                  {view === 'fixes' && applied.length > 0 && fixesOpen && (
+                    <View>
+                      {applied.map((e, i) => (
+                        <FixRow
+                          key={`${e.start}-${e.type}`}
+                          label={labelOf(e).label}
+                          shows={rowShows(e)}
+                          open={openEdit === i}
+                          onPress={() => {
+                            haptic('tap');
+                            setOpenEdit(openEdit === i ? null : i);
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
+              {!isSample && !editing && !later && (
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  className="-ml-4 self-start"
+                  testID="review.edit"
+                  onPress={() => {
+                    track('review_action', { action: 'edit_text' });
+                    // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
+                    setRestored(null);
+                    setEditing(true);
+                  }}>
+                  <Text>{pendingCopy.review.editTextButton}</Text>
+                </Button>
+              )}
+
+            </>
+          )}
+          {/* The picture chosen with this letter (NS-01-R7): add, change, take off, with Undo. It comes after the parent's
+              words and their small fixes and before Let it go and Keep (spec 01 section 4), so it never leads the words, and
+              when it is stored after Review opens nothing above it moves. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
+
+          {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. The footer is
+              null until the words are ready. */}
+          {inlineFooter ? footer : null}
+          {inlineFooter ? keepFooter : null}
+        </ScrollView>
+
+        {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll.
+            At accessibility text sizes it moves into the scroll instead, so the letter keeps the screen. */}
+        {!inlineFooter && footer}
+        {!inlineFooter && keepFooter}
+      </KeyboardAvoidingView>
+
+      <WhoseBookSheet
+        visible={pickerOpen}
+        books={listChildren()}
+        selectedId={child.id}
+        onSelect={chooseChild}
+        onClose={() => setPickerOpen(false)}
+      />
+      {keepSheet}
+    </SafeAreaView>
+  );
+}
+
+/**
+ * "With small fixes | Exactly as said" (COMPONENTS 2.19, D-086 5.4). Full width under the card, 44 pt tall, pill
+ * shaped. Selected: accentSoft fill, accent edge (stroke.selected) and a check, so it never relies on colour alone.
+ * At accessibility text sizes the two options stack, full width, with no line limit, so neither label is cut
+ * (COMPONENTS 0.1; P4 critics' pass S4).
+ */
+function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: ReviewView) => void }) {
+  const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
+  const r = copy.review;
+  const options: { value: ReviewView; label: string }[] = [
+    { value: 'fixes', label: r.view.fixes },
+    { value: 'exact', label: r.view.exact },
+  ];
+  return (
+    <View className={stacked ? 'gap-2' : 'flex-row gap-2'} accessibilityRole="radiogroup" accessibilityLabel={r.view.a11y} testID="review.view">
+      {options.map((o) => {
+        const selected = view === o.value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected, checked: selected }}
+            accessibilityLabel={o.label}
+            testID={`review.view.${o.value}`}
+            className={stacked ? 'min-h-11 flex-row items-center justify-center gap-1.5 px-3 py-2' : 'min-h-11 flex-1 flex-row items-center justify-center gap-1.5 px-3 py-2'}
+            style={{
+              borderRadius: tokens.radius.pill,
+              backgroundColor: selected ? c.accentSoft : 'transparent',
+              borderWidth: selected ? tokens.stroke.selected : tokens.stroke.control,
+              borderColor: selected ? c.accent : c.controlBorder,
+            }}>
+            {selected && <CheckIcon size={16} color={c.accent} weight="bold" />}
+            <Text variant="labelSmall" numberOfLines={stacked ? undefined : 2} className="shrink" style={{ textAlign: 'center' }}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
+function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
+  const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
+  const detail =
+    shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={detail ? `${label}, ${detail}` : label}
+      accessibilityHint={pendingCopy.review.editA11yHint}
+      accessibilityState={{ expanded: open }}
+      testID="review.fixRow"
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/** Where each action's testID comes from (e2e flows and journey steps read them). */
+const WORDS_TEST_ID: Record<WordsAction, string> = {
+  retry: 'review.retry',
+  keep: 'review.keepVoice',
+  type: 'review.type',
+  write: 'review.write',
+  recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
+  download: 'review.getReady',
+  cellular: 'review.mobileData',
+  later: 'review.later',
+};
+
+/**
+ * Review before the words are there (S14 to S16), one calm card: no spinner, real numbers only. While the words are
+ * written down the moon breathes (still while "Hear it" plays) over the recording's length; every other state holds
+ * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
+ */
+function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
+  // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
+  // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
+  // and "Read it back later" when it appears (TDD 09 V1).
+  const said = useRef<{ state: string; later: boolean } | null>(null);
+  const title = useRef(card.title);
+  title.current = card.title;
+  const first = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (first.current) clearTimeout(first.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    const now = { state: card.state, later: card.quiet === 'later' };
+    const before = said.current;
+    said.current = now;
+    if (!before) {
+      first.current = setTimeout(() => {
+        first.current = null;
+        announce(title.current);
+      }, tokens.motion.route.dissolveMs);
+      return;
+    }
+    if (before.state !== now.state) {
+      if (first.current) clearTimeout(first.current);
+      first.current = null;
+      announce(card.title);
+    } else if (!before.later && now.later) announce(wordsActionLabel('later'));
+  }, [card.state, card.quiet, card.title]);
+  const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
+  const primary = action(card.primary);
+  const quiet = action(card.quiet);
+  const length = card.state === 'writing' ? clockOf(lengthMs) : null;
+  return (
+    <InlineState
+      kind={card.kind}
+      art={card.art}
+      still={card.still}
+      title={card.title}
+      body={card.body}
+      primary={primary}
+      quiet={quiet ? [quiet] : undefined}>
+      {length && (
+        <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={lengthA11y(lengthMs) ?? undefined}>
+          {length}
+        </Text>
+      )}
+      {card.note && <Text variant="footnote">{card.note}</Text>}
+      {card.bar !== undefined && <ProgressLine value={card.bar} />}
+    </InlineState>
+  );
+}
+
+/** A thin, determinate line: progress the parent can trust. */
+function ProgressLine({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
+  return (
+    <View
+      className="h-1 w-full overflow-hidden rounded-full bg-input"
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: pct }}>
+      <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+    </View>
+  );
 }
