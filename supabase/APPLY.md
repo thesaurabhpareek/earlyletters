@@ -1239,3 +1239,11 @@ What it changes: drops the insert and update policies on `storage.objects` for `
 **Before the tag (founder, Q8):** `select count(*) from entries where photo_path is not null;` Expected 0. If it is not 0, stop and tell the data architect: those rows stay readable and deletable, but should be reviewed.
 
 **Apply** after file 32. **Check:** `select polname from pg_policy where polname like 'entry_photos_%';` lists `entry_photos_author_delete` and `entry_photos_read` only; `select tgname from pg_trigger where tgname = 'entries_15_photo_closed';` returns one row. **Rollback:** forward-fix only; see the file header.
+
+## File 35: the missing audit writers and the security_events store (S6, S7, CR-71 C3)
+
+`20261111010000_audit_writers_security_events.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 34. Refuses a second run (55000).
+
+What it changes: a trigger on `legal_holds` writes `legal_hold_placed` and `legal_hold_released`; `ops_support_access()` (service role) writes `ops.audit_log` then `support_access`; `record_export_created()` (signed-in, own row, 5 a day) writes `export_created`; new table `ops.security_events` (no API access, append-only, 12 months) with a writer, a reader `ops_security_events_check()` and `ops_security_events_retention()`. No existing column or grant changes.
+
+**Check:** `select tgname from pg_trigger where tgname = 'legal_holds_audit';` returns one row; `select count(*) from ops.security_events;` returns 0. **Rollback:** forward-fix only; see the file header.
