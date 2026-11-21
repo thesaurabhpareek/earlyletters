@@ -9,7 +9,11 @@
  * needs `announce()`; StateScreen's live region is Android-only). Cannot be checked on a device from here.
  */
 import { useRef, type ReactNode } from 'react';
+import { router } from 'expo-router';
 import { View } from 'react-native';
+import { copy as appCopy } from '@/lib/copy';
+import { capabilities } from '@/lib/capabilities';
+import { heldScreenModel } from '@/lib/first-run/held-screen.logic';
 import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
 import { useArrival } from '@/lib/first-run/use-arrival';
@@ -79,6 +83,33 @@ export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: (
         body={n.body}
         primary={{ label: n.startBook, onPress: onStartBook, testID: 'newPhone.startBook' }}
         quiet={[{ label: n.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
+      />
+    </Arrives>
+  );
+}
+
+/**
+ * Consent still to give, no book on this phone (BL-922a, NS-10-R0): one held screen with a way forward, never the child
+ * step. Finish setting up opens the consent sheet, as Settings > Account does. Try another way signs out. Delete account and
+ * the export are quiet and never ask for Terms (R4a, R4b). Decided from auth state alone: no network, no wait. The title
+ * reuses state A's heading; the body and the export line are PROPOSED keys (auth.newPhone.consentBody and .nothingToCopy).
+ */
+export function HeldScreen({ onTryAnother }: { onTryAnother: () => void }) {
+  const t = authCopy.newPhone;
+  const m = heldScreenModel({ accountDeletion: capabilities.accountDeletion, hasLocalBook: false });
+  const quiet = [
+    { label: authCopy.consent.noBook.tryAnother, onPress: onTryAnother, testID: 'held.tryAnother' },
+    ...(m.deleteAccount ? [{ label: appCopy.settingsHome.deleteAccountLabel, onPress: () => router.push(m.deleteAccount!.route), testID: 'held.deleteAccount' }] : []),
+    { label: appCopy.settingsHome.exportLabel, onPress: () => router.push(m.exportCopy.route), testID: 'held.export' },
+  ];
+  return (
+    <Arrives title={t.loading} screen="finishSetup">
+      <StateScreen
+        kind="empty"
+        title={t.loading}
+        body={m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody}
+        primary={{ label: authCopy.account.finishSetup, onPress: () => router.push(m.finishSetup.route), testID: 'held.finishSetup' }}
+        quiet={quiet}
       />
     </Arrives>
   );

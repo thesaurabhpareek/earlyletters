@@ -237,11 +237,12 @@ describe('prompts', () => {
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
     // readme; cancelBy: trial end; coParent: deletion summary; time: a reminder time ("8:30 PM");
     // first, domain: the masked address as VoiceOver says it (onboarding.child.spokenAddress).
+    // device, when: the new-device confirm page (newDevicePage, E83), the same two the new-device email fills.
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent', 'time', 'first', 'domain',
+      'percent', 'format', 'cancelBy', 'coParent', 'time', 'first', 'domain', 'device', 'when',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);

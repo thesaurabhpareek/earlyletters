@@ -8,7 +8,7 @@
  * sits in is worked out from the child's birthday each time it is shown (chapterOf), so
  * changing the birthday re-chapters letters without writing to them.
  */
-import { ageOn } from './age';
+import { ageOn, parseIsoDate } from './age';
 
 /** Matches children.name check (char_length between 1 and 60) in supabase/migrations. */
 export const CHILD_NAME_MAX = 60;
@@ -21,17 +21,9 @@ export const EARLIEST_BIRTHDAY = '1900-01-01';
 /** Show the soft "limit" hint once a field is this close to its cap. */
 export const LIMIT_HINT_FROM = 10;
 
-const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
-
 function dayNumber(iso: string): number {
-  const m = ISO.exec(iso);
-  if (!m) throw new Error(`Invalid ISO date: ${iso}`);
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const t = Date.UTC(y, mo - 1, d);
-  // Reject 2026-02-31 style dates, which Date.UTC would roll over.
-  const back = new Date(t);
-  if (back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d) throw new Error(`Invalid ISO date: ${iso}`);
-  return t / 86_400_000;
+  const { y, m, d } = parseIsoDate(iso);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
 /** True for a real calendar day written YYYY-MM-DD. */

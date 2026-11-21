@@ -415,9 +415,10 @@ function renderBoard() {
   const needsFounder = openPRs.filter((pr) => labelNames(pr).includes("needs:founder"));
   const decisions = tasks.filter((t) => t.status === "needs-decision");
   const human = tasks.filter((t) => t.mode === "human" && t.status === "ready");
-  lines.push("", "## Needs the founder", "");
-  lines.push(`- **PRs ready for your review (${forFounder.length}):** ${forFounder.map((pr) => `#${pr.number} (${agentOfPR(pr)}${redLabel(pr)})`).join(", ") || "none"}`);
-  lines.push(`- **PRs blocked on you (${needsFounder.length}):** ${needsFounder.map((pr) => `#${pr.number}`).join(", ") || "none"}`);
+  lines.push("", "## Karma's merge queue", "");
+  lines.push(`- **PRs ready for Karma to merge (CR-73) (${forFounder.length}):** ${forFounder.map((pr) => `#${pr.number} (${agentOfPR(pr)}${redLabel(pr)})`).join(", ") || "none"}`);
+  lines.push("", "## Needs the founder (acts only he can do, CR-73)", "");
+  lines.push(`- **PRs held for an act only the founder can do (label needs:founder, CR-73 list) (${needsFounder.length}):** ${needsFounder.map((pr) => `#${pr.number}`).join(", ") || "none"}`);
   lines.push(`- **Backlog decisions (${decisions.length}):** ${decisions.map((t) => t.id).join(", ") || "none"}`);
   lines.push(`- **Founder tasks ready (${human.length}):** ${human.map((t) => t.id).join(", ") || "none"}`);
   lines.push("", "## Agent conversations", "");

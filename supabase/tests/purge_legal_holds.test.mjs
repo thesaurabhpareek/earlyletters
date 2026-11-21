@@ -7,8 +7,10 @@
 // changes nothing, is set to 'held' and answers {"held": true}; a held book is skipped by purge_due
 // and the rest proceeds. Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7 } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, sys, one, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, C, N, S } = users;
 // More parents, one account request each (fictional).
 const P1 = '91111111-1111-4111-8111-111111111111';

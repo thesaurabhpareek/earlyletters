@@ -430,10 +430,15 @@ export const MIGRATIONS: Migration[] = [
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
 export class MigrationError extends Error {
-  constructor(public version: number, cause: unknown) {
-    // Code and number only: SQLite messages can quote values (TDD 01 4.2 rule 2).
+  readonly code = 'local_db_migration_failed';
+  /**
+   * A fixed code and the step's version only (TDD 01 4.2 rule 2). The original error is deliberately not
+   * kept, not even as `cause`: SQLite messages can quote stored values (a name, a date), and an error with a
+   * `cause` is serialised whole by crash reporters and loggers.
+   */
+  constructor(public version: number) {
     super(`local_db_migration_failed:${version}`);
-    this.cause = cause;
+    this.name = 'MigrationError';
   }
 }
 
@@ -461,8 +466,8 @@ export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[
         m.up(db, ctx);
         db.exec(`PRAGMA user_version = ${m.version}`);
       });
-    } catch (e) {
-      throw new MigrationError(m.version, e);
+    } catch {
+      throw new MigrationError(m.version);
     }
     to = m.version;
   }
