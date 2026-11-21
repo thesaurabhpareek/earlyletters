@@ -969,7 +969,7 @@ export const en = {
       // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
       // finishes it too, and it erases every row then present, so a letter added in between goes as well
       // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
-      failed: "Erasing didn't finish. Try again now, or wait: it will finish the next time the app opens, and that erases anything you add before then.",
+      failed: "Erasing didn't finish. Try again now, or let the app finish it the next time it opens. That erases anything you add before then.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
@@ -1166,7 +1166,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are still on this phone. It will try again on its own.",
+      body: "Your words are still on this phone. The app will try again.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
