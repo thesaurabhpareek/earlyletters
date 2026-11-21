@@ -57,7 +57,13 @@ const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
  */
 export function eraseDeviceFiles(): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
-  eraseDaysFile(); // first (NS-47-R16, ADR 0032 item 3): L4, so no recording that will not go may keep it on the phone
+  // First (NS-47-R16, ADR 0032 item 3). A file that will not go must not stop the other steps: it is thrown at the end, so the mark stays.
+  let daysLeft: unknown = null;
+  try {
+    eraseDaysFile();
+  } catch (e) {
+    daysLeft = e;
+  }
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
@@ -69,6 +75,7 @@ export function eraseDeviceFiles(): void {
       // iOS may clear Caches itself; a copy here is never read back by the app.
     }
   }
+  if (daysLeft) throw daysLeft;
 }
 
 /**

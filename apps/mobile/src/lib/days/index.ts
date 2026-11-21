@@ -31,7 +31,16 @@ function clearFile(): boolean {
 /** Sign-out on any path, or another account signing in (NS-47-R15). Synchronous, never throws. */
 export const endDaysSession = (): boolean => clearFile();
 
-/** Erase everything (NS-47-R16). Throws when the file stays, so the erase mark stays and the next launch retries. */
+/** CODE-R15: callers branch on `code`, never on the message. */
+export class DaysStoreError extends Error {
+  readonly code = 'days_file_not_removed';
+  constructor() {
+    super('days_file_not_removed');
+    this.name = 'DaysStoreError';
+  }
+}
+
+/** Erase everything (NS-47-R16). Throws a DaysStoreError when the file stays, so the erase mark stays and the next launch retries. */
 export function eraseDaysFile(): void {
-  if (!clearFile()) throw new Error('days_file_not_removed');
+  if (!clearFile()) throw new DaysStoreError();
 }

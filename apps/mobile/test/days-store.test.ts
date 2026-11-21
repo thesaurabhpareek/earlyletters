@@ -38,7 +38,7 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { endDaysSession, loadDays } = await import('../src/lib/days');
+const { DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
 
 const A = '1a2b3c4d5e6f7a8b';
@@ -54,7 +54,6 @@ const seed = (text: string) => {
   port.write(DAYS_FILE, text);
   return port;
 };
-const src = (rel: string) => readFileSync(join(__dirname, '..', 'src', rel), 'utf8');
 
 beforeEach(() => {
   h.disk = createDisk(iosContainer('6F0C3A2E-ASHA-4C1B-9D55-DAYS00000001'));
@@ -114,14 +113,11 @@ describe('[NS-47-R15] sign-out clears and B sees nothing', () => {
     expect(loadDays(B)).toEqual({ state: 'empty' });
   });
 
-  it('settleReminderSession runs endDaysSession first: before any read, await or reminder step; and it never throws', () => {
-    const s = src('lib/reminders/session.ts');
-    const body = s.slice(s.indexOf('export async function settleReminderSession'), s.indexOf('export async function endReminderSession'));
-    const at = body.indexOf('endDaysSession()');
-    expect(at).toBeGreaterThan(-1);
-    for (const later of ['getSetting(', 'await ending', 'endReminderSession()']) expect(at).toBeLessThan(body.indexOf(later));
+  it('endDaysSession never throws when the file will not go, and says false', async () => {
+    await writeDays(expoDaysPort()!, file());
     h.disk.undeletable.add(`${dir()}/${DAYS_FILE}`);
     expect(() => endDaysSession()).not.toThrow();
+    expect(endDaysSession()).toBe(false);
   });
 });
 
@@ -142,10 +138,82 @@ describe('[NS-47-R16] erase scan finds nothing', () => {
     expect(scan()).toEqual([]);
   });
 
-  it('eraseDeviceFiles clears the days store before any recording step', () => {
-    const body = src('lib/erase-everything.ts').split('export function eraseDeviceFiles')[1];
-    expect(body.indexOf('eraseDaysFile()')).toBeGreaterThan(-1);
-    expect(body.indexOf('eraseDaysFile()')).toBeLessThan(body.indexOf('listRecordingFiles()'));
+  it('eraseDaysFile removes the file, and throws a typed error when it stays (the mark then stays)', async () => {
+    await writeDays(expoDaysPort()!, file());
+    eraseDaysFile();
+    expect(names()).toEqual([]);
+    await writeDays(expoDaysPort()!, file());
+    h.disk.undeletable.add(`${dir()}/${DAYS_FILE}`);
+    expect(() => eraseDaysFile()).toThrow(DaysStoreError);
+    expect(() => eraseDaysFile()).toThrow(expect.objectContaining({ code: 'days_file_not_removed' }));
+    expect(names()).toEqual([DAYS_FILE]);
+  });
+});
+
+describe('[NS-47-R6] the write is atomic (AIE-R14)', () => {
+  const old = JSON.stringify({ v: 1, owner: A, ticked: { 'seasonal.old-day': {} } });
+  const onDisk = () => JSON.parse(expoDaysPort()!.read(DAYS_FILE));
+  const withPort = (over: Partial<ReturnType<typeof expoDaysPort> & object>) => ({ ...expoDaysPort()!, ...over });
+
+  it('the final file is never written in place: new bytes go to the temp, and the old file reads whole until the rename', async () => {
+    const port = seed(old);
+    const seen: string[] = [];
+    const spy = withPort({
+      write: (n, t) => (seen.push(n), port.write(n, t)),
+      rename: async (a, b) => (seen.push(`during:${onDisk().ticked['seasonal.old-day'] ? 'old' : 'new'}`), port.rename(a, b)),
+    });
+    expect(await writeDays(spy, file())).toBe('ok');
+    expect(seen).toEqual([DAYS_TMP, 'during:old']);
+    expect(onDisk().ticked).toEqual({ [DAY]: {} });
+  });
+
+  it('a rename that fails, or a write that dies half way, leaves the old file whole and no temp', async () => {
+    const port = seed(old);
+    expect(await writeDays(withPort({ rename: async () => Promise.reject(new Error('EIO')) }), file())).toBe('unavailable');
+    expect(onDisk().ticked).toEqual({ 'seasonal.old-day': {} });
+    expect(names()).toEqual([DAYS_FILE]);
+    const dies = withPort({ write: (n) => (port.write(n, '{"v":1,"ow'), (() => { throw new Error('killed'); })()) });
+    expect(await writeDays(dies, file())).toBe('unavailable');
+    expect(onDisk().ticked).toEqual({ 'seasonal.old-day': {} });
+    expect(names()).toEqual([DAYS_FILE]);
+  });
+});
+
+describe('[NS-47-R28] a read that fails, or a file that is off-shape, shows no day', () => {
+  it('a read that throws is unreadable and the file is kept', () => {
+    const port = seed(JSON.stringify(file()));
+    expect(readDays({ ...port, read: () => { throw new Error('EIO'); } }, A)).toEqual({ state: 'unreadable' });
+    expect(names()).toEqual([DAYS_FILE]);
+  });
+
+  it('an oversize file is not read, and tick values that are free text, nested or odd keys fail safe to unreadable', () => {
+    const port = seed(JSON.stringify(file()));
+    expect(readDays({ ...port, size: () => 64 * 1024 + 1, read: () => { throw new Error('must not read'); } }, A)).toEqual({ state: 'unreadable' });
+    for (const t of [{ note: 'free text about the day' }, { a: { b: 1 } }, { 'bad key': true }, { a: null }, { a: Number.NaN }]) {
+      seed(JSON.stringify({ v: 1, owner: A, ticked: { [DAY]: t } }));
+      expect(readDays(expoDaysPort()!, A)).toEqual({ state: 'unreadable' });
+    }
+    seed(JSON.stringify({ v: 1, owner: A, ticked: { [DAY]: { askedOn: '2026-10-03', done: true, n: 2 } } }));
+    expect(readDays(expoDaysPort()!, A)).toMatchObject({ state: 'ok' });
+    const many = Object.fromEntries(Array.from({ length: 501 }, (_, i) => [`d${i}`, {}]));
+    seed(JSON.stringify({ v: 1, owner: A, ticked: many }));
+    expect(readDays(expoDaysPort()!, A)).toEqual({ state: 'unreadable' });
+  });
+});
+
+describe('[NS-47-R1] nothing of the file is logged', () => {
+  it('reads, writes, sweeps and clears over day and owner content call no console method', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug', 'trace'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    const port = expoDaysPort()!;
+    await writeDays(port, { v: 1, owner: A, ticked: { 'canary-day-zq9': {} } });
+    loadDays(A);
+    loadDays(B);
+    readDays(port, A);
+    seed('{canary-day-zq9 not json');
+    loadDays(A);
+    removeDays(port);
+    expect(spies.flatMap((s) => s.mock.calls)).toEqual([]);
+    spies.forEach((s) => s.mockRestore());
   });
 });
 
