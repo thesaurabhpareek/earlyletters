@@ -33,7 +33,7 @@ vi.mock('expo-local-authentication', () => ({
 const { ownerCheck } = await import('../src/lib/security/owner-check');
 const { runEraseEverything } = await import('../src/components/settings/wipe.logic');
 
-type Check = 'passed' | 'cancelled' | 'unavailable';
+type Check = import('../src/lib/security/owner-check').OwnerCheckResult;
 type Runner = (ownerCheck: () => Promise<Check>, erase: () => Promise<'erased'>) => Promise<unknown>;
 
 const real: Runner = (check, erase) =>
