@@ -3,17 +3,17 @@
 // Limits: appName <= 30, subtitle <= 30, promotionalText <= 170, keywords <= 100 (comma-separated,
 // no spaces, no words already in the name or subtitle), whatsNew <= 4000, captions <= 40.
 //
-// The first store build (D-121, staged release): on-device only, with server features, backup, status report
-// and analytics off, English only, Plus on. Applied from docs/store/app-store-staged-1.0-proposal.md, 31 Oct 2026.
+// The first store build (D-121 staged release; D-157 and D-160 turned servers on and require sign-in): sign-in required,
+// server features on, backup, status report and analytics off, English only, Plus on. Applied from docs/store/app-store-staged-1.0-proposal.md, 31 Oct 2026.
 // Each later 1.0.x release that turns a feature on adds it back here in the same pull request.
 // - no "beta" anywhere (D-060, App Review 2.2): the beta runs on TestFlight; no "early version" or
 //   "early access" either, since the in-app note says "early version";
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - English only (D-121 item 1); the other six languages return one by one as each passes its gate (D-125 item 2);
-// - no co-parent sharing, sign-in or sync promised in the listing (D-121, D-126): nothing invites anyone. Build 12 runs
-//   with servers on (founder, 8 Nov 2026; no D-### yet), so every line must also be true of a servers-on build: the
-//   privacy paragraph says what holds without an account and claims nothing about the servers (#672 claim 3);
+// - no co-parent sharing promised in the listing (D-126, D-161, D-162): no store build has an invite door. Sign-in is
+//   required (D-160) and servers are on (D-157), so every line must be true of that build: the privacy paragraph
+//   claims nothing about the servers and nothing about life without an account (#672 claim 3);
 // - "exactly as you said it" is held from the listing until counsel clears it at T30 (D-125 item 9);
 // - recordings: no backup of our own (backup flag off); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
@@ -73,7 +73,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
