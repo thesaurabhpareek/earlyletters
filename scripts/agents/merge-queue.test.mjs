@@ -494,3 +494,25 @@ test("CR-73 security lens: padding the file list with harmless files cannot hide
   const w = async (path, o) => (path.split("?")[0].endsWith("/pulls/7/files") ? Array.from({ length: 100 }, (_, i) => ({ filename: `docs/f${i}.md` })) : api(path, o));
   assert.notEqual((await buildQueue({ api: w, now: NOW }))[0].verdict, "READY");
 });
+
+test("CR-73 security lens: fences follow CommonMark, so a shorter or different fence line does not close one", async () => {
+  assert.deepEqual(namedLenses("````\n```\nLens: security\n````\n"), [], "a 3-backtick line inside a 4-backtick fence does not close it");
+  assert.deepEqual(namedLenses("````\n```\n````\nLens: security"), ["security"], "a 4-backtick line closes it");
+  assert.deepEqual(namedLenses("```md\nLens: security\n"), [], "an info string opens a fence");
+  assert.deepEqual(namedLenses("```md\nx\n``` text\nLens: security\n```\n"), [], "a closing fence takes no text after it");
+  assert.deepEqual(namedLenses("~~~\n```\nLens: security\n~~~\nLens: correctness"), ["correctness"], "another character does not close it");
+  assert.deepEqual(namedLenses("   ```\nx\n   ```  \nLens: security"), ["security"], "indent of 3 and trailing blanks are fine");
+  const r = await verdict({ comments: both("````\n```\nLens: security\n````\n"), files: secFiles });
+  assert.equal(r.verdict, "NEEDS-REVIEW");
+  assert.equal(r.reason, "security lens missing");
+});
+
+test("CR-73 security lens: an HTML comment block or a line indented four spaces is not a lens", () => {
+  assert.deepEqual(namedLenses("<!--\nLens: security\n-->\nLens: correctness"), ["correctness"]);
+  assert.deepEqual(namedLenses("<!-- Lens: security -->\n"), []);
+  assert.deepEqual(namedLenses("x <!-- a\nLens: security\n"), [], "an unclosed comment hides the rest");
+  assert.deepEqual(namedLenses("    Lens: security\n"), []);
+  assert.deepEqual(namedLenses("\tLens: security\n"), []);
+  assert.deepEqual(namedLenses("  - Lens: security\n"), ["security"]);
+  assert.deepEqual(namedLenses("   Lens: security-architect\n"), ["security-architect"]);
+});

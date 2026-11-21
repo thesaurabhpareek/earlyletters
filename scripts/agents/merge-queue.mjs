@@ -120,14 +120,24 @@ export const securityLensHits = (files) => {
 };
 export const touchesSecurityLens = (files) => securityLensHits(files).length > 0;
 export const SECURITY_LENS_NAMES = ["security", "security-architect"];
-/** Lens names a review body gives on `Lens: a, b` lines (bold or bullet marks allowed). Lines inside a code fence (an unclosed fence hides the rest) and `>` quoted lines never count. Exact names only. */
+/**
+ * Lens names a review body gives on `Lens: a, b` lines (bold or bullet marks allowed). Never counted: HTML comments
+ * (an unclosed one hides the rest), fenced code (CommonMark: closed only by the same character, at least as long,
+ * indented at most 3 spaces, nothing but blanks after it; an unclosed fence hides the rest), `>` quoted lines and
+ * lines indented 4 or more spaces or a tab. Exact names only.
+ */
 export function namedLenses(body) {
   const out = [];
   let fence = null;
-  for (const line of String(body ?? "").replace(/\r/g, "").split("\n")) {
-    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line);
-    if (f) { if (!fence) fence = f[1][0]; else if (f[1][0] === fence) fence = null; continue; }
-    if (fence || /^\s*>/.test(line)) continue;
+  const text = String(body ?? "").replace(/\r/g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<!--[\s\S]*$/, "");
+  for (const line of text.split("\n")) {
+    const f = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (fence) {
+      if (f && f[1][0] === fence.ch && f[1].length >= fence.len && /^[ \t]*$/.test(f[2])) fence = null;
+      continue;
+    }
+    if (f && !(f[1][0] === "`" && f[2].includes("`"))) { fence = { ch: f[1][0], len: f[1].length }; continue; }
+    if (/^\s*>/.test(line) || /^(?: {4}|\t)/.test(line)) continue;
     const m = /^[ \t*_#-]*lens(?:es)?[ \t*_]*:[ \t*_]*(.*)$/i.exec(line);
     if (m) for (const item of m[1].split(/[,;/&]|\band\b/i)) out.push(item.trim().replace(/^[`*_ \t]+|[`*_ \t.]+$/g, "").toLowerCase());
   }
