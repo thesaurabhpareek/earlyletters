@@ -1,6 +1,6 @@
 # Early Letters writing guide
 
-Status: v1.0, 20 Nov 2026. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
+Status: v1.1, 21 Nov 2026 (v1.0 20 Nov). Reviewed by the CMO, Chief Design Officer, CPrivO, CCO and CAIO lenses as Claude roles, not counsel. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
 
 This is the guide for every word a customer reads: the app, error messages, emails, push notifications, the App Store page, the website, the prompts and the printed-looking pages inside the book. Read it before you write or change a line. Read `VOICE.md` and `BRAND.md` alongside it. Where they overlap, `VOICE.md` and the rules test win on mechanics, `BRAND.md` wins on vocabulary, and this guide wins on how a sentence should sound.
 
@@ -87,7 +87,7 @@ Voice stays the same. The dial moves. When unsure, go calmer and plainer.
 
 **Length**
 
-- Buttons: one to three words. Toasts: under 6 words if you can. Push title: under 40 characters, body under 60 (`VOICE.md`). Error: one or two short sentences. Email preheader: one useful fact.
+- Buttons: one to three words. Toasts: under 6 words if you can. Push title: 40 characters at most and body 110 at most (the rules test enforces both, `rules.test.ts`); our house target is a body under 60. Error: one or two short sentences. Email preheader: one useful fact.
 
 ## 6. The tells: what makes copy sound machine-made
 
@@ -108,6 +108,7 @@ These patterns are what customers notice. The copy tells lint (`npm run lint:cop
 | Empty exclamations | "Great!", "Oops!", "Uh-oh" | Insincere in errors (Apple's guidance says as much). | Drop it, state the fact. |
 | Mirroring the user back | "You are about to delete..." | Wastes the beat. | "This deletes {child}'s book and every letter in it." |
 | Everything is a gift | "treasure", "cherish", "precious" | Sentimental filler. | Let the parent's own words carry feeling. |
+| Polish words | "polished", "cleaned up", "perfect", "improved" | Implies the app made the words better. We only remove and repair. | "Small slips are marked, and you can put any back." |
 
 ## 7. Surface playbooks
 
@@ -133,7 +134,7 @@ Rules: place it next to the problem; never blame ("You entered..."); no codes; n
 | Don't | Do |
 | --- | --- |
 | "Could not set reminders just now." | "Couldn't set your reminders. Try again in a moment." |
-| "The download did not check out. It tries again on Wi-Fi, or tap Try again." | "The download didn't finish. It'll try again on Wi-Fi, or tap Try again." |
+| "The download did not check out. It tries again on Wi-Fi, or tap Try again." | "The download didn't finish. It tries again on Wi-Fi, or tap Try again." |
 | "Invalid email" | "That email doesn't look right. Check for a typo." |
 | "An error occurred. Please try again later." | "That didn't save. Your recording is still here. Try again." |
 
@@ -150,7 +151,7 @@ Label what the setting is. Explain what it does when it's on, and let them infer
 Say exactly what goes, whether it can come back, and what is kept. One calm confirmation. No guilt, no "we'll miss you". Money or retention facts are counsel-checked.
 
 ### Push notifications
-One idea, one line, under 60 characters, an invitation not a reminder. Never show what they wrote or the child's name on the lock screen unless they've turned it on. No day counts, no "you haven't", no emoji, no exclamation. Test every one against: would a friend text this?
+One idea, one line, an invitation not a reminder. Limits: the rules test holds a title to 40 characters and a body to 110; our tighter house target is a body under 60. Never show what they wrote or the child's name on the lock screen unless they've turned it on. No day counts, no "you haven't", no emoji, no exclamation. Test every one against: would a friend text this?
 
 | Don't | Do |
 | --- | --- |
@@ -158,7 +159,7 @@ One idea, one line, under 60 characters, an invitation not a reminder. Never sho
 | "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Say a few words" / "A minute is plenty. Your recording stays with the letter." |
 | "A page for {weekday}" / "Something from today for the book?" | "Anything from today?" |
 
-(These are guide examples and obey the lock-screen rule: no child name, nothing the parent wrote, title under 40 and body under 60 characters. The final wording is the content agent's job, checked against the rules test and the notification tests.)
+(These are guide examples and obey the lock-screen rule: no child name, nothing the parent wrote, title within 40 and body under our house target of 60 characters. The final wording is the content agent's job, checked against the rules test and the notification tests.)
 
 ### Email
 Subject says what happened or what's asked, in plain words. Preheader adds one useful next fact. Body: what, why they got it, the one thing to do. A calm line for security ("Didn't ask for this? You can ignore it."). Sign "Warmly," then the brand name. Contractions, short paragraphs, no filler. No child names, letter text, pixels or tracked links. Transactional only unless the CMO and counsel have classified it as commercial.
@@ -187,6 +188,12 @@ Plain, steady, no cleverness. Use the names and numbers as registered. Never sof
 - Read the sentence at the largest text size: it must still make sense when it wraps.
 - Don't build a sentence from parts that other languages must reorder; keep the whole sentence as one string with named placeholders.
 - Dynamic content ({child}, {date}) must read correctly for any value, including a long name.
+- The accessible name of a control contains its visible text (WCAG 2.5.3), so Voice Control users can say what they see.
+- A toast or error is announced with the same string the screen shows. No second, different version for VoiceOver.
+- Don't point: no "above", "below", "the lock", "the button on the left".
+- Decorative icons say nothing to a screen reader. A lock icon beside a line doesn't add a second announcement.
+- Don't carry meaning in a colon or a line break. Each sentence must read right when spoken aloud and when it wraps.
+- "Read at the largest size" needs a phone check (S1-23 in `docs/qa/DEVICE_TEST_PLAN.md`). A diff review can't prove it.
 
 ## 9. Benchmarks: what we took and from where
 
@@ -195,8 +202,10 @@ Read in full or in part this session (20 Nov 2026):
 - **Apple Human Interface Guidelines, Writing** (developer.apple.com/design/human-interface-guidelines/writing). Take: match tone to context (the Fall Detection and Move streak examples); be clear and cut words; verbs on buttons, "Send" over "Let's do it!"; avoid "we" in errors; "Choose a password with at least 8 characters" over "That password is too short"; "oops" and "uh-oh" tend to sound insincere; describe a setting by what it does when on; empty states give a next step.
 - **Monzo, Tone of voice** (monzo.com/tone-of-voice). Take: straightforward kindness as the base; plain, spoken-style words; lead with impact on the customer; own the mistake and apologise once; no humour in operational messages or in bad news; different dials by channel.
 - **Mailchimp, Content Style Guide, Voice and tone** (styleguide.mailchimp.com/voice-and-tone). Take: plainspoken, genuine; consider the reader's emotional state first; active voice; positive phrasing; humour only when it fits, otherwise keep a straight face.
+- **Atlassian Design System, Voice and tone**. Take: one voice, with tone that shifts to the reader's emotional state; no humour in errors or bad news; delight only sparingly.
+- **Microsoft Writing Style Guide, "Brand voice: above all, simple and human" and "Use contractions"** (learn.microsoft.com/en-us/style-guide). Take: voice stays constant while tone adapts; warm and relaxed, crisp and clear, ready to lend a hand; key point first with a clear next step; short everyday words, sentence-style capitals. On contractions: don't mix a contraction with its spelled-out form in the same interface (not "can't" in one place and "cannot" in another), don't join a noun to a verb ("Early Letters's"), and avoid awkward ones like "it'll", "there'd" and "they'd" in UI. The Microsoft voice page says nothing explicit about writing for people under stress; that reading is ours, not theirs.
 
-Not read this session, so not relied on: Atlassian, Google Material, Shopify Polaris, Headspace, Calm, Duolingo, Airbnb, Stripe, Day One. Two fetches (Atlassian, Material) needed an approval nobody gave; Polaris redirected. They stay on the research list. Do not cite these brands' rules until someone has read the source.
+Not read, so not relied on: GOV.UK style guide (the page redirected and the fetch needed an approval nobody gave), Google developer documentation style (same approval), Wise and Stripe (the sites refused the fetch), Google Material, Shopify Polaris, Headspace, Calm, Duolingo, Intercom, Airbnb, Day One. They stay on the research list. Do not cite these brands' rules until someone has read the source.
 
 ## 10. What is protected
 
@@ -211,6 +220,7 @@ Do not rewrite these without the named owner:
 - Anything under `supabase/**` that an email export regenerates (the Supabase Auth templates): needs its own D-041 review.
 - Prompt text. A prompt key is never reused for new wording: a changed prompt gets a new key and a `PROMPT_LIBRARY_VERSION` bump, and the signed published library is the founder's to republish.
 - Real family details: tests use Asha only.
+- `CLAUDE.md` edits that touch the constitution section are the founder's. This guide only adds a pointer to it.
 
 A rewrite that touches meaning (what we promise, what we do, price, data) is not a copy edit. Stop and route it.
 
