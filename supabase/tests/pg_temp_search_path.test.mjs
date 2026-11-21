@@ -8,6 +8,7 @@
 //   4. After purge_due trims purge_ledger (60 days), the author's own erasure record alone still refuses it,
 //      and the co-parent and a stranger still get false.
 import { createDb, users, uuid7 } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { db, check, as, sys, codeOf, done, publishPolicies, consent, newChild, join } = h;
@@ -45,8 +46,8 @@ const helpers = (await sys(`
 const badHelpers = helpers.filter((f) => !pinned(f.proconfig));
 for (const f of badHelpers) console.log(`      RLS helper without pg_temp last: ${f.sig} ${JSON.stringify(f.proconfig)}`);
 check(`every function an RLS policy calls pins search_path with pg_temp last (${helpers.length} functions)`, helpers.length > 5 && badHelpers.length === 0);
-check('the RLS helper set includes is_child_member, is_child_parent, child_is_live, can_read_entry_photo and photo_entry_is_purged',
-  ['is_child_member', 'is_child_parent', 'child_is_live', 'can_read_entry_photo', 'photo_entry_is_purged']
+check('the RLS helper set includes is_child_member, is_child_parent, child_is_live and can_read_entry_photo (photo_entry_is_purged is no longer called by a policy since 20261110000000)',
+  ['is_child_member', 'is_child_parent', 'child_is_live', 'can_read_entry_photo']
     .every((n) => helpers.some((f) => f.sig.startsWith(`public.${n}(`))));
 
 // Role defaults (alter role ... set search_path) follow the same rule.
@@ -78,6 +79,9 @@ const letter = (id) => ({
   edit_level: 'clean', prompt_key: null, engine_version: 5, raw_transcript: 'um you laughed', machine_edits: [],
   final_text: 'You laughed.', in_book: true, sounds_like_me: null, author_signs_as: 'Mama', audio_kept_on_device: true,
 });
+// 20261110000000 (BL-870): no client uploads to entry-photos, so every `upload` below is a refused attempt (42501)
+// and `seed` stands in for a legacy object that already exists. The purged-id helper stays and is still tested.
+const seed = (name) => sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [name]);
 const upload = (uid, name) => as(uid, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [name]);
 const purgedFn = async (uid, name) => (await as(uid, `select public.photo_entry_is_purged($1) v`, [name])).rows[0].v;
 
@@ -87,8 +91,9 @@ const p1 = `${CHILD}/${A}/${L1}.jpg`;
 const p2 = `${CHILD}/${A}/${L2}.jpg`;
 await push(A, [op('entry.upsert', L1, letter(L1)), op('entry.upsert', L2, letter(L2))]);
 
-check('before any erasure the photo of a letter uploads', (await codeOf(() => upload(A, p1))) === 'ok');
-await as(A, `update entries set photo_path = $1 where id = $2`, [p1, L1]);
+check('before any erasure the photo of a letter is refused too (the server takes no picture)', (await codeOf(() => upload(A, p1))) === '42501');
+await seed(p1);
+await legacyPhotoPath(sys, L1, p1);
 check('before any erasure the helper says false', (await purgedFn(A, p1)) === false);
 
 await push(A, [op('entry.delete', L1)]);
@@ -104,7 +109,7 @@ check('the helper says true for the erased letter\'s path (every extension)',
   (await purgedFn(A, p1)) === true && (await purgedFn(A, `${CHILD}/${A}/${L1}.png`)) === true);
 check('the author cannot put the erased letter\'s photo back (42501)', (await codeOf(() => upload(A, p1))) === '42501');
 check('nor under another extension (42501)', (await codeOf(() => upload(A, `${CHILD}/${A}/${L1}.heic`))) === '42501');
-check('a letter that was never erased still takes its photo', (await codeOf(() => upload(A, p2))) === 'ok');
+check('a letter that was never erased gets no photo either (42501)', (await codeOf(() => upload(A, p2))) === '42501');
 check('a path without a uuid file name answers false, with no cast error',
   (await purgedFn(A, `${CHILD}/${A}/cover.jpg`)) === false && (await purgedFn(A, 'x')) === false && (await purgedFn(A, '')) === false);
 check('the other parent still cannot upload into the author\'s folder (42501)', (await codeOf(() => upload(B, `${CHILD}/${A}/${id7()}.jpg`))) === '42501');
@@ -112,12 +117,17 @@ check('a stranger cannot upload into the book (42501)', (await codeOf(() => uplo
 
 // Rename, odd file names, nesting (red team on #311). Storage upsert and move go through UPDATE.
 const tmp = `${CHILD}/${A}/${id7()}.jpg`;
-await upload(A, tmp);
-const rename = (uid, from, to) => as(uid, `update storage.objects set name = $2 where bucket_id = 'entry-photos' and name = $1`, [from, to]);
-check('renaming an object onto an erased letter\'s path is refused (42501)', (await codeOf(() => rename(A, tmp, p1))) === '42501');
-check('renaming onto a nested path is refused (42501)', (await codeOf(() => rename(A, tmp, `${CHILD}/${A}/sub/${id7()}.jpg`))) === '42501');
+await seed(tmp);
+// With no update policy a rename changes no row and raises nothing: 'unchanged' means the object still has its old name.
+const rename = async (uid, from, to) => {
+  const code = await codeOf(() => as(uid, `update storage.objects set name = $2 where bucket_id = 'entry-photos' and name = $1`, [from, to]));
+  const moved = (await sys(`select 1 from storage.objects where bucket_id = 'entry-photos' and name = $1`, [to])).rows.length;
+  return moved ? 'moved' : code === 'ok' ? 'unchanged' : code;
+};
+check('renaming an object onto an erased letter\'s path changes nothing', (await rename(A, tmp, p1)) === 'unchanged');
+check('renaming onto a nested path changes nothing', (await rename(A, tmp, `${CHILD}/${A}/sub/${id7()}.jpg`)) === 'unchanged');
 const L3 = id7();
-check('renaming onto a fresh letter path works', (await codeOf(() => rename(A, tmp, `${CHILD}/${A}/${L3}.jpg`))) === 'ok');
+check('renaming onto a fresh letter path changes nothing either (no client write)', (await rename(A, tmp, `${CHILD}/${A}/${L3}.jpg`)) === 'unchanged');
 for (const [label, name] of [
   ['an extra extension', `${CHILD}/${A}/${L1}.x.jpg`],
   ['no extension', `${CHILD}/${A}/${L1}`],
@@ -127,13 +137,13 @@ for (const [label, name] of [
 ]) {
   check(`uploading under the erased id with ${label} is refused (42501)`, (await codeOf(() => upload(A, name))) === '42501');
   const t = `${CHILD}/${A}/${id7()}.jpg`;
-  await upload(A, t);
-  check(`renaming onto the erased id with ${label} is refused (42501)`, (await codeOf(() => rename(A, t, name))) === '42501');
+  await seed(t);
+  check(`renaming onto the erased id with ${label} changes nothing`, (await rename(A, t, name)) === 'unchanged');
 }
 check('a nested path for a never-erased id is refused too (42501)', (await codeOf(() => upload(A, `${CHILD}/${A}/sub/${id7()}.jpg`))) === '42501');
-check('the policy texts carry the purged check',
-  (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_insert', 'entry_photos_author_update')
-               and pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%'`)).rows[0].n === 2);
+check('the insert and update policies are gone (20261110000000); read and delete stay',
+  (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_insert', 'entry_photos_author_update')`)).rows[0].n === 0
+  && (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_delete', 'entry_photos_read')`)).rows[0].n === 2);
 
 // The helper does not tell anyone else whether a letter was erased, even from their own folder (ruling D2 of the CTO review, #325).
 const own = (u, id) => `${CHILD}/${u}/${id}.jpg`;
@@ -141,8 +151,8 @@ check('the other parent and a stranger get false for the author\'s erased path; 
   (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false && (await purgedFn(A, p1)) === true);
 check('the other parent and a stranger get false for the erased id even in their OWN folder (no one-bit leak)',
   (await purgedFn(B, own(B, L1))) === false && (await purgedFn(C, own(C, L1))) === false);
-check('one person\'s erasure never refuses another person\'s upload: the co-parent can use the erased id as a file name in their own folder',
-  (await codeOf(() => upload(B, own(B, L1)))) === 'ok');
+check('the co-parent is refused too, for the same reason as everyone (42501), not because of the erased id',
+  (await codeOf(() => upload(B, own(B, L1)))) === '42501');
 check('the author still gets true for the same id in the author\'s own folder after that',
   (await purgedFn(A, p1)) === true);
 // Held-draft marker 'erased' answers for its author only.
@@ -167,8 +177,8 @@ check('held.discard lets the draft go: a \'discarded\' marker for its author and
   discarded.ok === true && !discarded.kept && !discarded.missing
   && (await sys(`select gone from held_drafts_gone where id = $1 and author_id = $2`, [LD, A])).rows[0]?.gone === 'discarded'
   && (await sys(`select 1 from purge_ledger where entity_type = 'entry' and entity_id = $1`, [LD])).rows.length === 0);
-check('a \'discarded\' held-draft marker does not make the helper answer true, and the photo under that id still uploads',
-  (await purgedFn(A, own(A, LD))) === false && (await codeOf(() => upload(A, own(A, LD)))) === 'ok');
+check('a \'discarded\' held-draft marker does not make the helper answer true, and the helper still says false',
+  (await purgedFn(A, own(A, LD))) === false);
 // Ledger-only id: purge_ledger holds the id and nobody holds any other trail of it. Besides a restore replay
 // (the restored database never held the letter), an ordinary whole-book purge, an account purge and the purge
 // of a non-kept author's letters in a kept-book purge leave this state: entry_erasures goes with the book and
@@ -202,12 +212,12 @@ check('purge_due at 61 days trims the ledger rows (L1, LT and the ledger-only LR
   && (await inErasures(L1, A)) === 1 && (await inErasures(LT, B)) === 1);
 check('with the ledger row gone, the author still gets true for the erased id (every extension), from the author\'s own record alone',
   (await purgedFn(A, p1)) === true && (await purgedFn(A, `${CHILD}/${A}/${L1}.png`)) === true);
-check('with the ledger row gone, the author still cannot put the photo back, by upload or by rename (42501)',
+check('with the ledger row gone, the author still cannot put the photo back, by upload (42501) or by rename (unchanged)',
   (await codeOf(() => upload(A, p1))) === '42501' && (await codeOf(() => upload(A, `${CHILD}/${A}/${L1}.heic`))) === '42501'
   && await (async () => {
     const t = `${CHILD}/${A}/${id7()}.jpg`;
-    await upload(A, t);
-    return (await codeOf(() => rename(A, t, p1))) === '42501';
+    await seed(t);
+    return (await rename(A, t, p1)) === 'unchanged';
   })());
 check('with the ledger row gone, the co-parent and a stranger still get false for the author\'s path and for the id in their own folders',
   (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false

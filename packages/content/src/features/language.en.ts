@@ -16,6 +16,8 @@ export const languageCopy = {
   othersFooter: 'Add up to two more languages you speak at home.',
   addLanguage: 'Add a language',
   addLanguageFull: 'Three languages chosen',
+  // PROPOSED (spec 11, SL-1, 21 Nov 2026): the full Add row is dimmed, not hidden, and says why when read aloud.
+  addLanguageFullA11yHint: 'You can choose up to three languages. Remove one to add another.',
   change: 'Change',
   removeA11y: 'Remove {name}',
   remove: 'Remove',
@@ -44,6 +46,9 @@ export const languageCopy = {
     retry: "Didn't finish. Tap to try again.",
     downloadNow: 'Download now on cellular data',
   },
+  // PROPOSED (spec 11, SL-1, 21 Nov 2026): said once when a download starts and once when it ends, never per percent.
+  announceStarted: 'Downloading {name}',
+  announceFinished: '{name} is on this phone',
   // D-074: what the machine changes is a "small fix".
   safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.',
   // D-111 item 4 (N2 on #247, round 2 on #260): in builds that offer English only, a recording whose language was

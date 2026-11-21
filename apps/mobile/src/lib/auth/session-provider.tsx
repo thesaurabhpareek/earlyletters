@@ -21,16 +21,23 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { deleteBackupFilesExcept, endBackupFileFor } from '../backup/files';
+import { settleBackupTokens } from '../backup/launch-migrate';
+import { removeBackupTokensFor } from '../backup/token-vault';
+import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
+import { nextReportMark, type ReportMark } from './new-device/report.logic';
+import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
-import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, takePendingAppleName } from './apple';
+import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
+import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
-import { loadSyncGate, recordConsent as recordConsentAct, saveDisplayName } from './consent';
+import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
 import { openEmailLink } from './email-link.logic';
 import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey } from './errors.logic';
@@ -134,18 +141,6 @@ function phoneHasLocalData(): boolean {
   return phoneHoldsAnyRow(localSqlDb());
 }
 
-/** The stored session's user id, read from the Keychain without touching the network. */
-async function storedUserId(): Promise<string | null> {
-  try {
-    const raw = await secureStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const id = (JSON.parse(raw) as { user?: { id?: unknown } }).user?.id;
-    return typeof id === 'string' ? id : null;
-  } catch {
-    return null;
-  }
-}
-
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(Object.assign(new Error('timeout'), { message: 'timed out' })), ms);
@@ -199,12 +194,35 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const sessionUser = authUserId(state);
   const authSettled = state.status !== 'restoring';
   const lastSessionUser = useRef<string | null>(null);
+  // What the launch's Keychain read said; `unavailable` until it succeeds or when there is no client (never a sweep on that).
+  const storedRead = useRef<StoredSessionRead>({ kind: 'unavailable' });
   useEffect(() => {
     if (!authSettled) return;
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
+    // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
+    if (before && before !== sessionUser) {
+      endBackupFileFor(before);
+      void removeBackupTokensFor(before); // B5-6: and its upload tokens leave the Keychain
+    }
+    // B5-5: and every settled run (a launch included) keeps only the signed-in account's file, so a session that ended
+    // while the app was closed, a kill after sign-out and a failed delete are all caught and retried here.
+    const sweep = backupSweepFor(sessionUser, before, storedRead.current);
+    if (sweep.run) {
+      deleteBackupFilesExcept(sweep.keep);
+      // B5-6, B5-9: after the sweep, tokens of any other account leave the Keychain and the kept account's old rows move.
+      void settleBackupTokens(sweep.keep);
+    }
   }, [sessionUser, authSettled]);
+  // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
+  // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
+  const reportMark = useRef<ReportMark>(null);
+  useEffect(() => {
+    const next = nextReportMark(reportMark.current, state);
+    reportMark.current = next.mark;
+    if (next.call && sb) void reportNewDeviceFor(sb);
+  }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
@@ -219,7 +237,11 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       return;
     }
     let alive = true;
-    void storedUserId().then((id) => alive && dispatch({ type: 'RESTORED', userId: id }));
+    void readStoredSession(() => secureStorage.getItem(SESSION_STORAGE_KEY)).then((r) => {
+      if (!alive) return;
+      storedRead.current = r;
+      dispatch({ type: 'RESTORED', userId: r.kind === 'found' ? r.userId : null });
+    });
     const { data } = sb.auth.onAuthStateChange((event, session) => {
       // Never call Supabase from inside this callback (supabase-js deadlock note); state only.
       // INITIAL_SESSION arrives with null when the refresh failed for lack of network, while
@@ -266,19 +288,21 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     return () => sub.remove();
   }, [checkGate]);
 
-  // A-REQ-033: Apple sign-in revoked on this Apple ID: sign out once letters are uploaded.
+  // A-REQ-033, NS-45-R4, O-18: Apple sign-in revoked on this Apple ID (seen at sign-in, on every foreground, and
+  // on Apple's notification): sign out once letters are uploaded (the R3 rule).
   const signedInUser = isSignedIn(state) ? state.userId : null;
   useEffect(() => {
     if (!signedInUser) return;
-    let alive = true;
-    void appleCredentialRevoked().then(async (revoked) => {
-      if (!alive || !revoked) return;
-      dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: await pendingUploads() });
+    return startAppleRevocationWatch({
+      check: appleCredentialRevoked,
+      isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
+      pendingUploads,
+      dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
+      onAppActive: (l) => onAppBecameActive((e, h) => AppState.addEventListener(e, h), l),
+      onAppleRevoked: watchAppleRevocation,
+      now: Date.now,
     });
-    return () => {
-      alive = false;
-    };
-  }, [signedInUser]);
+  }, [signedInUser, sb]);
 
   // Sign-out: wait for the upload queue, then end the session on this phone only.
   const waiting = state.status === 'signingOut' && state.waitingForUploads;
@@ -508,15 +532,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (!sb || cur.status !== 'needsConsent') return { ok: false, error: 'unknown' };
         try {
           await recordConsentAct(sb, step, accepted, cur.method, cur.userId);
-          if (step === 'terms' && accepted) {
-            // Apple shares the name once; it waits in the Keychain until Terms are accepted.
-            const name = await takePendingAppleName();
-            if (name) {
-              await saveDisplayName(sb, cur.userId, name)
-                .then(clearPendingAppleName)
-                .catch(() => {});
-            }
-          }
+          if (step === 'terms' && accepted) await clearPendingAppleName(); // O-8: no Apple name is written to the profile
           dispatch({ type: 'CONSENT_RECORDED', step, accepted });
           return { ok: true };
         } catch (e) {

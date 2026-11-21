@@ -22,9 +22,11 @@ import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../
 import { createKeyManager } from '../src/lib/backup/keys';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { Aead, Conditions, FileIO, NetworkKind } from '../src/lib/backup/ports';
+import type { TokenStore } from '../src/lib/backup/token-vault';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
+import { firstLeak, leakNote } from './helpers/leak-scan';
 import { nodeDb } from './helpers/node-db';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -112,12 +114,18 @@ function rig() {
     open: nodeAead.open,
   };
   const server = backend.serverFor(MAMA);
+  // B5-6: the Keychain stand-in the queue gets, and a token the server can hand out at backup_begin.
+  const keychain = new Map<string, string>();
+  const tokens: TokenStore = { get: async (id) => keychain.get(id) ?? null, set: async (id, t) => void keychain.set(id, t), remove: async (id) => void keychain.delete(id) };
+  const beginToken = { value: null as string | null, seenByUploadTarget: [] as (string | null)[] };
   const killableServer: BackupServer = Object.fromEntries(
     Object.entries(server).map(([name, fn]) => [
       name,
       async (...a: unknown[]) => {
         point(`before:${name}`);
-        const r = await (fn as (...x: unknown[]) => Promise<unknown>)(...a);
+        if (name === 'uploadTarget') beginToken.seenByUploadTarget.push((a[1] as string | null) ?? null);
+        let r = await (fn as (...x: unknown[]) => Promise<unknown>)(...a);
+        if (name === 'begin' && beginToken.value && (r as { state: string }).state === 'pending') r = { ...(r as object), uploadToken: beginToken.value };
         point(`after:${name}`);
         return r;
       },
@@ -149,6 +157,7 @@ function rig() {
       conditions,
       clock: { now: () => clock.t, sleep: async () => {} },
       profileId: MAMA,
+      tokens,
       source: { list: () => items, has: (id) => items.some((i) => i.entryId === id) },
       random: () => 0.5,
       partBytes: PART,
@@ -219,6 +228,8 @@ function rig() {
     serverPlaintext,
     settle,
     seals: () => seals,
+    keychain,
+    beginToken,
     tmpFiles: () => readdirSync(files.tmpDir),
     /** Runs after every resumable-upload call returns (before the queue sees the answer). */
     onHttp: (h: (method: string) => void) => void httpHooks.push(h),
@@ -238,18 +249,50 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(r.db().getMeta('lastBackedUpAt')).not.toBeNull();
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
-    // Every byte that left the phone is ciphertext: no ftyp box, no window of the original, no plaintext hash.
-    // The ftyp box is the recording's own first 16 bytes (size, "ftyp", major brand, minor version), not the 4 letters:
-    // any 4 bytes of ciphertext equal "ftyp" by chance (1 in 2^32 per byte), 16 bytes cannot (2^-128).
-    const start = plain.subarray(0, 16);
-    expect(start.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
+    // Every byte that left the phone is ciphertext: no ftyp box, no part of the original, no plaintext hash.
+    // [BL-456] 16-byte shingles of the whole take, each at every offset of every body (`helpers/leak-scan.ts`).
+    expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     for (const req of r.backend.requests) {
-      expect(req.body.includes(start), `${req.kind} carries the start of the recording`).toBe(false);
-      expect(req.body.includes(plain.subarray(4096, 4160)), req.kind).toBe(false);
+      expect(leakNote(req.kind, firstLeak(req.body, plain))).toBe(leakNote(req.kind, null));
       expect(req.body.includes(Buffer.from(sha256Hex(plain))), req.kind).toBe(false);
       expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
     }
     expect(r.backend.requests.filter((x) => x.kind === 'tus').length).toBeGreaterThan(5); // 6 MiB parts in the app; 64 KiB here
+  });
+
+  it('[B5-6] the upload token goes to the Keychain, the column stays null, the upload sends it, and confirmed removes it', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-upload-token-1';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    let seen = 0;
+    r.onHttp(() => {
+      const row = r.db().job(item.entryId)!;
+      if (row.state === 'confirmed') return;
+      seen += 1;
+      expect(row.uploadToken, 'the column never holds the token').toBeNull();
+      expect([...r.keychain.values()]).toEqual(['asha-upload-token-1']);
+    });
+    await r.make().drain();
+    expect(seen).toBeGreaterThan(0);
+    expect(r.beginToken.seenByUploadTarget).toContain('asha-upload-token-1');
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(r.db().job(item.entryId)!.uploadToken).toBeNull();
+    expect(r.keychain.size).toBe(0);
+  });
+
+  it('[B5-6] a Keychain that refuses the token leaves the job sealed and the file without a token', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-upload-token-2';
+    const { item } = await r.addRecording(SEGMENT_SIZE);
+    const refuse = new Error('keychain locked');
+    const q = r.make();
+    r.keychain.set = () => {
+      throw refuse;
+    };
+    await q.drain().catch(() => undefined);
+    const row = r.db().job(item.entryId)!;
+    expect(row.state).not.toBe('begun');
+    expect(row.uploadToken).toBeNull();
   });
 
   it('goes oldest first, one at a time', async () => {
@@ -418,6 +461,15 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     await r.make().drain();
     expect(r.db().job(item.entryId)!).toMatchObject({ state: 'blocked', lastError: 'purged' });
     expect(r.backend.requests.filter((x) => x.kind === 'tus')).toEqual([]);
+  });
+
+  it('a server detail outside the contract is never stored as lastError', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(1000);
+    r.backend.refuseRpc = { code: 'P0002', detail: 'Asha born 2025-04-12' };
+    await r.make().drain();
+    const stored = r.db().job(item.entryId)!;
+    expect(stored.lastError).toBe('P0002');
   });
 
   it('the server lost the object before backup_confirm (P0002 object): sent again from the start, then confirmed', async () => {

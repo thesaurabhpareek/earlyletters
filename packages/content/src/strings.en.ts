@@ -717,14 +717,17 @@ export const en = {
   },
 
   notifications: {
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; NS-32-R13, NS-13-R33; words-packet row 18, option A). The
+    // one line iOS shows for a reminder when previews are hidden. No name, count, day or brand.
+    previewPlaceholder: "Something for the book, whenever you have a minute.",
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
+      { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
-      { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
+      { title: "Say a few words to {child}", body: "Talk or type, whichever is easier." },
+      { title: "Before you sleep", body: "A moment from {child}'s day? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
@@ -1108,9 +1111,17 @@ export const en = {
       cta: "Add {child}'s book",
       // Before a name is typed, or when the filled `cta` would pass 22 characters.
       ctaShort: "Add this book",
+      // PROPOSED (spec 10, AB-1, 21 Nov 2026): the local write failed. The page stays, the typed name and date are kept.
+      // Shown in a notice with the common Try again button. A full phone uses errors.phoneFull.
+      saveFailed: "This book did not save. What you typed is still here.",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me row that opens this page. The built title "Add a child" is unchanged until
+      // the founder approves the new words; nothing reads this key yet.
+      rowLabel: "Add a book",
     },
     settings: {
       sectionTitle: "Children",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me group title for the books. Nothing reads this key until the founder approves it.
+      booksSectionTitle: "Books",
       title: "{child}'s book",
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
@@ -1392,6 +1403,9 @@ export const en = {
     helpSubject: "Help with the app",
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
+    // PROPOSED (spec 08, L1, 21 Nov 2026): a Terms or Privacy link the iPhone could not open. ST-NOTICE above the list,
+    // with the common Try again button. Says what did not happen, no cause.
+    legalOpenFailed: "That page did not open. Nothing has changed.",
     versionLabel: "Version",
     // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
     // registered note under About already says it once (CLO-5, 1 Nov 2026).
@@ -1444,6 +1458,8 @@ export const en = {
       line: "Every um and false start stays in.",
     },
     footer: "Either way, we never rewrite your words.",
+    // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
+    saveFailed: "That choice did not save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a

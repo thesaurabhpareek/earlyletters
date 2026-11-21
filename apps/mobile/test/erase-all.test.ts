@@ -27,6 +27,8 @@ const h = vi.hoisted(() => ({
   calls: [] as string[],
   /** The Keychain, as a map that outlives a kill (it survives a reinstall on a real phone). */
   keychain: new Map<string, string>(),
+  /** A Keychain key whose removal fails (B5-6), or null. */
+  failRemoveKey: null as string | null,
   /** What `appLock.enabled` read when the app lock was asked to read its settings again (null: erased). */
   lockReloads: [] as (string | null)[],
   /** A setting as the store's database holds it right now (set in beforeEach, once the database exists). */
@@ -35,6 +37,13 @@ const h = vi.hoisted(() => ({
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+// lib/backup/files.ts (B5): the database folder and the native exclusion call, over this disk.
+vi.mock('expo-sqlite', () => ({
+  get defaultDatabaseDirectory() {
+    return `${h.disk.documents}SQLite`;
+  },
+}));
+vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // also: erase-everything reaches the days store (NS-47-R16)
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {
@@ -61,7 +70,10 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({
   secureStorage: {
     getItem: async (k: string) => h.keychain.get(k) ?? null,
     setItem: async (k: string, v: string) => void h.keychain.set(k, v),
-    removeItem: async (k: string) => void h.keychain.delete(k),
+    removeItem: async (k: string) => {
+      if (h.failRemoveKey === k) throw new Error('keychain locked');
+      h.keychain.delete(k);
+    },
   },
 }));
 vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'scribe.auth.appleUser', PENDING_NAME_KEY: 'scribe.auth.pendingName' }));
@@ -153,6 +165,7 @@ beforeEach(() => {
   h.calls = [];
   h.lockReloads = [];
   h.keychain = new Map();
+  h.failRemoveKey = null;
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -406,6 +419,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const printPdf = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`, 12_000);
     h.keychain.set('scribe.auth.pendingName', 'Mama'); // an Apple sign-in that never finished
     h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
+    h.keychain.set('scribe.auth.deviceId', 'ab'.repeat(32)); // NDR-1: the new-device email's install id; Erase everything clears it
     return { app, f, stray, frames, zip, recovery, printPdf };
   }
 
@@ -799,7 +813,8 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     const paths = ['src/lib/erase-everything.ts', 'src/lib/db/repos/wipe.ts', 'src/lib/store.ts', 'src/lib/billing/letter-ledger.ts'];
     for (const p of paths) {
       const s = src(p);
-      expect([p, /from '[^']*\/backup(?:\/|')/.test(s)]).toEqual([p, false]);
+      // B5: the only backup files erase-everything.ts may import are files.ts (the state file's delete) and token-vault.ts (the upload-token item); no keys, no runtime.
+      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/(files|token-vault)'/g, ''))]).toEqual([p, false]);
       expect([p, /deleteBookKeys|deleteDeviceKey|KeyVault/.test(s)]).toEqual([p, false]);
     }
   });
@@ -884,6 +899,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     const { runEraseEverything } = await import('../src/components/settings/wipe.logic');
     const log: string[] = [];
     const r = await runEraseEverything({
+      ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         log.push('erase');
         return 'erased';
@@ -912,6 +929,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     ] as const) {
       const log: string[] = [];
       await runEraseEverything({
+        ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
         erase: async () => outcome,
         setPhase: (p) => log.push(`phase:${p}`),
         setFailed: (f) => log.push(`failed:${f}`),
@@ -921,6 +940,8 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     }
     const log: string[] = [];
     await runEraseEverything({
+      ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         throw new Error('disk');
       },
@@ -1109,5 +1130,137 @@ describe('[BL-387][F17 6.2 F][DATA-REQ-024] the Erase everything row on Settings
   it("ROUTES.erase is '/settings/erase' and that screen exists", () => {
     expect(home()).toMatch(/const ROUTES = \{[^}]*\berase: '\/settings\/erase',[^}]*\} as const;/);
     expect(existsSync(join(__dirname, '..', 'src/app/settings/erase.tsx')), 'src/app/settings/erase.tsx exists').toBe(true);
+  });
+});
+
+describe('[B5-4] Erase everything deletes every backup state file inside eraseDeviceFiles() (CR-71 B5)', () => {
+  const ASHA_A = 'backup-3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f.db';
+  const ASHA_B = 'backup-7a1c9d2e-0b3f-4a5d-8e6c-2f1a0b9c8d7e.db';
+  const sqlite = (n: string) => `${h.disk.documents}SQLite/${n}`;
+  const seed = () => {
+    for (const n of [ASHA_A, `${ASHA_A}-wal`, `${ASHA_A}-shm`, ASHA_B, `${ASHA_B}-journal`]) put(h.disk, sqlite(n), 64);
+  };
+
+  it('every account\'s file and sidecar goes, scribe.db stays, and an open handle is closed first', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    const atClose: boolean[] = [];
+    files.registerBackupHandleCloser((id) => void atClose.push(id === null && has(sqlite(ASHA_A))));
+    seed();
+    app.all.eraseDeviceFiles();
+    expect(atClose).toEqual([true]); // the handle closed while the file still existed
+    expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+    expect(has(sqlite('scribe.db')) && has(sqlite('scribe.db-wal'))).toBe(true);
+  });
+
+  it('a file that will not go makes the erase throw, so the rows stay and the next try repeats it', async () => {
+    const app = await launch();
+    seed();
+    h.disk.undeletable.add(sqlite(ASHA_A));
+    expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+    h.disk.undeletable.clear();
+    app.all.eraseDeviceFiles();
+    expect(has(sqlite(ASHA_A))).toBe(false);
+  });
+
+  it('a folder that cannot be listed while a backup file exists: the erase throws (typed) and stays pending', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.unreadable.add(`${h.disk.documents}SQLite`);
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(Error);
+    expect(has(sqlite(ASHA_A))).toBe(true); // nothing was claimed deleted
+    h.disk.unreadable.clear();
+    app.all.eraseDeviceFiles(); // the retry finishes
+    expect(has(sqlite(ASHA_A))).toBe(false);
+    expect(files.deleteBackupFiles()).toEqual({ deleted: 0, failed: 0 });
+  });
+
+  it('the failure is the typed BackupFileDeleteFailed with a stable code, not a bare Error', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.undeletable.add(sqlite(ASHA_A));
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(files.BackupFileDeleteFailed);
+    expect((err as { code: string }).code).toBe('backup_file_delete');
+  });
+
+  it('a recording that will not delete still leaves no backup file (it goes first), and the erase throws', async () => {
+    const app = await launch();
+    seed();
+    const rec = take('A1');
+    h.disk.undeletable.add(rec);
+    expect(() => app.all.eraseDeviceFiles()).toThrow();
+    expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+  });
+
+  // Two steps that each hold their own failure (NS-47-R16 days file, B5-4 backup file): one failing must never skip the other.
+  describe('a days file and a backup file together: one that will not go never skips the other', () => {
+    const daysFile = () => `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/days/days.v1.json`;
+    const backupLeft = () => namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'));
+
+    it('the days file will not go: the backup file and the recording are still deleted, the erase throws, and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      const rec = take('A1');
+      h.disk.undeletable.add(daysFile());
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(backupLeft()).toEqual([]);
+      expect(has(rec)).toBe(false);
+      expect(has(daysFile())).toBe(true);
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      expect(() => app.all.eraseDeviceFiles()).toThrow(); // and a direct call throws
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles(); // the retry finishes
+      expect(has(daysFile())).toBe(false);
+    });
+
+    it('the backup file will not go: the days file is still erased, the erase throws (backup_file_delete), and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(sqlite(ASHA_A));
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(has(daysFile())).toBe(false);
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles();
+      expect(has(sqlite(ASHA_A))).toBe(false);
+    });
+  });
+
+  it('[B5-6] a Keychain that will not drop the upload tokens holds the erase: the rest runs, the mark stays, finish is not reached, and a retry finishes', async () => {
+    const app = await launch();
+    const tokens = await import('../src/lib/backup/token-vault');
+    h.keychain.set(tokens.BACKUP_TOKENS_KEY, '{"a:b":"asha-token"}');
+    h.failRemoveKey = tokens.BACKUP_TOKENS_KEY;
+    await expect(app.all.eraseEverything()).rejects.toThrow('keychain locked');
+    expect(app.store.eraseEverythingPending()).toBe(true); // finishEraseEverything was not reached
+    expect(h.calls).toContain('reminders:forget'); // the other steps still ran
+    expect(h.keychain.has(tokens.BACKUP_TOKENS_KEY)).toBe(true);
+    h.failRemoveKey = null;
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(h.keychain.has(tokens.BACKUP_TOKENS_KEY)).toBe(false);
+  });
+
+  it('a phone with no backup file erases as before', async () => {
+    const app = await launch();
+    expect(() => app.all.eraseDeviceFiles()).not.toThrow();
+    expect(has(sqlite('scribe.db'))).toBe(true);
   });
 });
