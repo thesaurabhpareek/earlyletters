@@ -389,6 +389,13 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(page).toMatch(/if \(!on \|\| !pick\.ready\) return null;/);
     expect(photoSurfaces({ build: false, paused: false }).addActions).toBe(false);
   });
+  it('[NS-01-R19] off, the Book draws no lens row and no Photos page', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
+    expect(book).toMatch(/\{lensOn \? \(/);
+    expect(book).toMatch(/const showPhotos = lensOn && lensMode === 'photos' && !params\.arrived;/);
+    expect(photoSurfaces({ build: false, paused: false }).lens).toBe(false);
+  });
 });
 
 describe('[NS-01-R20] new controls', () => {
@@ -542,5 +549,80 @@ describe('[NS-01-R22] the system picker is the only source', () => {
     for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
       expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/launchCameraAsync|requestCameraPermissions|Take a photo now/);
     }
+  });
+});
+
+describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exactly one checked', () => {
+  it('[NS-01-R48] the lens choice is a radio group: [NS-33-R3] LensRow is a segmented ChoiceGroup labelled for VoiceOver, never a tablist of buttons, and the group gives radiogroup, radio and checked', () => {
+    const lens = readFileSync(join(SRC, 'components', 'photos', 'photos-lens.tsx'), 'utf8');
+    const row = lens.slice(lens.indexOf('export function LensRow'), lens.indexOf('\n}\n', lens.indexOf('export function LensRow')));
+    expect(row).toMatch(/<ChoiceGroup\s+layout="segmented"\s+label=\{photos\.book\.lens\.label\}/);
+    expect(row).toMatch(/\{ value: 'months', label: photos\.book\.lens\.months \},\s*\{ value: 'photos', label: photos\.book\.lens\.photos \}/);
+    expect(row).toMatch(/value=\{mode\}\s+onChange=\{onChange\}\s+testID="book\.lens"/);
+    expect(lens).not.toMatch(/tablist|<Button\b|accessibilityState=\{\{ selected/);
+    // The group's own roles: one radiogroup with the label, each option a radio whose checked is its value === value.
+    const group = readFileSync(join(SRC, 'components', 'ui', 'choice-group.tsx'), 'utf8');
+    expect(group).toMatch(/accessibilityRole="radiogroup"\s+accessibilityLabel=\{label\}\s+testID=\{testID\}/);
+    expect(group).toMatch(/<SegmentChoice key=\{o\.value\} option=\{o\} checked=\{o\.value === value\}/);
+    expect(group).toMatch(/accessibilityRole="radio"\s+accessibilityState=\{\{ checked \}\}/);
+    expect(photos.book.lens.label.length).toBeGreaterThan(0);
+  });
+  it('[NS-33-R3][NS-01-R10] the lens row stays mounted across the switch: both lenses are the one SectionList, the row in its header (#840 review A)', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book.match(/<LensRow /g)).toHaveLength(1);
+    expect(book.match(/<AnimatedSectionList\b/g)).toHaveLength(1);
+    expect(book).not.toMatch(/<ScrollView\b|PhotoChapters/);
+    expect(book).toMatch(/const sections = useMemo\(\(\) => \(showPhotos \? photoChapters\(chapters, lens\.photos\) : chapters\), \[showPhotos, chapters, lens\.photos\]\);/);
+    expect(book).toMatch(/sections=\{sections\}\s+keyExtractor=\{\(e: Entry\) => e\.id\}\s+ListHeaderComponent=\{header\}/);
+    expect(book).toMatch(/showPhotos \? \(\s*<LensCard entry=\{item\} picture=\{lens\.photos\.get\(item\.id\)\} child=\{active\} onOpen=\{open\} \/>/);
+    // The lens row sits in `header`, which no lens branch renders on its own.
+    const header = book.slice(book.indexOf('const header = ('), book.indexOf('const compact = '));
+    expect(header).toMatch(/<LensRow mode=\{lensMode\} onChange=\{setLensMode\} \/>/);
+  });
+  it('[NS-01-R20e][NS-33-R9] Months is not offered in Photos, never opens by itself on the way back, and has its own name beside the lens row (#840 review A)', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const months =\s*!showPhotos && showsMonthsButton\(rows\)\s*\? \{ label: lensOn \? photos\.book\.lens\.monthsButton : bookCopy\.monthsButton,/);
+    expect(book).toMatch(/<MonthsSheet open=\{monthsOpen && !showPhotos\} rows=\{rows\}/);
+    expect(book.match(/<MonthsSheet /g)).toHaveLength(1);
+    // Both Months buttons (the cover band's and the bar's) take `months`; neither is drawn without it.
+    expect(book).toMatch(/months=\{chapters\.length > 0 \? months : null\}/);
+    expect(book).toMatch(/\{months \? <Button variant="quiet" size="sm" label=\{months\.label\}/);
+    expect(photos.book.lens.monthsButton).not.toBe(photos.book.lens.months);
+    // An arrival lands in Months, and a lens that goes away leaves Months chosen.
+    expect(book).toMatch(/if \(params\.arrived \|\| !lensOn\) setLensMode\('months'\);/);
+  });
+});
+
+describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
+  it('[NS-01-R23] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
+    const f = join(SRC, 'app', '(tabs)', 'book.tsx');
+    const sf = parse(f);
+    let found = false;
+    visit(sf, (n) => {
+      if (jsxName(n) !== 'Button' && !(ts.isJsxSelfClosingElement(n) && n.tagName.getText() === 'Button')) return;
+      const attrs = ts.isJsxElement(n) ? n.openingElement.attributes : (n as ts.JsxSelfClosingElement).attributes;
+      const label = attrs.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'label');
+      if (!label || !label.getText().includes('book.empty.bookCta')) return;
+      found = true;
+      const onPress = attrs.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'onPress')!;
+      expect(onPress.getText().replace(/\s+/g, '')).toBe("onPress={()=>router.navigate('/')}");
+    });
+    expect(found).toBe(true);
+    // The Book now hosts the read-only Photos lens, so its flag, hook and lens component are allowed; nothing that can
+    // start a letter or open the picker is (start-intent, capture, the photo start, the picker, the pending picture).
+    expect(importsOf(sf).filter((m) => /start-intent|capture|photos\/(use-photo-start|use-photo-pick|photo-start|session|registry|pending|device|picker|attach)/.test(m))).toEqual([]);
+    expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/copy', '@/lib/photos/flag', '@/lib/photos/hooks', '@/lib/photos/lens', '@/lib/photos/pause']);
+    expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
+  });
+  it('[NS-01-R23b] the lens cannot start a letter', () => {
+    // The lens components and the lens hook import nothing that starts a capture, opens the picker or holds a pending picture.
+    for (const f of [join(SRC, 'components', 'photos', 'photos-lens.tsx'), join(SRC, 'components', 'book', 'letter-card.tsx')]) {
+      const src = readFileSync(f, 'utf8');
+      expect(src, rel(f)).not.toMatch(/startCapture|start-capture|use-photo-start|use-photo-pick|photos\/(picker|pending|session|registry)|armListenStart|Add photos|Start from a photo/);
+    }
+    expect(Object.keys(photos.book.lens).filter((k) => /add|start/i.test(k))).toEqual([]);
+  });
+  it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
+    expect(JSON.stringify(photos.book.lens)).not.toMatch(/add/i);
   });
 });
