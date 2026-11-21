@@ -10,3 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| content-prompts-v2 | content | fix/content-prompts-v2 | 1171 | `packages/content/src/prompts.ts`, `packages/content/test/prompts.preBirth.test.ts` | 2026-11-21T03:19Z | 2026-11-24T02:19Z | prompt library v5, 13 rewrites under new keys; PR read as open 2026-11-21T03:19Z |
