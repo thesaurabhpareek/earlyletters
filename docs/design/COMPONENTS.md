@@ -576,6 +576,14 @@ type PhotoFrameProps = {
 - **Motion:** image fade-in; pager dots on `snappy`.
 - **Builds on:** `expo-image` (already installed; `placeholder` blurhash, `contentFit`), horizontal paging ScrollView or FlashList horizontal. Web: `next/image` + CSS scroll-snap.
 - **Android later:** same code. Check that horizontal paging inside a vertical FlashList does not steal the card tap or vertical scroll on Android.
+- **Frame and sizes (21 Nov 2026, conformance F-12, F-19):** the frame is `stroke.control` (1 pt) in the colour token `mediaFrame` (ruling 27: dark `#716A62`, 3.15:1 or better on bg, surface and surfaceRaised; light keeps `line`; Increase Contrast uses the `line` override), never a raw width or `line`. Maximum boxes are `tokens.picture`: Ready thumbnail `thumbMaxPt` 160, `thumbAxMaxPt` 88 from AX3, lens list copy `lensThumbPt` 72 (long side), letter page `letterColumnRatio` 0.75 and `letterWindowRatio` 0.4, `letterAxMaxPt` 88 from AX3. The last three are PROPOSED [U] for design to confirm: no design file sets them; mobile drew 120 for the large-text cap, and 88 is the existing step. The picture is fitted, never cropped (R42).
+- **Radius (F-26, recommendation, no token change):** `radius.sm` for the 72 pt lens thumbnail (B-S04 draws it; `DESIGN_LANGUAGE` 4 says `sm` is for thumbnails and a 14 pt corner on a 72 pt box reads as a pill), `radius.md` for the letter page picture and Ready. Spec 01 says `md` for all, so it needs one line changed (design to confirm); mobile then adds a `radius` prop to `PhotoFrame`. Until then the code draws `md` everywhere.
+
+### 2.23a ErrorLine (built 21 Nov 2026, `components/ui/error-line.tsx`)
+- **Purpose:** one calm line for a failure the person can act on while the page keeps working: the error kind of `Notice` (DESIGN-SYSTEM-DELTA 2.3). Extracted from the sign-in `ErrorLine` with the same look and behaviour and none of its imports, so photo screens can use it.
+- **Look:** a 20 pt `WarningCircle` in `caution` and the words in `subhead` on the `secondary` chip, `rounded-2xl`, 16 x 12 padding. Words never truncate. Red is never used.
+- **A11y:** one element, the words are the label, glyph not read; a polite live region (Android) and `announce()` (iOS), so it is read once on each platform; never assertive. Rules and tests in `error-line.logic.ts`.
+- **Motion:** opacity fade over `motion.swapMs`, the same fade under Reduce Motion.
 
 ---
 

@@ -24,6 +24,9 @@ import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
+import { bookVisibleTo } from './auth/account-scope.logic';
+import { getAuthSnapshot } from './auth/auth-store';
+import { authUserId } from './auth/machine.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
@@ -60,7 +63,7 @@ import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
 import { findBuildEnabled } from './find/flag';
-import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, type EnsureResult } from './find/lifecycle';
+import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, setIndexableBooks, type EnsureResult } from './find/lifecycle';
 import { rebuildSearchIndex } from './find/rebuild';
 import { searchLetters, type FindResult } from './find/search';
 import { dropSearchView, SEARCH_VIEW } from './find/sources';
@@ -186,6 +189,8 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
+  setIndexableBooks(() => (bookVisibleNow() ? null : []));
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
 }
@@ -204,6 +209,8 @@ const findObjectsExist = (db: SqlDb): boolean =>
 export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
   try {
     const { db } = ctx();
+    // [X4-R1]: while another account is signed in over this owner's book, nothing is indexed, dropped or moved.
+    if (!bookVisibleNow()) return 'unavailable';
     if (findBuildEnabled()) return await rebuildSearchIndex(db);
     if (findObjectsExist(db)) {
       dropSearchIndex(db);
@@ -224,6 +231,7 @@ let findCatchUpFor: unknown = null;
  */
 export function startFindCatchUp(): void {
   if (!conn?.result.ok || findCatchUpFor === conn) return;
+  if (!bookVisibleNow()) return; // [X4-R1]: not marked done, so a later call, once this book is shown again, still runs
   findCatchUpFor = conn;
   if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
   void ensureFindIndex();
@@ -236,6 +244,8 @@ export function findIndexReady(): boolean {
 
 /** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
 export function findLetters(raw: string, childId: string): FindResult {
+  // Dark unless the build says 'on', and never another account's book ([X4-R1]): nothing asked, nothing found.
+  if (!findBuildEnabled() || !bookVisibleNow()) return { status: 'idle' };
   return searchLetters(ctx().db, raw, childId);
 }
 
@@ -363,7 +373,7 @@ export function recordAgreement(rows: readonly AgreementRow[], passAge: boolean)
 // ── Children ─────────────────────────────────────────────────────────────
 /** Visible children, oldest book first. */
 export function listChildren(): Child[] {
-  return children.listVisible(ctx());
+  return shown(() => children.listVisible(ctx()));
 }
 
 export function getChild(id: string): Child | null {
@@ -452,7 +462,7 @@ export function unhideChild(id: string): void {
 }
 
 export function listHiddenChildren(): Child[] {
-  return children.listHidden(ctx());
+  return shown(() => children.listHidden(ctx()));
 }
 
 // ── Family view of the active child (stable, single-child API) ───────────
@@ -485,6 +495,34 @@ export function dictionaryFor(f: Family): DictionaryTerm[] {
  */
 export function currentUserId(): string | null {
   return getSetting(SYNC_SETTING.owner);
+}
+
+/**
+ * BL-961 (`[X4-R1]`, NS-10-R3; ADR 0031): may this phone's book be shown now? False only while another account is
+ * signed in on a phone that holds this owner's book (lib/auth/account-scope.logic.ts). The one check: the screen cover,
+ * the first-run gate and every read for display ask it. Reads the owner only while a session exists, so a signed-out
+ * phone and a build with server features off read nothing more than before. An owner that cannot be read hides the
+ * book (the safe side); nothing is deleted either way.
+ */
+export function bookVisibleNow(): boolean {
+  const sessionUser = authUserId(getAuthSnapshot());
+  if (!sessionUser) return true;
+  try {
+    return bookVisibleTo({ owner: currentUserId(), sessionUser });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every list of books, letters and drafts a screen, an export or a planner reads goes through here: empty while another
+ * account is signed in (`[X4-R1]`, security.md NSC-03), so no surface (Book, Home, Recently deleted, export, the
+ * reminder planner's books) can list the owner's book. Reads by id (getEntry, getDraft, getChild) stay open on purpose:
+ * the listening-copy sweep (audio-enhance) and the launch sweep must still find the owner's rows, or they would treat
+ * them as gone. Writes and sync are unchanged; nothing is deleted or moved.
+ */
+function shown<T>(rows: () => T[]): T[] {
+  return bookVisibleNow() ? rows() : [];
 }
 
 // Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
@@ -562,6 +600,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
     if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
+    // The draft's picture (entry_media, ADR 0028) becomes the letter's in the same transaction: same id, new owner.
+    c.db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
@@ -609,7 +649,7 @@ export function saveVoiceOnlyFromDraft(
 
 /** Spoken letters still waiting for their words, oldest first (the transcription queue reads this). */
 export function listWaitingForWords(childId: string): Entry[] {
-  return entries.listWaiting(ctx(), childId);
+  return shown(() => entries.listWaiting(ctx(), childId));
 }
 
 /**
@@ -693,7 +733,7 @@ export function keepReviewedWords(id: string, inBook?: boolean): boolean {
 
 /** Letters whose machine-written words wait for the author's review, oldest first. */
 export function listWordsToReview(childId: string): Entry[] {
-  return entries.listWordsToReview(ctx(), childId);
+  return shown(() => entries.listWordsToReview(ctx(), childId));
 }
 
 /** A quiet-day mark already exists for this book on this day (one per day, D-084). */
@@ -709,7 +749,7 @@ export function hasNotMuchOn(childId: string, isoDate: string): boolean {
  * first; for one letter when `entryId` is given. Empty in a build without sync.
  */
 export function listConflicts(entryId?: string): ConflictCopy[] {
-  return listConflictCopies(ctx().db, entryId);
+  return shown(() => listConflictCopies(ctx().db, entryId));
 }
 
 /**
@@ -750,15 +790,15 @@ export function listEntries(): Entry[] {
 }
 
 export function listEntriesForChild(childId: string): Entry[] {
-  return entries.listForChild(ctx(), childId);
+  return shown(() => entries.listForChild(ctx(), childId));
 }
 
 /** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
 export function listClosedBooks(): Child[] {
-  return children.listClosedByServer(ctx());
+  return shown(() => children.listClosedByServer(ctx()));
 }
 export function listDeletedEntriesForChild(childId: string): Entry[] {
-  return entries.listDeletedForChild(ctx(), childId);
+  return shown(() => entries.listDeletedForChild(ctx(), childId));
 }
 
 export function getEntry(id: string): Entry | null {
@@ -853,6 +893,7 @@ export type AudioEraser = (uri: string | null, entryId: string) => void;
 
 /** The shelf: deleted letters of every book, newest deletion first. Each has `deletedAt`. */
 export function listDeleted(): entries.DeletedEntry[] {
+  if (!bookVisibleNow()) return [];
   const c = ctx();
   // A deleted book's letters wait inside it (Restore the book brings them all back), not one by one.
   const gone = new Set(wipe.deletedIds(c));
@@ -1059,7 +1100,7 @@ export function restoreBook(id: string): boolean {
 
 /** Deleted books waiting in Recently deleted, newest deletion first. */
 export function listDeletedBooks(): wipe.DeletedBook[] {
-  return wipe.listDeleted(ctx());
+  return shown(() => wipe.listDeleted(ctx()));
 }
 
 /**
@@ -1208,7 +1249,7 @@ export function getDraft(id: string): Draft | null {
 
 /** Drafts waiting to be read back, newest first. A take still recording is not listed. */
 export function listDrafts(childId: string): Draft[] {
-  return drafts.listForChild(ctx(), childId);
+  return shown(() => drafts.listForChild(ctx(), childId));
 }
 
 /**
@@ -1288,7 +1329,7 @@ export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): b
 
 /** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
 export function listWaitingForExport(): Draft[] {
-  return drafts.listForExport(ctx());
+  return shown(() => drafts.listForExport(ctx()));
 }
 
 /**
@@ -1317,7 +1358,7 @@ export function setDraftReview(id: string, base: string, patch: ReviewPatch): bo
 
 /** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */
 export function listHeldDrafts(childId?: string): Draft[] {
-  return drafts.listHeld(ctx(), childId);
+  return shown(() => drafts.listHeld(ctx(), childId));
 }
 
 /**

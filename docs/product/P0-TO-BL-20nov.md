@@ -14,11 +14,11 @@ Counts of the table below (the generator's own output, 21 Nov 2026, 1,052 rows):
 
 | How | Rows |
 |---|---|
-| named in a row | 393 |
+| named in a row | 757 |
 | cited in the requirement text | 77 |
-| proposed group row | 582 |
+| proposed group row | 218 |
 
-Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, before BL-1158 to BL-1182, the generator gives 292 named, 77 cited and 683 proposed group rows (369 of 1,052 strict, 683 not). Earlier text that says 368 and 684 (`READINESS-20nov.md`) came from an earlier head and could not be reproduced on `bc143cc`; the 101 rows moved by this batch are the difference between 683 and 582.
+Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, before BL-1158 to BL-1182, the generator gives 292 named, 77 cited and 683 proposed group rows (369 of 1,052 strict, 683 not). Earlier text that says 368 and 684 (`READINESS-20nov.md`) came from an earlier head and could not be reproduced on `bc143cc`; the 101 rows moved by this batch are the difference between 683 and 582. Batch 2 (BL-1300 to BL-1325, 26 rows, 155 ids) moves 155 more ids from proposed to named: 393 to 548 named, 582 to 427 proposed. Batch 3 (BL-1326 to BL-1358, 33 rows, 209 ids) moves 209 more: 548 to 757 named, 427 to 218 proposed. The 218 left are the batch 4 groups (BL-047, BL-126, BL-045, BL-046).
 
 | P0 id | Card or file | BL id | How |
 |---|---|---|---|
@@ -79,7 +79,7 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-02-R5 | 02-find.md | BL-952 | named in a row |
 | NS-03-R1 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R2 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
-| NS-03-R3 | 03-family-hears-it-pilot.md | BL-127 | proposed group row |
+| NS-03-R3 | 03-family-hears-it-pilot.md | BL-1325 | named in a row |
 | NS-03-R4 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R5 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R7 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
@@ -160,7 +160,7 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-08-R17 | 08-keeping-and-trust.md | BL-1180 | named in a row |
 | NS-08-R18 | 08-keeping-and-trust.md | BL-1180 | named in a row |
 | NS-08-R19 | 08-keeping-and-trust.md | BL-1180 | named in a row |
-| NS-08-R21 | 08-keeping-and-trust.md | BL-1048 | named in a row |
+| NS-08-R21 | 08-keeping-and-trust.md | BL-1048, BL-1183, BL-1184, BL-1185, BL-1186, BL-1187, BL-1188, BL-1203, BL-1204, BL-1205, BL-1206 | named in a row |
 | NS-08-R4 | 08-keeping-and-trust.md | BL-976, BL-290 | named in a row |
 | NS-08-R5 | 08-keeping-and-trust.md | BL-976 | named in a row |
 | NS-08-R6 | 08-keeping-and-trust.md | BL-976 | named in a row |
@@ -232,17 +232,17 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-16-R5 | 09-capture.md | BL-980 | named in a row |
 | NS-16-R6 | 09-capture.md | BL-957, BL-980 | named in a row |
 | NS-16-R9 | 09-capture.md | BL-980 | named in a row |
-| NS-17-R1 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R10 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R11 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R12 | 09-capture.md | BL-182 | proposed group row |
+| NS-17-R1 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R10 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R11 | 09-capture.md | BL-1314 | named in a row |
+| NS-17-R12 | 09-capture.md | BL-1312 | named in a row |
 | NS-17-R2 | 09-capture.md | BL-327 | named in a row |
-| NS-17-R3 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R4 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R5 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R6 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R7 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R8 | 09-capture.md | BL-182 | proposed group row |
+| NS-17-R3 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R4 | 09-capture.md | BL-1315 | named in a row |
+| NS-17-R5 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R6 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R7 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R8 | 09-capture.md | BL-1313 | named in a row |
 | NS-18-R3 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R6 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R8 | 09-capture.md | BL-982 | named in a row |
@@ -276,13 +276,13 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-25-R4 | 10-reading-and-family.md | BL-983 | named in a row |
 | NS-25-R6 | 10-reading-and-family.md | BL-983 | named in a row |
 | NS-25-R7 | 10-reading-and-family.md | BL-983 | named in a row |
-| NS-32-R1 | 11-foundations.md | BL-966 | named in a row |
+| NS-32-R1 | 11-foundations.md | BL-966, BL-1191 | named in a row |
 | NS-32-R11 | 11-foundations.md | BL-966 | named in a row |
 | NS-32-R12 | 11-foundations.md | BL-966 | named in a row |
 | NS-32-R14 | 11-foundations.md | BL-966 | named in a row |
-| NS-32-R1b | 11-foundations.md | BL-966, BL-1152 | named in a row |
+| NS-32-R1b | 11-foundations.md | BL-966, BL-1152, BL-1191 | named in a row |
 | NS-32-R4 | 11-foundations.md | BL-966, BL-1152 | named in a row |
-| NS-32-R4b | 11-foundations.md | BL-966, BL-163, BL-1152 | named in a row |
+| NS-32-R4b | 11-foundations.md | BL-966, BL-163, BL-1152, BL-1189, BL-1190 | named in a row |
 | NS-32-R8 | 11-foundations.md | BL-966 | named in a row |
 | NS-33-R1 | 11-foundations.md | BL-1172 | named in a row |
 | NS-33-R10 | 11-foundations.md | BL-984, BL-139 | named in a row |
@@ -298,7 +298,7 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-33-R8 | 11-foundations.md | BL-1173 | named in a row |
 | NS-33-R9 | 11-foundations.md | BL-984, BL-139 | named in a row |
 | NS-34-R2 | 11-foundations.md | BL-168 | named in a row |
-| NS-34-R5 | 11-foundations.md | BL-185 | proposed group row |
+| NS-34-R5 | 11-foundations.md | BL-1341 | named in a row |
 | NS-34-R6 | 11-foundations.md | BL-1047, BL-168 | named in a row |
 | NS-35-R1 | 11-foundations.md | BL-1174 | named in a row |
 | NS-35-R3 | 11-foundations.md | BL-1174 | named in a row |
@@ -321,14 +321,14 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-37-R2 | 11-foundations.md | BL-1174 | named in a row |
 | NS-37-R4 | 11-foundations.md | BL-956 | named in a row |
 | NS-37-R5 | 11-foundations.md | BL-956 | named in a row |
-| NS-38-R1 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R1 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-38-R2 | 19-from-download-to-first-letter.md | BL-1021 | named in a row |
-| NS-38-R3 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R4 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R3 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
+| NS-38-R4 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-38-R5 | 19-from-download-to-first-letter.md | BL-1021 | named in a row |
-| NS-38-R7 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R8 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R9 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R7 | 19-from-download-to-first-letter.md | BL-1317 | named in a row |
+| NS-38-R8 | 19-from-download-to-first-letter.md | BL-1318 | named in a row |
+| NS-38-R9 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-39-R1 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
 | NS-39-R10 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
 | NS-39-R11 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
@@ -419,12 +419,12 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-45-R7 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
 | NS-45-R8 | 19-from-download-to-first-letter.md | BL-1039 | named in a row |
 | NS-45-R9 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
-| NS-46-R14 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R16 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R17 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R14 | 21-days-cultural-photos-home.md | BL-1320 | named in a row |
+| NS-46-R16 | 21-days-cultural-photos-home.md | BL-1320 | named in a row |
+| NS-46-R17 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R19 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
 | NS-46-R2 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
-| NS-46-R22 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R22 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R23 | 21-days-cultural-photos-home.md | BL-1011 | named in a row |
 | NS-46-R25 | 21-days-cultural-photos-home.md | BL-985 | cited in the requirement text |
 | NS-46-R26 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
@@ -433,79 +433,79 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-46-R31 | 21-days-cultural-photos-home.md | BL-1007 | named in a row |
 | NS-46-R32 | 21-days-cultural-photos-home.md | BL-1012 | named in a row |
 | NS-46-R34 | 21-days-cultural-photos-home.md | BL-1005 | named in a row |
-| NS-46-R35 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R35 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R36 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-46-R4 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R46 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R48 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R5 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R7 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R8 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-47-R1 | 21-days-cultural-photos-home.md | BL-1010 | named in a row |
-| NS-47-R10 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-46-R4 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R46 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
+| NS-46-R48 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
+| NS-46-R5 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R7 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R8 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-47-R1 | 21-days-cultural-photos-home.md | BL-1010, BL-1202 | named in a row |
+| NS-47-R10 | 21-days-cultural-photos-home.md | BL-1270, BL-1307 | named in a row |
 | NS-47-R11 | 21-days-cultural-photos-home.md | BL-1010 | named in a row |
 | NS-47-R12 | 21-days-cultural-photos-home.md | BL-1002, BL-1009 | named in a row |
 | NS-47-R13 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-47-R15 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R16 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R17 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R18 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R2 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R21 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R22 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R23 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R24 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R15 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R16 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R17 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R18 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R2 | 21-days-cultural-photos-home.md | BL-1306 | named in a row |
+| NS-47-R21 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R22 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R23 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R24 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
 | NS-47-R25 | 21-days-cultural-photos-home.md | BL-1015 | named in a row |
-| NS-47-R26 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R29 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R3 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R26 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R29 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R3 | 21-days-cultural-photos-home.md | BL-1306 | named in a row |
 | NS-47-R34 | 21-days-cultural-photos-home.md | BL-1005 | named in a row |
 | NS-47-R36 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-47-R38 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R4 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R5 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R6 | 21-days-cultural-photos-home.md | BL-1002, BL-1010 | named in a row |
-| NS-47-R7 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R8 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R9 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R38 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R4 | 21-days-cultural-photos-home.md | BL-1307 | named in a row |
+| NS-47-R5 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
+| NS-47-R6 | 21-days-cultural-photos-home.md | BL-1002, BL-1010, BL-1200, BL-1201, BL-1269 | named in a row |
+| NS-47-R7 | 21-days-cultural-photos-home.md | BL-1307 | named in a row |
+| NS-47-R8 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
+| NS-47-R9 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
 | NS-48-R1 | 21-days-cultural-photos-home.md | BL-1002, BL-1004 | named in a row |
 | NS-48-R10 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R11 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R2 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
-| NS-48-R21 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
-| NS-48-R26 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
+| NS-48-R21 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
+| NS-48-R26 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
 | NS-48-R28 | 21-days-cultural-photos-home.md | BL-1003 | named in a row |
 | NS-48-R3 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R30 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R36 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R4 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R5 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
-| NS-48-R9 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
-| NS-49-R10 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R11 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R12 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R13 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R15 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R16 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R17 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R19 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R21 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R23 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R24 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
+| NS-48-R9 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
+| NS-49-R10 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-49-R11 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R12 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
+| NS-49-R13 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-49-R15 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R16 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R17 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R19 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R21 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
+| NS-49-R23 | 21-days-cultural-photos-home.md | BL-1304 | named in a row |
+| NS-49-R24 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
 | NS-49-R25 | 21-days-cultural-photos-home.md | BL-1001, BL-1006 | named in a row |
 | NS-49-R26 | 21-days-cultural-photos-home.md | BL-1006 | named in a row |
 | NS-49-R27 | 21-days-cultural-photos-home.md | BL-1017 | named in a row |
 | NS-49-R28 | 21-days-cultural-photos-home.md | BL-1017 | named in a row |
 | NS-49-R3 | 21-days-cultural-photos-home.md | BL-1006 | named in a row |
-| NS-49-R33 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R35 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
+| NS-49-R33 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R35 | 21-days-cultural-photos-home.md | BL-1304 | named in a row |
 | NS-49-R6 | 21-days-cultural-photos-home.md | BL-1001 | named in a row |
-| NS-49-R7 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R9 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-50-R11 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-49-R7 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R9 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-50-R11 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
 | NS-50-R2 | 21-days-cultural-photos-home.md | BL-1014 | named in a row |
 | NS-50-R3 | 21-days-cultural-photos-home.md | BL-1014 | named in a row |
-| NS-50-R8 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-50-R8 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
 | NS-51-R1 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
 | NS-51-R10 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
 | NS-51-R11 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
@@ -559,49 +559,49 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-52-R5 | 27-photo-moments-and-media.md | BL-1018 | named in a row |
 | NS-52-R6 | 27-photo-moments-and-media.md | BL-1018 | named in a row |
 | NS-52-R8 | 27-photo-moments-and-media.md | BL-046 | proposed group row |
-| FR-AIS-01 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-02 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-03 | functions/ai-and-speech.md | BL-328 | proposed group row |
+| FR-AIS-01 | functions/ai-and-speech.md | BL-1347 | named in a row |
+| FR-AIS-02 | functions/ai-and-speech.md | BL-1347 | named in a row |
+| FR-AIS-03 | functions/ai-and-speech.md | BL-1347 | named in a row |
 | FR-AIS-04 | functions/ai-and-speech.md | BL-987 | cited in the requirement text |
-| FR-AIS-06 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-07 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-08 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-09 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-10 | functions/ai-and-speech.md | BL-006 | proposed group row |
+| FR-AIS-06 | functions/ai-and-speech.md | BL-1347 | named in a row |
+| FR-AIS-07 | functions/ai-and-speech.md | BL-1347 | named in a row |
+| FR-AIS-08 | functions/ai-and-speech.md | BL-1347 | named in a row |
+| FR-AIS-09 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-10 | functions/ai-and-speech.md | BL-1357 | named in a row |
 | FR-AIS-11 | functions/ai-and-speech.md | BL-043 | cited in the requirement text |
-| FR-AIS-13 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-15 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-16 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-17 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-19 | functions/ai-and-speech.md | BL-006 | proposed group row |
+| FR-AIS-13 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-15 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-16 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-17 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-19 | functions/ai-and-speech.md | BL-1357 | named in a row |
 | FR-AIS-20 | functions/ai-and-speech.md | BL-043 | cited in the requirement text |
-| FR-AIS-21 | functions/ai-and-speech.md | BL-007 | proposed group row |
+| FR-AIS-21 | functions/ai-and-speech.md | BL-1358 | named in a row |
 | FR-AIS-22 | functions/ai-and-speech.md | BL-043 | cited in the requirement text |
-| FR-AIS-23 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-25 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-26 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-27 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-29 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-33 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-34 | functions/ai-and-speech.md | BL-007 | proposed group row |
-| FR-AIS-35 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-36 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-37 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-39 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-40 | functions/ai-and-speech.md | BL-328 | proposed group row |
+| FR-AIS-23 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-25 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-26 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-27 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-29 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-33 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-34 | functions/ai-and-speech.md | BL-1358 | named in a row |
+| FR-AIS-35 | functions/ai-and-speech.md | BL-1348 | named in a row |
+| FR-AIS-36 | functions/ai-and-speech.md | BL-1351 | named in a row |
+| FR-AIS-37 | functions/ai-and-speech.md | BL-1351 | named in a row |
+| FR-AIS-39 | functions/ai-and-speech.md | BL-1348 | named in a row |
+| FR-AIS-40 | functions/ai-and-speech.md | BL-1348 | named in a row |
 | FR-AIS-42 | functions/ai-and-speech.md | BL-043 | cited in the requirement text |
-| FR-AIS-43 | functions/ai-and-speech.md | BL-006 | proposed group row |
-| FR-AIS-45 | functions/ai-and-speech.md | BL-328 | proposed group row |
-| FR-AIS-46 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-47 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-48 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-49 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-50 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-51 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-53 | functions/ai-and-speech.md | BL-008 | proposed group row |
-| FR-AIS-54 | functions/ai-and-speech.md | BL-328 | proposed group row |
+| FR-AIS-43 | functions/ai-and-speech.md | BL-1357 | named in a row |
+| FR-AIS-45 | functions/ai-and-speech.md | BL-1348 | named in a row |
+| FR-AIS-46 | functions/ai-and-speech.md | BL-1352 | named in a row |
+| FR-AIS-47 | functions/ai-and-speech.md | BL-1352 | named in a row |
+| FR-AIS-48 | functions/ai-and-speech.md | BL-1352 | named in a row |
+| FR-AIS-49 | functions/ai-and-speech.md | BL-1351 | named in a row |
+| FR-AIS-50 | functions/ai-and-speech.md | BL-1351 | named in a row |
+| FR-AIS-51 | functions/ai-and-speech.md | BL-1351 | named in a row |
+| FR-AIS-53 | functions/ai-and-speech.md | BL-1352 | named in a row |
+| FR-AIS-54 | functions/ai-and-speech.md | BL-1348 | named in a row |
 | FR-AIS-55 | functions/ai-and-speech.md | BL-962 | cited in the requirement text |
-| FR-AIS-56 | functions/ai-and-speech.md | BL-328 | proposed group row |
+| FR-AIS-56 | functions/ai-and-speech.md | BL-1348 | named in a row |
 | FR-AIS-57 | functions/ai-and-speech.md | BL-047 | proposed group row |
 | FR-AIS-58 | functions/ai-and-speech.md | BL-047 | proposed group row |
 | FR-AIS-59 | functions/ai-and-speech.md | BL-047 | proposed group row |
@@ -613,39 +613,39 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-AIS-66 | functions/ai-and-speech.md | BL-047 | proposed group row |
 | FR-AIS-67 | functions/ai-and-speech.md | BL-047 | proposed group row |
 | FR-AIS-68 | functions/ai-and-speech.md | BL-047 | proposed group row |
-| FR-BKO-01 | functions/back-office.md | BL-017 | proposed group row |
+| FR-BKO-01 | functions/back-office.md | BL-1330 | named in a row |
 | FR-BKO-03 | functions/back-office.md | BL-237 | cited in the requirement text |
 | FR-BKO-04 | functions/back-office.md | BL-237 | cited in the requirement text |
 | FR-BKO-07 | functions/back-office.md | BL-597, BL-598 | cited in the requirement text |
-| FR-BKO-09 | functions/back-office.md | BL-017 | proposed group row |
+| FR-BKO-09 | functions/back-office.md | BL-1330 | named in a row |
 | FR-BKO-10 | functions/back-office.md | BL-779 | cited in the requirement text |
-| FR-BKO-13 | functions/back-office.md | BL-017 | proposed group row |
-| FR-BKO-14 | functions/back-office.md | BL-017 | proposed group row |
-| FR-BKO-16 | functions/back-office.md | BL-017 | proposed group row |
-| FR-BKO-18 | functions/back-office.md | BL-017 | proposed group row |
-| FR-BKO-21 | functions/back-office.md | BL-017 | proposed group row |
+| FR-BKO-13 | functions/back-office.md | BL-1330 | named in a row |
+| FR-BKO-14 | functions/back-office.md | BL-1330 | named in a row |
+| FR-BKO-16 | functions/back-office.md | BL-1330 | named in a row |
+| FR-BKO-18 | functions/back-office.md | BL-1330 | named in a row |
+| FR-BKO-21 | functions/back-office.md | BL-1330 | named in a row |
 | FR-BKO-28 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-29 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-30 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-31 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-32 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-35 | functions/back-office.md | BL-047 | proposed group row |
-| FR-CMP-01 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-03 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-04 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-05 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-06 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-07 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-11 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-12 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-13 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-01 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-03 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-04 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-05 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-06 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-07 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-11 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-12 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-13 | functions/compliance.md | BL-1318 | named in a row |
 | FR-CMP-14 | functions/compliance.md | BL-119 | cited in the requirement text |
-| FR-CMP-15 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-15 | functions/compliance.md | BL-1318 | named in a row |
 | FR-CMP-16 | functions/compliance.md | BL-1040 | named in a row |
-| FR-CMP-17 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-18 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-19 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-20 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-17 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-18 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-19 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-20 | functions/compliance.md | BL-1317 | named in a row |
 | FR-CMP-22 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-23 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-24 | functions/compliance.md | BL-047 | proposed group row |
@@ -653,22 +653,22 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-CMP-26 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-27 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-28 | functions/compliance.md | BL-047 | proposed group row |
-| FR-CUL-01 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-02 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-03 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-04 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-05 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-06 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-07 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-08 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-09 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-11 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-12 | functions/cultural-background-data.md | BL-296 | proposed group row |
+| FR-CUL-01 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-02 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-03 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-04 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-05 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-06 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-07 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-08 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-09 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-11 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-12 | functions/cultural-background-data.md | BL-1311 | named in a row |
 | FR-CUL-15 | functions/cultural-background-data.md | BL-961 | cited in the requirement text |
-| FR-CUL-16 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-21 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-22 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-23 | functions/cultural-background-data.md | BL-296 | proposed group row |
+| FR-CUL-16 | functions/cultural-background-data.md | BL-1309 | named in a row |
+| FR-CUL-21 | functions/cultural-background-data.md | BL-1310 | named in a row |
+| FR-CUL-22 | functions/cultural-background-data.md | BL-1310 | named in a row |
+| FR-CUL-23 | functions/cultural-background-data.md | BL-1310 | named in a row |
 | FR-CUL-28 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-CUL-29 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-CUL-30 | functions/cultural-background-data.md | BL-047 | proposed group row |
@@ -677,33 +677,33 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-CUL-34 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-CUL-35 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-DAT-01 | functions/data-and-measurement.md | BL-1065, BL-1105 | named in a row |
-| FR-DAT-02 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-03 | functions/data-and-measurement.md | BL-025 | proposed group row |
+| FR-DAT-02 | functions/data-and-measurement.md | BL-1353 | named in a row |
+| FR-DAT-03 | functions/data-and-measurement.md | BL-1353 | named in a row |
 | FR-DAT-04 | functions/data-and-measurement.md | BL-981 | cited in the requirement text |
-| FR-DAT-05 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-09 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-14 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-20 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-27 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-32 | functions/data-and-measurement.md | BL-025 | proposed group row |
-| FR-DAT-35 | functions/data-and-measurement.md | BL-025 | proposed group row |
+| FR-DAT-05 | functions/data-and-measurement.md | BL-1353 | named in a row |
+| FR-DAT-09 | functions/data-and-measurement.md | BL-1353 | named in a row |
+| FR-DAT-14 | functions/data-and-measurement.md | BL-1353 | named in a row |
+| FR-DAT-20 | functions/data-and-measurement.md | BL-1354 | named in a row |
+| FR-DAT-27 | functions/data-and-measurement.md | BL-1354 | named in a row |
+| FR-DAT-32 | functions/data-and-measurement.md | BL-1354 | named in a row |
+| FR-DAT-35 | functions/data-and-measurement.md | BL-1354 | named in a row |
 | FR-DAT-36 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-37 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-38 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-39 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-40 | functions/data-and-measurement.md | BL-047 | proposed group row |
-| FR-DAY-02 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-02 | functions/days-library.md | BL-1320 | named in a row |
 | FR-DAY-03 | functions/days-library.md | BL-966, BL-982 | cited in the requirement text |
-| FR-DAY-04 | functions/days-library.md | BL-295 | proposed group row |
-| FR-DAY-06 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-04 | functions/days-library.md | BL-1320 | named in a row |
+| FR-DAY-06 | functions/days-library.md | BL-1320 | named in a row |
 | FR-DAY-07 | functions/days-library.md | BL-966 | cited in the requirement text |
 | FR-DAY-09 | functions/days-library.md | BL-965 | cited in the requirement text |
 | FR-DAY-10 | functions/days-library.md | BL-965 | cited in the requirement text |
 | FR-DAY-11 | functions/days-library.md | BL-965 | cited in the requirement text |
-| FR-DAY-15 | functions/days-library.md | BL-295 | proposed group row |
-| FR-DAY-20 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-15 | functions/days-library.md | BL-1321 | named in a row |
+| FR-DAY-20 | functions/days-library.md | BL-1322 | named in a row |
 | FR-DAY-23 | functions/days-library.md | BL-1011 | named in a row |
-| FR-DAY-25 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-25 | functions/days-library.md | BL-1321 | named in a row |
 | FR-DAY-26 | functions/days-library.md | BL-047 | proposed group row |
 | FR-DAY-27 | functions/days-library.md | BL-047 | proposed group row |
 | FR-DAY-28 | functions/days-library.md | BL-047 | proposed group row |
@@ -711,31 +711,31 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-DAY-32 | functions/days-library.md | BL-047 | proposed group row |
 | FR-DAY-33 | functions/days-library.md | BL-047 | proposed group row |
 | FR-FIN-02 | functions/finance.md | BL-958 | cited in the requirement text |
-| FR-FIN-03 | functions/finance.md | BL-017 | proposed group row |
-| FR-FIN-05 | functions/finance.md | BL-017 | proposed group row |
-| FR-FIN-09 | functions/finance.md | BL-017 | proposed group row |
-| FR-FIN-11 | functions/finance.md | BL-017 | proposed group row |
-| FR-FIN-22 | functions/finance.md | BL-017 | proposed group row |
+| FR-FIN-03 | functions/finance.md | BL-1331 | named in a row |
+| FR-FIN-05 | functions/finance.md | BL-1331 | named in a row |
+| FR-FIN-09 | functions/finance.md | BL-1331 | named in a row |
+| FR-FIN-11 | functions/finance.md | BL-1331 | named in a row |
+| FR-FIN-22 | functions/finance.md | BL-1330 | named in a row |
 | FR-FIN-30 | functions/finance.md | BL-047 | proposed group row |
 | FR-FIN-32 | functions/finance.md | BL-047 | proposed group row |
-| FR-LCY-01 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-02 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-03 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-04 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-06 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-07 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-09 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-10 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-11 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-12 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-13 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-14 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-17 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-19 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-20 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-21 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-28 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
-| FR-LCY-34 | functions/lifecycle-and-platforms.md | BL-018 | proposed group row |
+| FR-LCY-01 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
+| FR-LCY-02 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
+| FR-LCY-03 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
+| FR-LCY-04 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
+| FR-LCY-06 | functions/lifecycle-and-platforms.md | BL-1329 | named in a row |
+| FR-LCY-07 | functions/lifecycle-and-platforms.md | BL-1329 | named in a row |
+| FR-LCY-09 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-10 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-11 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-12 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
+| FR-LCY-13 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-14 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-17 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
+| FR-LCY-19 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
+| FR-LCY-20 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
+| FR-LCY-21 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
+| FR-LCY-28 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
+| FR-LCY-34 | functions/lifecycle-and-platforms.md | BL-1328 | named in a row |
 | FR-LCY-35 | functions/lifecycle-and-platforms.md | BL-047 | proposed group row |
 | FR-LCY-36 | functions/lifecycle-and-platforms.md | BL-047 | proposed group row |
 | FR-LCY-37 | functions/lifecycle-and-platforms.md | BL-047 | proposed group row |
@@ -743,69 +743,69 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-LCY-41 | functions/lifecycle-and-platforms.md | BL-047 | proposed group row |
 | FR-LCY-42 | functions/lifecycle-and-platforms.md | BL-047 | proposed group row |
 | FR-LEG-01 | functions/legal.md | BL-931 | cited in the requirement text |
-| FR-LEG-02 | functions/legal.md | BL-027 | proposed group row |
+| FR-LEG-02 | functions/legal.md | BL-1343 | named in a row |
 | FR-LEG-03 | functions/legal.md | BL-444 | cited in the requirement text |
-| FR-LEG-04 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-06 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-07 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-08 | functions/legal.md | BL-027 | proposed group row |
+| FR-LEG-04 | functions/legal.md | BL-1343 | named in a row |
+| FR-LEG-06 | functions/legal.md | BL-1343 | named in a row |
+| FR-LEG-07 | functions/legal.md | BL-1343 | named in a row |
+| FR-LEG-08 | functions/legal.md | BL-1343 | named in a row |
 | FR-LEG-09 | functions/legal.md | BL-577 | cited in the requirement text |
-| FR-LEG-10 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-11 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-12 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-13 | functions/legal.md | BL-027 | proposed group row |
-| FR-LEG-15 | functions/legal.md | BL-027 | proposed group row |
+| FR-LEG-10 | functions/legal.md | BL-1343 | named in a row |
+| FR-LEG-11 | functions/legal.md | BL-1343 | named in a row |
+| FR-LEG-12 | functions/legal.md | BL-1344 | named in a row |
+| FR-LEG-13 | functions/legal.md | BL-1344 | named in a row |
+| FR-LEG-15 | functions/legal.md | BL-1344 | named in a row |
 | FR-LEG-18 | functions/legal.md | BL-104 | cited in the requirement text |
-| FR-LEG-20 | functions/legal.md | BL-027 | proposed group row |
+| FR-LEG-20 | functions/legal.md | BL-1344 | named in a row |
 | FR-LEG-21 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-22 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-23 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-24 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-26 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-27 | functions/legal.md | BL-047 | proposed group row |
-| FR-LOC-01 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-02 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-03 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-04 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-05 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-08 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-10 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-13 | functions/languages-and-localisation.md | BL-182 | proposed group row |
+| FR-LOC-01 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-02 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-03 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-04 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-05 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-08 | functions/languages-and-localisation.md | BL-1313 | named in a row |
+| FR-LOC-10 | functions/languages-and-localisation.md | BL-1313 | named in a row |
+| FR-LOC-13 | functions/languages-and-localisation.md | BL-1315 | named in a row |
 | FR-LOC-15 | functions/languages-and-localisation.md | BL-411 | cited in the requirement text |
 | FR-LOC-17 | functions/languages-and-localisation.md | BL-411 | cited in the requirement text |
 | FR-LOC-18 | functions/languages-and-localisation.md | BL-105 | cited in the requirement text |
-| FR-LOC-19 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-20 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-21 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-22 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-23 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-24 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-26 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-28 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-29 | functions/languages-and-localisation.md | BL-182 | proposed group row |
+| FR-LOC-19 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-20 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-21 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-22 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-23 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-24 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-26 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-28 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-29 | functions/languages-and-localisation.md | BL-1313 | named in a row |
 | FR-LOC-30 | functions/languages-and-localisation.md | BL-047 | proposed group row |
 | FR-LOC-34 | functions/languages-and-localisation.md | BL-047 | proposed group row |
 | FR-LOC-35 | functions/languages-and-localisation.md | BL-047 | proposed group row |
 | FR-LOC-37 | functions/languages-and-localisation.md | BL-047 | proposed group row |
-| FR-MKT-01 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-02 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-03 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-05 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-06 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-07 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-08 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-09 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-11 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-12 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-15 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-16 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-19 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-20 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-22 | functions/marketing.md | BL-028 | proposed group row |
+| FR-MKT-01 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-02 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-03 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-05 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-06 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-07 | functions/marketing.md | BL-1336 | named in a row |
+| FR-MKT-08 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-09 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-11 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-12 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-15 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-16 | functions/marketing.md | BL-1337 | named in a row |
+| FR-MKT-19 | functions/marketing.md | BL-1338 | named in a row |
+| FR-MKT-20 | functions/marketing.md | BL-1338 | named in a row |
+| FR-MKT-22 | functions/marketing.md | BL-1338 | named in a row |
 | FR-MKT-25 | functions/marketing.md | BL-109, BL-981 | cited in the requirement text |
-| FR-MKT-28 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-29 | functions/marketing.md | BL-028 | proposed group row |
-| FR-MKT-32 | functions/marketing.md | BL-028 | proposed group row |
+| FR-MKT-28 | functions/marketing.md | BL-1338 | named in a row |
+| FR-MKT-29 | functions/marketing.md | BL-1338 | named in a row |
+| FR-MKT-32 | functions/marketing.md | BL-1338 | named in a row |
 | FR-MKT-34 | functions/marketing.md | BL-1103 | named in a row |
 | FR-MKT-35 | functions/marketing.md | BL-047 | proposed group row |
 | FR-MKT-36 | functions/marketing.md | BL-047 | proposed group row |
@@ -819,18 +819,18 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-MSG-06 | functions/messaging-and-entry-points.md | BL-053 | cited in the requirement text |
 | FR-MSG-09 | functions/messaging-and-entry-points.md | BL-053 | cited in the requirement text |
 | FR-MSG-10 | functions/messaging-and-entry-points.md | BL-053 | cited in the requirement text |
-| FR-MSG-11 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
-| FR-MSG-12 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
-| FR-MSG-14 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
-| FR-MSG-15 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
+| FR-MSG-11 | functions/messaging-and-entry-points.md | BL-1355 | named in a row |
+| FR-MSG-12 | functions/messaging-and-entry-points.md | BL-1355 | named in a row |
+| FR-MSG-14 | functions/messaging-and-entry-points.md | BL-1355 | named in a row |
+| FR-MSG-15 | functions/messaging-and-entry-points.md | BL-1355 | named in a row |
 | FR-MSG-16 | functions/messaging-and-entry-points.md | BL-546 | cited in the requirement text |
-| FR-MSG-18 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
-| FR-MSG-19 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
-| FR-MSG-22 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
+| FR-MSG-18 | functions/messaging-and-entry-points.md | BL-1356 | named in a row |
+| FR-MSG-19 | functions/messaging-and-entry-points.md | BL-1356 | named in a row |
+| FR-MSG-22 | functions/messaging-and-entry-points.md | BL-1356 | named in a row |
 | FR-MSG-23 | functions/messaging-and-entry-points.md | BL-364, BL-510 | cited in the requirement text |
-| FR-MSG-24 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
+| FR-MSG-24 | functions/messaging-and-entry-points.md | BL-1356 | named in a row |
 | FR-MSG-25 | functions/messaging-and-entry-points.md | BL-053, BL-510 | cited in the requirement text |
-| FR-MSG-28 | functions/messaging-and-entry-points.md | BL-039 | proposed group row |
+| FR-MSG-28 | functions/messaging-and-entry-points.md | BL-1356 | named in a row |
 | FR-MSG-29 | functions/messaging-and-entry-points.md | BL-420, BL-421 | cited in the requirement text |
 | FR-MSG-32 | functions/messaging-and-entry-points.md | BL-243, BL-364 | cited in the requirement text |
 | FR-MSG-33 | functions/messaging-and-entry-points.md | BL-364 | cited in the requirement text |
@@ -842,15 +842,15 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-MSG-43 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
 | FR-MSG-44 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
 | FR-MSG-45 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
-| FR-NTC-01 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-02 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-03 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-04 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-05 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-08 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-09 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-10 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-11 | functions/notification-catalogue.md | BL-297 | proposed group row |
+| FR-NTC-01 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-02 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-03 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-04 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-05 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-08 | functions/notification-catalogue.md | BL-1324 | named in a row |
+| FR-NTC-09 | functions/notification-catalogue.md | BL-1324 | named in a row |
+| FR-NTC-10 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-11 | functions/notification-catalogue.md | BL-1324 | named in a row |
 | FR-NTC-22 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-23 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-24 | functions/notification-catalogue.md | BL-047 | proposed group row |
@@ -859,53 +859,53 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-NTC-27 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-28 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-29 | functions/notification-catalogue.md | BL-047 | proposed group row |
-| FR-OPP-03 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-05 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-06 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-09 | functions/feature-opportunities.md | BL-298 | proposed group row |
+| FR-OPP-03 | functions/feature-opportunities.md | BL-1304 | named in a row |
+| FR-OPP-05 | functions/feature-opportunities.md | BL-1305 | named in a row |
+| FR-OPP-06 | functions/feature-opportunities.md | BL-1305 | named in a row |
+| FR-OPP-09 | functions/feature-opportunities.md | BL-1304 | named in a row |
 | FR-OPP-14 | functions/feature-opportunities.md | BL-047 | proposed group row |
 | FR-OPS-03 | functions/operations.md | BL-961 | cited in the requirement text |
-| FR-OPS-06 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-08 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-09 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-10 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-11 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-14 | functions/operations.md | BL-017 | proposed group row |
+| FR-OPS-06 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-08 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-09 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-10 | functions/operations.md | BL-1331 | named in a row |
+| FR-OPS-11 | functions/operations.md | BL-1331 | named in a row |
+| FR-OPS-14 | functions/operations.md | BL-1332 | named in a row |
 | FR-OPS-15 | functions/operations.md | BL-976 | cited in the requirement text |
-| FR-OPS-16 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-17 | functions/operations.md | BL-017 | proposed group row |
+| FR-OPS-16 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-17 | functions/operations.md | BL-1332 | named in a row |
 | FR-OPS-23 | functions/operations.md | BL-958 | cited in the requirement text |
-| FR-OPS-24 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-28 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-31 | functions/operations.md | BL-017 | proposed group row |
-| FR-OPS-33 | functions/operations.md | BL-017 | proposed group row |
+| FR-OPS-24 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-28 | functions/operations.md | BL-1331 | named in a row |
+| FR-OPS-31 | functions/operations.md | BL-1331 | named in a row |
+| FR-OPS-33 | functions/operations.md | BL-1332 | named in a row |
 | FR-OPS-39 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-42 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-43 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-44 | functions/operations.md | BL-958 | cited in the requirement text |
-| FR-PHS-04 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-11 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-12 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-14 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-15 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-17 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-19 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-20 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-22 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-23 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-33 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-40 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-41 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-43 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-44 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-50 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-51 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-52 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-53 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-54 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-55 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-56 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-57 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
+| FR-PHS-04 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-11 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-12 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-14 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-15 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-17 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-19 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-20 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-22 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-23 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-33 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-40 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-41 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-43 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-44 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-50 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-51 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-52 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-53 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-54 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-55 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
+| FR-PHS-56 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
+| FR-PHS-57 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
 | FR-PHS-58 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-59 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-60 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
@@ -918,19 +918,19 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-PHS-69 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-70 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-71 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
-| FR-POL-02 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-03 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-04 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-05 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-06 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-07 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-12 | functions/support.md | BL-029 | proposed group row |
-| FR-POL-13 | functions/support.md | BL-029 | proposed group row |
+| FR-POL-02 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-03 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-04 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-05 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-06 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-07 | functions/support.md | BL-1335 | named in a row |
+| FR-POL-12 | functions/support.md | BL-1334 | named in a row |
+| FR-POL-13 | functions/support.md | BL-1334 | named in a row |
 | FR-POL-14 | functions/support.md | BL-047 | proposed group row |
 | FR-PRT-01 | functions/print-and-fulfilment.md | BL-973 | cited in the requirement text |
-| FR-PRT-02 | functions/print-and-fulfilment.md | BL-027 | proposed group row |
-| FR-PRT-39 | functions/print-and-fulfilment.md | BL-027 | proposed group row |
-| FR-PRT-45 | functions/print-and-fulfilment.md | BL-027 | proposed group row |
+| FR-PRT-02 | functions/print-and-fulfilment.md | BL-1344 | named in a row |
+| FR-PRT-39 | functions/print-and-fulfilment.md | BL-1344 | named in a row |
+| FR-PRT-45 | functions/print-and-fulfilment.md | BL-1344 | named in a row |
 | FR-PRT-49 | functions/print-and-fulfilment.md | BL-047 | proposed group row |
 | FR-PRT-51 | functions/print-and-fulfilment.md | BL-047 | proposed group row |
 | FR-PRT-54 | functions/print-and-fulfilment.md | BL-047 | proposed group row |
@@ -938,25 +938,25 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-PRV-01 | functions/privacy.md | BL-485 | cited in the requirement text |
 | FR-PRV-02 | functions/privacy.md | BL-577, BL-579 | cited in the requirement text |
 | FR-PRV-06 | functions/privacy.md | BL-960 | cited in the requirement text |
-| FR-PRV-10 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-11 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-13 | functions/privacy.md | BL-026 | proposed group row |
+| FR-PRV-10 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-11 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-13 | functions/privacy.md | BL-1339 | named in a row |
 | FR-PRV-14 | functions/privacy.md | BL-961 | cited in the requirement text |
-| FR-PRV-15 | functions/privacy.md | BL-026 | proposed group row |
+| FR-PRV-15 | functions/privacy.md | BL-1340 | named in a row |
 | FR-PRV-16 | functions/privacy.md | BL-962 | cited in the requirement text |
 | FR-PRV-17 | functions/privacy.md | BL-962 | cited in the requirement text |
-| FR-PRV-18 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-19 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-20 | functions/privacy.md | BL-026 | proposed group row |
+| FR-PRV-18 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-19 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-20 | functions/privacy.md | BL-1340 | named in a row |
 | FR-PRV-24 | functions/privacy.md | BL-579 | cited in the requirement text |
-| FR-PRV-25 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-26 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-27 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-28 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-30 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-31 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-33 | functions/privacy.md | BL-026 | proposed group row |
-| FR-PRV-34 | functions/privacy.md | BL-026 | proposed group row |
+| FR-PRV-25 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-26 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-27 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-28 | functions/privacy.md | BL-1339 | named in a row |
+| FR-PRV-30 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-31 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-33 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-34 | functions/privacy.md | BL-1340 | named in a row |
 | FR-PRV-36 | functions/privacy.md | BL-047 | proposed group row |
 | FR-PRV-37 | functions/privacy.md | BL-047 | proposed group row |
 | FR-PRV-38 | functions/privacy.md | BL-047 | proposed group row |
@@ -970,42 +970,42 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-PRV-46 | functions/privacy.md | BL-047 | proposed group row |
 | FR-PRV-47 | functions/privacy.md | BL-047 | proposed group row |
 | FR-PRV-48 | functions/privacy.md | BL-047 | proposed group row |
-| FR-QAL-01 | functions/quality.md | BL-185 | proposed group row |
+| FR-QAL-01 | functions/quality.md | BL-1341 | named in a row |
 | FR-QAL-02 | functions/quality.md | BL-002 | cited in the requirement text |
-| FR-QAL-03 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-05 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-06 | functions/quality.md | BL-185 | proposed group row |
+| FR-QAL-03 | functions/quality.md | BL-1341 | named in a row |
+| FR-QAL-05 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-06 | functions/quality.md | BL-1342 | named in a row |
 | FR-QAL-07 | functions/quality.md | BL-929 | cited in the requirement text |
 | FR-QAL-09 | functions/quality.md | BL-929 | cited in the requirement text |
-| FR-QAL-11 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-12 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-15 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-16 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-17 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-20 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-21 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-22 | functions/quality.md | BL-185 | proposed group row |
-| FR-QAL-23 | functions/quality.md | BL-185 | proposed group row |
+| FR-QAL-11 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-12 | functions/quality.md | BL-1341 | named in a row |
+| FR-QAL-15 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-16 | functions/quality.md | BL-1341 | named in a row |
+| FR-QAL-17 | functions/quality.md | BL-1341 | named in a row |
+| FR-QAL-20 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-21 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-22 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-23 | functions/quality.md | BL-1341 | named in a row |
 | FR-QAL-25 | functions/quality.md | BL-047 | proposed group row |
 | FR-QAL-26 | functions/quality.md | BL-047 | proposed group row |
 | FR-QAL-27 | functions/quality.md | BL-047 | proposed group row |
 | FR-QAL-28 | functions/quality.md | BL-047 | proposed group row |
 | FR-QAL-29 | functions/quality.md | BL-047 | proposed group row |
 | FR-REL-12 | functions/reliability.md | BL-566 | cited in the requirement text |
-| FR-REL-13 | functions/reliability.md | BL-018 | proposed group row |
-| FR-REL-17 | functions/reliability.md | BL-018 | proposed group row |
-| FR-REL-23 | functions/reliability.md | BL-018 | proposed group row |
-| FR-REL-24 | functions/reliability.md | BL-018 | proposed group row |
-| FR-REL-33 | functions/reliability.md | BL-018 | proposed group row |
+| FR-REL-13 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-17 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-23 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-24 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-33 | functions/reliability.md | BL-1329 | named in a row |
 | FR-REL-40 | functions/reliability.md | BL-929 | cited in the requirement text |
-| FR-REL-41 | functions/reliability.md | BL-018 | proposed group row |
+| FR-REL-41 | functions/reliability.md | BL-1329 | named in a row |
 | FR-REL-42 | functions/reliability.md | BL-978 | cited in the requirement text |
-| FR-REL-43 | functions/reliability.md | BL-018 | proposed group row |
-| FR-REL-45 | functions/reliability.md | BL-018 | proposed group row |
+| FR-REL-43 | functions/reliability.md | BL-1326 | named in a row |
+| FR-REL-45 | functions/reliability.md | BL-1326 | named in a row |
 | FR-REL-48 | functions/reliability.md | BL-929 | cited in the requirement text |
 | FR-REL-49 | functions/reliability.md | BL-929 | cited in the requirement text |
 | FR-REL-59 | functions/reliability.md | BL-978 | cited in the requirement text |
-| FR-REL-61 | functions/reliability.md | BL-018 | proposed group row |
+| FR-REL-61 | functions/reliability.md | BL-1327 | named in a row |
 | FR-REL-62 | functions/reliability.md | BL-047 | proposed group row |
 | FR-REL-63 | functions/reliability.md | BL-047 | proposed group row |
 | FR-REL-64 | functions/reliability.md | BL-047 | proposed group row |
@@ -1015,38 +1015,38 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-REL-70 | functions/reliability.md | BL-047 | proposed group row |
 | FR-REL-71 | functions/reliability.md | BL-047 | proposed group row |
 | FR-REL-72 | functions/reliability.md | BL-047 | proposed group row |
-| FR-RSH-03 | functions/research-validation.md | BL-038 | proposed group row |
+| FR-RSH-03 | functions/research-validation.md | BL-1349 | named in a row |
 | FR-RSH-06 | functions/research-validation.md | BL-983 | cited in the requirement text |
 | FR-RSH-10 | functions/research-validation.md | BL-939, BL-961 | cited in the requirement text |
-| FR-RSH-13 | functions/research-validation.md | BL-038 | proposed group row |
+| FR-RSH-13 | functions/research-validation.md | BL-1349 | named in a row |
 | FR-RSH-14 | functions/research-validation.md | BL-981 | cited in the requirement text |
-| FR-RSH-15 | functions/research-validation.md | BL-038 | proposed group row |
+| FR-RSH-15 | functions/research-validation.md | BL-1349 | named in a row |
 | FR-RSH-16 | functions/research-validation.md | BL-962 | cited in the requirement text |
-| FR-RSH-17 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-19 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-20 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-21 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-22 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-26 | functions/research-validation.md | BL-038 | proposed group row |
-| FR-RSH-27 | functions/research-validation.md | BL-038 | proposed group row |
+| FR-RSH-17 | functions/research-validation.md | BL-1349 | named in a row |
+| FR-RSH-19 | functions/research-validation.md | BL-1349 | named in a row |
+| FR-RSH-20 | functions/research-validation.md | BL-1350 | named in a row |
+| FR-RSH-21 | functions/research-validation.md | BL-1350 | named in a row |
+| FR-RSH-22 | functions/research-validation.md | BL-1350 | named in a row |
+| FR-RSH-26 | functions/research-validation.md | BL-1350 | named in a row |
+| FR-RSH-27 | functions/research-validation.md | BL-1350 | named in a row |
 | FR-RSH-30 | functions/research-validation.md | BL-047 | proposed group row |
 | FR-RSH-31 | functions/research-validation.md | BL-047 | proposed group row |
 | FR-RSH-35 | functions/research-validation.md | BL-047 | proposed group row |
-| FR-RSK-02 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-RSK-03 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-RSK-04 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-RSK-06 | functions/risk-security.md | BL-019 | proposed group row |
+| FR-RSK-02 | functions/risk-security.md | BL-1346 | named in a row |
+| FR-RSK-03 | functions/risk-security.md | BL-1346 | named in a row |
+| FR-RSK-04 | functions/risk-security.md | BL-1346 | named in a row |
+| FR-RSK-06 | functions/risk-security.md | BL-1346 | named in a row |
 | FR-SEC-01 | functions/risk-security.md | BL-961 | cited in the requirement text |
 | FR-SEC-02 | functions/risk-security.md | BL-961 | cited in the requirement text |
-| FR-SEC-03 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-04 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-16 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-18 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-21 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-22 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-23 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-24 | functions/risk-security.md | BL-019 | proposed group row |
-| FR-SEC-26 | functions/risk-security.md | BL-019 | proposed group row |
+| FR-SEC-03 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-04 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-16 | functions/risk-security.md | BL-1346 | named in a row |
+| FR-SEC-18 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-21 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-22 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-23 | functions/risk-security.md | BL-1345 | named in a row |
+| FR-SEC-24 | functions/risk-security.md | BL-1346 | named in a row |
+| FR-SEC-26 | functions/risk-security.md | BL-1346 | named in a row |
 | FR-SEC-27 | functions/risk-security.md | BL-870 | cited in the requirement text |
 | FR-SEC-28 | functions/risk-security.md | BL-047 | proposed group row |
 | FR-SEC-30 | functions/risk-security.md | BL-047 | proposed group row |
@@ -1055,19 +1055,19 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-SEC-34 | functions/risk-security.md | BL-961 | cited in the requirement text |
 | FR-SEC-35 | functions/risk-security.md | BL-047 | proposed group row |
 | FR-SUP-01 | functions/support.md | BL-100 | cited in the requirement text |
-| FR-SUP-03 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-04 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-05 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-07 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-09 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-10 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-11 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-12 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-14 | functions/support.md | BL-029 | proposed group row |
+| FR-SUP-03 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-04 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-05 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-07 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-09 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-10 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-11 | functions/support.md | BL-1333 | named in a row |
+| FR-SUP-12 | functions/support.md | BL-1334 | named in a row |
+| FR-SUP-14 | functions/support.md | BL-1334 | named in a row |
 | FR-SUP-15 | functions/support.md | BL-237, BL-783 | cited in the requirement text |
 | FR-SUP-16 | functions/support.md | BL-105 | cited in the requirement text |
-| FR-SUP-17 | functions/support.md | BL-029 | proposed group row |
-| FR-SUP-21 | functions/support.md | BL-029 | proposed group row |
+| FR-SUP-17 | functions/support.md | BL-1334 | named in a row |
+| FR-SUP-21 | functions/support.md | BL-1334 | named in a row |
 | FR-SUP-23 | functions/support.md | BL-100, BL-367 | cited in the requirement text |
 | FR-SUP-24 | functions/support.md | BL-047 | proposed group row |
 | FR-SUP-25 | functions/support.md | BL-047 | proposed group row |
