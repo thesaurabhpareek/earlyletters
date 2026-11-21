@@ -281,10 +281,13 @@ Options and defaults are from the React Native library page [V posthog.com/docs/
 |---|---|---|---|
 | `defaultOptIn` | `true` | `false` | nothing tracked until `optIn()`; belt and braces, since the SDK is also constructed only after a yes (V15) |
 | `disabled` | `false` | `true` in every profile except `production` | no data from dev, e2e, preview |
-| `captureAppLifecycleEvents` | `true` (since 4.39.0 [UNVERIFIED: version note not on the page I read]) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
+| `captureAppLifecycleEvents` | `true` (since 4.39.0 [V library page, re-read 21 Nov]) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
 | `sendFeatureFlagEvent` | `true` | `false` | flags are off; it would send `$feature_flag_called` |
 | `preloadFeatureFlags` | `true` | `false` | no flag requests |
-| `disableRemoteFeatureFlags` | `false` (4.49.0+ [UNVERIFIED version note]) | `true` | experiments use our own exposure event (3.10) |
+| `disableRemoteFeatureFlags` | `false` (4.49.0+ [V library page, re-read 21 Nov]) | `true` | experiments use our own exposure event (3.10) |
+| `capturePushNotificationSubscriptions` | `true` (since 4.62.0 [V library page, 21 Nov]) | `false` | a default that would send push events we never registered. `posthog.ts` already sets it to `false` (read on `develop` and on #1086's branch, 21 Nov); V17 pins every row, so it must pin this one too |
+| `capturePushNotificationOpened` | `true` (since 4.62.0 [V library page, 21 Nov]) | `false` | same reason, and `posthog.ts` sets it to `false`; our reminders are local notifications, and `notifications:reminder_open` is our own event |
+| `pushIdentityProvider` | `undefined` (since 4.62.0 [V library page, 21 Nov]) | leave unset | it exists to name a push identity; we never identify with anything but the random install id (3.3) |
 | `disableGeoip` | `false` | `true` (a setting to set in `posthog.ts`; I did not read the code, so UNVERIFIED that it is set today) | no location from IP |
 | `enableSessionReplay` | `false` | `false` (never) | replay records screens; never |
 | `persistence` | `file` | `file` (RULING, founder, 21 Nov 2026, replacing `memory`) | see the paragraph below this table |
@@ -301,7 +304,7 @@ Why `file` and not `memory` (RULING, founder, 21 Nov 2026): the one random id ma
 Autocapture, logs and surveys:
 
 - Autocapture comes from `PostHogProvider` (`captureScreens`, `captureTouches`) [V from the page as read in the brief; the options table I re-read did not list them, so the provider options are UNVERIFIED this session]. We do not use `PostHogProvider` at all (V18), so there is nothing to switch off by option.
-- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+ [UNVERIFIED version note]) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
+- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+ [V library page, re-read 21 Nov]) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
 - The Expo config plugin `posthog-react-native/expo` and what needs a development build (session replay, native crash capture): the page I re-read only shows install commands; the plugin and source map settings are on the source maps page (section 4.5) [V], and the "needs a development build" statement from the brief is UNVERIFIED.
 
 ### 3.5 `before_send`: the last gate
@@ -575,7 +578,7 @@ The adapter branch is `feat/analytics-posthog-adapter`, now PR #1086 (head `449f
 17. Whether `setInternalOrTestUser()` exists on React Native (3.9).
 18. What `system.diagnostic.received` means (2.9).
 19. How the SDK keeps and clears its `file` persistence when the app is killed or offline (3.4, 3.6); `disableGeoip` and the project IP setting are not confirmed as set (3.4, 3.7).
-20. Version notes in 3.4 (4.39.0, 4.49.0, 4.44.0) are not on the page I read.
+20. Version notes in 3.4 (4.39.0, 4.49.0, 4.44.0): read on the library page on 21 Nov, so now [V]. The page does not say which SDK version it describes, so the 3.4 table is checked against the page as of 21 Nov, not against 4.87.1's source. The three push options (4.62.0) were missing from this table; `posthog.ts` sets the first two to `false` and leaves the third unset.
 
 ## 9. Open decisions
 
