@@ -239,7 +239,7 @@ An item closes only on a written answer from licensed counsel with name and date
 | Q9 | G10 | Founder starts an entity in parallel |
 | Q10 | G11b | No places; P-B not built |
 
-Note for the founder: the reconciliation request named counsel items Q123 to Q132. The spec has no such series. The only matches are "Q124" and "Q130" in the text of R135, which cite no definition anywhere in the spec or the docs. They are probably stray references. `product` has not guessed what they point to and has not invented two new questions; the spec author or the founder should say which of Q1 to Q10 R135 means, or the two citations should be corrected in the spec.
+Numbering note: this spec numbers its counsel questions Q1 to Q10 (no Q11). The counsel packet in PR #1316 (`docs/legal/COUNSEL_PACKET.md` section 9.2) numbers the same ten as packet Q123 to Q132: spec Q1..Q10 = packet Q123..Q132 (so spec Q2 = packet Q124 and spec Q8 = packet Q130). Those packet rows exist in #1316 and are not on this branch until it merges. R135 now cites spec Q2 and spec Q8 with the packet number in brackets. Use the spec numbers in this checklist; the packet numbers are the cross-reference.
 
 ### 1.8 Row ids the v2 checklist cited and v3 dropped from its text
 
