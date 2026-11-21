@@ -43,6 +43,8 @@ export type AuthErrorKind =
   | 'session_expired'
   | 'under_18'
   | 'consent_unavailable'
+  /** FP-6 (NS-40-R9): the sign-up hook refused this place. Not an outage, and a failed lookup is never this. */
+  | 'region_refused'
   /** An email link this phone did not ask for (BL-347, security review H1): never verified here. */
   | 'other_phone'
   /** SIGN-06: the same refusal, after GET /verify already ran, so the email's code may be spent too: send a new email. */
