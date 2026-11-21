@@ -5,7 +5,7 @@
  * anything move, so a kill mid-way loses nothing.
  *
  *   0 ms     the sheet scales from 1 to 0.9 and its radius goes from xl to md, on `gentle`
- *   250 ms   the chip fades in under it ("Kept in Month 7", or the lock and "Kept just for you."): accentSoft fill,
+ *   250 ms   the chip fades in under it ("Kept in Month 7", or the lock and "Kept private."): accentSoft fill,
  *            subhead (P1's trust-copy floor; S21 says caption), the website's lit edge (a 1 pt lamp-amber border at 40 percent; a 1 pt line under Increase
  *            Contrast or Reduce Transparency)
  *   550 ms   the card moves down 24 pt and fades (350 ms, so the words are never at part strength for longer)
@@ -158,8 +158,12 @@ export function SavedMoment({
             borderColor: highContrast || reduceTransparency ? c.line : LIT_EDGE,
           }}
           testID="review.saved.chip">
-          {lock && <LockSimpleIcon size={14} color={c.textMuted} />}
-          {/* subhead, not caption: P1's rule keeps trust copy ("Kept just for you.") at 16 pt or more (S21 says caption). */}
+          {lock && (
+            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <LockSimpleIcon size={14} color={c.textMuted} />
+            </View>
+          )}
+          {/* subhead, not caption: P1's rule keeps trust copy ("Kept private.") at 16 pt or more (S21 says caption). */}
           <Text variant="subhead" tone="default">
             {chip}
           </Text>
