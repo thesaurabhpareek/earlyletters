@@ -7087,7 +7087,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
 
 #### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
-- Status: ready (PR #1273 merged as d9c392736, so the probe it pins is on `develop`; BL-1425 is done in PR #1319). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Status: in-review (PR #1344; was ready: PR #1273 merged as d9c392736, so the probe it pins is on `develop`; BL-1425 is done in PR #1319). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` since #1273 the registration at `:266-274` is `registerUploadQueue({ pendingCount: () => { const userId = currentAuthUserId(); return userId ? pendingForAccount(localSqlDb(), userId) : pendingCount(localSqlDb()); }, ... })`, and `pendingForAccount` is in `apps/mobile/src/lib/sync/outbox.ts`.
@@ -7115,7 +7115,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
 
 #### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
-- Status: ready (PR #1274 merged as 32f4e55, the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
+- Status: in-review (PR #1351; the data-map line is held for the founder as a proposed legal-file edit in `docs/ops/proposed/bl-1429-data-map-line.md`). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
 - Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. Verified on `develop` after #1274 merged: `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47` is sent for every showing, so the second showing (built at `next-ask.logic.ts:75`) is labelled `first_letter` too. #1274 did not touch that file.
@@ -7447,3 +7447,120 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Done when: a planted copy of bytes 100..164 in each of the four forms turns the scans red; the real upload passes; the failure note prints an offset and never bytes; the header's "Not covered" line lists only what stays open.
 - Test: `apps/mobile/test/backup-leak-scan.test.ts` and the three backup scans.
 - Gate: none.
+
+#### BL-1477 Harden the app-source network allowlist test (#1336): built URLs, host tricks and the nightly proposal
+- Status: proposed (review notes on #1336, BL-414). Mode: agent. Owner: platform. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium (the test is the only guard that app source names no host outside the allowlist; today it can be passed by a string it never reads). Gate: none.
+- Satisfies: BL-414 and the privacy rule that nothing leaves the device except to a named host (not re-read here).
+- Problem and evidence: `apps/mobile/test/network-allowlist.test.ts` reads URL literals. Review found it does not catch or mishandles: (1) a URL built by concatenation or a template literal; (2) the userinfo trick `https://earlyletters.com@evil.com`, which reads as the allowed host when the text before `@` is taken as the host; (3) uppercase `HTTPS://`; (4) protocol-relative `//host`; (5) an IPv6 literal `[::1]`; (6) escaped slashes (`https:\/\/host`); (7) the `http://host` placeholder form; (8) the `NEVER_CONTACTED` table, read with a plain property lookup, so a host named like an object prototype member (`constructor`, `__proto__`, `toString`) is mishandled; (9) it skips some directories, `*.test.ts` files and non-TypeScript native files (Swift, Kotlin, plist), and a host in those is never read; (10) the SDK default hosts (library code that calls a host nobody wrote in app source) are not listed or checked; (11) the allowlist entry `earlyletters.com` appears only in comments, so the entry either has no use and is dropped, or is relabelled for what really calls it. The nightly host-reachability proposal `docs/ops/proposed/nightly-host-reachability.md` has no `permissions: contents: read` block.
+- Scope: parse each URL with `new URL` after normalising case and slashes, compare the parsed `hostname` (never a prefix or a split on `@`), cover cases 1 to 7 with a fixture each that must fail the guard and one that must pass, use `Object.hasOwn(NEVER_CONTACTED, host)` for the lookup, state in the test which directories and file types are read and why the rest are not (or read them), list the SDK default hosts in the test with the package that owns each, and resolve entry 11. In the proposal, add `permissions: contents: read` to the job. Test and docs only unless a real host fails.
+- Done when: each of cases 1 to 8 has a named test that fails on the old code and passes on the new, the scan list is stated, entry 11 is decided in the PR, and the proposal carries the permissions line.
+- Test: `apps/mobile/test/network-allowlist.test.ts`; `docs/ops/proposed/nightly-host-reachability.md`.
+
+#### BL-1478 The import-graph walk (#1353): require() literals, `typeof import()`, and a semicolon-less `import type`
+- Status: proposed (review notes on #1353, R2 walk). Mode: agent. Owner: platform. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium (a walk that misses an edge can let a forbidden module reach a launch path with every test green). Gate: none.
+- Satisfies: the first-launch no-prompt and age-gate tests added in #1353 (NS-39, NS-40), which rely on the walk (not re-read here).
+- Problem and evidence: the R2 walk in `apps/mobile/test/first-run-no-prompts.test.ts` (and the helpers its siblings use) has three gaps. (1) `require('./x')` with a string literal is not followed, so a module pulled in that way is never walked. (2) `typeof import('./x')` in a value position is now treated as a type and skipped, though it names a real module. (3) An `import type { A } from './a'` with no trailing semicolon swallows the next `import`, because the pattern runs on to the next `from`; so the next file is not followed.
+- Scope: follow `require('literal')`; treat `typeof import(...)` as a type only after `:` or `as` or inside a type alias, not in a value position; anchor the import pattern on the `from '...'` clause so it cannot run across a line end into the next statement. One fixture per gap, each failing on the old walk.
+- Done when: three named tests (one per gap) fail on the old walk and pass on the new, and the three tests from #1353 still pass.
+- Test: `apps/mobile/test/first-run-no-prompts.test.ts`, `apps/mobile/test/ns39-first-launch.test.ts`, `apps/mobile/test/age-gate-ns40.test.ts`.
+
+#### BL-1479 The docs lane in ci.yml (#1347): bind the file list to the head, narrow inert directories, fail safe on a grep error, and prove it
+- Status: proposed (review notes on #1347; the proof run is in the same change set). Mode: agent. Owner: platform. Milestone: M12. Size: S. Depends on: none.
+- Priority: High for the inert directory entries (they match any file type, so an author can reach the skip by putting a `.ts` or `.json` under one of them), Medium for the grep exit 2 fail-open (it needs a runner fault, but it is still a real fix) and the rest. Gate: the workflow edit is a proposal under `docs/ops/proposed/` that the founder applies.
+- Satisfies: `docs/ops/proposed/ci-speed.md` change 1.
+- Problem and evidence: in the `install` job of `.github/workflows/ci.yml`, `if ! grep -qvE '...' <<< "$files"` is true when grep exits 2 (a bad pattern or a read error), the same as when no line is outside the list; so `heavy` becomes false on an error. The changed-file list comes from `pulls/<n>/files`, which is read when the job runs, not bound to the head sha the job runs on, so a push between the two can pair one commit's list with another's code. The inert directory entries (`docs/engineering/readiness-20nov/`, `docs/product/instrumentation/`, `docs/content/lifecycle-playbook/`, `docs/qa/test-plan-b13/`) match any file type below them, including a `.ts`, `.json` or `.mjs` that a test reads.
+- Scope: (1) read the list from the compare endpoint, `repos/<repo>/compare/<base sha>...<head sha>` with the head taken from `github.event.pull_request.head.sha`, paginating (the compare endpoint pages its files, so follow every page), and set `heavy=true` if the result is not that sha or the file count reaches the limit; (2) run grep as `grep -qvE ...; rc=$?` and set `heavy=false` only on rc 1, so rc 0 and rc 2 both leave `heavy=true`; (3) tighten every directory entry to `^dir/.*\.(md|csv)$`; (4) a test in `.github/scripts/` that runs the decision step with a stubbed list (inert only, one code file, empty, bad pattern) and reads the exit paths. The change goes in `docs/ops/proposed/ci-speed.md` and a patch under `docs/ops/proposed/workflows/`, then the founder applies it.
+- Done when: the four stub cases give `heavy` false, true, true, true; a docs-only PR (one S-numbered check-in file, one ASCII line) shows `required` green with the heavy jobs skipped, and the check names and conclusions are recorded in the PR (the first proof run is on a separate draft PR dated 21 Nov 2026, see the hand-back on this row's PR).
+- Test: `.github/scripts/` (a new test for the scope step); the proof run is evidence, not a test.
+
+#### BL-1480 CR-74 follow-ups: define "build path" and require a green post-merge launch run before any release candidate tag
+- Status: proposed (CR-74 follow-ups; the ruling text itself is not on develop at the time of writing, so the wording below is to be checked against it by Karma). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Priority: High (a release candidate tag is a one-way door, tags never move: ADR 0022). Gate: the tag precondition lands in `release-ios.yml` as a proposal under `docs/ops/proposed/` that the founder applies.
+- Satisfies: ADR 0022; `docs/ops/RELEASE.md` section 3.4.
+- Problem and evidence: `NATIVE_PATHS` in `scripts/agents/merge-queue.mjs` lists `apps/mobile/ios/`, `apps/mobile/modules/`, `apps/mobile/app.config.*`, `apps/mobile/eas.json` and `package-lock.json`. A "build path" is named in the ruling but not defined, so a change to `apps/mobile/metro.config.js`, `apps/mobile/store.config.json`, `apps/mobile/version.json`, `apps/mobile/src/lib/privacy-manifest.ts` or `apps/mobile/src/lib/permission-copy.ts` (five paths; `apps/mobile/patches/**` too, if that directory is ever added, it does not exist today) changes what a release build contains (or what Apple reads) and is not treated as native by the merge table. Separately, nothing stops an `ios-v*-rc.*` tag when the last post-merge iOS launch run on `develop` is red or has not run.
+- Scope: (1) define "build path" as exactly those five entries (and `apps/mobile/patches/**` if ever added) plus the existing five and add the missing ones to `NATIVE_PATHS` with a test case each in `scripts/agents/` (the security-lens list already names metro, store config, privacy-manifest and permission-copy; keep the two lists in step or say why they differ); write the same definition in the ruling or `docs/ops/RELEASE.md` so it is one sentence in one place; (2) a proposal in `docs/ops/proposed/` for a first job in `release-ios.yml` that reads the most recent `ios-compile` run on `develop` at or after the merge base of the tagged commit and fails the tag run unless it concluded `success`; a documented manual override is the founder's.
+- Done when: `touchesNative` is true for each of the five added paths and the test says so; the definition appears once; the proposal names the job, the API call and the failure message.
+- Test: `scripts/agents/merge-queue.test.mjs` (or the existing test beside it).
+
+#### BL-1481 The web journeys (#1337) run in no CI workflow and have never run: one Mac run, then a Linux Chromium job proposal
+- Status: proposed (review notes on #1337). Mode: pair (the first run is on a Mac, which the agent harness does not have). Owner: platform. Milestone: M-JR. Size: S. Depends on: none.
+- Priority: Medium (BL-415's canary is a test that no workflow executes, so a leak it would catch passes unseen). Gate: the CI job is a proposal under `docs/ops/proposed/` that the founder applies (as in BL-1479 and BL-1480); no macOS spend is needed.
+- Satisfies: BL-415.
+- Problem and evidence: `npm run e2e:web -w @scribe/mobile` (`playwright test -c e2e-web/playwright.config.ts`) is not called by any file under `.github/workflows/`; `ci.yml` runs `npm test`, which runs `apps/mobile/test/log-canary.test.ts` (the canary's own unit test) but not the journeys. The journeys and the canary in `e2e-web/support/log-canary.ts` have not been run end to end by anyone.
+- Scope: (1) run `npm run e2e:web -w @scribe/mobile` once on a Mac with Playwright's Chromium installed, and record the result and the run time in the PR; fix a failing journey or file a row for it; (2) decide the CI job from that run and write it as `docs/ops/proposed/e2e-web-ci.md` with a patch under `docs/ops/proposed/workflows/`: a Linux Chromium job (`ubuntu-latest`, `npx playwright install --with-deps chromium`, `permissions: contents: read`, not required at first, run on pull requests that touch `apps/mobile/e2e-web/**`, `apps/mobile/src/**` or `apps/mobile/app/**`, and nightly), with the time it adds against the `.github/README.md` budget; the founder applies it.
+- Done when: the Mac run result is in the PR; the proposal exists with the job text and the time cost; the founder applies it or says no.
+- Test: the journeys themselves (`apps/mobile/e2e-web/`).
+
+#### BL-1482 The timing summary (#1339): pin the anchored TIMING regex, and delete the raw Maestro log after filing
+- Status: proposed (review note on #1339, BL-1403). Mode: agent. Owner: platform. Milestone: M-JR. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: the privacy rule that logs hold no content (the raw Maestro log can carry screen text from a real device run).
+- Problem and evidence: `apps/mobile/e2e/bin/timing-summary.mjs` reads lines with `/^TIMING ([a-z_]+_ms)=(\d+)$/`, anchored at both ends; nothing in `apps/mobile/test/e2e-timing-summary.test.ts` pins the end anchor, so a change to `/^TIMING ([a-z_]+_ms)=(\d+)/` would accept `TIMING cold_start_ms=12abc` as 12 and the test would still pass. `apps/mobile/e2e/README.md` does not say what to do with the raw Maestro log after the table is filed.
+- Scope: add a case that feeds `TIMING cold_start_ms=12abc` (and `TIMING cold_start_ms=12 `) and expects the line to be ignored, failing against the unanchored pattern; add one sentence to the README: once the table is filed under BL-044, delete the raw Maestro log.
+- Done when: the new case fails on the unanchored regex and passes on the real one; the README line is present.
+- Test: `apps/mobile/test/e2e-timing-summary.test.ts`.
+
+#### BL-1483 The photo lens card `missing` flag never resets while the row stays mounted
+- Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low (it fails closed: a replaced picture stays hidden, nothing wrong is shown). Gate: none.
+- Satisfies: the lens card code of #1365 and the photo wiring of #1340 (not re-read here).
+- Problem and evidence: the `missing` flag on the photo lens card is set on a load error and not cleared when the row's picture is replaced, so the new picture stays hidden until the row remounts. This is an inference from the #1365 reviews, not an observed run: review-B-1365 says the `missing` flag never resets while the row is mounted, and the reviews only say that a remount retries. Confirm it with a test first; if the flag does reset, close the row. It came from the #1340 and #1365 security review.
+- Scope: reset `missing` when the picture source changes (key the state on the source).
+- Done when: a replaced picture shows after a load error without a remount.
+- Test: a component test beside the lens card tests that sets missing, swaps the source and expects the picture.
+
+#### BL-1484 Spec 01 needs two edits: lens thumbnail radius `sm` and the `thumbMissing` card
+- Status: proposed. Mode: docs. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: B-S04, CONFORMANCE F-26 and F-27 (`docs/design/CONFORMANCE-21nov.md`; not re-read in full).
+- Problem and evidence: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` says radius `md` for the lens thumbnail (line 111) and draws a framed box where a thumbnail is missing. B-S04 draws `radius.sm` for the 72 pt thumbnail and `.thumbMissing` as a card without a thumbnail and no error (F-26, F-27). The spec changes two existing lines; it does not need a new section.
+- Scope: change the radius on the lens thumbnail line to `sm` (F-26 recommends `sm` for the 72 pt thumbnail, `md` for the letter page) and change the missing-thumbnail line to a card without a thumbnail, with the section named in the PR.
+- Done when: the spec says `sm` for the lens thumbnail and `thumbMissing` for a missing one, and F-26 and F-27 point at those lines.
+- Test: none (docs).
+
+#### BL-1485 AX5 and Increase Contrast device pass for the photo surfaces, before the photos flag goes on
+- Status: proposed. Mode: pair. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-956 and BL-1445 (the photo rows; BL-1447 is the Moments picker, not a photo row).
+- Priority: Medium (the flag should not go on before this pass). Gate: a phone, the founder's device run.
+- Satisfies: the accessibility acceptance in `docs/design/A11Y-AND-TYPE-AUDIT-20nov.md` (not re-read here).
+- Problem and evidence: the photo surfaces have not been seen at the largest accessibility text size (AX5) with Increase Contrast on a real device.
+- Scope: one device pass of every photo surface at AX5 and with Increase Contrast, findings filed as rows.
+- Done when: a written pass result is filed and any finding has a row, before the photos flag is turned on.
+- Test: device pass, recorded in the PR.
+
+#### BL-1486 Design decision check: does the "Add to this letter" heading in #1365 still hold, now that IA-FINAL replaces the group?
+- Status: proposed. Mode: design check. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low (may be superseded, see below). Gate: none.
+- Satisfies: `docs/design/IA-FINAL-20nov.md` (line 205 and the table near line 516 and line 527) and CONFORMANCE F-20 (not re-read in full).
+- Problem and evidence: this row may be superseded. IA-FINAL replaces the "Add to this letter" group of spec 06 section 4a with a level 2 list titled "This letter", and renames "Close this letter until a day" to "Hide until a day"; F-20 records that #839 deviates from the 4a group. So the open question is whether the heading #1365 uses still holds once "This was a first" and "Hide until a day" land, not a fact that it reads wrong over a single row.
+- Scope: read IA-FINAL and F-20 against the current letter page and record one decision: keep, change to "This letter", or retire this row as superseded. Any new words are PROPOSED content keys until the founder approves.
+- Done when: the decision is recorded in the design spec, or this row is closed as superseded by IA-FINAL and F-20.
+- Test: none (design check).
+
+#### BL-1487 Confirm with the B motion owner that dropping the lens thumb on a load error is acceptable
+- Status: proposed. Mode: decision. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: B-M05 and G3 (card height change; not re-read here). CONFORMANCE F-27 says to drop the frame on a missing thumbnail.
+- Problem and evidence: on a load error the lens thumb is dropped, which changes the card's height; B-M05 and G3 may not allow that jump.
+- Scope: ask the B motion owner and record yes, or the change (keep the height, or animate it).
+- Done when: a recorded answer; a follow-up row only if the answer is no.
+- Test: none (decision).
+
+#### BL-1488 A mounted-provider behavioural test for the three #1340 wiring points, next to BL-1460
+- Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium (three wiring points are only checked by reading source). Gate: none.
+- Satisfies: the wiring in #1340 (not re-read here); BL-1460 is the neighbouring row.
+- Problem and evidence: #1340 wires the photo provider in three places: the provider effect, forced sign-out and erase. Tests read source rather than mount the provider and run each path.
+- Scope: mount the provider in a test and drive each of the three paths, asserting the photo state is released.
+- Done when: three named tests fail when one wiring point is removed.
+- Test: the provider tests next to the BL-1460 test.
+
+#### BL-1489 A late adopt in #1340 can drop a fresh pick through the shared PendingPhoto; and a hardening choice for a dropped queued adopt
+- Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium for part 1 (a picked photo can be lost without a message), Low for part 2. Gate: none.
+- Satisfies: the pick and adopt behaviour of #1340 (not re-read here).
+- Problem and evidence: (1) an adopt that starts late reads the shared `PendingPhoto`, which a fresh pick may already have replaced, so the fresh pick is dropped (review-B-1340 RACE3; accurate). (2) A queued adopt that is dropped resolves `undefined`. review-A-1340 and review-D-1340 call that intended and good, so this is not a bug; it is a hardening choice only.
+- Scope: (1) capture the source at the start of the adopt, not at its end. (2) Optional, decided in the PR: resolve a named dropped outcome instead of `undefined`, only if a caller can then tell "dropped" from "nothing to do"; if the reviewers still prefer `undefined`, leave it and say so.
+- Done when: one named test for part 1 fails on the old code and passes on the new; part 2 is either done with its own test or recorded as left as is.
+- Test: a test beside the adopt code.

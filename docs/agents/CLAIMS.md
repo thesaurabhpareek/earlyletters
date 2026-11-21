@@ -12,3 +12,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 |---|---|---|---|---|---|---|---|
 | photo-lane | mobile | feat/mobile-photo-3-store | 836 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | 2026-11-20T23:30Z | 2026-11-24T10:00Z | 835 merged; 836 to 840 open |
 | content-d163-sweep | content | docs/content-analytics-claims-sweep | 1308 | `packages/content/src/pages.en.ts`, `docs/store/notes-for-review-1.0.txt`, `docs/store/app-store-staged-1.0-proposal.md` | 2026-11-21T16:08Z | 2026-11-24T16:08Z | D-163 analytics-claims sweep; PR read as open by REST at 2026-11-21T16:08Z |
+| bl-868-export-spec | data-architect | docs/data-bl-868-export-spec | 1215 | `docs/legal/DELETION_AND_EXPORT_SPEC.md`, `docs/agents/checkins/data-architect-bl-868.md` | 2026-11-21T05:10Z | 2026-11-24T03:00Z | BL-868; row ready and unclaimed, no open PR by REST at 05:05Z; legal text, founder merges |
