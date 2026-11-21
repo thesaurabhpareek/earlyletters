@@ -1,26 +1,26 @@
 # Progress: wave 1 execution (Karma, started 20 Nov 2026, 23:50 UTC)
 
-Rule: this file is updated by Karma from merged PRs, at least every hour while work runs. One line per task. Status: QUEUED, BUILDING (branch or PR open), IN REVIEW, MERGED (sha), BLOCKED (on whom). The plan (`docs/product/prd/17-engineering-project-plan.md`, `17b-engineering-plan-new-scope.md`) holds the full task list and waves; this file only tracks what has moved. Freeze: develop 55574906c, errata E1 to E83, CL-001 to CL-158 (plans 17 and 17b are pinned one erratum behind, at dcbf70fc8 and E82; the E83 text is in 18-errata-after-lock.md). Started 20 Nov 2026, 23:50 UTC. Last refresh: 21 Nov 2026, 02:58 UTC, against develop `26e516e9b` (facts from the GitHub pulls API and `scripts/trace.mjs --no-write`; [U] means not verified).
+Rule: this file is updated by Karma from merged PRs, at least every hour while work runs. One line per task. Status: QUEUED, BUILDING (branch or PR open), IN REVIEW, MERGED (sha), BLOCKED (on whom). The plan (`docs/product/prd/17-engineering-project-plan.md`, `17b-engineering-plan-new-scope.md`) holds the full task list and waves; this file only tracks what has moved. Freeze: develop 55574906c, errata E1 to E83, CL-001 to CL-158 (plans 17 and 17b are pinned one erratum behind, at dcbf70fc8 and E82; the E83 text is in 18-errata-after-lock.md). Started 20 Nov 2026, 23:50 UTC. Last refresh: 21 Nov 2026, 03:02 UTC, against develop `81d6dac15` (facts from the GitHub pulls API and `scripts/trace.mjs --no-write`; [U] means not verified).
 
-## What changed this hour (21 Nov 2026, 02:58 UTC)
+## What changed this hour (21 Nov 2026, 03:02 UTC)
 
-Since 23:45 UTC on 20 Nov, 67 PRs merged into develop [V pulls API, state closed, merged_at after 23:45Z, pages 1 to 3]. The ones that moved plan rows:
+Since 23:45 UTC on 20 Nov, 68 PRs merged into develop [V pulls API, state closed, merged_at after 23:45Z, pages 1 to 3]. The ones that moved plan rows:
 - Still open, not merged (the earlier table was right): photo stack #835 to #840 (BL-931 slices 3a to 5; #835 is `blocked`, #836 to #840 `unstable`; stacked on one another), #879 (BL-961, `unstable`), #894 and #895 (BL-952 6/8, 7/8, both `clean`), #873 (BL-960, `dirty`: a merge conflict with develop), #798 and #799 (Find, `dirty`). S1 (BL-870) is now MERGED as #1115, which removes one of the two F1 gates on the photo slices; the plain statement of what leaves the phone is [U].
-- BL-966a #1088 MERGED; #1089 (BL-966b) is now IN REVIEW.
+- BL-966a #1088 and BL-966b #1089 `3c0b57235` (merged 03:00Z) are MERGED.
 - Data and tests: T1 #1068 and T3 #1069 MERGED; test PRs #1060, #1061, #1064, #1065 MERGED; BL-959 parts #1070, #1074, #1083 MERGED; P-4b tests #1140, #1141 MERGED.
 - First-run: FP-1 #1101, FP-17 #1121, FP-18 #1120 MERGED; FP-9 #1125, FP-12 #1128, FP-16b #1124 and BL-922a #1126 opened, IN REVIEW.
-- CR-71: C3 #1147 and C9 #1144 opened, IN REVIEW (neither applied to the hosted project; the founder applies hosted migrations). Merged since 02:33Z: G4 #1085 `52c7d0d4f`, B5 PR 1 #1112 `eab5edd35`, kill-switch PR #1113 `26e516e9b` (adds signIn and libraryDays; this carries the FP-5 key).
+- CR-71: C3 #1147 `81d6dac15` MERGED 03:00Z (not applied to the hosted project; the founder applies hosted migrations); C9 #1144 IN REVIEW (also not applied). Merged since 02:33Z: G4 #1085 `52c7d0d4f`, B5 PR 1 #1112 `eab5edd35`, kill-switch PR #1113 `26e516e9b` (adds signIn and libraryDays; this carries the FP-5 key).
 - CI and ops: #1093, #1094, #1095, #1096, #1148, #1150 MERGED; #1149 (HG-MQ patch) IN REVIEW.
 - Measured, develop `d758baaa1` (`node scripts/trace.mjs --no-write`, report mode; it counts merged tests only, so a test in an open PR is untested here): NS cards, 1,032 acceptance rows in 16 cards, 537 P0: 70 tested, 0 partial, 0 journey, 17 device, 450 untested; 5 P0 with no backlog row. Old v2 trace: 773 P0, 552 with no test title, 232 ids in 930 test titles. No earlier reading is in this file, so there is no delta [U].
 
-## Plan rows (status from GitHub, 21 Nov 2026, 02:58 UTC)
+## Plan rows (status from GitHub, 21 Nov 2026, 03:02 UTC)
 
 Status words: MERGED (PR, squash sha), IN REVIEW (PR, head sha; GitHub mergeable_state in brackets: clean = checks green and approvals in; unstable = a check not green; blocked = approvals outstanding), BUILDING (no PR yet), QUEUED, NOT STARTED, BLOCKED (on what). Lane owner as in the table below it; one builder per lane.
 
 | Lane | Plan row | Owner | Status | PR and sha | Blocks or notes |
 |---|---|---|---|---|---|
 | reminders | BL-966a budget registry | mobile | MERGED | #1088 `952eac323` | test #1075 (NS-32-R4b) is a draft |
-| reminders | BL-966b one a day | mobile | IN REVIEW [unstable] | #1089 `436f36f8` | 134 lines |
+| reminders | BL-966b one a day | mobile | MERGED | #1089 `3c0b57235` (head `436f36f8`) | 134 lines |
 | account | #871 cover | mobile | MERGED | #871 (22:37Z) | sha [U] |
 | account | BL-961 store reads | mobile | IN REVIEW [unstable] | #879 `6d22a523` | 414 lines; [X4-R1] partial (3 of 3); #871 merged |
 | account | HO-911 delete under a second account | mobile | IN REVIEW [unstable] | #1087 `709bbe28` | see PR |
@@ -30,7 +30,7 @@ Status words: MERGED (PR, squash sha), IN REVIEW (PR, head sha; GitHub mergeable
 | data | BL-959 ADR 0028 A5 and keeping server tests | sync, data-architect | MERGED | #1070 `4aa487c0b`, #1074 `e27c73599`, #1083 `d2a54aa49` | |
 | data | BL-960 data inventory | privacy | IN REVIEW [dirty] | #873 `e332fe64` | merge conflict; founder merges |
 | data | S1 / BL-870 server refuses a picture | data-architect | MERGED in develop, NOT applied to hosted | #1115 `dca49553c` | the founder applies hosted migrations; applied state [U] |
-| data | C3 audit writers, security_events store | data-architect | IN REVIEW [clean], reviews passed | #1147 `d61b777b` | 357 lines; needs the founder's OK for the docs/legal classification block; NOT applied to hosted (founder applies) |
+| data | C3 audit writers, security_events store | data-architect | MERGED in develop, NOT applied to hosted | #1147 `81d6dac15` (head `d61b777b`) | 357 lines; the docs/legal classification block needed the founder's OK [U whether given]; founder applies the migration |
 | data | C9 drop insights_reader grant | data-architect | IN REVIEW [unstable] | #1144 `ea6a1db2` | NOT applied to hosted (founder applies) |
 | data | kill-switch PR (CR-69 A5) | sync | MERGED | #1113 `26e516e9b` (head `4b982dcb`) | signIn, libraryDays keys; this is the FP-5 key |
 | quality | T3 phone-class label check | qa | MERGED | #1069 `b00c3b1c7` | |
@@ -55,19 +55,19 @@ Status words: MERGED (PR, squash sha), IN REVIEW (PR, head sha; GitHub mergeable
 | first-run | FP-16b owner check before Erase everything | mobile | IN REVIEW [blocked] | #1124 `9bd131e9` | |
 | first-run | FP-18 purge worker NS-45 titles | qa | MERGED | #1120 `2bb7504cd` | |
 | first-run | BL-922a held screen | mobile | IN REVIEW [unstable] | #1126 `1da68e6e` | queue head |
-| first-run | BL-922b, BL-978a, then FP-6 | mobile | QUEUED | | in this order, after 922a; BL-978 also after BL-961 (now MERGED) |
+| first-run | BL-922b, BL-978a, then FP-6 | mobile | QUEUED | | in this order, after 922a; BL-978 also after BL-961 (#879, 3 of 3, still IN REVIEW; #871 and #869 are the merged parts) |
 | comms | new-device sign-in email (NS-08-R21, E83) | sync, security-architect | QUEUED | | privacy read of the device table first; words fix #1077 MERGED `801390297` |
 | days, media (NS-46 to NS-52) | all code PRs | mobile | NOT STARTED | | docs and test support only: #1082 `c978eafb4` (NS-48-R28) MERGED |
 
-## Dispatch and dependency map (Karma, 20 Nov 2026, 23:58 UTC; moves marked 21 Nov 02:58 UTC)
+## Dispatch and dependency map (Karma, 20 Nov 2026, 23:58 UTC; moves marked 21 Nov 03:02 UTC)
 
-Moved at 02:58 UTC: every "A (next)" task now has a PR open or merged (kill-switch #1113 and B5 PR 1 #1112 MERGED, C3 #1147, C9 #1144, FP-9 #1125, FP-12 #1128, FP-16b #1124, HG-MQ #1149) except B5 PR 2, 3 (NOT STARTED); FP-5 key is in #1113 and FP-2 is BUILDING; S1 and FP-1, FP-17, FP-18 and the CI scripts are MERGED; T1 and T3 and the test PRs are MERGED. B group: BL-922a is IN REVIEW (#1126) and heads the first-run lib queue; BL-966b is IN REVIEW (#1089), so the planner UI row waits only on 966a, which is MERGED. Nothing is in group C.
+Moved at 03:02 UTC: every "A (next)" task now has a PR open or merged (kill-switch #1113 and B5 PR 1 #1112 MERGED, C3 #1147 (MERGED 03:00Z), C9 #1144, FP-9 #1125, FP-12 #1128, FP-16b #1124, HG-MQ #1149) except B5 PR 2, 3 (NOT STARTED); FP-5 key is in #1113 and FP-2 is BUILDING; S1 and FP-1, FP-17, FP-18 and the CI scripts are MERGED; T1 and T3 and the test PRs are MERGED. B group: BL-922a is IN REVIEW (#1126) and heads the first-run lib queue; BL-966b is IN REVIEW (#1089), so the planner UI row waits only on 966a, which is MERGED. Nothing is in group C.
 
 Rule: one builder per lane. A lane owns the path globs in `docs/agents/CLAIMS.md`; nobody else edits them. A task starts when everything in its "after" column is MERGED. Group A tasks share no files and no ordering, so they run in parallel now. Questions go to Karma as `<!-- req-question:<row id> -->` PR comments; Karma routes them to the owning seat and records the answer.
 
 | Group | Task | Owner | After | Globs it owns | Source |
 |---|---|---|---|---|---|
-| A (now) | reminders BL-966a (MERGED #1088), then 966b (IN REVIEW #1089) | mobile | none | `apps/mobile/src/lib/reminders/**` | brief R1, CR-69 A1 |
+| A (now) | reminders BL-966a (MERGED #1088), then 966b (MERGED #1089) | mobile | none | `apps/mobile/src/lib/reminders/**` | brief R1, CR-69 A1 |
 | A (now) | store reads #879 (#871 merged) | mobile | none | `apps/mobile/src/components/account/**`, `apps/mobile/src/lib/account-deletion/**` | HO-911 |
 | A (now) | photo stack #835 to #840 | mobile | F1: S1 (MERGED #1115) and the plain statement [U]; #835 now `blocked`, no conflict | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | BL-931 |
 | A (now) | Find #894, #895 | mobile | none | `apps/mobile/src/lib/find/**` | BL-952 |
