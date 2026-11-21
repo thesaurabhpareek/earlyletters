@@ -100,6 +100,6 @@ describe('consent builder', () => {
     };
     walk(root);
     expect(hits).toEqual(['/lib/auth/consent.ts', '/lib/backup/runtime.ts']);
-    expect(readFileSync(join(root, 'lib', 'auth', 'consent.ts'), 'utf8')).toMatch(/'record_policy_act',\s*buildConsentAct\(/);
+    expect(readFileSync(join(root, 'lib', 'auth', 'consent.ts'), 'utf8')).toMatch(/const args = buildConsentAct\([\s\S]*sb\.rpc\('record_policy_act', a\)/);
   });
 });

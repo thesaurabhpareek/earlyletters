@@ -62,3 +62,18 @@ export function buildConsentAct(a: ConsentActInput, env: ConsentEnv): Record<str
     p_os_major: osMajor(env.osVersion),
   };
 }
+
+/**
+ * A build that ships before 20261108000000 is applied sends the 13-argument form to a server that only has the old
+ * 11-argument function: PostgREST answers PGRST202 (no candidate) or Postgres 42883 (undefined function). Only those two
+ * codes mean "the new function is not there yet"; a real refusal (23502, 42501, SCCON ...) never retries.
+ */
+export function isNoCandidate(code: string | null): boolean {
+  return code === 'PGRST202' || code === '42883';
+}
+
+/** The old argument form: the same act without p_app_build and p_os_major (hash and language stay). */
+export function withoutNewFields(args: Record<string, unknown>): Record<string, unknown> {
+  const { p_app_build: _build, p_os_major: _os, ...old } = args;
+  return old;
+}

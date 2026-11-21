@@ -22,7 +22,7 @@ import { sha256Hex } from '../sha256';
 import { idempotencyKey } from '../supabase/client';
 import { errorCode } from '../supabase/errors.logic';
 import { heldAnswers } from './consent-key.logic';
-import { buildConsentAct, type ConsentEnv } from './consent-record';
+import { buildConsentAct, isNoCandidate, withoutNewFields, type ConsentEnv } from './consent-record';
 import type { AuthMethod, ConsentStep, SyncGate } from './machine.logic';
 
 type PolicyDocument = 'terms' | 'sensitive-data';
@@ -128,25 +128,24 @@ export async function recordConsent(
   // One person's answers to one document: a new answer ends any earlier hold (consent-key.logic.ts).
   const group = JSON.stringify([userId, document]);
   const held = answers.hold(group, answerId, () => new Date().toISOString());
-  const { error } = await sb
-    .rpc(
-      'record_policy_act',
-      buildConsentAct(
-        {
-          document,
-          version,
-          action: accepted ? 'accept' : 'decline',
-          method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
-          surface: SURFACE[step],
-          shownText: consentShownText(SHOWN[step]),
-          locale: CONSENT_LOCALE,
-          clientRecordedAt: held.recordedAt,
-          context,
-        },
-        consentEnv(),
-      ),
-    )
-    .setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
+  const args = buildConsentAct(
+    {
+      document,
+      version,
+      action: accepted ? 'accept' : 'decline',
+      method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
+      surface: SURFACE[step],
+      shownText: consentShownText(SHOWN[step]),
+      locale: CONSENT_LOCALE,
+      clientRecordedAt: held.recordedAt,
+      context,
+    },
+    consentEnv(),
+  );
+  const send = (a: Record<string, unknown>) => sb.rpc('record_policy_act', a).setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
+  let { error } = await send(args);
+  // Shipped before 20261108000000 was applied (FS-21): the old function has no p_app_build. Retry once, old form, same key.
+  if (error && isNoCandidate(errorCode(error))) ({ error } = await send(withoutNewFields(args)));
   if (error) throw error;
   answers.confirmed(group);
 }
