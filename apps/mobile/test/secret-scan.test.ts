@@ -5,7 +5,7 @@
  * built at run time from random bytes, so this file never holds one whole (and the scanner reads this file too).
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,6 +18,7 @@ const rand = (n: number) => randomBytes(n).toString('base64url').replace(/[^A-Za
 const b64url = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = (role: string) => `${b64url({ alg: 'HS256' })}.${b64url({ role, iss: 'asha-fixture' })}.${rand(30)}`;
 const BEGIN = ['-----BEGIN', 'PRIVATE', 'KEY-----'].join(' ');
+const XS = ['X', 'SECRET'].join('_');
 const hex = (n: number) => randomBytes(n).toString('hex');
 const names = (text: string) => scanText(text).map((f: { name: string }) => f.name);
 
@@ -75,6 +76,31 @@ describe('secret scan, SEC-R03', () => {
     expect(names(`${N}=${jwt('service_role')}`).length).toBeGreaterThan(0);
   });
 
+  it('[SEC-R03] a reference excludes a line only when it is the whole value', () => {
+    const N = 'SUPABASE_SERVICE_ROLE_KEY';
+    const real = rand(40);
+    expect(names(`${N}: process.env.${N} || '${real}'`)).toEqual(['service role key value']);
+    expect(names(`${N}: process.env.${N} ?? "${real}",`)).toEqual(['service role key value']);
+    expect(names(`${N}=process.env.${N}`)).toEqual([]);
+    expect(names(`${N}: process.env.${N}, // from the host`)).toEqual([]);
+    expect(names(`${N}: process.env.${N};`)).toEqual([]);
+    // a dotted value that is not a known reference shape is a value
+    expect(names(`${N}=abc123.${rand(30)}`)).toEqual(['service role key value']);
+    // a reference in a *_SECRET rule with a digit in it is still a reference
+    expect(names(`${XS}=process.env.TOKEN_KEK_V2_SECRET`)).toEqual([]);
+    expect(names(`${XS}=process.env.TOKEN_KEK_V2_SECRET || '${rand(30)}9a'`)).toEqual(['secret variable value (*_SECRET)']);
+    expect(names(`${XS}=import.meta.env.PUBLIC_VALUE_V2_FOR_ASHA`)).toEqual([]);
+    // a UUID-shaped secret is a value
+    expect(names(`${XS}=${randomUUID()}`)).toEqual(['secret variable value (*_SECRET)']);
+  });
+
+  it('[SEC-R03] every match on a line is tried: a placeholder first does not hide a real key', () => {
+    expect(names(`a=sb_secret_${'a'.repeat(30)} b=sb_secret_${rand(30)}`)).toEqual(['Supabase secret key (sb_secret_)']);
+    expect(names(`${'AKIAIOSFODNN7EXAMPLE'} ${'AKIA' + rand(20).toUpperCase().slice(0, 16)}`)).toEqual(['AWS access key id']);
+    expect(names(`SERVICE_ROLE_KEY=<key> and k=ghp_${rand(40)} and e=phx_${rand(40)}`).sort()).toEqual(['GitHub token', 'PostHog personal key (phx_)']);
+    expect(names(`x=sb_secret_${'b'.repeat(30)} y=sb_secret_${'c'.repeat(30)}`)).toEqual([]);
+  });
+
   it('[SEC-R03] every GitHub token prefix is found, and a short one is not', () => {
     for (const p of ['ghp', 'gho', 'ghu', 'ghs', 'ghr']) expect(names(`t=${p}_${rand(40)}`), p).toEqual(['GitHub token']);
     expect(names(`t=github_pat_${rand(50)}`)).toEqual(['GitHub token']);
@@ -87,7 +113,7 @@ describe('secret scan, SEC-R03', () => {
     expect(names(`k=sk-or-v1-${hex(32)}`)).toEqual(['OpenRouter key (sk-or-)']);
     expect(names(`PURGE_WORKER_SECRET=${rand(30)}9a`)).toEqual(['secret variable value (*_SECRET)']);
     expect(names(`"UNSUBSCRIBE_SECRET": "${rand(30)}7b"`)).toEqual(['secret variable value (*_SECRET)']);
-    for (const ok of ['PURGE_WORKER_SECRET=process.env.PURGE_WORKER_SECRET', 'X_SECRET: ${{ secrets.X_SECRET }}', "E2E_SECRET: 'e2e-unsubscribe-secret-not-real'", `X_SECRET=${'a'.repeat(30)}`]) expect(names(ok), ok).toEqual([]);
+    for (const ok of ['PURGE_WORKER_SECRET=process.env.PURGE_WORKER_SECRET', 'X_SECRET: ${{ secrets.X_SECRET }}', "E2E_SECRET: 'e2e-unsubscribe-secret-not-real'", `${XS}=${'a'.repeat(30)}`]) expect(names(ok), ok).toEqual([]);
   });
 
   it('[SEC-R03] a PEM with a blank line after its header, and an Apple .p8 body with no header, are found', () => {

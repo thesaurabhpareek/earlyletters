@@ -28,7 +28,7 @@ export const SECRET_PATTERNS = [
   { name: 'private key block', re: /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----/, check: (m, next, line) => /^\s*[A-Za-z0-9+/=]{40,}/.test(next) || /^(?:\\n|\s)+[A-Za-z0-9+/=]{40,}/.test(line.slice(m.index + m[0].length)) },
   { name: 'Supabase secret key (sb_secret_)', re: /\bsb_secret_[A-Za-z0-9_-]{20,}/, check: (m) => !obviouslyFake(m[0]) },
   { name: 'service_role JWT', re: /\beyJ[A-Za-z0-9_-]{8,}\.(eyJ[A-Za-z0-9_-]{8,})\.[A-Za-z0-9_-]{8,}/, check: (m) => jwtRole(m[1]) === 'service_role' && !obviouslyFake(Buffer.from(m[0].split('.')[2], 'base64url').toString('latin1')) },
-  { name: 'service role key value', re: /\b(?:SUPABASE_)?SERVICE_ROLE_KEY['"]?\s*[=:]\s*['"]?(?![<$\{])([A-Za-z0-9._-]{30,})/, check: (m) => !isReference(m[1]) && !obviouslyFake(m[1]) },
+  { name: 'service role key value', re: /\b(?:SUPABASE_)?SERVICE_ROLE_KEY['"]?\s*[=:]\s*['"]?(?![<$\{])([A-Za-z0-9._-]{30,})/, check: (m) => !isBareReference(m) && !obviouslyFake(m[1]) },
   { name: 'EAS token (EXPO_TOKEN)', re: /\bEXPO_TOKEN['"]?\s*[=:]\s*['"]?(?![<$\{])[A-Za-z0-9_-]{30,}/ },
   { name: 'Supabase access token (sbp_)', re: /\bsbp_[0-9a-f]{40}\b/ },
   { name: 'Resend key', re: /\bre_[A-Za-z0-9]{8}_[A-Za-z0-9]{24,}/ },
@@ -37,13 +37,14 @@ export const SECRET_PATTERNS = [
   { name: 'GitHub token', re: /\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})/ },
   { name: 'PostHog personal key (phx_)', re: /\bphx_[A-Za-z0-9]{30,}/, check: (m) => !obviouslyFake(m[0]) },
   { name: 'OpenRouter key (sk-or-)', re: /\bsk-or-(?:v1-)?[A-Za-z0-9]{32,}/, check: (m) => !obviouslyFake(m[0]) },
-  { name: 'secret variable value (*_SECRET)', re: /\b[A-Z][A-Z0-9_]*_SECRET['"]?\s*[=:]\s*['"]?(?![<$\{])([A-Za-z0-9+/_.=-]{24,})/, check: (m) => /[A-Za-z]/.test(m[1]) && /\d/.test(m[1]) && !/^(?:sb_secret_|phx_|sk-|gh[pousr]_|github_pat_|sbp_|re_)/.test(m[1]) && !isReference(m[1]) && !isPhrase(m[1]) && !obviouslyFake(m[1]) },
+  { name: 'secret variable value (*_SECRET)', re: /\b[A-Z][A-Z0-9_]*_SECRET['"]?\s*[=:]\s*['"]?(?![<$\{])([A-Za-z0-9+/_.=-]{24,})/, check: (m) => /[A-Za-z]/.test(m[1]) && /\d/.test(m[1]) && !/^(?:sb_secret_|phx_|sk-|gh[pousr]_|github_pat_|sbp_|re_)/.test(m[1]) && !isBareReference(m) && !isPhrase(m[1]) && !obviouslyFake(m[1]) },
   // The PKCS8 DER start of an Apple Sign in .p8 (an EC P-256 key) in base64, so a body pasted without its BEGIN line is still found.
   { name: 'Apple .p8 key body (no header)', re: /MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg[A-Za-z0-9+/=]{8,}/ },
 ];
 
 /** Lowercase words joined by `-` or `_` (`e2e-unsubscribe-secret-not-real`): a human phrase, not a generated key. */
 function isPhrase(v) {
+  if (/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v)) return false; // a UUID is a generated value
   return /^[a-z0-9]+(?:[-_][a-z0-9]+){2,}$/.test(v);
 }
 
@@ -60,9 +61,15 @@ function obviouslyFake(v) {
   return /^(?:example|fake|dummy|signature|placeholder|your|test|key|secret|value|goes|here|[_.x0-9-])+$/i.test(body);
 }
 
-/** A dotted name such as `process.env.X` or `config.KEY`: a reference to a value, not a value. A JWT (starts `eyJ`) is never one. */
+/** A reference to a value, not a value: `process.env.NAME`, `Deno.env.NAME`, `import.meta.env.NAME`, `env.NAME`, `config.NAME`, `secrets.NAME`, or an all-capitals dotted name. */
 function isReference(v) {
-  return !v.startsWith('eyJ') && /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+$/.test(v);
+  return /^(?:(?:process|Deno|import\.meta)\.env|env|config|secrets)(?:\.[A-Za-z_]\w*)+$/.test(v) || /^[A-Z_][A-Z0-9_]*(?:\.[A-Z_][A-Z0-9_]*)+$/.test(v);
+}
+
+/** A reference counts only when it is the WHOLE value: nothing but quotes, commas, a semicolon or a comment may follow (`X || 'real value'` is not bare). */
+function isBareReference(m) {
+  const rest = m.input.slice(m.index + m[0].length);
+  return isReference(m[1]) && /^['"]?\s*[,;)!]*\s*(?:(?:\/\/|#).*)?$/.test(rest);
 }
 
 /** The `role` claim of a JWT payload (base64url JSON), or '' when it does not decode. */
@@ -80,10 +87,11 @@ export function scanText(text) {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     for (const p of SECRET_PATTERNS) {
-      const m = p.re.exec(lines[i]);
       // `next`: the first non-blank line within four lines (a PEM may have a blank line after its header).
       const next = lines.slice(i + 1, i + 5).find((l) => l.trim() !== '') ?? '';
-      if (m && (!p.check || p.check(m, next, lines[i]))) out.push({ line: i + 1, name: p.name });
+      // Every match on the line is tried (a placeholder first must not hide a real value after it); one finding per rule per line.
+      const hit = [...lines[i].matchAll(new RegExp(p.re.source, `${p.re.flags}g`))].find((m) => !p.check || p.check(m, next, lines[i]));
+      if (hit) out.push({ line: i + 1, name: p.name });
     }
   }
   return out;
