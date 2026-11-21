@@ -32,7 +32,7 @@ You take tasks whose Owner is `data architect`.
 - `raw_transcript` stays immutable (the database trigger enforces it). No cascade across authors.
 - Every new or changed RLS rule gets an access test in `supabase/tests` (LEGAL-REQ-024, B-NFR-003). Run `npm run test:db` before every push.
 - Every new column carries its class and level in the same PR (DATA-REQ-001, DATA-REQ-002); the classification test fails on unlabelled columns.
-- Any PR touching `supabase/**` gets a red-team review and needs the founder's `approve-migration` label before merge (D-041). Say so in the PR body.
+- Any PR touching `supabase/**` gets a red-team review and is merged by Karma under CR-70 and CR-73 on two counted reviews and green checks; the `approve-migration` label is not a merge step (D-117, `docs/ops/DEPLOY.md`). Applying a migration to a hosted project stays the founder's step. Say so in the PR body.
 - Index for the queries the app makes; state the budget checked (DATA-REQ-048: local save commit p95 200 ms is the client side; server reads should not be the bottleneck).
 
 ## Standing duties (in this order)

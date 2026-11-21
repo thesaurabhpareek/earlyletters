@@ -17,6 +17,7 @@
  * Nothing here queues an upload. Both paths are offered only on a phone that never signed in (store.ts checks).
  */
 import type { RepoContext } from './context';
+import { dropSearchIndex, reconcileSearch } from '../../find/lifecycle';
 
 export const BOOK_DELETED_PREFIX = 'book.deletedAt.';
 export const BOOK_ERASING_PREFIX = 'book.erasing.';
@@ -40,6 +41,7 @@ export function markDeleted(ctx: RepoContext, id: string): boolean {
   if (!ctx.db.get<{ id: string }>('SELECT id FROM children WHERE id = ?', id)) return false;
   if (isDeleted(ctx, id)) return false;
   ctx.db.run('INSERT INTO settings (key, value) VALUES (?, ?)', BOOK_DELETED_PREFIX + id, ctx.now());
+  reconcileSearch(ctx.db); // a deleted book's letters wait inside the book and are not found
   return true;
 }
 
@@ -47,6 +49,7 @@ export function markDeleted(ctx: RepoContext, id: string): boolean {
 export function unmarkDeleted(ctx: RepoContext, id: string): boolean {
   if (!isDeleted(ctx, id) || isErasing(ctx, id)) return false;
   ctx.db.run('DELETE FROM settings WHERE key = ?', BOOK_DELETED_PREFIX + id);
+  reconcileSearch(ctx.db);
   return true;
 }
 
@@ -117,6 +120,7 @@ export function removeBook({ db }: RepoContext, childId: string): void {
   db.run('DELETE FROM settings WHERE instr(key, ?) > 0 AND key NOT IN (?, ?)', childId, BOOK_DELETED_PREFIX + childId, BOOK_ERASING_PREFIX + childId);
   db.run('DELETE FROM children WHERE id = ?', childId);
   db.run('DELETE FROM settings WHERE key IN (?, ?)', BOOK_DELETED_PREFIX + childId, BOOK_ERASING_PREFIX + childId);
+  reconcileSearch(db); // the book's letters are gone, so their words leave the Find index in the same transaction
 }
 
 /** Every letter and draft on this phone with its recording path, for Erase everything. */
@@ -133,6 +137,9 @@ export function allAudioRows({ db }: RepoContext): { id: string; audioUri: strin
  * removes last, and `keepSettings` (an active 18+ stop, store.ts). The schema version stays, so the next open needs no migration.
  */
 export function removeEverything({ db }: RepoContext, keepSettings: readonly string[] = []): void {
+  // The Find index is dropped, never row-deleted: deleting the rows of an FTS5 table's shadow tables by hand corrupts it
+  // (ADR 0028 D5). The caller (store.ts) drops it first; doing it here too keeps every path that reaches this function safe.
+  dropSearchIndex(db);
   const tables = db
     .all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
     .map((r) => r.name);

@@ -36,6 +36,7 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
+import { appleSignInAvailable } from '@/lib/auth/apple';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
@@ -71,8 +72,8 @@ import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
-import { ARRIVAL_SETTING, arrivalToWrite } from '@/lib/first-run/new-phone.logic';
-import { NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
+import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
+import { HeldScreen, NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
@@ -670,7 +671,15 @@ export default function Onboarding() {
  */
 function FirstRun() {
   const route = useFirstRunRoute();
-  const { signOut } = useAuth();
+  const { signOut, lastMethod, signInWithApple, state: authState } = useAuth();
+  // NS-41-R12 (card 19): Apple stays reachable when a 429 on SENDING an email (`email_wait`) put the person here, and only then.
+  const emailWait = authState.status === 'signedOut' && authState.error === 'email_wait';
+  // FP-6: Apple's button on the outage screen, only where Apple sign-in is available on this phone.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleAvailable);
+  }, []);
+  const method = methodLine(lastMethod);
   // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
   // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
   // settings table when the store is erased (lib/store.ts eraseEverythingLocal; the Settings row behind it is not offered
@@ -690,11 +699,12 @@ function FirstRun() {
   if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen lettersComing={route.accountHasBook} />;
   if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
-  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;
+  if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} />;
+  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} method={method} />;
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
   if (route.screen === 'outage' && route.outage) {
-    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} onApple={appleAvailable && emailWait ? () => void signInWithApple() : undefined} />;
   }
   return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }

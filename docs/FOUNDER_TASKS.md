@@ -466,7 +466,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 
 - [ ] **FT-49 Launch-week switches**
   - Time: 1 hour. Cost: US $0 (it caps cost).
-  - Steps: Supabase spend cap **off** after launch, with billing alerts at 150% of the monthly model (T5-23; a cap that blocks sign-in or sync is worse than an overage); PostHog billing limit; schedule the weekly insights run for Monday about 07:45 Pacific with the Query Read key from FT-24 and an `insights_reader` token in the scheduler's secret store (`docs/analytics/INSIGHTS_LOOP.md` sections 4 and 6; D-070: the agent writes files, the coordinator commits).
+  - Steps: Supabase spend cap **off** after launch, with billing alerts at 150% of the monthly model (T5-23; a cap that blocks sign-in or sync is worse than an overage); PostHog billing limit; schedule the weekly insights run for Monday about 07:45 Pacific with the Query Read key from FT-24 and, once `reporting_reader` exists (IN-DA-03), its read-only login in the scheduler's secret store (until then run it locally; an `insights_reader` JWT no longer works after APPLY file 34, and the service key stays out of CI) (`docs/analytics/INSIGHTS_LOOP.md` sections 4 and 6; D-070: the agent writes files, the coordinator commits).
   - By: launch week. Blocks: BL-346; the insights loop (T5-26).
 
 - [ ] **FT-50 Store growth steps once the app is Ready for Sale**

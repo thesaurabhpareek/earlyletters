@@ -65,8 +65,8 @@ describe('ageOn: month anniversaries on short months', () => {
 
   it('refuses dates that are not YYYY-MM-DD', () => {
     for (const bad of ['12/04/2025', '2025-4-12', '', 'yesterday', '20250412']) {
-      expect(() => ageOn(bad, '2026-04-12'), bad).toThrow(/Invalid ISO date/);
-      expect(() => ageOn(ASHA, bad), bad).toThrow(/Invalid ISO date/);
+      expect(() => ageOn(bad, '2026-04-12'), bad).toThrow(/invalid_iso_date/);
+      expect(() => ageOn(ASHA, bad), bad).toThrow(/invalid_iso_date/);
     }
   });
 

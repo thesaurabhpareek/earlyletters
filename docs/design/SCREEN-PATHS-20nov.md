@@ -107,7 +107,7 @@ Happy: Me > Reminders, read the footer, turn the switch on, iOS asks, Allow, the
 | REV | The person turned notifications off in iPhone Settings. On next focus of the page the switch reads Off and the same ST-NOTICE shows. Pending local reminders are not scheduled (matrix row 2: "Reminders are not scheduled; app works"). A return from Settings with permission on shows `onToast` (S34). | same keys |
 | EMP | n/a. Nothing is "missing" when reminders are off. | n/a |
 | ERR | Scheduling failed: ST-NOTICE with Try again; the switch stays where the person put it. | `errors.generic` (built); a Reminders-specific line is CONTENT-NEEDED |
-| SLO | n/a (local) | n/a |
+| SLO | n/a: scheduling is local to the phone, so nothing waits on a network | n/a |
 | EXP | n/a: nothing here expires | n/a |
 | DEC | "No reminders" on the D-S04 card writes the choice and shows the line above the tab bar (`ReminderPrimeAsk`, inside the tabs `ToastHost`). The card does not return after the second showing. | built |
 | FUL | n/a: nothing here can fill up or hit a limit | n/a |
@@ -125,7 +125,7 @@ Happy: Me > App lock, a short line of ours above the switch (CONTENT-NEEDED, key
 
 | State | Exact screen | Copy key |
 |---|---|---|
-| OFF | n/a (local) | n/a |
+| OFF | n/a: the lock is local to the phone and needs no connection | n/a |
 | DEN | iOS said No to Face ID. The lock offers the iPhone passcode, or stays off. The switch reads what is true. | CONTENT-NEEDED |
 | REV | Face ID later turned off for the app in iPhone Settings: the unlock screen offers the passcode (iOS does this itself); the page shows what the lock uses now. Not in any source read: UNVERIFIED. | CONTENT-NEEDED |
 | EMP | n/a: no list is shown, so nothing can be empty | n/a |
@@ -168,7 +168,7 @@ No dark pattern, as a checklist the review reads against (what I confirmed in th
 |---|---|---|
 | OFF | The choice is local and needs no connection. Offline never delays or blocks it. | none |
 | DEN | n/a: there is no iOS popup for analytics. | n/a |
-| REV | n/a (not a system permission) | n/a |
+| REV | n/a: analytics is our own choice, not an iPhone permission, so iPhone Settings cannot revoke it | n/a |
 | EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | Saving the choice failed: the sheet stays, buttons re-enable (`busy` clears in `finally`), nothing is sent. No error text is built. If the write cannot be saved, treat as `unknown`: nothing sent. A line is CONTENT-NEEDED if the founder wants one. | CONTENT-NEEDED |
 | SLO | After a tap both buttons are disabled for the write (`busy`); the sheet closes on completion. | none |
@@ -323,7 +323,7 @@ Happy: the person signs in on a new phone, "Opening your book." (`authCopy.newPh
 | State | Exact screen | Copy key |
 |---|---|---|
 | OFF | Arrival: "No book" and offline states are built (`E WORDS:297-307`); Your words is local and works offline | `authCopy.newPhone.*` |
-| DEN, REV | n/a: no system permission is involved; no system permission is involved, so none can be revoked | n/a |
+| DEN, REV | n/a: no system permission is involved, so none can be denied or revoked | n/a |
 | EMP | Your words: empty list, one quiet line, "Add a name" if the page has one. No count, no "0 names", no "you have not taught any". | CONTENT-NEEDED |
 | ERR | The list file cannot be read: ST-INLINE, Try again, the book is unaffected | `errors.generic` |
 | SLO | n/a: local, no network wait | n/a |
@@ -336,7 +336,7 @@ Changed. Happy: Me > Reminders, "How it will look" shows the lock-screen preview
 
 | State | Exact screen | Copy key |
 |---|---|---|
-| OFF, SLO, FUL, INT | n/a (static, local) | n/a |
+| OFF, SLO, FUL, INT | n/a: the preview is a static drawing made on the phone, so nothing waits on a network, nothing can fill up and no work is in flight | n/a |
 | DEN / REV | Notifications off: the preview still draws, with the denied notice above it (PATH-03) | `reminderCopy.settings.deniedTitle` |
 | EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | n/a: static and local, nothing here can fail | n/a |
