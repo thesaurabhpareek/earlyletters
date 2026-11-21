@@ -45,7 +45,18 @@ describe('brand registry: assets', () => {
 
   it('npm fonts resolve from @scribe/brand', () => {
     const req = createRequire(join(BRAND, 'index.ts'));
-    for (const a of all.filter((x) => x.format === 'npm')) expect(() => req.resolve(`${a.package}/package.json`), a.id).not.toThrow();
+    // BL-442: and the copy that resolves is the one packages/brand/package.json pins (a range or "*" is not a pin).
+    const pinned = (JSON.parse(readFileSync(join(BRAND, 'package.json'), 'utf8')) as { devDependencies: Record<string, string> }).devDependencies;
+    const fonts = all.filter((x) => x.format === 'npm');
+    expect(fonts.length).toBeGreaterThan(0);
+    for (const a of fonts) {
+      expect(() => req.resolve(`${a.package}/package.json`), a.id).not.toThrow();
+      const version = (JSON.parse(readFileSync(req.resolve(`${a.package}/package.json`), 'utf8')) as { version: string }).version;
+      const want = pinned[a.package!];
+      expect(want, `${a.id}: ${a.package} is a dependency of @scribe/brand`).toBeDefined();
+      if (/^\d+\.\d+\.\d+$/.test(want)) expect(version, a.id).toBe(want);
+      else expect(version, a.id).toMatch(/^\d+\.\d+\.\d+/);
+    }
   });
 
   it('recorded dimensions match the files', () => {

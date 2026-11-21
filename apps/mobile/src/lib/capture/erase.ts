@@ -24,9 +24,12 @@
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
 import { erasePictureOf } from '../photos/device';
-import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, type AudioEraser } from '../store';
+import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, setDraftPictureEraser, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
+
+// A draft let go (Review, Listen, the launch sweep) or deleted (Write) takes its picture at once (ADR 0028 D5).
+setDraftPictureEraser(erasePictureOf);
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.

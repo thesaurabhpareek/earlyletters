@@ -152,6 +152,17 @@ describe('a long first name is never broken in two (P2 S2)', () => {
     expect(coverName('Alexandrina', 'sm').lines).toEqual(['Alexandrin']);
   });
 
+  it('on the 96 pt thumbnail cover at the 13 pt floor, Christopher and Alexandrina fade on one line and Maximilian fits whole', () => {
+    // The spec (EXPERIENCE_PASS S05) says the 96 pt cover fades both names; this pins it.
+    for (const name of ['Christopher', 'Alexandrina']) {
+      const set = coverName(name, 'thumb');
+      expect(set, name).toMatchObject({ truncated: true, broken: true, fontSize: tokens.minFontSize, full: name });
+      expect(set.lines, name).toHaveLength(1);
+      expect(set.lines[0].length, name).toBeLessThan(name.length);
+    }
+    expect(coverName('Maximilian', 'thumb')).toMatchObject({ lines: ['Maximilian'], truncated: false });
+  });
+
   it('a name of several words keeps the words before a long one whole, and a long word ends the name instead of wrapping', () => {
     expect(coverName('Asha Alexandrina', 'sm').lines).toEqual(['Asha', 'Alexandrin']);
     expect(coverName('Wilhelmina Rose', 'sm')).toMatchObject({ lines: ['Wilhelmin'], truncated: true }); // never "Wilhelmin" over "a Rose"
