@@ -180,11 +180,11 @@ Filled in as each is opened. Each is docs only and one concern. Status of every 
 
 | Pull request | Closes |
 |---|---|
-| this file | GAP-09 index, records all |
-| Legal and Licenses spec | GAP-01, GAP-02 |
-| Your words spec | GAP-03 (built page); GAP-04 asks for a ruling |
-| Add a book spec | GAP-05 |
-| Spoken language spec | GAP-06 |
+| #1185 this file | GAP-09 index, records all |
+| #1186 Legal and Licenses spec | GAP-01, GAP-02 |
+| #1187 Your words spec | GAP-03 (built page); GAP-04 asks for a ruling |
+| #1188 Add a book spec | GAP-05 |
+| #1189 Spoken language spec | GAP-06 |
 
 ## 5. What I need
 
