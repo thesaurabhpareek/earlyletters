@@ -270,4 +270,13 @@ describe('[B5-5] the sweep never runs on a Keychain read that failed or was unav
     expect(backupSweepFor(U, null, { kind: 'unavailable' })).toEqual({ run: true, keep: U });
     expect(backupSweepFor(null, U, { kind: 'unavailable' })).toEqual({ run: true, keep: null });
   });
+
+  it('the restore effect stores the real read (not a constant) before it dispatches RESTORED (a source match: the provider is not rendered here)', () => {
+    const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
+    expect(src).toMatch(
+      /void readStoredSession\(\(\) => secureStorage\.getItem\(SESSION_STORAGE_KEY\)\)\.then\(\(r\) => \{\s*if \(!alive\) return;\s*storedRead\.current = r;\s*dispatch\(\{ type: 'RESTORED', userId: r\.kind === 'found' \? r\.userId : null \}\);/,
+    );
+    expect(src).toMatch(/const storedRead = useRef<StoredSessionRead>\(\{ kind: 'unavailable' \}\);/);
+    expect(src.match(/storedRead\.current\s*=/g)).toHaveLength(1);
+  });
 });
