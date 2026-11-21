@@ -35,6 +35,7 @@ import { APP_ENV } from '../build-env';
 import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { AccountChanged, backupDbFileFor, createAccountHost } from './account';
+import { openSecureBackupFile } from './files';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -420,7 +421,9 @@ const listeners = new Set<() => void>();
 function dbFor(profileId: string): BackupDb {
   let d = backupDbs.get(profileId);
   if (!d) {
-    d = openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, () => new Date().toISOString());
+    const file = backupDbFileFor(profileId);
+    // B5-3: files.ts checks before and after the open and refuses (BackupFileNotExcluded) a file not excluded.
+    d = openSecureBackupFile(file, openNativeDb, (o) => openBackupDb(o.db, () => new Date().toISOString()));
     backupDbs.set(profileId, d);
   }
   return d;

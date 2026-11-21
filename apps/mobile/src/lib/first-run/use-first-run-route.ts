@@ -8,8 +8,7 @@
  * NX-36-S17: a ready, sync-on session with no book asks its account first (use-new-phone.ts) and is held on "Opening your
  * book" until the account has said it has no book, so the child step is never shown while the book may be on its way. A
  * signed-in session that cannot ask yet (the consent gate still being read, or unreadable, or a sign-out finishing) is held
- * too (gate.logic.ts heldNewPhoneView); only a session that cannot be sent a book keeps the earlier route: sync declined, or
- * consent not yet answered (`needsConsent`; the accepted gap and its follow-up are named at heldNewPhoneView).
+ * too (gate.logic.ts heldNewPhoneView); a `needsConsent` session is held on the finish-setup screen (BL-922a); only sync declined keeps the earlier route.
  */
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -136,8 +135,8 @@ export function useFirstRunRoute(): FirstRunRoute {
   const visible = bookVisibleTo({ owner: phoneOwner, sessionUser: active ? authUserId(auth.state) : null });
   // A ready session with sync on and no book asks its account first (NX-36-S17). A session whose consent gate is still being
   // read, could not be read, or whose sign-out has not finished is held meanwhile (heldNewPhoneView): it may yet become sync
-  // on, and the first pull would bring the account's book. A session that cannot be sent a book (sync declined, or consent not
-  // yet answered: `needsConsent`, the accepted gap named at heldNewPhoneView) keeps the earlier route (`new`); so does every
+  // on, and the first pull would bring the account's book. A session that declined sync keeps the earlier route (`new`); one with consent
+  // still to give is held on the finish-setup screen (`consent`, heldNewPhoneView); so does every
   // build with the switch off (nothing here is read then).
   const asks = active && visible && auth.state.status === 'ready' && auth.state.sync === 'on';
   const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });

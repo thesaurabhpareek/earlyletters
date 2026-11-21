@@ -46,6 +46,17 @@ check('[CR71-C9] insights_reader still cannot read a base table (42501)', (await
 check('[CR71-C9] a second run changes nothing', (await after.codeOf(() => after.db.exec(migration))) === 'ok' && (await members(after.sys)) === 0);
 check('[CR71-C9] authenticator cannot set role insights_reader (42501)', (await viaApi(after, VIEW)) === '42501');
 
+// [CR71-C9] insights_reader is not granted to authenticated either (a signed-in user must not become it).
+const notMember = async (sys, who) => (await sys(`select count(*)::int n from pg_auth_members m
+  join pg_roles r on r.oid = m.roleid join pg_roles g on g.oid = m.member
+ where r.rolname = 'insights_reader' and g.rolname = '${who}'`)).rows[0].n === 0;
+check('[CR71-C9] insights_reader is not granted to authenticated', await notMember(after.sys, 'authenticated'));
+check('[CR71-C9] a signed-in user cannot set role insights_reader (42501)', (await asRole(after, 'authenticated', 'set role insights_reader')) === '42501');
+// Mutant: the grant to authenticated is detected.
+const mutant = await createDb(files);
+await mutant.db.exec('grant insights_reader to authenticated');
+check('[CR71-C9] mutant: a grant to authenticated is detected', !(await notMember(mutant.sys, 'authenticated')));
+
 // State 3: a local database with no authenticator role: the file runs clean.
 const local = await createDb(files);
 check('[CR71-C9] with no authenticator role the file runs clean', (await local.codeOf(() => local.db.exec(migration))) === 'ok');

@@ -441,7 +441,7 @@ Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two
   Rollback: `select cron.unschedule('scribe-sync-housekeeping');`
 - **Restore epoch.** After any database restore, before clients reconnect and after the purge-ledger replay, run `select public.sync_begin_epoch('database_restore', '<restore point ISO>');` with the service role (docs/ops/runbooks/restore-drill.md step 4). Phones then re-upload what the restore lost; they never delete anything because of it. The old `app.sync_epoch` database setting from the deleted draft is not read by anything.
 - **Purge worker** (file 10): deploy and schedule as in docs/ops/README.md ("Deploy", steps 4 and 5; `supabase/cron/purge-worker.sql`). Keep the hourly `scribe-purge-due` job from step 7 as a backstop.
-- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists (removed again by file 34). Nothing else to set; the weekly insights run reads with the service role (docs/analytics/INSIGHTS_LOOP.md).
+- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists (removed again by file 34). Nothing else to set. After file 34 no hosted service key is used for the weekly insights run, and no hosted credential exists for it until `reporting_reader` (IN-DA-03); see docs/analytics/INSIGHTS_LOOP.md.
 - `app.store_environment` (step 11) is no longer read by anything after file 8.
 
 ## Step 16. App changes for files 8 to 11
@@ -1246,4 +1246,12 @@ What it changes: drops the insert and update policies on `storage.objects` for `
 
 What it changes: `revoke insights_reader from authenticator`. Nothing else: the role, its grants and the views stay; `service_role` still reads the views (it is not used for the weekly run). No column, no new grant.
 
-**Before the tag (founder):** an insights_reader JWT stops working through the Data API. The weekly insights run uses the planned `reporting_reader` login role (IN-DA-03); until it exists, run it locally and keep the service key out of CI (no workflow in `.github` uses it). Do not swap in the service key as the token. **Check:** `select count(*) from pg_auth_members m join pg_roles r on r.oid = m.roleid join pg_roles g on g.oid = m.member where r.rolname = 'insights_reader' and g.rolname = 'authenticator';` returns 0. **Rollback:** forward-fix only; `grant insights_reader to authenticator;`.
+**Before the tag (founder):** an insights_reader JWT stops working through the Data API. The weekly insights run uses the planned `reporting_reader` login role (IN-DA-03); until it exists, run it locally and keep the hosted service key out of CI (no workflow uses a hosted service key). Do not swap in the service key as the token. **Check:** `select count(*) from pg_auth_members m join pg_roles r on r.oid = m.roleid join pg_roles g on g.oid = m.member where r.rolname = 'insights_reader' and g.rolname = 'authenticator';` returns 0. **Rollback:** forward-fix only; `grant insights_reader to authenticator;`.
+
+## File 35: the missing audit writers and the security_events store (S6, S7, CR-71 C3)
+
+`20261111010000_audit_writers_security_events.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 34. Refuses a second run (55000).
+
+What it changes: a trigger on `legal_holds` writes `legal_hold_placed` and `legal_hold_released`; `ops_support_access()` (service role) writes `ops.audit_log` then `support_access`; `record_export_created()` (signed-in, own row, 5 a day) writes `export_created`; new table `ops.security_events` (no API access, append-only, 12 months) with a writer, a reader `ops_security_events_check()` and `ops_security_events_retention()`. No existing column or grant changes.
+
+**Check:** `select tgname from pg_trigger where tgname = 'legal_holds_audit';` returns one row; `select count(*) from ops.security_events;` returns 0. **Rollback:** forward-fix only; see the file header.
