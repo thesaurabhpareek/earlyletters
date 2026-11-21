@@ -1,7 +1,10 @@
 /** React hooks for the photo surfaces. Thin: the rules are in the files they call (surface, lens, pending, entry-media). */
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { subscribe as subscribeStore, listEntriesForChild } from '../store';
+import { subscribe as subscribeStore, subscribeTo, listEntriesForChild } from '../store';
+import { photoSurfaces, photosBuildEnabled } from './flag';
+import { photosPausedNow } from './pause';
+import { isClosedSeal } from './seal';
 
 import { photoDeps } from './device';
 import { adoptPending } from './adopt';
@@ -62,21 +65,37 @@ export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto 
   return photo;
 }
 
-/** The Book's Photos lens for one book: which of its kept, open letters have a picture (lens.ts). */
+const EMPTY_LENS: PhotosLens = { visible: false, photos: new Map() };
+const sameLens = (a: PhotosLens, b: PhotosLens): boolean =>
+  a.visible === b.visible && a.photos.size === b.photos.size && [...a.photos].every(([id, p]) => JSON.stringify(b.photos.get(id)) === JSON.stringify(p));
+
+/**
+ * The Book's Photos lens for one book: which of its kept, open letters have a picture (lens.ts). With the photos switch
+ * off or paused it returns the empty lens before the picture store is touched (NS-01-R19). It re-reads on changes to the
+ * letters only (not settings, children or drafts), and keeps the same object when nothing in the lens changed, so the
+ * Book does not re-render for an unrelated event.
+ */
 export function usePhotosLens(childId: string | null): PhotosLens {
-  const [tick, setTick] = useState(0);
-  useEffect(() => subscribeStore(() => setTick((n) => n + 1)), []);
-  return useMemo(() => {
-    void tick;
-    if (!childId) return { visible: false, photos: new Map() };
+  const on = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).lens;
+  const read = useCallback((): PhotosLens => {
+    if (!on || !childId) return EMPTY_LENS;
     try {
       const letters: LensLetter[] = listEntriesForChild(childId).map((e) => ({ id: e.id, inBook: e.inBook, kind: e.kind }));
-      return photosLens(letters, photoDeps().store.all());
+      return photosLens(letters, photoDeps().store.all(), { isClosedSeal });
     } catch {
-      return { visible: false, photos: new Map() };
+      return EMPTY_LENS;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [childId, tick]);
+  }, [on, childId]);
+  const [lens, setLens] = useState<PhotosLens>(read);
+  useEffect(() => {
+    const update = () => setLens((prev) => {
+      const next = read();
+      return sameLens(prev, next) ? prev : next;
+    });
+    update();
+    return subscribeTo('entries', update);
+  }, [read]);
+  return lens;
 }
 
 /** Back, Close or Let it go before Keep: nothing stays, the picker's original included (NS-01-R4). Safe with no photo. */

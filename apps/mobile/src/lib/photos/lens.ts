@@ -33,6 +33,9 @@ export function photosLens(letters: readonly LensLetter[], stored: readonly Stor
   return { visible: photos.size > 0, photos };
 }
 
+/** One spoken label for a card with a picture: the card's, then the picture's, with one stop between them, never two. */
+export const cardLabelWithPhoto = (label: string, photoLabel: string): string => `${label.replace(/[.!?]+\s*$/, '')}. ${photoLabel}`;
+
 /** The Book's chapters with only the letters that have a picture, in the Book's own order; an emptied chapter is dropped. */
 export function photoChapters<C extends { data: readonly { id: string }[] }>(chapters: readonly C[], photos: ReadonlyMap<string, unknown>): C[] {
   return chapters.map((c) => ({ ...c, data: c.data.filter((e) => photos.has(e.id)) })).filter((c) => c.data.length > 0);

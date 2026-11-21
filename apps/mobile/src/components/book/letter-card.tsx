@@ -18,6 +18,7 @@
  * first time) carries the 1.6 s accentSoft wash once, behind its words. A card that leaves (deleted here, or on
  * another phone) collapses out of its row: a fade over exitMs while the rows below close up on `standard`.
  */
+import { cardLabelWithPhoto } from '@/lib/photos/lens';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { WaveformIcon } from 'phosphor-react-native/src/icons/Waveform';
 import { useEffect, type ReactNode } from 'react';
@@ -125,7 +126,7 @@ export function LetterCard({ entry, child, onPress, wash, reason, photo }: Props
       // words sit in the same 330 pt column in both schemes and the page can carry them (canCarry allows 1 pt).
       style={scheme === 'dark' ? { padding: tokens.space[4] - CARD_EDGE_DARK } : undefined}
       onPress={() => onPress(entry.id)}
-      accessibilityLabel={photo ? `${label}. ${photo.label}` : label}
+      accessibilityLabel={photo ? cardLabelWithPhoto(label, photo.label) : label}
       accessibilityHint={copy.reader.openHint}
       className="gap-2.5"
       testID="book.card">

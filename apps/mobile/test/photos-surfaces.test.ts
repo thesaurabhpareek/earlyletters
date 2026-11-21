@@ -531,7 +531,7 @@ describe('[NS-01-R22] the system picker is the only source', () => {
 });
 
 describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exactly one checked', () => {
-  it('[NS-33-R3] LensRow is a segmented ChoiceGroup labelled for VoiceOver, never a tablist of buttons, and the group gives radiogroup, radio and checked', () => {
+  it('[NS-01-R48] the lens choice is a radio group: [NS-33-R3] LensRow is a segmented ChoiceGroup labelled for VoiceOver, never a tablist of buttons, and the group gives radiogroup, radio and checked', () => {
     const lens = readFileSync(join(SRC, 'components', 'photos', 'photos-lens.tsx'), 'utf8');
     const row = lens.slice(lens.indexOf('export function LensRow'), lens.indexOf('\n}\n', lens.indexOf('export function LensRow')));
     expect(row).toMatch(/<ChoiceGroup\s+layout="segmented"\s+label=\{photos\.book\.lens\.label\}/);

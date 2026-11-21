@@ -351,6 +351,14 @@ export default function Book() {
   // across the switch and VoiceOver keeps its place on the option just chosen (NS-33-R3).
   const sections = useMemo(() => (showPhotos ? photoChapters(chapters, lens.photos) : chapters), [showPhotos, chapters, lens.photos]);
 
+  // Switching lens starts the list at the top: the other lens has other rows, so the old offset means nothing (review B on #840).
+  const lensScrolled = useRef(showPhotos);
+  useEffect(() => {
+    if (lensScrolled.current === showPhotos) return;
+    lensScrolled.current = showPhotos;
+    (listRef.current as unknown as { getScrollResponder?: () => { scrollTo?: (o: { y: number; animated: boolean }) => void } } | null)?.getScrollResponder?.()?.scrollTo?.({ y: 0, animated: false });
+  }, [showPhotos]);
+
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;
 
   const child = active.name;
@@ -413,7 +421,7 @@ export default function Book() {
   // The inline bar after scroll (book-page.md 2): the title, Months and the gear, then the compact month at the top of
   // the list, which wraps and never truncates. It cross-fades in with the scroll; while it is out, nothing in it takes a
   // touch or is read (the band is in view with the same buttons).
-  const compact = compactMonth(chapters, topKey ?? chapters[0]?.key ?? null);
+  const compact = compactMonth(sections, topKey ?? sections[0]?.key ?? null); // the list on screen, so the bar's month is one of its sections (N4)
   const topBar = (
     <Animated.View
       pointerEvents={barUp ? 'box-none' : 'none'}

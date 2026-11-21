@@ -8,7 +8,8 @@ import { describe, expect, it } from 'vitest';
 import { newQuietMark } from '../src/components/book/quiet-day.logic';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
 import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
-import { photoChapters, photosLens } from '../src/lib/photos/lens';
+import { cardLabelWithPhoto, photoChapters, photosLens } from '../src/lib/photos/lens';
+import { photos } from '../src/lib/photos/copy';
 import { canKeepWithPhoto, commitPhoto, PHOTO_FREE_MARGIN_BYTES, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
@@ -386,6 +387,52 @@ describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
     expect(photosLens([L('a', { kind: 'not_much' })], [P('a')]).visible).toBe(false);
     expect(photosLens([L('a')], [P('a')], { isClosedSeal: () => true }).visible).toBe(false);
     expect(photosLens([L('a')], [P('a', { deletedAt: '2026-11-12T00:00:00Z' })]).visible).toBe(false);
+  });
+  it('[NS-01-R10a] the Photos lens appears with the first picture', () => {
+    expect(photosLens([L('a'), L('b')], []).visible).toBe(false);
+    expect(photosLens([L('a'), L('b')], [P('a')]).visible).toBe(true); // the first picture of one kept, open letter
+  });
+  it('[NS-01-R10b] a sealed letter\'s picture waits', () => {
+    // Only the closed seal's picture waits; an open letter's picture still counts. (No seal state exists on this phone yet:
+    // lib/photos/seal.ts is the one seam, and the hook passes it.)
+    const sealed = (id: string) => id === 's';
+    const lens = photosLens([L('s'), L('o')], [P('s'), P('o')], { isClosedSeal: sealed });
+    expect(ids(lens)).toEqual(['o']);
+    expect(photosLens([L('s')], [P('s')], { isClosedSeal: sealed }).visible).toBe(false);
+    const hook = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hook).toMatch(/photosLens\(letters, photoDeps\(\)\.store\.all\(\), \{ isClosedSeal \}\)/);
+    expect(readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'seal.ts'), 'utf8')).toMatch(/export const isClosedSeal = \(_entryId: string\): boolean => false;/);
+  });
+  it('[NS-01-R10c] no lens without a picture', () => {
+    for (const letters of [[], [L('a')], [L('a', { inBook: false })]]) expect(photosLens(letters, []).visible).toBe(false);
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
+  });
+  it('[NS-01-R11] the lens shows no count and no add control', () => {
+    // Mutant "add a count to the header": any size, length or digit in the lens components' rendered strings fails these.
+    const lensSrc = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'photos-lens.tsx'), 'utf8');
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(lensSrc).not.toMatch(/\.size\b|\.length\b|Add a photo|addPhoto|\+ /);
+    expect(book).not.toMatch(/lens\.photos\.size|photos\.size\}/);
+    expect(book).not.toMatch(/book\.lens[^\n]*(count|total)/i);
+    for (const s of [photos.book.lens.label, photos.book.lens.months, photos.book.lens.photos]) expect(s).not.toMatch(/\d|\{count\}|\{n\}/);
+    const lens = photosLens([L('a'), L('b'), L('c')], [P('a'), P('b'), P('c')]);
+    expect(Object.keys(lens).sort()).toEqual(['photos', 'visible']); // no total anywhere
+  });
+  it('[review B on #840] the lens hook reads nothing while the switch is off, re-reads on letter changes only, keeps its object when nothing changed; the list resets on a lens switch; the card says one stop; the bar reads the list on screen', () => {
+    const hook = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'hooks.ts'), 'utf8');
+    const fn = hook.slice(hook.indexOf('export function usePhotosLens'));
+    expect(fn.indexOf('if (!on || !childId) return EMPTY_LENS;')).toBeGreaterThan(-1);
+    expect(fn.indexOf('if (!on || !childId) return EMPTY_LENS;')).toBeLessThan(fn.indexOf('photoDeps()')); // nothing read with the switch off
+    expect(fn).toMatch(/subscribeTo\('entries', update\)/);
+    expect(fn).toMatch(/sameLens\(prev, next\) \? prev : next/);
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/compactMonth\(sections, topKey \?\? sections\[0\]\?\.key \?\? null\)/); // N4: not chapters[0]
+    expect(book).not.toMatch(/chapters\[0\]/);
+    expect(book).toMatch(/scrollTo\?\.\(\{ y: 0, animated: false \}\)/);
+    expect(cardLabelWithPhoto('Tuesday, 3 March. She laughed.', 'Rain boots')).toBe('Tuesday, 3 March. She laughed. Rain boots');
+    expect(cardLabelWithPhoto('She laughed', 'Rain boots')).toBe('She laughed. Rain boots');
+    expect(cardLabelWithPhoto('She laughed!', 'Rain boots')).not.toMatch(/\.\.|!\./);
   });
   it('[NS-01-R11] lists the Book\'s own chapters, newest first, keeping only letters that have a picture, and keeps no count', () => {
     const lens = photosLens([L('a'), L('b'), L('c'), L('d')], [P('a'), P('b'), P('d')]);
