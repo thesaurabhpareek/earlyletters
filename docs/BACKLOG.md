@@ -5636,11 +5636,11 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Done when: a test with reminders off shows no pending-notification read, and the planner tests still pass.
 - Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
 
-#### BL-1190 Reminder scheduler sets `lastSignature` before the re-plan awaits
+#### BL-1190 Plan reminders set `lastSignature` before the re-plan awaits
 - Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: none (hardening of BL-966; the rows BL-966 meets are NS-32-R4b and NS-32-R7, which this row changes none of).
 - Blocks: None.
-- Scope: move the `lastSignature` assignment to after the re-plan has completed, so a failed re-plan is tried again on the next call.
+- Scope: in `apps/mobile/src/lib/billing/plan-reminders.ts` (line 94, to verify against the file when picked up) `lastSignature = signature` is set before `await rescheduleReminders()`; move it to after the re-plan has completed, so a failed re-plan is tried again on the next call. The evening scheduler in `reminders/scheduler.ts` already sets it after its work.
 - Done when: a test where the re-plan throws shows the next call plans again, and a mutant that sets the signature early fails.
 - Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
 
@@ -5676,11 +5676,11 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Done when: a new folder under `apps/web` or `lib` that nothing scans fails the test, and every current folder is scanned or listed with a reason.
 - Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
 
-#### BL-1195 No test pins the `session-provider.tsx:280` call
+#### BL-1195 No test pins the Apple revoke watch wiring in `session-provider.tsx`
 - Status: proposed (review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-45-R4.
 - Blocks: None.
-- Scope: add a test that the Apple revoke path in `apps/mobile/src/lib/auth/session-provider.tsx` (the call at line 280) is reached from the foreground gate and from `addRevokeListener`.
+- Scope: add a test that the Apple revoke path in `apps/mobile/src/lib/auth/session-provider.tsx` (`startAppleRevocationWatch`, lines 275 to 283) is reached from the foreground gate (`onAppActive`) and from the revoke listener (`onAppleRevoked: watchAppleRevocation`, which calls `AppleAuthentication.addRevokeListener` in `apps/mobile/src/lib/auth/apple.ts` line 94).
 - Done when: a mutant that removes the call fails a test.
 - Source: review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125.
 
@@ -5696,7 +5696,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Status: proposed (review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, sync owner. Milestone: M15. Size: S.
 - Satisfies: NS-41-R25 (when built).
 - Blocks: None.
-- Scope: wire a reader for `killSwitches.signIn` in the sign-in entry (a switch hides, never turns on); `signIn` stays out of `KILL_SWITCH_FLAG` as `capabilities.test.ts` pins.
+- Scope: wire a reader for `killSwitches.signIn` in the sign-in entry (a switch hides, never turns on); `signIn` stays out of `KILL_SWITCH_FLAG` as `apps/mobile/test/capabilities.test.ts` line 308 pins (verified on develop).
 - Done when: with the switch set the sign-in entry is hidden and nothing else changes; unset, behaviour is as before.
 - Source: review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113.
 
@@ -5741,18 +5741,18 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
 #### BL-1203 Hook grant is noted in `grants.mjs`
-- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Status: done (the comment is in `supabase/tests/grants.mjs` lines 17 and 18, landed in PR #1182, https://github.com/thesaurabhpareek/earlyletters/pull/1182). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
-- Scope: add a one-line comment in `supabase/tests/grants.mjs` saying that `public.hook_new_device_sign_in` (executable by `supabase_auth_admin` only) is asserted in `new_device_sign_in.test.mjs`, so the CLAUDE.md rule that every grant goes in `grants.mjs` stays honest.
+- Scope: a one-line comment in `supabase/tests/grants.mjs` saying that `public.hook_new_device_sign_in` (executable by `supabase_auth_admin` only) is asserted in `new_device_sign_in.test.mjs`. Found already on develop; kept as a record.
 - Done when: the comment is there and names the test file; no grant changes.
-- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; evidence PR #1182.
 
 #### BL-1204 New-device tokens: a database cap on `expires_at`
 - Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, security engineer. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
-- Scope: in a new migration (never edit the applied file) add `check (expires_at <= created_at + interval '7 days')` to `ops.new_device_tokens`, so a faulty sender cannot mint a long-lived token; the 48 hour default stays in the sender. The migration is written, never applied: it waits for `approve-migration` and the founder's apply step.
+- Scope: in a new migration (never edit the applied file) add `check (expires_at <= created_at + interval '7 days')` to `ops.new_device_tokens`, so a direct insert cannot make a long-lived token. The mint function `ops_new_device_token_mint` already refuses a ttl under 1 minute or over 7 days (PR #1182), so this is the table-level backstop; the 48 hour default stays in the mint function. The migration is written, never applied: it waits for `approve-migration` and the founder's apply step.
 - Done when: a test shows a token with `expires_at` beyond 7 days is refused and a 48 hour one is accepted, and `npm run test:db` passes.
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
@@ -5768,8 +5768,8 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
-- Scope: `supabase/APPLY.md` File 36 cites `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, which is not on develop (it was read from a branch). Land the file, or change the citation to what is on develop.
-- Done when: the cited path exists on develop, or APPLY.md cites a file that does.
+- Scope: `supabase/APPLY.md` File 36 cites `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, which is not on develop (it was read from a branch). Open PR #1161, https://github.com/thesaurabhpareek/earlyletters/pull/1161, adds that file; this row closes when #1161 merges, and only if it does not, change the citation to what is on develop.
+- Done when: the cited path exists on develop, or APPLY.md cites a file that does (not yet: #1161 is open).
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
 #### BL-1207 Boundary scan: a scratch-tree test for `scan()`, and the `/*` test gets its closing `*/`
@@ -5788,7 +5788,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Done when: a test writes over a `newer` file and shows it is unchanged, and a mutant without the guard fails.
 - Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
-#### BL-1209 Days file: a test that dropping the post-rename exclusion check goes red
+#### BL-1269 Days file: a test that dropping the post-rename exclusion check goes red
 - Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
 - Satisfies: NS-47-R6.
 - Blocks: nothing.
@@ -5796,7 +5796,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Done when: the mutant fails a test.
 - Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
-#### BL-1210 Export README and inventory name the days file (before the days flag)
+#### BL-1270 Export README and inventory name the days file (before the days flag)
 - Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
 - Satisfies: NS-47-R10, and SECURITY-OPEN-QUESTIONS C-6 (`docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md`).
 - Blocks: `EXPO_PUBLIC_DAYS` on.
