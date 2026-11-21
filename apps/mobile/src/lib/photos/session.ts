@@ -57,8 +57,9 @@ export type PickRun =
   | { status: 'failed' };
 
 /**
- * Open the system picker (NS-01-R2, R17). The picker port has no permission call, so none can be made. An iCloud-only
- * picture reports progress and can be cancelled; a cancel or a failure leaves nothing behind.
+ * Open the system picker (NS-01-R2, R17). The picker port has no permission call, so none can be made. A cancel ends
+ * the wait at once, and a cancel or a failure leaves nothing behind (picker.ts removes a copy that lands later). No
+ * download progress is reported yet (picker.ts).
  */
 export function runPick(picker: PhotoPicker, onProgress?: (fraction: number) => void): { done: Promise<PickRun>; cancel(): void } {
   const run = picker.open({ onProgress });
