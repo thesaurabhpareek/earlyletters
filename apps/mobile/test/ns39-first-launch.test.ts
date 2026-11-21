@@ -143,9 +143,9 @@ describe('[NS-39-R14] a No discards a held link', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  // RED TODAY (NS-39-R14): answerAgeGate('no') clears the invite only; the held email auth link in memory
-  // (auth/pending.ts setPendingAuthLink) survives a No and would be replayed.
-  it.fails('[NS-39-R14] a No deletes the held email link too', async () => {
+  // Was written red (it.fails) before the fix. #1128 itself made answerAgeGate('no') also take the held email link
+  // (lib/age-gate.ts takePendingAuthLink), so it is green now and is a plain it.
+  it('[NS-39-R14] a No deletes the held email link too', async () => {
     const { setPendingAuthLink, takePendingAuthLink } = await import('../src/lib/auth/pending');
     const { answerAgeGate } = await import('../src/lib/age-gate');
     setPendingAuthLink({ tokenHash: 'asha-hash', type: 'magiclink' });

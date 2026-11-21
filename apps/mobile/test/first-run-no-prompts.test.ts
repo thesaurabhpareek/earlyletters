@@ -4,7 +4,8 @@
  * scans, as the design says (docs/tdd/new-scope/12-first-run-4.md section 14, FS-5, FS-8). The device half of R2 (no
  * iOS prompt through "The book is open.") is a human run on the Asha-only install; it is not claimed here.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -37,7 +38,9 @@ export const PROMPT_PATTERN = /request\w*PermissionsAsync|requestPermission|auth
 /** The Plus line, the "coming soon" family line and story cards (FS-8). */
 export const TEASER_PATTERN = /\bbillingCopy\b|familyCopy\.soon|\bstories\b|storiesCopy/;
 
-const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+// `typeof import('x')` is a type position: it is erased at build and loads nothing, so it is not an edge in the graph.
+// (lib/photos/device.ts reads the lock state with a lazy require and types it this way; the walk must not call that a load.)
+const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown');
 const read = (f: string) => strip(readFileSync(f, 'utf8'));
 
 /** Every local file the entry reaches through `@/` or relative imports, itself included. */
@@ -65,6 +68,21 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   it('[NS-39-R2] the scan flags a module that asks (positive control)', () => {
     expect(PROMPT_PATTERN.test('await Notifications.requestPermissionsAsync()')).toBe(true);
     expect(PROMPT_PATTERN.test("import * as LocalAuthentication from 'expo-local-authentication'")).toBe(true);
+  });
+
+  it('[NS-39-R2] control: the walk still follows a real import of the lock controller, and skips a type-only one', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ns39-walk-'));
+    try {
+      writeFileSync(join(dir, 'lock.ts'), 'export const x = 1;');
+      writeFileSync(join(dir, 'static.ts'), "import { x } from './lock';\nexport const y = x;");
+      writeFileSync(join(dir, 'dynamic.ts'), "import('./lock');\nexport const y = 1;");
+      writeFileSync(join(dir, 'typeonly.ts'), "export const y = (require('./lock') as typeof import('./lock')).x;");
+      expect(importGraph(join(dir, 'static.ts')).map((f) => f.slice(dir.length + 1))).toContain('lock.ts');
+      expect(importGraph(join(dir, 'dynamic.ts')).map((f) => f.slice(dir.length + 1))).toContain('lock.ts');
+      expect(importGraph(join(dir, 'typeonly.ts')).map((f) => f.slice(dir.length + 1))).not.toContain('lock.ts');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('[NS-39-R2] no first-run module asks for a permission or authenticates', () => {

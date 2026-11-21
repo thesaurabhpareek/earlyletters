@@ -19,6 +19,11 @@ vi.mock('react', async () => {
 });
 vi.mock('react-native', () => ({ AppState: { addEventListener: () => ({ remove: () => {} }) } }));
 vi.mock('../src/lib/family/pending-invite', () => ({ clearPendingInvite: () => { h.clearedInvite++; return Promise.resolve(); } }));
+// The sign-in link and email request stores sit on secure-storage (expo-secure-store, which needs __DEV__); this file observes neither.
+vi.mock('../src/lib/auth/pending', () => ({
+  clearPendingEmailRequest: () => Promise.resolve(),
+  takePendingAuthLink: () => null,
+}));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
 vi.mock('../src/lib/store', () => ({
   hasAgreement: () => false,
