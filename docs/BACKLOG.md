@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
 
 ---
 
@@ -5512,6 +5512,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 #### BL-1150 Backup is iOS only: a platform gate before the flag can turn on (B5)
 - Status: proposed (Lens B review on PR #1112, https://github.com/thesaurabhpareek/earlyletters/pull/1112; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, security engineer (security lens required). Milestone: M15. Size: S.
 - Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: setting `EXPO_PUBLIC_BACKUP` on (and so every backup flag step, BL-1151 and BL-1198).
 - Problem: HARD BLOCKER for setting `EXPO_PUBLIC_BACKUP` on. `apps/mobile/src/lib/capabilities.ts` gates backup on the build flag alone. On Android and in Expo Go `ScribeFiles` is null, so the exclusion read-back is always false: the state file is deleted at each launch and the store always refuses to open it.
 - Scope: one platform check in `lib/capabilities.ts` so backup is available only on iOS with the native file module present; the launch call in `lib/backup/gate.ts` and the store open in `runtime.ts` skip quietly when it is off. A test per case: iOS with the module, iOS without it, Android, Expo Go (flag on in each), none of them deletes or refuses anything.
 - Done when: with the flag on, Android and Expo Go never delete the state file and never refuse to open; iOS behaves as before; the security lens has read the diff.
@@ -5574,6 +5575,234 @@ Written 21 Nov 2026 by the product agent, docs only. One row, asked for on PR #8
 - Scope: regenerate `docs/legal/DATA_CLASSIFICATION.md` section 4.1 (Postgres, "generated from the column comments") from the column comments in `supabase/migrations`, so the tables added since 3 Oct appear with their level, and the Planned rows that the migrations have since made real move into 4.1. `privacy` reads the result for levels and retention. The file is under `docs/legal`, so the founder merges this PR (D-125). No migration, no code, no new claim to a parent.
 - Done when: section 4.1 matches the column comments on the day of the PR and says that date, `supabase/tests/classification.test.mjs` names the regeneration date and fails when 4.1 is older than the newest migration that changes a column comment, and `npm run test:db` passes.
 - Source: PR #873 comment of 21 Nov (product answer, "needs its own BL row"); `docs/legal/DATA_CLASSIFICATION.md` 4.1 and the line above 4.5 that says 4.1 is regenerated when a migration is applied.
+
+## Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Karma or the founder sets it to `ready`. Sources are the review comments and PR bodies named in each row. Rows marked `human` need a device, a hosted project, or the founder or counsel. A Blocks field names what a row gates.
+
+#### BL-1183 DATA_CLASSIFICATION lacks the three new-device sign-in tables
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: legal, privacy engineer (legal path: the founder or counsel merges). Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36, PRIV-R01.
+- Blocks: nothing.
+- Scope: add rows for `ops.account_sessions_seen`, `ops.new_device_pending` and `ops.new_device_tokens` to `docs/legal/DATA_CLASSIFICATION.md` with level and retention, drafted by privacy and decided by the founder or counsel.
+- Done when: the three tables have rows that match the migration's column comments and retention function, and the classification test passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1184 New-device hook: `when others` misses statement timeout 57014
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: `public.hook_new_device_sign_in` swallows errors with `when others`, which does not catch a statement timeout (SQLSTATE 57014); handle it in a new migration (the applied file is never edited), count it as `new_device_hook_failed`, and add a test that a timeout still lets the sign-in through.
+- Done when: a forced statement timeout inside the hook returns the claims unchanged and records one failure count, and `npm run test:db` passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1185 New-device refresh-token cascade is unproven on hosted
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: on the hosted project (founder account) prove that `ops_end_session` removing the `auth.sessions` row also ends the refresh tokens, with one scripted run and its result in the PR body; no secret goes into the repo.
+- Done when: a recorded hosted run shows the refresh token is refused after `ops_end_session`, or the gap is filed as a new row.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1186 `access_matrix` and `explicit_grants` do not guard new objects
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: extend the access tests so a new table, view or function in `ops` or `public` with no entry fails, including a grant to an API role the test does not list; today the new-device objects pass only because someone listed them.
+- Done when: a scratch object added without a grant row turns `npm run test:db` red, a grant to `anon` or `authenticated` on an `ops` object is caught, and the new-device tables and functions are named in both tests.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1187 A fail-open hook handler that adds a role claim stays green
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36.
+- Blocks: nothing.
+- Scope: add a test that the hook's returned claims equal its input claims in every branch, including the failure branch, so a handler that adds a role or other claim is caught.
+- Done when: a mutant that adds a role claim in the fail-open branch fails a test.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1188 Issued access tokens stay valid until they expire: privacy wording note, and any rule on validity is the founder's
+- Status: proposed (post-merge review B of PR #1176, item 6, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: human. Owner: privacy engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21, FR-SEC-36 (the cited rows; the finding itself is a wording note, not a rule).
+- Blocks: nothing.
+- Scope: the post-merge Review B on #1176 (item 6) says: access JWTs already issued stay valid until they expire after the session is ended; state this in the user-facing wording. Privacy drafts that wording note (the new-device page and email copy say what ends and when). Nothing is built here. Any rule on token validity (shorter lifetimes, a revoke list, refusing on use) is a founder decision (what users are promised, CR-73); this row does not propose one and no agent builds one.
+- Done when: privacy has written the wording note and the founder has decided whether the stated window is enough; if the founder asks for a rule, a new row is filed from that decision.
+- Source: post-merge review B of PR #1176, item 6, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1189 Reminder scheduler reads pending notifications before checking reminders are off
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none (hardening of BL-966; the rows BL-966 meets are NS-32-R4b and NS-32-R7, which this row changes none of).
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/reminders/scheduler.ts` check that reminders are off before the pending-notification read, so an off state reads nothing.
+- Done when: a test with reminders off shows no pending-notification read, and the planner tests still pass.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1190 Plan reminders set `lastSignature` before the re-plan awaits
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none (hardening of BL-966; the rows BL-966 meets are NS-32-R4b and NS-32-R7, which this row changes none of).
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/billing/plan-reminders.ts` (line 94, to verify against the file when picked up) `lastSignature = signature` is set before `await rescheduleReminders()`; move it to after the re-plan has completed, so a failed re-plan is tried again on the next call. The evening scheduler in `reminders/scheduler.ts` already sets it after its work.
+- Done when: a test where the re-plan throws shows the next call plans again, and a mutant that sets the signature early fails.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1191 No DST test for the reminder planner
+- Status: proposed (review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: NS-32-R1, NS-32-R6 (one budgeted notification a local day; time zone change).
+- Blocks: None.
+- Scope: add planner tests across a spring-forward and a fall-back day so a reminder keeps its local clock time and the one-per-day rule holds.
+- Done when: tests for both DST days pass and a mutant using a fixed 24 hour step fails.
+- Source: review of PR #1174, https://github.com/thesaurabhpareek/earlyletters/pull/1174.
+
+#### BL-1192 Boundary scan: JSX text with `/*` hides later imports, and a backtick `require(` is missed
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: in `apps/mobile/test/helpers/import-reader.ts` handle `/*` inside JSX text and a `require(` inside a template literal, each with a self-test.
+- Done when: a file with `/*` in JSX text followed by a forbidden import is flagged, a backtick `require(` is flagged, and the scan of the real tree is unchanged.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1193 Boundary scan: `KNOWN_COUNT` lives in the same file as the entries it counts
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: keep the pinned counts apart from the KNOWN entries (a separate file or a reviewed fixture), so adding an entry and its count in one edit is visible in review.
+- Done when: the counts and the entries live in different files, and a self-test shows a new entry without a count change fails.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1194 Boundary scan: `unreadRoots` excludes `apps/web` and `lib` is unscanned
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards (`docs/engineering/01-code-and-change.md` lines 51 and 55); no product row.
+- Blocks: None.
+- Scope: include `apps/web` in the unread-roots check and scan `lib`, or list each with a reason in `UNSCANNED_MOBILE` or `UNSCANNED_PACKAGE`.
+- Done when: a new folder under `apps/web` or `lib` that nothing scans fails the test, and every current folder is scanned or listed with a reason.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1195 No test pins the Apple revoke watch wiring in `session-provider.tsx`
+- Status: proposed (review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: NS-45-R4.
+- Blocks: None.
+- Scope: add a test that the Apple revoke path in `apps/mobile/src/lib/auth/session-provider.tsx` (`startAppleRevocationWatch`, lines 275 to 283) is reached from the foreground gate (`onAppActive`) and from the revoke listener (`onAppleRevoked: watchAppleRevocation`, which calls `AppleAuthentication.addRevokeListener` in `apps/mobile/src/lib/auth/apple.ts` line 94).
+- Done when: a mutant that removes the call fails a test.
+- Source: review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125.
+
+#### BL-1196 Confirm Apple's NOT_FOUND semantics for the revocation read
+- Status: proposed (review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, auth owner. Milestone: M15. Size: S.
+- Satisfies: NS-45-R4.
+- Blocks: None.
+- Scope: on a device, check what Apple's credential-state read returns for a revoked account and for an account never signed in on this device, and that `NOT_FOUND` is treated as the right one of the two; record the result.
+- Done when: the PR body records the device result, and the gate treats `NOT_FOUND` as the checked behaviour.
+- Source: review of PR #1125, https://github.com/thesaurabhpareek/earlyletters/pull/1125.
+
+#### BL-1197 Nothing reads the `signIn` kill switch yet
+- Status: proposed (review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, sync owner. Milestone: M15. Size: S.
+- Satisfies: NS-41-R25 (when built).
+- Blocks: None.
+- Scope: wire a reader for `killSwitches.signIn` in the sign-in entry (a switch hides, never turns on); `signIn` stays out of `KILL_SWITCH_FLAG` as `apps/mobile/test/capabilities.test.ts` line 308 pins (verified on develop).
+- Done when: with the switch set the sign-in entry is hidden and nothing else changes; unset, behaviour is as before.
+- Source: review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113.
+
+#### BL-1198 Backup: a locked Keychain that returns null reads as no session
+- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: backup flag on (`EXPO_PUBLIC_BACKUP`); decide the rule before the flag goes on.
+- Scope: needs a device check: with the phone locked, does the Keychain read return null instead of throwing, so the backup code treats it as no session; decide the rule (retry, defer or treat as unknown) before the flag goes on, and test it.
+- Done when: the device result is recorded, the chosen rule has a test, and a locked Keychain never deletes the state file.
+- Source: review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169.
+
+#### BL-1199 Backup: a session blob without a string user id reads as no session
+- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: BRIEF B5, CR-71 B5.
+- Blocks: None.
+- Scope: make a stored session blob with no string user id a distinct, content-free unknown state in the backup code rather than no session, so it cannot trigger an end-of-session delete.
+- Done when: a test with a blob lacking a string user id shows no delete, and a blob with a string id behaves as before.
+- Source: review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169.
+
+#### BL-1200 Days file: a size cap on read and tick validation
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R6 (a corrupt file fails closed); no NS-47 row names a size cap or a tick shape, so this is hardening and carries no P0 id.
+- Blocks: None.
+- Scope: in `apps/mobile/src/lib/days/store-file.ts` and `store.logic.ts` treat a file over a fixed size cap as corrupt, and validate each tick (slug-only ids, no duplicates, a limit on count).
+- Done when: an oversized or malformed file reads as corrupt and is replaced safely, with a test for each.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1201 Days file: assert the file protection class
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R6 (protection class no weaker than SEC-R15's).
+- Blocks: None.
+- Scope: add an assertion and test that the days file is written with the intended iOS file protection class beside the backup exclusion read-back.
+- Done when: a test fails when the protection class is missing or weaker than the one stated in the PR body.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1202 DATA_CLASSIFICATION has no row for the days file
+- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: human. Owner: legal, privacy engineer (legal path: the founder or counsel merges). Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+- Satisfies: NS-47-R1 (the whole store is L4), PRIV-R01.
+- Blocks: None.
+- Scope: add a row for `days/days.v1.json` (level, retention, erased on sign-out and on Erase everything) to `docs/legal/DATA_CLASSIFICATION.md`, drafted by privacy and decided by the founder or counsel.
+- Done when: the days file has a classification row that matches the code, and the classification test passes.
+- Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1203 Hook grant is noted in `grants.mjs`
+- Status: done (the comment is in `supabase/tests/grants.mjs` lines 17 and 18, landed in PR #1182, https://github.com/thesaurabhpareek/earlyletters/pull/1182). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: a one-line comment in `supabase/tests/grants.mjs` saying that `public.hook_new_device_sign_in` (executable by `supabase_auth_admin` only) is asserted in `new_device_sign_in.test.mjs`. Found already on develop; kept as a record.
+- Done when: the comment is there and names the test file; no grant changes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; evidence PR #1182.
+
+#### BL-1204 New-device tokens: a database cap on `expires_at`
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, security engineer. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: in a new migration (never edit the applied file) add `check (expires_at <= created_at + interval '7 days')` to `ops.new_device_tokens`, so a direct insert cannot make a long-lived token. The mint function `ops_new_device_token_mint` already refuses a ttl under 1 minute or over 7 days (PR #1182), so this is the table-level backstop; the 48 hour default stays in the mint function. The migration is written, never applied: it waits for `approve-migration` and the founder's apply step.
+- Done when: a test shows a token with `expires_at` beyond 7 days is refused and a 48 hour one is accepted, and `npm run test:db` passes.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1205 APPLY.md file 36: founder steps for the refresh-token cascade (A3 and A4)
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: `supabase/APPLY.md` File 36 lists H1 only; add the two checks from the cascade proof (a refresh with the ended session's token is refused, and refresh-token rows for that session are zero) beside H1, so "ended" is not trusted before the cascade is proved. Docs only; BL-1185 is the run itself.
+- Done when: File 36's founder steps name both checks and say the page must not say "signed out" until they hold.
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1206 The file 09 brief that APPLY.md cites is not in the repo
+- Status: done (PR #1161, https://github.com/thesaurabhpareek/earlyletters/pull/1161, merged 21 Nov 2026 04:47 UTC as 2bb32424; the cited file is on develop). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: NS-08-R21.
+- Blocks: nothing.
+- Scope: `supabase/APPLY.md` File 36 cites `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, which was not on develop when the row was filed (it was read from a branch). PR #1161 added that file, so the citation now resolves and no change to APPLY.md is needed.
+- Done when: the cited path exists on develop (yes: `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md`, from PR #1161).
+- Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
+
+#### BL-1207 Boundary scan: a scratch-tree test for `scan()`, and the `/*` test gets its closing `*/`
+- Status: proposed (review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M15. Size: S.
+- Satisfies: CODE-R10 and CODE-R11 are the rules the scan guards; no product row.
+- Blocks: nothing.
+- Scope: give `scan()` a root argument and add a scratch-tree test, so removing the `found.unresolved.push` lines or skipping `components` turns a test red; add the exact line `const s='/*'; import ...; const t='*/';` to the `/*` self-test in `apps/mobile/test/boundaries.test.ts` (the current one has no closing `*/` and stays green on the old reader).
+- Done when: the two reviewer mutants (unresolved push removed, `components` skipped) fail a test, and the `/*` self-test fails on the old reader.
+- Source: review of PR #1166, https://github.com/thesaurabhpareek/earlyletters/pull/1166.
+
+#### BL-1208 Days file: `writeDays` must not overwrite a newer file
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged and a writer in the ticking PR.
+- Satisfies: NS-47-R28.
+- Blocks: nothing.
+- Scope: when the ticking PR adds a writer, guard `writeDays` so a file with a higher unknown version is read for known keys and never rewritten or deleted (`apps/mobile/src/lib/days/store-file.ts`); the days page decides what the parent sees.
+- Done when: a test writes over a `newer` file and shows it is unchanged, and a mutant without the guard fails.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1269 Days file: a test that dropping the post-rename exclusion check goes red
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
+- Satisfies: NS-47-R6.
+- Blocks: nothing.
+- Scope: Review A on #1175 ran a mutant that forces the post-rename exclusion check true (`store-file.ts` line 76) and it stayed green; add a test where the rename drops the exclusion flag and the store reports it unavailable.
+- Done when: the mutant fails a test.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-1270 Export README and inventory name the days file (before the days flag)
+- Status: proposed (reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged.
+- Satisfies: NS-47-R10, and SECURITY-OPEN-QUESTIONS C-6 (`docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md`).
+- Blocks: `EXPO_PUBLIC_DAYS` on.
+- Scope: the recovery export README and the inventory line must name the days file, which lives outside `scribe.db` (Review B on #1175 asked for this before the flag turns on); add a test that the export holds no day key, tradition or country.
+- Done when: the README and inventory name the file and the export test passes.
+- Source: reviews of PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
 ## Split of the proposed group rows, batch 1 (21 Nov 2026, proposed)
 
