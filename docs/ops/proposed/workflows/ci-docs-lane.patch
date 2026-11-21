@@ -1,5 +1,5 @@
 diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
-index ea7a1b559..62dc86f3e 100644
+index ea7a1b559..71dce3b0b 100644
 --- a/.github/workflows/ci.yml
 +++ b/.github/workflows/ci.yml
 @@ -27,7 +27,30 @@ jobs:
@@ -25,7 +25,7 @@ index ea7a1b559..62dc86f3e 100644
 +          set -uo pipefail
 +          heavy=true
 +          if [ "$EVENT" = pull_request ] && files="$(gh api --paginate "repos/${REPO}/pulls/${PR}/files" --jq '.[].filename, (.[].previous_filename // empty)')" && [ -n "$files" ] && [ "$(wc -l <<< "$files")" -lt 3000 ]; then
-+            if ! grep -qvE '^(docs/engineering/readiness-20nov/|docs/agents/checkins/|docs/product/instrumentation/|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md$|docs/content/lifecycle-playbook/|docs/qa/test-plan-b13/|docs/design/DESIGN-[^/]*\.md$)' <<< "$files"; then
++            if ! grep -qvE '^(docs/engineering/readiness-20nov/|docs/agents/checkins/S[0-9][^/]*\.md$|docs/product/instrumentation/|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md$|docs/content/lifecycle-playbook/|docs/qa/test-plan-b13/|docs/design/DESIGN-[^/]*\.md$)' <<< "$files"; then
 +              heavy=false
 +            fi
 +          fi
