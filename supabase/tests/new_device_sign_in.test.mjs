@@ -84,10 +84,13 @@ const ev1 = (await sys(`select * from ops.security_events where kind = 'new_devi
 check('[NS-08-R21 token] one audit row, content free, written on the press', ev1.length === 1 && ev1[0].request_id === 'abcdef012345' && JSON.stringify(ev1[0].detail) === '{"ended":true}' && ev1[0].subject_hash === null);
 check('[NS-08-R21 token] a second press says "already", ends nothing more and writes no second audit row',
   (await press(H)).rows[0].r === 'already' && (await live()).length === 2 && (await cnt(`ops.security_events where kind = 'new_device_signed_out'`)) === 1);
-// mutant: single use removed (token un-used) lets the press end a second session of the same id only; here, it re-audits.
-await sys(`update ops.new_device_tokens set used_at = null, outcome = null`);
-check('[NS-08-R21 token] mutant: with used_at cleared the same token presses again (so the single-use check above can fail)',
-  (await press(H)).rows[0].r === 'already' && (await cnt(`ops.security_events where kind = 'new_device_signed_out'`)) === 2);
+// mutant: single use removed. The token is un-used and pointed at a second live session of the same person: the press then
+// ends that second session, so the used_at check above is the only thing that stopped it.
+const SD = '55555555-5555-4555-8555-555555555555';
+await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SD, A]);
+await sys(`update ops.new_device_tokens set used_at = null, outcome = null, session_id = $1`, [SD]);
+check('[NS-08-R21 token] mutant: with used_at cleared the same token presses again and ends a second session',
+  (await press(H)).rows[0].r === 'ended' && !(await live()).includes(SD) && (await cnt(`ops.security_events where kind = 'new_device_signed_out'`)) === 2);
 // expiry
 const H2 = sha('b'.repeat(43));
 await sys(`insert into ops.new_device_tokens (token_hash, profile_id, session_id, created_at, expires_at) values ($1, $2, $3, now() - interval '3 days', now() - interval '1 hour')`, [H2, B, SC]);
