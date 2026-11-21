@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.21",
     "@gorhom/bottom-sheet": "^5.2.14",
+    "@posthog/react-native-plugin": "2.13.3",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@rn-primitives/portal": "^1.5.3",
@@ -49,6 +50,7 @@
     "expo-web-browser": "~57.0.3",
     "fflate": "^0.8.3",
     "phosphor-react-native": "^3.0.6",
+    "posthog-react-native": "4.87.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

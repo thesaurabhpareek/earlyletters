@@ -15,6 +15,7 @@
  *  - prompts of a kind no screen asks for: the screens always ask for hardStretch false, role 'parent', together false
  *    (apps/mobile/test/nameless-surfaces.test.ts, "no screen asks for a hard, together or family prompt");
  *  - retired prompts: selectPrompt never returns one (packages/core/test/prompts.selection.test.ts);
+ *  - the analytics consent sentence, which promises that the name is never sent (PROMISED_ABSENT below);
  *  - words no screen reads yet (NOT_SHOWN_YET below), which expire the day a screen mentions them.
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -72,6 +73,13 @@ const NOT_SHOWN_YET: Record<string, { needle: string; why: string }> = {
   'en.settings.plan.familySharingHelp': { needle: 'familySharingHelp', why: 'the Plus screen reads billingCopy.plan, not en.settings.plan' },
 };
 
+/**
+ * Founder-approved wording (packages/analytics/test/consent-copy.test.ts pins it) that says "we never see {child}'s name or
+ * birthday". For a book with no name, "your child's name" there still reads correctly: it is a promise that a name is never
+ * sent. Only this one string is left out, and the test below pins that it still carries the promise.
+ */
+const PROMISED_ABSENT = new Set(['en.analyticsConsent.body']);
+
 /** The rows that are skipped: those in NOT_SHOWN_YET whose key no screen mentions. */
 function skipped(): Set<string> {
   return new Set(Object.entries(NOT_SHOWN_YET).filter(([, v]) => !appMentions(v.needle)).map(([path]) => path));
@@ -83,7 +91,7 @@ function rows(): Row[] {
   const seen = new Set<string>();
   const out: Row[] = [];
   const add = (path: string, text: string) => {
-    if (!text.includes('{child}') || seen.has(text) || skip.has(path) || path.startsWith(NAMED_EVENING)) return;
+    if (!text.includes('{child}') || seen.has(text) || PROMISED_ABSENT.has(path) || skip.has(path) || path.startsWith(NAMED_EVENING)) return;
     seen.add(text);
     out.push({ path, rendered: fill(text, { child: '' }) });
   };
@@ -146,6 +154,14 @@ describe('[NX-31-R3] a blank child name', () => {
     // Left out: the named evening lines. Kept: every other notification, so the birthday title is read.
     expect(paths.some((p) => p.startsWith(NAMED_EVENING))).toBe(false);
     expect(paths).toContain('en.notifications.birthday.title');
+  });
+
+  it('[NX-31-R3] only the consent promise that a name is never sent is left out, and it still carries that promise', () => {
+    const leaf = leaves(everything.en).find((x) => `en.${x.path}` === 'en.analyticsConsent.body');
+    expect(leaf, 'en.analyticsConsent.body is gone: remove it from PROMISED_ABSENT').toBeDefined();
+    expect(leaf!.text).toMatch(/We never see [^.]*\{child\}'s name or birthday/);
+    expect(PROMISED_ABSENT.size).toBe(1);
+    expect(rows().map((r) => r.path)).not.toContain('en.analyticsConsent.body');
   });
 
   it('[NX-31-R3] the words nothing shows yet are the only ones skipped, and they still read wrongly (so the skip is needed)', () => {

@@ -10,8 +10,9 @@
  * because they are local only; they leave the phone only as buckets, after a
  * yes. Pure and tested; the app feeds it AppState changes.
  */
-import { daysBucket, sessionBucket, ttfiBucket } from './buckets';
+import { daysBucket, msBucket } from './buckets';
 import type { Analytics } from './client';
+import { EV, PROP } from './registry';
 import type { KeyValueStorage } from './consent';
 
 export const SESSION_GAP_MS = 30 * 60 * 1000;
@@ -68,8 +69,8 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       }
       lastActive = parseTime(await storage.get(LIFECYCLE_KEYS.lastActiveAt));
       session = { startedAt: t, index: 1 };
-      if (i.ttfiMs !== undefined) analytics.track('app_cold_start', { ttfi_bucket: ttfiBucket(i.ttfiMs) });
-      analytics.track('app_opened', {
+      if (i.ttfiMs !== undefined) analytics.track(EV.perfMeasured, { [PROP.metric]: 'cold_start', [PROP.msBucket]: msBucket(i.ttfiMs), [PROP.ok]: true });
+      analytics.track(EV.appOpened, {
         source: i.source ?? 'cold',
         days_since_last_open: lastActive === null ? 'd0' : daysBucket(t - lastActive),
       });
@@ -83,7 +84,7 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       const fresh = awaySince === null || t - awaySince >= SESSION_GAP_MS;
       if (fresh) {
         session = { startedAt: t, index: session.index + 1 };
-        analytics.track('app_opened', {
+        analytics.track(EV.appOpened, {
           source,
           days_since_last_open: lastActive === null ? 'd0' : daysBucket(t - lastActive),
         });
@@ -96,7 +97,6 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       const t = now();
       backgroundedAt = t;
       lastActive = t;
-      analytics.track('app_backgrounded', { session_bucket: sessionBucket(t - session.startedAt) });
       await storage.set(LIFECYCLE_KEYS.lastActiveAt, String(t));
       await analytics.flush();
     },

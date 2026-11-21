@@ -14,16 +14,16 @@ import { useSegments } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { analyticsAskDueNow, recordAnalyticsOffer } from '@/lib/analytics/ask';
-import { capabilities } from '@/lib/capabilities';
+import { analyticsAskAvailable, analyticsEnabled } from '@/lib/capabilities';
 import { subscribe } from '@/lib/store';
 import { AnalyticsConsentSheet } from './analytics-consent-sheet';
 
 /** Time on a calm screen before the ask appears: long enough to land, short enough to be seen. */
 const CALM_DELAY_MS = 1200;
 
-/** Nothing at all in a build without analytics (v1.0, lib/capabilities.ts): the sheet never shows. */
+/** Nothing at all in a build without analytics, or without a PostHog key (lib/capabilities.ts): the sheet never shows. */
 export function AnalyticsConsentAsk() {
-  return capabilities.analytics ? <ConsentAskWhenDue /> : null;
+  return analyticsAskAvailable(analyticsEnabled(), process.env.EXPO_PUBLIC_POSTHOG_KEY) ? <ConsentAskWhenDue /> : null;
 }
 
 function ConsentAskWhenDue() {

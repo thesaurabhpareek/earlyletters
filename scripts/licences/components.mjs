@@ -146,6 +146,11 @@ export const PACKAGES = {
   'react-native-passkey': 'account',
 
   // Everything else: reminders and small building blocks.
+  // Opt-in usage counts (posthog-react-native and its React Native plugin); nothing is sent unless the person says yes.
+  '@posthog/react-native-plugin': 'other',
+  '@posthog/core': 'other',
+  '@posthog/types': 'other',
+  'posthog-react-native': 'other',
   '@babel/runtime': 'other',
   '@ungap/structured-clone': 'other',
   'abort-controller': 'other',

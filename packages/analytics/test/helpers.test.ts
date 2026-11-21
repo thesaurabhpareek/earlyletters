@@ -24,6 +24,7 @@ import {
   wordsBucket,
   type AnalyticsAskState,
 } from '../src';
+import { intentRecorder } from './support';
 
 async function granted() {
   const provider = recordingProvider();
@@ -31,11 +32,12 @@ async function granted() {
   const analytics = createAnalytics({ provider, randomId: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`, flushIntervalMs: 0 });
   await analytics.init();
   await analytics.grant();
+  const rec = intentRecorder(analytics);
   const sent = async () => {
     await analytics.flush();
-    return provider.captured();
+    return rec.intents.map(([event, properties]) => ({ event, properties: { ...properties, schema_version: SCHEMA_VERSION } as Record<string, string | number | boolean> }));
   };
-  return { analytics, provider, sent };
+  return { analytics: rec.analytics, provider, sent };
 }
 
 describe('buckets', () => {
@@ -247,7 +249,7 @@ describe('route map', () => {
 });
 
 describe('lifecycle', () => {
-  it('sends app_opened at launch and after 30 minutes away, and the session bucket on background', async () => {
+  it('sends a cold-start timing and app_opened at launch, and app_opened after 30 minutes away (backgrounding sends nothing: app_backgrounded is held)', async () => {
     const { analytics, sent } = await granted();
     const storage = memoryStorage();
     let t = Date.UTC(2026, 9, 3, 18);
@@ -264,10 +266,8 @@ describe('lifecycle', () => {
     expect(lc.session().index).toBe(2);
     const events = (await sent()).map((e) => [e.event, e.properties]);
     expect(events).toEqual([
-      ['app_cold_start', { ttfi_bucket: 'lt_1s', schema_version: SCHEMA_VERSION }],
+      ['perf_measured', { metric: 'cold_start', ms_bucket: '300ms_1s', ok: true, schema_version: SCHEMA_VERSION }],
       ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
-      ['app_backgrounded', { session_bucket: '1_5m', schema_version: SCHEMA_VERSION }],
-      ['app_backgrounded', { session_bucket: '5_15m', schema_version: SCHEMA_VERSION }],
       ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
     ]);
     expect(Number(storage.dump()[LIFECYCLE_KEYS.firstLaunchAt])).toBe(Date.UTC(2026, 9, 3, 18));

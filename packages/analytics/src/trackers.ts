@@ -19,6 +19,7 @@ import {
   hourBucket,
   latencyBucket,
   lettersBucket,
+  msBucket,
   sessionBucket,
   timeToFirstLetterBucket,
   toV1Lang,
@@ -26,6 +27,7 @@ import {
   wordsBucket,
 } from './buckets';
 import type { Catalog } from './catalog';
+import { EV, PROP } from './registry';
 import type { Analytics, EventProps, TrackResult } from './client';
 import { packAnalyticsId, speechModelValue } from './packs';
 
@@ -99,7 +101,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
 
   return {
     trackLetterSaved(i: LetterSavedInput): TrackResult {
-      return track('letter_saved', {
+      return track(EV.letterSaved, {
         mode: i.mode,
         destination: i.inBook ? 'book' : 'private',
         child_ordinal: childOrdinal(i.childIndex),
@@ -122,7 +124,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       childIndex: number;
       role: MemberRole;
     }): TrackResult {
-      return track('capture_started', {
+      return track(EV.captureStarted, {
         mode: i.mode,
         source: i.source,
         prompt_kind: i.promptKind ?? 'none',
@@ -132,7 +134,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackCaptureDiscarded(i: { mode: 'spoken' | 'typed'; stage: 'listening' | 'review'; audioMs?: number | null }): TrackResult {
-      return track('capture_discarded', {
+      return track(EV.captureDiscarded, {
         mode: i.mode,
         stage: i.stage,
         ...(i.audioMs != null ? { audio_bucket: audioBucket(i.audioMs) } : {}),
@@ -147,7 +149,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       latencyMs: number;
       outcome: V<'transcription_completed', 'outcome'>;
     }): TrackResult {
-      return track('transcription_completed', {
+      return track(EV.transcriptionCompleted, {
         engine: i.engine,
         model: speechModelValue(i.modelId),
         audio_bucket: audioBucket(i.audioMs),
@@ -157,7 +159,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackBookOpened(i: { childIndex: number; letters: number; role: MemberRole }): TrackResult {
-      return track('book_opened', { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
+      return track(EV.bookOpened, { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
     },
 
     trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
@@ -173,11 +175,11 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackInviteCreated(i: { role: InviteRoleInput; channel: V<'invite_created', 'channel'>; shared: boolean; childIndex: number }): TrackResult {
-      return track('invite_created', { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
+      return track(EV.inviteCreated, { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
     },
 
     trackInviteAccepted(i: { role: InviteRoleInput }): TrackResult {
-      return track('invite_accepted', { role: inviteRole(i.role), surface: 'app' });
+      return track(EV.inviteAccepted, { role: inviteRole(i.role), surface: 'app' });
     },
 
     trackExportStarted(i: { letters: number }): TrackResult {
@@ -224,7 +226,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackColdStart(i: { ttfiMs: number }): TrackResult {
-      return track('app_cold_start', { ttfi_bucket: ttfiBucket(i.ttfiMs) });
+      return track(EV.perfMeasured, { [PROP.metric]: 'cold_start', [PROP.msBucket]: msBucket(i.ttfiMs), [PROP.ok]: true });
     },
 
     /**
@@ -235,7 +237,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     trackAnalyticsOptedIn(i: OptedInSummaryInput): TrackResult {
       const sinceInstall = i.firstLaunchAt == null ? 0 : i.now - i.firstLaunchAt;
       const ttfl = i.firstLaunchAt != null && i.firstLetterAt != null ? i.firstLetterAt - i.firstLaunchAt : null;
-      return track('analytics_opted_in', {
+      return track(EV.analyticsOptedIn, {
         surface: i.surface,
         days_since_install: daysBucket(sinceInstall),
         letters_bucket: lettersBucket(i.letters),

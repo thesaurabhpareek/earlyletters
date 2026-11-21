@@ -6,7 +6,7 @@
  */
 import { useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { routeForSegments } from '@scribe/analytics';
+import { EV, routeForSegments } from '@scribe/analytics';
 import { analytics } from './index';
 
 export function useScreenViews(): void {
@@ -14,6 +14,6 @@ export function useScreenViews(): void {
   const key = segments.join('/');
   useEffect(() => {
     const route = routeForSegments(key ? key.split('/') : []);
-    if (route) analytics.track('screen_view', { route });
+    if (route) analytics.track(EV.screenView, { route });
   }, [key]);
 }

@@ -14,9 +14,16 @@
 import { childOrdinal, type PromptKindValue } from '@scribe/analytics';
 import { PROMPTS } from '@scribe/content';
 import { listChildren } from '@/lib/store';
-import { analytics, trackers } from './index';
+import { analytics, basics, trackers } from './index';
 
 export const track = analytics.track;
+
+/** Key tap on a registered control: `tapControl('tonight_speak', 'tonight')`. Ids come from the registry's closed lists. */
+export const tapControl = basics.tap;
+/** A registered surface seen (half visible for one second); once per surface per foreground session. */
+export const impressSurface = basics.impress;
+/** A timed step finished: `const done = startPerf('save_commit'); ... done()`. The time is bucketed, never sent raw. */
+export const { perf: perfMeasured, startPerf } = basics;
 
 /** 0-based position of a book among the visible books (helpers take `childIndex`); 0 when unknown. */
 export function childIndexOf(childId: string | null | undefined): number {

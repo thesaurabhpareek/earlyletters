@@ -10,6 +10,7 @@
  */
 import { hourBucket } from './buckets';
 import type { Catalog } from './catalog';
+import { EV } from './registry';
 import type { Analytics, EventProps, TrackResult } from './client';
 import { createTrackers } from './trackers';
 
@@ -83,7 +84,7 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
       return;
     }
     if (next.status === 'checkingConsent' && next.method && !SIGNED_IN.has(p.status)) {
-      a.track('auth_succeeded', { method: next.method, had_local_data: opts.hasLocalLetters() });
+      a.track(EV.authSucceeded, { method: next.method, had_local_data: opts.hasLocalLetters() });
       return;
     }
     if (next.status === 'signedOut' && SIGNED_IN.has(p.status)) {
@@ -187,7 +188,7 @@ export function createPlanObserver(a: Track): (p: PlanLike) => void {
     const from = prev;
     prev = p.state;
     if (p.environment !== 'production') return;
-    a.track('plan_changed', {
+    a.track(EV.planChanged, {
       from_state: from,
       to_state: p.state,
       period: p.period ?? 'unknown',

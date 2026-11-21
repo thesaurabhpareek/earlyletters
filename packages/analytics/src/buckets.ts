@@ -86,6 +86,19 @@ export function sessionBucket(ms: number): SessionBucket {
   return 'gt_15m';
 }
 
+export type MsBucket = 'lt_100ms' | '100_300ms' | '300ms_1s' | '1_3s' | '3_10s' | 'gt_10s';
+
+/** Milliseconds to the shared time bucket of `perf_measured`. The number itself never leaves the phone. */
+export function msBucket(ms: number): MsBucket {
+  const v = n(ms);
+  if (v < 100) return 'lt_100ms';
+  if (v < 300) return '100_300ms';
+  if (v < SEC) return '300ms_1s';
+  if (v < 3 * SEC) return '1_3s';
+  if (v < 10 * SEC) return '3_10s';
+  return 'gt_10s';
+}
+
 export function ttfiBucket(ms: number): TtfiBucket {
   const v = n(ms);
   if (v < SEC) return 'lt_1s';

@@ -5,11 +5,14 @@
  * (lib/capabilities.ts). Off: no consent sheet, no Settings switch, no
  * PostHog key even if one is set, no startAnalytics(), no recorded yes.
  * packages/analytics stays; analytics returns with consent in v1.1.
+ *
+ * 20 Nov 2026: the SDK is now a dependency (founder approval items on the PR) and the build flag is still off in
+ * every profile. Turning it on in `production` is the founder's separate commit.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { analyticsEnabled, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
+import { analyticsAskAvailable, analyticsEnabled, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -18,6 +21,24 @@ describe('[D-088] analytics switch: off unless a build says on', () => {
   afterEach(() => {
     setAnalyticsForTests(null);
     setServerFeaturesForTests(null);
+  });
+
+  it('the consent ask needs the switch AND a PostHog key, and both mounts use that one check', () => {
+    expect(analyticsAskAvailable(true, 'phc_test_key')).toBe(true);
+    expect(analyticsAskAvailable(true, undefined)).toBe(false);
+    expect(analyticsAskAvailable(true, '   ')).toBe(false);
+    expect(analyticsAskAvailable(false, 'phc_test_key')).toBe(false);
+    for (const f of ['src/components/consent/consent-ask.tsx', 'src/app/analytics-consent.tsx']) {
+      expect(read(f), f).toMatch(/analyticsAskAvailable\(analyticsEnabled\(\), process\.env\.EXPO_PUBLIC_POSTHOG_KEY\)/);
+    }
+  });
+
+  it('no consent surface claims crash reports while crash capture is off', () => {
+    expect(read('../../packages/analytics/src/crash.ts')).toMatch(/enabled: false/);
+    const strings = read('../../packages/content/src/strings.en.ts');
+    const block = strings.slice(strings.indexOf('analyticsLabel:'), strings.indexOf('analyticsOffNote:'));
+    expect(block.toLowerCase()).not.toMatch(/crash|breaks/);
+    expect(read('src/components/consent/copy.ts')).not.toMatch(/analyticsSection: '[^']*crash/i);
   });
 
   it('is off in this process and does not follow the server switch', () => {
@@ -71,7 +92,7 @@ describe('[D-088] every analytics entry point follows the switch', () => {
   });
 
   it('the consent sheet is never mounted while off', () => {
-    expect(read('src/components/consent/consent-ask.tsx')).toMatch(/return capabilities\.analytics \? <ConsentAskWhenDue \/> : null;/);
+    expect(read('src/components/consent/consent-ask.tsx')).toMatch(/return analyticsAskAvailable\(analyticsEnabled\(\), process\.env\.EXPO_PUBLIC_POSTHOG_KEY\) \? <ConsentAskWhenDue \/> : null;/);
   });
 
   it('Settings, Privacy shows no usage switch while off', () => {
@@ -79,9 +100,13 @@ describe('[D-088] every analytics entry point follows the switch', () => {
     expect(src).toMatch(/\{capabilities\.analytics \? \(\s*<ListSection title=\{consentCopy\.analyticsSection\}/);
   });
 
-  it('[D-095] the PostHog SDK is not a dependency and nothing in the app imports it', () => {
+  it('[20 Nov 2026] the PostHog SDK is a pinned dependency, imported only by lib/analytics/index.ts and only after a yes', () => {
     const pkg = JSON.parse(read('package.json')) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
-    expect(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((d) => d.startsWith('posthog'))).toEqual([]);
+    const all = { ...pkg.dependencies, ...pkg.devDependencies };
+    // Founder approval items on the PR: name, version, licence (both MIT). Exact versions, no range.
+    expect(all['posthog-react-native']).toBe('4.87.1');
+    expect(all['@posthog/react-native-plugin']).toBe('2.13.3');
+    expect(Object.keys(all).filter((d) => /posthog/.test(d)).sort()).toEqual(['@posthog/react-native-plugin', 'posthog-react-native']);
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const e of readdirSync(join(APP, dir), { withFileTypes: true })) {
@@ -91,9 +116,12 @@ describe('[D-088] every analytics entry point follows the switch', () => {
       }
     };
     walk('src');
-    // Only a comment may name it (the v1.1 re-add line in lib/analytics/index.ts).
     const code = (f: string) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    expect(files.filter((f) => /posthog-react-native|posthog-sdk/.test(code(f)))).toEqual([]);
-    expect(read('src/lib/analytics/index.ts')).toMatch(/const createClient: PostHogClientFactory \| null = null;/);
+    expect(files.filter((f) => /posthog-react-native|@posthog\//.test(code(f)))).toEqual(['src/lib/analytics/index.ts']);
+    const idx = code('src/lib/analytics/index.ts');
+    // A dynamic import inside the factory: no SDK code runs before the first yes.
+    expect(idx).toMatch(/await import\('posthog-react-native'\)/);
+    expect(idx).not.toMatch(/^import .*posthog-react-native/m);
+    expect(idx).not.toMatch(/@posthog\/react-native-plugin/); // the native plugin is installed for the later crash flip, never imported
   });
 });
