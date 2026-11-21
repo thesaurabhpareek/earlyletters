@@ -90,8 +90,8 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', actionWor
 
   const body = (
     <>
-      {leading ? <View className="w-7 items-center">{leading}</View> : null}
-      <View className={cn('flex-1', ax ? 'gap-1' : 'flex-row items-center gap-3')}>
+      {leading ? <View className={cn('w-7 items-center', ax && 'self-start')}>{leading}</View> : null}
+      <View className={cn(ax ? 'self-stretch gap-1' : 'flex-1 flex-row items-center gap-3')}>
         <View className={cn(!ax && 'flex-1', 'gap-0.5')}>
           <Text variant="body" tone={variant === 'destructive' ? 'destructive' : disabled ? 'muted' : 'default'}>
             {title}
@@ -106,11 +106,17 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', actionWor
         {nodeAt === 'under' ? <View className="self-start">{node}</View> : null}
       </View>
       {nodeAt === 'beside' ? node : null}
-      {chevron ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
+      {chevron ? (
+        <View className={ax ? 'self-end' : undefined}>
+          <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+        </View>
+      ) : null}
     </>
   );
 
-  const rowClass = 'min-h-11 flex-row items-center gap-3 px-4 py-3';
+  // At accessibility sizes the row is a column (leading, then the text on the full width, then the chevron on its own line),
+  // so a long word never shares its line with an icon or a chevron and splits (A11Y audit FE-8). Nothing gets smaller.
+  const rowClass = ax ? 'min-h-11 gap-2 px-4 py-3' : 'min-h-11 flex-row items-center gap-3 px-4 py-3';
   if (!onPress) {
     return (
       <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined} testID={testID}>
