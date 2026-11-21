@@ -91,7 +91,7 @@ describe('[NX-39-R51] the testflight preflight runs the lint and a problem fails
   const src = readFileSync(join(__dirname, '..', 'scripts', 'preflight-testflight.mjs'), 'utf8');
   it('[NX-39-R51] it imports forbiddenNativeProblems and calls it with the generated plist, entitlements and project', () => {
     expect(src).toMatch(/import \{[^}]*\bforbiddenNativeProblems\b[^}]*\} from '\.\/preflight-lib\.mjs'/);
-    expect(src).toMatch(/forbiddenNativeProblems\(\{\s*plist:\s*ios\.plist,\s*entitlements:\s*ios\.entitlements,\s*pbxproj:\s*ios\.pbxproj\s*\}\)/);
+    expect(src).toMatch(/const forbidden = forbiddenNativeProblems\(\{\s*plist:\s*ios\.plist,\s*entitlements:\s*ios\.entitlements,\s*pbxproj:\s*ios\.pbxproj\s*\}\)/);
   });
   it('[NX-39-R51] every problem is recorded as a FAIL, and any FAIL exits non-zero', () => {
     expect(src).toMatch(/for \(const p of forbidden\) fail\(/);
