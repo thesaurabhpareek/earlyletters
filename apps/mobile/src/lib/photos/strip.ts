@@ -2,9 +2,12 @@
  * The stored copy has no metadata (NS-01-R6, NX-39-R8): location, date, device, thumbnail, Exif, XMP and IPTC are all
  * gone. Pure bytes in, bytes out, so it is tested in Node. It removes; it never adds.
  *
- * JPEG: keeps the image data, the JFIF header (without its thumbnail), the ICC colour profile and Adobe's colour
- * flag, and drops every other APPn segment (Exif and XMP in APP1, Photoshop and IPTC in APP13, maker notes, MPF in
- * APP2 that is not a colour profile) and every comment. It stops at the first unescaped end-of-image marker and
+ * JPEG: an ALLOW list, not a deny list. It keeps only the markers a decoder needs (SOI, the JFIF header without its
+ * thumbnail, DQT, DHT, DAC, SOF0 to SOF15 except DHT, DAC and the reserved C8, DRI, SOS and its data, RSTn, EOI), the ICC
+ * colour profile (APP2 "ICC_PROFILE", kept by the brief so colours stay true) and Adobe's colour flag (APP14 "Adobe").
+ * Every other marker is dropped, including every APPn (Exif and XMP in APP1, Photoshop and IPTC in APP13, maker notes,
+ * MPF in APP2 that is not a colour profile), comments, and every reserved or unknown marker (C8, DC, DE, DF, F0 to FD, 02
+ * to BF). It stops at the first unescaped end-of-image marker and
  * drops everything after it (a motion-photo video, a trailer, a planted payload), PRD finding F1.
  *
  * Orientation: the tag lives in Exif, which is dropped, so a picture whose tag is not 1 would show sideways. The result
@@ -45,6 +48,10 @@ function exifOrientation(b: Uint8Array, start: number, end: number): number {
   return 1;
 }
 
+/** Markers with a length that a decoder needs and that carry no metadata: DHT, DAC, SOF (not C8), DQT, DRI. */
+const decoderMarker = (m: number): boolean =>
+  (m >= 0xc0 && m <= 0xcf && m !== 0xc8) || m === 0xdb || m === 0xdd;
+
 export function stripJpeg(input: Uint8Array): StripResult {
   const b = input;
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return { ok: false, reason: 'not_jpeg' };
@@ -64,10 +71,11 @@ export function stripJpeg(input: Uint8Array): StripResult {
       ended = true; // whatever follows the end marker is not the picture and is not copied
       break;
     }
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+    if (marker >= 0xd0 && marker <= 0xd7) {
       out.push(Uint8Array.of(0xff, marker));
       continue;
     }
+    if (marker === 0x01 || marker === 0xd8) continue; // a stray TEM or SOI has no length and nothing to keep
     if (i + 2 > b.length) return { ok: false, reason: 'corrupt' };
     const len = (b[i] << 8) | b[i + 1];
     const segEnd = i + len;
@@ -87,14 +95,13 @@ export function stripJpeg(input: Uint8Array): StripResult {
       i = j;
       continue;
     }
-    let keep = true;
+    let keep = decoderMarker(marker); // the allow list; APPn are decided below
     if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
       height = (b[body + 1] << 8) | b[body + 2]; // start of frame: precision, height, width
       width = (b[body + 3] << 8) | b[body + 4];
     }
     if (marker === 0xe1 && ascii(b, body, 'Exif\0\0')) orientation = exifOrientation(b, body, segEnd);
-    if (marker === 0xfe) keep = false; // comment
-    else if (marker >= 0xe1 && marker <= 0xef) {
+    if (marker >= 0xe1 && marker <= 0xef) {
       keep = (marker === 0xe2 && ascii(b, body, 'ICC_PROFILE\0')) || (marker === 0xee && ascii(b, body, 'Adobe'));
     }
     if (marker === 0xe0) {
@@ -149,13 +156,18 @@ export function carriesMetadata(b: Uint8Array): boolean {
       continue;
     }
     if (m === 0xd9) return signed(b, i + 2, b.length); // whatever follows the end marker
-    if (m === 0x01 || (m >= 0xd0 && m <= 0xd7)) {
+    if (m >= 0xd0 && m <= 0xd7) {
       i += 2;
       continue;
     }
+    if (m === 0x01) return true; // TEM: not in the allow list
     if (i + 4 > b.length) return false;
     const end = Math.min(b.length, i + 2 + ((b[i + 2] << 8) | b[i + 3]));
-    if (m === 0xe1 || m === 0xed || m === 0xfe || signed(b, i + 4, end)) return true;
+    // The allow list, read again independently of stripJpeg: a marker that is not a decoder's need, the JFIF header with a
+    // thumbnail, an APP2 that is not a colour profile or an APP14 that is not Adobe's flag, is metadata (or could be).
+    const jfifThumb = m === 0xe0 && (!ascii(b, i + 4, 'JFIF\0') || end - i - 2 > 16 || b[i + 16] !== 0 || b[i + 17] !== 0);
+    const appOk = (m === 0xe2 && ascii(b, i + 4, 'ICC_PROFILE\0')) || (m === 0xee && ascii(b, i + 4, 'Adobe')) || (m === 0xe0 && !jfifThumb);
+    if (!(decoderMarker(m) || m === 0xda || appOk) || signed(b, i + 4, end)) return true;
     i = end;
     if (m === 0xda) {
       // The scan's compressed data runs to the next marker that is neither a stuffed byte nor a restart.

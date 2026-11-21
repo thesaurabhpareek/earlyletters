@@ -12,6 +12,9 @@ export const photosCopy = {
     change: 'Change',
     // TODO(founder): PROPOSED, needs word approval
     openFailed: 'That photo could not be opened. Choose another.',
+    // Ready with a picture: the quiet Type beside Speak (NS-01-R20b). Its own key, not the microphone-off screen's.
+    // TODO(founder): PROPOSED, needs word approval
+    typeButton: 'Type',
   },
   text: {
     // The parent's own words about the picture, up to 140 characters. Never filled in by the app (NS-01-R21).

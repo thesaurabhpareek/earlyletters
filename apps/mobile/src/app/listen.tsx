@@ -79,6 +79,7 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
@@ -572,7 +573,7 @@ export default function Listen() {
           {/* Ready with a picture (NS-01 section 4 steps 3-4, R20b): Speak is the circle above, Type is here, so a parent
               who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
           {room.startControl && withPhoto ? (
-            <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+            <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
           ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">

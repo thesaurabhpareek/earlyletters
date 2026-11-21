@@ -8,7 +8,7 @@ import { adoptPending } from './adopt';
 import { photoNotSaved, subscribePhotoNotSaved } from './failures';
 import type { PendingPhoto } from './pending';
 import { getPending } from './registry';
-import { pictureCovered } from './surface';
+import { coveredForAppState } from './surface';
 import type { StoredPhoto } from './types';
 
 const noopSubscribe = () => () => {};
@@ -26,7 +26,7 @@ export function useAppPhase(): AppStateStatus {
 /** True while a picture must be blank (NS-01-R13, NX-39-R36; Karma's ruling in surface.ts). */
 export function usePictureCovered(): boolean {
   const phase = useAppPhase();
-  return pictureCovered(phase === 'active' || phase === 'inactive' ? phase : 'background');
+  return coveredForAppState(phase);
 }
 
 /** The pending picture, re-rendering when it changes. Null when none is registered (switch off). */

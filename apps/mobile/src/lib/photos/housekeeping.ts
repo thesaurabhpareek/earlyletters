@@ -21,18 +21,20 @@ export async function sweepPhotos(db: SqlDb, files: PhotoFiles, picked: PickedFi
   const counts: SweepCounts = { orphanFiles: 0, orphanRows: 0, missingFileRows: 0 };
   await picked.sweep();
   db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id IS NOT NULL AND EXISTS (SELECT 1 FROM entries e WHERE e.id = entry_media.draft_id)');
-  let onDisk: string[];
-  try {
-    onDisk = await files.list();
-  } catch {
-    return counts; // an unreadable folder changes nothing this launch
-  }
+  // Rows first, then the folder: a picture committed after the rows were read is a file with no row in this snapshot, which
+  // is re-checked below before it is touched; read the other way round, its row would be seen with no file and deleted.
   const rows = db.all<{ id: string; ext: string; entry_id: string | null; draft_id: string | null; entry_exists: number; draft_exists: number }>(
     `SELECT m.id, m.ext, m.entry_id, m.draft_id,
             EXISTS (SELECT 1 FROM entries e WHERE e.id = m.entry_id) AS entry_exists,
             EXISTS (SELECT 1 FROM drafts d WHERE d.id = m.draft_id) AS draft_exists
        FROM entry_media m`,
   );
+  let onDisk: string[];
+  try {
+    onDisk = await files.list();
+  } catch {
+    return counts; // an unreadable folder changes nothing this launch
+  }
   const have = new Set(onDisk);
   const wanted = new Set<string>();
   for (const r of rows) {
@@ -55,6 +57,8 @@ export async function sweepPhotos(db: SqlDb, files: PhotoFiles, picked: PickedFi
   }
   for (const name of have) {
     if (wanted.has(name) || !isStoredName(name)) continue;
+    // A picture committed while this sweep ran has its file before its row: look again, right before the delete.
+    if (db.get('SELECT 1 AS x FROM entry_media WHERE id = ?', name.replace(/\.jpg$/, ''))) continue;
     try {
       await files.remove(name);
       counts.orphanFiles++;

@@ -11,6 +11,12 @@ function leaves(o: unknown, path = 'photos'): { path: string; text: string }[] {
 const ALL = leaves(photosCopy);
 
 describe('[NS-01-R24] the photo strings obey the content rules', () => {
+  it('[NS-01-R24] photo strings match no forbidden pattern', () => {
+    for (const l of ALL) {
+      expect(l.text, l.path).not.toMatch(/[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]|\p{Extended_Pictographic}/u);
+      expect(l.text, l.path).not.toMatch(/\b(memory|memories|moment|moments|album|AI|auto|automatic|smart|generated|suggest\w*|caption\w*|describe\w*)\b/i);
+    }
+  });
   it('[NS-01-R24] has no dash, curly quote, ellipsis character or emoji', () => {
     for (const l of ALL) {
       expect(l.text, l.path).not.toMatch(/[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/); // en and em dash, curly quotes, ellipsis

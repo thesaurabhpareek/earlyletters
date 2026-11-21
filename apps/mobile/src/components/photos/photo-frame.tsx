@@ -17,12 +17,14 @@ export interface PhotoFrameProps {
   width?: number;
   height?: number;
   aspectRatio?: number;
+  /** 'contain' shows the whole picture inside the box, uncropped (NS-01-R42); the default fills it. */
+  fit?: 'cover' | 'contain';
   /** The file is gone: the caller draws its own "not on this phone any more" box. */
   onMissing?: () => void;
   testID?: string;
 }
 
-export function PhotoFrame({ uri, label, width, height, aspectRatio, onMissing, testID }: PhotoFrameProps) {
+export function PhotoFrame({ uri, label, width, height, aspectRatio, fit = 'cover', onMissing, testID }: PhotoFrameProps) {
   const { c } = useTheme();
   const covered = usePictureCovered();
   const [failed, setFailed] = useState(false);
@@ -32,7 +34,7 @@ export function PhotoFrame({ uri, label, width, height, aspectRatio, onMissing, 
     <View style={box} testID={testID}>
       <Image
         source={{ uri }}
-        resizeMode="cover"
+        resizeMode={fit}
         style={{ width: '100%', height: '100%' }}
         accessible
         accessibilityRole="image"
