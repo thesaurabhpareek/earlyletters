@@ -7,9 +7,9 @@ Both pages are BUILT. `IA-FINAL-20nov.md` section 7.4 gives them no screen id ("
 | Row | Screen id (PROPOSED, area E lead to re-key) | Route | Source requirement | Owner | Status |
 |---|---|---|---|---|---|
 | L1 | E-S33 Legal | `/settings/legal` | NS-42 (agreements and notices at collection); IA 7.4; the Terms name Settings as a path | design-systems (layout), legal (document text, never edited here) | PROPOSED |
-| L2 | E-S34 Licenses | `/settings/licenses` | release requirement named in `licenses.tsx` (id UNVERIFIED); NS-33 | design-systems (layout), content (words, built) | PROPOSED |
+| L2 | E-S35 Licenses | `/settings/licenses` | release requirement named in `licenses.tsx` (id UNVERIFIED); NS-33 | design-systems (layout), content (words, built) | PROPOSED |
 
-Note on ids: `SCREEN-PATHS-20nov.md` PATH-08 already uses E-S34 for the new-device page. The area E lead assigns final ids; until then this file calls them Legal and Licenses.
+Note on ids: `SCREEN-PATHS-20nov.md` PATH-08 already uses E-S34 for the new-device page, so Licenses takes E-S35 (PROPOSED; no other file under `docs/design` or `e2e/INDEX.md` uses it). The area E lead assigns final ids; until then this file calls them Legal and Licenses.
 
 ## 1. Legal (L1)
 

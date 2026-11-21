@@ -8,7 +8,7 @@ Three files describe `/settings/your-words` three ways.
 
 | Source | What it says the page is |
 |---|---|
-| `apps/mobile/src/app/settings/your-words.tsx` (built) and `IA-FINAL-20nov.md` 7.4 | The default for new letters: "Small fixes, marked" or "Exactly as said", with a static example. Setting `review.defaultView`. |
+| `apps/mobile/src/app/settings/your-words.tsx` (built); `IA-FINAL-20nov.md` 7.4 only says "the Word for word choice" | The default for new letters: "Small fixes, marked" or "Exactly as said", with a static example. Setting `review.defaultView`. |
 | `SCREEN-PATHS-20nov.md` PATH-12 (changed by E80) | A list of names the family taught the app, empty on a new phone, with "Add a name". |
 | `SPEC-SYNC-20nov.md` E80, `functions/ai-and-speech.md` FR-AIS-34 | A dictionary of taught names (`DictionaryTerm`) that stays on the phone and is never synced. |
 

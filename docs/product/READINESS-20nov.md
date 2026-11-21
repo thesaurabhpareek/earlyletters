@@ -18,7 +18,7 @@ Can confirm:
 - The plan has an order, parallel limits, reviewers and a default for every founder gate (section 3).
 
 Cannot confirm yet (each is a NO or NOT VERIFIED line in section 5):
-- Every P0 requirement has a backlog row. Strict G0 (a row names the id, or the id cites a row that exists) holds for 368 of 1,052 P0 rows: 290 with a row plus 78 that cite one. The other 684 map only to proposed group rows, which have to be split or set ready first. So gate G0 is not met. No P0 row is left without any BL id, and none is card-level only (`p0.py --check-map`: 1,052 P0 rows, 0 errors).
+- Every P0 requirement has a backlog row. Strict G0 (a row names the id, or the id cites a row that exists) holds for 470 of 1,052 P0 rows: 393 with a row plus 77 that cite one (generator on `develop` at `71c4485`, after #1190 batch 1: `python3 docs/product/prd/tools/review/p0.py . --json`; before batch 1 it was 369, with 292 and 77). The other 582 map only to proposed group rows, which have to be split or set ready first. So gate G0 is not met. No P0 row is left without any BL id, and none is card-level only (`p0.py --check-map`: 1,052 P0 rows, 0 errors).
 - Every Wave 1 row has a brief. The three that had none (BL-963, BL-982, BL-985) have one since #1110 merged. Briefs for the first-run rows BL-1021 to BL-1046 are still not written.
 - Karma's execution map and review framework (the 20 Nov Project doc) match this file. I could not open that doc from this repo session, so I used the summary I was given. Where his map differs, his map wins and this file needs one edit.
 - The founder's words and counsel gates. No PROPOSED word is approved, and no counsel answer is on file.
@@ -48,11 +48,11 @@ All run from the repo root on `develop` at `021ecdfea`.
 | Function files | 23 reviews plus `BRIEF.md` | c4 |
 | P0 rows, tool output | 1,052 | c5 |
 | P0 rows, split | 1,052 (537 in NS cards, 515 in function files) | c5, counted by id prefix. On 20 Nov the tool printed 1,062 because it also read 10 rows out of plan 17; #1105 fixed that (section 1.5) |
-| P0 rows with a row-level BL row (tier row) | 290 (287 NS, 3 function) | c6 |
-| P0 rows cited to a BL row in their own text (tier cite) | 78 (3 NS, 75 function) | c6 |
+| P0 rows with a row-level BL row (tier row) | 393 (388 NS, 5 function) | c6 |
+| P0 rows cited to a BL row in their own text (tier cite) | 77 (3 NS, 74 function) | c6 |
 | P0 rows named only at card level | 0 | c6 |
-| Strict G0: tier row plus tier cite | 368 of 1,052 | c6 |
-| P0 rows that map only to proposed group rows (tier proposed) | 684 (247 NS, 437 function) | c6 and c7 |
+| Strict G0: tier row plus tier cite | 470 of 1,052 (generator on `develop` at `71c4485`, command `python3 docs/product/prd/tools/review/p0.py . --json`) | c6 |
+| P0 rows that map only to proposed group rows (tier proposed) | 582 (146 NS, 436 function) | c6 and c7 |
 | P0 rows with no BL id at all | 0 | c7 |
 
 ```
@@ -68,7 +68,7 @@ c7  python3 -I docs/product/prd/tools/review/p0.py . --map > /tmp/map.md; python
 
 The P0 totals equal the numbers `RESUME.md` gives for the lock (1,052, 537 NS, 515 FR). The tier split moved because the tool now reads four-digit ids and ranges, and because BL-1001 to BL-1049 exist. Two earlier figures in this file were wrong and are replaced: "665 of 1,052 have no BL row" (that counted the proposed group rows as nothing; every P0 id maps to at least one BL id) and the 20 Nov tiers (251 row, 79 cite, 57 card, 225 and 440 "none").
 
-Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cites BL-552; FR-BKO-10, FR-OPS-06, FR-REL-13, FR-SUP-14, FR-POL-07 and FR-SUP-28 cite BL-551; FR-LOC-10 and FR-LOC-30 cite BL-321; FR-MSG-14 cites BL-196). The tool lists them as `cited_missing` and does not count the cite. They still map to a proposed group row, so they sit in the 684 or the 78 as the tool places them. They are for `product` to repair.
+Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cites BL-552; FR-BKO-10, FR-OPS-06, FR-REL-13, FR-SUP-14, FR-POL-07 and FR-SUP-28 cite BL-551; FR-LOC-10 and FR-LOC-30 cite BL-321; FR-MSG-14 cites BL-196). The tool lists them as `cited_missing` and does not count the cite. They still map to a proposed group row, so they sit in the 582 or the 77 as the tool places them. They are for `product` to repair.
 
 ### 1.3 Every NS card
 
@@ -586,7 +586,7 @@ Result on this file: `rows 243, edges 205, errors 0` (exit 0), re-run on 21 Nov 
 
 What the check proves and does not prove:
 - It proves the table is internally consistent: every id in Depends on is a row, there is no cycle, and no row outside the instrumentation chain depends on an instrumentation row.
-- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 684 P0 rows that map only to proposed group rows (section 1) are the known hole: the map has build rows for the stacks, not for each group.
+- It does not prove the table is complete. Rows come from the backlog, the plans and the instrumentation files. A work item that no document names is not here. The 582 P0 rows that map only to proposed group rows (section 1) are the known hole: the map has build rows for the stacks, not for each group.
 - It never reads the Blocks column. Blocks was written by hand to match Depends on, and a wrong Blocks cell would pass the check. On 21 Nov I compared Blocks with the inverse of Depends on in a throwaway script (not committed): 0 mismatches in the 243 rows, after setting aside the rows whose Blocks cell is cut short with "+n" (those cannot be compared). That is a one-off, not a gate.
 - Dependencies for the BL rows come from each row's `Depends on` line and the blockers named in its status. I added the ones plan 17 names and the backlog line leaves out: BL-978 on BL-922 and BL-961; BL-961 on PR-879 (its third part); BL-952 on FIND-8; BL-931 on PR-840; BL-933 on BL-868; BL-977 on BL-926; BL-984 on BL-928.
 
@@ -782,7 +782,7 @@ YES means I checked it and the evidence is named. NO means I checked and it is n
 |---|---|---|---|---|
 | 1 | Requirements locked | YES | Rev 2 LOCKED (`README.md`, `RESUME.md`); #934 merged as `88f3a975` at 20:37 UTC (REST `merged_at`). E1 to E83 and CL-001 to CL-158 present, none missing (section 1.2, c1 and c2) |
 | 2 | Every NS card and function file accounted for | YES | 52 of 52 card headings; 5 cards have 0 P0 rows and no BL row by design; 23 of 23 function files counted (sections 1.3 and 1.4) |
-| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. Strict G0 holds for 368 of 1,052 P0 rows (290 row, 78 cite); 684 map only to proposed group rows (section 1.2, `p0.py --json`, 21 Nov). Every P0 id maps to at least one BL id (`--check-map`: 0 errors). First-run rows now have ids (BL-1021 to BL-1046, #1106), all proposed. The 100 instrumentation rows have no BL id on `develop`: #1107 and #1108 are open |
+| 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. Strict G0 holds for 470 of 1,052 P0 rows (393 row, 77 cite; generator on `develop` at `71c4485`, `p0.py . --json`); 582 map only to proposed group rows (section 1.2, `p0.py --json`, 21 Nov). Every P0 id maps to at least one BL id (`--check-map`: 0 errors). First-run rows now have ids (BL-1021 to BL-1046, #1106), all proposed. The 100 instrumentation rows have no BL id on `develop`: #1107 and #1108 are open |
 | 4 | The counting tool is right | YES for ids and rows, with two limits | #1105 merged: four-digit ids, ranges, plan 17 no longer read, `--map` and `--check-map`. It counts a mention as coverage, and it drops a cite to a BL id with no heading (ten P0 rows, section 1.2) |
 | 5 | ADRs filed as Proposed | YES | ADRs 0029 to 0035 on `develop` (#1029 merged), each "Status: Proposed, 20 Nov 2026" (`git show origin/develop:docs/adr/0029-...`). None is Accepted, and only the founder accepts |
 | 6 | Dependency map: no cycle, no missing blocker | YES | `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables (section 2.13) |
