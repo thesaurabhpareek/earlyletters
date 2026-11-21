@@ -1,6 +1,6 @@
 # Early Letters writing guide
 
-Status: v1.0, 20 Nov 2026. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
+Status: v1.1, 21 Nov 2026 (v1.0 20 Nov). Reviewed by the CMO, Chief Design Officer, CPrivO, CCO and CAIO lenses as Claude roles, not counsel. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
 
 This is the guide for every word a customer reads: the app, error messages, emails, push notifications, the App Store page, the website, the prompts and the printed-looking pages inside the book. Read it before you write or change a line. Read `VOICE.md` and `BRAND.md` alongside it. Where they overlap, `VOICE.md` and the rules test win on mechanics, `BRAND.md` wins on vocabulary, and this guide wins on how a sentence should sound.
 
@@ -202,7 +202,6 @@ Read in full or in part this session (20 Nov 2026):
 - **Apple Human Interface Guidelines, Writing** (developer.apple.com/design/human-interface-guidelines/writing). Take: match tone to context (the Fall Detection and Move streak examples); be clear and cut words; verbs on buttons, "Send" over "Let's do it!"; avoid "we" in errors; "Choose a password with at least 8 characters" over "That password is too short"; "oops" and "uh-oh" tend to sound insincere; describe a setting by what it does when on; empty states give a next step.
 - **Monzo, Tone of voice** (monzo.com/tone-of-voice). Take: straightforward kindness as the base; plain, spoken-style words; lead with impact on the customer; own the mistake and apologise once; no humour in operational messages or in bad news; different dials by channel.
 - **Mailchimp, Content Style Guide, Voice and tone** (styleguide.mailchimp.com/voice-and-tone). Take: plainspoken, genuine; consider the reader's emotional state first; active voice; positive phrasing; humour only when it fits, otherwise keep a straight face.
-
 - **Atlassian Design System, Voice and tone**. Take: one voice, with tone that shifts to the reader's emotional state; no humour in errors or bad news; delight only sparingly.
 - **Microsoft Writing Style Guide, "Brand voice: above all, simple and human" and "Use contractions"** (learn.microsoft.com/en-us/style-guide). Take: voice stays constant while tone adapts; warm and relaxed, crisp and clear, ready to lend a hand; key point first with a clear next step; short everyday words, sentence-style capitals. On contractions: don't mix a contraction with its spelled-out form in the same interface (not "can't" in one place and "cannot" in another), don't join a noun to a verb ("Early Letters's"), and avoid awkward ones like "it'll", "there'd" and "they'd" in UI. The Microsoft voice page says nothing explicit about writing for people under stress; that reading is ours, not theirs.
 
