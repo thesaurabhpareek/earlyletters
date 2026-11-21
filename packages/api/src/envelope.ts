@@ -220,6 +220,8 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   SCTMB: rule('tombstoned', 'reject'),
   SCLPG: rule('last_parent', 'reject'),
   SCDEL: rule('deleted', 'reject'),
+  // SCPHO (20261110000000, BL-870): the server holds no pictures; a photo_path write is refused. A client bug: never retried.
+  SCPHO: rule('forbidden', 'reject'),
   SCPAR: rule('not_parent', 'reject'),
   P0002: rule('not_found', 'reject'),
   '22023': rule('bad_request', 'reject'),
