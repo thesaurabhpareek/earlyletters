@@ -785,7 +785,7 @@ From the table in `docs/tdd/new-scope/README.md`, read against develop `16e61549
 | Sign-out leaves reminders planned | NS-13-R14 | Fails | Closed: #904. Account gone and the upgrade path: handoff #910 |
 | The reminder never-list has no test | NS-13-R5, R6a, R6b | Untested | Closed: #905 |
 | Sign out never removes a recording has no test | NS-08-R6 | Untested | Closed: #874 |
-| Caption and place ceilings count characters, not code points | NS-01 caps, BL-957 | Mismatch | Not closed: #835's head has 2240 and 960 code points, 16 per character (`apps/mobile/src/lib/db/migrations.ts:462-463`), while E11 and `data-and-sync.md` say database ceilings of 1,120 (photo words) and 480 (place) code points and app limits of 140 and 60 graphemes; E10 sets the unit per field (From name counts code points, 30) and E12 sets NS-06-A23 at 320. Which is intended is Karma's to settle before #835 merges [U] |
+| Caption and place ceilings count characters, not code points | NS-01 caps, BL-957 | Mismatch | Closed 21 Nov by E84 (CL-159): the ceilings are 2,240 and 960 code points, as #835's head has them. Was: #835's head has 2240 and 960 code points, 16 per character (`apps/mobile/src/lib/db/migrations.ts:462-463`), while E11 and `data-and-sync.md` say database ceilings of 1,120 (photo words) and 480 (place) code points and app limits of 140 and 60 graphemes; E10 sets the unit per field (From name counts code points, 30) and E12 sets NS-06-A23 at 320. Which is intended is Karma's to settle before #835 merges [U] |
 | No switch for the system writing tools on a text field | ruling D2 | Open | CR-67 AX-1: one native setting once, under ADR 0039; flags for new letter-word fields stay off in `production` until it lands. Open; reported to the founder, not decided |
 
 ---
@@ -862,5 +862,5 @@ What changed with rev 2 (#934 merged at `88f3a975`; #846 closed):
 - Counsel turnaround and the founder's hours, which this plan does not estimate.
 - That the mermaid graph renders.
 - Rev 2: the id diff against `450bcb4a` (100 files), the cites in this file to card lines (rev 1 lines), the founder hold on the 13 held rows on develop, whether #843 is redundant, and the states of #843, #866 and #870 (heads only were re-read at 21:00 UTC).
-- Which of #835's ceilings (2240 and 960, or E11's 1,120 and 480 code points) is intended, and the NX-39 F6 cap number.
+- Closed by E84 (CL-159): #835's ceilings are 2,240 and 960 code points. Still open: the NX-39 F6 cap number.
 - Hosted settings, plan limits and device behaviour (the decisions record's own Not-verified list); the D-entry for the founder's answers is not yet pasted, so the allowance per phone is not final (5.5).

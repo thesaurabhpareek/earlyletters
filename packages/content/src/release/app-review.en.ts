@@ -1,8 +1,8 @@
 // Notes for App Review for a production build with server features on (build 12). Sent to Apple only, never shown to
 // families. PROPOSED: every sentence needs founder approval (the pull request lists them).
 //
-// Build 12 rulings this follows: D-157 (servers on), D-160 (sign-in is required; co-parent surfaces may show "coming soon"),
-// B12-5 (the "I was invited" button is hidden in the store build, so the reviewer is never sent through it).
+// Build 12 rulings this follows: D-157 (servers on), D-160 (sign-in is required), D-161 (no "coming soon" line in any build;
+// it replaces the second half of D-160), NS-38-R5 and NS-39 O-22 (the outage-only local start is named), B12-5 (the "I was invited" button is hidden in the store build, so the reviewer is never sent through it).
 //
 // Why this is not `storeListing.reviewNotes`: those words are for a build with server features off. These notes describe the
 // servers-on build only. The release workflow sends them when, and only when, the production profile is on
@@ -20,6 +20,7 @@
 // and planLabel. Re-check them against the release build before each submission; the Settings regroup may move rows.
 // Fictional family only (CLAUDE.md): Asha. No real name, address or sign-in is ever typed here.
 import { brand } from '@scribe/brand';
+import { authCopy } from '../features/auth.en';
 
 /** Replaced by the demo account's email address before the text reaches Apple. */
 const demoEmail = '{demoEmail}';
@@ -30,6 +31,7 @@ const notesServersOn = `${brand.name} is a memory book that parents fill by talk
 
 SIGN-IN IS REQUIRED
 An account keeps the words of a parent's letters with them on a new phone. Recordings stay on the phone that made them. Sign-in is Sign in with Apple, or a link and a 6-digit code sent by email. There are no passwords in the app.
+Only if our sign-in service is down, the first screen also offers "${authCopy.outage.startLocal}". It is a stopgap for an outage, not a way to review the app, and the letters made there can be moved into an account later.
 
 DEMO ACCOUNT (about 3 minutes)
 Email: ${demoEmail}
@@ -46,7 +48,7 @@ DELETING THE ACCOUNT
 Settings, Delete account. It shows what happens to each book, then asks you to type delete. The account is deleted 30 days later, and the deletion can be cancelled until then.
 
 PLUS
-The first two letters are free. To reach the Plus sheet, keep two letters, then try to keep a third, or open Settings, Plan. Please use a sandbox account.
+The first two letters are free. Plus is asked for at Keep: keep two letters, then try to keep a third, or open Settings, Plan, to reach the Plus sheet. Please use a sandbox account. Nothing else is behind Plus, and every letter already kept stays readable, playable and exportable.
 
 Contact: ${brand.support.email}`;
 

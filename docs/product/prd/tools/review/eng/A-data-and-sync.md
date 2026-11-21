@@ -146,7 +146,7 @@ Common to every file: no `begin;` or `commit;` (DB-R10); every new function `rev
 
 ### 1.5 Length rules: the database counts code points, the app counts graphemes
 
-The rule (BL-957): the app limit is in grapheme clusters through one helper in `packages/core`; the database ceiling is in code points and is a safety net against unbounded rows, never the product limit, so it must admit every value the app accepts. One grapheme can be many code points (a Devanagari conjunct cluster is 3 to 6; an emoji ZWJ family sequence 7 or more). I use 8 code points per grapheme.
+The rule (BL-957): the app limit is in grapheme clusters through one helper in `packages/core`; the database ceiling is in code points and is a safety net against unbounded rows, never the product limit, so it must admit every value the app accepts. One grapheme can be many code points (a Devanagari conjunct cluster is 3 to 6; an emoji ZWJ family sequence 7 or more). I use 8 code points per grapheme. **Superseded by E84 (21 Nov): the ceilings are 2,240 (photo words) and 960 (place), 16 per grapheme, because 140 emoji family sequences of 11 code points must be kept whole.**
 
 | Field | App limit | Database ceiling now | Proposed ceiling | Note |
 |---|---|---|---|---|
