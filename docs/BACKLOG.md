@@ -6098,7 +6098,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A18.
 
 #### BL-1254 Id registry: screens, controls, elements, metrics (ER-B01)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
+- Status: in review (branch feat/analytics-er-b01-id-registry). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: ids.ts and generated ids.md: the 29 routes plus the IA-FINAL extras, each with an area and an IA-FINAL id; a dynamic list is one element id. Never: entry text, transcript, audio, child name, autocapture, replay.
 - Done when: V4 and V16 (300 per kind) self-tests; npm run plan renders ids.md.
