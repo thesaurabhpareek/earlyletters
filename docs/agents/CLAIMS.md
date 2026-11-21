@@ -10,3 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| content-c | content (wave C) | fix/content-wave-c-push | #1135 | packages/content/src/features/{reminders,words,speech,language,packs,backup,licences,player,content-blocks}.en.ts, apps/mobile/src/lib/app-lock/copy.ts, apps/mobile/src/lib/packs/copy.ts, apps/mobile/src/components/book/copy.ts, packages/content/src/release/testflight.en.ts | 2026-11-21 01:02 | 2026-11-24 01:02 | copy rewrite wave C (PR read open by REST 2026-11-21 01:02) |
