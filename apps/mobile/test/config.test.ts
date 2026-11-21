@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
 import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
@@ -20,6 +20,17 @@ import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type
 const ROOT = path.resolve(__dirname, '..');
 const KEY = 'EXPO_PUBLIC_APP_ENV';
 const original = process.env[KEY];
+
+// BL-443: the first getConfig call pays the cold load of @expo/config and every plugin; the 5 s test timeout of
+// whichever test comes first used to pay it. It is paid here, under the hook timeout. An error is left for the
+// tests below, which call getConfig themselves and report it with their own names.
+beforeAll(() => {
+  try {
+    getConfig(ROOT, { skipSDKVersionRequirement: true, isPublicConfig: false });
+  } catch {
+    /* reported by the first test that needs the config */
+  }
+}, 60_000);
 
 afterEach(() => {
   if (original === undefined) delete process.env[KEY];
