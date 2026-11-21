@@ -261,7 +261,7 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
     // So the toast must not say the book is still in Recently deleted; it says the app finishes at the next open.
     const toast = en.settings.delete.bookEraseFailedToast;
     expect(toast).not.toMatch(/Recently deleted/);
-    expect(toast).toMatch(/next time it opens/);
+    expect(toast).toMatch(/next time the app opens/);
     expect(readFileSync(join(__dirname, '..', 'src/app/settings/recently-deleted.tsx'), 'utf8')).toMatch(
       /eraseDeletedBook\(b\.id\) \? d\.bookErasedToast : d\.bookEraseFailedToast/,
     );
@@ -967,7 +967,7 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     const d = en.settings.delete;
     expect(d.bookBodyThisPhone).toBe("Every letter and recording in {child}'s book will be removed from this phone.");
     expect(d.bookEraseNowBody).toBe('Every letter and recording in it is erased for good.');
-    expect(d.bookEraseFailedToast).toBe('The book was not erased yet. The app finishes the next time it opens.');
+    expect(d.bookEraseFailedToast).toBe("The book wasn't erased yet. The erase will finish the next time the app opens.");
   });
 
   it('button labels stay at most 22 characters', () => {
