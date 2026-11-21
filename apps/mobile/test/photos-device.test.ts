@@ -175,7 +175,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
       .toEqual(['entry_media_draft_idx', 'entry_media_entry_idx', 'entry_media_one_photo_idx']);
     expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')?.n).toBe(0);
   });
-  it('[D1] it queues nothing for sync and a phone on 10 gains the table without touching a letter', () => {
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: it queues nothing for sync and a phone on 10 gains the table without touching a letter', () => {
     const { db } = nodeDb();
     migrate(db, ctx, MIGRATIONS.slice(0, 10));
     letter(db, 'e1');
@@ -200,11 +200,11 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
     expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
     expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
-    // The CHECKs are ceilings in code points, 16 per character a person sees, never the product limit (BL-957): they
+    // The CHECKs are ceilings in code points, 8 per character a person sees (E11: 1,120 and 480; DEFAULT pending req-question NS-01-R54-ceilings), never the product limit (BL-957): they
     // admit the longest words and place the app keeps, and refuse one code point more.
-    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(2241) })).toThrow();
-    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(961) })).toThrow();
-    ins('m9', 'e4', null, { text: 'x'.repeat(2240), place: 'y'.repeat(960) });
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(1121) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(481) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(1120), place: 'y'.repeat(480) });
   });
   it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
     const { db } = nodeDb();
@@ -226,7 +226,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
 });
 
 describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
-  it('[D5] a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
+  it('[NS-01-R36] a kill leaves no orphan after the sweep: a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'live');
@@ -267,7 +267,7 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
 // ---- Application Support folder, the native step's temporary files ------------------------------------------------
 
 describe('[C9] where the stored copy lives', () => {
-  it('[C9] iOS: <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
+  it('[NS-01-R34] pictures live in Application Support: iOS <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000009'));
     expect(photosDirectory().uri).toBe(`${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/photos/`);
     h.disk = createDisk(androidContainer());
@@ -719,7 +719,7 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     expect(src).toMatch(/UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = \?', draftId\);/);
     expect(src.indexOf('UPDATE entry_media SET entry_id = draft_id')).toBeGreaterThan(src.indexOf('letters.saveFromDraft(c, draftId'));
   });
-  it('[D1] the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
+  it('[NS-01-R16c] purge and let-go remove the picture file: the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'kept'); // the letter exists, the move did not run
