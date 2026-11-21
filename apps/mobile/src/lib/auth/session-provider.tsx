@@ -26,7 +26,7 @@ import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
-import { nextReportMark, type ReportMark } from './new-device/report.logic';
+import { methodForEvent, nextReportMark, type ReportMark } from './new-device/report.logic';
 import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
@@ -250,12 +250,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       // emitted only when supabase-js really removes the session (_removeSession).
       if (session || event !== 'INITIAL_SESSION') setAccount(accountOf(session));
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-        dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodRef.current });
+        dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodForEvent(event, methodRef.current) });
       } else if (event === 'SIGNED_OUT') {
         // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
         // Keychain only, so it is safe inside this callback (no Supabase call).
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
+        methodRef.current = null; // a signed-out run keeps no method for the next session
       }
     });
     const stopRefresh = startAutoRefreshWhileActive();
@@ -490,6 +491,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // `restoring` while a saved session waits to be read.
         const signedInNow = isSignedIn(stateRef.current) || (await sessionSavedOnPhone(SESSION_STORAGE_KEY));
         let started = false;
+        let methodBefore: AuthMethod | null = methodRef.current; // what an earlier sign-in in this run set
         try {
           const r = await openEmailLink(
             { tokenHash, type },
@@ -500,6 +502,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
                 started = true;
                 // TPL-04: an email-change link confirms the new address of the account signed in here; it is not a sign-in.
                 if (t === 'email_change') return verifyEmailLinkPkce(sb, hash, t);
+                // NDA-1: a link sign-in is a fresh sign-in (new-device report), also at a cold start from the link. Set before the
+                // exchange, because Supabase's SIGNED_IN fires inside it.
+                methodBefore = methodRef.current;
                 methodRef.current = 'email';
                 if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
                 return verifyEmailLinkPkce(sb, hash, t);
@@ -522,7 +527,10 @@ export function SessionProvider({ children, onUnder18 }: Props) {
           // SIGN-06: refused after GET /verify ran (another phone with its own recent request): the token, and so the
           // email's code, may be spent; point to a new email rather than the code.
           const error: AuthErrorKind = kind === 'other_phone' ? 'other_phone_spent' : kind;
-          if (type !== 'email_change') dispatch({ type: 'FAILED', error }); // a failed change leaves the session as it was
+          if (type !== 'email_change') {
+            methodRef.current = methodBefore; // undo only what this link set; an earlier provider sign-in's method stays (NDA1-2)
+            dispatch({ type: 'FAILED', error });
+          } // a failed change leaves the session as it was
           return { ok: false, error };
         }
       },

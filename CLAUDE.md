@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 111 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 111 prompts. `WRITING-GUIDE.md` (how a line should sound), `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
@@ -42,6 +42,7 @@ npm run mobile         # start the iOS app
 All tests must pass before any commit. If a content rule test fails, fix the copy, not the test.
 
 ## Content rules (enforced by `packages/content/test/rules.test.ts`)
+Before you write or change any customer-facing line, read `packages/content/WRITING-GUIDE.md`. Read it aloud like a friend would say it. Contractions are normal. `npm run lint:copy` holds the machine-sounding patterns to a shrink-only baseline.
 - No em dashes, en dashes, curly quotes, ellipsis characters, or emoji.
 - No fear, guilt or loss language. Legacy is about love and time, never endings.
 - Never imply AI writes anything. We never rewrite.
