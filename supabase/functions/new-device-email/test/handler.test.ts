@@ -211,6 +211,13 @@ Deno.test('(c) no secret always answers 401, whatever the config; the config ans
   const broken = { ...ENV, DEVICE_HASH_KEY: '', RESEND_API_KEY: '' };
   for (const auth of [null, 'Bearer wrong', 'Bearer ']) assert.equal((await go2(world(), broken, auth)).status, 401);
   assert.equal((await go2(world(), { ...ENV, NEW_DEVICE_SENDER_SECRET: '' }, 'Bearer ')).status, 401);
+  // A short but non-empty secret with a matching bearer is still refused: the length floor is its own guard (not only safeEqual).
+  const short = 'short-secret-0123456789';
+  assert.ok(short.length > 0 && short.length < 32);
+  const w = world();
+  assert.equal((await go2(w, { ...ENV, NEW_DEVICE_SENDER_SECRET: short }, `Bearer ${short}`)).status, 401);
+  assert.equal(w.calls.length, 0, 'no take for a short secret');
+  assert.equal(w.pending.length, 1);
   assert.equal((await go2(world(), broken)).status, 503);
 });
 
@@ -240,10 +247,14 @@ Deno.test('(b) a rekey that fails is counted and nothing is recorded or sent', a
   const w = world({ rekey: '' });
   const failing = (n: string) => ({ ...ENV, DEVICE_HASH_KEY_NEXT: NEXT })[n];
   const calls: string[] = [];
+  const emails: string[] = [];
+  const events: Record<string, unknown>[] = [];
   const h = makeHandler(failing, {
     fetch: (url: string, init?: RequestInit) => {
       const fn = String(url).split('/rpc/')[1];
       if (fn) calls.push(fn);
+      if (String(url).endsWith('/emails')) emails.push(String(url));
+      if (fn === 'ops_security_event_write') events.push(JSON.parse(String(init?.body ?? '{}')));
       if (String(url).includes('/auth/v1/')) return Promise.resolve(new Response(JSON.stringify({ id: ASHA.profile, email: ASHA.email })));
       if (fn === 'ops_new_device_pending_take') return Promise.resolve(new Response(JSON.stringify(w.pending.splice(0, 1))));
       if (fn === 'ops_new_device_rekey') return Promise.resolve(new Response('{}', { status: 500 }));
@@ -255,6 +266,9 @@ Deno.test('(b) a rekey that fails is counted and nothing is recorded or sent', a
   await h(new Request('https://fn.local/x', { method: 'POST', headers: { Authorization: `Bearer ${SECRET}` } }));
   assert.ok(!calls.includes('ops_new_device_record'));
   assert.ok(calls.includes('ops_security_event_write'));
+  assert.equal(emails.length, 0, 'no email was sent');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].p_kind, 'new_device_hook_failed');
 });
 
 // Mutants: the order of the three guards is a property of the source. Moving the config gate after the take, the bearer
@@ -264,6 +278,8 @@ Deno.test('mutants: bearer check, then config gate, then take; rekey before reco
   const at = (needle: string) => { const i = src.indexOf(needle); assert.ok(i > 0, needle); return i; };
   assert.ok(at('safeEqual(auth') < at('const badKey'));
   assert.ok(at('const badKey') < at("'ops_new_device_pending_take'"));
-  assert.ok(at('MIN_KEY_CHARS') < at("'ops_new_device_pending_take'"));
+  // The first MIN_KEY_CHARS is the import line, so look at the one used in the gate (the badKey line).
+  const gate = src.indexOf('MIN_KEY_CHARS', src.indexOf('const badKey'));
+  assert.ok(gate > at('const badKey') && gate < at("'ops_new_device_pending_take'"));
   assert.ok(at("'ops_new_device_rekey'") < at("'ops_new_device_record'"));
 });
