@@ -77,18 +77,50 @@ export function eraseNoteKeys(o: { alpha: boolean; plan: ErasePlan }): EraseNote
 
 export type ErasePhase = 'review' | 'erasing';
 export type EraseOutcome = 'erased' | 'incomplete' | 'signed_in';
+/** FR-SEC-06: what runEraseEverything returns when the phone's owner check was cancelled (nothing changed, no message). */
+export type EraseRunOutcome = EraseOutcome | 'cancelled';
 
 /**
  * Erase everything after "Erase" (design 2.12): the Erasing screen first, with no way out, then the erase. On
  * 'erased' the phase stays 'erasing' (the age question replaces every screen from the root layout, so this page is
  * never drawn again) and the done line is announced. Otherwise the page comes back with one failure line.
+ * FR-SEC-06: the phone's owner check runs first, before the Erasing screen. Cancelled (or an error) changes nothing and
+ * says nothing: the page stays as it was. 'unavailable' (no passcode) lets the confirm stand alone.
+ * The check lives here and not in eraseEverything(), so a kill-and-resume of a pending erase never asks again.
  */
 export async function runEraseEverything(deps: {
+  ownerCheck: () => Promise<'passed' | 'cancelled' | 'failed' | 'unavailable'>;
+  /** The check failed or was locked out (not a cancel): one line, nothing erased. */
+  onCheckFailed: () => void;
   erase: () => Promise<EraseOutcome>;
   setPhase: (p: ErasePhase) => void;
   setFailed: (f: null | 'failed' | 'signed_in') => void;
   announceDone: () => void;
-}): Promise<EraseOutcome> {
+}): Promise<EraseRunOutcome> {
+  if (eraseRunning) return 'cancelled'; // a second confirm while one is running does nothing
+  eraseRunning = true;
+  try {
+    return await runOnce(deps);
+  } finally {
+    eraseRunning = false;
+  }
+}
+
+/** Latch: one Erase everything run at a time, from the owner check to the end. */
+let eraseRunning = false;
+
+async function runOnce(deps: Parameters<typeof runEraseEverything>[0]): Promise<EraseRunOutcome> {
+  let check: 'passed' | 'cancelled' | 'failed' | 'unavailable';
+  try {
+    check = await deps.ownerCheck();
+  } catch {
+    check = 'failed';
+  }
+  if (check === 'cancelled') return 'cancelled';
+  if (check === 'failed') {
+    deps.onCheckFailed();
+    return 'cancelled';
+  }
   deps.setFailed(null);
   deps.setPhase('erasing');
   let r: EraseOutcome;
