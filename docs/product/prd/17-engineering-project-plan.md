@@ -4,6 +4,8 @@ Status: v5, pinned 20 Nov 2026 to develop `55574906c`: errata E1 to E83, closure
 
 **Live status: see the one canonical block at the top of `docs/engineering/readiness-20nov/PROGRESS.md` ("Canonical live status"). It is not repeated here, so it cannot drift. Older status text below, if any, is superseded by it.**
 
+**Delivery plan: see `docs/engineering/readiness-20nov/DELIVERY-PLAN.md` (why delivery is slow, dependency map and critical path, lanes, founder pack).**
+
 
 Line numbers: `file:line` cites to the cards, 13, 14 and README are at `450bcb4a` (rev 1) unless another commit is named; rev 2 changed 100 files under `docs/product/prd`, so those lines may have moved and were not re-checked one by one [U]: read the id, not the line. Cites to `docs/BACKLOG.md`, RULINGS, ROADMAP and VISION are to develop. The conflict this plan once expected at `13:3` was resolved by the merge of develop into this branch (both lines kept).
 

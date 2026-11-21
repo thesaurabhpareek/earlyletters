@@ -4,6 +4,8 @@ Status: v4, 20 Nov 2026, pinned to develop `55574906c` (rev 2 of the requirement
 
 **Live status: see the one canonical block at the top of `docs/engineering/readiness-20nov/PROGRESS.md` ("Canonical live status"). It is not repeated here, so it cannot drift. Older status text below, if any, is superseded by it.**
 
+**Delivery plan: see `docs/engineering/readiness-20nov/DELIVERY-PLAN.md` (why delivery is slow, dependency map and critical path, lanes, founder pack).**
+
 Tags as in 17: [V] read in a file or on GitHub on 20 Nov, [E] an estimate (here, the designs' own sums, not a measure), [U] not verified. Cites to errata (E1 to E83) are to `docs/product/prd/18-errata-after-lock.md` on develop at the pin; `ENGINEERING-QUESTIONS-CLOSED-20nov.md` indexes the questions as P1 to P48. CR-71 is `docs/agents/cto/RULINGS.md:760`; the executive record is `docs/engineering/readiness-20nov/DECISIONS-20nov.md` (section 8: the founder's answers, repeated in 17 section 5.5). CL-nnn rows are in `docs/product/prd/GAP-LOG.md`. A1 to A13 are CR-69 (`docs/agents/cto/RULINGS.md:698-710`). Where a design and a card disagree, the card wins (CR-66).
 
 Sources: designs `docs/tdd/new-scope/12-first-run-5.md`, `17-days-prs-and-amendments.md`, `16-media-flags-tests-prs.md` and their siblings (PRs #964 to #976 per CR-69's question line); briefs under `docs/engineering/readiness-20nov/briefs/{mobile,data,platform}/` (#937 to #963). A brief's size and its README's [E] are the brief author's.
