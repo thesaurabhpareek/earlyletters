@@ -170,7 +170,7 @@ describe('[DATA-REQ-040] fail closed without wedging the pull', () => {
     expect(out.refused).toBe(1);
     expect(rawOf(f, L1)).toBe(FIRST);
     expect(rawOf(f, '0199a5b0-0000-7000-8000-0000000000b3')).toBe(SECOND);
-    expect(f.db.get<{ cursor: string }>('SELECT cursor FROM sync_books WHERE child_id = ?', ASHA)?.cursor).toBe(p.books[0].cursor);
+    expect(f.db.get<{ cursor: string }>('SELECT cursor FROM sync_books WHERE child_id = ?', ASHA)?.cursor).toBe(p.books![0].cursor);
     expect(flag(f)).toBeNull();
     expect(() => f.db.transaction(() => applyPullPage(f.db, p, NOW))).not.toThrow();
     f.close();
