@@ -167,6 +167,9 @@ const EXTENSION_PRODUCT = /productType\s*=\s*"?com\.apple\.product-type\.(?:app-
  * clean. `library` is `{ flagOn, content }`: the photo-library key is allowed only when its flag is on and its
  * value equals the content string (a null `content` means no string is agreed yet, so the key is never allowed).
  * Lines 575-576 era rule stays: any UIBackgroundModes, even an empty one, fails (R46: a founder ruling after counsel).
+ *
+ * @param {{ plist?: unknown, entitlements?: unknown, pbxproj?: unknown, library?: { flagOn: unknown, content: string | null } }} [inputs]
+ * @returns {{ id: string, text: string }[]}
  */
 export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library = { flagOn: false, content: null } } = {}) {
   const out = [];

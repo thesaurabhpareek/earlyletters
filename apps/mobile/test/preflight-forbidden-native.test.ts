@@ -40,6 +40,9 @@ describe('[NX-39-R4] the plist adds keys only for the phases that are on', () =>
     expect(ids({ plist: lib(ALERT), library: { flagOn: true, content: null } })).toEqual(['photo-library']);
     expect(ids({ plist: lib(ALERT) })).toEqual(['photo-library']);
   });
+  it('[NX-39-R4] the library key fails when the flag is merely truthy, not true', () => {
+    for (const flagOn of ['false', 'yes', 1, {}]) expect(ids({ plist: lib(ALERT), library: { flagOn, content: STR } as never })).toEqual(['photo-library']);
+  });
   it('[NX-39-R4] the library key fails when its value differs from the content string', () => {
     expect(ids({ plist: lib(ALERT), library: { flagOn: true, content: `${STR} More.` } })).toEqual(['photo-library']);
   });
