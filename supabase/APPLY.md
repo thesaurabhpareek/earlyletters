@@ -1247,3 +1247,13 @@ What it changes: drops the insert and update policies on `storage.objects` for `
 What it changes: a trigger on `legal_holds` writes `legal_hold_placed` and `legal_hold_released`; `ops_support_access()` (service role) writes `ops.audit_log` then `support_access`; `record_export_created()` (signed-in, own row, 5 a day) writes `export_created`; new table `ops.security_events` (no API access, append-only, 12 months) with a writer, a reader `ops_security_events_check()` and `ops_security_events_retention()`. No existing column or grant changes.
 
 **Check:** `select tgname from pg_trigger where tgname = 'legal_holds_audit';` returns one row; `select count(*) from ops.security_events;` returns 0. **Rollback:** forward-fix only; see the file header.
+
+## File 36: the new-device sign-in email, database half (NS-08-R21, E83, data-architect)
+
+`20261121000000_new_device_sign_in.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 35. Refuses a second run (55000).
+
+What it changes: three service-only tables in schema `ops` (`account_sessions_seen`, `new_device_pending`, `new_device_tokens`), the access token hook function `hook_new_device_sign_in` (fail open), `ops_end_session`, `ops_new_device_sign_out`, `ops_new_device_retention`, and two new `ops.security_events` kinds. No existing column or grant changes. Nothing sends yet: the sender is a later PR.
+
+**Founder steps (not done by this file):** after applying, switch the Custom Access Token hook on in the dashboard, pointing at `public.hook_new_device_sign_in`; run H1 of `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md` (`select has_table_privilege('postgres', 'auth.sessions', 'DELETE');` must be true, or the session lever does not exist on hosted). `ops` schedules `select public.ops_new_device_retention();` daily.
+
+**Check:** `select count(*) from ops.account_sessions_seen;` returns 0; `select has_function_privilege('supabase_auth_admin', 'public.hook_new_device_sign_in(jsonb)', 'execute');` is true and the same for `anon` and `authenticated` is false. **Rollback:** switch the hook off first; forward-fix only; see the file header.
