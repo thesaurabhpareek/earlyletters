@@ -1,6 +1,6 @@
 # Design system delta for the spec sync: tokens, components and their states
 
-Status: DRAFT for Karma, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only: nothing here is built, and no token file, generated CSS or component is changed by this PR. Everything below is PROPOSED until a token PR and a component PR carry it with tests. Stacks on #1033. Read with `SPEC-SYNC-20nov.md` (what and why), `SCREEN-PATHS-20nov.md` (where each is used) and `A11Y-AND-TYPE-AUDIT-20nov.md` (the evidence).
+Status: DRAFT for Karma, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only: nothing here is built, and no token file, generated CSS or component is changed by this PR. Everything below is PROPOSED until a token PR and a component PR carry it with tests. #1033 is merged. Read with `SPEC-SYNC-20nov.md` (what and why), `SCREEN-PATHS-20nov.md` (where each is used) and `A11Y-AND-TYPE-AUDIT-20nov.md` (the evidence).
 
 Rule followed (`docs/design/COMPONENT_LIBRARY.md`, ADR 0101): use a library component before building one, then add the finishing touch on top. Of the five things the ask names, two already exist in the app, two are thin wrappers on existing parts, and one is new. Said plainly per item.
 
@@ -37,7 +37,7 @@ Built on `Sheet`; reads `copy.analyticsConsent`; two `Button variant="outline"` 
 
 Changes proposed (for `mobile`):
 
-1. At AX1 and up the buttons sit under the body inside the scrolling content, not in a pinned footer (rule 3 of the audit, section 2). The body is about 15 lines at AX5 (MEASURED), so a pinned pair would cover most of the sheet.
+1. RULING (Karma, 20 Nov 2026): at AX1 and up the buttons are not pinned. Title and body scroll, and the two stacked buttons sit at the end of the body, inside the scrolling content, not in a pinned footer (rule 3 of the audit, section 2). The body is about 15 lines at AX5 (MEASURED), so a pinned pair would cover most of the sheet.
 2. Initial VoiceOver focus is the title, never a button (already the `Sheet`'s rule; the test must pin it).
 3. Failure of the write shows a `Notice` above the buttons (PATH-05), not a silent re-enable.
 
@@ -169,7 +169,7 @@ A single column page on the web tokens (`dist/tokens.web.css`): one `h1`, one pa
 |---|---|---|
 | `StateScreen` | From AX1 the primary scrolls with the content instead of pinning to the bottom (audit rule 3) | mobile; UNVERIFIED what the built component does at AX1 |
 | `ListRow`, `ToggleRow` | From AX1 the title takes the full width and the control sits under it (rule 4) | FE-8 |
-| `Sheet` | The sticky footer is not used at AX1 and up when it would take over 25 percent of the viewport | PATH-05 |
+| `Sheet` | The sticky footer is not used at AX1 and up: the analytics consent sheet's buttons sit at the end of the body (ruling, 20 Nov 2026), and no sheet pins a footer that would take over 25 percent of the viewport | PATH-05 |
 | `Text` | Reads `tabLabel` and `barTitle`; no screen sets `maxFontSizeMultiplier` itself | FE-1, FE-3, FE-4 |
 | `Toast` | None (stacking at accessibility sizes is #877) | |
 | Copy lint | A test that measures every string in `strings.en.ts` against 335 pt at AX5 and flags a word over the box | FE-8 |

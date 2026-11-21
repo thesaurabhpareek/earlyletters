@@ -1,6 +1,6 @@
 # Screen paths: happy and unhappy, for every new or changed screen
 
-Status: DRAFT for Karma, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only. Stacks on #1033. Companion to `docs/design/SPEC-SYNC-20nov.md`.
+Status: DRAFT for Karma, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only. #1033 (IA-FINAL-20nov.md) is merged. Companion to `docs/design/SPEC-SYNC-20nov.md`.
 
 What this file is: for each screen the spec sync adds or changes, the happy path, then each unhappy path as an exact screen state with its copy key. It writes no final copy. A key that exists is named as it is in `packages/content/src` on `develop` `55574906`. Anything else is marked:
 
@@ -18,16 +18,16 @@ State treatments, so each path names one and does not redraw it (components in `
 
 | Code | Treatment | Used when |
 |---|---|---|
-| ST-FULL | `StateScreen`: picture, title (`title2`), one sentence, one 56 pt full-width primary pinned at the bottom, at most quiet 44 pt options beneath. Never red, no spinner, no count. | the whole screen is the state |
+| ST-FULL | `StateScreen`: picture, title (`title2`), one sentence, one 56 pt full-width primary at the bottom of the content (from AX1 it scrolls with the content and is not pinned), at most quiet 44 pt options beneath. Never red, no spinner, no count. | the whole screen is the state |
 | ST-INLINE | `InlineState` (calm card for one region) | one region fails, the rest works |
 | ST-NOTICE | `Notice` (new, PROPOSED): inline banner under a header or above a form. Icon plus words plus an optional quiet action. Colour never the only signal. | a condition the person can act on, page still usable |
 | ST-TOAST | `Toast`, Undo or Close | a reversible act just happened |
-| ST-SHEET | `Sheet` (form sheet): title as the first heading, content, sticky footer | a single decision |
+| ST-SHEET | `Sheet` (form sheet): title as the first heading, content; the buttons sit at the end of the body and scroll with it from AX1 (not pinned) | a single decision |
 | ST-IOS | Apple's own alert or picker | permissions and the photo picker |
 
 Every path below also holds at Dynamic Type AX5 on an iPhone SE 3, in both themes, with Reduce Motion on and VoiceOver on. The rules for that are in `A11Y-AND-TYPE-AUDIT-20nov.md`; a path only notes a place where it differs.
 
-The ten unhappy states the founder named, as a checklist. Where a path says "n/a" the reason is given; none is skipped silently.
+The ten unhappy states the founder named, as a checklist. Where a path says "n/a" the reason is given in the row (a short generic reason where the whole screen has no such state); none is skipped silently.
 
 | Short | State |
 |---|---|
@@ -61,12 +61,12 @@ Happy path: Welcome shows the buttons with the agree line and the device-access 
 | OFF | Welcome stays as drawn; the buttons that need a connection answer with E-S14 `offline` (ST-FULL). The two lines stay on screen. | `authCopy.offline.title`, `.body` (built: "Sign-in needs a connection.", "Connect to the internet, then tap Try again.") |
 | DEN | n/a at this step: no iOS permission is asked here. The device-access line says each is asked later, at the moment it is needed. | CONTENT-NEEDED (in the line) |
 | REV | n/a: accepting is not revoked by iPhone Settings. Withdrawal is PATH-06 and Account. | n/a |
-| EMP | n/a | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | E-S07 `error-consent_unavailable`: ST-NOTICE above the button, "Try again" primary, the lines stay | `authCopy.errors.consent_unavailable` ("Setting up your account did not finish. Try again.") |
 | SLO | E-S07 `loading`: "Setting up your account" with the breathing drawing off under Reduce Motion; no primary action; quiet "Not now" stays | `authCopy.consent.settingUp`, `consent.terms.notNow` |
 | EXP | A sign-in link or code that ran out is PATH-07, before this step | see PATH-07 |
 | DEC | Not now: E-S07 `declined` goes to C-S11's held screen; local-only start offered. No error colour. | `authCopy.outage.startLocal` family for the local start, `consent.noBook.*` for the held screen (built) |
-| FUL | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
 | INT | App killed mid-flow: relaunch returns to the consent sheet (`PRD 19` row 33); typed child details are lost (under 60 s of typing, `PRD 19` row 260) | none new |
 
 Layout at AX5: the two lines are body text in the footer block, scrolling with the buttons; the primary does not pin over them. Links are 44 pt tall rows; the link text is the whole target and its VoiceOver name is the visible name, "link".
@@ -84,10 +84,10 @@ Happy: first tap on Speak, our one note (`listen.primer.title`, `.body`, `.conti
 | OFF | Listen works offline; the take is kept on this phone. A quiet line only if a feature needs a connection (it does not). | `errors.offline` ("You're offline", "Keep talking. Everything is saved on this phone.") |
 | DEN | iOS answered No. ST-FULL "The microphone is off": primary "Type instead", quiet "Open Settings" (deep link). A picture pending stays pending (GAP-LOG A G-15). | `errors.micDenied.title`, `.body`, `.typeButton`, `.settingsButton` |
 | REV | Same screen as DEN, reached on the next Speak after the person turned it off in iPhone Settings. The app reads the state at tap, never assumes the earlier yes. | same keys |
-| EMP | n/a | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | Microphone held by a call or another app: ST-FULL; Try again and Type instead. | `errors.micBusy.title`, `.body`; `common.tryAgainButton` |
 | SLO | Recorder takes more than a moment to start: the Start button shows pressed, the lamp stays still, VoiceOver says nothing into a take (SR-C-02). | none |
-| EXP | n/a | n/a |
+| EXP | n/a: nothing here expires | n/a |
 | DEC | Closing the primer without Continue writes nothing and shows no error; Speak shows the primer again next time. | none |
 | FUL | ST-FULL "This phone is full": Try again and Type instead. | `errors.phoneFull.title`, `.body` |
 | INT | A call, an alarm or a route change stops the take: what was recorded is kept and joins the waiting set (Home slip rank 1). | `Waiting to be kept.` family (built, `A WORDS:62-66`) |
@@ -108,10 +108,10 @@ Happy: Me > Reminders, read the footer, turn the switch on, iOS asks, Allow, the
 | EMP | n/a. Nothing is "missing" when reminders are off. | n/a |
 | ERR | Scheduling failed: ST-NOTICE with Try again; the switch stays where the person put it. | `errors.generic` (built); a Reminders-specific line is CONTENT-NEEDED |
 | SLO | n/a (local) | n/a |
-| EXP | n/a | n/a |
+| EXP | n/a: nothing here expires | n/a |
 | DEC | "No reminders" on the D-S04 card writes the choice and shows the line above the tab bar (`ReminderPrimeAsk`, inside the tabs `ToastHost`). The card does not return after the second showing. | built |
-| FUL | n/a | n/a |
-| INT | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
+| INT | n/a: no work is in flight to interrupt | n/a |
 
 Names switch: with App lock on it is disabled and its help is `reminderCopy.settings.namesHelpOff`. See PATH-13 for the preview.
 
@@ -128,12 +128,12 @@ Happy: Me > App lock, a short line of ours above the switch (CONTENT-NEEDED, key
 | OFF | n/a (local) | n/a |
 | DEN | iOS said No to Face ID. The lock offers the iPhone passcode, or stays off. The switch reads what is true. | CONTENT-NEEDED |
 | REV | Face ID later turned off for the app in iPhone Settings: the unlock screen offers the passcode (iOS does this itself); the page shows what the lock uses now. Not in any source read: UNVERIFIED. | CONTENT-NEEDED |
-| EMP | n/a | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | Face ID did not read: iOS's own retry then passcode; our unlock screen adds nothing that blocks. | none |
-| SLO | n/a | n/a |
-| EXP | n/a | n/a |
+| SLO | n/a: local, no network wait | n/a |
+| EXP | n/a: nothing here expires | n/a |
 | DEC | Switch left Off: nothing changes. | none |
-| FUL | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
 | INT | Leaving mid-capture with the lock on: the cover shows over the app (E-S22 cover); the take is kept (PATH-11). | built |
 
 ## PATH-05. Analytics ask: the consent sheet (E-S33, PROPOSED id)
@@ -169,15 +169,15 @@ No dark pattern, as a checklist the review reads against (what I confirmed in th
 | OFF | The choice is local and needs no connection. Offline never delays or blocks it. | none |
 | DEN | n/a: there is no iOS popup for analytics. | n/a |
 | REV | n/a (not a system permission) | n/a |
-| EMP | n/a | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | Saving the choice failed: the sheet stays, buttons re-enable (`busy` clears in `finally`), nothing is sent. No error text is built. If the write cannot be saved, treat as `unknown`: nothing sent. A line is CONTENT-NEEDED if the founder wants one. | CONTENT-NEEDED |
 | SLO | After a tap both buttons are disabled for the write (`busy`); the sheet closes on completion. | none |
-| EXP | n/a | n/a |
+| EXP | n/a: nothing here expires | n/a |
 | DEC | "Don't share": sheet closes, no toast, no follow-up. Withdrawn later: PATH-06. | none |
-| FUL | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
 | INT | App killed with the sheet open: counted as an unanswered offer; returns in a later session at most once more. | none |
 
-AX5 on SE 3: the buttons stack (built: `useIsLargeText`, xxxLarge and above); the body at AX5 is about 15 lines (measured, audit file section 2) and scrolls inside the sheet; the title wraps on 2 lines at its cap. The sheet must scroll with both buttons reachable without scrolling past the body: pin the buttons in a sticky footer at AX1 and above (a change for `mobile`).
+AX5 on SE 3: the buttons stack (built: `useIsLargeText`, xxxLarge and above); the body at AX5 is about 15 lines (measured, audit file section 2) and scrolls inside the sheet; the title wraps on 2 lines at its cap. RULING (Karma, 20 Nov 2026): the buttons are NOT pinned at AX1 and above. The title and the body scroll, and the two stacked buttons sit at the end of the body, so a big text size costs a scroll, not a lost control. There is no sticky footer on this sheet at any size. Close is first in reading order and top right, matching the visual order. A change for `mobile` if the built sheet pins them (UNVERIFIED).
 
 ## PATH-06. Analytics setting: Me > Privacy row (C-S23.analytics)
 
@@ -190,15 +190,15 @@ Happy: Me, Privacy, the switch reads Off. Turn On: the choice is saved (`grantAn
 | State | Exact screen | Copy key |
 |---|---|---|
 | OFF | Works offline: the choice is local. | none |
-| DEN | n/a | n/a |
-| REV | n/a | n/a |
+| DEN | n/a: no system permission is involved | n/a |
+| REV | n/a: no system permission is involved, so none can be revoked | n/a |
 | EMP | Never asked yet: the switch reads Off, same as a No. No "you have not chosen" line. | none |
 | ERR | A save that fails leaves the switch where it was and says one calm line. The built `setAnalytics` toggles a `busy` flag; the failure line is not built: CONTENT-NEEDED. | CONTENT-NEEDED |
 | SLO | The row is disabled while `busy` (built). | none |
-| EXP | n/a | n/a |
+| EXP | n/a: nothing here expires | n/a |
 | DEC | Off is a decision, not a gap: no badge, no nudge, no counter. | none |
-| FUL | n/a | n/a |
-| INT | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
+| INT | n/a: no work is in flight to interrupt | n/a |
 
 Flag: the label and the sheet say "crash", matrix row 13 says none is collected. See `SPEC-SYNC-20nov.md` section 4 flag 1.
 
@@ -213,8 +213,8 @@ Happy: email, a code arrives, the person types it (6 to 10 digits, the field dra
 | State | Exact screen | Copy key |
 |---|---|---|
 | OFF | E-S14 `offline`: "Sign-in needs a connection.", Try again; the screen goes back by itself when the connection returns. | `authCopy.offline.title`, `.body`, `authCopy.outage.backOnline` (announcement) |
-| DEN | n/a | n/a |
-| REV | n/a | n/a |
+| DEN | n/a: no system permission is involved | n/a |
+| REV | n/a: no system permission is involved, so none can be revoked | n/a |
 | EMP | Field empty: Continue disabled, field label visible, nothing red. | none |
 | ERR wrong | ST-NOTICE under the field, focus stays in the field, text kept | `authCopy.errors.wrong_code` |
 | EXP | ST-NOTICE with "Send a new email" as the one action (a quiet 44 pt button, not a link in the sentence). Field cleared. VoiceOver reads the notice on appear (`accessibilityLiveRegion` polite). | `authCopy.errors.expired` ("That link has expired. Send a new email for a fresh one."), `authCopy.code.resend` ("Send a new email") |
@@ -223,7 +223,7 @@ Happy: email, a code arrives, the person types it (6 to 10 digits, the field dra
 | RATE | Many tries or hourly cap | `authCopy.errors.email_wait`, `.rate_limited` |
 | OTHER PHONE | Link opened on a different phone | `authCopy.errors.other_phone`, `.other_phone_spent` |
 | SLO | E-S06 `checking`: field and Continue disabled, the progress is announced, a quiet "Use a different email" stays | built (`checking`) |
-| DEC | n/a at this screen | n/a |
+| DEC | n/a: no decline choice at this step | n/a |
 | FUL, INT | App killed on the code screen: relaunch returns to Welcome or to the first unanswered step (`PRD 19` row 260); the typed code is lost | none |
 
 Layout at AX5: the code field is `title1` at its cap 1.8 with letter spacing 6 (built, `code.tsx`); 10 digits at that size do not fit one line on an SE 3. See audit file font error FE-9.
@@ -241,16 +241,16 @@ Happy: the person opens the link on any device. The page shows first: the headin
 | State | Exact screen | Copy key |
 |---|---|---|
 | OFF | The page needs a connection to press the button. If the press fails for no network: ST-NOTICE "Nothing has changed", the button stays pressable. | CONTENT-NEEDED (follow `authCopy.errors.network` pattern) |
-| DEN | n/a | n/a |
-| REV | n/a | n/a |
-| EMP | n/a | n/a |
+| DEN | n/a: no system permission is involved | n/a |
+| REV | n/a: no system permission is involved, so none can be revoked | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | The sign-out failed on the server: "Nothing has changed" first, then a second path: the in-app path (Me, Account, Sign out other devices) | CONTENT-NEEDED |
 | SLO | After the press: button disabled with a polite live "Signing that device out", no spinner-only state | CONTENT-NEEDED |
 | EXP | The link is too old or already used: a calm line saying so, with the same in-app path. Not an error screen. | CONTENT-NEEDED |
 | ALREADY | That session is already signed out: say so, same in-app path | CONTENT-NEEDED |
 | SCANNER | A mail scanner or preview opens the link: nothing changes (the first view is read-only, E83). No design state; a test requirement for `web`. | n/a |
 | DEC | "This was me": a closing line and no further step. | CONTENT-NEEDED |
-| FUL, INT | n/a | n/a |
+| FUL, INT | n/a: nothing here can fill up or hit a limit; no work is in flight to interrupt | n/a |
 
 Web a11y: one `h1`; the primary button is a real button; the two buttons stack at 320 px and in zoom; visible focus; no auto-focus on the primary (a stray Enter must not act); language attribute set; works with JavaScript off for the first view. UNVERIFIED: the web tokens in `apps/web` (not in this sparse checkout).
 
@@ -266,8 +266,8 @@ No primer, no popup, no settings row: Apple's picker sees only what the person p
 |---|---|---|
 | OFF | A picture in iCloud that is not on the phone cannot load offline: ST-NOTICE "that picture could not be loaded" with Try again and "Choose another" | CONTENT-NEEDED |
 | DEN | n/a: no permission exists | n/a |
-| REV | n/a | n/a |
-| EMP | n/a | n/a |
+| REV | n/a: no system permission is involved, so none can be revoked | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
 | ERR | Picker returns an unreadable file: same notice | CONTENT-NEEDED |
 | SLO | Large picture: the picture slot shows a still placeholder and "Getting your picture" in text, no spinner-only | CONTENT-NEEDED |
 | DEC | Cancel: back to Home, nothing written | none |
@@ -295,7 +295,7 @@ Rules the screens carry: nothing pre-ticked (NS-46-R2); only ticked days are sto
 | DEC | "Not now" on the Home ask is final for Home (rank 3b) and schedules nothing | `A WORDS:471` |
 | NO DATE | A ticked day with no date for next year: one calm footnote line in the row's label, no warning glyph | NS-46-R15 wording, CONTENT-NEEDED |
 | GONE | A ticked id missing after an update: dropped silently, no line (NS-46-R43) | none |
-| FUL | n/a | n/a |
+| FUL | n/a: nothing here can fill up or hit a limit | n/a |
 | INT | Killed mid-Browse: each tick is already saved; the sheet reopens at the top (card 21 row) | none |
 
 Heritage months: a new group; its position is not ruled (OI-S3). It is offered, never ticked; the group title must not name a faith; a heritage month is not a religion question. Regional days and a place picker are not drawn for the first drop.
@@ -323,12 +323,12 @@ Happy: the person signs in on a new phone, "Opening your book." (`authCopy.newPh
 | State | Exact screen | Copy key |
 |---|---|---|
 | OFF | Arrival: "No book" and offline states are built (`E WORDS:297-307`); Your words is local and works offline | `authCopy.newPhone.*` |
-| DEN, REV | n/a | n/a |
+| DEN, REV | n/a: no system permission is involved; no system permission is involved, so none can be revoked | n/a |
 | EMP | Your words: empty list, one quiet line, "Add a name" if the page has one. No count, no "0 names", no "you have not taught any". | CONTENT-NEEDED |
 | ERR | The list file cannot be read: ST-INLINE, Try again, the book is unaffected | `errors.generic` |
-| SLO | n/a | n/a |
-| DEC | n/a | n/a |
-| FUL, INT | n/a | n/a |
+| SLO | n/a: local, no network wait | n/a |
+| DEC | n/a: no decline choice at this step | n/a |
+| FUL, INT | n/a: nothing here can fill up or hit a limit; no work is in flight to interrupt | n/a |
 
 ## PATH-13. Reminders preview and lock-screen specimens (D-S06, D-S10, D-S26), E82
 
@@ -338,8 +338,8 @@ Changed. Happy: Me > Reminders, "How it will look" shows the lock-screen preview
 |---|---|---|
 | OFF, SLO, FUL, INT | n/a (static, local) | n/a |
 | DEN / REV | Notifications off: the preview still draws, with the denied notice above it (PATH-03) | `reminderCopy.settings.deniedTitle` |
-| EMP | n/a | n/a |
-| ERR | n/a | n/a |
+| EMP | n/a: no list is shown, so nothing can be empty | n/a |
+| ERR | n/a: static and local, nothing here can fail | n/a |
 | DEC | Names left off: no line pushing them on | `reminderCopy.settings.namesHelpOff` |
 
 Test requirement: no digit and no "year" in any lock-screen string (E82, BL-966), and NTC-T24 on a device before the row counts as done.

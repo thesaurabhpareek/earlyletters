@@ -1,6 +1,6 @@
 # Spec sync: what changed since the final IA, and what the design does about it
 
-Status: DRAFT for Karma (CTO) to decide, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only: no code, token, card, string or legal text is changed by this PR. It stacks on #1033 (`docs/design/IA-FINAL-20nov.md`, head `71eb6e126`, not merged). Read that file first; this one only adds to it and says where it moves something.
+Status: DRAFT for Karma (CTO) to decide, 20 Nov 2026 (UTC). Author: `design-systems`. Docs only: no code, token, card, string or legal text is changed by this PR. It follows #1033 (`docs/design/IA-FINAL-20nov.md`, merged; this PR no longer carries that file, develop's copy is the one). Read that file first; this one only adds to it and says where it moves something.
 
 Companion files, one per ask:
 
@@ -19,7 +19,7 @@ Status tags as in `IA-FINAL-20nov.md` section 0 (BUILT, DESIGNED, PROPOSED, DARK
 
 Read this session, in full or in the parts named:
 
-- `docs/product/prd/18-errata-after-lock.md` rows E75 to E82 on the #1033 head, and E83 from `develop` at `55574906` (E83 is not on the #1033 head: it landed in #1051 after it).
+- `docs/product/prd/18-errata-after-lock.md` rows E75 to E83. E83 is on `develop` (landed in #1051, `55574906`) and was not on the #1033 head when this was first read.
 - `docs/product/prd/22-final-holistic-spec.md` headings and section 7; cards 19 and 21 by search for the terms this task needs (consent, primer, Browse, ticked, region), not end to end. Cards 00 to 18, 20, 26 and 27: headings and search hits only. `GAP-LOG.md`: search hits only. I did not read every card line by line; a delta that hides in a card row I did not open would be missing here. Say so before relying on "no change" rows marked (card not read in full).
 - The permissions and disclosure matrix at `75257f4c` (PR #1054) and the events and festivals file at `9eaccdae` (PR #1055, headings and rules sections 0 and 3 plus the data shape).
 - Analytics: `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`, `lib/analytics/ask-sequencer.logic.ts`, `app/settings/privacy.tsx` (search hits), and the `analyticsConsent` and `settings.privacy` strings, all on `develop` at `55574906`.
@@ -27,7 +27,7 @@ Read this session, in full or in the parts named:
 
 Could not read or verify:
 
-- **#1054 and #1055 are open and not merged.** The ask calls #1054 "merged". It is open, state `open`, merged `false`, head `75257f4c`; #1055 is open at `9eaccdae`. Everything built on them below is PROPOSED.
+- **#1054, #1055 and #1062 are merged on `develop`** (status updated 20 Nov 2026). When first read, #1054 and #1055 were open (heads `75257f4c`, `9eaccdae`); the rows built on them stay PROPOSED where the source file itself says PROPOSED (the events and festivals file, the ToS 3.5 sentence), not because a PR was open. #1062 (founder PostHog setup pack) was not read.
 - `docs/analytics/instrumentation/`: it does not exist on the #1033 head. On `develop` it holds `00-event-standard.md`, `analytics.md`, `data-steward.md`, `decision-science.md`; I listed the folder and did not read those four. The consent-timing facts come from the built code, not from them. The product-side instrumentation requirements (`docs/product/instrumentation/02`, `04`, `05`, `README`; PRs #1038, #1043, #1039) were not read; I rely on their titles only.
 - The Project doc named in earlier tasks (no Projects tool here). The Figma files (none are named in the repo for these screens).
 - No screen was seen on a device or simulator. No VoiceOver run. No Dynamic Type run on a phone. Text widths in the audit file are advance widths I measured with `opentype.js` on the bundled faces; they are not renders.
@@ -171,6 +171,11 @@ Outside the app (web)
 | OI-S5 | Face ID line: does the lock ask for Face ID only on turn-on, and what does the app do when Face ID is later turned off for the app in iPhone Settings? Not in any source read: UNVERIFIED | `mobile` |
 | OI-S6 | What the person sees after "Sign out other devices" | `product`, `content` |
 | OI-S7 | Copy mismatch on crash data (flag 1) | `analytics`, `content`, `legal` |
-| OI-S8 | #1054 and #1055 are open: every row built on them is PROPOSED until merged | Karma |
+| OI-S8 | #1033, #1054, #1055 and #1062 are merged. Rows that rest on PROPOSED text inside those files (heritage and regional layers, ToS 3.5) stay PROPOSED | Karma |
+| OI-S9 | Unhappy paths not yet written (listed, not drawn): Me > Account > Sign out other devices (E77: offline or failed call, nothing shown after the tap); C-S19 Erase; the heritage-months group in Browse (PATH-10: no states at all); "Add a name" failure (PATH-12) | `design-systems`, `product` |
+| OI-S10 | ADR 0032 and ADR 0033 states not in PATH-10 (listed, not drawn): a Days tick that cannot be saved (`C-S24.store-unavailable`), a restored or new phone (empty days list, does not ask again), App lock on (day names forced off), a paused family getting no day notes (E57(b)) | `design-systems`, `mobile` |
+| OI-S11 | Photo-access ids: A-S18 and E-S32 (Photos access primer) and `MA-62` stay out of Build 13 with NS-51 and are never drawn; the overlap in `docs/design/e2e/INDEX.md` pre-dates this PR | `design-systems` |
+| OI-S12 | E80 caveat: a new phone starts empty apart from any seed from the child's name (card 19, F03-REQ-010, unverified). PATH-12 EMP and the sync table say plain "empty" until that is settled | `product`, `mobile` |
+| OI-S13 | Ruling 31 citation: it retires `Breathe` in waiting states and keeps the lamp as the one ambient exception. DELTA 2.4 should cite COMPONENTS 2.15 for the empty-state illustration and ruling 31 only for waiting states | `design-systems` |
 
 Signed: `design-systems`, 20 Nov 2026.
