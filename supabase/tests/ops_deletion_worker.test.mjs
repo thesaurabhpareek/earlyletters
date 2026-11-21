@@ -2,8 +2,10 @@
 // the ops runbook scripts (20261004200000_ops_deletion_worker.sql).
 // Fictional family "Asha" only (CLAUDE.md). Run all DB tests: npm run test:db
 import { createDb, users } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, asAnon, sys, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, N, S, C } = users;
 // Supabase's storage.objects has owner (uuid, deprecated), owner_id (text) and created_at; the harness stub does not.
 await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now()`);
@@ -45,6 +47,9 @@ const SERVICE_ONLY = [
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
   `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
+  // 20261111010000 (CR-71 C3)
+  `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
+  `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

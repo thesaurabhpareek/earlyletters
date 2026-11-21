@@ -1229,3 +1229,21 @@ What it changes:
 What it changes: `children_name_check` becomes `char_length(name) <= 60` (was 1 to 60), and `create_child_row` stores a blank or missing name as `''` (over 60 is still refused; a birthday or due date is still required). `book_update` now trims a name on edit and stores `''` for spaces only or null, like create. No row changes, no new object, no grant change.
 
 **Apply** after file 31 (the audit append-only file). **Check:** `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.children'::regclass and contype = 'c';` must list `children_name_check` as `CHECK ((char_length(name) <= 60))` and no other check on name (if an older name check is listed under another name, drop it by that name). **Rollback:** only while no book has an empty name: restore the 1 to 60 check, re-create `book_update` from `20261015000000`, and re-create `create_child_row` from `20261004000000` with `set search_path = pg_catalog, public, pg_temp`, then re-run its `revoke all ... from public, anon, authenticated, service_role`.
+
+## File 33: the server refuses a picture (S1, BL-870, CR-71 C4)
+
+`20261110000000_photo_bucket_closed.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply before any build with `EXPO_PUBLIC_PHOTOS` on outside the founder's family (server before flag).
+
+What it changes: drops the insert and update policies on `storage.objects` for `entry-photos` (the read and delete policies stay), and adds `entries_15_photo_closed`, a trigger that raises `SCPHO` when a letter would get a `photo_path` it did not have. An unchanged or cleared legacy path still passes. No column, no new grant (the trigger function is executable by no API role).
+
+**Before the tag (founder, Q8):** `select count(*) from entries where photo_path is not null;` Expected 0. If it is not 0, stop and tell the data architect: those rows stay readable and deletable, but should be reviewed.
+
+**Apply** after file 32. **Check:** `select polname from pg_policy where polname like 'entry_photos_%';` lists `entry_photos_author_delete` and `entry_photos_read` only; `select tgname from pg_trigger where tgname = 'entries_15_photo_closed';` returns one row. **Rollback:** forward-fix only; see the file header.
+
+## File 35: the missing audit writers and the security_events store (S6, S7, CR-71 C3)
+
+`20261111010000_audit_writers_security_events.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 34. Refuses a second run (55000).
+
+What it changes: a trigger on `legal_holds` writes `legal_hold_placed` and `legal_hold_released`; `ops_support_access()` (service role) writes `ops.audit_log` then `support_access`; `record_export_created()` (signed-in, own row, 5 a day) writes `export_created`; new table `ops.security_events` (no API access, append-only, 12 months) with a writer, a reader `ops_security_events_check()` and `ops_security_events_retention()`. No existing column or grant changes.
+
+**Check:** `select tgname from pg_trigger where tgname = 'legal_holds_audit';` returns one row; `select count(*) from ops.security_events;` returns 0. **Rollback:** forward-fix only; see the file header.

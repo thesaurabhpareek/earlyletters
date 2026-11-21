@@ -10,8 +10,10 @@
  * the app breaks a cycle on purpose (`lib/billing/plan-store.ts` loads `status-report.app.ts` that way, and that file
  * imports `plan-store` back; see the G5 PR).
  * Type-only imports (`import type`, `export type ... from`) are erased at build and are not edges.
- * Test files are not nodes. A specifier that names no file (a package, a platform-suffixed or generated file the
- * reader cannot resolve) is not an edge; the count of resolved edges is asserted so a broken reader cannot pass.
+ * Test files are not nodes. A package or a file outside the scanned folder is not an edge. A relative specifier
+ * inside the folder that resolves to nothing fails the test. Platform files (`.ios`, `.android`, `.native`) are nodes.
+ * The reader strips comments with a scanner that knows strings, so `'src/*'` does not hide imports. Limits: a string
+ * that merely contains the text `import x from 'y'` still reads as an import.
  */
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,15 +24,77 @@ const ROOT = resolve(__dirname, '..', '..', '..');
 const MOBILE_SRC = join(ROOT, 'apps', 'mobile', 'src');
 const EXT = ['.ts', '.tsx'];
 
+/** Removes comments in one pass and leaves strings, templates and regex literals untouched (so `'src/*'` is not a comment). */
+export function stripComments(src: string): string {
+  let out = '';
+  let last = ''; // last significant character, to tell a regex literal from a division
+  for (let i = 0; i < src.length; ) {
+    const c = src[i];
+    if (c === '/' && src[i + 1] === '/') {
+      while (i < src.length && src[i] !== '\n') i++;
+    } else if (c === '/' && src[i + 1] === '*') {
+      const end = src.indexOf('*/', i + 2);
+      i = end < 0 ? src.length : end + 2;
+      out += ' ';
+    } else if (c === "'" || c === '"' || c === '`' || (c === '/' && (last === '' || '(,=:[!&|?{};+-*%<>~^'.includes(last)))) {
+      let j = i + 1;
+      let inClass = false;
+      while (j < src.length && (c === '/' ? inClass || src[j] !== '/' : src[j] !== c) && !(c !== '`' && src[j] === '\n')) {
+        if (src[j] === '\\') j++;
+        else if (c === '/' && src[j] === '[') inClass = true;
+        else if (c === '/' && src[j] === ']') inClass = false;
+        j++;
+      }
+      out += src.slice(i, j + 1);
+      i = j + 1;
+      last = c;
+    } else {
+      out += c;
+      i++;
+      if (!/\s/.test(c)) last = c;
+    }
+  }
+  return out;
+}
+
+/** True when the clause before `from` is erased at build: `type X`, `type { A }`, `type * as N`, or `{ type A, type B }`. */
+function isTypeOnlyClause(clause: string): boolean {
+  if (/^type\s*[{*]/.test(clause) || /^type\s+[A-Za-z_$]/.test(clause)) return true;
+  const named = /^\{([^}]*)\}$/.exec(clause);
+  if (!named) return false;
+  const parts = named[1].split(',').map((x) => x.trim()).filter(Boolean);
+  return parts.length > 0 && parts.every((x) => /^type\s+[A-Za-z_$]/.test(x) && !/^type\s+as\s*$/.test(x));
+}
+
+/**
+ * Linear reader: each `import` or `export` keyword scans forward only as far as the next keyword, a `;` or the first
+ * string, so the total work is proportional to the file size (a regex with a lazy gap was quadratic on long lines).
+ */
 export function importSpecifiers(source: string): string[] {
-  const src = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+  const src = stripComments(source);
   const out: string[] = [];
-  const add = (re: RegExp, group: number, typeOnly?: number) => {
-    for (let m = re.exec(src); m; m = re.exec(src)) if (typeOnly === undefined || m[typeOnly] === undefined) out.push(m[group]);
-  };
-  add(/\b(import|export)\s+(type\b)?[^'";]*?\bfrom\s*['"]([^'"]+)['"]/g, 3, 2);
-  add(/\bimport\s*['"]([^'"]+)['"]/g, 1);
-  add(/\brequire\(\s*['"]([^'"]+)['"]\s*\)/g, 1);
+  const kw = /\b(import|export)\b/g;
+  const starts: Array<{ at: number; end: number; word: string }> = [];
+  for (let m = kw.exec(src); m; m = kw.exec(src)) if (src[m.index - 1] !== '.') starts.push({ at: m.index, end: kw.lastIndex, word: m[1] });
+  starts.forEach((k, n) => {
+    const limit = n + 1 < starts.length ? starts[n + 1].at : src.length;
+    let j = k.end;
+    while (j < limit && src[j] !== "'" && src[j] !== '"' && src[j] !== ';') j++;
+    if (j >= limit || src[j] === ';') return;
+    const close = src.indexOf(src[j], j + 1);
+    if (close < 0) return;
+    const spec = src.slice(j + 1, close);
+    const head = src.slice(k.end, j).trim();
+    if (/^\(/.test(head)) return; // dynamic import( is not an edge
+    if (head === '') {
+      if (k.word === 'import') out.push(spec); // side-effect import 'x'
+      return;
+    }
+    const m = /^([\s\S]*?)\s*\bfrom$/.exec(head);
+    if (!m || isTypeOnlyClause(m[1].trim())) return;
+    out.push(spec);
+  });
+  for (const m of src.matchAll(/\brequire\(\s*['"]([^'"\n]+)['"]\s*\)/g)) out.push(m[1]);
   return out;
 }
 
@@ -43,17 +107,28 @@ export function sourceFiles(dir: string): string[] {
   });
 }
 
-/** Adjacency list of resolved value-import edges between the files given. `@/` maps to `alias`. */
-export function buildGraph(files: string[], alias: string | null): Map<string, string[]> {
+const PLATFORMS = ['', '.ios', '.android', '.native'];
+
+/**
+ * Adjacency list of resolved value-import edges between the files given. `@/` maps to `alias`.
+ * `./b` resolves to `b.ts`, `b.ios.ts`, `b.android.ts`, `b.native.ts` and the same under `b/index`: every variant is an edge.
+ * A relative or `@/` specifier inside the scanned folder with no known file and no extension of its own (an asset or `.json` is fine) is pushed
+ * to `missing`, so a new blind spot fails the test instead of vanishing.
+ */
+export function buildGraph(files: string[], alias: string | null, missing: string[] = []): Map<string, string[]> {
   const known = new Set(files);
-  const find = (base: string) => [base, ...EXT.map((e) => base + e), ...EXT.map((e) => join(base, 'index' + e))].find((c) => known.has(c));
+  const find = (base: string) =>
+    [base, ...PLATFORMS.flatMap((p) => EXT.flatMap((e) => [base + p + e, join(base, 'index' + p + e)]))].filter((c) => known.has(c));
+  const scope = files.length ? files.map(dirname).reduce((a, b) => { while (a !== b && !b.startsWith(a + '/')) a = dirname(a); return a; }) : '';
   const graph = new Map<string, string[]>();
   for (const file of files) {
     const edges = new Set<string>();
     for (const spec of importSpecifiers(readFileSync(file, 'utf8'))) {
       const base = spec.startsWith('.') ? resolve(dirname(file), spec) : alias && spec.startsWith('@/') ? join(alias, spec.slice(2)) : null;
-      const hit = base && find(base);
-      if (hit) edges.add(hit);
+      if (!base) continue;
+      const hits = find(base);
+      if (hits.length === 0 && (base === scope || base.startsWith(scope + '/')) && !/\.[a-z0-9]+$/i.test(spec.split('/').pop()!.replace(/^\.+$/, ''))) missing.push(`${file}: ${spec}`);
+      for (const h of hits) edges.add(h);
     }
     graph.set(file, [...edges]);
   }
@@ -94,19 +169,21 @@ export function findCycles(graph: Map<string, string[]>): string[][] {
 }
 
 const ROOTS: Array<{ name: string; dir: string; alias: string | null; minFiles: number; minEdges: number }> = [
-  { name: 'apps/mobile/src', dir: MOBILE_SRC, alias: MOBILE_SRC, minFiles: 400, minEdges: 1000 },
-  { name: 'packages/core/src', dir: join(ROOT, 'packages', 'core', 'src'), alias: null, minFiles: 20, minEdges: 20 },
-  { name: 'packages/api/src', dir: join(ROOT, 'packages', 'api', 'src'), alias: null, minFiles: 20, minEdges: 10 },
-  { name: 'packages/content/src', dir: join(ROOT, 'packages', 'content', 'src'), alias: null, minFiles: 10, minEdges: 5 },
-  { name: 'packages/analytics/src', dir: join(ROOT, 'packages', 'analytics', 'src'), alias: null, minFiles: 10, minEdges: 10 },
+  { name: 'apps/mobile/src', dir: MOBILE_SRC, alias: MOBILE_SRC, minFiles: 510, minEdges: 1900 },
+  { name: 'packages/core/src', dir: join(ROOT, 'packages', 'core', 'src'), alias: null, minFiles: 33, minEdges: 76 },
+  { name: 'packages/api/src', dir: join(ROOT, 'packages', 'api', 'src'), alias: null, minFiles: 20, minEdges: 26 },
+  { name: 'packages/content/src', dir: join(ROOT, 'packages', 'content', 'src'), alias: null, minFiles: 37, minEdges: 41 },
+  { name: 'packages/analytics/src', dir: join(ROOT, 'packages', 'analytics', 'src'), alias: null, minFiles: 22, minEdges: 38 },
 ];
 
 describe('[G5] no circular imports (ratchet at zero)', () => {
   for (const r of ROOTS) {
     it(`[G5] ${r.name} has no import cycle`, () => {
       const files = sourceFiles(r.dir);
-      const graph = buildGraph(files, r.alias);
+      const missing: string[] = [];
+      const graph = buildGraph(files, r.alias, missing);
       const edges = [...graph.values()].reduce((n, e) => n + e.length, 0);
+      expect(missing, 'a relative import inside the root resolves to no file: the gate cannot see through it').toEqual([]);
       expect(files.length, 'the reader found too few files').toBeGreaterThanOrEqual(r.minFiles);
       expect(edges, 'the reader resolved too few edges').toBeGreaterThanOrEqual(r.minEdges);
       const cycles = findCycles(graph).map((c) => c.map((f) => f.slice(ROOT.length + 1)));
@@ -161,6 +238,38 @@ describe('[G5] the reader and the walk, self-tests', () => {
       writeFileSync(join(dir, 'a.ts'), "import { x } from '@/x';\nexport const a = x;\n");
       writeFileSync(join(dir, 'x', 'index.ts'), "import { a } from '@/a';\nexport const x = a;\n");
       expect(findCycles(buildGraph(sourceFiles(dir), dir)).length).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('[G5] hardening: strings, long lines, inline types, platform files', () => {
+  it('a string holding "/*" does not swallow a real import (comment strip is string-aware)', () => {
+    const src = "const g = 'src/*';\nimport a from './a';\nconst h = 'x/*.ts */';\nconst r = /a\\/*/;\nimport b from './b';";
+    expect(importSpecifiers(src)).toEqual(['./a', './b']);
+    expect(importSpecifiers("/* import x from './x'; */ import y from './y'; // import z from './z'")).toEqual(['./y']);
+  });
+  it('a 1.4 MB single line is read in linear time', () => {
+    for (const word of ['export ', 'import ']) {
+      const t0 = Date.now();
+      expect(importSpecifiers(word.repeat(200000))).toEqual([]);
+      expect(Date.now() - t0).toBeLessThan(3000);
+    }
+  });
+  it('an inline type-only import is not an edge; a mixed one is', () => {
+    expect(importSpecifiers("import { type A, type B } from './t';\nexport { type C } from './u';\nimport type D from './v';")).toEqual([]);
+    expect(importSpecifiers("import { type A, b } from './m';\nimport d, { type E } from './n';\nimport type from './p';")).toEqual(['./m', './n', './p']);
+  });
+  it('a cycle through a platform file is found, and an unresolved relative import is reported', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'g5-'));
+    try {
+      writeFileSync(join(dir, 'a.ts'), "import { b } from './b';\nexport const a = b;\nimport './nope';\nimport './pic.png';\nimport '../outside';\n");
+      writeFileSync(join(dir, 'b.ios.ts'), "import { a } from './a';\nexport const b = a;\n");
+      const missing: string[] = [];
+      const graph = buildGraph(sourceFiles(dir), null, missing);
+      expect(findCycles(graph).length).toBe(1);
+      expect(missing.map((m) => m.slice(dir.length + 1))).toEqual(['a.ts: ./nope']);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

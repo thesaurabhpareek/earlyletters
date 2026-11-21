@@ -88,7 +88,7 @@ Same as `00-event-standard.md` section 2: a Proposed change box (meaning in one 
 |---|---|
 | `object_adjective` or `object_noun`: `member_count`, `child_ordinal`, `ms_bucket`, `words_bucket` | PostHog [V] |
 | Booleans start `is_` or `has_`. Our existing bools are renamed once, with the catalogue: `signed_in` to `is_signed_in`, `had_local_data` to `has_local_data`, `came_from_invite` to `is_from_invite`, `from_notification_2h` to `is_from_notification_2h`, `added_together` to `is_added_together`, `in_first_run` to `is_in_first_run`, `ok` to `is_ok`; `has_date` stays | PostHog [V]; the list is mine from TRACKING_PLAN 3.1, which I read |
-| `_date` and `_timestamp` suffixes are RESERVED AND BANNED here: no property is a date or time (the platform adds capture time; a birthday-set or person-set time never). `date` and `timestamp` are banned tokens in V7 | PostHog's suffix rule [V]; our rule from `00-event-standard.md` section 6 |
+| `_date` and `_timestamp` suffixes are RESERVED AND BANNED here: no property is a date or time (the platform adds capture time; a birthday-set or person-set time never). `date` and `timestamp` are banned tokens in V7, with ONE named exemption: the bool `has_date` stays (it says only that a date exists, never its value; the V7 exemption list holds exactly this name and the self-test checks `has_date` passes and `birth_date` fails) | PostHog's suffix rule [V]; our rule from `00-event-standard.md` section 6 |
 | Types stay three: enum (closed lowercase snake values), bool, bounded int | `schema.ts` |
 | Max 30 characters, no `$` | `00-event-standard.md` section 6 |
 | No person-like or content-like token anywhere in a name (V7 list) | `00-event-standard.md` section 10 |
@@ -104,7 +104,7 @@ Same as `00-event-standard.md` section 2: a Proposed change box (meaning in one 
 
 ### 2.9 Names old and new: the mapping
 
-The PM files and `00-event-standard.md` write dotted working names (`capture.letter.saved`). The registry holds ONE name, the wire name. PM files and the standard's examples keep the dotted names until their next edit; this table is the bridge. A `(none)` row is not a wire event: a server count, a crash, or something that cannot exist. Sources: `00` and `analytics.md` are #1042 (merged); `02`, `04`, `05` are the merged PM files on develop; #1040 (PM1), #1041 (PM3), #1044 (ops), #1052 (data-architect) are open PRs read at their head shas on 20 Nov by raw file. "(deviation)" marks a verb from the 2.4 table.
+The PM files and `00-event-standard.md` write dotted working names (`capture.letter.saved`). The registry holds ONE name, the wire name. PM files and the standard's examples keep the dotted names until their next edit; this table is the bridge. A `(none)` row is not a wire event: a server count, a crash, or something that cannot exist. Counted on 21 Nov by script over the table below (the event rows, not the four pattern rows of the Basics table above, which are generated per id): 98 rows in all, 13 with `(none)` and 85 with a wire name (27 of the 85 are marked deviation; the 85 wire names are all different, and no old name repeats). The 13 `(none)` rows are 9 server-only or server counts (`notifications.reminder.delivered`, `family.invite.peeked`, `family.second_voice.reached`, `family.second_voice.kept`, `system.email.sent`, `onboarding.email.sent`, `onboarding.summary.sent`, `keeping.security.notice_sent`, `keeping.summary.sent`), 3 that cannot or must not exist (`keeping.consent.declined`, `keeping.export.shared`, `keeping.slip.shown`) and 1 replaced by the reduced `$exception` (`system.crash.reported`). 9 + 3 + 1 = 13; 13 + 85 = 98. Sources: `00` and `analytics.md` are #1042 (merged); `02`, `04`, `05` are the merged PM files on develop; #1040 (PM1), #1041 (PM3), #1044 (ops), #1052 (data-architect) are open PRs read at their head shas on 20 Nov by raw file. "(deviation)" marks a verb from the 2.4 table.
 
 Basics (generated at build time from `ids.ts`; the area comes from the id registry):
 
@@ -151,7 +151,7 @@ Domain names:
 | `family.invite.peeked` | 04, #1052 | (none) | SERVER counter in PM4 and #1052: not on the wire |
 | `family.second_voice.reached` | 04, #1052 | (none) | SERVER weekly count (k = 10): not on the wire |
 | `family.second_voice.kept` | #1052 | (none) | SERVER view: not on the wire |
-| `family.invite.opened` | #1052 | `family:invite_open` (deviation) | if it is the phone-side `invite_opened`; as a server counter it is not on the wire |
+| `family.invite.opened` | #1052 | `family:invite_open` (deviation) | RULING: phone side only. The phone sends `family:invite_open` when an invite link opens the app after a yes. The server-side count of invite opens is `family.invite.peeked` above and is not on the wire; #1052 must not count `opened` on the server |
 | `notifications.permission.answered` | 04 | `notifications:permission_submit` |  |
 | `notifications.permission.revoked` | 04 | `notifications:permission_remove` |  |
 | `notifications.plan.violated` | 04 | `notifications:plan_fail` |  |
@@ -238,7 +238,7 @@ Checks I ran on this table: every new name is 60 characters or fewer, has one co
 | V3 | Unchanged: a name is a literal in the registry; the typed helpers are the only way in |
 | V4 | Ids exist in the id registry with an IA-FINAL id and an area; an id may not end in a verb token, and only a screen id may end in `_screen` |
 | V6 | Adds: a bool property starts `is_` or `has_` and nothing else does; no `_date` or `_timestamp` suffix; at most 12 properties per event |
-| V7 | Adds the whole tokens `date` and `timestamp` to the banned list |
+| V7 | Adds the whole tokens `date` and `timestamp` to the banned list. One exemption, by exact property name: `has_date` (a bool, section 2.7) |
 | V9 | Unchanged (2 to 8 steps, window enum, 40 characters) |
 | V16, V17 | V17 pins the SDK options of section 3.4 (including `persistence: 'file'`) and the error options of section 4.2 |
 | V18 (new) | One module: only `packages/analytics/src/posthog.ts` imports `posthog-react-native` or `@posthog/react-native-plugin`; no file calls `.capture(`, `.captureException(`, `.identify(`, `.screen(`, `.captureLog` or a survey API outside it; no `PostHogProvider` anywhere. A lint rule plus a test (PostHog's handbook: "let nothing else call `posthog.capture`" and block it with a lint rule [V]) |
@@ -260,8 +260,8 @@ Checks I ran on this table: every new name is 60 characters or fewer, has one co
 ### 3.3 Identity: anonymous only, and what that costs us
 
 - Distinct id: the random id made at consent (`consent.ts`), lowercase uuid, same format everywhere (PostHog: use one id format on every platform, `user-456` and `USER-456` are two people [V best-practices]). Never an email, account id, Supabase user id, device id or `appAccountToken`.
-- We never call `identify` with an account id, an email or anything that could be joined to one. We call `identify` zero times: PostHog's mobile default is identified-only, which means events are anonymous unless a profile already exists [V posthog.com/docs/data/anonymous-vs-identified-events; that page names Android, iOS and Flutter, not React Native, so it is UNVERIFIED for React Native]. Because of that, `personProfiles` is set explicitly in `posthog.ts` per `data-steward.md` section 7 [V from #1037] and never left to the default.
-- The id is kept in a device-local file across launches (3.4) and is never joined to an account. On withdrawal: `optOut()` then `reset()`, retire the id, delete the file, clear the queue (`00-event-standard.md` section 11). A later yes makes a new id. We never reuse an old or deleted id (PostHog: avoid reusing a deleted distinct id; deletion is asynchronous and reuse gives unexpected results [V posthog.com/docs/privacy/data-storage]).
+- We never call `identify` with an account id, an email or anything that could be joined to one. The only id the SDK ever sees is the random install id made at consent (`consent.ts`), which is not an account and not a person. After every yes, first or renewed, and on a launch that finds a stored yes, the app calls the adapter's `identify(id)`. On the first yes, or the first launch after one, the SDK is not built yet: the adapter builds it with that id bootstrapped, so no `$identify` event is sent and the SDK's own `identify` is not called. If the SDK is already running when consent is renewed, the adapter's `identify(id)` passes the SDK the SAME random install id and nothing else (no properties). That one call is the only `identify` call allowed, and it is open to review: PostHog's mobile default is identified-only, which means events are anonymous unless a profile already exists [V posthog.com/docs/data/anonymous-vs-identified-events; that page names Android, iOS and Flutter, not React Native, so it is UNVERIFIED for React Native], so an `identify` with the install id may create a profile (this is the F-2 fallback below, a founder, `privacy` and counsel decision). Because of that, `personProfiles` is set explicitly in `posthog.ts` per `data-steward.md` section 7 [V from #1037] and never left to the default.
+- The id is kept in a device-local file across launches (3.4) and is never joined to an account. On withdrawal: `optOut()` then `reset()`, retire the id, empty the SDK queue (the adapter does this); clearing the file is a target with a test to add (`00-event-standard.md` section 11). A later yes makes a new id. We never reuse an old or deleted id (PostHog: avoid reusing a deleted distinct id; deletion is asynchronous and reuse gives unexpected results [V posthog.com/docs/privacy/data-storage]).
 - Servers do not send to PostHog at all, so PostHog's warning about catch-all ids like `system` or `backend` [V best-practices] cannot apply. If that ever changes, those events must be sent with person processing off, not with a made-up id.
 
 What anonymous-only costs us, from PostHog's own page [V anonymous-vs-identified-events]:
@@ -275,32 +275,36 @@ What anonymous-only costs us, from PostHog's own page [V anonymous-vs-identified
 
 ### 3.4 SDK options: every default that matters, and our value
 
-Options and defaults are from the React Native library page [V posthog.com/docs/libraries/react-native]. We run `posthog-react-native` 4.78.4 [V `analytics.md`, read earlier from `posthog.ts`]. V17 pins every row with "our value".
+Options and defaults are from the React Native library page [V posthog.com/docs/libraries/react-native]. We run `posthog-react-native` 4.87.1 once #1086 merges (`develop` still says 4.78.4); the options below were read from the library page on 20 Nov and not re-checked against 4.87.1 (section 7a) [V `analytics.md`, `posthog.ts`]. V17 pins every row with "our value".
 
 | Option | PostHog default | Our value | Why |
 |---|---|---|---|
 | `defaultOptIn` | `true` | `false` | nothing tracked until `optIn()`; belt and braces, since the SDK is also constructed only after a yes (V15) |
 | `disabled` | `false` | `true` in every profile except `production` | no data from dev, e2e, preview |
-| `captureAppLifecycleEvents` | `true` (since 4.39.0 [UNVERIFIED: version note not on the page I read]) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
+| `captureAppLifecycleEvents` | `true` (since 4.39.0 [V library page, re-read 21 Nov]) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
 | `sendFeatureFlagEvent` | `true` | `false` | flags are off; it would send `$feature_flag_called` |
 | `preloadFeatureFlags` | `true` | `false` | no flag requests |
-| `disableRemoteFeatureFlags` | `false` (4.49.0+ [UNVERIFIED version note]) | `true` | experiments use our own exposure event (3.10) |
+| `disableRemoteFeatureFlags` | `false` (4.49.0+ [V library page, re-read 21 Nov]) | `true` | experiments use our own exposure event (3.10) |
+| `capturePushNotificationSubscriptions` | `true` (since 4.62.0 [V library page, 21 Nov]) | `false` | a default that would send push events we never registered. `posthog.ts` already sets it to `false` (read on `develop` and on #1086's branch, 21 Nov); V17 pins every row, so it must pin this one too |
+| `capturePushNotificationOpened` | `true` (since 4.62.0 [V library page, 21 Nov]) | `false` | same reason, and `posthog.ts` sets it to `false`; our reminders are local notifications, and `notifications:reminder_open` is our own event |
+| `pushIdentityProvider` | `undefined` (since 4.62.0 [V library page, 21 Nov]) | leave unset | it exists to name a push identity; we never identify with anything but the random install id (3.3) |
 | `disableGeoip` | `false` | `true` (a setting to set in `posthog.ts`; I did not read the code, so UNVERIFIED that it is set today) | no location from IP |
 | `enableSessionReplay` | `false` | `false` (never) | replay records screens; never |
 | `persistence` | `file` | `file` (RULING, founder, 21 Nov 2026, replacing `memory`) | see the paragraph below this table |
 | `flushAt` | 20 | 20 | default is fine |
-| `flushInterval` | 10000 ms | 10000 ms | default; we also flush on background |
+| `flushInterval` | 10000 ms | `0` | PRD 7.7: the SDK runs no timer of its own (`REQUIRED_POSTHOG_OPTIONS`, `posthog.ts`, at #1086 head `449f667`). The timer is ours: `createAnalytics` (`client.ts`) starts a 60 s timer once consent is granted (`DEFAULT_FLUSH_INTERVAL_MS`; the app does not override it in `apps/mobile/src/lib/analytics/index.ts`), `lifecycle.background()` flushes when the app goes to the background, and the SDK's own `flushAt` (20, not set by us) sends a batch of 20 queued events. So the standard and the adapter agree: the standard stays as written (`TRACKING_PLAN.md` transport paragraph and `analytics.md`: flush on our timer) |
 | `maxBatchSize` | 100 | 100 | must be higher than `flushAt` [V] |
 | `maxQueueSize` | 1000 | 100 [E: bounded queue; a phone offline for a day sends far fewer than 100 of our events] | bound the queue, bound a retry storm |
 | `errorTracking.autocapture` | not stated | section 4.2 | |
 | `before_send` | `undefined` | our allowlist function (3.5) | returning `null` drops the event [V] |
 | `host` | `https://us.i.posthog.com` | our proxy host (3.7) | EU Cloud is `https://eu.i.posthog.com` [V]; region is counsel's |
 
+Why `file` and not `memory` (RULING, founder, 21 Nov 2026): the one random id made at consent must survive app launches. With `memory`, every launch would be a new anonymous person, and weekly making families (FR-DAT-21) could not be counted at all. The id is reset on withdrawal (`optOut()` then `reset()`, section 3.3) and is never joined to an account. The cost, stated plainly: the SDK keeps the id, and any unsent queue, in a device-local file on the phone. On withdrawal and on Erase the adapter empties the SDK queue and resets the id; clearing the file itself is a target, not something the adapter does today, and the test for it is still to add. V15 is extended to cover both in `00-event-standard.md` (section 10, the V15 row); that check is not built yet, so until it is the file clearing is a requirement, not a tested guarantee. It holds no content, since `before_send` (3.5) has already reduced every event. How the file is kept when the app is killed or offline is the SDK's; its retry and overflow behaviour is UNVERIFIED (3.6).
+
 Autocapture, logs and surveys:
-Why `file` and not `memory` (RULING, founder, 21 Nov 2026): the one random id made at consent must survive app launches. With `memory`, every launch would be a new anonymous person, and weekly making families (FR-DAT-21) could not be counted at all. The id is reset on withdrawal (`optOut()` then `reset()`, section 3.3) and is never joined to an account. The cost, stated plainly: the SDK keeps the id, and any unsent queue, in a device-local file on the phone. That file is deleted on withdrawal and on Erase (V15 tests both). It holds no content, since `before_send` (3.5) has already reduced every event. How the file is kept when the app is killed or offline is the SDK's; its retry and overflow behaviour is UNVERIFIED (3.6).
 
 - Autocapture comes from `PostHogProvider` (`captureScreens`, `captureTouches`) [V from the page as read in the brief; the options table I re-read did not list them, so the provider options are UNVERIFIED this session]. We do not use `PostHogProvider` at all (V18), so there is nothing to switch off by option.
-- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+ [UNVERIFIED version note]) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
+- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+ [V library page, re-read 21 Nov]) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
 - The Expo config plugin `posthog-react-native/expo` and what needs a development build (session replay, native crash capture): the page I re-read only shows install commands; the plugin and source map settings are on the source maps page (section 4.5) [V], and the "needs a development build" statement from the brief is UNVERIFIED.
 
 ### 3.5 `before_send`: the last gate
@@ -309,7 +313,7 @@ Why `file` and not `memory` (RULING, founder, 21 Nov 2026): the one random id ma
 
 ### 3.6 Offline, flush and retry
 
-- Events are queued by the SDK (`persistence: 'file'`, 3.4), flushed at 20 events or every 10 seconds, and on going to the background. Capture time is the SDK's, so late sends still land in the right hour.
+- Events are queued by the SDK (`persistence: 'file'`, 3.4), flushed by our own timer (our client's 60 s timer in the foreground, `flushInterval: 0` so the SDK has no timer; PRD 7.7), by the SDK at 20 queued events (`flushAt`, the SDK default), and on going to the background (`lifecycle.background()`). Checked in code at #1086 head `449f667`: `client.ts` `startTimer` runs from `connect` after a yes and stops on withdrawal. If a later change passes `flushIntervalMs: 0` there, the standard must be edited in the same PR, because then only the background and 20-event flushes remain. Capture time is the SDK's, so late sends still land in the right hour.
 - PostHog says not to assume event ordering [V best-practices]. No funnel step may depend on two events that could arrive together within a second unless the funnel is ordered by the SDK timestamp; V9 funnels use steps that are separate user actions.
 - How the React Native SDK retries after being offline, and whether it drops the oldest event at `maxQueueSize`, is not written on the pages I read [UNVERIFIED]. QA step in 6.3: airplane mode, send 150 events, restore the network, count.
 - A single distinct id sending about 5,000 events a minute hits a rate limit and loses ordering [V best-practices]. Ours sends about 300 a month per parent, so only a bug can reach it. The client caps itself at 60 events a minute [E: my proposal] and drops the rest, counted by reason.
@@ -401,7 +405,7 @@ Sources are PostHog's own pages unless marked. The two outside references are se
 | 4 | Rename an event that has history | handbook: never rename; version and join with an action [V] | Section 2.6; the one-time rename is allowed only because nothing was ever sent |
 | 5 | Catch-all distinct ids for server events (`system`, `backend`) | best-practices [V] | Servers send nothing; counts live in Supabase |
 | 6 | Different id formats across platforms (`user-456` vs `USER-456`) | best-practices [V] | One id format: the consent uuid, lowercase |
-| 7 | `identify` with an email or account id, so every event is a known person | anonymous-vs-identified-events (identify links earlier anonymous events to a user) [V] | Never identify; random consent id; `reset()` on withdrawal |
+| 7 | `identify` with an email or account id, so every event is a known person | anonymous-vs-identified-events (identify links earlier anonymous events to a user) [V] | Never identify with an account id or email; the only id is the random install id from consent; `reset()` on withdrawal |
 | 8 | Reuse a deleted or old distinct id | data-storage [V] | A later yes gets a new id (`consent.ts`) |
 | 9 | Leave SDK defaults on: lifecycle events, flag events, preloaded flags, geoip | react-native page defaults [V] | Section 3.4, pinned by V17 |
 | 10 | Session replay or surveys "just to try" | enableSessionReplay is a switch [V]; replay of screens is the harm in the CITP and Glassbox stories [UNVERIFIED beyond the titles] | Never on; V17 |
@@ -457,11 +461,11 @@ Tracking: events added or changed: <wire names>; registry rows are in this PR
 Tracking: not needed, because <one reason>
 ```
 
-CI check (a small script in the `unit` job, not yet written):
+CI check (a small script, not yet written, in its own job named `tracking-line`, not inside the `unit` job, so a missing line shows as its own red check):
 - Reads the PR body from the event payload of a `pull_request` workflow with `edited` in its `types` (so editing the body re-runs it), or with `gh pr view --json body` [UNVERIFIED which; the workflow is not written]. Fails if the body has zero or more than one line starting `Tracking:`.
-- With `Tracking: none` or `not needed`, fails if the diff touches `catalog.ts`, `ids.ts`, `registry.md` or any file that imports the module (found with a grep for `from '.*analytics'`).
+- With `Tracking: none` or `not needed`, fails if the diff touches `catalog.ts`, `ids.ts`, `registry.md` or any file that imports the analytics package's send path. Search only for imports of the send path (the `track`, `trackScreen`, `tap`, `impress`, `perf` and domain tracker helpers from `packages/analytics`), and skip files that import only types, ids or the consent helpers; a plain grep for `from '.*analytics'` is too wide and would fail unrelated PRs.
 - With `events added or changed`, fails if a named event is not in the registry diff, or the registry diff has an event not named.
-The PR template and the script are a backlog row (IN-10, `analytics engineer`). Workflow edits are the founder's under the standing rule, so the workflow part is a hand-off to the founder; the script itself is `analytics engineer`'s.
+The PR template and the script are a backlog row (IN-10, `analytics engineer`). Workflow edits are the founder's under the standing rule, so the workflow part is a hand-off to the founder; the script itself is `analytics engineer`'s. The founder hand-off includes the edit that adds `edited` to the `pull_request` `types:` list of the new job (the default types do not re-run when a PR body is edited).
 
 ### 6.3 Per-event QA checklist (one tick each, in the PR)
 
@@ -532,10 +536,13 @@ Owners fix their own files in their next edit; none of this PR edits a PM file. 
 
 ## 7a. Adapter alignment
 
-The adapter branch is `feat/analytics-posthog-adapter` (head 1014088e when last read, no PR yet, 4 ahead and 7 behind develop; I read it through a review, not in code). It must be updated to this standard before it merges. Where it diverges:
+The adapter branch is `feat/analytics-posthog-adapter`, now PR #1086 (head `449f6673dd5e65f89459790149226a5ac89b8979`, 14 commits, 40 files, read in code on 21 Nov; the earlier heads `1014088e` and `94ccd85` are superseded; `3d0caf0` (production flag) is reverted by `92d9170` and returns as its own last PR, see `adapter-split-plan-20nov.md` in #1091). The adapter is built to `registry.ts`. It must still be updated to this standard before it merges. Each line below was re-checked against `449f667` by reading `registry.ts`, `registry-rules.ts`, `posthog.ts`, `client.ts` and the mobile `lib/analytics/index.ts`. Where it diverged:
 - Grammar: it still builds the old past-tense, no-colon, 40-character names (`NAME_RULES` in `registry-rules.ts`) and defers the rename to a separate PR. Until IN-03 lands, V1 (colon grammar, 60 characters) is not enforced there.
 - Validators: it builds V1 to V10 and V16 only (static rules in `registry-rules.ts`; V11 to V15 are runtime). V17 exists only as a constant (`REQUIRED_POSTHOG_OPTIONS`) and V18 is not built. Its V8 has no exemption for `server`, `store` and `support` rows. It carries `grandfathered` and `heldNames`, which this standard does not know: IN-03 removes them or this file adds them.
 - Persistence: it sets `persistence: 'file'`, which matches the 21 Nov ruling in 3.4. Any test or doc that says `memory` is wrong.
+- Flush: matches 3.4 and 3.6 (SDK `flushInterval: 0`, our 60 s timer in `client.ts`, background flush, SDK `flushAt` 20). Nothing to change there.
+- Crash: `crash.ts` is built and off (`CRASH_REPORTING.enabled`), with `errorTrackingOptions` and `reduceExceptionEvent`; I did not compare its option keys and reduction line by line with section 4 in this edit.
+- SDK version: it pins `posthog-react-native` 4.87.1 and `@posthog/core` 1.69.2; sections 3.4 and 4.2 cite the page read on 20 Nov and were not re-verified against that package version.
 - Row fields: its `RegistryRow` has `stage, decision, when, area, reqs, level` plus `status`. Section 6.1 needs more:
 
 | 6.1 field | Adapter field |
@@ -547,6 +554,7 @@ The adapter branch is `feat/analytics-posthog-adapter` (head 1014088e when last 
 | owner, side, consent_gate, v, supersedes, funnels, sampling, properties | new |
 | (none) | `stage` is not in 6.1: keep or drop at IN-03 |
 
+- Perf property: the catalogue and adapter still use `ok` where this standard says `is_ok` (2.7); rename `ok` to `is_ok` with IN-03.
 - Project settings: its `REQUIRED_PROJECT_SETTINGS` says "Region chosen (US recommended)" and "Data retention 12 months or less"; this standard leaves region to counsel and says free retention is 1 year (3.8). Reconcile in one place.
 
 ## 8. Unverified items (read before relying on this file)
@@ -570,7 +578,7 @@ The adapter branch is `feat/analytics-posthog-adapter` (head 1014088e when last 
 17. Whether `setInternalOrTestUser()` exists on React Native (3.9).
 18. What `system.diagnostic.received` means (2.9).
 19. How the SDK keeps and clears its `file` persistence when the app is killed or offline (3.4, 3.6); `disableGeoip` and the project IP setting are not confirmed as set (3.4, 3.7).
-20. Version notes in 3.4 (4.39.0, 4.49.0, 4.44.0) are not on the page I read.
+20. Version notes in 3.4 (4.39.0, 4.49.0, 4.44.0): read on the library page on 21 Nov, so now [V]. The page does not say which SDK version it describes, so the 3.4 table is checked against the page as of 21 Nov, not against 4.87.1's source. The three push options (4.62.0) were missing from this table; `posthog.ts` sets the first two to `false` and leaves the third unset.
 
 ## 9. Open decisions
 
