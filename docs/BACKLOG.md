@@ -45,7 +45,7 @@ Severity tags: **[Critical]** blocks launch or makes a published statement false
 | Done in part (remainder named in the task) | BL-115 (rest is BL-334), BL-118 (rest is T5-08), BL-122, BL-134, BL-136, BL-156, BL-171 (rest is BL-330), BL-236, BL-237, BL-239, BL-241, BL-242, BL-348 (app done in #165, 23 Oct 2026; rest is the website `/j` page, PR #144) |
 | In progress this wave | BL-021 and BL-266 (mobile-polish), BL-275 to BL-277, BL-279, BL-283 (qa-e2e), BL-331 to BL-333 (db-followup, `20261005000000` builds and applies), legal alignment (`docs/legal/**`, legal-alignment). Done this wave: the security review (`docs/reviews/2026-10-04-security-privacy.md`) |
 | Needs the founder | BL-005, BL-015, BL-030, BL-043, BL-044, BL-053, BL-101 to BL-104, BL-106 to BL-109, BL-122, BL-135, BL-177, BL-222, BL-245, BL-247, BL-280, BL-284, BL-286, BL-335 to BL-337, BL-339, BL-346 |
-| Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-272, BL-273, BL-278; v1.0.1: BL-343, BL-344 |
+| Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-273, BL-278; v1.0.1: BL-343, BL-344 |
 | Blocked | BL-221 (BL-275), BL-243 (website thread), BL-269 (BL-278), BL-340 (first preview build) |
 | Needs a decision | BL-338 (Q-009), BL-345 (counsel, FT-47) |
 | Superseded or deferred | Everything in M6 and M7, most of M8's server half, BL-016, BL-022, BL-041, BL-105, BL-118 (rest), BL-144 to BL-147, BL-175, BL-178, BL-231, BL-232, BL-248, BL-249, BL-271, BL-282, BL-288, the v1.1 table |
@@ -743,7 +743,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 | BL-269 | Component tests at default size and AX5 | blocked (BL-278) |
 | BL-270 | Native tabs | ready (cut first if late) |
 | BL-271 | Increase Contrast and Reduce Transparency variants | deferred (v1.1 or later; T5-20) |
-| BL-272 | Recording-without-words state | ready |
+| BL-272 | Recording-without-words state | done in code (read on develop 21 Nov 2026: `apps/mobile/src/components/capture/words-state.logic.ts` has the `noWords` state (title "No words in this one", Keep the recording, Write the words; no Try again, no Record again) and `apps/mobile/src/app/review.tsx` draws it through `WordsStatus`; `apps/mobile/src/components/book/words-card.logic.ts` `wordsCardKind` gives the letter page its `noWords` card; `apps/mobile/test/words-state.test.ts` (line 219) and `apps/mobile/test/p5-critics.test.ts` ([S3], line 171) cover it, 88 passing as the engineer reported, not re-run here; copy in `packages/content/src/features/words.en.ts` `wordsCopy.noSpeech`; not checked on a device; the mounted and AX5 checks are BL-1490) |
 | BL-273 | Accessibility statement | ready (content and legal; LEGAL-REQ-052) |
 
 ---
@@ -7564,3 +7564,66 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Scope: (1) capture the source at the start of the adopt, not at its end. (2) Optional, decided in the PR: resolve a named dropped outcome instead of `undefined`, only if a caller can then tell "dropped" from "nothing to do"; if the reviewers still prefer `undefined`, leave it and say so.
 - Done when: one named test for part 1 fails on the old code and passes on the new; part 2 is either done with its own test or recorded as left as is.
 - Test: a test beside the adopt code.
+
+#### BL-1490 The no-words card has logic tests only: a mounted test at default size and AX5, and the VoiceOver line, once BL-278 lands
+- Status: proposed (hygiene after BL-272 was found done in code). Mode: agent. Owner: QA engineer. Milestone: M15. Size: S. Depends on: BL-278.
+- Priority: Medium. Gate: none.
+- Satisfies: the same ids as BL-272 and BL-269 (not copied); D-086 (the card never says nobody spoke).
+- Problem and evidence: `apps/mobile/test/words-state.test.ts` and `apps/mobile/test/p5-critics.test.ts` test the pure card (`wordsCard`, `wordsCardKind`). Nothing mounts `WordsStatus` in `apps/mobile/src/app/review.tsx` or the letter page card, so the stacked layout at AX5 and the spoken title that `WordsStatus` sends to VoiceOver on a change of state are not tested. BL-269 covers this but waits on BL-278.
+- Scope: when the harness exists, add one mounted test of the `noWords` card at default size and at AX5 (both actions visible and reachable, nothing clipped) and one that the card's title is announced once on arrival. Do not edit BL-269; cite it.
+- Done when: the two tests run in `npm test` and fail if the quiet action is removed.
+- Test: the component harness from BL-278.
+
+#### BL-1491 The spec says the home place is one value per book, but the moments file contract has a single homePlace
+- Status: proposed. Mode: decision. Owner: founder. Milestone: M15. Size: XS. Depends on: none. Drafted by: product (the roster has no backlog owner name for product, so the check needs a mapped owner).
+- Priority: Medium (the file shape is hard to change once shipped). Gate: none.
+- Satisfies: NS-53-R249 and R221 (17.1), not copied.
+- Problem and evidence: `docs/product/prd/28-moments-tab.md` R249 says "one value per book". The file contract in `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` (line 167 and the `MomentsFile` type, line 430) is `{v, owner, dayKeys[], labels{}, hiddenPlaces[], homePlace}` with one `homePlace` for the whole file. Whether a file holds one book or many is not stated in what was read.
+- Scope: state which is meant. If one file per book, say so in 17.1. If one file per person across books, change `homePlace` to a value per book id. Draft the wording in the PR body for the founder; do not edit the requirement here.
+- Done when: R249 and 17.1 say the same thing, or a Proposed D-### is drafted.
+- Test: none (decision).
+
+#### BL-1492 ADR 0032 says the moments index holds local asset ids, but R247 stores no picture or album identifier; and the file needs an owner-derivation rule
+- Status: proposed. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: NS-53-R247 and NS-51 (not copied).
+- Problem and evidence: `docs/adr/0032-on-device-sensitive-store.md` line 11 says "the moments index (NS-51) holds local asset ids". R247 in `docs/product/prd/28-moments-tab.md` says no picture identifier and no album identifier is stored in the first release. The two disagree. The same ADR (line 19) adopts a local file only at the claim step by the same person, but the moments file's `owner` field has no stated rule for how it is derived.
+- Scope: draft an ADR 0032 amendment (Proposed) that removes or conditions the asset-id line to match R247, and states how `owner` is derived for a signed-out phone and at claim. The founder decides; do not change the PRD.
+- Done when: the amendment is in the PR body or a Proposed ADR, and ADR 0032 and R247 no longer contradict.
+- Test: none (docs).
+
+#### BL-1493 DATA-REQ-023's wipe list names no device files; add a test that no moments.json remains after deletion
+- Status: proposed. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none. Also: QA engineer.
+- Priority: High (a file of the person's day choices could outlive a deleted account). Gate: none.
+- Satisfies: DATA-REQ-023 and DATA-REQ-024 (not copied).
+- Problem and evidence: DATA-REQ-023 in `docs/legal/DELETION_AND_EXPORT_SPEC.md` (line 254) wipes "the local database, audio, photos, Keychain items for that account and the analytics id". It names no device files, so the local moments file (R249 says the home place has "the same wipe rules") is not on the list. DATA-REQ-024 has the same gap for signed-out phones.
+- Scope: (1) data architect drafts the list wording for the founder and counsel (legal text is theirs; draft in the PR body only). (2) QA adds a test that after the wipe path of both requirements no `moments.json` remains, written against the file the code creates.
+- Done when: a drafted wording is in the PR body, and the test fails if the wipe skips the moments file.
+- Test: a wipe test next to the existing deletion tests.
+
+#### BL-1494 Shipped planner and the notifications.birthday and notifications.monthOpen keys still name the child and the month number
+- Status: proposed (NS-53-R280, D11). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none. Also: content.
+- Priority: High (the spec's stricter reading is a lock-screen privacy rule). Gate: none.
+- Satisfies: NS-53-R280 and R138 (not copied).
+- Problem and evidence: R280 says a Moments-class note carries no child name and no month number or age on every setting, and that a code change row is owed. `packages/content/src/strings.en.ts` has `notifications.monthOpen` ("Month {month} begins", "{child}'s book") and `notifications.birthday` ("Happy birthday to {child}"). `planner.ts` (about lines 283 to 297 per R280, not re-read here) fills them when names are on.
+- Scope: content drafts name-free variants of both keys (Proposed, rules in `packages/content/test/rules.test.ts`); mobile makes the planner use them for the Moments-class notes on every setting; the evening class keeps its rule.
+- Done when: a planner test fails if the child name or month number reaches a Moments-class title or body with names on.
+- Test: planner test plus the content rules test.
+
+#### BL-1495 Moments token gaps: motion.carry, a 48 pt action target, listRowMin 52 versus 56, and a sheetTitle type role
+- Status: proposed. Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: the founder ruling in `docs/design/moments-design-closure.md` (line 38) that `motion.carry` { ms: 320 } lands in `tokens.ts` with a timeline test; the other three are from this session's reviews and are not re-derived here.
+- Problem and evidence: `packages/design-tokens/src/tokens.ts` has no `motion.carry` (grep found none) and `listRowMin: 52` (line 149) while the moments specs ask for 56. The reviews also report no 48 pt `target.action` and no `sheetTitle` role; a search of `tokens.ts` for `sheetTitle` found none.
+- Scope: add `motion.carry` { ms: 320 } with a stepped timeline test; for the other three, decide in the PR whether to add the token or change the spec, and say which.
+- Done when: the token tests pass and each of the four is either in `tokens.ts` or recorded as a spec change.
+- Test: `packages/design-tokens` tests.
+
+#### BL-1496 Analytics note for the picker spec: catalog moment_shown name clash, and the registry forbids ^moment_*
+- Status: proposed (informational). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-51-R27 (not copied).
+- Problem and evidence: `packages/analytics/src/catalog.ts` already has `moment_shown` (the celebrate milestone event), while `packages/analytics/src/registry.ts` line 461 forbids names matching `^moment_`. A picker event named `moment_*` would clash with the catalog entry and be blocked by the registry.
+- Scope: record in the analytics notes that picker events must not use the `moment_` stem, and flag it to the picker spec owner. No code change.
+- Done when: the note is merged and the picker spec names no `moment_*` event.
+- Test: none.
