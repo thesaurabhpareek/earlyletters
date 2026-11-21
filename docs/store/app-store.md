@@ -13,14 +13,14 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 | Promotional text | Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. | 135 / 170 |
 | Keywords | `diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama` | 100 / 100 |
 | Primary category | Lifestyle | |
-| Support URL | https://earlyletters.com/support | |
+| Support URL | https://earlyletters.com | |
 | Marketing URL | https://earlyletters.com | |
 | Privacy Policy URL | https://earlyletters.com/privacy | |
 | Support email | hello@earlyletters.com | |
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3454 / 4000)
+## Description (3457 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -107,31 +107,33 @@ Promotional text carries the short form. No locks, shields or "bank-level" langu
 - [ ] App Privacy answers in App Store Connect match `docs/legal/app-store-privacy-labels.md` and the shipped build.
 - [ ] Subscriptions attached to the version with display names, and Family Sharing turned on for both products (D-053).
 - [ ] Age rating questionnaire answered; category Lifestyle.
-- [ ] App Review notes, servers-on build (build 12, sign-in required, D-160): the release workflow sends the notes below, with the demo email and password filled from the `ASC_REVIEW_CONTACT_JSON` secret (`demoUsername`, `demoPassword`), and sends the same two as the App Store Connect sign-in fields with "Sign-in required" on. PROPOSED, founder decides: the demo account and the mailbox that receives its sign-in code (the app has no password sign-in). Never commit either value.
+- [ ] App Review notes, servers-on build (build 12, founder 8 Nov 2026): the release workflow sends the notes below, with the invite link and its date filled from the `ASC_REVIEW_CONTACT_JSON` secret. "Sign-in required" stays off and the demo user name and password stay empty (`proposals/app-review-demo-signin.md` option 3). Before each submission the founder makes a fresh single-use invite link to the Asha sample book and checks that invites are not paused.
 - [ ] App Review notes, servers-off build only: paste `notes-for-review-1.0.txt` once the founder resolves its brackets; it replaces the Notes for Review in `app-store-staged-1.0-proposal.md` section 6 (a baby memory book parents fill by talking; a due date is optional; no health service, D-004 5.1.1(ix) positioning; no account, so no demo account; the switched-off server features listed by flag). Co-parent sharing is not in this build: per D-126 the Family tab, the Settings row and the invite entry points are hidden; if that change has not landed when this checklist closes, the notes describe the on-screen co-parent notice instead (D-126 fallback). The speech model is a one-time download the person chooses at the end of first run (data, not code; D-065, D-087).
 - [ ] The build is English only (`EXPO_PUBLIC_ENGLISH_ONLY=on` in `production`, D-121) and the description names no other language. A language is added here only in the release that ships it (D-125 item 2).
 - [ ] Screenshots regenerated from the release build's web preview and checked frame by frame.
 
 ## Notes for Review (servers-on build)
 
-From `packages/content/src/release/app-review.en.ts`. `{demoEmail}` and `{demoPassword}` are filled at push time and never committed. 1877 of 4,000 bytes before they are filled.
+From `packages/content/src/release/app-review.en.ts`. `{inviteLink}` and `{inviteExpiry}` are filled at push time and never committed. 2142 of 4,000 bytes before they are filled.
 
 ```text
 Early Letters is a memory book that parents fill by talking. A parent speaks or types a short letter to their child. The app never rewrites what a person says. It makes only small marked fixes to the words it writes down (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.
 
-SIGN-IN IS REQUIRED
-An account keeps the words of a parent's letters with them on a new phone. Recordings stay on the phone that made them. Sign-in is Sign in with Apple, or a link and a 6-digit code sent by email. There are no passwords in the app.
+SIGN-IN IS OPTIONAL
+The app works fully on this iPhone without an account. Signing in adds two things: the same book on a parent's other iPhones, and sharing a book with the child's other parent. Sign-in is Sign in with Apple, or a sign-in link and 6-digit code sent by email. There are no passwords, so this submission has no demo user name or password. Please use your own Apple Account with Sign in with Apple.
 
-DEMO ACCOUNT (about 3 minutes)
-Email: {demoEmail}
-Password: {demoPassword}
-The password opens the mailbox for that address, where the code arrives. It is not typed into the app. If you prefer, use Sign in with Apple with your own Apple Account instead.
-1. On the first screen, tap Sign in with email.
-2. Type the email address above in Email, then tap Send link.
-3. Open the new email in that mailbox. Type its 6-digit code in Code, then tap Continue. Tapping the link on this iPhone also works.
-4. Tap Agree and continue, then answer "Are you 18 or older?" with Yes.
-5. Set up a book for a made-up child, for example Asha, and try a short letter by speaking or typing.
-Sharing a book with a second parent is not needed to review the app.
+TO REVIEW SIGN-IN AND SHARING (about 3 minutes)
+1. Launch and answer "Are you 18 or older?" with Yes.
+2. On the first screen, tap I was invited.
+3. Paste this invite link into Invite link, then tap Continue: {inviteLink}
+4. Tap Sign in, then Sign in with Apple.
+5. Agree to the Terms, answer the age question, then tap Agree and sync. Sharing a book needs this step.
+6. Tap Join the book. You join a sample book for a made-up child, Asha, as the second parent. Everything in it is fictional.
+7. Type what Asha calls you, for example Papa, then tap Open the book.
+The link works once, until {inviteExpiry}. You can also skip the link and start your own book.
+
+WHAT A CO-PARENT SEES
+Both parents read every letter in the book, each one signed. Recordings stay on the phone that made them in this version, so each parent hears only their own.
 
 DELETING THE ACCOUNT
 Settings, Delete account. It shows what happens to each book, then asks you to type delete. The account is deleted 30 days later, and the deletion can be cancelled until then.
