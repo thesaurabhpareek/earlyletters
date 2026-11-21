@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import ts from 'typescript';
-import { applyPullPage } from '../src/lib/sync/merge';
+import { applyEntryState, applyPullPage } from '../src/lib/sync/merge';
 import { entrySnapshot, SYNC_SETTING, writeSetting, type LocalEntryRow } from '../src/lib/sync/outbox';
 import type { PullResponse } from '../src/lib/sync/types';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
@@ -76,6 +76,35 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
     db.transaction(() => applyPullPage(db, page, NOW));
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id = 'e1'")?.final_text).toBe('Hi, Asha.'); // the pull did run
     expect(media()).toEqual(before);
+  });
+  it('[NS-01-R15] a push answer never creates, changes or deletes an entry_media row: applyEntryState (which applyPushResponse calls for every ok op) leaves the table as it was, a deleted letter included, and the sync layer never names the table', () => {
+    // Mutant: add `DELETE FROM entry_media WHERE entry_id = ?` (or an UPDATE) to applyEntryState in sync/merge.ts: this turns red.
+    const ME = '11111111-1111-1111-1111-111111111111';
+    const NOW = '2026-10-03T09:00:00.000Z';
+    const db = fixture().db;
+    insertBook(db, { id: 'c1', name: 'Asha', signsAs: 'Mama', serverState: 'synced' });
+    writeSetting(db, SYNC_SETTING.owner, ME);
+    writeSetting(db, SYNC_SETTING.epoch, '1');
+    for (const id of ['e1', 'e2']) {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text,
+           in_book, updated_at, child_id, author_id, server_version, server_updated_at, server_epoch, sync_state)
+         VALUES (?, 'letter', '2026-10-01', ?, 'typed', 'verbatim', 5, 'Hi.', '[]', 'Hi.', 1, ?, 'c1', ?, '100', ?, 1, 'synced')`,
+        id, NOW, NOW, ME, NOW,
+      );
+    }
+    const store = entryMediaStore(db);
+    for (const [owner, media] of [['e1', 'm1'], ['e2', 'm2']]) {
+      store.put({ entryId: owner, mediaId: media, ext: 'jpg', bytes: 3, sha256: 'ab', width: 4, height: 4, text: 'Rain boots', place: 'the back step', addedAt: NOW, deletedAt: null });
+    }
+    const media = () => db.all('SELECT * FROM entry_media ORDER BY id');
+    const before = media();
+    const state = (id: string, deleted: string | null) => ({ id, v: '130', updated_at: NOW, approval: null, in_book: true, deleted_at: deleted }) as unknown as Parameters<typeof applyEntryState>[1];
+    applyEntryState(db, state('e1', null), 1, NOW);
+    applyEntryState(db, state('e2', NOW), 1, NOW); // the server says deleted
+    expect(db.get<{ v: string }>("SELECT server_version AS v FROM entries WHERE id = 'e1'")?.v).toBe('130'); // it did run
+    expect(media()).toEqual(before);
+    expect(readFileSync(join(SRC, 'lib', 'sync', 'merge.ts'), 'utf8')).not.toMatch(/entry_media/);
   });
   it('[NS-01-R15] the photo code never imports the sync layer or the network', () => {
     for (const f of walk(join(SRC, 'lib', 'photos'))) {
