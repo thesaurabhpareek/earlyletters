@@ -197,7 +197,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: in-review (PR #46, the remaining rules). Done before it: the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0 (D-053, D-055, D-060, D-061 effects). The claims registry is deferred (v1.1, merged into T5-08).
 
 #### BL-119 `child-input` flag in the prompt selector [High]
-- Status: ready. Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never show today, but `packages/core` has no flag and no test that proves it.
+- Status: partly done (FR-CMP-14 child-input tag on the NS-16 flag remains: the flag registry tag with counsel Q45 linked in the flag description; PR #1220 merged as `401ab26f` with the selector part only, `SelectInput.childInput`, off when absent, in `packages/core/src/prompts.ts`, `packages/core/test/prompts.selection.test.ts`). Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never showed, but `packages/core` had no flag and no test that proved it (both added by #1220).
 
 #### BL-120 Verifier hardening and property tests [High]
 - Status: done (3bf45a0: negation, tense and modal guards in `packages/core/src/verify.ts`, `test/verify.fuzz.test.ts`, language regressions in `test/lang.*.test.ts`; ENGINE_VERSION 4).
@@ -1353,7 +1353,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J11 (J11-05); `apps/mobile/test/billing-plan.test.ts`.
 
 #### BL-408 Performance budgets have a harness: SQL perf test with a 5-year fixture in CI, Maestro timing for device runs [High]
-- Status: partly done (server perf test and nightly job built; the on-device 2,000-letter test `apps/mobile/test/perf.sql.test.ts` and Maestro timing are missing). Mode: agent. Owner: QA engineer, mobile engineer. Milestone: M-JR. Size: L.
+- Status: partly done (server perf test and nightly job built in `supabase/tests/perf.test.mjs`; the phone-store 2,000-letter test is BL-1402 and the Maestro timing scripts are BL-1403, split 21 Nov 2026). Mode: agent. Owner: QA engineer, mobile engineer. Milestone: M-JR. Size: L.
 - Severity: major. Raised by: quality (2 findings). Steps: J03-05; system-wide (`_journey` entries).
 - Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; extends BL-289 (done) and feeds BL-044.
 - Scope: A CI SQL-level perf test with a 5-year fixture of 2,000 Asha letters: chapter of 60 letters p95 500 ms, local save p95 200 ms, switch child p95 300 ms. Maestro timing scripts for cold start and record start for the device run per release candidate (200 samples), feeding BL-044.
@@ -1561,12 +1561,12 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J06 (J06-07, J06-09); content rules test.
 
 #### BL-434 Tonight and Book read only what they show
-- Status: blocked (BL-408). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-408.
+- Status: blocked (BL-1402). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-1402.
 - Severity: minor. Raised by: quality (2 findings). Steps: J01-14, J09-03.
 - Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111.
 - Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
 - Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
-- Test: `apps/mobile/test/perf.sql.test.ts` (from BL-408); journeys J01 (J01-14) and J09 (J09-03).
+- Test: `apps/mobile/test/perf.sql.test.ts` (from BL-1402); journeys J01 (J01-14) and J09 (J09-03).
 
 ## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
 
@@ -1736,7 +1736,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the test fails if the dependency array is removed or changed (n5, n5b and n5c are killed or shown irrelevant), and the effect uses `announce()`.
 
 #### BL-458 Pins for the refused-Save line and the shelf after a refused Erase, and the Book's first-mount subscribe window
-- Status: ready. Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted), qa engineer. Milestone: M4. Size: S. Depends on: none.
+- Status: in-review (PR #1287). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted), qa engineer. Milestone: M4. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1773,7 +1773,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: each point is fixed with a test, or recorded here as left as it is.
 
 #### BL-461 Spec and test nits after the P7-7 corrections (#381): cover pin, `COVER_SIZES` comment, card-to-page wording, v1 PRD line, F13 enums
-- Status: ready. Mode: agent. Owner: design systems (points 1 to 3), analytics engineer (point 5), content (point 4). Milestone: M11. Size: S. Depends on: none.
+- Status: partly done (point 4 stays with content, point 5 with the analytics engineer; points 1 to 3 done in PR #1288). Mode: agent. Owner: design systems (points 1 to 3), analytics engineer (point 5), content (point 4). Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2430,7 +2430,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### Server lane (`supabase/**`)
 
 #### BL-516 Two stale comments under `supabase/` (closure review N4)
-- Status: in-review (PR #1249). Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
+- Status: done (PR #1249 merged as `3416fa1b`, `supabase/config.toml` and `supabase/templates/README.md`, comments only). Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low. Gate: none (comments only, but `supabase/**` needs the D-041 review).
 - Problem and evidence: `supabase/config.toml:38` says "/auth/confirm is not listed until the app accepts it (SIGN-04)"; the app accepts it now, and the real reason it is not listed is that no code sends it as a redirect. `supabase/templates/README.md:59-61` says the app does not accept `email_change`; it does now (SIGN-10). Left alone on 31 Oct because a database test run held `supabase/**`.
 - Scope: reword both lines. No setting changes.
@@ -3359,7 +3359,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Plan: P0 on; install yes; no founder hours.
 
 #### BL-864 Plist and preflight lint per phase; UIBackgroundModes stays forbidden (NX-39-R4, R51)
-- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Status: partly done (PR #1203 merged as `84ecd222`: `forbiddenNativeProblems` in `apps/mobile/scripts/preflight-lib.mjs`, `apps/mobile/test/preflight-forbidden-native.test.ts`, both Done-when titles pass; the prebuild diff test for the P2c flag on and off remains, it needs the photo flag wired into `app.config.ts`, and the library content string is not in the repo yet). Mode: agent. Owner: platform. Milestone: M15. Size: S.
 - Who: `ops`, `security-architect`, `compliance-engineer`.
 - Satisfies: NX-39-R4, NX-39-R51. Also cited: LEGAL-REQ-007, LEGAL-REQ-011, SEC-ML-10, CPO-11.
 - Scope: extend `apps/mobile/scripts/preflight-testflight.mjs` and the plist test: keep failing on any `UIBackgroundModes` and any `BGTaskSchedulerPermittedIdentifiers` (lines 575 to 576 stay until a recorded founder ruling after counsel); fail on `NSLocation*`, `NSPhotoLibraryAddUsageDescription`, any WidgetKit, share-extension or notification-extension target, any `application-groups` entitlement; the library key only when its flag is on and equal to the content string; `PHPhotoLibraryPreventAutomaticLimitedAccessAlert` true when it exists; a positive control per rule; a prebuild diff test for the P2c flag on and off (the flag stays off).
@@ -3811,7 +3811,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the test passes and #721 is reconciled or superseded.
 
 #### BL-964 Traceability sees the NS ids (gate G0)
-- Status: partly done (PRs #878 and #1060 report the NS P0 rows; the NS ratchet and its CI step are missing). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: partly done (PRs #878 and #1060 report the NS P0 rows; PR #1205 merged as `86eccfa0` with the NS ratchet in `scripts/trace.mjs`; the CI step remains, it is the founder's paste in `docs/ops/proposed/trace-ns-ratchet.md` and waits on founder question 07 Q8, and so does rule (d), a P0 row dropped from section 7). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: gate G0 (`14-test-plan.md`); council finding F1.
 - Problem: `scripts/trace.mjs` matches only `X-REQ-nnn` and `X-NFR-nnn` under `docs/prd/v2`, so no NS row is traceable. #819 (draft) does part of it.
 - Scope: rework #819 or replace it: read `docs/product/prd/` as a second source, match `NS-nn-Rnn` and the split and lettered forms (`R9a`, `A2b`, `C28-13`, `B8b`), and the cross-cutting ids `X4-R1`, `X6-R1`, `FRAME-SLIP`; a ratchet that fails when a P0 row in `14-test-plan.md` section 7 has no test title found in the code.
@@ -6547,6 +6547,26 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Scope: tests first, then code or words only where a test fails, for the 1 row above: the read-out file in the repo holding counts and the outcome only: 0 quotes, 0 participant codes joined to an answer and 0 names. One PR. The card (NS-03) is the source of truth; nothing here changes a row. The rest of BL-127 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the no-real-family-data hash test (`packages/content/test/no-real-family-data.test.ts`) passes on the PR that adds the file; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
+## Split of BL-408, 21 Nov 2026 (ready)
+
+BL-408 stays `partly done`: its server half (a launch-scale SQL perf test with p95 budgets, run nightly) is in `supabase/tests/perf.test.mjs` and the `perf` job of `.github/workflows/nightly.yml` (read on `develop` at `c52582bf`; not run here). The two missing halves are below, each its own PR. Source: `docs/backlog/STATUS-AUDIT-2026-11-21.md`, "Partly done rows to split first", item 1.
+
+#### BL-1402 The phone's local store has a 2,000-letter perf test with the BL-408 budgets
+- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; BL-408 (the half it names); feeds BL-434.
+- Scope: a new `apps/mobile/test/perf.sql.test.ts` that builds the app's real local database (`node:sqlite` with `MIGRATIONS` and `migrate` from `apps/mobile/src/lib/db/migrations.ts`, the way `apps/mobile/test/sync-e2e.test.ts` does) and fills it with 2,000 letters over five years for the fictional family Asha, in two children so switching has something to switch to. It times, through the repos in `apps/mobile/src/lib/db/repos` and the same reads the Book and Tonight screens call: a chapter of 60 letters (p95 500 ms), one local save (p95 200 ms) and switching the active child (p95 300 ms). The numbers are BL-408's, not new ones. The test states in its header that it times the SQL path on a CI machine, not a phone: the phone figures come from BL-1403 and BL-044. It runs under the existing `npm test` (`.github/workflows/ci.yml` line 62 runs it), so no workflow change is part of this row.
+- Done when: the test fails when a budget is exceeded on the fixture, shown by one planted slow read (an unindexed scan or a deliberate delay) turning it red and the real code passing; the fixture holds no real family data (`packages/content/test/no-real-family-data.test.ts` stays green); the run is under 60 s on the CI runner; the three budgets and the sample count are named in one place in the file.
+- Test: `apps/mobile/test/perf.sql.test.ts` itself, with its planted-slow mutant.
+- Gate: none. Tests only, no `src`, migration or dependency change.
+
+#### BL-1403 Maestro timing scripts for cold start and record start, 200 samples, feeding BL-044
+- Status: ready. Mode: agent (writing and linting the scripts; running them on a phone is the founder's device run under BL-044, FT-22 and FT-39). Owner: qa engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; BL-408 (the half it names); feeds BL-044.
+- Scope: under `apps/mobile/e2e/` (flows in `flows/`, helpers in `scripts/`) two timing flows, cold start to the first usable screen and record start (tap to recording), each repeating 200 times with the app killed between runs; a small script that reads the timings into a table of p50 and p95 with the sample count; and a section in `apps/mobile/e2e/README.md` saying how to run them per release candidate, what build they need (the `e2e` profile is request B-1 in `TESTID_REQUESTS.md` and not built yet) and where the result is filed (`docs/qa/evidence`). Content-free output: timings and counts only, never a letter, a name or a path.
+- Done when: `node apps/mobile/e2e/bin/lint-flows.mjs` passes on the new flows; the summary script has a test over a fixed list of timings; the README section exists and names the budgets from BL-408 without restating new ones. No device run is claimed.
+- Test: `node apps/mobile/e2e/bin/lint-flows.mjs`; the summary script's own test under `apps/mobile/test/` or `apps/mobile/e2e/`.
+- Gate: BL-044's device run stays the founder's; this row never marks it done.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
@@ -6808,3 +6828,81 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Scope: one new migration file and its tests, never an edit of an applied migration: a service-role function that limits one member's read of one book's server rows (reversible, never deletes a letter, writes one `access_limit` audit row) and a lever that suspends sign-in for an account without touching the account or its letters. The new functions and any table carry their own grants in the same migration and a line in `supabase/tests/grants.mjs`. The rows BL-1330 and BL-1363 hold the runbook and phone side and name the ids.
 - Done when: the migration file exists with its grants line; `supabase/tests` shows the limit reversing, one audit row per use and no letter deleted, and the suspend lever leaving every letter in place; the file is listed for the founder in `supabase/APPLY.md`; the founder applies it (docs/FOUNDER_TASKS.md).
 
+
+## Review follow-ups: sign-out, the upload probe and the asks (21 Nov 2026; BL-1424 and BL-1425 triaged ready by Karma, 21 Nov 2026 (PR #1292 comment 7060294784); BL-1431 sourced from #1293; the rest proposed or blocked as each row says)
+
+Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL-1424 to BL-1431 file eight findings from the reviews of PRs #1273, #1274 and #1289 (all open when written). Anything that exists only in one of those PRs is marked unverified: this file was checked against `develop`, not against the PR heads. BL-458's Status is not changed here: #1287 had not merged when this was written.
+
+#### BL-1424 Sign-out clears the join wait, so the next account's welcome cannot show the previous child's name
+- Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
+- Priority: High until reproduced (privacy: a child's name staying in memory across accounts). The leak is in memory only: the store is never written to disk, so it ends when the app process ends. Gate: none.
+- Satisfies: none given (the child-name rule in `CLAUDE.md` Privacy rules is the nearest; no requirement id was checked).
+- Problem and evidence: found by Lens B on #1289. `joinWait` is a module-level store (`apps/mobile/src/components/family/join-wait.logic.ts:123`) that holds `{ childId, name, since }`. Its only `clear()` calls are in `join-wait.tsx:40` and `:43`, which run only while the welcome's `useWelcomeJoinWait` hook is mounted. Nothing under `apps/mobile/src/lib/auth` calls `joinWait.clear()` (searched `apps/mobile/src`: `joinWait` appears only in `components/family/join-wait*` and `app/invite/index.tsx:40,174,177`). `session-provider.tsx` `signOut()` (`:559-564`) dispatches `SIGN_OUT_REQUESTED` and clears nothing of the wait. So if sign-out happens while no welcome hook is mounted, the name from the previous account stays in memory and could appear in the next account's welcome line (`joinWaitLine`). Whether the next welcome really reads it was not run: unverified.
+- Scope: clear the join wait when the account signs out, for every sign-out reason (user, apple_revoked, force_reauth, switch_account), in the sign-out path rather than only in the welcome hook. No change to the wait's other rules.
+- Done when: a test signs in as account A, starts a wait with a name, signs out with no welcome mounted, signs in as account B and reads no name (the wait is null); the test fails with the new clear removed.
+- Test: `apps/mobile/test/join-wait.test.ts` plus an auth-side test. Depends on nothing else.
+
+#### BL-1425 `pendingUploads()` treats a failed read as unsynced, with a typed result
+- Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: found by Lens A on #1273. `pendingUploads()` in `apps/mobile/src/lib/auth/auth-store.ts:188-194` returns 0 when the probe throws, which tells sign-out nothing is waiting when the store could not be read. That is the opposite of fail-safe: sign-out could proceed and drop letters that were never uploaded. Its callers read a number: `apple-revocation.logic.ts:54-63`, `session-provider.tsx:299,316,374,560`, and the literal `pendingUploads: 0` at `:424` (switch_account, which never reads the probe), and the reducer's `waiting` line at `machine.logic.ts:195`. The 0 for "no sync engine registered" is correct and stays.
+- Scope: return a typed result (for example `{ kind: 'count', n } | { kind: 'unknown' }`) and treat `unknown` as unsynced in the sign-out reducer and in the revocation and force-reauth paths, so sign-out waits as it does for a non-zero count. The way out of an endless wait is `cancelSignOutWait()` (`session-provider.tsx:566-568`, which dispatches `SIGN_OUT_WAIT_CANCELLED`); keep it reachable when the result is `unknown`. `unknown` never reaches a dispatch as `pendingUploads: 0`: every dispatch site above either passes the typed result on or treats it as unsynced; the `:424` literal is reviewed and either kept with a comment saying why or routed through the same read. The sync side's own `countOr0` (`apps/mobile/src/lib/sync/index.ts:61-67`, for the status line) is a separate read and is not changed here.
+- Done when: a test with a probe that throws shows sign-out waiting, not completing; a test with no probe still shows 0 pending; every caller above compiles against the typed result.
+- Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
+
+#### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
+- Status: blocked (PR #1273 merging; the probe it pins is #1273's change and is not on `develop`). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Priority: Medium. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` the registration is `registerUploadQueue({ pendingCount: () => pendingCount(localSqlDb()), ... })` at `:266-274`; the changed probe is unverified until #1273 merges.
+- Scope: one test that starts the sync module, reads `pendingUploads()` through the registered probe and expects what #1273's probe counts that plain `pendingCount` does not; mutate the probe back and see the test fail.
+- Done when: reverting the probe to plain `pendingCount` makes exactly this test fail.
+- Test: `apps/mobile/test/sync-*.test.ts`.
+
+#### BL-1427 BL-518 web half: a web journey that shows the second reminder prime
+- Status: blocked (PR #1274 merging; it builds the mobile half of BL-518 only). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-518.
+- Priority: Medium. Gate: none.
+- Satisfies: none given (same source as BL-518: C-REQ-001 Rev, F13 6.2 B row 4c).
+- Problem and evidence: BL-518's Done-when says "`test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it". #1274 builds the mobile half: the second prime after the first month chapter, the cap of 2 and the tests. No web journey step for it exists on `develop` (searched `docs/BACKLOG.md` and `apps/mobile/test` for a journey naming the second prime: none found). What remains on BL-518 once #1274 merges: only the web journey.
+- Scope: add the web journey step that reaches the second showing after the first month chapter and records what it shows. Instruction for the status: when #1274 merges, BL-518's Status must read `partly done (web journey)`, and the product agent sets it in the PR that records the merge; this row is then set to `ready`. This PR does not edit BL-518.
+- Done when: the web journey shows the second prime once, after the first month chapter, and shows no third; BL-518 is changed to `done (<evidence>)` in the PR that merges this.
+- Test: the web journey run (`docs/qa`), plus the existing `test/next-ask.test.ts`.
+
+#### BL-1428 BL-458 part 3: how the Book catches an `entries` event between its first read and its subscribe
+- Status: needs-decision (the mobile engineer picks between the two options; no D- or Q- id yet). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: BL-458 point 3. The Book reads its letters in the `useState` initialiser and subscribes in an effect, so an `entries` event between the two is missed until the next event (BL-458 Problem (3); unverified on a device). BL-458 stays `partly done` after #1287 merges; this row is the open part.
+- Options for the mobile engineer: (A) a store change counter: the store increments a number on every `entries` event; the Book records the number at its initial read and, in the effect, compares it and re-reads on a difference. Trade-off: one small addition to the store's public surface and a counter every subscriber could misuse, but one cheap integer compare and no extra read when nothing changed. (B) one extra read in the effect: after subscribing, read the list again and set state only if it differs from the initialiser's. Trade-off: no store change and the smallest diff, but a full list read on every Book mount, which costs more for a large book, and a "differs" compare that has to be cheap and correct.
+- Scope: decide A or B, record the choice in this row, then implement it in the same PR.
+- Done when: the chosen option is written here; a test shows an `entries` event between the initialiser read and the subscribe is picked up at once.
+- Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
+
+#### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
+- Status: blocked (PR #1274 merging; the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
+- Satisfies: none given.
+- Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. On `develop` the prime tracks `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47`, correct for the only showing that exists there. Unverified: how #1274 labels the second.
+- Scope: give the second showing its own source value (for example `first_month`), added to the analytics allowlist in `packages/analytics` with its test, and nothing else in the event.
+- Done when: a test shows the first showing sends `first_letter` and the second sends the new value; the allowlist test passes with the value and fails without it.
+- Data map: the new `source` value is an analytics field value, so check the data map entry beside the allowlist test (DATA-REQ-001).
+- Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
+
+#### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
+- Status: needs-decision (founder or Karma; product's recommendation is in the Problem line). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Priority: Low. Gate: none.
+- Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
+- Problem and evidence: Lens B on #1274. On `develop` there is no second prime: `apps/mobile/src/lib/asks/next-ask.logic.ts:58` is the first-prime rule only (`firstLetter && primesShown === 0 && !remindersOn`), and the cap is `MAX_REMINDER_PRIMES = 2` at `:20`. The question arises only if #1274 makes the second prime eligible for someone who said Yes to the first and later turned reminders off in Settings (unverified: this lives only in #1274 and was not read). Whether that matches F13 6.2 B row 4c was not checked either. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
+- Scope: record the decision as a D-### proposal in the PR body and either keep the behaviour with a test that names it, or add a rule that a person who ever said Yes is never primed again, with its test.
+- Done when: the decision is recorded and `test/next-ask.test.ts` has a case named for it.
+- Test: `apps/mobile/test/next-ask.test.ts`.
+
+#### BL-1431 The `j18-dark-mode` web flow: reported failing on #1293 (unverified on develop), it expects "Month 6. 2 letters, from Mama." and the Book shows "6 months"
+- Status: proposed (Lens B on #1293; the flow has not been run on `develop`, so the failure is unconfirmed; QA or Karma sets it to ready once it is run there). Mode: agent. Owner: qa engineer. Milestone: M4. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: none given. Related: BL-464 (the web e2e flake and seeded flows), #1293.
+- Problem and evidence: found by Lens B on #1293. The `j18-dark-mode` flow is reported failing: it expects a heading matching `/^(This month, )?Month 6\. 2 letters, from Mama\. /` (`apps/mobile/e2e-web/j18-dark-mode.flow.ts:45`) and the Book shows "6 months". The same regex is at `apps/mobile/e2e-web/j09-book.flow.ts:33` as reported (the line was not re-read here). Cause unverified: a copy change in `packages/content`, or the date-dependent "This month" and month-number wording that j09, j11 and j18 already hedge. The failure itself was not re-run here.
+- Scope: find the cause by running the flow; fix the flow's expectation (or the copy, if the copy change was a mistake) in both j18 and j09, keeping the existing alternation for the date-dependent prefix.
+- Done when: `j18-dark-mode` and `j09-book` pass on `develop`; a changed heading would fail them.
+- Test: `apps/mobile/e2e-web/j18-dark-mode.flow.ts`, `j09-book.flow.ts`.
