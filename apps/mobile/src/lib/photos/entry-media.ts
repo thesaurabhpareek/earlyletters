@@ -8,6 +8,18 @@
 import type { SqlDb } from '../db/sql';
 import type { PhotoStore, StoredPhoto } from './types';
 
+/**
+ * put() was given an owner that is neither a letter nor a draft on this phone (DQ-R07): nothing is written. Without
+ * this, the row would look like a draft's, and the next launch sweep would remove it and its words without a word.
+ */
+export class PhotoOwnerUnknown extends Error {
+  readonly code = 'photo_owner_unknown';
+  constructor() {
+    super('photo_owner_unknown');
+    this.name = 'PhotoOwnerUnknown';
+  }
+}
+
 interface Row {
   id: string;
   owner: string;
@@ -48,6 +60,7 @@ export function entryMediaStore(db: SqlDb, onChange: () => void = () => {}): Pho
       // One picture per owner: the new row replaces the old one in one transaction.
       db.transaction(() => {
         const isLetter = db.get<{ n: number }>('SELECT 1 AS n FROM entries WHERE id = ?', p.entryId) !== null;
+        if (!isLetter && db.get<{ n: number }>('SELECT 1 AS n FROM drafts WHERE id = ?', p.entryId) === null) throw new PhotoOwnerUnknown();
         db.run('DELETE FROM entry_media WHERE COALESCE(entry_id, draft_id) = ?', p.entryId);
         db.run(
           `INSERT INTO entry_media (id, entry_id, draft_id, kind, ext, bytes, sha256, width, height, photo_text, place, added_at)
