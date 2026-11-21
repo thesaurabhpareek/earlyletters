@@ -1,0 +1,406 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
+# Moments tab: principle-by-principle review (21 Nov 2026)
+
+Status: PROPOSED. Docs only. Nothing here is decided, built or recorded in `DECISIONS.md`. Branch `wip/moments-principles`, no PR.
+Author: product. For: the founder. Nothing here is legal advice; every legal or store reading ends with "counsel must confirm".
+Fictional family Asha only. The founder's screenshots were not opened and nothing from them is used.
+
+Founder direction (21 Nov, verbatim): "This feature is important so build requirements and design right and change any of our current principles because if we don't solve customer problems there's no value of these principles. And this is core value prop for me."
+
+Customer problem, in one sentence: a tired parent has photos and days they want to tell their child about, but no prompt, no easy start and no reason to come back, so the letter never starts.
+
+## 0. The short answer
+
+1. Of 79 rows below, 55 are KEEP, 24 are AMEND and none are REVERSE (counted from the class column by script; section 5). Every change widens or narrows a rule; none drops a principle. Most of what blocks the customer is not a deep principle. It is one of our own rules that was written for a product with three tabs and no photo read. The deep principles (the constitution, no gap or guilt language, nothing leaves the phone, no face or person matching) block nothing the customer needs.
+2. The constitution in `CLAUDE.md` needs no change for Moments. I checked this by reading it and the code it names (section 7). Nothing in Moments writes, edits or reads the parent's words.
+3. Two kinds of rule are kept apart. Section 2 lists OUR rules, which the founder may change. Section 3 lists EXTERNAL rules, which we cannot change, each with the cheapest compliant design. Most of what the founder wants fits inside the external rules. The one real external limit is that nothing derived from the photo library may leave the phone, so email cannot use it, ever, and App Review 5.1.2(vi) leaves a question over a picture-timed nudge.
+4. Machine card labels (section 6). Recommended position: allow labels that are computed by a fixed rule from a photo's own timestamp (weekday and date, and a time-of-day word) as UI-only labels behind a firewall. Refuse a place name and refuse Apple-style titles. The place name is refused mainly because a place needs a lookup that is network based (VERIFIED, section 1), because a place label can hurt, and because it is not needed to find a day.
+5. The honest limit on the whole feature: Moments is a reason to come back when something real exists, not every day. On most days a parent has no new day or picture worth a letter, and we must not invent one. The daily reason stays Home's prompt and the one evening reminder (P1 reaches the same view). I found no measured evidence anywhere that library nudges raise return rates. The founder's belief is the basis; the parent study is where it is tested (HYPOTHESIS).
+
+## 1. Sources, and what is VERIFIED
+
+Clone: plain https into a new directory, `develop` at `fdf34a58`. Read this session at that head (marked V in the tables): `CLAUDE.md`, `docs/DECISIONS.md`, `docs/prd/v2/03-goals-and-principles.md`, `packages/content/VOICE.md`, `packages/content/BRAND.md`, `docs/design/specs/NEW-SCOPE-INDEX-11nov.md` (the J1 to J12 working copy), `docs/design/specs/06-HOME-BOOK-ME-IA-11nov.md` (IA-R rules), `docs/design/IA-FINAL-20nov.md` (section 2 and the tree), `docs/product/prd/21-days-cultural-photos-home.md` (NS-46 to NS-50 rows), `docs/product/prd/27-photo-moments-and-media.md` (NS-51, NS-52, Q-PM-1 to Q-PM-12), `docs/product/prd/11-foundations.md` (NS-32 rows), `docs/roadmap/next/03-requirements/NX-39-memory-library.md`, `docs/BACKLOG.md` BL-1305, `docs/design/NOTIFICATIONS.md`, `docs/prd/B-first-run-and-family.md` (K-02), `docs/emails/CATALOG.md`, `docs/emails/COMPLIANCE.md`, `packages/core/src/types.ts` and the headers of `verify.ts` and `meaning.ts`.
+Read at branch heads: the lead docs on `wip/moments-p1` to `p5`, `d1` to `d6`, `x1` to `x6` (all present); PR #1264, #1267, #1269, #1270 at their heads; PR #1276 as a diff against `develop`.
+
+Read on the web this session (VERIFIED, 21 Nov 2026, each fetched by me):
+- W1. Apple App Review Guidelines, https://developer.apple.com/app-store/review/guidelines/ , first 100000 of 121052 characters: 5.1.1 (ii), (iii), (iv); 5.1.2 (i) to (vi); 4.5.4. Text quoted below is from that read.
+- W2. Apple Developer Program License Agreement (8 Oct 2025 English PDF), https://developer.apple.com/support/downloads/terms/apple-developer-program/Apple-Developer-Program-License-Agreement-20251008-English.pdf , first 100000 of 381649 characters: section 3.3.3(H), read in full.
+- W3. Apple, CLGeocoder, https://developer.apple.com/documentation/corelocation/clgeocoder.md : "works with a network-based service", requests "rate-limited for each app", "Send at most one geocoding request for any one user action", "do not start a request if your application is inactive or in the background", and the device "must have access to the network" for detailed placemark information, though it "stores enough information locally to report the localized country or region name and ISO country code for many locations".
+- W4. Apple, Journaling Suggestions framework, https://developer.apple.com/documentation/journalingsuggestions.md : iOS 17.2 and later; "your app needs a special entitlement"; "You don't need to ask for additional authorization because your app can't access the details for a suggestion until after a person chooses to share them".
+- W5. Apple, App Privacy Details, https://developer.apple.com/app-store/app-privacy-details/ : "Collect" means transmitting data off the device so that you or partners can access it for longer than needed to serve the request in real time; "Data that is processed only on device is not 'collected'"; "If you derive anything from that data and send it off device, the resulting data should be considered separately"; Precise Location is latitude and longitude with three or more decimal places.
+- W6. FTC, CAN-SPAM compliance guide, https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business : the eight requirements; five transactional or relationship categories "read narrowly"; opt-outs honoured within 10 business days; penalties up to $53,088 per email.
+
+UNVERIFIED by me (relayed by a lead doc or the brief, or not opened): COPPA, GDPR, CCPA and App Tracking Transparency texts (the X4 lead read them; I did not re-read them); whether Apple reviews the Journaling Suggestions entitlement; whether App Review 4.5.4 governs local notifications; App Review text after character 100000; DPLA text after character 100000; the Project docs under `infra/` (no Projects tool in this run), including the three-tab ruling in `infra/scope-stack-rank-and-ia-redesign-2026-11-19.md` (its content reaches me only through D-161, IA-R1 and the lead docs); `03-SHARE-ONE-LETTER-11nov.md` section 8 (the tab test); NS-23 (read only through P2 and #1264); device behaviour of anything.
+
+Id mismatches found (the integrator should settle them):
+- "ML-3" and "ML-6" in the brief are not ids I could find in `docs/` (nor could #1267, X1, P1). The written rules are NX-39 ruling 3 with R26, R27 and K1 (no notification derived from the library) for ML-3, and NX-39-R16 (a card shows a date range only: no place, no thumbnail, no count) for ML-6. Rows below cite those.
+- "J4 (only Home starts a letter)" in the brief is J3 in the only J1 to J12 text I could read, and IA-R3 and N3 in the IA spec. J4 there is "One object".
+- K-02 as written (`docs/prd/B-first-run-and-family.md` line 52, revised 2 Oct 2026) says "first run never asks for notification permission and never shows a reminder step". It does not mention photos. The photo reading comes from `docs/design/notifications/COPY_INVENTORY.md` line 211 ("never during first run (K-02 rule)"). That matters for row R34.
+- Branch `wip/moments-p6` does not exist on origin (I listed refs). There are five product leads, P1 to P5.
+- D-161 is "Decided (founder, 11 Nov 2026)" in `DECISIONS.md` line 668. #1269 calls it a "draft". It is decided, so changing it is a founder reversal.
+- BL-1305 says no photo-library usage string or PhotoKit call "in any 1.x build". NS-51-R2 allows the string when the flag is on, and `27` places level 3 in 1.1, which is a 1.x build. #1264 found the same conflict. Row R35.
+- NS-49-R9 (locked) lets Apple's suggestion title show as "From your phone: {title}". The brief and MT-X1-R5 say a title is never shown or stored by us. Row R56.
+- D5 key names still use the tab word the founder withdrew; D6 and #1276 fix the tab name to Moments.
+
+## 2. How to read a row (OUR rules)
+
+Every row in section 4 is one of OUR rules, so the founder may change it. External rules are in section 3 and are never rows.
+Columns: Id; Source and current text (V = read this session at `fdf34a58`, U = relayed, not read); What it protects (the real reason); What it blocks for the customer (specific, or "none"); Class (KEEP, AMEND, REVERSE); Proposed new text; Who is hurt if we change it; Remaining guardrail.
+KEEP means the rule stands as written, usually because it blocks nothing the customer needs. AMEND means the rule stays but its text narrows or widens. REVERSE means the rule is dropped for Moments.
+"Founder-owned" marks a ruling the founder or his delegate recorded; the PM only proposes.
+
+## 3. EXTERNAL rules we cannot change, and the cheapest compliant design
+
+| Id | Rule (source, status) | What it forces | Cheapest compliant design |
+|---|---|---|---|
+| E1 | App Review 5.1.1(ii): "Ensure your purpose strings clearly and completely describe your use of the data." Also: "Paid functionality must not be dependent on or require a user to grant access to this data." (W1, VERIFIED) | A usage string that says what is read and why, complete for every use of the data. A missing string crashes the app (W5 lead read; UNVERIFIED by me). Nothing paid may depend on photo access. | One plain string: the app reads when pictures were taken, on the phone, to show days and (if on) to time the parent's own reminder. Test that the string exists exactly where the flag is on (NS-51-R2). No Plus gate on any Moments feature. |
+| E2 | 5.1.1(iii): "Where possible, use the out-of-process picker or a share sheet rather than requesting full access to protected resources like Photos or Contacts." (W1, VERIFIED) | A reviewer can ask why we need a library read at all. | Notes for Review answer it: the picker cannot list days or time a reminder. Ship the picker path as the always-available fallback (multi-select, no permission). Counsel and `mobile` write the answer. |
+| E3 | 5.1.1(iv): "Apps must respect the user's permission settings and not attempt to manipulate, trick, or force people to consent to unnecessary data access." "Where possible, provide alternative solutions for users who don't grant consent." (W1, VERIFIED) | "Get that permission" cannot mean a wall, a second ask or reduced function after a "no". | One ask, on the parent's tap, after one sentence. "Not now" is the same size and weight as "Show days". After a no, Moments still shows For you (typed days, month days, our 111 prompts, a year ago) and the picker. No repeat; iOS remembers the answer. |
+| E4 | 5.1.2(i): the app "may not require users to enable system functionalities (such as push notifications, location services, tracking) in order to access functionality, content, use the app". (W1, VERIFIED) | Moments must work with notifications and photos both off. | The tab never asks for notification permission; it uses the existing ask after the first saved letter. |
+| E5 | 5.1.2(ii): "Data collected for one purpose may not be repurposed without further consent unless otherwise explicitly permitted by law." (W1, VERIFIED) | Consent to "show days" does not by itself cover "time a reminder from them". | Name both uses in the primer sentence, or give the reminder use its own switch with Shown, Records, Never and Decline lines (PRIV-R21). Recommended: its own switch, off until chosen. |
+| E6 | 5.1.2(vi): data gathered from "Photo APIs ... may not be used for marketing, advertising or use-based data mining, including by third parties." (W1, VERIFIED) | Open question: is a picture-timed reminder "marketing" or "use-based data mining"? Counsel must confirm (X1 Q-X1-6). | Keep the signal on the phone; the notification is the parent's own reminder in the identical words of the ordinary reminder; no server, no analytics marker, no third party, never email. If counsel says no, the library only shows days in the tab and does not time anything. |
+| E7 | 4.5.4: push "should not be used for promotions or direct marketing purposes unless customers have explicitly opted in ... via consent language displayed in your app's UI, and you provide a method in your app for a user to opt out". Push "must not be required for the app to function". (W1, VERIFIED text; whether it governs local notifications is UNVERIFIED) | Any Moments reminder needs opt-in language and an off switch. | The reminder lives inside the existing reminder opt-in and its Me switch; a separate Moments reminder switch beside it. No promo words. |
+| E8 | DPLA 3.3.3(H): the app "must not access the Journaling Suggestions API unless the use of such API is for journaling purposes. Any such uses must be clearly evident in Your marketing text and user interface"; no collecting "for any purposes other than providing journaling services"; no disclosure to a third party without prior express consent; "clearly disclose to end users how You and Your Application will be using their ... journaling suggestions information". (W2, VERIFIED) | Route A data may feed only the letter being started: not nudges, not analytics, not email. Our brand rule keeps "journal" out of prose (BRAND.md; D-139 keeps it in the store name), so "clearly evident" needs counsel (X1 Q-X1-5). | Ship Route B (our own read) first. Route A only after counsel reads 3.3.3(H). If Route A ships: keep only pictures, drop every other item at the boundary, use the result for nothing but the letter. |
+| E9 | App Privacy label: "collect" is transmitting data off the device for longer than a real-time request needs; on-device-only data is not collected; "If you derive anything from that data and send it off device, the resulting data should be considered separately." (W5, VERIFIED) | Photos or Videos stays "not collected" only while nothing library-derived leaves the phone: no date, count, identifier, flag or "a moment exists" to our server, to a push service, to analytics or to an email system. X2 F1 (read, not verified by me) adds that the label of record already answers Yes for other types, so the claim can only be per data type. | Nothing library-derived leaves the phone. Network-fake test (NS-51-R26). Label re-run in the same build as any behaviour change (NS-51-R30). |
+| E10 | CLGeocoder: reverse geocoding "works with a network-based service"; rate limited; one request per user action; none in the background; needs the network for detail. (W3, VERIFIED) | A place name from a photo's coordinates means coordinates go to Apple's service. Whether Apple's service retains or links them is UNVERIFIED, and whether that is "collection" under W5 is for counsel (CQ-4). | No geocoding. If the founder insists later: a bundled offline city table with zero network calls (the design NX-39-R7 already wrote), city level only. Row R51. |
+| E11 | CAN-SPAM: eight requirements; transactional or relationship mail is only the five categories, "read narrowly"; opt-outs honoured within 10 business days; up to $53,088 per violating email. (W6, VERIFIED) | A nudge email whose purpose is to get a parent to open the app and write is not one of the five categories. Build it to the commercial standard unless counsel says otherwise: accurate headers, honest subject, ad identification, postal address, working opt-out. | Treat it as commercial (X6 D12): separate sending subdomain, own list and suppression, one-click unsubscribe, own switch in Settings that never touches sign-in or billing mail, postal box not home (D-004). |
+| E12 | COPPA, GDPR and UK GDPR, CCPA/CPRA, ATT (read by X4 and X1, UNVERIFIED by me) | The register's readings: users are adults (18+ gate); US storefront only at launch; CCPA thresholds not met; no tracking. They stay true only while nothing from the library is collected, sold, shared or sent to an ad or attribution SDK. | Keep the 18+ gate and US-only launch. No ATT call, no ad SDK, nothing to a third party (MT-X4-R40). Re-run the register reading if any library-derived value is ever collected. |
+| E13 | Photos label accuracy and the claims ban: the content test bans on-device-only phrases such as "stays on this phone" because accounts and sync exist (X2 F7, read in the lead doc, not verified by me) | Value-page copy may not overclaim. | Say what we receive: "The app reads only when pictures were taken." Not "never leaves your phone". Each sentence gets a claims-inventory row (BL-1310 pattern). |
+| E14 | Journaling Suggestions entitlement `com.apple.developer.journal.allow`, iOS 17.2 and later (W4, VERIFIED) | Route A needs it; the production profile test (`g6-production-flags-off.test.ts`) fails on it today; whether Apple reviews it is UNVERIFIED. | Keep iOS 17.0 as the floor (D-098); the Route A control is absent below 17.2, not greyed (NS-49-R5). |
+
+Three honest consequences. (a) E3 means "if not given permission then get that permission" can only be one plain ask; the founder cannot have a second ask or a gated tab. (b) E9 means email can never use the library, even with the parent's consent, without making Photos or Videos metadata "collected" and changing the label. (c) E6 and E7 leave a counsel question over any picture-timed reminder; the identical-words form is the cheapest answer and the only form I recommend.
+
+### 3b. What the founder cannot have, stated plainly
+
+- A tab that withholds anything until photo access is granted (E3, E4). The value page may pitch; the tab must still work.
+- A second photo ask after a "no", or a nag in a card or a notification (E3; iOS also remembers the answer).
+- A picture-derived email or server push, even with consent, without making Photos or Videos metadata collected and re-doing the label (E9).
+- A reverse-geocoded place name with no network call to Apple's service (E10), unless it comes from a bundled offline table.
+- Use of anything Route A returns for nudges, analytics or email (E8).
+- A claim that the library "never leaves your phone" while accounts and sync exist (E13).
+Everything else the founder asked for is a rule of ours and can change.
+
+### 3c. Counsel questions this review depends on (defaults hold for design and build, never for public text)
+
+| Id | Question | Default |
+|---|---|---|
+| Q-X1-1 / CQ-1 | May a 1.x build carry the usage string and read dates only, label kept? | No library read in any store build until answered |
+| Q-X1-6 | Is a picture-timed reminder "marketing" or "use-based data mining" (5.1.2(vi), 4.5.4)? | Off by default, own switch, identical words, or none |
+| CQ-4 | Is a geocoder request "collection" under the label definition? | Avoid: no geocoding |
+| Q-X1-5 | Is "journaling purposes" clearly evident given our brand words (3.3.3(H))? | Route A stays off |
+| X4 CQ-17 | Is a nudge email commercial? | Build to the commercial standard |
+| Q-X1-12 | May Moments appear in store metadata? | In-app only |
+
+## 4. The review: OUR rules, row by row
+
+Evidence tags: V read this session; U relayed. Every id below is quoted from the source named. The proposed text is for the PR that changes the rule, never copy for a screen.
+
+### 4.1 The constitution, content rules and privacy rules
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R1 | `CLAUDE.md` constitution (V): "The machine may remove and repair. It may never add meaning." Edits only by `EditType` (seven types, `types.ts`); every edit through `verifyEdits`; `raw_transcript` immutable. | The parent's words stay theirs. The whole product promise. | None. Moments never touches a transcript, an edit or `verifyEdits`. | KEEP | Unchanged. | Every parent, if loosened. | The DB trigger and `verifyEdits` tests. Section 7. |
+| MT-PR-R2 | `CLAUDE.md` (V): "No feature may write, rewrite, summarize or 'shape' a person's words. Say no to 'make it nicer' requests." | Same. | None. A day card, a prompt card and a date label are not the parent's words. | KEEP | Unchanged. | Every parent. | A card model has no field for machine prose (R3). |
+| MT-PR-R3 | Brief decision of record (U, PROPOSED): "No machine-written title, caption, summary or story. No scene, place or person guess. No face matching." Sources in the repo: NS-51-R10, NS-01 never-line, NS-51-R33 (V). | Nothing we say about a picture can be wrong, hurtful or read as AI writing. | One slice only: a plain weekday, date and time-of-day on a card. As written, a "Saturday morning" card is a "machine title". Parents recognise a day by "Saturday morning" faster than by a bare date. | AMEND | "No machine description of what is in a picture, where it was taken or who is in it. No title, caption, summary or story. No face or person matching. A label computed by a fixed rule from the picture's own timestamp (weekday, date, time-of-day word) is allowed as a UI-only label (section 6)." | A parent who would see a wrong time-of-day (photo taken in another time zone). | Section 6 firewall F1 to F8. |
+| MT-PR-R4 | Brief (U) and D3 label rule (U): "A label appears only if the parent typed or chose it." | Parent authorship. | Same slice as R3, plus it blocks any default label on a day card. | AMEND | "A label about content, place or people appears only if the parent typed or chose it. A computed date label may appear, and the parent may replace it with their own words in one tap." | None beyond R3. | The parent's typed label is phone-only (D3), never in analytics. |
+| MT-PR-R5 | Content rules (V): no counts of gaps; no streaks, points, badges, ever; "Celebrate what exists; never count gaps" (`CLAUDE.md`, VOICE, PS5, PRD principle 4). | A parent never feels behind. Baby books stall when they scold. | None. A Recent list of days is a list of things that exist. Danger: an unread badge or a count on the tab icon. | KEEP | Unchanged, with one added line: "No badge, dot or numeral on the Moments tab icon." | Engagement dashboards. | `rules.test.ts`; no analytics counts of days (R49). |
+| MT-PR-R6 | Content rules (V): no fear, guilt or loss language; legacy is love and time, never endings. | The audience includes parents on hard days. | None. | KEEP | Unchanged. | Parents on hard days. | Quiet-day tone (NS-46-R16). |
+| MT-PR-R7 | VOICE (V): no daily rhythm in what the product says about itself: no "daily", "every day", "every night". | Daily copy reads as pressure. | None. The founder's "reason to come back every day" is a design aim; the rule bans the words, not the usefulness. | KEEP | Unchanged. Note for `content`: the daily reason is shown by a different card each day, never said. | None. | `rules.test.ts`. |
+| MT-PR-R8 | Content rule (V): "Never imply AI writes anything." | Trust in the parent's authorship. | Blocks Apple-style copy such as "Suggested for you", "We found", "Highlights". | KEEP | Add to the banned list for Moments words: "found for you", "picked for you", "smart", "AI", "best", "memories we found". "From your pictures" and "Pictures from Saturday" are fine. | None. | Content test with a positive-control string. |
+| MT-PR-R9 | Content and brand rules (V): never gender the child, use `{child}`; two vocabularies (internal terms stay out of parent strings); the public name only from `packages/brand`. | Inclusion; one voice. | None. "Feed", "deck", "card", "suggestion", "moment" (as a thing) stay out of parent words. | KEEP | Unchanged. | None. | Existing tests. |
+| MT-PR-R10 | BRAND.md (V) bans "moment" as a name for a short piece or anything a person makes; PR #1276 (V, diff) adds the tab label Moments as a place name only and keeps the ban for things made. Founder, 21 Nov: "Change brand.md and I approve moments." | A note stays a note. | The tab name itself. | AMEND (drafted in #1276, awaiting merge) | As in #1276. | None. | BRAND-MOMENTS-1 to 3 tests; push and email never use the word for content. |
+| MT-PR-R11 | #1276 and X1 (V diff, U): Moments is not in store name, subtitle, keywords, listing or screenshots until counsel clears it (Q-X1-12). | A name that is crowded and not yet cleared (X1 saw two dead USPTO records and did not search further). | None for the customer in the app. | KEEP | Unchanged until clearance. | Store discovery. | BRAND-MOMENTS-2 test. |
+| MT-PR-R12 | Content test (U via X2 F7): bans "stays on this phone", "never leaves", "only on this phone", "nothing is sent anywhere" and similar, because accounts and sync exist. | No false privacy claim. | Makes the value-page promise harder to write. It does not block the feature. | KEEP | Unchanged. Write true statements about what is read and what we receive (E13). | None. | Claims inventory per sentence. |
+| MT-PR-R13 | `CLAUDE.md` privacy rule (V): no entry text, transcript, audio or child name in analytics, logs or crash reports; brief adds photo, filename, album, place, date. | Nothing leaves that identifies the family or the pictures. | None. | KEEP | Add library-derived values by name (photo, identifier, album, place, date, count, "a moment exists"). | None. | Log canary; analytics allowlist test. |
+| MT-PR-R14 | `CLAUDE.md` (V): real family details never in code, tests or fixtures; only the fictional family Asha. | A real child's data never ships. | None. The value page needs demo pictures: generate them; never use the founder's screenshots. | KEEP | Unchanged. | None. | `no-real-family-data.test.ts`. |
+
+### 4.2 Tabs, jobs, Home and the ask sequence
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R15 | D-161 (V, founder, 11 Nov): "Three tabs in every build: Home, Book, Me. Family is never a tab." | Job clarity; a small bar; no "coming soon" surface. | The surface where days, occasions and pictures can be offered. Without a place of its own they live in a Home slip (one per day, no list) or a Me row, which cannot be a return reason. | AMEND (founder-owned) | "Four tabs once Moments ships: Home, Moments, Book, Me, in that order. Home stays the landing tab. Family is never a tab and no build shows a coming-soon co-parent surface." | Parents who want the simplest bar; the tab-bar tests; the next tab request. | The tab test (R17) written first; J12 passes (R23). |
+| MT-PR-R16 | IA-R1, navigation tests N1 and N4 (V): the bar is exactly Home, Book, Me, "and no screen for Family, Library, Photos or Share". | A library is not a place a parent returns to. | Same as R15. | AMEND | "Exactly Home, Moments, Book, Me. No tab or screen for Family, Library, Photos or Share. Moments lists days, never the whole library; it has no all-pictures grid as its first view." | Same. | N1 and N4 updated in the same PR; a test that no Moments screen is an all-pictures grid. |
+| MT-PR-R17 | The tab test for a new tab (U: cited by P1 as the "Share-style test", 03-SHARE section 8; I did not read it). | A tab must earn its place. | None. It is the gate that makes R15 safe. | KEEP | Write the Moments test before the tab is built; five-parent read per IA-R5. | None. | IA-R5 (four of five parents name the job; HYPOTHESIS, no parent evidence yet). |
+| MT-PR-R18 | J1 One job and J2 Unique verb (V, NEW-SCOPE-INDEX section 5). | Every tab says one thing; no two tabs share a verb. | None. P1 gives a 12-word job sentence and the verb "choose". | KEEP | Unchanged; `content` finalises the verb and the sentence. | None. | Machine-checked in N2. |
+| MT-PR-R19 | J3 One capture entry; IA-R3 and N3 (V): only Home's module and allow-listed doorways call the capture start. The brief calls this J4. | One place starts a letter; no second composer. | A day card that cannot start the letter. Sending the parent to Home first adds a hop at the exact moment of intent. | AMEND (founder-owned) | "Home's module and one more caller, the Moments module, call `startCapture({ source: 'moment' })`. Moments renders no recorder and no composer. The source is in memory and dropped at Keep." | The job-clarity discipline if Moments grows its own capture. | N3 allow-list is exactly two modules; NS-51-R39 (no stored source). |
+| MT-PR-R20 | J4 One object, J5 first line says it, J6 one primary action, J7 doorway not a copy (V). | A screen with a clear object and action. | Risk only: a deck mixing days and idea cards can fail J4. | KEEP | Unchanged. Reading: the object is "a day to write about" (picture day, marked day, month day, a year ago); an idea card is an extra start. If five parents cannot name the job, cut the idea cards before changing the rule. | None. | Five-parent read. |
+| MT-PR-R21 | J8 Day one is whole: not an empty box, not mostly a promise (V). | A new parent never meets a blank tab. | This is the founder's "value props first" instinct under test: a value page alone fails J8. | KEEP | Unchanged. The day-one tab must hold one real action with no permission: "Pick one picture" through the system picker, a month-age day, a typed-day invitation. | None. | Device check of the day-one state. |
+| MT-PR-R22 | J9 states say what next; J10 words; J11 everyone (V). | Honest states, glossary words, access. | None. | KEEP | Unchanged. | None. | Device pass. |
+| MT-PR-R23 | J12 Removal (V): if the tab were deleted, which job goes undone and does another place already do it? | Tabs that earn their place. | None. It decides the tab. If Moments ships with only Home-slip sources, Home already does the job and J12 fails (P1). The tab passes J12 only with picture sources or a list of days. | KEEP | Unchanged. Ship the tab with at least one source Home does not have: library days or the picker-backed Recent. | None. | Release gate. |
+| MT-PR-R24 | IA-R9 and R-IA-3 and NS-50-R10, R11 (V): Home lists no kept letters, at most one slip, no picture slip, tile or strip; "Home is not a feed". | Home keeps one job: say. | None for Moments. This is why pictures belong on a separate tab. | KEEP | Unchanged for Home. | None. | N-tests. |
+| MT-PR-R25 | NS-50-R5 slip order incl. rank 4 "past letter" (V rows; NS-23 itself U). | One thing at a time on Home. | A "year ago" letter is a natural Moments card; on Home it competes with the prompt. | AMEND (optional) | "While Moments is on, the year-ago card shows in Moments and not on Home." Default: move it (P1 Q-P1-3). | Parents who liked it on Home. | Doorway only: the card opens the Book letter (J7). |
+| MT-PR-R26 | Home is the default landing tab (U implicit; `TONIGHT_HREF`; first run ends on Home). Founder relaxed this on 20 Nov. | The first letter path is one tap. | None. | KEEP | Unchanged: Home default, Moments second. | None. | NS-50-R13 stop line. |
+| MT-PR-R27 | Q-PM-7 / CL-052 (V): Photo moments is drop C, after 1.0 approval, spike first. | Finish 1.0 before a new permission. | Time to value. The tab without the library (value page, For you, picker) has none of the permission risk and need not wait. | AMEND | "The tab ships in the first drop whose gates pass; its library part stays spike first and dark until its gates close. A failed library gate never cuts the part that needs no gate." (P5 MT-P5-R8 says the same.) | Review capacity. | Release record per gate. |
+| MT-PR-R28 | D-121 (V, coordinator, founder may reverse): first store build on-device only; submission target Tue 1 Dec 2026; the rest in later 1.0.x releases behind flags. | A date the founder can hit. | Nothing for the customer; it is a schedule fact: a fourth tab before 1 Dec is a risk to the date. | KEEP | Unchanged. Moments is a 1.0.x drop. | None. | ROADMAP. |
+| MT-PR-R29 | NS-47-R11 (V): only the days module reads the ticked-days store; planner, prompts, Home copy, emails, Find, analytics and support read none of it. | A parent's chosen days are never inferred or leaked. | Moments "For you" needs today's marked day. | AMEND | "The days module exposes one read, today's marked day for the active book, to Home's slip and to Moments. Nothing else reads the store." | Privacy of the days list. | Import-boundary test allows exactly those two callers. |
+| MT-PR-R30 | NS-46-R2, R16, R22 and NS-50-R2 (V): nothing pre-ticked; quiet days show a name only; a day note never says "last year" or "again"; Home shows a ticked day only on its date. | Hard days; no inferred tradition. | None. | KEEP | Unchanged; Moments shows a marked day only on its date. | None. | Existing tests. |
+| MT-PR-R31 | PRD v2 section 5 non-goal (V): "Photo albums. Photos are optional and secondary." NS-01 (K3): a picture is never the letter. | The product is letters, not an album. | The wording "optional and secondary" undersells a picture as the best start. | AMEND | "No albums. A picture is never the letter; it may be where a letter starts." | None. | NS-52-R3: no words, no letter. |
+| MT-PR-R32 | PRD v2 section 5 non-goal (V): no social feed, likes, comments; NS-50-R11 "Home is not a feed". | No performance pressure. | None. | KEEP | Unchanged; Moments is a short deck: no infinite scroll, no ranking by engagement, no like. | None. | Design review. |
+| MT-PR-R33 | PRD v2 principle 10 (V): "One ask at a time. At most one permission or consent sheet per session after the first letter" (`nextAsk`, NS-47-R33 sequence). | No pile of asks. | A parent who taps "Show days from my pictures" is not being asked; they asked. Counting it as the session's one ask would block it behind the reminder ask. | AMEND | "At most one unprompted permission or consent ask per session. A sheet the parent opens by tapping a control does not count." | A parent who hits an ask they did not open. | Sequencer test: unprompted asks unchanged. |
+| MT-PR-R34 | K-02 (V, `docs/prd/B-first-run-and-family.md` line 52): "first run never asks for notification permission and never shows a reminder step." Extended to photo cards by `COPY_INVENTORY.md` line 211 (V): "never during first run". | A "no" to iOS notifications is permanent; ask after the parent has felt the product work. | Nothing if Moments is not in first run. Under option "Home default, Moments second", the Moments tab is reached after first run, so K-02 as written is not touched. Only the photo extension needs a reading. | AMEND (clarify) | "First run means the onboarding stack and the first letter's save. K-02 stands for the notification ask. Moments, opened by the parent after first run, may show its picture primer on a tap. Moments never asks for notification permission." | Parents who prefer no ask before a first letter. | Moments before the first letter shows no ask (P3, X1 recommend this), only a value page and a no-permission action. |
+
+### 4.3 Photos and the library
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R35 | BL-1305 (V), FR-PHS-40, NS-49-R25: "no photo-library usage string or PhotoKit call in any 1.x build", enforced by a build-config test (`g6-production-flags-off.test.ts`, U). | An unused permission invites review questions; the label "No photo feature in v1.0"; trust. | Everything the founder asked: days from the library, a Recent list. The picker cannot list days. | AMEND (founder-owned) | "No usage string, PhotoKit symbol or entitlement in a build profile where `EXPO_PUBLIC_PHOTO_MOMENTS` is off. Present, with the exact string and the one module, where it is on. The flag stays off in the store profile until its gates close." This also fixes the contradiction with NS-51-R2 and level 3 in 1.1 (#1264). | Privacy-minded parents; the reviewer asking why. | Gates: counsel CQ-1, label re-run, spike (NS-51-R36), Notes for Review (E2). |
+| MT-PR-R36 | NS-01-R22 and the NS-01 never-line (V): system picker only, no library access, never "any picture the parent did not pick"; already scoped by errata E34 so the library clause is lifted only for NS-51 (V, `27`). | A picture enters the app only by the parent's act. | None now. Showing a thumbnail in a day card is a read, not a keep. | AMEND (small) | "Never any picture the parent did not choose to look at. Showing is not keeping: nothing is copied into the app until the parent attaches it." | None. | NS-51-R29 one module; NS-52-R2. |
+| MT-PR-R37 | NS-51-R1 (V): library access is off until the parent taps "Turn on" on its own Me row after one sentence; "no other screen, slip or onboarding step asks". | One auditable doorway. | The founder's ask on the tab. A parent who understands the value on Moments must go to Me to switch it on. | AMEND (founder-owned) | "Two doorways, both sentence, then a tap, then Apple's sheet: the Moments primer and the Me row. Never at launch, never in onboarding, never repeated after any answer." | A parent who dislikes a button that asks. | E3 design; no second ask (R39). |
+| MT-PR-R38 | NS-51-R2, R29, R30, R31 (V): usage string exactly when the flag is on; library calls only in one module; label re-run per build; Notes for Review and counsel read 5.1.1. | Honest plist; one place to audit; true label. | None. | KEEP | Unchanged; extend the module scan to the Moments screens. | None. | Scans and the review gate. |
+| MT-PR-R39 | NS-51-R3, R18, R19 and Q-PM-1 (V): limited and full both work; no second ask after any answer; limited with a small selection shows nothing and no message; denied shows one calm line and "Open Settings" only when the parent looks; limited first. | E3: no coercion. | None. | KEEP | Unchanged. | None. | Device rows. |
+| MT-PR-R40 | NS-51-R5 (V): the index reads only creation date and a system identifier, never image data, location, file name, caption, album, face, scene. | The smallest read. | Video length badges and photo versus video on a card. | AMEND (small) | "Creation date, media type (picture or video), video duration and a system identifier. Nothing else." | None; duration and type are metadata the phone already shows. | The scan fails on location, image data and every analysis call. |
+| MT-PR-R41 | NS-51-R6 (V): the index is the whole derived store: at most 30 moments, at most 6 identifiers each, class L4, own file, backup-excluded, never synced, exported or logged. | Derived data about a child's pictures stays on the phone. | None. | KEEP | Unchanged (numbers are data; the spike may move them). | None. | Erase scan. |
+| MT-PR-R42 | NS-51-R7 (V): a moment is a day with at least 5 pictures, or 4 within 3 hours, or 1 on a birthday, month-age or marked day; last 90 days; "no older backlog is swept". Numbers ASSUMED. | A day is never "missed". | A parent who takes few photos gets an empty Recent. | AMEND (numbers) | "Recent lists any day in the last 30 days with at least one picture, newest first; stronger days rank first in For you. Nothing older is swept; no day is ever labelled missed." Numbers fixed by the spike. | Parents who read a long list as a backlog. | No numeral on screen; quiet removal after a letter (R43). |
+| MT-PR-R43 | NS-51-R8 (V): the capture menu offers only the newest moment, never a list, a count or an older one, and none while a draft exists. | No pile of unwritten days. | The Recent list, the core of the founder's ask. | AMEND (founder-owned) | "Moments shows a bounded Recent list, newest first, within the window. No numeral, no 'N days', no 'unwritten', no 'waiting', no older sweep. The capture-menu item on Home keeps the one-newest rule and none-while-a-draft." | Parents who feel pressure from a list. | NS-51-R12 words; the list never grows a heading that counts. |
+| MT-PR-R44 | NX-39-R16 (V; the brief's ML-6) and NS-51-R9 (V): a card shows a date range only, no place, no thumbnail, no count; the sheet has no title, place or count. | A Tonight card is visible to anyone near the phone; a thumbnail discloses. | A day card that shows the parent's own pictures. A date alone does not tell a parent which day it was. | AMEND (founder-owned) | "On Moments, a day card shows up to four of the parent's own pictures in time order, one fixed layout, one fixed centre crop, no ranking, plus the computed date label (R3). No place, no title, no count." | Shoulder surfing; screenshots; the app switcher. | NS-51-R25 (blank snapshot, opaque boxes under App lock), no thumbnail in any notification, no persisted thumbnail cache. |
+| MT-PR-R45 | NS-51-R10 (V): nothing describes what a picture shows, suggests words, pre-fills photo words or place, or uses a picture's date as the letter's date without confirmation. | The constitution at the card. | None. | KEEP | Unchanged. This is the label firewall (section 6, F4). | None. | Content test: no string names a subject. |
+| MT-PR-R46 | NS-51-R12 (V): no nudge, line or setting counts moments, unwritten days or pictures, names a gap, or uses "again", "still", "don't forget" or a streak; no analytics field carries them. | No guilt. | None. | KEEP | Unchanged. | None. | Content test. |
+| MT-PR-R47 | NS-51-R15, R16, R17, R23, R24 (V): pause and off empty the index and remove pending nudges; sign-out, Erase and Delete clear it; a restored phone starts off; a second account starts off. | The parent can stop it, and it never leaks across phones or accounts. | None. | KEEP | Unchanged. | None. | Erase scan; device rows. |
+| MT-PR-R48 | NS-51-R25 and NS-01-R13a (V): under App lock the sheet cannot open, thumbnails are replaced by opaque boxes before the switcher snapshot, with or without App lock (E18). | A child's picture is never in the switcher. | None. | KEEP | Unchanged, applied to the whole Moments tab. | None. | Device row. |
+| MT-PR-R49 | NS-51-R26 and R28 (V): a network fake sees zero requests; canary identifiers find nothing in logs, crash or URLs. | E9. | None. | KEEP | Unchanged. | None. | The two tests. |
+| MT-PR-R50 | NS-51-R27, NS-50-R17, NS-47-R34 (V): no analytics event for a library moment, a slip rank, a tradition or a day; the forbidden-key list rejects `place`, `location`, `suggestion_` and similar. D-163 (V) collects page-view, click and impression events for every user (consent default undecided). | No library or day fact in analytics. | The team cannot tell whether Moments works. Without a tab-level view or tap the founder is blind to the core value prop. | AMEND | "Tab-level events are allowed: tab viewed, primer shown, primer answered (a closed value), card tapped by a closed kind from {prompt, month day, typed day, year ago, picture day} without date, count or identifier. A picture day is never distinguished from an ordinary card by any property." | Privacy purists. | Allowlist test with a positive control; the library kinds never named; the consent default stays the founder's. |
+| MT-PR-R51 | Q-PM-5 / CL-050 (V): place names off, `asset.location` never touched. NX-39 S2 (V, older, 10 Nov) had proposed a city name from a bundled table; superseded on 20 Nov. | A place label can be wrong or painful; reverse geocoding sends coordinates to Apple (E10). | The map tile and place in the screenshots. None of the "find a day to write about" job needs it. | KEEP | Unchanged for 1.x. A parent-typed place on a letter is letter content (CQ-10). If the founder reverses later: bundled offline table, city level, UI-only, one-tap hide. | Parents who like seeing where. | Section 6. |
+| MT-PR-R52 | Q-PM-6, NS-51-R33, NS-01-R33 (V): no on-device image analysis, no faces, people, scenes, objects. | The line that keeps us out of content understanding, biometric exposure and 5.1.2(vi) "use-based data mining". | Apple-style titles and people names. | KEEP | Unchanged. | None. | Scan for Vision, Core ML, People collections. |
+| MT-PR-R53 | Q-PM-8 / CL-053 (V): no background refresh; a nudge is planned only when the app opens; background modes stay absent (LEGAL-REQ-011 via NX-39 S6, U). | No silent library reads; review risk. | A weekend's pictures cannot prompt on Monday if the app was not opened. Honest cost: the picture-timed nudge works only for parents who open the app. | KEEP | Unchanged for the first library build. Revisit only after phase 1 device rows (X6 D7). | None. | Revisit needs counsel on background modes. |
+| MT-PR-R54 | NS-52-R1, R3, R5, R6, Q-PM-4 (V): at most 6 pictures and 2 videos, video up to 60 s and 100 MB (ASSUMED); media without words is not a letter (D-103); metadata stripped; video sound never transcribed. | Durability, storage, privacy. | None for Moments' job. | KEEP | Unchanged. | None. | Existing tests. |
+| MT-PR-R55 | NS-49-R5, R10, R15 and E14 (V): Route A needs iOS 17.2, the entitlement and the flag; reads only Photo and LivePhoto from a suggestion, never location, contact, song, workout, state of mind; the entitlement is absent in 1.x. | No stray data through Apple's picker. | Apple's own Recommended and Recent look. We cannot restyle it. | KEEP | Unchanged. Route B first; Route A only after counsel reads 3.3.3(H). | None. | E8. |
+| MT-PR-R56 | NS-49-R9 (V): a suggestion's title may show only as "From your phone: {title}" with a "Use this" control; photo words start empty; the title is copied only on the parent's tap. Brief (U) and MT-X1-R5 (U): a title is never shown or stored by us. | A visible, attributed machine string that the parent adopts is not the machine adding meaning. | Little: an Apple title adds little to finding a day. | KEEP (default off) | Keep NS-49-R9 as locked text, unbuilt. First Route A build drops every item but pictures. The founder may enable the attributed title later. | None. | Section 6 L5. |
+| MT-PR-R57 | NS-49-R20, R22 (V): Apple's system suggestion notifications are a spike only and sit outside our budget; X1 Q-X1-7 default: do not use. | We do not hand timing of nudges to a system we cannot see. | A free Apple notification that opens our app. | KEEP | Unchanged. | None. | E8. |
+| MT-PR-R58 | NS-49-R35, R37 (V): DPLA use clearly evident in marketing and UI; never name Apple's Journal or "Journaling Suggestions"; never show Apple's picker or a mock. | E8; Apple's marks. | None. | KEEP | Unchanged. | None. | Counsel read. |
+
+### 4.4 Notifications
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R59 | NX-39 ruling 3, R26, R27 and K1 (V; the brief's ML-3): no notification is derived from the library; R27: "Given any library signal, the notification builder returns 0 notifications derived from it"; reason (NX-39): a notification that exists because of a library read discloses a derived fact by existing. | A lock-screen watcher learns nothing about pictures from a reminder. | A nudge that lands on a day when something real exists, and opens Moments. | AMEND (founder-owned) | "No notification exists, or differs in words, count or extra time, because of the library. The library may decide only which already-budgeted evening gets the ordinary reminder, only while the parent has the Moments reminder switch on, and only in the identical words of the ordinary reminder. A tap opens Moments by a fixed route and never a particular day or picture." | Lock-screen privacy; the 5.1.2(vi) question (E6). | Identical words; no payload id from the library; no analytics marker (R50); counsel Q-X1-6 before it ships. |
+| MT-PR-R60 | NS-51-R11 (V): a moment is a ranked source inside the evening class, below month age; one neutral title and body; planned only at foreground; counts inside the one a day; skipped for quiet or hidden books. | One budget, no extra notification. | The founder's example, "Some pictures from the weekend are here", names pictures. | AMEND | "Same as R59. The picture wording may show on the lock screen only behind its own parent switch, off by default, with the line 'Anyone who sees your lock screen can read it' (the D-025 and `dayNames` pattern). Default lock-screen words never mention pictures (Q-PM-9)." | A parent who leaves the switch on and shares the phone. | Q-PM-9 default; switch off; App lock forces it off. |
+| MT-PR-R61 | NS-32-R1, R3, R5 (V): at most one budgeted notification per local day; priority decides; the registry has no `occasion` class. | No nagging. | None. A Moments source takes the evening slot; it never adds one. | KEEP | Unchanged. | None. | NS-32-R1 test over 92 days. |
+| MT-PR-R62 | NS-32-R8, NS-48-R4, NS-51-R13 (V): no `evening` after day 35 of no open; copy is shorter and more open as the gap grows and never names it; a made letter silences that day. | Guilt. | None. | KEEP | Unchanged. | None. | Existing tests. |
+| MT-PR-R63 | NS-32-R10 to R14 (V): interruption level active; bodies are content keys; no letter words and no child name unless the parent turned names on; hidden-preview placeholder; a quiet book adds nothing. | Hard days; no leaks. | None. | KEEP | Unchanged. | None. | Existing tests. |
+| MT-PR-R64 | NX-39-R26, R28 (V): payload holds a random id only; no attachment or subtitle; a tap opens by a fixed enum route and attaches nothing. | A notification is not a data channel. | None. | KEEP | Unchanged. | None. | Payload-builder test. |
+| MT-PR-R65 | Quiet window 21:30 to 07:00 (NX-39 K6, V; NOTIFICATIONS.md, V: nothing after 9:30 PM). | Sleep. | Tired parents are awake in the evening; the rule bounds the nudge, not the product. | KEEP | Unchanged. | None. | Time-zone tests. |
+| MT-PR-R66 | The reminder ask comes after the first saved letter (K-02, `NOTIFICATIONS.md` section 2, V). | A one-shot ask lands better after value. The only evidence for asking earlier is a vendor case study (the file says so). | None for Moments. | KEEP | Unchanged; Moments never asks for notification permission (MT-X4-R43, U). | None. | The parent study H13 can overturn it. |
+| MT-PR-R67 | PRD v2 guardrail (V): reminders muted or turned off per month 10% or less [A]. | A stop line on nudges. | None. | KEEP | Unchanged; applied to the Moments reminder separately. | None. | Release stop line. |
+
+### 4.5 Email and push from the server
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R68 | `CATALOG.md` principle 1 (V): "Email is for things a person needs to know or keep ... Nothing that exists to bring someone back into the app." | Email stays rare and trusted. | A parent who turned push off or never opens the app gets no nudge. | AMEND (founder-owned) | "One opt-in email may carry a reminder the parent set up themselves, for a date they chose. It is not a come-back email: no 'we miss you', no count, no gap." | Inbox trust; sender reputation. | R70; X6 D1 default yes in phase 2 only, dark first with send-to-self. |
+| MT-PR-R69 | `CATALOG.md` principle 5 and E75 (V; E75 via errata): no commercial or product-news email to an app address at 1.0; E75's own text says it lifts with "its own row, a separate opt-in that is off by default, a one-click unsubscribe, hashed suppression, and his yes" (X6 F4, U). | Early trust; CAN-SPAM exposure. | Same as R68. E75 is the founder's default, not a legal rule. | AMEND (founder-owned) | "A lifecycle reminder email is allowed after the founder's yes, opt-in, off by default, treated as commercial for compliance (E11), from the separate subdomain." | A parent who hates email. | Counsel on CAN-SPAM classification (X4 CQ-17). |
+| MT-PR-R70 | `CATALOG.md` lines 139 and 161 (V): no child-anchored emails: no birthday, month-of-age or due-date email, because those dates can fall on the worst day of a family's year, and because they would put the child's name in the email provider. | Hard days. | An email on a baby's month day. | KEEP | Unchanged. An email may carry only a date the parent chose, with no label. A date we computed from the child's date of birth does not start an email in this phase (X6 D4 default no). | None. | Per-occasion opt-in; pause per child. |
+| MT-PR-R71 | `CATALOG.md` principle 4 and VOICE email rules (V): no child name and no letter text in any email; transactional only; one action; no tracked links; we cannot know if an email was opened. | No child data in the email provider. | We cannot measure whether an email works except by return behaviour in the study. | KEEP | Unchanged. | None. | Email content tests. |
+| MT-PR-R72 | NS-51-R26 and K1 (V), MT-X4-R53 (U): the server never sees the library; no email, segment, trigger or send time is derived from it. | E9: the label and the promise. | An email that says "pictures from the weekend are here". Not possible without the phone telling the server a derived fact. | KEEP | Unchanged. Email may never use a library signal, even with consent, without a separate founder and counsel decision that changes the label (E9). | None. | Network-fake test. |
+| MT-PR-R73 | E79 (V, errata): no APNs key, token table or push entitlement in 1.0; `CATALOG.md` principle 3: server push only for billing, and family letters from v1.1. | A smaller server surface. | Nothing. A local notification already carries every occasion the phone knows (X6 F3). | KEEP | Unchanged. | None. | X6 D2: local only. |
+
+### 4.6 Engagement, measurement and the reason to return
+
+| Id | Source and current text | What it protects | What it blocks for the customer | Class | Proposed new text | Who is hurt if changed | Remaining guardrail |
+|---|---|---|---|---|---|---|---|
+| MT-PR-R74 | PRD v2 PS5 and principle 4 (V): a book that grows at the family's pace with no guilt; "no streak or gap copy". | The soul of the product. | Common daily-return mechanics: streaks, badges, "you missed". We do not need them. | KEEP | Unchanged. The daily reason is a different real card each day (for example a month day, a prompt, a year ago) and one gentle evening reminder. | None. | R5. |
+| MT-PR-R75 | NS-50-R13 and R18 (V): a stop line if any parent says "there is nothing here", and a strip is not built before research shows it adds no time to Speak or Type. | Home stays fast. | None. | KEEP | Unchanged; run the same two checks on Moments (does it add time to the first letter; does a parent say "nothing here"). | None. | Five-parent study. |
+| MT-PR-R76 | PRD v2 4.1 and 4.3 (V): headline numbers are paying families and weekly making families; guardrail: no feature difference by analytics consent. | Honest measurement. | None. | KEEP | Unchanged; add one Moments question for the study: of letters started from a card, how many reach Keep (no analytics join; the source is not stored). | None. | R50. |
+| MT-PR-R77 | NS-47 and NS-46 Days (V): Days is a Me page plus a Home slip on the day; typed days and ticked days are one list. | Days are the parent's own choice. | Moments could show "coming up" days to give a reason to return. NS-50-R2 forbids showing an upcoming day on Home. | KEEP | Unchanged: a marked day shows on its date only, on both Home and Moments. Days the parent chose still send the morning reminder. | None. | NS-50-R2. |
+| MT-PR-R78 | PRD v2 principle 7 (V): "Standard over custom. Use what Apple and well-maintained permissive open source provide." | Less custom native code. | Argues for the system picker over our own library read (see challenge C1b). | KEEP | Unchanged. Our own read is justified only by what the picker cannot do: list days and time a reminder. | None. | Spike read-out. |
+| MT-PR-R79 | PRD v2 principle 9 (V): every screen passes AX5 text and VoiceOver on the iPhone SE 3; design language v2: content stays paper, glass only on navigation, at most three glass surfaces (brief). | Everyone can use it. | None. | KEEP | Unchanged. | None. | Device pass. |
+
+## 5. Count, and the brief's named reversals mapped to rows
+
+Counted from the class column by script: 79 rows, KEEP 55, AMEND 24, REVERSE 0. I classed nothing REVERSE because every change keeps the reason behind its rule (job clarity, one doorway, no leak from the phone) and changes only the text that blocked the customer. The founder may still choose to call D-161 or K-02 a reversal; the proposed text is the same either way.
+
+| Reversal the brief names | Rows | My class |
+|---|---|---|
+| J4 (as the brief states it; J3 and IA-R3 in the repo): only Home starts a letter | R19 | AMEND: one more allow-listed caller |
+| K-02: no ask in first run | R34, R66 | AMEND by clarifying: K-02 as written covers only the notification ask |
+| BL-1305: no usage string or PhotoKit in any 1.x build | R35 | AMEND: per build profile and flag |
+| ML-6 (NX-39-R16): date only, no place or thumbnail | R44, R51 | AMEND thumbnails; KEEP no place |
+| ML-3 (NX-39 ruling 3, R27, K1): no push from library data | R59, R60 | AMEND, identical words, own switch, after counsel |
+| Three-tab ruling and D-161 | R15, R16 | AMEND (founder-owned) |
+| NS-51-R1 and R8: one doorway; newest only | R37, R43 | AMEND |
+| NS-51-R27 and NS-50-R17: no analytics | R50 | AMEND tab-level only |
+| CATALOG principles 1 and 5, E75: no come-back or commercial email | R68, R69 | AMEND, opt-in, later phase |
+
+## 5b. Which signal may drive which channel
+
+The founder wants one moment signal to drive the in-app card, push and email. The sources decide the channels, not the wish.
+
+| Signal source | In-app card | Local push | Email | Why |
+|---|---|---|---|---|
+| A prompt from our 111 | yes | yes (ordinary evening reminder) | no | Nothing library-derived; email is for needs, not come-back (R68) |
+| Child's month age or birthday | yes | yes (local, parent-controlled) | no | CATALOG lines 139 and 161 (hard-day reason) |
+| A day the parent typed or ticked | yes, on its date | yes | yes, only a bare date the parent chose, opt-in, later | X6 Tier 2; the words never leave the phone |
+| A year ago from our own letters | yes | no | no in this phase | Look-back copy risks "again"; X6 D5 default no |
+| A day of pictures from the library | yes, parent's own thumbnails | only in the identical-words form, own switch, after counsel | never | E9, E6 |
+| A picture the parent already attached | on its letter | no | no | Already a letter |
+| Apple's suggestion (Route A) | only inside the letter being started | no | no | DPLA 3.3.3(H) |
+
+Plain consequence for the founder: push can carry nearly everything because the phone already knows it. Email can carry only dates the parent chose. The library is in-app, plus at most an ordinary-looking reminder.
+
+## 5c. The cheapest path that solves the customer problem with the fewest changes
+
+If the founder wants value before the hard reversals, this order needs only R15, R16, R19, R27, R33 and R34, and no library permission:
+1. Ship the tab with For you: our prompts, the child's month day, a marked or typed day, a year ago, and "Pick one picture" through the system picker. This passes J8 only because that picker action works with no permission.
+2. Measure with the five-parent read and the study: does a parent start more letters from a card than from Home alone (HYPOTHESIS)?
+3. Then spike the library read (R35, R40 to R44) and counsel's CQ-1 and Q-X1-6, and add Recent only if the picker-only tab shows demand.
+This costs the customer the Recent list for one drop. It buys evidence before a one-way permission door, which is the strongest answer to challenge C2.
+
+## 5d. Tests each amendment must bring (so no guardrail is lost)
+
+| Row | Test that must exist before the amendment ships | Layer |
+|---|---|---|
+| R15, R16 | N1 and N4 updated to four tabs; a test that no Moments screen is an all-pictures grid | unit |
+| R19 | N3 allow-list is exactly Home and Moments; Moments imports no recorder | unit and scan |
+| R35 | Build-config test inverted: usage string present exactly when the flag is on; the store profile has it off | scan |
+| R37 | Primer shows one sentence, then Apple's sheet; no second ask after any answer; Not now equal in size to the primary | e2e |
+| R40 | Scan fails on any field beyond date, media type, duration and identifier | scan |
+| R42, R43 | No numeral, no "unwritten", no "waiting" on any Moments string or accessibility label | content |
+| R44 | Opaque boxes in the switcher snapshot; no thumbnail written to any cache outside the phone | device |
+| R3, R4 | Card model has no machine free-text field; Save a copy and synced entry byte-identical with and without a label | unit and db |
+| R50 | Event allowlist with a positive control that fails on a date, count or identifier property | unit |
+| R59, R60 | Notification builder with a fake library that throws unless the Moments switch is on; payload holds a random id only; words equal the ordinary reminder's | unit |
+| R68, R69 | Email class test per template (LEGAL-REQ-053); suppression list separate from sign-in mail | unit and e2e |
+
+## 5e. Worked example of the label line (Asha, invented)
+
+A parent opens Moments on a Sunday. Recent shows a card for Saturday with four of the parent's own pictures. Under L1 and L2 the card says "Saturday 14 June" and, in the detail view, "9:10 to 11:40 am". Under L4 it would have said "Morning at the park with Asha" (a place guess, an outing guess and a name guess); we refuse that. The parent taps the card and capture opens with every field empty. If they want a label they type "Park day", which stays on the phone. Nothing in the letter, the Book, Save a copy or a notification mentions the weekday or the part of day.
+
+## 6. Machine-made card labels: the honest case, and a position
+
+What the founder asked me to weigh: UI-only labels on a card that are visibly ours, never saved into a letter, never shown in the book: (1) weekday and time of day; (2) a place name from the photo's own location; (3) Apple-style titles. The three are not one decision.
+
+| Id | Label kind | Data it needs | Case for | Case against | Position |
+|---|---|---|---|---|---|
+| L1 | Weekday and date, for example "Saturday 14 June" | The photo's creation time, the phone's locale and time zone | It is arithmetic on a fact the parent can check. It already has a precedent: "Month 4" and ages are machine-computed labels the book shows today. D3 already uses it. A bare date is hard to place; a weekday is how people remember. | A photo taken in another time zone can land on a neighbouring day. | ALLOW |
+| L2 | Time-of-day word, for example "morning", from fixed hour bands | The same timestamp | Same logic as L1. Cards read like Apple's without any guess about the picture. It helps a parent tell two days apart. | Hour bands are a convention (is 5 pm "afternoon"?). A trip across time zones gives a wrong word. The brief and D3 and D5 banned it as "a machine title". A word is more like meaning than a number. | ALLOW with the firewall, and show clock times in the detail view. If the five-parent read finds it feels like the app guessing, drop it; L1 alone is enough. |
+| L3 | Place name from the photo's own location | `asset.location` (precise coordinates), then a lookup | The place is what most helps a parent say "oh, that day". It is the most Apple-like element. | A lookup by CLGeocoder is network based, so coordinates go to Apple's service (E10, VERIFIED). Reading location widens what we read from the library beyond dates (NS-51-R5, Q-PM-5). A place label can be wrong, or painful: a hospital, a place of loss, a home a parent has left. It must be right every time and we cannot promise it. Not needed to find or start a letter. | REFUSE in 1.x |
+| L4 | Apple-style generated title: time of day, outing or visit, place, people names | Content understanding: scene, place, people | It is the screenshots. | It is the exact thing the constitution refuses: words we add about a picture. It needs a scene guess, a place and people matching, which breaks Q-PM-6, NS-51-R33 and the biometric exposure X1 described, and risks 5.1.2(vi) "use-based data mining". Names of people can only come from face or contact matching. | REFUSE |
+| L5 | Apple's own title from Route A, shown as Apple's | Apple's suggestion `title` after the parent picks | It is visibly attributed and parent-adopted (NS-49-R9); it adds nothing we wrote. | Low value; moves a machine string into a parent field on a tap; DPLA 3.3.3(H) limits what the data may be used for. | OFF by default, locked text kept (R56) |
+
+Recommended position: computed facts from the timestamp, yes (L1, L2); words about a place, an occasion or people, no (L3, L4). The rule in one line: a label may say when, never where, never what, never who.
+
+Why this line is principled and not a convenience. The constitution forbids adding meaning to the parent's words. A weekday is not meaning; it is the same fact the parent would read off a calendar, and the product already prints computed facts (age, "Month 4"). A place, an outing or a name is an interpretation, and one that can be wrong in a way that hurts. The test I use: could the parent verify it with a calendar, and would the label be right for every parent in every case? When and weekday pass. Where and what do not.
+
+The firewall (every item a test, all PROPOSED):
+- F1. A closed set of label kinds in `packages/core`: weekday-date, part-of-day. A pure function of one timestamp, the phone's locale and zone. It imports nothing that reads location, content, people or the network.
+- F2. The card model has no free-text machine field. A test fails if a field for a title, place or caption is added.
+- F3. Visibly ours: the label is set in the card title style with the card's own date; it carries no sparkle, "AI" mark or "suggested" word (R8). The parent can tap it and replace it with their own words (phone-only, 60 characters, D3).
+- F4. Never crosses into an entry: capture opens with empty photo words, empty letter text and no date (NS-51-R10); the label is not selectable text that copies into a field.
+- F5. Never saved, exported, shared, shown in the Book, in a notification payload, in analytics, logs or crash reports. Test: the Save a copy file and the synced entry row are byte-identical with and without the label (NS-49-R13 pattern).
+- F6. Time zone: use the phone's current zone; if a day's pictures span more than one hour band or the label could change by zone, show the clock range instead of the word.
+- F7. Words from `packages/content` only (hour band names, weekday names come from the locale); passes `rules.test.ts`.
+- F8. Off switch: one control in Me turns Moments labels to plain dates. A founder kill switch (`killSwitches`) can hide the part-of-day word.
+
+What would change my mind on L3. If five parents tested with their own photos say a date alone is not enough and the founder wants a place, the cheapest compliant design is a bundled offline city table (no network, as NX-39-R7 wrote it), city level only, off by default, a one-tap "hide places", and a per-card "not this place". It still adds a read of location, so counsel re-reads the usage string and label first. I do not recommend it before evidence.
+
+## 7. Does the core constitution need a change for Moments?
+
+Verdict: no. Verified by reading, not by running the suite (no install in this run):
+- `CLAUDE.md` constitution: four lines (remove and repair; edits only by `EditType`; every edit through `verifyEdits`; `raw_transcript` immutable; no feature may write, rewrite, summarize or shape a person's words). Read in full.
+- `packages/core/src/types.ts`: `EditType` is seven transcript-cleaning types (filler, false start, repeat, speech-to-text fix, punctuation, agreement, paragraph). All act on a transcript against `raw`. Read.
+- `verify.ts` and `meaning.ts` headers: the verifier refuses any edit that changes negation, tense, a name, a number or a sentence type. Read.
+- The Moments docs (P1 to P5, D1 to D6, X1 to X6, #1264, #1267, #1269, #1270) and NS-51, NS-52: none writes, edits or reads a transcript or the parent's typed text. A day card and an idea card are our own fixed words, as the 111 prompts already are.
+- Where Moments touches the letter of the rule, and what I recommend: (a) a computed date label (section 6) is not "meaning"; (b) NS-49-R9, an Apple title copied into photo words on a parent's tap, moves a machine string into a parent field; I recommend leaving it off (R56); (c) the prompt cards are written by us, not generated, and a parent writes the answer.
+- Optional, doc-only clarification that I recommend the founder may decline: one sentence under the constitution so a later reviewer does not re-argue this: "Facts the app computes by a fixed rule from data the parent already holds, such as a weekday from a date or an age from a date of birth, are shown as computed and are not meaning. A description of what is in a picture, where it was or who is in it is never machine-made." This changes no rule and no test.
+
+## 7b. Rules that already contradict each other (settle these whatever the founder decides)
+
+| Conflict | Where | Why it matters for Moments | Proposed settlement |
+|---|---|---|---|
+| BL-1305 forbids any usage string in a 1.x build; NS-51-R2 allows one when the flag is on; level 3 is placed in 1.1 | BL-1305; `27`; `26`; #1264 | A 1.1 build that ships Photo moments would fail its own build test | R35: per profile and flag |
+| NS-49-R9 shows Apple's title as Apple's; MT-X1-R5 and the brief say never show or store a title | `21`; X1; brief | Two tests would disagree on the same Route A result | R56: first Route A build drops every item but pictures |
+| NS-51 says no new tab and no Home element; the brief says a new tab | `27` section 3; D-161 | Cards that cite NS-51 section 3 will read as blockers | R15, R16, and an errata row |
+| NS-47-R11 lets only the days module read ticked days; P2 wants Moments to show a marked day | `21`; P2 | A second reader fails the import-boundary test | R29: one read exposed by the days module |
+| NS-50-R10 says a picture suggestion is never a slip or tile; Moments shows picture days | `21` | Only true on Home | R24: Home keeps it; Moments is the place |
+| PRD principle 10 counts any permission sheet as the session's one ask | PRD v2 `03` | Blocks a parent-opened primer behind the reminder ask | R33 |
+| X6 F1 says server features are on in the `production` profile; X1, X3, X5 describe the store build as server-off; D-121 says the first store build is on-device only | X6; D-121; `eas.json` (U) | Decides whether email and sync claims are live at all | `mobile` confirms before any email row is scheduled |
+| D5 keys still use the withdrawn tab word | D5 | Test and content churn | D6 and #1276 settle the name |
+
+## 7c. The reason to come back, without streaks
+
+The founder asked for a reason to return every day. The honest version, in our rules:
+- The reason is variety that is true. A different real card on a different day: a prompt, the child's month day, a day the parent marked, a year ago, a day of pictures when the library is on. If nothing real exists for a day the deck is short and says nothing, never "nothing yet" (J8).
+- The reason is never loss. Skipping a day costs nothing and is never shown (R5, R46). No badge on the tab, no count, no "waiting", no "N days".
+- One reminder a day at most, in the ordinary words (R61, R59). The picture signal may choose which evening, not add one.
+- The honest limit: on a quiet week the tab has little to show. P1 says so and I agree. If the founder wants a true every-day reason it comes from Home's prompt, which exists, not from an invented day.
+- Measure it with parents (R75, R76) and the opt-in reminder guardrail of 10% muted (R67). I found no evidence that library nudges lift return; that is the test to run first.
+
+## 7d. Label risks by kind, in one view
+
+| Risk | L1 weekday and date | L2 part of day | L3 place | L4 generated title |
+|---|---|---|---|---|
+| Can be wrong | Rarely (time zone edge) | Sometimes (zone, hour bands) | Yes (lookup can be wrong or vague) | Yes, by design a guess |
+| Can hurt | No | No | Yes (a hospital, a place of loss, a place a parent left) | Yes (names, outings that were not happy) |
+| Needs a network call | No | No | Yes (W3) | Depends on method; content analysis is refused anyway |
+| Reads more than dates | No | No | Yes (location) | Yes (content) |
+| Breaks the constitution | No | No, by the "fixed rule, checkable" test | Softest case, but still words we add | Yes |
+| Helps find a day | Yes | A little | Yes | Yes |
+| Position | Allow | Allow with firewall and parent read | Refuse in 1.x | Refuse |
+
+## 8. Top ten principle changes for customer value (ordered by value; each with a recommendation and a default)
+
+HYPOTHESIS on the ordering: no parent evidence exists. The order is my judgment of what unlocks the customer's problem.
+
+1. Add a fourth tab, Moments, second in the bar, Home stays the landing tab (R15, R16). Recommend: yes. Default: Home, Moments, Book, Me; fix IA tests in the same PR. Founder owns D-161.
+2. Allow a library read in a 1.x build behind a flag, with the exact usage string, Limited honoured (R35). Recommend: yes, flag-scoped, store profile dark until counsel and the spike close. Default: ship the tab without the library first (R27), library after.
+3. Let the Moments tab hold the permission ask, on the parent's tap, as one of two doorways (R37, R33). Recommend: yes, one ask, a comfortable Not now, a working no-permission path. Default: no ask before the first saved letter.
+4. Allow a bounded Recent list with the parent's own thumbnails (R43, R44, R42). Recommend: yes; no numerals, no "unwritten", a 30-day window. Default: up to four thumbnails per day, fixed layout.
+5. Allow computed date labels, weekday and part of day, and refuse place and titles (R3, R4, section 6). Recommend: yes with the firewall. Default: weekday and date always, part-of-day word subject to the five-parent read.
+6. Let a day card start the letter directly (R19). Recommend: yes, one extra allow-listed caller. Default: `source: 'moment'`, in memory only.
+7. Allow a library-timed local nudge in the identical words of the ordinary reminder, with its own parent switch (R59, R60). Recommend: yes only after counsel answers Q-X1-6. Default: off until the parent chooses; lock-screen words never mention pictures.
+8. Allow one opt-in email on a date the parent chose, never from the library (R68, R69). Recommend: yes in a later phase. Default: dark first, send to the founder only; separate subdomain; commercial standard.
+9. Clarify K-02 and the one-ask rule so a parent-opened primer is not an unprompted ask (R34, R33). Recommend: yes. Default: K-02 stands for the notification ask.
+10. Allow tab-level analytics with closed kinds and no library facts (R50). Recommend: yes. Default: collected only under the consent default the founder sets for D-163; library kinds never.
+
+## 9. Challenge: arguing against my own top three
+
+C1. Against the fourth tab (change 1).
+- J12 can fail. If the tab ships with only Home-slip sources, Home already does the job and the tab is a removal candidate (P1). The tab is justified only by library days, and the library is the part that is hardest to ship (R35, R27).
+- The daily-return claim is not honest. P1 and this review agree Moments is not a daily reason. A tab that is empty or weak on most days teaches a parent to stop opening it, and an empty tab bar slot costs more than no slot.
+- D-161 was the founder's own call on 11 Nov for job clarity. A fourth tab dilutes "Home says, Book reads, Me looks after". Putting the same cards in Home's one slip, or in a Home mode, keeps three tabs and tests the idea at a tenth of the cost. I have no evidence that a tab beats a mode. The five-parent read has not run.
+- C1b. The system picker covers the "easy start" half of the problem with no permission. "No prompt" is solved by our 111 prompts and the month day; "no easy start" is solved by "Pick a picture" which exists. Only "a list of my recent days" needs a library read. Is that worth a tab, a permission and a label review?
+What would answer it: the five-parent read of the day-one tab (IA-R5) and a device spike of the picker-only tab.
+
+C2. Against the library read in 1.x (change 2).
+- Apple's own text prefers the out-of-process picker (5.1.1(iii), W1) and a reviewer may ask why (E2). A permission that most parents answer "Select Photos" to gives us a small index and a weak Recent list; limited access can leave nothing to show.
+- A one-shot permission: iOS remembers a "no". If a parent taps early and declines, we cannot ask again, so the primer's timing is a one-way door.
+- The label and the policy change; "private by default" is a positioning promise (D-139, VOICE) and a library permission is the first thing a privacy-minded parent notices. I have no parent data on which side that falls.
+- It pulls against the 1 Dec date (D-121). A schedule risk is a cost to the customer too.
+- E6: 5.1.2(vi) leaves a counsel question over any use of Photo API data for timing a reminder. If counsel says no, the library gives days in a tab but not nudges, and the engagement case weakens.
+What would answer it: the NS-51-R36 spike on devices, counsel CQ-1 and Q-X1-6, and a read of how many parents answer "Select Photos".
+
+C3. Against the ask on the tab (change 3).
+- "Get that permission" is the founder's wording, but 5.1.1(iv) and 5.1.2(i) bound it (E3, E4). A tab whose first screen is a value pitch and a button can feel like a wall even if it is not one.
+- The auditable single doorway (NS-51-R1) was a strength: one Me row, one test, one sentence. Two doorways double the copy, the tests and the claims.
+- A parent who has not yet made a first letter has the least reason to grant access. Asking in Moments before the first saved letter spends the one-shot ask at the weakest moment. My default, no ask before the first letter, is a guess backed only by the NOTIFICATIONS.md reading, which itself cites a vendor case study as the only evidence for the other side.
+- Changing the one-ask rule (R33) so a parent-opened sheet is free lets future screens add buttons that open sheets and still say "the parent asked". The line between a tap and an ask is soft.
+What would answer it: parent study H13 (ask after the first letter against inside setup) extended with a Moments arm.
+
+## 10. Founder decisions this review leaves open
+
+| Id | Decision | Default if unanswered | Deadline (PROPOSED) |
+|---|---|---|---|
+| FD-1 | Reverse D-161 and IA-R1: a fourth tab, second position (R15, R16) | Yes, with the tab test first | Mon 24 Nov 2026 |
+| FD-2 | Allow `startCapture({ source: 'moment' })` from Moments (R19) | Yes | Mon 24 Nov 2026 |
+| FD-3 | Reword BL-1305 and NS-49-R25 to per-profile (R35) | Yes, flag-scoped | Before any library spike build |
+| FD-4 | Allow the tab's own ask and the Recent list with thumbnails (R37, R43, R44) | Yes, after the first saved letter | Before design freeze |
+| FD-5 | Labels: L1 and L2 yes, L3 and L4 no (section 6) | As stated | Before `content` writes card words |
+| FD-6 | Library-timed local nudge in identical words (R59, R60) | No until counsel answers Q-X1-6 | Before Route B spike results |
+| FD-7 | Lift E75 for one opt-in lifecycle email on parent-chosen dates (R68, R69) | Not in the first drop | Fri 28 Nov 2026 |
+| FD-8 | Consent default for analytics under D-163 as it touches the tab (R50) | The founder's call; library kinds never | Before the production build |
+
+## 11. Not done
+
+- I did not open the founder's screenshots, and did not run any test or build.
+- I did not read the Project docs under `infra/` (no Projects tool), `03-SHARE-ONE-LETTER-11nov.md` section 8, or NS-23 in full.
+- I did not edit `docs/BACKLOG.md`, `docs/agents/CLAIMS.md`, `docs/legal/**`, `CLAUDE.md`, BRAND.md or any rule. No PR.
+- The "customer value" ordering in section 8 is judgment; no parent evidence exists in the repo and I found none outside it.
+
+Content-rule check on this file: ASCII only; no em or en dashes, curly quotes, ellipsis characters or emoji; no model names; the child is `{child}` and the family is Asha.
+
+## 12. How to use this file
+
+- Read section 0, section 6 and section 8 first. They are the decisions.
+- Sections 3 and 4 are the evidence. A row marked U was relayed and should be re-read at its source before a PR cites it.
+- Each AMEND row carries proposed rule text for the PR that changes the rule, one rule per PR, with the tests in section 5d.
+- Nothing here changes a rule until the founder says so and the owner of the file edits it.

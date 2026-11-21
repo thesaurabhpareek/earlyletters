@@ -522,16 +522,16 @@ export function renderTrace(m) {
 }
 
 // NS acceptance rows (BL-964, gate G0; grammar from eval C s3.2). Definitions are the acceptance
-// tables (`Id | Given, When, Then | Priority | Test title`) of the cards 00 to 12, 19, 21 and 27 next to the
+// tables (`Id | Given, When, Then | Priority | Test title`) of the cards 00 to 12, 19, 21, 27 and 28 next to the
 // register (`14-test-plan.md`); its section 7 lists the P0 rows and names the cross-cutting ids.
 // A test counts only when its title cites the id in brackets and is not .skip, .todo or .fails;
 // `[stand-in]` in the title makes it partial (14 section 2). Report only: nothing here fails.
-export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
+export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,3}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
 const NS_ONLY = new RegExp(`^${NS_SOURCE}$`);
 const NS_TOK = String.raw`[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?(?![A-Za-z0-9-])`;
 // Cards 00 to 12, and the three added 20 Nov: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), the
 // cards p0.py reads for NS rows. Other cards above 12 (13 to 18, 20, 22 to 26) stay out: not acceptance cards.
-const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27)-[^/\\]*\.md$/;
+const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27|28)-[^/\\]*\.md$/;
 const uniq = (a) => [...new Set(a)];
 export const cmpNs = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
@@ -577,7 +577,7 @@ export function nsDefinitions(md, spec) {
   const defs = [];
   for (const t of parseTables(md.split(/\r?\n/))) {
     if (!/^Id$/i.test(t.header[0]) || !/^Given/i.test(t.header[1] || '')) continue;
-    const pc = t.header.findIndex((h) => /^Priority$/i.test(h));
+    const pc = t.header.findIndex((h) => /^Pri(?:ority)?$/i.test(h));
     const tc = t.header.findIndex((h) => /^Test\b/i.test(h));
     for (const r of t.rows) {
       const id = stripMd(r.cells[0]);
@@ -693,7 +693,7 @@ export function renderNs(ns) {
   const s = summarizeNs(ns);
   const list = (a, n = 3) => a.slice(0, n).map((x) => `\`${x}\``).join(', ') + (a.length > n ? ` and ${a.length - n} more` : '');
   const L = ['## NS acceptance rows (locked cards, gate G0)', ''];
-  L.push(`Read from the cards beside \`${ns.register}\` (\`--register\`). A row is **tested** when an active test title cites it in brackets, **partial** when only \`[stand-in]\` titles do, **journey** when only an e2e-web flow or a Maestro tag does (they do not run in \`npm test\`), **device** when its card names a phone row and no test cites it, else **untested**. Report only: nothing here fails a build yet (BL-964).`);
+  L.push(`Read from the cards beside \`${ns.register}\` (\`--register\`). A row is **tested** when an active test title cites it in brackets, **partial** when only \`[stand-in]\` titles do, **journey** when only an e2e-web flow or a Maestro tag does (they do not run in \`npm test\`), **device** when its card names a phone row and no test cites it, else **untested**. Report only in report mode; \`--check\` also fails a row open and not in \`docs/ops/trace-ns-baseline.txt\` (BL-964).`);
   L.push('', '| Measure | Count |', '|---|---|');
   L.push(`| Cards read | ${s.cards} |`, `| Acceptance rows | ${s.rows} |`, `| P0 rows | ${s.p0} |`);
   for (const st of NS_STATUSES) L.push(`| P0 ${st} | ${s[st]} |`);
@@ -782,6 +782,53 @@ export function ratchet(uncited, baseline) {
   return { added: uncited.filter((id) => !base.has(id)), stale: baseline.filter((id) => !cur.has(id)) };
 }
 
+/**
+ * BL-964 ratchet (gate G0): the NS ids that may be open, in a baseline that only shrinks. Open is a
+ * P0 row (or cross-cutting id) with no test title, or a bracketed id in a title that no card defines.
+ * `added` are open ids the baseline lacks; `stale` are baseline lines now cited (report only, so
+ * parallel PRs do not all edit one file); `grown` are baseline lines the base branch's copy lacks.
+ */
+export const nsOpen = (ns) => [...ns.p0, ...ns.cross].filter((r) => r.status === 'untested').map((r) => r.id).concat(ns.strays.map((x) => x.id)).sort(cmpNs);
+export function nsRatchet(open, baseline, base, tested = new Set()) {
+  const have = new Set(baseline), cur = new Set(open), was = base && new Set(base);
+  const closed = baseline.filter((id) => !cur.has(id));
+  // A line may leave only because a test now cites its row. A row removed or downgraded, or a cited id
+  // that vanished, is `gone`: it fails until the author runs --update-ns-baseline (which only shrinks).
+  return { added: open.filter((id) => !have.has(id)), stale: closed.filter((id) => tested.has(id)), gone: closed.filter((id) => !tested.has(id)),
+    grown: was ? baseline.filter((id) => !was.has(id)) : [] };
+}
+const NS_BASELINE = 'docs/ops/trace-ns-baseline.txt';
+const NS_BASELINE_HEAD = '# NS P0 rows with no test title, and bracketed ids no card defines (BL-964, gate G0). One per line.\n' +
+  '# The set may only shrink: delete a line when its row gets a test. Do not add a line to make a build pass.\n';
+const nsLines = (text) => text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).sort(cmpNs);
+
+function nsGate({ repo, ns, args, log }) {
+  const file = path.resolve(repo, args.nsBaseline || NS_BASELINE);
+  const open = nsOpen(ns), has = exists(file);
+  if (args.updateNsBaseline) {
+    const old = has ? nsLines(read(file)) : null;
+    const grew = old ? open.filter((id) => !old.includes(id)) : [];
+    if (grew.length) { log(`  NS baseline not updated: it would gain ${grew.join(', ')}. The baseline may only shrink.`); return 1; }
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, NS_BASELINE_HEAD + open.join('\n') + (open.length ? '\n' : ''));
+    log(`  NS baseline written: ${open.length} ids.`);
+    return 0;
+  }
+  // Deleting the baseline must not pass: when the base branch has a copy, a missing one fails.
+  if (!has && args.nsBase && exists(path.resolve(repo, args.nsBase))) { log(`  FAIL: ${path.relative(repo, file)} is missing but the base branch has it (${args.nsBase}); it may only shrink, not be deleted.`); return 1; }
+  if (!has) { if (!args.nsBaseline) return 0; log(`  FAIL: NS baseline missing: ${path.relative(repo, file)}. Create it with --update-ns-baseline.`); return 1; }
+  const baseFile = args.nsBase && path.resolve(repo, args.nsBase);
+  if (baseFile && !exists(baseFile)) { log(`  FAIL: --ns-base file missing: ${args.nsBase}`); return 1; }
+  const tested = new Set([...ns.p0, ...ns.cross].filter((x) => x.status !== 'untested').map((x) => x.id));
+  const r = nsRatchet(open, nsLines(read(file)), baseFile ? nsLines(read(baseFile)) : null, tested);
+  const rel = path.relative(repo, file).split(path.sep).join('/');
+  for (const id of r.stale) log(`  stale baseline line: ${id} is tested or defined now; delete it from ${rel}.`);
+  for (const id of r.gone) log(`  FAIL: ${id} is in ${rel} but is no longer an open P0 row with no test (the row was removed or lowered, or the id is no longer cited). Run \`node scripts/trace.mjs --no-write --update-ns-baseline\`; it only shrinks.`);
+  for (const id of r.added) log(`  FAIL: ${id} is open and not in ${rel} (a P0 row with no test title, or a cited id no card defines).`);
+  for (const id of r.grown) log(`  FAIL: ${id} was added to the baseline; it may only shrink against ${args.nsBase}.`);
+  return r.added.length || r.grown.length || r.gone.length ? 1 : 0;
+}
+
 function b1Scope({ repo, m, args, log }) {
   const catalog = path.resolve(repo, args.catalog || 'docs/qa/release-test-catalog.csv');
   const baselineFile = path.resolve(repo, args.baseline || 'docs/qa/b1-p0-uncited.baseline');
@@ -813,7 +860,7 @@ const BASELINE_HEAD = '# B1 P0 requirement IDs with no test title citing them (H
   '# This file may only shrink. Cite the ID in a test title as [ID] and delete the line.\n';
 
 function parseArgs(argv) {
-  const a = { check: false, scope: null, catalog: null, baseline: null, updateBaseline: false, write: true, out: null, repo: null, root: null, json: false, register: null };
+  const a = { check: false, scope: null, catalog: null, baseline: null, updateBaseline: false, nsBaseline: null, nsBase: null, updateNsBaseline: false, write: true, out: null, repo: null, root: null, json: false, register: null };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--check') a.check = true;
@@ -823,6 +870,9 @@ function parseArgs(argv) {
     else if (v === '--catalog') a.catalog = argv[++i];
     else if (v === '--baseline') a.baseline = argv[++i];
     else if (v === '--update-baseline') a.updateBaseline = true;
+    else if (v === '--ns-baseline') a.nsBaseline = argv[++i];
+    else if (v === '--ns-base') a.nsBase = argv[++i];
+    else if (v === '--update-ns-baseline') a.updateNsBaseline = true;
     else if (v === '--out') a.out = argv[++i];
     else if (v === '--repo') a.repo = argv[++i];
     else if (v === '--register') a.register = argv[++i];
@@ -835,7 +885,7 @@ function parseArgs(argv) {
 
 export function main(argv = process.argv.slice(2), log = console.log) {
   const args = parseArgs(argv);
-  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>] [--register <14-test-plan.md>] [--scope b1 [--catalog <csv>] [--baseline <file>] [--update-baseline]]'); return 0; }
+  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>] [--register <14-test-plan.md>] [--scope b1 [--catalog <csv>] [--baseline <file>] [--update-baseline]] [--ns-baseline <file>] [--ns-base <base copy>] [--update-ns-baseline]'); return 0; }
   if (args.scope && args.scope !== 'b1') throw new Error(`unknown scope ${args.scope} (only b1)`);
   const repo = path.resolve(args.repo || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
   const docsRoot = path.resolve(repo, args.root || (exists(path.join(repo, 'docs/prd/v2')) ? 'docs/prd/v2' : 'docs/prd'));
@@ -856,6 +906,8 @@ export function main(argv = process.argv.slice(2), log = console.log) {
     // The ratchet is its own check: duplicate and undefined IDs are the plain --check (EG-5).
     return b1Scope({ repo, m, args, log });
   }
+  // The NS ratchet runs under --check, or to write its baseline; report mode never fails. JSON mode keeps stdout clean.
+  const nsFail = m.ns && (args.check || args.updateNsBaseline) ? nsGate({ repo, ns: m.ns, args, log: args.json ? console.error : log }) : 0;
   if (args.json) {
     log(JSON.stringify({
       layout: m.layout,
@@ -863,10 +915,10 @@ export function main(argv = process.argv.slice(2), log = console.log) {
       ...s,
       duplicateIds: m.duplicates.map((d) => ({ id: d.id, at: d.at.map((x) => `${x.spec}:${x.line}`) })),
       undefinedIds: m.undefinedIds,
-      wouldFailCheck: failed,
+      wouldFailCheck: failed || nsFail > 0,
       ns: ns && { register: m.ns.register, ...ns, untestedP0: m.ns.p0.filter((r) => r.status === 'untested').map((r) => r.id) },
     }));
-    return args.check && failed ? 1 : 0;
+    return args.check && (failed || nsFail) ? 1 : 0;
   }
   log(`trace (${m.layout}, ${m.docsRoot}): ${s.defined} IDs defined (${s.p0} P0) in ${s.specs} specs` +
     (m.layout === 'v2' ? `, ${s.wps} work packages` : '') +
@@ -882,7 +934,8 @@ export function main(argv = process.argv.slice(2), log = console.log) {
       `${ns.strays} bracketed ids defined nowhere; ${ns.skipped} skipped titles not counted. Report only.`);
     for (const x of m.ns.strays) log(`  NS id defined nowhere: ${x.id} (${x.at[0]})`);
   }
-  if (args.check && failed) return 1;
+  if (args.check && (failed || nsFail)) return 1;
+  if (args.updateNsBaseline) return nsFail;
   if (failed) log('  report mode: not failing. Run with --check to fail on these.');
   return 0;
 }

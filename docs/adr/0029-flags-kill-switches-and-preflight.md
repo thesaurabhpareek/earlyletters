@@ -29,8 +29,9 @@
 | `videos` | video and the several-pictures limit | picture flag and `EXPO_PUBLIC_VIDEO` (planned, not built yet) and not paused | NS-52-R42 |
 | `signIn` | first-run and account sign-in; shows the outage screen with the local start; never ends a session | not paused | NS-41-R25 |
 | `libraryDays` | the days library, Browse and the ask slip; cancels pending library notes | `EXPO_PUBLIC_DAYS` and `!== true`, not `mayRun` | NS-46-R28 |
+| `bookSearch` | the Find action in the Book; the on-device index and the letters are untouched | build flag `EXPO_PUBLIC_BOOK_SEARCH` and not paused (the pause only hides, never enables) | NS-02-R1 |
 
-All four are off in the bundled defaults and in any config signed before they existed. `photos` now reads "adding pictures".
+All five are off in the bundled defaults and in any config signed before they existed. `photos` now reads "adding pictures".
 
 ## Consequences
 

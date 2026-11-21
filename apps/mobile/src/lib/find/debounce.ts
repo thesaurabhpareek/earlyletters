@@ -19,6 +19,8 @@ export interface QueryDebounce {
   push(raw: string): void;
   /** The return key: run what is typed now. */
   flush(): void;
+  /** Find went dark or Cancel was pressed: whatever is waiting is dropped; later pushes still work. */
+  cancel(): void;
   /** Find closed: nothing runs after this. */
   dispose(): void;
 }
@@ -49,6 +51,10 @@ export function createQueryDebounce(run: (raw: string) => void, opts: { delayMs?
       handle = timers.set(fire, delay);
     },
     flush: fire,
+    cancel() {
+      pending = null;
+      cancel();
+    },
     dispose() {
       disposed = true;
       pending = null;

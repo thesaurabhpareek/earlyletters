@@ -1,0 +1,9 @@
+// Planted bypass for the CONST-C04 positive control. Read as text, never run.
+export interface CleanOptions {
+  level: string;
+  skipVerify?: boolean;
+}
+export function clean(opts: CleanOptions) {
+  if (opts.skipVerify) return [];
+  return [];
+}

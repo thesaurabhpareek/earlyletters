@@ -10,6 +10,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { BOOT_DIAG_PREFIX, installBootDiagnostics } from './boot-diagnostics';
 
 export const OUT = path.resolve(__dirname, '../../../../docs/release/journey');
 const SHOTS = process.env.JOURNEY_SHOTS === '1';
@@ -64,10 +65,14 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
   app: async ({ page }, use) => {
     const errors: string[] = [];
     const consoleErrors: string[] = [];
+    const bootDiag: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => {
-      if (m.type() === 'error') consoleErrors.push(m.text());
+      if (m.text().startsWith(BOOT_DIAG_PREFIX)) bootDiag.push(m.text());
+      else if (m.type() === 'error') consoleErrors.push(m.text());
     });
+    // BL-464: the app hides what failed a boot (MigrationError keeps a code only); name it in the report.
+    await page.addInitScript(installBootDiagnostics);
     // Screenshots are the app viewport only: no scrollbars of any kind (also after a reload).
     await page.addInitScript(() => {
       const add = () => {
@@ -83,7 +88,8 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
     const allowedPage = ALLOWED_PAGE.get(page) ?? [];
     expect(
       errors.filter((m) => !allowedPage.some((re) => re.test(m))),
-      'uncaught page errors',
+      // The diagnostics are only read on a failure, so a passing run says nothing extra.
+      `uncaught page errors${bootDiag.length ? `; what the page saw before it (BL-464): ${[...new Set(bootDiag)].join(' | ')}` : ''}`,
     ).toEqual([]);
     const allowed = ALLOWED.get(page) ?? [];
     expect(

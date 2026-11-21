@@ -36,7 +36,7 @@ export {
   type ReminderTime,
   type ReminderWindow,
 } from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
+export { anchorAt, LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writeOnSince, REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
 export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
   currentPlan,

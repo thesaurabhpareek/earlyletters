@@ -17,10 +17,24 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const sha = (p: string) => createHash('sha256').update(readFileSync(p)).digest('hex');
 // Kept apart from VOCAB on purpose, so adding a word to the generator turns this test red.
 const ENGLISH = new Set("asha laughed rain window dal nani papa mama morning blanket spoon giggle sleepy garden shoes bath song kitten bubbles walked clapped sunny cuddle story yellow cup puddle".split(" "));
-const NON_LATIN = /^[\p{Script=Devanagari}\p{Script=Arabic}\p{Script=Han}]+$/u;
-const allowed = (w: string) => ENGLISH.has(w) || NON_LATIN.test(w);
+// Pinned word for word, as escapes, so a new Hindi, Arabic or Chinese word in the generator turns this red too.
+const NON_LATIN = new Set([
+  '\u092a\u094d\u092f\u093e\u0930', '\u092c\u093f\u091f\u093f\u092f\u093e', '\u0906\u091c', '\u0939\u0901\u0938\u0940', // hi
+  '\u062d\u0628', '\u0627\u0644\u064a\u0648\u0645', '\u0636\u062d\u0643\u0629', '\u0645\u0627\u0645\u0627', // ar
+  '\u7231', '\u4eca\u5929', '\u7b11', '\u5b9d\u5b9d', // zh
+]);
+const allowed = (w: string) => ENGLISH.has(w) || NON_LATIN.has(w);
 
 describe('[NS-34-R5] seeded book is generated and fictional', () => {
+  it('[NS-34-R5] positive control: allowed() takes every pinned word, and refuses a word that is on neither list', () => {
+    expect(NON_LATIN.size).toBe(12);
+    for (const w of [...ENGLISH, ...NON_LATIN]) expect(allowed(w), w).toBe(true);
+    for (const w of ['', 'Asha', 'hello', 'asha ', '\u00e9cole', '\u3053\u3093\u306b\u3061\u306f']) expect(allowed(w), JSON.stringify(w)).toBe(false);
+    // the generator's own words are covered: every non-Latin word it writes is pinned, and every pinned one is written
+    const written = new Set(planBook({ seed: DEFAULT_SEED }).items.flatMap((i) => i.text.split(' ')));
+    expect([...written].filter((w) => /[^\x00-\x7f]/.test(w)).sort()).toEqual([...NON_LATIN].sort());
+  });
+
   it('[NS-34-R5] same seed gives the same plan and the same database bytes; another seed differs', () => {
     expect(planSha256(planBook({ seed: DEFAULT_SEED }))).toBe(planSha256(planBook({ seed: DEFAULT_SEED })));
     const files = ['a', 'b', 'c'].map((n) => join(dir, `${n}.db`));
@@ -79,6 +93,10 @@ describe('[NS-34-R5] seeded book is generated and fictional', () => {
       if (!(i.audio === null || /^[0-9a-f]{64}$/.test(i.audio.sha256))) bad.push(`audio ${i.audio?.sha256}`);
     }
     expect([...new Set(bad)]).toEqual([]);
+    // Mutant: one foreign word spliced into a copy of the plan is caught by the same scan.
+    const mutant = items.map((i, n) => (n === 0 ? { ...i, text: `${i.text} lorem` } : i));
+    const caught = mutant.flatMap((i) => i.text.split(' ')).filter((w) => !allowed(w));
+    expect([...new Set(caught)]).toEqual(['lorem']);
     // The stored rows carry the same words and nothing else: ids and audio names are generated, the author is Asha's book.
     const book = buildAshaBook({ ...SIZES.small });
     const stored: string[] = [];

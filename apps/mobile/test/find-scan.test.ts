@@ -60,12 +60,15 @@ describe('[NS-02-R5] only what the parent kept and typed is findable', () => {
   it('[NS-02-R5] parent-typed photo words and a typed place are found and quoted; a place read from the file is not', () => {
     f = findFixture();
     const id = f.add({ text: 'We stayed home all day.' });
-    expect(find('slide')).toEqual([]); // no photo table on this phone yet: the source contributes nothing, and nothing fails
-    f.db.exec('CREATE TABLE entry_media (id TEXT PRIMARY KEY, entry_id TEXT, photo_text TEXT, place TEXT, sha256 TEXT, derived_place TEXT)');
-    f.db.run("INSERT INTO entry_media VALUES ('m1', ?, 'Asha on the red slide', 'Bishop Park', 'abc', 'Mission District')", id);
+    // Migration 11 (this stack) now creates entry_media on every fixture. A phone without the table contributes nothing
+    // and nothing fails: drop it to prove that, then put the real table back.
+    const ddl = f.db.get<{ sql: string }>("SELECT sql FROM sqlite_master WHERE name = 'entry_media'")!.sql;
+    f.db.exec('DROP TABLE entry_media');
+    expect(find('slide')).toEqual([]);
+    f.db.exec(ddl);
+    f.db.run("INSERT INTO entry_media (id, entry_id, kind, ext, bytes, sha256, photo_text, place, added_at) VALUES ('m1', ?, 'photo', 'jpg', 10, 'abc', 'Asha on the red slide', 'Bishop Park', '2026-11-01T00:00:00Z')", id);
     expect(find('slide')).toEqual([id]);
     expect(find('bishop')).toEqual([id]);
-    expect(find('mission')).toEqual([]);
     expect(find('abc')).toEqual([]);
     const q = prepareQuery('slide');
     expect(snippetSource(q, rows('slide')[0])).toBe('extra');

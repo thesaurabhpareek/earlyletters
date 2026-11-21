@@ -93,6 +93,34 @@ function nativeProblems(sources: Array<{ file: string; text: string }>): string[
   return found;
 }
 
+/**
+ * Every EXPO_PUBLIC_* name the app reads that is not a card flag above: switches, keys and URLs with their own pins.
+ * A new name must be added here on purpose, and that is the moment to decide whether it belongs in CARD_FLAGS.
+ */
+const OTHER_PUBLIC_ENV = [
+  'ACCOUNT_DELETION', 'ANALYTICS', 'APP_ENV', 'BACKUP', 'DOCS_BASE_URL', 'E2E', 'EMAIL_OTP_LENGTH', 'ENGLISH_ONLY',
+  'ESCROW_KEYS', 'ESCROW_URL', 'GOOGLE_IOS_CLIENT_ID', 'GOOGLE_WEB_CLIENT_ID', 'PASSKEYS', 'PERF', 'POSTHOG_HOST',
+  'POSTHOG_KEY', 'SERVER_FEATURES', 'SPOKEN_LANGUAGES', 'STATUS_REPORT', 'SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEY',
+  'SUPABASE_URL', 'WEB_PREVIEW',
+].map((n) => `EXPO_PUBLIC_${n}`);
+
+/** Names in `texts` that are on neither list. */
+const unknownPublicEnv = (texts: string[], known: readonly string[]): string[] =>
+  [...new Set(texts.flatMap((t) => t.match(/EXPO_PUBLIC_[A-Z0-9_]+/g) ?? []))].filter((n) => !known.includes(n)).sort();
+
+function appSourceTexts(): string[] {
+  const out = [readFileSync(join(APP, 'app.config.ts'), 'utf8')];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.(ts|tsx|js|jsx|mjs)$/.test(name)) out.push(readFileSync(p, 'utf8'));
+    }
+  };
+  walk(join(APP, 'src'));
+  return out;
+}
+
 const temps: string[] = [];
 afterEach(() => {
   while (temps.length) rmSync(temps.pop() as string, { recursive: true, force: true });
@@ -171,7 +199,7 @@ describe('G6 positive control: the check can go red', () => {
 });
 
 describe('G6 mutants: a temp copy of the real files, one change each', () => {
-  it('[NS-49-R25] G6 mutant: EXPO_PUBLIC_DAYS=on added to production in a copy of eas.json turns the check red', () => {
+  it('[NS-49-R25] G6 mutant: any card flag set on in production in a copy of eas.json turns the check red', () => {
     const real = readEas();
     expect(flagsOn(real)).toEqual([]);
     for (const flag of CARD_FLAGS) {
@@ -202,5 +230,21 @@ describe('G6 mutants: a temp copy of the real files, one change each', () => {
     const withEntitlement = cfg.replace('entitlements: {', "entitlements: {\n      'com.apple.developer.journal.allow': ['suggestions'],");
     expect(withEntitlement).not.toBe(cfg);
     expect(nativeProblems([{ file: 'app.config.ts', text: withEntitlement }])).toEqual(['app.config.ts: the journaling entitlement']);
+  });
+});
+
+describe('G6 allowlist: a new EXPO_PUBLIC_* flag cannot appear unreviewed', () => {
+  const known = [...CARD_FLAGS, ...OTHER_PUBLIC_ENV];
+
+  it('[NS-49-R25] G6 every EXPO_PUBLIC_* name read in src and app.config.ts is a card flag or a named other switch', () => {
+    // A new name fails here on purpose. Decide: if it is a card flag that may never be on in a store build, add it to
+    // CARD_FLAGS; if it is a switch, key or URL with its own pin, add it to OTHER_PUBLIC_ENV (both above in this file).
+    const unknown = unknownPublicEnv(appSourceTexts(), known);
+    expect(unknown, `unlisted EXPO_PUBLIC_* name(s) ${unknown.join(', ')}: add each to CARD_FLAGS or OTHER_PUBLIC_ENV in g6-production-flags-off.test.ts`).toEqual([]);
+  });
+
+  it('[NS-49-R25] G6 positive control: a fixture that reads an unlisted flag is reported, a listed one is not', () => {
+    expect(unknownPublicEnv(['const a = process.env.EXPO_PUBLIC_PHOTO_MOMENTS;'], known)).toEqual([]);
+    expect(unknownPublicEnv(['const a = process.env.EXPO_PUBLIC_ASHA_NEW_THING;', "x('EXPO_PUBLIC_DAYS')"], known)).toEqual(['EXPO_PUBLIC_ASHA_NEW_THING']);
   });
 });
