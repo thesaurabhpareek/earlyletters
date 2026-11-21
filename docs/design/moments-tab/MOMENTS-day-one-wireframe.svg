@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812" role="img" aria-labelledby="t d">
+  <title id="t">Moments tab, day one, before any photo permission (light, iPhone SE 3 width, PROPOSED wireframe; tab order shown is option A, Home first and default)</title>
+  <desc id="d">Fictional family Asha. Words are placeholders for content. Photo tiles are plain tinted rectangles, labelled as an example. No glass on any card. The tab bar is the navigation layer.</desc>
+  <rect width="375" height="812" fill="#FBF8F3"/>
+  <text x="20" y="78" font-family="serif" font-size="34" fill="#2B2622">Moments</text>
+  <text x="20" y="102" font-family="sans-serif" font-size="14" fill="#6B625A">Pick a day worth a letter to Asha.</text>
+  <!-- value card with example collage -->
+  <rect x="16" y="120" width="343" height="250" rx="18" fill="#FFFFFF" stroke="#E6DED2"/>
+  <rect x="28" y="132" width="159" height="100" rx="10" fill="#E9DCCB"/>
+  <rect x="193" y="132" width="154" height="48" rx="10" fill="#DCE3D6"/>
+  <rect x="193" y="184" width="75" height="48" rx="10" fill="#E3D6DD"/>
+  <rect x="272" y="184" width="75" height="48" rx="10" fill="#D6DFE6"/>
+  <rect x="34" y="138" width="86" height="22" rx="11" fill="#FFFFFF"/>
+  <text x="44" y="153" font-family="sans-serif" font-size="12" fill="#2B2622">An example</text>
+  <text x="28" y="258" font-family="serif" font-size="20" fill="#2B2622">Sat 14 Oct</text>
+  <text x="28" y="280" font-family="sans-serif" font-size="14" fill="#2B2622">Your own photos, a day at a time. Pick one,</text>
+  <text x="28" y="298" font-family="sans-serif" font-size="14" fill="#2B2622">then say a few words about it.</text>
+  <text x="28" y="318" font-family="sans-serif" font-size="12" fill="#6B625A">Only the dates are read, on this phone.</text>
+  <rect x="28" y="326" width="170" height="44" rx="22" fill="#8A5A3C"/>
+  <text x="113" y="353" font-family="sans-serif" font-size="15" fill="#FFFFFF" text-anchor="middle">Show my photo days</text>
+  <rect x="206" y="326" width="100" height="44" rx="22" fill="none"/>
+  <text x="256" y="353" font-family="sans-serif" font-size="15" fill="#2B2622" text-anchor="middle">Not now</text>
+  <!-- real content below -->
+  <text x="20" y="402" font-family="sans-serif" font-size="14" font-weight="bold" fill="#2B2622">A thought to start with</text>
+  <rect x="16" y="414" width="343" height="92" rx="18" fill="#FFFFFF" stroke="#E6DED2"/>
+  <text x="32" y="446" font-family="serif" font-size="19" fill="#2B2622">What does Asha smell like right now?</text>
+  <text x="32" y="470" font-family="serif" font-size="19" fill="#2B2622">Try to put it in words.</text>
+  <text x="32" y="494" font-family="sans-serif" font-size="13" fill="#6B625A">Speak or type, from a prompt we wrote.</text>
+  <rect x="16" y="518" width="343" height="84" rx="18" fill="#FFFFFF" stroke="#E6DED2"/>
+  <text x="32" y="548" font-family="sans-serif" font-size="13" fill="#6B625A">Tue 21 Nov</text>
+  <text x="32" y="574" font-family="serif" font-size="19" fill="#2B2622">Asha is 7 months old today.</text>
+  <text x="32" y="594" font-family="sans-serif" font-size="13" fill="#6B625A">A day to talk about.</text>
+  <rect x="16" y="614" width="343" height="84" rx="18" fill="#FFFFFF" stroke="#E6DED2"/>
+  <text x="32" y="644" font-family="sans-serif" font-size="13" fill="#6B625A">Sun 12 Nov</text>
+  <text x="32" y="670" font-family="serif" font-size="19" fill="#2B2622">A day you added: Nani visits</text>
+  <text x="32" y="690" font-family="sans-serif" font-size="13" fill="#6B625A">Typed by the parent. Shown only if one exists.</text>
+  <rect x="0" y="740" width="375" height="72" fill="#F4EFE7"/><line x1="0" y1="740" x2="375" y2="740" stroke="#D9D0C3"/>
+  <g font-family="sans-serif" font-size="13" text-anchor="middle" fill="#6B625A">
+    <text x="47" y="790">Home</text><circle cx="47" cy="763" r="9" fill="none" stroke="#6B625A" stroke-width="2"/>
+    <text x="140" y="790" font-weight="bold" fill="#2B2622">Moments</text><circle cx="140" cy="763" r="9" fill="none" stroke="#2B2622" stroke-width="2"/>
+    <text x="234" y="790">Book</text><rect x="225" y="754" width="18" height="18" fill="none" stroke="#6B625A" stroke-width="2"/>
+    <text x="328" y="790">Me</text><circle cx="328" cy="763" r="9" fill="none" stroke="#6B625A" stroke-width="2"/>
+  </g>
+</svg>
