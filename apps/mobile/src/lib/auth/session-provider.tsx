@@ -26,6 +26,7 @@ import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
+import { discardPendingPhotoOnLeaving } from '../photos/leaving';
 import { methodForEvent, nextReportMark, type ReportMark } from './new-device/report.logic';
 import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
@@ -216,6 +217,15 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       void settleBackupTokens(sweep.keep);
     }
   }, [sessionUser, authSettled]);
+  // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
+  // Its own effect, so the reminders and backup effect above keeps the shape its tests pin.
+  const photoUser = useRef<string | null>(null);
+  useEffect(() => {
+    if (!authSettled) return;
+    const before = photoUser.current;
+    photoUser.current = sessionUser;
+    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
+  }, [sessionUser, authSettled]);
   // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
   // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
   const reportMark = useRef<ReportMark>(null);
@@ -371,6 +381,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
     if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
     if (step.signOut) {
+      void discardPendingPhotoOnLeaving(); // BL-1444: a forced sign-out waits for uploads; the picture does not wait with it
       void pendingUploads().then((p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p }));
     }
   }, [remoteEpoch, reauthPhase]);

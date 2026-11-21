@@ -33,7 +33,9 @@
  *    a date followed by a letter, digit or underscore (YYYY-MM-DD_notes),
  *    EXIF dates in photos (YYYY:MM:DD), DD-Mon-YYYY, D/M/YY, YYYYMMDD and
  *    "YYYY Month D";
- *  - names glued to other letters or digits, anywhere.
+ *  - names glued to other letters or digits, anywhere;
+ *  - a name split by a line break (or a hyphen at a wrap): the parts are
+ *    separate tokens, so neither part hashes to the name.
  *
  * The scan fails when the file list lacks the root CLAUDE.md or this file at
  * its root path (an empty list, or the wrong root), and when a listed file

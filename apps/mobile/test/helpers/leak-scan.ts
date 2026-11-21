@@ -19,7 +19,8 @@
  *
  * Not covered: a leak shorter than 64 bytes that falls between shingles; a piece that is split over bodies and wider
  * than 2 x JOIN_WINDOW; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
- * decimal list with other separators, or three or more layers of encoding).
+ * decimal list with other separators, or three or more layers of encoding). Known bypasses (BL-1476): hex with space or
+ * colon separators, 0x-prefixed hex, percent-encoded bytes, base64 wrapped over lines, XOR, and pieces under 16 bytes.
  */
 import { createHash } from 'node:crypto';
 
