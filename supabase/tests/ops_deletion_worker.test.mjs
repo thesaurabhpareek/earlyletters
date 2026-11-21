@@ -53,6 +53,9 @@ const SERVICE_ONLY = [
   // 20261121000000 (NS-08-R21)
   `select public.ops_end_session('${A}', '${A}')`, `select public.ops_new_device_sign_out(decode(repeat('00', 32), 'hex'))`,
   `select public.ops_new_device_retention()`,
+  // 20261121010000 (NS-08-R21 sender)
+  `select public.ops_new_device_record('${A}', decode(repeat('00', 16), 'hex'), 'other')`, `select public.ops_new_device_pending_take()`,
+  `select public.ops_new_device_token_mint('${A}', '${A}', decode(repeat('00', 32), 'hex'))`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
