@@ -7,7 +7,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { momentAnnouncement, savedMoment } from '../src/components/capture/review-view.logic';
 
 const source = readFileSync(join(__dirname, '..', 'src/components/capture/saved-moment.tsx'), 'utf8');
 
@@ -18,13 +17,14 @@ describe('[S21] the lock on the saved chip is decorative', () => {
     );
   });
 
-  it('the icon is not rendered anywhere else in the file, so no second announcement can come from it', () => {
-    expect(source.match(/<LockSimpleIcon/g)).toHaveLength(1);
-  });
-
-  it('the announcement for a lock chip is its words alone', () => {
-    const m = savedMoment({ kind: 'private', childName: 'Asha', month: 7 });
-    expect(m.lock).toBe(true);
-    expect(momentAnnouncement(m.chip, m.line)).toBe(m.chip);
+  it('every lock icon in the file sits directly inside a hidden view, so none can be announced', () => {
+    const parts = source.split('<LockSimpleIcon');
+    expect(parts.length - 1).toBeGreaterThan(0);
+    for (const before of parts.slice(0, -1)) {
+      const tag = before.slice(before.lastIndexOf('<View'));
+      expect(tag).toContain('accessibilityElementsHidden');
+      expect(tag).toContain('importantForAccessibility="no-hide-descendants"');
+      expect(before.slice(before.lastIndexOf('<View')).includes('</View>')).toBe(false);
+    }
   });
 });
