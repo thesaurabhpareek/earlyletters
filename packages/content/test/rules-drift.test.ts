@@ -156,4 +156,13 @@ describe('content rules drift', () => {
     // this test and the `notifications` budget in rules.test.ts, together.
     expect(RULES).toMatch(/notifications: 0,/);
   });
+
+  it('[NS-48-R28] the rhythm and gap rules read the whole notification scope, not their own path guess', () => {
+    // RHYTHM_SCOPE feeds the gap and day-count rules. If it stops using NOTIFICATION_PATH, a notification
+    // family outside en.notifications or a "remind" key (features.photos.suggestions, a future ntc family)
+    // is read by the length rule but never by the gap rules.
+    const line = WIRED.split('\n').find((l) => /const RHYTHM_SCOPE\b/.test(l)) ?? '';
+    expect(line, 'RHYTHM_SCOPE is no longer defined in rules.test.ts').not.toBe('');
+    expect(line).toMatch(/NOTIFICATION_PATH\.test\(l\.path\)/);
+  });
 });
