@@ -420,7 +420,7 @@ Since the 20 Nov read (checked on 21 Nov, REST `GET /repos/.../pulls/<n>` for ea
 | IN-05/an | Hooks and screen wiring (M5), 29 routes first | IN-03/an | IN-06/an, IN-07/an, IN-08/an | mobile | M | IN (phase 2) | - | proposed; file merged; no BL id |
 | IN-06/an | Controls and elements wiring per area from PM tables | IN-05/an | - | mobile | L | IN (phase 2) | - | proposed; file merged; no BL id |
 | IN-07/an | Five funnels saved in PostHog; weekly read-out inputs | IN-05/an | - | analytics | S | IN (phase 2) | founder creates PostHog account | proposed; file merged; no BL id |
-| IN-08/an | Turn on in the production profile behind the consent gate (section 1a: erratum,  | IN-04/an, IN-05/an, IN-DS-06, IN-DA-10, IN-DA-11, IN-ops-01, IN-K9, IN-DS-02, IN-DS-04 | IN-DS6/sci | founder | S | IN (phase 3) | E-INSTR-1 erratum; label; counsel; subprocessor; policy text; sheet wording (founder) | proposed; file merged; no BL id |
+| IN-08/an | Turn on in the production profile behind the consent gate (section 1a: erratum,  | IN-04/an, IN-05/an, IN-DS-06, IN-DA-10, IN-DA-11, IN-ops-01, IN-K9, IN-DS-02, IN-DS-04 | IN-DS6/sci | founder | S | IN (phase 3) | E95 erratum; label; counsel; subprocessor; policy text; sheet wording (founder) | proposed; file merged; no BL id |
 | IN-DS-01 | Create docs/legal/data-map.yaml with the section 9 rows and a test that every ca | - | - | privacy | M | IN (phase 1) | - | proposed; file merged; no BL id |
 | IN-DS-05 | Closed screen, control, surface and marker lists generated into catalog.ts; deny | - | - | analytics | L | IN (phase 1) | IA-FINAL is merged (#1033) | proposed; file merged; no BL id |
 | IN-DS-06 | Staging deletion drill on a throwaway project: send events under a bootstrapped  | - | IN-08/an, IN-DS-03, IN-DA-11 | qa | S | IN (phase 1) | founder: free host decision (FD-1); throwaway PostHog project | proposed; file merged; no BL id |
@@ -495,7 +495,7 @@ Since the 20 Nov read (checked on 21 Nov, REST `GET /repos/.../pulls/<n>` for ea
 | IN-DA-02 | EXPLAIN every insights view on seeded data; index only where over budget; state  | - | IN-DA-03 | data-architect | S | IN (phase 1) | - | proposed; file in review; no BL id |
 | IN-DA-03 | Write reporting_reader migration and reporting_role.test.mjs with the rows in se | IN-DA-02 | IN-DA-05, IN-DA-07 | data-architect | M | IN (phase 1) | approve-migration | proposed; file in review; no BL id |
 | IN-DA-04 | Views weekly_second_voice and weekly_invites_accepted (5.1) with tests and colum | - | IN-DA-06 | data-architect | M | IN (phase 2) | approve-migration | proposed; file in review; no BL id |
-| IN-DA-05 | Counters migration (5.2), kill switch, _bump call sites in peek_invite and the e | IN-DA-03 | IN-DA-08 | data-architect | M | IN (phase 2) | E-INSTR-1; approve-migration | proposed; file in review; no BL id |
+| IN-DA-05 | Counters migration (5.2), kill switch, _bump call sites in peek_invite and the e | IN-DA-03 | IN-DA-08 | data-architect | M | IN (phase 2) | E95; approve-migration | proposed; file in review; no BL id |
 | IN-DA-10 | Withdrawal route: ops.forget_quota_anon migration (6a), withdrawal reason in ana | - | IN-08/an, IN-DS-02, IN-DA-11, IN-DA-08 | data-architect | M | IN (phase 1) | founder F-1, F-3; withdrawal erratum; legal text; approve-migration | proposed; file in review; no BL id |
 | IN-DA-11 | Release gate: the staging deletion drill passes and the policy retention number  | IN-DA-10, IN-DS-06 | IN-08/an | qa | S | IN (phase 1) | founder | proposed; file in review; no BL id |
 | IN-DA-06 | Tier 0 snippets and the weekly read-out job in the ops repo | IN-DA-04 | - | decision-science | S | IN (phase 2) | secret (founder) | proposed; file in review; no BL id |
@@ -737,7 +737,7 @@ Wave placement for BL-1006 to BL-1020 is mine, from each row's drop and blockers
 
 ### 4.1 What the founder asked, and what it changes
 
-On 20 Nov the founder's direction was "build for production now so analytics is needed" (quoted in #1041's body). That reverses three locked lines for the production release: D-095, D-124 item 3 and FR-DAT-01 ("no event, counter or payload sent, queued or written"). The instrumentation files propose one erratum to supersede them, placeholder `E-INSTR-1` (the real number comes from E84 when ruled; E83 is taken by #1051). Nothing in the locked pack is edited. The privacy label and the Privacy Policy currently say there is no usage data and no analytics (`PERMISSIONS-AND-DISCLOSURE-MATRIX.md`, gap 2).
+On 20 Nov the founder's direction was "build for production now so analytics is needed" (quoted in #1041's body). That reverses three locked lines for the production release: D-095, D-124 item 3 and FR-DAT-01 ("no event, counter or payload sent, queued or written"). The instrumentation files propose one erratum to supersede them, former placeholder E-INSTR-1, now E95 (E95 on 21 Nov; others from E96). Nothing in the locked pack is edited. The privacy label and the Privacy Policy currently say there is no usage data and no analytics (`PERMISSIONS-AND-DISCLOSURE-MATRIX.md`, gap 2).
 
 What already exists: the typed allowlist, the consent gate, the validators and the PostHog adapter (`posthog-react-native`) in `packages/analytics`, and the consent sheet with its timing (`analyticsConsentDue`: after the first saved letter, never the same session, at most two offers) (`analytics.md` sections 1 and 1a). So there is no new adapter row. The work is wording, tests, deletion proof, and the paper (erratum, label, policy).
 
@@ -753,7 +753,7 @@ Never before every line below is closed. The turn-on row is `IN-08/an`. In this 
 | Consent sheet words, in the Shown, Records, Never, Decline shape (PRIV-R21) | IN-K9 (privacy, content, S), IN-14/pm1 | Not started. Words are the founder's (G3) |
 | Privacy label and policy text change, subprocessor row, data-map row | IN-DS-09, IN-DS-01, IN-DS-04 (retention number equal to the policy) | Not started. `docs/legal` is the founder's merge |
 | Counsel read | G2 | Packet 1.7.0 (#872) defers the analytics questions Q6 and Q7 to v1.1 under D-095 (`COUNSEL_PACKET.md` line 156). They need reopening for production analytics. Not started |
-| The erratum | E-INSTR-1, plus a D-### superseding D-095 and D-124 item 3 (IN-14/pm1, IN-DA-01) | Draft text is IN-201 (PM2). Founder decides |
+| The erratum | E95, plus a D-### superseding D-095 and D-124 item 3 (IN-14/pm1, IN-DA-01) | Draft text is IN-201 (PM2). Founder decides |
 | The build test: today any 1.0.x profile with analytics on fails; production needs "analytics only behind consent" | IN-DS-08, IN-02/pm1, IN-04/an (validators V1 to V16) | Not started |
 | The release gate rewrite (OG-1 to OG-10) and the label-guard exception for `posthog-react-native` | IN-ops-04, IN-DS-08 | Not started. Founder applies workflow patches |
 | The host decision | IN-K10 (founder with ops): free-only hosting path, hosted free tier, or none | Founder |
@@ -810,7 +810,7 @@ YES means I checked it and the evidence is named. NO means I checked and it is n
 3. Say which phones he holds, and run the Build 13 device sheet.
 4. Answer plan 17's Q1 and Q2, or accept the recommendations. Say whether Build 13 is servers off (this decides whether F4 matters).
 5. Merge or reject the size exceptions for #835 to #839 at their new sizes.
-6. Decide the reversal ruling BL-1001 (level 3 and several pictures), and the analytics reversal (E-INSTR-1 and the D-### superseding D-095 and D-124).
+6. Decide the reversal ruling BL-1001 (level 3 and several pictures), and the analytics reversal (E95 and the D-### superseding D-095 and D-124).
 7. Pick the free-only analytics host path (IN-K10), and rule F-1, F-2, F-3 and F-10 of the data-architect file.
 8. Paste the workflow patches (CI-SET, HG-MQ, B13-CHECKS) and apply migrations with `approve-migration` when a row needs it.
 9. Apple: the Journaling Suggestions entitlement, Declared Age Range, the Texas exposure record.

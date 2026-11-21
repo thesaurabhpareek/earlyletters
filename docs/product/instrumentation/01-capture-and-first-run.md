@@ -6,7 +6,7 @@ Founder rules applied: only completely free open-source tools that fit Expo, Sup
 
 ## 0. The frame
 
-1. This reverses "off through 1.0.x" (D-095, D-124 item 3, FR-DAT-01) for the production release. It needs a new D-### from the founder superseding those, and E-INSTR-1 changing FR-DAT-01 from "never sent" to "nothing before a yes". Until the founder records it, this file is PROPOSED.
+1. This reverses "off through 1.0.x" (D-095, D-124 item 3, FR-DAT-01) for the production release. It needs a new D-### from the founder superseding those, and E95 changing FR-DAT-01 from "never sent" to "nothing before a yes". Until the founder records it, this file is PROPOSED.
 2. Every event is closed: enums, booleans, bucketed integers. No text on screen, no id of a person, book, letter, picture or media, no child name or date, no prompt text, no Find query, no typed day word (OBSERVABILITY-WITHOUT-CONTENT section 2 [V]).
 3. The first run still cannot be seen on the phone: the consent sheet is a later session after the first letter (TRACKING_PLAN section 2, K-01; NS-39; IA-FINAL section 10). Before a yes nothing is sent, queued or written (standard V15). So install to first letter rests on App Store Connect (ASC), the one-time summary and, if any rounds run, tester numbers. Moving consent earlier is a CPO decision (D2).
 4. Server aggregates (`insights.*`) are NOT read in the 1.0 line unless the founder rules otherwise (FQ-01, FR-DAT-28). So the funnel numbers that exist are phone-side (consenters only), Apple's (ASC, Organizer) and tester numbers. Server events appear below only as proposed rows that nobody reads until that ruling.
@@ -159,7 +159,7 @@ Rule: completely free and fits Expo, Supabase, Vercel. Facts [V] read 20 Nov at 
 
 Reports: first letter (`f_onboarding_first_letter`, founder weekly); sign-in health; capture health (`mobile` weekly); reminder health (`product` fortnightly); surface read, impressed to tapped (`product` monthly); zero-target board (FR-DAT-09, on arrival). In the 1.0 line the numbers that exist are phone-side (consenters), Apple's and tester numbers; server counts wait for the FQ-01 ruling.
 
-Tests [P], under the standard's validator (V1 to V16): `[IN-01] registry closed and matches IA`; `[IN-02] no event before consent` (0 sent, queued or written; the age gate sends 0 in every state, including No); `[IN-02] SDK autocapture off` (V16); `[IN-04] unknown name or property rejected` (V1 to V13); `[IN-11] canary` (an invented Asha string typed into every free field never appears in any payload, route param, log or fault record; V14); ASCII and no birthday-timed event. FR-DAT-01's own test changes from "analytics off in every profile" to "analytics off until a yes" with E-INSTR-1.
+Tests [P], under the standard's validator (V1 to V16): `[IN-01] registry closed and matches IA`; `[IN-02] no event before consent` (0 sent, queued or written; the age gate sends 0 in every state, including No); `[IN-02] SDK autocapture off` (V16); `[IN-04] unknown name or property rejected` (V1 to V13); `[IN-11] canary` (an invented Asha string typed into every free field never appears in any payload, route param, log or fault record; V14); ASCII and no birthday-timed event. FR-DAT-01's own test changes from "analytics off in every profile" to "analytics off until a yes" with E95.
 
 ## 8. Conflicts, proposed changes, gate
 
@@ -167,7 +167,7 @@ Tests [P], under the standard's validator (V1 to V16): `[IN-01] registry closed 
 - NS-01 names `media_added`, absent from catalog v8; it is `capture.media.saved`.
 - Install to first letter cannot run on the phone without sending before consent.
 
-> Proposed change E-INSTR-1: FR-DAT-01, D-095 and D-124 item 3 change from "no event sent in any 1.0.x build" to "nothing sent, queued or written before a yes"; `EXPO_PUBLIC_ANALYTICS` on in the production profile; the store label and App Privacy answers change in the same build (NS-38-R4). Founder decision; a D-### supersedes D-095 and D-124 item 3.
+> Proposed change E95: FR-DAT-01, D-095 and D-124 item 3 change from "no event sent in any 1.0.x build" to "nothing sent, queued or written before a yes"; `EXPO_PUBLIC_ANALYTICS` on in the production profile; the store label and App Privacy answers change in the same build (NS-38-R4). Founder decision; a D-### supersedes D-095 and D-124 item 3.
 > Proposed change E-INSTR-2: extend `onboarding.summary.sent` with `first_sign_in_method`, `mic_primer_result`, `speech_pack_state` (all L2, closed, from stored state, sent only after a yes). TRACKING_PLAN section 2 already marks the summary Open for counsel. No locked PRD statement changes.
 > Not proposed (PC-2): anonymous first-run counts without consent. It breaks LEGAL-REQ-003 and the label.
 
@@ -197,7 +197,7 @@ Waves: 0 foundations, no sending; 1 events built, in the production release behi
 ## For the CPO: decisions and risks
 
 FLIPPED by the founder on 20 Nov ("build for production now so analytics is needed"): analytics ships in the production release behind the consent gate, replacing "dark, turned on later". Defaults (D1 to D9):
-1. Record the flip as a D-### superseding D-095 and D-124 item 3, and E-INSTR-1 on FR-DAT-01 [yes; privacy rules unchanged: opt-in, off until a yes, no content].
+1. Record the flip as a D-### superseding D-095 and D-124 item 3, and E95 on FR-DAT-01 [yes; privacy rules unchanged: opt-in, off until a yes, no content].
 2. Keep the consent sheet where it is, a later session after the first letter (NS-39, K-01)? Moving it first run would let the phone see the first-run funnel but adds an ask before the first letter [default: keep; first run rests on ASC, the summary and tester numbers].
 3. Approve E-INSTR-2 for counsel's read [yes].
 4. Count anything about the age question, even the number of No [nothing, ever; counsel Q46 and Q57 may differ].
