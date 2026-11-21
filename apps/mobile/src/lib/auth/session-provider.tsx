@@ -481,6 +481,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // `restoring` while a saved session waits to be read.
         const signedInNow = isSignedIn(stateRef.current) || (await sessionSavedOnPhone(SESSION_STORAGE_KEY));
         let started = false;
+        let methodBefore: AuthMethod | null = methodRef.current; // what an earlier sign-in in this run set
         try {
           const r = await openEmailLink(
             { tokenHash, type },
@@ -493,6 +494,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
                 if (t === 'email_change') return verifyEmailLinkPkce(sb, hash, t);
                 // NDA-1: a link sign-in is a fresh sign-in (new-device report), also at a cold start from the link. Set before the
                 // exchange, because Supabase's SIGNED_IN fires inside it.
+                methodBefore = methodRef.current;
                 methodRef.current = 'email';
                 if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
                 return verifyEmailLinkPkce(sb, hash, t);
@@ -516,7 +518,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
           // email's code, may be spent; point to a new email rather than the code.
           const error: AuthErrorKind = kind === 'other_phone' ? 'other_phone_spent' : kind;
           if (type !== 'email_change') {
-            methodRef.current = null; // a link that did not sign in leaves no method behind for a later session
+            methodRef.current = methodBefore; // undo only what this link set; an earlier provider sign-in's method stays (NDA1-2)
             dispatch({ type: 'FAILED', error });
           } // a failed change leaves the session as it was
           return { ok: false, error };

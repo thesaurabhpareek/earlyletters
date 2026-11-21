@@ -252,7 +252,8 @@ describe('[NDA-1] a sign-in through the email link is fresh; a restored session 
     const src = readFileSync(join(SRC, 'lib/auth/session-provider.tsx'), 'utf8');
     expect(src).toMatch(/methodRef\.current = 'email';\s*if \(stateRef\.current\.status[^\n]*\n\s*return verifyEmailLinkPkce\(sb, hash, t\)/);
     expect(src).toContain('method: methodForEvent(event, methodRef.current)');
-    expect(src).toMatch(/methodRef\.current = null;[^\n]*\n\s*dispatch\(\{ type: 'FAILED', error \}\)/);
+    expect(src).toMatch(/methodRef\.current = methodBefore;[^\n]*\n\s*dispatch\(\{ type: 'FAILED', error \}\)/); // mutant: = null would drop an earlier sign-in's mark (NDA1-2)
+    expect(src).toMatch(/methodBefore = methodRef\.current;\s*methodRef\.current = 'email';/);
   });
 });
 
