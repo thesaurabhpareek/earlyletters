@@ -98,7 +98,7 @@ The phone sends no timestamp property. The receiver stamps arrival; reports use 
 | Retired ids `scribe.analytics.retired_ids` | Phone only | L2 | At most 20 (`MAX_RETIRED_IDS`); kept only so deletion can reach old events |
 | Consent act record | `policy_acceptances`, written by `record_policy_act` | L2 with L3 `profile_id` | PRIV-R06 and R21; context keys `crash`, `usage`, `product` exist already (PRIV-R21 table). It is the one place that links a signed-in person to "said yes to usage". It never holds the analytics id |
 | Event store records | Store chosen in FD-1 | L2 each; the set is behaviour under a pseudonym | Counsel must confirm it is personal data; treat it as such for deletion and DSR |
-| SDK state | Device-local file (`persistence: 'file'`, founder ruling 21 Nov 2026): the consent-time id and any unsent queue | L2 | Survives launches so weekly making families (FR-DAT-21) can be counted; deleted on withdrawal and on Erase; never joined to an account |
+| SDK state | Device-local file (`persistence: 'file'`, founder ruling 21 Nov 2026): the consent-time id and any unsent queue | L2 | Survives launches so weekly making families (FR-DAT-21) can be counted; never joined to an account. On withdrawal the adapter empties the SDK queue and resets the install id (`optOut()` then `reset()`). Clearing the file itself on withdrawal and on Erase is a target, with a test still to add; until it exists, do not say the file is deleted |
 
 ## 5. Retention (proposed, none is a legal opinion)
 
