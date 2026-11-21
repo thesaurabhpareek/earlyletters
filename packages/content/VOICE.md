@@ -1,5 +1,7 @@
 # Early Letters voice guide
 
+> How a sentence should sound, with before and after pairs, tone by moment and the review checklist: `WRITING-GUIDE.md`. Read it first for any copy change.
+
 Scope: every word outside the app.
 
 ## Who we talk to
