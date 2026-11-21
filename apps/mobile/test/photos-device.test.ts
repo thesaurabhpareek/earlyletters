@@ -1,17 +1,24 @@
 /// <reference types="node" />
 // Device-side pieces of Photo with a letter that run in Node: the file layer over the expo-file-system stand-in (C7,
-// C9), the entry_media table and the launch sweep (ADR 0028 D1, D5), the orientation baker (C7), and the scribe-photo
-// Swift module read as source (C8). What only a phone can show is listed as device checks in the PR.
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+// C9), the picker adapter (C5, C6), the entry_media table and the launch sweep (ADR 0028 D1, D5), the orientation baker
+// (C7), and the scribe-photo Swift module read as source (C8). What only a phone can show is listed as device checks in
+// the PR.
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
+import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { adoptPending } from '../src/lib/photos/adopt';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
 import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-media';
-import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
+import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
+import { photosPausedNow } from '../src/lib/photos/pause';
+import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, pickerDestination, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
-import { commitPhoto } from '../src/lib/photos/session';
+import { PendingPhoto } from '../src/lib/photos/pending';
+import { createPhotoPicker } from '../src/lib/photos/picker';
+import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { CODE_POINTS_PER_CHARACTER, normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
@@ -22,6 +29,150 @@ const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 
 const SRC = join(__dirname, '..', 'src');
+const walk = (dir: string): string[] =>
+  readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
+  });
+
+// ---- C5: the system picker is reached only through scribe-photo's pickOne, from one file ----------------------------
+
+const BANNED_NAMES = [
+  'launchCameraAsync', 'launchImageLibraryAsync', 'requestCameraPermissionsAsync', 'getCameraPermissionsAsync', 'requestMediaLibraryPermissionsAsync',
+  'getMediaLibraryPermissionsAsync', 'useCameraPermissions', 'useMediaLibraryPermissions', 'requestMediaLibraryWriteOnlyPermissionsAsync',
+];
+const BANNED_MODULES = /^(expo-image-picker|expo-media-library|expo-camera|react-native-image-picker|react-native-vision-camera)(\/|$)/;
+
+/** Everything the scan reports for one source text: banned modules (aliases and dynamic imports included), banned names, pickOne calls. */
+export function scanPickerUse(source: string, file = 'x.ts'): { banned: string[]; pickCalls: number } {
+  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const out = { banned: [] as string[], pickCalls: 0 };
+  const visit = (n: ts.Node): void => {
+    if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier) && BANNED_MODULES.test(n.moduleSpecifier.text)) out.banned.push(n.moduleSpecifier.text);
+    if (ts.isCallExpression(n) && n.arguments.length > 0 && ts.isStringLiteralLike(n.arguments[0])) {
+      const callee = n.expression.getText(sf);
+      if ((callee === 'require' || n.expression.kind === ts.SyntaxKind.ImportKeyword) && BANNED_MODULES.test(n.arguments[0].text)) out.banned.push(n.arguments[0].text);
+    }
+    if (ts.isIdentifier(n) && BANNED_NAMES.includes(n.text)) out.banned.push(n.text);
+    if (ts.isStringLiteralLike(n) && BANNED_NAMES.includes(n.text)) out.banned.push(n.text); // P['launchCameraAsync']
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'pickOne') out.pickCalls++;
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return out;
+}
+
+describe('[NS-01-R2][NS-01-R22][C5] the only picker is Apple\'s, through scribe-photo pickOne, called from one file', () => {
+  const files = walk(SRC);
+  const scans = files.map((f) => ({ f: relative(SRC, f), s: scanPickerUse(readFileSync(f, 'utf8'), f) }));
+
+  it('[NS-01-R2][NS-01-R22][C5] no file imports a picker, camera or media-library package, or names a camera, permission or library call', () => {
+    expect(scans.flatMap((x) => x.s.banned.map((b) => `${x.f}: ${b}`))).toEqual([]);
+  });
+  it('[NS-01-R22][C5] pickOne is called in exactly one place, lib/photos/picker.ts', () => {
+    expect(scans.filter((x) => x.s.pickCalls > 0).map((x) => [x.f, x.s.pickCalls])).toEqual([['lib/photos/picker.ts', 1]]);
+  });
+  it('[NS-01-R22][C5] positive control: each banned thing in a fixture makes the scan fail', () => {
+    const bad = [
+      "import * as P from 'expo-image-picker';",
+      "import { requestMediaLibraryPermissionsAsync as ask } from 'expo-media-library'; ask();",
+      "const P = require('expo-image-picker'); P['getMediaLibraryPermissionsAsync']();",
+      "const C = await import('expo-camera');",
+      'launchCameraAsync({});',
+      'P.launchImageLibraryAsync({});',
+      "import { useCameraPermissions } from 'react-native-vision-camera';",
+    ];
+    for (const src of bad) expect(scanPickerUse(src).banned.length, src).toBeGreaterThan(0);
+    expect(scanPickerUse('ScribePhoto.pickOne(dest);').pickCalls).toBe(1);
+  });
+});
+
+// ---- C6: the picker port keeps only the uri of the file it asked for ------------------------------------------------
+
+describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
+  const DEST = 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/ImagePicker/0194-a.img';
+  /** The picker's hooks: what it removed, and whether the app lock is up. */
+  const hooks = (gone: string[] = [], locked: () => boolean = () => false) => ({ discard: async (u: string) => void gone.push(u), locked });
+  it('[C6] a pick yields the destination it asked for and nothing else; the session keeps only the uri', async () => {
+    const asked: string[] = [];
+    const picker = createPhotoPicker({ pickOne: async (d: string) => (asked.push(d), d) }, () => DEST, hooks());
+    const r = await picker.open({}).done;
+    expect(asked).toEqual([DEST]);
+    expect(r).toEqual({ status: 'picked', asset: { uri: DEST } });
+    const s = new PhotoSession();
+    s.pick({ ...(r.status === 'picked' ? r.asset : { uri: '' }), pairedVideoUri: 'file:///x/live.mov' });
+    expect(Object.keys(s.source!)).toEqual(['uri']);
+  });
+  it('[C6] a failure crosses as a closed code with no native text', async () => {
+    const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    try {
+      const picker = createPhotoPicker({ pickOne: async () => { throw new Error('CANARY-/private/var/mobile/IMG_4521-Berkeley.HEIC'); } }, () => DEST, hooks());
+      const r = await picker.open({}).done;
+      expect(r).toEqual({ status: 'failed' });
+      expect(JSON.stringify(r) + spies.flatMap((s) => s.mock.calls.map((c) => c.map(String).join(' '))).join('')).not.toContain('CANARY');
+    } finally {
+      for (const s of spies) s.mockRestore();
+    }
+  });
+  it('[C6] Cancel, an answer naming another file and a cancel by the app are told apart and keep nothing', async () => {
+    const run = (answer: string | null) => createPhotoPicker({ pickOne: async () => answer }, () => DEST, hooks()).open({}).done;
+    expect(await run(null)).toEqual({ status: 'cancelled' });
+    expect(await run('file:///var/mobile/Containers/Data/Application/ASHA/Documents/ExpoAudio/take.m4a')).toEqual({ status: 'failed' });
+    const gone: string[] = [];
+    const p = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone)).open({});
+    p.cancel();
+    expect(await p.done).toEqual({ status: 'cancelled' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]); // the copy that landed after the cancel is removed
+  });
+  it('[NS-01-R17][C6] one pick at a time, and Cancel ends the wait at once: a copy that lands later is removed', async () => {
+    let land!: (uri: string | null) => void;
+    const calls: string[] = [];
+    const gone: string[] = [];
+    const picker = createPhotoPicker({ pickOne: (d: string) => (calls.push(d), new Promise<string | null>((r) => (land = r))) }, () => DEST, hooks(gone));
+    const first = picker.open({});
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' }); // a second tap opens nothing
+    expect(calls).toEqual([DEST]);
+    first.cancel(); // an iCloud download still running natively
+    expect(await first.done).toEqual({ status: 'cancelled' });
+    // Cancel ends the wait, not the native copy: the picker is not free while it still runs (privacy review B on #837).
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(calls).toEqual([DEST]); // nothing was opened under the running copy
+    land(DEST);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]);
+    picker.open({}); // free once the native copy has finished
+    expect(calls).toEqual([DEST, DEST]);
+  });
+  it('[NS-01-R22] no reset function ships in the bundle: resetPhotoDeviceForTest lives only under test/', () => {
+    const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+    for (const f of walk(join(__dirname, '..', 'src')).filter((x) => /\.tsx?$/.test(x))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/resetPhotoDeviceForTest|nativeForTest/);
+  });
+  it('[NS-01-R47] a pick under App lock is dropped: [C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
+    const gone: string[] = [];
+    let locked = true;
+    const picker = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => locked));
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(gone).toEqual([DEST]);
+    const broken = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => { throw new Error('lock'); }));
+    expect(await broken.open({}).done).toEqual({ status: 'cancelled' }); // a lock that cannot be read counts as up
+    locked = false;
+    expect(await picker.open({}).done).toEqual({ status: 'picked', asset: { uri: DEST } });
+    expect(gone).toEqual([DEST, DEST]);
+    // The phone's picker reads the real lock state, and discards through the picker folder's remover.
+    const device = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'device.ts'), 'utf8');
+    expect(device).toContain('{ discard: (uri) => picked.remove(uri), locked: appLocked }');
+    expect(device).toContain(".getAppLockState().locked;");
+  });
+  it('[C6] the destination is a new plain file in Caches/ImagePicker, where the reader, the remover and the launch sweep look', () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000003'));
+    const dest = pickerDestination('0194-a');
+    expect(dest).toBe(`${h.disk.caches}ImagePicker/0194-a.img`);
+    expect(withinFolder(dest, `${h.disk.caches}ImagePicker/`)).toBe(true);
+    expect(() => pickerDestination('../x')).toThrow();
+  });
+});
+
 // ---- C7: no temporary original survives ----------------------------------------------------------------------------
 
 function pickedMemory(initial: Record<string, Uint8Array>): PickedFiles & { left: () => string[]; sweeps: number } {
@@ -45,11 +196,90 @@ function pickedMemory(initial: Record<string, Uint8Array>): PickedFiles & { left
   return f;
 }
 
+describe('[NX-39-R53][C7] no temporary original survives an interrupted attach', () => {
+  const URI = 'file:///c/ImagePicker/a.jpg';
+  const WORDS = 'Asha and the rain boots.';
+  it('[C7] after a successful strip the original is gone', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('stored');
+    expect(files.left()).toEqual([]);
+    expect(stored.disk.size).toBe(1);
+    expect(p.source).toBeNull();
+  });
+  it('[C7] after a failed strip (not a picture, damaged, or a failing disk) the original is gone and nothing is stored', async () => {
+    for (const bytes of [Uint8Array.of(1, 2, 3, 4, 5), makeJpeg().slice(0, 12)]) {
+      const files = pickedMemory({ [URI]: bytes });
+      const p = new PendingPhoto(files);
+      await p.set({ uri: URI });
+      const { d, files: stored } = deps();
+      expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('unreadable');
+      expect(files.left()).toEqual([]);
+      expect(stored.disk.size).toBe(0);
+    }
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps({ files: memoryFiles({ failWrite: true }) });
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('failed');
+    expect(files.left()).toEqual([]);
+    expect(stored.disk.size).toBe(0);
+  });
+  it('[C7] a read that fails while the original is still there also ends with the original removed and nothing stored', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    files.read = async () => {
+      throw new Error('io'); // the file is there, but it cannot be read
+    };
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored, store } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('failed');
+    expect([files.left(), stored.disk.size, store.all().length, p.source]).toEqual([[], 0, 0, null]);
+  });
+  it('[C7] a cancel (discard) removes the original, and so does a replace after the Undo window and a take-off after it', async () => {
+    let t = 0;
+    const files = pickedMemory({ [URI]: makeJpeg(), 'file:///c/ImagePicker/b.jpg': makeJpeg() });
+    const p = new PendingPhoto(files, () => t);
+    await p.set({ uri: URI });
+    await p.set({ uri: 'file:///c/ImagePicker/b.jpg' }); // replace: the first waits for Undo
+    expect(files.left().sort()).toEqual([URI, 'file:///c/ImagePicker/b.jpg']);
+    expect(p.canUndo).toBe(true);
+    await p.settle();
+    expect(files.left()).toEqual(['file:///c/ImagePicker/b.jpg']);
+    p.remove();
+    t = 11_000;
+    expect(p.canUndo).toBe(false);
+    expect(await p.undo()).toBe(false);
+    await p.discard();
+    expect(files.left()).toEqual([]);
+  });
+  it('[C7] Undo brings the earlier picture back and removes the replacement\'s original', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg(), 'file:///c/ImagePicker/b.jpg': makeJpeg() });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    await p.set({ uri: 'file:///c/ImagePicker/b.jpg' });
+    expect(await p.undo()).toBe(true);
+    expect(p.source?.uri).toBe(URI);
+    expect(files.left()).toEqual([URI]);
+  });
+  it('[C7] a picture with no words is not read into a copy and stays pending', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg() });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: URI });
+    const { d, files: stored } = deps();
+    expect((await p.commit(d, { entryId: 'e1', finalText: '  ' }))?.status).toBe('needs_words');
+    expect(stored.disk.size).toBe(0);
+    expect(files.left()).toEqual([URI]);
+  });
+});
+
 describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuses to touch anything else', () => {
   beforeEach(() => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000001'));
   });
-  it('[C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
     const cache = h.disk.caches;
     put(h.disk, `${cache}ImagePicker/a.jpg`, 100);
     put(h.disk, `${cache}ImagePicker/b.heic`, 100);
@@ -503,11 +733,22 @@ describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and rem
     expect([...h.disk.files.keys()]).toEqual([other]);
     expect(() => expoBakedFiles(() => '../x').destination()).toThrow();
   });
-  it('[C7] the launch sweep empties Caches/ScribePhoto too', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] the launch sweep empties Caches/ScribePhoto too', async () => {
     put(h.disk, `${h.disk.caches}ScribePhoto/left.jpg`, 10);
     put(h.disk, `${h.disk.caches}ImagePicker/left.jpg`, 10);
     await expoPickedFiles().sweep();
     expect([...h.disk.files.keys()].filter((u) => /ScribePhoto|ImagePicker/.test(u))).toEqual([]);
+  });
+  it('[C8] a baker wired into commit turns a rotated picture upright using the picked file\'s uri', async () => {
+    const seen: (string | undefined)[] = [];
+    const files = pickedMemory({ 'file:///c/ImagePicker/r.jpg': makeJpeg({ exif: true, orientation: 6 }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: 'file:///c/ImagePicker/r.jpg' });
+    const { d, files: stored } = deps();
+    d.orientation = { bake: async (_o, s) => (seen.push(s?.uri), makeJpeg({ seed: 4 })) };
+    expect((await p.commit(d, { entryId: 'e1', finalText: 'Words.' }))?.status).toBe('stored');
+    expect(seen).toEqual(['file:///c/ImagePicker/r.jpg']);
+    expect(stored.disk.size).toBe(1);
   });
 });
 
@@ -686,7 +927,7 @@ export function swiftProblems(swift: string): string[] {
 describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () => {
   const dir = join(__dirname, '..', 'modules', 'scribe-photo');
   const swift = readFileSync(join(dir, 'ios', 'ScribePhotoModule.swift'), 'utf8');
-  it('[NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
+  it('[NS-01-R22] the system picker is the only source and returns one photo: [NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
     const sources = compiledSources(join(dir, 'ios'));
     expect(sources).toEqual(['ScribePhotoModule.swift']);
     for (const f of sources) expect(swiftProblems(readFileSync(join(dir, 'ios', f), 'utf8')), f).toEqual([]);
@@ -876,5 +1117,56 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     expect((await commitPhoto(d, { entryId: 'd1', finalText: '', bytes: makeJpeg(), text: null, requireWords: false })).status).toBe('stored');
     expect((await commitPhoto(d, { entryId: 'e1', finalText: '', bytes: makeJpeg(), text: null })).status).toBe('needs_words');
     expect(files.disk.size).toBe(1);
+  });
+});
+
+describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
+  const WORDS = 'Asha and the rain boots.';
+  beforeEach(() => {
+    clearPhotoNotSaved('e1');
+  });
+  it('[NS-01-R17] a failing disk marks the letter; a later success clears it; a picture with no words marks nothing', async () => {
+    const URI = 'file:///c/ImagePicker/a.jpg';
+    const run = async (opts: { failWrite?: boolean; text?: string }) => {
+      const picked = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+      const p = new PendingPhoto(picked);
+      await p.set({ uri: URI });
+      const { d } = deps({ files: memoryFiles({ failWrite: opts.failWrite }) });
+      await adoptPending(p, () => d, 'e1', opts.text ?? WORDS, true);
+      return picked.left();
+    };
+    expect(await run({ failWrite: true })).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(true);
+    expect(await run({})).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(false);
+    clearPhotoNotSaved('e1');
+    expect(await run({ text: '' })).toEqual([URI]); // needs words: still pending, nothing marked
+    expect(photoNotSaved('e1')).toBe(false);
+  });
+  it('[NS-01-R17] a throwing store is caught and marked, never rethrown', async () => {
+    const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': makeJpeg() });
+    const p = new PendingPhoto(picked);
+    await p.set({ uri: 'file:///c/ImagePicker/a.jpg' });
+    await expect(adoptPending(p, () => { throw new Error('db'); }, 'e1', WORDS, true)).resolves.toBeUndefined();
+    expect(photoNotSaved('e1')).toBe(true);
+  });
+});
+
+describe('[NS-01-R19] the remote pause hides the new surfaces and never turns them on', () => {
+  it('[NS-01-R19] killSwitches.photos true pauses; absent, false, a missing config or an unreadable one do not', () => {
+    const at = (cfg: unknown) => photosPausedNow(() => ({ getRemoteConfig: () => cfg as never }));
+    expect(at({ killSwitches: { photos: true } })).toBe(true);
+    expect(at({ killSwitches: { photos: false } })).toBe(false);
+    expect(at({ killSwitches: { sync: true } })).toBe(false);
+    expect(at(null)).toBe(false);
+    expect(photosPausedNow(() => { throw new Error('no remote'); })).toBe(false);
+  });
+  it('[NS-01-R19] the data rights never read the switch or the pause: the store, the sweep and every eraser', () => {
+    for (const f of ['lib/photos/housekeeping.ts', 'lib/photos/entry-media.ts', 'lib/erase-everything.ts', 'lib/capture/erase.ts', 'lib/capture/sweep.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).not.toMatch(/photosPausedNow|photosBuildEnabled/);
+    const device = readFileSync(join(SRC, 'lib', 'photos', 'device.ts'), 'utf8');
+    for (const fn of ['sweepPhotosAtLaunch', 'erasePictureOf']) {
+      const body = device.slice(device.indexOf(`export function ${fn}`), device.indexOf('\n}\n', device.indexOf(`export function ${fn}`)));
+      expect(body, fn).not.toMatch(/photosPausedNow|photosBuildEnabled/);
+    }
   });
 });
