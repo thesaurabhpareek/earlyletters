@@ -260,16 +260,22 @@ describe('[NS-47-R28] a value is a known shape, never free text', () => {
   });
 });
 
-describe('[NS-47-R15] a file of another owner is never adopted or merged', () => {
-  it('B ticking over A\'s file, and A over a local file, start empty: nothing of the old file lands in the new one', async () => {
+describe('[NS-47-R15] a file of another owner is never adopted, merged or overwritten', () => {
+  it('B ticking over A\'s file, and A over a local file, write nothing and leave the file byte for byte (DAYS-4: refuse)', async () => {
     await fresh(A).tickDay(DAY);
+    const before = text();
     expect(loadDays(B)).toEqual({ state: 'empty' }); // B is never told a file existed
-    const b = fresh(B);
-    await b.tickDay('family.synthetic-two');
-    expect(JSON.parse(text())).toEqual({ v: 1, owner: B, ticked: { 'family.synthetic-two': {} } });
+    h.written = 0;
+    expect(await fresh(B).tickDay('family.synthetic-two')).toEqual(UNAVAILABLE);
+    expect(await fresh(B).clearAllDays()).toEqual(UNAVAILABLE);
+    expect(h.written).toBe(0);
+    expect(text()).toBe(before);
+    expect(endDaysSession()).toBe(true); // sign-out clears it, and only then can B write
+    expect(await fresh(B).tickDay('family.synthetic-two')).toEqual({ ok: true });
     await writeDays(expoDaysPort()!, file('local'));
-    await fresh(A).tickDay('family.synthetic-two');
-    expect(JSON.parse(text())).toEqual({ v: 1, owner: A, ticked: { 'family.synthetic-two': {} } }); // only the claim step adopts (next PR)
+    const local = text();
+    expect(await fresh(A).tickDay(DAY)).toEqual(UNAVAILABLE); // only the claim step adopts (next PR)
+    expect(text()).toBe(local);
   });
 
   it('a queued write is dropped by a clear, and a write already past its rename does not bring the file back', async () => {

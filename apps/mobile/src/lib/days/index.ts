@@ -33,9 +33,8 @@ export function createDaysStore(getPort: () => DaysPort | null) {
     const run = queue.then(async (): Promise<DaysResult> => {
       const p = port();
       if (!p || started !== generation) return UNAVAILABLE;
-      let r = readDays(p, owner);
-      if (r.state === 'foreign' && removeDays(p)) r = { state: 'empty' };
-      if (r.state !== 'ok' && r.state !== 'empty') return UNAVAILABLE; // unreadable, newer, unavailable or undeletable
+      const r = readDays(p, owner);
+      if (r.state !== 'ok' && r.state !== 'empty') return UNAVAILABLE; // foreign, unreadable, newer or unavailable: nothing is written
       const next = fn(r.state === 'ok' ? r.file : { v: 1, owner, ticked: {} });
       if (!next || (await writeDays(p, next)) !== 'ok') return UNAVAILABLE;
       if (started !== generation) {
