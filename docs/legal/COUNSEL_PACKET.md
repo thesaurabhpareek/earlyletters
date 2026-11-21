@@ -453,3 +453,137 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 | 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
 | 1.1.0 | 2026-10-16 | Rebuilt for option B and the founder's 15 Oct direction for legal pages: a one-page table of what changed; R4's twelve questions in R4's order (Q41 to Q52); Q53 to Q56; #81's Q32 to Q40 restated (Q32 is now the health notice question, with the separate notice removed); the 1.0.0 questions with their status; and the code checks of the services the texts name. 16 Oct: the review of PR #163 (two reviews) found claims the code contradicts or has not built; the drafts now describe only built features or say a feature is not available yet, and section 0 lists each. Decision ids follow develop (D-100 to D-108). The 1.1.0 addendum drafted in PR #81 was never merged; its questions are carried here. |
 | 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |
+
+## 9. Questions from the Moments tab (NS-53; drafted 21 Nov 2026)
+
+> Draft for counsel review. Prepared by an AI (legal drafting support); not legal advice; no attorney-client relationship exists. Every legal conclusion below is marked "counsel must confirm". Nothing here says anything is compliant or legal. The "default if counsel is silent" is what the product does, not a legal view.
+
+**Appended, not merged into 1.7.0.** This section is appended at the end of the file so it does not collide with the open draft that adds section 8 (#1057, Q109 to Q122). The packet version line and the Changelog row (the next version after #1057's 1.8.0) are for whoever merges second; they are deliberately not touched here.
+
+**Where it comes from (all heads read on 21 Nov 2026).**
+- The spec `docs/product/prd/28-moments-tab.md` on `wip/moments-prd-v3` at `b31a389b8afb3e747f61d19e098f2bc22a65800d`: section 21.3 (the ten questions), 21.2 (money), 21.1 (calendar), G2, section 16.1 (proposed promise text). The spec is PROPOSED; nothing in it is decided, built or in `docs/DECISIONS.md`. Spec rows R135 and R166 were reworded in PR #1314 (branch `docs/moments-prd-v3`, head `f52cd5a2f426951497ebfc145d809d031371127f`) and no longer say "never leaves the phone" or "we hold nothing"; the other spec citations in this section were read at `b31a389b` and are not re-checked against the newer head (UNVERIFIED).
+- `docs/product/moments-tab/exec-review/hybrid-legal.md` on `wip/moments-hybrid-review-legal` at `4d001e1da8b3b521b9467d3f4a8aef484913889d` (EXH-LEG-1 to EXH-LEG-15) and `hybrid-privacy.md` on `wip/moments-hybrid-review-privacy` at `0b1218108926ca43dc0602c8be5d1202d4adbb80` (EXH-PRV-1 to EXH-PRV-13). Both are Claude-role reviews, not counsel. Their statements about Apple text are as they report them; I did not re-read Apple's pages, so each Apple quotation is UNVERIFIED here until counsel or `legal` reads it.
+- The earlier brief in `docs/product/moments-tab/exec-review/clo.md` on `develop`, "Counsel brief: the ten questions".
+
+**How the numbers work.** The spec numbers its ten questions Q1 to Q10 inside its own table. Those clash with this packet's Q1 to Q10 (1.0.0 questions). So here they take the next free packet numbers, and the spec number is kept in brackets. The repo's id check (`scripts/agents/next-id.mjs`, `id-collisions.mjs`) covers D, ADR, APPLY, BL, CR and S1 ids only, not packet question numbers. I therefore checked by hand: develop's packet ends at Q108; the open drafts claim Q58 to Q74 (#598), Q75 to Q77 (BL-780), Q78 to Q106 (per the #760 title; its branch's separate draft file `docs/legal/COUNSEL_PACKET_MEMORY_LIBRARY_DRAFT.md` has headings from Q78 to Q106, and #760 no longer lists `COUNSEL_PACKET.md` among its files) and Q109 to Q122 (#1057, section 8; its head `f80e67bb` ends at Q122); a scan, on 21 Nov 2026, of the file lists of all 193 open PRs (counted at the same time; this number changes daily) found only #1057, #830 (the develop-into-main release snapshot, which carries develop's file ending at Q108) and this PR touching `docs/legal/COUNSEL_PACKET.md`; no open PR or head read mentions Q123 to Q132 in a docs file; no `wip/moments-*` branch adds a packet number. I did not re-read every `wip/*` branch for this re-check. The next free numbers are Q123 to Q132. Re-run this check at merge; if #1057 grows past Q122, shift this block and nothing else.
+
+**Build profiles used below** (read from `apps/mobile/eas.json` on develop): `development`, `e2e` and `testflight` have `EXPO_PUBLIC_SERVER_FEATURES` off; `preview` and `production` have it on; `EXPO_PUBLIC_BACKUP` is off in all; no profile sets `EXPO_PUBLIC_PHOTOS`. Spec flags: **F1** the picker door (Apple's system picker, no permission), **F2** the library read on the phone (date, time and place of pictures, after a primer), **F3** an Apple geocoder (not planned), **F4** picture-timed reminders (off). The first store build is the `production` profile, so servers are ON in it.
+
+### 9.1 Proposed promise text, before and after (founder approves; counsel must confirm)
+
+Founder-only: what a user is promised. Nothing below is live. O-48 in the spec is the founder's approval; no public line ships before it. Source: spec section 16.1 and R285.
+
+| Surface | Before | After (PROPOSED) | True when |
+|---|---|---|---|
+| Lead line | "days suggested from your pictures" (the earlier lead the spec replaces; I found no live public copy of it in `packages/content` or the store text on develop, so "before" is the spec's own earlier wording) | "Pictures start the story. Your voice finishes it." Second line: "We never write a word for you." | The second line is true in every build (the constitution in `CLAUDE.md`) |
+| First run, library read granted (Full or Limited), F2 on | None found | "Pick pictures from a day, then tell {child} about it. If you like, {app} can suggest days from the date, time and place of your pictures, read on this phone." | F2 on and approved with its gates |
+| First run, declined, Not now, Restricted or library off | None found | "Pick pictures from a day you want to remember, then say what was happening." Button: "Choose pictures" | F1 only; every build |
+| First run, Limited | None found | "Pick pictures from a day, then tell {child} about it." One calm line says which pictures this tab can use, with a "Choose pictures" button | F1 plus a limited library read |
+| Store description and screenshots | None found | "Pick pictures from a day you want to remember, then say what was happening. Your words stay yours. It never adds a word to your letter." | Every build |
+| Store promotional text (only after F2 is approved and gates are on record) | None found | "Let the app suggest days from the date, time and place of your pictures, read on this phone, or choose pictures yourself any time." | F2 on |
+| Primer, variant A (default, R192) | None found | "{app} reads the date, the time and the place of your pictures, on this phone and only while Moments is open, to suggest days to tell {child} about." | F2 on |
+| Primer, variant B (challenger) | None found | "You can choose pictures yourself any time. If you would like suggestions, {app} can read the date, time and place of your pictures, on this phone, while Moments is open." | F2 on |
+| Primer, variant C | None found | "To suggest days, {app} reads the date, time and place of your pictures. It happens on this phone, only while Moments is open." | F2 on |
+
+Words the spec bars from every line: the tab name in store text, "stays on your phone", "no account", "private" as a bare headline, "Apple Photos", "memories", "highlights", "daily", "every day", "never ask again", "we only see what you pick" (EXH-LEG-3: true only with no access; false with the library read on), "a better App Review story".
+
+Questions this raises for counsel are inside Q123 (label and consent), Q130 (absolute sentences) and Q128 (Terms). Counsel must confirm that none of the "after" lines is a misleading statement in any build in which it appears.
+
+### 9.2 Index
+
+| Packet Q | Spec Q | Topic | Requirement ids | Profiles it bites | Blocks | Default if silent |
+|---|---|---|---|---|---|---|
+| Q123 | 1 | Label, consent, purpose string, phone-only primer record | R81, R72, R37, R61, R166, R182, 8.5, EXH-LEG-4, EXH-LEG-7 | `production`, `preview` (F2) | G2, store submission | F2 stays dark; label and policy unchanged |
+| Q124 | 2 | Picture-timed reminders (4.5.4, 5.1.2(vi)) | R132 to R135, R191, R181, R80, F4 | none in the first release | Phase 2 | F4 off |
+| Q125 | 3 | Naming a city from picture location; the in-memory home place | R61, R63, R64, R117, 7a.2 | `production`, `preview` (F2) | G2, G3 | Place lines off; date-only cards |
+| Q126 | 4 | Location in a library or picked picture (DPLA 3.3.3(F)); readable under Limited | R37, R61, R72, R75, EXH-LEG-5, EXH-LEG-6 | F2 and F1 | G2, G3 | Date-only cards |
+| Q127 | 5 | Trademark: "Moments" as a tab label (trademark attorney) | R8, R194, O-28 | store listing, screenshots | O-28 | Fallback label in screenshots |
+| Q128 | 6 | Terms: other people's children, approximate labels, no scanning, knowledge duty | R93, R97, R103, R104, EXH-LEG-7(d) | F1 and F2 | G2, store submission | Terms 4.2.0 not published; library read waits |
+| Q129 | 7 | Deletion promise versus a picture copy in an iPhone backup | R97, R166, R81, R235, O-44, EXH-LEG-14, EXH-PRV-1 | F1 and F2, any build that keeps a picture | G2 | Exclude the folder from backup; carve-out sentence |
+| Q130 | 8 | Policy mechanics: material change, Significant Change API, CalOPPA, absolute sentences | R135, R166, R81, R175, R193, H-11, EXH-LEG-3 | `production` | Store submission | Say what we receive, never where it lives |
+| Q131 | 9 | Publisher and liability (5.1.1(ix)); entity; cover; public address | G10, O-47 | store submission | G10 | Founder starts an entity in parallel |
+| Q132 | 10 | Place dataset licence; later geocoder caching | R61, R62, R117, G8, G11b | F2 places | G11b | No places; geocoder not built |
+
+No eleventh question (EXH-LEG-13). The picker door's questions are lettered sub-items under the numbers above. Per the spec's G2 row, the door is independent of the spec's Q1 to Q4 and Q10 (here Q123 to Q126 and Q132) and not independent of Q5 to Q7 and Q9 (here Q127 to Q129 and Q131). Counsel must confirm that reading.
+
+### 9.3 Q123 (spec Q1). Label and consent for a build that reads dates and places on the phone, servers on
+- **Facts.** The F2 read takes the date, time and rounded place of pictures in the parent's library, in memory on the phone, after a primer. Nothing library-derived is meant to leave the phone or be stored (R162). The first store build has servers on. The label of record today answers "Photos or Videos: No" and "Location: No" for a build with no photo feature (`app-store-privacy-labels.md` lines 50 and 54).
+- **(a)** Is "Photos or Videos: not collected" and "Precise Location: not collected" a correct answer for a `production` build that reads picture dates and coordinates only on the phone, keeps picture copies on the phone only, and has servers on? The spec's reviewers read Apple's definition of "collect" (data leaves the device and is held beyond the real-time request) as supporting "not collected"; that is UNVERIFIED here and counsel must confirm. Any picture upload or sync (the spec's Variant B) would change it at once.
+- **(b)** Is the purpose string (date, time and place named, no claim about analysing the content of pictures) enough? Is a phone-only record of the primer answer enough, with no server consent row?
+- **(c)** Apple's first-time picker text (EXH-LEG-4): if the system picker shows its own onboarding text in a state where our primer has told the parent something different (Full access), what does counsel advise about showing both? Until read, the spec holds the inline picker out of the Full-access state. G1a records, per access state, whether the text shows and its exact words.
+- **(d)** A picked picture is stored on the phone as a stripped copy after Keep (EXH-LEG-1, EXH-LEG-7). Does that change the "Photos or Videos" row or the sentence "We do not collect ... photos" (Privacy Policy 3.0.0 line 45)?
+- **Default.** F2 stays dark; label, policy and in-app text unchanged; the door waits for its own paperwork (see Q128 to Q130).
+
+### 9.4 Q124 (spec Q2). Picture-timed reminders
+- **Facts.** A reminder timed from picture dates on the phone, with the same words as the ordinary evening reminder (R133 to R135). F4 is off in the first release.
+- **(a)** Is such a reminder "promotions or direct marketing" (App Review 4.5.4) or "use-based data mining" (5.1.2(vi)), under either reading of whether "Photo APIs" there means all photo data or only depth and facial data? Both texts are UNVERIFIED here; counsel must confirm.
+- **(b)** Does an identical-words reminder mislead anyone, given that the opt-in discloses it?
+- **Default.** F4 off. **Blocks** phase 2 only.
+
+### 9.5 Q125 (spec Q3). Naming a city from picture location, on the phone
+- **Facts.** A nearest-place lookup runs against a bundled table on the phone; no request leaves. A single "home place" lives in memory and in `moments.json` as a parent correction (R249).
+- **(a)** Is naming a city from picture location metadata on the phone acceptable under App Review 5.1.1(ii) and 5.1.2(ii) and (iii)? Counsel must confirm.
+- **(b)** Is the in-memory or stored home place a "profile" that needs its own disclosure under the state precise-geolocation definitions (EX-CLO-15)?
+- **Default.** Place lines off; date-only cards.
+
+### 9.6 Q126 (spec Q4). Location data duties for a picture
+- **Facts.** The Apple Developer Program License Agreement 3.3.3(F)(ii), as the legal reviewer read it, covers applications that "otherwise obtain a user's location through the use of the Apple Software or Apple Services" and requires notice and consent before location data is "collected, transmitted or otherwise used" (EXH-LEG-5; verbatim reading UNVERIFIED by me).
+- **(a)** Does that clause, or any other, treat location embedded in a library picture as location data needing separate notice or consent? Is location readable and usable under Limited access (G1a-L records the technical answer)?
+- **(b)** A file the parent picks through the system picker can carry coordinates. If our code opens it only to read a date and then re-encodes it without location, does that count as obtaining or using location data? The spec's default for the door is a date chip only, with no place from a picked picture, and a build test that fails if the picker code touches a location property or tag.
+- **(c)** Video: the metadata removal API for a re-encoded video is UNVERIFIED (NS-52-R5); until the spike passes, text says "pictures" only (EXH-LEG-6).
+- **Default.** Date-only cards; no place from a picked picture. **Blocks** G2 and G3.
+
+### 9.7 Q127 (spec Q5). "Moments" as a tab label (trademark attorney, not the same counsel)
+- **Facts.** The tab label appears in the tab bar and so in screenshots; no filing is planned while the word is in-app only (spec 21.2).
+- **Questions.** Is "Moments" clear for this software in classes 9, 42 and 45 (two USPTO-derived records were opened by the CLO role; a wider search was not)? May it appear in screenshots? Which fallback label is lowest risk? Does it change the search for "Early Letters"? Counsel must confirm.
+- **Default.** Fallback label in screenshots; in-app label per founder.
+
+### 9.8 Q128 (spec Q6). Terms for pictures, other people's children and approximate labels
+- **Facts.** Terms 4.1.0 do not mention pictures (a search of the file finds none). The door is the first place a parent attaches a picture of someone else's child.
+- **(a)** Do the draft clauses (the parent confirms they may use the pictures they add, including pictures of other people and their children; dates and place names are computed, not the parent's words; no scanning; optional library read) fit inside Apple's minimum custom EULA terms and California law?
+- **(b)** The same question for pictures the parent picks through the system picker, including other people's children (EXH-PRV-10: Apple's People album is inside the picker).
+- **(c)** Does reading the library on the phone create any knowledge duty (18 U.S.C. 2258A)? Counsel must confirm.
+- **Default.** Terms 4.2.0 not published; the library read and the door wait.
+
+### 9.9 Q129 (spec Q7). Deletion promise versus a picture copy in an iPhone backup
+- **Facts.** A kept letter's picture copy sits in the app container and is part of the parent's iPhone backup; `data-policy.md` lines 138 and 145 already say so, and no parent-facing line says so yet (CR-62 item 4). Privacy Policy 3.0.0 line 37 and Terms 7.3 name recordings in the iPhone backup, not pictures.
+- **(a)** Does a picture copy in an iPhone backup change our deletion promise, the label, or what we may say in answer to an access or deletion request?
+- **(b)** Temporary located originals in `Caches/ImagePicker` and the system's iCloud download after a pick (EXH-LEG-14): do they belong in the answer?
+- **(c)** Is a carve-out sentence enough if the folder is not excluded from backup, or does counsel prefer exclusion (the CLO role does, because it makes the promise true)? Founder decision O-44 sits beside this.
+- **Default.** Exclude the folder from backup; carve-out sentence. **Blocks** G2.
+
+### 9.10 Q130 (spec Q8). Policy mechanics and absolute sentences
+- **Facts.** The library read and the door change behaviour; the policy and label must change in the same build (R81, R240).
+- **(a)** Is the library read a material change needing notice and re-show, including to TestFlight testers? Does Apple's Significant Change API apply (UNVERIFIED)?
+- **(b)** Does CalOPPA need anything beyond the build-list fix (Privacy Policy 3.0.0 line 21; see `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`)?
+- **(c)** Which absolute sentences are unsafe ("never leaves the phone", "we hold nothing", "we only see what you pick")? The spec says sentences state what we receive, never where something lives (H-11), and that every sentence about the picker names its mode: no access, Limited or Full (EXH-LEG-3). Counsel must confirm.
+- **Default.** "We do not receive" wording with a version bump and re-show.
+
+### 9.11 Q131 (spec Q9). Publisher and liability
+- **Questions.** With Moments, is an individual publisher at risk under App Review 5.1.1(ix)? Should an entity exist before the first submission? What cover is realistic for errors and omissions and cyber for a one-person publisher holding family data? What address may be public? Existing packet Q47 asks the publisher-identity part; this question adds what Moments changes.
+- **Default.** The founder starts an entity in parallel (decide-by Fri 27 Nov in the spec's calendar; PROPOSED). **Blocks** G10.
+
+### 9.12 Q132 (spec Q10). Place data licence and any later geocoder
+- **Questions.** Does the chosen offline dataset's licence permit bundling in a paid app, and what attribution or share-alike duty follows? If Apple's geocoder is ever wanted, may results be cached, what consent text and label change follow, and does it conflict with Apple's one-request-per-action rule (Attachment 6 UNVERIFIED)?
+- **Default.** Offline table only; geocoder not built. **Blocks** G11b.
+
+### 9.13 Capped brief ordering (a proposal for the founder; the cap and the engagement are the founder's, O-40)
+Counsel cost is UNVERIFIED and the founder sets the cap. Silence is not a pass: any part counsel does not answer stays dark. If the cap forces cuts, the order below keeps the questions that gate the most shipping first and cuts last the ones whose default is already "off".
+
+| Order | Packet Q | Why here |
+|---|---|---|
+| 1 | Q123 | Gates the library read and the label for the `production` profile |
+| 2 | Q126 | Gates date and place use; its default (date-only) is a real product cost |
+| 3 | Q129 | Gates the door and the library; the promise and the label depend on it |
+| 4 | Q128 | Gates the door and store submission |
+| 5 | Q130 | Policy mechanics for the same release |
+| 6 | Q131 | Gates the founder sign-off; may be a separate engagement |
+| 7 | Q125 | Default (date-only cards) is acceptable; ask if budget allows |
+| 8 | Q127 | A different attorney; separate cap; the fallback label is available |
+| 9 | Q124 | Phase 2 only; F4 off |
+| 10 | Q132 | No places by default; ask only if the place table is wanted |
+
+A first cut (orders 1 to 6) answers everything the spec says the door and the library need together. Whether that is an adequate or sufficient brief is for counsel and the founder; counsel must confirm.
+
+### 9.14 What counsel is not asked to do
+Nothing here asks counsel to approve the product copy in 9.1 as marketing, to set price, or to rule on anything outside these ten topics. The contradictions between published drafts and the hybrid design are listed in `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`; they are fixes `legal` drafts as Privacy Policy 3.1.0, Terms 4.2.0, in-app disclosures 3.5.0 and label 2.3.0 (spec R266), held as draft-for-counsel.
