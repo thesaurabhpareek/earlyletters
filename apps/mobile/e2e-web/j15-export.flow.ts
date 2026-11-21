@@ -16,9 +16,9 @@ test('[J15] export with letters', async ({ app, record }) => {
   await step('happy', 'Export your book', 'The book\'s own cover at the top, so the person sees what they will get. A "Last export" row ("Not exported yet" until a copy has been prepared) with one plain nudge to save a copy in Files or iCloud Drive; no notifications and no reminder. What is inside, each with its glyph: every letter as text, every recording, a printable book per child, a data file with the words as heard, every small fix and the final text. The export is made on this phone and goes only where it is sent. (Seeded fictional family Asha.)');
   await app.getByText('Export everything', { exact: true }).click();
   const failed = app.getByTestId('export.failed');
-  await expect(failed.getByText("The export didn't finish")).toBeVisible();
+  await expect(failed.getByText('The export did not finish')).toBeVisible();
   await expect(app.getByText('Export again', { exact: true })).toBeVisible();
-  await step('unhappy', "The export didn't finish", 'On a phone Export builds a ZIP in the cache and opens the iOS share sheet. The web build has no file system, so it lands on the honest failure card, with the warning mark, and "Export again". Every failure names its cause and has an action that can work: a book too big for one file leads to "Write to us" instead (a phone check).');
+  await step('unhappy', 'The export did not finish', 'On a phone Export builds a ZIP in the cache and opens the iOS share sheet. The web build has no file system, so it lands on the honest failure card, with the warning mark, and "Export again". Every failure names its cause and has an action that can work: a book too big for one file leads to "Write to us" instead (a phone check).');
 });
 
 test('[J15b] export with nothing to export', async ({ app, record }) => {
