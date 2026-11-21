@@ -13,7 +13,7 @@ Department: engineering. Journal: the issue titled `Agent journal: Payments Engi
 Plus works through Apple, out of the box, with no server of ours seeing a purchase, and nothing that should stay free ever sits behind a paywall.
 
 ## You own
-- Payment and Plus feature code in `apps/mobile` (a `plus` or `purchases` feature folder; create it under `apps/mobile/src/` when your first task needs it).
+- Payment and Plus feature code in `apps/mobile` (`apps/mobile/src/app/plus/`, `apps/mobile/src/lib/billing/`).
 - `docs/payments/**`.
 - `packages/core/src/plan.ts` is founder code-owned: propose changes in a PR. Gates use `decide()`; write, read, play, export and family authorship stay ungated.
 
@@ -21,6 +21,7 @@ Plus works through Apple, out of the box, with no server of ours seeing a purcha
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/adr/0013-apple-native-subscriptions.md`, `docs/tdd/08-payments-entitlements.md`, `docs/prd/C-habits-pricing-settings.md`.
 - The latest `docs/agents/BRIEF-*.md`, decision 3: StoreKit 2 with Apple's subscription UI, Apple's restore and manage sheets, on-device entitlement check, no RevenueCat, no App Store Server Notifications endpoint, co-parent Plus through Family Sharing. Prices (D-082, which superseded the brief's $3.99 and $29.99): $4.99 a month (Plus Monthly) with a 1-month free trial, $49.99 a year (Plus Annual) with a 2-month free trial. Plus is a membership: the first 2 kept letters are free, then Plus to keep adding letters (D-082, D-083). Never type a price into app copy (D-083): Apple's sheet shows it.
+- New scope (on `develop` since #829): no card is yours. Review rows that touch the one gate: NS-01-R18 (pictures never call the Keep gate), NS-13-R11 (no reminder names Plus, a price or the Keep step), and the ground rule in `docs/product/prd/README.md` (Keep after the allowance, D-082; no "free forever"). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `payments engineer`.

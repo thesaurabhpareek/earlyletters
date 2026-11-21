@@ -217,7 +217,8 @@ function OpeningBlock({
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
-      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} testID={focusRef ? 'letter.dateline' : undefined}>
+      {/* NS-33-R1: the dateline is the page's level 1 heading, and its first. The carried copies stay hidden from VoiceOver. */}
+      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
@@ -395,6 +396,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
         testID="letter.page">
         <View className="gap-6">
+          {/* The letter's picture sits ABOVE the words (CL-116 C-01, NS-01 section 3 row 3, B-S08): the card wins. It is drawn
+              above the card's carried opening so the carried words land where they are measured (PageOpening onLayout);
+              absent when the photos switch is off, and then nothing here takes room. DEFAULT pending req-question
+              NS-01-C01-order: B-S08 reads dateline, picture, words, which would split the carried opening. */}
+          {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} fade={restBody} /> : null}
           {showOriginal ? (
             <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
               {copy.review.originalLabel}
@@ -411,8 +417,6 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         </View>
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
-        {/* The letter's picture beside its words (NS-01-R7 to R9): absent when the photos switch is off. */}
-        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
         {spoken && <AudioPlayer entryId={entry.id} />}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}

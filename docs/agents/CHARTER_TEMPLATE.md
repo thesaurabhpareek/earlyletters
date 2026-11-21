@@ -47,7 +47,7 @@ Memory template (`agents/<handle>/MEMORY.md`, under 120 lines):
 ```markdown
 # Memory: <Title> (<handle>)
 
-Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever.
+Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines instead of appending forever.
 
 ## Current focus
 ## Facts about this codebase (with paths)

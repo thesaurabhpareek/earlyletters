@@ -8,6 +8,9 @@
  *
  * The order, first match wins:
  *  1. server features off                -> `unchanged`
+ *  1a. another account is signed in on a phone that holds this owner's book -> `otherAccount` (BL-961, NS-10-R3,
+ *     `[X4-R1]`; lib/auth/account-scope.logic.ts): no book, no child step, no new-phone question. The screen cover
+ *     (components/account/account-layer.tsx) offers sign-out over every route; the route itself draws nothing.
  *  2. the phone holds a book             -> `openTonight` (R22: an ended session never locks a person out of reading,
  *     recording or export; sign-in is offered, not required). Only the under-18 stop beats it, and that stop is the
  *     root age gate's, which sits above every route and is not changed here.
@@ -27,7 +30,8 @@
  * switch is ever added, the CISO's condition is that it is disable-only: a remote value may turn the local start off,
  * never on, signed through ADR 0016.
  */
-import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
+import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
+import { authUserId, type AuthErrorKind, type AuthState } from '@/lib/auth/machine.logic';
 import type { OpeningView } from './new-phone.logic';
 
 /**
@@ -75,9 +79,14 @@ export interface FirstRunGateInput {
    * has not answered: the safe reading is "still opening", never the child step.
    */
   newPhone?: OpeningView;
+  /**
+   * BL-961: false while another account is signed in on a phone that holds this owner's book (account-scope.logic.ts).
+   * Absent counts as visible, as every caller before BL-961 meant.
+   */
+  bookVisible?: boolean;
 }
 
-export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere';
+export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere' | 'otherAccount';
 
 export interface FirstRunGateResult {
   step: FirstRunStep;
@@ -108,6 +117,9 @@ function localStartAllowed(ageAnswered: AgeAnswer, constant: boolean): boolean {
 
 export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
   if (!input.serverFeatures) return NOTHING;
+  // BL-961: never the owner's book, and never a new one either (it would be written into the owner's store and sent
+  // under the owner's account at their next sign-in).
+  if (input.bookVisible === false) return result('otherAccount');
   const constant = input.localStartFallback ?? LOCAL_START_FALLBACK;
 
   // A signed-in phone is being asked about its account (NX-36-S17). Only the under-18 stop beats it.
@@ -206,6 +218,8 @@ export function gateInputsFromAuth(args: {
   newPhone?: OpeningView;
   /** From the connectivity source (use-online.ts). Omitted means unknown, which counts as online. */
   online?: boolean;
+  /** BL-961: `sync.ownerId` (store `currentUserId()`), the account that owns this phone's book; null before the first claim. */
+  phoneOwner?: string | null;
 }): FirstRunGateInput {
   const s = args.authState;
   return {
@@ -220,6 +234,7 @@ export function gateInputsFromAuth(args: {
     localStartFallback: LOCAL_START_FALLBACK,
     localStartChosen: args.localStartChosen,
     newPhone: args.newPhone,
+    bookVisible: bookVisibleTo({ owner: args.phoneOwner ?? null, sessionUser: authUserId(s) }),
   };
 }
 
