@@ -6907,7 +6907,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Done when: `j18-dark-mode` and `j09-book` pass on `develop`; a changed heading would fail them.
 - Test: `apps/mobile/e2e-web/j18-dark-mode.flow.ts`, `j09-book.flow.ts`.
 
-## Follow-ups filed at the progress refresh (BL-1439 to BL-1442; proposed, none is decided)
+## Follow-ups filed at the progress refresh (BL-1439 to BL-1445; proposed, none is decided)
 
 Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL-1438 are held by the open PR #1296, so these rows start at BL-1439. Anything that exists only in an open PR is marked unverified.
 
@@ -6923,7 +6923,7 @@ Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL
 #### BL-1440 Find part 2 gates before the Book-header slice mounts Find
 - Status: proposed. Mode: agent. Owner: mobile engineer (Find). Milestone: M12. Size: S. Depends on: BL-952.
 - Priority: Medium. Gate: this row lands before the Book-header slice that mounts Find.
-- Satisfies: none given (NS-02 is the nearest; no requirement id was checked).
+- Satisfies: NS-02-R41 (gap 1, the row reads once), NS-02-R14 (gap 2, the query is cleared), NS-02-R15 and NS-02-R22 (gap 5, no analytics), checked in `docs/product/prd/02-find.md`. Gaps 3 (Cancel clears) and 4 (the fallback moves to content) have no row that says so [U].
 - Problem and evidence: five gaps are open. (1) `rowLabel` uses `String.replace` with a string replacement, so a letter containing `$&` or `$'` is mangled in the VoiceOver label. (2) The query is not cleared, and Find is not unmounted, when Find is hidden. (3) Cancel does not clear the query. (4) A hard-coded "your child" fallback is in code, not in content. (5) The no-analytics grep test is weak.
 - Scope: fix (1) with a function replacement or split and join; clear or unmount on hide; make Cancel clear; move the fallback to `packages/content` (the words are PROPOSED until the founder approves); strengthen the grep test. Split into two PRs if it grows past one reviewable PR.
 - Done when: a letter containing `$&` and `$'` reads back unchanged in the label; each of (2) and (3) has a test; the fallback is read from content; the grep test fails on a planted analytics call.
@@ -6942,7 +6942,34 @@ Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL
 - Status: proposed (#1242 is blocked by the CI unit timeout; the notes apply once it can run). Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
-- Problem and evidence: reviewers left two notes on #1242: key `inFlight` by user id, and add a provider behavioural test. Note on the premise: the NDA-1 premise was a reviewer's reading, not an observed failure; no failure was seen on a device or in a test. Unverified: the exact code in the PR head.
-- Scope: key the in-flight map by user id; add the provider test; do not claim the premise as a bug in the PR body.
-- Done when: both notes are answered in the PR and the new test fails without the keying.
+- Problem and evidence: reviewers left three notes on #1242: (1) key `inFlight` by user id; (2) add a provider behavioural test; (3) no test asserts the report timer is cleared, so the `clearTimeout` mutant survives. Note on the premise: the builder found `verifyEmailLink` already sets the method before the exchange; no failure was observed on a device. Unverified: the exact code in the PR head.
+- Scope: key the in-flight map by user id; add the provider test; add a test that fails when the report timer is not cleared; do not claim the premise as a bug in the PR body.
+- Done when: all three notes are answered in the PR, the new test fails without the keying, and the timer test fails with `clearTimeout` removed.
 - Test: `apps/mobile/test` auth tests.
+
+#### BL-1443 Tighten the smart-invert guard for pictures
+- Status: proposed (not decided; design-systems sets it to ready). Mode: agent. Owner: design systems. Milestone: M12. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-33-R11 (the guard from #1097, merged); no new requirement.
+- Problem and evidence: the guard detects an `Image` by its import source from `react-native` or `expo-image`, and treats a component as safe by the `Button$` name suffix. Aliased or third-party images and bare `PictureCard` or `Avatar` call sites are not detected. Unverified: the exact current code of the test.
+- Scope: detect images by import source from `react-native` or `expo-image` including aliases; replace the `Button$` suffix with an explicit allowlist; decide whether bare `PictureCard` and `Avatar` call sites are checked, and say so in the test.
+- Done when: a planted aliased image without the invert guard fails the test, and the allowlist is the only way a component passes.
+- Test: the NS-33-R11 test in `apps/mobile/test`.
+
+#### BL-1444 Photo wiring slice: discard pending photos on leaving, one adopt at a time, and the picture after a forced sign-out
+- Status: proposed (not decided; waits for the photo stack #838 to #840 to merge). Mode: agent. Owner: mobile engineer (photo). Milestone: M12. Size: S. Depends on: BL-931 slices 4b to 5.
+- Priority: Medium. Gate: after the photo stack.
+- Satisfies: none given (BL-931 is the parent row; no requirement id was checked).
+- Problem and evidence: three gaps found in review of the photo slices. (1) Pending photos are not discarded on sign-out, on an account switch or on Erase everything. (2) The adopt path's global `adopting` flag silently drops a second adopt. (3) A forced sign-out on an expired session leaves the in-memory picture until the next Home focus. Unverified: the exact code on the stack heads.
+- Scope: discard pending photos in those three paths, each with a test; make a second adopt wait or queue instead of being dropped; clear the in-memory picture on forced sign-out. Split into two PRs if it grows past one.
+- Done when: a test for each of the three paths fails with the fix removed.
+- Test: `apps/mobile/test` photo tests.
+
+#### BL-1445 Design-conformance swap for the photo frame after the stack
+- Status: proposed (not decided; waits for the photo stack to merge). Mode: agent. Owner: mobile engineer (photo; design-systems reviews). Milestone: M12. Size: XS. Depends on: BL-931 slices 4b to 5.
+- Priority: Low. Gate: after the photo stack.
+- Satisfies: none given (design conformance; no requirement id was checked).
+- Problem and evidence: `photo-frame.tsx` uses a raw `borderWidth` of 1; `surface.ts` holds literal values; `error-line.tsx` carries its own copy. Unverified: file paths and lines on the stack heads.
+- Scope: `photo-frame.tsx` uses `mediaFrame` and `tokens.stroke.control`; `surface.ts` reads `tokens.picture`; `error-line.tsx` is replaced by the shared `ErrorLine` in `components/ui`. No new words.
+- Done when: no raw border width or duplicated picture literal is left in those files, and the photo tests still pass.
+- Test: `apps/mobile/test` photo tests and the token tests.
