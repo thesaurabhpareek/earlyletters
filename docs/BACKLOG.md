@@ -209,7 +209,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: superseded (by BL-111 and BL-130).
 
 #### BL-334 Consent pepper guard (new) [High]
-- Status: done (`supabase/migrations/20261015010000_v1_gate_peek_invite_consent_pepper.sql`, `consent_pepper_ready()`, `supabase/tests/access_matrix.test.mjs`). Mode: agent (`approve-migration`; migration range from the coordinator, or folded into db-followup's `20261005*`). Owner: privacy engineer.
+- Status: partly done (migration `20261015010000_v1_gate_peek_invite_consent_pepper.sql` and `supabase/tests/v1_gate_limits_peek_pepper.test.mjs` merged; hosted apply, `supabase/APPLY.md` files 13 to 16, and FT-10 setting the pepper remain). Mode: agent (`approve-migration`; migration range from the coordinator, or folded into db-followup's `20261005*`). Owner: privacy engineer.
 - Satisfies: LEGAL-REQ-009, DATA-REQ-006; TDD 05 X-12.
 - Scope: account deletion's pseudonymisation raises if `app.consent_pepper` is missing or shorter than 32 characters, instead of hashing with an empty pepper (`coalesce(current_setting('app.consent_pepper', true), '')` today); a test proves it. The founder sets the pepper in FT-10 before any deletion.
 
@@ -434,7 +434,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Done when: the chosen option is recorded; for (a), an export taken offline after one signed-in read holds the record and says when it was read, with a test.
 
 #### BL-324 Native modules never crash or hang on bad input (review L9)
-- Status: done (`apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift`, `apps/mobile/modules/scribe-store/ios/PlusStoreSheet.swift`, `apps/mobile/test/native-guards.test.ts`; device check FT-22 is separate). Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
+- Status: partly done (`apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift`, `PlusStoreSheet.swift`, `apps/mobile/test/native-guards.test.ts`; the device check FT-22 remains). Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
 
 #### BL-529 Export carries the person's own profile fields [Medium]
 - Status: done (PR #469, merged as 985ed66). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034 ("profile fields"). Raised by: Review B of PR #161.
@@ -919,12 +919,12 @@ Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-
 - Scope: move `pendingCopy` and permission strings into content; wire `en.settings.plan`, `en.settings.account`, `en.auth`, `en.coParentLeft`; rename `tidy*` keys to "Word for word" (D-074); microphone purpose string without "share with family"; hide v1.1 family screens.
 
 #### BL-357 App reports subscription status to the server
-- Status: done (`apps/mobile/src/lib/billing/plan-store.ts`, `apps/mobile/test/billing-status-report.test.ts`; hosted apply and flag-on are separate). Mode: pair. Owner: payments engineer. Milestone: M8. Size: M. Depends on: BL-358.
+- Status: partly done (`apps/mobile/src/lib/billing/plan-store.ts` and `apps/mobile/test/billing-status-report.test.ts` merged; waits on the BL-358 hosted apply and the flag-on step). Mode: pair. Owner: payments engineer. Milestone: M8. Size: M. Depends on: BL-358.
 - Satisfies: D-080 (narrows Brief decision 3), D-022.
 - Scope: after StoreKit 2 entitlement checks, send plan, trial end, renewal date and cancelled flag only (no payment data, no receipts) through `packages/api`.
 
 #### BL-358 Subscription status table and endpoint
-- Status: done (`supabase/migrations/20261016001000_subscription_status.sql`, `supabase/functions/subscription-status/handler.ts`). Mode: pair (founder `approve-migration`). Owner: data architect. Milestone: M8. Size: M.
+- Status: partly done (migration `20261016001000_subscription_status.sql` and `supabase/functions/subscription-status/handler.ts` merged; the migration is Pending in `supabase/APPLY.md` file 18, hosted apply is a founder step). Mode: pair (founder `approve-migration`). Owner: data architect. Milestone: M8. Size: M.
 - Satisfies: D-080; data map entry required (DATA-REQ-001).
 - Scope: new migration and RPC per the `packages/api` contract; RLS tests; retention; privacy data map row. Platform coordinator area.
 
@@ -1120,7 +1120,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J04 (J04-01), J05 (J05-08), J06 (J06-12); discard cases in `apps/mobile/test/store.entries.test.ts` and `apps/mobile/test/sweep.test.ts`.
 
 #### BL-380 Recording stays awake and Read together autoplay survives auto-lock [High]
-- Status: done (`apps/mobile/src/lib/resilience/keep-awake.ts`, `apps/mobile/test/keep-awake.test.ts`; the device row stays in BL-279). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Status: partly done (`apps/mobile/src/lib/resilience/keep-awake.ts`, `apps/mobile/test/keep-awake.test.ts`; the Done-when is Auto-Lock 30 s on a device, row in BL-279). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
 - Severity: major. Raised by: quality (2 findings). Steps: J05-01, J11-03.
 - Satisfies: LEGAL-REQ-011 (recording still stops when the app leaves the foreground); D-027.
 - Scope: Keep the screen awake during recording and during Read together autoplay, and release it on stop or leave. A take is still saved and stopped if the app is backgrounded. Verify on a device (auto-lock 30 s).
@@ -2532,7 +2532,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 ### Build 2 blockers (S0)
 
 #### BL-563 Listen never sticks on "finishing" (APP-01)
-- Status: done (PR #595 with follow-ups #618 and #611, `apps/mobile/test/listen.test.ts`; device row S1-39 not yet run). Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
+- Status: partly done (PR #595 with follow-ups #618 and #611, `apps/mobile/test/listen.test.ts`; the SE 3 full-disk acceptance is device row S1-39, not yet run). Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
 - Who: `mobile`.
 - Problem: `apps/mobile/src/app/listen.tsx:134-144` calls `endTake` without a catch, and most callers use `void` (`finish` at :263 awaits nothing either). If `finalizeDraftAudio` throws (a full disk makes the SQLite write in `recorder.ts:150` throw), the screen stays on "finishing" and the only control left is "Let it go", which deletes the take (`listen.logic.ts:74-76`).
 - Requirement: every way out of a take reaches Review or Tonight within 3 s, and the take is kept.
@@ -2574,7 +2574,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Extends: BL-107, BL-247, DATA-REQ-030, DATA-REQ-031.
 
 #### BL-594 Edge Functions keep working when staging's legacy keys are switched off (SEC-01)
-- Status: done (PR #602, `supabase/functions/_shared/keys/keys.test.ts`; the live staging check with legacy keys off is still to do). Mode: agent. Owner: security engineer, platform. Severity: S0. Karma's ruling (CR-47): until the code change lands, AF-06 keeps the legacy keys on staging; the founder does not deactivate them.
+- Status: partly done (code and `supabase/functions/_shared/keys/keys.test.ts` merged in PR #602; the S0 acceptance, a live staging check with legacy keys off, is outstanding, a founder or hosted step, CR-47). Mode: agent. Owner: security engineer, platform. Severity: S0. Karma's ruling (CR-47): until the code change lands, AF-06 keeps the legacy keys on staging; the founder does not deactivate them.
 - Who: `security` (code), `ops` (AF-06 text).
 - Problem: every function reads only `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_ANON_KEY` (`supabase/functions/invite-redeem/handler.ts:104-105`, `apple-token/handler.ts:103,121`, `analytics-forget/handler.ts:83`, `subscription-status/handler.ts:115`, `purge-worker/config.ts:44`), while AF-06 says to deactivate the legacy keys on staging (`docs/release/AUTOMATION.md:322,413`). Supabase says those variables carry the legacy keys and lists `SUPABASE_SECRET_KEYS` and `SUPABASE_PUBLISHABLE_KEYS` for functions (supabase.com/docs/guides/api/api-keys and /functions/secrets, read 1 Nov 2026). Without the Apple token, deletion cannot revoke Sign in with Apple (Apple 5.1.1(v)).
 - Requirement: the functions read the new secret and publishable keys, with the legacy names as a fallback until they are gone.

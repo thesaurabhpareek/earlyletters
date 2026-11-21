@@ -14,7 +14,7 @@ Status words used, from the file's own vocabulary: `done (evidence)`, `supersede
 
 | Auditor verdict | Rows | Changed here | Left unchanged |
 |---|---|---|---|
-| DONE | 37 | 37 (34 done, 3 partly done after the re-read) | 0 |
+| DONE | 37 | 37 (27 done, 10 partly done after the re-read and the review of PR 1213) | 0 |
 | PARTIAL | 46 | 46 | 0 |
 | BLOCKED | 15 | 15 | 0 |
 | SUPERSEDED | 8 | 5 (4 superseded, BL-453 partly done) | 3 (BL-369, BL-406, BL-845 not reproduced) |
@@ -22,7 +22,7 @@ Status words used, from the file's own vocabulary: `done (evidence)`, `supersede
 | OPEN | 71 | 0 | 71 |
 | Total | 188 | 103 | 85 |
 
-Final lines by new status: done 34, superseded 4, blocked or needs-founder 15, partly done 50 (46 audited PARTIAL plus BL-394, BL-509, BL-510 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
+Final lines by new status: done 27, superseded 4, blocked or needs-founder 15, partly done 57 (46 audited PARTIAL, 10 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
 
 ## Verdicts overturned or not applied
 
@@ -31,6 +31,8 @@ Final lines by new status: done 34, superseded 4, blocked or needs-founder 15, p
 | BL-509 | DONE | partly done | Done-when says the text is on `main`. `origin/main` still has the old line in `apps/web/src/content/site.ts`. |
 | BL-510 | DONE | partly done | Done-when says `/open` serves on `main` and the AASA lists it. `origin/main` has neither. |
 | BL-394 | DONE | partly done | Done-when asks for 3:1 and 4.5:1 checks on every captured route in J18. `apps/mobile/e2e-web/j18-dark-mode.flow.ts` only checks the screen is dark. |
+| BL-594, BL-358, BL-334, BL-357 | DONE | partly done | Review of PR 1213: BL-594's S0 acceptance is a live staging check, and the BL-358 and BL-334 migrations are Pending in `supabase/APPLY.md`; BL-357 depends on BL-358. A hosted apply is not done because the code is merged. |
+| BL-563, BL-380, BL-324 | DONE | partly done | Their acceptance or Done-when is a device result (S1-39, BL-279, FT-22), not yet run. |
 | BL-453 | SUPERSEDED | partly done | Points 1 to 3 lost their surface when BL-870 closed the photo bucket, but points 4 and 6 are still real work. |
 | BL-369 | SUPERSEDED | unchanged | D-071 chose final-a, but the row is the founder's optional parent test. Founder decides whether to retire it. |
 | BL-406 | SUPERSEDED | unchanged | The code no longer matches the row (Write says "Add to {child}'s book"), but no D or BL id records the choice. Needs a design or product decision id first. |
@@ -43,20 +45,20 @@ All rows were `ready`.
 | Id | New status | Evidence or what remains |
 |---|---|---|
 | BL-002 | done | `scripts/trace.mjs`, `docs/TRACE.md`, run by `npm test` in report mode; making `--check` block merges is a founder question, 07 Q8 |
-| BL-334 | done | `supabase/migrations/20261015010000_v1_gate_peek_invite_consent_pepper.sql`, `consent_pepper_ready()`, `supabase/tests/access_matrix.test.mjs` |
-| BL-324 | done | `apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift`, `apps/mobile/modules/scribe-store/ios/PlusStoreSheet.swift`, `apps/mobile/test/native-guards.test.ts`; device check FT-22 is separate |
+| BL-334 | partly done | migration `20261015010000_v1_gate_peek_invite_consent_pepper.sql` and `supabase/tests/v1_gate_limits_peek_pepper.test.mjs` merged; hosted apply, `supabase/APPLY.md` files 13 to 16, and FT-10 setting the pepper remain |
+| BL-324 | partly done | `apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift`, `PlusStoreSheet.swift`, `apps/mobile/test/native-guards.test.ts`; the device check FT-22 remains |
 | BL-325 | done | `apps/mobile/src/lib/remote/__tests__/documents.test.ts`, `apps/mobile/src/lib/auth/reauth.logic.ts` |
 | BL-342 | done | PR #121, `apps/mobile/src/lib/billing/plan-reminders.logic.ts`, `apps/mobile/test/billing-plan-reminders.test.ts` |
 | BL-440 | done | `packages/content/src/store.en.ts`, `apps/mobile/test/release-config.test.ts` case BL-440 |
 | BL-344 | done | `apps/mobile/src/app/settings/plus.tsx` redeemOfferCode, `apps/mobile/modules/scribe-store/ios/ScribeStoreModule.swift` |
 | BL-355 | done | `apps/mobile/src/components/ui/fonts.ts`, `apps/mobile/src/app/onboarding.tsx` |
 | BL-356 | done | `apps/mobile/src/lib/copy.ts` deprecated, every string lives in `@scribe/content` |
-| BL-357 | done | `apps/mobile/src/lib/billing/plan-store.ts`, `apps/mobile/test/billing-status-report.test.ts`; hosted apply and flag-on are separate |
-| BL-358 | done | `supabase/migrations/20261016001000_subscription_status.sql`, `supabase/functions/subscription-status/handler.ts` |
+| BL-357 | partly done | `apps/mobile/src/lib/billing/plan-store.ts` and `apps/mobile/test/billing-status-report.test.ts` merged; waits on the BL-358 hosted apply and the flag-on step |
+| BL-358 | partly done | migration `20261016001000_subscription_status.sql` and `supabase/functions/subscription-status/handler.ts` merged; the migration is Pending in `supabase/APPLY.md` file 18, hosted apply is a founder step |
 | BL-370 | done | PR #801, `apps/mobile/src/app/_layout.tsx` ErrorBoundary, `apps/mobile/test/resilience.test.ts` |
 | BL-371 | done | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/app/settings/recently-deleted.tsx`, `purgeExpired` in `apps/mobile/src/lib/store.ts`; Undo is a toast on the Book per S36, not a button on the page |
 | BL-375 | done | `apps/mobile/src/components/speech/speech-consent-card.tsx`, `apps/mobile/src/components/settings/speech-row.tsx`, `apps/mobile/src/lib/packs/__tests__/engine.test.ts` |
-| BL-380 | done | `apps/mobile/src/lib/resilience/keep-awake.ts`, `apps/mobile/test/keep-awake.test.ts`; the device row stays in BL-279 |
+| BL-380 | partly done | `apps/mobile/src/lib/resilience/keep-awake.ts`, `apps/mobile/test/keep-awake.test.ts`; the Done-when is Auto-Lock 30 s on a device, row in BL-279 |
 | BL-382 | done | `apps/mobile/src/lib/capture/probe.ts`, `apps/mobile/test/sweep.playable.test.ts` |
 | BL-383 | done | `apps/mobile/src/app/+not-found.tsx`, `LINK_ROUTE_ALLOWLIST` in `apps/mobile/src/lib/family/entry.logic.ts` |
 | BL-386 | done | `apps/mobile/src/app/settings/children/[id].tsx` editors call `updateChild` |
@@ -66,9 +68,9 @@ All rows were `ready`.
 | BL-496 | done | PR #400, tests tagged BL-496 in `apps/mobile/test/account-deletion-gate-hook.test.ts` |
 | BL-503 | done | PR #804, `apps/mobile/test/auth-machine.test.ts` case BL-503 |
 | BL-515 | done | `apps/web/src/app/auth/callback/page.tsx`, `apps/web/e2e/auth-confirm.e2e.ts` |
-| BL-563 | done | PR #595 with follow-ups #618 and #611, `apps/mobile/test/listen.test.ts`; device row S1-39 not yet run |
+| BL-563 | partly done | PR #595 with follow-ups #618 and #611, `apps/mobile/test/listen.test.ts`; the SE 3 full-disk acceptance is device row S1-39, not yet run |
 | BL-564 | done | PR #589, `apps/mobile/test/privacy-documents.test.ts` |
-| BL-594 | done | PR #602, `supabase/functions/_shared/keys/keys.test.ts`; the live staging check with legacy keys off is still to do |
+| BL-594 | partly done | code and `supabase/functions/_shared/keys/keys.test.ts` merged in PR #602; the S0 acceptance, a live staging check with legacy keys off, is outstanding, a founder or hosted step, CR-47 |
 | BL-857 | done | PR #763, `docs/research/studies/MEMORY-LIBRARY-STUDY-PLAN-10nov.md`, status DRAFT; the path differs from the scope |
 | BL-870 | done | PR #1115, `supabase/migrations/20261110000000_photo_bucket_closed.sql`, `supabase/tests/photo_bucket_closed.test.mjs`; hosted apply is a founder step |
 | BL-927 | done | PR #867, `docs/design/specs/NS-33-ACCESSIBILITY-FLOOR-20nov.md` |
@@ -150,7 +152,7 @@ All rows were `ready`.
 
 - `node scripts/agents/dispatch.mjs` reads the first word of the status. `partly` is neither ready nor done, so the 50 partly done rows are skipped and their dependents stay blocked. The remainder of each is named in its status line, but nothing picks it up until product splits it into a new `ready` row. That is the next product task for the rows with agent work left (for example BL-110, BL-117, BL-363, BL-364, BL-402, BL-408, BL-427, BL-430, BL-466). BL-408 matters most: BL-434 waits on it.
 - The existing phrase "done in part" would have counted as `done` for dependents, which is why it was not used.
-- Eligible agent tasks by the dispatcher's own rules: 165 before, 80 after. Newly eligible: BL-359 and BL-928 (their blockers BL-358 and BL-927 are now done).
+- Eligible agent tasks by the dispatcher's own rules: 165 before, 79 after. Newly eligible: BL-928 (its blocker BL-927 is now done). BL-359 stays blocked because BL-358 is partly done.
 - Stale claim rows: `find-lane` (PR 895) and `account-lane` (PR 879) point at merged PRs. Their owner removes them.
 
 ## Rows still UNSURE, and the check each needs
