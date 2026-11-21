@@ -264,6 +264,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
         // Keychain only, so it is safe inside this callback (no Supabase call).
         void clearPendingEmailRequest();
+        // Cross-account audit F2: and the Apple user id, like Sign out, under-18 and revoked do.
+        void forgetAppleUser();
         dispatch({ type: 'SIGNED_OUT' });
         methodRef.current = null; // a signed-out run keeps no method for the next session
       }
