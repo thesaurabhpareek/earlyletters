@@ -8,7 +8,7 @@ Rule: this file is updated by Karma from merged PRs, at least every hour while w
 | reminders | BL-966b planner one a day | mobile | QUEUED | | after 966a |
 | account | #871 account cover | mobile | MERGED 22:37Z | #871 | held-screen words PROPOSED |
 | account | #879 store reads | mobile | BUILDING | #879 | #871 merged |
-| photo | #835 to #840 stack (BL-931) | mobile | BUILDING | #835-#840 | #854 merged 22:37Z; #835 has a merge conflict with develop; #839 rework (C-01); S1 (BL-870) must be live before the photo flag is on outside the founder's family (BRIEF-BL-870) |
+| photo | #835 to #840 stack (BL-931) | mobile | BUILDING | #835-#840 | #854 merged 22:37Z; #835 has a merge conflict with develop; #839 rework (C-01); per F1 the photo slices merge only with S1 (BL-870) and a plain statement of what leaves the phone (DECISIONS-20nov.md line 60) |
 | find | #894, #895 | mobile | BUILDING | #894, #895 | words PROPOSED |
 | data | T1 synced-column drift guard | sync | IN REVIEW | #1068 | |
 | data | BL-959 ADR 0028 amendment and keeping server tests | sync | BUILDING | | |
@@ -26,10 +26,10 @@ Rule: one builder per lane. A lane owns the path globs in `docs/agents/CLAIMS.md
 |---|---|---|---|---|---|
 | A (now) | reminders BL-966a, then 966b | mobile | none | `apps/mobile/src/lib/reminders/**` | brief R1, CR-69 A1 |
 | A (now) | store reads #879 (#871 merged) | mobile | none | `apps/mobile/src/components/account/**`, `apps/mobile/src/lib/account-deletion/**` | HO-911 |
-| A (now) | photo stack #835 to #840 | mobile | #854 (founder, legal) for #835 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | BL-931 |
+| A (now) | photo stack #835 to #840 | mobile | F1: S1 and the plain statement; #835 conflict with develop | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | BL-931 |
 | A (now) | Find #894, #895 | mobile | none | `apps/mobile/src/lib/find/**` | BL-952 |
-| A (now) | T1 guard #1068, BL-959 | sync | none | new files only: `apps/mobile/test/sync-*`, `packages/api/test/contract-drift*` | plan T1 |
-| A (now) | T3 #1069, test PRs #1060 #1061 #1064 #1065 | qa | none | new files only: `apps/mobile/test/g6-*`, `scripts/trace*.mjs`, `scripts/qa/**` | quality catalogues |
+| A (now) | T1 guard #1068, BL-959 | sync | none | exact files: the sync-t1 row in `docs/agents/CLAIMS.md` | plan T1 |
+| A (now) | T3 #1069, test PRs #1060 #1061 #1064 #1065 | qa | none | exact files: the qa-tests row in `docs/agents/CLAIMS.md` | quality catalogues |
 | A (next) | kill-switch PR (signIn, libraryDays) | sync | none | `packages/api/src/kill-switches.ts` | CR-69 A5 |
 | A (next) | B5 backup file PRs 1 to 3 | mobile | none | `apps/mobile/src/lib/backup/**` | BRIEF-B5 |
 | A (next) | S1 photo policy migration, C3 audit writers, C9 grant drop | data-architect | none | `supabase/migrations/**` (new files), `supabase/tests/grants.mjs` | CR-71 |
