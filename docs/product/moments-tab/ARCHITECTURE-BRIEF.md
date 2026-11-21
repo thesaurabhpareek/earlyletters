@@ -87,7 +87,7 @@ Dependencies point one way: screens call `apps/mobile/src/lib` only (CODE-R11, `
 | Module | Path | Owns | F-flag | Edited by |
 |---|---|---|---|---|
 | Moment engine | `packages/core/src/moments/` (new) | types, exclude, group, rules, occasions, place, collage, rank, plan (19.1) | none (pure) | PR 1 to 5 |
-| `scribe-library` | `apps/mobile/modules/scribe-library` (new) | every PhotoKit read, the thumbnail view, `exportForAttach` (R220) | F2, excluded from the native project where F2 is off (R222, R277) | PR 9, 10, 18 |
+| `scribe-library` | `apps/mobile/modules/scribe-library` (new) | every PhotoKit read, the thumbnail view, `exportForAttach` (R220) | F2; the aim is exclusion from the native project where F2 is off (R222, R277), UNVERIFIED until G3-x (2.7) | PR 9, 10, 18 |
 | `scribe-picker` | `apps/mobile/modules/scribe-picker` (new) | the one plain picker, date read, multi-select contract (R271 to R274) | F1 only; independent of F2 (R169 v3 note) | PR 18b-1a, -1b, -1c, later -2, 18c |
 | `scribe-photo` | `apps/mobile/modules/scribe-photo` (exists) | `pickOne`, `reencodeUpright` (`index.ts`, 2 functions) | existing photos flag | no picker PR; only PR 18d (R271, R296) |
 | `lib/moments` | `apps/mobile/src/lib/moments` (new) | `source.ts`, `use-moments`, `capture-handoff.ts`, `clear.ts`, the decisions store | n/a | PR 8, 15, 18a, 19, 19b |
@@ -148,7 +148,7 @@ Files, from 19.1 and HR rows 1 to 5: `types.ts`, `reasons.ts` (15 reasons in the
 
 Pure interfaces (PROPOSED shape; names follow the spec's vocabulary; section 5.1 has the full signatures). Inputs are columnar typed arrays and a clock; outputs are `Moment` values that hold ids, never bytes. A type test fails if a coordinate field appears on a `Moment` (7a.2 step 1, line 407). The type has no free-text field except the parent's own 60-character label (RK-8, R201).
 
-Place rules (7a.2): coordinates are read only inside `place.ts` and dropped when a place id exists; a day's place is its majority place, a tie gives none; home place is the most frequent place in the window, held in memory; a place line shows only when the place differs from home and its share is below `PLACE_RARE_SHARE`; a stay (consecutive qualifying days, same away place) is one card, never named "trip"; Hide this place stores a place key (R229 external id, never a readable name). Table: a bundled offline city table, versioned and checksummed, fails closed to no place (R229); PR 5 uses a synthetic 10-row table, PR 5b ships the real one after counsel reads the licence.
+Place rules (7a.2). Default build target is R220 (Q-2, G1a-L decides): the native fetch returns a place id or a coarse cell and never a coordinate, so `place.ts` resolves only a cell to a place. If G1a-L shows a cell cannot be produced natively, the fallback is that coordinates are read only inside `place.ts` and dropped when a place id exists, which needs the spec owners to change R220 first; a day's place is its majority place, a tie gives none; home place is the most frequent place in the window, held in memory; a place line shows only when the place differs from home and its share is below `PLACE_RARE_SHARE`; a stay (consecutive qualifying days, same away place) is one card, never named "trip"; Hide this place stores a place key (R229 external id, never a readable name). Table: a bundled offline city table, versioned and checksummed, fails closed to no place (R229); PR 5 uses a synthetic 10-row table, PR 5b ships the real one after counsel reads the licence.
 
 Junk bar and the span rule are decided by PR 3b, the R205 harness (counts only, on the founder's own phone export, locally; 7.2a line 349). Goldens for 7.2a are written in PR 2 and PR 5 against `asha-lib-v1`.
 
@@ -162,9 +162,11 @@ Where core's closed lists live (CODE-R13): my standards position, PROPOSED, no r
 | Primer answered flag; nudge opt-in flags | phone settings | L2 | until changed | 17 |
 | Coordinates, place ids for the window, home place, thumbnails | memory only | L4 | the session | 17 |
 | A picked original (temporary) | `Caches/ImagePicker` | L4 (a picture of a child with a location) | removed at the strip, on back-out, on lock, by the photos switch and Erase; launch sweep is backstop | 17, R272, R282 |
-| A kept letter's picture copies | app container, `entry_media` | L4 | with the letter | 17 (existing, ADR 0028) |
+| A kept letter's picture copies | app container, `entry_media` | L4 | with the letter | 17 (existing, ADR 0028). NOT excluded from iPhone backup today: R81, R235 and MEDIA_THREAT_MODEL P9 say so, and whether the policy line discloses it or the folder is excluded is the founder's call at O-44 (device row D-3). `moments.json` is excluded from backup; the picture copies are a different store and must not be assumed to be treated alike |
 
 `moments.json` contract (R221, 17.1): `{v, owner, dayKeys[], labels{}, hiddenPlaces[], homePlace}`; day key is a local ISO date with no zone; unknown fields preserved; a higher `v` reads as empty and writes nothing; write is temp file then rename; a corrupt file is deleted and the tab starts clean with no message; `owner` is an opaque local id, never a person id.
+
+The parent's 60-character label is free text and can hold a child's name: it is never logged, never sent, never in a crash report, and it lives only in `moments.json`, so it is excluded from backup with that file (R201, RK-8).
 
 Never persisted, never sent, never logged (10.2, line 596): image bytes or thumbnails of library assets; coordinates; machine titles, captions, filenames, EXIF text; counts; tap or dwell history; scan results; the permission result as an event; any picture or album identifier (R247: dropped for good, O-13 and O-14 closed as No). Thumbnails have no disk cache (R112, 10.1 step 6).
 
@@ -239,7 +241,7 @@ capture-handoff.ts  builds ONE AttachRequest (type from PR 18a; no route param c
  scribe-photo.reencodeUpright(source, dest)  -> upright, metadata-free JPEG in Caches/ScribePhoto
    v  (the one stripper: EXIF, GPS, device atoms removed; resized under NS-01 numbers)
  PickedFiles.remove(original)   <- the deleter (TypeScript, lib/photos/files.ts); runs after the strip
-   |                              resolves OR the item is refused; launch sweep is the backstop
+   |                              resolves, the strip throws, or the item is refused; a partial `exportForAttach` file and an `exportForAttach` that fails before it returns a name are removed by the same path (L0 cases named in 5.3); launch sweep is the backstop
    v
  Review (copies held in Caches while Review is open)
    |-- back out / Not now / lock / inactive-then-lock  -> 0 files, 0 rows (R86, R102)
@@ -382,7 +384,7 @@ export interface ScribeLibraryNative {
   accessStatus(): AccessStateNative;                       // no prompt, cheap
   requestAccess(): Promise<AccessStateNative>;             // only after the primer's Continue
   fetchWindow(w: { fromMs: number; toMs: number; limit: number }): Promise<LibraryWindowNative>;
-  fullImage(localId: string, px: number): Promise<string>; // day sheet; shape UNVERIFIED (R220 lists "full image and player item or poster")
+  fullImage(localId: string, px: number): Promise<string>; // day sheet; shape UNVERIFIED (R220 lists "full image and player item or poster"). RULE: it must not return a path or base64, because that would create a disk or bridge copy of a library image outside the `exportForAttach` lifecycle; it is a native view handle, or it gets its own deleter row in the threat model before PR 10 (Q-8)
   cancel(requestId: string): void;
   exportForAttach(localId: string, plainName: string): Promise<string>; // writes Caches/ImagePicker/<plainName>
 }
@@ -434,7 +436,7 @@ export function clearMoments(scope: 'revoke' | 'turnOff' | 'erase'): Promise<voi
 ### 5.2 Error codes: local only
 
 - No new analytics event, identifier or stored field; no event that varies by access state; no attach or photo event carries a picker-or-library source (R282, R87, R284).
-- New failure codes are local closed codes. The one wire code is `picker_unavailable`, with no count, type or state (`system.error.raised`, area `moments`, line 965; R282); `library_unreadable` and `fallback_used` stay local (line 965).
+- New failure codes are local closed codes. The one wire code is `picker_unavailable`, with no count, type or state (`system.error.raised`, area `moments`, line 965; R282). It is still a new wire value, so it owes an allowlist row in `packages/analytics` and a data-map entry (PRIV-R01, DQ-R01) before PR 18b-1a merges, and it must be emitted in every access state or it leaks "access granted" (PRIV-R05); `library_unreadable` and `fallback_used` stay local (line 965).
 - A native error is one closed `code` with no path, id, date, file name, type identifier or system text (R110, R272; today's pattern: `index.ts` header of `scribe-photo`).
 - Lint view (my standards read, not a spec row): these are client-local TypeScript codes. API-R09's SQLSTATE registry (`docs/engineering/02-api-and-contracts.md:49`) governs codes a client branches on that come from the server; none does here (no server surface, R116). So no registry entry is owed, and `docs/engineering/10-logging-and-observability.md` OBS-R02 applies to the client the same way: log `{name, code}`, never an id or a message.
 - `photo_limit` is named by R272; the others in `PickerErrorCode` and `LibraryErrorCode` are ASSUMED names for `mobile` to settle in PR 9 and PR 18b-1a, with a test that every thrown code is in a closed list.
@@ -444,7 +446,7 @@ export function clearMoments(scope: 'revoke' | 'turnOff' | 'erase'): Promise<voi
 | Module | L0 unit (vitest, Node) | L1 scan or lint | L2 simulator, e2e | L3 visual | L4 accessibility | L5 device |
 |---|---|---|---|---|---|---|
 | `packages/core/src/moments` | goldens (`asha-lib-v1`), property tests for rank and collage, both span predicates, near-duplicate goldens of 7.2a, place goldens (R281 f), no coordinate on `Moment` (type test) | import-graph (no platform import, CODE-R10); closed reason and verb lists | none | none | none | none |
-| `lib/moments` | access state function table; store contract (corrupt, higher `v`, rename write); hand-off one-shot; cleanup order with `PickedFiles.remove` and negative control; zero-residue on back-out | no `scribe-library` call from `_layout.tsx` or Home (R109); no `requestAuthorization` anywhere in the picker path (R70) | Maestro flows through `fixtureSource` and `fixturePicker` (PR 24); stop at the host sheet | tab states; host frame baselined against a flat placeholder body (EM 10) | per state (G5 a) | permission states, Settings change (G7) |
+| `lib/moments` | access state function table; store contract (corrupt, higher `v`, rename write); hand-off one-shot; cleanup order with `PickedFiles.remove` and negative control; zero-residue on back-out; failure paths with the same zero-residue assertion: `reencodeUpright` throws, `exportForAttach` leaves a partial file, `exportForAttach` fails before it returns a name, app lock engages mid-strip | no `scribe-library` call from `_layout.tsx` or Home (R109); no `requestAuthorization` anywhere in the picker path (R70) | Maestro flows through `fixtureSource` and `fixturePicker` (PR 24); stop at the host sheet | tab states; host frame baselined against a flat placeholder body (EM 10) | per state (G5 a) | permission states, Settings change (G7) |
 | `scribe-library` | TypeScript wrapper against `fixtureSource` | Swift function names equal `index.ts` surface; forbidden-call scan; per-profile native project scan (R277); usage-string key only in allow-listed profiles | `ios-compile.yml` compile leg (F2-on has its own leg, R277) | thumbnails fade in place | decorative view | scan time, LRU, 20,000-item library on an iPhone SE 3 (G1b) |
 | `scribe-picker` | wrapper against `fixturePicker`; per-item codes; limit enforced twice (stub); date-chip rule; canary-GPS fixture | one `PHPickerConfiguration()`; no PhotoKit symbol; no GPS constant, `CLLocation` or whole-dictionary copy; plist, entitlements, privacy manifest diffs unchanged (G11a-photo) | present and cancel on the simulator | host frame | task completion through Apple's view (G5 b) | iCloud pick, app lock during a pick, switcher snapshot, Limited pick (G7) |
 | `scribe-photo` (18d only) | existing C5 to C10 tests, edited only in 18d | existing C8 Swift scan | existing | none | none | existing rows |
@@ -480,7 +482,7 @@ The rest are MY proposed budgets, with no source, to be replaced by the G1b read
 |---|---|---|
 | Cold launch: library work before Home's first frame | 0 calls except `accessStatus` | L0 and L1 source test of R109; Instruments launch trace on device |
 | First Moments focus to first card painted, 20,000-item library, default window | 1.0 s target, 2.0 s ceiling | Instruments Time Profiler plus a perf marker with no content (A5-R2, 14.4); median of 10 cold runs |
-| Fetch window (`fetchWindow`) | bounded by `limit`; `limit` set by G1a-L | native timer in the spike build; report `ms_bucket` only (perf events allow `ms_bucket` and `is_ok`; exec-review `cdo.md:94`) |
+| Fetch window (`fetchWindow`) | bounded by `limit`; `limit` set by G1a-L | native timer in the spike build; report `ms_bucket` only (perf events allow `ms_bucket` and `is_ok`; exec-review `cdo.md:94`). Spike-only: a perf marker emitted only when the library is read would reveal the access state, so in a release build it fires in every access state and carries no state, or it is not emitted |
 | Thumbnail memory | LRU capped in bytes; start at 16 MB hypothesis; peak resident growth from the tab under 40 MB | Instruments Allocations and VM tracker, scroll a 200-day list; size set at G1b |
 | Host sheet with tray thumbnails | tray thumbnails dropped if DM-11 fails (EM 4.4) | DM-11 on SE 3, eight concurrent iCloud picks |
 | Frame time for EM-01 | 0 frames over 16.7 ms at 60 Hz on SE 3 | Instruments Animation Hitches or Core Animation FPS (tool and template names UNVERIFIED for this Xcode); DM-12 |
@@ -566,7 +568,7 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 | Q-2 | Where is a place formed: R220 says the fetch returns "a place id or coarse cell, never a coordinate" (line 1256), while 10.1 step 1 and 7a.2 step 1 return coordinates to JavaScript and resolve in `core/moments/place.ts` (lines 579, 407). Which wins? | `mobile` with `privacy`, `security-architect`; read-out from G1a-L | R220 wins: native returns a coarse cell, core maps cell to place; coordinates never cross the bridge. Accuracy of a cell against the R204 bars is UNVERIFIED | G1a-L, before 9a |
 | Q-3 | Are `Reason`, `Verb`, `CardKind` in `domain.ts` (CODE-R13) or `moments/types.ts`? | `data-architect` with me | `moments/types.ts` exported once from core (never redeclared in the app); `domain.ts` only for a type that reaches SQL or analytics | PR 1 |
 | Q-4 | How does core export `moments` given `export *` and the existing `./rules`? | `mobile` | `export * as moments from './moments'` | PR 1 |
-| Q-5 | With the modal presenter, what does the sheet show while Apple's controller is up, and does the tray exist for Apple picks (R269 says "presented in our sheet"; EM 4.8 Layout C says no tray)? | `design-systems` with `mobile` | Paper cover under the presenter; the tray fills on return; Start only after return | G1a-P read-out, before 18b-1a |
+| Q-5 | With the modal presenter, what does the sheet show while Apple's controller is up, and does the tray exist for Apple picks (R269 says "presented in our sheet"; EM 4.8 Layout C says no tray)? | `design-systems` with `mobile` | Paper cover under the presenter; the tray fills on return; Start only after return | G1a-P read-out, before 18b-1a Also decide what the app lock does while Apple's presented controller is up: it is not our view to close, so the rule must be that lock dismisses the controller if the OS allows it, and otherwise the picks are discarded and the copies deleted on return (R102, R272; UNVERIFIED on a device). |
 | Q-6 | Which `startCapture` source for a door pick and for capture Add: `photo` (exists) or `moment` (R83, card tap)? | `mobile` with `design-systems` | card tap and day sheet: `moment`; door and capture Add: `photo`; neither sent anywhere (R87) | PR 19, 19b |
 | Q-7 | Does a transparent modal fit the `ROUTES` row type or does PR 6 extend `transitions.logic.ts`? | `design-systems` | extend the table in PR 6 with its own test | PR 6 |
 | Q-8 | R220 lists "full image and player item or poster" for the day sheet, but D7 and R276 cut the viewer to one plain full-width enlarge. Keep the functions? | `mobile`, `security-architect` (fewer decoder surfaces) | Keep one function: full image at screen size; drop the player and poster until video ships | PR 9a |
@@ -604,6 +606,12 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 - Every number in `rules.ts` (7.2a), every budget in section 7, and the sizes in section 8 (HR table).
 - Whether Instruments template names used in section 7 match the installed Xcode.
 - Counsel's answers (G2, G8, G9) and the founder's signatures (G10, RV-02, RV-23, O-27, O-37, O-39, O-46, O-48, O-50, O-53, O-54, O-56, O-58): all open; this brief assumes none.
+
+### 10.2a Threat-model rows owed, and the tab's own app-switcher cover
+
+- `docs/security/` has no row today for `scribe-library`, `exportForAttach`, `moments.json` or the thumbnail view. Rows are owed before PR 9, 10 and 8 merge, in `docs/security/MEDIA_THREAT_MODEL.md` or a new file named in the PR 18b-0 style docs item; `security-architect` reads them. Picker rows live in 18b-0.
+- The app-switcher cover is specified for the sheet (4.2). The Moments tab itself holds library thumbnails in memory, so the existing app-lock and inactive cover must be checked to hide the tab body too, not only the sheet (new device row; UNVERIFIED).
+- Backup: the O-44 decision (policy line discloses stored picture copies in the iPhone backup, or the folder is excluded) is open and is not assumed by this brief (2.6; R81, R235; device row D-3). `Caches/ImagePicker` is a separate question and is UNVERIFIED against Apple's text.
 
 ### 10.3 What this brief does not do
 
