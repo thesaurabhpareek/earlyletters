@@ -213,7 +213,7 @@ export const authCopy = {
     provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: "Setting up your account didn't finish. Try again.",
+    consent_unavailable: 'Setting up your account did not finish. Try again.',
     unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',

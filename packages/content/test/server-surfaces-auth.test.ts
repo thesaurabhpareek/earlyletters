@@ -38,7 +38,7 @@ const CHAPTER_7: Record<string, string> = {
   // LNG-05: the stock "That did not work this time" says what did not finish.
   'errors.provider': "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
   'errors.session_expired': 'You were signed out. Sign in again to carry on.',
-  'errors.consent_unavailable': "Setting up your account didn't finish. Try again.",
+  'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
   'errors.unknown': "That didn't go through. Nothing has changed.",
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
@@ -270,7 +270,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     const SAFE = /^(?:Nothing has changed|Your letters are still on this phone)\./;
     // session_expired follows a sign-out the person did not ask for, and consent_unavailable can follow a successful sign-in,
     // so "Nothing has changed." would not be true of either: each says what happened instead.
-    const SAYS_WHAT_HAPPENED: Record<string, string> = { session_expired: 'You were signed out.', consent_unavailable: "Setting up your account didn't finish." };
+    const SAYS_WHAT_HAPPENED: Record<string, string> = { session_expired: 'You were signed out.', consent_unavailable: 'Setting up your account did not finish.' };
     const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
     const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
