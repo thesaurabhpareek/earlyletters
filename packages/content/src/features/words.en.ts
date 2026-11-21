@@ -54,7 +54,7 @@ export const wordsCopy = {
     readItBackButton: 'Read it back',
     readyBody: 'Words are ready. Read it back.',
     // Words arrived while the letter was closed: shown exactly as said, no fix proposed yet.
-    arrivedNote: 'These words are exactly as you said them. Nothing has been fixed.',
+    arrivedNote: 'These words are as they arrived. Nothing has been fixed.',
     // The sheet where a person writes the words for a letter whose recording has none.
     writeTitle: 'Write the words',
     writeLabel: 'Words for this recording',
