@@ -1736,7 +1736,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the test fails if the dependency array is removed or changed (n5, n5b and n5c are killed or shown irrelevant), and the effect uses `announce()`.
 
 #### BL-458 Pins for the refused-Save line and the shelf after a refused Erase, and the Book's first-mount subscribe window
-- Status: in-review (PR #1287). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted), qa engineer. Milestone: M4. Size: S. Depends on: none.
+- Status: partly done (points 1 and 2 done in PR #1287; part 3: the Book's first-mount subscribe window needs a store change counter or one extra read in the effect, mobile picks, see BL-1428, filed in PR #1292). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted), qa engineer. Milestone: M4. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
