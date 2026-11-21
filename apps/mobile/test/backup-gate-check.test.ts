@@ -10,10 +10,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { B5_FILES, B5_MARKERS, backupGateProblems, bundledEscrowKeyCount, gatherBackupGateInputs, stripComments } from '../scripts/lib/backup-gate-check.mjs';
 
+const KEY = Buffer.from(Array.from({ length: 32 }, (_, i) => i + 1)).toString('base64'); // a plausible 32-byte key (a fixture, not a real one)
 const GOOD = {
   profiles: { production: 'on', development: 'off' } as Record<string, string | undefined>,
   missingB5Files: [] as string[],
   missingB5Markers: [] as string[],
+  profileCount: 5,
   escrowKeyCount: 1,
   stopRouteFile: true,
   stopTestAnswers200: true,
@@ -28,6 +30,21 @@ describe('[B5-7] the backup gate check', () => {
   it('no profile on (and no shell value): nothing is required, even with everything missing', () => {
     const none = { ...GOOD, profiles: { production: 'off', preview: undefined }, missingB5Files: ['x'], escrowKeyCount: 0, stopRouteFile: false };
     expect(backupGateProblems(none)).toEqual({ on: false, problems: [] });
+  });
+
+  it('the flag is read as the app reads it: ON, On and " on " are on (a profile and the shell); off values stay off', () => {
+    for (const v of ['ON', 'On', ' on ', '\ton\n']) {
+      expect(ids({ ...GOOD, profiles: { production: v }, escrowKeyCount: 0 }), `profile ${JSON.stringify(v)}`).toEqual(['escrow-keys-empty']);
+      expect(ids({ ...GOOD, profiles: {}, shellValue: v, escrowKeyCount: 0 }), `shell ${JSON.stringify(v)}`).toEqual(['escrow-keys-empty']);
+    }
+    for (const v of ['off', 'OFF', '', 'onn', 'true', '1', undefined]) {
+      expect(backupGateProblems({ ...GOOD, profiles: { production: v }, shellValue: v, escrowKeyCount: 0 }).on, String(v)).toBe(false);
+    }
+  });
+
+  it('a shell value of on with an eas.json that lists no profiles is a problem; with the shell not on there is nothing to check', () => {
+    expect(ids({ ...GOOD, profiles: {}, profileCount: 0, shellValue: 'on' })).toEqual(['eas-no-profiles']);
+    expect(backupGateProblems({ ...GOOD, profiles: {}, profileCount: 0 })).toEqual({ on: false, problems: [] });
   });
 
   it('the shell value counts as on', () => {
@@ -59,13 +76,18 @@ describe('[B5-7] reading the escrow key list', () => {
   const src = (body: string) => `export const BUNDLED_ESCROW_KEYS: readonly EscrowPublicKey[] = [\n${body}\n];\n`;
   it('empty, or only a commented-out key: zero', () => {
     expect(bundledEscrowKeyCount(src(''))).toBe(0);
-    expect(bundledEscrowKeyCount(src("  // TODO(S07): { version: 1, publicKey: 'AAAA' },"))).toBe(0);
-    expect(bundledEscrowKeyCount(src("  /* { version: 1, publicKey: 'AAAA' }, */"))).toBe(0);
+    expect(bundledEscrowKeyCount(src(`  // TODO(S07): { version: 1, publicKey: '${KEY}' },`))).toBe(0);
+    expect(bundledEscrowKeyCount(src(`  /* { version: 1, publicKey: '${KEY}' }, */`))).toBe(0);
+  });
+  it('a placeholder does not count: TODO, too short, not base64, all zero bytes, 33 bytes', () => {
+    for (const k of ['TODO', 'AAAA', '<base64 of 32 raw X25519 bytes>', 'A'.repeat(43) + '=', Buffer.alloc(33, 5).toString('base64'), KEY.slice(0, 40)]) {
+      expect(bundledEscrowKeyCount(src(`  { version: 1, publicKey: '${k}' },`)), k).toBe(0);
+    }
   });
   it('a real entry counts; an entry with an empty key does not', () => {
-    expect(bundledEscrowKeyCount(src("  { version: 1, publicKey: 'AAAA' },"))).toBe(1);
+    expect(bundledEscrowKeyCount(src(`  { version: 1, publicKey: '${KEY}' },`))).toBe(1);
     expect(bundledEscrowKeyCount(src("  { version: 1, publicKey: '' },"))).toBe(0);
-    expect(bundledEscrowKeyCount(src("  { version: 1, publicKey: 'AAAA' },\n  { version: 2, publicKey: 'BBBB' },"))).toBe(2);
+    expect(bundledEscrowKeyCount(src(`  { version: 1, publicKey: '${KEY}' },\n  { version: 2, publicKey: '${KEY}' },`))).toBe(2);
   });
   it('strips comments but not a URL', () => {
     expect(stripComments('a // b\nhttps://x')).toBe('a \nhttps://x');
@@ -91,11 +113,21 @@ describe('[B5-7] the real repository', () => {
     expect(backupGateProblems(wouldBeOn).on).toBe(true);
   });
 
+  it('extends: a profile inherits its parent\'s flag, its own env wins; a cycle does not hang', () => {
+    const files = new Map<string, string>([
+      ['/m/eas.json', JSON.stringify({ build: { base: { env: { EXPO_PUBLIC_BACKUP: 'ON' } }, child: { extends: 'base' }, own: { extends: 'base', env: { EXPO_PUBLIC_BACKUP: 'off' } }, a: { extends: 'b' }, b: { extends: 'a' } } })],
+    ]);
+    const io = { exists: (p: string) => files.has(p), read: (p: string) => files.get(p) ?? '', list: () => [] as string[] };
+    const got = gatherBackupGateInputs({ mobileDir: '/m', webDir: '/w', join: (...p: string[]) => p.join('/'), io, shellValue: undefined });
+    expect(got.profiles).toEqual({ base: 'ON', child: 'ON', own: 'off', a: undefined, b: undefined });
+    expect(got.profileCount).toBe(5);
+  });
+
   it('a fixture tree with all three present reads as present (no network, only the file system)', () => {
     const files = new Map<string, string>([
       ['/m/eas.json', JSON.stringify({ build: { production: { env: { EXPO_PUBLIC_BACKUP: 'on' } } } })],
       ...B5_FILES.map((f) => [`/m/${f}`, ''] as [string, string]),
-      ['/m/src/lib/backup/escrow-keys.ts', "export const BUNDLED_ESCROW_KEYS = [ { version: 1, publicKey: 'AAAA' } ];"],
+      ['/m/src/lib/backup/escrow-keys.ts', `export const BUNDLED_ESCROW_KEYS = [ { version: 1, publicKey: '${KEY}' } ];`],
       ['/w/src/app/stop/page.tsx', ''],
       ['/w/test/stop.test.ts', 'expect(res.status).toBe(200)'],
     ]);
