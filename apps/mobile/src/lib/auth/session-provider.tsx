@@ -21,6 +21,8 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { deleteBackupFilesExcept, endBackupFileFor } from '../backup/files';
+import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
@@ -135,18 +137,6 @@ function phoneHasLocalData(): boolean {
   return phoneHoldsAnyRow(localSqlDb());
 }
 
-/** The stored session's user id, read from the Keychain without touching the network. */
-async function storedUserId(): Promise<string | null> {
-  try {
-    const raw = await secureStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const id = (JSON.parse(raw) as { user?: { id?: unknown } }).user?.id;
-    return typeof id === 'string' ? id : null;
-  } catch {
-    return null;
-  }
-}
-
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(Object.assign(new Error('timeout'), { message: 'timed out' })), ms);
@@ -200,11 +190,19 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const sessionUser = authUserId(state);
   const authSettled = state.status !== 'restoring';
   const lastSessionUser = useRef<string | null>(null);
+  // What the launch's Keychain read said; `unavailable` until it succeeds or when there is no client (never a sweep on that).
+  const storedRead = useRef<StoredSessionRead>({ kind: 'unavailable' });
   useEffect(() => {
     if (!authSettled) return;
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
+    // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
+    if (before && before !== sessionUser) endBackupFileFor(before);
+    // B5-5: and every settled run (a launch included) keeps only the signed-in account's file, so a session that ended
+    // while the app was closed, a kill after sign-out and a failed delete are all caught and retried here.
+    const sweep = backupSweepFor(sessionUser, before, storedRead.current);
+    if (sweep.run) deleteBackupFilesExcept(sweep.keep);
   }, [sessionUser, authSettled]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
@@ -220,7 +218,11 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       return;
     }
     let alive = true;
-    void storedUserId().then((id) => alive && dispatch({ type: 'RESTORED', userId: id }));
+    void readStoredSession(() => secureStorage.getItem(SESSION_STORAGE_KEY)).then((r) => {
+      if (!alive) return;
+      storedRead.current = r;
+      dispatch({ type: 'RESTORED', userId: r.kind === 'found' ? r.userId : null });
+    });
     const { data } = sb.auth.onAuthStateChange((event, session) => {
       // Never call Supabase from inside this callback (supabase-js deadlock note); state only.
       // INITIAL_SESSION arrives with null when the refresh failed for lack of network, while
