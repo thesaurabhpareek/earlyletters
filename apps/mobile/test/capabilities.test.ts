@@ -301,7 +301,7 @@ describe('[F19-REQ-011] remote kill switches can pause a build flag, never start
     expect(KILL_SWITCH_FLAG).toEqual({ backupUploads: 'backup', escrow: 'backup', statusReport: 'statusReport' });
   });
 
-  it('[NS-46-R28] [NS-41-R25] libraryDays and signIn are read directly, never through mayRun (CR-69 A5)', () => {
+  it('[NS-46-R28] [NS-41-R25] guard: libraryDays and signIn never join KILL_SWITCH_FLAG (CR-69 A5)', () => {
     // libraryDays: gate is the days flag plus `killSwitches.libraryDays !== true`. signIn: the outage
     // screen. Neither has a build flag of its own, so neither may sit in this map.
     expect(Object.keys(KILL_SWITCH_FLAG)).not.toContain('libraryDays');

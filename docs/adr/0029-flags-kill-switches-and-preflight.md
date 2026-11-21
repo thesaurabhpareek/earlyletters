@@ -25,8 +25,8 @@
 
 | Key | Hides | Read as | Card row |
 |---|---|---|---|
-| `photoMoments` | the photo-library read and its index at next launch | build flag `EXPO_PUBLIC_PHOTO_MOMENTS` and not paused | NS-51-R32 |
-| `videos` | video and the several-pictures limit | picture flag, video flag and not paused | NS-52-R42 |
+| `photoMoments` | the photo-library read and its index at next launch | build flag `EXPO_PUBLIC_PHOTO_MOMENTS` (planned, not built yet) and not paused | NS-51-R32 |
+| `videos` | video and the several-pictures limit | picture flag and `EXPO_PUBLIC_VIDEO` (planned, not built yet) and not paused | NS-52-R42 |
 | `signIn` | first-run and account sign-in; shows the outage screen with the local start; never ends a session | not paused | NS-41-R25 |
 | `libraryDays` | the days library, Browse and the ask slip; cancels pending library notes | `EXPO_PUBLIC_DAYS` and `!== true`, not `mayRun` | NS-46-R28 |
 
