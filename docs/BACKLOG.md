@@ -2453,7 +2453,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 - Done when: `test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it.
 
 #### BL-519 Keep the book re-offer after the third letter when the person chose Later
-- Status: in-review (PR #N). Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
+- Status: in-review (PR #1331). Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: build 2 (the sheet needs `auth.configured`).
 - Problem and evidence: F02 6.1 offers Keep the book again after the third letter if the person tapped Later; `next-ask.logic.ts:10` offers it once ("the re-offer is not built", SET-01).
 - Scope: one re-offer after the third saved letter when the first was declined, never more, within the session and day caps.
