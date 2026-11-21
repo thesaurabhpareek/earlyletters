@@ -76,6 +76,30 @@ Deno.test('an empty, short, long or odd device id is refused', async () => {
   }
 });
 
+Deno.test('the 2 KB body cap on its own: a valid class and device id padded past 2048 chars is refused', async () => {
+  const t = run(true);
+  const padded = JSON.stringify({ ...GOOD_BODY, pad: 'p'.repeat(2100) });
+  assert.ok(padded.length > 2048);
+  assert.equal((await t.post(padded)).res.status, 400);
+  assert.equal(t.calls.length, 0);
+  // Multi-byte padding counts bytes, not characters: 1100 two-byte characters are over the cap although under 2048 characters.
+  const wide = JSON.stringify({ ...GOOD_BODY, pad: '\u00e9'.repeat(1100) });
+  assert.ok(wide.length < 2048);
+  assert.equal((await run(true).post(wide)).res.status, 400);
+  // A body under the cap with an extra field is fine.
+  assert.equal((await run(true).post({ ...GOOD_BODY, pad: 'p'.repeat(100) })).res.status, 200);
+});
+
+Deno.test('a Content-Length over the cap is refused before the body is read', async () => {
+  const t = run(true);
+  let read = false;
+  const req = new Request('https://fn.local/new-device-fill', { method: 'POST', headers: { Authorization: `Bearer ${GOOD}`, 'Content-Length': '999999' }, body: JSON.stringify(GOOD_BODY) });
+  req.text = () => { read = true; return Promise.resolve('{}'); };
+  const res = await t.handler(req);
+  assert.equal(res.status, 400);
+  assert.equal(read, false);
+});
+
 Deno.test('a missing sub or session_id, or no usable token, is refused with 401 (the gateway has already refused a bad signature)', async () => {
   const cases: (string | null)[] = [
     null, '', 'garbage', 'a.b.c', jwt({ session_id: ASHA.session }), jwt({ sub: ASHA.profile }), jwt({ sub: 'not-a-uuid', session_id: ASHA.session }),

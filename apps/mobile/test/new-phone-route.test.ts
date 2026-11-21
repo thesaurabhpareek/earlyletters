@@ -149,7 +149,10 @@ describe('[NX-36-S17] the opening screen ends when the book exists and the first
     expect(opening({ online: false, kind: 'unknown' })).toBe('offline');
   });
   it('[NX-36-S17] an unreadable or timed out account answer, with a connection, still shows No book here yet; so does a returning account with none', () => {
-    expect(opening({ kind: 'unknown' })).toBe('noBook');
+    // R11 (BL-978a): an unreadable answer is "opening" inside the 10 seconds, "No book here yet" only after them.
+    expect(opening({ kind: 'unknown' })).toBe('opening');
+    expect(opening({ kind: 'unknown', elapsedMs: OPENING_WAIT_MS - 1 })).toBe('opening');
+    expect(opening({ kind: 'unknown', elapsedMs: OPENING_WAIT_MS })).toBe('noBook');
     expect(opening({ kind: 'returningNoBook' })).toBe('noBook');
     expect(opening({ kind: 'returningNoBook', online: false })).toBe('noBook');
   });

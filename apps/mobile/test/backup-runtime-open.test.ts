@@ -69,6 +69,7 @@ vi.mock('../src/lib/supabase/env', () => h.inert());
 vi.mock('../src/lib/build-env', () => ({ APP_ENV: 'test' }));
 vi.mock('../src/lib/auth/auth-store', () => h.inert());
 vi.mock('../src/lib/capabilities', () => h.inert());
+vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: {} })); // token-vault's Keychain, unused by an open
 
 const ASHA = '3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f';
 const FILE = `backup-${ASHA}.db`;
@@ -160,12 +161,12 @@ describe('[B5-5] sign-out closes the backup handle, then deletes the file; the b
 describe('[B5-5] the sign-out seam', () => {
   it('session-provider ends the file of the account that went or was replaced, beside the reminders', () => {
     const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
-    expect(src).toMatch(/void settleReminderSession\(before, sessionUser\);\s*\/\/[^\n]*\n\s*if \(before && before !== sessionUser\) endBackupFileFor\(before\);/);
+    expect(src).toMatch(/void settleReminderSession\(before, sessionUser\);\s*\/\/[^\n]*\n\s*if \(before && before !== sessionUser\) \{\s*endBackupFileFor\(before\);/);
   });
 
   it('and every settled run keeps only the signed-in account\'s file (a source match: the effect is not rendered here)', () => {
     const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
-    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) deleteBackupFilesExcept\(sweep\.keep\);/);
+    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) \{\s*deleteBackupFilesExcept\(sweep\.keep\);/);
   });
 });
 
