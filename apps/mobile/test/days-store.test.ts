@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   excluded: new Set<string>(),
   mode: 'stick' as 'stick' | 'ignore' | 'absent', // 'ignore': a read-back that says false; 'absent': Expo Go
   written: 0, // bytes ever written, not what is left
+  hold: null as Promise<void> | null, // a write waits here after its rename: still running when a clear lands
 }));
 vi.mock('expo-file-system', async () => {
   const fs = (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk);
@@ -21,6 +22,7 @@ vi.mock('expo-file-system', async () => {
   fs.File.prototype.move = async function (this: { uri: string }, to: { uri: string }, o?: { overwrite?: boolean }) {
     await move.call(this, to, o);
     if (h.excluded.delete(this.uri)) h.excluded.add(to.uri); // a rename keeps the backup attribute on iOS
+    if (h.hold) await h.hold;
   };
   fs.File.prototype.write = function (this: { uri: string }, c: string | Uint8Array) {
     h.written += c.length;
@@ -38,7 +40,8 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
+const { createDaysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
+const { parseDays } = await import('../src/lib/days/store.logic');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
 
 const A = '1a2b3c4d5e6f7a8b';
@@ -57,7 +60,7 @@ const seed = (text: string) => {
 
 beforeEach(() => {
   h.disk = createDisk(iosContainer('6F0C3A2E-ASHA-4C1B-9D55-DAYS00000001'));
-  Object.assign(h, { excluded: new Set(), mode: 'stick', written: 0 });
+  Object.assign(h, { excluded: new Set(), mode: 'stick', written: 0, hold: null });
 });
 
 describe('[NS-47-R6] the store is out of the backup and fails closed', () => {
@@ -99,15 +102,15 @@ describe('[NS-47-R28] the store file is protected, versioned and fails closed', 
   });
 
   it('a higher version is read for known keys and flagged, so no writer rewrites it', () => {
-    seed(JSON.stringify({ v: 9, owner: A, ticked: { [DAY]: { future: 1 } }, extra: true }));
-    expect(readDays(expoDaysPort()!, A)).toMatchObject({ state: 'newer', file: { v: 9, ticked: { [DAY]: { future: 1 } } } });
+    seed(JSON.stringify({ v: 9, owner: A, ticked: { [DAY]: { future: 1, authority: 'src-a' } }, extra: true }));
+    expect(readDays(expoDaysPort()!, A)).toMatchObject({ state: 'newer', file: { v: 9, ticked: { [DAY]: { authority: 'src-a' } } } });
   });
 });
 
 describe('[NS-47-R15] sign-out clears and B sees nothing', () => {
   it('A signs out: the file is gone with nothing awaited, B reads nothing, and a file of A read as B is empty', async () => {
     await writeDays(expoDaysPort()!, file());
-    expect(readDays(expoDaysPort()!, B)).toEqual({ state: 'empty' }); // the owner check, before any clear
+    expect(readDays(expoDaysPort()!, B)).toEqual({ state: 'foreign', owner: A }); // the owner check, before any clear
     expect(endDaysSession()).toBe(true);
     expect(names()).toEqual([]);
     expect(loadDays(B)).toEqual({ state: 'empty' });
@@ -209,5 +212,125 @@ describe('[NS-47-R11] one reader', () => {
     const root = join(__dirname, '..', 'src');
     const bad = walk(root).filter((f) => !f.includes('/lib/days/') && /days\/store-file|days\/store\.logic|days\.v1\.json|culture\.asked|asks\.daysAsked/.test(readFileSync(f, 'utf8')));
     expect(bad.map((f) => f.slice(root.length))).toEqual([]);
+  });
+});
+
+const UNAVAILABLE = { ok: false, code: 'days_store_unavailable' };
+const DROPPED = { ok: false, code: 'days_write_dropped' };
+const fresh = (owner = A) => {
+  return createDaysStore(() => expoDaysPort(), owner); // already signed in as `owner`: no sign-in retry runs
+};
+const text = () => new TextDecoder().decode(h.disk.files.get(`${dir()}/${DAYS_FILE}`)!.data);
+
+describe('[NS-47-R6] a tick is saved as it is made, on one queue', () => {
+  it('tick, untick and clear all write the file, tell subscribers, and two ticks at once both land', async () => {
+    const s = fresh();
+    const heard: number[] = [];
+    const off = s.subscribeDays(() => heard.push(1));
+    expect(await Promise.all([s.tickDay(DAY), s.tickDay('family.synthetic-two')])).toEqual([{ ok: true }, { ok: true }]);
+    expect(Object.keys(JSON.parse(text()).ticked)).toEqual([DAY, 'family.synthetic-two']);
+    await s.untickDay(DAY);
+    expect(Object.keys(JSON.parse(text()).ticked)).toEqual(['family.synthetic-two']);
+    await s.clearAllDays();
+    expect(JSON.parse(text()).ticked).toEqual({});
+    expect(heard).toHaveLength(4);
+    off();
+    expect(await s.tickDay('Asha birthday!')).toEqual(UNAVAILABLE); // not a slug: refused, never stored
+    expect(names()).toEqual([DAYS_FILE]);
+  });
+
+  it('an exclusion that reads false ticks nothing; a corrupt or newer file is not overwritten', async () => {
+    h.mode = 'ignore';
+    expect(await fresh().tickDay(DAY)).toEqual(UNAVAILABLE);
+    expect(h.written).toBe(0);
+    h.mode = 'stick';
+    const odd = seed('{not json');
+    expect(await fresh().tickDay(DAY)).toEqual(UNAVAILABLE);
+    expect(odd.read(DAYS_FILE)).toBe('{not json');
+  });
+});
+
+describe('[NS-47-R28] a value is a known shape, never free text', () => {
+  const tick = (t: unknown, v = 1) => parseDays(JSON.stringify({ v, owner: A, ticked: { [DAY]: t } })).kind;
+  it('rejects free text in any value, an unknown key, and a wrong type; a higher version drops unknown keys', () => {
+    for (const t of [{ authority: 'Asha birthday!' }, { note: 'x' }, { move: { date: 'for Asha', always: true } }, { offYear: ['2027'] }, { move: { date: '2027-05-09', always: 'yes' } }, []]) expect(tick(t)).toBe('corrupt');
+    expect(tick({ move: { date: '2027-05-09', always: false, year: 2027 }, authority: 'src-a', offYear: [2028] })).toBe('ok');
+    expect(tick({ note: 'x' }, 2)).toBe('newer');
+  });
+});
+
+describe('[NS-47-R15] a file of another owner is never adopted, merged or overwritten', () => {
+  it('B ticking over A\'s file, and A over a local file, write nothing and leave the file byte for byte (DAYS-4: refuse)', async () => {
+    await fresh(A).tickDay(DAY);
+    const before = text();
+    expect(loadDays(B)).toEqual({ state: 'empty' }); // B is never told a file existed
+    h.written = 0;
+    expect(await fresh(B).tickDay('family.synthetic-two')).toEqual(UNAVAILABLE);
+    expect(await fresh(B).clearAllDays()).toEqual(UNAVAILABLE);
+    expect(h.written).toBe(0);
+    expect(text()).toBe(before);
+    expect(endDaysSession()).toBe(true); // sign-out clears it, and only then can B write
+    expect(await fresh(B).tickDay('family.synthetic-two')).toEqual({ ok: true });
+    await writeDays(expoDaysPort()!, file('local'));
+    const local = text();
+    expect(await fresh(A).tickDay(DAY)).toEqual(UNAVAILABLE); // only the claim step adopts (next PR)
+    expect(text()).toBe(local);
+  });
+
+  it('a queued write is dropped by a clear, and a write already past its rename does not bring the file back', async () => {
+    const s = fresh();
+    await s.tickDay(DAY);
+    const queued = s.tickDay('family.synthetic-two');
+    expect(s.clearNow()).toBe(true);
+    expect(await queued).toEqual(DROPPED);
+    let release = () => {};
+    h.hold = new Promise<void>((r) => (release = r));
+    const running = s.tickDay(DAY);
+    await new Promise((r) => setTimeout(r, 5));
+    s.clearNow();
+    release();
+    expect(await running).toEqual(DROPPED);
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[NS-47-R15] an owner change drops writes and retries a stale clear', () => {
+  it('a write queued under A never lands under B, and says it was dropped, not failed', async () => {
+    const s = fresh(A);
+    const queued = s.tickDay(DAY);
+    s.setOwner(B);
+    expect(await queued).toEqual({ ok: false, code: 'days_write_dropped' });
+    expect(names()).toEqual([]);
+    expect(await s.tickDay(DAY)).toEqual({ ok: true });
+    expect(JSON.parse(text()).owner).toBe(B);
+  });
+
+  it('sign-in retries a clear that was stuck: the next account is not blocked; a local file is left for the claim step', async () => {
+    const s = fresh(A);
+    await s.tickDay(DAY);
+    h.disk.undeletable.add(`${dir()}/${DAYS_FILE}`);
+    expect(s.clearNow()).toBe(false); // A's sign-out clear is stuck
+    h.disk.undeletable.clear();
+    expect(await fresh(B).tickDay(DAY)).toEqual(UNAVAILABLE); // still refused: nothing of A is overwritten
+    s.setOwner(B); // B signs in: the clear is retried
+    expect(names()).toEqual([]);
+    expect(await s.tickDay(DAY)).toEqual({ ok: true });
+    await s.clearNow();
+    await writeDays(expoDaysPort()!, file('local'));
+    const local = text();
+    s.setOwner(A);
+    expect(text()).toBe(local);
+  });
+});
+
+describe('[NS-47-R6] a failure after the rename deletes the final file too', () => {
+  it('a read-back that throws, or an emptying write that throws, leaves no file and no temp', async () => {
+    const real = expoDaysPort()!;
+    const readBackThrows = { ...real, isExcluded: (n: string) => (n === DAYS_FILE ? (() => { throw new Error('x'); })() : real.isExcluded(n)) };
+    expect(await writeDays(readBackThrows, file())).toBe('unavailable');
+    expect(names()).toEqual([]);
+    const lostThenWriteThrows = { ...real, isExcluded: (n: string) => n !== DAYS_FILE && real.isExcluded(n), write: (n: string, t: string) => { if (n === DAYS_FILE) throw new Error('x'); real.write(n, t); } };
+    expect(await writeDays(lostThenWriteThrows, file())).toBe('unavailable');
+    expect(names()).toEqual([]);
   });
 });

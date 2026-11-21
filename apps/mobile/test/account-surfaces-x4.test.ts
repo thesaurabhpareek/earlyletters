@@ -4,9 +4,9 @@
  * through the Find index, the reminder planner input, the outbox, the claim and the uploads (NS-10-R5; test plan b13
  * section 3, risk 1). Uses the account-scope reader (lib/auth/account-scope.logic.ts) and the real auth store.
  *
- * `it.fails` marks a surface that leaks on develop today: the test states the rule, runs red against the code, and
- * the suite stays green. When the surface is fixed vitest reports the test as unexpectedly passing, and the
- * `.fails` is removed in the fixing PR. Fictional family "Asha" only.
+ * Every surface is now a real regression test. The Find guard landed in #1208 (second-account guard and build-flag check in the
+ * store's Find calls). The planner guard is not from #1208: plannerChildren() (reminders/prefs.ts) reads listChildren() in
+ * store.ts, which goes through bookVisibleNow() since #879 (BL-961). Fictional family "Asha" only.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,9 @@ import { searchLetters } from '../src/lib/find/search';
 import { SYNC_SETTING, pendingCount, readSetting, writeSetting } from '../src/lib/sync/outbox';
 import { AccountMismatchError, takeOwnership } from '../src/lib/sync/ownership';
 import type { RpcResult, SupabaseLike } from '../src/lib/sync/types';
-import { insertBook } from './helpers/store-fixture';
+import { insertBook, letter } from './helpers/store-fixture';
+import { entries } from '../src/lib/db/repos';
+import { setFindForTest } from '../src/lib/find/flag';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
@@ -66,16 +68,34 @@ describe('[X4-R1] Find: B never finds A\'s words', () => {
     expect(found.status === 'done' ? found.hits : null).toEqual([]);
   });
 
-  it.fails('production: B signed in over A\'s phone, a search of A\'s book returns nothing (setIndexableBooks is never registered outside tests)', () => {
-    const f = findFixture();
-    f.add({ text: 'Asha, you laughed at the rain today.' });
-    writeSetting(f.db, SYNC_SETTING.owner, A);
-    asB();
-    const r = searchLetters(f.db, 'rain', 'child-asha');
-    expect(r.status === 'done' ? r.hits : null).toEqual([]);
+  it('production: B signed in over A\'s phone, a search of A\'s book through the store returns nothing, with the index built', async () => {
+    store.closeStore();
+    const h = nodeDb();
+    try {
+      setFindForTest(true);
+      expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => NOW, newId: id7 }).ok).toBe(true);
+      const db = store.localSqlDb();
+      insertBook(db, { id: 'child-asha', name: 'Asha', birthday: '2026-03-01', at: NOW });
+      entries.upsert(
+        { db, now: () => NOW, newId: id7 },
+        letter({ id: id7(), finalText: 'Asha, you laughed at the rain today.', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, captureMode: 'typed', inBook: true }),
+        { childId: null, authorSignsAs: null },
+      );
+      writeSetting(db, SYNC_SETTING.owner, A);
+      auth.publishAuth({ status: 'ready', userId: A, sync: 'on' });
+      expect(await store.ensureFindIndex()).toBe('ready');
+      const r = store.findLetters('rain', 'child-asha');
+      expect(r.status === 'done' ? r.hits.length : null).toBe(1); // control: A finds it
+      asB();
+      expect(store.findLetters('rain', 'child-asha')).toEqual({ status: 'idle' });
+    } finally {
+      setFindForTest(null);
+      store.closeStore();
+      h.close();
+    }
   });
 
-  it.fails('the seam is wired: some file outside lib/find registers setIndexableBooks', () => {
+  it('the seam is wired: some file outside lib/find registers setIndexableBooks', () => {
     const walk = (d: string): string[] => readdirSync(d).flatMap((f) => {
       const p = join(d, f);
       return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(f) ? [p] : [];

@@ -27,7 +27,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, extraPermissions, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo as expoIn, extraPermissions, forbiddenNativeProblems, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
 import { STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -596,8 +596,11 @@ if (ios) {
     `generated Info.plist asks for the microphone and Face ID only (${REQUIRED_PLIST_USAGE.join(', ')}; the dev-client local-network key is stripped from Release)`,
     `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected exactly ${REQUIRED_PLIST_USAGE.join(' and ')} (missing: ${usageProblems.missing.join(', ') || 'none'}; extra: ${usageProblems.extra.join(', ') || 'none'}).`,
   );
-  const modes = /<key>UIBackgroundModes<\/key>\s*<array>([\s\S]*?)<\/array>/.exec(ios.plist)?.[1];
-  check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
+  // BL-864 (NX-39-R4, R51): no background mode, task identifier, location key, photo-add key, extension target or app group.
+  // The photo-library key needs its flag and content string; no store profile turns the flag on (BL-958), so none is allowed here.
+  const forbidden = forbiddenNativeProblems({ plist: ios.plist, entitlements: ios.entitlements, pbxproj: ios.pbxproj });
+  for (const p of forbidden) fail(`Generated native project: ${p.text}`);
+  if (!forbidden.length) pass('generated native project: no background mode, location key, photo-add key, extension target, app group or CoreLocation (BL-864)');
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
   if (ios.privacy !== null) {

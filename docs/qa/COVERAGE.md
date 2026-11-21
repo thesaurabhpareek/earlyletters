@@ -14,7 +14,7 @@ node scripts/coverage/report.mjs --files 25 # re-print the last run's table
 
 - v8 provider (`@vitest/coverage-v8`, same version as vitest), `all: true` (a file no test loads counts at 0%), AST-aware remapping. Each workspace's `vitest.coverage.config.ts` builds on `scripts/coverage/preset.ts`; reports go to `<workspace>/coverage/` (gitignored). The CI job is proposed in `docs/ops/proposed/coverage-ci.md`.
 - Never in a denominator: tests, `.d.ts`, goldens, `e2e/` and `e2e-web/`, vitest configs, command-line scripts. Mobile also leaves out `.tsx` screens and components, `src/app`, `src/dev` and the native adapters, so its number is the Node-testable part of the app.
-- Coverage runs differ from `npm test` on purpose: 30 s per-test timeout; verifier and language fuzz at 2000 cases (same seed); the plan-reminders "holds every invariant" test left out (BL-443 removes the need for both).
+- Coverage runs differ from `npm test` on purpose: 30 s per-test timeout; verifier and language fuzz at 2000 cases (same seed); verifier and language fuzz are cut into blocks of 2000 cases (BL-443), and the plan-reminders "holds every invariant" test now runs here too, at its PR stride of every 15th day (`SCRIBE_REMINDER_STRIDE=1` checks every day).
 
 ## Numbers and floors
 

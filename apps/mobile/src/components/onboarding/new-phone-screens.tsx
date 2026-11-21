@@ -11,12 +11,28 @@
 import { useRef, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { copy as appCopy } from '@/lib/copy';
 import { capabilities } from '@/lib/capabilities';
 import { heldScreenModel } from '@/lib/first-run/held-screen.logic';
 import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
 import { useArrival } from '@/lib/first-run/use-arrival';
+
+/**
+ * R12: the sign-in method (never the address) as its OWN line above the screen, in the header slot, so VoiceOver reads it
+ * first and as its own element (C-S10 wrong-account; F-05). Shown on No book here yet only, until design adds more screens.
+ */
+function MethodLead({ method }: { method: string | null }) {
+  if (!method) return null;
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, alignItems: 'center' }}>
+      <Text variant="footnote" tone="muted" style={{ textAlign: 'center' }} testID="newPhone.method">
+        {method}
+      </Text>
+    </View>
+  );
+}
 
 function Arrives({ title, screen, children }: { title: string; screen: string; children: ReactNode }) {
   const block = useRef<View>(null);
@@ -73,7 +89,7 @@ export function OfflineBookScreen({ onTryAgain, onTryAnother }: { onTryAgain: ()
 }
 
 /** "No book here yet" for a returning account with no book (or an unreadable answer), the same words as the consent sheet's. */
-export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: () => void; onTryAnother: () => void }) {
+export function NoBookHereScreen({ onStartBook, onTryAnother, method = null }: { onStartBook: () => void; onTryAnother: () => void; method?: string | null }) {
   const n = authCopy.consent.noBook;
   return (
     <Arrives title={n.title} screen="noBookHere">
@@ -81,6 +97,7 @@ export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: (
         kind="empty"
         title={n.title}
         body={n.body}
+        header={<MethodLead method={method} />}
         primary={{ label: n.startBook, onPress: onStartBook, testID: 'newPhone.startBook' }}
         quiet={[{ label: n.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
       />

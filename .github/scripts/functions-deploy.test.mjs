@@ -210,7 +210,7 @@ test('this repository: every function that takes a person\'s session keeps the g
   assert.deepEqual(SMOKE_HEALTH, PUBLIC);
   assert.deepEqual([...r.smoke].sort(), PUBLIC);
   // And the deploy list itself (review B note 1 on #253): a new function fails here until it is named.
-  assert.deepEqual([...r.deploy].sort(), ['analytics-forget', 'apple-token', 'config', 'content', 'invite-redeem', 'new-device-email', 'purge-worker', 'subscription-status']);
+  assert.deepEqual([...r.deploy].sort(), ['analytics-forget', 'apple-token', 'config', 'content', 'invite-redeem', 'new-device-email', 'new-device-fill', 'purge-worker', 'subscription-status']);
   const session = r.deploy.filter((n) => !BEARER.includes(n));
   for (const n of ['analytics-forget', 'apple-token', 'invite-redeem', 'subscription-status', ...session]) {
     assert.ok(r.deploy.includes(n), `${n} is deployed`);

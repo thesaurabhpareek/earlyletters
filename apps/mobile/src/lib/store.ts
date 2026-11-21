@@ -62,8 +62,8 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
-import { findBuildEnabled } from './find/flag';
-import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, type EnsureResult } from './find/lifecycle';
+import { findBuildEnabled, findSurface } from './find/flag';
+import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, setIndexableBooks, type EnsureResult } from './find/lifecycle';
 import { rebuildSearchIndex } from './find/rebuild';
 import { searchLetters, type FindResult } from './find/search';
 import { dropSearchView, SEARCH_VIEW } from './find/sources';
@@ -189,6 +189,8 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
+  setIndexableBooks(() => (bookVisibleNow() ? null : []));
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
 }
@@ -207,6 +209,8 @@ const findObjectsExist = (db: SqlDb): boolean =>
 export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
   try {
     const { db } = ctx();
+    // [X4-R1]: while another account is signed in over this owner's book, nothing is indexed, dropped or moved.
+    if (!bookVisibleNow()) return 'unavailable';
     if (findBuildEnabled()) return await rebuildSearchIndex(db);
     if (findObjectsExist(db)) {
       dropSearchIndex(db);
@@ -227,9 +231,27 @@ let findCatchUpFor: unknown = null;
  */
 export function startFindCatchUp(): void {
   if (!conn?.result.ok || findCatchUpFor === conn) return;
+  if (!bookVisibleNow()) return; // [X4-R1]: not marked done, so a later call, once this book is shown again, still runs
   findCatchUpFor = conn;
   if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
   void ensureFindIndex();
+}
+
+/**
+ * Account A returned (B signed out, or A signed in again): the seam skipped whatever was written into A's book meanwhile
+ * (NS-02-R24, [X4-R1]), so the once-per-store catch-up runs again now, not at the next launch. Find off: nothing.
+ */
+export function resumeFindCatchUp(): void {
+  findCatchUpFor = null;
+  startFindCatchUp();
+}
+
+/**
+ * The one gate of Find's screen (BL-952 slice 8): the build switch on, the remote pause off, a kept letter to find, and
+ * this phone's book shown to the signed-in account. False anywhere else: the Find action is absent, not greyed (R1).
+ */
+export function findAvailableNow(input: { paused: boolean; hasLetters: boolean }): boolean {
+  return bookVisibleNow() && findSurface({ build: findBuildEnabled(), paused: input.paused, hasLetters: input.hasLetters });
 }
 
 /** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
@@ -239,6 +261,8 @@ export function findIndexReady(): boolean {
 
 /** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
 export function findLetters(raw: string, childId: string): FindResult {
+  // Dark unless the build says 'on', and never another account's book ([X4-R1]): nothing asked, nothing found.
+  if (!findBuildEnabled() || !bookVisibleNow()) return { status: 'idle' };
   return searchLetters(ctx().db, raw, childId);
 }
 
@@ -593,6 +617,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
     if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
+    // The draft's picture (entry_media, ADR 0028) becomes the letter's in the same transaction: same id, new owner.
+    c.db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
@@ -1377,8 +1403,29 @@ export function beginDiscard(id: string): boolean {
   return done;
 }
 
-/** Let it go, last step: removes a draft already marked `discarding`, never any other. */
+/**
+ * Removes a draft's picture, the file first and then its row (photos/device.ts erasePictureOf). capture/erase.ts hands
+ * it in when it loads, which the launch sweep does at every start; until then nothing is erased here, and the photo
+ * sweep removes a gone draft's picture at the next launch.
+ */
+let eraseDraftPicture: (draftId: string) => void = () => {};
+export function setDraftPictureEraser(erase: (draftId: string) => void): void {
+  eraseDraftPicture = erase;
+}
+
+/**
+ * Let it go, last step: removes a draft already marked `discarding`, never any other. Its picture goes first, file then
+ * row (ADR 0028 D5); a picture file that will not go keeps the draft marked, off every list, for the launch sweep to
+ * finish, as a recording does (BL-924).
+ */
 export function finishDiscard(id: string): boolean {
+  if (ctx().db.get("SELECT 1 AS n FROM drafts WHERE id = ? AND state = 'discarding'", id)) {
+    try {
+      eraseDraftPicture(id);
+    } catch {
+      return false;
+    }
+  }
   const done = drafts.finishDiscard(ctx(), id);
   if (done) bus.emit('drafts');
   return done;
@@ -1391,6 +1438,12 @@ export function finishDiscard(id: string): boolean {
  * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
+  try {
+    eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5)
+  } catch {
+    // A picture file that will not go never blocks the draft going: the launch photo sweep removes a gone draft's picture
+    // (the row's owner is gone), so nothing here may throw uncaught into the screen that let the draft go.
+  }
   const c = ctx();
   let held = false;
   c.db.transaction(() => {

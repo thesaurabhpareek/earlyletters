@@ -149,10 +149,15 @@ describe('[NX-31-R12] the call is bounded and never blocks the first screen', ()
       await vi.advanceTimersByTimeAsync(1);
       expect(kind).toBe('unknown');
     });
-    it('the sheet never passes a wait of its own: both of its calls take the default', () => {
+    it('[BL-922b] one account reader: the sheet reads sync_books once (the claim screen, a book on the phone), never for a phone with no book; the route is the only other reader', () => {
       const t = src('app/(auth)/sign-in/consent.tsx');
-      expect(t.match(/readAccountBooks\(/g)?.length).toBe(2);
-      expect(t.match(/readAccountBooks\(auth\.client\)/g)?.length).toBe(2);
+      // Mutant: the no-book read back in the sheet makes this two, and the sheet shows its own "No book here yet" again.
+      expect(t.match(/readAccountBooks\(/g)?.length).toBe(1);
+      expect(t.match(/readAccountBooks\(auth\.client\)/g)?.length).toBe(1);
+      expect(t).not.toMatch(/setNoBook\(|afterConsent\(/);
+      // The one read sits in the claim effect, which only runs with `claiming` (a book on the phone: the route does not ask then).
+      expect(t).toMatch(/if \(!claiming \|\| !auth\.client\) return;[\s\S]{0,200}readAccountBooks\(auth\.client\)/);
+      expect(src('lib/first-run/use-new-phone.ts').match(/readAccountBooks\(/g)?.length).toBe(1);
       expect(src('lib/first-run/account-books.ts')).toContain('waitMs: number = ACCOUNT_BOOKS_WAIT_MS');
     });
   });
@@ -217,24 +222,15 @@ describe('[NX-31-R12] readAccountBooks against a fake client (fail-safe: only a 
 
 describe('the consent sheet decides with the pure rules', () => {
   const t = src('app/(auth)/sign-in/consent.tsx');
-  it('closes on a new account and shows No book here yet for the rest, through afterConsent', () => {
-    expect(t).toContain('readAccountBooks(auth.client)');
-    expect(t).toContain("afterConsent(kind) === 'close'");
-    expect(t).toContain('setNoBook(true)');
-  });
-  it('[M1] the two lines are one if and else, exactly: the "No book here yet" path is taken whenever afterConsent says noBook', () => {
-    // `afterConsent(kind) === 'close' || true` kept the substrings above and sent everyone on to the child step.
-    expect(t).toMatch(/if \(afterConsent\(kind\) === 'close'\) close\(\);\n\s+else setNoBook\(true\);/);
-    expect(t.match(/afterConsent\(/g)?.length).toBe(1);
-    // And the decision it asks is the table: every kind but a clear new account or an account with a book is noBook.
+  it('[BL-922b] a settled ready session with sync on closes the sheet with no read: "No book here yet" is the route\'s now (NoBookHereScreen)', () => {
+    expect(t).not.toMatch(/setNoBook\(|const \[noBook|if \(noBook\)/);
+    expect(t).toMatch(/\n    close\(\);\n    \/\/ Runs when the state settles; close is stable enough/);
+    // The decision table stays pure and pinned; the route's hook (use-new-phone.ts) is its reader.
     expect((['unknown', 'returningNoBook'] as const).map(afterConsent)).toEqual(['noBook', 'noBook']);
     expect((['new', 'hasBook'] as const).map(afterConsent)).toEqual(['close', 'close']);
   });
   it('a failure no longer closes the sheet onto a new-account route', () => {
     expect(t).not.toMatch(/\.catch\(\(\) => alive && close\(\)\)/);
-  });
-  it('still asks only a person who signed in with no book on the phone', () => {
-    expect(t).toContain("getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client");
   });
 });
 

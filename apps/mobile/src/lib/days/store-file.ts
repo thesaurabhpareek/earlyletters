@@ -27,6 +27,7 @@ export interface DaysPort {
 
 export type DaysRead =
   | { state: 'empty' }
+  | { state: 'foreign'; owner: string } // another owner's file: never read, adopted or overwritten (E73, DAYS-4); a writer writes nothing
   | { state: 'ok' | 'newer'; file: DaysFile }
   | { state: 'unreadable' } // corrupt: no day, no crash, NOT deleted (a newer build may read it)
   | { state: 'unavailable' }; // exclusion reads false: the file was deleted and the store will not write
@@ -59,14 +60,15 @@ export function readDays(port: DaysPort, owner: string): DaysRead {
     }
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
-    return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'empty' };
+    return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign', owner: parsed.file.owner };
   } catch {
     return { state: 'unreadable' };
   }
 }
 
-/** 'unavailable' means 0 bytes were written, or the final was emptied and deleted. */
+/** 'unavailable' means 0 bytes were written, or nothing is left: after the rename a failure deletes the final file too. */
 export async function writeDays(port: DaysPort, file: DaysFile): Promise<'ok' | 'unavailable'> {
+  let renamed = false;
   try {
     port.createEmpty(DAYS_TMP);
     if (!excludedAfterSet(port, DAYS_TMP)) {
@@ -75,14 +77,17 @@ export async function writeDays(port: DaysPort, file: DaysFile): Promise<'ok' | 
     }
     port.write(DAYS_TMP, serializeDays(file));
     await port.rename(DAYS_TMP, DAYS_FILE);
+    renamed = true;
     if (port.isExcluded(DAYS_FILE)) return 'ok';
     port.write(DAYS_FILE, '');
-    port.remove(DAYS_FILE);
   } catch {
+    // fall through: nothing sensitive may stay
+  }
+  for (const n of renamed ? [DAYS_FILE, DAYS_TMP] : [DAYS_TMP]) {
     try {
-      port.remove(DAYS_TMP);
+      port.remove(n);
     } catch {
-      // swept at launch
+      // swept or removed at the next launch, sign-out or Erase
     }
   }
   return 'unavailable';
