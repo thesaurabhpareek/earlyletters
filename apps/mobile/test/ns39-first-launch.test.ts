@@ -30,7 +30,7 @@ export function ageQuestionFirst(layout: string): string[] {
 
 describe('[NS-39-R1] first launch never waits on the network', () => {
   it('[NS-39-R1] a fresh store asks the age question from local state alone', () => {
-    const r = decideGate({ passed: false, stoppedAt: undefined }, Date.parse('2026-11-20T10:00:00Z'));
+    const r = decideGate({ passed: false, stoppedAt: null }, Date.parse('2026-11-20T10:00:00Z'));
     expect(r.decision).toBe('ask');
     expect(decideEntry('ask', false)).toBe('ask');
   });
