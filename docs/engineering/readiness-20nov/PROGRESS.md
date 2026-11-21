@@ -8,7 +8,7 @@ Rule: this file is updated by Karma from merged PRs, at least every hour while w
 | reminders | BL-966b planner one a day | mobile | QUEUED | | after 966a |
 | account | #871 account cover | mobile | MERGED 22:37Z | #871 | held-screen words PROPOSED |
 | account | #879 store reads | mobile | BUILDING | #879 | #871 merged |
-| photo | #835 to #840 stack (BL-931) | mobile | BUILDING | #835-#840 | #854 legal merge (founder) gates #835; #839 rework (C-01) |
+| photo | #835 to #840 stack (BL-931) | mobile | BUILDING | #835-#840 | #854 merged 22:37Z; #835 has a merge conflict with develop; #839 rework (C-01); S1 (BL-870) must be live before the photo flag is on outside the founder's family (BRIEF-BL-870) |
 | find | #894, #895 | mobile | BUILDING | #894, #895 | words PROPOSED |
 | data | T1 synced-column drift guard | sync | IN REVIEW | #1068 | |
 | data | BL-959 ADR 0028 amendment and keeping server tests | sync | BUILDING | | |
