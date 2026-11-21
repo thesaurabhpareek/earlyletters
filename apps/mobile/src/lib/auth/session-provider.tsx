@@ -61,7 +61,7 @@ import {
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
-import { registerSensitiveDataRow } from './sensitive-row';
+import { useRegisterSensitiveDataRow } from './sensitive-row-hook';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -226,9 +226,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
-  useEffect(() => {
-    registerSensitiveDataRow();
-  }, []);
+  useRegisterSensitiveDataRow();
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
