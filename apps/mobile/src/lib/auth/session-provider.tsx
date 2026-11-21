@@ -24,6 +24,8 @@ import { AppState } from 'react-native';
 import { deleteBackupFilesExcept, endBackupFileFor } from '../backup/files';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
+import { nextReportMark, type ReportMark } from './new-device/report.logic';
+import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
@@ -204,6 +206,14 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const sweep = backupSweepFor(sessionUser, before, storedRead.current);
     if (sweep.run) deleteBackupFilesExcept(sweep.keep);
   }, [sessionUser, authSettled]);
+  // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
+  // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
+  const reportMark = useRef<ReportMark>(null);
+  useEffect(() => {
+    const next = nextReportMark(reportMark.current, state);
+    reportMark.current = next.mark;
+    if (next.call && sb) void reportNewDeviceFor(sb);
+  }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.

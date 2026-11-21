@@ -413,6 +413,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const printPdf = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`, 12_000);
     h.keychain.set('scribe.auth.pendingName', 'Mama'); // an Apple sign-in that never finished
     h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
+    h.keychain.set('scribe.auth.deviceId', 'ab'.repeat(32)); // NDR-1: the new-device email's install id; Erase everything clears it
     return { app, f, stray, frames, zip, recovery, printPdf };
   }
 
