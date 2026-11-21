@@ -24,7 +24,7 @@ A loop closes when the parent makes a letter or taps "Not much today". Either an
 
 ## 2. What each key reads
 
-Only data that already exists in a spec. All of it stays on the phone.
+Only data that already exists in a spec; this draft adds none. The loops are chosen on the phone from these inputs, but not every input is phone-only: the child's birth date or age also lives on the server after sign-in.
 
 | Key | Reads | Where |
 |---|---|---|
@@ -62,7 +62,7 @@ No variant, tone, channel or time reads any of these.
 - The language the parent speaks. The child's gender or name as a joke; a name appears only where names are on, never in a title.
 - Whether the parent is a mother, father or other, the co-parent, Plus or a trial.
 - Letter text, a transcript, audio, a picture's content, how many letters, how many days ticked, days since, streaks, time away.
-- Analytics. The four local kinds are never reported (NS-46-R34); analytics is off through 1.0 (D-124). A later opt-in event may carry a class name, never a day id, a tradition or a loop id for these kinds (FR-CUL-09).
+- Analytics. The four local kinds are never reported (NS-46-R34); D-163 (20 Nov 2026) supersedes D-124 item 3 for the production build only: page-view, click and impression instrumentation is built before that build, collected for every user and not behind an opt-in, content-free (no letter text, transcript, audio, child name, date of birth or account id), and limited to the analytics allowlist. It stays off in production until D-163's gates close, and the consent wording and counsel's view are still open there. A later analytics event may carry a class name, never a day id, a tradition or a loop id for these kinds (FR-CUL-09).
 
 ## 5. Tone and fallback
 
