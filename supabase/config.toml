@@ -135,7 +135,7 @@ enabled = false
 [auth.email.notification.mfa_factor_unenrolled]
 enabled = false
 
-# Compliance gate at sign-up (20261121030000, CR-22; APPLY.md File 39): the "before user created" auth hook,
+# Compliance gate at sign-up (20261121030000, account-checks ruling CR-26; APPLY.md File 39): the "before user created" auth hook,
 # Postgres function public.hook_before_user_created. Not configured here: the CLI key for this hook was not
 # verified against the CLI version in use (31 Oct 2026). Hosted: turn it on in the Dashboard (APPLY.md).
 

@@ -1,8 +1,9 @@
 -- Compliance gates at account creation, content-free counts, and the regulatory watch (CTO ruling CR-26).
 --
 -- PENDING: not yet applied. For the server features (sign-in, D-100): alpha build 2 already signs people in
--- (D-128), and the public gets them in a 1.0.x after the first on-device store build (D-121). Do not merge
--- before the 9 Nov go/no-go; apply before any server-feature release reaches people outside the family. Apply after 20261028000000. Safe to run twice.
+-- (D-128), and the public gets them in a 1.0.x after the first on-device store build (D-121). The 9 Nov go/no-go
+-- has passed. This file only lands on develop; the hook stays OFF until the conditions in APPLY.md File 39 hold,
+-- and they must hold before any sign-in outside the family. Apply after 20261121020000 (APPLY.md File 38). Safe to run twice.
 --
 -- What it adds, all in schema ops (service only, never reachable from the app):
 --   ops.restricted_jurisdictions  places we refuse sign-up from (Terms 2.4, register CR-121). Data, not code.
@@ -34,7 +35,7 @@
 --     error, the 'block' count is lost with it (Postgres has no autonomous transactions). Passes and
 --     fail-open counts are unaffected.
 --   * The IP is used in memory to find a country and is never stored or logged by this file. Supabase Auth's own
---     audit log may still record it (unverified); see APPLY.md File 28.
+--     audit log may still record it (unverified); see APPLY.md File 39.
 --   * Fail open, and count it. No geo data, no IP, an unknown country, or an internal error lets the sign-up
 --     through and counts `geo_unknown` or `error`. Refusing every sign-up because a monthly file is late would
 --     be an outage, not a control; the counts make it visible, and the report flags stale data (> 45 days).
@@ -43,7 +44,7 @@
 --     region rows. At sign-up those regions are covered only by the Terms 2.4 confirmation.
 --   * No name screening (references/sanctions.md).
 --
--- Enable on hosted (founder step, after apply; APPLY.md File 28): Dashboard > Authentication > Hooks > Before User Created >
+-- Enable on hosted (founder step, after apply; APPLY.md File 39): Dashboard > Authentication > Hooks > Before User Created >
 -- Postgres function public.hook_before_user_created.
 -- Then load geo data (compliance/scripts/load-geo-ip.mjs). Until geo data is loaded the hook allows all.
 --

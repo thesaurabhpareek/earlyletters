@@ -1280,9 +1280,9 @@ What it changes: three service-only tables in schema `ops` (`account_sessions_se
 
 **Check [U] (hosted, founder):** `select has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute');` and the same for `public.ops_new_device_rekey(uuid,bytea,bytea)` are true, and false for `anon` and `authenticated` [U]; `select proname from pg_proc where proname in ('ops_new_device_pending_fill','ops_new_device_rekey') and prosecdef;` returns two rows [U]. **Rollback:** drop the two functions.
 
-## File 39: compliance gates at sign-up, counts and the regulatory watch (re-cut of #424, CR-26)
+## File 39: compliance gates at sign-up, counts and the regulatory watch (re-cut of #424; CR-26 is the account-checks ruling written for #424)
 
-`20261121030000_compliance_gates.sql`. Not before the 9 Nov go/no-go; apply before any server-feature release (sign-in, D-100, staged by D-121) reaches people outside the family. Apply after File 38. Idempotent; adds tables in `ops` and functions; changes no existing row or function.
+`20261121030000_compliance_gates.sql`. The 9 Nov go/no-go has passed. The file only lands on develop and the hook stays OFF; apply it, and meet the conditions below, before any server-feature release (sign-in, D-100, staged by D-121) reaches people outside the family. Apply after File 38 (`20261121020000`). Idempotent; adds tables in `ops` and functions; changes no existing row or function.
 
 - **What it adds.** `ops.restricted_jurisdictions` (seeded per D-131: KP, IR, CU, SY, RU, BY and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
 - **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
@@ -1293,6 +1293,11 @@ What it changes: three service-only tables in schema `ops` (`account_sessions_se
 - `legal` has drafted, and the founder has approved, the Privacy Policy disclosure that the sign-up IP is used to work out a country. Today the policy says we do not collect location.
 - DATA_CLASSIFICATION rows exist for the five new tables, and the retention schedule lists two years for the counts (`legal` and `compliance-engineer`).
 - The refusal screen links to https://db-ip.com (DB-IP's CC BY 4.0 attribution).
+- BL-553: the app handles the 403 refusal (mobile, with copy from content; CCO review).
+- BL-554: the regulatory watch is scheduled (regulatory-affairs with ops).
+- BL-555: legal paperwork is done (DATA_CLASSIFICATION rows for the five new tables, register CR-121, claims rows, the two-year retention entry). The two DATA_CLASSIFICATION and retention items above are part of this.
+- Counsel's answer to COUNSEL_PACKET Q57. D-131 (31 Oct 2026) already set the blocked default for IR and CU, with no name screening (D-137); until counsel confirms it is a delegated default. Any change to it stays a founder decision in `docs/DECISIONS.md`.
+- BL-552 (suspend sign-in for one account) is built before any sign-in outside the family.
 
 **What it does not cover:** at sign-up Crimea, Donetsk and Luhansk are covered only by the Terms 2.4 confirmation, because country-level data cannot single them out. "No IP stored" is true of our tables only. Supabase Auth's own audit log probably records the sign-up IP (unverified, 31 Oct 2026); check its retention before making any claim.
 
