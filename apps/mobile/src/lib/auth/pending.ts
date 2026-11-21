@@ -58,9 +58,9 @@ export async function clearPendingEmailRequest(): Promise<void> {
   await secureStorage.removeItem(PENDING_REQUEST_KEY).catch(() => {});
 }
 
-export type SignInTrigger = 'first_letter' | 'invite' | 'invite_create' | 'sign_in' | 'settings';
+export type SignInTrigger = 'first_letter' | 'third_letter' | 'invite' | 'invite_create' | 'sign_in' | 'settings';
 
-const TRIGGERS: readonly SignInTrigger[] = ['first_letter', 'invite', 'invite_create', 'sign_in', 'settings'];
+const TRIGGERS: readonly SignInTrigger[] = ['first_letter', 'third_letter', 'invite', 'invite_create', 'sign_in', 'settings'];
 
 export function asSignInTrigger(v: unknown): SignInTrigger {
   return typeof v === 'string' && (TRIGGERS as readonly string[]).includes(v) ? (v as SignInTrigger) : 'settings';
