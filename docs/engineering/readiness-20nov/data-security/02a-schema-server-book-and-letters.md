@@ -358,7 +358,7 @@ Tables a family book is made of: people, books, who belongs, invitations, letter
 ## Gaps found in this file
 
 - G-3 `held_drafts_gone` has no age sweep (see its Retention line).
-- G-4 `dictionary_terms` has a policy and L4 labels but no grant and no function that creates a row.
+- G-4 `dictionary_terms` has a policy and L4 labels but no grant and no function that creates a row. CLOSED as by design (E80).
 - G-8 Inert policies (the policy names a role that holds no grant, so it never applies): `child_invites_select`, `entry_versions_author_select`, `children_member_update`, `dictionary_terms_owner`. They are harmless defence in depth; `explicit_grants.test.mjs` pins the grants, not the policies.
 - G-15 `entries` and `held_drafts` give au direct INSERT and UPDATE (`grants.mjs:7-9`), so a client can write them without `sync_push`; the triggers (`entries_guard_immutable`, `client_content_gate`, `entries_family_rules`) are the control. [V] from the catalog; the trigger list is in 02f.
 
@@ -373,5 +373,5 @@ Tables a family book is made of: people, books, who belongs, invitations, letter
 Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-a1: AGREE (CDO return). Keep the four inert policies and list them (01a 8.3: 14 across the pack). Add a test that the set of policies with no matching grant equals a written list, so a later grant cannot wake one silently. Gap G-8, gate G10 [E].
-- Q-a2: AGREE (CDO return). Leave `dictionary_terms` unreachable. Condition: a test that account purge and book purge cover it. Gap G-4, gate G10 [E].
+- Q-a2: RULED by E80 (`18-errata-after-lock.md`, FR-AIS-34): the dictionary is phone only and never synced; the table stays built and unreachable (no grant, writer or reader) until a card names a synced dictionary, which would need a privacy read, export and deletion rows and a label check. G-4 is closed as by design. Whether to drop it is open to data-architect and `mobile`. AGREE (CDO return). Leave `dictionary_terms` unreachable. Condition: a test that account purge and book purge cover it. Gap G-4, gate G10 [E].
 - Q-a3: tied to C5. `sync` states the longest offline period a phone may have; the `held_drafts_gone` sweep and the purged-id guard (01a G-23) both take their period from that one number. Until then no sweep. Gap G-3, gate G10 [E].
