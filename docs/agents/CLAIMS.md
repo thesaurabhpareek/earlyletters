@@ -10,3 +10,7 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| photo-lane | mobile | feat/mobile-photo-3-store | 835 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | slices 835 to 840 (4b and 4c also touch Review and the letter page); REST open check 00:05Z |
+| find-lane | mobile | feat/mobile-bl-952-7-wiring | 895 | `apps/mobile/src/lib/find/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | 894 and 895; REST open check 00:05Z |
+| account-lane | mobile | fix/mobile-bl-961-store-reads | 879 | `apps/mobile/src/lib/account-deletion/**`, `apps/mobile/src/components/account/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | REST open check 00:05Z |
+| bl-878-native-gate | security | docs/security-bl-878-native-gate | 1204 | `docs/security/NATIVE_MODULE_GATE.md`, `apps/mobile/test/native-module-gate.test.ts` | 2026-11-21T04:48Z | 2026-11-24T03:48Z | BL-878; row read as ready and unclaimed, no open or merged PR found by REST at 04:45Z |

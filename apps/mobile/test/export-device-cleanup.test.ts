@@ -67,7 +67,8 @@ vi.mock('expo-sharing', () => ({
     if (h.share === 'error') throw new Error('share_failed');
   },
 }));
-vi.mock('../src/lib/auth/auth-store', () => ({ currentAuthUserId: () => null }));
+// BL-961: the store asks who is signed in (bookVisibleNow); nobody is, so every list reads as before.
+vi.mock('../src/lib/auth/auth-store', () => ({ currentAuthUserId: () => null, getAuthSnapshot: () => ({ status: 'signedOut' }) }));
 vi.mock('../src/lib/billing', () => ({ hasPlus: () => false }));
 vi.mock('../src/lib/supabase/client', () => ({ getSupabaseOrNull: () => null }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
