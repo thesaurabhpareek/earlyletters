@@ -6,15 +6,13 @@ Owner: product. Supersedes the older status audits of 9 and 10 Nov (open PRs #73
 
 1. Three read-only auditors compared all 188 rows with `Status: ready` in `docs/BACKLOG.md` against `origin/develop`, the open PRs (read by REST) and `docs/agents/CLAIMS.md`. Each wrote a table (id, verdict, evidence, open PR or claim, next action) with one of six verdicts: DONE, PARTIAL, OPEN, BLOCKED, SUPERSEDED, UNSURE.
 2. Product opened the cited evidence for all 37 DONE verdicts (file present and holding the cited symbol or test title, or the merged PR read by REST) and read the row's Done-when line against it wherever the row has one. All 8 SUPERSEDED verdicts were checked against the decision, plan or code comment they cite. For BLOCKED, every Depends on and founder-task id was read; for PARTIAL, file-level checks on about 8 rows and the cited PRs read by REST. A verdict that could not be reproduced stayed as it was.
-3. Only the `Status:` phrase of a verified row changed, in place, so the diff cannot conflict with PRs that append sections to the backlog. Nothing else in a row, and no OPEN or UNSURE row, was touched.
-
-Status words used, from the file's own vocabulary: `done (evidence)`, `superseded (by D-### or BL-###)`, `blocked (BL ids or the reason)`, `needs-founder (FT-##)` where a founder task id exists (instead of `blocked`, for BL-360, BL-365 and BL-368), and `partly done (what remains)` as the product agent was asked to write it.
+3. Only the `Status:` phrase of a verified `ready` row changed, in place, so the diff cannot conflict with PRs that append sections to the backlog. Nothing else in a row, and no OPEN or UNSURE row, was touched. Status words used, from the file's own vocabulary: `done (evidence)`, `superseded (by D-### or BL-###)`, `blocked (BL ids or the reason)`, `needs-founder (FT-##)` where a founder task id exists (instead of `blocked`, for BL-360, BL-365 and BL-368), and `partly done (what remains)` as the product agent was asked to write it.
 
 ## Counts
 
 | Auditor verdict | Rows | Changed here | Left unchanged |
 |---|---|---|---|
-| DONE | 37 | 37 (26 done, 11 partly done after the re-read, the review of PR 1213 and the BL-371 ruling) | 0 |
+| DONE | 37 | 37 (25 done, 12 partly done after the re-read, the review of PR 1213 and the BL-371 ruling) | 0 |
 | PARTIAL | 46 | 46 | 0 |
 | BLOCKED | 15 | 15 | 0 |
 | SUPERSEDED | 8 | 5 (4 superseded, BL-453 partly done) | 3 (BL-369, BL-406, BL-845 not reproduced) |
@@ -22,16 +20,15 @@ Status words used, from the file's own vocabulary: `done (evidence)`, `supersede
 | OPEN | 71 | 0 | 71 |
 | Total | 188 | 103 | 85 |
 
-Final lines by new status: done 26, superseded 4, blocked or needs-founder 15, partly done 58 (46 audited PARTIAL, 11 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
+Final lines by new status: done 25, superseded 4, blocked or needs-founder 15, partly done 59 (46 audited PARTIAL, 12 from DONE and BL-453 from SUPERSEDED). 85 rows stay `ready`.
 
 ## Verdicts overturned or not applied
 
 | Row | Auditor | Result | Why |
 |---|---|---|---|
-| BL-509 | DONE | partly done | Done-when says the text is on `main`. `origin/main` still has the old line in `apps/web/src/content/site.ts`. |
-| BL-510 | DONE | partly done | Done-when says `/open` serves on `main` and the AASA lists it. `origin/main` has neither. |
+| BL-509, BL-510 | DONE | partly done | Done-when says the text, `/open` and the AASA path are on `main`. `origin/main` still has the old line in `apps/web/src/content/site.ts` and neither `/open` nor the AASA entry. |
 | BL-394 | DONE | partly done | Done-when asks for 3:1 and 4.5:1 checks on every captured route in J18. `apps/mobile/e2e-web/j18-dark-mode.flow.ts` only checks the screen is dark. |
-| BL-594, BL-358, BL-334, BL-357 | DONE | partly done | Review of PR 1213: BL-594's S0 acceptance is a live staging check, and the BL-358 and BL-334 migrations are Pending in `supabase/APPLY.md`; BL-357 depends on BL-358. A hosted apply is not done because the code is merged. |
+| BL-594, BL-358, BL-334, BL-357, BL-870 | DONE | partly done | Review of PR 1213: BL-594's S0 acceptance is a live staging check, and the BL-358 and BL-334 migrations are Pending in `supabase/APPLY.md`; BL-357 depends on BL-358, and BL-870's migration is not applied per `supabase/APPLY.md`. A hosted apply is not done because the code is merged. |
 | BL-563, BL-380, BL-324 | DONE | partly done | Their acceptance or Done-when is a device result (S1-39, BL-279, FT-22), not yet run. |
 | BL-371 | DONE | partly done | Same standard as BL-509, BL-510 and BL-394: the Done-when is read literally. It says "Undo is a button on the page for as long as the page is open", and the code has an Undo toast on the Book (S36, `book.tsx`), not a page button. Everything else in the row is built, so the remainder is small: product and design either reconcile the row with S36 or the button is built. |
 | BL-453 | SUPERSEDED | partly done | Points 1 to 3 lost their surface when BL-870 closed the photo bucket, but points 4 and 6 are still real work. |
@@ -40,8 +37,6 @@ Final lines by new status: done 26, superseded 4, blocked or needs-founder 15, p
 | BL-845 | SUPERSEDED | unchanged | Plan 17 says "fold or close" but `photos-device.test.ts` is the Swift module scan, not the NX-39-R9 scanner with the adapter allowlist. |
 
 ## Table of changes
-
-All rows were `ready`.
 
 | Id | New status | Evidence or what remains |
 |---|---|---|
@@ -73,7 +68,7 @@ All rows were `ready`.
 | BL-564 | done | PR #589, `apps/mobile/test/privacy-documents.test.ts` |
 | BL-594 | partly done | code and `supabase/functions/_shared/keys/keys.test.ts` merged in PR #602; the S0 acceptance, a live staging check with legacy keys off, is outstanding, a founder or hosted step, CR-47 |
 | BL-857 | done | PR #763, `docs/research/studies/MEMORY-LIBRARY-STUDY-PLAN-10nov.md`, status DRAFT; the path differs from the scope |
-| BL-870 | done | PR #1115, `supabase/migrations/20261110000000_photo_bucket_closed.sql`, `supabase/tests/photo_bucket_closed.test.mjs`; hosted apply is a founder step |
+| BL-870 | partly done | PR #1115 merged `supabase/migrations/20261110000000_photo_bucket_closed.sql` and `supabase/tests/photo_bucket_closed.test.mjs`; hosted apply is a founder step |
 | BL-927 | done | PR #867, `docs/design/specs/NS-33-ACCESSIBILITY-FLOOR-20nov.md` |
 | BL-949 | done | PR #872, `docs/legal/COUNSEL_PACKET.md` 1.7.0 section 7 |
 | BL-962 | done | PR #868, `apps/mobile/test/no-system-indexing.test.ts` |
@@ -151,8 +146,7 @@ All rows were `ready`.
 
 ## Side effects on the dispatcher
 
-- `node scripts/agents/dispatch.mjs` reads the first word of the status. `partly` is neither ready nor done, so the 58 partly done rows are skipped and their dependents stay blocked. The remainder of each is named in its status line, but nothing picks it up until product splits it into a new `ready` row. That is the next product task for the rows with agent work left (for example BL-110, BL-117, BL-363, BL-364, BL-402, BL-408, BL-427, BL-430, BL-466). BL-408 matters most: BL-434 waits on it.
-- The existing phrase "done in part" would have counted as `done` for dependents, which is why it was not used.
+- `node scripts/agents/dispatch.mjs` reads the first word of the status. `partly` is neither ready nor done (the older phrase "done in part" would have counted as `done` for dependents), so the 59 partly done rows are skipped and their dependents stay blocked. The remainder of each is named in its status line, but nothing picks it up until product splits it into a new `ready` row. That is the next product task for the rows with agent work left (for example BL-110, BL-117, BL-363, BL-364, BL-402, BL-408, BL-427, BL-430, BL-466). BL-408 matters most: BL-434 waits on it.
 - Eligible agent tasks by the dispatcher's own rules: 165 before, 79 after. Newly eligible: BL-928 (its blocker BL-927 is now done). BL-359 stays blocked because BL-358 is partly done.
 - Stale claim rows: `find-lane` (PR 895) and `account-lane` (PR 879) point at merged PRs. Their owner removes them.
 
@@ -160,39 +154,32 @@ All rows were `ready`.
 
 | Id | Check |
 |---|---|
-| BL-251 | Analytics owner says what the row meant (likely an analytics consent version); PRs 1086 and 1201 may replace it. Rewrite or retire. |
-| BL-252 | Analytics owner: does any test drive the real PostHog client? Retire or rewrite after PR 1086 merges. |
+| BL-251, BL-252 | Analytics owner says what BL-251 meant (likely an analytics consent version) and whether any test drives the real PostHog client (BL-252); PRs 1086 and 1201 may replace both. Rewrite or retire. |
 | BL-395 | Design owner runs journey J06 and ticks each Done-when point (fix-mark hit areas, first-time note, Keep exact words confirm, Literata edit field). |
-| BL-419 | Run journeys J01 to J03, compare the ten visual findings, split into points. |
-| BL-420 | Add the layout-shift measurement to the web run, then judge the four moves. |
-| BL-421 | Compare against Book journey J09-03, then close or narrow (the placeholder text is gone). |
+| BL-419, BL-420 | Run journeys J01 to J03, compare the ten visual findings, split into points (BL-419). Add the layout-shift measurement to the web run, then judge the four moves (BL-420). |
+| BL-421 | Compare against Book journey J09-03, then close or narrow (the placeholder text is gone).Also BL-423: check where the first-run finale button routes and whether it reaches a ready recorder in one tap. |
 | BL-422 | Content owner reads `privateNote` and `privacyNote` in `strings.en.ts` and picks one explanation. |
-| BL-423 | Check where the first-run finale button routes and whether it reaches a ready recorder in one tap. |
-| BL-891 | Product or Karma: retire as superseded by the NS first-run cards, or edit NX-40. |
-| BL-894 | Same question as BL-891 for the NS-39 to NS-45 cards. |
+| BL-891, BL-894 | Product or Karma: retire as superseded by the NS first-run cards (BL-894: the NS-39 to NS-45 cards), or edit NX-40. |
 | BL-873 | Content or Karma: typed-day lines go with BL-965 and BL-982, the rest is parked Memory Library. |
 
 ## OPEN rows the auditors recommend building next
 
 Small and unblocked first (each S or XS):
 
-- BL-119 (together prompts never show without the flag, speech), BL-441 (plan.ts fix and flip the `it.fails`, payments; engine file, coordinator merges), BL-457, BL-459, BL-461, BL-463, BL-473, BL-456, BL-449, BL-450, BL-506, BL-508 (mobile, sync, qa), BL-516 (XS, reword two lines), BL-518 and BL-519 (asks), BL-957 (grapheme helper, needed by photo word fields), BL-974, BL-985 (needs a content key first).
-- Docs and legal drafts: BL-851, BL-868, BL-935, BL-867, BL-850 (after PR 873), BL-841 (rewrite against the current packet numbering).
-- Unblock others: BL-148 (M, unlocks BL-413 and BL-377), BL-444 (M, unlocks BL-469).
+- BL-119 (together prompts never show without the flag, speech), BL-441 (plan.ts fix and flip the `it.fails`, payments; engine file, coordinator merges), BL-457, BL-459, BL-461, BL-463, BL-473, BL-456, BL-449, BL-450, BL-506, BL-508 (mobile, sync, qa), BL-516 (XS, reword two lines), BL-518 and BL-519 (asks), BL-957 (grapheme helper, needed by photo word fields), BL-974, BL-985 (needs a content key first). Docs and legal drafts: BL-851, BL-868, BL-935, BL-867, BL-850 (after PR 873), BL-841 (rewrite against the current packet numbering). Unblock others: BL-148 (M, unlocks BL-413 and BL-377), BL-444 (M, unlocks BL-469).
 
 Wait for an open PR first: BL-412 after PR 835; BL-414 after PR 1086; BL-452 and BL-476 after PRs 1170 and 1134; BL-455 and BL-492 after PRs 1087 and 1124; BL-775 after PRs 1169, 1175 and 1124; BL-864 and BL-878 are the open PRs 1203 and 1204 themselves (review and merge); BL-960 is open PR 873.
 
 ## Not verified
 
-- Most OPEN and UNSURE verdicts were not re-read: they change nothing here.
-- The "what remains" part of about 40 PARTIAL rows, and the file evidence behind them, is the auditors' and was not re-read.
+- Most OPEN and UNSURE verdicts were not re-read: they change nothing here. Also, the "what remains" part of about 40 PARTIAL rows, and the file evidence behind them, is the auditors' and was not re-read.
 - No test suite was run against the code behind any DONE verdict; "done" means the code and test exist on `origin/develop` and the merged PR was read, not that a device or hosted check happened. Device rows (FT-22, S1-39, BL-279) and hosted applies (BL-870, BL-594 staging) are separate and said so in the status lines.
-- The BL-002 evidence is the script, the report and the `npm test` hook. `--check` currently exits 1 and is not run by CI.
+- The BL-002 evidence is the script, the report and the `npm test` hook. `--check` currently exits 1 and is not run by CI. BL-344, BL-375 and BL-383 have device or sandbox points in their Done-when (Apple redeem sheet, consent card and download states, a link opened on a phone) that no one ran.
 
-## Partly done rows to split first (58)
+## Partly done rows to split first (59)
 
 Product splits each remainder into new `ready` rows in this order. Until then the dispatcher skips these rows and their dependents.
 
 1. BL-408 first. BL-434 is blocked on it, and the remainder is plain agent work: the on-device 2,000-letter test `apps/mobile/test/perf.sql.test.ts` and the Maestro timing.
 2. Agent work left, no outside dependency (split next, in this order): BL-110, BL-117, BL-378, BL-379, BL-381, BL-388, BL-392, BL-400, BL-401, BL-402, BL-403, BL-404, BL-417, BL-425, BL-426, BL-427, BL-428, BL-430, BL-431, BL-363, BL-364, BL-466, BL-479, BL-489, BL-453, BL-454, BL-394, BL-397, BL-371, BL-922, BL-929, BL-952, BL-958, BL-964, BL-965, BL-966, BL-978, BL-987, BL-565, BL-507.
-3. Remainder waits on a founder step, a device run, a decision or another PR, so split only when that clears: BL-334, BL-358 and BL-357 (hosted apply, FT-10), BL-594 (staging check), BL-324, BL-380 and BL-563 (device rows FT-22, BL-279, S1-39), BL-341 and BL-354 (founder or Mac), BL-509 and BL-510 (next release snapshot to `main`), BL-377 (BL-148), BL-376, BL-396, BL-398 and BL-362 (decide first whether the remainder is wanted), BL-961 (device row).
+3. Remainder waits on a founder step, a device run, a decision or another PR, so split only when that clears: BL-334, BL-358 and BL-357 (hosted apply, FT-10), BL-594 (staging check), BL-870 (hosted apply), BL-324, BL-380 and BL-563 (device rows FT-22, BL-279, S1-39), BL-341 and BL-354 (founder or Mac), BL-509 and BL-510 (next release snapshot to `main`), BL-377 (BL-148), BL-376, BL-396, BL-398 and BL-362 (decide first whether the remainder is wanted), BL-961 (device row).
