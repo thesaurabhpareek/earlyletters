@@ -11,6 +11,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BOOT_DIAG_PREFIX, installBootDiagnostics } from './boot-diagnostics';
+import { findLeaks, runtimeFixture } from './log-canary';
 
 export const OUT = path.resolve(__dirname, '../../../../docs/release/journey');
 const SHOTS = process.env.JOURNEY_SHOTS === '1';
@@ -45,6 +46,13 @@ export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-q
   if (path !== '/') await page.goto(`${base}${path}${path.includes('?') ? '&' : '?'}seed=${kind}`);
 }
 
+const TYPED = new WeakMap<Page, string[]>();
+/** BL-415: tell the log canary a letter this journey typed, so it is searched for in the captured logs. */
+export function canary(page: Page, text: string): void {
+  const t = runtimeFixture(text);
+  if (t) TYPED.set(page, [...(TYPED.get(page) ?? []), t]);
+}
+
 const ALLOWED_PAGE = new WeakMap<Page, RegExp[]>();
 /** A step that injects a fault on purpose may expect the page to throw. */
 export function allowPageError(page: Page, re: RegExp): void {
@@ -66,8 +74,13 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
     const errors: string[] = [];
     const consoleErrors: string[] = [];
     const bootDiag: string[] = [];
-    page.on('pageerror', (e) => errors.push(e.message));
+    const everyLog: string[] = []; // BL-415: every level, kept for the canary below
+    page.on('pageerror', (e) => {
+      errors.push(e.message);
+      everyLog.push(`${e.message}\n${e.stack ?? ''}`);
+    });
     page.on('console', (m) => {
+      everyLog.push(m.text());
       if (m.text().startsWith(BOOT_DIAG_PREFIX)) bootDiag.push(m.text());
       else if (m.type() === 'error') consoleErrors.push(m.text());
     });
@@ -90,6 +103,11 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
       errors.filter((m) => !allowedPage.some((re) => re.test(m))),
       // The diagnostics are only read on a failure, so a passing run says nothing extra.
       `uncaught page errors${bootDiag.length ? `; what the page saw before it (BL-464): ${[...new Set(bootDiag)].join(' | ')}` : ''}`,
+    ).toEqual([]);
+    // BL-415: no entry text, transcript or child name in any log line. No allow-list on purpose.
+    expect(
+      findLeaks(everyLog, TYPED.get(page) ?? []),
+      'a console line or page error held the child name or a letter (LEGAL-REQ-014): fix the logging, never this check',
     ).toEqual([]);
     const allowed = ALLOWED.get(page) ?? [];
     expect(
