@@ -108,7 +108,7 @@ Mobile auth code: keep it under `apps/mobile/src/lib/auth/` so the fence (`fence
 
 ## Exceptions
 
-Only the founder grants an exception, recorded as a `D-###` in `docs/DECISIONS.md` or, for a one-off, in the PR body with the founder's approving review. Any exception to IAM-R07, R13 to R17, R20 or R23 also needs the `approve-migration` label (D-041). A test that encodes the exception is required; "temporary" exceptions name a removal date.
+Only the founder grants an exception, recorded as a `D-###` in `docs/DECISIONS.md` or, for a one-off, in the PR body with the founder's approving review. Any exception to IAM-R07, R13 to R17, R20 or R23 is reviewed by `security-architect`; the `approve-migration` label is not a merge step (D-117) and applying a migration to a hosted project stays the founder's. A test that encodes the exception is required; "temporary" exceptions name a removal date.
 
 ## Open questions
 

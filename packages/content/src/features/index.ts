@@ -11,6 +11,7 @@ export { familyCopy } from './family.en';
 export { findCopy } from './find.en';
 export { languageCopy } from './language.en';
 export { licences } from './licences.en';
+export { newDevicePageCopy } from './new-device.en';
 export { packsCopy } from './packs.en';
 export { playerCopy } from './player.en';
 export { reminderCopy } from './reminders.en';
@@ -27,6 +28,7 @@ import { familyCopy } from './family.en';
 import { findCopy } from './find.en';
 import { languageCopy } from './language.en';
 import { licences } from './licences.en';
+import { newDevicePageCopy } from './new-device.en';
 import { packsCopy } from './packs.en';
 import { playerCopy } from './player.en';
 import { reminderCopy } from './reminders.en';
@@ -45,6 +47,7 @@ export const features = {
   find: findCopy,
   language: languageCopy,
   licences,
+  newDevicePage: newDevicePageCopy,
   packs: packsCopy,
   player: playerCopy,
   reminders: reminderCopy,

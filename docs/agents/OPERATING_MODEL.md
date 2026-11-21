@@ -32,7 +32,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 **Added 15 Oct, from the first two weeks.**
 - **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
-- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until Karma merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
 
 ## 3. Memory: how you keep context between runs
 
@@ -86,7 +86,7 @@ Two board facts are not reviews and do not change how you review. A line under "
 
 ## 7. The founder digest
 
-The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for the founder (oldest first, with the red-team verdict), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
+The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for Karma (oldest first, with the red-team verdict), and the few acts only the founder can do (CR-73), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
 
 ## 8. Hard limits (every agent, every run)
 

@@ -1,0 +1,42 @@
+diff --git a/.github/workflows/ios-compile.yml b/.github/workflows/ios-compile.yml
+index 721271b6..cb243311 100644
+--- a/.github/workflows/ios-compile.yml
++++ b/.github/workflows/ios-compile.yml
+@@ -394,4 +394,5 @@ jobs:
+       # request, so the build is mostly the JavaScript bundle and the app target. A pull request saves none of its own.
+       - name: Restore DerivedData (Release)
++        id: dd
+         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+         with:
+@@ -401,4 +402,12 @@ jobs:
+             dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+ 
++      # CI-Q1 measurement: was the restore an exact hit, and how big is the cache we start from.
++      - name: DerivedData restore (measurement)
++        env:
++          HIT: ${{ steps.dd.outputs.cache-hit }}
++          MATCHED: ${{ steps.dd.outputs.cache-matched-key }}
++        run: |
++          echo "- DerivedData restore: exact hit=${HIT:-false}, matched key prefix=${MATCHED%%-xcode*}, size before $(du -sh "$RUNNER_TEMP/DerivedData" 2>/dev/null | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
++
+       - name: xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)
+         working-directory: apps/mobile/ios
+@@ -416,6 +425,8 @@ jobs:
+             -derivedDataPath "$RUNNER_TEMP/DerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+-            build > "$log" 2>&1
++            -showBuildTimingSummary build > "$log" 2>&1
+           status=$?
++          echo "- DerivedData size after: $(du -sh "$RUNNER_TEMP/DerivedData" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
++          grep -A25 'Build Timing Summary' "$log" | sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY" || true
+           echo "- store-profile Release build: exit ${status} after $((SECONDS / 60)) min $((SECONDS % 60)) s on runner image ${ImageVersion:-unknown}" >> "$GITHUB_STEP_SUMMARY"
+           grep -E '(fatal )?error: |\*\* BUILD (SUCCEEDED|FAILED) \*\*' "$log" | grep -v '/Pods/' | head -200
+@@ -495,6 +506,6 @@ jobs:
+           exit 0
+ 
+-      - name: Keep the diagnostics and the build log (on failure)
+-        if: failure()
++      - name: Keep the diagnostics and the build log (on failure, and on a manual run)
++        if: failure() || (always() && github.event_name == 'workflow_dispatch')
+         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         with:

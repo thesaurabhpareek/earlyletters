@@ -37,6 +37,7 @@ import {
   BackupServerError,
   MAX_OBJECT_BYTES,
   needsSignIn,
+  storedLastError,
   type BackupServer,
 } from './contract';
 import { BackupStopped, KEY_LEN, NONCE_PREFIX_LEN, SEGMENT_SIZE, encryptObject, objectLength, wrapAad } from './format';
@@ -186,7 +187,7 @@ export function createUploadQueue(d: QueueDeps) {
     if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
     d.db.updateJob(job.entryId, {
       attempts,
-      lastError: code,
+      lastError: storedLastError(code),
       nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, retryAfterSeconds),
     });
     return { kind: 'retry_later' };
@@ -403,7 +404,7 @@ export function createUploadQueue(d: QueueDeps) {
       if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && (e.detail === 'object' || !e.detail)) || (e.code === '22023' && e.detail === 'size'))) {
         const attempts = job.attempts + 1;
         if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
-        reset(job, { attempts, lastError: `${e.code}:${e.detail ?? 'none'}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
+        reset(job, { attempts, lastError: storedLastError(`${e.code}:${e.detail ?? 'none'}`), nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
         return { kind: 'retry_later' };
       }
       throw e;
