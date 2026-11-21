@@ -6906,3 +6906,43 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Scope: find the cause by running the flow; fix the flow's expectation (or the copy, if the copy change was a mistake) in both j18 and j09, keeping the existing alternation for the date-dependent prefix.
 - Done when: `j18-dark-mode` and `j09-book` pass on `develop`; a changed heading would fail them.
 - Test: `apps/mobile/e2e-web/j18-dark-mode.flow.ts`, `j09-book.flow.ts`.
+
+## Follow-ups filed at the progress refresh (BL-1439 to BL-1442; proposed, none is decided)
+
+Written by the product agent, docs only, on `develop` `b09193c01`. BL-1432 to BL-1438 are held by the open PR #1296, so these rows start at BL-1439. Anything that exists only in an open PR is marked unverified.
+
+#### BL-1439 A job for an erased or deleted letter drops its Keychain token
+- Status: proposed (a test comes first; Karma or the mobile owner sets it to ready). Mode: agent. Owner: mobile engineer (backup). Milestone: M12. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: in `apps/mobile/src/lib/backup/queue.ts`, `goneNow` (about line 171) and the `reconcile` loop (about line 511) delete a job with `d.db.deleteJob` and do not call `dropToken` (defined at about line 126), so the Keychain token for an erased or deleted letter stays until sign-out or the settled sweep. Other paths (`reset`, the finished path) do call it.
+- Scope: call `dropToken(entryId)` where those two paths delete a job. Write the failing test first.
+- Done when: a test erases a letter with a queued job and finds no token for it; the test fails with the new call removed.
+- Test: `apps/mobile/test` backup queue tests.
+
+#### BL-1440 Find part 2 gates before the Book-header slice mounts Find
+- Status: proposed. Mode: agent. Owner: mobile engineer (Find). Milestone: M12. Size: S. Depends on: BL-952.
+- Priority: Medium. Gate: this row lands before the Book-header slice that mounts Find.
+- Satisfies: none given (NS-02 is the nearest; no requirement id was checked).
+- Problem and evidence: five gaps are open. (1) `rowLabel` uses `String.replace` with a string replacement, so a letter containing `$&` or `$'` is mangled in the VoiceOver label. (2) The query is not cleared, and Find is not unmounted, when Find is hidden. (3) Cancel does not clear the query. (4) A hard-coded "your child" fallback is in code, not in content. (5) The no-analytics grep test is weak.
+- Scope: fix (1) with a function replacement or split and join; clear or unmount on hide; make Cancel clear; move the fallback to `packages/content` (the words are PROPOSED until the founder approves); strengthen the grep test. Split into two PRs if it grows past one reviewable PR.
+- Done when: a letter containing `$&` and `$'` reads back unchanged in the label; each of (2) and (3) has a test; the fallback is read from content; the grep test fails on a planted analytics call.
+- Test: `apps/mobile/test` Find tests and the content rules test.
+
+#### BL-1441 A refused Apple or Google sign-up on the first-run Welcome shows a line
+- Status: needs-decision (FP6-2: needs a design-systems ruling on what the screen says and where; release gate). Mode: pair. Owner: mobile engineer (first-run; the design-systems ruling comes first). Milestone: M12. Size: S. Depends on: BL-1440 is not required; FP-6 (#1243, merged).
+- Priority: High for release: a refused sign-up that shows nothing leaves a person stuck. Gate: design-systems ruling.
+- Satisfies: NS-40 (the first-run sign-in rows); no row id was checked here.
+- Problem and evidence: on the first-run Welcome, when Apple or Google refuses sign-up, the screen shows nothing.
+- Scope: after the ruling, show the ruled line using content keys and add a test for each provider's refusal.
+- Done when: the ruling is recorded; a refusal from each provider shows the line; no analytics call carries the reason text.
+- Test: `apps/mobile/test` first-run tests.
+
+#### BL-1442 Open reviewer notes on #1242 (NDA-1), and a note on its premise
+- Status: proposed (#1242 is blocked by the CI unit timeout; the notes apply once it can run). Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: none given.
+- Problem and evidence: reviewers left two notes on #1242: key `inFlight` by user id, and add a provider behavioural test. Note on the premise: the NDA-1 premise was a reviewer's reading, not an observed failure; no failure was seen on a device or in a test. Unverified: the exact code in the PR head.
+- Scope: key the in-flight map by user id; add the provider test; do not claim the premise as a bug in the PR body.
+- Done when: both notes are answered in the PR and the new test fails without the keying.
+- Test: `apps/mobile/test` auth tests.
