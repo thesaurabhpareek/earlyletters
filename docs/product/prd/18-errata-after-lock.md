@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E83) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E84) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -16,7 +16,7 @@ Owner: Karma (CTO role, product side). Source: the engineering evaluation passes
 | E8 | NS-09 D7 | Assumes a server change | None needed: `held_discard` deletes the row and its words in the acknowledging request (`:771-788`). The card names the two cases that keep words: a stale base answered `kept: true`, and a legal hold |
 | E9 | NS-10 open question | Whether `sync_pull` serves rows while consent is outstanding | It does; it checks sign-in only (`:1305`). The decline rule is enforced on the phone; NS-10 gains a P0 row for it |
 | E10 | BL-957, NS-16 | Grapheme counting on every field would let a Devanagari From name pass the app and fail the server CHECK, rejecting the upload for good | Unit per field: the From name counts code points (as built, 30); photo words, place, Firsts label count graphemes in the app with a code-point ceiling in the database |
-| E11 | NS-01-R54 | #835 CHECK `length(photo_text) <= 140` and #836 `capTyped` count code points | Database ceilings 1,120 code points for photo words and 480 for place; the app limits 140 and 60 graphemes. Fix in #835 and #836 before merge |
+| E11 | NS-01-R54 | #835 CHECK `length(photo_text) <= 140` and #836 `capTyped` count code points | Database ceilings 1,120 code points for photo words and 480 for place; the app limits 140 and 60 graphemes. Fix in #835 and #836 before merge. Numbers changed by E84 (2,240 and 960) |
 | E12 | NS-06-A23 | 200 code points fails 40-grapheme labels with long sequences | Ceiling 320 code points |
 | E13 | NS-13-R23, section 3a vs NS-32-R4b, R7 | 60 in total vs 60 plus 4 | 60 pending in total, plan notices kept first within it |
 | E14 | BL-939, J-N11 vs NS-05-R18, R5b | Row says text only, byte-equal to the kept words | The card wins: the shared text is the wrapper (date, words, signature) and the optional picture is gated by counsel Q45. BL-939 and J-N11 corrected |
@@ -134,6 +134,7 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E81 | none for 1.0 (no alert sender is built); the alert cap binds NS-08-R21 and any later sender | `functions/risk-security.md` FR-SEC-36 | sync, security-architect |
 | E82 | BL-966 and the reminder copy PR add the names-off test; content swaps the birthday body when names are off | NS-13-R24, NS-32-R12 | mobile, content, design-systems |
 | E83 | the new-device sign-in email is built and read before the first outside family signs in (it also still gates the backup flip); the E78 proposed row changes its gate | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content, mobile |
+| E84 | none; #835 keeps its ceilings of 2,240 (photo words) and 960 (place) code points, 16 per grapheme, and #836 counts graphemes only (140 and 60); E11's numbers are superseded | card 01 NS-01-R54; BL-957 | mobile, data-architect |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
@@ -348,3 +349,13 @@ Ruling: the founder's answer holds, and it replaces the timing in E78 and CL-155
 Edited in place: NS-08-R21 (08-keeping-and-trust.md), FR-SEC-36 (functions/risk-security.md), the E78 line of the founder digest (22-final-holistic-spec.md section 7). Plan delta: the sender, the device table, the stop page and the one-session sign-out lever move from "gated before the flip" to "gated before the first outside family"; the one proposed backlog row from E78 changes its gate; any scheduling is engineering's and the dates are the founder's; sync, security-architect, content, mobile.
 
 Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E83 changes the timing of the E78 line to the founder's own answer (CL-158); E78 was also CR-71 D1 (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
+
+## Seventh round, E84 (21 Nov, Karma with product, from the mobile agent's question on #835)
+
+### E84: the database ceilings for photo words and place are 2,240 and 960 code points (21 Nov, Karma with product; NS-01-R54, BL-957, E11; req-question NS-01-R54-ceilings on #835)
+
+Question: E11 says the database admits 1,120 code points of photo words and 480 of place (8 per grapheme). NS-01-R54 says 140 grapheme clusters "with emoji" are written whole and the ceiling "must admit it". The design and the head of #835 (`39cf30d3`) say 2,240 and 960 (16 per grapheme). With 8 per grapheme, a long emoji family or kiss sequence (10 or 11 code points) cannot be kept 140 times: words are cut whole at 112 or 101 clusters and place at 48 or 43. Which holds?
+
+Ruling: the card sentence holds and the E11 numbers change. The database ceilings are 2,240 code points for photo words and 960 for place, 16 per grapheme, a safety net against unbounded rows and never the product limit. The app limits stay 140 and 60 graphemes, counted by the one helper in `packages/core`, and the app never cuts a value that is within them. Text is stored as typed, so the new ceiling stores no more than a parent typed; the only cut left is the app's own limit, which removes whole clusters, never part of one. The card line NS-01-R54 is not edited. It shows less, stores nothing extra, sends nothing, and a parent's words are never dropped silently.
+
+Edited in place: the E11 row (numbers changed by E84); `17-engineering-project-plan.md` (the ceilings rows, closed, CL-159); a "superseded by E84" note in `tools/review/eng/A-data-and-sync.md` section 1.5 and `B-mobile-client.md` (`length.ts` row). Plan delta: #835 keeps `length(photo_text) <= 2240` and `place <= 960` (revert the one commit that lowered them); #836 `capTyped` counts graphemes against 140 and 60 and never cuts on the code point ceiling; the test `[NS-01-R54]` adds 140 emoji sequences of 11 code points kept whole in photo words and 60 in place, one over the limit refused by the app, and a mutant at 8 per grapheme that fails; mobile, data-architect. The first-label ceiling of 320 (40 x 8, NS-06-A23) has the same flaw for 11-code-point sequences and is raised with that card when it is built (proposal 640); not decided here. No founder line.
