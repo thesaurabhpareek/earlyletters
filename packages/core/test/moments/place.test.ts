@@ -8,7 +8,9 @@ import {
   openPlaceTable,
   placeForCell,
   placeLine,
+  placeName,
   placeStays,
+  type PlaceStayGuard,
   placeTableText,
   windowPlaces,
   type PlaceIndex,
@@ -169,31 +171,70 @@ describe('[NS-53-R281] the home-place rarity rule (7.2a PLACE_RARE_SHARE 0.15)',
 });
 
 describe('[NS-53-R58] stays: consecutive away days of one place', () => {
-  const d = (dayKey: string, placeId: string | null) => ({ dayKey, placeId });
+  const d = (dayKey: string, placeId: string | null, isBirthDay = false) => ({ dayKey, placeId, isBirthDay });
+  const PORTO = 'syn:porto';
+  const W = windowPlaces([...rep(SEA, 60), ...rep(LIS, 5), ...rep(PORTO, 5)]);
+  const guard = (over: Partial<PlaceStayGuard> = {}): PlaceStayGuard => ({
+    table: T, window: W, hidden: new Set(), rules: RULES, machineLabels: true, ...over,
+  });
+  const stays = (days: ReturnType<typeof d>[], over: Partial<PlaceStayGuard> = {}) => placeStays(days, guard(over));
+  const three = (id: string) => [d('2026-10-24', id), d('2026-10-25', id), d('2026-10-26', id)];
+
   it('Asha: Fri 24 to Sun 26 Oct 2026 in Lisbon is one stay of 3 days', () => {
-    expect(placeStays([d('2026-10-24', LIS), d('2026-10-25', LIS), d('2026-10-26', LIS)], 7)).toEqual([
-      { placeId: LIS, from: '2026-10-24', to: '2026-10-26', days: 3 },
-    ]);
+    expect(stays(three(LIS))).toEqual([{ placeId: LIS, from: '2026-10-24', to: '2026-10-26', days: 3 }]);
   });
   it('a gap day, a changed place or a null place splits; a lone day is no stay', () => {
-    expect(placeStays([d('2026-10-24', LIS), d('2026-10-26', LIS)], 7)).toEqual([]);
-    expect(placeStays([d('2026-10-24', LIS), d('2026-10-25', 'syn:porto'), d('2026-10-26', 'syn:porto')], 7)).toEqual([
-      { placeId: 'syn:porto', from: '2026-10-25', to: '2026-10-26', days: 2 },
+    expect(stays([d('2026-10-24', LIS), d('2026-10-26', LIS)])).toEqual([]);
+    expect(stays([d('2026-10-24', LIS), d('2026-10-25', PORTO), d('2026-10-26', PORTO)])).toEqual([
+      { placeId: PORTO, from: '2026-10-25', to: '2026-10-26', days: 2 },
     ]);
-    expect(placeStays([d('2026-10-24', LIS), d('2026-10-25', null), d('2026-10-26', LIS)], 7)).toEqual([]);
+    expect(stays([d('2026-10-24', LIS), d('2026-10-25', null), d('2026-10-26', LIS)])).toEqual([]);
   });
-  it('a run longer than maxRun gives no theme; exactly maxRun does', () => {
+  it('a run longer than rules.maxRun gives no theme; exactly maxRun does', () => {
     const run = (n: number) => Array.from({ length: n }, (_, i) => d(`2026-10-${String(10 + i).padStart(2, '0')}`, LIS));
-    expect(placeStays(run(8), 7)).toEqual([]);
-    expect(placeStays(run(7), 7)).toHaveLength(1);
+    expect(stays(run(8))).toEqual([]);
+    expect(stays(run(7))).toHaveLength(1);
   });
   it('input order and duplicate days do not matter; month and year edges are consecutive', () => {
-    expect(placeStays([d('2027-01-01', LIS), d('2026-12-31', LIS), d('2026-12-31', LIS)], 7)).toEqual([
+    expect(stays([d('2027-01-01', LIS), d('2026-12-31', LIS), d('2026-12-31', LIS)])).toEqual([
       { placeId: LIS, from: '2026-12-31', to: '2027-01-01', days: 2 },
     ]);
   });
   it('a malformed day key is ignored, never thrown', () => {
-    expect(placeStays([d('nope', LIS), d('2026-10-24', LIS)], 7)).toEqual([]);
+    expect(stays([d('nope', LIS), d('2026-10-24', LIS)])).toEqual([]);
+  });
+  it('[NS-53-R63] days at home are never a stay', () => {
+    expect(stays(three(SEA))).toEqual([]);
+    expect(stays(three(LIS), { homeCorrection: LIS })).toEqual([]);
+  });
+  it('[NS-53-R254] a hidden place never gets a stay', () => {
+    expect(stays(three(LIS), { hidden: new Set([LIS]) })).toEqual([]);
+  });
+  it('[NS-53-R202] the machineLabels kill switch gives no stay', () => {
+    expect(stays(three(LIS), { machineLabels: false })).toEqual([]);
+  });
+  it('[NS-53-R254] a birth day is not part of a stay', () => {
+    expect(stays([d('2026-10-24', LIS, true), d('2026-10-25', LIS), d('2026-10-26', LIS)])).toEqual([
+      { placeId: LIS, from: '2026-10-25', to: '2026-10-26', days: 2 },
+    ]);
+    expect(stays([d('2026-10-24', LIS), d('2026-10-25', LIS, true)])).toEqual([]);
+  });
+  it('a place the table does not name gives no stay', () => {
+    expect(stays(three(LIS), { table: null })).toEqual([]);
+  });
+});
+
+describe('prototype keys are not places', () => {
+  it('placeName and placeForCell ignore inherited keys', () => {
+    for (const k of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+      expect(placeName(T, k)).toBeNull();
+      expect(placeForCell(T, k)).toBeNull();
+    }
+  });
+  it('a table whose cell points at "constructor" does not open', () => {
+    const bad = { ...T, cells: { ...T.cells, 'syn:x': 'constructor' } };
+    const withSum = { ...bad, checksum: fnv1a32Hex(placeTableText(bad)) };
+    expect(openPlaceTable(withSum, fnv1a32Hex)).toBeNull();
   });
 });
 

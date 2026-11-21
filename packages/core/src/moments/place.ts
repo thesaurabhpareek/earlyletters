@@ -64,19 +64,24 @@ export function openPlaceTable(table: PlaceIndex | null | undefined, hash: Place
   if (!table) return null;
   if (hash(placeTableText(table)) !== table.checksum) return null;
   for (const k of Object.keys(table.places)) if (table.places[k].id !== k) return null;
-  for (const c of Object.keys(table.cells)) if (!(table.cells[c] in table.places)) return null;
+  for (const c of Object.keys(table.cells)) if (!has(table.places, table.cells[c])) return null;
   return table;
+}
+
+/** Own keys only: a place id such as "constructor" must never reach the object prototype. */
+function has(o: object, k: string): boolean {
+  return Object.prototype.hasOwnProperty.call(o, k);
 }
 
 /** A native cell to a stable place id, or null (no cell, unknown cell, no table). */
 export function placeForCell(table: PlaceIndex | null, cell: string | null | undefined): PlaceId | null {
   if (!table || cell == null) return null;
-  const id = Object.prototype.hasOwnProperty.call(table.cells, cell) ? table.cells[cell] : undefined;
-  return id !== undefined && id in table.places ? id : null;
+  const id = has(table.cells, cell) ? table.cells[cell] : undefined;
+  return id !== undefined && has(table.places, id) ? id : null;
 }
 
 export function placeName(table: PlaceIndex | null, id: PlaceId): string | null {
-  return table && id in table.places ? table.places[id].name : null;
+  return table && has(table.places, id) ? table.places[id].name : null;
 }
 
 function counts(ids: readonly (PlaceId | null)[]): Map<PlaceId, number> {
@@ -160,17 +165,28 @@ export interface PlaceStay {
   readonly days: number;
 }
 
+/** The guard inputs of `placeLine`, shared by every day of the stays (R254, R202, R249). */
+export type PlaceStayGuard = Omit<PlaceLineInput, 'placeId' | 'isBirthDay'>;
+
 /**
  * Stays (7a.2 step 5): consecutive local days that each show the same away place form one stay of
- * at least two days and at most `maxRun`. The caller passes only qualifying days with a place line.
- * Stays are for Recent only, never For you (R254). No purpose word is produced here.
+ * at least two days and at most `rules.maxRun`. Every day goes through `placeLine` first, so a
+ * hidden place, the home place, a birth day, an unnamed place or the `machineLabels` kill switch
+ * drops the day and a stay can never exist where a place line would not. Stays are for Recent
+ * only, never For you (R254). No purpose word is produced here.
  */
-export function placeStays(days: readonly { dayKey: string; placeId: PlaceId | null }[], maxRun: number): PlaceStay[] {
+export function placeStays(
+  days: readonly { dayKey: string; placeId: PlaceId | null; isBirthDay: boolean }[],
+  guard: PlaceStayGuard,
+): PlaceStay[] {
+  const maxRun = guard.rules.maxRun;
+  type Day = { dayKey: string; placeId: PlaceId };
   const sorted = days
-    .filter((d): d is { dayKey: string; placeId: PlaceId } => d.placeId !== null && isIsoDate(d.dayKey))
+    .filter((d) => isIsoDate(d.dayKey) && placeLine({ ...guard, placeId: d.placeId, isBirthDay: d.isBirthDay }) !== null)
+    .map((d): Day => ({ dayKey: d.dayKey, placeId: d.placeId as PlaceId }))
     .sort((a, b) => (a.dayKey < b.dayKey ? -1 : a.dayKey > b.dayKey ? 1 : 0));
   const out: PlaceStay[] = [];
-  let run: { dayKey: string; placeId: PlaceId }[] = [];
+  let run: Day[] = [];
   const flush = (): void => {
     if (run.length >= 2 && run.length <= maxRun) {
       out.push({ placeId: run[0].placeId, from: run[0].dayKey, to: run[run.length - 1].dayKey, days: run.length });
