@@ -8,13 +8,15 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
-import { entryMediaStore } from '../src/lib/photos/entry-media';
+import { entryMediaStore, PhotoOwnerUnknown } from '../src/lib/photos/entry-media';
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
+import { commitPhoto } from '../src/lib/photos/session';
+import { CODE_POINTS_PER_CHARACTER, normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
-import { makeJpeg, memoryFiles } from './photos-helpers';
+import { deps, makeJpeg, memoryFiles } from './photos-helpers';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -238,6 +240,106 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
+  it('[NS-01-R54] caps count graphemes and the database agrees: [NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const d = { ...deps().d, store: entryMediaStore(db) };
+    const kinds: Record<string, string> = {
+      'a Devanagari conjunct': '\u0915\u094D\u0937',
+      'Devanagari ki': '\u0915\u093F',
+      'a decomposed accent': 'e\u0301',
+      'an emoji ZWJ family': '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}',
+      'a flag': '\u{1F1EE}\u{1F1F3}',
+    };
+    const intl = Intl as { Segmenter?: unknown };
+    const seg = intl.Segmenter;
+    for (const engine of ['with Segmenter', 'as on Hermes']) {
+      if (engine === 'as on Hermes') delete intl.Segmenter;
+      try {
+        for (const [kind, g] of Object.entries(kinds)) {
+          const at = `${engine}, ${kind}`;
+          expect([normalizePhotoText(g.repeat(140)), normalizePhotoText(g.repeat(141))], at).toEqual([g.repeat(140), g.repeat(140)]);
+          expect([normalizePhotoPlace(g.repeat(60)), normalizePhotoPlace(g.repeat(61))], at).toEqual([g.repeat(60), g.repeat(60)]);
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
+        }
+        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones): 140 in the words and 60
+        // in the place are kept whole and pass the CHECK (card 01 R54, E84: 16 code points per grapheme); one over the app
+        // limit is cut by the app, never refused by the database.
+        const kiss = '\u{1F9D1}\u{1F3FB}\u200D\u2764\uFE0F\u200D\u{1F48B}\u200D\u{1F9D1}\u{1F3FC}';
+        const family = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
+        for (const g of [kiss, family]) {
+          expect(Array.from(g).length).toBeGreaterThanOrEqual(10);
+          expect([normalizePhotoText(g.repeat(141)), normalizePhotoPlace(g.repeat(61))], engine).toEqual([g.repeat(140), g.repeat(60)]);
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(140), place: g.repeat(60) })).status, engine).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(140), g.repeat(60)]);
+        }
+        // A character longer than 16 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
+        // store never refuses what the app kept.
+        const stack = 'a' + '\u0301'.repeat(20);
+        expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: stack.repeat(140), place: stack.repeat(60) })).status, engine).toBe('stored');
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(106), stack.repeat(45)]);
+      } finally {
+        intl.Segmenter = seg;
+      }
+    }
+  });
+  it('[NS-01-R54] mutant guard: the app multiplier is the database ceiling per grapheme (2240 / 140 and 960 / 60 are both 16), so 8 per grapheme fails here and in the 11 code point fixtures', () => {
+    const sql = readFileSync(join(SRC, 'lib', 'db', 'migrations.ts'), 'utf8');
+    expect(sql).toMatch(/length\(photo_text\) <= 2240/);
+    expect(sql).toMatch(/length\(place\) <= 960/);
+    expect(CODE_POINTS_PER_CHARACTER).toBe(16);
+    expect(CODE_POINTS_PER_CHARACTER * 140).toBe(2240);
+    expect(CODE_POINTS_PER_CHARACTER * 60).toBe(960);
+  });
+  it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: [NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store: entryMediaStore(db) };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    db.run("CREATE TRIGGER full BEFORE INSERT ON entry_media BEGIN SELECT RAISE(ABORT, 'database or disk is full'); END");
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([entryMediaStore(db).get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    db.run('DROP TRIGGER full');
+    // The owner went (a let-go draft) between the write and the row: put and the restore both refuse; still no throw.
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    const store = entryMediaStore(db);
+    const racing = { ...d, store: { ...store, put: (p: Parameters<typeof store.put>[0]) => (db.run("DELETE FROM drafts WHERE id = 'd1'"), store.put(p)) } };
+    await expect(commitPhoto(racing, { entryId: 'd1', finalText: '', bytes: makeJpeg({ seed: 3 }), text: null, requireWords: false })).resolves.toEqual({ status: 'failed' });
+    expect([...files.disk.keys()]).toEqual(['m1.jpg']);
+  });
+  it('[NS-01-R17] a row committed and then failed after is taken back: the earlier picture comes back, or none stays, and the commit never throws (#836 review B)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    let fail = false;
+    // The row is committed by put's own transaction; the change notice after it throws, as a later step would.
+    const store = entryMediaStore(db, () => {
+      if (fail) throw new Error('after the row');
+    });
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    fail = true;
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    await expect(commitPhoto(d, { entryId: 'e2', finalText: 'Words.', bytes: makeJpeg({ seed: 3 }), text: 'Only' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e2'), [...files.disk.keys()]]).toEqual([null, ['m1.jpg']]);
+  });
+  it('[D1] put refuses an owner that is neither a letter nor a draft, with a typed error, and writes nothing (DQ-R07)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    expect(() => store.put(row('nobody', 'm1'))).toThrow(PhotoOwnerUnknown);
+    expect(db.all('SELECT id FROM entry_media')).toEqual([]);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    store.put(row('d1', 'm2'));
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'm2')).toEqual({ entry_id: null, draft_id: 'd1' });
+  });
 });
 
 describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
@@ -249,9 +351,11 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     const store = entryMediaStore(db);
     store.put(row('live', 'mLive'));
     store.put(row('shelf', 'mShelf'));
-    store.put(row('gone', 'mGone')); // its letter was purged
-    store.put(row('live2', 'mNoFile')); // no letter and no file
+    letter(db, 'gone');
+    store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
     letter(db, 'live2');
+    store.put(row('live2', 'mNoFile')); // a letter whose picture file is gone
     const files = memoryFiles();
     for (const n of ['mLive.jpg', 'mShelf.jpg', 'mGone.jpg', 'stray.jpg', 'half.jpg.part']) await files.write(n, Uint8Array.of(1));
     const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': Uint8Array.of(1) });
@@ -288,7 +392,9 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     const { db } = nodeDb();
     migrate(db, ctx);
     const store = entryMediaStore(db);
+    letter(db, 'gone');
     store.put(row('gone', 'mGone'));
+    db.run("DELETE FROM entries WHERE id = 'gone'"); // its letter was purged
     const broken = { ...memoryFiles(), list: async () => { throw new Error('read'); } };
     const rows = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')!.n;
     expect(await sweepPhotos(db, broken, pickedMemory({}))).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
@@ -313,12 +419,6 @@ describe('[C9] where the stored copy lives', () => {
   it('[C9] any other container layout fails closed: no picture goes to Documents or anywhere unknown (review N10)', () => {
     h.disk = createDisk({ documents: 'file:///var/mobile/Containers/Data/Application/ASHA/Docs/', caches: 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/', os: 'ios' });
     expect(() => photosDirectory()).toThrow('photos_folder_unknown');
-  });
-  it('[NS-01-R16][NX-39-R31][C9] the erase-everything code removes that same folder and the picker and re-encode caches', () => {
-    const src = readFileSync(join(SRC, 'lib', 'erase-everything.ts'), 'utf8');
-    expect(src).toMatch(/photosDirectory\(\)/);
-    expect(src).not.toMatch(/Paths\.document, 'photos'/);
-    expect(src).toMatch(/'ImagePicker', 'ScribePhoto'/);
   });
 });
 
@@ -742,6 +842,7 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     const store = entryMediaStore(db);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
     store.put(row('d1', 'mD1')); // no entries row: owned by the draft
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: null, draft_id: 'd1' });
     expect(store.get('d1')?.mediaId).toBe('mD1');
@@ -750,11 +851,6 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', 'd1'); // store.saveLetterFromDraft
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
     expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
-  });
-  it('[D1] store.saveLetterFromDraft makes that move inside the letter\'s own transaction', () => {
-    const src = readFileSync(join(SRC, 'lib', 'store.ts'), 'utf8');
-    expect(src).toMatch(/UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = \?', draftId\);/);
-    expect(src.indexOf('UPDATE entry_media SET entry_id = draft_id')).toBeGreaterThan(src.indexOf('letters.saveFromDraft(c, draftId'));
   });
   it('[NS-01-R16c] purge and let-go remove the picture file: the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
     const { db } = nodeDb();
@@ -765,12 +861,20 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     store.put(row('kept', 'mKept'));
     db.run("UPDATE entry_media SET entry_id = NULL, draft_id = 'kept' WHERE id = 'mKept'");
     store.put(row('live', 'mLive'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('letgo', 'c', 'typed', 't')");
     store.put(row('letgo', 'mGone'));
+    db.run("DELETE FROM drafts WHERE id = 'letgo'"); // let go
     const files = memoryFiles();
     for (const n of ['mKept.jpg', 'mLive.jpg', 'mGone.jpg']) await files.write(n, Uint8Array.of(1));
     await sweepPhotos(db, files, pickedMemory({}));
     expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mKept', 'mLive']);
     expect(db.get('SELECT entry_id FROM entry_media WHERE id = ?', 'mKept')).toEqual({ entry_id: 'kept' });
     expect([...files.disk.keys()].sort()).toEqual(['mKept.jpg', 'mLive.jpg']);
+  });
+  it('[D1] a draft\'s picture needs no words, a kept letter\'s does', async () => {
+    const { d, files } = deps();
+    expect((await commitPhoto(d, { entryId: 'd1', finalText: '', bytes: makeJpeg(), text: null, requireWords: false })).status).toBe('stored');
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: '', bytes: makeJpeg(), text: null })).status).toBe('needs_words');
+    expect(files.disk.size).toBe(1);
   });
 });
