@@ -4,7 +4,7 @@
  * through the Find index, the reminder planner input, the outbox, the claim and the uploads (NS-10-R5; test plan b13
  * section 3, risk 1). Uses the account-scope reader (lib/auth/account-scope.logic.ts) and the real auth store.
  *
- * An `it.fails` marks a surface that leaks today and is removed in the fixing PR (Find's two are now real tests). Fictional family "Asha" only.
+ * Every surface is now a real regression test (the Find and planner guards landed in #1208). Fictional family "Asha" only.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
