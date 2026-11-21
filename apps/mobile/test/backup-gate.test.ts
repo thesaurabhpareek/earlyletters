@@ -15,6 +15,7 @@ import { backupInBuild, loadBackup, startBackup } from '../src/lib/backup/gate';
 // gate.ts reaches files.ts (the B5 data right); its native-backed imports are stood in so Node can load it.
 vi.mock('expo-file-system', () => ({ File: class {}, Directory: class {} }));
 vi.mock('expo-sqlite', () => ({ defaultDatabaseDirectory: '/none' }));
+vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: {} }));
 vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null }));
 
 const APP = join(__dirname, '..');
@@ -23,6 +24,9 @@ const BACKUP = join(SRC, 'lib', 'backup');
 const GATE = join(BACKUP, 'gate.ts');
 // files.ts is a data right (B5): it works with the flag off and reaches no backup runtime, so outside code may import it by name.
 const FILES = join(BACKUP, 'files.ts');
+// token-vault.ts (the upload tokens in the Keychain, B5-6) and launch-migrate.ts (the launch move, B5-9) are data rights too.
+const TOKENS = join(BACKUP, 'token-vault.ts');
+const MIGRATE = join(BACKUP, 'launch-migrate.ts');
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
@@ -86,7 +90,7 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
       for (const s of specifiers(f)) {
         if (/scribe-keys/.test(s)) offenders.push(`${relative(APP, f)} -> ${s}`);
         const target = resolveSpec(f, s);
-        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES) offenders.push(`${relative(APP, f)} -> ${s}`);
+        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES && target !== TOKENS && target !== MIGRATE) offenders.push(`${relative(APP, f)} -> ${s}`);
       }
     }
     expect(offenders).toEqual([]);
@@ -111,6 +115,11 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
 
   it('files.ts (the backup file exclusion, a data right) imports only expo-file-system, expo-sqlite and ScribeFiles', () => {
     expect(specifiers(FILES).sort()).toEqual(['../../../modules/scribe-files', 'expo-file-system', 'expo-sqlite']);
+  });
+
+  it('launch-migrate.ts and token-vault.ts reach only the Keychain wrapper, expo-sqlite and files.ts (no runtime, no native keys)', () => {
+    expect(specifiers(MIGRATE).sort()).toEqual(['./files', './token-vault', 'expo-sqlite']);
+    expect(specifiers(TOKENS)).toEqual(['../supabase/secure-storage']);
   });
 
   it('with the flag off: nothing loads, start is a no-op, and the screen has nothing to show', () => {

@@ -33,10 +33,12 @@ import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
 import { DEVICE_ID_KEY } from './auth/new-device/key';
 import { PENDING_REQUEST_KEY } from './auth/pending';
 import { closeBackupHandles, deleteBackupFiles } from './backup/files';
+import { removeAllBackupTokens } from './backup/token-vault';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
+import { photosDirectory } from './photos/files';
 import { eraseDaysFile } from './days';
 import { clearPendingInvite } from './family/pending-invite';
 import { forgetReminders } from './reminders/scheduler';
@@ -50,7 +52,7 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
  * PDF expo-print writes to `Caches/Print/<uuid>.pdf` while an export renders the whole book (export/device.ts deletes
  * it afterwards, but a kill mid-render leaves it, and `cleanupExports` does not look there).
  */
-const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
+const CACHE_COPIES = ['exports', 'recovery-export', 'Print', 'ImagePicker', 'ScribePhoto'] as const; // ImagePicker: the photo picker's originals
 
 /**
  * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.
@@ -80,6 +82,14 @@ export function eraseDeviceFiles(): void {
   if (backupFailure) throw backupFailure;
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
+  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says. A container
+  // layout photosDirectory does not know means no picture was ever written (it fails closed for writes too).
+  try {
+    const pictures = photosDirectory();
+    if (pictures.exists) pictures.delete();
+  } catch (e) {
+    if (!(e instanceof Error && e.message === 'photos_folder_unknown')) throw e;
+  }
   for (const name of CACHE_COPIES) {
     try {
       const dir = new Directory(Paths.cache, name);
@@ -105,7 +115,18 @@ async function finish(): Promise<void> {
   await clearLedger(ledgerDb());
   await clearPendingInvite();
   for (const key of SIGN_IN_LEFTOVERS) await secureStorage.removeItem(key).catch(() => {});
+  // B5-6: the upload tokens (one Keychain item). A failure is HELD, the rest still runs, then it is thrown before the
+  // pending mark goes: the erase stays pending and the next launch repeats this step (safe to repeat).
+  let tokensHeld: unknown = null;
+  let tokensFailed = false;
+  try {
+    await removeAllBackupTokens();
+  } catch (e) {
+    tokensHeld = e;
+    tokensFailed = true;
+  }
   await forgetReminders();
+  if (tokensFailed) throw tokensHeld;
   finishEraseEverything();
 }
 
