@@ -14,11 +14,11 @@ Counts of the table below (the generator's own output, 21 Nov 2026, 1,052 rows):
 
 | How | Rows |
 |---|---|
-| named in a row | 393 |
+| named in a row | 548 |
 | cited in the requirement text | 77 |
-| proposed group row | 582 |
+| proposed group row | 427 |
 
-Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, before BL-1158 to BL-1182, the generator gives 292 named, 77 cited and 683 proposed group rows (369 of 1,052 strict, 683 not). Earlier text that says 368 and 684 (`READINESS-20nov.md`) came from an earlier head and could not be reproduced on `bc143cc`; the 101 rows moved by this batch are the difference between 683 and 582.
+Strict G0 holds for 625 of 1,052 (548 plus 77). On `develop` `bc143cc` alone, before BL-1158 to BL-1182, the generator gives 292 named, 77 cited and 683 proposed group rows (369 of 1,052 strict, 683 not). Earlier text that says 368 and 684 (`READINESS-20nov.md`) came from an earlier head and could not be reproduced on `bc143cc`; the 101 rows moved by this batch are the difference between 683 and 582. Batch 2 (BL-1300 to BL-1325, 26 rows, 155 ids) moves 155 more ids from proposed to named: 393 to 548 named, 582 to 427 proposed.
 
 | P0 id | Card or file | BL id | How |
 |---|---|---|---|
@@ -79,7 +79,7 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-02-R5 | 02-find.md | BL-952 | named in a row |
 | NS-03-R1 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R2 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
-| NS-03-R3 | 03-family-hears-it-pilot.md | BL-127 | proposed group row |
+| NS-03-R3 | 03-family-hears-it-pilot.md | BL-1325 | named in a row |
 | NS-03-R4 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R5 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
 | NS-03-R7 | 03-family-hears-it-pilot.md | BL-129 | named in a row |
@@ -232,17 +232,17 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-16-R5 | 09-capture.md | BL-980 | named in a row |
 | NS-16-R6 | 09-capture.md | BL-957, BL-980 | named in a row |
 | NS-16-R9 | 09-capture.md | BL-980 | named in a row |
-| NS-17-R1 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R10 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R11 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R12 | 09-capture.md | BL-182 | proposed group row |
+| NS-17-R1 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R10 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R11 | 09-capture.md | BL-1314 | named in a row |
+| NS-17-R12 | 09-capture.md | BL-1312 | named in a row |
 | NS-17-R2 | 09-capture.md | BL-327 | named in a row |
-| NS-17-R3 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R4 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R5 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R6 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R7 | 09-capture.md | BL-182 | proposed group row |
-| NS-17-R8 | 09-capture.md | BL-182 | proposed group row |
+| NS-17-R3 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R4 | 09-capture.md | BL-1315 | named in a row |
+| NS-17-R5 | 09-capture.md | BL-1312 | named in a row |
+| NS-17-R6 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R7 | 09-capture.md | BL-1313 | named in a row |
+| NS-17-R8 | 09-capture.md | BL-1313 | named in a row |
 | NS-18-R3 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R6 | 09-capture.md | BL-982 | named in a row |
 | NS-18-R8 | 09-capture.md | BL-982 | named in a row |
@@ -321,14 +321,14 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-37-R2 | 11-foundations.md | BL-1174 | named in a row |
 | NS-37-R4 | 11-foundations.md | BL-956 | named in a row |
 | NS-37-R5 | 11-foundations.md | BL-956 | named in a row |
-| NS-38-R1 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R1 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-38-R2 | 19-from-download-to-first-letter.md | BL-1021 | named in a row |
-| NS-38-R3 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R4 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R3 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
+| NS-38-R4 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-38-R5 | 19-from-download-to-first-letter.md | BL-1021 | named in a row |
-| NS-38-R7 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R8 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
-| NS-38-R9 | 19-from-download-to-first-letter.md | BL-187 | proposed group row |
+| NS-38-R7 | 19-from-download-to-first-letter.md | BL-1317 | named in a row |
+| NS-38-R8 | 19-from-download-to-first-letter.md | BL-1318 | named in a row |
+| NS-38-R9 | 19-from-download-to-first-letter.md | BL-1316 | named in a row |
 | NS-39-R1 | 19-from-download-to-first-letter.md | BL-1032 | named in a row |
 | NS-39-R10 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
 | NS-39-R11 | 19-from-download-to-first-letter.md | BL-1171 | named in a row |
@@ -419,12 +419,12 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-45-R7 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
 | NS-45-R8 | 19-from-download-to-first-letter.md | BL-1039 | named in a row |
 | NS-45-R9 | 19-from-download-to-first-letter.md | BL-1162 | named in a row |
-| NS-46-R14 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R16 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R17 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R14 | 21-days-cultural-photos-home.md | BL-1320 | named in a row |
+| NS-46-R16 | 21-days-cultural-photos-home.md | BL-1320 | named in a row |
+| NS-46-R17 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R19 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
 | NS-46-R2 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
-| NS-46-R22 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R22 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R23 | 21-days-cultural-photos-home.md | BL-1011 | named in a row |
 | NS-46-R25 | 21-days-cultural-photos-home.md | BL-985 | cited in the requirement text |
 | NS-46-R26 | 21-days-cultural-photos-home.md | BL-1013 | named in a row |
@@ -433,79 +433,79 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | NS-46-R31 | 21-days-cultural-photos-home.md | BL-1007 | named in a row |
 | NS-46-R32 | 21-days-cultural-photos-home.md | BL-1012 | named in a row |
 | NS-46-R34 | 21-days-cultural-photos-home.md | BL-1005 | named in a row |
-| NS-46-R35 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R35 | 21-days-cultural-photos-home.md | BL-1321 | named in a row |
 | NS-46-R36 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-46-R4 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R46 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R48 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R5 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R7 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
-| NS-46-R8 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-46-R4 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R46 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
+| NS-46-R48 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
+| NS-46-R5 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R7 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
+| NS-46-R8 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
 | NS-47-R1 | 21-days-cultural-photos-home.md | BL-1010 | named in a row |
-| NS-47-R10 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R10 | 21-days-cultural-photos-home.md | BL-1307 | named in a row |
 | NS-47-R11 | 21-days-cultural-photos-home.md | BL-1010 | named in a row |
 | NS-47-R12 | 21-days-cultural-photos-home.md | BL-1002, BL-1009 | named in a row |
 | NS-47-R13 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-47-R15 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R16 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R17 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R18 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R2 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R21 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R22 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R23 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R24 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R15 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R16 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R17 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R18 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
+| NS-47-R2 | 21-days-cultural-photos-home.md | BL-1306 | named in a row |
+| NS-47-R21 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R22 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R23 | 21-days-cultural-photos-home.md | BL-1310 | named in a row |
+| NS-47-R24 | 21-days-cultural-photos-home.md | BL-1309 | named in a row |
 | NS-47-R25 | 21-days-cultural-photos-home.md | BL-1015 | named in a row |
-| NS-47-R26 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R29 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R3 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R26 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R29 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R3 | 21-days-cultural-photos-home.md | BL-1306 | named in a row |
 | NS-47-R34 | 21-days-cultural-photos-home.md | BL-1005 | named in a row |
 | NS-47-R36 | 21-days-cultural-photos-home.md | BL-1009 | named in a row |
-| NS-47-R38 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R4 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R5 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R38 | 21-days-cultural-photos-home.md | BL-1311 | named in a row |
+| NS-47-R4 | 21-days-cultural-photos-home.md | BL-1307 | named in a row |
+| NS-47-R5 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
 | NS-47-R6 | 21-days-cultural-photos-home.md | BL-1002, BL-1010 | named in a row |
-| NS-47-R7 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R8 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
-| NS-47-R9 | 21-days-cultural-photos-home.md | BL-296 | proposed group row |
+| NS-47-R7 | 21-days-cultural-photos-home.md | BL-1307 | named in a row |
+| NS-47-R8 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
+| NS-47-R9 | 21-days-cultural-photos-home.md | BL-1308 | named in a row |
 | NS-48-R1 | 21-days-cultural-photos-home.md | BL-1002, BL-1004 | named in a row |
 | NS-48-R10 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R11 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R2 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
-| NS-48-R21 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
-| NS-48-R26 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
+| NS-48-R21 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
+| NS-48-R26 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
 | NS-48-R28 | 21-days-cultural-photos-home.md | BL-1003 | named in a row |
 | NS-48-R3 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R30 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R36 | 21-days-cultural-photos-home.md | BL-1004 | named in a row |
 | NS-48-R4 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
 | NS-48-R5 | 21-days-cultural-photos-home.md | BL-1016 | named in a row |
-| NS-48-R9 | 21-days-cultural-photos-home.md | BL-297 | proposed group row |
-| NS-49-R10 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R11 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R12 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R13 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R15 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R16 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R17 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R19 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R21 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R23 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R24 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
+| NS-48-R9 | 21-days-cultural-photos-home.md | BL-1324 | named in a row |
+| NS-49-R10 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-49-R11 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R12 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
+| NS-49-R13 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-49-R15 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R16 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R17 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R19 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R21 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
+| NS-49-R23 | 21-days-cultural-photos-home.md | BL-1304 | named in a row |
+| NS-49-R24 | 21-days-cultural-photos-home.md | BL-1302 | named in a row |
 | NS-49-R25 | 21-days-cultural-photos-home.md | BL-1001, BL-1006 | named in a row |
 | NS-49-R26 | 21-days-cultural-photos-home.md | BL-1006 | named in a row |
 | NS-49-R27 | 21-days-cultural-photos-home.md | BL-1017 | named in a row |
 | NS-49-R28 | 21-days-cultural-photos-home.md | BL-1017 | named in a row |
 | NS-49-R3 | 21-days-cultural-photos-home.md | BL-1006 | named in a row |
-| NS-49-R33 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R35 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
+| NS-49-R33 | 21-days-cultural-photos-home.md | BL-1303 | named in a row |
+| NS-49-R35 | 21-days-cultural-photos-home.md | BL-1304 | named in a row |
 | NS-49-R6 | 21-days-cultural-photos-home.md | BL-1001 | named in a row |
-| NS-49-R7 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-49-R9 | 21-days-cultural-photos-home.md | BL-298 | proposed group row |
-| NS-50-R11 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-49-R7 | 21-days-cultural-photos-home.md | BL-1300 | named in a row |
+| NS-49-R9 | 21-days-cultural-photos-home.md | BL-1301 | named in a row |
+| NS-50-R11 | 21-days-cultural-photos-home.md | BL-1319 | named in a row |
 | NS-50-R2 | 21-days-cultural-photos-home.md | BL-1014 | named in a row |
 | NS-50-R3 | 21-days-cultural-photos-home.md | BL-1014 | named in a row |
-| NS-50-R8 | 21-days-cultural-photos-home.md | BL-295 | proposed group row |
+| NS-50-R8 | 21-days-cultural-photos-home.md | BL-1322 | named in a row |
 | NS-51-R1 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
 | NS-51-R10 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
 | NS-51-R11 | 27-photo-moments-and-media.md | BL-045 | proposed group row |
@@ -630,22 +630,22 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-BKO-31 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-32 | functions/back-office.md | BL-047 | proposed group row |
 | FR-BKO-35 | functions/back-office.md | BL-047 | proposed group row |
-| FR-CMP-01 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-03 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-04 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-05 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-06 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-07 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-11 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-12 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-13 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-01 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-03 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-04 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-05 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-06 | functions/compliance.md | BL-1316 | named in a row |
+| FR-CMP-07 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-11 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-12 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-13 | functions/compliance.md | BL-1318 | named in a row |
 | FR-CMP-14 | functions/compliance.md | BL-119 | cited in the requirement text |
-| FR-CMP-15 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-15 | functions/compliance.md | BL-1318 | named in a row |
 | FR-CMP-16 | functions/compliance.md | BL-1040 | named in a row |
-| FR-CMP-17 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-18 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-19 | functions/compliance.md | BL-187 | proposed group row |
-| FR-CMP-20 | functions/compliance.md | BL-187 | proposed group row |
+| FR-CMP-17 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-18 | functions/compliance.md | BL-1317 | named in a row |
+| FR-CMP-19 | functions/compliance.md | BL-1318 | named in a row |
+| FR-CMP-20 | functions/compliance.md | BL-1317 | named in a row |
 | FR-CMP-22 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-23 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-24 | functions/compliance.md | BL-047 | proposed group row |
@@ -653,22 +653,22 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-CMP-26 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-27 | functions/compliance.md | BL-047 | proposed group row |
 | FR-CMP-28 | functions/compliance.md | BL-047 | proposed group row |
-| FR-CUL-01 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-02 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-03 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-04 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-05 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-06 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-07 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-08 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-09 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-11 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-12 | functions/cultural-background-data.md | BL-296 | proposed group row |
+| FR-CUL-01 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-02 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-03 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-04 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-05 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-06 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-07 | functions/cultural-background-data.md | BL-1307 | named in a row |
+| FR-CUL-08 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-09 | functions/cultural-background-data.md | BL-1308 | named in a row |
+| FR-CUL-11 | functions/cultural-background-data.md | BL-1306 | named in a row |
+| FR-CUL-12 | functions/cultural-background-data.md | BL-1311 | named in a row |
 | FR-CUL-15 | functions/cultural-background-data.md | BL-961 | cited in the requirement text |
-| FR-CUL-16 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-21 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-22 | functions/cultural-background-data.md | BL-296 | proposed group row |
-| FR-CUL-23 | functions/cultural-background-data.md | BL-296 | proposed group row |
+| FR-CUL-16 | functions/cultural-background-data.md | BL-1309 | named in a row |
+| FR-CUL-21 | functions/cultural-background-data.md | BL-1310 | named in a row |
+| FR-CUL-22 | functions/cultural-background-data.md | BL-1310 | named in a row |
+| FR-CUL-23 | functions/cultural-background-data.md | BL-1310 | named in a row |
 | FR-CUL-28 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-CUL-29 | functions/cultural-background-data.md | BL-047 | proposed group row |
 | FR-CUL-30 | functions/cultural-background-data.md | BL-047 | proposed group row |
@@ -692,18 +692,18 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-DAT-38 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-39 | functions/data-and-measurement.md | BL-047 | proposed group row |
 | FR-DAT-40 | functions/data-and-measurement.md | BL-047 | proposed group row |
-| FR-DAY-02 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-02 | functions/days-library.md | BL-1320 | named in a row |
 | FR-DAY-03 | functions/days-library.md | BL-966, BL-982 | cited in the requirement text |
-| FR-DAY-04 | functions/days-library.md | BL-295 | proposed group row |
-| FR-DAY-06 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-04 | functions/days-library.md | BL-1320 | named in a row |
+| FR-DAY-06 | functions/days-library.md | BL-1320 | named in a row |
 | FR-DAY-07 | functions/days-library.md | BL-966 | cited in the requirement text |
 | FR-DAY-09 | functions/days-library.md | BL-965 | cited in the requirement text |
 | FR-DAY-10 | functions/days-library.md | BL-965 | cited in the requirement text |
 | FR-DAY-11 | functions/days-library.md | BL-965 | cited in the requirement text |
-| FR-DAY-15 | functions/days-library.md | BL-295 | proposed group row |
-| FR-DAY-20 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-15 | functions/days-library.md | BL-1321 | named in a row |
+| FR-DAY-20 | functions/days-library.md | BL-1322 | named in a row |
 | FR-DAY-23 | functions/days-library.md | BL-1011 | named in a row |
-| FR-DAY-25 | functions/days-library.md | BL-295 | proposed group row |
+| FR-DAY-25 | functions/days-library.md | BL-1321 | named in a row |
 | FR-DAY-26 | functions/days-library.md | BL-047 | proposed group row |
 | FR-DAY-27 | functions/days-library.md | BL-047 | proposed group row |
 | FR-DAY-28 | functions/days-library.md | BL-047 | proposed group row |
@@ -763,26 +763,26 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-LEG-24 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-26 | functions/legal.md | BL-047 | proposed group row |
 | FR-LEG-27 | functions/legal.md | BL-047 | proposed group row |
-| FR-LOC-01 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-02 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-03 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-04 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-05 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-08 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-10 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-13 | functions/languages-and-localisation.md | BL-182 | proposed group row |
+| FR-LOC-01 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-02 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-03 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-04 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-05 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-08 | functions/languages-and-localisation.md | BL-1313 | named in a row |
+| FR-LOC-10 | functions/languages-and-localisation.md | BL-1313 | named in a row |
+| FR-LOC-13 | functions/languages-and-localisation.md | BL-1315 | named in a row |
 | FR-LOC-15 | functions/languages-and-localisation.md | BL-411 | cited in the requirement text |
 | FR-LOC-17 | functions/languages-and-localisation.md | BL-411 | cited in the requirement text |
 | FR-LOC-18 | functions/languages-and-localisation.md | BL-105 | cited in the requirement text |
-| FR-LOC-19 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-20 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-21 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-22 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-23 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-24 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-26 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-28 | functions/languages-and-localisation.md | BL-182 | proposed group row |
-| FR-LOC-29 | functions/languages-and-localisation.md | BL-182 | proposed group row |
+| FR-LOC-19 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-20 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-21 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-22 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-23 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-24 | functions/languages-and-localisation.md | BL-1315 | named in a row |
+| FR-LOC-26 | functions/languages-and-localisation.md | BL-1314 | named in a row |
+| FR-LOC-28 | functions/languages-and-localisation.md | BL-1312 | named in a row |
+| FR-LOC-29 | functions/languages-and-localisation.md | BL-1313 | named in a row |
 | FR-LOC-30 | functions/languages-and-localisation.md | BL-047 | proposed group row |
 | FR-LOC-34 | functions/languages-and-localisation.md | BL-047 | proposed group row |
 | FR-LOC-35 | functions/languages-and-localisation.md | BL-047 | proposed group row |
@@ -842,15 +842,15 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-MSG-43 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
 | FR-MSG-44 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
 | FR-MSG-45 | functions/messaging-and-entry-points.md | BL-047 | proposed group row |
-| FR-NTC-01 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-02 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-03 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-04 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-05 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-08 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-09 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-10 | functions/notification-catalogue.md | BL-297 | proposed group row |
-| FR-NTC-11 | functions/notification-catalogue.md | BL-297 | proposed group row |
+| FR-NTC-01 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-02 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-03 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-04 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-05 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-08 | functions/notification-catalogue.md | BL-1324 | named in a row |
+| FR-NTC-09 | functions/notification-catalogue.md | BL-1324 | named in a row |
+| FR-NTC-10 | functions/notification-catalogue.md | BL-1323 | named in a row |
+| FR-NTC-11 | functions/notification-catalogue.md | BL-1324 | named in a row |
 | FR-NTC-22 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-23 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-24 | functions/notification-catalogue.md | BL-047 | proposed group row |
@@ -859,10 +859,10 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-NTC-27 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-28 | functions/notification-catalogue.md | BL-047 | proposed group row |
 | FR-NTC-29 | functions/notification-catalogue.md | BL-047 | proposed group row |
-| FR-OPP-03 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-05 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-06 | functions/feature-opportunities.md | BL-298 | proposed group row |
-| FR-OPP-09 | functions/feature-opportunities.md | BL-298 | proposed group row |
+| FR-OPP-03 | functions/feature-opportunities.md | BL-1304 | named in a row |
+| FR-OPP-05 | functions/feature-opportunities.md | BL-1305 | named in a row |
+| FR-OPP-06 | functions/feature-opportunities.md | BL-1305 | named in a row |
+| FR-OPP-09 | functions/feature-opportunities.md | BL-1304 | named in a row |
 | FR-OPP-14 | functions/feature-opportunities.md | BL-047 | proposed group row |
 | FR-OPS-03 | functions/operations.md | BL-961 | cited in the requirement text |
 | FR-OPS-06 | functions/operations.md | BL-017 | proposed group row |
@@ -883,29 +883,29 @@ Strict G0 holds for 470 of 1,052 (393 plus 77). On `develop` `bc143cc` alone, be
 | FR-OPS-42 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-43 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-44 | functions/operations.md | BL-958 | cited in the requirement text |
-| FR-PHS-04 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-11 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-12 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-14 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-15 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-17 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-19 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-20 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-22 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-23 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-33 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-40 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-41 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-43 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-44 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-50 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-51 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-52 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-53 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-54 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-55 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-56 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
-| FR-PHS-57 | functions/photos-and-suggestions.md | BL-298 | proposed group row |
+| FR-PHS-04 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-11 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-12 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-14 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-15 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-17 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-19 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-20 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-22 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-23 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-33 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-40 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-41 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-43 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-44 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-50 | functions/photos-and-suggestions.md | BL-1305 | named in a row |
+| FR-PHS-51 | functions/photos-and-suggestions.md | BL-1302 | named in a row |
+| FR-PHS-52 | functions/photos-and-suggestions.md | BL-1301 | named in a row |
+| FR-PHS-53 | functions/photos-and-suggestions.md | BL-1300 | named in a row |
+| FR-PHS-54 | functions/photos-and-suggestions.md | BL-1303 | named in a row |
+| FR-PHS-55 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
+| FR-PHS-56 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
+| FR-PHS-57 | functions/photos-and-suggestions.md | BL-1304 | named in a row |
 | FR-PHS-58 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-59 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
 | FR-PHS-60 | functions/photos-and-suggestions.md | BL-047 | proposed group row |
