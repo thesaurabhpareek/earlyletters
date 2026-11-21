@@ -27,7 +27,7 @@ export const lifecycleEmails = {
     body: [
       "{parentName} is keeping a book of letters for a child you love, and would like yours in it.",
       `To write, open ${brand.name} and tap the red circle.`,
-      "Then just talk, in the language you speak. A minute is plenty.",
+      "Then talk, in the language you speak. A minute is plenty.",
       "It stays in your words. Each letter you speak keeps its original recording, unchanged.",
       "{parentName} reads your letters first, then adds them to the book. Until then, only the parents can see them.",
     ],
@@ -42,7 +42,7 @@ export const lifecycleEmails = {
     id: 'welcome-coparent',
     subject: "Welcome to the book",
     preheader: "You and {parentName} now keep it together, as equals.",
-    heading: "A book with two voices now",
+    heading: "You and {parentName} share this book",
     body: [
       "{parentName} invited you to keep the book together. You can write letters of your own and read every letter in the book.",
       "Your letters are yours, and {parentName}'s are theirs. Neither of you can change the other's words.",

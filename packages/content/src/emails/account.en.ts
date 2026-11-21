@@ -29,7 +29,7 @@ import type { EmailCopy } from './types';
 const FALLBACK = "Button not working? Copy and paste this link:";
 const OPEN_APP = { label: `Open ${brand.name}`, urlVar: "{appUrl}" };
 const PLUS_NOT_CANCELLED =
-  "If you have Plus, deleting your account does not cancel it. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.";
+  "If you have Plus, deleting your account doesn't cancel it. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.";
 // Customer review CUS-12, legal review LGL-14: no purchase records are held (D-080 keeps plan status only,
 // deleted with the account), and only the consent record is kept to show what was agreed.
 const RECORDS_KEPT =
@@ -44,7 +44,7 @@ export const accountEmails = {
     // Recently deleted, which Export leaves out), and no "we have let them know": nothing sends coparent-left or shows
     // the coParentLeft card yet (BL-361). The app offers Export on the step before Confirm (S64).
     preheader: "On {deletionDate}. Until then you can change your mind.",
-    heading: "We have your request",
+    heading: "We got your request",
     body: [
       `You asked to delete your ${brand.name} account on {requestDate}. Request number: {requestId}.`,
       "Your account, letters and recordings will be deleted from our servers on {deletionDate}. Our backups clear 7 days after that, and our service providers delete their copies within 45 days of your request.",
@@ -59,7 +59,7 @@ export const accountEmails = {
     ],
     cta: OPEN_APP,
     fallback: FALLBACK,
-    safety: "Did not ask for this? Reply to this email and we will stop it. Nothing is deleted before {deletionDate}.",
+    safety: "Didn't ask for this? Reply to this email and we'll stop it. Nothing is deleted before {deletionDate}.",
     category: 'account',
     kind: 'transactional',
   },
@@ -77,7 +77,7 @@ export const accountEmails = {
     ],
     cta: OPEN_APP,
     fallback: FALLBACK,
-    safety: "Did not cancel this yourself? Reply to this email and we will help.",
+    safety: "Didn't cancel this yourself? Reply to this email and we'll help.",
     category: 'account',
     kind: 'transactional',
   },
@@ -87,15 +87,15 @@ export const accountEmails = {
   'account-deleted': {
     id: 'account-deleted',
     subject: "Your account has been deleted",
-    preheader: "Request {requestId} is complete. This is the last email we will send you.",
+    preheader: "Request {requestId} is complete. This is the last email we'll send you.",
     heading: "Your account and letters have been deleted",
     body: [
       "We finished request {requestId} on {completedDate}. Your account, letters and recordings have been deleted from our servers.",
       "Our backups clear by {backupClearDate}, and our service providers delete their copies within 45 days of your request.",
       "Anything you exported stays with you.",
-      "If you have Plus, it is not cancelled by this. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.",
+      "If you have Plus, this doesn't cancel it. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.",
       RECORDS_KEPT,
-      "Thank you for keeping your letters with us. This is the last email we will send to this address.",
+      "Thank you for keeping your letters with us. This is the last email we'll send to this address.",
     ],
     category: 'account',
     kind: 'transactional',
@@ -106,7 +106,7 @@ export const accountEmails = {
     id: 'book-deletion-scheduled',
     subject: "A book is set to be deleted",
     preheader: "On {deletionDate}. Until then you can export it, or change your mind.",
-    heading: "We have your request",
+    heading: "We got your request",
     body: [
       "On {requestDate} you asked to delete one of your books. It will be deleted on {deletionDate}, with every letter and recording in it.",
       "To see which book, or to cancel, open the app and go to Settings, Your data. You can export everything in it first, free.",
@@ -117,7 +117,7 @@ export const accountEmails = {
     ],
     cta: OPEN_APP,
     fallback: FALLBACK,
-    safety: "Did not ask for this? Reply to this email. Nothing is deleted before {deletionDate}.",
+    safety: "Didn't ask for this? Reply to this email. Nothing is deleted before {deletionDate}.",
     category: 'account',
     kind: 'transactional',
   },
@@ -132,7 +132,7 @@ export const accountEmails = {
     ],
     cta: OPEN_APP,
     fallback: FALLBACK,
-    safety: "Did not cancel this yourself? Reply to this email and we will help.",
+    safety: "Didn't cancel this yourself? Reply to this email and we'll help.",
     category: 'account',
     kind: 'transactional',
   },
@@ -142,16 +142,16 @@ export const accountEmails = {
   // plain sign-in email: people who write in often cannot use the app.
   'deletion-request-received': {
     id: 'deletion-request-received',
-    subject: "We have your deletion request",
-    preheader: "One more step to confirm it is you. Nothing is deleted until then.",
-    heading: "We have your request",
+    subject: "We got your deletion request",
+    preheader: "One more step to confirm it's you. Nothing is deleted until then.",
+    heading: "We got your request",
     body: [
       `We received a request to delete the ${brand.name} account for this email address. Request number: {requestId}.`,
-      "To make sure it is really you, we will send a separate email to this address with a link that confirms it. It works in any web browser, so you do not need the app. Nothing is deleted until you confirm.",
+      "To make sure it's you, we'll email this address a link to confirm. It opens in any browser, so you don't need the app. Nothing is deleted until you confirm.",
       "Once you confirm, your account is set to be deleted 30 days later. Until then you can change your mind.",
       "If you can open the app, you can also do this yourself: Settings, Delete account.",
     ],
-    safety: "Did not ask for this? You can ignore this email. Nothing happens without your confirmation.",
+    safety: "Didn't ask for this? You can ignore this email. Nothing happens without your confirmation.",
     category: 'account',
     kind: 'transactional',
   },
@@ -168,13 +168,13 @@ export const accountEmails = {
     heading: "Confirm you want to delete your account",
     body: [
       `You asked us to delete the ${brand.name} account for {email}. Request number: {requestId}.`,
-      "Tap the button to open a page in your web browser. It shows the date your account will be deleted and has one button, Delete my account. You do not need the app or an iPhone.",
+      "Tap the button to open a page in your web browser. It shows the date your account will be deleted and has one button, Delete my account. You don't need the app or an iPhone.",
       "Once you confirm, your account is set to be deleted 30 days later. Until then you can cancel by replying to any of our emails, or in the app if you can open it.",
       "The link works once, for {expiresIn}. Nothing is deleted unless you press the button on the page.",
     ],
     cta: { label: "Confirm deletion", urlVar: "{confirmDeleteUrl}" },
     fallback: FALLBACK,
-    safety: "Did not ask for this? You can ignore this email. Your account stays exactly as it is.",
+    safety: "Didn't ask for this? You can ignore this email. Your account stays exactly as it is.",
     category: 'account',
     kind: 'transactional',
   },
@@ -195,7 +195,7 @@ export const accountEmails = {
       `{coParentName} asked to close their ${brand.name} account on {requestDate}. The letters and recordings they wrote are no longer in the book you share.`,
       "The book stays with you, as it was. Every letter you wrote is still there, and you can keep writing.",
       "If {coParentName} changes their mind before {deletionDate}, their letters come back to the book. After that date they are deleted.",
-      "Each letter belongs to the person who wrote it, so we cannot give you a copy. If you would like one, you can ask {coParentName} to export theirs and share it with you before {deletionDate}.",
+      "Each letter belongs to the person who wrote it, so we can't give you a copy. If you'd like one, you can ask {coParentName} to export theirs and share it with you before {deletionDate}.",
     ],
     cta: OPEN_APP,
     fallback: FALLBACK,
@@ -208,14 +208,14 @@ export const accountEmails = {
     id: 'privacy-request-received',
     subject: "We have your privacy request",
     preheader: "A person is on it. We reply within 45 days, and usually much sooner.",
-    heading: "We have your request",
+    heading: "We got your request",
     body: [
       "We received your request about your information. Request number: {requestId}.",
-      "We answer within 45 days. If we need longer, we will tell you before then, and finish within 45 more.",
-      "To make sure it is really you, we may first send a sign-in email to this address.",
+      "We answer within 45 days. If we need longer, we'll tell you before then, and finish within 45 more.",
+      "To make sure it's you, we may first send a sign-in email to this address.",
       "Some things are quickest in the app. Settings, Your data, Export everything gives you every letter and recording, any time, free.",
     ],
-    safety: "Did not ask for this? Reply to this email and let us know.",
+    safety: "Didn't ask for this? Reply to this email and let us know.",
     category: 'account',
     kind: 'transactional',
   },
@@ -225,7 +225,7 @@ export const accountEmails = {
     id: 'export-ready',
     subject: "Your copy is ready to download",
     preheader: "Every letter and recording, in open formats that work without the app.",
-    heading: "Your letters, ready to keep",
+    heading: "Your copy is ready",
     body: [
       "The copy you asked for is ready. It holds your letters, your recordings and a PDF of the book.",
       "Everything opens without the app, in any web browser, with a guide to every file.",
@@ -234,7 +234,7 @@ export const accountEmails = {
     ],
     cta: { label: "Download your copy", urlVar: "{exportUrl}" },
     fallback: FALLBACK,
-    safety: "Did not ask for this? Reply to this email and we will look into it.",
+    safety: "Didn't ask for this? Reply to this email and we'll look into it.",
     category: 'account',
     kind: 'transactional',
   },
@@ -244,10 +244,10 @@ export const accountEmails = {
   'policy-update': {
     id: 'policy-update',
     subject: "An update to our {documentName}",
-    preheader: "What is changing, in plain words, and the date it takes effect.",
+    preheader: "What's changing, in plain words, and the date it takes effect.",
     heading: "Our {documentName} changes on {effectiveDate}",
     body: [
-      "We are updating our {documentName}. What changes, in plain words:",
+      "We're updating our {documentName}. What changes, in plain words:",
       "{changeSummary}",
       "The new version takes effect on {effectiveDate}. The button below opens it in full, with a list of what changed.",
       "If the change needs your agreement, the app will ask you once, on or after {effectiveDate}.",

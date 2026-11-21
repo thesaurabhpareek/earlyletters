@@ -29,12 +29,12 @@ export const backupEmails = {
   'backup-restore-requested': {
     id: 'backup-restore-requested',
     subject: "A new iPhone asked for your recordings",
-    preheader: "If this was you, there is nothing to do. If not, you can stop it here.",
+    preheader: "If this was you, there's nothing to do. If not, you can stop it here.",
     heading: "Was this you?",
     body: [
       "On {when}, someone signed in to your account on {device} and asked for your recording backup.",
-      "If it was you, there is nothing to do. Your recordings will start coming back to that iPhone by {holdUntil}. If you still have your old iPhone, open the app there and tap Yes, it's mine to start sooner.",
-      "If it was not you, tap the button below. We will cancel the request and sign out every device. Your recordings stay where they are. The link works once, for {expiresIn}.",
+      "If it was you, there's nothing to do. Your recordings will start coming back to that iPhone by {holdUntil}. If you still have your old iPhone, open the app there and tap Yes, it's mine to start sooner.",
+      "If it wasn't you, tap the button below. We'll cancel the request and sign out every device. Your recordings stay where they are. The link works once, for {expiresIn}.",
     ],
     facts: [
       { label: "Comes back by", value: "{holdUntil}" },
@@ -57,7 +57,7 @@ export const backupEmails = {
       "On {when}, our recovery service used your recovery key to send your recording backup to {device}, the new iPhone you signed in on.",
       "Your recordings travel encrypted, sealed to that iPhone.",
       EVERY_USE,
-      "If you did not sign in on a new iPhone, reply to this email and we will help you.",
+      "If you didn't sign in on a new iPhone, reply to this email and we'll help you.",
     ],
     facts: [{ label: "Reference", value: "{requestId}" }],
     safety: NEVER_ASK,
@@ -69,10 +69,10 @@ export const backupEmails = {
   'backup-key-rotated': {
     id: 'backup-key-rotated',
     subject: "We updated your recovery key",
-    preheader: "A routine change to the key that protects your recording backup. Nothing to do.",
+    preheader: "A routine change to the key that protects your recording backup. There's nothing to do.",
     heading: "We updated your recovery key",
     body: [
-      "On {when}, we moved your recording backup to a new recovery key. This is routine, and there is nothing for you to do.",
+      "On {when}, we moved your recording backup to a new recovery key. This is routine. There's nothing for you to do.",
       "To make the change, our recovery service opened your old key and sealed it under the new one. Your recordings stayed encrypted and never left our service.",
       EVERY_USE,
     ],
