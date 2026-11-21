@@ -11,6 +11,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
 import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SignOutReason } from '../src/lib/auth/machine.logic';
 import { familyNotice, joinedArrival } from '../src/components/family/family-notice';
+import { bookHandoff } from '../src/components/book/book.logic';
+import type { Entry } from '../src/lib/store';
 
 const run = (from: AuthState, events: AuthEvent[]): AuthState =>
   events.reduce((s, e) => {
@@ -27,6 +29,7 @@ const signedInAs = (userId: string): AuthEvent[] => [
 const drain = () => {
   familyNotice.take();
   joinedArrival.take();
+  bookHandoff.take();
 };
 
 beforeEach(() => {
@@ -69,5 +72,34 @@ describe('[X-ACCT-1] sign-out ends the family notice and the arrival mark', () =
     publishAuth(s);
     expect(familyNotice.take()).toBe('Invite is waiting');
     expect(joinedArrival.take()).toBe(true);
+  });
+
+  it('account A to account B with no sign-out between: B does not inherit the line, the arrival or the deleted letter', () => {
+    const s = run(initialAuthState, signedInAs('user-a'));
+    familyNotice.leave('Asha left the book');
+    joinedArrival.leave();
+    bookHandoff.deleted({ id: 'e1' } as unknown as Entry);
+    publishAuth({ ...s, userId: 'user-b' } as AuthState);
+    expect(familyNotice.take()).toBeNull();
+    expect(joinedArrival.take()).toBe(false);
+    expect(bookHandoff.get()).toBeNull();
+  });
+
+  it('a sheet that resumes after its await, once the session has ended, leaves nothing for the next account (RACE1)', () => {
+    let s = run(initialAuthState, signedInAs('user-a'));
+    s = run(s, [{ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: { kind: 'count', n: 0 } }, { type: 'SIGNED_OUT' }]);
+    familyNotice.leave('Asha left the book'); // the late continuation
+    joinedArrival.leave();
+    run(s, signedInAs('user-b'));
+    expect(familyNotice.take()).toBeNull();
+    expect(joinedArrival.take()).toBe(false);
+  });
+
+  it('a line left by A and read by B without any clear is not shown (owner check)', () => {
+    run(initialAuthState, signedInAs('user-a'));
+    familyNotice.leave('Asha left the book');
+    resetAuthStoreForTests();
+    run(initialAuthState, signedInAs('user-b'));
+    expect(familyNotice.take()).toBeNull();
   });
 });

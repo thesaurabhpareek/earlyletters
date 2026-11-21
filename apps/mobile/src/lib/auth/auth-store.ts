@@ -21,7 +21,8 @@
  * state, for the screens.
  */
 import { needsAccountClaim } from './account-claim.logic';
-import { familyNotice, joinedArrival } from '@/components/family/family-notice';
+import { bindNoticeOwner, familyNotice, joinedArrival } from '@/components/family/family-notice';
+import { bookHandoff } from '@/components/book/book.logic';
 import { joinWait } from '@/components/family/join-wait.logic';
 import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
 
@@ -49,6 +50,8 @@ export interface ClaimReaders {
 /** Until the provider registers the real readers: nobody owns the phone, and assume letters exist (ask first). */
 const ASK_FIRST: ClaimReaders = { owner: () => null, hasLocalData: () => true };
 let readers: ClaimReaders = ASK_FIRST;
+
+bindNoticeOwner(() => authUserId(snapshot));
 
 export function getAuthSnapshot(): AuthState {
   return snapshot;
@@ -125,6 +128,7 @@ export function publishAuth(next: AuthState): void {
     joinWait.clear();
     familyNotice.clear();
     joinedArrival.clear();
+    bookHandoff.take(); // a deleted letter's text held for the Book (book.logic.ts)
   }
   listeners.forEach((l) => l(next));
   announce();
