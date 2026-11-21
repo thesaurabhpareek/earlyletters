@@ -16,6 +16,8 @@ What the app expects, in one table:
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview` (TestFlight alpha builds), `.dev` (development builds; no universal links) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
+Every hosted value this guide sets, and the repo value that goes with it, is listed in [AUTH_SETTINGS.md](AUTH_SETTINGS.md): read it back there and record the date. Nothing in this guide proves what the dashboard holds.
+
 Do the sections in order. Sections 1 to 6 are needed before anyone but you signs in. Section 7 (passkeys) can wait.
 
 ---
@@ -27,7 +29,7 @@ Dashboard: your project (`early-letters`, us-west-1).
 1. **Project Settings > API Keys**: copy the **Project URL** and the **publishable key** (`sb_publishable_...`; older projects call it the `anon` key). Both are public by design and go into the app (section 8). Never copy the `service_role` or secret key anywhere near the app.
 2. **Authentication > Sign In / Providers > Auth settings** (labels as of Oct 2026):
    - Allow new users to sign up: **on**.
-   - Allow manual linking: **on** (needed later for "Ways to sign in", A-REQ-019).
+   - Allow manual linking: **off** (matches `supabase/config.toml:47`, `supabase/tests/auth_config.test.mjs:89` and the first-run card; turn it on only in the change that ships "Ways to sign in", A-REQ-019).
    - Allow anonymous sign-ins: **off**. The app never uses them; the web contribution page that might is v1.1.
    - Confirm email: **on** (an address is an account only after its owner uses the link or code).
 3. **Authentication > Sessions** (or Project Settings > JWT): leave refresh token rotation on (default). Recommended JWT expiry: **900 seconds** (TDD 04 3.1: shorter window for a stolen token; the app refreshes in the foreground). Leave "time-box sessions" and "inactivity timeout" off: this is a local-first memory book, and a forced sign-out helps nobody.
@@ -143,13 +145,13 @@ Supabase > Authentication > **Emails** > SMTP Settings > Enable custom SMTP (Ver
 | Minimum interval between emails | `60` seconds (matches the app's "You can send another in a minute", A-REQ-025) |
 
 ### 4.3 Rate limits
-Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch. Leave the token verification limit at its default (about 30 per 5 minutes per IP).
+Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch. Leave the token verification limit at its default (about 30 per 5 minutes per IP). O-6 later lowers it to 15, with the 8-digit code (4.4; register row 4).
 
 ### 4.4 Email provider
 Supabase > Authentication > Sign In / Providers > **Email**:
 - Enable Email provider: on. Confirm email: on. Secure email change: on.
 - **Email OTP expiration**: `900` seconds (link and code live 15 minutes; PRD V2 F02 A-REQ-018 Rev). Confirmed by code: every generated template in `supabase/templates/` tells people "15 minutes", and the export script that writes them says the words must match an expiry of 900 (`packages/emails/scripts/export-supabase.ts`); `supabase/auth-email.md` 3.2 says 900. No file sets the hosted value (`supabase/config.toml` is the local stack only, and `supabase/templates/management-api.json` carries templates, not the expiry), so read it in the dashboard after you set it. The app does not depend on it: it refuses its own pending email request after one hour at most (4.6), which covers 900. Updated 15 Oct 2026 from 3600; if you ever change it, re-export the templates with the same wording (`supabase/templates/README.md`).
-- **Email OTP length**: `6` today. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (confirmed by code: the app reads 6 to 10 and falls back to 6, `apps/mobile/src/lib/auth/email.ts`). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). PRD V2 A-REQ-018 Rev and TDD 04 OQ-S1 ask for **8**; that is an open founder decision (PRD V2 F02 Q2, WP-F02-14, FOUNDER_TASKS FT-04 item 8). For 8: set it here and `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS environment of every build that talks to this project, together.
+- **Email OTP length**: `6` today. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (confirmed by code: the app reads 6 to 10 and falls back to 6, `apps/mobile/src/lib/auth/email.ts`). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). The first-run card (O-6) moves it to **8**, together with the per-IP token verification limit from 30 to 15 (4.3), in one release: the build with `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` first, then the dashboard the same day (FP-8, OQ-F6). Until the founder confirms O-6 the value stays 6. For 8: set it here and `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS environment of every build that talks to this project, together.
 
 ### 4.6 PKCE for email links (BL-347, security review H1, ADR 0023)
 
@@ -305,7 +307,7 @@ The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an ag
 | Order | Task | Steps here | Blocks |
 |---|---|---|---|
 | 1 | **FT-07** Apple identifiers, Team ID, Sign in with Apple key, email relay | 2.1, 2.2, 2.4, 2.5 (one `.p8` serves sign-in, capture and revocation; `docs/ops/SECURITY.md` 5) | 2, 4, the AASA Team ID, every Apple sign-in |
-| 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking on, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider (OTP expiry **900** seconds, the "15 minutes" every template says; the 3600 written earlier contradicted them, and review M4 recommends 900 too); 5.1 redirect URLs (exactly two); 6 templates as `supabase/templates/README.md` lists them. Code length stays 6 until the M4 work package (FT-04 item 8). PKCE needs no setting (4.6) | All sign-in; device checks 11 |
+| 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking off, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider (OTP expiry **900** seconds, the "15 minutes" every template says; the 3600 written earlier contradicted them, and review M4 recommends 900 too); 5.1 redirect URLs (exactly one); 6 templates as `supabase/templates/README.md` lists them. Code length stays 6 until the M4 work package (FT-04 item 8). PKCE needs no setting (4.6) | All sign-in; device checks 11 |
 | 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile, not in the alpha profiles (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
 | 4 | **FT-11** `apple-token` | Apply migration `20261004200000` through `deploy-db.yml` if it is not applied yet, and S02's `20261015000000` (the database half of the apple-token limit, `rate_hit('apple_token')`) when its PR merges; set `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`, `TOKEN_KEK_V1` (2.7; the purge worker reads the same); leave `APPLE_EXTRA_CLIENT_IDS` unset (not read yet; see 2.7); `npx supabase functions deploy apple-token --use-api` | Apple token revocation at deletion (App Store 5.1.1(v)) |
 | 5 | Device checks on a switch-on preview build, founding family only | 11.1, 11.3, 11.9 (needs a production-bundle build until the purge worker reads `APPLE_EXTRA_CLIENT_IDS`), 11.10 | The R-17 sign-off |
