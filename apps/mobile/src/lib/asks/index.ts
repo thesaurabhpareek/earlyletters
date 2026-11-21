@@ -23,7 +23,9 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
-import { firstMonthDone, localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+import { firstMonthDone, localDay, nextAsk, reminderPrimeSource, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+
+type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
 export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
@@ -68,10 +70,15 @@ export function noteAsked(now = Date.now()): void {
   noteAskShown(); // the analytics consent sequencer reads the same rule
 }
 
-/** The reminder prime appeared (after the first letter, or from Settings): counts toward the cap of 2. */
-export function noteReminderPrimeShown(): void {
+/**
+ * The reminder prime appeared: counts toward the cap of 2. Returns the analytics `source` for this showing
+ * (`first_letter` for the first, `first_month` for the second), read before the count moves (BL-1429).
+ */
+export function noteReminderPrimeShown(): ReminderPrimeSource {
+  const source = reminderPrimeSource(count(K.primes));
   setSetting(K.primes, String(count(K.primes) + 1));
   noteAsked();
+  return source;
 }
 
 /**

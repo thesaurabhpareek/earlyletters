@@ -63,6 +63,14 @@ export function primeAllowed(primesShown: number): boolean {
   return primesShown < MAX_REMINDER_PRIMES;
 }
 
+/**
+ * The `source` of `reminder_prime_shown` for a showing, from how many primes were shown before it (BL-1429).
+ * The first is after the first letter; the only other one the cap allows is after the first month chapter (BL-518).
+ */
+export function reminderPrimeSource(primesShownBefore: number): 'first_letter' | 'first_month' {
+  return primesShownBefore === 0 ? 'first_letter' : 'first_month';
+}
+
 /** The one ask due right after this save, or null. */
 export function nextAsk(f: AskFacts): NextAsk {
   if (f.lettersSaved < 1) return null;
