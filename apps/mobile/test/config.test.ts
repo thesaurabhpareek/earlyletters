@@ -345,6 +345,14 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
 
     it('has a submit profile', () => {
       expect(eas.submit.testflight).toBeDefined();
+      // BL-442: the fields a TestFlight submission needs: the App Store Connect app id (digits) and the internal
+      // tester group the build goes to.
+      const ios = (eas.submit.testflight as { ios?: { ascAppId?: unknown; groups?: unknown } }).ios;
+      expect(ios, 'submit.testflight.ios').toBeDefined();
+      expect(ios!.ascAppId, 'ascAppId').toMatch(/^\d{6,}$/);
+      expect(Array.isArray(ios!.groups), 'groups').toBe(true);
+      expect((ios!.groups as unknown[]).length, 'groups').toBeGreaterThan(0);
+      for (const g of ios!.groups as unknown[]) expect(g, 'group name').toEqual(expect.any(String));
     });
 
     it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES, until the flip makes them equal', () => {
