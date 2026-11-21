@@ -9,7 +9,11 @@ import { execFileSync } from 'node:child_process';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
-/** The base branch copy of `path`. `env` and `run` are injectable for tests. Never throws. */
+/**
+ * The base branch copy of `path`. `env` and `run` are injectable for tests. Never throws.
+ * @param {string} path
+ * @param {{ env?: Record<string, string | undefined>, run?: (args: string[], cwd?: string) => string, cwd?: string }} [opts]
+ */
 export function baseCopy(path, { env = process.env, run = git, cwd = process.cwd() } = {}) {
   if (env.GITHUB_EVENT_NAME === 'push') return { kind: 'push' };
   const ref = `origin/${env.GITHUB_BASE_REF || 'develop'}`;
