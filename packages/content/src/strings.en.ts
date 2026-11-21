@@ -1081,11 +1081,19 @@ export const en = {
   },
 
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
+  // FOUNDER-WORDING: proposed in docs/analytics/instrumentation/founder-setup-pack.md section 1.1 (default wording). Nothing
+  // ships until the founder approves these words and counsel confirms the `turnOff` retention sentences (COUNSEL, Q-PH-4,
+  // Q-PH-5). Truth list, checked by packages/analytics/test/consent-copy.test.ts: the sheet says what the code sends (screens
+  // opened, buttons tapped, how fast the app runs, app version and iPhone software version). It must NOT claim crash sharing
+  // until CRASH_REPORTING.enabled is true (packages/analytics/src/crash.ts), and must NOT list a phone model (the code sends
+  // the app version and build, OS name and version and a coarse device type only).
+  // Records (PRIV-R21): Shown = this text with its version and hash. Never = the analytics id in the policy row, an IP address,
+  // a device model, any join to a login. Decline = nothing is sent, every feature works, at most two offers.
   analyticsConsent: {
-    title: "Help us make it better?",
-    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
-    detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
-    changeLater: "You can change this any time in Settings, Privacy.",
+    title: "Help improve {app}?",
+    body: "If you say yes, {app} sends us simple counts about how it is used, so we can fix what is slow or confusing. We see which screens you open, which buttons you tap, how fast the app runs, and your app version and iPhone software version. We never see your words, recordings, photos, {child}'s name or birthday, where you are, or your family's religion or background.",
+    detail: "Nothing is sent unless you tap Share. Until you choose, nothing leaves your phone.",
+    turnOff: "You can turn this off any time in Settings, Privacy. Then nothing more is sent. What we already received is kept for up to 12 months under a random number that is not your name, then deleted. If you delete your account, we ask for it to be deleted sooner, and that can take up to about two months to finish.",
     yesButton: "Share usage",
     noButton: "Don't share",
   },

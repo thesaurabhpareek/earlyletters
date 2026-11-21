@@ -70,7 +70,7 @@ export function AnalyticsConsentContent({
           <Text>{t.yesButton}</Text>
         </Button>
       </View>
-      <Text variant="footnote">{t.changeLater}</Text>
+      <Text variant="footnote">{t.turnOff}</Text>
     </View>
   );
 }
