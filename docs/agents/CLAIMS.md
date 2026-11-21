@@ -11,3 +11,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
 | loops-content | content | docs/content-engagement-loops | 1202 | `docs/content/engagement-loops/**` | 2026-11-21T04:46Z | 2026-11-24T04:46Z | docs only draft; REST open check 2026-11-21T04:46Z |
+| content-e97 | content | docs/errata-e97-humour-policy | 1275 | `docs/product/prd/18-errata-after-lock.md`, `docs/agents/CLAIMS.md` | 2026-11-21T08:05Z | 2026-11-24T08:05Z | split from 1183; REST open check 2026-11-21T08:05Z |
