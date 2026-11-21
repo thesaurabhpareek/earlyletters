@@ -5731,6 +5731,248 @@ Every row is `proposed`: Karma or the founder sets `ready`. Dependencies are the
 - Scope: tests first, then code or words only where a test fails, for the 4 rows above: the queued discard until the server acknowledges, the second phone holding neither row nor audio, no switcher while Listen is open, and A's selection reset when B signs in. One PR. The card (NS-09, NS-14) is the source of truth; nothing here changes a row. The rest of BL-181 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
+## Analytics engineering requirements (21 Nov 2026, proposed)
+
+Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (PR for D-163, #1193). BL-1235 to BL-1268 are used. Rows A00 to A18 are stream A, B01 to B14 stream B, G01 the gate (no shared files, section 4 of the source). Milestone for every row: before the production readiness build. Founder hands FH-n are listed in section 11 of the source. Nothing here turns analytics on; the production value of `analytics.basicsPolicy` stays `ask_first`.
+
+#### BL-1235 Re-cut the PostHog adapter as the P1 to P8 stack of the split plan (ER-A00)
+- Status: blocked (Karma lifts the HELD ruling on #1086; D-163 merged). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: none.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Land values, registry, crash reducer (off), send path, catalog shrink, validators, helpers and canary as eight PRs from the #1086 head tree, each green alone, no commit carrying the old name history. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: each PR passes npm test -w @scribe/analytics and npm run typecheck alone; sizes per adapter-split-plan-20nov.md section 3; the barrel exports every module the other stream needs.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A00.
+
+#### BL-1236 Analytics contract types: tier, basics policy, gate decision (ER-A01)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: contracts.ts with BasicsPolicy, EventTier, GateDecision, AnalyticsGate; the barrel exports what stream B imports; frozen after wave 0. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: typecheck passes; a test asserts every registry row carries a tier.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A01.
+
+#### BL-1237 Resolve analytics.basicsPolicy: ask_first default, tighten-only remote (ER-A02)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1236.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Pure resolveBasicsPolicy from the build value, profile, optional region map (empty by default) and remote value; unknown, empty, missing or non-production resolves to ask_first; remote can only tighten. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: table test over every input including garbage and a remote loosen attempt passes.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A02.
+
+#### BL-1238 Policy-aware consent gate; the old no-send-before-yes test kept as the ask_first case (ER-A03)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1236, BL-1237, BL-1239.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: The client asks the gate instead of reading consent status. ask_first behaves as today. collect_by_default lets only tier basics through; other events are dropped_not_basics; the person's off switch wins. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: the old V15 build test runs unchanged as the ask_first case; a test shows a send before consent happens only when the policy is collect_by_default; a test fails if production resolves anything but ask_first before the recorded decision; a non-basics event is dropped; off beats policy. Privacy reviews.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A03.
+
+#### BL-1239 Anonymous install id minted on first allowed event, retired on off (ER-A04)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1236.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Lowercase uuid, minted only when the gate first allows an event, never an account, device or advertising id, bootstrapped into the SDK with no identify; retire on off (cap 20), new id on a later on. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: mint on first allowed event, none under ask_first before a yes, retire on off, new id on on, 21st toggle recorded.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A04.
+
+#### BL-1240 PostHog adapter in one module with every SDK option pinned (ER-A05)
+- Status: blocked (founder hands: FH-6 dependency approval for posthog-react-native 4.87.1). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: posthog.ts as the only SDK importer; options per posthog-standard.md 3.4 including the three push options; dynamic import only when the gate first allows; no plugin. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V17 test pins every option and fails on a missing one; no SDK constructed before the gate allows.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A05.
+
+#### BL-1241 before_send as the last gate: tier, registry, property and PII checks (ER-A06)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238, BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Gate decision, V11, V12, V13, rebuild properties from the registry list plus the ten allowed dollar keys, count drops by reason only. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: positive and negative self-tests for V11 to V13; a non-basics event is dropped even if a caller bypasses the helper.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A06.
+
+#### BL-1242 Static validators V1 to V10 and V16, registry row fields reconciled (ER-A07)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Rename row fields to the standard, add owner, side, consent_gate, v, supersedes, funnels, sampling and tier, V8 exemption for server, store and support rows, settle grandfathered and heldNames. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: each rule has a positive and a negative self-test; V8 agrees registry, code and TRACKING_PLAN.md both ways.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A07.
+
+#### BL-1243 V17 SDK options test and V18 one-module lint rule and test (ER-A08)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: V17 pins options; V18 allows only posthog.ts to import the SDK or call capture, identify, screen, captureException, logs or surveys; no PostHogProvider. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a planted violation in a fixture fails each check.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A08.
+
+#### BL-1244 Off switch, withdrawal and Erase empty the queue, the id and the SDK file (ER-A09)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: optOut, reset, empty the SDK queue, retire the id, on off and on Erase everything, sending nothing. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: unit test of the call order; named device check that no PostHog file in the app container keeps the id or a queued event after off and after Erase (qa adds the row to the device test sheet).
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A09.
+
+#### BL-1245 Region, host and key checks (ER-A10)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: EXPO_PUBLIC_POSTHOG_REGION us or eu maps to two fixed hosts; other values mean no SDK; the key must start phc_; an optional proxy host override exists and is off. The real key is FH-1 and is not needed to merge. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: both hosts, an arbitrary host refused, a phx_ key refused, yes with no key sends nothing.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A10.
+
+#### BL-1246 PostHog-only error tracking: reducer fixes, caps and reportFault (ER-A11)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Run the PII and property checks on every kept dollar field of an exception; unknown class becomes other; cap 5 per foreground session and one per class and top frame; reportFault takes a closed code; autocapture limited to uncaught and unhandled, console empty, nativeCrashes false; crash capture stays off unless the founder says yes (FH-13). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests for each point with Asha strings; no message text of any exception or chained cause leaves.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A11.
+
+#### BL-1247 Exception canary and a real exception payload fixture (ER-A12)
+- Status: blocked (founder hands: FH-1 for the real payload; the canary half is ready). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1246.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Asha strings through the before_send path for exception entries with module, nested cause, long function name, context line and vars; then a real payload from a throwaway project rebuilds the fixture and allowlist. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: canary green; the fixture names the real field names.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A12.
+
+#### BL-1248 Remote flags off, own exposure event plumbing (ER-A13)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: No flag request and no flag event; the experiment arm is drawn on the phone and reported by our own exposure event. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a fake network sees no flag call in a full session.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A13.
+
+#### BL-1249 Production-only build gating and the replaced build test (ER-A14)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238, BL-1245.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Only the production profile can construct the SDK; analytics-off-v1.test.ts is replaced by analytics-policy.test.ts (kept: off in every non-production profile; added: production resolves ask_first until a recorded decision). The eas.json flip is the founder's (FH-7); ops rewrites the two preflight checks first. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests as stated pass; nothing in eas.json is edited by this row.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A14.
+
+#### BL-1250 Global properties build_kind and is_internal, hidden tester switch (ER-A15)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: build_kind and is_internal on every event; one local switch, off and unreachable in a store install (FH-10). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: both present on every event; the switch is unreachable in a store build.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A15.
+
+#### BL-1251 Offline, flush timer and client caps (ER-A16)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: 60 s timer, background flush, SDK flushAt 20, client cap of 60 events a minute counted by reason. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: unit tests for the cap and timer; named device check: airplane mode, 150 events, restore, count arrivals (qa).
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A16.
+
+#### BL-1252 Deletion coverage for installs that never said yes (ER-A17)
+- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1239, BL-1061, BL-1062.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Account deletion and Erase everything pass the current and every retired id to analytics-forget whatever the consent status; a person with no account has a route; the drill includes a never-consented id. Wording about what withdrawal does is counsel's. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: the id minted under collect_by_default is in allIds and in the forget request; the signed-out route covers it; the staging drill (BL-1060) includes it.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A17.
+
+#### BL-1253 Stale vendor and version wording; remove the unused native plugin (ER-A18)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Reword the Sentry line in analytics index.ts and the 4.78.4 and native-plugin comments in posthog.ts to PostHog Error Tracking, one switch; drop @posthog/react-native-plugin from the dependency list until FH-13 says yes. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: a grep test finds no Sentry, GlitchTip or the plugin in packages/analytics/src or apps/mobile/package.json.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A18.
+
+#### BL-1254 Id registry: screens, controls, elements, metrics (ER-B01)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: ids.ts and generated ids.md: the 29 routes plus the IA-FINAL extras, each with an area and an IA-FINAL id; a dynamic list is one element id. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V4 and V16 (300 per kind) self-tests; npm run plan renders ids.md.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B01.
+
+#### BL-1255 Rename the catalogue to wire names once and add tier to every row (ER-B02)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1254.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Rename 68 events, ok to is_ok and the other bool renames, add tier; basics is every screen view, click and element view plus a closed list of at most 12 funnel-step rows signed by privacy; perf stays consented. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V1, V2, V6 pass; a test pins the basics set and fails on a change without a registry bump.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B02.
+
+#### BL-1256 Typed helpers generated from the registry (ER-B03)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: trackScreen, tap, impress, perf and domain trackers; no free string. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V3 source scan finds no template-string name; helpers.test.ts passes.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B03.
+
+#### BL-1257 Screen views for the 29 routes (ER-B04)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: useScreenViews once in the root layout; no resolved path or param. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: test walks the route table: one view per route, none for an unregistered one; device check on a dev build: one screen, one event, registry properties only.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B04.
+
+#### BL-1258 Click wiring: capture and book areas (ER-B05)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Each tappable control calls tap(id); a VoiceOver activate counts as a click. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: per-screen test that registered controls fire once; source test that no control calls the SDK.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B05.
+
+#### BL-1259 Click and impression wiring: family, keeping, me, plus, notifications (ER-B06)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Same rules; no share destination, no birthday or seal timed surface. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: per-screen tests; source test.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B06.
+
+#### BL-1260 Impression hook with one dedupe rule (ER-B07)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: At least half visible for 1 second, once per element per foreground session, counter in memory only. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: hook tests with a fake clock.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B07.
+
+#### BL-1261 Domain and funnel-step events wired from registry constants (ER-B08)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255, BL-1256.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Replace literal track calls with registry constants; wire the funnel-step events flagged in B02. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: source scan finds no literal event name outside the registry; each event fires once on its trigger.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B08.
+
+#### BL-1262 Funnel rows and saved PostHog insights (ER-B09)
+- Status: blocked (founder hands: FH-1 PostHog account). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Registry rows for the five funnels (2 to 8 steps, window enum) and one launch dashboard. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: V9 self-test; a throwaway project renders each funnel with colon names.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B09.
+
+#### BL-1263 Canary and registry tests: every helper, every held event, no-key (ER-B10)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1256, BL-1241.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Asha strings through every helper and before_send; a loop over every held event counted under held_event apart from unknown_event; yes with no key sends nothing; never-list tests. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: all green in the unit job; Asha only in fixtures.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B10.
+
+#### BL-1264 Generated tracking plan, registry doc and the PR tracking-line script (ER-B11)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1255.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: npm run plan renders TRACKING_PLAN.md and registry.md; V8 both ways; reword the Sentry line; write the Tracking-line script (the .github job is FH-14). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: catalog.test.ts asserts the doc equals the render.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B11.
+
+#### BL-1265 Privacy manifest and label alignment, code half (ER-B12)
+- Status: blocked (founder hands: FH-5 S17 worksheet and label, FH-6; counsel on Q-005). Mode: pair. Owner: privacy engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1240.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: privacy-manifest.ts and PrivacyInfo.xcprivacy data follow the build switches (usage data, not used for tracking, no tracking domains); label-effect.mjs gets a founder-approved exception for posthog-react-native; the no-analytics-SDK test is updated by its owner through review in the same PR. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: manifest test and label-effect test pass with rows that match the build; nothing under docs/legal is edited.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B12.
+
+#### BL-1266 Settings off switch and the in-app disclosure line placeholder (ER-B13)
+- Status: blocked (founder hands: FH-4 wording, FH-11 switch). Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: A switch in Settings, Privacy; it must exist whenever the resolved policy is collect_by_default; the disclosure line is a placeholder key marked CONTENT-NEEDED; the Shown, Records, Never and Decline lines in the PR body. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: switch exists under collect_by_default, off persists across relaunch, no consent sheet under that policy, content rules pass.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B13.
+
+#### BL-1267 Ask sequencer and consent sheet only under ask_first (ER-B14)
+- Status: blocked (founder hands: FH-4 consent wording). Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: The sequencer shows the sheet only when the resolved policy is ask_first; two-offer cap kept; a dismissed sheet is not a yes. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: analyticsAskDue is false under collect_by_default; cap holds under ask_first.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B14.
+
+#### BL-1268 Throwaway-project verification pass (ER-G01)
+- Status: blocked (founder hands: FH-1 PostHog account). Mode: agent. Owner: qa engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240, BL-1257.
+- Satisfies: none claimed: build work for D-163, not a P0 row.
+- Scope: Colon names in trends, funnel, retention and HogQL; retention on anonymous events; offline retry; a real exception payload; withdrawal then on gives a new id; IP discard and GeoIP transformation on. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: results in an evidence note under docs/analytics/instrumentation with no token and no real family data.
+- Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-G01.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
