@@ -107,7 +107,8 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 - [x] `EXPERIENCE-AND-MOTION.md` is read and folded (spec section 29); its open items O-56 to O-59 and O-27 await the founder.
 - [ ] The CPO freeze review has regraded priorities (EX-CPO-5; the spec deferred the regrade so row ids stay stable).
 - [ ] `legal` has the Moments section of packet 1.8.0 and the register rows of R239.
-- [ ] The lead-document trace figure (836 of 845) is recomputed (it was carried forward, UNVERIFIED, again in v3: `node scripts/trace.mjs` reads the V2 PRD and not this spec, so the lead-id coverage script needs the lead branches).
+- [x] The "836 of 845" claim is withdrawn as a coverage figure (it only says an id is written next to a row) and replaced by the honest measures of spec sections 26 and 26b, recomputed by `node docs/product/moments-tab/row-homes.mjs` (21 Nov 2026: 301 rows; 259 with a PR home; 141 with a gate home; 293 with a PR or a gate; 20 not built with a reason; 0 orphans; 0 with an automated test; 70 naming a device or manual script). `node scripts/trace.mjs` reads card 28 only after PR #1313 merges; until then use the row-homes script. The PR and gate homes of 26b are PROPOSED and wait for a read by `mobile` and `data-architect`.
+- [ ] `mobile` and `data-architect` have read the row homes of 26b and corrected any they disagree with; after PR #1313 merges, `node scripts/trace.mjs --no-write` is run and its NS-53 P0 untested count (203 of 203 expected today) is recorded.
 - [ ] Content rules scan passes on the PRD (no em or en dashes, curly quotes, ellipsis characters or emoji).
 
 ## 2. Harness hand-off summary

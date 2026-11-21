@@ -1319,7 +1319,7 @@ New rows R269 to R301 from the hybrid design (section 3.4) and the seven hybrid 
 | NS-53-R283 | Given the media threat model (`MEDIA_THREAT_MODEL.md`), Then row P2 is corrected (the launch sweep call exists: `sweep.ts` calls `sweepPhotosAtLaunch`) and widened (up to six located originals can sit in `Caches/ImagePicker`), and rows are added for the multi-select picker (A3, A8), the host sheet (A3, App lock) and the date read (A3, A4), each with its control type (test, setting read back, prose); G11a-photo runs them. Decision D12 | L1, L5 | P1 | 1 | EXH-SEC-10 |
 | NS-53-R284 | Given analytics, Then a new enum value for how a letter was started (picker, card, capture) is a founder question (O-49) whose default is do NOT send in the first release; the two diary questions (how the pictures were added; whether the parent allowed access) are added to the two-week diary and read as x of n with no percentage under 20. Decision D13 | L0 | P1 | 1 | EXH-CPO-6 |
 | NS-53-R285 | Given the value proposition, Then the proposed text of section 16.1 (lead with the act and the voice: pictures start the story, the parent's voice finishes it, we never write for them), the first-run promise for three states (granted; declined or library off; Limited) and the store story true in every build are PROPOSED for the founder to approve (founder-only: what a user is promised; counsel must confirm), and no public line ships before approval. Decision D10 | L0 | P0 (a) | 1 | EXH-CMO-1, EXH-CMO-3, EXH-CMO-13 |
-| NS-53-R286 | Given PR 0, Then the same edit sweeps RSN-ALBUM out of 6.4a (reason list and precedence), the two extra verbs out of 7.4, R54, R212 and R42's list, the `Moment` type member for a chosen album title out of R59, and brings R40, R41, R44 and R60 into line with R281 and 7.2a (candidates not frames, the near-duplicate gap rule, tile 1 from the middle session, the two junk bars), and the album and picture members out of R221, R247, R255 and R257, so the closed reason list and the `Moment` type carry no dead member; the verb count is five in R54 and R212. Decision D14. The requirement-trace figure could not be recomputed (see 26) | L0 | P1 | 1 | EXH-ENG-6, EXH-CPO-12 |
+| NS-53-R286 | Given PR 0, Then the same edit sweeps RSN-ALBUM out of 6.4a (reason list and precedence), the two extra verbs out of 7.4, R54, R212 and R42's list, the `Moment` type member for a chosen album title out of R59, and brings R40, R41, R44 and R60 into line with R281 and 7.2a (candidates not frames, the near-duplicate gap rule, tile 1 from the middle session, the two junk bars), and the album and picture members out of R221, R247, R255 and R257, so the closed reason list and the `Moment` type carry no dead member; the verb count is five in R54 and R212. Decision D14. The requirement-trace figure is replaced by honest measures in 26 and 26b (v3 fix) | L0 | P1 | 1 | EXH-ENG-6, EXH-CPO-12 |
 | NS-53-R287 | Given Limited access (ACC-3), a MAIN case, Then the tab never shows a blank or an empty-looking state: when the chosen set yields few or no cards the tab shows one calm line (what it can use, in plain words) and a "Choose pictures" button, no count of what is missing and no "selection is small" message; any row that creates an empty-looking failure is amended (R75's "no message" now means no count and no apology, not no line); Limited and Denied are designed and tested with the same polish as Full; G4 adds a five-parent task on Limited (what can this app see now, and what would you do next). Karma decision KM2 | L2, L3, L5 | P0 (c) | 1 | BM-2, BM-8 |
 | NS-53-R288 | Given the card design, Then it is recorded as an honest hypothesis H-card: a date range plus the parent's own thumbnails plus one reason line starts a letter, our cards are plainer than the market's because the constitution bans machine titles, counts, streaks, faces and generated narrative; it is tested by experiment E9 (20.1) before any public claim, with a stop line owned by the founder (O-46). Karma decision KM3 | L5 | P1 | 1 | BM-3, BM-13 |
 | NS-53-R289 | Given the 1.0 measurement plan with analytics off, Then experiment E8 ("picker-only versus library read") runs as two arms read from App Store Connect install-week cohorts and the diary (x of n, no percentage under 20, the F1 and F2 state recorded in the release record), and Apple Journaling Suggestions (Route A, entitlement UNVERIFIED for a baby app) stays a phase 2 evaluation row (open question O-51, owner CPO, default: evaluate after the F2a read-out). Karma decision KM1 | L5 | P1 | 1 | BM-7, BM-8 |
@@ -1587,7 +1587,28 @@ Round 1 verdicts and where each reviewer's answer lives: the first twelve review
 
 ## 26. Traceability: every lead-document requirement id
 
-Every id below is either carried by the NS-53 rows named, or marked "not carried" with a reason. Each id is shown as id:row number, where "+n" means n further NS-53 rows also carry it and "nc" means not carried. The lead documents are P1 to P6, D1 to D6, A1 to A5, T1 to T5, X1 to X6, B1 and R1; ids of the form Q-P1-n, OQ-P4-n and P6-Qn are open questions carried in section 23. Coverage was computed by script from the Satisfies column when the first draft was assembled: 836 of 845 ids are carried by at least one row, 9 are marked not carried, 0 are unmapped. That figure is carried forward unchanged and not recomputed in round 1 (the trace script needs the lead-document branches; UNVERIFIED this round): rows R192 to R268 carry review finding ids (EX-...) and no new lead-document id, and no amendment removed a lead id from a row. Review coverage is a second measure: 184 of 184 findings are dispositioned in section 27 and each ACCEPTED or PARTIAL one names a row or section that exists. v3 (round 2): the figure of 836 of 845 is carried forward and was NOT recomputed. `node scripts/trace.mjs` was run and reads the V2 PRD (docs/prd/v2), not this file, so it gave no figure for the lead-document ids; the lead-id coverage script needs the lead branches and was not run. What was checked: no row id was renumbered, rows R56, R57 and R255 stay in the table as DROPPED (their Satisfies ids stay carried and are now carried by dropped rows, which a reader counting live coverage should know), and the new rows R269 to R301 carry review finding ids and benchmark ids only, no new lead-document id. Review coverage of round 2 is a second measure: all 104 hybrid findings and 20 benchmark ids are dispositioned in 27b and 27c (UNVERIFIED lead-id figure: recompute before freeze).
+Every id below is either carried by the NS-53 rows named, or marked "not carried" with a reason. Each id is shown as id:row number, where "+n" means n further NS-53 rows also carry it and "nc" means not carried. The lead documents are P1 to P6, D1 to D6, A1 to A5, T1 to T5, X1 to X6, B1 and R1; ids of the form Q-P1-n, OQ-P4-n and P6-Qn are open questions carried in section 23. What the 836 of 845 claim measures, and what it does not (v3 fix after the trace report, `wip/moments-trace` 5344384c6, which reproduced it): 845 lead-document ids are listed in the table below, 9 are marked not carried and 836 are named in the Satisfies cell of at least one NS-53 row. That says an id is written down next to a row (a documentation check; three of those rows, R56, R57 and R255, are DROPPED and still carry ids). It does not say a PR builds the row, a gate checks it or a test exists, and it is not a coverage figure; this file no longer claims it as one. The honest measures follow, recomputed on 21 Nov 2026 by `node docs/product/moments-tab/row-homes.mjs` (it reads the row tables and the table of 26b; output quoted):
+
+```
+rows: 301
+prIdsIn19_4: 40
+rowsWithPrHome: 259
+rowsWithGateHome: 141
+rowsWithPrOrGate: 293
+rowsNotBuiltWithReason: 20
+orphansRemaining: 0
+rowsWithAutomatedTest: 0
+rowsWithNamedDeviceOrManualScript: 70
+rowsDeclaringAnAutomatedLayerL0toL4: 266
+manualOrPaperOnlyRowsByOwnLayer: 35
+ofThoseWithANamedScript: 33
+ofThoseNotBuilt: 2
+rowsWithPrHomeAndDeclaredAutomatedLayer: 248
+manualOrPaperOnlyRowsWithNoScript: none
+problems: none
+```
+
+Read plainly: of 301 rows, 259 have a PR home, 141 have a gate home, 293 have a PR or a gate, 20 are explicitly not built in the first release with a reason (3 dropped, 13 phase 2, 2 phase 3, 1 not planned, 1 a founder money table; 12 of the 20 also name a gate that decides the later work), and 0 are orphans. 0 of 301 rows are cited by any test, Maestro tag or test file (`grep` for `NS-53-R` in `apps`, `packages`, `supabase` and `scripts` finds nothing), so the number of rows with an automated test is 0 today. 266 rows declare an automated layer (L0 to L4) in their own row; those tests are not written. 70 rows name a device or manual script (the G4 script, G5 W1 to W12, G7 rows, the G1a read-out, or a paperwork read); of the 35 rows whose own layer is manual or paperwork only, 33 name one and 2 are not built. The earlier measure the trace report found, 140 rows named by a PR, a gate or the replan and 161 named by none (104 of them P0), is what the PR and gate columns of 26b were written to close; the new homes are the author's reading, PROPOSED, and `mobile` and `data-architect` confirm them. `node scripts/trace.mjs` cannot yet read this file: it reads card 28 only after PR #1313 (`qa/trace-ns-card-28`, three lines: the card file list, the row-id width and the `Pri` header) merges, and then it will report every NS-53 P0 row untested (203 of 203) until tests cite their ids. The lead-document id table follows unchanged. Review coverage is a second measure: 184 of 184 round 1 findings are dispositioned in section 27 and each ACCEPTED or PARTIAL one names a row or section that exists; all 104 hybrid findings and 20 benchmark ids are dispositioned in 27b and 27c.
 
 | Lead doc | id : NS-53 row number (+n further rows; nc = not carried, reason in the not-carried list below) |
 |---|---|
@@ -1635,6 +1656,314 @@ Not carried (intentionally), with reasons:
 | MT-D2-Q9 | A question. Carried by the reversal table in section 3.2 (K-02, J3, NS-51-R1). |
 | MT-D3-Q1 | A question about the tab name. Settled by D6 and PR #1276 (Moments, in-app only). |
 | MT-P6-R13 | Reserved id in P6 with no requirement (keeps numbering aligned). Nothing to carry. |
+
+### 26b. Where every NS-53 row lives: PR, gate, device or manual script, or "not built, because"
+
+PROPOSED mapping (written in the fix pass after the trace report found 161 rows named by no PR, no gate and no replan line; the PR and gate homes are the author's reading of sections 19.4 and 21 and need a read by `mobile` and `data-architect`, who own the row-to-PR mapping). Every one of the 301 rows has at least one of: a PR home (a row of 19.4), a gate home (a gate of section 21), or an explicit "not built, because" reason. A home says who builds or checks the row. It does not say a test exists: none does. The PR column is what a PR cites in its body, so a reviewer can check a row off. Where a row has no PR and a gate only, the gate is the check (a counsel read, a device walk, a five-parent task or a paperwork line). Script legend: G4 script is the task list of `EXPERIENCE-AND-MOTION.md` 9.1 (T1 to T12) with the earlier G4 items; G5 W1 to W12 are the device rows of gate G5; G7 rows are the real-iPhone checks of gate G7; G1a read-out is the spike record of gate G1a-L or G1a-P (DM-01 to DM-13 for the picker, `EXPERIENCE-AND-MOTION.md` 9.2); paperwork read is a dated line in `docs/release/<x.y.z>.md` by counsel, `legal` or `privacy`. Recompute with `node docs/product/moments-tab/row-homes.mjs` (it reads this table and the row tables; exit 1 if a row has no home or a PR id is not in 19.4).
+
+| Row | PR home (19.4) | Gate home (21) | Device or manual script | Not built, because |
+|---|---|---|---|---|
+| R1 | 6 | G10 |  | |
+| R2 | 6, 12 |  |  | |
+| R3 | 6, 13 | G5 |  | |
+| R4 | 6, 23 | G5 |  | |
+| R5 | 4 |  |  | |
+| R6 | 15, 17 | G7 |  | |
+| R7 |  | G4 | G4 script | |
+| R8 | 12 | G6 |  | |
+| R9 | 12 | G6 |  | |
+| R10 | 4, 15 |  |  | |
+| R11 | 12, 13 | G6 |  | |
+| R12 | 1, 12 |  |  | |
+| R13 | 13, 14 |  |  | |
+| R14 | 16, 17 |  |  | |
+| R15 | 19 |  |  | |
+| R16 | 4, 13 |  |  | |
+| R17 | 13, 21 | G10 |  | |
+| R18 | 4 |  |  | |
+| R19 | 4 |  |  | |
+| R20 | 4 |  |  | |
+| R21 | 4 |  |  | |
+| R22 | 4 |  |  | |
+| R23 | 4 |  |  | |
+| R24 | 4, 15 |  |  | |
+| R25 | 4, 12 |  |  | |
+| R26 | 16 |  |  | |
+| R27 | 4 |  |  | |
+| R28 | 15, 21 |  |  | |
+| R29 | 21 |  |  | |
+| R30 | 21 |  |  | |
+| R31 | 16 |  |  | |
+| R32 | 15, 19 |  |  | |
+| R33 | 4, 16 |  |  | |
+| R34 | 4 |  |  | |
+| R35 | 15, 16 |  |  | |
+| R36 | 4 |  |  | |
+| R37 | 9 | G3, G1a-L |  | |
+| R38 | 2 | G1a-L |  | |
+| R39 | 2 | G1b |  | |
+| R40 | 2, 3b | G4 |  | |
+| R41 | 2, 3 |  |  | |
+| R42 | 1, 12 |  |  | |
+| R43 | 11b | G3 |  | |
+| R44 | 3 |  |  | |
+| R45 | 10 | G1b |  | |
+| R46 | 4, 13 |  |  | |
+| R47 | 4 |  |  | |
+| R48 | 4, 13 |  |  | |
+| R49 | 19 |  |  | |
+| R50 | 4 |  |  | |
+| R51 | 3 |  |  | |
+| R52 | 12 | G6 |  | |
+| R53 | 10, 15 | G1b |  | |
+| R54 | 21 |  |  | |
+| R55 | 21 |  |  | |
+| R56 | |  | | DROPPED in v3 (D6): the picker and the parent's own tick replace it; it stored a picture identifier |
+| R57 | |  | | DROPPED in v3 (D6): Apple's picker has its own Albums tab; no album identifier is stored |
+| R58 | 4 |  |  | |
+| R59 | 2 |  |  | |
+| R60 |  | G4 | G4 script | |
+| R61 | 5, 5b | G1a-L, G11b |  | |
+| R62 | | G8 | | phase 2: the Apple geocoder (F3) is off and not compiled into the release profile (R236); waits for G8 |
+| R63 | 5 |  |  | |
+| R64 | 5, 22 |  |  | |
+| R65 | 22 |  |  | |
+| R66 | 4 |  |  | |
+| R67 | | G9 | | NOT PLANNED (O-32): K-SUG is not built unless the founder asks; G9 |
+| R68 | 11b |  |  | |
+| R69 | 16 |  |  | |
+| R70 | 11b, 15 | G7 |  | |
+| R71 | 14 |  |  | |
+| R72 | 12, 14, 17 | G2, G6 |  | |
+| R73 | 15, 17 |  |  | |
+| R74 | 15 |  |  | |
+| R75 | 17 |  |  | |
+| R76 | 14, 15 |  |  | |
+| R77 | 15 | G7 | G7 rows | |
+| R78 | 21 |  |  | |
+| R79 | 16, 19 | G7 |  | |
+| R80 | 25 | G2, G11d | paperwork read | |
+| R81 | 25 | G2, G11d |  | |
+| R82 | |  | | phase 3: Route A (Apple's journaling suggestions picker) waits for the entitlement answer, DPLA read and spike D1 |
+| R83 | 7, 19 |  |  | |
+| R84 | 6, 19 |  |  | |
+| R85 | 19 |  |  | |
+| R86 | 18b-1c, 19 |  |  | |
+| R87 | 7, 19 |  |  | |
+| R88 | 18, 18a |  |  | |
+| R89 | 18, 18b-1a | G7 |  | |
+| R90 | 17, 18b-1a | G1a-P |  | |
+| R91 | 18b-1c, 19 |  |  | |
+| R92 | 19 |  |  | |
+| R93 | 18 |  |  | |
+| R94 | |  | | phase 3: Route A adapter, see R82 |
+| R95 | 18b-1b, 19b |  |  | |
+| R96 | 19 |  |  | |
+| R97 | 19 | G7 | G7 rows | |
+| R98 | 19 | G7 | G7 rows | |
+| R99 | 19 |  |  | |
+| R100 | 19 | G7 | G7 rows | |
+| R101 | 19, 20 | G5 | G5 W1 to W12 | |
+| R102 | 14, 19 | G7 | G7 rows | |
+| R103 | 19 | G7 | G7 rows | |
+| R104 | 19 | G2 |  | |
+| R105 | 8, 21 | G7 | G7 rows | |
+| R106 | 11c, 15 |  |  | |
+| R107 | 2, 24 |  |  | |
+| R108 | 19 |  |  | |
+| R109 | 9, 15 |  |  | |
+| R110 | 9, 10, 18 |  |  | |
+| R111 | 9 |  |  | |
+| R112 | 10 |  |  | |
+| R113 | 8, 15 |  |  | |
+| R114 | 8 |  |  | |
+| R115 | 8, 21 |  |  | |
+| R116 | 8 | G11c |  | |
+| R117 | 5, 22 |  |  | |
+| R118 | 10 | G7 | G7 rows | |
+| R119 | 6, 15 | G10 |  | |
+| R120 | 16 |  |  | |
+| R121 | 23 |  |  | |
+| R122 | 17 |  |  | |
+| R123 | 16 |  |  | |
+| R124 | 14, 16 |  |  | |
+| R125 | 15, 17 |  |  | |
+| R126 |  | G7 | G7 rows | |
+| R127 | 23 |  |  | |
+| R128 | 23 |  |  | |
+| R129 | 23 |  |  | |
+| R130 | 4 |  |  | |
+| R131 | 23 |  |  | |
+| R132 | | G2 | | phase 2: the library-timed local reminder (F4) is off until counsel answers Q-X1-6 (G2) |
+| R133 | | G2 | | phase 2: the library-timed local reminder (F4), see R132 |
+| R134 | | G2 | | phase 2: the library-timed local reminder (F4), see R132 |
+| R135 | | G2 | | phase 2: the library-timed local reminder (F4), see R132 |
+| R136 | 23 |  |  | |
+| R137 | 23 |  |  | |
+| R138 | 23 |  |  | |
+| R139 | 6, 23 |  |  | |
+| R140 | | G10 | | phase 2: the lifecycle email is dark until the founder signs RV-09 |
+| R141 | | G10 | | phase 2: the lifecycle email is dark until the founder signs RV-09 |
+| R142 | | G10 | | phase 2: the lifecycle email and its occasion tables are dark until RV-09 |
+| R143 | | G10 | | phase 2: the email opt-in and its promise rules ship with the lifecycle email (dark until RV-09); PR 12 writes no email promise on the tab |
+| R144 | 13, 14, 17 | G7 | G7 rows | |
+| R145 | 6, 16 | G7 | G7 rows | |
+| R146 | 13, 17 | G7 | G7 rows | |
+| R147 | 16 |  |  | |
+| R148 | 13, 19 | G5 | G5 W1 to W12 | |
+| R149 | 20 | G5 | G5 W1 to W12 | |
+| R150 | 14, 17 | G5 | G5 W1 to W12 | |
+| R151 | 13 | G7 | G7 rows | |
+| R152 | 24 | G7 | G7 rows | |
+| R153 | 13, 14, 16 | G5 | G5 W1 to W12 | |
+| R154 | 13 |  |  | |
+| R155 | 14, 16 | G5 | G5 W1 to W12 | |
+| R156 | 13, 17 | G5 | G5 W1 to W12 | |
+| R157 | 13 | G5 | G5 W1 to W12 | |
+| R158 | 13, 21 | G5 | G5 W1 to W12 | |
+| R159 | 12 | G6 |  | |
+| R160 | 12, 13 |  |  | |
+| R161 |  | G4 | G4 script | |
+| R162 | 8, 24 | G11c |  | |
+| R163 | 19 |  |  | |
+| R164 | 11b |  |  | |
+| R165 | 6, 15 | G5 |  | |
+| R166 | 8, 21 | G11c |  | |
+| R167 | 7, 11b |  |  | |
+| R168 |  | G4 | G4 script | |
+| R169 | 11b, 11c | G3-x |  | |
+| R170 | 15 |  |  | |
+| R171 | 11b, 25 | G1b, G7, G10, G11a-lib | paperwork read | |
+| R172 | 6 |  |  | |
+| R173 | 4, 15 |  |  | |
+| R174 |  | G4 | G4 script | |
+| R175 | 25 | G11d, G2 | paperwork read | |
+| R176 | 2, 24, 11b |  |  | |
+| R177 | 16, 17 | G7 |  | |
+| R178 | 14, 17 | G5 | G5 W1 to W12 | |
+| R179 | 19 | G5 | G5 W1 to W12 | |
+| R180 | 6, 14 | G5 | G5 W1 to W12 | |
+| R181 | 17 |  |  | |
+| R182 | 14, 15 |  |  | |
+| R183 | 19 | G5 | G5 W1 to W12 | |
+| R184 | |  | | phase 2: the email link web page ships with the lifecycle email |
+| R185 | 6, 13 |  |  | |
+| R186 | 13, 17 |  |  | |
+| R187 | 12 | G6 |  | |
+| R188 | |  | | phase 2: the email job ships with the lifecycle email |
+| R189 | 16, 17, 24 | G5 |  | |
+| R190 | 2, 3 | G1b | G1a read-out | |
+| R191 | 12, 23 |  |  | |
+| R192 | 12 | G2, G6 |  | |
+| R193 | 25 | G2, G11d | paperwork read | |
+| R194 | 25 | G11d | paperwork read | |
+| R195 | 22 | G4 | G4 script | |
+| R196 | 12, 23 | G6 |  | |
+| R197 | | G2 | | phase 2: the lifecycle email |
+| R198 | 12, 23 |  |  | |
+| R199 | 4, 21 |  |  | |
+| R200 |  | G4 | G4 script | |
+| R201 | 4, 13 |  |  | |
+| R202 | 4, 15 |  |  | |
+| R203 | 1 |  |  | |
+| R204 | 5 | G1a-L, G1b |  | |
+| R205 | 3b | G1b |  | |
+| R206 | 5b |  |  | |
+| R207 | 4 |  |  | |
+| R208 | 13 | G5 |  | |
+| R209 | 16 | G4 | G4 script | |
+| R210 | 17 |  |  | |
+| R211 | 13, 17 | G5 |  | |
+| R212 | 13, 17 |  |  | |
+| R213 | 15, 17 |  |  | |
+| R214 | 13 | G5 |  | |
+| R215 | 6 | G5 |  | |
+| R216 | 0b |  |  | |
+| R217 | 13, 14 |  |  | |
+| R218 | 14, 17 | G2, G5 |  | |
+| R219 |  | G4 | G4 script | |
+| R220 | 9, 10, 18 |  |  | |
+| R221 | 8 |  |  | |
+| R222 | 11b, 11c | G3-x |  | |
+| R223 | 2, 9 |  |  | |
+| R224 | 24 | G1b | G1a read-out | |
+| R225 | 24 |  |  | |
+| R226 | 11b |  |  | |
+| R227 | 7 |  |  | |
+| R228 | 5b, 9 | G1a-L |  | |
+| R229 | 5b | G11b |  | |
+| R230 | 11b | G11a-lib |  | |
+| R231 | 11b |  |  | |
+| R232 | 15, 17 | G7 | G7 rows | |
+| R233 | 11b | G11a-lib |  | |
+| R234 | 23 |  |  | |
+| R235 | 12 | G2, G7, G11d | G7 rows | |
+| R236 | 11c | G11a-lib |  | |
+| R237 | 9, 18b-0 |  |  | |
+| R238 |  | G2 | paperwork read | |
+| R239 |  | G2 | paperwork read | |
+| R240 | 25 | G11d | paperwork read | |
+| R241 | 5, 11b | G3 |  | |
+| R242 |  | G2 | paperwork read | |
+| R243 | 11c |  |  | |
+| R244 |  | G2, G11d | paperwork read | |
+| R245 | 8 |  |  | |
+| R246 | 8, 21 |  |  | |
+| R247 | 8 |  |  | |
+| R248 | 5b, 8 |  |  | |
+| R249 | 5, 21 |  |  | |
+| R250 |  | G11c | paperwork read | |
+| R251 | 7 |  |  | |
+| R252 |  | G4 | G4 script | |
+| R253 | 4, 15 |  |  | |
+| R254 | 4, 22 |  |  | |
+| R255 | |  | | DROPPED with R56 (D6); "Hide this day" (R275) replaces it |
+| R256 | 12, 21 |  |  | |
+| R257 | 19, 24 |  |  | |
+| R258 | 4, 11b |  |  | |
+| R259 | 25 |  | paperwork read | |
+| R260 | 12 | G6 |  | |
+| R261 | 18 |  |  | |
+| R262 |  | G1b, G2, G3, G5, G7, G10, G11a-lib | paperwork read | |
+| R263 | | G10 | | a founder money table (21.2), signed by the founder, nothing is built; G10 |
+| R264 |  | G10 | paperwork read | |
+| R265 | 23 |  |  | |
+| R266 |  | G2, G11d | paperwork read | |
+| R267 | 4 |  |  | |
+| R268 | 0b |  | docs read in the PR 0b review | |
+| R269 | 6, 14, 17 |  |  | |
+| R270 | 14 | G4 | G4 script | |
+| R271 | 18b-1a | G1a-P, G11a-photo |  | |
+| R272 | 18b-1c | G1a-P |  | |
+| R273 | 18b-1b | G11a-photo |  | |
+| R274 | 18b-1b, 19b |  |  | |
+| R275 | 17, 21 | G4 | G4 script | |
+| R276 | 17, 20 | G4, G5 | G4 script | |
+| R277 | 11a, 11b, 11c | G11a-lib, G11a-photo |  | |
+| R278 | 12, 25 | G2, G7, G11d | G7 rows | |
+| R279 | 14, 19b | G7 | G7 rows | |
+| R280 | 23 | G10 |  | |
+| R281 | 2, 3, 3b, 5 | G4 |  | |
+| R282 | 7, 18b-1a |  |  | |
+| R283 | 18b-0 |  |  | |
+| R284 | 7 | G10 |  | |
+| R285 | 12 | G10 |  | |
+| R286 | 0b |  |  | |
+| R287 | 14, 17 | G4 | G4 script | |
+| R288 |  | G4 | G4 script | |
+| R289 |  | G10 | paperwork read | |
+| R290 |  | G1a-P | G1a read-out | |
+| R291 | 21 |  |  | |
+| R292 |  | G1a-P | G1a read-out | |
+| R293 | 14 | G5 | G5 W1 to W12 | |
+| R294 | 12, 14 | G6 |  | |
+| R295 | 16 | G4 | G4 script | |
+| R296 | 18d |  |  | |
+| R297 | 14, 18b-1a, 24 |  |  | |
+| R298 | |  | | phase 2 and priority P2: the closed menu of qualifying keys is not in the first release |
+| R299 | 23 |  |  | |
+| R300 | 12 | G2, G6 |  | |
+| R301 |  | G2 | paperwork read | |
 
 ## 27. Executive review disposition (round 1)
 
@@ -1876,7 +2205,7 @@ Counts: 104 findings (BLOCKER 3, MAJOR 53, MINOR 48): ACCEPTED 98, PARTIAL 6, RE
 | EXH-CPO-9 | CPO | MINOR | ACCEPTED | D6; R275 (G4 hand-over task) |
 | EXH-CPO-10 | CPO | MINOR | ACCEPTED | R270 (one key family, one component) |
 | EXH-CPO-11 | CPO | MINOR | ACCEPTED | R274, R294, G1a-P (limit behaviour) |
-| EXH-CPO-12 | CPO | MINOR | PARTIAL | R286, FREEZE-CHECKLIST 1.4; trace figure could not be recomputed (the repo script does not read this spec) |
+| EXH-CPO-12 | CPO | MINOR | PARTIAL | R286, FREEZE-CHECKLIST 1.4; the 836 of 845 claim is replaced by the measures of 26 and 26b (the repo script does not read this spec) |
 | EXH-CPO-13 | CPO | MINOR | ACCEPTED | O-37 default unchanged; 23.2 note |
 | EXH-DES-1 | Design | MAJOR | ACCEPTED | D8; G1a-P hidden-bars matrix; O-53 (Layout A or B) |
 | EXH-DES-2 | Design | MAJOR | ACCEPTED | D1; R269, R294 |
@@ -2043,7 +2372,7 @@ UNVERIFIED: whether `asset.location` is readable under Limited access and withou
 
 Added in round 1: every legal and store-rule fact in the reviews (App Review 5.1.2(v) and (vi), DPLA 3.3.3(F), CAN-SPAM, state age-assurance dates, the dataset licence, the trademark position) is carried with the reviewer's own label and stays UNVERIFIED until the CCO or `regulatory-affairs` reads it, and no founder recommendation rests on an UNVERIFIED rule (EX-CCO-14). Also UNVERIFIED: D-121's target of Tue 1 Dec as still current; the open gates of D-163; whether `app.config.ts` is a fenced path; the arithmetic of the effort range; the Resend 100 a day allowance; whether the default PhotoKit fetch excludes Recently Deleted.
 
-Added in round 2 (v3): every Apple behaviour of the picker (what it returns under Limited, the Options menu under Full access, the first-time text, selection numbers, the iOS 27 `removeLocation` option, a video-pick permission prompt under Expo defaults for SDK 57, whether a Favorites flag is readable under Limited) is UNVERIFIED until the G1a-P and G1a-L read-outs; the picker facts rest on a WWDC session summary, Apple reference pages read by two reviewers and forum threads, not on a device. Legal and store-rule statements in the hybrid reviews (5.1.1(iii) and (iv), 5.1.2, DPLA 3.3.3, Apple's definition of collect) were read by the Legal and CMO reviewers and are carried with their labels; none is a counsel view. The effort figures of 19.4 are ASSUMED. The traceability figure was not recomputed (section 26).
+Added in round 2 (v3): every Apple behaviour of the picker (what it returns under Limited, the Options menu under Full access, the first-time text, selection numbers, the iOS 27 `removeLocation` option, a video-pick permission prompt under Expo defaults for SDK 57, whether a Favorites flag is readable under Limited) is UNVERIFIED until the G1a-P and G1a-L read-outs; the picker facts rest on a WWDC session summary, Apple reference pages read by two reviewers and forum threads, not on a device. Legal and store-rule statements in the hybrid reviews (5.1.1(iii) and (iv), 5.1.2, DPLA 3.3.3, Apple's definition of collect) were read by the Legal and CMO reviewers and are carried with their labels; none is a counsel view. The effort figures of 19.4 are ASSUMED. The 836 of 845 traceability claim is replaced by the measures of sections 26 and 26b (recomputed by script on 21 Nov 2026; 0 rows have an automated test).
 
 A GUESS: the likelihood and impact judgments in section 22; the effort ranges quoted from the reconciliation pack; that a place line shown only when away is the right default; that public holidays by date help.
 
@@ -2064,4 +2393,4 @@ Round 2 (v3) inputs: present and folded: HYBRID-PICKER-DELTA.md (a84f448c), PICK
 - The trust seam (its 7): which of the three wording variants goes where, order and boundary rules, and the Shown, Records, Never and Decline lines. Unhappy paths (its 8), the five-parent script and the device matrix (its 9), L3 with a flat placeholder for Apple's body (its 10).
 - Honest limits (its 11): every statement about what Apple's picker does and every device behaviour is UNVERIFIED; nothing was tested on a phone; the prototype is a web page.
 
-Applied in this edit: section 5.3 and R186 (the two row edits the experience spec flagged for `product`); O-27 extended and O-56 to O-59 added in section 23. Flagged by the experience spec in its section 12 and NOT applied here (each is one line for a later edit once the founder rules): R144 with the O-27 ruling (the Start hand-off carries the tray tiles); R106 (the door is one verb family and opens the same host sheet); R120 (the first value line states the act); R253 (the door's word is "Choose pictures", folding "Add pictures"). One conflict it leaves open for the founder: D2 and R270 in this file keep the door off the tab before an answer, while the experience spec puts it below the ask card (O-56). Its proposed token additions (`motion.carry`, a `sheetTitle` use of title2 capped at 1.4) stay in its document until accepted (O-58). Still not done in this file: the requirement-trace figure was not recomputed (section 26); section 14 was not re-read line by line against the experience spec; no device was used; no counsel contact; no code written.
+Applied in this edit: section 5.3 and R186 (the two row edits the experience spec flagged for `product`); O-27 extended and O-56 to O-59 added in section 23. Flagged by the experience spec in its section 12 and NOT applied here (each is one line for a later edit once the founder rules): R144 with the O-27 ruling (the Start hand-off carries the tray tiles); R106 (the door is one verb family and opens the same host sheet); R120 (the first value line states the act); R253 (the door's word is "Choose pictures", folding "Add pictures"). One conflict it leaves open for the founder: D2 and R270 in this file keep the door off the tab before an answer, while the experience spec puts it below the ask card (O-56). Its proposed token additions (`motion.carry`, a `sheetTitle` use of title2 capped at 1.4) stay in its document until accepted (O-58). Done in the fix pass after this edit: the traceability claim is replaced by the measures of 26 and 26b, and section 14 and the experience spec were re-read line by line (14.6). Still not done in this file: no device was used; no counsel contact; no code written.
