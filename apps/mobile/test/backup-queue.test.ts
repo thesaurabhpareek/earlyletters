@@ -337,6 +337,55 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     });
   }
 
+  for (const status of [400, 401, 403]) {
+    it(`[B5-6] an old column token is nulled when the upload is refused with ${status}: the job waits sealed with no token in the file`, async () => {
+      const r = rig();
+      const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+      r.kill.at = 'tus:POST:after'; // begun; an older build's token sits in the column, the Keychain holds none
+      r.kill.countdown = 1;
+      await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+      r.kill.dead = false;
+      r.reopen();
+      r.db().updateJob(item.entryId, { uploadToken: 'asha-old-column-token' });
+      const inner = r.backend.http;
+      let refusals = 1;
+      (r.backend as unknown as { http: HttpLike }).http = async (url, init) => {
+        if (init.method === 'PATCH' && refusals > 0) {
+          refusals -= 1;
+          r.backend.faults.set('begin', 1); // the next backup_begin fails, so the job stays `sealed` and the file can be read
+          return { status, header: () => null };
+        }
+        return inner(url, init);
+      };
+      await r.make().drain();
+      const row = r.db().job(item.entryId)!;
+      expect(row.state).toBe('sealed');
+      expect(row.uploadToken).toBeNull(); // mutant: no `uploadToken: null` in the refusal's update leaves the old token in the file
+      expect(row.objectPath).toBeNull();
+      r.beginToken.seenByUploadTarget.length = 0; // what the refused attempt sent is behind us
+      await r.settle(); // and the retry never sends it
+      expect(r.beginToken.seenByUploadTarget).not.toContain('asha-old-column-token');
+      expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    });
+  }
+
+  it('[B5-6] a job reset because its recording changed drops its Keychain token (reset via ensureTmp)', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-reset';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'tus:POST:after';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    expect([...r.keychain.values()]).toEqual(['asha-token-reset']);
+    rmSync(join(r.files.tmpDir, `${item.entryId}.enc`)); // the saved ciphertext is gone, so it is rebuilt, which checks the recording
+    writeFileSync(fileURLToPath(item.audioUri), fakeM4a(3 * SEGMENT_SIZE + 9)); // and the recording is not the one that was sealed
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!.state).not.toBe('begun');
+    expect(r.keychain.size).toBe(0); // mutant: no dropToken in reset() leaves the token in the Keychain
+  });
+
   it('goes oldest first, one at a time', async () => {
     const r = rig();
     const a = await r.addRecording(1000);
