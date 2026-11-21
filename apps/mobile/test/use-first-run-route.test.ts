@@ -39,6 +39,8 @@ const h = vi.hoisted(() => ({
   sync: { phase: 'idle', lastSyncedAt: null as string | null },
   syncListeners: new Set<(s: unknown) => void>(),
   syncNowCalls: 0,
+  /** FP-6: the cached signed config's kill switches (lib/remote getRemoteConfig). */
+  kill: { signIn: false },
 }));
 
 vi.mock('react', async () => {
@@ -46,6 +48,7 @@ vi.mock('react', async () => {
   // A faithful useCallback: the same function while the dependencies hold.
   return { ...m, useCallback: <T,>(fn: T, deps: readonly unknown[]) => m.useMemo(() => fn, deps) };
 });
+vi.mock('../src/lib/first-run/sign-in-pause', () => ({ signInPaused: () => h.kill.signIn }));
 vi.mock('@/lib/auth/session-provider', () => ({ useAuth: () => h.auth }));
 vi.mock('@/lib/a11y', () => ({ announce: (m: string) => void h.spoken.push(m) }));
 vi.mock('@/lib/store', () => ({
@@ -108,6 +111,7 @@ const networkEvent = (s: Record<string, unknown>) => {
 const failed = (): { status: string; error: string } => ({ status: 'signedOut', error: 'network' });
 
 beforeEach(() => {
+  h.kill = { signIn: false };
   h.auth = { state: { status: 'signedOut' }, configured: true };
   h.books = [];
   h.listChildrenCalls = 0;
@@ -664,6 +668,18 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     networkEvent({ ...ONLINE });
     expect(h.asked).toHaveLength(1);
     expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+
+  it('[NS-41-R25] the cached signIn kill switch puts a phone with no session on the outage with the local start; a session is untouched', async () => {
+    h.kill = { signIn: true };
+    h.auth = { state: { status: 'signedOut' }, configured: true };
+    const none = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(none.result.current).toMatchObject({ step: 'outage', screen: 'outage', localStartOffered: true });
+    none.unmount();
+    const withSession = await signedIn({ status: 'ready', userId: 'u1', sync: 'off' });
+    expect(withSession.result.current.step).not.toBe('outage');
+    withSession.unmount();
   });
 
   it('[NX-36-S17] a returning account with no book, or an answer that could not be read: No book here yet; Start a book is the child step', async () => {
