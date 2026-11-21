@@ -57,6 +57,34 @@ const counts = () => store.localSqlDb().get<{ c: number; e: number; d: number; o
   'SELECT (SELECT COUNT(*) FROM children) AS c, (SELECT COUNT(*) FROM entries) AS e, (SELECT COUNT(*) FROM drafts) AS d, (SELECT COUNT(*) FROM sync_outbox) AS o',
 )!;
 
+/**
+ * Rows for every list read the store gates, so that taking any `shown()` wrapper (or the listDeleted guard) away turns
+ * the "B: every list is empty" test red: each list holds something for A first (asserted), then nothing for B.
+ */
+function seedEveryList(): void {
+  const db = store.localSqlDb();
+  const now = '2026-11-20T09:00:00.000Z';
+  store.saveEntry(letter({ id: id7(), childId: asha, transcriptStatus: 'waiting' }));
+  store.saveEntry(letter({ id: id7(), childId: asha, transcriptStatus: 'unreviewed' }));
+  const gone = id7();
+  store.saveEntry(letter({ id: gone, childId: asha }));
+  store.deleteEntry(gone);
+  const held = store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'Held words.' });
+  store.holdDraft(held.id, { inBookChoice: null });
+  db.run(
+    'INSERT INTO rejected_writes (op_id, type, entity_id, payload, code, rejected_at) VALUES (?, ?, ?, ?, ?, ?)',
+    id7(), 'held.upsert', held.id,
+    JSON.stringify({ op: 'x', type: 'held.upsert', id: held.id, data: { id: held.id, typed_text: 'Mine.' }, conflict: { server_v: null } }),
+    'conflict', now,
+  );
+  const hidden = store.addChild({ name: 'Nova', birthday: '2026-04-01', dueDate: null, signsAs: 'Mama' }).id;
+  store.hideChild(hidden);
+  const closed = store.addChild({ name: 'Kit', birthday: '2026-05-01', dueDate: null, signsAs: 'Mama' }).id;
+  db.run("UPDATE children SET server_state = 'deleted' WHERE id = ?", closed);
+  const binned = store.addChild({ name: 'Pia', birthday: '2026-06-01', dueDate: null, signsAs: 'Mama' }).id;
+  db.run('INSERT INTO settings (key, value) VALUES (?, ?)', `book.deletedAt.${binned}`, now);
+}
+
 beforeEach(async () => {
   vi.resetModules();
   store = (await import('../src/lib/store')) as Store;
@@ -82,6 +110,13 @@ describe('[NS-10-R3] a second account never sees the first', () => {
   });
 
   it('B signed in: every list is empty, at every step of B\'s session, and nothing on the phone changed', () => {
+    seedEveryList();
+    // Every list holds something for A, so a list that stops being gated cannot hide behind an empty table.
+    const mine = lists();
+    for (const [k, v] of Object.entries(mine)) {
+      if (k === 'active') continue;
+      expect(Array.isArray(v) ? v.length : v, `A ${k}`).toBeTruthy();
+    }
     const before = counts();
     const statesOfB: AuthState[] = [
       { status: 'checkingConsent', userId: B, method: 'email' },
@@ -128,6 +163,42 @@ describe('[NS-10-R3] a second account never sees the first', () => {
     auth.publishAuth({ status: 'signedOut' });
     expect(told).toBe(2);
     stop();
+  });
+});
+
+describe('bookVisibleNow() fails closed', () => {
+  it('an owner that cannot be read hides the book (the catch answers false, never true)', () => {
+    auth.publishAuth(ready(B));
+    const db = store.localSqlDb();
+    const get = vi.spyOn(db, 'get').mockImplementation(() => {
+      throw new Error('settings unreadable');
+    });
+    expect(store.bookVisibleNow()).toBe(false);
+    get.mockRestore();
+  });
+});
+
+describe('[NS-01-R29][X4-R1] a second account sees no picture', () => {
+  it('every list a picture lens or a letter page reads is empty for B (letters, tonight, deleted, waiting), and A has them', () => {
+    seedEveryList();
+    const read = () => [store.listEntriesForChild(asha), store.listEntries(), store.listDeleted(), store.listWaitingForWords(asha), store.listWordsToReview(asha)];
+    for (const rows of read()) expect(rows.length).toBeGreaterThan(0);
+    auth.publishAuth(ready(B));
+    for (const rows of read()) expect(rows).toEqual([]);
+  });
+});
+
+describe('[NS-02-R24][X4-R1] a second account finds none of the first account\'s letters', () => {
+  it('no letter text of A\'s is in any list B can read (the store side; the search index guard is BRIEF-PR895)', () => {
+    seedEveryList();
+    const words = ['laughed at the rain', 'Held words'];
+    const texts = () => JSON.stringify([
+      store.listEntriesForChild(asha), store.listEntries(), store.listDeleted(), store.listDeletedEntriesForChild(asha),
+      store.listDrafts(asha), store.listHeldDrafts(), store.listWaitingForExport(), store.listConflicts(),
+    ]);
+    for (const w of words) expect(texts()).toContain(w);
+    auth.publishAuth(ready(B));
+    for (const w of words) expect(texts()).not.toContain(w);
   });
 });
 
