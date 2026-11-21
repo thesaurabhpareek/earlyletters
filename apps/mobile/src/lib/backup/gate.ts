@@ -3,13 +3,15 @@
  * WP-F08-B5c). Everything else in `lib/backup` and the native `ScribeKeys`
  * module is loaded on the first call here, and only in a build made with
  * `capabilities.backup` on. With the flag off (every profile today), this file
- * imports nothing but the capabilities switch, the native module is never
+ * imports nothing but the capabilities switch and files.ts (the backup file's exclusion, a data right that runs with
+ * the flag off; it reaches no runtime), the native module is never
  * looked up, no Keychain item is touched and no request is made.
  * `test/backup-gate.test.ts` holds the line: no file outside `lib/backup`
  * imports any backup file but this one, and this one has no static import of
  * them.
  */
 import { capabilities } from '../capabilities';
+import { secureBackupFilesAtLaunch } from './files';
 
 type Runtime = typeof import('./runtime');
 
@@ -29,6 +31,8 @@ export function backupInBuild(): boolean {
 
 /** Root layout: starts backup once, after the first frame. A no-op without the flag. */
 export function startBackup(): void {
+  // B5 (CR-71): a data right, so it runs with the flag off too: an old install may hold a backup file.
+  secureBackupFilesAtLaunch();
   loadBackup()?.startBackupRuntime();
 }
 

@@ -35,6 +35,7 @@ import { APP_ENV } from '../build-env';
 import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { AccountChanged, backupDbFileFor, createAccountHost } from './account';
+import { backupFileIsSecure } from './files';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -420,7 +421,15 @@ const listeners = new Set<() => void>();
 function dbFor(profileId: string): BackupDb {
   let d = backupDbs.get(profileId);
   if (!d) {
-    d = openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, () => new Date().toISOString());
+    const file = backupDbFileFor(profileId);
+    // B5-3: an existing file that is not excluded is deleted and not opened; a new file is checked once it exists.
+    if (!backupFileIsSecure(file)) throw new Error('backup_file_not_excluded');
+    const opened = openNativeDb(file);
+    if (!backupFileIsSecure(file)) {
+      opened.close();
+      throw new Error('backup_file_not_excluded');
+    }
+    d = openBackupDb(opened.db, () => new Date().toISOString());
     backupDbs.set(profileId, d);
   }
   return d;
