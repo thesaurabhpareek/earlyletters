@@ -38,7 +38,7 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({
 }));
 
 import { setServerFeaturesForTests } from '../src/lib/capabilities';
-import { PENDING_NAME_KEY, signInWithApple, takePendingAppleName, watchAppleRevocation } from '../src/lib/auth/apple';
+import { PENDING_NAME_KEY, signInWithApple, watchAppleRevocation } from '../src/lib/auth/apple';
 
 const sb = {
   auth: { signInWithIdToken: async () => ({ data: { user: { id: 'u-asha' } }, error: null }) },
@@ -64,7 +64,6 @@ describe('[NS-41-O8] Apple email only, no name kept', () => {
     signInAsync.mockResolvedValue({ identityToken: 'tok', user: 'apple-user-asha', fullName: { givenName: 'Asha', familyName: 'P' }, authorizationCode: null });
     await signInWithApple(sb);
     expect(store.has(PENDING_NAME_KEY)).toBe(false); // mutant: write PENDING_NAME_KEY again
-    expect(await takePendingAppleName()).toBeNull();
   });
 });
 
@@ -104,7 +103,7 @@ describe('[NS-45-R4] Apple revocation seen on foreground', () => {
     expect(onRevoked).not.toHaveBeenCalled();
   });
 
-  it('the notification listener signs out, and is gone after unsubscribe', async () => {
+  it('the notification listener calls back, and is gone after unsubscribe', async () => {
     const onRevoked = vi.fn();
     const stop = watchAppleRevocation(onRevoked);
     expect(listeners).toHaveLength(1);
@@ -163,6 +162,27 @@ describe('[NS-45-R4] the signed-in effect sets up and removes its listeners', ()
     h.revoked[0]();
     await new Promise((r) => setTimeout(r, 5));
     expect(h.dispatchSignOut).not.toHaveBeenCalled(); // mutant: remove the isAppleSession check
+  });
+
+  it('a session read that fails is not a revocation, signs nobody out and throws nothing', async () => {
+    const revoked: Array<() => void> = [];
+    const dispatchSignOut = vi.fn();
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    startAppleRevocationWatch({
+      check: async () => false,
+      isAppleSession: () => Promise.reject(new Error('storage down')),
+      pendingUploads: async () => 1,
+      dispatchSignOut,
+      onAppActive: () => () => {},
+      onAppleRevoked: (l) => (revoked.push(l), () => {}),
+      now: () => 5_000_000,
+    });
+    expect(() => revoked[0]()).not.toThrow();
+    await new Promise((r) => setTimeout(r, 10));
+    process.off('unhandledRejection', unhandled);
+    expect(dispatchSignOut).not.toHaveBeenCalled();
+    expect(unhandled).not.toHaveBeenCalled(); // mutant: drop the .catch(() => false) on isAppleSession
   });
 
   it('reads the provider from the session', () => {
