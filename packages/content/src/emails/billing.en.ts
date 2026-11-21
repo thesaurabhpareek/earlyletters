@@ -151,7 +151,7 @@ export const billingEmails = {
   'trial-ending-long': {
     id: 'trial-ending-long',
     subject: "Your Plus trial ends on {trialEndDate}",
-    preheader: "A heads-up before your trial ends, with the date and the price.",
+    preheader: "The date it ends, the price after, and how to cancel before then.",
     heading: "A heads-up before your trial ends",
     body: [
       "Your free trial of {planName} ends on {trialEndDate}.",
