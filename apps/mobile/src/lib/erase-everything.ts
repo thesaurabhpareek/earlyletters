@@ -57,11 +57,18 @@ const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
  */
 export function eraseDeviceFiles(): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
-  closeBackupHandles(); // B5-4: an open backup handle closes before its file goes (below, after the recordings)
+  closeBackupHandles(); // B5-4: an open backup handle closes before its file goes (below)
+  // B5-4: the backup state file (it holds a token, an upload URL and a wrapped key) goes FIRST, so a recording that will
+  // not delete cannot leave it waiting for the retry. Synchronous, so no await can come before it. A failure is held
+  // until the recordings have been tried, then thrown, so the rows stay and the next try repeats everything.
+  let backupFailure: unknown = null;
+  try {
+    deleteBackupFiles();
+  } catch (e) {
+    backupFailure = e;
+  }
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
-  // B5-4: the backup state file and its sidecars go after the recordings. Synchronous, so no await can come before
-  // it; it throws when a file will not go, so the rows stay and the next try repeats this.
-  deleteBackupFiles();
+  if (backupFailure) throw backupFailure;
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
   for (const name of CACHE_COPIES) {

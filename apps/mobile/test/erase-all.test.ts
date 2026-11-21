@@ -1150,6 +1150,49 @@ describe('[B5-4] Erase everything deletes every backup state file inside eraseDe
     expect(has(sqlite(ASHA_A))).toBe(false);
   });
 
+  it('a folder that cannot be listed while a backup file exists: the erase throws (typed) and stays pending', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.unreadable.add(`${h.disk.documents}SQLite`);
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(Error);
+    expect(has(sqlite(ASHA_A))).toBe(true); // nothing was claimed deleted
+    h.disk.unreadable.clear();
+    app.all.eraseDeviceFiles(); // the retry finishes
+    expect(has(sqlite(ASHA_A))).toBe(false);
+    expect(files.deleteBackupFiles()).toEqual({ deleted: 0, failed: 0 });
+  });
+
+  it('the failure is the typed BackupFileDeleteFailed with a stable code, not a bare Error', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.undeletable.add(sqlite(ASHA_A));
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(files.BackupFileDeleteFailed);
+    expect((err as { code: string }).code).toBe('backup_file_delete');
+  });
+
+  it('a recording that will not delete still leaves no backup file (it goes first), and the erase throws', async () => {
+    const app = await launch();
+    seed();
+    const rec = take('A1');
+    h.disk.undeletable.add(rec);
+    expect(() => app.all.eraseDeviceFiles()).toThrow();
+    expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+  });
+
   it('a phone with no backup file erases as before', async () => {
     const app = await launch();
     expect(() => app.all.eraseDeviceFiles()).not.toThrow();

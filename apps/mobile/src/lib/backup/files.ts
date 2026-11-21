@@ -196,13 +196,22 @@ function deleteAll(files: File[]): DeleteResult {
  */
 export function deleteBackupFiles(): DeleteResult {
   const r = deleteAll(listBackupFiles());
-  if (r.failed > 0) throw new Error('backup_file_delete');
+  if (r.failed > 0) throw new BackupFileDeleteFailed();
   return r;
+}
+
+/** A backup state file would not go (CODE-R15: callers branch on `code`, never on the message). */
+export class BackupFileDeleteFailed extends Error {
+  readonly code = 'backup_file_delete';
+  constructor() {
+    super('backup_file_delete');
+  }
 }
 
 /**
  * Sign-out (B5-5): the one account's file and sidecars, by exact name (no listing). The caller has closed the
- * handle first. Never throws; a file left is deleted or refused at the next launch's check. The book is not touched.
+ * handle first. Never throws. A file left (a failed delete, a kill before it) is NOT removed by the launch's exclusion check, which
+ * keeps an excluded file; `deleteBackupFilesExcept` at the next settled launch or session change removes it. The book is not touched.
  */
 export function deleteBackupFilesFor(profileId: string): DeleteResult {
   const name = `backup-${profileId.toLowerCase()}.db`;
@@ -213,6 +222,40 @@ export function deleteBackupFilesFor(profileId: string): DeleteResult {
   } catch {
     return { deleted: 0, failed: 1 };
   }
+}
+
+const OWNER = /^backup-([0-9a-f-]{36})\.db$/;
+
+/**
+ * Keying rule (B5-5): a backup file belongs to the account named in its file name, and only the account signed in
+ * NOW (`keep`, null when signed out) may keep one. Run once the session has settled at launch (so a session that
+ * ended while the app was closed, or a kill right after sign-out, is caught) and on every change of the signed-in
+ * user. Each other family has its handle closed, is marked ended and is deleted; a failure is counted, never thrown,
+ * and the next run retries it. Idempotent and cheap when nothing is there. The account signing in builds its own file
+ * only after this runs, and `keep` spares an account that is already signed in, so an account switch cannot delete
+ * the incoming account's file. A list failure counts as failed (the next run retries). Never touches scribe.db*.
+ */
+export function deleteBackupFilesExcept(keep: string | null): DeleteResult {
+  const keepBase = keep ? `backup-${keep.toLowerCase()}.db` : null;
+  let files: File[];
+  try {
+    files = listBackupFiles();
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+  const out: DeleteResult = { deleted: 0, failed: 0 };
+  for (const [base, family] of families(files)) {
+    if (base === keepBase) continue;
+    const id = OWNER.exec(base)?.[1];
+    if (id) {
+      endedAccounts.add(id);
+      closeHandles(id);
+    }
+    const r = deleteAll(family);
+    out.deleted += r.deleted;
+    out.failed += r.failed;
+  }
+  return out;
 }
 
 /**

@@ -162,4 +162,67 @@ describe('[B5-5] the sign-out seam', () => {
     const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
     expect(src).toMatch(/void settleReminderSession\(before, sessionUser\);\s*\/\/[^\n]*\n\s*if \(before && before !== sessionUser\) endBackupFileFor\(before\);/);
   });
+
+  it('and every settled run keeps only the signed-in account\'s file (a source match: the effect is not rendered here)', () => {
+    const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
+    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*deleteBackupFilesExcept\(sessionUser\);/);
+  });
+});
+
+describe('[B5-5] a settled launch keeps only the signed-in account\'s backup file (behaviour of what the effect calls)', () => {
+  const BEE = '7a1c9d2e-0b3f-4a5d-8e6c-2f1a0b9c8d7e';
+  const BEE_FILE = `backup-${BEE}.db`;
+  const seedBoth = () => {
+    for (const n of [FILE, `${FILE}-wal`, `${FILE}-shm`, BEE_FILE, `${BEE_FILE}-wal`]) put(h.disk, at(n), 64);
+  };
+
+  it('signed out at launch (the session ended while the app was closed, or a kill right after sign-out): every account\'s file goes, scribe.db stays', async () => {
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    seedBoth();
+    const r = deleteBackupFilesExcept(null);
+    expect(r).toEqual({ deleted: 5, failed: 0 });
+    expect([...h.disk.files.keys()].filter((k) => k.includes('/backup-'))).toEqual([]);
+    expect(h.disk.files.has(at('scribe.db'))).toBe(true);
+  });
+
+  it('account switch across a kill: signed in as the second account, the first account\'s file goes and the second\'s stays whole', async () => {
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    seedBoth();
+    deleteBackupFilesExcept(BEE.toUpperCase()); // case of the id does not matter
+    expect(gone()).toBe(true);
+    expect(h.disk.files.has(at(BEE_FILE)) && h.disk.files.has(at(`${BEE_FILE}-wal`))).toBe(true);
+  });
+
+  it('a delete that failed is retried at the next run and then succeeds', async () => {
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    seedBoth();
+    h.disk.undeletable.add(at(FILE));
+    expect(deleteBackupFilesExcept(null).failed).toBe(1);
+    expect(h.disk.files.has(at(FILE))).toBe(true);
+    h.disk.undeletable.clear();
+    expect(deleteBackupFilesExcept(null).failed).toBe(0);
+    expect(gone()).toBe(true);
+  });
+
+  it('an unlistable folder is a counted failure, never a throw, and the next run retries', async () => {
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    seedBoth();
+    h.disk.unreadable.add(`${h.disk.documents}SQLite`);
+    expect(deleteBackupFilesExcept(null)).toEqual({ deleted: 0, failed: 1 });
+    h.disk.unreadable.clear();
+    expect(deleteBackupFilesExcept(null).failed).toBe(0);
+    expect(gone()).toBe(true);
+  });
+
+  it('nothing there is a cheap no-op; an open handle for a removed account closes before its file goes', async () => {
+    const rt = await import('../src/lib/backup/runtime');
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    expect(deleteBackupFilesExcept(null)).toEqual({ deleted: 0, failed: 0 });
+    rt.openBackupDbForTests(ASHA);
+    h.events.length = 0;
+    deleteBackupFilesExcept(BEE);
+    expect(h.events).toEqual(['close:true']);
+    expect(gone()).toBe(true);
+    expect(() => rt.openBackupDbForTests(ASHA)).toThrow('backup_account_ended'); // a running pass cannot re-create it
+  });
 });
