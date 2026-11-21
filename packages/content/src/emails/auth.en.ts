@@ -30,7 +30,7 @@ import type { EmailCopy } from './types';
 
 const FALLBACK = "Button not working? Copy and paste this link:";
 const CODE_LABEL = "Or enter this code in the app";
-const NEVER_ASK = "We will never ask for this code by phone, text or chat.";
+const NEVER_ASK = "We'll never ask for this code by phone, text or chat.";
 
 export const authEmails = {
   // Not applicable while sign-in is one passwordless call (signInWithOtp with shouldCreateUser: true): there is
@@ -128,7 +128,7 @@ export const authEmails = {
       "On another device? Type the code below in the app instead.",
       "Joined with Apple or Google? Use that button in the app. If you chose Hide My Email, your book is under Apple's private address, and Sign in with Apple takes you straight there.",
       "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",
-      "Looking for a password? There is no password, and we'll never ask you for one.",
+      "Looking for a password? There's no password, and we'll never ask you for one.",
     ],
     cta: { label: "Sign in to my book", urlVar: "{signInUrl}" },
     code: { label: CODE_LABEL, codeVar: "{code}" },
@@ -150,7 +150,7 @@ export const authEmails = {
       `You can now sign in to ${brand.name} with your Apple Account, as well as with {email}.`,
       "If this was you, there is nothing else to do.",
     ],
-    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We will never ask for a code or a password.",
+    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We'll never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -166,7 +166,7 @@ export const authEmails = {
       `You can now sign in to ${brand.name} with your Google Account, as well as with {email}.`,
       "If this was you, there is nothing else to do.",
     ],
-    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We will never ask for a code or a password.",
+    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We'll never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -182,7 +182,7 @@ export const authEmails = {
       `You can now sign in to ${brand.name} with a passkey on {device}, as well as with {email}.`,
       "If this was you, there is nothing else to do.",
     ],
-    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We will never ask for a code or a password.",
+    safety: "Not you? Reply to this email right away with Not me in the subject, and we'll help you secure your account. We'll never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -198,7 +198,7 @@ export const authEmails = {
       "If that was you, there is nothing to do.",
       "If it was not, reply to this email with Not me in the subject. We will sign that device out and help you secure your account.",
     ],
-    safety: "We will never ask for a sign-in code or a password, by email, phone, text or chat.",
+    safety: "We'll never ask for a sign-in code or a password, by email, phone, text or chat.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -214,7 +214,7 @@ export const authEmails = {
       "Your letters, recordings and books are all still there. Sign-in links now go to the new address.",
       "If this was you, there is nothing else to do.",
     ],
-    safety: "Not you? Reply to this email right away, from this address, with Not me in the subject, and we'll help you put it right. We will never ask for a code or a password.",
+    safety: "Not you? Reply to this email right away, from this address, with Not me in the subject, and we'll help you put it right. We'll never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
