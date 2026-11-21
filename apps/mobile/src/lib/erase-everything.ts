@@ -35,6 +35,7 @@ import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
+import { eraseDaysFile } from './days';
 import { clearPendingInvite } from './family/pending-invite';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
@@ -56,6 +57,7 @@ const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
  */
 export function eraseDeviceFiles(): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
+  eraseDaysFile(); // first (NS-47-R16, ADR 0032 item 3): L4, so no recording that will not go may keep it on the phone
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
