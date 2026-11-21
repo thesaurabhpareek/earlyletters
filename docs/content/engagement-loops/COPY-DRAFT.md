@@ -78,7 +78,7 @@ Read these first, because a script cannot judge them: E3-r3-p, E4-r1-p, E4-r2-p,
 | M2-save-a | LP-M2 | in-app | tone: plain | Saved. | B6 | pass; any destination (claims nothing about the book or who sees it) |
 | M2-save-b | LP-M2 | in-app | tone: plain | Saved to {child}'s book. | B24 | pass; book destination only (a private letter uses the existing `review.destination.privateToast`) |
 | M2-save-p | LP-M2 | in-app | tone: playful (fallback M2-save-a) | Saved. Back to your day. | B24 | pass; the one dry saved-letter line; any destination |
-| M4-year-a | LP-M4 | in-app | tone: plain | A year of letters // Twelve months of them, kept for {child}. | T17/B37 | pass |
+| M4-year-a | LP-M4 | in-app | tone: plain | A year of letters // Every one kept for {child}. | T17/B37 | pass |
 | M7-empty | LP-M7 | in-app | tone: plain | The days you pick will show up here. | B36 | pass |
 | M7-tick | LP-M7 | in-app | tone: plain | You'll get a reminder that morning. Untick it, or choose Clear all, to stop it. | B79 | pass |
 
