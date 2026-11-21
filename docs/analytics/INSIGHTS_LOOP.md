@@ -15,7 +15,7 @@ Labels: **Fact**, **Decision** (made here, reviewable), **Unverified**, **Founde
  phones (opted in)          Supabase (all synced families)
       | PostHog events             | insights.* views, k = 10
       v                            v
- HogQL counts (read key) --> scripts/insights/run.ts <-- insights_aggregates() (insights_reader)
+ HogQL counts (read key) --> scripts/insights/run.ts <-- insights_aggregates() (reporting_reader, planned)
                                    |
                                    v
                      docs/insights/YYYY-MM-DD.md   (findings + ranked proposals, counts only)
@@ -68,7 +68,7 @@ All on the latest **complete** week before the report date (weeks start Monday, 
 ## 4. Credentials and set-up (Founder)
 
 1. **PostHog read key.** In PostHog, create a personal API key with only the **Query Read** scope, limited to the Early Letters project. Store it as `POSTHOG_PERSONAL_API_KEY` in the scheduler's secret store, with `POSTHOG_PROJECT_ID` and `POSTHOG_API_HOST=https://us.posthog.com` (the private API host, not the `us.i.posthog.com` ingestion host). Never put it in the app or the repo.
-2. **Supabase reader.** The migration creates the no-login role `insights_reader`, which can run only `insights_aggregates()` and read the six views, and grants it to `authenticator`. Mint a long-lived JWT with `{"role": "insights_reader"}` signed by the project's JWT secret, and store it as `SUPABASE_INSIGHTS_TOKEN`, with `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. **Unverified:** whether the project's signing-key mode (legacy secret versus the newer asymmetric keys) still allows a custom-role JWT; if not, run the job with the secret key instead (broader: say so in the scheduler notes) or connect as a login role granted `insights_reader`.
+2. **Supabase reader.** The no-login role `insights_reader` can run only `insights_aggregates()` and read the six views. Since file 34 (`20261111000000`, CR-71 C9) it is no longer granted to `authenticator`, so a JWT with `{"role": "insights_reader"}` no longer works through the Data API. The weekly insights run uses the planned `reporting_reader` login role (read-only, member of `insights_reader`; IN-DA-03). Until that role exists the founder runs it locally; the service key stays out of CI and out of every workflow (none in `.github` uses it). Do not store the service key as `SUPABASE_INSIGHTS_TOKEN` in a scheduler or CI secret store: it is an all-access key where a read-only one is wanted.
 3. **First real run.** `npm run insights -w @scribe/analytics` on a machine with those variables. **Unverified** until then: the HogQL function names (`toStartOfWeek(timestamp, 1)`, `countIf`) against PostHog's current HogQL; the run fails loudly (status and query name only) if a query is rejected.
 4. **Apply the migration** in the order of `supabase/APPLY.md` (the coordinator adds the line; the founder applies).
 

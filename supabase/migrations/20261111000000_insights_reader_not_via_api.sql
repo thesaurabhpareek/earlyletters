@@ -2,7 +2,7 @@
 --
 -- 20261004300000_insights_aggregates.sql (lines 35-37) ran `grant insights_reader to authenticator`, so a
 -- JWT whose `role` claim is insights_reader could read the k-anonymised insights views through PostgREST.
--- The weekly insights run uses the service role, so nothing needs that path. This file takes the
+-- No workflow uses that path. This file takes the
 -- membership away. Revoke only: the role, its schema and function grants, and every view stay as they are.
 --
 -- PENDING: not yet applied. Needs the founder's `approve-migration` label and a CI tag run (D-041).
@@ -16,8 +16,9 @@
 --
 -- ROLLBACK (forward-fix only; a later migration): grant insights_reader to authenticator;
 --
--- Who is affected: anyone holding an insights_reader JWT (SUPABASE_INSIGHTS_TOKEN in scripts/insights/run.ts)
--- must switch that run to the service key before this is applied. Data classification: no data touched.
+-- Who is affected: anyone holding an insights_reader JWT (SUPABASE_INSIGHTS_TOKEN in scripts/insights/run.ts).
+-- The weekly run moves to the planned reporting_reader login (IN-DA-03); until then it is run locally, and the
+-- service key stays out of CI. Data classification: no data touched.
 
 do $$
 begin
