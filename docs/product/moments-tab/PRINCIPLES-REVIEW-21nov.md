@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Moments tab: principle-by-principle review (21 Nov 2026)
 
 Status: PROPOSED. Docs only. Nothing here is decided, built or recorded in `DECISIONS.md`. Branch `wip/moments-principles`, no PR.

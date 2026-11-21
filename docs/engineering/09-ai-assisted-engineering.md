@@ -120,7 +120,7 @@ Each rule below is new, from the 28 Oct retrospective. None is in force until th
 
 ### Review and merge practice (21 Nov, Karma under CR-73)
 
-These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge under CR-73 and are not part of the proposed set in the section above. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
+These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge under CR-73 and are not part of the proposed set in the section above. AIE-R40 to R43 are in `09a-review-and-merge-practice.md`. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
 
 **AIE-R32 (MUST)** A fix round is one commit that closes every open Must-fix item, pushed once, and reviewers are launched only after the head is stable. *Why:* a new commit voids both counted reviews (CR-70), so each extra push costs two fresh review runs. *Evidence:* #1029 took five rounds, #1031 three and #1032 two (rounds counted as heads with a CHANGES verdict, plus the final PASS). *Enforced by:* review only. A stale-review delta print for `merge-queue.mjs` is proposed as a patch in #1149 (merged as a proposal under `docs/ops/proposed/`, not applied).
 

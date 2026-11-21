@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Fact check: pictures and the server-feature flags
 
 Read-only check of `origin/develop` at fdf34a58 (21 Nov 2026) and the photo slice branches. Marks: VERIFIED (read in the file named) or UNVERIFIED.

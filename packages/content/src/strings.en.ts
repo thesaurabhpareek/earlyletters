@@ -928,7 +928,6 @@ export const en = {
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
       accountScheduledTitle: "Your account is set to be deleted",
-      accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
       accountScheduledDateLabel: "Deletion date",
       cancelDeletionButton: "Cancel deletion",
     },

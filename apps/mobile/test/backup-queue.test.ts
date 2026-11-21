@@ -16,7 +16,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { hexToBytes } from '../src/lib/backup/bytes';
 import { BackupServerError, type BackupServer } from '../src/lib/backup/contract';
 import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../src/lib/backup/format';
 import { createKeyManager } from '../src/lib/backup/keys';
@@ -26,7 +25,7 @@ import type { TokenStore } from '../src/lib/backup/token-vault';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
-import { firstLeak, leakNote } from './helpers/leak-scan';
+import { scanRequests } from './helpers/leak-scan';
 import { nodeDb } from './helpers/node-db';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -252,14 +251,12 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(r.db().getMeta('lastBackedUpAt')).not.toBeNull();
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
-    // Every byte that left the phone is ciphertext: no ftyp box, no part of the original, no plaintext hash.
+    // No ftyp box, no part of the original, no plaintext hash left the phone in a form the scan can read. This is a
+    // scan, not a proof: it does not cover every encoding (see "Not covered" in `helpers/leak-scan.ts`, BL-1476).
     // [BL-456] 16-byte shingles of the whole take, each at every offset of every body (`helpers/leak-scan.ts`).
     expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
-    for (const req of r.backend.requests) {
-      expect(leakNote(req.kind, firstLeak(req.body, plain))).toBe(leakNote(req.kind, null));
-      expect(req.body.includes(Buffer.from(sha256Hex(plain))), req.kind).toBe(false);
-      expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
-    }
+    // [BL-1417 to BL-1419] and as base64, hex or a byte list; in the URL, headers and RPC arguments; across joins of bodies.
+    expect(scanRequests(r.backend.requests, [plain])).toEqual([]);
     expect(r.backend.requests.filter((x) => x.kind === 'tus').length).toBeGreaterThan(5); // 6 MiB parts in the app; 64 KiB here
   });
 

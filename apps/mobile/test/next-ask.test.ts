@@ -10,9 +10,12 @@ import { en } from '@scribe/content';
 import {
   ASK_SESSION_GAP_MS,
   MAX_REMINDER_PRIMES,
+  FIRST_MONTH_MS,
+  firstMonthDone,
   localDay,
   nextAsk,
   primeAllowed,
+  reminderPrimeSource,
   sessionAfterForeground,
   type AskFacts,
 } from '../src/lib/asks/next-ask.logic';
@@ -26,10 +29,12 @@ const facts = (over: Partial<AskFacts> = {}): AskFacts => ({
   remindersOn: false,
   signInOffered: true,
   keepBookOffered: false,
+  keepBookReoffered: false,
   firstLetterSession: S1,
   session: S1,
   askShownThisSession: false,
   askShownToday: false,
+  firstMonthDone: false,
   ...over,
 });
 
@@ -95,6 +100,111 @@ describe('[DR-12 B, F02 6.1] Keep the book: the second letter, or the first save
 
   it('nothing without a letter', () => {
     expect(nextAsk(facts({ lettersSaved: 0 }))).toBeNull();
+  });
+});
+
+describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, after the first month chapter', () => {
+  const later = (over: Partial<AskFacts> = {}) =>
+    facts({ firstLetter: false, lettersSaved: 6, primesShown: 1, keepBookOffered: true, keepBookReoffered: true, session: S2, firstMonthDone: true, ...over });
+
+  it('the first month is done: the second save after it offers reminder_prime again, once', () => {
+    expect(nextAsk(later())).toBe('reminder_prime');
+  });
+
+  it('not before the first month is done', () => {
+    expect(nextAsk(later({ firstMonthDone: false }))).toBeNull();
+  });
+
+  it('only a second prime: not when none was shown (the first has its own slot), never a third (the cap of 2)', () => {
+    expect(nextAsk(later({ primesShown: 0 }))).toBeNull();
+    expect(nextAsk(later({ primesShown: MAX_REMINDER_PRIMES }))).toBeNull();
+  });
+
+  it('not when reminders are on, and not on the first letter', () => {
+    expect(nextAsk(later({ remindersOn: true }))).toBeNull();
+    expect(nextAsk(later({ firstLetter: true, lettersSaved: 1 }))).toBeNull();
+  });
+
+  it('one ask per session and per day still hold', () => {
+    expect(nextAsk(later({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(later({ askShownToday: true }))).toBeNull();
+  });
+
+  it('the account sheet keeps its earlier slot when both are due', () => {
+    expect(nextAsk(later({ keepBookOffered: false }))).toBe('keep_book');
+  });
+
+  it('the first month is 30 days after the first letter; unknown is not done', () => {
+    const t = 1_000_000;
+    expect(firstMonthDone(null, t)).toBe(false);
+    expect(firstMonthDone(t, t + FIRST_MONTH_MS - 1)).toBe(false);
+    expect(firstMonthDone(t, t + FIRST_MONTH_MS)).toBe(true);
+  });
+});
+
+describe('[C-REQ-034, BL-1429] reminder_prime_shown names which showing it is', () => {
+  it('Given no earlier showing, Then the source is first_letter; Given one, Then it is first_month', () => {
+    expect(reminderPrimeSource(0)).toBe('first_letter');
+    expect(reminderPrimeSource(1)).toBe('first_month');
+  });
+
+  it('the source follows the second-prime rule: the showing nextAsk returns at primesShown 1 is the one labelled first_month', () => {
+    const first = nextAsk(facts());
+    const second = nextAsk(facts({ firstLetter: false, lettersSaved: 3, primesShown: 1, firstMonthDone: true, signInOffered: false, session: S2 }));
+    expect([first, second]).toEqual(['reminder_prime', 'reminder_prime']);
+    expect([reminderPrimeSource(0), reminderPrimeSource(1)]).toEqual(['first_letter', 'first_month']);
+  });
+
+  it('the card sends the source it is given by the counter, never a fixed string', () => {
+    const card = readFileSync(join(__dirname, '..', 'src', 'components/asks/reminder-prime-ask.tsx'), 'utf8');
+    expect(card).toMatch(/track\('reminder_prime_shown', \{ source: noteReminderPrimeShown\(\) \}\)/);
+    expect(card).not.toMatch(/reminder_prime_shown'[^)]*'first_letter'/);
+  });
+});
+
+describe('[F02 6.1, BL-519] Keep the book comes once more after the third letter when the person chose Later', () => {
+  // Offered before (the first offer, Later: still signed out), a later session, no card due.
+  const offered = (over: Partial<AskFacts> = {}): AskFacts =>
+    facts({ firstLetter: false, lettersSaved: 3, primesShown: 1, keepBookOffered: true, session: S2, ...over });
+
+  it('offer: the second letter is the first offer', () => {
+    expect(nextAsk(facts({ firstLetter: false, lettersSaved: 2, primesShown: 1 }))).toBe('keep_book');
+  });
+
+  it('Later: the first offer taken and still signed out, a second letter does not offer again', () => {
+    expect(nextAsk(offered({ lettersSaved: 2 }))).toBeNull();
+  });
+
+  it('re-offer: the third saved letter offers it once more', () => {
+    expect(nextAsk(offered())).toBe('keep_book');
+  });
+
+  it('no third offer: once the re-offer is made, no later letter brings it back', () => {
+    for (const n of [3, 4, 9]) expect(nextAsk(offered({ lettersSaved: n, keepBookReoffered: true })), String(n)).toBeNull();
+  });
+
+  it('a third letter whose slot was taken by another ask offers it on a later save, still once', () => {
+    expect(nextAsk(offered({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(offered({ lettersSaved: 4 }))).toBe('keep_book');
+  });
+
+  it('the session and day caps hold for the re-offer', () => {
+    expect(nextAsk(offered({ askShownThisSession: true }))).toBeNull();
+    expect(nextAsk(offered({ askShownToday: true }))).toBeNull();
+  });
+
+  it('never when the person signed in or servers are off (signInOffered false)', () => {
+    expect(nextAsk(offered({ signInOffered: false }))).toBeNull();
+  });
+
+  it('the second reminder prime keeps its slot ahead of the re-offer (BL-518)', () => {
+    expect(nextAsk(offered({ lettersSaved: 6, firstMonthDone: true }))).toBe('reminder_prime');
+  });
+
+  it('wiring: the re-offer is remembered on the phone and reuses the same sheet', () => {
+    const asks = readFileSync(join(__dirname, '..', 'src', 'lib/asks/index.ts'), 'utf8');
+    expect(asks).toMatch(/keepBookReoffered:\s*getSetting\(K\.keepBookReoffer\) === 'on'/);
+    expect(asks).toMatch(/setSetting\(K\.keepBookReoffer, 'on'\)/);
   });
 });
 

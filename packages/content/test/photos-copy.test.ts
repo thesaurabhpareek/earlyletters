@@ -40,6 +40,10 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
   it('[NS-01-R9] the fixed label is exactly "Photo with this letter"', () => {
     expect(photosCopy.book.photos.a11yCard).toBe('Photo with this letter');
   });
+  it('[NS-01-R11] no lens string counts pictures or carries a digit', () => {
+    for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\d|\bphotos? (this|each)\b/i);
+    expect(photosCopy.book.photos.a11yCard).not.toMatch(/\d|\bof\b \w+ photos/i);
+  });
   it('[NS-01-R22] no string offers the camera', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/take a photo now|camera/i);
   });
@@ -49,6 +53,15 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
     expect(t).toMatch(/add it again/i);
     expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
     expect(t.length).toBeLessThanOrEqual(120);
+  });
+  it('[NS-01-R20e][NS-33-R9] with the lens row showing, the Months button and the lens option have different names (#840 review A)', () => {
+    const { months, photos, monthsButton } = photosCopy.book.lens;
+    expect(monthsButton.toLowerCase()).not.toBe(months.toLowerCase());
+    expect(monthsButton.toLowerCase()).not.toBe(photos.toLowerCase());
+  });
+  it('[NS-01-R23] the lens has no "add" string; adding lives on the letter page only', () => {
+    for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\badd\b/i);
+    expect(photosCopy.book.letter.addPhoto).toMatch(/this letter/);
   });
   it('[NS-01-R17] on Review, before Keep, the not-stored line never says kept: offers a retry, no cause or blame (#839 review B)', () => {
     const t = photosCopy.review.notStored;
