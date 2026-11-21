@@ -52,7 +52,7 @@ import {
   type SyncPushArgs,
   type UndoJoinArgs,
 } from '../server';
-import { KILL_SWITCH_KEYS } from '../src/kill-switches';
+import { KILL_SWITCH_KEYS, M14_KILL_SWITCH_KEYS, NEW_SCOPE_KILL_SWITCH_KEYS } from '../src/kill-switches';
 
 const MIGRATIONS = fileURLToPath(new URL('../../../supabase/migrations', import.meta.url));
 const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
@@ -115,6 +115,26 @@ describe('[ADR-0017] error codes equal the migrations', () => {
     for (const d of [...INVITE_UNUSABLE_DETAILS, ...CONSENT_KINDS, ...ESCROW_ERROR_DETAILS, ...KILL_SWITCH_KEYS, 'purged']) {
       expect(ERROR_DETAILS as readonly string[]).toContain(d);
     }
+  });
+});
+
+describe('[CR-69 A5] the kill-switch vocabulary has no second copy that can drift', () => {
+  const read = (rel: string) => readFileSync(join(__dirname, '..', '..', '..', rel), 'utf8');
+
+  it('[NS-46-R28] the README names every key and its count, and the ADR 0029 table names the four new ones', () => {
+    const readme = read('packages/api/README.md');
+    const line = readme.split('\n').find((l) => l.startsWith('**Kill switches.**')) ?? '';
+    for (const k of KILL_SWITCH_KEYS) expect(line, k).toContain('`' + k + '`');
+    expect(line).toContain('Twelve keys');
+    expect(KILL_SWITCH_KEYS.length).toBe(12);
+    const adr = read('docs/adr/0029-flags-kill-switches-and-preflight.md');
+    for (const k of NEW_SCOPE_KILL_SWITCH_KEYS) expect(adr, k).toContain('| `' + k + '` |');
+  });
+
+  it('[NS-41-R25] the signed-config source lists every key, all off, and the new four are not M14', () => {
+    const src = JSON.parse(read('scripts/packs/remote-config.json')) as { killSwitches: Record<string, boolean> };
+    expect(Object.keys(src.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
+    for (const k of NEW_SCOPE_KILL_SWITCH_KEYS) expect(M14_KILL_SWITCH_KEYS).not.toContain(k);
   });
 });
 
