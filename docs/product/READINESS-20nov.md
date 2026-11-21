@@ -81,23 +81,23 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-05 | 05 | 17 | 2 | 0 | 15 | 0 | 0 | BL-126, BL-939, BL-981, BL-991 |
 | NS-06 | 06 | 31 | 31 | 0 | 0 | 0 | 0 | BL-287, BL-954, BL-957, BL-962, BL-968, BL-969 +6 more |
 | NS-07 | 07 | 14 | 14 | 0 | 0 | 0 | 0 | BL-299, BL-973, BL-974, BL-975, BL-990, BL-991 |
-| NS-08 | 08 | 14 | 6 | 0 | 8 | 0 | 0 | BL-128, BL-290, BL-976, BL-990 |
-| NS-09 | 08 | 13 | 7 | 0 | 6 | 0 | 0 | BL-138, BL-181, BL-977, BL-987, BL-988 |
+| NS-08 | 08 | 14 | 14 | 0 | 0 | 0 | 0 | BL-128, BL-290, BL-976, BL-990 |
+| NS-09 | 08 | 13 | 13 | 0 | 0 | 0 | 0 | BL-138, BL-181, BL-977, BL-987, BL-988 |
 | NS-10 | 08 | 9 | 9 | 0 | 0 | 0 | 0 | BL-961, BL-965, BL-978, BL-987, BL-990 |
 | NS-11 | 08 | 5 | 2 | 0 | 3 | 0 | 0 | BL-126, BL-934, BL-942, BL-963, BL-965, BL-990 |
 | NS-12 | 08 | 5 | 5 | 0 | 0 | 0 | 0 | BL-949, BL-979, BL-990 |
 | NS-13 | 09 | 18 | 18 | 0 | 0 | 0 | 0 | BL-943, BL-965, BL-967, BL-982, BL-987, BL-991 +1 more |
-| NS-14 | 09 | 4 | 2 | 0 | 2 | 0 | 0 | BL-181, BL-940, BL-941, BL-988 |
+| NS-14 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-181, BL-940, BL-941, BL-988 |
 | NS-15 | 09 | 4 | 4 | 0 | 0 | 0 | 0 | BL-944, BL-945, BL-988 |
 | NS-16 | 09 | 8 | 8 | 0 | 0 | 0 | 0 | BL-949, BL-957, BL-965, BL-980, BL-988 |
 | NS-17 | 09 | 11 | 1 | 0 | 10 | 0 | 0 | BL-182, BL-327, BL-987, BL-988 |
 | NS-18 | 09 | 3 | 3 | 0 | 0 | 0 | 0 | BL-949, BL-982, BL-991 |
-| NS-19 | 09 | 2 | 0 | 0 | 2 | 0 | 0 | BL-183, BL-988 |
+| NS-19 | 09 | 2 | 2 | 0 | 0 | 0 | 0 | BL-183, BL-988 |
 | NS-20 | 09 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
-| NS-21 | 10 | 5 | 2 | 0 | 3 | 0 | 0 | BL-183, BL-287, BL-937, BL-962, BL-989 |
+| NS-21 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-183, BL-287, BL-937, BL-962, BL-989 |
 | NS-22 | 10 | 2 | 2 | 0 | 0 | 0 | 0 | BL-938, BL-985, BL-989 |
 | NS-23 | 10 | 5 | 5 | 0 | 0 | 0 | 0 | BL-946, BL-963, BL-965, BL-989 |
-| NS-24 | 10 | 3 | 2 | 0 | 1 | 0 | 0 | BL-183, BL-947, BL-987, BL-989 |
+| NS-24 | 10 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-947, BL-987, BL-989 |
 | NS-25 | 10 | 13 | 13 | 0 | 0 | 0 | 0 | BL-983, BL-991 |
 | NS-26 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
 | NS-27 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
@@ -106,19 +106,19 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-30 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | none, by design (a "why it waits" card, 0 P0 rows) |
 | NS-31 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | BL-966 |
 | NS-32 | 11 | 8 | 8 | 0 | 0 | 0 | 0 | BL-163, BL-949, BL-966, BL-991 |
-| NS-33 | 11 | 13 | 6 | 0 | 7 | 0 | 0 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
+| NS-33 | 11 | 13 | 13 | 0 | 0 | 0 | 0 | BL-139, BL-162, BL-184, BL-931, BL-948, BL-954 +2 more |
 | NS-34 | 11 | 3 | 2 | 0 | 1 | 0 | 0 | BL-168, BL-185, BL-329, BL-948, BL-992 |
-| NS-35 | 11 | 4 | 1 | 0 | 3 | 0 | 0 | BL-183, BL-952, BL-971, BL-988 |
-| NS-36 | 11 | 14 | 2 | 0 | 12 | 0 | 0 | BL-186, BL-254, BL-959, BL-960, BL-990 |
-| NS-37 | 11 | 3 | 2 | 0 | 1 | 0 | 0 | BL-183, BL-956, BL-989 |
+| NS-35 | 11 | 4 | 4 | 0 | 0 | 0 | 0 | BL-183, BL-952, BL-971, BL-988 |
+| NS-36 | 11 | 14 | 14 | 0 | 0 | 0 | 0 | BL-186, BL-254, BL-959, BL-960, BL-990 |
+| NS-37 | 11 | 3 | 3 | 0 | 0 | 0 | 0 | BL-183, BL-956, BL-989 |
 | NS-38 | 19 | 8 | 2 | 0 | 6 | 0 | 0 | BL-187, BL-994 |
-| NS-39 | 19 | 10 | 4 | 0 | 6 | 0 | 0 | BL-188 |
-| NS-40 | 19 | 11 | 3 | 0 | 8 | 0 | 0 | BL-198, BL-577 |
-| NS-41 | 19 | 18 | 3 | 1 | 14 | 0 | 0 | BL-208 |
-| NS-42 | 19 | 15 | 7 | 0 | 8 | 0 | 0 | BL-291 |
-| NS-43 | 19 | 11 | 2 | 0 | 9 | 0 | 0 | BL-292 |
+| NS-39 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-188 |
+| NS-40 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-198, BL-577 |
+| NS-41 | 19 | 18 | 17 | 1 | 0 | 0 | 0 | BL-208 |
+| NS-42 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-291 |
+| NS-43 | 19 | 11 | 11 | 0 | 0 | 0 | 0 | BL-292 |
 | NS-44 | 19 | 10 | 10 | 0 | 0 | 0 | 0 | BL-293 |
-| NS-45 | 19 | 15 | 4 | 0 | 11 | 0 | 0 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
+| NS-45 | 19 | 15 | 15 | 0 | 0 | 0 | 0 | BL-294, BL-994, BL-995, BL-996, BL-997, BL-998 +1 more |
 | NS-46 | 21 | 22 | 10 | 1 | 11 | 0 | 0 | BL-295, BL-1002, BL-1005, BL-1007, BL-1008, BL-1009 +3 more |
 | NS-47 | 21 | 27 | 8 | 0 | 19 | 0 | 0 | BL-296, BL-1002, BL-1005, BL-1009, BL-1010, BL-1015 |
 | NS-48 | 21 | 13 | 10 | 0 | 3 | 0 | 0 | BL-297, BL-1002, BL-1003, BL-1004, BL-1016 |
@@ -126,7 +126,7 @@ Ten P0 rows cite a BL id that has no heading in `docs/BACKLOG.md` (FR-BKO-07 cit
 | NS-50 | 21 | 4 | 2 | 0 | 2 | 0 | 0 | BL-295, BL-1014 |
 | NS-51 | 27 | 27 | 5 | 0 | 22 | 0 | 0 | BL-045, BL-1001, BL-1019 |
 | NS-52 | 27 | 26 | 13 | 0 | 13 | 0 | 0 | BL-046, BL-1001, BL-1018, BL-1020 |
-| **52 cards** | | **537** | **287** | **3** | **247** | **0** | **0** | |
+| **52 cards** | | **537** | **388** | **3** | **146** | **0** | **0** | |
 
 Reading it:
 - 47 of 52 cards are named by at least one BL row. NS-20, NS-26, NS-27, NS-28 and NS-30 have none, by design: they are "why it waits" cards with 0 P0 rows. NS-29 and NS-31 are named only by a parked row (BL-986) and by BL-966's "no Memory Library classes" line.
@@ -142,14 +142,14 @@ Reading it:
 | back-office.md | 17 | 0 | 4 | 13 |
 | compliance.md | 23 | 1 | 1 | 21 |
 | cultural-background-data.md | 23 | 0 | 1 | 22 |
-| data-and-measurement.md | 16 | 0 | 2 | 14 |
+| data-and-measurement.md | 16 | 1 | 1 | 14 |
 | days-library.md | 18 | 1 | 5 | 12 |
 | feature-opportunities.md | 5 | 0 | 0 | 5 |
 | finance.md | 8 | 0 | 1 | 7 |
 | languages-and-localisation.md | 24 | 0 | 3 | 21 |
 | legal.md | 21 | 0 | 4 | 17 |
 | lifecycle-and-platforms.md | 24 | 0 | 0 | 24 |
-| marketing.md | 27 | 1 | 1 | 25 |
+| marketing.md | 27 | 2 | 1 | 24 |
 | messaging-and-entry-points.md | 28 | 0 | 14 | 14 |
 | notification-catalogue.md | 17 | 0 | 0 | 17 |
 | operations.md | 19 | 0 | 4 | 15 |
@@ -161,9 +161,11 @@ Reading it:
 | research-validation.md | 17 | 0 | 4 | 13 |
 | risk-security.md | 22 | 0 | 4 | 18 |
 | support.md | 29 | 0 | 4 | 25 |
-| **23 files** | **515** | **3** | **75** | **437** |
+| **23 files** | **515** | **5** | **74** | **436** |
 
-3 of the 515 function-file P0 rows have a row-level BL row (FR-CMP, FR-DAY and FR-MKT, one each), 75 cite a BL id in their own text, and 437 map only to the 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. Strict G0 for function files is therefore 78 of 515. That generated file was not regenerated in this refresh and may still carry older counts; trust the table above and `p0.py --gaps`.
+5 of the 515 function-file P0 rows have a row-level BL row (compliance, data-and-measurement, days-library and two in marketing), 74 cite a BL id in their own text, and 436 map only to the 35 proposed groups (G01 to G35) in `docs/product/prd/BACKLOG-GAPS.md`. Strict G0 for function files is therefore 79 of 515 (NS cards 391 of 537, overall 470 of 1,052). That generated file was not regenerated in this refresh and may still carry older counts; trust the table above and `p0.py --gaps`.
+
+Tables 1.3 and 1.4 are regenerated per card and per file from the generator on `develop` at `71c4485`, command `python3 -I docs/product/prd/tools/review/p0.py . --json`, counting each P0 row by its `tier` field (row, cite, proposed).
 
 ### 1.5 The counting tool (both defects fixed by #1105)
 
