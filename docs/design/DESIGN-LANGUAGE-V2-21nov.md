@@ -1,6 +1,6 @@
 # Design language v2: the uplift (version of record, 21 Nov 2026)
 
-Status: **ADOPTED 21 Nov 2026. This is the version of record for the design language.** Decision of record: issue #1221 (Karma, with the Chief Design Officer, CPO, CTO and CMO; the founder delegated, so no wait for Mon 23 Nov). F1 is ruled as in that comment: the uplift enters the first store build for tokens, shared card and button, first run and empty, Review, Book home without the tab bar, capture polish, letter reading and Settings, each only after it passes the screen gate below; a screen that fails stays on its current look and nothing blocks submission. The three spike-gated items (system tab bar, system sheets, SF Symbols) wait for the SDK 58 upgrade and device spikes and ship after submission. Where this file and the council rulings differ, the rulings win. The rulings are copied into section 8 of this file (the Project doc `infra/exec-rulings-2026-11-21-design-uplift.md` cannot be read from `develop`); the ids T, C, M, W and A3 are defined in section 9. Author: `design-systems`, with the Chief Design Officer view. This file changes no token or component file; the work lands in later pull requests. Any new word on a screen stays PROPOSED until `content` clears it, and a PROPOSED word does not ship (see the block below).
+Status: **ADOPTED 21 Nov 2026. This is the version of record for the design language.** Decision of record: issue #1221 (Karma, with the Chief Design Officer, CPO, CTO and CMO; the founder delegated, so no wait for Mon 23 Nov). F1 is ruled as in that comment: the uplift enters the first store build for tokens, shared card and button, first run and empty, Review, Book home without the tab bar, capture polish, letter reading and Settings, each only after it passes the screen gate below; a screen that fails stays on its current look and nothing blocks submission, except that the set rule wins for the core flow: if any core-flow screen fails its gate, the whole core flow stays on the current look. The three spike-gated items (system tab bar, system sheets, SF Symbols) wait for the SDK 58 upgrade and device spikes and ship after submission. Where this file and the council rulings differ, the rulings win. The rulings are copied into section 8 of this file (the Project doc `infra/exec-rulings-2026-11-21-design-uplift.md` cannot be read from `develop`); the ids T, C, M, W and A3 are defined in section 9. Author: `design-systems`, with the Chief Design Officer view. This file changes no token or component file; the work lands in later pull requests. Any new word on a screen stays PROPOSED until `content` clears it, and a PROPOSED word does not ship (see the block below).
 
 ## Agents: read this first
 
@@ -16,7 +16,7 @@ Do:
 Do not:
 - Put glass on a card, a letter, a prompt or any content.
 - Ship the system tab bar, system sheets or SF Symbols before the SDK 58 upgrade and their device spikes pass.
-- Ship a screen that fails any gate item. It stays on its current look.
+- Ship a screen that fails any gate item. It stays on its current look, and the set rule wins for the core flow: if any core-flow screen fails its gate, the whole core flow stays on the current look.
 - Add, reword or rename a word beyond case, or ship a PROPOSED word, a stub state, or a feature flag that is on by default but unfinished.
 - Add streaks, points, badges, confetti or progress rings, or count gaps.
 
@@ -106,8 +106,8 @@ Fixed from before and not negotiable: no streaks, points, badges, confetti or pr
 | # | Screen (id) | Before (as built or specified) | After (v2) |
 |---|---|---|---|
 | 1 | First run welcome (E-S02) | Quotation mark, serif title, three lines, buttons on flat paper. | The closed book cover is the hero object (R5), the lamp light stays, title in `display`, one prominent pill on the accent, the second action as a plain text button, agreement line in `footnote` with links. |
-| 2 | Capture, recording (A-S05) | Red disc with a breathing glow. | The existing breathing glow (soft aura layers that never fill, count or show a fraction, so never a progress ring) around the Phosphor mic; a system-weight SF Symbol mic with the breathe effect follows with C4, after submission; "Listening." in `title2` serif; timer in the new `timer` style with tabular figures; "Say it however it comes." as `subhead`; "Let it go" as a quiet button and the stop control (A3, built word "Finish") is a glass ring around the red disc, so terracotta keeps meaning recording and the glass ring is the one floating control on this screen; under Reduce Transparency the ring is the solid `glassFallback` with a hairline. No waveform. |
-| 3 | Review of a take (A-S07) | A sheet with To, day, From, words, Keep. | Letter on a raised paper card with the dateline above, machine-edited words keep the dotted `editMark`, the bar at the bottom is one prominent "Keep" on the accent with "Let it go" beside it as plain text; the card has the v2 shadow and highlight. |
+| 2 | Capture, recording (A-S05) | Red disc with a breathing glow. | The existing breathing glow (soft aura layers that never fill, count or show a fraction, so never a progress ring) around the Phosphor mic; a system-weight SF Symbol mic with the breathe effect follows with C4, after submission; "Listening." in `title2` serif; timer in the new `timer` style with tabular figures; "Say it however it comes." as `subhead`; "Let it go" as a quiet button and the stop control (A3) keeps its built Finish label and its VoiceOver label (the built hint stays too) and is a glass ring around the red disc, so terracotta keeps meaning recording and the glass ring is the one floating control on this screen; under Reduce Transparency the ring is the solid `glassFallback` with a hairline. No waveform. |
+| 3 | Review of a take (A-S07) | A sheet with To, day, From, words, Keep. | Letter on a raised paper card with the dateline above, machine-edited words keep the dotted `editMark`, the bar at the bottom is one prominent "Keep" (PROPOSED: the built word is "Keep it", so it stays "Keep it" until `content` clears the change) on the accent with "Let it go" beside it as plain text; the card has the v2 shadow and highlight. |
 | 4 | Keep sheet (E-S10) | A custom bottom sheet. | After the device spike, the system sheet at medium detent (until then the `@gorhom/bottom-sheet` sheet stays, with case-only word changes), a grabber, the system sheet radius, title in `title2` serif, one prominent action, Cancel leading. Words unchanged. |
 | 5 | Book home (B-S01) | Title, cover band, month list on flat paper, paper tab bar. | Large serif title, the cover band as the one lit object with a v2 shadow, month rows with larger padding and concentric radius, and, only if the SDK 58 device spike passes, the system tab bar (glass on iOS 26 and later). Whether it minimises on scroll is decided by that spike (ruling 32), because Expo says minimise on scroll does not work with FlatList lists such as the Book. Until then the paper tab bar stays (Book home ships without the tab bar change). |
 | 6 | A letter, reading view (B-S08) | Text column, dateline, "This letter" list. | A measure cap of about 62 characters, 12 pt paragraph gap, dateline in `letterDateline`, a quiet play row, the signature in italic serif, and a toolbar with standard back and one overflow menu. Reading size stays. The tab bar hides on this pushed route (ruling 32). |
@@ -184,7 +184,7 @@ Spike-gated: this waits for SDK 58 and the device spike; Phosphor behind the `Ic
 
 ## 5. Build order (ruled 21 Nov 2026, replaces the proposed order)
 
-Source: decision of record on #1221. Every step passes the screen gate in the block at the top. The set rule applies to steps 2 to 4: first run, empty Book, capture, Review and Keep, Book home and reading a letter move together or not at all.
+Source: decision of record on #1221. Every step passes the screen gate in the block at the top. The set rule covers the core flow in steps 2 to 4: first run, empty Book, capture, Review and Keep, Book home and reading a letter move together or not at all. M1 Settings (step 4) is outside the set rule and may move alone.
 
 1. **Tokens T1 to T6**, then shared components C1 to C3 and C7 (`ui/card`, `ui/button`, `ui/list-row` with `ui/section-header`, and `COMPONENTS.md` kept in step).
 2. **M2 with C5** (first run and empty, the book cover as the hero object), then **Review** (A-S07 card and Keep action).
@@ -231,7 +231,7 @@ Source: `infra/exec-rulings-2026-11-21-design-uplift.md` (Karma with the CPO, CT
 
 ## 9. Key to ids used in this file
 
-Copied from issue #1221.
+Ids from #1221.
 
 | Id | Meaning |
 |---|---|
