@@ -70,8 +70,11 @@ export function makeHandler(env: (n: string) => string | undefined, opts: Handle
     let cls: unknown;
     let deviceId: unknown;
     try {
+      // Content-Length first, so a declared oversize body is never read; then the real bytes (not characters) of what was read.
+      const declared = Number(req.headers.get('content-length'));
+      if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new Error('size');
       const text = await req.text();
-      if (text.length > MAX_BODY_BYTES) throw new Error('size');
+      if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) throw new Error('size');
       const body = JSON.parse(text);
       cls = body?.class;
       deviceId = body?.device_id;

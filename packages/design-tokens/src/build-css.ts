@@ -43,7 +43,7 @@ const SHADCN: Record<string, ColorKey> = {
   ring: 'focus',
 };
 /** Our names with no shadcn equivalent. */
-const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution', 'controlBorder', 'editMark', 'onDestructive', 'scrim'];
+const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution', 'controlBorder', 'editMark', 'onDestructive', 'scrim', 'mediaFrame'];
 
 export function colorVars(mode: Mode, highContrast = false): Record<string, string> {
   const c: Record<ColorKey, string> = { ...tokens[mode], ...(highContrast ? tokens.highContrast[mode] : {}) };

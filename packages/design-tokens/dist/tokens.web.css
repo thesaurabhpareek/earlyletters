@@ -28,6 +28,7 @@
   --color-edit-mark: #8A5A3B;
   --color-on-destructive: #FFFFFF;
   --color-scrim: #2B272252;
+  --color-media-frame: #E6DED3;
 }
 .dark {
   --color-background: #161412;
@@ -58,6 +59,7 @@
   --color-edit-mark: #D9A47E;
   --color-on-destructive: #1E1612;
   --color-scrim: #0000008C;
+  --color-media-frame: #716A62;
 }
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
@@ -89,6 +91,7 @@
     --color-edit-mark: #D9A47E;
     --color-on-destructive: #1E1612;
     --color-scrim: #0000008C;
+    --color-media-frame: #716A62;
   }
 }
 @media (prefers-contrast: more) {
@@ -121,6 +124,7 @@
     --color-edit-mark: #6E4529;
     --color-on-destructive: #FFFFFF;
     --color-scrim: #2B272252;
+    --color-media-frame: #6B645B;
   }
   .dark {
     --color-background: #161412;
@@ -151,6 +155,7 @@
     --color-edit-mark: #E8BC9A;
     --color-on-destructive: #1E1612;
     --color-scrim: #0000008C;
+    --color-media-frame: #B3AA9E;
   }
 }
 
