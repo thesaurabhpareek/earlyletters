@@ -9,7 +9,7 @@ import { ENGINE_VERSION } from '@scribe/core';
 import { migrate } from '../../src/lib/db/migrations';
 import * as entries from '../../src/lib/db/repos/entries';
 import type { Entry, RepoContext } from '../../src/lib/db/repos';
-import { planBook, RTL, type AshaItem } from '../../../../scripts/qa/asha-book/plan.mjs';
+import { planBook, RANGE, RTL, type AshaItem } from '../../../../scripts/qa/asha-book/plan.mjs';
 import { insertBook } from './store-fixture';
 import { nodeDb } from './node-db';
 
@@ -62,7 +62,8 @@ export function buildAshaBook(opts: { seed?: number; letters?: number; pictures?
   const ctx: RepoContext = { db, now: () => AT, newId: () => 'asha-fixed-id' };
   let n = 0;
   migrate(db, { now: AT, newId: () => `asha-mig-${++n}` });
-  insertBook(db, { id: ASHA_BOOK_ID, at: AT });
+  // Born on the first day of the range: no letter is dated before the book's child exists (the helper default, 2026-03-01, is later).
+  insertBook(db, { id: ASHA_BOOK_ID, at: AT, birthday: RANGE.from });
   db.transaction(() => {
     for (const item of plan.items) {
       entries.upsert(ctx, entryOf(item), { childId: ASHA_BOOK_ID, authorSignsAs: 'Mama' });

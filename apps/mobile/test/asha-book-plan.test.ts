@@ -61,20 +61,33 @@ describe('[NS-34-R5] seeded book is generated and fictional', () => {
     }
   });
 
+  it('[NS-34-R5] the book exists before its first letter: the birthday is not after any letter date', () => {
+    const book = buildAshaBook({ ...SIZES.small });
+    const birthday = book.ctx.db.get<{ birthday: string }>('SELECT birthday FROM children WHERE id = ?', ASHA_BOOK_ID)?.birthday ?? '';
+    const early = entries.listForChild(book.ctx, ASHA_BOOK_ID).filter((e) => e.occurredOn < birthday).map((e) => e.occurredOn);
+    book.close();
+    expect(birthday).not.toBe('');
+    expect(early).toEqual([]);
+  });
+
   it('[NS-34-R5] no field holds anything outside the Asha vocabulary', () => {
     const { items } = planBook({ seed: DEFAULT_SEED });
+    const bad: string[] = [];
     for (const i of items) {
-      for (const w of i.text.split(' ')) expect(allowed(w)).toBe(true);
-      expect(i.picture === null || /^asha-\d+\.(jpg|png)$/.test(i.picture.file)).toBe(true);
-      expect(i.audio === null || /^[0-9a-f]{64}$/.test(i.audio.sha256)).toBe(true);
+      for (const w of i.text.split(' ')) if (!allowed(w)) bad.push(w);
+      if (!(i.picture === null || /^asha-\d+\.(jpg|png)$/.test(i.picture.file))) bad.push(`picture ${i.picture?.file}`);
+      if (!(i.audio === null || /^[0-9a-f]{64}$/.test(i.audio.sha256))) bad.push(`audio ${i.audio?.sha256}`);
     }
+    expect([...new Set(bad)]).toEqual([]);
     // The stored rows carry the same words and nothing else: ids and audio names are generated, the author is Asha's book.
     const book = buildAshaBook({ ...SIZES.small });
+    const stored: string[] = [];
     for (const e of entries.listForChild(book.ctx, ASHA_BOOK_ID)) {
-      for (const w of e.rawTranscript.split(' ')) expect(allowed(w)).toBe(true);
-      expect(e.authorSignsAs).toBe('Mama');
-      expect(e.audioUri === null || /^file:\/\/\/Documents\/asha-\d+\.m4a$/.test(e.audioUri ?? '')).toBe(true);
+      for (const w of e.rawTranscript.split(' ')) if (!allowed(w)) stored.push(w);
+      if (e.authorSignsAs !== 'Mama') stored.push(`author ${e.authorSignsAs}`);
+      if (!(e.audioUri === null || /^file:\/\/\/Documents\/asha-\d+\.m4a$/.test(e.audioUri ?? ''))) stored.push(`audio ${e.audioUri}`);
     }
+    expect([...new Set(stored)]).toEqual([]);
     book.close();
   });
 
