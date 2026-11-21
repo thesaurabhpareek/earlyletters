@@ -400,7 +400,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
       .toEqual(['entry_media_draft_idx', 'entry_media_entry_idx', 'entry_media_one_photo_idx']);
     expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')?.n).toBe(0);
   });
-  it('[D1] it queues nothing for sync and a phone on 10 gains the table without touching a letter', () => {
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: it queues nothing for sync and a phone on 10 gains the table without touching a letter', () => {
     const { db } = nodeDb();
     migrate(db, ctx, MIGRATIONS.slice(0, 10));
     letter(db, 'e1');
@@ -425,11 +425,11 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
     expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
     expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
-    // The CHECKs are ceilings in code points, 16 per character a person sees, never the product limit (BL-957): they
+    // The CHECKs are ceilings in code points, 8 per character a person sees (E11: 1,120 and 480; DEFAULT pending req-question NS-01-R54-ceilings), never the product limit (BL-957): they
     // admit the longest words and place the app keeps, and refuse one code point more.
-    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(2241) })).toThrow();
-    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(961) })).toThrow();
-    ins('m9', 'e4', null, { text: 'x'.repeat(2240), place: 'y'.repeat(960) });
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(1121) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(481) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(1120), place: 'y'.repeat(480) });
   });
   it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
     const { db } = nodeDb();
@@ -448,7 +448,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
-  it('[NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
+  it('[NS-01-R54] caps count graphemes and the database agrees: [NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -472,25 +472,27 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
           expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
           expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
         }
-        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones) are kept whole, 140
-        // and 60 of them, through the CHECK (card 01 R54; 16 code points per character).
+        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones) are longer than the
+        // 8 code points per character that E11 allows (1,120 and 480): the cut stops whole characters before the
+        // ceiling, so the store never refuses what the app kept. DEFAULT, pending req-question NS-01-R54-ceilings: card
+        // 01 R54 also asks that 140 emoji be kept whole, which 8 per character cannot do for these two.
         const kiss = '\u{1F9D1}\u{1F3FB}\u200D\u2764\uFE0F\u200D\u{1F48B}\u200D\u{1F9D1}\u{1F3FC}';
         const family = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
-        for (const g of [kiss, family]) {
+        for (const [g, nText, nPlace] of [[kiss, 112, 48], [family, 101, 43]] as const) {
           expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(140), place: g.repeat(60) })).status, engine).toBe('stored');
-          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(140), g.repeat(60)]);
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(nText), g.repeat(nPlace)]);
         }
-        // A character longer than 16 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
+        // A character longer than 8 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
         // store never refuses what the app kept.
         const stack = 'a' + '\u0301'.repeat(20);
         expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: stack.repeat(140), place: stack.repeat(60) })).status, engine).toBe('stored');
-        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(106), stack.repeat(45)]);
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(53), stack.repeat(22)]);
       } finally {
         intl.Segmenter = seg;
       }
     }
   });
-  it('[NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
+  it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: [NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -540,7 +542,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
 });
 
 describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
-  it('[D5] a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
+  it('[NS-01-R36] a kill leaves no orphan after the sweep: a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'live');
@@ -585,7 +587,7 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
 // ---- Application Support folder, the native step's temporary files ------------------------------------------------
 
 describe('[C9] where the stored copy lives', () => {
-  it('[C9] iOS: <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
+  it('[NS-01-R34] pictures live in Application Support: iOS <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000009'));
     expect(photosDirectory().uri).toBe(`${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/photos/`);
     h.disk = createDisk(androidContainer());
@@ -1038,7 +1040,7 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
     expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
   });
-  it('[D1] the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
+  it('[NS-01-R16c] purge and let-go remove the picture file: the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'kept'); // the letter exists, the move did not run

@@ -185,14 +185,17 @@ export type ResurfacedCard = { id: string; kicker: string; words: string; a11yLa
  * The one letter "A month ago" shows, or null: only when no draft is waiting; the newest letter in the book dated 28
  * to 35 days ago that has words; never a private letter, never a quiet-day mark, never a count or a gap. Never a
  * letter dated to a month only (F09-REQ-003): its stored day is where its month of age starts, not a day the parent
- * gave, so "A month ago" and the date VoiceOver reads would both state a day nobody said.
+ * gave, so "A month ago" and the date VoiceOver reads would both state a day nobody said. Never anything from a book
+ * this person quieted (Quiet this book, F12-REQ-011; NS-23-R8, J-N19): `book.quiet` is required, so no caller can
+ * leave it out. A hidden book is never the open one (store getActiveChildId lists visible books only).
  */
 export function resurfaced(
   entries: readonly (Pick<Entry, 'id' | 'kind' | 'inBook' | 'occurredOn' | 'capturedAt' | 'finalText'> & Partial<Pick<Entry, 'occurredPrecision'>>)[],
   today: string,
   draftsWaiting: number,
+  book: { quiet: boolean },
 ): ResurfacedCard | null {
-  if (draftsWaiting > 0) return null;
+  if (draftsWaiting > 0 || book.quiet) return null;
   const pick = entries
     .filter((e) => {
       const age = daysBetween(e.occurredOn, today);

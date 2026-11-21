@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area D motion prototype: family, sharing and reminders</title>
+<!--
+  Self-contained: no network, no framework. Token values copied from packages/design-tokens/src/tokens.ts (motion,
+  light and dark colours, radii, atmosphere tones) on 20 Nov 2026. Keyed to MOTION.md (D-Mnn) and DESIGN.md (D-Snn).
+  Fictional family only (Asha). Pictures are drawn shapes. System surfaces (iOS share sheet, alerts, lock screen) are
+  grey stand-ins labelled "system": their motion is iOS's, approximated here only so the hand-off can be seen.
+-->
+<style>
+  :root {
+    --bg: #FBF8F3; --surface: #F5EFE7; --raised: #FFFFFF; --text: #2B2722; --muted: #6B645B; --accent: #8A5A3B;
+    --accentSoft: #F1E6DC; --onAccent: #FFFFFF; --line: #E6DED3; --focus: #2F6F8F; --scrim: rgba(43,39,34,0.32);
+    --controlBorder: #8A8175; --success: #3F7A55; --caution: #94661A; --destructive: #B5473A;
+    --sys: #E9E9EE; --sysText: #1C1C1E; --sysMuted: #6E6E73;
+    --gold: #FFE2A8; --amber: #F3C98B;
+    --page: #EDE7DF;
+  }
+  body.dark {
+    --bg: #161412; --surface: #1B1917; --raised: #201D1A; --text: #F2ECE4; --muted: #B3AA9E; --accent: #D9A47E;
+    --accentSoft: #3A2E25; --onAccent: #1E1612; --line: #33302C; --focus: #8CC4DE; --scrim: rgba(0,0,0,0.55);
+    --controlBorder: #857C70; --success: #8CC9A0; --caution: #E3B866; --destructive: #F08C7C;
+    --sys: #2C2C2E; --sysText: #F2F2F7; --sysMuted: #A1A1A6;
+    --page: #0E0D0C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.45 -apple-system, system-ui, "Segoe UI", sans-serif; }
+  header.top { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  header.top h1 { font: 500 20px/1.2 Georgia, serif; margin: 0 16px 0 0; }
+  header.top label { display: inline-flex; gap: 6px; align-items: center; min-height: 44px; cursor: pointer; }
+  header.top select, header.top button { min-height: 44px; font: inherit; color: var(--text); background: var(--raised); border: 1px solid var(--controlBorder); border-radius: 22px; padding: 0 14px; }
+  main { padding: 16px 20px 60px; max-width: 1500px; margin: 0 auto; }
+  .intro { max-width: 900px; color: var(--muted); }
+  .tokens { font: 12px/1.5 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--surface); border-radius: 8px; padding: 10px 12px; max-width: 900px; white-space: pre-wrap; }
+  h2 { font: 500 22px/1.3 Georgia, serif; margin: 32px 0 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+  .demo { background: var(--raised); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .demo h3 { margin: 0; font: 600 14px/1.3 -apple-system, system-ui, sans-serif; }
+  .demo .ids { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+  .demo p.what { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .demo .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .demo .btns button { min-height: 44px; min-width: 44px; font: 500 14px/1 -apple-system, system-ui, sans-serif; color: var(--onAccent); background: var(--accent); border: 0; border-radius: 22px; padding: 0 16px; cursor: pointer; }
+  .demo .btns button.alt { color: var(--text); background: transparent; border: 1px solid var(--controlBorder); }
+  .demo .btns button:focus-visible, header.top button:focus-visible, header.top select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .log { font: 11px/1.45 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--surface); border-radius: 8px; padding: 6px 8px; min-height: 64px; max-height: 140px; overflow: auto; white-space: pre-wrap; }
+
+  /* The phone: 375 x 812 pt drawn at 0.62 scale. */
+  .frame { width: calc(375px * 0.62 + 12px); height: calc(812px * 0.62 + 12px); border-radius: 34px; background: #111; padding: 6px; align-self: center; }
+  .phone { width: 375px; height: 812px; transform: scale(0.62); transform-origin: 0 0; border-radius: 46px; overflow: hidden; position: relative; background: var(--bg); color: var(--text); font: 17px/1.35 -apple-system, system-ui, sans-serif; }
+  .status { height: 47px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 28px 6px; font: 600 15px/1 -apple-system, system-ui, sans-serif; position: relative; z-index: 3; }
+  .content { position: absolute; top: 47px; left: 0; right: 0; bottom: 83px; padding: 12px 20px; overflow: hidden; z-index: 2; }
+  .content.full { bottom: 0; }
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 83px; border-top: 1px solid var(--line); background: var(--raised); display: flex; z-index: 3; }
+  .tabbar div { flex: 1; text-align: center; padding-top: 12px; font: 500 13px/1 -apple-system, system-ui, sans-serif; color: var(--muted); }
+  .tabbar div.on { color: var(--accent); }
+  .tabbar div::before { content: ""; display: block; width: 26px; height: 22px; margin: 0 auto 6px; border-radius: 6px; border: 2px solid currentColor; }
+  .lamp { position: absolute; left: -20%; right: -20%; top: -10%; height: 70%; background: radial-gradient(ellipse at 50% 0%, var(--gold) 0%, var(--amber) 30%, rgba(243,201,139,0.25) 55%, rgba(243,201,139,0) 75%); z-index: 1; pointer-events: none; }
+  body.dark .lamp { mix-blend-mode: screen; filter: brightness(0.35); }
+  .dateline { font: 500 14px/18px -apple-system, system-ui, sans-serif; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+  .serif { font-family: Georgia, "Times New Roman", serif; }
+  .title1 { font: 500 28px/34px Georgia, serif; }
+  .title2 { font: 500 22px/28px Georgia, serif; }
+  .promptHero { font: 400 28px/36px Georgia, serif; }
+  .letter { font: 400 20px/32px Georgia, serif; }
+  .sig { font: italic 400 20px/32px Georgia, serif; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; line-height: 19px; }
+  .btn { min-height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font: 500 18px/22px -apple-system, system-ui, sans-serif; background: var(--accent); color: var(--onAccent); padding: 0 20px; }
+  .btn.out { background: transparent; color: var(--accent); border: 1px solid var(--controlBorder); }
+  .btn.quiet { background: transparent; color: var(--accent); min-height: 44px; }
+  .btn.cap { min-height: 64px; border-radius: 32px; flex: 1; }
+  .row { display: flex; gap: 10px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--raised); border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 6px rgba(43,39,34,0.06); }
+  body.dark .card { border: 1px solid var(--line); }
+  .listrow { min-height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--raised); border-bottom: 1px solid var(--line); overflow: hidden; }
+  .listrow:first-child { border-radius: 14px 14px 0 0; } .listrow:last-child { border-radius: 0 0 14px 14px; border-bottom: 0; }
+  .wash { position: absolute; inset: 0; background: var(--accentSoft); border-radius: inherit; pointer-events: none; }
+  .switch { width: 51px; height: 31px; border-radius: 16px; background: var(--line); position: relative; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .switch.on { background: var(--success); } .switch.on::after { left: 22px; }
+  .scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 10; opacity: 0; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--raised); border-radius: 28px 28px 0 0; z-index: 11; padding: 10px 22px 34px; transform: translateY(110%); }
+  .sheet .grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 14px; }
+  .sys { background: var(--sys); color: var(--sysText); font-family: -apple-system, system-ui, sans-serif; }
+  .syssheet { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 16px; z-index: 20; padding: 14px; transform: translateY(110%); }
+  .syssheet .apps { display: flex; gap: 16px; margin: 14px 0; } .syssheet .apps div { width: 56px; text-align: center; font-size: 11px; color: var(--sysMuted); }
+  .syssheet .apps div::before { content: ""; display: block; width: 56px; height: 56px; border-radius: 14px; background: var(--sysMuted); opacity: 0.4; margin-bottom: 4px; }
+  .sysalert { position: absolute; left: 50%; top: 50%; width: 270px; margin-left: -135px; margin-top: -80px; border-radius: 14px; z-index: 30; text-align: center; padding: 18px 16px 0; opacity: 0; }
+  .sysalert .acts { display: flex; border-top: 1px solid rgba(128,128,128,0.3); margin: 14px -16px 0; } .sysalert .acts div { flex: 1; padding: 11px 0; color: #0A84FF; }
+  .syslabel { font: 600 10px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.5px; color: var(--sysMuted); text-transform: uppercase; }
+  .toast { position: absolute; left: 16px; right: 16px; bottom: 95px; background: var(--text); color: var(--bg); border-radius: 14px; padding: 14px 16px; z-index: 12; display: flex; justify-content: space-between; align-items: center; opacity: 0; font-size: 16px; }
+  .toast b { color: var(--bg); font-weight: 600; }
+  .ring { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 28px; }
+  .thumb { width: 72px; height: 72px; border-radius: 8px; background: linear-gradient(135deg, var(--amber), var(--accentSoft)); position: relative; flex: none; }
+  .thumb::after { content: ""; position: absolute; left: 18px; top: 16px; width: 26px; height: 26px; border-radius: 50%; background: var(--raised); opacity: 0.8; }
+  body.dark .thumb { box-shadow: 0 0 0 1px var(--line); }
+  .bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; position: relative; }
+  .bar i { position: absolute; left: 0; top: 0; height: 3px; border-radius: 2px; background: var(--accent); }
+  .cover { width: 132px; height: 176px; border-radius: 6px 12px 12px 6px; margin: 0 auto; position: relative; }
+  .cover .front, .cover .fly { position: absolute; inset: 0; border-radius: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; }
+  .cover .front { background: var(--accent); color: var(--onAccent); font: 500 22px/28px Georgia, serif; }
+  .cover .fly { background: var(--raised); border: 1px solid var(--line); font: 400 15px/20px Georgia, serif; color: var(--text); opacity: 0; }
+  .lock { position: absolute; inset: 0; background: linear-gradient(180deg, #3b3346, #1d1a22); color: #fff; z-index: 40; }
+  .lock .time { text-align: center; font: 200 82px/1 -apple-system, system-ui, sans-serif; margin-top: 110px; }
+  .lock .note { margin: 40px 12px 0; border-radius: 18px; background: rgba(255,255,255,0.22); padding: 12px 14px; font-size: 15px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; } .chip { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--controlBorder); display: flex; align-items: center; font-size: 16px; }
+  .chip.on { background: var(--accentSoft); border-color: var(--accent); }
+  .note-rm { font: 12px/1.4 -apple-system, system-ui, sans-serif; color: var(--muted); }
+  .never { columns: 2 320px; font-size: 14px; color: var(--muted); max-width: 1100px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Area D motion: family, sharing and reminders</h1>
+  <label><input type="checkbox" id="rm"> Reduce Motion</label>
+  <label><input type="checkbox" id="dark"> Dark</label>
+  <label>Speed <select id="speed"><option value="1">1x</option><option value="0.5">0.5x</option><option value="0.25">0.25x (inspect)</option></select></label>
+  <button id="resetAll" type="button">Reset all</button>
+</header>
+<main>
+  <p class="intro">Each card plays one item of <code>MOTION.md</code>, keyed by its id (D-Mnn) and the screen ids of <code>DESIGN.md</code> (D-Snn). Turn on Reduce Motion to see each item's reduced form; it starts on if your system asks for reduced motion. The log under each phone lists what happens and when: the commit, the haptic and any sound (Paper sounds are off by default, so sounds are listed only as "with Paper sounds on"). Grey surfaces marked "system" are iOS's; their motion here is a stand-in.</p>
+  <div class="tokens" id="tokenReadout"></div>
+
+  <h2>4.1 Share one letter (NS-05)</h2>
+  <div class="grid" id="g-share"></div>
+  <h2>4.2 The other parent: invite, join, undo (NS-25)</h2>
+  <div class="grid" id="g-family"></div>
+  <h2>4.3 Reminders: the ask, settings, typed days (NS-13, NS-18)</h2>
+  <div class="grid" id="g-remind"></div>
+  <h2>4.4 Landing from a notification tap (NS-13-R9, NS-18, NS-32)</h2>
+  <div class="grid" id="g-land"></div>
+  <h2>4.5 Quiet days (NS-07 C5)</h2>
+  <div class="grid" id="g-quiet"></div>
+  <h2>5. Never animate in area D</h2>
+  <ul class="never">
+    <li>No confetti, burst, sparkle, tick or bounce after a share, an invite or a join.</li>
+    <li>No counter ticking anywhere; no badge on the app icon or a tab.</li>
+    <li>No ringing or wiggling bell, no pulsing Share control, no coach mark.</li>
+    <li>No motion that says time passed or something is missing: back-off is invisible (D-M45).</li>
+    <li>No run or chain between quiet days; no wash on a quiet day (D-M60).</li>
+    <li>No word animates: letter words, typed-day words and notification text are never typed on.</li>
+    <li>No loop where nothing is happening; the one loop (D-M18) stops under Reduce Motion.</li>
+    <li>No movement of ours over a system surface.</li>
+  </ul>
+</main>
+
+<script>
+"use strict";
+/* ------------------------------------------------------------------ */
+/* Tokens (tokens.motion), copied                                      */
+/* ------------------------------------------------------------------ */
+var T = {
+  snappy: { k: 520, c: 46, m: 1 },
+  standard: { k: 260, c: 30, m: 1 },
+  gentle: { k: 90, c: 18, m: 1 },
+  fadeMs: 200, exitMs: 160, enter: { dy: 8, ms: 280 }, staggerMs: 30, swapMs: 150, newMarkMs: 1600,
+  lamp: { arriveMs: 1200, leaveMs: 160, returnMs: 280, dimTo: 0.7 },
+  cover: { holdMs: 300, dx: 8 },
+  press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
+  easing: "cubic-bezier(0.2, 0, 0, 1)",
+  waitSweepMs: 1400 /* PROPOSED token (MOTION.md E4); built as SWEEP_MS in join-ask.tsx */
+};
+
+/* ------------------------------------------------------------------ */
+/* Settings                                                            */
+/* ------------------------------------------------------------------ */
+var RM = false, SPEED = 1;
+var rmBox = document.getElementById("rm");
+var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+if (mq && mq.matches) { rmBox.checked = true; RM = true; }
+rmBox.addEventListener("change", function () { RM = rmBox.checked; resetAll(); });
+document.getElementById("dark").addEventListener("change", function (e) { document.body.classList.toggle("dark", e.target.checked); });
+document.getElementById("speed").addEventListener("change", function (e) { SPEED = parseFloat(e.target.value); });
+document.getElementById("resetAll").addEventListener("click", function () { resetAll(); });
+function S(ms) { return ms / SPEED; }
+
+/* ------------------------------------------------------------------ */
+/* Springs: simulated, sampled at 120 Hz into keyframes                */
+/* ------------------------------------------------------------------ */
+var springCache = {};
+function springValues(name) {
+  if (springCache[name]) return springCache[name];
+  var p = T[name], x = 0, v = 0, dt = 1 / 1200, out = [0], acc = 0, t = 0, settle = 0;
+  for (var i = 0; i < 1200 * 3; i++) {
+    var a = (-p.k * (x - 1) - p.c * v) / p.m;
+    v += a * dt; x += v * dt; t += dt; acc += dt;
+    if (Math.abs(1 - x) >= 0.01) settle = t;
+    if (acc >= 1 / 120) { out.push(x); acc = 0; }
+    if (Math.abs(1 - x) < 0.0005 && Math.abs(v) < 0.005) break;
+  }
+  out.push(1);
+  springCache[name] = { values: out, ms: (out.length - 1) * (1000 / 120), settleMs: Math.round(settle * 1000) };
+  return springCache[name];
+}
+(function readout() {
+  var lines = [];
+  ["snappy", "standard", "gentle"].forEach(function (n) {
+    var s = springValues(n), p = T[n];
+    var ratio = (p.c / (2 * Math.sqrt(p.k * p.m))).toFixed(2);
+    lines.push(n + ": stiffness " + p.k + ", damping " + p.c + ", mass " + p.m + " (ratio " + ratio + "), settles to 1% in " + s.settleMs + " ms");
+  });
+  lines.push("fadeMs " + T.fadeMs + ", exitMs " + T.exitMs + ", enter dy " + T.enter.dy + " over " + T.enter.ms + " ms, swapMs " + T.swapMs + ", newMarkMs " + T.newMarkMs + ", staggerMs " + T.staggerMs);
+  lines.push("lamp: arriveMs " + T.lamp.arriveMs + ", leaveMs " + T.lamp.leaveMs + ", returnMs " + T.lamp.returnMs + ", dimTo " + T.lamp.dimTo + "; cover: holdMs " + T.cover.holdMs + ", dx " + T.cover.dx + "; press " + T.press.scale + " / " + T.press.cardScale);
+  lines.push("easing " + T.easing + "; waitSweepMs " + T.waitSweepMs + " (PROPOSED token)");
+  document.getElementById("tokenReadout").textContent = lines.join("\n");
+})();
+
+/* ------------------------------------------------------------------ */
+/* Animation helpers (Web Animations API)                              */
+/* ------------------------------------------------------------------ */
+function Cancelled() {}
+function run(el, frames, ms, opt) {
+  opt = opt || {};
+  if (!el) return Promise.resolve();
+  var a = el.animate(frames, { duration: Math.max(1, S(ms)), delay: S(opt.delay || 0), easing: opt.easing || "linear", fill: "both" });
+  return a.finished.then(function () { try { a.commitStyles(); } catch (e) {} a.cancel(); }, function () {});
+}
+function spring(el, name, frameAt, opt) {
+  var s = springValues(name);
+  var frames = s.values.map(function (v) { return frameAt(v); });
+  return run(el, frames, s.ms, opt);
+}
+function fade(el, from, to, ms, opt) { return run(el, [{ opacity: from }, { opacity: to }], ms, opt); }
+function set(el, styles) { if (el) for (var k in styles) el.style[k] = styles[k]; }
+
+/* House moves */
+function enterEl(el, delay) {
+  if (RM) return fade(el, 0, 1, T.fadeMs, { delay: delay || 0 });
+  return run(el, [{ opacity: 0, transform: "translateY(" + T.enter.dy + "px)" }, { opacity: 1, transform: "translateY(0px)" }], T.enter.ms, { delay: delay || 0, easing: T.easing });
+}
+function exitEl(el) { return fade(el, 1, 0, RM ? T.fadeMs : T.exitMs, { easing: T.easing }); }
+function collapse(el) {
+  var h = el.getBoundingClientRect().height / 0.62;
+  if (RM) { set(el, { height: "0px", minHeight: "0px", padding: "0px", border: "0" }); return Promise.resolve(); }
+  set(el, { minHeight: "0px" });
+  return spring(el, "standard", function (v) { return { height: (h * (1 - v)) + "px", paddingTop: (8 * (1 - v)) + "px", paddingBottom: (8 * (1 - v)) + "px" }; });
+}
+function grow(el, toPx) {
+  if (RM) { set(el, { height: toPx + "px" }); return Promise.resolve(); }
+  var from = el.getBoundingClientRect().height / 0.62;
+  return spring(el, "standard", function (v) { return { height: (from + (toPx - from) * v) + "px" }; });
+}
+function sheetIn(sheet, scrim) {
+  if (RM) { set(sheet, { transform: "translateY(0)" }); return Promise.all([fade(sheet, 0, 1, T.fadeMs), fade(scrim, 0, 1, T.fadeMs)]); }
+  set(sheet, { opacity: 1 });
+  return Promise.all([spring(sheet, "standard", function (v) { return { transform: "translateY(" + ((1 - v) * 110) + "%)" }; }), fade(scrim, 0, 1, T.fadeMs)]);
+}
+function sheetOut(sheet, scrim) {
+  if (RM) return Promise.all([fade(sheet, 1, 0, T.fadeMs), fade(scrim, 1, 0, T.fadeMs)]);
+  return Promise.all([spring(sheet, "standard", function (v) { return { transform: "translateY(" + (v * 110) + "%)" }; }), fade(scrim, 1, 0, T.exitMs)]);
+}
+/* iOS stand-ins: approximations of the system's own motion; under Reduce Motion iOS cross-fades. */
+function sysSheetIn(el) {
+  if (RM) { set(el, { transform: "translateY(0)" }); return fade(el, 0, 1, 250); }
+  return run(el, [{ transform: "translateY(110%)" }, { transform: "translateY(0)" }], 380, { easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+}
+function sysSheetOut(el) {
+  if (RM) return fade(el, 1, 0, 250);
+  return run(el, [{ transform: "translateY(0)" }, { transform: "translateY(110%)" }], 300, { easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+}
+function sysAlertIn(el) {
+  if (RM) return fade(el, 0, 1, 200);
+  return run(el, [{ opacity: 0, transform: "scale(1.15)" }, { opacity: 1, transform: "scale(1)" }], 250, { easing: "ease-out" });
+}
+function sysAlertOut(el) { return fade(el, 1, 0, 200); }
+function pressOn(el, card) {
+  if (RM) return fade(el, 1, T.press.opacity, 80);
+  var s = card ? T.press.cardScale : T.press.scale;
+  return spring(el, "snappy", function (v) { return { transform: "scale(" + (1 - (1 - s) * v) + ")" }; });
+}
+function pressOff(el, card) {
+  if (RM) return fade(el, T.press.opacity, 1, 80);
+  var s = card ? T.press.cardScale : T.press.scale;
+  return spring(el, "snappy", function (v) { return { transform: "scale(" + (s + (1 - s) * v) + ")" }; });
+}
+function lampTo(el, from, to, ms) {
+  if (RM) { set(el, { opacity: String(to) }); return Promise.resolve(); }
+  return run(el, [{ opacity: from }, { opacity: to }], ms, { easing: T.easing });
+}
+function swapText(el, text) {
+  if (RM) { el.textContent = text; return Promise.resolve(); }
+  return fade(el, 1, 0, T.swapMs / 2).then(function () { el.textContent = text; return fade(el, 0, 1, T.swapMs / 2); });
+}
+
+/* ------------------------------------------------------------------ */
+/* Demo framework                                                      */
+/* ------------------------------------------------------------------ */
+var demos = [];
+function demo(group, cfg) { demos.push(cfg); cfg.group = group; }
+function mount(cfg) {
+  var box = document.createElement("section");
+  box.className = "demo";
+  box.innerHTML = '<h3></h3><div class="ids"></div><p class="what"></p><div class="frame"><div class="phone"></div></div><div class="btns"></div><div class="log" aria-live="polite"></div><div class="note-rm"></div>';
+  box.querySelector("h3").textContent = cfg.title;
+  box.querySelector(".ids").textContent = cfg.ids;
+  box.querySelector(".what").textContent = cfg.what;
+  box.querySelector(".note-rm").textContent = "Reduce Motion: " + cfg.rm;
+  var phone = box.querySelector(".phone"), logEl = box.querySelector(".log"), btns = box.querySelector(".btns");
+  var state = { run: 0 };
+  cfg.reset = function () {
+    state.run++;
+    phone.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); });
+    phone.innerHTML = "";
+    phone.appendChild(cfg.scene());
+    logEl.textContent = "";
+  };
+  (cfg.plays || [{ label: "Play", fn: cfg.play }]).forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = p.label;
+    b.addEventListener("click", function () {
+      cfg.reset();
+      var my = state.run, t0 = performance.now();
+      var ctx = {
+        q: function (sel) { return phone.querySelector(sel); },
+        phone: phone,
+        log: function (msg) { if (state.run !== my) throw new Cancelled(); logEl.textContent += "t=" + Math.round((performance.now() - t0) * SPEED) + " ms  " + msg + "\n"; logEl.scrollTop = logEl.scrollHeight; },
+        wait: function (ms) { return new Promise(function (res, rej) { setTimeout(function () { if (state.run !== my) rej(new Cancelled()); else res(); }, S(ms)); }); },
+        alive: function () { return state.run === my; }
+      };
+      Promise.resolve().then(function () { return p.fn(ctx); }).then(function () { if (state.run === my) ctx.log("end"); }).catch(function (e) { if (!(e instanceof Cancelled)) console.error(e); });
+    });
+    btns.appendChild(b);
+  });
+  var r = document.createElement("button");
+  r.type = "button"; r.className = "alt"; r.textContent = "Reset";
+  r.addEventListener("click", function () { cfg.reset(); });
+  btns.appendChild(r);
+  document.getElementById(cfg.group).appendChild(box);
+  cfg.reset();
+}
+function resetAll() { demos.forEach(function (d) { d.reset(); }); }
+function el(html) { var d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; }
+function wrap(html) { var d = document.createElement("div"); d.style.position = "absolute"; d.style.inset = "0"; d.innerHTML = html; return d; }
+
+/* ------------------------------------------------------------------ */
+/* Scenes (fictional family: Asha)                                     */
+/* ------------------------------------------------------------------ */
+var STATUS = '<div class="status"><span>20:30</span><span>100%</span></div>';
+function tabbar(on) {
+  return '<div class="tabbar">' + ["Home", "Book", "Me"].map(function (t) { return '<div class="' + (t === on ? "on" : "") + '">' + t + "</div>"; }).join("") + "</div>";
+}
+function letterPage() {
+  return STATUS +
+    '<div class="content full"><div class="small muted" style="min-height:44px;display:flex;align-items:center">Back</div>' +
+    '<div class="dateline">Month 4 . Tuesday night . Papa</div>' +
+    '<p class="letter">Asha said a first word today. It was ball, or something very close to ball, and she said it twice to be sure.</p>' +
+    '<p class="sig">From Papa</p>' +
+    '<div class="stack" style="margin-top:18px"><div class="btn out" id="share">Share this letter</div><div class="btn out">Delete</div></div></div>';
+}
+function previewSheet(withPicture) {
+  return '<div class="scrim"></div><div class="sheet" id="preview"><div class="grab"></div>' +
+    '<div class="title2" style="margin-bottom:10px">This will be sent</div>' +
+    '<div class="card" style="background:var(--surface);box-shadow:none"><div class="small muted">Tuesday 14 July 2026</div><div class="letter" style="font-size:17px;line-height:26px">Asha said a first word today. It was ball, or something very close to ball, and she said it twice.</div><div class="small muted">From Papa</div><div id="thumbrow" style="display:none;margin-top:8px"><span class="thumb"></span></div></div>' +
+    '<div class="small" style="margin:10px 0 4px">The words always go</div>' +
+    (withPicture ? '<div class="row" style="justify-content:space-between;align-items:center;min-height:44px"><span>Include the picture</span><span class="switch" id="sw"></span></div>' : "") +
+    '<div class="small muted" style="margin-top:6px">Sent as it reads in the book, with small fixes</div>' +
+    '<div class="small muted">It goes only where you send it, and cannot be taken back once sent</div>' +
+    '<div class="row" style="margin-top:14px"><div class="btn" id="cont" style="flex:1">Continue</div><div class="btn out" id="notnow" style="flex:1">Not now</div></div></div>';
+}
+function iosShare() {
+  return '<div class="syssheet sys" id="ios"><div class="syslabel">iOS share sheet (system)</div><div class="apps"><div>Messages</div><div>Mail</div><div>WhatsApp</div><div>More</div></div><div style="text-align:center;color:#0A84FF;padding:8px">Cancel</div></div>';
+}
+function iosAlert(title, a, b) {
+  return '<div class="sysalert sys" id="alert"><div class="syslabel">system alert</div><div style="font-weight:600;margin-top:6px">' + title + '</div><div class="acts"><div>' + a + '</div><div>' + b + "</div></div></div>";
+}
+function homeScreen(opts) {
+  opts = opts || {};
+  return '<div class="lamp" id="lamp" style="opacity:' + (opts.lamp == null ? 1 : opts.lamp) + '"></div>' + STATUS +
+    '<div class="content"><div class="dateline" data-enter>Asha . 7 months</div>' +
+    '<div class="title2" style="margin:6px 0 30px" data-enter>Good evening, Papa</div>' +
+    (opts.typed ? '<div id="typed" class="small" style="margin-bottom:10px;' + (opts.typedHidden ? "display:none" : "") + '" data-enter>Nursery starts</div>' : "") +
+    '<div class="promptHero" id="prompt" data-enter>What made Asha laugh today?</div>' +
+    '<div class="small muted" style="margin-top:10px">Another thought</div>' +
+    '<div style="position:absolute;left:20px;right:20px;bottom:10px" class="stack"><div class="row"><div class="btn cap">Speak</div><div class="btn cap out">Type</div></div>' +
+    '<div style="position:relative;min-height:48px"><div class="btn quiet" id="notmuch" style="position:absolute;left:0;right:0">Not much today</div>' +
+    '<div id="kept" style="position:absolute;left:0;right:0;opacity:0;display:flex;justify-content:center;align-items:center;gap:12px;min-height:44px"><span>A quiet day, kept.</span><span class="btn quiet" id="undo" style="padding:0 10px">Undo</span></div></div></div></div>' +
+    tabbar("Home");
+}
+function bookScreen(lamp) {
+  return '<div class="lamp" id="lamp" style="opacity:' + (lamp == null ? 0.6 : lamp) + '"></div>' + STATUS +
+    '<div class="content"><div class="title1" id="bookhead" style="margin:6px 0 16px">Asha\'s book</div>' +
+    '<div class="stack"><div class="card"><div class="dateline">Month 4 . Tuesday night . Papa</div><div class="letter" style="font-size:18px;line-height:28px">Asha said a first word today.</div></div>' +
+    '<div class="card"><div class="dateline">Month 4 . Sunday</div><div class="muted">A quiet day</div></div>' +
+    '<div class="card"><div class="dateline">Month 4 . Friday . Mama</div><div class="letter" style="font-size:18px;line-height:28px">The rain stopped just for you.</div></div></div></div>' + tabbar("Book");
+}
+function meScreen(extra) {
+  return STATUS + '<div class="content"><div class="title1" style="margin:6px 0 16px">Me</div><div class="stack" style="gap:0" id="merows">' +
+    '<div class="listrow" id="mrow1"><span>Reminders</span><span class="muted">Tue, Sat</span></div>' +
+    '<div class="listrow" id="mrow2"><span>Asha\'s book</span><span class="muted">&gt;</span></div>' +
+    '<div class="listrow" id="mrow3"><span>Plan</span><span class="muted"></span></div>' +
+    '<div class="listrow"><span>Take the book with you</span><span></span></div></div>' + (extra || "") + "</div>" + tabbar("Me");
+}
+
+/* ------------------------------------------------------------------ */
+/* 4.1 Share one letter                                                */
+/* ------------------------------------------------------------------ */
+demo("g-share", {
+  title: "Share: press, then the preview rises", ids: "D-M01, D-M02 | D-S01 -> D-S02.default",
+  what: "Press 0.97 on snappy (no haptic). The house sheet rises on standard; scrim fades over fadeMs. Content is in place on the first frame; nothing inside enters.",
+  rm: "press is an opacity dip to 0.9; sheet and scrim fade in over 200 ms, no travel.",
+  scene: function () { return wrap(letterPage() + previewSheet(true)); },
+  play: function (c) {
+    var b = c.q("#share");
+    c.log("touch down: press (snappy)"); return pressOn(b).then(function () { return c.wait(90); }).then(function () {
+      c.log("release; haptic: none"); pressOff(b);
+      c.log("preview sheet mounts; rise starts"); return sheetIn(c.q("#preview"), c.q(".scrim"));
+    }).then(function () { c.log("sheet settled"); });
+  }
+});
+demo("g-share", {
+  title: "Include the picture: on, off", ids: "D-M03, D-M04 | D-S02.picture-off <-> D-S02.picture-on",
+  what: "The native switch moves as iOS moves it. The thumbnail appears and goes at once: no motion of ours (card 15).",
+  rm: "same (nothing of ours moves).",
+  scene: function () { var w = wrap(letterPage() + previewSheet(true)); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#preview"), { transform: "translateY(0)" }); return w; },
+  plays: [{ label: "Toggle on then off", fn: function (c) {
+    var sw = c.q("#sw"), th = c.q("#thumbrow");
+    c.log("switch on (native switch's own haptic; we add none)"); sw.classList.add("on"); th.style.display = "block";
+    return c.wait(1200).then(function () { c.log("switch off; thumbnail removed at once"); sw.classList.remove("on"); th.style.display = "none"; });
+  } }]
+});
+demo("g-share", {
+  title: "The picture could not be added", ids: "D-M05 | D-S02.picture-failed (share_temp_write_failed)",
+  what: "Continue with the picture on, and the temporary copy fails: the share sheet does not open; the line replaces the thumbnail in place (swapMs cross-fade); the toggle returns to off (native switch). No haptic, no sound. The next Continue sends the words.",
+  rm: "instant swap.",
+  scene: function () { var w = wrap(letterPage() + previewSheet(true)); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#preview"), { transform: "translateY(0)" }); w.querySelector("#sw").classList.add("on"); w.querySelector("#thumbrow").style.display = "block"; return w; },
+  play: function (c) {
+    var row = c.q("#thumbrow");
+    c.log("Continue: temp copy fails; the share sheet does not open (no haptic, no sound)");
+    function put() { row.innerHTML = '<div class="small" style="color:var(--caution);min-height:44px;display:flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:16px;height:16px;border-radius:8px;border:2px solid currentColor;display:inline-block"></span>The picture could not be added. The words will still go.</div>'; c.q("#sw").classList.remove("on"); c.log("line in place of the thumbnail; toggle returns to off; VoiceOver announces"); }
+    if (RM) { put(); return Promise.resolve(); }
+    return fade(row, 1, 0, T.swapMs / 2).then(function () { put(); return fade(row, 0, 1, T.swapMs / 2); });
+  }
+});
+demo("g-share", {
+  title: "Continue: iOS share sheet, then back to the letter", ids: "D-M06, D-M07 | D-S02 -> D-S03 -> D-S01",
+  what: "iOS's sheet rises from the letter page while our preview and scrim fade out in place (exitMs, no travel): one thing moves. When the share sheet completes (any outcome, unread), the parent is on the unchanged letter page, focus on Share. No toast, no haptic, no sound.",
+  rm: "iOS cross-fades its sheet; ours fades the same way (already opacity only).",
+  scene: function () { var w = wrap(letterPage() + previewSheet(false) + iosShare()); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#preview"), { transform: "translateY(0)" }); return w; },
+  play: function (c) {
+    c.log("Continue (haptic: none)"); return pressOn(c.q("#cont")).then(function () {
+        pressOff(c.q("#cont"));
+        c.log("system: share sheet presents from the letter page; our preview fades out in place");
+        return Promise.all([sysSheetIn(c.q("#ios")), fade(c.q("#preview"), 1, 0, T.exitMs, { easing: T.easing }), fade(c.q(".scrim"), 1, 0, T.exitMs, { easing: T.easing })]);
+      })
+      .then(function () { return c.wait(900); })
+      .then(function () { c.log("system: share sheet completes; result not read; temp file deleted"); return sysSheetOut(c.q("#ios")); })
+      .then(function () { c.log("focus returns to Share (ring shown); no toast, no haptic"); c.q("#share").classList.add("ring"); });
+  }
+});
+demo("g-share", {
+  title: "Not now", ids: "D-M08 | D-S02 -> D-S01",
+  what: "The sheet exits on standard, scrim over exitMs. Letter page unchanged; focus to Share.",
+  rm: "sheet and scrim fade out over 200 ms.",
+  scene: function () { var w = wrap(letterPage() + previewSheet(false)); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#preview"), { transform: "translateY(0)" }); return w; },
+  play: function (c) { c.log("Not now (haptic: none)"); return sheetOut(c.q("#preview"), c.q(".scrim")).then(function () { c.q("#share").classList.add("ring"); c.log("focus on Share"); }); }
+});
+
+/* ------------------------------------------------------------------ */
+/* 4.2 The other parent                                                */
+/* ------------------------------------------------------------------ */
+function inviteSheet() {
+  return '<div class="scrim"></div><div class="sheet" id="inv" style="top:60px;border-radius:12px 12px 0 0"><div class="syslabel" style="margin-bottom:8px">modal sheet (platform rise)</div>' +
+    '<div class="cover" style="width:96px;height:128px;margin-bottom:12px"><div class="front" style="font-size:18px">Asha</div></div>' +
+    '<div class="title2">Invite Asha\'s co-parent</div><p class="small">They will be able to read every letter in this book that is not private, including the ones already there.</p>' +
+    '<div class="btn out" id="sendlink" style="margin-top:12px">Share invite link</div><div class="btn out" style="margin-top:8px">Not now</div></div>';
+}
+demo("g-family", {
+  title: "Invite: row, sheet, share sheet, back", ids: "D-M11 to D-M14, D-M21, D-M24 | D-S12 -> D-S13 -> D-S18",
+  what: "Row press; the invite route rises as a platform modal; iOS's share sheet over it; when the link goes, our sheet closes, the toast enters and the pending row enters. No success haptic (change from built).",
+  rm: "platform reduced presentations; toast and row fade.",
+  scene: function () {
+    return wrap(STATUS + '<div class="content"><div class="title1" style="margin:6px 0 16px">Who writes to Asha</div><div class="stack" style="gap:0" id="rows"><div class="listrow" id="me1"><span class="sig" style="font-size:18px">From Papa</span><span class="muted small">You</span></div></div><div class="listrow" id="invrow" style="margin-top:16px;border-radius:14px"><span>Write this book together</span><span class="muted">&gt;</span></div></div>' + tabbar("Me") + inviteSheet() + iosShare() + '<div class="toast" id="toast"><span>The invite waits until they join.</span></div>');
+  },
+  play: function (c) {
+    var row = c.q("#invrow");
+    c.log("row press (haptic: none)"); return pressOn(row).then(function () { pressOff(row); c.log("platform: modal sheet rises"); return sysSheetInModal(c); })
+      .then(function () { return c.wait(500); })
+      .then(function () { var b = c.q("#sendlink"); c.log("Share invite link: label swaps to Getting the link ready (swapMs)"); return swapText(b, "Getting the link ready"); })
+      .then(function () { c.log("system share sheet"); return sysSheetIn(c.q("#ios")); })
+      .then(function () { return c.wait(800); })
+      .then(function () { c.log("system: sent; haptic: none (built played success)"); return sysSheetOut(c.q("#ios")); })
+      .then(function () { c.log("platform: our sheet closes"); return Promise.all([sysSheetOut(c.q("#inv")), fade(c.q(".scrim"), 1, 0, 250)]); })
+      .then(function () {
+        c.log("toast enters; pending row enters");
+        var r = el('<div class="listrow" style="opacity:0"><span>Invited, open until 27 Nov</span><span class="muted small">Share again</span></div>');
+        c.q("#rows").appendChild(r);
+        return Promise.all([enterEl(c.q("#toast")), enterEl(r, 40)]);
+      });
+  }
+});
+function sysSheetInModal(c) { set(c.q("#inv"), { opacity: 1 }); return Promise.all([sysSheetIn(c.q("#inv")), fade(c.q(".scrim"), 0, 1, 250)]); }
+
+function joinSheet(inner) {
+  return '<div class="scrim" style="opacity:1"></div><div class="sheet" id="join" style="top:60px;border-radius:12px 12px 0 0;transform:none">' + inner + "</div>";
+}
+var PEEK = '<div id="step"><div class="small muted" style="margin-top:20px">Opening the invite</div></div>';
+var PEEK_BODY = '<div class="title2" style="margin-top:20px">Join this book as a parent?</div><div style="font-weight:600;margin-top:8px">Invited by Papa</div><div class="small muted">Parent</div><p class="small">You will both read every letter in the book that is not private. Join only if you know who sent you this link.</p><p class="small muted">Terms . Privacy Policy . Consumer Health Data Privacy Policy</p><div class="btn out" id="joinbtn" style="margin-top:12px">Join the book</div><div class="btn out" style="margin-top:8px">Not now</div>';
+demo("g-family", {
+  title: "Join: one sheet, views cross-fade", ids: "D-M15, D-M16 | D-S15.loading -> D-S15.default + D-S16 -> D-S16.joining -> .error-join_failed",
+  what: "Peek and agreement are one sheet. Each new view fades in over the last in place (fadeMs); the sheet does not move. Join the book swaps its label (swapMs). Errors are lines: no shake, no sound. No child name before agreement.",
+  rm: "the same 200 ms fade (already the reduced form).",
+  scene: function () { return wrap(meScreen() + joinSheet(PEEK)); },
+  play: function (c) {
+    var step = c.q("#step");
+    return c.wait(500).then(function () {
+      c.log("peek answered: the view fades in over the last (fadeMs)");
+      step.innerHTML = PEEK_BODY;
+      return fade(step, 0, 1, T.fadeMs);
+    }).then(function () { return c.wait(800); }).then(function () {
+      c.log("Join the book: label swaps (swapMs)"); return swapText(c.q("#joinbtn"), "Joining the book");
+    }).then(function () { return c.wait(700); }).then(function () {
+      c.log("lost answer: the error view fades in (no shake, no sound)");
+      step.innerHTML = '<div class="title2" style="margin-top:20px">Join this book as a parent?</div><p class="small">Joining did not finish. Nothing has changed. Try again.</p><div class="btn out" style="margin-top:12px">Try again</div><div class="btn out" style="margin-top:8px">Not now</div>';
+      return fade(step, 0, 1, T.fadeMs);
+    });
+  }
+});
+demo("g-family", {
+  title: "Joined: the cover opens", ids: "D-M17 | D-S16 -> D-S17.joined",
+  what: "Commit, then success haptic (and invite_accepted only with Paper sounds on). The step fades in; the cover fades in, holds 300 ms, then cross-fades to the flyleaf with an 8 pt shift on standard. About 800 ms: exception 5 for a ruling.",
+  rm: "shown open at once; one 200 ms fade.",
+  scene: function () { return wrap(meScreen() + joinSheet('<div id="step" style="opacity:0"><div class="title2" style="margin:16px 0 18px;text-align:center">You are in Asha\'s book</div><div class="cover" id="cov" style="opacity:0"><div class="front">Asha</div><div class="fly">Asha<br><span style="font-style:italic;font-size:13px">From Mama</span></div></div><div class="btn" style="margin-top:24px">Open the book</div></div>')); },
+  play: function (c) {
+    c.log("accept committed; haptic: success; sound: invite_accepted (Paper sounds on only)");
+    var step = c.q("#step"), cov = c.q("#cov"), front = c.q(".front"), fly = c.q(".fly");
+    if (RM) { set(front, { opacity: "0" }); set(fly, { opacity: "1" }); set(cov, { opacity: "1" }); return fade(step, 0, 1, T.fadeMs).then(function () { c.log("open at once"); }); }
+    return Promise.all([fade(step, 0, 1, T.fadeMs), fade(cov, 0, 1, T.fadeMs)]).then(function () { c.log("hold " + T.cover.holdMs + " ms"); return c.wait(T.cover.holdMs); })
+      .then(function () {
+        c.log("front cross-fades to flyleaf, " + T.cover.dx + " pt shift on standard");
+        return Promise.all([
+          spring(front, "standard", function (v) { return { opacity: 1 - v, transform: "translateX(" + (-T.cover.dx * v) + "px)" }; }),
+          spring(fly, "standard", function (v) { return { opacity: v, transform: "translateX(" + (T.cover.dx * (1 - v)) + "px)" }; })
+        ]);
+      });
+  }
+});
+demo("g-family", {
+  title: "Waiting for the book: the one loop", ids: "D-M18 | D-S17.waiting",
+  what: "A slow sweep of a short segment while sync really is bringing the book. No number, no percent. Hidden from VoiceOver; the line is announced once. Exception 6 for a ruling; token waitSweepMs PROPOSED.",
+  rm: "the segment rests still at the start (also under Low Power Mode once guarded).",
+  scene: function () { return wrap(meScreen() + joinSheet('<div class="title2" style="margin:24px 0 12px">You are in Asha\'s book</div><p class="small">Bringing the book to this phone.</p><div class="bar" style="margin-top:14px"><i id="seg" style="width:33%"></i></div>')); },
+  plays: [{ label: "Play 3 sweeps", fn: function (c) {
+    var seg = c.q("#seg");
+    if (RM) { c.log("Reduce Motion: still"); return Promise.resolve(); }
+    var w = c.q(".bar").getBoundingClientRect().width / 0.62, travel = w - w / 3;
+    c.log("sweep " + T.waitSweepMs + " ms, ease in-out, back and forth");
+    return run(seg, [{ transform: "translateX(0px)" }, { transform: "translateX(" + travel + "px)" }, { transform: "translateX(0px)" }, { transform: "translateX(" + travel + "px)" }], T.waitSweepMs * 3, { easing: "ease-in-out" });
+  } }]
+});
+demo("g-family", {
+  title: "Open the book: the Book's light arrives", ids: "D-M19 | D-S17 -> Book (second parent's first Book)",
+  what: "The join sheet closes (platform); the Book is under it; its lamp arrives from 0 to 0.6 over arriveMs (1200 ms). Cards are in place; nothing enters but the light.",
+  rm: "lamp at 0.6 at once; the system's reduced close.",
+  scene: function () { return wrap(bookScreen(0) + joinSheet('<div class="title2" style="margin:24px 0 12px">You are in Asha\'s book</div><div class="btn" style="margin-top:24px">Open the book</div>')); },
+  play: function (c) {
+    c.log("platform: sheet closes"); return Promise.all([sysSheetOut(c.q("#join")), fade(c.q(".scrim"), 1, 0, 250)])
+      .then(function () { c.log("lamp arrives 0 -> 0.6 over " + T.lamp.arriveMs + " ms"); return lampTo(c.q("#lamp"), 0, 0.6, T.lamp.arriveMs); });
+  }
+});
+function familyRows(withCo, withPending) {
+  return STATUS + '<div class="content"><div class="small muted" style="min-height:44px;display:flex;align-items:center;justify-content:flex-end">Close</div><div class="title1" style="margin:0 0 16px">Who writes to Asha</div><div class="stack" style="gap:0" id="rows">' +
+    '<div class="listrow"><span class="sig" style="font-size:18px">From Papa</span><span class="muted small">You</span></div>' +
+    (withCo ? '<div class="listrow" id="co" style="position:relative"><div class="wash" id="wash" style="opacity:0;border-radius:0"></div><span class="sig" style="font-size:18px;position:relative">From Mama</span><span class="muted small" style="position:relative">Co-parent</span></div>' : "") +
+    (withPending ? '<div class="listrow" id="pend"><span>Invited, open until 27 Nov</span><span class="muted small">Cancel invite</span></div>' : "") +
+    '</div></div><div class="toast" id="toast"><span id="toasttext"></span></div>';
+}
+demo("g-family", {
+  title: "The other parent's first row", ids: "D-M20, D-M22 | D-S18",
+  what: "First time this phone lists the co-parent: the row enters (280 ms) and carries the accentSoft wash fading over newMarkMs (1600 ms), once. Exception 3.",
+  rm: "row in place; wash shows still, then fades.",
+  scene: function () { var w = wrap(familyRows(true, false)); set(w.querySelector("#co"), { opacity: "0" }); return w; },
+  play: function (c) {
+    var co = c.q("#co"), wash = c.q("#wash");
+    set(wash, { opacity: "1" });
+    c.log("row enters with the wash");
+    var e = RM ? (set(co, { opacity: "1" }), Promise.resolve()) : enterEl(co);
+    return e.then(function () { c.log("wash fades over " + T.newMarkMs + " ms"); return fade(wash, 1, 0, T.newMarkMs, { easing: T.easing }); });
+  }
+});
+demo("g-family", {
+  title: "Cancel invite", ids: "D-M23, D-M24 | D-S18",
+  what: "System alert confirms; commit; warning haptic (change from built soft); the row leaves over exitMs and the list closes up on standard; the toast enters.",
+  rm: "row fades over 200 ms; list jumps; toast fades.",
+  scene: function () { return wrap(familyRows(false, true) + iosAlert("Cancel this invite?", "Keep", "Cancel invite")); },
+  play: function (c) {
+    c.log("system alert"); return sysAlertIn(c.q("#alert")).then(function () { return c.wait(700); })
+      .then(function () { c.log("confirmed: commit; haptic: warning"); return sysAlertOut(c.q("#alert")); })
+      .then(function () { var p = c.q("#pend"); c.log("row exits, list closes up"); return exitEl(p).then(function () { return collapse(p); }); })
+      .then(function () { c.q("#toasttext").textContent = "Invite cancelled."; c.log("toast enters"); return enterEl(c.q("#toast")); });
+  }
+});
+demo("g-family", {
+  title: "Undo the join (within 72 hours)", ids: "D-M25, D-M26 | D-S18 -> D-S19 -> D-S18",
+  what: "Our confirm sheet rises; it says what happens to the other parent's letters. Confirm: commit, warning, sheet exits, the row leaves and the list closes up; one line as a toast.",
+  rm: "sheet fades; row fades; list jumps.",
+  scene: function () {
+    return wrap(familyRows(true, false) + '<div class="scrim"></div><div class="sheet" id="confirm"><div class="grab"></div><div class="title2">Undo the join?</div><p class="small">Mama\'s phone stops receiving this book. Their letters leave the book and stay theirs.</p><div class="btn" style="margin-top:8px">Keep them in the book</div><div class="btn quiet" id="undojoin" style="color:var(--destructive)">Undo join</div></div>');
+  },
+  play: function (c) {
+    c.log("confirm sheet rises (standard)"); return sheetIn(c.q("#confirm"), c.q(".scrim")).then(function () { return c.wait(700); })
+      .then(function () { c.log("confirmed: commit; haptic: warning"); return sheetOut(c.q("#confirm"), c.q(".scrim")); })
+      .then(function () { var r = c.q("#co"); return exitEl(r).then(function () { return collapse(r); }); })
+      .then(function () { c.q("#toasttext").textContent = "Mama is no longer in Asha's book."; return enterEl(c.q("#toast")); });
+  }
+});
+demo("g-family", {
+  title: "The other parent's phone after an undo", ids: "D-M27 | D-S20",
+  what: "One AppNote line at the top of the Book fades in once (fadeMs); on the next visit it is simply absent. No alert, no sound, no haptic: this phone did not act.",
+  rm: "the same fade.",
+  scene: function () { var w = wrap(bookScreen(0.6)); var n = el('<div id="left" class="small" style="opacity:0;margin:0 0 12px;padding:10px 12px;border-radius:14px;background:var(--surface)">This book is no longer shared with you. Your own letters stay yours, to read, export or delete.</div>'); var h = w.querySelector("#bookhead"); h.parentNode.insertBefore(n, h.nextSibling); return w; },
+  play: function (c) { c.log("next sync: line fades in once (fadeMs)"); return fade(c.q("#left"), 0, 1, T.fadeMs); }
+});
+
+/* ------------------------------------------------------------------ */
+/* 4.3 Reminders                                                       */
+/* ------------------------------------------------------------------ */
+function askSheet() {
+  return '<div class="scrim"></div><div class="sheet" id="ask" style="overflow:hidden"><div style="width:56px;height:56px;border-radius:28px;background:var(--surface);margin:14px 0 14px"></div>' +
+    '<div class="title2">A gentle nudge, now and then?</div><p class="small" style="margin:6px 0 10px">A couple of evenings a week, at a time you pick, to add to Asha\'s book. Never late at night.</p>' +
+    '<div id="rhythm" class="row" style="justify-content:space-between;align-items:center;min-height:44px;overflow:hidden"><span class="small muted">A few times a week at 8:30 PM</span><span class="btn quiet" id="change" style="padding:0 6px;font-size:16px">Change the time</span></div>' +
+    '<div class="stack" style="margin-top:8px"><div class="btn out" id="yes">Yes, evenings</div><div class="btn out" id="none">No reminders</div></div></div>';
+}
+demo("g-remind", {
+  title: "The ask waits, then rises", ids: "D-M28, D-M29 | D-S04.default",
+  what: "After the first kept letter: the ask waits until the Book's arrival has landed (lamp returned, returnMs), then rises on standard with its scrim. No close, no swipe. The bell is still. (Built: RN Modal slide; E1 moves it to the house Sheet.)",
+  rm: "sheet and scrim fade over 200 ms; the wait is shorter because the arrival is.",
+  scene: function () { var w = wrap(bookScreen(0.6) + askSheet()); return w; },
+  play: function (c) {
+    c.log("Book arrival landing (wash, lamp return)"); return c.wait(T.lamp.returnMs).then(function () { c.log("ask rises (haptic: none)"); return sheetIn(c.q("#ask"), c.q(".scrim")); });
+  }
+});
+demo("g-remind", {
+  title: "Change the time, then the iOS alert, then the outcome", ids: "D-M30, D-M31, D-M32 | D-S04.pickTime -> D-S05 -> D-S04.after-yes",
+  what: "Change the time (a control, no haptic): the rhythm line cross-fades (swapMs) into Remind me at [time] with the system picker; the answers under the finger do not move. Yes, evenings: commit, tap haptic, sheet exits, iOS alert, outcome toast.",
+  rm: "instant height, swapMs swap; sheet fades; toast fades.",
+  scene: function () { var w = wrap(bookScreen(0.6) + askSheet() + iosAlert("Allow notifications?", "Don't Allow", "Allow") + '<div class="toast" id="toast"><span>Reminders are on. Next: Tuesday at 8:30 PM.</span><b>Change</b></div>'); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#ask"), { transform: "translateY(0)" }); return w; },
+  play: function (c) {
+    var r = c.q("#rhythm");
+    c.log("Change the time (haptic: none): rhythm line swaps in place");
+    function put() { r.innerHTML = '<span>Remind me at</span><span class="chip">8:30 PM</span>'; }
+    var swap = RM ? (put(), Promise.resolve()) : fade(r, 1, 0, T.swapMs / 2).then(function () { put(); return fade(r, 0, 1, T.swapMs / 2); });
+    return swap.then(function () { c.log("system compact picker opens its own popover (not drawn)"); return c.wait(900); })
+      .then(function () { c.log("Yes, evenings: commit; haptic tap; sheet exits"); return sheetOut(c.q("#ask"), c.q(".scrim")); })
+      .then(function () { c.log("system: permission alert"); return sysAlertIn(c.q("#alert")); })
+      .then(function () { return c.wait(800); })
+      .then(function () { c.log("system: answered"); return sysAlertOut(c.q("#alert")); })
+      .then(function () { c.log("outcome toast enters (no success haptic)"); return enterEl(c.q("#toast")); });
+  }
+});
+demo("g-remind", {
+  title: "No reminders", ids: "D-M33 | D-S04 -> under it",
+  what: "Same tap haptic as the other answers (equal choices, change from built). Sheet exits; the help toast enters. No iOS alert.",
+  rm: "fades.",
+  scene: function () { var w = wrap(bookScreen(0.6) + askSheet() + '<div class="toast" id="toast"><span>You can turn reminders on in Me whenever you like.</span></div>'); set(w.querySelector(".scrim"), { opacity: 1 }); set(w.querySelector("#ask"), { transform: "translateY(0)" }); return w; },
+  play: function (c) { c.log("No reminders: haptic tap"); return sheetOut(c.q("#ask"), c.q(".scrim")).then(function () { c.log("help toast enters"); return enterEl(c.q("#toast")); }); }
+});
+function settingsScreen(on) {
+  return STATUS + '<div class="content"><div class="small muted" style="min-height:44px;display:flex;align-items:center">Me</div><div class="title1" style="margin:0 0 14px">Reminders</div>' +
+    '<div class="listrow" style="border-radius:14px"><span>Reminders</span><span class="switch' + (on ? " on" : "") + '" id="rsw"></span></div>' +
+    '<div id="choices" class="stack" style="margin-top:14px;' + (on ? "" : "opacity:0") + '">' +
+    '<div class="card"><div class="small muted">How it will look</div><div id="preview" style="font-size:16px">A note for tonight</div></div>' +
+    '<div class="small" id="next">Next: Tuesday at 8:30 PM</div>' +
+    '<div class="small muted">How often</div><div class="chips"><span class="chip">Once a week</span><span class="chip on" id="few">A few times a week</span><span class="chip" id="every">Every evening</span></div>' +
+    '<div class="small muted">Which evenings</div><div class="chips"><span class="chip on">Tue</span><span class="chip on">Sat</span><span class="chip">Sun</span></div>' +
+    '<div class="listrow" style="border-radius:14px"><span>Days you typed</span><span class="muted">Add a day</span></div></div></div>' + tabbar("Me");
+}
+demo("g-remind", {
+  title: "Settings: choices reveal, Next line swaps", ids: "D-M35, D-M37 | D-S06",
+  what: "Switch on: the choices appear with one opacity fade, nothing travels (card 15: motion none). A chip change: tap haptic; the Next line cross-fades (swapMs). VoiceOver hears Saved after 600 ms.",
+  rm: "instant reveal; instant swap.",
+  scene: function () { return wrap(settingsScreen(false)); },
+  play: function (c) {
+    c.log("switch on (native switch's own haptic)"); c.q("#rsw").classList.add("on");
+    var r = RM ? (set(c.q("#choices"), { opacity: "1" }), Promise.resolve()) : fade(c.q("#choices"), 0, 1, T.fadeMs);
+    return r.then(function () { return c.wait(700); }).then(function () {
+      c.log("Every evening chosen: haptic tap; Next line swaps"); c.q("#few").classList.remove("on"); c.q("#every").classList.add("on");
+      return swapText(c.q("#next"), "Next: Today at 8:30 PM");
+    }).then(function () { return c.wait(600); }).then(function () { c.log("VoiceOver: Saved. Next: Today at 8:30 PM"); });
+  }
+});
+demo("g-remind", {
+  title: "Typed day: save, then delete", ids: "D-M41, D-M42, D-M44 | D-S06 -> D-S08 -> D-S06; D-S09",
+  what: "Add a day: our sheet rises. Save: commit, tap haptic, sheet exits, the new row enters in date order. Delete (confirmed): warning haptic, the row leaves, the list closes up.",
+  rm: "fades; list jumps.",
+  scene: function () {
+    return wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days you typed</div><div class="stack" style="gap:0" id="days"><div class="listrow"><span>Sat 5 Dec</span><span class="muted small">Grandma visits</span></div></div><div class="btn out" style="margin-top:14px">Add a day</div></div>' + tabbar("Me") +
+      '<div class="scrim"></div><div class="sheet" id="add"><div class="grab"></div><div class="title2">Add a day</div><div class="listrow" style="border-radius:14px;margin:12px 0"><span>Date</span><span class="chip">Mon 30 Nov</span></div><div class="card" style="background:var(--surface);box-shadow:none">Nursery starts</div><div class="btn" style="margin-top:14px">Save</div></div>');
+  },
+  play: function (c) {
+    c.log("Add a day: sheet rises"); return sheetIn(c.q("#add"), c.q(".scrim")).then(function () { return c.wait(700); })
+      .then(function () { c.log("Save: commit; haptic tap"); return sheetOut(c.q("#add"), c.q(".scrim")); })
+      .then(function () { var r = el('<div class="listrow" id="newday" style="opacity:0"><span>Mon 30 Nov</span><span class="muted small">Nursery starts</span></div>'); c.q("#days").insertBefore(r, c.q("#days").firstChild); c.log("row enters in date order"); return enterEl(r); })
+      .then(function () { return c.wait(900); })
+      .then(function () { var r = c.q("#newday"); c.log("Delete confirmed: haptic warning; row leaves; list closes up"); return exitEl(r).then(function () { return collapse(r); }); });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 4.4 Landing                                                         */
+/* ------------------------------------------------------------------ */
+function lockScreen(text) {
+  return '<div class="lock" id="lock"><div class="syslabel" style="color:#ccc;text-align:center;padding-top:60px">lock screen (system)</div><div class="time">20:30</div><div class="note" id="note"><div style="font-weight:600">Early note</div><div>' + text + '</div></div></div>';
+}
+function openFromLock(c) {
+  var lock = c.q("#lock");
+  c.log("delivered: silent, no badge, active (not time-sensitive)");
+  return c.wait(500).then(function () {
+    c.log("tap: system opens the app");
+    if (RM) return fade(lock, 1, 0, 250);
+    return run(lock, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(1.08)" }], 350, { easing: "ease-in" });
+  }).then(function () { set(lock, { display: "none" }); });
+}
+function coldHome(c) {
+  var items = c.phone.querySelectorAll("[data-enter]");
+  c.log("cold launch: Home's entrance (enter, " + T.staggerMs + " ms stagger); Speak and Type static");
+  c.log("lamp arrives over " + T.lamp.arriveMs + " ms");
+  var lampP = lampTo(c.q("#lamp"), 0, 1, T.lamp.arriveMs);
+  if (RM) return Promise.all([lampP].concat(Array.prototype.map.call(items, function (n) { return fade(n, 0, 1, T.fadeMs); })));
+  return Promise.all([lampP].concat(Array.prototype.map.call(items, function (n, i) { return enterEl(n, Math.min(i, 5) * T.staggerMs); })));
+}
+demo("g-land", {
+  title: "Evening note -> Home, warm and cold", ids: "D-M46, D-M47, D-M48 | D-S10 -> D-S11.home",
+  what: "Warm: the app comes forward on Home; if the Book was showing, the tab swaps natively and the lamp settles over returnMs; Home's content does not re-enter. Cold: Home is the first lit room: lamp arrives (1200 ms) and the dateline, greeting and prompt enter once.",
+  rm: "lamp at its level at once; cold content one 200 ms fade.",
+  scene: function () { return wrap('<div id="under">' + bookScreen(0.6) + "</div>" + lockScreen("A note for tonight")); },
+  plays: [
+    { label: "Warm (from the Book)", fn: function (c) {
+      return openFromLock(c).then(function () {
+        c.log("native tab swap to Home (no slide); content does not re-enter");
+        c.q("#under").innerHTML = homeScreen({ lamp: 0.6 });
+        c.log("lamp settles 0.6 -> 1 over " + T.lamp.returnMs + " ms");
+        return lampTo(c.q("#lamp"), 0.6, 1, T.lamp.returnMs);
+      });
+    } },
+    { label: "Cold start", fn: function (c) {
+      c.q("#under").innerHTML = homeScreen({ lamp: 0 });
+      Array.prototype.forEach.call(c.phone.querySelectorAll("[data-enter]"), function (n) { n.style.opacity = "0"; });
+      return openFromLock(c).then(function () { return coldHome(c); });
+    } }
+  ]
+});
+demo("g-land", {
+  title: "Month or birthday note -> the Book", ids: "D-M49, D-M50 | D-S10 -> D-S11.book",
+  what: "Warm: native swap to the Book, lamp settles to 0.6; the Book opens at its top; no wash (nothing new). Cold: the Book is the first lit room, lamp arrives over 1200 ms and the header settles (opacity 0.6 to 1, y 6 to 0, gentle). Built gap E2: a cold tap lands on Home today.",
+  rm: "lamp at once; one 200 ms fade on cold.",
+  scene: function () { return wrap('<div id="under">' + homeScreen({ lamp: 1 }) + "</div>" + lockScreen("Month 8 starts today")); },
+  plays: [
+    { label: "Warm (from Home)", fn: function (c) {
+      return openFromLock(c).then(function () { c.log("native tab swap to the Book; lamp 1 -> 0.6 over returnMs"); c.q("#under").innerHTML = bookScreen(1); return lampTo(c.q("#lamp"), 1, 0.6, T.lamp.returnMs); });
+    } },
+    { label: "Cold start", fn: function (c) {
+      c.q("#under").innerHTML = bookScreen(0); var head = c.q("#bookhead"); set(head, { opacity: "0.6" });
+      return openFromLock(c).then(function () {
+        c.log("lamp arrives 0 -> 0.6 over " + T.lamp.arriveMs + " ms; header settles on gentle");
+        var hp = RM ? fade(head, 0.6, 1, T.fadeMs) : spring(head, "gentle", function (v) { return { opacity: 0.6 + 0.4 * v, transform: "translateY(" + (6 * (1 - v)) + "px)" }; });
+        return Promise.all([lampTo(c.q("#lamp"), 0, 0.6, T.lamp.arriveMs), hp]);
+      });
+    } }
+  ]
+});
+demo("g-land", {
+  title: "Typed day -> Home with the parent's words", ids: "D-M51, D-M52 | D-S11.home-typed-day",
+  what: "Home already on screen: the typed words enter once above the prompt (enter) and the prompt makes room on the standard layout spring. The words never animate per word. Cold: the line joins Home's entrance before the prompt.",
+  rm: "line fades in; prompt jumps.",
+  scene: function () { return wrap('<div id="under">' + homeScreen({ lamp: 1, typed: true, typedHidden: true }) + "</div>" + lockScreen("A day you wanted to remember")); },
+  plays: [
+    { label: "Warm (Home on screen)", fn: function (c) {
+      return openFromLock(c).then(function () {
+        var line = c.q("#typed"), prompt = c.q("#prompt");
+        var before = prompt.getBoundingClientRect().top;
+        set(line, { display: "block", opacity: "0" });
+        var dy = (prompt.getBoundingClientRect().top - before) / 0.62;
+        c.log("line enters above the prompt; prompt moves down on standard");
+        if (RM) return fade(line, 0, 1, T.fadeMs);
+        return Promise.all([enterEl(line), spring(prompt, "standard", function (v) { return { transform: "translateY(" + (-dy * (1 - v)) + "px)" }; })]);
+      });
+    } },
+    { label: "Cold start", fn: function (c) {
+      c.q("#under").innerHTML = homeScreen({ lamp: 0, typed: true });
+      Array.prototype.forEach.call(c.phone.querySelectorAll("[data-enter]"), function (n) { n.style.opacity = "0"; });
+      return openFromLock(c).then(function () { return coldHome(c); });
+    } }
+  ]
+});
+demo("g-land", {
+  title: "A tap while a letter is being made", ids: "D-M53 | D-S11 with Listen, Review or Write open",
+  what: "Nothing navigates. The app comes forward on the open capture, unchanged. (Card gap G6; engineering gap E12.)",
+  rm: "same.",
+  scene: function () { return wrap('<div id="under"><div style="position:absolute;inset:0;background:var(--bg)">' + STATUS + '<div class="content full"><div class="dateline">Review</div><p class="letter">Asha laughed at the dog again, the big laugh, the one with hiccups.</p><div class="btn" style="position:absolute;left:20px;right:20px;bottom:40px">Keep</div></div></div></div>' + lockScreen("A note for tonight")); },
+  play: function (c) { return openFromLock(c).then(function () { c.log("Review is still open; no navigation, no dissolve"); }); }
+});
+demo("g-land", {
+  title: "Plan notice -> Me, Plan", ids: "D-M54, D-M55 | D-S10 -> D-S24",
+  what: "Warm: native tab swap to Me, then the Plan page pushes. Cold: Me, Plan shown directly, no Home frame and no visible push (built gap E3).",
+  rm: "system reduced push; cold unchanged.",
+  scene: function () { return wrap('<div id="under">' + homeScreen({ lamp: 1 }) + "</div>" + lockScreen("Your trial ends on Friday")); },
+  plays: [
+    { label: "Warm", fn: function (c) {
+      return openFromLock(c).then(function () {
+        c.log("tab swap to Me (no slide)"); c.q("#under").innerHTML = meScreen();
+        var page = el('<div style="position:absolute;inset:0;background:var(--bg);z-index:5">' + STATUS + '<div class="content full"><div class="small muted" style="min-height:44px;display:flex;align-items:center">Me</div><div class="title1">Plan</div><p class="small">Your trial ends on Friday 4 Dec.</p></div></div>');
+        c.q("#under").appendChild(page);
+        c.log("system: Plan pushes");
+        if (RM) return fade(page, 0, 1, 250);
+        return run(page, [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }], 350, { easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+      });
+    } },
+    { label: "Cold start", fn: function (c) {
+      c.q("#under").innerHTML = '<div style="position:absolute;inset:0;background:var(--bg)">' + STATUS + '<div class="content full"><div class="small muted" style="min-height:44px;display:flex;align-items:center">Me</div><div class="title1">Plan</div><p class="small">Your trial ends on Friday 4 Dec.</p></div></div>';
+      return openFromLock(c).then(function () { c.log("Me, Plan is the first screen: no push, no Home frame"); });
+    } }
+  ]
+});
+
+/* ------------------------------------------------------------------ */
+/* 4.5 Quiet days                                                      */
+/* ------------------------------------------------------------------ */
+function quietHandOff(c, out, inn) {
+  /* Link out over exitMs/2; line in from 40 ms over exitMs: readable by 100 ms, done by 200 ms (proposed, E7). */
+  return Promise.all([fade(out, 1, 0, T.exitMs / 2, { easing: T.easing }), fade(inn, 0, 1, T.exitMs, { delay: 40, easing: T.easing })]);
+}
+demo("g-quiet", {
+  title: "Not much today, in the evening, and Undo", ids: "D-M56, D-M57, D-M58 | D-S21",
+  what: "Commit; soft haptic; VoiceOver announces. The link hands off to the kept line in place (proposed timing: readable by 100 ms, done by 200 ms). The evening light dims to 0.7 over 1200 ms (exception 2). Undo: tap haptic (change from built), the reverse hand-off, the light rises back.",
+  rm: "the same opacity hand-off; the lamp jumps.",
+  scene: function () { return wrap(homeScreen({ lamp: 1 })); },
+  play: function (c) {
+    c.log("tap: commit (one write); haptic soft; VoiceOver: A quiet day, kept.");
+    var nm = c.q("#notmuch"), kept = c.q("#kept");
+    return Promise.all([quietHandOff(c, nm, kept), (c.log("lamp dims to " + T.lamp.dimTo), lampTo(c.q("#lamp"), 1, T.lamp.dimTo, T.lamp.arriveMs))])
+      .then(function () { return c.wait(900); })
+      .then(function () { c.log("Undo: commit removal; haptic tap; reverse hand-off; light rises"); return Promise.all([quietHandOff(c, kept, nm), lampTo(c.q("#lamp"), T.lamp.dimTo, 1, T.lamp.arriveMs)]); });
+  }
+});
+demo("g-quiet", {
+  title: "The Book's quiet-day row: still", ids: "D-M60, D-M61 | D-S22",
+  what: "Nothing moves. No wash, no mark drawn, no run between consecutive quiet days, no count. When words arrive the same day the row is simply gone next time.",
+  rm: "same.",
+  scene: function () { return wrap(bookScreen(0.6)); },
+  play: function (c) { c.log("nothing animates (by design)"); return Promise.resolve(); }
+});
+
+
+/* ------------------------------------------------------------------ */
+/* Appended items (v1.1)                                               */
+/* ------------------------------------------------------------------ */
+demo("g-remind", {
+  title: "Add a day: the preview follows the one switch", ids: "D-M64, D-M78 | D-S08 preview (v2: no switch in the sheet; the one day-names switch is on C-S24)",
+  what: "The sheet has no switch. When the day-names switch on the Days page is on and App lock is off, the preview's words cross-fade in place between the fixed line and the parent's words, unchanged; the words never animate per letter.",
+  rm: "instant swap.",
+  scene: function () {
+    var w = wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days</div></div>' + tabbar("Me") +
+      '<div class="scrim" style="opacity:1"></div><div class="sheet" style="transform:none"><div class="grab"></div><div class="title2">Add a day</div><div class="listrow" style="border-radius:14px;margin:12px 0"><span>Date</span><span class="chip">Mon 30 Nov</span></div>' +
+      '<div class="small muted" style="margin-top:6px">How it will look</div><div class="card"><div id="pv" style="font-size:16px">A day you wanted to remember</div></div><div class="small muted" style="margin-top:6px">The lock screen shows this unless you choose otherwise in Days.</div><div class="btn" style="margin-top:14px">Save</div></div>');
+    return w;
+  },
+  play: function (c) {
+    c.log("the day-names switch (area C) is turned on elsewhere; preview words swap (swapMs)");
+    return swapText(c.q("#pv"), "Nursery starts").then(function () { return c.wait(900); }).then(function () {
+      c.log("switched off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
+    });
+  }
+});
+demo("g-land", {
+  title: "A tap with App lock on", ids: "D-M65 | D-S10 -> D-S11.appLock -> warm landing",
+  what: "App lock's own screen comes first; nothing of the landing shows behind it. After unlock the warm landing plays (here: Home), never the cold entrance a second time.",
+  rm: "App lock's reduced form, then the warm landing's.",
+  scene: function () { return wrap('<div id="under">' + bookScreen(0.6) + '</div><div id="applock" style="position:absolute;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px"><div class="title2">Unlock to open the book</div><div class="btn out" style="min-width:200px">Unlock</div><div class="syslabel">app lock (area C/E owns its motion)</div></div>' + lockScreen("A note for tonight")); },
+  play: function (c) {
+    return openFromLock(c).then(function () { c.log("App lock shown first; landing waits"); return c.wait(900); })
+      .then(function () { c.log("unlocked (stand-in fade)"); c.q("#under").innerHTML = homeScreen({ lamp: 0.6 }); return fade(c.q("#applock"), 1, 0, T.fadeMs); })
+      .then(function () { set(c.q("#applock"), { display: "none" }); c.log("warm landing: tab swap, lamp settles over returnMs; no content entrance"); return lampTo(c.q("#lamp"), 0.6, 1, T.lamp.returnMs); });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* v2 items (final pack) and round 2 (PROPOSED)                         */
+/* ------------------------------------------------------------------ */
+demo("g-remind", {
+  title: "Days reminders: the calm line, the DoorNotes, the first tick", ids: "D-M69, D-M72, D-M73, D-M74, D-M75 | D-S06.daysRemindersOff; D-S25",
+  what: "Reminders off with a day present: one calm line fades in in place. In Browse the two DoorNotes are there on the first frame and never move. A first tick changes only its row; one sentence swaps in; then iOS asks. Untick or Clear all: rows leave together, no toast, no count.",
+  rm: "fades only; layout instant.",
+  scene: function () {
+    return wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 10px">Reminders</div><div class="listrow"><span>Days</span><span class="muted">&gt;</span></div><div class="small muted" id="cl" style="margin:8px 4px;opacity:0">Days you added or chose still send a reminder when Reminders is off. You can stop them in Days.</div>' +
+      '<div class="card" style="margin-top:12px"><div class="small">Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me.</div></div><div class="card" style="margin-top:8px"><div class="small">A day you tick sends one reminder that morning. Untick it, or choose Clear all, and it stops.</div></div>' +
+      '<div class="listrow" id="tk" style="margin-top:10px"><span>Thanksgiving</span><span id="tkm">&#9633;</span></div><div class="small muted" id="ask" style="margin:8px 4px;min-height:20px"></div></div>' + tabbar("Me"));
+  },
+  plays: [
+    { label: "Calm line", fn: function (c) { c.log("Reminders switched off: the line enters in place (m.enter)"); return enterEl(c.q("#cl")).then(function () { set(c.q("#cl"), { opacity: "1" }); return c.wait(600); }); } },
+    { label: "First tick", fn: function (c) {
+      c.log("tick: the row changes (m.select), H-select; DoorNotes do not move");
+      c.q("#tkm").innerHTML = "&#10003;";
+      return swapText(c.q("#ask"), "Your iPhone will ask if {app} can send reminders.").then(function () { c.log("then iOS asks once (system)"); return c.wait(700); });
+    } },
+    { label: "Untick", fn: function (c) { c.log("untick: row change only; no toast, no count"); c.q("#tkm").innerHTML = "&#9633;"; return swapText(c.q("#ask"), ""); } }
+  ]
+});
+demo("g-land", {
+  title: "A day reminder is tapped: Home and the day slip", ids: "D-M76, D-M77 | D-S11 (no libraryDay state), A-S01.dayToday",
+  what: "The app opens as for any landing; Home does not re-enter. The day slip is in place (a tap changes nothing about what Home shows). Not today: the slip leaves, the gap closes up, no haptic.",
+  rm: "one fade; fade then jump.",
+  scene: function () { return wrap(homeScreen({ lamp: 0.6 }).replace('<div class="promptHero"', '<div class="card" id="dslip" style="margin:0 0 10px"><div class="small">Thanksgiving. Anything you would like Asha to hear about today?</div><div class="small muted" style="margin-top:6px" id="nt">Not today</div></div><div class="promptHero"'));  },
+  play: function (c) { c.log("landing: slip already in place"); return c.wait(900).then(function () { c.log("Not today: m.list.remove, no haptic"); return exitEl(c.q("#dslip")).then(function () { return collapse(c.q("#dslip")); }); }); }
+});
+demo("g-land", {
+  title: "Round 2 (PROPOSED): the photo reminder switch and its tap", ids: "D-M80, D-M81, D-M84 | D-S06.photoMoments*, D-S11.photoMoment",
+  what: "The native switch moves; the footnote swaps in place. Nothing scans, shimmers, sparkles or counts. A tap lands on plain Home; the invitation, if any, is area A's and never a slip or tile.",
+  rm: "instant swap.",
+  scene: function () { return wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 10px">Reminders</div><div class="listrow"><span>Reminders about photos</span><span class="switch" id="psw"></span></div><div class="small muted" id="pf" style="margin:8px 4px;min-height:36px"></div></div>' + tabbar("Me")); },
+  play: function (c) {
+    c.log("switch on (native haptic); footnote swaps in place"); c.q("#psw").classList.add("on");
+    return swapText(c.q("#pf"), "Uses the same one reminder a day. Notifications show only neutral words.").then(function () { return c.wait(900); }).then(function () {
+      c.log("switch off; footnote swaps out"); c.q("#psw").classList.remove("on"); return swapText(c.q("#pf"), "");
+    });
+  }
+});
+demo("g-quiet", {
+  title: "Quiet day: save fails; Remove this mark", ids: "D-M67, D-M66 | D-S21.error-save_failed; D-S22.menu -> .removed",
+  what: "Save fails: the line replaces the link in place (swapMs); no haptic (soft plays only after a commit); the light does not dim. Remove this mark: soft on the long press, the system menu, the row leaves and the list closes up, the toast enters.",
+  rm: "instant swap; row fades; list jumps; toast fades.",
+  scene: function () { return wrap(homeScreen({ lamp: 1 })); },
+  plays: [
+    { label: "Save fails", fn: function (c) {
+      var nm = c.q("#notmuch");
+      c.log("tap: the write fails; no haptic; lamp unchanged");
+      function put() { nm.innerHTML = '<span class="small" style="color:var(--caution)">Today\'s mark did not save.</span>&nbsp;<span>Try again</span>'; }
+      if (RM) { put(); return Promise.resolve(); }
+      return fade(nm, 1, 0, T.swapMs / 2).then(function () { put(); return fade(nm, 0, 1, T.swapMs / 2); });
+    } },
+    { label: "Remove this mark", fn: function (c) {
+      c.q(".phone > div").innerHTML = bookScreen(0.6) + '<div class="toast" id="toast"><span>Mark removed.</span></div>' + '<div class="sysalert sys" id="menu" style="top:40%;margin-top:0;text-align:left"><div class="syslabel">system context menu</div><div style="padding:10px 0">Remove this mark</div></div>';
+      var row = c.phone.querySelectorAll(".card")[1];
+      c.log("long press: haptic soft; system menu");
+      return pressOn(row, true).then(function () { return sysAlertIn(c.q("#menu")); }).then(function () { return c.wait(700); })
+        .then(function () { c.log("Remove: commit (no haptic); row leaves; list closes up"); pressOff(row, true); return sysAlertOut(c.q("#menu")); })
+        .then(function () { return exitEl(row).then(function () { return collapse(row); }); })
+        .then(function () { c.log("toast enters: book.quietDay.removedToast"); return enterEl(c.q("#toast")); });
+    } }
+  ]
+});
+
+/* Mount everything. */
+demos.forEach(mount);
+</script>
+</body>
+</html>

@@ -22,9 +22,10 @@ No one can read, change or delete a family's letters unless they are meant to, a
 - The `infosec` skill (`.claude/skills/infosec/SKILL.md`): threat-model method, checks by layer, open-source tools and their licences.
 - `docs/tdd/04-security-identity.md`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, D-041.
 - The latest `docs/agents/BRIEF-*.md`: sign-in is Apple, Google and email magic link, no passwords (decision 4); requests are signed with user JWTs only and no service keys ship in the app (decision 17).
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 3 (NS-25, the other parent in store builds), and the open rows behind NS-01's P0 rows: BL-851 (threat model for media on the phone, NX-39-R36) and BL-878 (native dependency gate, NX-39-R52). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
-You take tasks whose Owner is `security engineer`.
+You take tasks whose Owner is `security engineer` or `auth owner` (`agents/roster.json`).
 
 ## How you work
 - Threat-model each new surface (screen, endpoint, table, vendor) before or with the code: assets, entry points, abuse cases, mitigations, tests.

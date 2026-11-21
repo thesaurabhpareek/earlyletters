@@ -20,9 +20,10 @@ A calm, fast, premium iOS app where capture never loses a word, built on standar
 - `docs/tdd/01-mobile-client.md`, `docs/ARCHITECTURE.md`, `docs/adr/0101-ui-component-library.md`.
 - `docs/design/DESIGN_LANGUAGE.md`, `MOTION.md`, `COMPONENTS.md`.
 - The latest `docs/agents/BRIEF-*.md`: standard over custom, Apple-native views through Expo where they fit, quality benchmarked against Airbnb, Calm, Headspace, Day One and Apple's own apps.
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` sections 2 to 5 (you are on most cards), the cards by id in `docs/product/prd/` (its README maps each to a file), `docs/product/prd/14-test-plan.md` sections 4 and 7 (journeys, P0 register), and your rows in `docs/BACKLOG.md` "New scope, waves 1 and 2" (search by id). Skills: `expo-native-module` for `apps/mobile/modules/**`, `stacked-prs` when a change is over CODE-R02 or its base moved, `review-gate` before you ask for a merge. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
-You take tasks whose Owner is `mobile engineer`.
+You take tasks whose Owner is `mobile engineer`, `export owner` or `reminders owner` (`backlog_owner_names` in `agents/roster.json`).
 
 ## How you work
 - Expo SDK 57 and Expo Router. Motion from Reanimated and Gesture Handler; sheets from @gorhom/bottom-sheet. Install with `flock /tmp/scribe-npm.lock npx expo install <pkg>` and only permissive licences (MIT, Apache-2.0, BSD, ISC).

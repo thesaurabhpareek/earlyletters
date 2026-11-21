@@ -134,7 +134,7 @@ describe('[NS-01-R5] a picture without words cannot be kept', () => {
 });
 
 describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
-  it('[NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
+  it('[NS-01-R21a] photo words and place are optional and capped: [NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
     expect(normalizePhotoText(undefined)).toBeNull();
     expect(normalizePhotoText('x'.repeat(141))!.length).toBe(140);
     expect(normalizePhotoText('  Asha on the swing  ')).toBe('Asha on the swing');

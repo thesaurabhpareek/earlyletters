@@ -1,7 +1,7 @@
 // Tests for merge-queue.mjs. A fake API is injected: no network, no gh, no real repo state.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -305,4 +305,48 @@ test("a head that moved between the list and the detail call is not trusted (WAI
   const api = fake({ comments: [review("A", HEAD), review("B", HEAD)] });
   const w = async (path, o) => (path.endsWith("/pulls/7") ? { mergeable_state: "clean", head: { sha: OLD } } : api(path, o));
   assert.equal((await buildQueue({ api: w, now: NOW }))[0].verdict, "WAIT-CI");
+});
+
+test("mergeability unknown on an old head is STALE-UNKNOWN: no Merge ask, listed in its own group", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  const old = STALE_UNKNOWN_MINUTES + 5;
+  const r = (await buildQueue({ api: fake({ comments, state: "unknown", pushedMin: old }), now: NOW }))[0];
+  assert.equal(r.verdict, "STALE-UNKNOWN");
+  assert.equal(r.founderAsk, undefined);
+  const out = formatTable([r]);
+  assert.match(out, /stale-unknown \(1\)/);
+  assert.match(out, new RegExp(`#7 base develop, last push 7 days ago, head ${HEAD}`));
+  assert.doesNotMatch(out, /Merge #7/);
+  assert.doesNotMatch(out.split("\n")[1] ?? "", /#7/, "no row for it in the main table");
+});
+
+test("--all-bases: an old other-base PR with unknown mergeability is parked as STALE-UNKNOWN, a clean one stays READY", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  const all = await buildQueue({ api: multiBase({ comments }), now: NOW, allBases: true });
+  const wrapped = async (path, o) => {
+    const v = await multiBase({ comments })(path, o);
+    if (path.split("?")[0].endsWith("/pulls/9")) return { ...v, mergeable_state: "unknown" };
+    if (path.split("?")[0].endsWith("/commits/" + HEAD)) return { commit: { committer: { date: ago(STALE_UNKNOWN_MINUTES * 2) } } };
+    return v;
+  };
+  const rows = await buildQueue({ api: wrapped, now: NOW, allBases: true });
+  assert.deepEqual(all.map((r) => r.verdict), ["READY", "OTHER-BASE"]);
+  assert.deepEqual(rows.map((r) => [r.number, r.verdict]), [[7, "READY"], [9, "STALE-UNKNOWN"]]);
+  const out = formatTable(rows);
+  assert.match(out, /Merge #7 at /);
+  assert.doesNotMatch(out, /Merge #9/);
+});
+
+test("a fresh PR with unknown mergeability is not STALE-UNKNOWN, and an unknown push date is not stale", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  assert.equal((await verdict({ comments, state: "unknown", pushedMin: 60 })).verdict, "WAIT-CI");
+  assert.equal((await verdict({ comments, state: "unknown", pushedMin: STALE_UNKNOWN_MINUTES - 1 })).verdict, "WAIT-CI");
+  const api = fake({ comments, state: "unknown" });
+  const w = async (path, o) => (path.endsWith(`/commits/${HEAD}`) ? { commit: { committer: { date: "not a date" } } } : api(path, o));
+  assert.equal((await buildQueue({ api: w, now: NOW }))[0].verdict, "WAIT-CI");
+});
+
+test("a clean old PR is not STALE-UNKNOWN", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  assert.equal((await verdict({ comments, state: "clean", pushedMin: STALE_UNKNOWN_MINUTES * 3 })).verdict, "READY");
 });

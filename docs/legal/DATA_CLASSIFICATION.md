@@ -655,6 +655,19 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `bytes` | L2 | File size |
 | `found_at` | L2 | Timestamp |
 
+**`entry_media`** (the one picture kept with a letter or a draft; local migration 11, ADR 0028 D1). Never synced or pulled (NS-01-R15); not in the owner backup in Build 13 (ADR 0028 Q4 default; open for the founder, CR-62 item 6).
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L2 | Media id (UUIDv7 made on the phone); also the picture's file name |
+| `entry_id`, `draft_id` | L3 | The owning letter or draft, one of the two: letter and draft ids, as `entries.id` and `drafts.id` (rule 1.1.5) |
+| `kind`, `ext` | L2 | Enums: `photo` and `jpg` only |
+| `bytes` | L2 | Size of the stripped copy, as `audio_bytes` |
+| `width`, `height`, `added_at` | L2 | |
+| `sha256` | L4 | Of the stripped copy (rule 1.1.2) |
+| `photo_text` | L4 | The parent's own words about the picture, at most 140 |
+| `place` | L4 | Typed by the parent, at most 60; never read from the picture |
+
 **`sync_outbox`** (ordered upload queue)
 
 | Column | Level | Note |
@@ -726,7 +739,9 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 |---|---|---|
 | `audio/<entry_id>.m4a` | L4 | Free plan: the only copy |
 | Listening copies (cleaner playback copy, decision 8) | L4 | Derived from the recording; the original is never altered |
-| Photos, cached book audio of other members | L4 | Deleted on purge sync or removal |
+| Synced photos (planned), cached book audio of other members | L4 | Deleted on purge sync or removal. Not the pictures kept with letters (next row), which never come from the server |
+| Pictures: `Library/Application Support/photos/<media_id>.jpg` (iOS; the stripped copy, no metadata) | L4 | Kept with a letter or a draft (`entry_media`, ADR 0028 D1); in the device backup (NX-39 F9 default; the founder's to change, CR-62 item 7); never uploaded (NS-01-R15); erased with the letter, its book, a let-go draft, or Erase everything. A replaced picture's file stays for Undo, and goes at the latest at the next launch |
+| Picker originals `Caches/ImagePicker/<id>.img`, re-encode copies `Caches/ScribePhoto/<id>.jpg` | L4 | A pick in flight only. The original carries its location; it is read once and removed, and both folders are emptied at every launch and by Erase everything |
 | Export ZIPs in app temp | L4 | Deleted after the share sheet closes; plaintext by design |
 | Installed packs: `Application Support/packs/installed/<pack id>/<version>/` with `pack.json` and the pack file; `staging/` for partial downloads | L1 | Text-rule packs (rules, filler and negation tables, punctuation, phonetic tables, prompt text) and speech models: public data checked against the signed manifest (SHA-256). Excluded from backup. Which packs are installed reveals which languages the author picked, so the **list** of installed packs is handled as L4 on the device and never leaves it except as the `pack_download` analytics event after a yes (TRACKING_PLAN 6.2) |
 | Remote document cache (`Application Support/remote`: signed remote config, pack manifest, content blocks) | L1 | Public server documents |
