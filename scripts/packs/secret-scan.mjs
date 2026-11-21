@@ -24,11 +24,14 @@ import { pathToFileURL } from 'node:url';
 export const SECRET_PATTERNS = [
   { name: 'pack signing key (EL_SIGNING_KEY)', re: /EL_SIGNING_KEY\s*[=:]\s*['"]?[A-Za-z0-9+/]{43}=/ },
   { name: 'upload secret (PACKS_S3_SECRET_ACCESS_KEY)', re: /PACKS_S3_SECRET_ACCESS_KEY\s*[=:]\s*['"]?(?![<$])[^\s'"]{20,}/ },
-  { name: 'private key block', re: /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----/, check: (m, next, line) => /^[A-Za-z0-9+/=]{40,}/.test(next) || /^(?:\\n|\s)[A-Za-z0-9+/=]{40,}/.test(line.slice(m.index + m[0].length)) },
+  { name: 'private key block', re: /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----/, check: (m, next, line) => /^\s*[A-Za-z0-9+/=]{40,}/.test(next) || /^(?:\\n|\s)+[A-Za-z0-9+/=]{40,}/.test(line.slice(m.index + m[0].length)) },
   { name: 'Supabase secret key (sb_secret_)', re: /\bsb_secret_[A-Za-z0-9_-]{20,}/, check: (m) => !obviouslyFake(m[0]) },
   { name: 'service_role JWT', re: /\beyJ[A-Za-z0-9_-]{8,}\.(eyJ[A-Za-z0-9_-]{8,})\.[A-Za-z0-9_-]{8,}/, check: (m) => jwtRole(m[1]) === 'service_role' && !obviouslyFake(Buffer.from(m[0].split('.')[2], 'base64url').toString('latin1')) },
-  { name: 'service role key value', re: /\b(?:SUPABASE_)?SERVICE_ROLE_KEY\s*[=:]\s*['"]?(?![<$\{])[A-Za-z0-9._-]{30,}/ },
-  { name: 'EAS token (EXPO_TOKEN)', re: /\bEXPO_TOKEN\s*[=:]\s*['"]?(?![<$\{])[A-Za-z0-9_-]{30,}/ },
+  { name: 'service role key value', re: /\b(?:SUPABASE_)?SERVICE_ROLE_KEY['"]?\s*[=:]\s*['"]?(?![<$\{])[A-Za-z0-9._-]{30,}/ },
+  { name: 'EAS token (EXPO_TOKEN)', re: /\bEXPO_TOKEN['"]?\s*[=:]\s*['"]?(?![<$\{])[A-Za-z0-9_-]{30,}/ },
+  { name: 'Supabase access token (sbp_)', re: /\bsbp_[0-9a-f]{40}\b/ },
+  { name: 'Resend key', re: /\bre_[A-Za-z0-9]{8}_[A-Za-z0-9]{24,}/ },
+  { name: 'AWS access key id', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/, check: (m) => !obviouslyFake(m[0]) },
   { name: 'Anthropic key (sk-ant-)', re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
   { name: 'GitHub token', re: /\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})/ },
 ];

@@ -6,7 +6,7 @@ Status: draft for the founder to read (SEC-R02, SEC-R03; BRIEF CI-SECRET). Names
 
 | Guard | Covers | Does not cover |
 |---|---|---|
-| `node scripts/packs/secret-scan.mjs` (runs in `npm test -w apps/mobile` through `apps/mobile/test/secret-scan.test.ts`) | The tracked tree at HEAD: private key blocks (also an Apple `.p8`), `sb_secret_` keys, a JWT whose role is `service_role`, a service-role key variable with a value, an `EXPO_TOKEN` value, `sk-ant-` keys, GitHub tokens, the pack signing key, the R2 secret. Output is file, line and rule name, never the value | Git history: a secret committed and later deleted is not found. Untracked and ignored files. A secret in an unknown format |
+| `node scripts/packs/secret-scan.mjs` (runs in `npm test -w apps/mobile` through `apps/mobile/test/secret-scan.test.ts`) | The tracked tree at HEAD: private key blocks (also an Apple `.p8`), `sb_secret_` keys, a JWT whose role is `service_role`, a service-role key variable with a value, an `EXPO_TOKEN` value, `sk-ant-` keys, GitHub tokens, Supabase `sbp_` tokens, Resend keys, AWS access key ids, the pack signing key, the R2 secret. Output is file, line and rule name, never the value | Git history: a secret committed and later deleted is not found. Untracked and ignored files. A secret in an unknown format |
 | GitHub secret scanning with push protection (repository setting, founder only) | Known token formats at push time, and history | Anything GitHub does not know. Read back with `node scripts/founder/check.mjs` (needs his token) |
 
 If either finds a real value: treat it as leaked, rotate it first, then follow `docs/ops/runbooks/suspected-data-leak.md`. Do not paste the value into an issue, a PR or a chat.

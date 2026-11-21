@@ -39,6 +39,27 @@ describe('secret scan, SEC-R03', () => {
     expect(names(`${BEGIN}\n\${body}\n`)).toEqual([]);
   });
 
+  it('[SEC-R03] a private key block indented under a YAML block scalar, or on one line with whitespace, is found', () => {
+    expect(names(`key: |\n  ${BEGIN}\n  ${rand(60)}\n`)).toEqual(['private key block']);
+    expect(names(`  - ${BEGIN}\n    ${rand(60)}`)).toEqual(['private key block']);
+    expect(names(`"key": "${BEGIN}\\n  ${rand(60)}"`)).toEqual(['private key block']);
+  });
+
+  it('[SEC-R03] quoted names as in JSON (eas.json env) are found', () => {
+    expect(names(`"SUPABASE_SERVICE_ROLE_KEY": "${rand(40)}"`)).toEqual(['service role key value']);
+    expect(names(`"EXPO_TOKEN": "${rand(40)}"`)).toEqual(['EAS token (EXPO_TOKEN)']);
+    expect(names(`'EXPO_TOKEN': '${rand(40)}'`)).toEqual(['EAS token (EXPO_TOKEN)']);
+    expect(names('"EXPO_TOKEN": "${EXPO_TOKEN}"')).toEqual([]);
+  });
+
+  it('[SEC-R03] Supabase personal access tokens, Resend keys and AWS access keys are found', () => {
+    const hex = randomBytes(20).toString('hex');
+    expect(names(`t=sbp_${hex}`)).toEqual(['Supabase access token (sbp_)']);
+    expect(names(`k=re_${rand(8).slice(0, 8)}_${rand(26).slice(0, 26)}`)).toEqual(['Resend key']);
+    expect(names(`id=AKIA${rand(20).toUpperCase().slice(0, 16)}`)).toEqual(['AWS access key id']);
+    for (const ok of ['sbp_...', 're_send_button_label', 'AKIAIOSFODNN7EXAMPLE']) expect(names(ok), ok).toEqual([]);
+  });
+
   it('[SEC-R03] EAS, Anthropic and GitHub tokens are found, and placeholders are not', () => {
     expect(names(`EXPO_TOKEN=${rand(40)}`)).toEqual(['EAS token (EXPO_TOKEN)']);
     expect(names(`k: sk-ant-${rand(40)}`)).toEqual(['Anthropic key (sk-ant-)']);

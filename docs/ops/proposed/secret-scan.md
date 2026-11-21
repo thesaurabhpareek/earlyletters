@@ -4,7 +4,7 @@ Status: proposal, 20 Nov 2026. Nothing under `.github/` is changed here. Apply a
 
 ## The exact change
 
-1. This pull request extends `scripts/packs/secret-scan.mjs` to nine rules and adds `apps/mobile/test/secret-scan.test.ts`, which runs in `unit` through `npm test`. So the scan runs on every pull request without any workflow edit; the step below only makes it a named, separate line in the run page.
+1. This pull request extends `scripts/packs/secret-scan.mjs` to twelve rules and adds `apps/mobile/test/secret-scan.test.ts`, which runs in `unit` through `npm test`. So the scan runs on every pull request without any workflow edit; the step below only makes it a named, separate line in the run page.
 2. Paste `docs/ops/proposed/workflows/secret-scan-step.yml` into `ci.yml`, job `unit`, after the last step. No new action, no permission.
 
 Option A (this) against Option B (a third-party scanner such as gitleaks):
@@ -13,7 +13,7 @@ Option A (this) against Option B (a third-party scanner such as gitleaks):
 |---|---|---|
 | New dependency | none | a new action or binary, approved by the founder (AIE-R21), pinned by sha |
 | History | not scanned | scanned |
-| Formats | the nine named rules | hundreds, maintained by others |
+| Formats | the twelve named rules | hundreds, maintained by others |
 | Value in output | never | only if configured to redact; a mistake leaks the match into a public log |
 | Cost | 10 seconds | one more supply-chain trust |
 
