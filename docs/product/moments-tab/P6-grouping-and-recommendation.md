@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Moments tab, P6: grouping and recommendation inside our rules
 
 Status: PROPOSED (nothing here is decided, built, or in `DECISIONS.md`) | 21 Nov 2026 | Lead: product lead P6 | Docs only | Branch `wip/moments-p6`

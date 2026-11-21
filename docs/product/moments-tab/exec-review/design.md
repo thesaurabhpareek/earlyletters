@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # NS-53 Moments tab: executive review, Design (CDesO)
 
 Reviewer: Chief Design Officer (Claude role). Date: 21 Nov 2026.

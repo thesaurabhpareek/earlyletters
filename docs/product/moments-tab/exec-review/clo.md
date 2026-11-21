@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 Status: EXECUTIVE REVIEW, round 1, CLO seat (NS-53, section 25.6). Nothing here is decided, published or sent to counsel.
 Date: 21 Nov 2026
 Reviewer: Chief Legal Officer (Claude role, not a lawyer). No attorney-client relationship exists. Nothing here is legal advice. Every legal conclusion marked "counsel must confirm" is a judgment for a licensed California attorney, not a finding.
