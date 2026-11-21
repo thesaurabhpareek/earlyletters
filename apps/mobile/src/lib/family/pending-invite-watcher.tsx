@@ -7,6 +7,8 @@
  */
 import { router, usePathname, useRootNavigationState } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { authUserId } from '../auth/machine.logic';
+import { getAuthSnapshot } from '../auth/auth-store';
 import { PLUS_ALPHA } from '../billing/alpha';
 import { serverFeaturesEnabled } from '../capabilities';
 import { inviteDestination } from './entry.logic';
@@ -28,7 +30,7 @@ export function PendingInviteWatcher() {
       return;
     }
     if (pathname.startsWith('/invite')) return;
-    void readPendingInvite().then((p) => {
+    void readPendingInvite(Date.now(), !!authUserId(getAuthSnapshot())).then((p) => {
       if (p) router.push('/invite');
     });
   }, [ready, pathname]);

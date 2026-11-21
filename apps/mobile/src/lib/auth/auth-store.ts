@@ -119,7 +119,12 @@ export function publishAuth(next: AuthState): void {
   if (!authUserId(next)) confirmed.clear();
   // BL-1424: a join wait holds the child's name in memory. It ends with the account that started it, for every
   // sign-out reason, even when no welcome is mounted to clear it (the next account must not read this name).
-  if (!authUserId(next) || (was && authUserId(next) !== was)) joinWait.clear();
+  if (!authUserId(next) || (was && authUserId(next) !== was)) {
+    joinWait.clear();
+    // CISO-2: an invite token this account had read must not reach the next account.
+    // Loaded on demand so the store stays free of the Keychain module for code that only reads auth state.
+    void import('@/lib/family/pending-invite').then((m) => m.clearReadPendingInvite()).catch(() => {});
+  }
   listeners.forEach((l) => l(next));
   announce();
 }

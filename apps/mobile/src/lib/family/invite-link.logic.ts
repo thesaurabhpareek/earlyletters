@@ -96,20 +96,32 @@ export interface PendingInvite {
   token: string;
   /** Epoch ms when the link reached this phone. */
   receivedAt: number;
+  /** True once a signed-in account has read it (CISO-2): the next account must not get it. Absent in old items. */
+  read?: boolean;
 }
 
 export function encodePendingInvite(p: PendingInvite): string {
-  return JSON.stringify({ t: p.token, at: p.receivedAt });
+  return JSON.stringify(p.read ? { t: p.token, at: p.receivedAt, r: 1 } : { t: p.token, at: p.receivedAt });
+}
+
+/** True when the stored item carries the "a signed-in account read it" mark. Damaged or old-format items: false. */
+export function isPendingInviteRead(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    return (JSON.parse(raw) as { r?: unknown }).r === 1;
+  } catch {
+    return false;
+  }
 }
 
 /** Reads what pending-invite.ts stored; null if damaged, not a token, or too old. */
 export function decodePendingInvite(raw: string | null, now: number): PendingInvite | null {
   if (!raw) return null;
   try {
-    const v = JSON.parse(raw) as { t?: unknown; at?: unknown };
+    const v = JSON.parse(raw) as { t?: unknown; at?: unknown; r?: unknown };
     if (typeof v.t !== 'string' || typeof v.at !== 'number' || !isInviteToken(v.t)) return null;
     if (now - v.at > PENDING_INVITE_MAX_AGE_MS || v.at - now > 60_000) return null;
-    return { token: v.t, receivedAt: v.at };
+    return v.r === 1 ? { token: v.t, receivedAt: v.at, read: true } : { token: v.t, receivedAt: v.at };
   } catch {
     return null;
   }

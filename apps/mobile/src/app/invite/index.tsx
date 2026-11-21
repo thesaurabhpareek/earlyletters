@@ -93,7 +93,7 @@ function JoinBook() {
   const started = useRef<'peek' | 'accept' | null>(null);
 
   useEffect(() => {
-    void readPendingInvite().then((p) => {
+    void readPendingInvite(Date.now(), !!authUserId(auth.state)).then((p) => {
       if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setToken(p?.token ?? null);
       setLoaded(true);
