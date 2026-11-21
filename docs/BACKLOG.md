@@ -2428,7 +2428,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### Server lane (`supabase/**`)
 
 #### BL-516 Two stale comments under `supabase/` (closure review N4)
-- Status: ready. Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
+- Status: in-review (PR #1249). Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low. Gate: none (comments only, but `supabase/**` needs the D-041 review).
 - Problem and evidence: `supabase/config.toml:38` says "/auth/confirm is not listed until the app accepts it (SIGN-04)"; the app accepts it now, and the real reason it is not listed is that no code sends it as a redirect. `supabase/templates/README.md:59-61` says the app does not accept `email_change`; it does now (SIGN-10). Left alone on 31 Oct because a database test run held `supabase/**`.
 - Scope: reword both lines. No setting changes.

@@ -1,17 +1,21 @@
 /**
  * The days store's public surface (NS-47-R11; ADR 0032 items 3, 7 and 9). Ticking goes through one queue; the file goes
  * FIRST and synchronously on sign-out and Erase, before `forgetReminders` and any await (item 3). A write queued or
- * running when a clear lands is dropped (generation check). A file of another owner is never read or adopted: a writer
- * deletes it and starts empty (E73); the claim step (NS-47-R7, next PR) is the only adoption. Owner key: next PR.
+ * running when a clear or an owner change lands is dropped (generation check; the owner is captured when the write is
+ * queued). A file of another owner is never read, adopted or overwritten: a writer writes nothing and reports
+ * unavailable (DAYS-4, REFUSE). Only sign-out, Erase, a sign-in retry of a stale clear, or the claim step (NS-47-R7,
+ * next PR) removes it. Owner key: next PR.
  */
 import { type DaysPort, type DaysRead, expoDaysPort, readDays, removeDays, sweepDaysTemp, writeDays } from './store-file';
 import { type DaysFile, LOCAL_OWNER, tickDay as tick, untickDay as untick } from './store.logic';
 
-export type DaysResult = { ok: true } | { ok: false; code: 'days_store_unavailable' };
+/** `days_write_dropped`: a clear or owner change landed first, so the write was never made (not a failure to show). */
+export type DaysResult = { ok: true } | { ok: false; code: 'days_store_unavailable' | 'days_write_dropped' };
 const UNAVAILABLE: DaysResult = { ok: false, code: 'days_store_unavailable' };
+const DROPPED: DaysResult = { ok: false, code: 'days_write_dropped' };
 
-export function createDaysStore(getPort: () => DaysPort | null) {
-  let owner = LOCAL_OWNER,
+export function createDaysStore(getPort: () => DaysPort | null, initialOwner = LOCAL_OWNER) {
+  let owner = initialOwner,
     generation = 0,
     swept = false,
     queue: Promise<unknown> = Promise.resolve();
@@ -29,17 +33,19 @@ export function createDaysStore(getPort: () => DaysPort | null) {
   }
 
   function change(fn: (file: DaysFile) => DaysFile | null): Promise<DaysResult> {
-    const started = generation;
+    const started = generation,
+      who = owner; // the owner this write was made for, not whoever is current when it runs
     const run = queue.then(async (): Promise<DaysResult> => {
+      if (started !== generation) return DROPPED;
       const p = port();
-      if (!p || started !== generation) return UNAVAILABLE;
-      const r = readDays(p, owner);
+      if (!p) return UNAVAILABLE;
+      const r = readDays(p, who);
       if (r.state !== 'ok' && r.state !== 'empty') return UNAVAILABLE; // foreign, unreadable, newer or unavailable: nothing is written
-      const next = fn(r.state === 'ok' ? r.file : { v: 1, owner, ticked: {} });
+      const next = fn(r.state === 'ok' ? r.file : { v: 1, owner: who, ticked: {} });
       if (!next || (await writeDays(p, next)) !== 'ok') return UNAVAILABLE;
       if (started !== generation) {
         removeDays(p); // a clear landed during the write: nothing of it may stay
-        return UNAVAILABLE;
+        return DROPPED;
       }
       tell();
       return { ok: true };
@@ -49,7 +55,23 @@ export function createDaysStore(getPort: () => DaysPort | null) {
   }
 
   return {
-    setOwner: (key: string): void => void (owner = key),
+    /**
+     * Sign-in (or any owner change). Queued writes of the old owner are dropped. A stale file left by an earlier
+     * account whose clear failed is removed again, so the next account is not blocked; a 'local' file is left for the
+     * claim step, and the new owner's own file is never touched.
+     */
+    setOwner(key: string): void {
+      if (key === owner) return;
+      owner = key;
+      generation += 1;
+      try {
+        const p = getPort();
+        const r = p ? readDays(p, key) : null;
+        if (p && r?.state === 'foreign' && r.owner !== LOCAL_OWNER) removeDays(p);
+      } catch {
+        // still blocked: the next sign-in, sign-out or Erase tries again
+      }
+    },
     load(forOwner = owner): DaysRead {
       const p = port();
       const r = p ? readDays(p, forOwner) : ({ state: 'unavailable' } as const);
