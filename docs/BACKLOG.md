@@ -7505,23 +7505,23 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 #### BL-1483 The photo lens card `missing` flag never resets while the row stays mounted
 - Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low (it fails closed: a replaced picture stays hidden, nothing wrong is shown). Gate: none.
-- Satisfies: the photo lens card behaviour of #1340 (not re-read here).
-- Problem and evidence: the `missing` flag on the photo lens card is set on a load error and not cleared when the row's picture is replaced, so the new picture stays hidden until the row remounts (from the #1340 and #1365 security review).
+- Satisfies: the lens card code of #1365 and the photo wiring of #1340 (not re-read here).
+- Problem and evidence: the `missing` flag on the photo lens card is set on a load error and not cleared when the row's picture is replaced, so the new picture stays hidden until the row remounts. This is an inference from the #1365 reviews, not an observed run: review-B-1365 says the `missing` flag never resets while the row is mounted, and the reviews only say that a remount retries. Confirm it with a test first; if the flag does reset, close the row. It came from the #1340 and #1365 security review.
 - Scope: reset `missing` when the picture source changes (key the state on the source).
 - Done when: a replaced picture shows after a load error without a remount.
 - Test: a component test beside the lens card tests that sets missing, swaps the source and expects the picture.
 
-#### BL-1484 Spec 01 needs a one-line update for radius sm and `thumbMissing`
-- Status: proposed. Mode: docs. Owner: design-systems. Milestone: M15. Size: XS. Depends on: none.
+#### BL-1484 Spec 01 needs two edits: lens thumbnail radius `sm` and the `thumbMissing` card
+- Status: proposed. Mode: docs. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
-- Satisfies: B-S04 and CONFORMANCE F-26 and F-27 (not re-read here).
-- Problem and evidence: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` does not say radius `sm` or the `thumbMissing` state that B-S04 and CONFORMANCE F-26 and F-27 require.
-- Scope: one line in the spec for each, with the section it lands in named in the PR.
-- Done when: the spec names radius `sm` and `thumbMissing`, and F-26 and F-27 point at that line.
+- Satisfies: B-S04, CONFORMANCE F-26 and F-27 (`docs/design/CONFORMANCE-21nov.md`; not re-read in full).
+- Problem and evidence: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` says radius `md` for the lens thumbnail (line 111) and draws a framed box where a thumbnail is missing. B-S04 draws `radius.sm` for the 72 pt thumbnail and `.thumbMissing` as a card without a thumbnail and no error (F-26, F-27). The spec changes two existing lines; it does not need a new section.
+- Scope: change the radius on the lens thumbnail line to `sm` (F-26 recommends `sm` for the 72 pt thumbnail, `md` for the letter page) and change the missing-thumbnail line to a card without a thumbnail, with the section named in the PR.
+- Done when: the spec says `sm` for the lens thumbnail and `thumbMissing` for a missing one, and F-26 and F-27 point at those lines.
 - Test: none (docs).
 
 #### BL-1485 AX5 and Increase Contrast device pass for the photo surfaces, before the photos flag goes on
-- Status: proposed. Mode: human or pair. Owner: design-systems. Milestone: M15. Size: S. Depends on: the photo surfaces built (BL-1447).
+- Status: proposed. Mode: pair. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-956 and BL-1445 (the photo rows; BL-1447 is the Moments picker, not a photo row).
 - Priority: Medium (the flag should not go on before this pass). Gate: a phone, the founder's device run.
 - Satisfies: the accessibility acceptance in `docs/design/A11Y-AND-TYPE-AUDIT-20nov.md` (not re-read here).
 - Problem and evidence: the photo surfaces have not been seen at the largest accessibility text size (AX5) with Increase Contrast on a real device.
@@ -7529,19 +7529,19 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Done when: a written pass result is filed and any finding has a row, before the photos flag is turned on.
 - Test: device pass, recorded in the PR.
 
-#### BL-1486 Recheck the "Add to this letter" heading over a single row when "This was a first" and "Close until a day" land
-- Status: proposed. Mode: design check. Owner: design-systems. Milestone: M15. Size: XS. Depends on: the two rows built.
-- Priority: Low. Gate: none.
-- Satisfies: the entry screen heading rules in the latest design (not re-read here).
-- Problem and evidence: the heading "Add to this letter" is written for more than one row; when only a single row sits under it the heading may read wrong.
-- Scope: look at the screen with one row and with two, and decide the heading or its removal for one row; copy is a PROPOSED key until the founder approves.
-- Done when: the single-row case has a decision recorded in the design spec.
+#### BL-1486 Design decision check: does the "Add to this letter" heading in #1365 still hold, now that IA-FINAL replaces the group?
+- Status: proposed. Mode: design check. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low (may be superseded, see below). Gate: none.
+- Satisfies: `docs/design/IA-FINAL-20nov.md` (line 205 and the table near line 516 and line 527) and CONFORMANCE F-20 (not re-read in full).
+- Problem and evidence: this row may be superseded. IA-FINAL replaces the "Add to this letter" group of spec 06 section 4a with a level 2 list titled "This letter", and renames "Close this letter until a day" to "Hide until a day"; F-20 records that #839 deviates from the 4a group. So the open question is whether the heading #1365 uses still holds once "This was a first" and "Hide until a day" land, not a fact that it reads wrong over a single row.
+- Scope: read IA-FINAL and F-20 against the current letter page and record one decision: keep, change to "This letter", or retire this row as superseded. Any new words are PROPOSED content keys until the founder approves.
+- Done when: the decision is recorded in the design spec, or this row is closed as superseded by IA-FINAL and F-20.
 - Test: none (design check).
 
 #### BL-1487 Confirm with the B motion owner that dropping the lens thumb on a load error is acceptable
-- Status: proposed. Mode: decision. Owner: design-systems. Milestone: M15. Size: XS. Depends on: none.
+- Status: proposed. Mode: decision. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
-- Satisfies: B-M05 and G3 (card height change, not re-read here).
+- Satisfies: B-M05 and G3 (card height change; not re-read here). CONFORMANCE F-27 says to drop the frame on a missing thumbnail.
 - Problem and evidence: on a load error the lens thumb is dropped, which changes the card's height; B-M05 and G3 may not allow that jump.
 - Scope: ask the B motion owner and record yes, or the change (keep the height, or animate it).
 - Done when: a recorded answer; a follow-up row only if the answer is no.
@@ -7556,11 +7556,11 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Done when: three named tests fail when one wiring point is removed.
 - Test: the provider tests next to the BL-1460 test.
 
-#### BL-1489 A late adopt in #1340 can drop a fresh pick through the shared PendingPhoto, and a dropped queued adopt resolves undefined
+#### BL-1489 A late adopt in #1340 can drop a fresh pick through the shared PendingPhoto; and a hardening choice for a dropped queued adopt
 - Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
-- Priority: Medium (a picked photo can be lost without a message). Gate: none.
+- Priority: Medium for part 1 (a picked photo can be lost without a message), Low for part 2. Gate: none.
 - Satisfies: the pick and adopt behaviour of #1340 (not re-read here).
-- Problem and evidence: (1) an adopt that starts late reads the shared `PendingPhoto`, which a fresh pick may already have replaced, so the fresh pick is dropped; (2) a queued adopt that is dropped resolves `undefined`, which the caller treats as a result.
-- Scope: (1) capture the source at the start of the adopt, not at its end; (2) a dropped queued adopt resolves a named dropped outcome that the caller handles.
-- Done when: two named tests, one per case, fail on the old code and pass on the new.
+- Problem and evidence: (1) an adopt that starts late reads the shared `PendingPhoto`, which a fresh pick may already have replaced, so the fresh pick is dropped (review-B-1340 RACE3; accurate). (2) A queued adopt that is dropped resolves `undefined`. review-A-1340 and review-D-1340 call that intended and good, so this is not a bug; it is a hardening choice only.
+- Scope: (1) capture the source at the start of the adopt, not at its end. (2) Optional, decided in the PR: resolve a named dropped outcome instead of `undefined`, only if a caller can then tell "dropped" from "nothing to do"; if the reviewers still prefer `undefined`, leave it and say so.
+- Done when: one named test for part 1 fails on the old code and passes on the new; part 2 is either done with its own test or recorded as left as is.
 - Test: a test beside the adopt code.
