@@ -242,11 +242,11 @@ Gap ids defined here:
 | AIE-R24 | MUST | founder approval of `agents/roster.json` (CODEOWNERS); review | on develop (#4) | none |
 | AIE-R32 | MUST | review; stale-review delta print proposed in #1149 (a patch under `docs/ops/proposed/`, not applied) | review only | none |
 | AIE-R33 | MUST | review | review only | none |
-| AIE-R34 | MUST | `merge-queue.mjs` is the reader of record; ad hoc scripts by review | not yet | AIE-G10 |
+| AIE-R34 | MUST | `merge-queue.mjs` is the reader of record; ad hoc scripts by review | not yet | AIE-G14 |
 | AIE-R35 | MUST | `securityLensHits` in `merge-queue.mjs` (#1081); review | on develop (#1081) for the check; planning review only | none |
 | AIE-R36 | MUST | review-gate skill; review | review only | none |
 | AIE-R37 | MUST | review | review only | none |
-| AIE-R38 | MUST | review | not yet | AIE-G11 |
+| AIE-R38 | MUST | review | not yet | AIE-G15 |
 | AIE-R39 | MUST | weekly aggregation (AIE-R23) | not yet | AIE-G8 |
 
-Gap ids added 21 Nov (AIE-R32 to R39): AIE-G10 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G11 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.
+Gap ids added 21 Nov (AIE-R32 to R39): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.

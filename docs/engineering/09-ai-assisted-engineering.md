@@ -120,13 +120,13 @@ Each rule below is new, from the 28 Oct retrospective. None is in force until th
 
 ### Review and merge practice (21 Nov, Karma under CR-73)
 
-These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
+These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 to CR-73, the merge-queue changes and a count of the last 30 merged PRs. They are in force on merge under CR-73 and are not part of the proposed set in the section above. The numbers below were counted from comment headers by REST on 21 Nov and are a small sample.
 
 **AIE-R32 (MUST)** A fix round is one commit that closes every open Must-fix item, pushed once, and reviewers are launched only after the head is stable. *Why:* a new commit voids both counted reviews (CR-70), so each extra push costs two fresh review runs. *Evidence:* #1029 took five rounds, #1031 and #1032 three each. *Enforced by:* review only. A stale-review delta print for `merge-queue.mjs` is proposed as a patch in #1149 (merged as a proposal under `docs/ops/proposed/`, not applied).
 
 **AIE-R33 (MUST)** A required check that shows `cancelled` is re-run with `POST repos/<owner>/<repo>/actions/runs/<run_id>/rerun`, never by pushing an empty commit. *Why:* a push voids the reviews. *Evidence:* `compliance-fence` was cancelled on #1032, #1071 and #1149 (twice) and passed on re-run. *Enforced by:* review only.
 
-**AIE-R34 (MUST)** A script or report that reads counted-review headers looks at the first three lines of each comment, because the agent marker line can come first. *Why:* a count that reads only line one undercounts. *Evidence:* a first count on 21 Nov found 75 reviews and 10 of 30 PRs with none; the corrected count is 116 reviews and none missing. *Enforced by:* not yet (AIE-G10); `merge-queue.mjs` is the reader of record.
+**AIE-R34 (MUST)** A script or report that reads counted-review headers looks at the first three lines of each comment, because the agent marker line can come first. *Why:* a count that reads only line one undercounts. *Evidence:* a first count on 21 Nov found 75 reviews and 10 of 30 PRs with none; the corrected count is 116 reviews and none missing. *Enforced by:* not yet (AIE-G14); `merge-queue.mjs` is the reader of record.
 
 **AIE-R35 (MUST)** When a PR touches a path on the CR-73 security-lens list (`.github/**`, `scripts/agents/**`, `docs/agents/**` and the rest of that list), the reviewer pair is planned at launch as one Review A plus one Review B from the `security` or `security-architect` lens. *Why:* a pair without the lens needs a third run. *Evidence:* #1303 had a red-team Review B and then needed a security-lens one. *Enforced by:* `securityLensHits` in `merge-queue.mjs` (#1081) names the missing lens; the planning is review only.
 
@@ -134,7 +134,7 @@ These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 t
 
 **AIE-R37 (MUST)** A number given to the founder says how it was counted and what it leaves out, and a new counting method is checked against one case read by hand before the number is reported. *Why:* a wrong count was almost reported as a finding. *Evidence:* the 21 Nov review count above; #1063 overstated its grid evidence and was closed. *Enforced by:* review only.
 
-**AIE-R38 (MUST)** The PR that records a policy ruling greps `docs/agents`, `.claude`, `agents/*/MEMORY.md` and `docs/engineering` for the old wording and fixes or lists every hit, naming what stays on purpose (legal text is still the founder's). *Why:* CR-73 merged in #1071 and harness-v2 drafts still said the founder merges until #1303. *Enforced by:* not yet (AIE-G11).
+**AIE-R38 (MUST)** The PR that records a policy ruling greps `docs/agents`, `.claude`, `agents/*/MEMORY.md` and `docs/engineering` for the old wording and fixes or lists every hit, naming what stays on purpose (legal text is still the founder's). *Why:* CR-73 merged in #1071 and harness-v2 drafts still said the founder merges until #1303. *Enforced by:* not yet (AIE-G15).
 
 **AIE-R39 (MUST)** The weekly measure in AIE-R23 adds reviews per PR, the share of PRs with a CHANGES verdict, and median hours from open to merge, each with its method stated. *Baseline, 21 Nov, last 30 merged PRs:* 116 counted reviews (105 PASS, 11 CHANGES on 7 PRs), median open to merge 1.3 hours, mean 6.1, maximum 37. Stacked PRs distort the time; queue wait is not separated out; cost per reviewer run is not measured. *Enforced by:* not yet (AIE-G8).
 
@@ -182,6 +182,8 @@ These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 t
 | AIE-G11 | `isFounderComment` and `isTrusted` read the author line (AIE-R30); until a separate identity exists, a founder instruction carries a positive marker the founder types (AIE-R22) |
 | AIE-G12 | `check.mjs` fails when two open PRs or a PR and `develop` claim the same D, BL or ADR id (AIE-R25) |
 | AIE-G13 | A lint fails on scheduled prompts that hard-code dates, freezes or issue numbers as decisions (AIE-R26, AIE-R27) |
+| AIE-G14 | `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test (AIE-R34) |
+| AIE-G15 | A check fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires (AIE-R38) |
 
 ## Exceptions
 
