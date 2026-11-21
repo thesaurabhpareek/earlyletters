@@ -1,60 +1,46 @@
-/**
- * The days store, pure part (NS-47-R6, R28; NS-46-R6; ADR 0032; BRIEF NS-47). No file, no clock, no React Native.
- * Ids only, never a copied date. The whole file is L4 (NS-47-R1): nothing here is logged.
- */
+/** The days store, pure part (NS-47-R6, R28; NS-46-R6; ADR 0032). Ids only, never a copied date. The whole file is L4 (NS-47-R1). */
 export const DAYS_FILE_VERSION = 1;
-/** The owner of a file made on a phone that never signed in. Adopted only at the claim step (NS-47-R7, E73). */
+/** Owner of a file made before any sign-in. Adopted only at the claim step (NS-47-R7, E73; next PR). */
 export const LOCAL_OWNER = 'local';
 
-/** One ticked day. Moves and per-year overrides come with the Days page (next PRs); unknown fields are kept. */
 export type DayTick = Record<string, unknown>;
-
+/** `owner` is 'local' or the first 16 hex of SHA-256 of the user id; every read compares it. */
 export interface DaysFile {
   v: number;
-  /** `'local'` or the first 16 hex of SHA-256 of the user id. Every read compares it (fails closed on a mismatch). */
   owner: string;
   ticked: Record<string, DayTick>;
 }
-
 export type ParsedDays = { kind: 'ok' | 'newer'; file: DaysFile } | { kind: 'corrupt' };
 
-/** A day id is a short plain slug, so a file can never carry free text (NS-47-R2: only ticks are stored). */
+/** A short plain slug, so a file can never carry free text (NS-47-R2: only ticks are stored). */
 export const DAY_ID = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 const OWNER = /^(local|[0-9a-f]{16})$/;
+const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 export const emptyDays = (owner: string): DaysFile => ({ v: DAYS_FILE_VERSION, owner, ticked: {} });
 
-/**
- * Reads a file's text. A higher version is read for the keys we know and flagged `newer` (never rewritten or
- * deleted, NS-47-R28). Anything else that is not the shape is `corrupt`: fail closed, never repaired.
- */
+/** A higher version is read for known keys and flagged `newer` (never rewritten, NS-47-R28). Anything off-shape is `corrupt`. */
 export function parseDays(text: string): ParsedDays {
-  let raw: unknown;
+  let o: unknown;
   try {
-    raw = JSON.parse(text);
+    o = JSON.parse(text);
   } catch {
     return { kind: 'corrupt' };
   }
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { kind: 'corrupt' };
-  const o = raw as Record<string, unknown>;
-  if (typeof o.v !== 'number' || !Number.isInteger(o.v) || o.v < 1) return { kind: 'corrupt' };
-  if (typeof o.owner !== 'string' || !OWNER.test(o.owner)) return { kind: 'corrupt' };
-  if (typeof o.ticked !== 'object' || o.ticked === null || Array.isArray(o.ticked)) return { kind: 'corrupt' };
+  if (!isObject(o) || typeof o.v !== 'number' || !Number.isInteger(o.v) || o.v < 1) return { kind: 'corrupt' };
+  if (typeof o.owner !== 'string' || !OWNER.test(o.owner) || !isObject(o.ticked)) return { kind: 'corrupt' };
   const ticked: Record<string, DayTick> = {};
-  for (const [id, tick] of Object.entries(o.ticked as Record<string, unknown>)) {
-    if (!DAY_ID.test(id) || typeof tick !== 'object' || tick === null || Array.isArray(tick)) return { kind: 'corrupt' };
-    ticked[id] = tick as DayTick;
+  for (const [id, t] of Object.entries(o.ticked)) {
+    if (!DAY_ID.test(id) || !isObject(t)) return { kind: 'corrupt' };
+    ticked[id] = t;
   }
   return { kind: o.v > DAYS_FILE_VERSION ? 'newer' : 'ok', file: { v: o.v, owner: o.owner, ticked } };
 }
 
 export const serializeDays = (file: DaysFile): string => JSON.stringify(file);
 
-/** Ticks a day. An unknown id shape is refused (null), never stored. */
-export function tickDay(file: DaysFile, id: string): DaysFile | null {
-  if (!DAY_ID.test(id)) return null;
-  return { ...file, ticked: { ...file.ticked, [id]: file.ticked[id] ?? {} } };
-}
+/** An id that is not a slug is refused (null), never stored. */
+export const tickDay = (file: DaysFile, id: string): DaysFile | null => (DAY_ID.test(id) ? { ...file, ticked: { ...file.ticked, [id]: file.ticked[id] ?? {} } } : null);
 
 export function untickDay(file: DaysFile, id: string): DaysFile {
   const { [id]: _gone, ...rest } = file.ticked;
