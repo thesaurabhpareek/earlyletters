@@ -176,29 +176,29 @@ export function sanitizeWith(
 // ---------------------------------------------------------------------------
 
 /**
- * SDK-added properties we accept. Everything else starting with `$` is
- * dropped: notably `$device_name` (often "<Name>'s iPhone"), `$timezone` and
- * `$locale` (coarse location; LEGAL-REQ-012 bans location), `$screen_name`,
- * `$network_carrier`, and `$set` / `$set_once` (person properties,
- * LEGAL-REQ-017). Verify this list against the SDK version in staging: if
- * ingestion needs a field that is missing here, add it with a reason.
+ * The ten `$` keys that may leave the phone on a normal event (V6, `00-event-standard.md` section 6): the five
+ * app and device fields kept at source, then the five SDK internals. Exactly this list, pinned by a test, so
+ * adding a key is a PR to the standard first. Everything else starting with `$` is dropped: notably
+ * `$device_name` (often "<Name>'s iPhone"), `$timezone` and `$locale` (coarse location; LEGAL-REQ-012 bans
+ * location), `$screen_name`, `$os`, `$anon_distinct_id`, `$network_carrier`, and `$set` / `$set_once` (person
+ * properties, LEGAL-REQ-017). The real payload is not yet captured (ER-G01): if ingestion needs a field that is
+ * missing here, it is added to the standard with a reason, never here alone.
  */
 export const ALLOWED_SDK_PROPERTIES: readonly string[] = [
-  'distinct_id',
-  'token',
-  '$lib',
-  '$lib_version',
-  '$os',
-  '$os_name',
-  '$os_version',
   '$app_version',
   '$app_build',
+  '$os_name',
+  '$os_version',
   '$device_type',
+  '$lib',
+  '$lib_version',
   '$session_id',
-  '$anon_distinct_id',
   '$process_person_profile',
   '$geoip_disable',
 ];
+
+export { IDENTITY_PROPERTIES, identityValueOk, sdkValueOk } from './pii';
+import { IDENTITY_PROPERTIES, identityValueOk, sdkValueOk } from './pii';
 
 /** SDK-internal events we let through (no properties beyond the above). */
 export const ALLOWED_SDK_EVENTS: readonly string[] = ['$identify'];
@@ -248,9 +248,15 @@ export function sanitizeOutgoing<E extends OutgoingEvent>(
   const sdkProps: Record<string, unknown> = {};
   const ours: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(evt.properties ?? {})) {
-    if (ALLOWED_SDK_PROPERTIES.includes(k)) {
-      if (typeof v === 'string' && isPiiLike(v) && k !== 'distinct_id' && k !== '$anon_distinct_id' && k !== '$session_id' && k !== 'token') {
-        onViolation?.({ kind: 'pii_like_value', event: evt.event, property: k });
+    if (IDENTITY_PROPERTIES.includes(k)) {
+      if (!identityValueOk(k, v)) {
+        onViolation?.({ kind: 'invalid_value', event: safeEvent(evt.event), property: k });
+        return null;
+      }
+      sdkProps[k] = v;
+    } else if (ALLOWED_SDK_PROPERTIES.includes(k)) {
+      if (!sdkValueOk(k, v)) {
+        onViolation?.({ kind: 'pii_like_value', event: safeEvent(evt.event), property: k });
         return null;
       }
       sdkProps[k] = v;
