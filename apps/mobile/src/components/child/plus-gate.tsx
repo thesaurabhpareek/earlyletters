@@ -23,7 +23,7 @@
  * "Redeem a code" follow (keepSheetLayout).
  */
 import * as React from 'react';
-import { AccessibilityInfo, BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
+import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
@@ -37,7 +37,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { expoNetwork } from '@/lib/packs/expo-adapter';
-import { useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { STANDARD_EASING, useMotion, useSheetMotion } from '@/lib/motion';
 import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, sheetTap, type HeldLetter, type HeldOn, type KeepSheetBlock, type KeepSheetLine, type SheetTapNote } from './plus-gate.logic';
 
@@ -134,7 +134,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
     const id = setTimeout(() => {
       try {
         if (layout.words.includes('note')) scroll.current?.scrollTo({ y: Math.max(0, wordsY.current + noteY.current - tokens.space[4]), animated: false });
-        AccessibilityInfo.announceForAccessibility(note);
+        announce(note);
       } catch {
         // the note is still on the sheet, in reading order
       }

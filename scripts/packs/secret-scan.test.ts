@@ -14,7 +14,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generateSigningKey } from '../../packages/api/src/index';
-import { scanRepo, scanText } from './secret-scan.mjs';
+import { SECRET_PATTERNS, scanRepo, scanText } from './secret-scan.mjs';
 
 const REPO = path.resolve(__dirname, '../..');
 const SCAN = path.join(REPO, 'scripts/packs/secret-scan.mjs');
@@ -30,6 +30,21 @@ describe('scanText', () => {
       expect(scanText(`# notes\n${line}\n`), line).toEqual([{ line: 2, name: 'pack signing key (EL_SIGNING_KEY)' }]);
     }
     expect(scanText(`${R2}=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcd`)).toEqual([{ line: 1, name: 'upload secret (PACKS_S3_SECRET_ACCESS_KEY)' }]);
+  });
+
+  it('no rule regex carries the g or y flag (scanText pre-checks each line with p.re.test(line), which a stateful regex would make skip lines)', () => {
+    for (const p of SECRET_PATTERNS) {
+      expect(p.re.flags, p.name).not.toMatch(/[gy]/);
+    }
+  });
+
+  it('two real matches of the same rule on one line give exactly one finding for that rule on that line', () => {
+    const name = 'pack signing key (EL_SIGNING_KEY)';
+    const two = `${realKeyLine()} ${realKeyLine()}`;
+    expect(scanText(two).filter((f) => f.name === name)).toEqual([{ line: 1, name }]);
+    // On line 2 of a file, and the same line twice does not leak into the next line's count.
+    const found = scanText(`# notes\n${two}\n${realKeyLine()}\n`).filter((f) => f.name === name);
+    expect(found).toEqual([{ line: 2, name }, { line: 3, name }]);
   });
 
   it('does not flag mentions and placeholders (the runbook, the scripts, the tests)', () => {

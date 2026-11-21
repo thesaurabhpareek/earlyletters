@@ -8,6 +8,9 @@
  * a child. Variant order matches `copy.notifications.evening`, so a variant id
  * means the same idea with or without names.
  */
+const NEUTRAL_TITLE = 'Something for the book today';
+const LOCK_BODY_NEUTRAL = 'A day you chose to mark. A few words, if you like.';
+
 export const reminderCopy = {
   neutral: {
     evening: [
@@ -20,10 +23,13 @@ export const reminderCopy = {
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
-    // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
-    monthOpen: { title: 'Month {month} begins', body: 'A new month in the book is open.' },
-    birthday: { title: 'A birthday today', body: 'A year of letters. Want to read them together today?' },
-    birthdays: { title: 'Birthdays today', body: 'A year of letters. Want to read them together today?' },
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; E45, E82, G-D21 default). With names off a month or birthday
+    // note carries no month number, age, "A year of letters." or "birthday": one fixed title and one fixed body
+    // (`days.lock.body.neutral`, no {child} in any switch state). Names on use `en.notifications` (NS-13-R24).
+    lockBody: LOCK_BODY_NEUTRAL,
+    monthOpen: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    birthday: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    birthdays: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {

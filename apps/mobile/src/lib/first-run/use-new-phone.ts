@@ -1,7 +1,8 @@
 /**
  * The clock and the one question for "Opening your book" (NX-36-S17 Tier 0; new-phone.logic.ts decides). A phone with a
  * ready, sync-on session and no book asks `readAccountBooks` (bounded at 10 s, fail-safe to `unknown`) EVERY time the
- * route mounts or is retried, and never stores the answer, so a kill and relaunch asks again and nothing goes stale.
+ * route mounts or is retried (Try again keeps the 10 second clock running; a lost answer is re-asked once inside it, BL-978a
+ * R11), and never stores the answer, so a kill and relaunch asks again and nothing goes stale.
  * It reads the sync engine's status (phase, lastSyncedAt) and the connection. It sends only the signed-in session, and
  * records nothing: no analytics event, no storage.
  *
@@ -43,6 +44,12 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   const [kind, setKind] = useState<AccountKind | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [wait, setWait] = useState<Wait | null>(null);
+  // R11: when the first question of this wait went out. Kept across Try again and the one automatic re-ask, so the 10 seconds
+  // are never restarted; only the baseline is refreshed. Cleared when nothing is being asked.
+  const began = useRef<number | null>(null);
+  const reasked = useRef(false);
+  const onlineNow = useRef(o.online);
+  onlineNow.current = o.online;
   // The engine's status, read and followed only while active.
   const [sync, setSync] = useState<SyncStatus | null>(null);
   const [, tick] = useState(0);
@@ -53,14 +60,31 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     return subscribeSyncStatus(setSync);
   }, [active]);
 
+  // Nothing is being asked: the next wait starts its own clock.
+  useEffect(() => {
+    if (active) return;
+    began.current = null;
+    reasked.current = false;
+  }, [active]);
+
   useEffect(() => {
     if (!active || !o.client) return;
-    setWait({ began: Date.now(), baseline: getSyncStatus().lastSyncedAt });
+    began.current ??= Date.now();
+    const start = began.current;
+    setWait({ began: start, baseline: getSyncStatus().lastSyncedAt });
     setKind(null);
     let alive = true;
-    void readAccountBooks(o.client).then((k) => alive && setKind(k));
+    void readAccountBooks(o.client).then((k) => {
+      if (!alive) return;
+      setKind(k);
+      // R11: one automatic re-ask of a lost answer, inside the same window (never a second clock).
+      if (k === 'unknown' && onlineNow.current && !reasked.current && Date.now() - start < OPENING_WAIT_MS) {
+        reasked.current = true;
+        setAttempt((n) => n + 1);
+      }
+    });
     void syncNow();
-    const t = setTimeout(() => tick((n) => n + 1), OPENING_WAIT_MS + 50);
+    const t = setTimeout(() => tick((n) => n + 1), Math.max(0, start + OPENING_WAIT_MS - Date.now()) + 50);
     return () => {
       alive = false;
       clearTimeout(t);

@@ -233,35 +233,52 @@ function fuzzEdits(raw: string, lang: Lang, R: LanguageRules, rnd: () => number)
   return edits;
 }
 
+/**
+ * BL-443: each (language, mode) property is cut into `it` blocks of CHUNK cases, so no single synchronous call
+ * blocks a worker for long (instrumented it took 40 to 67 s). The blocks of one property share one PRNG and
+ * run in file order, so every seed and run number replays as when the property was one test.
+ */
+const CHUNK = 2000;
+const chunks = (runs: number): { from: number; to: number }[] =>
+  Array.from({ length: Math.ceil(runs / CHUNK) }, (_, i) => ({ from: i * CHUNK, to: Math.min(runs, (i + 1) * CHUNK) }));
+
 describe('every language: random hostile edits never add or swap meaning', () => {
   for (const lang of LANGS) {
     for (const mode of ['as shipped', 'vetted'] as const) {
-      it(`${lang.code} ${mode}: ${RUNS} generated edit lists (seed ${SEED})`, () => {
-        const pack = mode === 'vetted' ? vetted(lang.code) : load(lang.code);
-        const R = compileRules(lang.code, pack, lang.script ? { script: lang.script } : {});
-        const broke = makeCheck(lang, R);
-        const rnd = mulberry32(SEED + lang.code.charCodeAt(0) + (mode === 'vetted' ? 1 : 0));
-        let proposed = 0;
-        let accepted = 0;
-        for (let run = 0; run < RUNS; run++) {
-          const raw = lang.corpus[Math.floor(rnd() * lang.corpus.length)];
-          const edits = fuzzEdits(raw, lang, R, rnd);
-          proposed += edits.length;
-          const c = { raw, level: 'clean' as const, dictionary: lang.dict, protectedSpans: protectedSpans(raw, lang.dict), rules: R };
-          const v = verifyEdits(edits, c);
-          accepted += v.accepted.length;
-          for (const e of v.accepted) expect(checkEdit(e, c), `seed ${SEED} run ${run}`).toBeNull();
-          const text = applyEdits(raw, v.accepted);
-          const why = broke(raw, text);
-          if (why) throw new Error(`${lang.code} ${mode} seed ${SEED} run ${run}: ${why}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
+      // Built on the first block's first call, then shared by the blocks that follow.
+      let state: { R: ReturnType<typeof compileRules>; broke: ReturnType<typeof makeCheck>; rnd: () => number } | undefined;
+      let proposed = 0;
+      let accepted = 0;
+      for (const { from, to } of chunks(RUNS)) {
+        it(`${lang.code} ${mode}: generated edit lists ${from} to ${to - 1} of ${RUNS} (seed ${SEED})`, () => {
+          if (!state) {
+            const pack = mode === 'vetted' ? vetted(lang.code) : load(lang.code);
+            const R = compileRules(lang.code, pack, lang.script ? { script: lang.script } : {});
+            state = { R, broke: makeCheck(lang, R), rnd: mulberry32(SEED + lang.code.charCodeAt(0) + (mode === 'vetted' ? 1 : 0)) };
+          }
+          const { R, broke, rnd } = state;
+          for (let run = from; run < to; run++) {
+            const raw = lang.corpus[Math.floor(rnd() * lang.corpus.length)];
+            const edits = fuzzEdits(raw, lang, R, rnd);
+            proposed += edits.length;
+            const c = { raw, level: 'clean' as const, dictionary: lang.dict, protectedSpans: protectedSpans(raw, lang.dict), rules: R };
+            const v = verifyEdits(edits, c);
+            accepted += v.accepted.length;
+            for (const e of v.accepted) expect(checkEdit(e, c), `seed ${SEED} run ${run}`).toBeNull();
+            const text = applyEdits(raw, v.accepted);
+            const why = broke(raw, text);
+            if (why) throw new Error(`${lang.code} ${mode} seed ${SEED} run ${run}: ${why}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
 
-          const out = faithfulClean(raw, { level: 'clean', dictionary: lang.dict, rules: R, modelEdits: edits });
-          const why2 = broke(raw, out.text);
-          if (why2) throw new Error(`${lang.code} ${mode} seed ${SEED} run ${run} (pipeline): ${why2}\nraw:  ${raw}\ntext: ${out.text}\nedits: ${JSON.stringify(out.applied)}`);
-        }
+            const out = faithfulClean(raw, { level: 'clean', dictionary: lang.dict, rules: R, modelEdits: edits });
+            const why2 = broke(raw, out.text);
+            if (why2) throw new Error(`${lang.code} ${mode} seed ${SEED} run ${run} (pipeline): ${why2}\nraw:  ${raw}\ntext: ${out.text}\nedits: ${JSON.stringify(out.applied)}`);
+          }
+        }, 120_000); // 2000 cases per block: well past vitest's 5 s default on a loaded CI runner
+      }
+      it(`${lang.code} ${mode}: was not vacuous`, () => {
         expect(proposed).toBeGreaterThan(RUNS * 2);
         expect(accepted).toBeGreaterThan(RUNS / 10);
-      }, 120_000); // thousands of runs per language: well past vitest's 5 s default on a loaded CI runner
+      });
     }
   }
 });
