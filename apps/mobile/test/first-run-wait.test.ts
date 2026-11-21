@@ -57,7 +57,7 @@ describe('the bar shows at low progress', () => {
 
 describe('"You can start now" is said only where it is true', () => {
   it('the line', () => {
-    expect(speechConsentCopy.startNow).toBe('You can start now. Your voice is kept, and the words follow.');
+    expect(speechConsentCopy.startNow).toBe('You can start now. Recording saved, and the words follow.');
   });
 
   it('shown while the download is on its way: at the tap, queued, moving, checking, finishing, waiting for Wi-Fi, offline', () => {

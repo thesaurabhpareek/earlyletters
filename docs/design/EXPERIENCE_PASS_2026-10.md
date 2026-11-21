@@ -381,7 +381,7 @@ Copy:
 | `speechConsentCopy.footnote` | (not shown) | RET |
 | `speechConsentCopy.chosenYes` | Getting ready. It waits for Wi-Fi. | KEEP |
 | `speechSettingsCopy.downloading` | Getting ready, {n}% | KEEP, shown in the card while downloading |
-| `speechConsentCopy.chosenLater` | Your voice is kept either way. | CHG |
+| `speechConsentCopy.chosenLater` | Recordings are saved either way. | CHG |
 | `speechConsentCopy.lowSpace` | This phone needs {size} of free space first. | KEEP (no download button then) |
 
 Visual: the cover from S06, now 132 x 176 pt and centred above the hero line, **opens**: its front cross-fades to the flyleaf (the child's name small at the top, "From Mama" at the foot, one hairline across the middle where the first letter will go). "The book is open." in `hero`, the body in `body`. The download card below: `accentSoft` fill, `radius.md`, 16 pt padding, title in `headline`, body in `footnote`, then a bordered secondary "Download on Wi-Fi" and a quiet "Not now" side by side (stacked at accessibility sizes). After a choice the card collapses to one line: `chosenYes` plus a thin determinate bar, or `chosenLater`, or `lowSpace`. "Write the first one" full width, pinned at the bottom below the scrolling step, so it is whole on an iPhone SE at the default text size (#374; the web flow measures that size only, and large type is a device check, D1 and D5 of the P2 critics' pass); the cover, the line and the download card scroll above it. The lamp `finish` scene rises from 0.5 to 1.0: the light comes up as the book opens.
@@ -393,7 +393,7 @@ States: low space (no download button, the low-space line); download in progress
 Acceptance:
 - [ ] One filled button on the screen ("Write the first one").
 - [ ] Nothing downloads until "Download on Wi-Fi" is tapped (D-087); the size shown is this phone's plan, never a typed number.
-- [ ] After "Not now", one line: "Your voice is kept either way."
+- [ ] After "Not now", one line: "Recordings are saved either way."
 - [ ] With the model already on the phone, the card does not appear.
 
 ### Chapter 2. The first evening
@@ -562,7 +562,7 @@ Copy:
 |---|---|---|
 | (not yet agreed to the download) title, body | `speechConsentCopy.title` "Get your words ready" / `speechConsentCopy.body` (S08 wording) | KEEP keys |
 | primary / quiet | `speechConsentCopy.downloadButton` "Download on Wi-Fi" / `review.voiceOnlyButton` "Keep the recording" | KEEP |
-| (downloading or waiting) title | `review.waiting.title` "Your voice is kept" | KEEP |
+| (downloading or waiting) title | `review.waiting.title` "Recording saved" | KEEP |
 | `review.waiting.body` | Your words follow once the download is done. | CHG. Revised 16 Oct (review B6): names the real cause (principle 8) instead of "this phone is ready". |
 | status line | `speechSettingsCopy.downloading` / `waitingForWifi` / `noSpace` | KEEP |
 | `wordsCopy.pack.mobileDataButton` | Use {size} of cellular | CHG (US), as #181 holds it. "Use cellular data {size}" is 24 characters, over the 22 in `rules.test.ts`, and `apps/mobile/test/speech-consent.test.ts` (from `develop`) requires the button to show the size from the plan (D-087). "Use 575 MB of cellular" is 22 characters. |
@@ -687,7 +687,7 @@ Copy:
 | `review.destination.filedChip` | Kept in Month {month} | NEW (as #181: "Kept" is the word the person just tapped; the website's "Filed in Month 9" card stays the motion benchmark) |
 | `review.destination.filedChipNewborn` | Kept in the first weeks | NEW |
 | `review.destination.filedChipBefore` | Kept in Before You | NEW |
-| `review.destination.privateToast` | Kept just for you. | KEEP (chip with LockSimple) |
+| `review.destination.privateToast` | Saved as private. | KEEP (chip with LockSimple) |
 | `review.destination.voiceOnlyToast` | Recording kept on this phone. | KEEP (true at this moment: a backup upload, when backup is on, comes after the save) |
 | `billingCopy.keepGate.secondFreeNote` | That was your second free letter. | KEEP, once: on the second kept letter it shows as the Book's toast after the landing (no action, 4 s), not under the chip, where the hand-off leaves no time to read it (D-082) |
 

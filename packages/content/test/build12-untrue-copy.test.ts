@@ -182,7 +182,7 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
       'Our servers keep your letters. Your recordings go there too, on the cloud.',
       'Your audio is sent to our servers.',
       'Our servers hold the audio of each letter.',
-      'Your voice is kept on our servers.',
+      'Your recording is saved on our servers.',
       'Our servers store every voice you record.',
     ]) expect(onServers(claim), claim).toBe(true);
     // Negative samples: true lines the rule must leave alone.
