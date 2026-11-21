@@ -47,6 +47,9 @@ const SERVICE_ONLY = [
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
   `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
+  // 20261111010000 (CR-71 C3)
+  `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
+  `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

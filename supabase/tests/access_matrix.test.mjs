@@ -258,6 +258,8 @@ const WRITES = [
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-04-12"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261111010000 (CR-71 C3): a person's own export row; the sixth call a day writes nothing.
+  ['record_export_created', `select public.record_export_created(1, 10, '${'ab'.repeat(32)}')`,  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   // D-069 (20261005000000): the book already has two parents, so a further co-parent invite is SCCAP.
   ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['SCCAP', 'SCCAP', 'SCPAR', 'SCPAR', 'SCANO', '42501']],

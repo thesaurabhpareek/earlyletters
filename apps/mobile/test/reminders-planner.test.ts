@@ -316,7 +316,7 @@ describe('month notes and birthdays (C-REQ-011)', () => {
 describe('names on the lock screen (C-REQ-009, D-025)', () => {
   const names = ['Asha', 'Dev'];
   const lots = (namesOnLockScreen: boolean) =>
-    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, maxNotifications: 200, now: at('2026-12-20', 12, 0) });
+    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, now: at('2026-12-20', 12, 0) });
 
   it('by default no notification names a child', () => {
     const p = lots(false);
@@ -325,7 +325,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('with names on, evening nudges name each included child in turn', () => {
-    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56, maxNotifications: 200 });
+    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56 });
     // Every variant but "Tonight's letter" names a child.
     const named = evenings.map((n) => names.find((name) => `${n.title} ${n.body}`.includes(name))).filter(Boolean);
     expect(named.length).toBe(evenings.length - evenings.filter((n) => n.variant === 1).length);
@@ -336,7 +336,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('never names a child left out of reminders', () => {
-    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400, maxNotifications: 200 });
+    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400 });
     for (const n of p) expect(`${n.title} ${n.body}`).not.toContain('Dev');
   });
 
