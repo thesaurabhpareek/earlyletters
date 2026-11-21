@@ -168,9 +168,19 @@ const EXTENSION_PRODUCT = /productType\s*=\s*"?com\.apple\.product-type\.(?:app-
  * value equals the content string (a null `content` means no string is agreed yet, so the key is never allowed).
  * Lines 575-576 era rule stays: any UIBackgroundModes, even an empty one, fails (R46: a founder ruling after counsel).
  */
-export function forbiddenNativeProblems({ plist = '', entitlements = '', pbxproj = '', library = { flagOn: false, content: null } } = {}) {
+export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library = { flagOn: false, content: null } } = {}) {
   const out = [];
   const add = (id, text) => out.push({ id, text });
+  // Fail closed: an input that is missing, not text, empty or not the file it should be proves nothing.
+  const unreadable = [
+    ['plist', plist, '<dict', 'Info.plist'],
+    ['entitlements', entitlements, '<dict', 'entitlements file'],
+    ['pbxproj', pbxproj, 'PBXProject', 'project.pbxproj'],
+  ].filter(([, v, marker]) => typeof v !== 'string' || !v.includes(marker));
+  for (const [id, , , name] of unreadable) add(`missing-${id}`, `The generated ${name} is missing, unreadable or empty, so the lint proves nothing (BL-864).`);
+  if (typeof plist !== 'string') plist = '';
+  if (typeof entitlements !== 'string') entitlements = '';
+  if (typeof pbxproj !== 'string') pbxproj = '';
   const keys = [...plist.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
   if (BG_MODES_KEY.test(plist)) add('background-modes', 'Info.plist declares UIBackgroundModes; LEGAL-REQ-011 says none until a recorded founder ruling.');
   if (keys.includes('BGTaskSchedulerPermittedIdentifiers')) add('bg-task-identifiers', 'Info.plist declares BGTaskSchedulerPermittedIdentifiers; no background task runs until a recorded founder ruling.');
