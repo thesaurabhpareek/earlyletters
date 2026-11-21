@@ -98,7 +98,7 @@ The phone sends no timestamp property. The receiver stamps arrival; reports use 
 | Retired ids `scribe.analytics.retired_ids` | Phone only | L2 | At most 20 (`MAX_RETIRED_IDS`); kept only so deletion can reach old events |
 | Consent act record | `policy_acceptances`, written by `record_policy_act` | L2 with L3 `profile_id` | PRIV-R06 and R21; context keys `crash`, `usage`, `product` exist already (PRIV-R21 table). It is the one place that links a signed-in person to "said yes to usage". It never holds the analytics id |
 | Event store records | Store chosen in FD-1 | L2 each; the set is behaviour under a pseudonym | Counsel must confirm it is personal data; treat it as such for deletion and DSR |
-| SDK state | In memory only (`persistence: 'memory'`) | L2 | Nothing on disk |
+| SDK state | Device-local file (`persistence: 'file'`, founder ruling 21 Nov 2026): the consent-time id and any unsent queue | L2 | Survives launches so weekly making families (FR-DAT-21) can be counted; deleted on withdrawal and on Erase; never joined to an account |
 
 ## 5. Retention (proposed, none is a legal opinion)
 
@@ -173,7 +173,8 @@ Shape follows the fields PRIV-R01 requires (level, purpose, retention, deletion 
 |---|---|---|---|---|---|---|
 | `analytics.consent` | phone | L2 | remember the choice | until Erase | Erase everything | none leaves phone |
 | `analytics.id`, `analytics.retired_ids` | phone | L2 | pseudonymous period id; deletion | period; retired kept at most 20 | forget call then local clear | sent to event store only |
-| `analytics.event.*` (68 plus section 3.2 classes) | event store (FD-1) | L2 per property | product analytics | 12 months (proposed) | forget by id; retention job | Usage Data; Diagnostics for error and perf classes |
+| `analytics.event.*` (68 plus section 3.2 classes) | event store (FD-1: PostHog Cloud free, founder 20 Nov) | L2 per property | product analytics | 12 months (proposed) | forget by id; retention job; limits F-1 to F-5 of section 7 apply | Usage Data; Diagnostics for error and perf classes |
+| `analytics.event.sdk_fields` | event store | L2 | which app build and phone software made an event | same | same | Five SDK fields kept at source, by name: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type`. Together with a long-lived random id they are a fingerprinting surface; accepted, and listed so the label and policy name them |
 | `analytics.screen`, `.control`, `.surface`, `.marker` | event store | L2 enum | usage and speed | same | same | same |
 | `policy_acceptances` (analytics act) | Supabase | L2 plus L3 `profile_id` | consent record | account life plus 3 years pseudonymised | account deletion pseudonymises | already inventoried |
 | `ops.forget_quota` | Supabase | L3 (per person) | rate limit | per day | account deletion | already inventoried |
@@ -215,7 +216,7 @@ Engineering gates: IN-DS-01 to 07 below; FR-DAT-26 clean-up of stale values; FR-
 
 | Id | Decision | Default |
 |---|---|---|
-| FD-1 | Where in-app events live under the free-only rule: own Supabase table, self-hosted PostHog on a VM the founder pays for, or nothing beyond Apple's numbers | Apple's numbers now; own table when analytics returns; counsel to rule on "Linked" first |
+| FD-1 | Where in-app events live under the free-only rule: own Supabase table, self-hosted PostHog on a VM the founder pays for, or nothing beyond Apple's numbers | DECIDED 20 Nov 2026 by the founder: PostHog Cloud free tier, for product analytics and crash reporting (settings and rules: `posthog-standard.md`). Open: counsel on "Linked", subprocessor row, label |
 | FD-2 | Retention for raw events | 12 months |
 | FD-3 | One consent switch for usage and crash, or two | One |
 | FD-4 | Withdrawal also deletes (E83 box) | Yes, if counsel agrees |

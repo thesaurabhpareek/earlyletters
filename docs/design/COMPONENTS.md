@@ -589,6 +589,12 @@ type PhotoFrameProps = {
 - **A11y:** decorative (hidden) unless given `accessibilityLabel`, then one image. Its type does not grow with Dynamic Type: it is artwork with a measured layout, like the app icon, and the same name is always real, scalable text on the screen around it.
 - **Android later:** same code.
 
+### 2.25 Notice (PROPOSED, 20 Nov 2026)
+An inline message for a condition the person can act on while the page stays usable (a sign-in code that ran out, notifications off, one choice that did not save). Kinds: info, caution, error, offline. Never red; the glyph carries the kind and the words stay in `text`; one polite live region; no auto-dismiss for error or offline; no count prop. Full spec and states table: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.3. Not built.
+
+### 2.26 PermissionPrimer (PROPOSED, 20 Nov 2026)
+One short note of ours before Apple's own permission alert, extracted from the microphone primer in `app/listen.tsx` when the Face ID line is built. No Allow or Don't allow buttons of ours; Continue is the only path to the iOS alert; shown once while the system has not asked. Spec and states: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.2. Not built.
+
 ## 3. Build order (smallest set that ships the capture loop)
 
 1. Text, Button, IconButton, Card (foundation; edit RNR copies to spec).
