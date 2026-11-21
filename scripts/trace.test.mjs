@@ -8,7 +8,7 @@ import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
   legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
   parseCsv, b1ScopeFromCatalog, parseBaseline, ratchet,
-  nsIds, nsBracketed, nsCited, nsDefinitions, collectNs, summarizeNs,
+  nsIds, nsBracketed, nsCited, nsDefinitions, collectNs, summarizeNs, nsRatchet, nsOpen,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -460,4 +460,84 @@ test('[BL-964] cards 19, 21 and 27 are read; other cards above 12 are not', () =
   assert.equal('NS-94-R1' in by, false, 'card 22 is not an acceptance card');
   assert.equal('NS-90-R50' in by, false, 'card 15 is still not read');
   assert.equal(summarizeNs(ns).cards, 4);
+});
+
+// BL-964 ratchet: the NS rows that may be open are listed in a baseline that only shrinks.
+const NS_ARGS = (repo, more = []) => ['--check', '--no-write', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', ...more, 'docs/prd'];
+const nsBase = (repo, ids) => { fs.mkdirSync(path.join(repo, 'docs/ops'), { recursive: true }); fs.writeFileSync(path.join(repo, 'docs/ops/trace-ns-baseline.txt'), `# header\n${ids.join('\n')}\n`); };
+const OPEN = ['NS-90-C28-1', 'NS-90-R2', 'NS-90-R3', 'NS-90-R99'];
+
+test('[BL-964] nsOpen lists the untested P0 rows and the cited ids no card defines, and nothing else', () => {
+  const repo = nsRepo();
+  const ns = collectNs({ repo, register: path.join(repo, 'docs/product/prd/14-test-plan.md') });
+  assert.deepEqual(nsOpen(ns), ['NS-90-C28-1', 'NS-90-R2', 'NS-90-R3', 'NS-90-R99', 'FRAME-SLIP'].sort((a, b) => a.localeCompare(b, 'en', { numeric: true })));
+});
+
+test('[BL-964] nsRatchet: a new open id fails, a listed one passes, a cited one is only stale', () => {
+  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R2'], ['NS-01-R1', 'NS-01-R2'], null), { added: [], stale: [], grown: [] });
+  assert.deepEqual(nsRatchet(['NS-01-R1', 'NS-01-R9'], ['NS-01-R1', 'NS-01-R2'], null), { added: ['NS-01-R9'], stale: ['NS-01-R2'], grown: [] });
+  assert.deepEqual(nsRatchet([], ['NS-01-R1', 'NS-01-R2'], ['NS-01-R1']), { added: [], stale: ['NS-01-R1', 'NS-01-R2'], grown: ['NS-01-R2'] });
+});
+
+test('[BL-964] --check passes when every open NS id is in the baseline, and lists them in report mode', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 0);
+  assert.doesNotMatch(out.join('\n'), /FAIL/);
+});
+
+test('[BL-964] --check fails and names a P0 row that is untested and not in the baseline', () => {
+  const repo = nsRepo();
+  nsBase(repo, OPEN);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /FAIL: FRAME-SLIP is open and not in docs\/ops\/trace-ns-baseline\.txt/);
+});
+
+test('[BL-964] --check fails on a malformed or undefined bracketed id that is not in the baseline', () => {
+  const repo = nsRepo();
+  nsBase(repo, ['NS-90-C28-1', 'NS-90-R2', 'NS-90-R3', 'FRAME-SLIP']);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /FAIL: NS-90-R99 is open/);
+});
+
+test('[BL-964] a new test title cites a row: the row leaves the open set, and a stale line only reports', () => {
+  const repo = nsRepo();
+  fs.appendFileSync(path.join(repo, 'apps/mobile/test/a.test.ts'), "\nit('[NS-90-R2] now tested', () => {});\n");
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const out = [];
+  assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 0);
+  assert.match(out.join('\n'), /stale baseline line: NS-90-R2/);
+});
+
+test('[BL-964] a baseline that gained an id against the base copy fails; an equal or smaller one passes', () => {
+  const repo = nsRepo();
+  nsBase(repo, [...OPEN, 'FRAME-SLIP']);
+  const base = path.join(repo, 'base.txt');
+  fs.writeFileSync(base, OPEN.join('\n') + '\n');
+  const out = [];
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), (l) => out.push(l)), 1);
+  assert.match(out.join('\n'), /FAIL: FRAME-SLIP was added to the baseline/);
+  fs.writeFileSync(base, [...OPEN, 'FRAME-SLIP', 'NS-90-R1'].join('\n') + '\n');
+  assert.equal(main(NS_ARGS(repo, ['--ns-base', base]), () => {}), 0);
+});
+
+test('[BL-964] a named baseline that is missing fails --check; with none anywhere --check stays as before', () => {
+  const repo = nsRepo();
+  assert.equal(main(NS_ARGS(repo, ['--ns-baseline', 'docs/ops/none.txt']), () => {}), 1);
+  assert.equal(main(NS_ARGS(repo), () => {}), 0);
+  assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', '--ns-baseline', 'docs/ops/none.txt', 'docs/prd'], () => {}), 0, 'report mode never fails');
+});
+
+test('[BL-964] --update-ns-baseline writes the open set once and then only when it shrinks', () => {
+  const repo = nsRepo();
+  const file = path.join(repo, 'docs/ops/trace-ns-baseline.txt');
+  assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', '--update-ns-baseline', 'docs/prd'], () => {}), 0);
+  assert.equal(parseBaseline(fs.readFileSync(file, 'utf8')).length, 5);
+  assert.equal(main(NS_ARGS(repo), () => {}), 0);
+  fs.writeFileSync(file, '# h\nNS-90-R2\n');
+  assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', '--update-ns-baseline', 'docs/prd'], () => {}), 1);
+  assert.equal(fs.readFileSync(file, 'utf8'), '# h\nNS-90-R2\n');
 });

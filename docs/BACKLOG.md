@@ -3809,7 +3809,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the test passes and #721 is reconciled or superseded.
 
 #### BL-964 Traceability sees the NS ids (gate G0)
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: partly done. Report mode #878 and #1060 are merged; the ratchet (`docs/ops/trace-ns-baseline.txt`, `--check`) is in review; blocking in CI is the founder's paste, `docs/ops/proposed/trace-ns-ratchet.md`. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: gate G0 (`14-test-plan.md`); council finding F1.
 - Problem: `scripts/trace.mjs` matches only `X-REQ-nnn` and `X-NFR-nnn` under `docs/prd/v2`, so no NS row is traceable. #819 (draft) does part of it.
 - Scope: rework #819 or replace it: read `docs/product/prd/` as a second source, match `NS-nn-Rnn` and the split and lettered forms (`R9a`, `A2b`, `C28-13`, `B8b`), and the cross-cutting ids `X4-R1`, `X6-R1`, `FRAME-SLIP`; a ratchet that fails when a P0 row in `14-test-plan.md` section 7 has no test title found in the code.
