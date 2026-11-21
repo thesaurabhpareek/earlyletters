@@ -88,7 +88,7 @@ $$;
 
 -- --- 2. ops.security_events -----------------------------------------------------------
 create or replace function ops.security_detail_ok(d jsonb)
-returns boolean language sql immutable set search_path = pg_catalog as $$
+returns boolean language sql immutable set search_path = pg_catalog, pg_temp as $$
   select jsonb_typeof(d) = 'object' and octet_length(d::text) <= 256 and not exists (
     select 1 from jsonb_each(d) e
      where e.key !~ '^[a-z][a-z_]{0,23}$'
