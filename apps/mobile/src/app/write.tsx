@@ -323,8 +323,8 @@ export default function Write() {
     anotherOpacity.value = motion.reduced ? (offerAnother ? 1 : 0) : withTiming(offerAnother ? 1 : 0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
   }, [offerAnother, motion.reduced, anotherOpacity]);
   const anotherStyle = useAnimatedStyle(() => ({ opacity: anotherOpacity.value }));
-  const promptOut = motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
-  const promptIn = motion.reduced ? undefined : FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
+  const promptOut = FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
+  const promptIn = FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
   const promptLayout = motion.reduced ? undefined : LinearTransition.duration(tokens.motion.enter.durationMs);
 
   if (!child) return null;
@@ -414,6 +414,9 @@ export default function Write() {
               <Button variant="quiet" size="sm" icon={ArrowsClockwiseIcon} label={copy.tonight.newPromptButton} className="-ml-4 self-start" onPress={swapPrompt} testID="write.anotherThought" />
             </Animated.View>
           ) : null}
+          {/* A taller or shorter prompt moves the page on the same transition as the prompt; Reduce Motion: no layout move,
+              the prompt itself fades (BL-420). */}
+          <Animated.View layout={promptLayout}>
           <TextField
             ref={field}
             variant="letter"
@@ -433,6 +436,7 @@ export default function Write() {
             scrollEnabled={false}
             placeholder={copy.tonight.typing.placeholder}
           />
+          </Animated.View>
           {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
               above the keyboard and push "Add to the book" off the screen. */}
           {inlineFooter ? footer : null}
