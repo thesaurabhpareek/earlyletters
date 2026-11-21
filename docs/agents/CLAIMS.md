@@ -10,3 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| marketing-wave-e | marketing | fix/content-wave-e-site-store | 1131 | `packages/content/src/pages.en.ts`, `packages/content/src/site.en.ts`, `packages/content/src/store.en.ts`, `packages/content/src/stories.en.ts` | 2026-11-21T00:57Z | 2026-11-24T00:57Z | copy rewrite wave E; PR read as open by REST at 2026-11-21T00:57Z |
