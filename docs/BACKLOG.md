@@ -6809,9 +6809,9 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Done when: the migration file exists with its grants line; `supabase/tests` shows the limit reversing, one audit row per use and no letter deleted, and the suspend lever leaving every letter in place; the file is listed for the founder in `supabase/APPLY.md`; the founder applies it (docs/FOUNDER_TASKS.md).
 
 
-## Review follow-ups: sign-out, the upload probe and the asks (21 Nov 2026; BL-1424 and BL-1425 triaged ready by Karma, 21 Nov 2026; the rest proposed or blocked as each row says)
+## Review follow-ups: sign-out, the upload probe and the asks (21 Nov 2026; BL-1424 and BL-1425 triaged ready by Karma, 21 Nov 2026 (PR #1292 comment 7060294784); BL-1431 sourced from #1293; the rest proposed or blocked as each row says)
 
-Written 21 Nov 2026 by the product agent, docs only, on `develop` `64bbcdd`. BL-1424 to BL-1431 file eight findings from the reviews of PRs #1273, #1274 and #1289 (all open when written). Anything that exists only in one of those PRs is marked unverified: this file was checked against `develop`, not against the PR heads. BL-458's Status is not changed here: #1287 had not merged when this was written.
+Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL-1424 to BL-1431 file eight findings from the reviews of PRs #1273, #1274 and #1289 (all open when written). Anything that exists only in one of those PRs is marked unverified: this file was checked against `develop`, not against the PR heads. BL-458's Status is not changed here: #1287 had not merged when this was written.
 
 #### BL-1424 Sign-out clears the join wait, so the next account's welcome cannot show the previous child's name
 - Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
@@ -6826,8 +6826,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `64bbcdd`. BL-
 - Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
-- Problem and evidence: found by Lens A on #1273. `pendingUploads()` in `apps/mobile/src/lib/auth/auth-store.ts:188-194` returns 0 when the probe throws, which tells sign-out nothing is waiting when the store could not be read. That is the opposite of fail-safe: sign-out could proceed and drop letters that were never uploaded. Its callers read a number: `apple-revocation.logic.ts:54-63`, `session-provider.tsx:299,316,374,560`, and the reducer's `waiting` line at `machine.logic.ts:194`. The 0 for "no sync engine registered" is correct and stays.
-- Scope: return a typed result (for example `{ kind: 'count', n } | { kind: 'unknown' }`) and treat `unknown` as unsynced in the sign-out reducer and in the revocation and force-reauth paths, so sign-out waits as it does for a non-zero count. The way out of an endless wait is `cancelSignOutWait()` (`session-provider.tsx:566-568`, which dispatches `SIGN_OUT_WAIT_CANCELLED`); keep it reachable when the result is `unknown`. The sync side's own `countOr0` (`apps/mobile/src/lib/sync/index.ts:61-67`, for the status line) is a separate read and is not changed here.
+- Problem and evidence: found by Lens A on #1273. `pendingUploads()` in `apps/mobile/src/lib/auth/auth-store.ts:188-194` returns 0 when the probe throws, which tells sign-out nothing is waiting when the store could not be read. That is the opposite of fail-safe: sign-out could proceed and drop letters that were never uploaded. Its callers read a number: `apple-revocation.logic.ts:54-63`, `session-provider.tsx:299,316,374,560`, and the literal `pendingUploads: 0` at `:424` (switch_account, which never reads the probe), and the reducer's `waiting` line at `machine.logic.ts:195`. The 0 for "no sync engine registered" is correct and stays.
+- Scope: return a typed result (for example `{ kind: 'count', n } | { kind: 'unknown' }`) and treat `unknown` as unsynced in the sign-out reducer and in the revocation and force-reauth paths, so sign-out waits as it does for a non-zero count. The way out of an endless wait is `cancelSignOutWait()` (`session-provider.tsx:566-568`, which dispatches `SIGN_OUT_WAIT_CANCELLED`); keep it reachable when the result is `unknown`. `unknown` never reaches a dispatch as `pendingUploads: 0`: every dispatch site above either passes the typed result on or treats it as unsynced; the `:424` literal is reviewed and either kept with a comment saying why or routed through the same read. The sync side's own `countOr0` (`apps/mobile/src/lib/sync/index.ts:61-67`, for the status line) is a separate read and is not changed here.
 - Done when: a test with a probe that throws shows sign-out waiting, not completing; a test with no probe still shows 0 pending; every caller above compiles against the typed result.
 - Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
 
@@ -6878,11 +6878,11 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `64bbcdd`. BL-
 - Done when: the decision is recorded and `test/next-ask.test.ts` has a case named for it.
 - Test: `apps/mobile/test/next-ask.test.ts`.
 
-#### BL-1431 The `j18-dark-mode` web flow fails on `develop`: it expects "Month 6. 2 letters, from Mama." and the Book shows "6 months"
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M4. Size: S. Depends on: none.
+#### BL-1431 The `j18-dark-mode` web flow: reported failing on #1293 (unverified on develop), it expects "Month 6. 2 letters, from Mama." and the Book shows "6 months"
+- Status: proposed (Lens B on #1293; the flow has not been run on `develop`, so the failure is unconfirmed; QA or Karma sets it to ready once it is run there). Mode: agent. Owner: qa engineer. Milestone: M4. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none given. Related: BL-464 (the web e2e flake and seeded flows), #1293.
-- Problem and evidence: found by Lens B on #1293. The `j18-dark-mode` flow fails on `develop` today: it expects a heading matching `/^(This month, )?Month 6\. 2 letters, from Mama\. /` (`apps/mobile/e2e-web/j18-dark-mode.flow.ts:45`) and the Book shows "6 months". The same regex is at `apps/mobile/e2e-web/j09-book.flow.ts:33` as reported (the line was not re-read here). Cause unverified: a copy change in `packages/content`, or the date-dependent "This month" and month-number wording that j09, j11 and j18 already hedge. The failure itself was not re-run here.
+- Problem and evidence: found by Lens B on #1293. The `j18-dark-mode` flow is reported failing: it expects a heading matching `/^(This month, )?Month 6\. 2 letters, from Mama\. /` (`apps/mobile/e2e-web/j18-dark-mode.flow.ts:45`) and the Book shows "6 months". The same regex is at `apps/mobile/e2e-web/j09-book.flow.ts:33` as reported (the line was not re-read here). Cause unverified: a copy change in `packages/content`, or the date-dependent "This month" and month-number wording that j09, j11 and j18 already hedge. The failure itself was not re-run here.
 - Scope: find the cause by running the flow; fix the flow's expectation (or the copy, if the copy change was a mistake) in both j18 and j09, keeping the existing alternation for the date-dependent prefix.
 - Done when: `j18-dark-mode` and `j09-book` pass on `develop`; a changed heading would fail them.
 - Test: `apps/mobile/e2e-web/j18-dark-mode.flow.ts`, `j09-book.flow.ts`.
