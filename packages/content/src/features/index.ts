@@ -2,6 +2,7 @@
 // re-export in each old file so imports still work. Every string here obeys VOICE.md and is
 // checked by test/rules.test.ts.
 export { accountDeletionCopy } from './account-deletion.en';
+export { appLockLines } from './app-lock.en';
 export { authCopy } from './auth.en';
 export { backupCopy } from './backup.en';
 export { billingCopy } from './billing.en';
@@ -15,10 +16,12 @@ export { newDevicePageCopy } from './new-device.en';
 export { packsCopy } from './packs.en';
 export { playerCopy } from './player.en';
 export { reminderCopy } from './reminders.en';
+export { screenStates } from './screen-states.en';
 export { speechConsentCopy, speechSettingsCopy } from './speech.en';
 export { languageNames, wordsCopy } from './words.en';
 
 import { accountDeletionCopy } from './account-deletion.en';
+import { appLockLines } from './app-lock.en';
 import { authCopy } from './auth.en';
 import { backupCopy } from './backup.en';
 import { billingCopy } from './billing.en';
@@ -32,12 +35,14 @@ import { newDevicePageCopy } from './new-device.en';
 import { packsCopy } from './packs.en';
 import { playerCopy } from './player.en';
 import { reminderCopy } from './reminders.en';
+import { screenStates } from './screen-states.en';
 import { speechConsentCopy, speechSettingsCopy } from './speech.en';
 import { languageNames, wordsCopy } from './words.en';
 
 /** Every feature's copy in one object, for the rules test. */
 export const features = {
   accountDeletion: accountDeletionCopy,
+  appLock: appLockLines,
   auth: authCopy,
   backup: backupCopy,
   billing: billingCopy,
@@ -51,6 +56,7 @@ export const features = {
   packs: packsCopy,
   player: playerCopy,
   reminders: reminderCopy,
+  screenStates,
   speech: speechSettingsCopy,
   speechConsent: speechConsentCopy,
   words: wordsCopy,

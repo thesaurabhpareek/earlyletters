@@ -37,7 +37,13 @@ const h = vi.hoisted(() => ({
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
-vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // erase-everything reaches the days store (NS-47-R16)
+// lib/backup/files.ts (B5): the database folder and the native exclusion call, over this disk.
+vi.mock('expo-sqlite', () => ({
+  get defaultDatabaseDirectory() {
+    return `${h.disk.documents}SQLite`;
+  },
+}));
+vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // also: erase-everything reaches the days store (NS-47-R16)
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {
@@ -802,7 +808,8 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     const paths = ['src/lib/erase-everything.ts', 'src/lib/db/repos/wipe.ts', 'src/lib/store.ts', 'src/lib/billing/letter-ledger.ts'];
     for (const p of paths) {
       const s = src(p);
-      expect([p, /from '[^']*\/backup(?:\/|')/.test(s)]).toEqual([p, false]);
+      // B5: the one backup file erase-everything.ts may import is files.ts (the state file's delete; no keys, no runtime).
+      expect([p, /from '[^']*\/backup(?:\/|')/.test(s.replace(/from '\.\/backup\/files'/g, ''))]).toEqual([p, false]);
       expect([p, /deleteBookKeys|deleteDeviceKey|KeyVault/.test(s)]).toEqual([p, false]);
     }
   });
@@ -1209,5 +1216,122 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     app.store.saveLetterFromDraft(d.id, kept);
     expect(owner()).toEqual({ entry_id: d.id, draft_id: null });
     expect(has(file)).toBe(true);
+  });
+});
+
+describe('[B5-4] Erase everything deletes every backup state file inside eraseDeviceFiles() (CR-71 B5)', () => {
+  const ASHA_A = 'backup-3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f.db';
+  const ASHA_B = 'backup-7a1c9d2e-0b3f-4a5d-8e6c-2f1a0b9c8d7e.db';
+  const sqlite = (n: string) => `${h.disk.documents}SQLite/${n}`;
+  const seed = () => {
+    for (const n of [ASHA_A, `${ASHA_A}-wal`, `${ASHA_A}-shm`, ASHA_B, `${ASHA_B}-journal`]) put(h.disk, sqlite(n), 64);
+  };
+
+  it('every account\'s file and sidecar goes, scribe.db stays, and an open handle is closed first', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    const atClose: boolean[] = [];
+    files.registerBackupHandleCloser((id) => void atClose.push(id === null && has(sqlite(ASHA_A))));
+    seed();
+    app.all.eraseDeviceFiles();
+    expect(atClose).toEqual([true]); // the handle closed while the file still existed
+    expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+    expect(has(sqlite('scribe.db')) && has(sqlite('scribe.db-wal'))).toBe(true);
+  });
+
+  it('a file that will not go makes the erase throw, so the rows stay and the next try repeats it', async () => {
+    const app = await launch();
+    seed();
+    h.disk.undeletable.add(sqlite(ASHA_A));
+    expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+    h.disk.undeletable.clear();
+    app.all.eraseDeviceFiles();
+    expect(has(sqlite(ASHA_A))).toBe(false);
+  });
+
+  it('a folder that cannot be listed while a backup file exists: the erase throws (typed) and stays pending', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.unreadable.add(`${h.disk.documents}SQLite`);
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(Error);
+    expect(has(sqlite(ASHA_A))).toBe(true); // nothing was claimed deleted
+    h.disk.unreadable.clear();
+    app.all.eraseDeviceFiles(); // the retry finishes
+    expect(has(sqlite(ASHA_A))).toBe(false);
+    expect(files.deleteBackupFiles()).toEqual({ deleted: 0, failed: 0 });
+  });
+
+  it('the failure is the typed BackupFileDeleteFailed with a stable code, not a bare Error', async () => {
+    const app = await launch();
+    const files = await import('../src/lib/backup/files');
+    seed();
+    h.disk.undeletable.add(sqlite(ASHA_A));
+    let err: unknown;
+    try {
+      app.all.eraseDeviceFiles();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(files.BackupFileDeleteFailed);
+    expect((err as { code: string }).code).toBe('backup_file_delete');
+  });
+
+  it('a recording that will not delete still leaves no backup file (it goes first), and the erase throws', async () => {
+    const app = await launch();
+    seed();
+    const rec = take('A1');
+    h.disk.undeletable.add(rec);
+    expect(() => app.all.eraseDeviceFiles()).toThrow();
+    expect(namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'))).toEqual([]);
+  });
+
+  // Two steps that each hold their own failure (NS-47-R16 days file, B5-4 backup file): one failing must never skip the other.
+  describe('a days file and a backup file together: one that will not go never skips the other', () => {
+    const daysFile = () => `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/days/days.v1.json`;
+    const backupLeft = () => namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'));
+
+    it('the days file will not go: the backup file and the recording are still deleted, the erase throws, and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      const rec = take('A1');
+      h.disk.undeletable.add(daysFile());
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(backupLeft()).toEqual([]);
+      expect(has(rec)).toBe(false);
+      expect(has(daysFile())).toBe(true);
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      expect(() => app.all.eraseDeviceFiles()).toThrow(); // and a direct call throws
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles(); // the retry finishes
+      expect(has(daysFile())).toBe(false);
+    });
+
+    it('the backup file will not go: the days file is still erased, the erase throws (backup_file_delete), and the mark stays', async () => {
+      const app = await launch();
+      seed();
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(sqlite(ASHA_A));
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(has(daysFile())).toBe(false);
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      h.disk.undeletable.clear();
+      app.all.eraseDeviceFiles();
+      expect(has(sqlite(ASHA_A))).toBe(false);
+    });
+  });
+
+  it('a phone with no backup file erases as before', async () => {
+    const app = await launch();
+    expect(() => app.all.eraseDeviceFiles()).not.toThrow();
+    expect(has(sqlite('scribe.db'))).toBe(true);
   });
 });
