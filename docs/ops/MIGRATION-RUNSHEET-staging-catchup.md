@@ -99,7 +99,7 @@ Stop if: there are other rows (staging may be ahead of the markdown: the cdo pac
 
 ### A6. The numbers that decide whether a guard will stop the run
 
-New query, paste this whole box, run it. Read-only. It is the "Before counts" of APPLY.md for Files 4, 6, 22, 23 and 33, plus the hosted checks a), b) of "Hosted checks before the first apply". It was run in PGlite (the repo's own test harness) built from Files 1 and 2 on 21 Nov. Rows 3 to 11 answered as in the last column. Three things differ locally by construction and are not evidence for the hosted project: row 1 answers 18 (PGlite, not Postgres 17), row 12 answers `true` (the harness presets the pepper), and the index check below shows only `objects_pkey` (the harness stubs Storage) [V].
+New query, paste this whole box, run it. Read-only. It is the "Before counts" of APPLY.md for Files 4, 6, 22, 23 and 33, plus the hosted checks a), b) of "Hosted checks before the first apply". It was run in PGlite (the repo's own test harness) built from Files 1 and 2 on 21 Nov. Rows 3 to 11 answered as in the last column, and rows 13 and 14 answered 0 and 0. Three things differ locally by construction and are not evidence for the hosted project: row 1 answers 18 (PGlite, not Postgres 17), row 12 answers `true` (the harness presets the pepper), and the index check below shows only `objects_pkey` (the harness stubs Storage) [V].
 
 ```sql
 select n, what, got, expect from (values
@@ -130,14 +130,14 @@ How to read it:
 | 4 | **Guard G2, File 33.** Must be 0 | Stop; tell the data architect. Those rows stay readable and deletable but need review |
 | 5 | File 4 adds a picture-path rule as NOT VALID, so it still applies | Not a stop; paste back the number so the rule can be validated later (APPLY.md Step 5) |
 | 6 | File 4 deletes `safety_events` on purpose (a health inference the product decided not to keep) | Not a stop; paste back the number. The rows cannot be undone: only a backup brings them back |
-| 13 | **Guard G8, File 8.** File 8 runs `drop table` on `store_notifications`, `store_subscriptions` and `app_account_tokens` with no guard [V: `20261004000000` lines 123 to 125]. File 6 creates them inside this same run, so on a project with only Files 1 and 2 they do not exist yet and the answer is 0 | If not 0, stop: someone created them by hand. Their rows are gone for good once File 8 runs; only a restore from backup (A4) brings them back |
-| 14 | Same as A0 | Stop if it is more than the accounts that are yours |
 | 7 | File 4 needs the three names free | Stop if `false` |
 | 8 | File 6 needs every book to have a date; a book with none is flagged for repair | Not a stop; paste back the number |
 | 9 | **File 22 count.** `held_drafts` is created by File 17 inside this same run, so it starts empty and has nothing to count. `false` is the expected answer | If `true`, File 17 is somehow already in: stop (A5 should have shown it) |
 | 10 | The role that applies the files must see every Storage object, or the legal-hold checks of File 21 answer "not held" | Stop if `false` |
 | 11 | Informational. `3\|3\|3` is the old automatic grants, `0\|0\|0` the new. Both are fine: File 25 sets the end state in this same run | Anything else: stop |
 | 12 | Before Part B this should be `false` (or `true` if you set it earlier) | Informational |
+| 13 | **Guard G8, File 8.** File 8 runs `drop table` on `store_notifications`, `store_subscriptions` and `app_account_tokens` with no guard [V: `20261004000000` lines 123 to 125]. File 6 creates them inside this same run, so on a project with only Files 1 and 2 they do not exist yet and the answer is 0 | If not 0, stop: someone created them by hand. Their rows are gone for good once File 8 runs; only a restore from backup (A4) brings them back |
+| 14 | Same as A0 | Stop if it is more than the accounts that are yours |
 
 Paste back: the fourteen "got" values, one per line.
 
@@ -160,7 +160,7 @@ On your Mac, on the same commit `develop` has: `npm install`, then `npm run test
 
 ## Part B. Set the consent pepper (once, before the run)
 
-The pepper is a secret random value that turns an old account id into a hash. Rules: it is made on your Mac, it lives in your password manager and in one file outside the repo, and it never goes in chat, in a GitHub secret, in a commit or in a screenshot. It is set once and never changed afterwards (old and new hashes would stop matching).
+The pepper is a secret random value that turns an old account id into a hash. Rules: it is made on your Mac, it lives in your password manager and, until B2 step 4 says `true`, in one file outside the repo, and it never goes in chat, in a GitHub secret, in a commit or in a screenshot. It is set once and never changed afterwards (old and new hashes would stop matching).
 
 What the pepper guards, honestly: File 14 and File 30 do **not** refuse to apply without it. Their guard sits inside `finalize_account_deletion` and the pseudonymise triggers, which refuse (`55000`) at the moment an account deletion runs [V: `20261015010000` lines 53 to 61, `20261108010000` lines 64 to 77]. Without it the run still goes through, but the smoke is red on `consent pepper`, and the first deletion stalls. You set it first because you decided that, and because a deletion that runs before it is set stalls.
 
@@ -172,7 +172,7 @@ If you have no pepper yet for this project, make one. This writes it to a file o
 ( umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
-Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and then delete the file once it is saved there (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
@@ -192,6 +192,7 @@ If you already have a pepper in your password manager, do not make a new one. Pu
    show log_min_duration_statement;
    ```
    Expect `none` and `-1`. The smoke accepts `ddl` for the first (`scripts/ops/lib/smoke.ts` line 423), but `ddl` would write the `alter database` statement, pepper included, into the Postgres logs. If `log_statement` is anything but `none` (`ddl`, `mod`, `all`), or the second is not `-1`, **stop**: do not run the pepper line. Turn logging off first (docs/ops/SECURITY.md section 4; ask Supabase support if the dashboard has no switch [U]), or tell the data architect.
+0a. **Before you copy anything:** turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy. If you forget and copied first, open each manager afterwards and delete the entry that holds the pepper.
 1. Get the value onto the clipboard once. Best: open it in your password manager and copy it there (a password manager clears the clipboard itself [U]; this skips `pbcopy`). Or, from the file:
    ```bash
    tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
@@ -201,7 +202,7 @@ If you already have a pepper in your password manager, do not make a new one. Pu
    alter database postgres set app.consent_pepper = '';
    ```
    Run it. Expect "Success. No rows returned". Do not use the Supabase Assistant or any AI panel for this line, and do not click Save or Run-and-save on it. Afterwards close the tab and discard the snippet without saving.
-3. Clear the clipboard and remove the secret from the editor. Before step 1, also turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy. If you did not, open each manager and delete the entry that holds the pepper. Then:
+3. Clear the clipboard and remove the secret from the editor. Then:
    ```bash
    printf '' | pbcopy
    ```
@@ -212,6 +213,8 @@ If you already have a pepper in your password manager, do not make a new one. Pu
    select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
    ```
    Expect `true`. A database setting reaches new connections only [U]; if the editor still says `false`, close the tab, open a new query and run it again. Connections already open in the pooler keep the old value until they are recycled [U], so wait a few minutes (or restart the project from the dashboard, your decision) before the first account deletion.
+
+Once step 4 is `true` and the pepper is saved in your password manager, delete the file now: `rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`.
 
 Paste back: `pepper_ready = true`. Never the value, never the file.
 Stop if: still `false` after a fresh tab. Do not run Part C.
@@ -346,8 +349,8 @@ These are database settings, not migrations, so CI does not apply them.
 | G4. File 30 pepper | `finalize_account_deletion` refuses (`55000`, nothing changed) without a 32-character pepper | Not at apply. At the first account deletion, and as a red smoke line `consent pepper`, and the alert `pepper_missing` from the purge worker | Part B again; then re-check `pepper_ready`. Never set a different value later |
 | G5. Re-run refusals | Most files refuse a second run (`55000`): at least 13, 14, 15, 17, 20, 21, 22, 23, 24, 25, 27, 29, 30, 31, 33, 35 and 36 [V: "already applied" in the files] | Only if the history row is missing while the objects exist | Stop. Do not rerun by hand. The data architect reads A5 and the Verify table and decides |
 | G6. File 25 in the same run | Without File 25 every table answers `42501` to the app | Verify rows 5, 6 and 7 | Files 3 to 24 are applied but the app is shut. Run Part C again; if File 25 itself failed, paste the error |
-| G8. File 8 drops tables | `store_notifications`, `store_subscriptions`, `app_account_tokens` are dropped for good | A6 row 13, before approving | Stop if not 0; only a backup restores them |
 | G7. Photo-path trigger `SCPHO` (File 33) | A new picture path is refused by the server | After the run, from a build with photos on | Expected. The server is closed to pictures on purpose until the photo design ships |
+| G8. File 8 drops tables | `store_notifications`, `store_subscriptions`, `app_account_tokens` are dropped for good | A6 row 13, before approving | Stop if not 0; only a backup restores them |
 
 If the failure is not in this table: stop, paste the failing step's name and the SQLSTATE, and nothing else.
 
