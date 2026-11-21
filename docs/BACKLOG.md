@@ -1637,7 +1637,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: each of the six points is settled in the file it names, or recorded here as left as it is; the book-deletion email and the website page say only what the app does, and the request email says a co-parent is told only if a notice is sent.
 
 #### BL-449 A sign-out wait ends when the queued letters belong to another account [High]
-- Status: ready. Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1273). Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
 - Satisfies: none given.
 - Why: `pendingCount` has no owner filter (`apps/mobile/src/lib/sync/outbox.ts:786-792`), and the engine does not start when the signed-in account differs from the account that owns the queue (`apps/mobile/src/lib/sync/index.ts:186`, `:206`). Account A signs out with letters queued, account B signs in with sync on, and B's sign-out waits on A's rows forever. The same on develop. From the #359 review (lens A S3): code reading, not run.
 - Scope: end the wait when the queue is not the signed-in account's, for example by counting only that account's rows in the sign-out check, or by not waiting when the engine will not start on a mismatch. The owner picks one in the PR. A's queued rows are left as they are.
@@ -1726,7 +1726,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #382 and the experience critics' passes) and filed here by the product agent from the coordinator's list, one entry per item, in the format of BL-446 to BL-456 (`Problem` and `Evidence` take the place of `Why`; `Gate` names the build the item must land before, or "none"). Every file:line cite was re-checked against `develop` at 4192a99, the tip when I last looked, and a moved line has the test title or key beside it; where a line is on an open PR's head, the entry says which PR. "Unverified" means the review said it and I could not find or run it. The brief's "later" is written as `blocked (PR #n merge)` where the PR was open when this was written; the status parser does not clear a PR blocker, so the product agent flips it when the PR merges. `needs-decision (...)` names who decides in the parenthetical (the BL-447 and BL-448 precedent) where no D-### or Q-### exists yet. Priorities are the product agent's call (none were given); the file tags only [Critical] and [High] in a heading, so these carry a `Priority:` line. Not entered: the P8a link-versus-pause decision (F02-U14), because #372 had not merged.
 
 #### BL-457 Pin the See Plus note effect's dependency array, and use `announce()` there
-- Status: ready. Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
+- Status: in-review (PR #1290). Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1746,7 +1746,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: mutants S3-x and S6-g are killed; a test shows an `entries` event between the initialiser read and the subscribe is picked up at once.
 
 #### BL-459 Pin that a join wait started with no name does not inherit the previous book's name
-- Status: ready. Mode: agent. Owner: family owner (S04: the join wait), qa engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1289). Mode: agent. Owner: family owner (S04: the join wait), qa engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1913,7 +1913,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: an expecting book shows the row before its due date, setting the birth date turns the book into a born one (letters before it stay in Before You), and a test covers the row's visibility.
 
 #### BL-473 The Family tab's dateline for a book that is not born yet
-- Status: ready. Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1266). Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2367,7 +2367,7 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Done when: the plan row names the drill and its date; B2-13 says how it is run; the flip section names both conditions once the founder has confirmed them; a test on the preflight output for both profiles shows no PASS line for build 2's row.
 
 #### BL-508 The test that the session provider registers the Privacy row is a formatting-sensitive regex
-- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1252). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2445,7 +2445,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### App (mobile)
 
 #### BL-518 The second reminder prime (after the first month chapter)
-- Status: ready. Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Status: in-review (PR #1274). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. Only the first is built (`apps/mobile/src/lib/asks/next-ask.logic.ts:7`, SET-02).
 - Scope: offer `reminder_prime` again once after the first month chapter, inside the cap of 2 (`MAX_REMINDER_PRIMES`) and the one-ask-per-session rule.
@@ -6281,7 +6281,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A18.
 
 #### BL-1254 Id registry: screens, controls, elements, metrics (ER-B01)
-- Status: in review (branch feat/analytics-er-b01-id-registry). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
+- Status: done (PR #1234, merged). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: ids.ts and generated ids.md: the 29 routes plus the IA-FINAL extras, each with an area and an IA-FINAL id; a dynamic list is one element id. Never: entry text, transcript, audio, child name, autocapture, replay.
 - Done when: V4 and V16 (300 per kind) self-tests; npm run plan renders ids.md.
@@ -6827,6 +6827,18 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Satisfies: none claimed (this row builds the server side of rows BL-1330 and BL-1363, which keep their ids).
 - Scope: one new migration file and its tests, never an edit of an applied migration: a service-role function that limits one member's read of one book's server rows (reversible, never deletes a letter, writes one `access_limit` audit row) and a lever that suspends sign-in for an account without touching the account or its letters. The new functions and any table carry their own grants in the same migration and a line in `supabase/tests/grants.mjs`. The rows BL-1330 and BL-1363 hold the runbook and phone side and name the ids.
 - Done when: the migration file exists with its grants line; `supabase/tests` shows the limit reversing, one audit row per use and no letter deleted, and the suspend lever leaving every letter in place; the file is listed for the founder in `supabase/APPLY.md`; the founder applies it (docs/FOUNDER_TASKS.md).
+
+
+## Delivery plan rows (proposed; docs/engineering/readiness-20nov/DELIVERY-PLAN.md)
+
+#### BL-1446 A recording that will not delete shows in Storage with Remove now (NS-09-R6, plan row P-4a)
+- Status: proposed (the one state line is PROPOSED words under BL-925, which waits for the founder; Karma or the founder sets it to ready; no other row builds NS-09-R6). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-925 for the words.
+- Priority: High (P1: it holds the first store build under the plan's Q1 recommendation). Gate: the first store build.
+- Satisfies: NS-09-R6 (`docs/product/prd/08-keeping-and-trust.md:309`). Also cited: ruling E28, plan 17 row P-4.
+- Problem and evidence: a let-go recording whose delete has failed on 3 launches is invisible; `storage.tsx` says letters and recordings never appear there. No backlog row builds NS-09-R6 (plan 17 section 8 and row P-4 say "no row"). Unverified: that BL-977's failure counter is already merged; it is not on develop as of the plan.
+- Scope: Storage in Me (`apps/mobile/src/app/settings/storage.tsx`) shows one state line, "A recording is still being removed" (PROPOSED), and a Remove now button that retries once; never a list or a count; amend the file's header comment to match.
+- Done when: `[NS-09-R6] a stuck recording is visible in Storage` passes and fails without the line, the content rules test passes, and plan 17 row P-4 can say built.
+- Test: `apps/mobile/test` Storage screen test with a stuck job; content rules.
 
 
 ## Review follow-ups: sign-out, the upload probe and the asks (21 Nov 2026; BL-1424 and BL-1425 triaged ready by Karma, 21 Nov 2026 (PR #1292 comment 7060294784); BL-1431 sourced from #1293; the rest proposed or blocked as each row says)
