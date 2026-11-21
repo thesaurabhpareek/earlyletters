@@ -2448,7 +2448,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 #### BL-518 The second reminder prime (after the first month chapter)
 - Status: partly done (web journey, see BL-1427; mobile half merged in PR #1274, merge commit 32f4e55fb1615d39365c200237e598d0c459ad2b). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
-- Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. Only the first is built (`apps/mobile/src/lib/asks/next-ask.logic.ts:7`, SET-02).
+- Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. The second prime is now built (PR #1274): `apps/mobile/src/lib/asks/next-ask.logic.ts:75` offers it once when `firstMonthDone` and exactly one prime has been shown, inside the cap of 2 (`:20`); `asks.firstLetterAt` is stored in `apps/mobile/src/lib/asks/index.ts:82`. What remains is the web journey (see BL-1427).
 - Scope: offer `reminder_prime` again once after the first month chapter, inside the cap of 2 (`MAX_REMINDER_PRIMES`) and the one-ask-per-session rule.
 - Done when: `test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it.
 
@@ -7100,7 +7100,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Priority: Medium. Gate: none.
 - Satisfies: none given (same source as BL-518: C-REQ-001 Rev, F13 6.2 B row 4c).
 - Problem and evidence: BL-518's Done-when says "`test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it". #1274 builds the mobile half: the second prime after the first month chapter, the cap of 2 and the tests. No web journey step for it exists on `develop` (searched `docs/BACKLOG.md` and `apps/mobile/test` for a journey naming the second prime: none found). What remains on BL-518 once #1274 merges: only the web journey.
-- Scope: add the web journey step that reaches the second showing after the first month chapter and records what it shows. Instruction for the status: when #1274 merges, BL-518's Status must read `partly done (web journey)`, and the product agent sets it in the PR that records the merge; this row is then set to `ready`. This PR does not edit BL-518.
+- Scope: add the web journey step that reaches the second showing after the first month chapter and records what it shows. Reaching it needs `asks.firstLetterAt` (`apps/mobile/src/lib/asks/index.ts:82`) at least 30 days old (`FIRST_MONTH_MS`, `next-ask.logic.ts:23`) with exactly one prime shown (`:75`). How the journey gets there (move the clock, or seed `asks.firstLetterAt`) is the first thing qa decides; if the harness cannot move the clock the size may exceed S and this row should be split. Instruction for the status: when #1274 merges, BL-518's Status must read `partly done (web journey)`, and the product agent sets it in the PR that records the merge; this row is then set to `ready`. This PR does not edit BL-518.
 - Done when: the web journey shows the second prime once, after the first month chapter, and shows no third; BL-518 is changed to `done (<evidence>)` in the PR that merges this.
 - Test: the web journey run (`docs/qa`), plus the existing `test/next-ask.test.ts`.
 
@@ -7118,17 +7118,17 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Status: ready (PR #1274 merged as 32f4e55, the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
-- Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. On `develop` the prime tracks `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47`, correct for the only showing that exists there. Unverified: how #1274 labels the second.
-- Scope: give the second showing its own source value (for example `first_month`), added to the analytics allowlist in `packages/analytics` with its test, and nothing else in the event.
+- Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. Verified on `develop` after #1274 merged: `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47` is sent for every showing, so the second showing (built at `next-ask.logic.ts:75`) is labelled `first_letter` too. #1274 did not touch that file.
+- Scope: give the second showing its own source value (for example `first_month`), added to the analytics allowlist in `packages/analytics` with its test, and nothing else in the event. A new `source` value changes the catalog, so it bumps `SCHEMA_VERSION` and records the new catalog hash in `packages/analytics/src/catalog.ts` (the test that hashes `catalogShape()` fails until it does, PDATA-10).
 - Done when: a test shows the first showing sends `first_letter` and the second sends the new value; the allowlist test passes with the value and fails without it.
 - Data map: the new `source` value is an analytics field value, so check the data map entry beside the allowlist test (DATA-REQ-001).
 - Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
 
 #### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
-- Status: needs-decision (founder or Karma; product's recommendation is in the Problem line). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
+- Status: needs-decision (founder or Karma). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
 - Priority: Low. Gate: none.
 - Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
-- Problem and evidence: Lens B on #1274. On `develop` there is no second prime: `apps/mobile/src/lib/asks/next-ask.logic.ts:58` is the first-prime rule only (`firstLetter && primesShown === 0 && !remindersOn`), and the cap is `MAX_REMINDER_PRIMES = 2` at `:20`. The question arises only if #1274 makes the second prime eligible for someone who said Yes to the first and later turned reminders off in Settings (unverified: this lives only in #1274 and was not read). Whether that matches F13 6.2 B row 4c was not checked either. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
+- Problem and evidence: Lens B on #1274. The second-prime rule now exists on `develop` (PR #1274): `apps/mobile/src/lib/asks/next-ask.logic.ts:75` returns `reminder_prime` when `!firstLetter && firstMonthDone && primesShown === 1 && primeAllowed(primesShown) && !remindersOn`, with the cap `MAX_REMINDER_PRIMES = 2` at `:20`. `primesShown` counts showings from any source and does not record whether the person said Yes, so someone who said Yes to the first and later turned reminders off in Settings becomes eligible once the first month is done. Whether that matches F13 6.2 B row 4c was not checked. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
 - Scope: record the decision as a D-### proposal in the PR body and either keep the behaviour with a test that names it, or add a rule that a person who ever said Yes is never primed again, with its test.
 - Done when: the decision is recorded and `test/next-ask.test.ts` has a case named for it.
 - Test: `apps/mobile/test/next-ask.test.ts`.
