@@ -22,11 +22,32 @@ export class InvalidIsoDateError extends Error {
   }
 }
 
-function parse(iso: string): { y: number; m: number; d: number } {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!match) throw new InvalidIsoDateError();
-  return { y: Number(match[1]), m: Number(match[2]), d: Number(match[3]) };
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+// A full timestamp is accepted as its calendar day (the date part is read; the time never changes a day).
+const ISO_STAMP = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
+
+function isLeap(y: number): boolean {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 }
+
+/**
+ * The one date validator: age.ts, child.ts and everything that reads a calendar day use it.
+ * Anchored at both ends and range-checked, so "2025-13-45", "2026-02-30" and "2026-04-12 junk" all throw.
+ * With `stamp`, a full timestamp ("2026-04-12T23:59:59Z") is read as its day. The error is an InvalidIsoDateError: a fixed
+ * code, never the value (a birthday is personal and error text reaches logs and crash reports).
+ */
+export function parseIsoDate(iso: string, stamp = false): { y: number; m: number; d: number } {
+  const match = typeof iso === 'string' ? (ISO_DAY.exec(iso) ?? (stamp ? ISO_STAMP.exec(iso) : null)) : null;
+  if (!match) throw new InvalidIsoDateError();
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  const days = m === 2 ? (isLeap(y) ? 29 : 28) : [4, 6, 9, 11].includes(m) ? 30 : 31;
+  if (m < 1 || m > 12 || d < 1 || d > days) throw new InvalidIsoDateError();
+  return { y, m, d };
+}
+
+const parse = (iso: string) => parseIsoDate(iso, true);
 
 function dayNumber(iso: string): number {
   const { y, m, d } = parse(iso);
