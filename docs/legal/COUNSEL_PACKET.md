@@ -1,6 +1,6 @@
 ---
 title: Counsel packet, Early Letters v1.0 (option B) and after
-version: 1.7.0
+version: 1.8.0
 status: for counsel
 date: 2026-11-20
 owner: founder
@@ -10,6 +10,8 @@ prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 > **This packet was prepared by an AI. It is not legal advice, and no attorney-client relationship exists.** It collects every open legal question about the v1.0 build the founder chose on 15 Oct 2026 (option B), as questions, not conclusions. Each has a default the product follows if counsel has not answered by the date named; dates are milestone ids from PRD V2 `docs/prd/v2/08-delivery.md` section 2.1 (branch `docs/prd-v2`, PR #124). Facts are tagged **V** (verified on a page or file opened, with the date), **S** (secondary) or **U** (unverified). Source checks are in `BENCHMARK.md`. The published drafts contain no notes for counsel by the founder's direction of 15 Oct; everything counsel must confirm is here and in the pull request description.
 
 ## 0. How to use this packet
+
+**New in 1.8.0 (20 Nov 2026).** Section 8 adds Q109 to Q122: the questions the days, cultural background and media cards (NS-46 to NS-52) left as "needs a number from legal" (CUL-Q5, Q6, Q7, Q11, Q14; FR-DAY-23; tradition-reviewer records; L-14 to L-19; C-9 to C-11). CUL-Q6 is widened to inference (CJEU C-184/20); CUL-Q11 (a day note that names a faith day) no longer maps to Q41. Sections 1 to 7 are unchanged.
 
 **New in 1.7.0 (20 Nov 2026).** Section 7 adds the questions raised by the locked new-scope requirements (cards NS-01 to NS-37) and their engineering designs. It merges each repeated question into the existing number, adds two new ones (Q107, Q108), and marks which block the Build 13 store candidate. Sections 1 to 6 are unchanged apart from section 6 items 9 to 12.
 
@@ -442,10 +444,204 @@ Twelve more questions are cited by the cards but need no new text. They are list
 
 Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) asks about typed occasions and the wording of local reminders for the Memory Library (its Q103 to Q105). NS-18 raises the same facts, so counsel can answer them together.
 
+## 8. Questions from the days, cultural background and media cards (20 Nov 2026)
+
+**Where these come from.**
+- **Cards.** `docs/product/prd/21-days-cultural-photos-home.md` (NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture suggestions, NS-50 Home today) and `docs/product/prd/27-photo-moments-and-media.md` (NS-51 photo moments, NS-52 pictures and videos), read on `develop` 9e4757459dc3, 20 Nov 2026. Function reviews: `functions/cultural-background-data.md` (CUL-Q5 to Q7, Q11, Q14), `functions/days-library.md` (FR-DAY-23, Q-DAY-10, Q-DAY-11), `functions/legal.md` (L-14 to L-19), `functions/compliance.md` (C-9 to C-11 and the second addendum).
+- **Why these were stuck.** Each of those files said "needs a number from legal". CUL-Q11 was mapped to Q41, which is about plan notices (NS-32), not about a day note that names a faith day. The card 21 gate ("counsel answers CUL-Q5 to Q7 and Q11 before production; the flag stays off") could not close without numbers.
+- **How the numbers work.** These are new questions, Q109 to Q122, because no existing number covers them. Where one extends an earlier question, it says so; counsel may answer them together. Q107 and Q108 are taken (section 7). Open drafts claim Q61 to Q74 (#598) and Q78 to Q106 (#760); nothing open claims Q109 or above (checked 20 Nov 2026).
+- **Overlap with #760.** Its Q103 to Q105 ask about the wording of local reminders for the Memory Library. Q112 asks about a day note. Counsel can answer them together.
+- **"Deadline."** The cards give order and gates, never dates (ruling T5). So each question's deadline is the gate it blocks: the answer is needed before that flag turns on in `production`. No calendar date is invented here. The dated milestones of section 0 (T30, 23 Apr 2027) still apply to the packet as a whole.
+- **Not legal advice.** Every reading below is an engineering reading; counsel must confirm. Facts are tagged V (read this session in a named file or page) or U (not read).
+
+### 8.1 Index
+
+| Q | Topic | Old id | Cards | Priority | Blocks (flag in `production`) |
+|---|---|---|---|---|---|
+| Q109 | Religion by inference from a day list kept on the phone | CUL-Q6, Q-DAY-11 | NS-47, NS-46 | C | NS-47 ask slip, tradition browse, tradition days, day-name switch (Drop C) |
+| Q110 | The day list left out of Save a copy | CUL-Q5 | NS-47-R10 | C | Same; with Q55 |
+| Q111 | The label answer and the Privacy Policy sentence for the day list | CUL-Q7 | NS-47-R23 | B | NS-47 Drop C items; in a Drop B candidate the label check is an internal G5 check and the card names no counsel read for it |
+| Q112 | A local day note that names a faith day: Apple 4.5.4 and the licence agreement | CUL-Q11 | NS-46-R35, R36; NS-47-R12, R13; NS-48-R9 | B | Part (c) blocks the Drop B days release (card 21 names "the consent line read by counsel" as its gate); the rest blocks the day-name switch (Drop C) |
+| Q113 | The right to use calendar and day source tables | FR-DAY-23, Q-DAY-10 | NS-46-R12, R23 | B | Any NS-46 row whose date is copied from a source |
+| Q114 | Tradition-reviewer records | NS-46-R23, DL-8 | NS-46-R23 | C | Each tradition's rows (Drop C) |
+| Q115 | Does a picture index plus a day list amount to inference | CUL-Q14 | NS-51-R6, R7 | C | NS-51 |
+| Q116 | A child's picture or video leaving the phone on the parent's act | L-14 | NS-52, NS-51, NS-05 | C | NS-52 Variant B; any video through a door |
+| Q117 | Biometric laws and a design that never matches | L-15 | NS-51-R33, NS-52-R29 | C | Nothing now; any matching feature |
+| Q118 | Another adult's voice in a parent's video | L-16 | NS-52 | C | NS-52 video |
+| Q119 | Library read on the phone only: "collection" and notice at collection | L-17 | NS-51 | C | NS-51 |
+| Q120 | Terms, retention and deletion for hosted media | L-18 | NS-52 Variant B | C | NS-52 Variant B only |
+| Q121 | A printed QR code to a hosted video page | L-19 | NS-52 print | C | Nothing; not built |
+| Q122 | Apple's platform terms for the library read and the Journaling picker | C-9, C-10, C-11 | NS-49 level 2, NS-51 | C | NS-49 level 2, NS-51 |
+
+### 8.2 Q109 (new). Religion by inference from a day list kept on the phone (CUL-Q6, Q-DAY-11)
+- **Facts.**
+  - **What is kept.** Only the days a parent ticks, and a date the parent moved, plus a content-free "asked" flag. The tradition and the country picked in the ask are a browse filter held in memory until the sheet closes (NS-47-R1, R2; `cultural-background-data.md` FR-CUL-02). V.
+  - **Where.** A file in Application Support outside `scribe.db`, excluded from the iPhone backup, per account, cleared at sign-out; class L4. Never in analytics, logs, crash reports, a server table or Save a copy (NS-47-R4, R6, R8, R9, R10; ADR 0032). V (cards and ADR; no build exists).
+  - **We receive nothing.** A network fake sees 0 requests carrying a day id, tradition or country (NS-47-R4). The App Store territory is the United States only (LEGAL-REQ-058, cited by `compliance.md` section 3c, G5). V for the citation.
+  - **Inference.** A ticked day that belongs to one faith may reveal that faith. The CJEU held on 1 Aug 2022 (C-184/20) that data from which special-category information can be indirectly inferred are themselves special-category data under GDPR Article 9. U: I read only a commentary page (https://www.thomashelbing.com/en/wissen/dsgvo-hub/rechtsprechung/1.4.15-eugh-vyriausioji), not the judgment or Article 9. Whether C-184/20 reaches religion through a ticked day is for counsel.
+  - **Earlier wording.** CUL-Q6 asked only whether Article 9 or a US state rule reaches device-only data. This question widens it, as below.
+- **(a)** Is a list of ticked days that includes a faith day "data liable to reveal" religion under Article 9(1) as read after C-184/20, even when it is stored only on the user's phone?
+- **(b)** If yes, is a maker that never receives the data a controller or a processor for it, or neither? Does the household exemption for the parent matter (U, not read)?
+- **(c)** Does EU or UK law reach an app offered only in the US storefront, for example when the account holder is in the EU? Does the answer to (b) change that?
+- **(d)** Which US state laws that name religious belief (or inferred religion) as sensitive data, if any, reach data the maker never receives? U: no state statute was read.
+- **(e)** Is a tick an explicit consent act for Article 9(2)(a) and for the door lines of `docs/agents/COORDINATION.md` section 10 (PRIV-R21), or is it a choice that needs no record because nothing leaves the phone? The line before the first tick says the data stays on the phone and how to stop it (NS-46-R35, NS-47-R29).
+- **Default.** Design as if the answer to (a) is yes: optional, explicit, withdrawable in one tap, never received, equal-weight "Not now". Until counsel answers, the ask slip, the tradition browse, tradition days and the day-name switch stay off in `production`; the plain browse-and-tick list (the CUL-Q8 fallback, no question about the family) is the only form.
+- **If no.** (a) no extra duty beyond the design. If yes with duties on the maker: remove the tradition browse and the ask and keep seasonal, family and civic days only, or add the notice and basis counsel names. (c) EU wording and a territory statement as counsel says.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-47 ask slip, tradition browse, tradition days, day-name switch (Drop C). Does not block Build 13.
+
+### 8.3 Q110 (new). The day list left out of Save a copy (CUL-Q5)
+- **Facts.** Save a copy holds no day, tradition or country; one line on the Days page says so (NS-47-R10). The file can be shared on, which is why the list is left out. V (card). Q55 covers export classification.
+- **(a)** Is leaving the list out of Save a copy consistent with the access and portability rights the Privacy Policy (section 10) describes, given we hold no copy and the parent sees the list on screen? California access right: Cal. Civ. Code 1798.110, U: not opened.
+- **(b)** Must the Privacy Policy or the Days line say that the list is not exported, and where?
+- **Default.** Left out; the one line says so; no export section.
+- **If no.** Save a copy gains a days section, with the risk that a forwarded file shows a faith day; `privacy` and the founder decide the file's warning.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-47-R10 in Drop C. Read with Q55.
+
+### 8.4 Q111 (new). The label answer and the Privacy Policy sentence for the day list (CUL-Q7)
+- **Facts.**
+  - Apple's label rule: data processed only on the device is not "collected" (App Privacy Details, read earlier on 20 Nov by `compliance.md` as S2, not re-read now). The card says Apple lists religious or philosophical beliefs as Sensitive Info and that derived data sent off the device is considered separately. U.
+  - The cards keep the answer "not collected" while NS-47-R4 holds, add one plain Privacy Policy sentence, and re-run the label per build (NS-47-R23; FR-CUL-23). The sentence, in intent: an optional list of days, kept on the phone only, never sent to us.
+  - The law's meaning of "collect" is not Apple's (Q20, Q54).
+- **(a)** May the label stay "not collected" for the day list?
+- **(b)** Is the Privacy Policy sentence enough, and is adding it a clarification (POLICY_VERSIONING 2.2) or a material change (2.1)?
+- **(c)** Does a notice-at-collection duty arise for data we never receive (with Q20)?
+- **Default.** Yes to (a) while NS-47-R4 holds; add the sentence as a minor change; tell the parent in plain words either way.
+- **If no.** The label row changes in the same build; the ask stays off until it does.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Drop C needs the answer. For a Drop B candidate the card (21, release line and NS-47 section 22) gates the label by an internal check at G5 (`privacy` re-runs it, NS-47-R23) and lists CUL-Q5 to Q7 and Q11 as "on record or the fallback list"; Drop B uses the fallback list, so this answer is not a Drop B gate by the card's own words. Note: the old cell for CUL-Q7 said "Q57(f)-adjacent"; Q57 is sanctions, and the related question here is Q54.
+
+### 8.5 Q112 (new). A local day note that names a faith day: Apple 4.5.4 and the licence agreement (CUL-Q11)
+- **Facts.**
+  - **Apple 4.5.4** (read 20 Nov 2026 at https://developer.apple.com/app-store/review/guidelines/; the page text has no last-updated date): push notifications "should not be used to send sensitive personal or confidential information", and "should not be used for promotions or direct marketing purposes unless customers have explicitly opted in ... via consent language displayed in your app's UI, and you provide a method in your app for a user to opt out". V. The text names push; a day note is a local notification.
+  - **The licence agreement.** The cards say Developer Program License Agreement Attachment 1 section 2.2 names local notifications used for marketing and requires opt-in consent language and an opt-out (NS-46-R35), and section 2.3 limits excessive local notifications (NS-48 section 17). U: I did not read the agreement.
+  - **What the product does.** A ticked day sends a 09:00 local note that sells nothing (NS-46-R27) and advertises no feature, new day, the Days page or an update (NS-46-R35). Its lock-screen title and body are neutral for every family, tradition, culture-led or national day; a day's own name shows only for allowlisted seasonal and civic days, or behind a local switch that is off by default and forced off while App lock is on (NS-46-R36; NS-47-R12, R13, R38; ADR 0033; errata E45). The yearly timing of a note is a residual the cards accept (NS-47-R22). V (cards; nothing is built).
+  - **Not Q41.** Q41 is about plan notices (NS-32). CUL-Q11 had been mapped to Q41, which is a different subject; this question replaces that mapping.
+- **(a)** Does 4.5.4, or the agreement, reach a local day note?
+- **(b)** Is a note that names a faith day "sensitive personal or confidential information" in the sense of 4.5.4 when the parent has turned the day-name switch on? Is a neutral note on a faith day, arriving each year, a disclosure in itself?
+- **(c)** Is a day note "promotion or direct marketing"? If a reminder the parent chose by ticking is not, is the line before the first tick plus the opt-out (NS-46-R35, NS-47-R21) still the right design?
+- **(d)** A parent's own typed day follows the same switch (E45). Does a parent's typed word on a lock screen differ in any way?
+- **Default.** Treat 4.5.4 as applying; neutral title and body; names only behind the local switch; no feature advertised in any day note; one-tap untick and Clear all.
+- **If no.** (b) counsel names the fallback: the switch is removed and every day note is neutral. (c) the consent line and the opt-out are written to counsel's words.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Part (c), the read of the line before the first tick and the opt-out, blocks the Drop B days release: card 21 lists "the consent line read by counsel" among the gates of its Drop B row and of the NS-46 release unit, and a default never substitutes for a read that gates a flag (FR-CMP-12). Parts (a), (b) and (d) block the day-name switch (Drop C).
+
+### 8.6 Q113 (new). The right to use calendar and day source tables (FR-DAY-23, Q-DAY-10)
+- **Facts.**
+  - Sources the library review names: timeanddate, Hebcal, the Naval Observatory's public service, the Baha'i World Centre. The review read the pages "as a reader", not their terms of use or licence. V (`days-library.md` line 501 and FR-DAY-23). U: I read none of the terms.
+  - The design: compute what a rule computes (fixed days, nth weekday, Western and Orthodox Easter by the computus); take only moon-sighting and lunisolar dates, and astronomical instants, from a source whose terms allow it; cite it in the data (NS-46-R12, R23; DL-4). Every table cell is a date or the literal `n/r` (NS-46-R1).
+  - The review's view, to be confirmed by counsel: a date is a fact, but a compiled table may be protected and a bulk copy of a commercial list is the risk. U.
+  - The federal holiday names come from 5 U.S.C. 6103 (the cards); U: not opened by me.
+- **(a)** May we use each named source's dates, and on what terms (licence, attribution, where shown)?
+- **(b)** Is computing a rule-based date from a published rule free of any duty?
+- **(c)** Does an `authority` field citing the source in our data meet an attribution duty?
+- **(d)** Is a refresh of the library (a whole-library fetch, NS-46-R48) any different from a bundled table?
+- **Default.** Compute every rule date; cite each table; copy nothing; a source with no confirmed right ships as `n/r`.
+- **If no.** That source's rows are removed or licensed; the moving days that depend on it are not offered.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Any NS-46 row whose date is copied from a source, including the astronomical days (Drop B).
+
+### 8.7 Q114 (new). Tradition-reviewer records (NS-46-R23, DL-8)
+- **Facts.**
+  - Before a tradition's rows ship, a member of that tradition reviews them. The record names a pseudonymous reviewer id, the tradition id, the date and "read"; the person's name stays outside the repository (NS-46-R23). V (card).
+  - Proposed place for the records: `docs/legal/evidence/days/<tradition-id>.md` (PROPOSED in `compliance.md` FR-CMP-32). The repository is public (`gh api repos/thesaurabhpareek/earlyletters --jq .visibility` returned `public`, 21 Nov 2026). V. So the default record form puts a pseudonymous reviewer id paired with a tradition id in a public place.
+  - The library names and prefills are also read against App Review 1.1.1 (read 20 Nov: "Defamatory, discriminatory, or mean-spirited content, including references or commentary about religion ... national/ethnic origin"). V.
+- **(a)** Does a record that pairs a pseudonymous reviewer with a tradition reveal something about that person's religion, so that it needs a basis, a notice or a different form?
+- **(b)** What agreement should sit behind a reviewer's read (confidentiality, no claim that the reviewer speaks for a community, compensation, no right in our texts)? Counsel drafts; we do not sign anything.
+- **(c)** May any public line say a tradition's days were reviewed by a member of it? (The card's marketing rule says no tradition is named as an audience, NS-46-R47.)
+- **Default.** Record only the four fields in the public repository (pseudonymous reviewer id, tradition id, date, "read"); no name anywhere in it; no public line about the review; the 1.1.1 read date goes in the same record. Counsel should read (a) knowing the default is public.
+- **If no.** Counsel names a different record form (for example the review held outside the public repository, with only a hash in it).
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Each tradition's rows (Drop C).
+
+### 8.8 Q115 (new). Does a picture index plus a day list amount to inference (CUL-Q14)
+- **Facts.** The moments index (NS-51) holds picture dates and identifiers only, in its own L4 file; it reads the ticked-day dates in memory to widen a moment and never copies them (NS-51-R6, R7; ADR 0032). Nothing reads faces, people, places or albums by name (NS-51-R5, R33). V (card). The thresholds in R7 are PROPOSED.
+- **(a)** Does a date cluster that falls on a day the parent ticked, held in memory, amount to a sensitive inference, in a family context or under Q109?
+- **(b)** Does the index alone (dates, counts, clusters of a child's pictures) count as sensitive data?
+- **Default.** Both files stay on the phone and are never joined in storage; the in-memory read is the only join; NS-51 stays off in `production`.
+- **If no.** NS-51 does not read the ticked-day dates; moments widen on birthdays and month-age days only.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-51.
+
+### 8.9 Q116 (new). A child's picture or video leaving the phone on the parent's act (L-14; extends Q45)
+- **Facts.**
+  - Variant A (default): no media path in a push, 0 bytes of media uploaded; media stay on the phone and in the iPhone backup, which is Apple's (NS-52-R19). Variant B (not chosen; the founder's decision, Q-PM-3 in card 27, closed as CL-048 with the default accepted: Variant A): media stored on our servers, readable by the second parent (NS-52-R21 to R25). The share sheet carries at most one picture and never a video (NS-52-R37). Save a copy includes every item (NS-52-R17). V (card).
+  - 16 CFR 312.2 treats a child's image or voice as personal information when collected online (`compliance.md` source S10, read earlier, not re-read now). U.
+  - Q45 already asks about a child's picture and voice through the share sheet and Arm V; this question is about stored, shared, exported and printed pictures and video.
+- **(a)** May a child's picture and video leave the phone through Variant B storage, the share sheet, Save a copy or print, on the parent's act?
+- **(b)** Is the parent the provider under child-data law, and are we a service that hosts a parent's content about a child, not an operator collecting from a child?
+- **(c)** What must counsel see before Variant B (X2 and E23: a security read and a counsel read)?
+- **Default.** Variant A first; no video through any door; the flags stay off in `production` until read.
+- **If no.** Variant B is not built; the share carries text only (as Q45(c)).
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 Variant B; a video through NS-05 or NS-11; NS-05 with a picture.
+
+### 8.10 Q117 (new). Biometric laws and a design that never matches (L-15)
+- **Facts.** No face, voice or body measurement exists; nothing reads faces, people or Apple's People data (NS-51-R33), a video's sound is never analysed (NS-52-R6), and no model describes or tags media (NS-52-R29). A source scan fails the build on any such API. V (card). The Illinois definition lists "a retina or iris scan, fingerprint, voiceprint, or scan of hand or face geometry" and does not include photographs (740 ILCS 14/10; the page text was cut, `legal.md` S9); the rest of that act and Texas and Washington law were not read. U.
+- **(a)** Confirm that a design with no face, voice or body measurement is outside BIPA, Texas CUBI, RCW 19.375 and GDPR Article 9 biometric data.
+- **(b)** Does storing and playing back a video, with no analysis, change the answer?
+- **Default.** Nothing is built that matches or measures; counsel confirms.
+- **If no.** Counsel names what must change; media features stay off.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Nothing now. Any face, "same person" or voice-matching feature is a new question first (FR-LEG-24).
+
+### 8.11 Q118 (new). Another adult's voice in a parent's video (L-16; with CR-041)
+- **Facts.** A video can record another adult speaking. The Terms section 5.5 (recordings) and the add-media sheet carry an instruction line to add it only with their agreement; there is no attestation tick (D9; FR-LEG-25). The sound stays in the file and is never transcribed (NS-52-R6). V (card, `legal.md`). Recording-consent statutes were not read. U.
+- **(a)** Does a parent's own video that records another adult engage recording-consent law, and who bears the exposure?
+- **(b)** Is an instruction line enough, or does counsel want a different line?
+- **Default.** Instruction line only.
+- **If no.** Counsel's words; NS-52 video stays off until they are in.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 video.
+
+### 8.12 Q119 (new). Library read on the phone only: "collection" and notice at collection (L-17; extends Q20)
+- **Facts.** NS-51, once the parent turns it on, reads each picture's creation date and a system identifier on the phone, and nothing leaves it (NS-51-R5, R26); Apple's label does not count that as collected (S2). The law's meaning of "collect" differs (Q20). The Privacy Policy and the where-it-lives lines say it in plain words (FR-LEG-21; NS-51-R42). V (card).
+- **(a)** Is that read "collection" under CCPA or any notice-at-collection duty?
+- **(b)** Are the plain-words lines enough?
+- **Default.** Tell the parent in plain words anyway.
+- **If no.** Counsel's notice wording; NS-51 waits for it.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-51 (with Q122).
+
+### 8.13 Q120 (new). Terms, retention and deletion for hosted media (L-18; extends Q51)
+- **Facts.** Only if Variant B is chosen: the Terms licence (section 5.2) would cover hosted media; retention, the deletion clock and media in backups follow the letters' rules (D8). Not built. V (`legal.md`).
+- **(a)** Is the same licence, retention and deletion clock right for hosted media of a child?
+- **(b)** What must Privacy 2, 3 and 7 and the Terms say for media in a server backup?
+- **Default.** Same as letters (D8).
+- **If no.** Counsel's clocks and words before any upload.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 Variant B only.
+
+### 8.14 Q121 (new). A printed QR code to a hosted video page (L-19)
+- **Facts.** A QR code in a printed book could link to a hosted page of a child's video. Anyone holding the book could open the link; signed links cannot be revoked one by one (Supabase signed URLs, `legal.md` S11). Not built and not specced (FR-LEG-27). V (`legal.md`).
+- **(a)** May this ever be offered, and under what limits?
+- **Default.** Not built.
+- **If no.** No change.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Nothing; a spec would wait for the answer.
+
+### 8.15 Q122 (new). Apple's platform terms for the library read and the Journaling picker (C-9, C-10, C-11; NS-49-R27, R35)
+- **Facts.**
+  - **5.1.1(iii)** (read 20 Nov 2026): apps "should only request access to data relevant to the core functionality" and, "where possible, use the out-of-process picker or a share sheet rather than requesting full access to protected resources like Photos". V. NS-01 and NS-49 level 1 use the picker with no permission; NS-51 asks for library access after the parent turns it on (NS-51-R1, R3).
+  - **5.1.1(ii)**: "Ensure your purpose strings clearly and completely describe your use of the data." V. The string exists only in a profile whose flag is on (NS-51-R2).
+  - **NS-49 level 2** uses Apple's Journaling Suggestions picker and an entitlement; no permission string (NS-49-R6, R15). The licence agreement clause 3.3.3(H), as the cards state it, allows the API only "for journaling purposes", with the use clearly evident in marketing text and the interface (NS-49-R35). U: not read by me. The store name is "Early Letters: Baby Journal" (`packages/brand/index.ts`, V), while the brand glossary keeps "journal" out of prose (`BRAND.md`; founder item Q-FD-34).
+  - Suggestions can carry Health-derived items; the app reads only photos (NS-49-R10). Whether 5.1.3 applies is U.
+- **(a)** Will App Review accept a library read for moments when the out-of-process picker exists (5.1.1(iii))?
+- **(b)** Is Photos permission data "sensitive" under any rule the packet lists? (Apple 5.1.3 health data is not it.)
+- **(c)** What do the licence agreement's clauses say about Photos library data beyond 3.3.3(H)?
+- **(d)** Does the store name plus the button words make the journaling purpose "clearly evident" for 3.3.3(H)? Does 5.1.3 touch a feature that reads only photos?
+- **(e)** Is a library permission for a child's pictures acceptable under 5.1.1, and does the purpose string need more than "dates, on this phone"?
+- **Default.** NS-51 ships limited-library-first with the Notes for Review explaining it, and the flag stays off if App Review objects; NS-49 level 2 stays off until (d) is read.
+- **If no.** NS-51 is dropped or reduced to the picker; level 2 is not shipped; the label is unchanged.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-49 level 2; NS-51.
+
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8.0 | 2026-11-20 | Adds section 8 (Q109 to Q122) for the locked cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`, `develop` 9e4757459dc3): CUL-Q5, Q6 (widened to religion by inference, with the controller and US-storefront sub-questions), Q7, Q11 (now Q112, not Q41), Q14; FR-DAY-23 (the right to use source tables); tradition-reviewer records; L-14 to L-19; C-9 to C-11 with the Journaling picker terms. Version 1.8.0 because 1.7.0 is used and #598 names 1.6.0 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
 | 1.7.0 | 2026-11-20 | Adds section 7 (BL-949): the questions raised by the locked new-scope pack (`docs/prd-lock-v1-20nov` at 450bcb4a) and its engineering designs of 20 Nov. Repeated questions are merged into Q32, Q40, Q41, Q43 to Q46, Q48 to Q51 and Q54, with new lettered parts. Two are new: Q107 (a sealed letter and the child who may read it later) and Q108 (earlier versions already on our server, which the policy does not name). Q107 is the first free number, because open drafts claim Q58 to Q106 (#598, BL-780, #760). Twelve cited questions are unchanged (7.16). Section 6 gains items 9 to 12. Version 1.7.0, because #598 names 1.6.0 for its renumbering of Q58 to Q60 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
 | 1.5.0 | 2026-11-01 | Adds Q57 (sanctions: the D-131 country block, no name screening under D-137, the Privacy 12 country-check wording under D-136). Chief Legal Officer (Claude role, not a lawyer), CLO-3. |
 | 1.4.0 | 2026-10-31 | Terms and Subscription Terms are the plain-form 4.1.0 texts. The reviewers' notes that sat inside develop's 4.0.0 texts are carried here: Q41 gains the 31 Oct update (California notices without the amount, the two routes, Unverified items, price-change setting, grace period, federal status); Q40 gains the free-list notes (co-parent writing, the floor, binding promise). Full notes word for word in `CHANGES-2026-10-31.md`, last section. Version 1.4.0 because 1.3.0 is used (POLICY_VERSIONING 2.4). |
