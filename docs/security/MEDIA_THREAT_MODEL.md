@@ -125,9 +125,9 @@ Each gap is a proposal for a backlog row; numbers are for `product` to assign. S
 | G-5 | Metadata scan over the export bytes and the share temp file in the same PR as each path (BL-933, NS-05) | mobile and qa | S | those paths |
 | G-6 | Fuzz the picture and audio parsers on a Mac with a corpus of malformed files (offline; no live service) | security and qa | M | none |
 | G-7 | Native Writing Tools switch on letter fields (existing: NS-01-R50, NSC-05) | mobile | S | NSC-01 |
+| G-8 | Preflight refuses `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`, any photo or camera usage string, and app groups (NSC-02; it stands alone, it is the plist half of P8 and P9 and of the Files-app exposure of Documents). Today preflight checks only `UIBackgroundModes` (`preflight-testflight.mjs:599-600`) | ops | S | BL-864 |
 | G-9 | Decide and document whether account deletion also erases media on the phone (D-7b); if yes, call the device erase from that flow | mobile, privacy | S | founder and privacy call |
 | G-10 | Canary run over the photo paths: a fake city, id and date appear in no log, event or crash record (NX-39-R30, BL-862) | qa | S | BL-862 |
-| G-8 | Preflight refuses `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`, any photo or camera usage string, and app groups (NSC-02; it stands alone, it is the plist half of P8 and P9 and of the Files-app exposure of Documents). Today preflight checks only `UIBackgroundModes` (`preflight-testflight.mjs:599-600`) | ops | S | BL-864 |
 
 ## 9. What this page did not check
 
