@@ -1644,7 +1644,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: a test with two accounts (A queues and signs out, B signs in with sync on and signs out) shows B's sign-out does not wait on A's rows, and A's rows are still queued.
 
 #### BL-450 An Apple revocation noticed at launch waits for unsynced letters before signing out
-- Status: ready (BL-449 is done in PR #1273, so this can proceed; the sign-out probe it touches now counts only the signed-in account's rows, `lib/sync/index.ts:266-271`). Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1332; BL-449 is done in PR #1273, so this can proceed; the sign-out probe it touches now counts only the signed-in account's rows, `lib/sync/index.ts:266-271`). Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
 - Priority: Medium.
 - Satisfies: A-REQ-033 (P0, `docs/prd/v2/features/F02-account.md:213`: "Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync").
 - Why: an Apple revocation noticed at launch signs out without waiting for unsynced letters. The state at that point is `checkingConsent`, and the sign-out request maps it to sync off (`apps/mobile/src/lib/auth/machine.logic.ts:181-183`), so no wait starts. A-REQ-033 is not met for that case. Letters are kept, not sent. Pre-existing. From the #359 review (lens A N1).
