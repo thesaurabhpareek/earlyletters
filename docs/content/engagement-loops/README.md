@@ -43,7 +43,7 @@ Founder rulings (Q-FD-5, NS-46-R20, NS-47-R2): a tradition or a country picked i
 | Library layer (`layer` in the CSV) | Example day ids | Loop | Playful allowed |
 |---|---|---|---|
 | seasonal | `spring_start`, `summer_start`, `fall_start`, `winter_start` | LP-D1 | yes, in-app only |
-| seasonal or civic, light | `new_years_day`, `new_years_eve`, `independence_day`, `labor_day`, `thanksgiving`, `halloween` | LP-D2 | yes, in-app only |
+| seasonal or civic, light | `new_years_day`, `independence_day`, `labor_day`, `thanksgiving` (playful); `new_years_eve`, `halloween` (plain) | LP-D2 | four of six, in-app only |
 | civic, with weight | `mlk_day`, `juneteenth` | LP-D3 | no |
 | quiet (field `tone: quiet`) | `memorial_day`, `veterans_day`, `good_friday`, `yom_kippur` | LP-D4 | no |
 | family | `siblings_day`, `grandparents_day`, `valentines_day`; `mothers_day` and `fathers_day` are never promoted or pre-ticked | LP-D5 | no |
@@ -66,11 +66,11 @@ No variant, tone, channel or time reads any of these.
 
 ## 5. Tone and fallback
 
-- `plain` is the default everywhere. `playful` appears only where guide v1.2 section 4 allows it and the founder has ruled: Friday and Saturday evening lines (Q-FD-27, CL-032; Monday and Sunday stay small and slow), a birthday or month note with names on, a year in the book, first-run delight, a letter-kept toast, and in-app day lines for seasonal and light days.
-- A library-day lock screen is never playful. It is one neutral string per tone for every layer (NS-47-R12). Wit waits until the phone is open.
-- Never playful: errors, money, billing, deletion, safety, permissions, hard seasons, grief, illness, anything the parent might read while upset.
+- `plain` is the default everywhere. The founder chose Option 2 on 21 Nov. `playful` is allowed on exactly three things: Friday and Saturday notes (Q-FD-27, CL-032; Monday and Sunday stay small and slow), one dry letter-kept line, and in-app wording for the five public days (the four seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day). His answer was a selection, not words, so every playful line stays PROPOSED and he approves it key by key.
+- A library-day lock screen is never playful. It is one neutral string per tone for every layer (NS-47-R12), and stays so until Q-FD-18 (`publicTitleOk`) is decided. The five public days may carry playful wording in-app, after the phone is open. There is no playful push for a library day.
+- Never playful: first-run screens with consent, errors, money, billing, deletion, safety, permissions, hard seasons, grief, illness, anything the parent might read while upset, and anything tied to a parent-ticked festival, tradition, country or region. No birthday, month, year-in-the-book or email line is playful.
 - Wit is never at the parent's expense, never a pun on the child's name, never a joke about the child.
-- Each playful line names a plain sibling. A build flag `humour` (PROPOSED, default off) swaps a playful line for its fallback. The swap keeps the slot, so volume never changes.
+- Each playful line names a plain sibling. A build flag `humour` (PROPOSED, off until the founder approves the words) swaps a playful line for its fallback. The swap keeps the slot, so volume never changes.
 
 ## 6. Channels, per the rulings
 
