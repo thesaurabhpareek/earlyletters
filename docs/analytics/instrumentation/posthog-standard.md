@@ -528,7 +528,7 @@ Owners fix their own files in their next edit; none of this PR edits a PM file. 
 | `03-keeping-and-trust.md` (#1041, open; head 03defdc6) | not edited | `keeping.consent.declined` cannot exist (nothing is sent after a no; V15). `keeping.export.shared` and `keeping.slip.shown` are denied by its own list; keep them denied. Its denied-names list must be rewritten in wire names so V1 to V3 reject them |
 | `ops.md` (#1044, open; head 8a4f0d96) | not edited | `system.crash.reported` is replaced by PostHog `$exception` (4.4); the crash-tool evaluation (Sentry, GlitchTip) is closed by the founder's decision; the `error_class` closed list becomes the allowed `type` values; `app_version` and `os_major` are already `$app_version` and `$os_version`; `perf.cold_start` and `perf.warm_start` become `launch_cold` and `launch_warm`. The release gate OG-1 rewrite is the founder's (`analytics.md` section 1a) |
 | `data-architect.md` (#1052, open; head 0a414cbb) | not edited | I read only the lines I cite (volume assumption, server counters, `withdrawal` forget reason). Server counters stay in Supabase and out of PostHog. Its 400 events a month feeds 6.5 |
-| FR-DAT-01 | needs erratum | Production flip, E-INSTR-1 (founder). Not edited |
+| FR-DAT-01 | needs erratum | Production flip, E95 (founder). Not edited |
 | FR-DAT-27, 36, 38 | stand | Checks in V7 and the QA list; names that would break them are denied by the registry |
 | FR-DAT-28 | stands | Server aggregates not read in 1.0 unless the founder rules |
 | PRIV-R21, FR-DAT-04 | stand | Consent sheet and its Shown, Records, Never, Decline lines: wording is the founder's and counsel's, adds crashes |
@@ -589,7 +589,7 @@ Founder:
 - Hold a personal API key for symbol and source map upload in the build service (4.5).
 - US or EU region (3.4). Default: counsel advises.
 - If the deletion drill fails: accept an identified consent id (up to about 4x event cost above the free million) or accept that anonymous events cannot be deleted by person (3.3).
-- Consent sheet wording naming crashes, App Store label (usage plus diagnostics), erratum E-INSTR-1, release gate rewrite, the PostHog subprocessor and data-map rows: all founder or counsel, as in `analytics.md` section 1a.
+- Consent sheet wording naming crashes, App Store label (usage plus diagnostics), erratum E95, release gate rewrite, the PostHog subprocessor and data-map rows: all founder or counsel, as in `analytics.md` section 1a.
 
 Counsel:
 - Whether a phone-held random id with 20 retired ids is "linked" for the label.
