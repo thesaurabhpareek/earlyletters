@@ -248,7 +248,7 @@ Gap ids defined here:
 | AIE-R37 | MUST | review | review only | none |
 | AIE-R38 | MUST | review | not yet | AIE-G15 |
 | AIE-R39 | MUST | weekly aggregation (AIE-R23) | not yet | AIE-G8 |
-| AIE-R40 | MUST | `merge-queue.mjs` NEEDS-UPDATE verdict (#1356); review | pending PR #1356; review only until it merges | AIE-G16 |
+| AIE-R40 | MUST | `merge-queue.mjs` NEEDS-UPDATE verdict (#1356); review | on `develop` since #1356; advisory output, not a blocking check | AIE-G16 |
 | AIE-R41 | MUST | review | not yet | AIE-G17 |
 | AIE-R42 | MUST | reviewer brief; review | review only | none |
 | AIE-R43 | MUST | review | not yet | AIE-G18 |
