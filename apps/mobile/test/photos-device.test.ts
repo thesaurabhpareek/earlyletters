@@ -149,7 +149,7 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
     const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
     for (const f of walk(join(__dirname, '..', 'src')).filter((x) => /\.tsx?$/.test(x))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/resetPhotoDeviceForTest|nativeForTest/);
   });
-  it('[C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
+  it('[NS-01-R47] a pick under App lock is dropped: [C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
     const gone: string[] = [];
     let locked = true;
     const picker = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => locked));
@@ -280,7 +280,7 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
   beforeEach(() => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000001'));
   });
-  it('[C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
     const cache = h.disk.caches;
     put(h.disk, `${cache}ImagePicker/a.jpg`, 100);
     put(h.disk, `${cache}ImagePicker/b.heic`, 100);
@@ -418,6 +418,21 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
     expect(countOutbox()).toBe(before);
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id='e1'")?.final_text).toBe('She laughed.');
+  });
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: every column of every row is byte-identical afterwards (whole-row equality, Asha\'s letters)', () => {
+    // Mutants (run by hand, each turns this red; the final_text-only check above passes the first two): add to migration 11
+    //   UPDATE entries SET updated_at = '2030-01-01T00:00:00Z';   UPDATE entries SET in_book = 0;   UPDATE entries SET final_text = final_text || ' ';
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.slice(0, 10));
+    letter(db, 'e1');
+    letter(db, 'e2', '2026-11-12T00:00:00Z'); // in Recently deleted
+    letter(db, 'e3');
+    db.run("UPDATE entries SET in_book = 0, updated_at = '2026-07-01T10:00:00Z', final_text = 'Asha said \"da\" today.', machine_edits = '[{\"type\":\"filler\"}]' WHERE id = 'e3'");
+    db.run("UPDATE entries SET occurred_on = '2026-03-03', captured_at = '2026-03-04T08:15:00Z', capture_mode = 'spoken', raw_transcript = 'um da da' WHERE id = 'e1'");
+    const before = db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id');
+    expect(before.length).toBe(3);
+    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id')).toEqual(before);
   });
   it('[D1] the checks hold: photo only, jpg only, 140 and 60 characters, an owner that is either a letter or a draft, one picture per owner', () => {
     const { db } = nodeDb();
@@ -737,7 +752,7 @@ describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and rem
     expect([...h.disk.files.keys()]).toEqual([other]);
     expect(() => expoBakedFiles(() => '../x').destination()).toThrow();
   });
-  it('[C7] the launch sweep empties Caches/ScribePhoto too', async () => {
+  it('[NS-01-R52] the picker\'s copy never stays: [C7] the launch sweep empties Caches/ScribePhoto too', async () => {
     put(h.disk, `${h.disk.caches}ScribePhoto/left.jpg`, 10);
     put(h.disk, `${h.disk.caches}ImagePicker/left.jpg`, 10);
     await expoPickedFiles().sweep();
@@ -931,7 +946,7 @@ export function swiftProblems(swift: string): string[] {
 describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () => {
   const dir = join(__dirname, '..', 'modules', 'scribe-photo');
   const swift = readFileSync(join(dir, 'ios', 'ScribePhotoModule.swift'), 'utf8');
-  it('[NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
+  it('[NS-01-R22] the system picker is the only source and returns one photo: [NS-01-R2][NS-01-R22][C8] every file the pod compiles passes the scan: no permission request, camera, library, network or log; checked paths; one picker; the write carries only our three options', () => {
     const sources = compiledSources(join(dir, 'ios'));
     expect(sources).toEqual(['ScribePhotoModule.swift']);
     for (const f of sources) expect(swiftProblems(readFileSync(join(dir, 'ios', f), 'utf8')), f).toEqual([]);

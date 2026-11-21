@@ -269,7 +269,7 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     expect(calls.cancel).toBe(1);
     expect((await run.done).status).toBe('cancelled');
   });
-  it('[NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
+  it('[NS-01-R17c] only the still of a Live Photo: [NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
     const { p } = picker('picked', { paired: true });
     const r = await runPick(p).done;
     if (r.status !== 'picked') throw new Error('not picked');
