@@ -21,6 +21,7 @@ import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
+import { letItGo } from '../src/lib/capture/let-it-go.logic';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
 
@@ -35,6 +36,8 @@ const h = vi.hoisted(() => ({
   lockReloads: [] as (string | null)[],
   /** A setting as the store's database holds it right now (set in beforeEach, once the database exists). */
   settingNow: (_key: string): string | null => null,
+  /** A step of Erase everything after which the process dies (the step's own work is done first), or null. */
+  killAt: null as string | null,
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -66,7 +69,12 @@ vi.mock('../src/lib/audio-enhance', () => ({
   sweepListeningCopies: () => (h.calls.push('listening:sweep'), 0),
 }));
 vi.mock('../src/lib/analytics', () => ({ stopAnalyticsForErase: async () => void h.calls.push('analytics:stop') }));
-vi.mock('../src/lib/family/pending-invite', () => ({ clearPendingInvite: async () => void h.calls.push('invite:clear') }));
+vi.mock('../src/lib/family/pending-invite', () => ({
+  clearPendingInvite: async () => {
+    h.calls.push('invite:clear');
+    if (h.killAt === 'invite') throw new Error('killed');
+  },
+}));
 // The app's Keychain wrapper, over the same map as the ledger's Keychain (the auth modules only lend their key names).
 vi.mock('../src/lib/supabase/secure-storage', () => ({
   secureStorage: {
@@ -87,7 +95,12 @@ vi.mock('../src/lib/app-lock/controller', () => ({
     return true;
   },
 }));
-vi.mock('../src/lib/reminders/scheduler', () => ({ forgetReminders: async () => void h.calls.push('reminders:forget') }));
+vi.mock('../src/lib/reminders/scheduler', () => ({
+  forgetReminders: async () => {
+    h.calls.push('reminders:forget');
+    if (h.killAt === 'reminders') throw new Error('killed');
+  },
+}));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
     throw new Error('native open must not be used in tests');
@@ -168,6 +181,7 @@ beforeEach(() => {
   h.lockReloads = [];
   h.keychain = new Map();
   h.failRemoveKey = null;
+  h.killAt = null;
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -1212,6 +1226,38 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect(mediaRows()).toEqual([]);
   });
 
+  it('[ADR 0028 D5] Let it go and deleteDraft take a draft\'s picture at once, the file first and then its row; a draft not being let go keeps its own', async () => {
+    const app = await launch();
+    const f = family(app);
+    const file = picture(f.draftId, 'mD');
+    expect(app.store.finishDiscard(f.draftId)).toBe(false); // not marked for Let it go: nothing goes
+    expect(has(file)).toBe(true);
+    // The steps Review's Let it go and Listen's Discard run (BL-924).
+    const steps = { beginDiscard: app.store.beginDiscard, deleteFile: (u: string) => void h.disk.files.delete(u), finishDiscard: app.store.finishDiscard };
+    expect(letItGo(f.draftId, f.draft, steps)).toBe(true);
+    expect([has(file), mediaRows()]).toEqual([false, []]);
+    const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
+    const second = picture(typed.id, 'mT');
+    app.store.deleteDraft(typed.id); // Write's emptied draft
+    expect([has(second), mediaRows()]).toEqual([false, []]);
+  });
+
+  it('[NS-01-R16][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
+    let app = await launch();
+    const f = family(app);
+    const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
+    const file = picture(typed.id, 'mT');
+    app.store.setDraftPictureEraser(() => {
+      throw new Error('disk');
+    });
+    expect(() => app.store.deleteDraft(typed.id)).not.toThrow();
+    expect(app.store.getDraft(typed.id)).toBeFalsy(); // the draft is gone
+    expect([has(file), mediaRows()]).toEqual([true, ['mT']]); // the picture is not: yet
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    await vi.waitFor(() => expect([has(file), mediaRows()]).toEqual([false, []]));
+  });
+
   it('[ADR 0028 D1] Keep moves a draft\'s picture to the letter inside the letter\'s own transaction: a failed Keep leaves it the draft\'s', async () => {
     const app = await launch();
     const asha = app.store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
@@ -1361,5 +1407,226 @@ describe('[B5-4] Erase everything deletes every backup state file inside eraseDe
     const app = await launch();
     expect(() => app.all.eraseDeviceFiles()).not.toThrow();
     expect(has(sqlite('scribe.db'))).toBe(true);
+  });
+});
+
+// T7-31, T2-044 (docs/qa/test-plan-b13): a kill after each step of the erase sequence in erase-everything.ts and store.ts.
+describe('[NS-36] kill during Erase resumes and finishes', () => {
+  const daysFile = () => `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/days/days.v1.json`;
+  const sqlite = (n: string) => `${h.disk.documents}SQLite/${n}`;
+  const BACKUP = 'backup-3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f.db';
+  const backupLeft = () => namesIn(h.disk, `${h.disk.documents}SQLite`).filter((n) => n.startsWith('backup-'));
+
+  /** Asha's and Avi's books, every kind of copy on the disk, and every Keychain item the erase clears. */
+  async function phone() {
+    const app = await launch();
+    const f = family(app);
+    app.store.ledgerDb().raiseTo(2);
+    await app.ledger.syncLedger(app.store.ledgerDb());
+    app.store.setSetting('ageGate.passed', '1');
+    app.store.setSetting('appLock.enabled', 'on');
+    const copies = [
+      put(h.disk, `${h.disk.documents}recording-5D2E0F11-0000-4000-8000-0000000057A2.m4a`, 8_000),
+      put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000),
+      put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000),
+      put(h.disk, `${h.disk.caches}recovery-export/recovery-2026-10-03.zip`, 9_000),
+      put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`, 12_000),
+      put(h.disk, daysFile(), 80),
+      put(h.disk, sqlite(BACKUP), 64),
+      put(h.disk, sqlite(`${BACKUP}-wal`), 64),
+    ];
+    h.keychain.set('scribe.auth.pendingName', 'Mama');
+    h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
+    h.keychain.set('scribe.auth.deviceId', 'ab'.repeat(32));
+    return { app, f, copies, all: [f.a1, f.a2, f.draft, f.v1, ...copies] };
+  }
+
+  const tablesLeft = () =>
+    db
+      .all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+      .map((r) => [r.name, rows(r.name)] as const)
+      .filter(([t, n]) => n > 0 && t !== 'settings');
+  const settingKeys = () => db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort();
+
+  /** After the relaunch: nothing is left in any store, nothing comes back, and the mark is gone. */
+  async function expectNothingLeft(next: App, files: string[]) {
+    expect(tablesLeft()).toEqual([]);
+    expect(files.filter(has)).toEqual([]);
+    expect(backupLeft()).toEqual([]);
+    expect([...h.keychain.keys()]).toEqual([]);
+    expect(await next.ledger.lettersKept(next.store.ledgerDb())).toBe(0);
+    expect(next.store.eraseEverythingPending()).toBe(false);
+    expect(next.store.getFamily()).toBeNull();
+    expect(next.store.listChildren()).toEqual([]);
+    expect(await next.sweep.runLaunchSweep()).toEqual({});
+    expect(settingKeys().filter((k) => !['db.secureDeleteVacuumAt', 'lastLaunchAt'].includes(k))).toEqual([]); // the launch writes only its own
+    expect(fetches).toBe(0);
+  }
+
+  // The steps, in order (erase-everything.ts header, store.ts eraseEverythingLocal). Each kills the process right after the step.
+  type Kill = { step: string; rowsGone: boolean; run: (app: App) => Promise<unknown> };
+  const kills: Kill[] = [
+    {
+      step: 'after the pending mark, before any file',
+      rowsGone: false,
+      run: async (app) => app.store.eraseEverythingLocal(() => { throw new Error('killed'); }, app.all.eraseDeviceFiles),
+    },
+    {
+      step: 'after the first recording file, before the rest',
+      rowsGone: false,
+      run: async (app) => {
+        let n = 0;
+        return app.store.eraseEverythingLocal((u, id) => { if (n++ === 1) throw new Error('killed'); app.erase.eraseAudioFile(u, id); }, app.all.eraseDeviceFiles);
+      },
+    },
+    {
+      step: 'after every recording file, before the days, backup and cache copies',
+      rowsGone: false,
+      run: async (app) => app.store.eraseEverythingLocal(app.erase.eraseAudioFile, () => { throw new Error('killed'); }),
+    },
+    {
+      step: 'after every file, before any row',
+      rowsGone: false,
+      run: async (app) =>
+        app.store.eraseEverythingLocal(app.erase.eraseAudioFile, () => {
+          app.all.eraseDeviceFiles();
+          throw new Error('killed');
+        }),
+    },
+    { step: 'after the rows, before the Keychain', rowsGone: true, run: async (app) => app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles) },
+    {
+      step: 'after the invite link and the free-letter count, before the reminders',
+      rowsGone: true,
+      run: async (app) => { h.killAt = 'invite'; return app.all.eraseEverything().catch(() => 'killed'); },
+    },
+    {
+      step: 'after the reminders, before the pending mark goes',
+      rowsGone: true,
+      run: async (app) => { h.killAt = 'reminders'; return app.all.eraseEverything().catch(() => 'killed'); },
+    },
+  ];
+
+  for (const k of kills) {
+    it(`[NS-36] killed ${k.step}: the next launch finishes it, nothing half-erased is visible, nothing comes back`, async () => {
+      const { app, all } = await phone();
+      await k.run(app);
+      h.killAt = null;
+      expect(app.store.eraseEverythingPending()).toBe(true); // the mark outlives every step
+      if (k.rowsGone) expect(tablesLeft()).toEqual([]);
+
+      const next = await launch(); // the process died; the same disk, database and Keychain are opened again
+      const resumed = next.all.resumeEraseAtLaunch();
+      // Files and rows go inside the call, so the first frame reads an empty store, before the Keychain steps are awaited.
+      expect(rows('entries') + rows('drafts') + rows('children')).toBe(0);
+      expect(all.filter(has)).toEqual([]);
+      expect(await resumed).toBe('erased');
+      await expectNothingLeft(next, all);
+    });
+  }
+
+  it('[NS-47-R16] erase scan finds nothing: a kill after the rows, with the days file and a leftover setting key, is finished', async () => {
+    const { app } = await phone();
+    app.store.setSetting('days.dismissedOn', '2026-10-02'); // a key left in settings (T2-044 mutant)
+    await kills[4].run(app);
+    expect(has(daysFile())).toBe(false);
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(next.store.getSetting('days.dismissedOn')).toBeNull();
+    expect(has(daysFile())).toBe(false);
+    await expectNothingLeft(next, [daysFile()]);
+  });
+
+  it('[NS-36] positive control: a launch with no pending erase leaves everything exactly as it was', async () => {
+    const { app, all } = await phone();
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBeNull();
+    expect(all.filter((u) => !has(u))).toEqual([]);
+    expect(rows('entries')).toBe(4);
+    expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(true);
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    await expect(expectNothingLeft(next, all)).rejects.toThrow(); // the check itself is not vacuous
+  });
+
+  it('[NS-36] mutant (clear the marker before the stores): a kill after the mark is cleared is never finished, and the checks catch it', async () => {
+    const { app, all } = await phone();
+    await kills[0].run(app);
+    app.store.finishEraseEverything(); // the mutant: the mark goes before the stores are empty
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBeNull();
+    await expect(expectNothingLeft(next, all)).rejects.toThrow();
+    expect(rows('entries')).toBe(4); // the letters are still there, which is the harm
+  });
+
+  it('[NS-36] idempotent: a second resume in the same process is the same answer, and a third launch finds nothing to do', async () => {
+    const { app, all } = await phone();
+    await kills[5].run(app);
+    h.killAt = null;
+    const next = await launch();
+    const first = next.all.resumeEraseAtLaunch();
+    expect(next.all.resumeEraseAtLaunch()).toBe(first); // once per process
+    expect(await first).toBe('erased');
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    const third = await launch();
+    expect(await third.all.resumeEraseAtLaunch()).toBeNull();
+    await expectNothingLeft(third, all);
+  });
+
+  it('[NS-36] idempotent: every step run again on an erased phone changes nothing and throws nothing', async () => {
+    const { app, all } = await phone();
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(() => app.all.eraseDeviceFiles()).not.toThrow();
+    expect(() => app.all.eraseDeviceFiles()).not.toThrow();
+    expect(await app.all.eraseEverything()).toBe('erased'); // the page's button pressed again
+    await expectNothingLeft(app, all);
+  });
+
+  it('[NS-36] a kill during the resume itself (the second kill) is finished by the third launch', async () => {
+    const { app, all } = await phone();
+    await kills[1].run(app);
+    h.killAt = 'reminders';
+    const second = await launch();
+    expect(await second.all.resumeEraseAtLaunch()).toBe('incomplete'); // killed again in the Keychain and reminder steps
+    h.killAt = null;
+    expect(second.store.eraseEverythingPending()).toBe(true);
+    const third = await launch();
+    expect(await third.all.resumeEraseAtLaunch()).toBe('erased');
+    await expectNothingLeft(third, all);
+  });
+
+  describe('[NS-36][B5-4] a backup file that will not go still triggers the copy and export cleanup (the gap left by #1169)', () => {
+    const exportsAndCopies = () => [
+      `${h.disk.caches}exports/early-letters-2026-10-03.zip`,
+      `${h.disk.caches}recovery-export/recovery-2026-10-03.zip`,
+      `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`,
+      `${h.disk.caches}whole-frames-abc-1.aac`,
+    ];
+
+    // RED TODAY (#1169 gap): erase-everything.ts throws `backupFailure` right after the recordings, before
+    // removeWholeFrameCopies and the CACHE_COPIES loop. The export ZIPs and the print PDF stay until a retry succeeds.
+    it.fails('[NS-36-B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
+      const app = await launch();
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, sqlite(BACKUP), 64);
+      h.disk.undeletable.add(sqlite(BACKUP));
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+    });
+
+    it('[NS-36-B5-4] what is green today: the recordings and the days file are cleaned, the erase throws, the mark stays, and the retry finishes the copies', async () => {
+      const app = await launch();
+      const rec = take('A1');
+      put(h.disk, daysFile(), 80);
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, sqlite(BACKUP), 64);
+      h.disk.undeletable.add(sqlite(BACKUP));
+      expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('incomplete');
+      expect([has(rec), has(daysFile())]).toEqual([false, false]);
+      expect(app.store.eraseEverythingPending()).toBe(true);
+      h.disk.undeletable.clear();
+      const next = await launch();
+      expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(backupLeft()).toEqual([]);
+    });
   });
 });

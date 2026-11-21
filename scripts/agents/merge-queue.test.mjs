@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -13,12 +13,16 @@ const run = (id, name, conclusion, status = "completed") => ({ id, name, status,
 const good = [run(1, "required", "success"), run(2, "compliance-fence", "success"), run(3, "applied migrations unchanged", "success")];
 const PROT = { required_status_checks: { contexts: ["applied migrations unchanged", "required", "compliance-fence"] } };
 
-function fake({ changedFiles, comments = [], runs = good, pushedMin = 60, state = "clean", extraPrs = [], calls = [], files = ["docs/x.md"], protection = PROT } = {}) {
+function fake({ changedFiles, comments = [], runs = good, pushedMin = 60, state = "clean", extraPrs = [], calls = [], files = ["docs/x.md"], protection = PROT, behindBy = 0, baseFiles = [], compareFail = false } = {}) {
   return async (path, opts = {}) => {
     calls.push({ path, method: opts.method });
     const p = path.split("?")[0];
     if (p.endsWith("/pulls")) return [{ number: 7, draft: false, head: { sha: HEAD }, base: { ref: "develop" } }, { number: 8, draft: true, head: { sha: OLD }, base: { ref: "develop" } }, ...extraPrs];
     if (p.includes("/branches/") && p.endsWith("/protection")) { if (!protection) throw new Error("403"); return protection; }
+    if (p.includes("/compare/")) {
+      if (compareFail) throw new Error("502");
+      return p.endsWith("...develop") ? { files: baseFiles.map((filename) => ({ filename })) } : { behind_by: behindBy };
+    }
     if (p.endsWith("/pulls/7/files")) return files.map((filename) => ({ filename }));
     if (p.endsWith("/pulls/7")) return { mergeable_state: state, changed_files: changedFiles === undefined ? files.length : changedFiles };
     if (p.endsWith("/issues/7/comments")) return comments;
@@ -515,4 +519,62 @@ test("CR-73 security lens: an HTML comment block or a line indented four spaces 
   assert.deepEqual(namedLenses("\tLens: security\n"), []);
   assert.deepEqual(namedLenses("  - Lens: security\n"), ["security"]);
   assert.deepEqual(namedLenses("   Lens: security-architect\n"), ["security-architect"]);
+});
+
+const stalePr = { comments: [review("A", HEAD), review("B", HEAD)], files: ["apps/mobile/src/a.ts"] };
+
+test("stale base: behind with a shared workspace is NEEDS-UPDATE with the reason, no Karma line", async () => {
+  const r = await verdict({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/src/b.ts", "docs/x.md"] });
+  assert.equal(r.verdict, "NEEDS-UPDATE");
+  assert.equal(r.mergeNote, undefined);
+  assert.deepEqual(r.staleBase, { behindBy: 3, shared: ["apps/mobile"] });
+  const out = formatTable([r]);
+  assert.match(out, /note: #7 base is behind develop by 3 commits that touch apps\/mobile: update the branch, wait for required, and get fresh reviews \(a new commit voids both\)/);
+  assert.doesNotMatch(out, /ready for Karma/);
+});
+
+test("stale base: behind with no shared workspace stays READY and prints a note with the count", async () => {
+  const r = await verdict({ ...stalePr, behindBy: 5, baseFiles: ["packages/core/src/a.ts", "apps/web/x.ts"] });
+  assert.equal(r.verdict, "READY");
+  assert.match(formatTable([r]), /note: #7 base is behind develop by 5 commits, none in a workspace this PR touches; still ready/);
+  assert.match(formatTable([r]), /ready for Karma/);
+});
+
+test("stale base: not behind is READY with no base note", async () => {
+  const r = await verdict({ ...stalePr, behindBy: 0, baseFiles: ["apps/mobile/src/b.ts"] });
+  assert.equal(r.verdict, "READY");
+  assert.doesNotMatch(formatTable([r]), /base is behind/);
+});
+
+test("stale base: a compare failure is NEEDS-REVIEW with a reason, never READY", async () => {
+  const r = await verdict({ ...stalePr, compareFail: true });
+  assert.equal(r.verdict, "NEEDS-REVIEW");
+  assert.equal(r.reason, "base compare failed");
+  assert.equal(r.mergeNote, undefined);
+  assert.match(formatTable([r]), /note: #7 base compare failed/);
+  const api = fake({ ...stalePr, behindBy: 2 });
+  for (const bad of [{ behind_by: "2" }, {}, null]) {
+    const w = async (path, o) => (path.includes("/compare/") ? bad : api(path, o));
+    assert.equal((await buildQueue({ api: w, now: NOW }))[0].reason, "base compare failed", JSON.stringify(bad));
+  }
+  const cut = async (path, o) => (path.endsWith("...develop") ? { files: Array.from({ length: 300 }, (_, i) => ({ filename: `docs/f${i}.md` })) } : api(path, o));
+  assert.equal((await buildQueue({ api: cut, now: NOW }))[0].verdict, "NEEDS-REVIEW", "300 files may be cut off");
+  const noFiles = async (path, o) => (path.endsWith("...develop") ? {} : api(path, o));
+  assert.equal((await buildQueue({ api: noFiles, now: NOW }))[0].verdict, "NEEDS-REVIEW");
+});
+
+test("stale base: workspaceOf and staleBase are pure and data-driven", () => {
+  const cases = [["apps/mobile/src/a.ts", "apps/mobile"], ["packages/core/src/a.ts", "packages/core"], ["supabase/migrations/1.sql", "supabase"], ["scripts/x.mjs", "scripts"], ["docs/engineering/a.md", "docs/engineering"], ["docs/DECISIONS.md", "docs"], ["package-lock.json", "(root)"], [".github/a.yml", ".github"]];
+  for (const [path, ws] of cases) assert.equal(workspaceOf(path), ws, path);
+  assert.deepEqual(staleBase({ behindBy: 0, prFiles: ["scripts/a"], baseFiles: ["scripts/b"] }), { behindBy: 0, shared: [] });
+  assert.deepEqual(staleBase({ behindBy: 2, prFiles: [{ filename: "docs/n.md", previous_filename: "supabase/a.sql" }], baseFiles: ["supabase/b.sql", "scripts/c"] }), { behindBy: 2, shared: ["supabase"] });
+});
+
+test("stale base: other verdicts keep their place, and the check makes only GET calls", async () => {
+  assert.equal((await verdict({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/x"], state: "dirty" })).verdict, "DIRTY");
+  assert.equal((await verdict({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/x"], pushedMin: 1 })).verdict, "NEEDS-UPDATE");
+  assert.equal((await verdict({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/x"], runs: [good[0]] })).verdict, "WAIT-CI");
+  const calls = [];
+  await buildQueue({ api: fake({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/x"], calls }), now: NOW });
+  assert.ok(calls.some((c) => c.path.includes("/compare/")) && calls.every((c) => c.method === "GET"));
 });

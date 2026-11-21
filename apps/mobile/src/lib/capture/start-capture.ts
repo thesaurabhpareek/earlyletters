@@ -1,6 +1,7 @@
 /**
  * startCapture({ source }): the one function that begins a new letter or take (design spec 06 step 0 and N3; PRD 01
- * section 3; NS-01-R1's prerequisite). Home's cluster calls it for Speak, Type and Not much today; a doorway handler
+ * section 3; NS-01-R1's prerequisite). Home's cluster calls it for Speak, Type, Not much today and, behind
+ * EXPO_PUBLIC_PHOTOS, the photo start once a picture is chosen (NS-01-R1); a doorway handler
  * (widget, Control Center control, Action button, Siri) will call it with its own source when one is built. Nothing
  * else starts a capture: test/navigation-one-entry.test.ts fails on any other push of /listen or /write.
  *
@@ -18,6 +19,7 @@ import { planCapture, type CaptureRequest, type CaptureRoute, type CaptureSource
 
 export type CaptureStarted =
   | { kind: 'route'; pathname: CaptureRoute }
+  | { kind: 'photo'; pathname: '/listen' }
   | { kind: 'quietDay'; markId: string }
   | { kind: 'reserved'; source: CaptureSource };
 
@@ -36,6 +38,10 @@ export function startCapture(req: CaptureRequest): CaptureStarted {
       router.push({ pathname: plan.pathname, params: plan.params });
       return { kind: 'route', pathname: plan.pathname };
     }
+    case 'photo':
+      // The picture is held in memory (lib/photos/pending.ts); Listen shows it at Ready. Nothing is armed or tracked.
+      router.push({ pathname: plan.pathname, params: plan.params });
+      return { kind: 'photo', pathname: plan.pathname };
     case 'quietDay': {
       // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
       // Today by the clock at the tap, not the room's last read.
