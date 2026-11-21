@@ -197,7 +197,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: in-review (PR #46, the remaining rules). Done before it: the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0 (D-053, D-055, D-060, D-061 effects). The claims registry is deferred (v1.1, merged into T5-08).
 
 #### BL-119 `child-input` flag in the prompt selector [High]
-- Status: ready. Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never show today, but `packages/core` has no flag and no test that proves it.
+- Status: done (PR #1220 merged as `401ab26f`: `SelectInput.childInput`, off when absent, in `packages/core/src/prompts.ts`; `packages/core/test/prompts.selection.test.ts`). Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never show today, but `packages/core` has no flag and no test that proves it.
 
 #### BL-120 Verifier hardening and property tests [High]
 - Status: done (3bf45a0: negation, tense and modal guards in `packages/core/src/verify.ts`, `test/verify.fuzz.test.ts`, language regressions in `test/lang.*.test.ts`; ENGINE_VERSION 4).
@@ -2430,7 +2430,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### Server lane (`supabase/**`)
 
 #### BL-516 Two stale comments under `supabase/` (closure review N4)
-- Status: in-review (PR #1249). Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
+- Status: done (PR #1249 merged as `3416fa1b`, `supabase/config.toml` and `supabase/templates/README.md`, comments only). Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low. Gate: none (comments only, but `supabase/**` needs the D-041 review).
 - Problem and evidence: `supabase/config.toml:38` says "/auth/confirm is not listed until the app accepts it (SIGN-04)"; the app accepts it now, and the real reason it is not listed is that no code sends it as a redirect. `supabase/templates/README.md:59-61` says the app does not accept `email_change`; it does now (SIGN-10). Left alone on 31 Oct because a database test run held `supabase/**`.
 - Scope: reword both lines. No setting changes.
@@ -3359,7 +3359,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Plan: P0 on; install yes; no founder hours.
 
 #### BL-864 Plist and preflight lint per phase; UIBackgroundModes stays forbidden (NX-39-R4, R51)
-- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Status: partly done (PR #1203 merged as `84ecd222`: `forbiddenNativeProblems` in `apps/mobile/scripts/preflight-lib.mjs`, `apps/mobile/test/preflight-forbidden-native.test.ts`, both Done-when titles pass; the prebuild diff test for the P2c flag on and off remains, it needs the photo flag wired into `app.config.ts`, and the library content string is not in the repo yet). Mode: agent. Owner: platform. Milestone: M15. Size: S.
 - Who: `ops`, `security-architect`, `compliance-engineer`.
 - Satisfies: NX-39-R4, NX-39-R51. Also cited: LEGAL-REQ-007, LEGAL-REQ-011, SEC-ML-10, CPO-11.
 - Scope: extend `apps/mobile/scripts/preflight-testflight.mjs` and the plist test: keep failing on any `UIBackgroundModes` and any `BGTaskSchedulerPermittedIdentifiers` (lines 575 to 576 stay until a recorded founder ruling after counsel); fail on `NSLocation*`, `NSPhotoLibraryAddUsageDescription`, any WidgetKit, share-extension or notification-extension target, any `application-groups` entitlement; the library key only when its flag is on and equal to the content string; `PHPhotoLibraryPreventAutomaticLimitedAccessAlert` true when it exists; a positive control per rule; a prebuild diff test for the P2c flag on and off (the flag stays off).
@@ -3811,7 +3811,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the test passes and #721 is reconciled or superseded.
 
 #### BL-964 Traceability sees the NS ids (gate G0)
-- Status: partly done (PRs #878 and #1060 report the NS P0 rows; the NS ratchet and its CI step are missing). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: partly done (PRs #878 and #1060 report the NS P0 rows; PR #1205 merged as `86eccfa0` with the NS ratchet in `scripts/trace.mjs`; the CI step remains, it is the founder's paste in `docs/ops/proposed/trace-ns-ratchet.md`, and so does rule (d), a P0 row dropped from section 7). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: gate G0 (`14-test-plan.md`); council finding F1.
 - Problem: `scripts/trace.mjs` matches only `X-REQ-nnn` and `X-NFR-nnn` under `docs/prd/v2`, so no NS row is traceable. #819 (draft) does part of it.
 - Scope: rework #819 or replace it: read `docs/product/prd/` as a second source, match `NS-nn-Rnn` and the split and lettered forms (`R9a`, `A2b`, `C28-13`, `B8b`), and the cross-cutting ids `X4-R1`, `X6-R1`, `FRAME-SLIP`; a ratchet that fails when a P0 row in `14-test-plan.md` section 7 has no test title found in the code.
