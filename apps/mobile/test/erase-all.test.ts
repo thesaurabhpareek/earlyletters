@@ -42,6 +42,7 @@ vi.mock('expo-sqlite', () => ({
   },
 }));
 vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null }));
+vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // erase-everything reaches the days store (NS-47-R16)
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {
