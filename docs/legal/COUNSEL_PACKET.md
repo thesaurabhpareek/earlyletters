@@ -11,6 +11,8 @@ prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 
 ## 0. How to use this packet
 
+**New in 1.9.0 (21 Nov 2026).** Adds section 9 (Q123 to Q132, Moments tab, NS-53) and corrects the Q129 default to the founder's O-44 decision (disclose the iPhone backup in one plain line). Sections 1 to 8 are unchanged.
+
 **New in 1.8.0 (20 Nov 2026).** Section 8 adds Q109 to Q122: the questions the days, cultural background and media cards (NS-46 to NS-52) left as "needs a number from legal" (CUL-Q5, Q6, Q7, Q11, Q14; FR-DAY-23; tradition-reviewer records; L-14 to L-19; C-9 to C-11). CUL-Q6 is widened to inference (CJEU C-184/20); CUL-Q11 (a day note that names a faith day) no longer maps to Q41. Sections 1 to 7 are unchanged.
 
 **New in 1.7.0 (20 Nov 2026).** Section 7 adds the questions raised by the locked new-scope requirements (cards NS-01 to NS-37) and their engineering designs. It merges each repeated question into the existing number, adds two new ones (Q107, Q108), and marks which block the Build 13 store candidate. Sections 1 to 6 are unchanged apart from section 6 items 9 to 12.

@@ -318,7 +318,7 @@ CISO (Claude role, not an auditor); Chief Financial Officer (Claude role).
 
 ## 7. The exact list of things only the founder's hands can do
 
-1. PR #1316 is merged (`ddbf7691`) and so is #1057 (`ab52389c`). What remains is the follow-up docs PR that fixes the Q129 default and adds the packet version (1.9.0) and Changelog row (legal text, D-125 item 5: the founder's standing word covers pending doc merges; Karma decides at merge time).
+1. PR #1316 is merged (`ddbf7691`) and so is #1057 (`ab52389c`). What remains is the follow-up docs PR that fixes the Q129 default and adds the packet version (1.9.0) and Changelog row (legal text; D-125 item 5 says the founder merges `docs/legal/**`. The founder said in chat on 21 Nov 2026 "Yes merge 1057. And everything pending." Karma decides at merge time whether that covers each legal-text PR).
 2. Merge any policy, Terms, label or in-app text that carries the O-44 backup line and the picture lines (Privacy Policy 3.1.0, Terms 4.2.0, label 2.3.0 are drafts, `PRIVACY-CONTRADICTIONS.md`). Legal text is his to merge and counsel confirms the wording first.
 3. Paste and push the O-61 patch (section 6.1) and the existing `ios-compile-eas-json.patch`, open the PR, and, if the repository has a required check with the old job name, change it in the repository settings (sessions cannot read or write settings).
 4. Decide whether to engage licensed California counsel and set the cap (O-40, spend). Without that, G11b, Q123 to Q132 and every "counsel must confirm" stay open, and the library read, places and the door's store build stay dark.
