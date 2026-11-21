@@ -62,8 +62,8 @@ export const wordsCopy = {
     cancelButton: 'Not now',
   },
   unavailable: {
-    title: 'Your voice is kept',
-    body: "Words can't be written down on this phone yet. Keep the recording and the words can come later, or type it instead.",
+    title: 'Recording kept',
+    body: 'Words cannot be written down on this phone yet. Keep the recording now and the words can come later. You can also type it.',
   },
 };
 

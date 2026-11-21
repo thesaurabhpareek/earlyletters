@@ -724,7 +724,7 @@ export const en = {
       { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
       { title: "Say a few words to {child}", body: "Talk or type, whichever is easier." },
-      { title: "Before you sleep", body: "A moment from {child}'s day? Or tap Not much today." },
+      { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
