@@ -699,7 +699,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) 30 s: no lock. 70 s: the cover and the system sheet once. Immediately: locks after 2 s.
   - (d) Cancel leaves the cover and Unlock and nothing else; no second sheet appears on its own. Unlock opens the sheet; success fades the cover (a fade under Reduce Motion too), no haptic, content within 1 s. At the end of the fade no frame of the cover comes back (no flash), with Reduce Motion on and off. VoiceOver reads the app name, focus lands on Unlock with its hint.
   - (e) The take is kept in full (plays to the second you left); the lock appears only after the take has ended, never during it.
-  - (f) "Confirm it is you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
+  - (f) "Confirm it's you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
   - (g) Names in notifications is off and dimmed, with "Names stay hidden while App lock is on."; a reminder that fires shows no name.
   - (h) The switch reads "Lock with passcode", the line "Face ID is off for <app> in iPhone Settings, so your passcode opens the book." and Open Settings; Unlock asks for the passcode.
   - (i) The book opens with no lock, one toast "The lock is off because this iPhone has no passcode. Set one to turn the lock on again."; the App lock switch is dimmed with the no-passcode line.
