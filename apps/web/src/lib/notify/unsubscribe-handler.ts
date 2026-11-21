@@ -23,7 +23,7 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
 
 export async function handleUnsubscribe(request: Request): Promise<Response> {
   try {
-    if (!perClient.hit(clientKey(request.headers)).allowed) return new Response('Too many tries. Wait a minute.', { status: 429, headers: NO_STORE });
+    if (!perClient.hit(clientKey(request.headers)).allowed) return new Response('Too many tries. Try again later.', { status: 429, headers: NO_STORE });
     if (!isSameOrigin(request)) return new Response('Bad request', { status: 400, headers: NO_STORE });
 
     const url = new URL(request.url);

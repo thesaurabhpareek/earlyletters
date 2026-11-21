@@ -302,13 +302,13 @@ export const site = {
   /** The unsubscribe page (app/unsubscribe/page.tsx), reached from the link in every email. */
   unsubscribe: {
     title: 'Stop these emails?',
-    body: 'We will not write to this address again. If you change your mind, you can sign up again on the website.',
+    body: "We won't write to this address again. If you change your mind, you can sign up again on the website.",
     button: 'Unsubscribe',
-    doneTitle: 'You are unsubscribed.',
-    doneBody: "We won't write to you again.",
-    invalidTitle: 'That link did not work.',
-    invalidBody: 'It may be old or incomplete. Write to hello@earlyletters.com and we will remove your address ourselves.',
-    error: 'That did not go through on our side. Please try again in a moment.',
+    doneTitle: "You're unsubscribed.",
+    doneBody: "We won't write to this address again.",
+    invalidTitle: "That link didn't work.",
+    invalidBody: "It may be old or incomplete. Write to hello@earlyletters.com and we'll remove your address ourselves.",
+    error: "That didn't go through. Try again in a moment.",
     home: `Back to ${NAME}`,
   },
 
