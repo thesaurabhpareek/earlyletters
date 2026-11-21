@@ -26,6 +26,12 @@ describe('[NS-40-R9] a refused sign-up is calm and stores nothing', () => {
     // A refusal that arrives as a failed fetch is a network error, not a refusal: a failed lookup is never a refusal.
     expect(authErrorKind(Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }), 'code')).toBe('network');
   });
+  it('[NS-40-R9] [U] the code string `region_refused` is pinned here until the hosted hook is checked; any other code is the ordinary unknown error', () => {
+    expect(authErrorKind(Object.assign(new Error('x'), { code: 'region_refused' }), 'code')).toBe('region_refused');
+    for (const code of ['hook_payload_invalid', 'region_blocked', 'unexpected_failure']) {
+      expect(authErrorKind(Object.assign(new Error('x'), { code, status: 403 }), 'code'), code).toBe('unknown');
+    }
+  });
   it('[NS-40-R9] it is not an outage input and not an inline line on the Welcome: it never signs the person into the outage screen', () => {
     const signedOut: AuthState = { status: 'signedOut', error: 'region_refused' };
     const inputs = gateInputsFromAuth({ serverFeatures: true, authState: signedOut, hasLocalBook: false });
@@ -88,11 +94,12 @@ describe('[NS-41-R25] a hostile signed signIn true keeps every session', () => {
 });
 
 describe('[NS-41-R12] Sign in with Apple is reachable from the outage screen', () => {
-  it('[NS-41-R12] the outage screen carries Apple\'s own button when it is handed an action, in the outage variant only, with no new words', () => {
+  it('[NS-41-R12] the outage screen carries Apple\'s own button when it is handed an action, in the outage variant only, with no new words; the route hands it one only after email_wait', () => {
     const o = src('components/onboarding/outage-screen.tsx');
     expect(o).toMatch(/\{onApple && !offline \? \(/);
     expect(o).toContain('<AppleButton signIn onPress={onApple} />');
-    expect(src('app/onboarding.tsx')).toMatch(/onApple=\{appleAvailable \? \(\) => void signInWithApple\(\) : undefined\}/);
+    expect(src('app/onboarding.tsx')).toMatch(/onApple=\{appleAvailable && emailWait \? \(\) => void signInWithApple\(\) : undefined\}/);
+    expect(src('app/onboarding.tsx')).toMatch(/authState\.error === 'email_wait'/);
     expect(src('app/onboarding.tsx')).toContain('appleSignInAvailable()');
   });
   it('[NS-41-R12] mutant: removing the action is caught', () => {

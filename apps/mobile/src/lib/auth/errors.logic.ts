@@ -29,7 +29,9 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
   }
   const code = errorCode(e);
   // FP-6 (NS-40-R9, E47): the sign-up hook's refusal, before the network check so it is never read as an outage. A failed lookup
-  // fails open on the server and never arrives here. The hook's exact code is [U] (File 28 is not applied): req-question FP6-1.
+  // fails open on the server and never arrives here. The hook's code string is [U] until the hosted hook is
+  // checked: card 19 (NS-40-R9 notes) names a 403 from the before-user-created hook and the kind, and no spec names a code. Any other
+  // code falls through to the ordinary mapping (the inline unknown error), which is safe. req-question FP6-1.
   if (code === 'region_refused') return 'region_refused';
   // expo-apple-authentication: the person closed the Apple sheet.
   if (code === 'ERR_REQUEST_CANCELED') return 'cancelled';

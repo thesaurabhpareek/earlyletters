@@ -671,7 +671,9 @@ export default function Onboarding() {
  */
 function FirstRun() {
   const route = useFirstRunRoute();
-  const { signOut, lastMethod, signInWithApple } = useAuth();
+  const { signOut, lastMethod, signInWithApple, state: authState } = useAuth();
+  // NS-41-R12 (card 19): Apple stays reachable when a 429 on SENDING an email (`email_wait`) put the person here, and only then.
+  const emailWait = authState.status === 'signedOut' && authState.error === 'email_wait';
   // FP-6: Apple's button on the outage screen, only where Apple sign-in is available on this phone.
   const [appleAvailable, setAppleAvailable] = useState(false);
   useEffect(() => {
@@ -702,7 +704,7 @@ function FirstRun() {
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
   if (route.screen === 'outage' && route.outage) {
-    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} onApple={appleAvailable ? () => void signInWithApple() : undefined} />;
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} onApple={appleAvailable && emailWait ? () => void signInWithApple() : undefined} />;
   }
   return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }

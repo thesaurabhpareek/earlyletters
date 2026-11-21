@@ -20,8 +20,8 @@ import { AppleButton } from '@/lib/auth/ui';
 import { useArrival } from '@/lib/first-run/use-arrival';
 
 /**
- * FP-6 (NS-41-R12, R21): with `onApple` given (Apple sign-in is available and the variant is the outage, not offline), Apple's own
- * button sits under the screen, so a person whose email send was rate limited can still sign in. No new words (the button is Apple's).
+ * FP-6 (NS-41-R12): with `onApple` given (the caller passes it only when Apple sign-in is available and the failure was `email_wait`,
+ * a 429 while sending an email), Apple's own button sits under the screen, so that person can still sign in. No new words (the button is Apple's).
  */
 export function OutageScreen({ variant, localStartOffered, onTryAgain, onLocalStart, onApple }: { variant: 'offline' | 'outage'; localStartOffered: boolean; onTryAgain: () => void; onLocalStart: () => void; onApple?: () => void }) {
   const t = authCopy.outage;
