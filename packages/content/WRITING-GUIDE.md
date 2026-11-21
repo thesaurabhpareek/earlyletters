@@ -241,7 +241,7 @@ When we can't tell whether something saved or went through (a dropped connection
 Say what we'll ask, why it helps them, and that they stay in control, in two short sentences. The OS prompt text is registered and counsel-held (`permissions.en.ts`): don't rewrite it without the CLO. Never narrate the sequence. Say what happens next and when.
 
 ### Onboarding
-Each screen has one job and one idea. Lead with the thing they can do. The alpha first-run headline is held (D-125 item 9, a ruling that holds the store listing's "exactly as you said it" until counsel clears it, and keeps the alpha headline). The public promise line follows D-133 (the founder's ruling on what the public promise says): "It stays in your words. Every change is marked, and your original recording is kept unchanged."
+Each screen has one job and one idea. Lead with the thing they can do. The alpha first-run headline is held (D-125 item 9, a ruling that holds the store listing's "exactly as you said it" until counsel clears it, and keeps the alpha headline). The public promise line follows D-133 (the founder's ruling on what the public promise says): "It stays in your words. Every change is marked, and your original recording is kept unchanged." D-133 decision 2 also says the store build's first-run headline uses the same true wording, and the alpha keeps its headline.
 
 ### Settings
 Label what the setting is. Explain what it does when it's on, and let them infer the off state (Apple). Link to the setting, don't describe where it lives.

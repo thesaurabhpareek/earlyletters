@@ -65,7 +65,7 @@ Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven lang
 
 ## How to write a notification
 
-- One idea, one line. The rules test enforces a title of 40 characters or fewer and a body of 110 or fewer; the house target is a body under 60 (WRITING-GUIDE.md section 5).
+- One idea, one line. The rules test enforces a title of 40 characters or fewer and a body of 110 or fewer; the house target is a body under 60 (WRITING-GUIDE.md section 2 for the limits, section 8 "Push notifications" for the target).
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
