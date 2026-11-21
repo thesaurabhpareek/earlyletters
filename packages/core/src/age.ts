@@ -10,9 +10,21 @@ export interface Age {
   days: number; // total days since birth
 }
 
+/**
+ * A date that does not parse. The message is a fixed code on purpose: a birthday is
+ * personal, and error text reaches crash tools and logs. Never put the value in it.
+ */
+export class InvalidIsoDateError extends Error {
+  readonly code = 'invalid_iso_date';
+  constructor() {
+    super('invalid_iso_date');
+    this.name = 'InvalidIsoDateError';
+  }
+}
+
 function parse(iso: string): { y: number; m: number; d: number } {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!match) throw new Error(`Invalid ISO date: ${iso}`);
+  if (!match) throw new InvalidIsoDateError();
   return { y: Number(match[1]), m: Number(match[2]), d: Number(match[3]) };
 }
 
