@@ -14,7 +14,7 @@ Preheader: Your account is still here. If this was you, there's nothing to do.
 
 Heading: A sign-in method was removed
 
-Body, paragraph 1: {provider} was removed as a way to sign in to Early Letters. (In code this is `${brand.name}`, never typed.)
+Body, paragraph 1: {provider} was removed as a way to sign in to {app}. (`{app}` is the public name, filled from `packages/brand` as `brand.name`; it is never typed.)
 
 Body, paragraph 2: Your letters, recordings and books are still here. You can still sign in the other ways you set up.
 
@@ -29,7 +29,7 @@ Sign-off: Warmly, then the brand name (`emailChrome.signature`).
 - The variable. Supabase's `identity_unlinked` notification exposes the provider name; whether it arrives as `{{ .Provider }}` and how it reads for Apple, Google and email ("apple" versus "Apple") is UNVERIFIED. It may need a display-name map.
 - "You can still sign in the other ways you set up." True only while at least one other method is left. UNVERIFIED whether Supabase lets the last identity be unlinked. If it can, paragraph 2 must change.
 - "Reply ... we'll help" follows the wording of `email-changed-old-address` in `emails/auth.en.ts`. CLO to confirm the support promise and the reply address still match.
-- "Early Letters" for the product name and the sign-off are not to be typed in code; use `brand.name` and `emailChrome.signature`.
+- The product name and the sign-off are not to be typed in code or in copy; write `{app}` in drafts, and use `brand.name` and `emailChrome.signature` in code.
 - Who removed it. Anyone signed in to the account, or an admin action, can unlink a method, and that person may not be the account holder, so no line says who did it. Paragraph 1 is passive on purpose; "If this was you" in paragraph 3 only tells the account holder nothing is needed.
 - Rules: no em or en dash, curly quote, ellipsis character or emoji; contractions; no child name. Both a plain-text and an HTML version are needed (VOICE.md, How to write an email).
 - The Supabase export (`npm run export:supabase`) regenerates `supabase/templates/*`: a new template there needs its own D-041 review (writing guide Appendix B).
