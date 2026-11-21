@@ -48,6 +48,10 @@ Owner key: `legal` drafts the text; `privacy` checks it against code; `content` 
 - Whether the server refusal migration `20261110000000` is live: UNVERIFIED (spec section 17).
 - Whether any text above is accurate or lawful once changed: counsel must confirm.
 
+## C-3: route recorded (21 Nov 2026)
+
+The founder chose the first route in row C-3: disclose, and do not exclude the picture folder from backup (decision O-44, 21 Nov 2026). Draft wording for counsel to confirm, one plain line for the Privacy Policy, with the matching Terms 7.3 sentence: "Recordings, and pictures you keep with a letter, are kept on your phone, and in your phone's own iPhone backup if you use one." The line says nothing about removal from an older backup, because what Apple's backup does with a deleted file is UNVERIFIED. This is a draft for counsel review, not applied to any published text. Packet Q129 (`docs/legal/COUNSEL_PACKET.md` section 9.9) carries the question.
+
 ## Hand-offs
 
 - `content`: C-9 strings, 16.1 text, with the founder's approval (O-48).

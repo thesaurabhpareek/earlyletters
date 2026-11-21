@@ -41,7 +41,7 @@ The spec is freeze-ready in the sense that no BLOCKER is open without either an 
 | O-41 | Store screenshots: hide the tab bar or wait for trademark clearance | Hide the tab bar in every frame | Fri 27 Nov |
 | O-32 | Special occasions: dates we know, or also events recognised from pictures (K-SUG) | Dates we know; K-SUG NOT PLANNED | With G10 |
 | O-30 | Faces and naming people | OUT, not decided here | When the founder chooses |
-| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; counsel Q7 default) | Before G2 |
+| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; spec Q7 = packet Q129 default; the founder chose disclose on 21 Nov 2026) | Before G2 |
 | O-45 | Postal address for the lifecycle email | Decide with O-47; phase 2 only | With O-47 |
 | O-46 | Numbers for the measurable and the stop line (section 20.1) | Founder sets them | Before PR 16 |
 | O-42 | Sign RV-01 to RV-22 as four signatures, with H-10 (the machine-label boundary) in the third | Four signatures | With G10 |

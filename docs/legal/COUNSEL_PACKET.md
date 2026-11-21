@@ -1,8 +1,8 @@
 ---
 title: Counsel packet, Early Letters v1.0 (option B) and after
-version: 1.8.0
+version: 1.9.0
 status: for counsel
-date: 2026-11-20
+date: 2026-11-21
 owner: founder
 prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 ---
@@ -637,24 +637,11 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 - **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
 - **Blocks.** NS-49 level 2; NS-51.
 
-## Changelog
-
-| Version | Date | Change |
-|---|---|---|
-| 1.8.0 | 2026-11-20 | Adds section 8 (Q109 to Q122) for the locked cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`, `develop` 9e4757459dc3): CUL-Q5, Q6 (widened to religion by inference, with the controller and US-storefront sub-questions), Q7, Q11 (now Q112, not Q41), Q14; FR-DAY-23 (the right to use source tables); tradition-reviewer records; L-14 to L-19; C-9 to C-11 with the Journaling picker terms. Version 1.8.0 because 1.7.0 is used and #598 names 1.6.0 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
-| 1.7.0 | 2026-11-20 | Adds section 7 (BL-949): the questions raised by the locked new-scope pack (`docs/prd-lock-v1-20nov` at 450bcb4a) and its engineering designs of 20 Nov. Repeated questions are merged into Q32, Q40, Q41, Q43 to Q46, Q48 to Q51 and Q54, with new lettered parts. Two are new: Q107 (a sealed letter and the child who may read it later) and Q108 (earlier versions already on our server, which the policy does not name). Q107 is the first free number, because open drafts claim Q58 to Q106 (#598, BL-780, #760). Twelve cited questions are unchanged (7.16). Section 6 gains items 9 to 12. Version 1.7.0, because #598 names 1.6.0 for its renumbering of Q58 to Q60 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
-| 1.5.0 | 2026-11-01 | Adds Q57 (sanctions: the D-131 country block, no name screening under D-137, the Privacy 12 country-check wording under D-136). Chief Legal Officer (Claude role, not a lawyer), CLO-3. |
-| 1.4.0 | 2026-10-31 | Terms and Subscription Terms are the plain-form 4.1.0 texts. The reviewers' notes that sat inside develop's 4.0.0 texts are carried here: Q41 gains the 31 Oct update (California notices without the amount, the two routes, Unverified items, price-change setting, grace period, federal status); Q40 gains the free-list notes (co-parent writing, the floor, binding promise). Full notes word for word in `CHANGES-2026-10-31.md`, last section. Version 1.4.0 because 1.3.0 is used (POLICY_VERSIONING 2.4). |
-| 1.3.0 | 2026-10-31 | Merge of develop (31 Oct) into the rebuilt packet of PR #163. Kept the 1.1.0 structure; the 1.2.0 product-paragraph prices (D-082) were already in it; the Q14 note on the Terms 4.0.0 free list is carried into the superseded-questions table. Version 1.3.0 because 1.1.0 and 1.2.0 are used (POLICY_VERSIONING 2.4). Also: version list in section 0 brought up to date; Privacy Policy 3.0.0 carries the D-116 exception to the 31-day erasure promise and a drafted "never for marketing" bullet, both unconfirmed; the packet's text about Terms 3.1.0 and Subscription Terms 3.1.0 is superseded by develop's 4.0.0 texts, whose content differs from the server-product wording the packet's questions were written against (see the PR body). |
-| 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
-| 1.1.0 | 2026-10-16 | Rebuilt for option B and the founder's 15 Oct direction for legal pages: a one-page table of what changed; R4's twelve questions in R4's order (Q41 to Q52); Q53 to Q56; #81's Q32 to Q40 restated (Q32 is now the health notice question, with the separate notice removed); the 1.0.0 questions with their status; and the code checks of the services the texts name. 16 Oct: the review of PR #163 (two reviews) found claims the code contradicts or has not built; the drafts now describe only built features or say a feature is not available yet, and section 0 lists each. Decision ids follow develop (D-100 to D-108). The 1.1.0 addendum drafted in PR #81 was never merged; its questions are carried here. |
-| 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |
-
 ## 9. Questions from the Moments tab (NS-53; drafted 21 Nov 2026)
 
 > Draft for counsel review. Prepared by an AI (legal drafting support); not legal advice; no attorney-client relationship exists. Every legal conclusion below is marked "counsel must confirm". Nothing here says anything is compliant or legal. The "default if counsel is silent" is what the product does, not a legal view.
 
-**Appended, not merged into 1.7.0.** This section is appended at the end of the file so it does not collide with the open draft that adds section 8 (#1057, Q109 to Q122). The packet version line and the Changelog row (the next version after #1057's 1.8.0) are for whoever merges second; they are deliberately not touched here.
+**Placement.** This section was first merged (#1316, `ddbf7691`) after the Changelog, with the version line untouched, so it would not collide with the open draft for section 8 (#1057). #1057 has since merged (`ab52389c`). In version 1.9.0 the section sits above the Changelog, and the version line and Changelog row are updated.
 
 **Where it comes from (all heads read on 21 Nov 2026).**
 - The spec `docs/product/prd/28-moments-tab.md` on `wip/moments-prd-v3` at `b31a389b8afb3e747f61d19e098f2bc22a65800d`: section 21.3 (the ten questions), 21.2 (money), 21.1 (calendar), G2, section 16.1 (proposed promise text). The spec is PROPOSED; nothing in it is decided, built or in `docs/DECISIONS.md`. Spec rows R135 and R166 were reworded in PR #1314 (branch `docs/moments-prd-v3`, head `f52cd5a2f426951497ebfc145d809d031371127f`) and no longer say "never leaves the phone" or "we hold nothing"; the other spec citations in this section were read at `b31a389b` and are not re-checked against the newer head (UNVERIFIED).
@@ -695,7 +682,7 @@ Questions this raises for counsel are inside Q123 (label and consent), Q130 (abs
 | Q126 | 4 | Location in a library or picked picture (DPLA 3.3.3(F)); readable under Limited | R37, R61, R72, R75, EXH-LEG-5, EXH-LEG-6 | F2 and F1 | G2, G3 | Date-only cards |
 | Q127 | 5 | Trademark: "Moments" as a tab label (trademark attorney) | R8, R194, O-28 | store listing, screenshots | O-28 | Fallback label in screenshots |
 | Q128 | 6 | Terms: other people's children, approximate labels, no scanning, knowledge duty | R93, R97, R103, R104, EXH-LEG-7(d) | F1 and F2 | G2, store submission | Terms 4.2.0 not published; library read waits |
-| Q129 | 7 | Deletion promise versus a picture copy in an iPhone backup | R97, R166, R81, R235, O-44, EXH-LEG-14, EXH-PRV-1 | F1 and F2, any build that keeps a picture | G2 | Exclude the folder from backup; carve-out sentence |
+| Q129 | 7 | Deletion promise versus a picture copy in an iPhone backup | R97, R166, R81, R235, O-44, EXH-LEG-14, EXH-PRV-1 | F1 and F2, any build that keeps a picture | G2 | Disclose the iPhone backup of kept pictures in one plain policy line; do not exclude the folder (founder, O-44, 21 Nov 2026) |
 | Q130 | 8 | Policy mechanics: material change, Significant Change API, CalOPPA, absolute sentences | R135, R166, R81, R175, R193, H-11, EXH-LEG-3 | `production` | Store submission | Say what we receive, never where it lives |
 | Q131 | 9 | Publisher and liability (5.1.1(ix)); entity; cover; public address | G10, O-47 | store submission | G10 | Founder starts an entity in parallel |
 | Q132 | 10 | Place dataset licence; later geocoder caching | R61, R62, R117, G8, G11b | F2 places | G11b | No places; geocoder not built |
@@ -746,7 +733,7 @@ No eleventh question (EXH-LEG-13). The picker door's questions are lettered sub-
 - **(a)** Does a picture copy in an iPhone backup change our deletion promise, the label, or what we may say in answer to an access or deletion request?
 - **(b)** Temporary located originals in `Caches/ImagePicker` and the system's iCloud download after a pick (EXH-LEG-14): do they belong in the answer?
 - **(c)** Is a carve-out sentence enough if the folder is not excluded from backup, or does counsel prefer exclusion (the CLO role does, because it makes the promise true)? Founder decision O-44 sits beside this.
-- **Default.** Exclude the folder from backup; carve-out sentence. **Blocks** G2.
+- **Default.** Disclose the iPhone backup of kept pictures in one plain line of the policy text; do not exclude the folder from backup. This is the founder's decision of 21 Nov 2026 (O-44), reversing the earlier default of exclusion. Counsel must confirm the wording and whether disclosure is enough. What Apple's backup does with a deleted file is UNVERIFIED. Part (c) above is kept as the question to counsel; the CLO role's preference for exclusion is recorded there as a view, not the default. **Blocks** G2.
 
 ### 9.10 Q130 (spec Q8). Policy mechanics and absolute sentences
 - **Facts.** The library read and the door change behaviour; the policy and label must change in the same build (R81, R240).
@@ -783,3 +770,17 @@ A first cut (orders 1 to 6) answers everything the spec says the door and the li
 
 ### 9.14 What counsel is not asked to do
 Nothing here asks counsel to approve the product copy in 9.1 as marketing, to set price, or to rule on anything outside these ten topics. The contradictions between published drafts and the hybrid design are listed in `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`; they are fixes `legal` drafts as Privacy Policy 3.1.0, Terms 4.2.0, in-app disclosures 3.5.0 and label 2.3.0 (spec R266), held as draft-for-counsel.
+
+## Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| 1.9.0 | 2026-11-21 | Adds section 9 (Q123 to Q132, Moments tab, NS-53; merged in #1316) above this Changelog, where it was first appended after it. Q129 default corrected to the founder's O-44 decision of 21 Nov 2026 (disclose the iPhone backup in one plain policy line; do not exclude the folder); the 9.2 index row and the C-3 note in `PRIVACY-CONTRADICTIONS.md` follow. Version 1.9.0 because 1.8.0 is used by #1057 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.8.0 | 2026-11-20 | Adds section 8 (Q109 to Q122) for the locked cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`, `develop` 9e4757459dc3): CUL-Q5, Q6 (widened to religion by inference, with the controller and US-storefront sub-questions), Q7, Q11 (now Q112, not Q41), Q14; FR-DAY-23 (the right to use source tables); tradition-reviewer records; L-14 to L-19; C-9 to C-11 with the Journaling picker terms. Version 1.8.0 because 1.7.0 is used and #598 names 1.6.0 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.7.0 | 2026-11-20 | Adds section 7 (BL-949): the questions raised by the locked new-scope pack (`docs/prd-lock-v1-20nov` at 450bcb4a) and its engineering designs of 20 Nov. Repeated questions are merged into Q32, Q40, Q41, Q43 to Q46, Q48 to Q51 and Q54, with new lettered parts. Two are new: Q107 (a sealed letter and the child who may read it later) and Q108 (earlier versions already on our server, which the policy does not name). Q107 is the first free number, because open drafts claim Q58 to Q106 (#598, BL-780, #760). Twelve cited questions are unchanged (7.16). Section 6 gains items 9 to 12. Version 1.7.0, because #598 names 1.6.0 for its renumbering of Q58 to Q60 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.5.0 | 2026-11-01 | Adds Q57 (sanctions: the D-131 country block, no name screening under D-137, the Privacy 12 country-check wording under D-136). Chief Legal Officer (Claude role, not a lawyer), CLO-3. |
+| 1.4.0 | 2026-10-31 | Terms and Subscription Terms are the plain-form 4.1.0 texts. The reviewers' notes that sat inside develop's 4.0.0 texts are carried here: Q41 gains the 31 Oct update (California notices without the amount, the two routes, Unverified items, price-change setting, grace period, federal status); Q40 gains the free-list notes (co-parent writing, the floor, binding promise). Full notes word for word in `CHANGES-2026-10-31.md`, last section. Version 1.4.0 because 1.3.0 is used (POLICY_VERSIONING 2.4). |
+| 1.3.0 | 2026-10-31 | Merge of develop (31 Oct) into the rebuilt packet of PR #163. Kept the 1.1.0 structure; the 1.2.0 product-paragraph prices (D-082) were already in it; the Q14 note on the Terms 4.0.0 free list is carried into the superseded-questions table. Version 1.3.0 because 1.1.0 and 1.2.0 are used (POLICY_VERSIONING 2.4). Also: version list in section 0 brought up to date; Privacy Policy 3.0.0 carries the D-116 exception to the 31-day erasure promise and a drafted "never for marketing" bullet, both unconfirmed; the packet's text about Terms 3.1.0 and Subscription Terms 3.1.0 is superseded by develop's 4.0.0 texts, whose content differs from the server-product wording the packet's questions were written against (see the PR body). |
+| 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
+| 1.1.0 | 2026-10-16 | Rebuilt for option B and the founder's 15 Oct direction for legal pages: a one-page table of what changed; R4's twelve questions in R4's order (Q41 to Q52); Q53 to Q56; #81's Q32 to Q40 restated (Q32 is now the health notice question, with the separate notice removed); the 1.0.0 questions with their status; and the code checks of the services the texts name. 16 Oct: the review of PR #163 (two reviews) found claims the code contradicts or has not built; the drafts now describe only built features or say a feature is not available yet, and section 0 lists each. Decision ids follow develop (D-100 to D-108). The 1.1.0 addendum drafted in PR #81 was never merged; its questions are carried here. |
+| 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |
