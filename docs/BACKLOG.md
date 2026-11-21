@@ -3242,7 +3242,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Plan: P1 to P2c; no install; no founder hours.
 
 #### BL-851 Threat model for media on the phone: the app switcher, thumbnails, device backups, restore, temporary files, protection class (NX-39-R36, R43, R53)
-- Status: done (PR #1217, `docs/security/MEDIA_THREAT_MODEL.md`; its gaps G-1 to G-10 are BL-1406 to BL-1416). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1217 merged the doc, `docs/security/MEDIA_THREAT_MODEL.md`; its gaps G-1 to G-10 are BL-1406 to BL-1416; the scripted App lock snapshot check, a P0 gate, is not built and is BL-1423). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
 - Who: `security`, `security-architect`.
 - Satisfies: NX-39-R36, NX-39-R43, NX-39-R53, NX-39-R42. Also cited: NX-33 "Not verified", SEC-ML-7, SEC-ML-14.
 - Scope: a short doc in `docs/security/` listing where a picture, a date or a city could persist or leak and the control for each; the scripted snapshot check for App lock (a P0 gate); the file class per file and what the background reader costs (`CompleteUntilFirstUserAuthentication`, not `complete`); restore distrust; marks each claim verified or not.
@@ -5814,8 +5814,8 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Status: ready. Mode: agent. Owner: mobile engineer, security engineer. Milestone: M12. Size: S. Depends on: none.
 - Satisfies: none given. Cited: CLAUDE.md privacy rules (no secret in a log); Review B on #1219 (finding 2); BL-506 (the guard and its test).
 - Problem (read in `apps/mobile/scripts/env-file-guard.mjs` lines 32 to 36): `envFileProblems` does `line.split('=')` and pushes `${file}: ${k}`, where `k` is everything before the first `=`. A line with no `=` (a bare `sb_secret_...`) or one that uses `:` (`SERVICE_ROLE_KEY: sb_secret_...`) is therefore echoed whole. Review B on #1219 confirmed it by calling the guard; the pin is the `it.fails` "a line with no "=" does not put its text into the FAIL message" in `apps/mobile/test/preflight-planted-env.test.ts`. PR #1219 is merged (`c52582bf`), so the pin is on develop.
-- Scope: print only a name: the part of the line up to the first `=`, `:` or space, and only when it looks like a variable name (letters, digits, underscore); otherwise print `<file>: <unparsable line N>`. Same change flips the `it.fails` to a plain `it`.
-- Done when: the pin is a plain `it` and passes; one new case in `envFileProblems`' string tests covers `KEY: value`, a bare token and a line with spaces, and none of the three values appears in the output; the existing 12 tests in the planted-env file still pass.
+- Scope: the FAIL message never echoes any content from a line, only the file name and a line number. Print a variable name only when the line contains `=` and the text before the first `=` is a variable name (letters, digits, underscore, starting with a letter or underscore); for every other line (no `=`, a `:` separator, spaces, anything else) print `<file>: <unparsable line N>` with the line number and nothing from the line. A bare token such as `sb_secret_...` matches the name pattern but has no `=`, so it is never printed. Same change flips the `it.fails` to a plain `it`.
+- Done when: the pin is a plain `it` and passes; one new case in `envFileProblems`' string tests covers a no-`=` secret line (a bare `sb_secret_...`), a line containing `:` (`KEY: value`) and a line with spaces, and for each the output holds the line number and file name and none of the line's text; one more case checks that a `KEY=value` line still names the key and never the value; the existing 12 tests in the planted-env file still pass.
 - Test: `apps/mobile/test/preflight-planted-env.test.ts` (pin flipped), `apps/mobile/test/account-deletion-switch.test.ts` (string cases for `envFileProblems`).
 - Gate: none. The pin goes red as an unexpected pass if the guard is fixed and the pin is not flipped, so both land in one PR.
 
@@ -5829,11 +5829,11 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: waits on BL-1404 so the two PRs do not edit the same test file at once.
 
 #### BL-1406 A kill at any step of attaching a picture leaves no temporary file, and a test proves it
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: ready (narrowed to the steps that exist on develop today; the picker step waits on PR #837, which is open, and is not part of this row). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NX-39-R53. Cited: `docs/security/MEDIA_THREAT_MODEL.md` P2, gap G-1 and device row D-4.
 - Problem: the model lists G-1 as open on PR #835. Read on develop: #835 is merged, the launch call is wired (`apps/mobile/src/lib/capture/sweep.ts:69` runs `sweepPhotosAtLaunch`) and Erase everything names `ImagePicker`, `ScribePhoto` and the photos folder (`apps/mobile/src/lib/erase-everything.ts:55` and `:85` to `:91`). The model text is stale on those two halves. What is left is the proof: `apps/mobile/test/photos-device.test.ts` has `[NX-39-R53][C7]` tests for the sweep (line 46) and the native temporary JPEG (line 342); whether any of them stops the attach at each step and then runs the sweep is not verified. The picker path is PR #837 (open).
-- Scope: a test that stops an attach after each step the model's D-4 names (pick, copy, re-encode, store), runs the launch sweep, and finds no file left in `Caches/ImagePicker`, `ScribePhoto` or a half-written file in the photos folder. Say in the PR which steps the existing tests already stop at.
-- Done when: the test fails if the sweep call, or the removal at any one step, is taken out (shown by one planted removal per step); the title starts with `[NX-39-R53]`.
+- Scope: buildable now: a test that stops an attach after each step of D-4 that exists on develop today (copy, re-encode, store; the pick step is the picker path in PR #837 and is left out until it merges, then a follow-up row adds it), runs the launch sweep, and finds no file left in `Caches/ImagePicker`, `ScribePhoto` or a half-written file in the photos folder. Say in the PR which steps the existing tests already stop at.
+- Done when: the test fails if the sweep call, or the removal at any one step, is taken out (shown by one planted removal per step); the title starts with `[NX-39-R53]`; the PR says the pick step is not covered and why (PR #837).
 - Test: `apps/mobile/test/photos-device.test.ts` or a sibling file.
 - Gate: none; the device row D-4 stays the founder's.
 
@@ -5950,15 +5950,16 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: none.
 
 #### BL-1420 Each new claim is its own file, so adding a claim never conflicts with another PR
-- Status: proposed (this row, a proposal for Karma; pick option A or B and set `ready`). Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: none.
+- Status: proposed (Karma ruled option A on #1265; product sets `ready` after #1265 merges). Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: none.
 - Satisfies: none given. Cited: `docs/agents/COORDINATION.md` section 2 and 3 (claims; the 17 Oct note that a shared last line made every pair of PRs conflict); HV2-007 as named in `scripts/agents/board-check.mjs`.
 - Problem: every PR adds its row to the same table in `docs/agents/CLAIMS.md`, so each merge conflicts the next. Evidence read in the PR threads on 21 Nov: PR #1219 merged develop into itself twice for a one-hunk `CLAIMS.md` conflict (heads `01a7c99c`, then `d5d509a5`), and PR #1216 once (`7271977d`), each time "both sides added a row at the same spot in the table". A PR also deletes its own row when it merges, which is a second place two PRs can collide.
-- Option A (recommended): one file per claim, `docs/agents/claims/<id>.md`, holding the same columns as front matter (owner session, branch, PR, globs, claimed, expires, note). A new claim is a new file and a finished one is a deleted file, so two PRs only conflict when they claim the same id, which is the real collision. `scripts/agents/board-check.mjs` reads the folder and enforces the 15-row limit by file count; `docs/agents/CLAIMS.md` becomes a short rules page with no table.
-- Option B: keep the table and add `docs/agents/CLAIMS.md merge=union` in `.gitattributes`. Cheaper, but a union merge keeps both sides of a deleted row, so a finished claim can come back silently; not recommended.
-- Scope (A): the folder and a first-run migration of the live rows (10 on 21 Nov); the parser in `scripts/agents/board-check.mjs` and its test (the live-file test at `board-check.test.mjs:119` reads `CLAIMS.md` today); every other reader found by search: `scripts/agents/merge-queue.mjs`, `scripts/agents/brief.mjs`, `scripts/status/today.mjs`; the wording in `docs/agents/COORDINATION.md` sections 2 and 3, `docs/agents/OPERATING_MODEL.md`, `docs/agents/HARNESS.md` and the lane prompts under `docs/agents/lanes/`. Several of these may not need a change; the owner checks each. Per-agent charters that name the file (`.claude/agents/`, `agents/*/MEMORY.md`) are updated in a second PR if the first would pass CODE-R02.
+- Ruling (Karma, comment on #1265): option A, one file per claim, is the chosen design; option B is not taken, because `merge=union` hides real conflicts. The way back is to restore the single table from git. The change touches `scripts/agents/**` and `docs/agents/**`, so it needs two counted reviews, a fresh builder agent, and the harness owner checks that `check.mjs` and the merge queue still read claims.
+- Option A (ruled): one file per claim, `docs/agents/claims/<id>.md`, holding the same columns as front matter (owner session, branch, PR, globs, claimed, expires, note). A new claim is a new file and a finished one is a deleted file, so two PRs only conflict when they claim the same id, which is the real collision. `scripts/agents/board-check.mjs` reads the folder and enforces the 15-row limit by file count; `docs/agents/CLAIMS.md` becomes a short rules page with no table.
+- Option B (not taken): keep the table and add `docs/agents/CLAIMS.md merge=union` in `.gitattributes`. Cheaper, but a union merge keeps both sides of a deleted row, so a finished claim can come back silently; not recommended.
+- Scope (option A, as ruled): the folder and a first-run migration of the live rows (10 on 21 Nov); the parser in `scripts/agents/board-check.mjs` and its test (the live-file test at `board-check.test.mjs:119` reads `CLAIMS.md` today); every other reader found by search: `scripts/agents/merge-queue.mjs`, `scripts/agents/brief.mjs`, `scripts/status/today.mjs`; the wording in `docs/agents/COORDINATION.md` sections 2 and 3, `docs/agents/OPERATING_MODEL.md`, `docs/agents/HARNESS.md` and the lane prompts under `docs/agents/lanes/`. Several of these may not need a change; the owner checks each. Per-agent charters that name the file (`.claude/agents/`, `agents/*/MEMORY.md`) are updated in a second PR if the first would pass CODE-R02.
 - Done when: two scratch PRs that each add a different claim merge in either order with no conflict; `node scripts/agents/board-check.mjs` and `node --test 'scripts/agents/*.test.mjs'` pass on the folder; the old table is gone from `CLAIMS.md` with no reader left pointing at it.
 - Test: `scripts/agents/board-check.test.mjs` (a folder fixture, a malformed file, 16 files over the limit) and a real two-branch merge shown in the PR body.
-- Gate: `docs/agents/**` and `scripts/agents/**` are on the CR-70 founder-only list; under CR-73 Karma merges them with a `security` lens review. A change to the claim rules is Karma's to approve.
+- Gate: this touches `scripts/agents/**` and `docs/agents/**`, so it needs two counted reviews, one of them a `security` lens. Karma approves and merges (CR-70, CR-73); a change to the claim rules is Karma's to approve.
 
 #### BL-1421 A test calls redeemOfferCode and checks every outcome
 - Status: ready. Mode: agent. Owner: payments engineer. Milestone: M-JR. Size: S. Depends on: none.
@@ -5976,6 +5977,15 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Done when: each of the three has a run-sheet row with its steps, and the founder's result is filed under `docs/qa/evidence`; no row is marked run before then.
 - Test: the evidence files.
 - Gate: the Apple sandbox and the Ready for Sale state are the founder's.
+
+#### BL-1423 A scripted check shows the app switcher snapshot is covered when App lock is on, and fails if the cover is removed
+- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NX-39-R36. Cited: BL-851 (its Scope named this check and it was not built); `docs/security/MEDIA_THREAT_MODEL.md` section 4 ("to be built by qa with mobile") and P6; Review B on #1265 (finding 2).
+- Problem: the model says the App lock snapshot check is a P0 gate to be built by qa with mobile. No script or test exists for it, and no other row covers it: BL-1407 is only the decision about App lock off, and BL-1422 is the three device groups. Whether a source-level test already pins the cover is not verified here.
+- Scope: a script or test in `apps/mobile` that drives the app-lock layer into the inactive state with App lock on and asserts the cover (`PrivacyCover`) is drawn over the letter content, and that with the cover code removed the assertion fails. The part a script cannot see (the real iOS snapshot image) stays a device row, D-1, and is not claimed here.
+- Done when: the check passes on develop; one planted removal of the cover turns it red; the title starts with `[NX-39-R36]`; the PR says what is and is not proven without a device.
+- Test: a new file beside the app-lock tests in `apps/mobile/test`.
+- Gate: none; the device row D-1 stays the founder's. BL-1407 decides the App lock off case and is separate.
 
 ## Split of the proposed group rows, batch 1 (21 Nov 2026, proposed)
 
