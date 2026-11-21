@@ -1254,7 +1254,7 @@ export const en = {
     previewEmpty: "Aa",
     notFoundTitle: "This letter isn't in the book",
     // Shown only when a deleted copy of this letter is on the shelf (S37).
-    notFoundDeleted: "It is in Recently deleted.",
+    notFoundDeleted: "It's in Recently deleted.",
     openShelfButton: "Open Recently deleted",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
