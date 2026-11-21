@@ -8,7 +8,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthState } from '../src/lib/auth/machine.logic';
 import { parseNewDeviceEmailFlag, setNewDeviceEmailForTest } from '../src/lib/auth/new-device/flag';
-import { nextReportMark, reportNewDevice, DEVICE_ID_PATTERN, deviceClassOf, type ReportDeps } from '../src/lib/auth/new-device/report.logic';
+import { authReducer, initialAuthState, type AuthEvent } from '../src/lib/auth/machine.logic';
+import { methodForEvent, nextReportMark, reportNewDevice, DEVICE_ID_PATTERN, deviceClassOf, type ReportDeps } from '../src/lib/auth/new-device/report.logic';
 
 const kc = new Map<string, string>();
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
@@ -206,5 +207,102 @@ describe('[NS-08-R21] Erase everything clears the id; sign-out keeps it', () => 
   it('the sign-out settle path never touches the id', () => {
     const src = readFileSync(join(SRC, 'lib/auth/session-provider.tsx'), 'utf8');
     expect(src).not.toMatch(/DEVICE_ID_KEY|deviceId|clearDeviceId/);
+  });
+});
+
+/** The provider's real path: the real reducer, the method each auth event carries, and the report mark. */
+function session(events: Array<{ auth: string; ev: AuthEvent; ref: 'email' | null }>): number {
+  let state: AuthState = initialAuthState;
+  let mark: string | null = null;
+  let calls = 0;
+  const step = (e: AuthEvent) => {
+    state = authReducer(state, e);
+    const n = nextReportMark(mark, state);
+    mark = n.mark;
+    if (n.call) calls++;
+  };
+  for (const { auth, ev, ref } of events) {
+    step(ev.type === 'SIGNED_IN' ? { ...ev, method: methodForEvent(auth, ref) } : ev);
+    if (state.status === 'checkingConsent' || state.status === 'needsConsent') step({ type: 'GATE_LOADED', gate: GATE_ON, sensitiveDeclined: false });
+  }
+  return calls;
+}
+const GATE_ON = { termsCurrent: true, ageAttested: true, sensitiveData: true, contentAllowed: true } as never;
+const signedIn = (auth: string, ref: 'email' | null) => ({ auth, ev: { type: 'SIGNED_IN', userId: 'u1', method: null } as AuthEvent, ref });
+
+describe('[NDA-1] a sign-in through the email link is fresh; a restored session is not', () => {
+  it('a fresh link sign-in reports once, however often Supabase repeats SIGNED_IN', () => {
+    const r = session([{ auth: '', ev: { type: 'RESTORED', userId: null }, ref: null }, signedIn('SIGNED_IN', 'email'), signedIn('SIGNED_IN', 'email')]);
+    expect(r).toBe(1); // mutant: link never sets the method -> 0
+  });
+  it('a restored session never reports, even with a stale method left in the ref (INITIAL_SESSION carries none)', () => {
+    expect(session([{ auth: '', ev: { type: 'RESTORED', userId: 'u1' }, ref: null }, signedIn('INITIAL_SESSION', null)])).toBe(0);
+    expect(session([signedIn('INITIAL_SESSION', 'email')])).toBe(0); // mutant: methodForEvent returns current -> 1
+  });
+  it('a link opened after a cold start (app killed since the email was asked for, state still restoring) reports once', () => {
+    expect(session([signedIn('SIGNED_IN', 'email'), { auth: '', ev: { type: 'RESTORED', userId: null }, ref: null }])).toBe(1);
+    expect(session([{ auth: '', ev: { type: 'RESTORED', userId: null }, ref: null }, { auth: '', ev: { type: 'START', method: 'email' }, ref: null }, signedIn('SIGNED_IN', 'email')])).toBe(1);
+  });
+  it('methodForEvent keeps the method for every event but INITIAL_SESSION', () => {
+    expect(methodForEvent('SIGNED_IN', 'email')).toBe('email');
+    expect(methodForEvent('INITIAL_SESSION', 'email')).toBeNull();
+    expect(methodForEvent('SIGNED_IN', null)).toBeNull();
+  });
+  it('the provider sets the method before the exchange, reads it through methodForEvent, and clears it on a failed link', () => {
+    const src = readFileSync(join(SRC, 'lib/auth/session-provider.tsx'), 'utf8');
+    expect(src).toMatch(/methodRef\.current = 'email';\s*if \(stateRef\.current\.status[^\n]*\n\s*return verifyEmailLinkPkce\(sb, hash, t\)/);
+    expect(src).toContain('method: methodForEvent(event, methodRef.current)');
+    expect(src).toMatch(/methodRef\.current = null;[^\n]*\n\s*dispatch\(\{ type: 'FAILED', error \}\)/);
+  });
+});
+
+describe('[NDA-1] sync is judged once, when the fresh sign-in reaches ready', () => {
+  it('sync off or unknown at ready drops the mark: turning sync on later in the same run never calls', () => {
+    expect(run([st.checking('email'), st.ready('off'), st.ready('on')])).toBe(0); // mutant: keep the mark -> 1
+    expect(run([st.checking('email'), st.ready('unknown'), st.ready('on')])).toBe(0);
+  });
+  it('sync on at ready still calls once', () => {
+    expect(run([st.checking('email'), st.ready('on'), st.ready('off'), st.ready('on')])).toBe(1);
+  });
+});
+
+describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the retry', () => {
+  beforeEach(() => {
+    kc.clear();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+  const wire = async () => {
+    vi.resetModules();
+    const flag = await import('../src/lib/auth/new-device/flag');
+    flag.setNewDeviceEmailForTest(true);
+    return { ...(await import('../src/lib/auth/new-device/report')), flag };
+  };
+  const client = (invoke: unknown) => ({ auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN } } }) }, functions: { invoke } }) as never;
+
+  it('aborts the first attempt at the cap, then retries once', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const signals: AbortSignal[] = [];
+    const invoke = vi.fn((_n: string, o: { signal: AbortSignal }) => {
+      signals.push(o.signal);
+      return signals.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
+    });
+    const done = reportNewDeviceFor(client(invoke));
+    await vi.advanceTimersByTimeAsync(8_001);
+    await done;
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(signals[0].aborted).toBe(true); // mutant: no abort -> false
+    expect(signals[1].aborted).toBe(false);
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('a second ask while one is in flight shares it: at most one call at a time', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    const sb = client(invoke);
+    await Promise.all([reportNewDeviceFor(sb), reportNewDeviceFor(sb)]);
+    expect(invoke).toHaveBeenCalledTimes(1); // mutant: no cap -> 2
+    await reportNewDeviceFor(sb); // after it settled, the next sign-in may call again
+    expect(invoke).toHaveBeenCalledTimes(2);
+    flag.setNewDeviceEmailForTest(null);
   });
 });
