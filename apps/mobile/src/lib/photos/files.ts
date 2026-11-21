@@ -75,6 +75,9 @@ function freshName(id: string, ext: string): string {
   return name;
 }
 
+/** Where scribe-photo's picker copies the next picked original: a new file in Caches/ImagePicker. */
+export const pickerDestination = (id: string): string => new File(pickerDir(), freshName(id, 'img')).uri;
+
 export function expoPhotoFiles(): PhotoFiles {
   return {
     async write(path, bytes) {
