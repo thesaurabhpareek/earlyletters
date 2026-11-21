@@ -1351,7 +1351,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J11 (J11-05); `apps/mobile/test/billing-plan.test.ts`.
 
 #### BL-408 Performance budgets have a harness: SQL perf test with a 5-year fixture in CI, Maestro timing for device runs [High]
-- Status: partly done (server perf test and nightly job built; the on-device 2,000-letter test `apps/mobile/test/perf.sql.test.ts` and Maestro timing are missing). Mode: agent. Owner: QA engineer, mobile engineer. Milestone: M-JR. Size: L.
+- Status: partly done (server perf test and nightly job built in `supabase/tests/perf.test.mjs`; the phone-store 2,000-letter test is BL-1402 and the Maestro timing scripts are BL-1403, split 21 Nov 2026). Mode: agent. Owner: QA engineer, mobile engineer. Milestone: M-JR. Size: L.
 - Severity: major. Raised by: quality (2 findings). Steps: J03-05; system-wide (`_journey` entries).
 - Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; extends BL-289 (done) and feeds BL-044.
 - Scope: A CI SQL-level perf test with a 5-year fixture of 2,000 Asha letters: chapter of 60 letters p95 500 ms, local save p95 200 ms, switch child p95 300 ms. Maestro timing scripts for cold start and record start for the device run per release candidate (200 samples), feeding BL-044.
@@ -1559,12 +1559,12 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J06 (J06-07, J06-09); content rules test.
 
 #### BL-434 Tonight and Book read only what they show
-- Status: blocked (BL-408). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-408.
+- Status: blocked (BL-1402). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-1402.
 - Severity: minor. Raised by: quality (2 findings). Steps: J01-14, J09-03.
 - Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111.
 - Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
 - Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
-- Test: `apps/mobile/test/perf.sql.test.ts` (from BL-408); journeys J01 (J01-14) and J09 (J09-03).
+- Test: `apps/mobile/test/perf.sql.test.ts` (from BL-1402); journeys J01 (J01-14) and J09 (J09-03).
 
 ## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
 
@@ -6363,6 +6363,26 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Satisfies: NS-03-R3.
 - Scope: tests first, then code or words only where a test fails, for the 1 row above: the read-out file in the repo holding counts and the outcome only: 0 quotes, 0 participant codes joined to an answer and 0 names. One PR. The card (NS-03) is the source of truth; nothing here changes a row. The rest of BL-127 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the no-real-family-data hash test (`packages/content/test/no-real-family-data.test.ts`) passes on the PR that adds the file; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+
+## Split of BL-408, 21 Nov 2026 (ready)
+
+BL-408 stays `partly done`: its server half (a launch-scale SQL perf test with p95 budgets, run nightly) is in `supabase/tests/perf.test.mjs` and the `perf` job of `.github/workflows/nightly.yml` (read on `develop` at `c52582bf`; not run here). The two missing halves are below, each its own PR. Source: `docs/backlog/STATUS-AUDIT-2026-11-21.md`, "Partly done rows to split first", item 1.
+
+#### BL-1402 The phone's local store has a 2,000-letter perf test with the BL-408 budgets
+- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; BL-408 (the half it names); feeds BL-434.
+- Scope: a new `apps/mobile/test/perf.sql.test.ts` that builds the app's real local database (`node:sqlite` with `MIGRATIONS` and `migrate` from `apps/mobile/src/lib/db/migrations.ts`, the way `apps/mobile/test/sync-e2e.test.ts` does) and fills it with 2,000 letters over five years for the fictional family Asha, in two children so switching has something to switch to. It times, through the repos in `apps/mobile/src/lib/db/repos` and the same reads the Book and Tonight screens call: a chapter of 60 letters (p95 500 ms), one local save (p95 200 ms) and switching the active child (p95 300 ms). The numbers are BL-408's, not new ones. The test states in its header that it times the SQL path on a CI machine, not a phone: the phone figures come from BL-1403 and BL-044. It runs under the existing `npm test` (`.github/workflows/ci.yml` line 62 runs it), so no workflow change is part of this row.
+- Done when: the test fails when a budget is exceeded on the fixture, shown by one planted slow read (an unindexed scan or a deliberate delay) turning it red and the real code passing; the fixture holds no real family data (`packages/content/test/no-real-family-data.test.ts` stays green); the run is under 60 s on the CI runner; the three budgets and the sample count are named in one place in the file.
+- Test: `apps/mobile/test/perf.sql.test.ts` itself, with its planted-slow mutant.
+- Gate: none. Tests only, no `src`, migration or dependency change.
+
+#### BL-1403 Maestro timing scripts for cold start and record start, 200 samples, feeding BL-044
+- Status: ready. Mode: agent (writing and linting the scripts; running them on a phone is the founder's device run under BL-044, FT-22 and FT-39). Owner: qa engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; BL-408 (the half it names); feeds BL-044.
+- Scope: under `apps/mobile/e2e/` (flows in `flows/`, helpers in `scripts/`) two timing flows, cold start to the first usable screen and record start (tap to recording), each repeating 200 times with the app killed between runs; a small script that reads the timings into a table of p50 and p95 with the sample count; and a section in `apps/mobile/e2e/README.md` saying how to run them per release candidate, what build they need (the `e2e` profile is request B-1 in `TESTID_REQUESTS.md` and not built yet) and where the result is filed (`docs/qa/evidence`). Content-free output: timings and counts only, never a letter, a name or a path.
+- Done when: `node apps/mobile/e2e/bin/lint-flows.mjs` passes on the new flows; the summary script has a test over a fixed list of timings; the README section exists and names the budgets from BL-408 without restating new ones. No device run is claimed.
+- Test: `node apps/mobile/e2e/bin/lint-flows.mjs`; the summary script's own test under `apps/mobile/test/` or `apps/mobile/e2e/`.
+- Gate: BL-044's device run stays the founder's; this row never marks it done.
 
 ## Appendix: TDD proposal to BL mapping
 
