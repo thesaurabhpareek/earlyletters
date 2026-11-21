@@ -1091,7 +1091,7 @@ export const en = {
   // a device model, any join to a login. Decline = nothing is sent, every feature works, at most two offers.
   analyticsConsent: {
     title: "Help improve {app}?",
-    body: "If you say yes, {app} sends us simple counts about how it is used, so we can fix what is slow or confusing. We see which screens you open, which buttons you tap, how fast the app runs, and your app version and iPhone software version. We never see your words, recordings, photos, {child}'s name or birthday, where you are, or your family's religion or background.",
+    body: "If you say yes, {app} sends us simple counts about how it is used, so we can fix what is slow or confusing. We see which screens you open, which buttons you tap, how fast the app runs, and your app version and iPhone software version. We never see your words, recordings, photos, names or birthdays, where you are, or your family's religion or background.",
     detail: "Nothing is sent unless you tap Share. Until you choose, nothing leaves your phone.",
     turnOff: "You can turn this off any time in Settings, Privacy. Then nothing more is sent. What we already received is kept for up to 12 months under a random number that is not your name, then deleted. If you delete your account, we ask for it to be deleted sooner, and that can take up to about two months to finish.",
     yesButton: "Share usage",
