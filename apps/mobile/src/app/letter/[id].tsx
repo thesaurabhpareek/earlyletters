@@ -428,10 +428,10 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         </View>
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
-        {/* The picture's controls (add, change, words, remove) stay after the words; the picture itself is drawn by the
+        {spoken && <AudioPlayer entryId={entry.id} />}
+        {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
             opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
         {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
-        {spoken && <AudioPlayer entryId={entry.id} />}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
         {own && words === 'words' && (unread || entry.wordsUnreviewed) && (

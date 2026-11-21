@@ -1223,7 +1223,7 @@ describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter,
     expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
     expect(src).toMatch(/\{notSaved \? <SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\} testID="letter\.photo\.notSaved" \/> : null\}/);
     expect(src.indexOf('photos.book.letter.notSaved')).toBeLessThan(src.indexOf('photos.book.letter.addPhoto'));
-    expect(src).toMatch(/return own && words \?/);
+    expect(src).toMatch(/return controls\.add \? \(/); // the author-only rule: add needs the author and words (letterPhotoControls)
     expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);
     expect(photos.book.letter.notSaved).toMatch(/words are kept/);
   });

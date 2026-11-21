@@ -47,6 +47,15 @@ export function coveredForAppState(phase: string): boolean {
   return pictureCovered(phase === 'active' || phase === 'inactive' ? phase : 'background');
 }
 
+/**
+ * Which controls the letter page and Review draw for a picture (NS-01-R9c): only the letter's author adds, changes, takes
+ * off or edits the words; another parent only sees the picture. A picture needs words on the letter to be added (R5).
+ */
+export function letterPhotoControls(a: { own: boolean; hasPhoto: boolean; hasWords: boolean }): { add: boolean; change: boolean; remove: boolean; editWords: boolean } {
+  const author = a.own === true;
+  return { add: author && !a.hasPhoto && a.hasWords, change: author && a.hasPhoto, remove: author && a.hasPhoto, editWords: author && a.hasPhoto };
+}
+
 export function pictureCovered(phase: 'active' | 'inactive' | 'background', lockOn = false, unlocked = true): boolean {
   return pictureHidden({ lockOn: lockOn || PHOTO_BLANK_WITHOUT_APP_LOCK, unlocked, phase });
 }

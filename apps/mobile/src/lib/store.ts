@@ -1325,7 +1325,12 @@ export function finishDiscard(id: string): boolean {
  * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
-  eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5); a file that will not go keeps the draft
+  try {
+    eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5)
+  } catch {
+    // A picture file that will not go never blocks the draft going: the launch photo sweep removes a gone draft's picture
+    // (the row's owner is gone), so nothing here may throw uncaught into the screen that let the draft go.
+  }
   const c = ctx();
   let held = false;
   c.db.transaction(() => {

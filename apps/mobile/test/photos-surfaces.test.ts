@@ -13,7 +13,7 @@ import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
-import { coveredForAppState, LETTER_PICTURE_AX_MAX_PT, letterPictureSize, pictureCovered, pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { coveredForAppState, LETTER_PICTURE_AX_MAX_PT, letterPhotoControls, letterPictureSize, pictureCovered, pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
 import { photoStartShows } from '../src/lib/photos/start-shows';
 import { PendingPhoto } from '../src/lib/photos/pending';
 import { registerPhotoPicker, registerPending } from '../src/lib/photos/registry';
@@ -21,6 +21,7 @@ import { setPhotosForTest } from '../src/lib/photos/flag';
 import { planCapture } from '../src/lib/capture/start-capture.logic';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
+import { PHOTO_WORDS_WRITING_TOOLS_OFF, photoWordsFieldsShown } from '../src/lib/photos/words-setting';
 import { fixture, insertBook } from './helpers/store-fixture';
 import { deps, makeJpeg } from './photos-helpers';
 
@@ -329,6 +330,53 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     const ax = letterPictureSize({ ...wide, largeText: true });
     expect(ax.height).toBeLessThanOrEqual(LETTER_PICTURE_AX_MAX_PT);
     expect(letterPictureSize({ ...wide, aspect: 5 }).width).toBeLessThanOrEqual(300); // a panorama fits the column
+  });
+  it('[NS-01-R9c] only the author changes the picture', () => {
+    // Another parent's letter: no add, change, take off or edit control, with or without a picture and words.
+    for (const hasPhoto of [true, false]) {
+      for (const hasWords of [true, false]) expect(letterPhotoControls({ own: false, hasPhoto, hasWords }), `${hasPhoto}/${hasWords}`).toEqual({ add: false, change: false, remove: false, editWords: false });
+    }
+    expect(letterPhotoControls({ own: true, hasPhoto: true, hasWords: true })).toEqual({ add: false, change: true, remove: true, editWords: true });
+    expect(letterPhotoControls({ own: true, hasPhoto: false, hasWords: true }).add).toBe(true);
+    expect(letterPhotoControls({ own: true, hasPhoto: false, hasWords: false }).add).toBe(false); // a mark has no words (R5, R25)
+    // The component draws its controls only through that rule. Mutant: "author-only controls always visible" (a bare `true`
+    // or `own`-free condition in the controls) fails these pins.
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).toMatch(/const controls = letterPhotoControls\(\{ own, hasPhoto: !!photo, hasWords: words \}\);/);
+    expect(src).toMatch(/return controls\.add \? \(/);
+    expect(src).toMatch(/\{controls\.change \? \(/);
+    expect(src).toMatch(/\{editing && controls\.editWords && photoWordsFieldsShown\(\) \? \(/);
+    expect(src).toMatch(/letterPhotoControls\(\{ own, hasPhoto: true, hasWords: true \}\)\.remove/);
+    expect(src).not.toMatch(/\{own \?|own && /);
+  });
+  it('[NS-01-R50] writing tools are off on photo words and place', () => {
+    // OPEN, never green by silence (E41): React Native 0.86 has no prop for iOS writing tools and the native setting of ADR 0039
+    // is not built. This row stays red-by-design until PHOTO_WORDS_WRITING_TOOLS_OFF is true (the PR that builds the setting).
+    expect(PHOTO_WORDS_WRITING_TOOLS_OFF, 'OPEN: R50 needs the native setting; see R50b for what ships meanwhile').toBe(false);
+  });
+  it('[NS-01-R50b] the fields stay off in production until the setting exists', () => {
+    expect(photoWordsFieldsShown('production', false)).toBe(false);
+    expect(photoWordsFieldsShown('preview', false)).toBe(true);
+    expect(photoWordsFieldsShown('development', false)).toBe(true);
+    expect(photoWordsFieldsShown(null, false)).toBe(true); // an unknown value resolves to development, as build-env does
+    expect(photoWordsFieldsShown('production', true)).toBe(true); // the setting exists
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src.match(/photoWordsFieldsShown\(\)/g)?.length).toBe(2); // the fields and the button that opens them
+    // Mutant: show the fields in production (drop the gate) fails the two pins above.
+  });
+  it('[review B on #839] the words are written on blur and Done, not per keystroke; the caption is not read twice; Review draws the picture; the controls follow the player', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).not.toMatch(/onChangeText=\{\(t\) => editPhotoWords/);
+    expect(src.match(/onBlur=\{flush\}/g)?.length).toBe(2);
+    expect(src).toMatch(/useEffect\(\(\) => flush, \[\]\)/); // leaving the page writes what was typed
+    expect(src).toMatch(/accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="letter\.photo\.text"/);
+    const review = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
+    expect(review.indexOf('<LetterPicture')).toBeGreaterThan(-1);
+    expect(review.indexOf('<LetterPicture')).toBeLessThan(review.indexOf('<LetterPhoto '));
+    const page = readFileSync(join(SRC, 'app', 'letter', '[id].tsx'), 'utf8');
+    expect(page.indexOf('<LetterPhoto ')).toBeGreaterThan(page.indexOf('<AudioPlayer'));
+    const hooks = readFileSync(join(SRC, 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hooks).toMatch(/setPhoto\(\(prev\) => \(samePhoto\(prev, next\) \? prev : next\)\)/);
   });
   it('[NS-01-R19] off, the letter page and Review draw no photo control', () => {
     const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');

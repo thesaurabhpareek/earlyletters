@@ -244,7 +244,7 @@ describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
     // The letter page offers Add only on a letter with words; a mark has none (D-084), so it draws nothing.
     const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).toMatch(/const words = draft \|\| finalText\.trim\(\)\.length > 0;/);
-    expect(page).toMatch(/return own && words \?/);
+    expect(page).toMatch(/return controls\.add \? \(/); // author and words, through letterPhotoControls
   });
 });
 
@@ -259,7 +259,7 @@ describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed l
     expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
     expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
   });
-  it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
+  it('[NS-01-R9a] the picture has a fixed label: [NS-01-R9] no typed words, the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
   });

@@ -5,13 +5,14 @@
  * Remove; the letter itself reads whole. None of this touches the letter's words, transcript or recording.
  * Absent when the photos switch is off.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, View, useWindowDimensions } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
-import { ErrorLine } from '@/lib/auth/ui';
+import { ErrorLine } from './error-line';
+import { photoWordsFieldsShown } from '@/lib/photos/words-setting';
 import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
 import { clearPhotoNotSaved } from '@/lib/photos/failures';
@@ -23,7 +24,7 @@ import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
 import { photosPausedNow } from '@/lib/photos/pause';
 import { useLetterPhoto } from '@/lib/photos/hooks';
 import { photoA11yLabel } from '@/lib/photos/text';
-import { letterPictureSize } from '@/lib/photos/surface';
+import { letterPhotoControls, letterPictureSize } from '@/lib/photos/surface';
 import type { PickedAsset, StoredPhoto } from '@/lib/photos/types';
 import { usePhotoPick } from '@/lib/photos/use-photo-pick';
 import { PhotoFrame } from './photo-frame';
@@ -33,6 +34,15 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
   const toast = useToast();
   const [failed, setFailed] = useState(false);
   const [editing, setEditing] = useState(false);
+  // Words are written when the parent leaves a field or taps Done, not on every keystroke (each write is a SQLite write that
+  // broadcasts to the store's listeners). The latest text waits in a ref, and unmounting flushes it.
+  const typed = useRef<{ text?: string; place?: string }>({});
+  const flush = () => {
+    const t = typed.current;
+    typed.current = {};
+    if (t.text !== undefined || t.place !== undefined) editPhotoWords(photoDeps(), entryId, t);
+  };
+  useEffect(() => flush, []); // eslint-disable-line react-hooks/exhaustive-deps
   const notSaved = usePhotoNotSaved(entryId);
   const on = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
 
@@ -79,8 +89,9 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
 
   if (!on || !pick.ready) return null;
   const words = draft || finalText.trim().length > 0;
+  const controls = letterPhotoControls({ own, hasPhoto: !!photo, hasWords: words });
   if (!photo) {
-    return own && words ? (
+    return controls.add ? (
       <View className="items-start" testID="letter.photo.add">
         {notSaved ? <SpokenLine text={draft ? photos.review.notStored : photos.book.letter.notSaved} testID="letter.photo.notSaved" /> : null}
         <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
@@ -90,17 +101,17 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
   }
   return (
     <View className="gap-2" testID="letter.photo.controls">
-      {editing && own ? (
+      {editing && controls.editWords && photoWordsFieldsShown() ? (
         <View className="gap-3" testID="letter.photo.edit">
           {/* No length cap on the fields: a native cap counts UTF-16 units and could cut a character in half; editPhotoWords keeps 140 and 60 characters a person sees (BL-957). */}
-          <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} multiline onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { text: t })} testID="letter.photo.text" />
-          <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { place: t })} testID="letter.photo.place" />
-          <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="letter.photo.editDone" />
+          <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} multiline onChangeText={(t) => (typed.current.text = t)} onBlur={flush} testID="letter.photo.text" />
+          <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} onChangeText={(t) => (typed.current.place = t)} onBlur={flush} testID="letter.photo.place" />
+          <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => (flush(), setEditing(false))} testID="letter.photo.editDone" />
         </View>
       ) : null}
-      {own ? (
+      {controls.change ? (
         <View className="items-start">
-          {!editing ? <Button variant="quiet" size="md" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
+          {!editing && photoWordsFieldsShown() ? <Button variant="quiet" size="md" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
           <Button variant="quiet" size="md" label={photos.book.letter.changePhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.change" />
           <Button
             variant="quiet"
@@ -133,7 +144,12 @@ export function LetterPicture({ entryId, own, columnWidth }: { entryId: string; 
   return (
     <View className="gap-2" testID="letter.photo">
       <PictureFrame key={photo.mediaId} photo={photo} own={own} width={width} height={height} />
-      {photo.text ? <Text variant="callout" testID="letter.photo.text">{photo.text}</Text> : null}
+      {/* The photo words are the picture's accessible name already (R21c): the caption is for the eye, not read twice. */}
+      {photo.text ? (
+        <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="letter.photo.text">
+          {photo.text}
+        </Text>
+      ) : null}
       {photo.place ? <Text variant="footnote" tone="muted" testID="letter.photo.placeText">{photo.place}</Text> : null}
     </View>
   );
@@ -145,7 +161,7 @@ function PictureFrame({ photo, own, width, height }: { photo: StoredPhoto; own: 
     return (
       <View className="gap-1" testID="letter.photo.missing">
         <Text variant="callout" tone="muted">{photos.book.letter.missing}</Text>
-        {own ? (
+        {letterPhotoControls({ own, hasPhoto: true, hasWords: true }).remove ? (
           <Button variant="quiet" size="md" label={photos.book.letter.missingRemove} onPress={() => void removePhotoFromLetter(photoDeps(), photo.entryId)} testID="letter.photo.missingRemove" />
         ) : null}
       </View>

@@ -36,6 +36,8 @@ export function usePendingPhoto(): PendingPhoto | null {
   return p;
 }
 
+const samePhoto = (a: StoredPhoto | null, b: StoredPhoto | null): boolean => a === b || (!!a && !!b && JSON.stringify(a) === JSON.stringify(b));
+
 /** The kept letter's picture, not while its letter waits in Recently deleted. */
 export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto | null {
   const read = useCallback(() => {
@@ -49,8 +51,12 @@ export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto 
   }, [entryId]);
   const [photo, setPhoto] = useState<StoredPhoto | null>(read);
   useEffect(() => {
-    setPhoto(read());
-    return subscribeStore(() => setPhoto(read()));
+    const update = () => {
+      const next = read();
+      setPhoto((prev) => (samePhoto(prev, next) ? prev : next)); // the same picture keeps its reference: no re-render per store event
+    };
+    update();
+    return subscribeStore(update);
   }, [read]);
   return photo;
 }
