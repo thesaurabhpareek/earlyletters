@@ -15,6 +15,7 @@ import {
   localDay,
   nextAsk,
   primeAllowed,
+  reminderPrimeSource,
   sessionAfterForeground,
   type AskFacts,
 } from '../src/lib/asks/next-ask.logic';
@@ -138,6 +139,26 @@ describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, a
     expect(firstMonthDone(null, t)).toBe(false);
     expect(firstMonthDone(t, t + FIRST_MONTH_MS - 1)).toBe(false);
     expect(firstMonthDone(t, t + FIRST_MONTH_MS)).toBe(true);
+  });
+});
+
+describe('[C-REQ-034, BL-1429] reminder_prime_shown names which showing it is', () => {
+  it('Given no earlier showing, Then the source is first_letter; Given one, Then it is first_month', () => {
+    expect(reminderPrimeSource(0)).toBe('first_letter');
+    expect(reminderPrimeSource(1)).toBe('first_month');
+  });
+
+  it('the source follows the second-prime rule: the showing nextAsk returns at primesShown 1 is the one labelled first_month', () => {
+    const first = nextAsk(facts());
+    const second = nextAsk(facts({ firstLetter: false, lettersSaved: 3, primesShown: 1, firstMonthDone: true, signInOffered: false, session: S2 }));
+    expect([first, second]).toEqual(['reminder_prime', 'reminder_prime']);
+    expect([reminderPrimeSource(0), reminderPrimeSource(1)]).toEqual(['first_letter', 'first_month']);
+  });
+
+  it('the card sends the source it is given by the counter, never a fixed string', () => {
+    const card = readFileSync(join(__dirname, '..', 'src', 'components/asks/reminder-prime-ask.tsx'), 'utf8');
+    expect(card).toMatch(/track\('reminder_prime_shown', \{ source: noteReminderPrimeShown\(\) \}\)/);
+    expect(card).not.toMatch(/reminder_prime_shown'[^)]*'first_letter'/);
   });
 });
 
