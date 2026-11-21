@@ -1911,12 +1911,12 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: an expecting book shows the row before its due date, setting the birth date turns the book into a born one (letters before it stay in Before You), and a test covers the row's visibility.
 
 #### BL-473 The Family tab's dateline for a book that is not born yet
-- Status: ready. Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1266). Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
 - Problem: for a book whose child is not born yet, the Family tab's dateline is only the day: `ageText` returns null without a birthday, so `tonightDateline` falls back to the date. Tonight shows the name and "Before You" for the same book (fixed in #376).
-- Evidence: `apps/mobile/src/app/(tabs)/family.tsx:191` (`tonightDateline(child, ageText(active, today), dayDate(today))`); `apps/mobile/src/lib/dates.ts:69-73` (`ageText`); `apps/mobile/src/components/tonight/draft-card.logic.ts:215-217` (the fallback); Tonight's label `tonightStageLabel` (`apps/mobile/src/components/tonight/prompt.logic.ts:33-36`, used at `apps/mobile/src/app/(tabs)/index.tsx:191`). From the 28 Oct reviews.
+- Evidence: `apps/mobile/src/app/family.tsx:192` (`tonightDateline(child, ageText(active, today), dayDate(today))`); `apps/mobile/src/lib/dates.ts:69-73` (`ageText`); `apps/mobile/src/components/tonight/draft-card.logic.ts:215-217` (the fallback); Tonight's label `tonightStageLabel` (`apps/mobile/src/components/tonight/prompt.logic.ts:33-36`, used at `apps/mobile/src/app/(tabs)/index.tsx:191`). From the 28 Oct reviews.
 - Scope: use `tonightStageLabel` on the Family tab so a not-yet-born book reads like Tonight's dateline (the spec says "the dateline as on Tonight": `docs/design/EXPERIENCE_PASS_2026-10.md:1415`), with a test beside the Tonight one. Also update the documented fallback ("With no age it is the day's date (the Family tab)": `apps/mobile/src/components/tonight/draft-card.logic.ts:211-213`) and the pin that holds it (`apps/mobile/test/draft-card.test.ts:253`), which is the fix site for the day-only fallback.
 - Done when: a before-birth book shows its name and "Before You" in the Family tab's dateline, and a test covers it.
 
