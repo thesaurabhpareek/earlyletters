@@ -1637,14 +1637,14 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: each of the six points is settled in the file it names, or recorded here as left as it is; the book-deletion email and the website page say only what the app does, and the request email says a co-parent is told only if a notice is sent.
 
 #### BL-449 A sign-out wait ends when the queued letters belong to another account [High]
-- Status: in-review (PR #1273). Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1273, d9c392736: `pendingForAccount` in `apps/mobile/src/lib/sync/outbox.ts` counts only the signed-in account's rows in the sign-out check, and A's rows stay queued; test `apps/mobile/test/sync-signout-wait-owner.test.ts`; the test is at the function level, the wiring in `lib/sync/index.ts` is pinned by BL-1426). Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
 - Satisfies: none given.
 - Why: `pendingCount` has no owner filter (`apps/mobile/src/lib/sync/outbox.ts:786-792`), and the engine does not start when the signed-in account differs from the account that owns the queue (`apps/mobile/src/lib/sync/index.ts:186`, `:206`). Account A signs out with letters queued, account B signs in with sync on, and B's sign-out waits on A's rows forever. The same on develop. From the #359 review (lens A S3): code reading, not run.
 - Scope: end the wait when the queue is not the signed-in account's, for example by counting only that account's rows in the sign-out check, or by not waiting when the engine will not start on a mismatch. The owner picks one in the PR. A's queued rows are left as they are.
 - Done when: a test with two accounts (A queues and signs out, B signs in with sync on and signs out) shows B's sign-out does not wait on A's rows, and A's rows are still queued.
 
 #### BL-450 An Apple revocation noticed at launch waits for unsynced letters before signing out
-- Status: ready. Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
+- Status: ready (BL-449 is done in PR #1273, so this can proceed; the sign-out probe it touches now counts only the signed-in account's rows, `lib/sync/index.ts:266-271`). Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
 - Priority: Medium.
 - Satisfies: A-REQ-033 (P0, `docs/prd/v2/features/F02-account.md:213`: "Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync").
 - Why: an Apple revocation noticed at launch signs out without waiting for unsynced letters. The state at that point is `checkingConsent`, and the sign-out request maps it to sync off (`apps/mobile/src/lib/auth/machine.logic.ts:181-183`), so no wait starts. A-REQ-033 is not met for that case. Letters are kept, not sent. Pre-existing. From the #359 review (lens A N1).
@@ -1726,12 +1726,12 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #382 and the experience critics' passes) and filed here by the product agent from the coordinator's list, one entry per item, in the format of BL-446 to BL-456 (`Problem` and `Evidence` take the place of `Why`; `Gate` names the build the item must land before, or "none"). Every file:line cite was re-checked against `develop` at 4192a99, the tip when I last looked, and a moved line has the test title or key beside it; where a line is on an open PR's head, the entry says which PR. "Unverified" means the review said it and I could not find or run it. The brief's "later" is written as `blocked (PR #n merge)` where the PR was open when this was written; the status parser does not clear a PR blocker, so the product agent flips it when the PR merges. `needs-decision (...)` names who decides in the parenthetical (the BL-447 and BL-448 precedent) where no D-### or Q-### exists yet. Priorities are the product agent's call (none were given); the file tags only [Critical] and [High] in a heading, so these carry a `Priority:` line. Not entered: the P8a link-versus-pause decision (F02-U14), because #372 had not merged.
 
 #### BL-457 Pin the See Plus note effect's dependency array, and use `announce()` there
-- Status: in-review (PR #1290). Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
+- Status: done (PR #1290, 6985a1557: the effect calls `announce()`, both slice indexes are asserted before slicing and `}, [view.note]);` must appear exactly once; the PR reports mutants on the deps array and on the direct call all killed, not run on a device). Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
 - Problem: the test for the See Plus note effect does not pin the effect's dependency array, so a missing or changed `[view.note]` passes. The test slices the source to the first `}, [view.note]);`, and a missing anchor makes `indexOf` return -1, which slices to almost the whole file, where every match still passes. Mutants n5, n5b and n5c survive (from the review of #370, not re-run here). The effect also calls `AccessibilityInfo.announceForAccessibility(note)` directly instead of the repo's `announce()`.
-- Evidence: `apps/mobile/test/plus-gate.test.ts:139-141` (the slice runs from `const openingNote = React.useRef(view.note);` to `}, [view.note]);`); `apps/mobile/src/components/child/plus-gate.tsx:127-140` (the effect; the direct call is at `:134`, the dependency array at `:140`); `apps/mobile/src/lib/a11y.ts:53` (`announce()` queues behind VoiceOver and is a no-op on Android, where the live region at `plus-gate.tsx:199` already reads the note). Review of #370 (merged as 86ff1e2).
+- Evidence: `apps/mobile/test/plus-gate.test.ts:139-141` (the slice runs from `const openingNote = React.useRef(view.note);` to `}, [view.note]);`); `apps/mobile/src/components/child/plus-gate.tsx` (before #1290 the effect was at `:127-140`, with the direct `AccessibilityInfo.announceForAccessibility(note)` call at `:134`; since #1290 the effect is at `:130-143`, it calls `announce(note)` at `:137` and the dependency array is at `:143`, and `plus-gate.tsx` no longer imports `AccessibilityInfo`); `apps/mobile/src/lib/a11y.ts:54` (`announce()` queues behind VoiceOver and is a no-op on Android, where the live region at `plus-gate.tsx:208` already reads the note). Review of #370 (merged as 86ff1e2).
 - Scope: add `expect(gate).toMatch(/\}, \[view\.note\]\);/)` and assert both slice indexes are >= 0 before slicing; change the effect to `announce()` from `@/lib/a11y` and update the test's match for the old direct call.
 - Done when: the test fails if the dependency array is removed or changed (n5, n5b and n5c are killed or shown irrelevant), and the effect uses `announce()`.
 
@@ -1746,7 +1746,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: mutants S3-x and S6-g are killed; a test shows an `entries` event between the initialiser read and the subscribe is picked up at once.
 
 #### BL-459 Pin that a join wait started with no name does not inherit the previous book's name
-- Status: in-review (PR #1289). Mode: agent. Owner: family owner (S04: the join wait), qa engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1289, 71d4661e8: test only, `apps/mobile/test/join-wait.test.ts`; the PR reports the mutant `name: name ?? wait?.name ?? null` fails the new test). Mode: agent. Owner: family owner (S04: the join wait), qa engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1814,7 +1814,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: a lowercase "read together" in the scanned Plus copy fails the guard; counsel's answer on `en.plus.legal` is recorded here; the listed documents no longer name keys or files that do not exist, or are marked as dated.
 
 #### BL-464 Find the cause of the web e2e boot flake `local_db_migration_failed:1`, then harden the seeded flows
-- Status: partly done (scope 1 in PR #1293, in review: the report now names the error; scope 5 done in #382; cause not found and not reproduced, so scopes 2 to 4 are open and unsupported: the web build's sync cap is 30 s of wall time, so `Sync operation timeout` is unlikely; see the PR). Mode: agent. Owner: qa engineer, sync owner (S03: the migration). Milestone: M12. Size: M. Depends on: none.
+- Status: partly done (scope 1 done in PR #1293, ccac54d08: the report now names the error; scope 5 done in #382; cause not found and not reproduced, so scopes 2 to 4 are open and unsupported: the web build's sync cap is 30 s of wall time, so `Sync operation timeout` is unlikely; see the PR). Mode: agent. Owner: qa engineer, sync owner (S03: the migration). Milestone: M12. Size: M. Depends on: none.
 - Priority: Medium.
 - Gate: none.
 - Satisfies: none given.
@@ -1913,7 +1913,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: an expecting book shows the row before its due date, setting the birth date turns the book into a born one (letters before it stay in Before You), and a test covers the row's visibility.
 
 #### BL-473 The Family tab's dateline for a book that is not born yet
-- Status: in-review (PR #1266). Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1266, 239e893f0: `family.tsx` passes `tonightStageLabel(active.birthday, today)`, the fallback comment and its pin are updated, and a test in `apps/mobile/test/draft-card.test.ts` covers a before-birth book; not run on a device). Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2367,7 +2367,7 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Done when: the plan row names the drill and its date; B2-13 says how it is run; the flip section names both conditions once the founder has confirmed them; a test on the preflight output for both profiles shows no PASS line for build 2's row.
 
 #### BL-508 The test that the session provider registers the Privacy row is a formatting-sensitive regex
-- Status: in-review (PR #1252). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1252, 909535447: the effect moved into `useRegisterSensitiveDataRow`, and `apps/mobile/test/privacy-sensitive-row.test.ts` mounts it and checks the row follows the auth snapshot). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -7078,7 +7078,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/join-wait.test.ts` plus an auth-side test. Depends on nothing else.
 
 #### BL-1425 `pendingUploads()` treats a failed read as unsynced, with a typed result
-- Status: ready. Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
+- Status: done (PR #1319, 0e78228a7: `pendingUploads()` returns `{ kind: 'count', n } | { kind: 'unknown' }` and sign-out waits on unknown; tests `apps/mobile/test/auth-pending-uploads.test.ts` and `auth-sign-out-wait.test.ts`). Mode: agent. Owner: mobile engineer (auth). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: found by Lens A on #1273. `pendingUploads()` in `apps/mobile/src/lib/auth/auth-store.ts:188-194` returns 0 when the probe throws, which tells sign-out nothing is waiting when the store could not be read. That is the opposite of fail-safe: sign-out could proceed and drop letters that were never uploaded. Its callers read a number: `apple-revocation.logic.ts:54-63`, `session-provider.tsx:299,316,374,560`, and the literal `pendingUploads: 0` at `:424` (switch_account, which never reads the probe), and the reducer's `waiting` line at `machine.logic.ts:195`. The 0 for "no sync engine registered" is correct and stays.
@@ -7087,16 +7087,16 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
 
 #### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
-- Status: blocked (PR #1273 merging; the probe it pins is #1273's change and is not on `develop`). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Status: ready (PR #1273 merged as d9c392736, so the probe it pins is on `develop`; BL-1425 is done in PR #1319). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
-- Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` the registration is `registerUploadQueue({ pendingCount: () => pendingCount(localSqlDb()), ... })` at `:266-274`; the changed probe is unverified until #1273 merges.
-- Scope: one test that starts the sync module, reads `pendingUploads()` through the registered probe and expects what #1273's probe counts that plain `pendingCount` does not; mutate the probe back and see the test fail.
+- Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` since #1273 the registration at `:266-274` is `registerUploadQueue({ pendingCount: () => { const userId = currentAuthUserId(); return userId ? pendingForAccount(localSqlDb(), userId) : pendingCount(localSqlDb()); }, ... })`, and `pendingForAccount` is in `apps/mobile/src/lib/sync/outbox.ts`.
+- Scope: one test that starts the sync module, reads `pendingUploads()` (a typed result since #1319) through the registered probe and expects what `pendingForAccount` counts that plain `pendingCount` does not (0 for another account's queued rows); mutate the probe back and see the test fail.
 - Done when: reverting the probe to plain `pendingCount` makes exactly this test fail.
 - Test: `apps/mobile/test/sync-*.test.ts`.
 
 #### BL-1427 BL-518 web half: a web journey that shows the second reminder prime
-- Status: blocked (PR #1274 merging; it builds the mobile half of BL-518 only). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-518.
+- Status: blocked (PR #1274 is open and not merged; it builds the mobile half of BL-518 only; product sets this to ready in the PR that records its merge). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: PR #1274 merged (a PR, not a backlog id: the task it builds turns done only when this row merges).
 - Priority: Medium. Gate: none.
 - Satisfies: none given (same source as BL-518: C-REQ-001 Rev, F13 6.2 B row 4c).
 - Problem and evidence: BL-518's Done-when says "`test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it". #1274 builds the mobile half: the second prime after the first month chapter, the cap of 2 and the tests. No web journey step for it exists on `develop` (searched `docs/BACKLOG.md` and `apps/mobile/test` for a journey naming the second prime: none found). What remains on BL-518 once #1274 merges: only the web journey.
@@ -7115,7 +7115,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
 
 #### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
-- Status: blocked (PR #1274 merging; the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Status: blocked (PR #1274 is open and not merged; the second showing is built there; product sets this to ready in the PR that records its merge). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: PR #1274 merged (a PR, not a backlog id: the task it builds is still in review).
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
 - Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. On `develop` the prime tracks `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47`, correct for the only showing that exists there. Unverified: how #1274 labels the second.
