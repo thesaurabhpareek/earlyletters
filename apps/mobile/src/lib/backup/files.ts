@@ -1,6 +1,6 @@
 /**
  * The recording-backup state file on this phone (`backup-<profile id>.db` and its -wal, -shm and -journal
- * sidecars): its name, its exclusion from the phone's backup, and (PR 2) its removal. CR-71 B5; BRIEF B5.
+ * sidecars): its name, its exclusion from the phone's backup, and its removal (Erase everything, sign-out). CR-71 B5; BRIEF B5.
  *
  * A data right, like the photo sweep: it works with `capabilities.backup` off, because an install that once ran a
  * build with the flag on may hold the file. So it imports only expo-file-system, expo-sqlite (the folder) and the
@@ -170,4 +170,140 @@ export function openSecureBackupFile<T extends { close: () => void }, R>(
     opened.close();
     throw e;
   }
+}
+
+export interface DeleteResult {
+  deleted: number;
+  /** Files that would not go (a count only; no name or path is kept or logged). */
+  failed: number;
+}
+
+function deleteAll(files: File[]): DeleteResult {
+  let deleted = 0;
+  let failed = 0;
+  for (const f of files) {
+    if (deleteFile(f)) deleted += 1;
+    else failed += 1;
+  }
+  return { deleted, failed };
+}
+
+/**
+ * Erase everything (B5-4): every backup state file and sidecar, whichever account it belongs to. Synchronous, so it
+ * can sit inside `eraseDeviceFiles()` with no await before it. THROWS when the folder cannot be listed (an empty
+ * answer there would read as "nothing to delete") or a file will not go, so the erase stays pending and repeats.
+ * Never touches scribe.db*.
+ */
+export function deleteBackupFiles(): DeleteResult {
+  const r = deleteAll(listBackupFiles());
+  if (r.failed > 0) throw new BackupFileDeleteFailed();
+  return r;
+}
+
+/** A backup state file would not go (CODE-R15: callers branch on `code`, never on the message). */
+export class BackupFileDeleteFailed extends Error {
+  readonly code = 'backup_file_delete';
+  constructor() {
+    super('backup_file_delete');
+  }
+}
+
+/**
+ * Sign-out (B5-5): the one account's file and sidecars, by exact name (no listing). The caller has closed the
+ * handle first. Never throws. A file left (a failed delete, a kill before it) is NOT removed by the launch's exclusion check, which
+ * keeps an excluded file; `deleteBackupFilesExcept` at the next settled launch or session change removes it. The book is not touched.
+ */
+export function deleteBackupFilesFor(profileId: string): DeleteResult {
+  const name = `backup-${profileId.toLowerCase()}.db`;
+  if (!isBackupFileName(name)) return { deleted: 0, failed: 0 };
+  try {
+    const found = filesNamed(name);
+    return found ? deleteAll(found.files) : { deleted: 0, failed: 0 };
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+}
+
+const OWNER = /^backup-([0-9a-f-]{36})\.db$/;
+
+/**
+ * Keying rule (B5-5): a backup file belongs to the account named in its file name, and only the account signed in
+ * NOW (`keep`, null when signed out) may keep one. Run once the session has settled at launch (so a session that
+ * ended while the app was closed, or a kill right after sign-out, is caught) and on every change of the signed-in
+ * user. Each other family has its handle closed, is marked ended and is deleted; a failure is counted, never thrown,
+ * and the next run retries it. Idempotent and cheap when nothing is there. The account signing in builds its own file
+ * only after this runs, and `keep` spares an account that is already signed in, so an account switch cannot delete
+ * the incoming account's file. A list failure counts as failed (the next run retries). Never touches scribe.db*.
+ */
+export function deleteBackupFilesExcept(keep: string | null): DeleteResult {
+  const keepBase = keep ? `backup-${keep.toLowerCase()}.db` : null;
+  let files: File[];
+  try {
+    files = listBackupFiles();
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+  const out: DeleteResult = { deleted: 0, failed: 0 };
+  for (const [base, family] of families(files)) {
+    if (base === keepBase) continue;
+    const id = OWNER.exec(base)?.[1];
+    if (id) {
+      endedAccounts.add(id);
+      closeHandles(id);
+    }
+    const r = deleteAll(family);
+    out.deleted += r.deleted;
+    out.failed += r.failed;
+  }
+  return out;
+}
+
+/**
+ * Open handles are the runtime's, which this file must not import (flag off loads none of it). The runtime hands its
+ * closer here when it loads; with the flag off none is registered, and none is open.
+ */
+type HandleCloser = (profileId: string | null) => void;
+let handleCloser: HandleCloser | null = null;
+
+export function registerBackupHandleCloser(close: HandleCloser | null): void {
+  handleCloser = close;
+}
+
+function closeHandles(profileId: string | null): void {
+  try {
+    handleCloser?.(profileId);
+  } catch {
+    // A handle that will not close must not stop the delete that follows.
+  }
+}
+
+/** Erase everything: close every open backup handle. */
+export function closeBackupHandles(): void {
+  closeHandles(null);
+}
+
+/**
+ * Sign-out (B5-5, D1): close this account's backup handle, then delete its file. The order matters (an open handle
+ * on a deleted file keeps writing to it). Runs with the flag off too. The book is not touched. Never throws.
+ */
+export function endBackupFileFor(profileId: string): DeleteResult {
+  endedAccounts.add(profileId.toLowerCase());
+  closeHandles(profileId);
+  return deleteBackupFilesFor(profileId);
+}
+
+/**
+ * Accounts that signed out (or were replaced) on this phone and have not signed in since. A service pass already
+ * running for such an account must not open its file again, or it would re-create the file just deleted (the
+ * handle was closed, the map entry forgotten). The runtime asks here in `dbFor` and clears the mark when the
+ * account's next service is built (a sign-in). In memory only: a launch starts with no service and no mark.
+ */
+const endedAccounts = new Set<string>();
+
+export function backupAccountEnded(profileId: string): boolean {
+  return endedAccounts.has(profileId.toLowerCase());
+}
+
+export function backupAccountStarted(profileId: string): void {
+  endedAccounts.delete(profileId.toLowerCase());
 }
