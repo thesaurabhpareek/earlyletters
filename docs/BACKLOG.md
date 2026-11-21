@@ -1702,7 +1702,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: V-06 has the double-tap row; the `storedWords` order test exists and fails if the order is swapped; the answers to points 1 and 2 are recorded here.
 
 #### BL-455 Delete account page clean-up from the #358 review
-- Status: ready. Mode: agent. Owner: mobile engineer (S14: the page and its hook), content (the strings and the purge-worker copy). Milestone: M9. Size: S. Depends on: none.
+- Status: in-review (PR #1333). Mode: agent. Owner: mobile engineer (S14: the page and its hook), content (the strings and the purge-worker copy). Milestone: M9. Size: S. Depends on: none.
 - Priority: Medium. Point 4 is Low.
 - Satisfies: none given.
 - Why and where (from the #358 lens A delta and lens B; #358 merged as 8301ac8):
