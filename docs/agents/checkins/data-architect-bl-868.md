@@ -1,0 +1,1 @@
+05:09 (21 Nov) data-architect | done: BL-868 edit to DELETION_AND_EXPORT_SPEC 4.2 (stored copy only, per-item path, PROPOSED README line) | next: PR for the founder | blocked/needs: founder merge (D-125), two lenses

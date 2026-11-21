@@ -332,10 +332,14 @@ data/entries.json               one object per letter (fields below)
 letters/<child>/<YYYY-MM>/<YYYY-MM-DD>_<entry_id>.txt   UTF-8, header lines then final text
 audio/<entry_id>.m4a            original AAC-LC mono M4A, byte-identical to the recording (ADR 0005)
 audio/<entry_id>.aac            or, for an ADTS recording, the original ADTS stream, byte-identical (ADR 0027)
-photos/<entry_id>.<jpg|heic>    original bytes; HEIC also gets a .jpg copy
+photos/<entry_id>/<media_id>.<ext>   the stored copy, re-encoded, with no Exif, XMP, IPTC or location; HEIC may also carry a .jpg copy
 book/<child>.pdf                the book as rendered by packages/book
 history/<entry_id>.json         own letters: every entry_versions row
 ```
+
+Pictures (NX-39-R32, NS-01-R6, ADR 0028 D2 and Q3, LEGAL-REQ-013, DATA-REQ-056). The export holds the stored copy only: never the original bytes, and there is no option to include originals. The stored copy is the re-encoded file with no Exif, XMP, IPTC or location, so a byte scan of the export matches the scan of the stored copy and no coordinate is present anywhere in the package. One directory, `photos/`, holds one sub-folder per letter, named by `entry_id`, and each picture is `<media_id>.<ext>`, so several pictures on one letter never collide. `<ext>` is `jpg` while the stored copy is a JPEG. `counts.photos` equals the number of picture files. City text appears only for pictures the parent kept and only when "Include places" is on. The derived index of pictures and the parent's hidden choices are not exported. The export format version takes the next free minor at merge (not fixed in this spec) and the published JSON schema is bumped with it. The export screen says the file is not encrypted.
+
+PROPOSED README line (words a parent reads; `content` and the founder own the final words, not approved): "Your pictures are here as the copies kept in the app, with no location in them. The app's search index and the choices you hid are not part of this file."
 
 `entries.json` fields per letter: `id`, `child_id`, `author {signs_as, is_exporter}`, `kind`, `occurred_on`, `captured_at`, `capture_mode`, `edit_level`, `language` (when known), `final_text`, `in_book`, `photo`, `audio {path, sha256, bytes, duration_ms, codec}` or `audio_missing {reason}`, and for own letters `raw_transcript`, `raw_sha256`, `machine_edits` (accepted and rejected), `stt_meta.engine`, `alignment`, `engine_version`, `prompt_key`.
 
