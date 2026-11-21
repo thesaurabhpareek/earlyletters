@@ -1,6 +1,6 @@
 # Early Letters writing guide
 
-Status: v1.2, 21 Nov 2026 (v1.1 21 Nov, v1.0 20 Nov). Reviewed by the CMO, Chief Design Officer, CPrivO, CCO and CAIO lenses as Claude roles, not counsel, then by an independent reviewer (6/10 on v1.1). This version applies that review's MUST FIX and SHOULD FIX items. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
+Status: v1.2, 21 Nov 2026 (v1.1 21 Nov, v1.0 20 Nov). Reviewed by the CMO, Chief Design Officer, CPrivO, CCO and CAIO lenses as Claude roles, not counsel, then by an independent reviewer (6/10 on v1.1). This version applies that review's MUST FIX and SHOULD FIX items. Revised 21 Nov after Review A and the executive council (round 2): the humour scope follows the founder's 21 Nov choice, a push never claims what a recording keeps, and the spelling and date questions are decided. Owner: `content`, with the CMO and Chief Design Officer lenses. Legal review of any promise or consent wording goes through the CLO.
 
 This is the guide for every word a customer reads: the app, error messages, emails, push notifications, the App Store page, the website, the prompts and the pages inside the book. Read it before you write or change a line.
 
@@ -23,7 +23,7 @@ This is the guide for every word a customer reads: the app, error messages, emai
 
 **Never**
 
-1. No em dashes, en dashes, curly quotes, ellipsis characters or emoji. No exclamation marks.
+1. No em dashes, en dashes, curly quotes, ellipsis characters or emoji. No exclamation marks in new copy. The budgets in section 2 are a ceiling for lines that already exist, not an allowance.
 2. No fear, guilt, loss language, streaks, points, badges or gap counts.
 3. No hint that software wrote, improved or tidied a letter. We only remove and repair.
 4. No he, she, son, daughter, boy or girl for the child.
@@ -108,19 +108,27 @@ Early Letters sounds like a calm, observant friend who has done this before. It 
 
 The literary register belongs to the family's own words in the book and to a small number of prompts. The interface stays plain. The app's own text is smaller and quieter than a letter, never in the letter's serif, never signed.
 
-### Humour policy (PROPOSED, pending the founder's answer)
+### Humour policy (PROPOSED, pending the founder's approval of the words)
 
-Status: PROPOSED. It follows the founder's ruling Q-FD-27 (closed 20 Nov: a little playfulness on Friday and Saturday notes, Monday and Sunday small and slow; `docs/product/prd/GAP-LOG.md` CL-032) and the founder's 21 Nov ask for copy that is "fun, witty, engaging, empathetic". That ask comes from the brief for this change; I did not find it written in the repo, so treat the exact words as relayed. Nothing here changes a shipped line, and the founder approves before any wit goes live.
+Status: PROPOSED. The founder chose the scope on 21 Nov from a set of options. That is a selection, not words he typed. It is recorded in the Project doc `infra/exec-rulings-2026-11-21-witty-tone-scope.md`, which is not in this repo. The policy extends Q-FD-27 (closed 20 Nov: a little playfulness on Friday and Saturday notes, Monday and Sunday small and slow; `docs/product/prd/GAP-LOG.md` CL-032). Q-FD-27 covers the Friday and Saturday notes in the notification catalogue only. The saved-letter line and the five public days are the extension. His earlier 21 Nov ask for copy that is "fun, witty, engaging, empathetic" comes from the brief for this change; I did not find it written in the repo, so treat the exact words as relayed. Nothing here changes a shipped or locked line. Every witty line stays PROPOSED and carries a plain fallback, and the founder approves the words before any wit turns on (BL-965). The catalogue-side entry is PROPOSED in `docs/product/prd/18-errata-after-lock.md` (E90), not in the locked catalogue.
 
-- **Where wit may live.** Celebrations (a first letter saved), light nudges (Friday and Saturday notes first), and first-run delight. Light and dry, one small thing, once.
-- **Where it never lives.** Errors, money, billing, deletion, safety, helplines, permissions, hard seasons, grief, illness and anything a parent might read while upset.
+- **Where wit may live.** Three places, nothing else, and only inside the app after the phone is open:
+  1. A Friday or Saturday note (Q-FD-27). Monday and Sunday get no wit.
+  2. The one line shown when a letter is saved: a single dry sentence, never fanfare, never fixed copy, rotated, with no motion, sound or icon (section 5, Saved a letter).
+  3. The five public days whose names may already show on a lock screen: the seasons, New Year's Day, Thanksgiving, Independence Day and Labor Day (the hand-listed allowlist; Q-FD-18).
+
+  One small, dry thing, once.
+- **The lock screen stays neutral.** Until the founder answers Q-FD-18, the text on the lock screen is the neutral frame. A witty line is read in the app, not on the lock screen.
+- **Where it never lives.** First-run consent screens (and the age gate and sign-in beside them), errors, money, billing, deletion, safety, helplines, permissions, hard seasons, grief, illness and anything a parent might read while upset.
+- **Never about belief, place or culture.** No wit on a day the parent ticked, a festival, a tradition, a country, a region or a language, and no line that varies by any of them. The app stores none of these (Q-FD-5). A day's name shows on the lock screen only behind its own switch, default off and forced off with App lock (Q-FD-14, NS-47-R12). Apple says push notifications "should not be used to send sensitive personal or confidential information" (App Review Guideline 4.5.4, read 21 Nov).
 - **Never at the parent's expense.** No joke about being tired, late, behind or forgetful.
-- **No puns on the child's name.** No jokes about the child at all that the parent didn't make.
+- **No puns or wordplay** (section 4, Plainspoken). That includes the child's name. No jokes about the child at all that the parent didn't make.
+- **No exclamation marks in a push.** Zero in notifications (Q-NTC-7).
 - **Rotate and don't repeat.** A line that amuses once can annoy a dozen times (Atlassian, appendix A). Three notes in a row never share a joke shape.
 - **When unsure, no joke.** Clear beats entertaining (Mailchimp, appendix A).
 - **Delight in the interface is a small flourish**, not a joke (Atlassian).
 
-Examples that pass (suggested, not shipped, not tested): a Friday note "Friday, and a minute for the book?"; a Saturday note "Anything funny from the weekend?" Both obey the lock-screen rule and the guide's push limits. They are examples of register only; final words are the `content` owner's, checked by the rules test.
+No example is given here. The locked catalogue already holds the Friday and Saturday lines (`docs/product/prd/functions/notification-catalogue.md` section 4.2). New wit is written against those, in a set the founder approves key by key (BL-965).
 
 ## 5. Tone by moment
 
@@ -131,7 +139,7 @@ Voice stays the same. The dial moves.
 | Moment | Dial | What it sounds like | Never | Before and after |
 | --- | --- | --- | --- | --- |
 | First open, onboarding | Warm, light | One short welcome, then get out of the way | A speech about the brand | "Welcome! We're so excited to help you capture precious moments." becomes "Tell {child} about today. Tap the red circle and talk." |
-| Saved a letter | Quiet pleasure | A plain confirmation, varied | Fanfare, confetti, "Great job!" | "Great job! Your entry was saved successfully!" becomes "Saved to {child}'s book." |
+| Saved a letter | Quiet pleasure | A plain confirmation, varied. One dry line is PROPOSED (section 4) | Fanfare, confetti, "Great job!" | "Great job! Your entry was saved successfully!" becomes "Saved to {child}'s book." |
 | Slow or waiting | Patient, informative | What's happening, and a time only if the build measures it | Cute loading lines | "Hang tight, working our magic..." becomes "Getting the language ready." |
 | Something failed | Calm, practical | What happened, what's still fine, what to do | Blame, "Oops", "Uh-oh", "Something went wrong" | "Oops! Something went wrong." becomes "That didn't save. Your recording is still here. Try again." (only if the audio is on the phone) |
 | Permission or consent | Clear, respectful | What it's for, what changes, that they can change their mind | Pressure, fear, small print tone | "To unlock the full experience, allow notifications." becomes "Want a gentle reminder? You can change this any time in Settings." |
@@ -159,16 +167,16 @@ The "before" lines are made-up examples of the tells, not shipped text. Check ea
 
 - One term for one thing, from the `BRAND.md` glossary. A parent reads "letter", "book", "recording", "words". Internal terms (take, entry, draft, pack) never appear.
 - The short word: "use" over "utilise", "start" over "begin", "help" over "assist", "about" over "approximately".
-- Don't use: ensure, leverage, seamless, effortless, robust, empower, enable, unlock, elevate, delve, tapestry, journey, curated, cherish, treasure, "precious moments", "make memories", "special someone". Don't write "little one" in any new line; if it is already in the prompt library or a shipped line, leave it and don't copy it.
+- Don't use: ensure, leverage, seamless, effortless, robust, empower, enable, unlock, elevate, delve, tapestry, journey, curated, cherish, treasure, "precious moments", "make memories", "special someone". Don't write "little one" in any new line; if it is already in the prompt library or a shipped line, leave it and don't copy it. The locked catalogue's neutral twins say "your little one" (`docs/product/prd/functions/notification-catalogue.md` section 4.2). `content` rewrites them to "the book" when the words packet is written. Do not copy the phrase elsewhere.
 - Don't open an instruction with "Please" ("Tap Save"). Use "please" only for a real favour or a real inconvenience.
 - Don't say "successfully", "unable to", "invalid", "failed", "error occurred", "encountered an issue", "experiencing difficulties". This is our house list, not Apple's. Apple itself shows "Unable to load content" and calls "Invalid name" robotic.
-- No exclamation marks.
+- No exclamation marks in new copy (section 2 holds the ceilings for lines that already exist).
 - No em dashes, en dashes, curly quotes, ellipsis characters or emoji. Use a comma, a full stop or "to".
 - Sentence case everywhere: "Add a letter". Proper nouns only. Buttons start with a verb.
 
 **Numbers, dates, time**
 
-- Numerals for counts and money ("3 letters", "$4.99"). Dates the way people say them: "Tuesday". Shipped copy writes a month before the day ("December 3"); the guide's own v1.1 example "5 March" was not what ships. See DECISIONS NEEDED (section 9).
+- Numerals for counts and money ("3 letters", "$4.99"). Dates the way people say them: "Tuesday". A month comes before the day ("December 3"), from the locale formatter, as shipped (CMO-RULED, section 9, item 4). US spelling in every new or touched line (CMO-RULED, section 9, item 3).
 - Dates come from the locale formatter in code, never typed by hand in a template.
 - Never show a number that counts a gap, a streak, or one person against another.
 
@@ -249,12 +257,12 @@ Say exactly what goes, whether it can come back, and what is kept. One calm conf
 Fill the "can it come back" cells from the build, not from this guide (section 12, step 0).
 
 ### Push notifications
-One idea, one line, an invitation not a reminder. Limits are in section 2; the house body target is under 60. A question is fine in a push because it invites a reply. Never show what they wrote or the child's name on the lock screen unless they've turned it on. No day counts, no "you haven't", no emoji, no exclamation. Test every one: would a friend text this?
+One idea, one line, an invitation not a reminder. Limits are in section 2; the house body target is under 60. A question is fine in a push because it invites a reply. Never show what they wrote or the child's name on the lock screen unless they've turned it on. No day counts, no "you haven't", no emoji, no exclamation. A day's name appears only behind the day-name switch. With it off or App lock on, the title and body are the neutral frame and name no day, tradition, country or child. Never choose a line from language, locale, time zone or a name (NS-47-R20). A push says nothing about what the app keeps: it doesn't know whether the next letter is spoken or typed, saved or let go, or whether its recording is on the phone, so "Your recording stays with the letter" is false in a push. Test every one: would a friend text this?
 
 | Don't | Do |
 | --- | --- |
 | "Dear little one," / "Anything to tell your little one today? A line or two is enough." | "A minute for the book?" / "Say whatever's on your mind. A line is plenty." |
-| "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Say a few words" / "A line is plenty." |
+| "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Say a few words" / "Talk or type, whichever is easier." |
 | "A page for {weekday}" / "Something from today for the book?" | "Anything from today?" |
 
 Rotate these. "A minute is plenty" and "A line is plenty" are two lines, not a template for every push. The name variant ("Anything you want {child} to know?") exists only where the parent has turned names on for the lock screen. Final wording is the content agent's job, checked against the rules test and the notification tests.
@@ -304,14 +312,14 @@ Silence in this guide doesn't mean "anything goes". Status: DONE (a playbook abo
 | Sample, placeholder and screenshot text | `content`, CMO | None | Principle 11 | DONE |
 | Humour | `content`, CMO, founder | Light, rare | Section 4 | PROPOSED |
 
-### DECISIONS NEEDED (not decided here)
+### Decisions: two deferred, two decided
 
-Each needs an owner's ruling. I checked what shipped copy does so the ruling starts from fact.
+Items 1 and 2 are deferred to their owners. Items 3 and 4 were ruled by the CMO on 21 Nov. I checked what shipped copy does so each ruling started from fact.
 
-1. **Exception route for the FEAR regex.** The test bans "died", "death", "dead" and "passed away" in all copy. A support reply to a bereaved parent, or a prompt that meets a loss, can't be written without tripping it, and this guide says to fix the copy, not the test. Question for the CPrivO and the founder: is there a narrow, named exception (a list of keys, reviewed), or does such text stay out of the repo? Until ruled, don't weaken the test and don't write such text.
-2. **`{child}` and gender agreement.** `{child}` removes gendered nouns and pronouns in English. In Hindi, Spanish, French, Portuguese and Arabic, verbs and adjectives agree with gender, so `{child}` alone isn't enough. Nothing translates the app at v1.0, so this blocks nothing today. It blocks any translated string. Owner: CAIO and founder.
-3. **US or UK spelling.** Shipped copy mixes them. Checked 21 Nov in `packages/content/src`: "cancelled" (UK, 24 hits including keys, and in user strings like "Invite cancelled."), "centre" in a page, and a "Licences" file name, against "color", "favorite" and "license" in other strings. The product is US-first ($, Apple Account). Owner: CMO.
-4. **Date format.** Shipped templates use month then day ("October 3", "December 3", "Saturday, October 3, 2026 at 9:14 pm ET"), as code comments and examples. This guide's v1.1 example "5 March" isn't that. Owner: CMO. Until ruled, follow what ships and take dates from the formatter.
+1. **Exception route for the FEAR regex.** DEFERRED. Owners: CPrivO and the founder. The test bans "died", "death", "dead" and "passed away" in all copy. A support reply to a bereaved parent, or a prompt that meets a loss, can't be written without tripping it, and this guide says to fix the copy, not the test. Question: is there a narrow, named exception (a list of keys, reviewed), or does such text stay out of the repo? Until ruled, don't weaken the test and don't write such text. Nothing ships that needs it.
+2. **`{child}` and gender agreement.** DEFERRED. Owners: CAIO and the founder. `{child}` removes gendered nouns and pronouns in English. In Hindi, Spanish, French, Portuguese and Arabic, verbs and adjectives agree with gender, so `{child}` alone isn't enough. Nothing translates the app at v1.0, so this blocks nothing today. It blocks any translated string.
+3. **US or UK spelling.** DECIDED, CMO-RULED 21 Nov. US spelling in every new or touched line (US-only launch, D-013 and D-083; the product shows `$` and Apple Account). No mass rewrite of keys; a later sweep PR, with no change of meaning. Shipped copy still mixes them ("cancelled" and "centre" against "color", "favorite" and "license", checked 21 Nov in `packages/content/src`).
+4. **Date format.** DECIDED, CMO-RULED 21 Nov. Month before day, from the locale formatter, as shipped ("October 3", "Saturday, October 3, 2026 at 9:14 pm ET"). The guide has no "5 March" example left; keep it that way.
 
 ## 10. Writing for access and translation
 
@@ -400,7 +408,7 @@ Final: "A reminder before your trial ends" / "Your trial ends on {date}. It then
 Re-read 21 Nov 2026 for v1.2 (fetched the pages again): Apple, Monzo, Mailchimp and Atlassian. Microsoft's contractions page was read on 20 Nov and not re-read for v1.2.
 
 - **Apple Human Interface Guidelines, Writing** (developer.apple.com/design/human-interface-guidelines/writing; change log: possessive-pronoun guidance added 16 Dec 2025). VERIFIED. Take: match tone to context (the Fall Detection and Move streak examples); be clear and cut words; verbs on buttons, "Send" over "Let's do it!"; consistent words across a multi-step flow ("Next", "Continue", "Done"); use possessive pronouns sparingly ("Favorites" over "Your Favorites"); avoid "we" altogether, because it may be unclear who "we" is, as in "We're having trouble loading this content" against "Unable to load content"; "Choose a password with at least 8 characters" over "That password is too short"; "oops!" and "uh-oh" are typically unnecessary and can sound insincere; describe a setting by what it does when on; empty states give a next step; show hints like "name@example.com" and avoid robotic errors like "Invalid name". Where we differ: we don't use "unable to".
-- **Monzo, Tone of voice** (monzo.com/tone-of-voice). VERIFIED. Take: "straightforward kindness"; plain words; apologise once and then focus on the fix, and don't apologise for bad news that isn't our fault; sensitive feelings are handled "with care and never make light of them". On wit: Monzo allows "the very occasional little joke" in straightforward operational updates, says to keep it simple if the news could be negative or if in doubt, and allows no wit in customer service. (The v1.1 text said "no humour in operational messages"; that overstated it.)
+- **Monzo, Tone of voice** (monzo.com/tone-of-voice). VERIFIED. Take: "straightforward kindness"; plain words; apologise once and then focus on the fix, and don't apologise for bad news that isn't our fault; sensitive feelings are handled "with care and never make light of them". On wit: Monzo allows "the very occasional little joke" when giving straightforward updates, says to keep it simple if the news could be negative or if in doubt, and allows no wit in customer service. Review A (21 Nov) also found its channel grid lists "Warm wit: None" for operational communications, so the "occasional little joke" line is not a licence for notifications or errors. (The v1.1 text said "no humour in operational messages"; that overstated it.)
 - **Mailchimp, Content Style Guide, Voice and tone** (styleguide.mailchimp.com/voice-and-tone). VERIFIED. Take: consider the reader's state of mind first; "it's always more important to be clear than entertaining"; "forced humor can be worse than none at all"; humour when it fits.
 - **Atlassian Design System, Voice and tone** (atlassian.design/foundations/content/voice-tone). VERIFIED 21 Nov. Take: tone changes with the user's situation; tone down and be more prescriptive for someone who is new or confused; "Delight means little flourishes, not humor or being cheeky"; "Once may amuse, but a dozen times may annoy". The v1.1 claim of "no humour in errors or bad news" is not in the text I read; I dropped it. The councils recorded that this page was unreadable on 20 Nov; it loaded on 21 Nov.
 - **Microsoft Writing Style Guide** ("Brand voice: above all, simple and human"; "Use contractions", learn.microsoft.com/en-us/style-guide). Read 20 Nov, not re-read. Take: voice stays constant while tone adapts; key point first with a clear next step; short everyday words; sentence-style capitals. Don't mix a contraction with its spelled-out form, don't join a noun to a verb, and avoid awkward ones like "it'll", "there'd" and "they'd" in UI. Microsoft's voice page says nothing explicit about writing for people under stress; that reading is ours.

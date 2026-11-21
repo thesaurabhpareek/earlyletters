@@ -69,7 +69,7 @@ Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven lang
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
-- At most one exclamation mark per month across all notifications. The rules test budget is stricter (none in notifications, Q-NTC-7), so use none.
+- No exclamation marks in notifications (Q-NTC-7, CL-040).
 
 Good: "Anything to tell {child} today?" (only where the parent has turned names on for the lock screen)
 Good: "A minute before bed? {child}'s book is open." (same: names on only)
