@@ -27,7 +27,7 @@ import { AppState, Platform } from 'react-native';
 import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
+import { anchorAt, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
 import { REMINDER_SOURCE, reminderContent } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
@@ -139,6 +139,7 @@ export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): 
     children: plannerChildren(),
     lastSaveAt: lastOwnSaveAt(),
     lastForegroundAt,
+    anchorAt: anchorAt(),
   });
 }
 
@@ -161,6 +162,8 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
 }
 
 async function apply(): Promise<void> {
+  // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
+  if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const plan = await currentPlan(Date.now(), pendingPlanNotices(scheduled));
   const signature = planSignature(plan);
@@ -320,6 +323,7 @@ export interface TurnOnResult {
  */
 export async function turnOnReminders(opts: { cadence?: Exclude<Cadence, 'off'> } = {}): Promise<TurnOnResult> {
   const prefs = readPrefs();
+  if (!(prefs.enabled && !prefs.paused) || readOnSince() === null) writeOnSince(Date.now()); // turned on again: the anchor moves (R27)
   writePrefs({ enabled: true, paused: false, cadence: opts.cadence ?? (prefs.cadence === 'off' ? 'fewTimes' : prefs.cadence) });
   let permission: ReminderPermission = 'undetermined';
   let asked = false;

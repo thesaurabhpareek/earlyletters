@@ -198,6 +198,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
       'reminders.days',
       'reminders.enabled',
       'reminders.monthNotes',
+      'reminders.onSince',
       'reminders.paused',
       'reminders.session',
       'reminders.time',
