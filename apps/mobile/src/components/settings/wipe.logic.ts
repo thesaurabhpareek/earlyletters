@@ -77,18 +77,31 @@ export function eraseNoteKeys(o: { alpha: boolean; plan: ErasePlan }): EraseNote
 
 export type ErasePhase = 'review' | 'erasing';
 export type EraseOutcome = 'erased' | 'incomplete' | 'signed_in';
+/** FR-SEC-06: what runEraseEverything returns when the phone's owner check was cancelled (nothing changed, no message). */
+export type EraseRunOutcome = EraseOutcome | 'cancelled';
 
 /**
  * Erase everything after "Erase" (design 2.12): the Erasing screen first, with no way out, then the erase. On
  * 'erased' the phase stays 'erasing' (the age question replaces every screen from the root layout, so this page is
  * never drawn again) and the done line is announced. Otherwise the page comes back with one failure line.
+ * FR-SEC-06: the phone's owner check runs first, before the Erasing screen. Cancelled (or an error) changes nothing and
+ * says nothing: the page stays on the confirm's page as it was. 'unavailable' (no passcode) lets the confirm stand alone.
+ * The check lives here and not in eraseEverything(), so a kill-and-resume of a pending erase never asks again.
  */
 export async function runEraseEverything(deps: {
+  ownerCheck: () => Promise<'passed' | 'cancelled' | 'unavailable'>;
   erase: () => Promise<EraseOutcome>;
   setPhase: (p: ErasePhase) => void;
   setFailed: (f: null | 'failed' | 'signed_in') => void;
   announceDone: () => void;
-}): Promise<EraseOutcome> {
+}): Promise<EraseRunOutcome> {
+  let check: 'passed' | 'cancelled' | 'unavailable';
+  try {
+    check = await deps.ownerCheck();
+  } catch {
+    check = 'cancelled';
+  }
+  if (check === 'cancelled') return 'cancelled';
   deps.setFailed(null);
   deps.setPhase('erasing');
   let r: EraseOutcome;
