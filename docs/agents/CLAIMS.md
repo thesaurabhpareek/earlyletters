@@ -11,3 +11,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
 | photo-lane | mobile | feat/mobile-photo-3-store | 835 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | 2026-11-20T23:30Z | 2026-11-23T23:30Z | slices 835 to 840 (4b and 4c also touch Review and the letter page); REST open check 00:05Z |
+| bl-119-child-input | speech | fix/speech-bl-119-child-input | 1220 | `packages/core/src/prompts.ts`, `packages/core/test/prompts.selection.test.ts` | 2026-11-21T05:20Z | 2026-11-24T04:20Z | BL-119; row read as ready and unclaimed, no PR found by REST at 05:05Z; REST open check 05:20Z |

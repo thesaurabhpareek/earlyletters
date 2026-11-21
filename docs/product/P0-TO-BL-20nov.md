@@ -2,7 +2,7 @@
 
 Status: CURRENT, 21 Nov 2026 | Owner: `product` | Load when: someone asks "does this P0 row have a backlog row" (gate G0).
 
-Generated, not written by hand: `python3 -I docs/product/prd/tools/review/p0.py . --map`, then checked with `python3 -I docs/product/prd/tools/review/p0.py . --check-map docs/product/P0-TO-BL-20nov.md` (exit 0 means every P0 id is here, none maps to nothing, and every BL id has a heading in `docs/BACKLOG.md`). Pinned to `develop` `bc143cc` plus BL-1158 to BL-1182 (the first split batch, `docs/product/P0-SPLIT-PLAN-21nov.md`). Nothing here changes a requirement.
+Generated, not written by hand: `python3 -I docs/product/prd/tools/review/p0.py . --map`, then checked with `python3 -I docs/product/prd/tools/review/p0.py . --check-map docs/product/P0-TO-BL-20nov.md` (exit 0 means every P0 id is here, none maps to nothing, and every BL id has a heading in `docs/BACKLOG.md`). Pinned to `develop` `bc143cc` plus the split rows of batches 1 to 3 (BL-1158 to BL-1182, BL-1300 to BL-1325 and BL-1326 to BL-1365, `docs/product/P0-SPLIT-PLAN-21nov.md`). Nothing here changes a requirement.
 
 How to read the last column:
 - `named in a row`: a backlog row (not a proposed group row) lists the id or a range that holds it.
@@ -297,7 +297,7 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | NS-33-R7 | 11-foundations.md | BL-1173 | named in a row |
 | NS-33-R8 | 11-foundations.md | BL-1173 | named in a row |
 | NS-33-R9 | 11-foundations.md | BL-984, BL-139 | named in a row |
-| NS-34-R2 | 11-foundations.md | BL-168 | named in a row |
+| NS-34-R2 | 11-foundations.md | BL-168, BL-1341 | named in a row |
 | NS-34-R5 | 11-foundations.md | BL-1341 | named in a row |
 | NS-34-R6 | 11-foundations.md | BL-1047, BL-168 | named in a row |
 | NS-35-R1 | 11-foundations.md | BL-1174 | named in a row |
@@ -721,7 +721,7 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-LCY-01 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
 | FR-LCY-02 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
 | FR-LCY-03 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
-| FR-LCY-04 | functions/lifecycle-and-platforms.md | BL-1326 | named in a row |
+| FR-LCY-04 | functions/lifecycle-and-platforms.md | BL-1361 | named in a row |
 | FR-LCY-06 | functions/lifecycle-and-platforms.md | BL-1329 | named in a row |
 | FR-LCY-07 | functions/lifecycle-and-platforms.md | BL-1329 | named in a row |
 | FR-LCY-09 | functions/lifecycle-and-platforms.md | BL-1327 | named in a row |
@@ -806,7 +806,7 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-MKT-28 | functions/marketing.md | BL-1338 | named in a row |
 | FR-MKT-29 | functions/marketing.md | BL-1338 | named in a row |
 | FR-MKT-32 | functions/marketing.md | BL-1338 | named in a row |
-| FR-MKT-34 | functions/marketing.md | BL-1103 | named in a row |
+| FR-MKT-34 | functions/marketing.md | BL-1103, BL-1338 | named in a row |
 | FR-MKT-35 | functions/marketing.md | BL-047 | proposed group row |
 | FR-MKT-36 | functions/marketing.md | BL-047 | proposed group row |
 | FR-MKT-37 | functions/marketing.md | BL-047 | proposed group row |
@@ -867,18 +867,18 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-OPS-03 | functions/operations.md | BL-961 | cited in the requirement text |
 | FR-OPS-06 | functions/operations.md | BL-1332 | named in a row |
 | FR-OPS-08 | functions/operations.md | BL-1332 | named in a row |
-| FR-OPS-09 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-09 | functions/operations.md | BL-1363 | named in a row |
 | FR-OPS-10 | functions/operations.md | BL-1331 | named in a row |
 | FR-OPS-11 | functions/operations.md | BL-1331 | named in a row |
-| FR-OPS-14 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-14 | functions/operations.md | BL-1363 | named in a row |
 | FR-OPS-15 | functions/operations.md | BL-976 | cited in the requirement text |
 | FR-OPS-16 | functions/operations.md | BL-1332 | named in a row |
-| FR-OPS-17 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-17 | functions/operations.md | BL-1363 | named in a row |
 | FR-OPS-23 | functions/operations.md | BL-958 | cited in the requirement text |
 | FR-OPS-24 | functions/operations.md | BL-1332 | named in a row |
 | FR-OPS-28 | functions/operations.md | BL-1331 | named in a row |
 | FR-OPS-31 | functions/operations.md | BL-1331 | named in a row |
-| FR-OPS-33 | functions/operations.md | BL-1332 | named in a row |
+| FR-OPS-33 | functions/operations.md | BL-1363 | named in a row |
 | FR-OPS-39 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-42 | functions/operations.md | BL-047 | proposed group row |
 | FR-OPS-43 | functions/operations.md | BL-047 | proposed group row |
@@ -946,15 +946,15 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-PRV-16 | functions/privacy.md | BL-962 | cited in the requirement text |
 | FR-PRV-17 | functions/privacy.md | BL-962 | cited in the requirement text |
 | FR-PRV-18 | functions/privacy.md | BL-1340 | named in a row |
-| FR-PRV-19 | functions/privacy.md | BL-1340 | named in a row |
-| FR-PRV-20 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-19 | functions/privacy.md | BL-1364 | named in a row |
+| FR-PRV-20 | functions/privacy.md | BL-1364 | named in a row |
 | FR-PRV-24 | functions/privacy.md | BL-579 | cited in the requirement text |
 | FR-PRV-25 | functions/privacy.md | BL-1339 | named in a row |
 | FR-PRV-26 | functions/privacy.md | BL-1339 | named in a row |
 | FR-PRV-27 | functions/privacy.md | BL-1339 | named in a row |
 | FR-PRV-28 | functions/privacy.md | BL-1339 | named in a row |
-| FR-PRV-30 | functions/privacy.md | BL-1340 | named in a row |
-| FR-PRV-31 | functions/privacy.md | BL-1340 | named in a row |
+| FR-PRV-30 | functions/privacy.md | BL-1364 | named in a row |
+| FR-PRV-31 | functions/privacy.md | BL-1364 | named in a row |
 | FR-PRV-33 | functions/privacy.md | BL-1340 | named in a row |
 | FR-PRV-34 | functions/privacy.md | BL-1340 | named in a row |
 | FR-PRV-36 | functions/privacy.md | BL-047 | proposed group row |
@@ -979,11 +979,11 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-QAL-09 | functions/quality.md | BL-929 | cited in the requirement text |
 | FR-QAL-11 | functions/quality.md | BL-1342 | named in a row |
 | FR-QAL-12 | functions/quality.md | BL-1341 | named in a row |
-| FR-QAL-15 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-15 | functions/quality.md | BL-1365 | named in a row |
 | FR-QAL-16 | functions/quality.md | BL-1341 | named in a row |
 | FR-QAL-17 | functions/quality.md | BL-1341 | named in a row |
-| FR-QAL-20 | functions/quality.md | BL-1342 | named in a row |
-| FR-QAL-21 | functions/quality.md | BL-1342 | named in a row |
+| FR-QAL-20 | functions/quality.md | BL-1365 | named in a row |
+| FR-QAL-21 | functions/quality.md | BL-1365 | named in a row |
 | FR-QAL-22 | functions/quality.md | BL-1342 | named in a row |
 | FR-QAL-23 | functions/quality.md | BL-1341 | named in a row |
 | FR-QAL-25 | functions/quality.md | BL-047 | proposed group row |
@@ -994,14 +994,14 @@ Strict G0 holds for 834 of 1,052 (757 plus 77). On `develop` `bc143cc` alone, be
 | FR-REL-12 | functions/reliability.md | BL-566 | cited in the requirement text |
 | FR-REL-13 | functions/reliability.md | BL-1329 | named in a row |
 | FR-REL-17 | functions/reliability.md | BL-1329 | named in a row |
-| FR-REL-23 | functions/reliability.md | BL-1329 | named in a row |
-| FR-REL-24 | functions/reliability.md | BL-1329 | named in a row |
-| FR-REL-33 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-23 | functions/reliability.md | BL-1362 | named in a row |
+| FR-REL-24 | functions/reliability.md | BL-1362 | named in a row |
+| FR-REL-33 | functions/reliability.md | BL-1362 | named in a row |
 | FR-REL-40 | functions/reliability.md | BL-929 | cited in the requirement text |
-| FR-REL-41 | functions/reliability.md | BL-1329 | named in a row |
+| FR-REL-41 | functions/reliability.md | BL-1362 | named in a row |
 | FR-REL-42 | functions/reliability.md | BL-978 | cited in the requirement text |
-| FR-REL-43 | functions/reliability.md | BL-1326 | named in a row |
-| FR-REL-45 | functions/reliability.md | BL-1326 | named in a row |
+| FR-REL-43 | functions/reliability.md | BL-1361 | named in a row |
+| FR-REL-45 | functions/reliability.md | BL-1361 | named in a row |
 | FR-REL-48 | functions/reliability.md | BL-929 | cited in the requirement text |
 | FR-REL-49 | functions/reliability.md | BL-929 | cited in the requirement text |
 | FR-REL-59 | functions/reliability.md | BL-978 | cited in the requirement text |
