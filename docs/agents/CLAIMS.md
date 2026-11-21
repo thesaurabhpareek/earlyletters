@@ -11,3 +11,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
 | photo-lane | mobile | feat/mobile-photo-3-store | 836 | `apps/mobile/src/lib/photos/**`, `apps/mobile/src/components/capture/**` | 2026-11-20T23:30Z | 2026-11-24T10:00Z | 835 merged; 836 to 840 open |
+| reminder-cold-start | mobile | fix/reminder-cold-start-route | 1285 | `apps/mobile/src/lib/reminders/scheduler.ts`, `apps/mobile/src/lib/reminders/payload.ts`, `apps/mobile/test/reminders-cold-start-route.test.ts` | 2026-11-21T08:30Z | 2026-11-24T08:30Z | cold-start push tap routing; REST open check 08:35Z, 14 of 15 |
