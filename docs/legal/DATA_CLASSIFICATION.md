@@ -781,8 +781,6 @@ Changes on 3 Oct 2026 (catalogue `SCHEMA_VERSION` 2):
 - `machine_edit_rejected` carries the verifier reason (including `not_vetted_for_language`), edit type, source and a count; never text or offsets.
 - SDK fields kept: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type`, `$lib`, `$lib_version`, `$session_id`; dropped at the source and again in `before_send`: device name and model, locale, timezone, screen size, person properties.
 
-Change on 21 Nov 2026 (catalogue `SCHEMA_VERSION` 9, BL-1429, DATA-REQ-001): `reminder_prime_shown.source` gains the value `first_month` (L2, a fixed enum value) so the second reminder card, after the first month chapter, is not labelled `first_letter`. No new property, no free text, no id.
-
 Sentry crash events (not in the v1.0 app): L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008); same consent switch as analytics.
 
 ### 4.8 Logs and processors
