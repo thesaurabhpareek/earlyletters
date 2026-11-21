@@ -20,6 +20,25 @@ How the numbers were made: case counts are machine-counted from the tables in fi
 | Device rows run | none for Build 13 (S1-204, S1-205, S1-135 and the backup drill were still owed at the last record) | 14-test-plan.md section 8 |
 | develop head 3e16f6a2 | typecheck, Deno, B-8, install, migrations green; compliance-fence failed on the push run; tests and database rules were still running when read | GitHub checks, 20 Nov |
 
+Test PRs against this plan (state read from GitHub on 21 Nov 2026; base develop 4805ff8c5):
+
+| PR | What | Rows | State |
+|---|---|---|---|
+| #1060 | trace reads cards 19, 21, 27 (BL-964, G0) | wave 0 item 1 | merged |
+| #1061 | gate G6, store builds ship with new-scope flags off | T2-120, T2-121 | merged |
+| #1064 | late pull, restore edges, X4-R1 per surface | risks 19 and 1 | merged |
+| #1065 | seeded Asha fixture, 1,000 letters and 300 pictures | wave 0 item 3 | merged |
+| #1075 | at most 60 pending notifications in all | NS-32-R4b, risk 8 | open, draft |
+| #1097 | Smart Invert guard for pictures | NS-33-R11, risk 7 | open, draft |
+| #1098 | purged id never returns; own ids | DSR-R09, NS-40-R1, R8 | open, draft |
+| #1100 | first-run no-leak and no-surprise rows | risk 10 | open, draft |
+| #1102 | never-sampled events survive `sampleRates` (`it.fails`, red today) | risk 11 | open, draft |
+| #1103 | J-N18 canary sweep, narrow guards, never-sampled P0 events | risks 11, 12 | open, draft |
+| #1104 | every machine edit goes through `verifyEdits` (source scan) | CONST-C04, risk 21 | open, draft |
+| #1111 | `entries_guard_immutable` refuses each of nine columns | [ARCH-P-01], risk 22 | open, draft |
+
+The "NS-38 to NS-52 ... 0 of 238" row above is the state before #1060; re-run `node scripts/trace.mjs --no-write --json` for today's number.
+
 Read the 6 percent as a measure of the pack, not of the app. The repo has 295 mobile test files and 44 database test files; the last coverage measure (16 Oct, `docs/qa/COVERAGE.md`) was core 97 percent lines, mobile 56 percent lines. The new scope (cards 19, 21, 27 and the NS ids) has almost no test that names its rows.
 
 ## 2. Priorities
@@ -28,7 +47,7 @@ P0 means a promise breaks if it fails (card 14, section 1): a letter or recordin
 
 Release line (card 21 "Release line and cut", E31, 22 section 4; the earlier pointer that put NS-46, 47 and 50 in Drop A is wrong and is corrected here): Drop A is NS-48 phase 1 only (E31, CL-015; P0 by drop reads A 6, B 55, B+C 2, C 24). Drop B is NS-46 (US only, plain browse-and-tick list), NS-47 store rules only, NS-50 rank 2b, and NS-49 level 1 R1, R3, R4, R25, R26, which E31 moved from A to B because it needs NS-01, which Build 13 keeps dark, and which ships only if the A-S01 re-draw passes its AX5 test (NS-49-R1); all of B ships in 1.0 only if its gates close before the freeze, otherwise 1.1. NS-47 ask slip and the rest of NS-49 are Drop C; Drop C is NS-51, NS-52 after 1.0 (the NS-51 spike runs in Build 13); Drop D is first run NS-38 to NS-45, after wave 1 and Drop A and before any family outside the founder's signs in. Nothing in Drop A is a content change. The Build 13 content list is a separate proposal (NS-09, 10, 32, 13, 33 on; NS-01, 02, 37 and export 1.7.0 dark), not a ruling.
 
-## 3. The twenty risks that matter most (ranked)
+## 3. The twenty-two risks that matter most (ranked)
 
 Rank by the promise at risk, then by how far the test is from existing. "Red today" means the author of that file found a rule the code breaks now; I re-checked Smart Invert (0 uses), `LockOffer` (mounted) and the missing `photo_bucket_closed` test file, not the rest.
 
@@ -41,7 +60,7 @@ Rank by the promise at risk, then by how far the test is from existing. "Red tod
 | 5 | No test that every production build has the new flags off (G6) and no photo-library string or journaling entitlement | NS-49-R15, R25, R26, T2-120 to 123 | 02 | GAP; must exist before the first `EXPO_PUBLIC_DAYS` line in eas.json | ops, qa |
 | 6 | Kill and durability: kill harness has no media crash points; no 50-run SE 3 run; migration 11 proved on one letter, not 1,000 | NS-01-R35, R36, NS-09, J-N1 | 06, 03 | GAP | mobile, data |
 | 7 | Smart Invert red today: `accessibilityIgnoresInvertColors` has 0 uses, pictures invert | NS-33-R11 and four picture rows | 05 | RED TODAY | design-systems, mobile |
-| 8 | Notification cap: planner default is 60 (`planner.ts:323`) and `plan-reminders.logic.ts:48` adds 4 plan notices, so the total can reach 64; NS-32-R4b was reworded to 60 in total (E13, CL-115). Reviewer B confirmed the conflict | NS-32-R4b | 06 | RED (confirmed by Review B, not run) | mobile |
+| 8 | Notification cap, LATENT: on the base this plan read, the planner default was 60 and plan notices (up to `MAX_PLAN_NOTIFICATIONS`, `apps/mobile/src/lib/billing/plan-reminders.logic.ts:48`, value 4) were added on top, so iOS's 64 was reachable only with a long horizon (month and birthday notes plan 92 days ahead; the shipped 21-day evening horizon never nears 60). NS-32-R4b says 60 in total (E13, CL-115). On develop 4805ff8c5 #1089 already caps the planner at `TOTAL_MAX` less pending plan notices (`planner.ts:330`, `budget.ts:88-93`), so the 64 case is closed in code; test PR #1075 pins it. The earlier cite `planner.ts:323` was a closing brace; the live line is `planner.ts:330` | NS-32-R4b | 06 | LATENT (code fixed by #1089; test open in #1075) | mobile |
 | 9 | First run: pending-request note lives 1 h in code (`email-link.logic.ts:36`, a deliberate choice longer than the 900 s link) while NS-41-R11 says 900 s; `LockOffer` still mounted (`apps/mobile/src/app/onboarding.tsx:579`); withdrawing consent has no control | NS-41-R11, NS-43-R10, NS-39-R9, NS-42-R17 | 01 | code and card disagree (card 19 is Drop D); product to rule on R11 | mobile, product |
 | 10 | First-run no-leak and no-surprise rows have no test: no network before the age question, no permission prompt, no teaser or price, same screens for known and unknown address, no log canary | NS-39-R1, R2, R12, R14, NS-41-R2, R16, NS-42-R16, NS-44-R1 | 01 | GAP | mobile, security |
 | 11 | Analytics: sampling can silently drop P0 events; failed or offline send loses the batch; allowlist guards narrower than the promises (hash, file, size words pass; int to 1000 passes) | TRACKING_PLAN 5.3, FR-DAT-36, NS-47-R34, NS-48-R38 | 04 | GAP | analytics |
@@ -54,6 +73,8 @@ Rank by the promise at risk, then by how far the test is from existing. "Red tod
 | 18 | Motion and Low Power: no frame budget proof; `breathe.tsx` ignores Low Power; rulings 26 to 30 tokens (`mediaFrame`, `glassFallback`, spring 439/38.5) not in code | NS-34, NS-37-R1, rulings 26 to 30 | 05 | GAP | design-systems |
 | 19 | Sync late-write and restore edges after #737: no test for an in-flight pull landing after sign-out; no guard after the restore-mode push; no signed-in-user compare | NX-31, NS-10 | 06 | GAP (the #823 tests exist on a closed branch, 2320b9af) | sync |
 | 20 | No secret-scan job (gitleaks pending PR #30), no `docs/ops/SECRETS.md`; agent lane fails open to founder on a new first-line format | SEC-R02, SEC-R03, NSC-12 | 07 | GAP | security, ops |
+| 21 | Constitution: a machine edit written without `verifyEdits` (file 06 C04, ARCH-P-04). Test PR #1104 scans `apps` and `packages` for `machine_edits` writes with a positive control. Known limits of the scan: aliased imports of `verifyEdits`, a `source:` value taken from a variable, and object-style `machine_edits` writes evade it | ARCH-P-04 (06 C04), CONST-C04 | 06 | GAP (scan open in #1104) | qa, core |
+| 22 | Constitution: `raw_transcript` and the other guarded entry columns must stay immutable. The live guard is `entries_guard_immutable` (`supabase/migrations/20261016000000_sync_v1_server.sql:183-225`, errcode SCIMM) over nine columns; test PR #1111 | ARCH-P-01 (06 C01) | 06 | PARTIAL (author update of `raw_transcript` only today; nine columns in #1111) | data |
 
 ## 4. Order of work
 
