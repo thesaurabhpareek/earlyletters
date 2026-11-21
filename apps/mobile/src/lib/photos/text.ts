@@ -1,4 +1,5 @@
 import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from './types';
+import { photos } from './copy';
 
 // Hermes has no Intl.Segmenter (ADR 0014). There a cluster is a base character with its marks (accents, vowel signs,
 // variation selectors) and skin tones, joined across a ZWJ or an Indic virama, or a pair of regional indicators (a flag).
@@ -44,3 +45,9 @@ export const normalizePhotoText = (typed: string | null | undefined): string | n
 
 /** The typed place (NS-01-R21): optional, at most 60 characters a person sees, only what the parent typed. */
 export const normalizePhotoPlace = (typed: string | null | undefined): string | null => capTyped(typed, PHOTO_PLACE_MAX);
+
+/**
+ * The picture's one text alternative for VoiceOver (NS-01-R9, R21): the parent's words when they typed any, else the
+ * fixed phrase. Never generated.
+ */
+export const photoA11yLabel = (text: string | null | undefined): string => normalizePhotoText(text) ?? photos.book.photos.a11yCard;
