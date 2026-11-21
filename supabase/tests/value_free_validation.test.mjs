@@ -8,13 +8,14 @@
 //   VF-3 behaviour: an over-length write to a content table fails with an error whose message and detail carry no
 //        value; a table that still echoes is on KNOWN_GAPS (a ratchet: fixing one forces its removal from the list).
 // RAISE_OK names functions whose raise reads a public policy document key, never a person's words.
-// KNOWN_GAPS is the work the migration still owes (hosted apply is the founder's step); it may only shrink.
+// KNOWN_GAPS is the work still owed (hosted apply is the founder's step); it may only shrink. It is empty: 20261121040000 added
+// entries_validate_limits, held_drafts_validate_limits, children_validate_limits and dictionary_terms_validate_limits.
 import { createDb } from './harness.mjs';
 
 const { check, sys, done } = await createDb(process.argv.slice(2));
 
 const RAISE_OK = new Set(['public.policy_versions_guard']);
-const KNOWN_GAPS = new Set(['entries', 'held_drafts', 'children', 'dictionary_terms']);
+const KNOWN_GAPS = new Set([]);   // empty since 20261121040000 (BL-244); a new content table must ship its trigger
 
 // Content tables by structure: an L4 text/jsonb column and at least one CHECK that reads a length or a size.
 const content = (await sys(`
@@ -56,15 +57,38 @@ const probe = async (rel, sql, params) => {
   try { await sys(sql, params); await sys('rollback to vf'); return 'ok'; }
   catch (e) { await sys('rollback to vf'); return echo(e) ? 'echo' : 'clean'; }
 };
+const big = 'x'.repeat(200001);
 const probes = {
   children: [`insert into children (id, name, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, ['x'.repeat(61)]],
+  children_nickname: [`insert into children (id, nickname, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, ['x'.repeat(31)]],
+  entries: [`insert into entries (id, final_text) values (gen_random_uuid(), $1)`, ['x'.repeat(20001)]],
+  entries_raw: [`insert into entries (id, raw_transcript) values (gen_random_uuid(), $1)`, ['x'.repeat(40001)]],
+  entries_edits: [`insert into entries (id, author_edits) values (gen_random_uuid(), $1::jsonb)`, [JSON.stringify(['x'.repeat(65536)])]],
+  held_drafts: [`insert into held_drafts (id, typed_text) values (gen_random_uuid(), $1)`, [big.slice(0, 100001)]],
+  held_drafts_prompt: [`insert into held_drafts (id, prompt_key) values (gen_random_uuid(), $1)`, ['x'.repeat(201)]],
+  dictionary_terms: [`insert into dictionary_terms (owner_id, term, kind) values (gen_random_uuid(), $1, 'word')`, ['x'.repeat(81)]],
+  dictionary_terms_forms: [`insert into dictionary_terms (owner_id, term, kind, forms) values (gen_random_uuid(), 'ok', 'word', $1::jsonb)`, [JSON.stringify([{ script: 'latin', text: 'x'.repeat(81) }])]],
+};
+// The refusal is the trigger's: 23514, names the table, and neither message, detail nor hint carries the written value.
+const refusal = async (sql, params) => {
+  await sys('savepoint vf');
+  try { await sys(sql, params); await sys('rollback to vf'); return null; }
+  catch (e) { await sys('rollback to vf'); return e; }
 };
 await sys('begin');
 for (const [rel, [sql, params]] of Object.entries(probes)) {
-  const r = await probe(rel, sql, params);
-  const gap = KNOWN_GAPS.has(rel);
+  const table = rel.replace(/_(nickname|raw|edits|prompt|forms)$/, '');
+  const r = await probe(table, sql, params);
+  const gap = KNOWN_GAPS.has(table);
   check(`VF-3 ${rel}: an over-length write is refused${gap ? ' and still echoes the row (known gap)' : ' without echoing the row'}`,
     gap ? r === 'echo' || r === 'ok' : r === 'clean');
+}
+for (const [rel, [sql, params]] of Object.entries(probes)) {
+  const e = await refusal(sql, params);
+  const table = rel.replace(/_(nickname|raw|edits|prompt|forms)$/, '');
+  const text = `${e?.message ?? ''} ${e?.detail ?? ''} ${e?.hint ?? ''}`;
+  check(`VF-4 ${rel}: refused by the validate trigger (23514), table named, no DETAIL or HINT, no value in the text`,
+    e !== null && e.code === '23514' && e.message.startsWith(`${table}:`) && !e.detail && !e.hint && !/xxxxx/.test(text) && !e.message.includes('Failing row'));
 }
 await sys('rollback');
 done();
