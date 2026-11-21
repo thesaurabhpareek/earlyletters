@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * Gate G6 (docs/qa/test-plan-b13, T2-120 and T2-121; NS-49-R15, R25, R26): no store build carries a new-scope card flag
+ * Gate G6 (docs/product/prd/14-test-plan.md, rows T2-120 and T2-121; NS-49-R15, R25, R26): no store build carries a new-scope card flag
  * turned on, a photo-library usage string, a PhotoKit authorisation or library call, or the journaling entitlement.
  *
  * Reads eas.json and the sources as text, the way capabilities.test.ts and the preflight tests do. It never calls
@@ -15,27 +15,27 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resolveProfile, storeProfiles } from '../../../scripts/release/store-flags.mjs';
+import { STORE_FLAGS, resolveProfile, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const APP = join(__dirname, '..');
 
 /**
  * Every EXPO_PUBLIC_* card flag of the new scope that may never be on in a store profile before gate G6. PHOTOS and
- * BOOK_SEARCH are also pinned, with their card ids, by store-flags.test.ts (BL-958); the rest have no code behind them
- * yet (a grep of src and app.config.ts finds none), so this list comes from the PRD cards and ADR 0029.
- * Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ANALYTICS, ACCOUNT_DELETION (alpha and
- * server switches with their own pins in capabilities.test.ts and preflight-production.test.ts).
+ * BOOK_SEARCH come from STORE_FLAGS (scripts/release/store-flags.mjs, BL-958), so this list cannot drift from it; the
+ * rest have no code behind them yet and are named by the cards and errata: E38 (PHOTO_MOMENTS, VIDEO, and MEDIA_SYNC for
+ * variant B only), card 21 (DAYS, DAYS_ASK, SUGGESTIONS). EXPO_PUBLIC_MEDIA_ATTACH is retired (plan 17b, E38) and is
+ * not pinned. Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ANALYTICS, ACCOUNT_DELETION
+ * (alpha and server switches with their own pins in capabilities.test.ts and preflight-production.test.ts).
  */
 const CARD_FLAGS = [
+  ...STORE_FLAGS.map((f: { env: string }) => f.env),
   'EXPO_PUBLIC_DAYS', // NS-46, card 21
   'EXPO_PUBLIC_DAYS_ASK', // card 21 flags line (E57 says no new flag; absent or off either way)
   'EXPO_PUBLIC_SUGGESTIONS', // NS-49, card 21
-  'EXPO_PUBLIC_PHOTOS', // NS-01
-  'EXPO_PUBLIC_BOOK_SEARCH', // NS-02
-  'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27
-  'EXPO_PUBLIC_VIDEO', // NS-52, card 27
-  'EXPO_PUBLIC_MEDIA_ATTACH', // ADR 0029
-] as const;
+  'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27 (E38)
+  'EXPO_PUBLIC_VIDEO', // NS-52, card 27 (E38)
+  'EXPO_PUBLIC_MEDIA_SYNC', // variant B only (E38, handoff 24)
+] as string[];
 
 type Eas = { build?: Record<string, { env?: Record<string, unknown>; distribution?: string; ios?: { simulator?: boolean }; extends?: string }> };
 
@@ -59,7 +59,7 @@ function flagsOn(eas: Eas): string[] {
 const FORBIDDEN_NATIVE: ReadonlyArray<[string, RegExp]> = [
   ['a photo-library usage string', /NSPhotoLibrary(Add)?UsageDescription|photosPermission|savePhotosPermission/],
   ['the journaling entitlement', /com\.apple\.developer\.journal\.allow|JournalingSuggestions/],
-  ['a PhotoKit authorisation or library call', /PHPhotoLibrary|PHAsset\b|PHFetch|PHImageManager|PHAuthorizationStatus|requestAuthorization/],
+  ['a PhotoKit authorisation or library call', /PHPhotoLibrary|PHAsset\b|PHFetch|PHImageManager|PHAuthorizationStatus|PHPhotoLibrary\.requestAuthorization/],
   ['a background mode for fetch or processing', /UIBackgroundModes|BGTaskScheduler|BGAppRefreshTask|BGProcessingTask/],
   ['a media-library or camera package', /expo-media-library|expo-camera|expo-image-picker|react-native-vision-camera/],
 ];
@@ -128,7 +128,7 @@ describe('G6: store builds ship with the new-scope flags off', () => {
   it('[NS-49-R26] G6 no EAS profile that builds for release enables a library-derived flag', () => {
     // The level 3 spike runs on a development build only. development and e2e are not store profiles.
     const eas = readEas();
-    const releaseOn = flagsOn(eas).filter((l) => /PHOTO_MOMENTS|SUGGESTIONS|PHOTOS|MEDIA_ATTACH/.test(l));
+    const releaseOn = flagsOn(eas).filter((l) => /PHOTO_MOMENTS|SUGGESTIONS|PHOTOS|MEDIA_SYNC/.test(l));
     expect(releaseOn).toEqual([]);
     expect(storeProfiles(eas)).not.toContain('development');
     expect(storeProfiles(eas)).not.toContain('e2e');
