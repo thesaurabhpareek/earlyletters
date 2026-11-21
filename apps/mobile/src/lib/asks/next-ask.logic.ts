@@ -7,7 +7,8 @@
  *   1. `reminder_prime`: the first ask slot after the first saved letter. At most 2 primes ever
  *      (C-REQ-001 Rev); the second one comes once after the first month chapter (F13 6.2 B row 4c, BL-518), below.
  *   2. `keep_book`: the account sheet, on the first save in session 2 or the second saved letter,
- *      whichever comes first; offered once here (the "after the third letter if Later" re-offer is not built).
+ *      whichever comes first. If the person tapped Later (still signed out), it is offered once more, at the first
+ *      save from the third letter on (F02 6.1, BL-519), and never a third time.
  *   3. Analytics consent stays with its own sequencer (lib/analytics/ask.ts) and is off in the 1.0 line (D-124 item 3).
  *
  * At most one ask per session and one per calendar day (F02 6.1), so a second letter in the same session as the
@@ -38,6 +39,8 @@ export interface AskFacts {
   signInOffered: boolean;
   /** The Keep the book sheet was offered before on this phone. */
   keepBookOffered: boolean;
+  /** The one re-offer of Keep the book was already made (BL-519). */
+  keepBookReoffered: boolean;
   /** Key of the session in which the first letter was saved; null when unknown (letters from before this sequencer). */
   firstLetterSession: number | null;
   /** Key of the current session. */
@@ -73,6 +76,8 @@ export function nextAsk(f: AskFacts): NextAsk {
   }
   // 3. The second and last prime, once, after the first month chapter (cap of 2; the first has its own slot above).
   if (!f.firstLetter && f.firstMonthDone && f.primesShown === 1 && primeAllowed(f.primesShown) && !f.remindersOn) return 'reminder_prime';
+  // 4. Keep the book, once more: offered before, still signed out (so Later), from the third letter on, never twice (F02 6.1, BL-519).
+  if (f.signInOffered && f.keepBookOffered && !f.keepBookReoffered && !f.firstLetter && f.lettersSaved >= 3) return 'keep_book';
   return null;
 }
 

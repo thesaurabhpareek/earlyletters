@@ -10,6 +10,7 @@
  * |---|---|
  * | `asks.reminderPrimes` | times the reminder prime was shown, from any source (cap MAX_REMINDER_PRIMES) |
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
+ * | `asks.keepBookReoffered` | `on` once the one re-offer of Keep the book was made (after the third letter, BL-519) |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
  * | `asks.firstLetterAt` | time (ms epoch) of the first letter, for the second prime after the first month (BL-518) |
  * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
@@ -29,6 +30,7 @@ export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk
 const K = {
   primes: 'asks.reminderPrimes',
   keepBook: 'asks.keepBookOffered',
+  keepBookReoffer: 'asks.keepBookReoffered',
   firstLetterSession: 'asks.firstLetterSession',
   firstLetterAt: 'asks.firstLetterAt',
   lastAskDay: 'asks.lastAskDay',
@@ -89,6 +91,7 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       remindersOn: readPrefs().enabled,
       signInOffered: input.signInOffered,
       keepBookOffered: getSetting(K.keepBook) === 'on',
+      keepBookReoffered: getSetting(K.keepBookReoffer) === 'on',
       firstLetterSession: Number.isFinite(stored) && stored > 0 ? stored : null,
       session,
       askShownThisSession: askSession === session,
@@ -96,6 +99,7 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
     if (ask === 'keep_book') {
+      if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
       setSetting(K.keepBook, 'on');
       noteAsked(now);
     }
