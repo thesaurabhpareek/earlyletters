@@ -42,7 +42,7 @@ Notes:
   event `HEAD^` needs `fetch-depth: 2`; if that is not wanted, drop the env on push and let the `HEAD` check stand.
 - If `git show <ref>:packages/content/copy-tells-baseline.txt` fails (no file at the base, as for #1244's first merge), the script treats the base as
   absent and skips that comparison. No special case is needed for the first PR.
-- Runtime: one TypeScript parse of the content files, a few seconds; fits the `unit` job's 5 minute budget.
+- Runtime: one TypeScript parse of the content files, not measured here, expected to fit the `unit` job's 5 minute budget.
 - Not `continue-on-error`. A red step means a line got worse; the fix is to fix the line, never to raise the baseline (CLAUDE.md content rules).
 - Lock the gain: when the count falls, `--check` prints "Under baseline". The author runs `npm run lint:copy -- --update-baseline` and commits the lower file.
 
