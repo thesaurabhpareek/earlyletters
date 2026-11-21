@@ -71,10 +71,10 @@ export function welcomeErrorMessage(kind: AuthErrorKind | null): string | null {
   return authErrorMessage(kind);
 }
 
-export type FirstRunScreen = 'blank' | 'welcome' | 'outage' | 'steps' | 'opening' | 'slow' | 'offlineBook' | 'noBookHere';
+export type FirstRunScreen = 'blank' | 'welcome' | 'outage' | 'steps' | 'opening' | 'slow' | 'offlineBook' | 'noBookHere' | 'finishSetup';
 
 /** The screens of "Opening your book" (NX-36-S17), one per gate step; onboarding.tsx draws them (new-phone-screens.tsx). */
-const NEW_PHONE_SCREENS: Partial<Record<FirstRunStep, FirstRunScreen>> = { openingBook: 'opening', slowBook: 'slow', offlineBook: 'offlineBook', noBookHere: 'noBookHere' };
+const NEW_PHONE_SCREENS: Partial<Record<FirstRunStep, FirstRunScreen>> = { openingBook: 'opening', slowBook: 'slow', offlineBook: 'offlineBook', noBookHere: 'noBookHere', finishSetup: 'finishSetup' };
 
 /**
  * Which screen the first-run route draws. The gate answers where a person with no session starts (`signIn`, `outage`),
