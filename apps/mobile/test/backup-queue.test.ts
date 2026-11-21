@@ -26,6 +26,7 @@ import type { TokenStore } from '../src/lib/backup/token-vault';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
+import { firstLeak, leakNote } from './helpers/leak-scan';
 import { nodeDb } from './helpers/node-db';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -248,14 +249,11 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(r.db().getMeta('lastBackedUpAt')).not.toBeNull();
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
-    // Every byte that left the phone is ciphertext: no ftyp box, no window of the original, no plaintext hash.
-    // The ftyp box is the recording's own first 16 bytes (size, "ftyp", major brand, minor version), not the 4 letters:
-    // any 4 bytes of ciphertext equal "ftyp" by chance (1 in 2^32 per byte), 16 bytes cannot (2^-128).
-    const start = plain.subarray(0, 16);
-    expect(start.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
+    // Every byte that left the phone is ciphertext: no ftyp box, no part of the original, no plaintext hash.
+    // [BL-456] 16-byte shingles of the whole take, each at every offset of every body (`helpers/leak-scan.ts`).
+    expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     for (const req of r.backend.requests) {
-      expect(req.body.includes(start), `${req.kind} carries the start of the recording`).toBe(false);
-      expect(req.body.includes(plain.subarray(4096, 4160)), req.kind).toBe(false);
+      expect(leakNote(req.kind, firstLeak(req.body, plain))).toBe(leakNote(req.kind, null));
       expect(req.body.includes(Buffer.from(sha256Hex(plain))), req.kind).toBe(false);
       expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
     }
