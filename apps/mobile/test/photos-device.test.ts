@@ -136,11 +136,18 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
     expect(calls).toEqual([DEST]);
     first.cancel(); // an iCloud download still running natively
     expect(await first.done).toEqual({ status: 'cancelled' });
+    // Cancel ends the wait, not the native copy: the picker is not free while it still runs (privacy review B on #837).
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(calls).toEqual([DEST]); // nothing was opened under the running copy
     land(DEST);
     await new Promise((r) => setTimeout(r, 0));
     expect(gone).toEqual([DEST]);
-    picker.open({}); // free again after the cancel
+    picker.open({}); // free once the native copy has finished
     expect(calls).toEqual([DEST, DEST]);
+  });
+  it('[NS-01-R22] no reset function ships in the bundle: resetPhotoDeviceForTest lives only under test/', () => {
+    const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+    for (const f of walk(join(__dirname, '..', 'src')).filter((x) => /\.tsx?$/.test(x))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/resetPhotoDeviceForTest|nativeForTest/);
   });
   it('[C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
     const gone: string[] = [];
@@ -574,6 +581,28 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     expect(counts).toEqual({ orphanFiles: 1, orphanRows: 1, missingFileRows: 1 });
     expect(picked.left()).toEqual([]);
     expect(await sweepPhotos(db, files, picked)).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 }); // repeat
+  });
+  it('[NS-01-R36] a picture committed while the sweep runs keeps its file and its row (privacy review B on #835): rows are read before the folder is listed, and an orphan file is looked up again before it is removed', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    const files = memoryFiles();
+    const real = files.list.bind(files);
+    const commit = async (owner: string, media: string) => {
+      await files.write(`${media}.jpg`, Uint8Array.of(1)); // the file first, then its row, as commitPhoto writes them
+      entryMediaStore(db).put(row(owner, media));
+    };
+    files.list = async () => {
+      await commit('e1', 'mA'); // before the listing: a file with no row in the sweep's snapshot
+      const listed = await real();
+      await commit('e2', 'mB'); // after the listing: a row whose file the listing never saw
+      return listed;
+    };
+    const counts = await sweepPhotos(db, files, pickedMemory({}));
+    expect([...files.disk.keys()].sort()).toEqual(['mA.jpg', 'mB.jpg']);
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mA', 'mB']);
+    expect(counts).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
   });
   it('[D5] an unreadable folder changes nothing; a file that will not go keeps its row for the next launch', async () => {
     const { db } = nodeDb();
