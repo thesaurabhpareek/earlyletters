@@ -2443,7 +2443,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### App (mobile)
 
 #### BL-518 The second reminder prime (after the first month chapter)
-- Status: ready. Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Status: in-review (PR #1274). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. Only the first is built (`apps/mobile/src/lib/asks/next-ask.logic.ts:7`, SET-02).
 - Scope: offer `reminder_prime` again once after the first month chapter, inside the cap of 2 (`MAX_REMINDER_PRIMES`) and the one-ask-per-session rule.
