@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { AGE_GATE_PASSED_KEY as PASSED, AGE_GATE_STOPPED_KEY as STOPPED_AT, answerGate, decideGate } from './age-gate.logic';
 import { agreementRows, decideEntry, type AgreementSurface, type EntryDecision } from './agreements.logic';
-import { takePendingAuthLink } from './auth/pending';
+import { clearPendingEmailRequest, takePendingAuthLink } from './auth/pending';
 import { clearPendingInvite } from './family/pending-invite';
 import { deleteSetting, getSetting, hasAgreement, recordAgreement, setSetting, subscribeTo, uuidv7 } from './store';
 
@@ -35,6 +35,7 @@ export function answerAgeGate(answer: 'yes' | 'no'): void {
     setSetting(STOPPED_AT, s.stoppedAt!);
     void clearPendingInvite();
     takePendingAuthLink();
+    void clearPendingEmailRequest(); // the typed address (memory) and the sent-email time (Keychain)
   }
 }
 

@@ -11,7 +11,7 @@ import { decideGate } from '../src/lib/age-gate.logic';
 import { firstRunGate, screenTwoInputs, type FirstRunGateInput } from '../src/lib/first-run/gate.logic';
 import { ASHA_A, ASHA_B, fixedClock, memoryKeychain, memorySettings, recordedSupabase, throwingFetch } from './helpers/first-run-stubs';
 
-const h = vi.hoisted(() => ({ keychain: null as null | { getItem: (k: string) => Promise<string | null>; setItem: (k: string, v: string) => Promise<void>; removeItem: (k: string) => Promise<void> }, settings: null as null | { getSetting: (k: string) => string | null; setSetting: (k: string, v: string) => void; deleteSetting: (k: string) => void } }));
+const h = vi.hoisted(() => ({ keychain: null as null | { items: Map<string, string>; getItem: (k: string) => Promise<string | null>; setItem: (k: string, v: string) => Promise<void>; removeItem: (k: string) => Promise<void> }, settings: null as null | { getSetting: (k: string) => string | null; setSetting: (k: string, v: string) => void; deleteSetting: (k: string) => void } }));
 
 vi.mock('react-native', () => ({ AppState: { addEventListener: () => ({ remove: () => {} }) } }));
 vi.mock('react', () => ({ useCallback: (f: unknown) => f, useEffect: () => {}, useState: (v: unknown) => [v, () => {}] }));
@@ -103,6 +103,7 @@ describe('[NS-39-R14] a No discards a held link', () => {
     answerAgeGate('no');
     await new Promise((r) => setTimeout(r, 0));
     expect(await readPendingInvite(fixedClock())).toBeNull();
+    expect([...h.keychain!.items.keys()].filter((k) => k.includes('pendingInvite'))).toEqual([]); // the Keychain item itself is gone
     expect(h.settings!.getSetting('ageGate.stoppedAt')).not.toBeNull();
     expect(net.calls).toEqual([]);
     expect(db.calls).toEqual([]);
@@ -119,5 +120,13 @@ describe('[NS-39-R14] a No discards a held link', () => {
     answerAgeGate('no');
     expect(takePendingAuthLink()).toBeNull();
     expect(net.calls).toEqual([]);
+  });
+
+  it('[NS-39-R14] the address typed before the No is dropped too', async () => {
+    const { setPendingEmail, getPendingEmail } = await import('../src/lib/auth/pending');
+    const { answerAgeGate } = await import('../src/lib/age-gate');
+    setPendingEmail('asha.parent@example.com');
+    answerAgeGate('no');
+    expect(getPendingEmail()).toBeNull();
   });
 });
