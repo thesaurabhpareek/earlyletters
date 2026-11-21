@@ -3,13 +3,25 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import ts from 'typescript';
+import { selectPrompt } from '@scribe/core';
+import { PROMPTS } from '@scribe/content';
+import { tonightPromptInput } from '../src/components/tonight/prompt.logic';
 import { applyEntryState, applyPullPage } from '../src/lib/sync/merge';
 import { entrySnapshot, SYNC_SETTING, writeSetting, type LocalEntryRow } from '../src/lib/sync/outbox';
 import type { PullResponse } from '../src/lib/sync/types';
+import { tokens } from '@scribe/design-tokens';
+import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
+import { coveredForAppState, pictureCovered, pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { photoStartShows } from '../src/lib/photos/start-shows';
+import { PendingPhoto } from '../src/lib/photos/pending';
+import { registerPhotoPicker, registerPending } from '../src/lib/photos/registry';
+import { setPhotosForTest } from '../src/lib/photos/flag';
+import { planCapture } from '../src/lib/capture/start-capture.logic';
+import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
+import { photos } from '../src/lib/photos/copy';
 import { fixture, insertBook } from './helpers/store-fixture';
-import { commitPhoto } from '../src/lib/photos/session';
 import { deps, makeJpeg } from './photos-helpers';
 
 const ROOT = join(__dirname, '..');
@@ -20,8 +32,131 @@ const walk = (dir: string): string[] =>
     return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
   });
 const parse = (file: string): ts.SourceFile => ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+const visit = (n: ts.Node, f: (n: ts.Node) => void): void => {
+  f(n);
+  n.forEachChild((c) => visit(c, f));
+};
+const jsxName = (n: ts.Node): string | null =>
+  ts.isJsxElement(n) ? n.openingElement.tagName.getText() : ts.isJsxSelfClosingElement(n) ? n.tagName.getText() : null;
 const importsOf = (sf: ts.SourceFile): string[] => sf.statements.filter(ts.isImportDeclaration).map((s) => (s.moduleSpecifier as ts.StringLiteral).text);
 const rel = (f: string) => relative(SRC, f);
+
+const APP = walk(join(SRC, 'app'));
+const HOME = join(SRC, 'app', '(tabs)', 'index.tsx');
+
+describe('[NS-01-R4][NS-01-R52] leaving without the letter takes the picked picture with it; Keep stores it', () => {
+  // Each test reads only the handler that must make the call, so removing that one line fails it.
+  const body = (file: string, from: string, to: string) => {
+    const src = readFileSync(join(SRC, file), 'utf8');
+    const start = src.indexOf(from);
+    expect(start, from).toBeGreaterThan(-1);
+    return src.slice(start, src.indexOf(to, start + from.length));
+  };
+  it('[NS-01-R4][NS-01-R52] Listen\'s Close discards the pending picture before it leaves', () => {
+    const close = body('app/listen.tsx', 'const close = () => {', '\n  };');
+    expect(close).toMatch(/discardPendingPhoto\(\);[^\n]*\n\s*if \(router\.canGoBack\(\)\) router\.back\(\);/);
+  });
+  it('[NS-01-R4][NS-01-R52] Listen\'s confirmed Let it go discards the pending picture after the take is let go', () => {
+    const discard = body('app/listen.tsx', 'const discard = () => {', 'const typeInstead =');
+    expect(discard).toMatch(/if \(id\) letItGo\([^\n]*\n\s*discardPendingPhoto\(\);[^\n]*\n\s*router\.back\(\);/);
+  });
+  it('[NS-01-R4][NS-01-R52] Home, on coming back into focus, discards a picture left behind', () => {
+    const start = body('lib/photos/use-photo-start.ts', 'useFocusEffect(', '\n  );');
+    expect(start).toMatch(/useCallback\(\(\) => \{\s*void getPending\(\)\?\.discard\(\);\s*\}, \[\]\)/);
+  });
+  it('[NS-01-R5][NS-01-R17] Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
+    const save = body('app/review.tsx', 'const save = async (inBook: boolean) => {', 'const keepRecordingOnly =');
+    const kept = save.indexOf('saveLetterFromDraft(');
+    const stored = save.indexOf('await commitPendingPhoto(draft.id, finalText);');
+    expect([kept > -1, stored > kept, stored < save.indexOf('finishSave(inBook, firstLetter);')]).toEqual([true, true, true]);
+  });
+});
+
+describe('[NS-01-R1] only Home registers a photo start', () => {
+  it('[NS-01-R1] exactly 1 photo start exists in the app, in Home, inside the capture cluster beside Speak and Type', () => {
+    const renders: { file: string; node: ts.Node }[] = [];
+    for (const f of walk(SRC).filter((f) => !rel(f).startsWith('components/photos'))) {
+      visit(parse(f), (n) => {
+        if (jsxName(n) === 'PhotoStartButton') renders.push({ file: f, node: n });
+      });
+    }
+    expect(renders.map((r) => rel(r.file))).toEqual([rel(HOME)]);
+    let parent: ts.Node = renders[0].node.parent;
+    while (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent)) parent = parent.parent;
+    const siblings = parent.children.map(jsxName).filter(Boolean);
+    expect(siblings).toContain('ButtonRow'); // the Speak and Type row is in the same cluster
+  }, 30_000); // parses the whole src tree: 7 to 9 s on a loaded runner
+  it('[NS-01-R1] the Book, Me and every other route have 0 controls that start a letter from a picture', () => {
+    for (const f of APP.filter((f) => f !== HOME)) {
+      const sf = parse(f);
+      expect(importsOf(sf).filter((m) => /lib\/photos\/(use-photo-start|session|registry)|components\/photos\/photo-start/.test(m)), rel(f)).toEqual([]);
+    }
+  });
+});
+
+describe('[NS-01-R2][NX-39-R2] the photo start asks no library question', () => {
+  const BANNED = /requestPermissionsAsync|requestMediaLibraryPermissions|getMediaLibraryPermissions|requestAuthorization|PHPhotoLibrary|MediaLibrary|expo-media-library/;
+  it('[NS-01-R2][NX-39-R2] no photo code names a permission or full-library call', () => {
+    for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(BANNED);
+    }
+  });
+});
+
+describe('[NS-01-R4][NX-39-R14] backing out writes nothing (behaviour)', () => {
+  it('[NS-01-R4][NX-39-R14] a pending picture that is discarded leaves no file, no row and no held picture, whichever way the parent leaves', async () => {
+    for (const leave of ['Close', 'Let it go', 'swipe back to Home']) {
+      const removed: string[] = [];
+      const files = { read: async () => Uint8Array.of(1), remove: async (u: string) => void removed.push(u), sweep: async () => undefined };
+      const p = new PendingPhoto(files);
+      await p.set({ uri: 'file:///c/ImagePicker/one.jpg' });
+      expect(p.source?.uri, leave).toBe('file:///c/ImagePicker/one.jpg');
+      await p.discard(); // what Close, Let it go and Home's focus all call (discardPendingPhoto)
+      expect([p.source, removed], leave).toEqual([null, ['file:///c/ImagePicker/one.jpg']]);
+    }
+  });
+});
+
+describe('[NS-01-R3] the prompt does not depend on the picture', () => {
+  it('[NS-01-R3] the prompt does not depend on the picture', () => {
+    const state = { birthday: '2026-04-01', today: '2026-11-11', daysSinceLastEntry: 2, recentKeys: [], shuffle: 0, leftKey: null, childName: 'Asha' };
+    const picked: string[] = [];
+    for (const uri of ['picker://a', 'picker://b', 'picker://c']) {
+      const s = new PhotoSession();
+      s.pick({ uri });
+      picked.push(selectPrompt(tonightPromptInput(state), PROMPTS).key); // the input has no place for the picture
+      // The session is held while the plan is made: the route the photo start takes carries the same prompt params as Speak
+      // and Type for that prompt, whatever was picked (the request has no field a picture could ride in).
+      const prompt = { key: picked[picked.length - 1], libraryVersion: 3 };
+      expect(s.source?.uri).toBe(uri);
+      expect(planCapture({ source: 'photo', prompt })).toEqual({ kind: 'photo', pathname: '/listen', params: { promptKey: prompt.key, promptLibraryVersion: '3' } });
+    }
+    const first = planCapture({ source: 'speak', prompt: { key: picked[0], libraryVersion: 3 } });
+    expect(first.kind === 'route' && first.params).toEqual({ promptKey: picked[0], promptLibraryVersion: '3' });
+    expect(new Set(picked).size).toBe(1);
+    expect(Object.keys(state).some((k) => /photo|picture|uri/i.test(k))).toBe(false);
+  });
+  it('[NS-01-R3] the thumbnail is at most 160 pt tall and sits above the prompt on Listen and above the field on Write', () => {
+    expect(THUMB_MAX_HEIGHT_PT).toBe(160);
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb).toMatch(/height=\{boxHeight\}/);
+    const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
+    expect(listen.indexOf('<PendingPhotoThumb />')).toBeGreaterThan(0);
+    expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
+    const write = readFileSync(join(SRC, 'app', 'write.tsx'), 'utf8');
+    expect(write.indexOf('<PendingPhotoThumb />')).toBeGreaterThan(0);
+    expect(write.indexOf('<PendingPhotoThumb />')).toBeLessThan(write.indexOf('{prompt && ('));
+  });
+});
+
+describe('[NS-01-R13][NX-39-R36] the switcher snapshot is blank', () => {
+  it('[NS-01-R13][NX-39-R36] with App lock on, a picture is not drawn when the app is not in front or not unlocked', () => {
+    for (const phase of ['inactive', 'background'] as const) expect(pictureHidden({ lockOn: true, unlocked: true, phase })).toBe(true);
+    expect(pictureHidden({ lockOn: true, unlocked: false, phase: 'active' })).toBe(true); // cold open
+    expect(pictureHidden({ lockOn: true, unlocked: true, phase: 'active' })).toBe(false);
+    expect(pictureHidden({ lockOn: false, unlocked: false, phase: 'background' })).toBe(false);
+  });
+});
 
 describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
   const row: LocalEntryRow = {
@@ -114,6 +249,16 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
   });
 });
 
+describe('[NS-01-R18][NX-39-R58] pictures are never gated', () => {
+  it('[NS-01-R18][NX-39-R58] the photo code never calls the plan or Keep gate, and GatedFeature stays two names', () => {
+    for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
+      expect(importsOf(parse(f)).filter((m) => /billing|plan|keep-gate|@scribe\/core/.test(m)), rel(f)).toEqual([]);
+    }
+    const plan = readFileSync(join(ROOT, '..', '..', 'packages', 'core', 'src', 'plan.ts'), 'utf8');
+    expect(plan).toMatch(/export type GatedFeature = 'keep_letter' \| 'theme_extra';/);
+  });
+});
+
 describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights', () => {
   it('[NS-01-R19][NX-39-R37] off (the default), or paused remotely, nothing new draws; only "on" turns it on', () => {
     expect(parsePhotosFlag(undefined)).toBe(false);
@@ -126,5 +271,149 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(photosPaused({ killSwitches: { photos: true } })).toBe(true);
     expect(photosPaused(null)).toBe(false);
     expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
+  });
+  it('[NS-01-R19] the Home start is guarded by the switch and a registered picker (absent, not dead)', () => {
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'start-shows.ts'), 'utf8');
+    expect(hook).toMatch(/photoSurfaces\(\{ build: photosBuildEnabled\(\), paused \}\)\.start && getPhotoPicker\(\) !== null/);
+    expect(readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8')).toMatch(/photoStart\.show \? <PhotoStartButton/);
+  });
+  it('[NS-01-R19] off, Listen, Write and Review gain nothing: the thumbnail needs a pending picture, and Keep stores nothing without one', async () => {
+    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
+    const { d, files, store } = deps();
+    await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
+    expect(files.writes + store.puts).toBe(0);
+  });
+});
+
+describe('[NS-01-R20] new controls', () => {
+  it('[NS-01-R20] every new control is a Button of size md (44 pt or more), and on Listen the thumbnail reads before the prompt', () => {
+    const md = /BUTTON_MIN_HEIGHT = \{[^}]*\bmd: (\d+)/.exec(readFileSync(join(SRC, 'components', 'ui', 'button.tsx'), 'utf8'));
+    expect(Number(md?.[1])).toBeGreaterThanOrEqual(Math.max(44, tokens.target.min));
+    for (const f of walk(join(SRC, 'components', 'photos'))) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/<Button\b[^>]*>/g)) expect(m[0], rel(f)).toMatch(/size="md"/);
+    }
+    // Reading order on Ready: thumbnail, prompt, then the red circle (Speak) and "or type instead" (Type) below it.
+    const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
+    expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
+  });
+  it('[NS-01-R20b] VoiceOver order on Ready', () => {
+    // E40: thumbnail, Change, prompt, Speak, Type; Type keeps the picture.
+    const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
+    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{photos\.capture\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
+    expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
+    // E40: Change sits under the thumbnail, inside the thumbnail block, before the prompt; Change announces its state.
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb.indexOf('<PhotoFrame')).toBeGreaterThan(-1);
+    expect(thumb.indexOf('testID="ready.photo.change"')).toBeGreaterThan(thumb.indexOf('<PhotoFrame'));
+    expect(thumb).toMatch(/testID="ready.photo.change"[^>]*\/>/);
+    expect(thumb).toMatch(/disabled=\{pick\.busy\}/);
+    const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
+    expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
+  });
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the photo ErrorLine, which announces it and is a live region (#838 review B)', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
+      const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
+      expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
+      expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
+    }
+    const line = readFileSync(join(SRC, 'components', 'photos', 'error-line.tsx'), 'utf8');
+    const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
+    expect(body).toMatch(/if \(message\) announce\(message\);/);
+    expect(body).toMatch(/accessibilityLiveRegion="polite"/);
+  });
+  it('[NS-01-R20][review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx', 'error-line.tsx']) {
+      expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
+    }
+    expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/listen\.photo\.type[\s\S]{0,0}micDenied|micDenied\.typeButton\} onPress=\{typeInstead\}/);
+    for (const f of ['use-photo-start.ts', 'use-photo-pick.ts']) {
+      const src = readFileSync(join(SRC, 'lib', 'photos', f), 'utf8');
+      expect(src, f).not.toMatch(/registerPhotoDevice\(\)/);
+      expect(src, f).toMatch(/useRegisteredPhotoDevice\(\)/);
+    }
+    expect(readFileSync(join(SRC, 'lib', 'photos', 'use-registered.ts'), 'utf8')).toMatch(/useEffect\(\(\) => \{\s*registerPhotoDevice\(\);/);
+    const start = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(start).toMatch(/if \(!picker \|\| running\.current\) return;/); // one pick at a time
+    expect(start).toMatch(/\.catch\(\(\) => setFailed\(true\)\)/);
+  });
+  it('[NS-01-R39][NS-01-R42] the Ready thumbnail is at most 88 pt tall from AX3 and shows the whole picture (contain, never cover)', () => {
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb).toMatch(/large \? THUMB_AX_MAX_HEIGHT_PT : THUMB_MAX_HEIGHT_PT/);
+    expect(thumb).toMatch(/fit="contain"/);
+    expect(thumb).not.toMatch(/aspectRatio=/);
+    expect(THUMB_AX_MAX_HEIGHT_PT).toBe(88);
+  });
+  it('[NS-01-R13a][NX-39-R36] the switcher snapshot shows no picture', () => {
+    // The phase mapping the hook uses: only 'active' draws a picture; inactive (the snapshot moment), background and anything
+    // else cover it. The mutant `usePictureCovered returns false` fails the source pins below.
+    expect(coveredForAppState('active')).toBe(false);
+    for (const phase of ['inactive', 'background', 'unknown', '']) expect(coveredForAppState(phase), phase).toBe(true);
+    const hooks = readFileSync(join(SRC, 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hooks).toMatch(/export function usePictureCovered\(\): boolean \{\s*const phase = useAppPhase\(\);\s*return coveredForAppState\(phase\);\s*\}/);
+    // Every Image goes through PhotoFrame, which draws the opaque box when covered, at once.
+    const frame = readFileSync(join(SRC, 'components', 'photos', 'photo-frame.tsx'), 'utf8');
+    expect(frame).toMatch(/const covered = usePictureCovered\(\);/);
+    expect(frame).toMatch(/if \(covered \|\| failed\) return <View [^>]*accessibilityLabel=\{label\} \/>;/);
+    for (const f of walk(join(SRC, 'components', 'photos')).filter((x) => /\.tsx$/.test(x) && !/photo-frame\.tsx$/.test(x))) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/<Image\b/);
+    }
+  });
+  it('[NS-01-R13b] no picture before unlock', () => {
+    // pictureCovered with the lock on and not yet unlocked covers a picture even in front. No caller passes `unlocked` today
+    // (surface.ts takes the always-blank ruling instead): a follow-up when App lock state is read here.
+    expect(pictureHidden({ lockOn: true, unlocked: false, phase: 'active' })).toBe(true);
+    expect(pictureHidden({ lockOn: true, unlocked: true, phase: 'active' })).toBe(false);
+    expect(pictureCovered('active', true, false)).toBe(true);
+  });
+  it('[NS-01-R59] no picker, no photo controls', () => {
+    // No native module: nothing registered, so no start, no Change, no Add; absent, never dead.
+    setPhotosForTest(true);
+    try {
+      registerPhotoPicker(null);
+      registerPending(null);
+      expect(photoStartShows(false)).toBe(false);
+    } finally {
+      setPhotosForTest(null);
+    }
+    const pick = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-pick.ts'), 'utf8');
+    expect(pick).toMatch(/ready: registered && getPhotoPicker\(\) !== null/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8')).not.toMatch(/disabled=/);
+  });
+  it('[NS-01-R59] the photo start draws only when a picker is registered: `show` is registered && photoStartShows() (mutant `show: true` fails)', () => {
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(hook).toMatch(/return \{ show: registered && photoStartShows\(\), failed, start \};/);
+    expect(hook).not.toMatch(/show: true/);
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    expect(home).toMatch(/\{photoStart\.show \? <PhotoStartButton /);
+  });
+  it('[NS-01-R3] Home passes the same prompt to Speak, Type and the photo start: the one `prompt.key` on screen, nothing else (mutant: another key fails)', () => {
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    // The photo start's plan input and the Speak and Type input are built from the prompt Home shows, never from the picture.
+    expect(home).toMatch(/usePhotoStart\(\(\) => startCapture\(\{ source: 'photo', prompt: \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \} \}\)\)/);
+    expect(home).toMatch(/const promptParam = \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \};/);
+    expect(home).toMatch(/startCapture\(\{ source: 'speak', prompt: promptParam \}\)/);
+    expect(home).toMatch(/startCapture\(\{ source: 'type', prompt: promptParam \}\)/);
+    // No prompt key literal reaches a capture start from Home.
+    expect(home).not.toMatch(/startCapture\(\{[^}]*key: ['"`]/);
+  });
+  it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
+    expect(src).toMatch(/variant="quiet"/);
+    expect(src).toMatch(/size="md"/);
+    expect(src).toMatch(/accessibilityHint=/);
+    expect(photos.capture.startButton).toBeTruthy();
+  });
+});
+
+describe('[NS-01-R22] the system picker is the only source', () => {
+  it('[NS-01-R22] no camera permission string, plugin, dependency or "Take a photo now" anywhere', () => {
+    const cfg = readFileSync(join(ROOT, 'app.config.ts'), 'utf8');
+    const pkg = readFileSync(join(ROOT, 'package.json'), 'utf8');
+    expect(cfg).not.toMatch(/NSCameraUsageDescription|expo-camera|launchCameraAsync/);
+    expect(pkg).not.toMatch(/expo-camera|react-native-vision-camera/);
+    for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/launchCameraAsync|requestCameraPermissions|Take a photo now/);
+    }
   });
 });
