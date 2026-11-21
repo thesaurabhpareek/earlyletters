@@ -165,7 +165,7 @@ describe('[B5-5] the sign-out seam', () => {
 
   it('and every settled run keeps only the signed-in account\'s file (a source match: the effect is not rendered here)', () => {
     const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
-    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*deleteBackupFilesExcept\(sessionUser\);/);
+    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) deleteBackupFilesExcept\(sweep\.keep\);/);
   });
 });
 
@@ -224,5 +224,50 @@ describe('[B5-5] a settled launch keeps only the signed-in account\'s backup fil
     expect(h.events).toEqual(['close:true']);
     expect(gone()).toBe(true);
     expect(() => rt.openBackupDbForTests(ASHA)).toThrow('backup_account_ended'); // a running pass cannot re-create it
+  });
+});
+
+describe('[B5-5] the sweep never runs on a Keychain read that failed or was unavailable', () => {
+  const U = '3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f';
+  const session = JSON.stringify({ user: { id: U } });
+
+  it('the read is typed: found, none (a successful read), unavailable (a throw)', async () => {
+    const { readStoredSession } = await import('../src/lib/auth/stored-session.logic');
+    expect(await readStoredSession(async () => session)).toEqual({ kind: 'found', userId: U });
+    expect(await readStoredSession(async () => null)).toEqual({ kind: 'none' });
+    expect(await readStoredSession(async () => { throw new Error('keychain locked'); })).toEqual({ kind: 'unavailable' }); // before first unlock, transient error
+  });
+
+  it('Keychain throws, before first unlock, or no Supabase client (unavailable): signed-out launch deletes nothing', async () => {
+    const { readStoredSession, backupSweepFor } = await import('../src/lib/auth/stored-session.logic');
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    put(h.disk, at(FILE), 64);
+    put(h.disk, at(`${FILE}-wal`), 64);
+    const reads = [await readStoredSession(async () => { throw new Error('locked'); }), { kind: 'unavailable' as const } /* no client */];
+    for (const read of reads) {
+      const plan = backupSweepFor(null, null, read);
+      expect(plan).toEqual({ run: false });
+      if (plan.run) deleteBackupFilesExcept(plan.keep);
+      expect(h.disk.files.has(at(FILE)) && h.disk.files.has(at(`${FILE}-wal`))).toBe(true);
+    }
+  });
+
+  it('a successful read with no session sweeps, and a failed delete is retried at the next settled run', async () => {
+    const { backupSweepFor } = await import('../src/lib/auth/stored-session.logic');
+    const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
+    put(h.disk, at(FILE), 64);
+    h.disk.undeletable.add(at(FILE));
+    const plan = backupSweepFor(null, null, { kind: 'none' });
+    expect(plan).toEqual({ run: true, keep: null });
+    if (plan.run) expect(deleteBackupFilesExcept(plan.keep).failed).toBe(1);
+    h.disk.undeletable.clear();
+    if (plan.run) deleteBackupFilesExcept(plan.keep);
+    expect(gone()).toBe(true);
+  });
+
+  it('a known user keeps theirs whatever the read said; a live sign-out sweeps even when the read was unavailable', async () => {
+    const { backupSweepFor } = await import('../src/lib/auth/stored-session.logic');
+    expect(backupSweepFor(U, null, { kind: 'unavailable' })).toEqual({ run: true, keep: U });
+    expect(backupSweepFor(null, U, { kind: 'unavailable' })).toEqual({ run: true, keep: null });
   });
 });
