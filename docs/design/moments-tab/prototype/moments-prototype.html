@@ -63,10 +63,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 h1,h2,h3,p{margin:0}
 
 /* ---------- stage and phone ---------- */
-#proto-strip{position:fixed;top:0;left:0;right:0;height:26px;display:flex;align-items:center;justify-content:center;gap:12px;font:500 12px/1 var(--sans);color:#5b544b;background:#F1E6DC;z-index:50;padding:0 8px;text-align:center}
+#proto-strip{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:center;gap:12px;font:500 12px/1 var(--sans);color:#5b544b;background:#F1E6DC;z-index:50;padding:0 8px;text-align:center}
 [data-theme=dark] #proto-strip{background:#2a221b;color:#cfc5b8}
-#proto-strip button{font:600 12px/1 var(--sans);color:inherit;text-decoration:underline;min-height:26px;padding:0 6px}
-#stage{position:fixed;inset:26px 0 0 0;display:flex;align-items:center;justify-content:center;gap:32px;padding:12px}
+#proto-strip button{font:600 12px/1 var(--sans);color:inherit;text-decoration:underline;min-height:44px;min-width:44px;padding:0 10px}
+#stage{position:fixed;inset:44px 0 0 0;display:flex;align-items:center;justify-content:center;gap:32px;padding:12px}
 #phone-wrap{flex:none;position:relative}
 #phone{position:absolute;left:0;top:0;width:390px;height:844px;transform-origin:0 0;border-radius:56px;background:var(--bg);
   box-shadow:0 0 0 10px #1a1815,0 0 0 11px #3a3631,0 30px 60px rgba(0,0,0,.25);overflow:hidden;color:var(--text)}
@@ -83,13 +83,13 @@ h1,h2,h3,p{margin:0}
 
 /* mobile: the phone fills the viewport */
 @media (max-width:560px){
-  #stage{inset:26px 0 0 0;padding:0;display:block}
+  #stage{inset:44px 0 0 0;padding:0;display:block}
   #phone-wrap{width:100%!important;height:100%!important}
   #phone{width:100%!important;height:100%!important;transform:none!important;border-radius:0;box-shadow:none}
   #statusbar,#island{display:none}
   .tabpane{top:env(safe-area-inset-top,0px)}
   #home-ind{display:none}
-  #panel{position:fixed;left:0;right:0;bottom:0;top:26px;z-index:90;border-radius:0}
+  #panel{position:fixed;left:0;right:0;bottom:0;top:44px;z-index:90;border-radius:0}
   #panel[data-open="0"]{display:none}
 }
 @media (min-width:561px){ #panel-open{display:none} #panel-close{display:none} }
@@ -195,6 +195,7 @@ h1,h2,h3,p{margin:0}
 .scrim{position:absolute;inset:0;background:var(--scrim)}
 .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;box-shadow:var(--sheet-shadow);padding:0 20px calc(26px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto;scrollbar-width:none}
 .grab{height:28px;display:grid;place-items:center;touch-action:none;cursor:grab;position:sticky;top:0;z-index:3;background:var(--bg)}
+.grab::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}
 .grab::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--controlBorder);opacity:.6}
 .doors{margin:14px 0 8px;display:grid;gap:12px}
 .doors dt{color:var(--muted)}
@@ -324,9 +325,9 @@ h1,h2,h3,p{margin:0}
 #panel h3{font:600 12px/16px var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
 #panel p{font:400 13px/18px var(--sans);color:var(--muted);margin:0 0 6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{min-height:36px;padding:0 12px;border-radius:9999px;font:500 13px/1 var(--sans);box-shadow:inset 0 0 0 1px var(--controlBorder)}
+.chips button{min-height:44px;padding:0 12px;border-radius:9999px;font:500 13px/1 var(--sans);box-shadow:inset 0 0 0 1px var(--controlBorder)}
 .chips button[aria-pressed=true]{background:var(--accentSoft);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
-.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;font:500 14px/18px var(--sans)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font:500 14px/18px var(--sans)}
 .sw input{appearance:none;width:46px;height:28px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--controlBorder);position:relative;cursor:pointer;flex:none;margin:0}
 .sw input::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:11px;background:var(--controlBorder);transition:transform 150ms linear}
 .sw input:checked{background:var(--accentSoft);box-shadow:inset 0 0 0 1.5px var(--accent)}
@@ -434,7 +435,7 @@ h1,h2,h3,p{margin:0}
   </div>
 
   <aside id="panel" data-open="0" aria-label="Prototype controls">
-    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Prototype controls</h2><button id="panel-close" class="textbtn" style="min-height:36px">Close</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Prototype controls</h2><button id="panel-close" class="textbtn" style="min-height:44px">Close</button></div>
     <p>Examples only. Every picture is drawn. The family is the fictional Asha. Nothing here is saved or sent.</p>
     <h3>Access state of the tab</h3>
     <div class="chips" id="states"></div>
@@ -1421,7 +1422,7 @@ function updateGlass(){
 function fit(){
   const wrap=$("#phone-wrap"), phone=$("#phone");
   if(window.innerWidth<=560){ wrap.style.width=wrap.style.height=""; phone.style.setProperty("--k","1"); return; }
-  const k = Math.min(1,(window.innerHeight-26-24-22)/844);
+  const k = Math.min(1,(window.innerHeight-44-24-22)/844);
   wrap.style.width = (390*k)+"px"; wrap.style.height=(844*k)+"px"; phone.style.transform="scale("+k+")"; phone.style.setProperty("--k",k);
 }
 window.addEventListener("resize",fit);

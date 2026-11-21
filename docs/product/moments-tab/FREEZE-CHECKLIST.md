@@ -113,7 +113,7 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 
 ## 2. Harness hand-off summary
 
-Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (33 items in five waves, about 8,560 changed lines ASSUMED; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
+Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (41 items in five waves, about 10,130 changed lines ASSUMED, computed by script; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
 
 ## 3. Proposed backlog and claim entries (text only)
 

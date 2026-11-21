@@ -1,6 +1,6 @@
 # Proposal: a second `ios-compile` leg with the photo-moments flag (F2) on, and a prebuild scan of the F2-off leg
 
-Status: proposal, 21 Nov 2026. Docs only. Nothing under `.github/` is edited by this file. Source: challenger read CH-ENG-4 of the Moments tab spec (`docs/product/prd/28-moments-tab.md` R222, R277, PR 11, PR 25). Needed only once PR 9 (`scribe-library`) is about to merge; until then there is no Swift to compile.
+Status: proposal, 21 Nov 2026. Docs only. Nothing under `.github/` is edited by this file. Source: challenger read CH-ENG-4 of the Moments tab spec (`docs/product/prd/28-moments-tab.md` R222, R277, PR 11c, PR 25a and PR 25b). Needed only once PR 9 (`scribe-library`) is about to merge; until then there is no Swift to compile.
 
 ## Why
 
@@ -9,7 +9,7 @@ Status: proposal, 21 Nov 2026. Docs only. Nothing under `.github/` is edited by 
 ## What to add (a matrix, `f2: [off, on]`, on the `compile` job only)
 
 1. A matrix on the `compile` job: `strategy: { fail-fast: false, matrix: { f2: [off, on] } }`. The `launch` job is unchanged.
-2. After the step "Build env from the eas.json testflight profile", one more step that overrides the flag for the leg (the names are those of spec 19.2; the config plugin of PR 11 reads them):
+2. After the step "Build env from the eas.json testflight profile", one more step that overrides the flag for the leg (the names are those of spec 19.2; the config plugin of PR 11c reads them):
 
 ```yaml
       - name: Photo-moments flag for this leg
@@ -53,7 +53,7 @@ Status: proposal, 21 Nov 2026. Docs only. Nothing under `.github/` is edited by 
 
 ## Cost
 
-One more macOS job per native PR (macOS runners are free on this public repository, see the header of `ios-compile.yml`), roughly doubling that job's minutes. PR 25 of the Moments plan (the release read-out guard) does not depend on this leg, but PR 11 and PR 9 should not merge without it green.
+One more macOS job per native PR (macOS runners are free on this public repository, see the header of `ios-compile.yml`), roughly doubling that job's minutes. PR 25a and PR 25b of the Moments plan (the release read-out guard, photo line and library line) do not depend on this leg, but PR 11b, PR 11c and PR 9 should not merge without it green.
 
 ## Who pastes
 
