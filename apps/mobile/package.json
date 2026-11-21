@@ -88,7 +88,7 @@
     "preflight:production": "node scripts/preflight-production.mjs",
     "licences:generate": "node ../../scripts/licences/generate.mjs",
     "licences:verify": "node ../../scripts/licences/verify-shipped.mjs",
-    "test": "vitest run && vitest run --config vitest.component.config.ts",
+    "test": "vitest run",
     "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "e2e:web:index": "node e2e-web/support/build-index.mjs",
     "e2e:web:pack": "bash e2e-web/support/pack-journey.sh"

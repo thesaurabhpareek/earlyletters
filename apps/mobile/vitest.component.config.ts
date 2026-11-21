@@ -3,7 +3,7 @@
  * Component tests (BL-278): one real component rendered to markup in Node, no device, no Jest.
  * react-native is aliased to react-native-web (already an app dependency), and the native seams a component reaches
  * (reanimated, uniwind, expo fonts, the a11y hooks) are stood in by test/component/setup.tsx. Files: test/component/*.test.tsx.
- * Kept apart from vitest.config.ts so no existing test sees the alias. `npm test` runs both.
+ * Kept apart from the node project so no existing test sees the alias; vitest.config.ts lists both as projects, so one `vitest run` covers both.
  */
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
@@ -18,6 +18,7 @@ export default defineConfig({
     ],
   },
   test: {
+    name: 'component',
     include: ['test/component/**/*.test.tsx'],
     environment: 'node',
     setupFiles: ['test/component/setup.tsx'],
