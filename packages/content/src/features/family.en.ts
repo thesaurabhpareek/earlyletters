@@ -196,7 +196,7 @@ export const familyCopy = {
     already_member: "You're already part of this book.",
     not_found: 'That link does not open an invite. Check it and try again.',
     not_parent: "Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",
-    rate_limited: "You've reached today's limit for invites. You can send more tomorrow.",
+    rate_limited: "You've reached today's limit for invites. You can send more in a day.",
     consent_needed: 'Finish setting up your account first.',
     book_deleted: "This book isn't available.",
     signed_out: 'Sign in again to continue.',
