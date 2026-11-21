@@ -5743,7 +5743,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A00.
 
 #### BL-1236 Analytics contract types: tier, basics policy, gate decision (ER-A01)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1235 (it adds the barrel exports).
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: contracts.ts with BasicsPolicy, EventTier, GateDecision, AnalyticsGate; the barrel exports what stream B imports; frozen after wave 0. Never: entry text, transcript, audio, child name, autocapture, replay.
 - Done when: typecheck passes and a contracts test over a fixture row passes; the test that every shipped registry row carries a tier is BL-1255's.
@@ -5766,8 +5766,8 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 #### BL-1239 Anonymous install id minted on first allowed event, retired on off (ER-A04)
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1236.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
-- Scope: Lowercase uuid, minted only when the gate first allows an event, never an account, device or advertising id, bootstrapped into the SDK with no identify; retire on off (cap 20), new id on a later on. Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: tests: mint on first allowed event, none under ask_first before a yes, retire on off, new id on on, 21st toggle recorded. Privacy reviews. The DATA_CLASSIFICATION.md row for the new on-device store (install id, retired-id list, SDK queue) is drafted by privacy and merged by the founder (docs/legal) before the flag goes on.
+- Scope: Lowercase uuid, minted only when the gate first allows an event, never an account, device or advertising id, bootstrapped into the SDK with no identify; retire on off (cap 20), new id on a later on. At the cap the oldest retired id is never silently dropped: the cap triggers an analytics-forget call for that id, and the id leaves the list only after it is acknowledged (privacy to confirm this behavior). Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: tests: mint on first allowed event, none under ask_first before a yes, retire on off, new id on on, 21st toggle forgets the oldest retired id before removing it and keeps it in the list if the call is not acknowledged. Privacy reviews. The DATA_CLASSIFICATION.md row for the new on-device store (install id, retired-id list, SDK queue) is drafted by privacy and merged by the founder (docs/legal) before the flag goes on.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A04.
 
 #### BL-1240 PostHog adapter in one module with every SDK option pinned (ER-A05)
@@ -5781,7 +5781,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238, BL-1240.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: Gate decision, V11, V12, V13, rebuild properties from the registry list plus the ten allowed dollar keys ($app_version, $app_build, $os_name, $os_version, $device_type, $lib, $lib_version, $session_id, $process_person_profile, $geoip_disable), count drops by reason only. Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: positive and negative self-tests for V11 to V13; a non-basics event is dropped even if a caller bypasses the helper.
+- Done when: positive and negative self-tests for V11 to V13; a non-basics event is dropped even if a caller bypasses the helper. Privacy reviews.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A06.
 
 #### BL-1242 Static validators V1 to V10 and V16, registry row fields reconciled (ER-A07)
@@ -5801,8 +5801,8 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 #### BL-1244 Off switch, withdrawal and Erase empty the queue, the id and the SDK file (ER-A09)
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1240.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
-- Scope: optOut, reset, empty the SDK queue, retire the id, on off and on Erase everything, sending nothing. Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: unit test of the call order; named device check that no PostHog file in the app container keeps the id or a queued event after off and after Erase (qa adds the row to the device test sheet). Privacy reviews; the on-device store row in DATA_CLASSIFICATION.md is the same founder-merged row as BL-1239.
+- Scope: optOut, reset, empty the SDK queue, retire the id, on off and on Erase everything, sending nothing. Erase must not clear the retired-id list: those ids are what the forget call needs. forgetPending is the retry marker; it stays set until the forget call is acknowledged, and a partial acknowledgement keeps the unacknowledged ids in the list. Never: entry text, transcript, audio, child name, autocapture, replay.
+- Done when: unit test of the call order; a test that Erase leaves the retired-id list and forgetPending in place, and that a partial acknowledgement keeps only the unacknowledged ids; named device check that no PostHog file in the app container keeps the id or a queued event after off and after Erase (qa adds the row to the device test sheet). Privacy reviews; the on-device store row in DATA_CLASSIFICATION.md is the same founder-merged row as BL-1239.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A09.
 
 #### BL-1245 Region, host and key checks (ER-A10)
@@ -5816,7 +5816,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1235, BL-1240.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: Run the PII and property checks on every kept dollar field of an exception; unknown class becomes other; cap 5 per foreground session and one per class and top frame; reportFault takes a closed code; autocapture limited to uncaught and unhandled, console empty, nativeCrashes false; crash capture stays off unless the founder says yes (FH-13). Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: tests for each point with Asha strings; no message text of any exception or chained cause leaves.
+- Done when: tests for each point with Asha strings; no message text of any exception or chained cause leaves. Privacy reviews.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A11.
 
 #### BL-1247 Exception canary and a real exception payload fixture (ER-A12)
@@ -5844,7 +5844,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: build_kind and is_internal on every event; one local switch, off and unreachable in a store install (FH-10). Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: both present on every event; the switch is unreachable in a store build.
+- Done when: both present on every event; the switch is unreachable in a store build. DATA_CLASSIFICATION.md row for the persisted tester switch (on-device flag, no content; privacy confirms class and level), in the same PR or the founder-merged row of BL-1239.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A15.
 
 #### BL-1251 Offline, flush timer and client caps (ER-A16)
@@ -5956,7 +5956,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Status: blocked (founder hands: FH-4 wording, FH-11 switch). Mode: agent. Owner: mobile engineer. Milestone: before the production readiness build. Size: M. Depends on: BL-1238.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: A switch in Settings, Privacy; it must exist whenever the resolved policy is collect_by_default. Under that policy the disclosure is shown before the first event: a persisted disclosure_shown flag with the text version, and the gate sends nothing until it is set (counsel must confirm that this suffices). The disclosure is a placeholder key marked CONTENT-NEEDED. Shown, Records, Never and Decline lines in the PR body, each marked counsel must confirm. Never: entry text, transcript, audio, child name, autocapture, replay.
-- Done when: tests: switch exists under collect_by_default, off persists across relaunch, no consent sheet under that policy, no event before the disclosure flag, a code-matching test that each item the Never line promises maps to a V7 banned token or a global NOT rule and that the Decline line holds (off makes dropped_user_off), content rules pass.
+- Done when: tests: switch exists under collect_by_default, off persists across relaunch, no consent sheet under that policy, no event before the disclosure flag, a code-matching test that each item the Never line promises maps to a V7 banned token or a global NOT rule and that the Decline line holds (off makes dropped_user_off), content rules pass. DATA_CLASSIFICATION.md row for the persisted off-switch state and disclosure_shown flag with text version (on-device settings; privacy confirms class and level), in the same PR.
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-B13.
 
 #### BL-1267 Ask sequencer and consent sheet only under ask_first (ER-B14)
