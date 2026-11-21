@@ -10,6 +10,12 @@ Labels: **[V]** read in this repo or run in the local test database on 21 Nov. *
 
 **What counts: 35 files, not 36.** There is no File 28. Files 3 to 27 are 25 files and Files 29 to 38 are 10, so the run applies 35 files on top of Files 1 and 2, and the folder holds 37 in all [V: `git ls-tree origin/develop supabase/migrations/`, 37 on 21 Nov].
 
+**This run is not harmless to the app on the live project.** File 5 turns on the server consent gate. From the moment it applies, the app on `early-letters` answers `SCCON` for everyone, you included, until the policy versions are published and your acceptances are recorded (Part E, point 5). Decide that before you press Approve, not after. [V: APPLY.md Step 8]
+
+**A run may already be waiting.** Every merge of a migration to `develop` starts a "deploy to staging" run that waits for approval (DEPLOY.md, "Tagging flow" steps 1 and 2); Files 36 to 38 merged recently, so GitHub is probably holding one now. Approving that one applies the same 35 files but skips the "manual run is on develop" job and could happen before Parts A and B are done. In GitHub > Actions > Deploy database, if a run shows "Waiting", leave it unapproved until Part B is finished, then approve exactly one run (either that one or a manual one from C1; if you start a manual one, cancel the waiting one). Never approve two. [U] whether one is waiting.
+
+**The job has a 15 minute limit** (`timeout-minutes: 15`, covering the push and the smoke) [V: `deploy-db.yml` line 119]. If 35 files take longer, the run is cancelled mid-file: that file rolls back, earlier files stay applied. A run cancelled at about 15 minutes is not a failed migration; run Part C again.
+
 **You are told what to paste back.** Numbers, true or false, file names, and error codes only. Never a row, a letter, a name, an email, a key, a URL with a password in it, or the pepper. If a screen shows any of those, crop it out before you share it.
 
 **The approval comes before the dry run.** The staging job in `.github/workflows/deploy-db.yml` waits for your approval first. After you approve, it runs the dry run and the real push back to back, with no pause for you in between [V: lines 120 to 164]. So every check in Part A happens before you press Approve, not after reading the dry run. The dry run is still useful: if it fails (for example, because the history looks wrong), nothing has been applied.
@@ -35,12 +41,12 @@ Labels: **[V]** read in this repo or run in the local test database on 21 Nov. *
 Only one hosted project exists today: `early-letters` (project ref `fpkxggtzwoumdghwzlsl`, us-west-1) [V: DEPLOY.md; APPLY.md]. DEPLOY.md still names `scribe-staging` and `scribe-prod`, which do not exist yet. So today the word "staging" means: the database whose connection string is stored in the GitHub Environment `staging`. The dashboard cannot tell you that, so you set it yourself and then check it:
 
 1. GitHub > repository > Settings > Environments > `staging`. Look at the list of secret names (names only; GitHub never shows values). You need all four: `SUPABASE_DB_URL_STAGING`, `SUPABASE_STAGING_URL`, `SUPABASE_STAGING_PUBLISHABLE_KEY`, `SUPABASE_STAGING_PROJECT_REF`. Check that "Deployment branches" is `develop` only and that you are a required reviewer.
-2. Re-save `SUPABASE_DB_URL_STAGING` from the project itself, so there is no doubt where it points: Supabase dashboard > project `early-letters` > Connect > **Session pooler** (port 5432, not 6543), copy the string, put your database password in it (percent-encode special characters), and paste it into the GitHub secret (Update secret). Do this in the browser, never in chat. The user part of the string reads `postgres.<project ref>`: the ref must be `fpkxggtzwoumdghwzlsl`. [U] whether it already points there.
-3. Open the Environment `db-production`. Its secret `SUPABASE_DB_URL_PROD` must **not** point at `early-letters` while `early-letters` is your staging. If it does, or if you are unsure, stop: staging and production would be the same database, and the production tag in Part H would hit the same data a second time.
-4. Tell the two apart afterwards by this one fact: staging is the project whose ref equals `SUPABASE_STAGING_PROJECT_REF`; production is the project whose ref equals the one inside `SUPABASE_DB_URL_PROD`. Supabase's dashboard has no built-in "this is staging" label that this repo relies on [U].
+2. Re-save `SUPABASE_DB_URL_STAGING` from the project itself, so there is no doubt where it points: Supabase dashboard > project `early-letters` > Connect > **Session pooler** (port 5432, not 6543), copy the string, put your database password in it (percent-encode special characters), and paste it into the GitHub secret (Update secret). You need the database password for this; it is in your password manager (DEPLOY.md, "Founder steps", 1.4). If you do not have it, do not reset it yet: resetting the database password may break the Edge Functions and the purge worker if they use it [U], so tell the data architect before you do. Do this in the browser, never in chat. The user part of the string reads `postgres.<project ref>`: the ref must be `fpkxggtzwoumdghwzlsl`. [U] whether it already points there.
+3. Make production impossible by accident. You cannot read a secret's value on GitHub, only its name, so do not try to compare. The only Supabase project is `early-letters`. **If there is no separate production project, then staging IS the live project, with real letters in it.** Say so plainly to yourself before Part C: every check in this sheet is then protecting live data. Next, GitHub > repository > Settings > Environments > `db-production`. Under "Environment secrets": if `SUPABASE_DB_URL_PROD` is listed, click the trash icon next to it and confirm (it cannot be read back, so deleting is the only certain way). With no such secret, a production run stops at its "Check the secret exists" step (`deploy-db.yml` line 259). Re-save it only later, from a different project's Connect > Session pooler string, when that project exists (Part H).
+4. Staging is therefore: the project that the `staging` secrets were saved from in point 2. Supabase's dashboard has no built-in "this is staging" label that this repo relies on [U].
 
-Paste back: "A1 done", the four secret names present (yes or no), and the project ref only if it is not `fpkxggtzwoumdghwzlsl`.
-Stop if: a name is missing, the ref differs, or `db-production` points at `early-letters`.
+Paste back: "A1 done", the four secret names present (yes or no), whether `SUPABASE_DB_URL_PROD` is now gone (yes or no), and the project ref only if it is not `fpkxggtzwoumdghwzlsl`.
+Stop if: a name is missing, the ref differs, or `SUPABASE_DB_URL_PROD` is still listed after you tried to delete it.
 
 ### A2. The folder holds exactly 37 files
 
@@ -52,6 +58,10 @@ git fetch origin develop && git ls-tree --name-only origin/develop supabase/migr
 
 Expect `37`. Paste back the number. Stop if it is higher: a migration newer than this sheet is on `develop` and the run would apply it too. Ask Karma to extend the sheet first.
 
+Also repeat this count right before you approve in C2: the job applies `develop`'s tip at the moment of approval (`deploy-db.yml` line 132), so a migration merged in between would be applied too.
+
+Also decide now, in A: File 5's consent gate will shut the live app out until policy versions are published (Part 0, Part E point 5). If you are not ready for that, stop here.
+
 ### A3. Is the workflow's Run button there
 
 GitHub > Actions > left list > **Deploy database**. A grey **Run workflow** button should be at the top right of the run list [U: the button appears only once the workflow file is on the default branch, DEPLOY.md]. Stop if there is no button; ask Karma (the fallback is a push from your computer, which needs its own sheet).
@@ -59,7 +69,7 @@ GitHub > Actions > left list > **Deploy database**. A grey **Run workflow** butt
 ### A4. A backup you can go back to
 
 Supabase dashboard > Database > Backups. Confirm a daily backup from the last 24 hours exists. If the page offers point in time recovery, note whether it is on [U: Pro plan only]. Paste back: the time of the newest backup, and "PITR on" or "PITR off".
-Stop if there is no backup from the last 24 hours. A restore is the only true undo for Files 26, 33, 34, 35 and 36, which are forward-fix only (Part I).
+Daily backups need a paid plan [U]. Stop if there is no backup from the last 24 hours, unless you take one yourself: on your Mac, with the Supabase CLI linked to the project, `supabase db dump --linked -f backup-before-catchup.sql` (APPLY.md "Before you start"; keep the file outside the repo and out of chat). A restore is the only true undo for Files 25, 26, 33, 34, 35 and 36, which are forward-fix only (Part I); Files 20, 21 and 24 are also "prefer forward" there.
 
 ### A5. What the project holds today (read-only)
 
@@ -75,7 +85,7 @@ Stop if: there are other rows (staging may be ahead of the markdown: the cdo pac
 
 ### A6. The numbers that decide whether a guard will stop the run
 
-New query, paste this whole box, run it. Read-only. It is the "Before counts" of APPLY.md for Files 4, 6, 22, 23 and 33, plus the hosted checks a), b) of "Hosted checks before the first apply". It was run against a local database built from Files 1 and 2 and answered as shown in the last column [V].
+New query, paste this whole box, run it. Read-only. It is the "Before counts" of APPLY.md for Files 4, 6, 22, 23 and 33, plus the hosted checks a), b) of "Hosted checks before the first apply". It was run in PGlite (the repo's own test harness) built from Files 1 and 2 on 21 Nov. Rows 3 to 11 answered as in the last column. Three things differ locally by construction and are not evidence for the hosted project: row 1 answers 18 (PGlite, not Postgres 17), row 12 answers `true` (the harness presets the pepper), and the index check below shows only `objects_pkey` (the harness stubs Storage) [V].
 
 ```sql
 select n, what, got, expect from (values
@@ -90,7 +100,7 @@ select n, what, got, expect from (values
  (9,  'File 22 guard: held_drafts table already exists', (to_regclass('public.held_drafts') is not null)::text, 'false'),
  (10, 'Migrating role sees every storage object (BYPASSRLS)', (select rolbypassrls from pg_roles where rolname = current_user)::text, 'true'),
  (11, 'Automatic grants on new objects: tables, sequences, functions', (select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELECT') || '|' || count(*) filter (where d.defaclobjtype = 'S' and a.privilege_type = 'USAGE') || '|' || count(*) filter (where d.defaclobjtype = 'f' and a.privilege_type = 'EXECUTE') from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole)), '0|0|0 or 3|3|3'),
- (12, 'Consent pepper already long enough (value never shown)', (char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32)::text, 'false before Step 4, true after')
+ (12, 'Consent pepper already long enough (value never shown)', (char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32)::text, 'false before Part B, true after')
 ) as t(n, what, got, expect) order by n;
 ```
 
@@ -144,18 +154,26 @@ If you have no pepper yet for this project, make one. This writes it to a file o
 umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt"
 ```
 
-Expect `65` (64 characters and a newline). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file as the second copy.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file as the second copy.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
 ```bash
-umask 077; mkdir -p "$HOME/el-secrets"; read -rs -p "Paste the pepper, then press Return: " P; echo; printf '%s\n' "$P" > "$HOME/el-secrets/consent-pepper-early-letters.txt"; unset P; wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt"
+umask 077; mkdir -p "$HOME/el-secrets"; printf 'Pepper: '; read -rs P; echo; printf '%s\n' "$P" > "$HOME/el-secrets/consent-pepper-early-letters.txt"; unset P; wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt"
 ```
 
-`read -rs` hides what you paste. Expect `65` again.
+`read -rs` hides what you paste, and this form is meant to work in both zsh (the Mac default) and bash (tested here in bash only; zsh was not available [U]). The pepper must be at least 32 characters. The number printed is its length plus one: a 64 character pepper prints `65`, and any pepper you already have prints its length plus 1, at least `33`. If it prints less than `33`, the pepper is too short: stop.
 
 ### B2. Put it into the database, without typing it
 
+0. **First check that the database will not log the line you are about to run.** Dashboard > SQL Editor > New query, run each of these (they show settings, not data):
+   ```sql
+   show log_statement;
+   ```
+   ```sql
+   show log_min_duration_statement;
+   ```
+   Expect `none` and `-1`. The smoke accepts `ddl` for the first (`scripts/ops/lib/smoke.ts` line 423), but `ddl` would write the `alter database` statement, pepper included, into the Postgres logs. If `log_statement` is anything but `none` (`ddl`, `mod`, `all`), or the second is not `-1`, **stop**: do not run the pepper line. Turn logging off first (docs/ops/SECURITY.md section 4; ask Supabase support if the dashboard has no switch [U]), or tell the data architect.
 1. Copy the file's contents to the clipboard (macOS), without printing them:
    ```bash
    tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
@@ -165,7 +183,7 @@ umask 077; mkdir -p "$HOME/el-secrets"; read -rs -p "Paste the pepper, then pres
    alter database postgres set app.consent_pepper = '';
    ```
    Run it. Expect "Success. No rows returned".
-3. Clear the clipboard and remove the secret from the editor:
+3. Clear the clipboard and remove the secret from the editor. Before step 1, also turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy. If you did not, open each manager and delete the entry that holds the pepper. Then:
    ```bash
    printf '' | pbcopy
    ```
@@ -174,7 +192,7 @@ umask 077; mkdir -p "$HOME/el-secrets"; read -rs -p "Paste the pepper, then pres
    ```sql
    select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
    ```
-   Expect `true`. A database setting reaches new connections only [U]; if the editor still says `false`, close the tab, open a new query and run it again.
+   Expect `true`. A database setting reaches new connections only [U]; if the editor still says `false`, close the tab, open a new query and run it again. Connections already open in the pooler keep the old value until they are recycled [U], so wait a few minutes (or restart the project from the dashboard, your decision) before the first account deletion.
 
 Paste back: `pepper_ready = true`. Never the value, never the file.
 Stop if: still `false` after a fresh tab. Do not run Part C.
@@ -187,7 +205,7 @@ GitHub > Actions > **Deploy database** > **Run workflow** > branch **develop** >
 
 ### C2. Approve
 
-Click Review deployments > tick `staging` > Approve and deploy. This is the moment the apply starts. It is your hand, and the only one in this part.
+Repeat the A2 count first. Then click Review deployments > tick `staging` > Approve and deploy. This is the moment the apply starts. It is your hand, and the only one in this part.
 
 ### C3. Watch, and read the summary
 
@@ -211,7 +229,7 @@ A red smoke fails the job after the push; the files are applied anyway [V: DEPLO
 
 ## Part D. Verify (read-only)
 
-Dashboard > SQL Editor > New query. Paste this whole box, run it, and read the `got` and `expect` columns side by side. It ran against a local database with all 37 files applied: every row matched, except row 27, which needs the hosted role `supabase_auth_admin` and so is [U] until you run it [V].
+Dashboard > SQL Editor > New query. Paste this whole box, run it, and read the `got` and `expect` columns side by side. It ran in PGlite (the repo's test harness) with all 37 files applied, a stub history table of 37 rows and a stub role `supabase_auth_admin` created after the files, with File 36's hook grant run by hand (the file grants it only `if exists` that role, `20261121000000` line 188): all 28 rows matched, row 27 included. Row 16 locally listed three policies. Only the hosted answer is [U], most of all row 27, because the real role and the real history table are Supabase's own [V].
 
 ```sql
 select n, what, got, expect from (values
@@ -293,7 +311,7 @@ These are database settings, not migrations, so CI does not apply them.
    select cron.schedule('scribe-sync-housekeeping', '43 * * * *', $$ select public.sync_housekeeping(); $$);
    ```
    Each answers a job number. The purge-worker jobs (`scribe-purge-worker`, `scribe-purge-worker-daily`) come from `supabase/cron/purge-worker.sql` and need the `purge-worker` function deployed and two Vault secrets; follow `docs/ops/runbooks/purge-failing.md` "Install or reinstall the schedule" [U: not run here].
-2. **Daily retention for File 36.** `ops` schedules `select public.ops_new_device_retention();` daily. Schedule it the same way when the new-device work is switched on (Part G, row 5), not before.
+2. **Daily retention for File 36.** The file expects `select public.ops_new_device_retention();` to run daily. There is no schedule in the repo yet: this sheet gives none, and it is deferred to the time the new-device work is switched on (Part G, row 5). The data architect supplies the command then.
 3. **Validate the rules File 4 and File 6 added as NOT VALID**, only after Part A6 rows 5 and 8 were 0 (APPLY.md Steps 5 and 12). Otherwise leave them and tell the data architect the numbers.
 4. **Leave these off:** `app.contributors_enabled`, `app.family_share_consent_required`, `app.consent_fields_required` [V: APPLY.md, steps 22 and File 29].
 5. **Consent gate warning for your own phone.** File 5 turns on the server consent gate: from that moment no letter, book or setting is accepted from anyone without a current Terms acceptance (with the age attestation) and a current sensitive-data acceptance. Until `policy_versions` has published rows (APPLY.md Step 8) and your own acceptances are recorded, the app on `early-letters` will answer `SCCON`. Publishing the text is your decision with counsel; it is not part of this run [V: APPLY.md Step 8].
@@ -307,7 +325,7 @@ These are database settings, not migrations, so CI does not apply them.
 | G2. File 33 `photo_path` count | Letters with a picture path | Caught in A6 row 4, before approving. The file itself does not refuse; it closes the door to new picture paths and leaves old ones readable | If not 0, do not run. Tell the data architect; those rows need review |
 | G3. Lock timeout `55P03` on Files 23 and 26 | The file waits at most 5 seconds for an exclusive lock on `entries` (File 23) or `storage.objects` (File 26) | Push stops with "canceling statement due to lock timeout", SQLSTATE `55P03`. Nothing changed and nothing is recorded for that file | Wait ten minutes, close the app on every phone, run Part C again. It resumes at that file. Three `55P03` in a row: stop and ask |
 | G4. File 30 pepper | `finalize_account_deletion` refuses (`55000`, nothing changed) without a 32-character pepper | Not at apply. At the first account deletion, and as a red smoke line `consent pepper`, and the alert `pepper_missing` from the purge worker | Part B again; then re-check `pepper_ready`. Never set a different value later |
-| G5. Re-run refusals | Files 13, 14, 15, 20, 21, 22, 23, 24, 25, 35, 36 refuse a second run (`55000`) | Only if the history row is missing while the objects exist | Stop. Do not rerun by hand. The data architect reads A5 and the Verify table and decides |
+| G5. Re-run refusals | Most files refuse a second run (`55000`): at least 13, 14, 15, 17, 20, 21, 22, 23, 24, 25, 27, 29, 30, 31, 33, 35 and 36 [V: "already applied" in the files] | Only if the history row is missing while the objects exist | Stop. Do not rerun by hand. The data architect reads A5 and the Verify table and decides |
 | G6. File 25 in the same run | Without File 25 every table answers `42501` to the app | Verify rows 5, 6 and 7 | Files 3 to 24 are applied but the app is shut. Run Part C again; if File 25 itself failed, paste the error |
 | G7. Photo-path trigger `SCPHO` (File 33) | A new picture path is refused by the server | After the run, from a build with photos on | Expected. The server is closed to pictures on purpose until the photo design ships |
 
@@ -343,7 +361,7 @@ All founder steps in the dashboard and SQL Editor; none is proved by the test su
 
 Not part of today. Written down so the order is not lost.
 
-1. Preconditions: Part D green on staging; Part E 6 green; the record PR (Part J) merged; Files 3 to 38 reached `main` (the tag job refuses a commit that is not on `main`) [U whether they have]; `SUPABASE_DB_URL_PROD` set on `db-production` and pointing at a different database from staging (A1 point 3); a backup and the same Part A and B repeated for production, with a **different** pepper.
+1. Preconditions: Part D green on staging; Part E 6 green; the record PR (Part J) merged; Files 3 to 38 reached `main` (the tag job refuses a commit that is not on `main`) [U whether they have]; `SUPABASE_DB_URL_PROD` re-saved from the new production project (A1 point 3); a backup and the same Part A and B repeated for production, with a **different** pepper.
 2. Tag a commit on `main` and push it [V: DEPLOY.md "Tagging flow"]:
    ```bash
    git fetch origin
@@ -406,4 +424,5 @@ After Part D is green, the data architect opens a PR that adds the 35 file names
 - [U] The Custom Access Token hook's menu wording, `auth.sessions` DELETE on hosted (H1), and the A3 and A4 proofs.
 - [U] Whether Files 3 to 38 are on `main` yet (production tag).
 - [U] The purge-worker cron's Vault secrets and the `purge-worker` function's deploy state.
-- [V but local only] The two big read-only queries ran against a local Postgres built from the repo's migrations, not against the hosted project; row 27 of Part D could not be proved locally.
+- [V but local only] The two big read-only queries ran in PGlite (the repo harness), not against the hosted project. Locally row 1 of A6 answers 18, row 12 answers true and the index check shows only `objects_pkey`; Part D passes all 28 rows including row 27 with a stub `supabase_auth_admin` role. The hosted answers are [U].
+- [U] That pooled connections pick up the pepper after a few minutes.
