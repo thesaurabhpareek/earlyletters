@@ -18,7 +18,8 @@
  *  4. a session exists                   -> the account is asked first (NX-36-S17, `newPhone`): `openingBook`, `slowBook`,
  *     `offlineBook` or `noBookHere` until the account says it has no book; `childStep` only for `new`. A signed-in
  *     parent is never sent back to sign-in (R4), and never shown "Who is this book for?" while the book may be on its
- *     way. Step 2 still wins once the book is on the phone, except that `newPhone` holds the loading screen until the
+ *     way. Consent still to give (`needsConsent`) with no book is `finishSetup`, the held screen (BL-922a, NS-10-R0): never
+ *     the child step. Step 2 still wins once the book is on the phone, except that `newPhone` holds the loading screen until the
  *     first pull cycle is done or 10 seconds have passed.
  *  5. the local start was chosen         -> `childStep`, only if it was allowed (age Yes + constant on)
  *  6. offline, or sign-in failed or timed out -> `outage` (variant `offline` or `outage`); the local start is offered
@@ -86,7 +87,7 @@ export interface FirstRunGateInput {
   bookVisible?: boolean;
 }
 
-export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere' | 'otherAccount';
+export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere' | 'otherAccount' | 'finishSetup';
 
 export interface FirstRunGateResult {
   step: FirstRunStep;
@@ -129,6 +130,7 @@ export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
     if (view === 'slow') return result('slowBook');
     if (view === 'offline') return result('offlineBook', { retryOnReconnect: true });
     if (view === 'noBook' && !input.hasLocalBook) return result('noBookHere');
+    if (view === 'consent' && !input.hasLocalBook) return result('finishSetup');
     if (view === 'arrived') return result('openTonight', { mayBeginBook: true, arrivedFromAccount: true });
   }
 
@@ -192,20 +194,18 @@ export function hasSessionIn(s: AuthState): boolean {
  *  - `checkingConsent`, and `signingOut` with sync `on` or `unknown`: the loading screen;
  *  - `ready` with sync `unknown`: the slow screen, or the connection screen with no connection; Try again there re-reads
  *    the consent gate (the route calls the provider's `refreshGate`), and sync on then asks the account.
- * A session that cannot be sent a book is `undefined`, so the route keeps the earlier answer (`new`, the child step): `ready`
- * or `signingOut` with sync `off` (sync declined), and `needsConsent`, where consent is not yet answered (the Terms or the
- * sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version bumped since the last acceptance;
- * `my_sync_gate()` is per account). No pull can reach any of them (canSync is false and the engine is stopped), so no book
- * lands while consent is outstanding. Known gap, accepted by CR-61 (17 Nov 2026, amended) and held in BL-922: nothing pushes
- * the consent sheet again at relaunch, so a `needsConsent` session with no local book keeps the child step. A book made
- * there has no owner (takeOwnership runs only from onSignedIn), so when setup is finished (Settings > Account > Finish
- * setup) the claim screen shows first (consentHandoff: askClaim); it joins the account as a second book only after Keep in
- * this account, and in build 13 the extra book can be hidden (Hide this book), not deleted, until F17-REQ-026 ships; no
- * letter lost. No session is `undefined` too. Pure; the route calls it only with the switch on.
+ * `needsConsent` (the Terms or the sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version
+ * bumped since the last acceptance; `my_sync_gate()` is per account) is `consent`, the held screen (BL-922a, NS-10-R0; CR-61
+ * amended): Finish setup, Try another way, Delete account and the export, never the child step. It is decided from auth state
+ * alone, so the 10 second limit holds by construction, and no pull can reach it (canSync is false and the engine is stopped).
+ * A session that cannot be sent a book and is not held is `undefined`, so the route keeps the earlier answer (`new`, the
+ * child step): `ready` or `signingOut` with sync `off` (sync declined). No session is `undefined` too. Pure; the route calls
+ * it only with the switch on.
  */
 export function heldNewPhoneView(s: AuthState, online: boolean): OpeningView | undefined {
   if (s.status === 'checkingConsent') return 'opening';
   if (s.status === 'ready' && s.sync === 'unknown') return online ? 'slow' : 'offline';
+  if (s.status === 'needsConsent') return 'consent';
   if (s.status === 'signingOut' && s.sync !== 'off') return 'opening';
   return undefined;
 }
