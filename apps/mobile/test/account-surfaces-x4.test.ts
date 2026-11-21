@@ -106,7 +106,7 @@ describe('[X4-R1] the reminder planner input: B\'s planner is not handed A\'s bo
     expect(plannerChildren().map((c) => c.id)).toEqual([BOOK]);
   });
 
-  it.fails('B signed in on A\'s phone: plannerChildren() is empty (it names Asha today, nothing filters by session)', () => {
+  it('B signed in on A\'s phone: plannerChildren() is empty', () => {
     asB();
     expect(bookVisibleTo({ owner: store.currentUserId(), sessionUser: authUserId(auth.getAuthSnapshot()) })).toBe(false);
     expect(plannerChildren()).toEqual([]);
