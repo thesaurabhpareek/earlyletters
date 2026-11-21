@@ -36,7 +36,7 @@ export const site = {
       body: "Word for word: transcription happens on your phone. It takes out the ums and accidental repeats, spells your names your way, and marks each fix. You can undo any fix. We never rewrite your words.",
     },
     {
-      title: "Your voice, kept",
+      title: "The recording stays with the letter",
       body: "The original recording stays with each letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
     },
     {
@@ -140,7 +140,7 @@ const v1_1 = {
   },
   gift: {
     title: "A gift from the grandparents",
-    body: `Give ${brand.name} to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. It is a gift that keeps growing, one letter at a time.`,
+    body: `Give ${brand.name} to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. The book stays open for more, one letter at a time.`,
     cta: `Give ${brand.name}`,
   },
 } as const;

@@ -157,7 +157,7 @@ export const en = {
 
     dictionary: {
       title: "Your words, spelled your way",
-      body: "Add names and home words you use often. We will spell them the way you do.",
+      body: "Add names and home words you use often. They'll be spelled the way you write them.",
       examples: "Like Nani, chhotu, or the name of a stuffed rabbit.",
       addPlaceholder: "Add a word or name",
       addButton: "Add word",
@@ -170,7 +170,7 @@ export const en = {
       body: "So we hear it the way you say it.",
       countLabel: "{count} of 3",
       listeningLabel: "Listening",
-      heardLabel: "We heard:",
+      heardLabel: "Heard:",
       correctPrompt: "Is that how you spell it?",
       yesButton: "Yes, that's it",
       fixButton: "Let me spell it",
@@ -243,7 +243,7 @@ export const en = {
       stopButton: "Finish",
       saving: "Saving your words.",
       saved: "Saved.",
-      savedLetter: "Signed and kept.",
+      savedLetter: "Saved and signed.",
       transcribing: "Writing down what you said.",
     },
     typing: {
@@ -679,7 +679,7 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in your own words. Get the free app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We're making a book of letters for {child}. Will you add yours? You just talk, in your own words. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
