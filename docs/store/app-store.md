@@ -20,7 +20,7 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3457 / 4000)
+## Description (3449 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -88,7 +88,7 @@ Eight frames: 1 to 6 are the set, 7 and 8 are optional. Captured from the real a
 | 4 | A book that grows by month. | Each letter goes into your child's month of age. | Asha's book after Add to the book: this month and the month before | light |
 | 5 | Read together at bedtime. | One letter at a time, oldest first. | Read together, dark: one letter, Back one and Next letter | dark |
 | 6 | Your book is private. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
-| 7 | Quiet days are fine. | Tap Not much today. That's enough. | "A quiet day, kept." after Not much today | dark |
+| 7 | Quiet days are fine. | Tap Not much today. That is enough. | "A quiet day, kept." after Not much today | dark |
 | 8 | Pause, laugh, start again. | Take your time. Say it however it comes. | Listening: no words on screen while you talk | dark |
 
 The first three show in search results when there is no preview, so they carry the core promise: talk, every change marked, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real Settings screen rather than a badge.

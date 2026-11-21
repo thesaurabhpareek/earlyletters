@@ -37,7 +37,7 @@ const screenshots = [
   { id: '04-book', caption: "A book that grows by month.", subline: "Each letter goes into your child's month of age.", scheme: 'light' },
   { id: '05-letter-night', caption: "Read together at bedtime.", subline: "One letter at a time, oldest first.", scheme: 'dark' },
   { id: '06-privacy', caption: "Your book is private.", subline: "Private by default. Never sold, never used for ads.", scheme: 'light' },
-  { id: '07-quiet-day', caption: "Quiet days are fine.", subline: "Tap Not much today. That's enough.", scheme: 'dark' },
+  { id: '07-quiet-day', caption: "Quiet days are fine.", subline: "Tap Not much today. That is enough.", scheme: 'dark' },
   { id: '08-listening', caption: "Pause, laugh, start again.", subline: "Take your time. Say it however it comes.", scheme: 'dark' },
 ] as const;
 

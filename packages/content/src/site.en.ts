@@ -89,7 +89,7 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
