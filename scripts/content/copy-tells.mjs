@@ -11,15 +11,18 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import ts from "typescript";
 
-const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+// COPY_TELLS_ROOT points the scan at another tree (the tests use a temp one).
+const ROOT = resolve(process.env.COPY_TELLS_ROOT || fileURLToPath(new URL("../..", import.meta.url)));
 export const BASELINE = "packages/content/copy-tells-baseline.txt";
 const COPY_FILE = /(^|\/)(copy|[^/]+[.-]copy)\.ts$/;
 
 export const RULES = [
   ["uncontracted", /\b(did not|could not|do not|does not|cannot|can not|will not|is not|are not|have not|would not|should not|we will|you will|we are|you are)\b/i],
-  ["softener", /\b(just|simply|easily|quickly|effortlessly)\b/i],
+  // "Just X" as an opener or an instruction is the tell. Time and degree uses ("just now", "just as it is") are plain English.
+  ["softener", /(^|[.!?] )just\b(?! (now|as|before|yet|then|after|for|signed|happened|in case)\b)|\b(you|to|and|then) just\b(?! (now|as|before|yet|then|after|for|signed|happened|in case)\b)|\b(simply|easily|quickly|effortlessly)\b/i],
   ["oops-voice", /\b(oops|uh-oh|whoops|successfully|unable to|invalid|encountered an? (error|issue))\b/i],
   ["please-open", /^please\b/i],
   ["corporate-word", /\b(ensure|utili[sz]e|leverage|seamless|robust|empower|facilitate|journey|cherish|precious|treasure[ds]?)\b/i],
@@ -99,12 +102,46 @@ export function compare(now, base) {
   return grew;
 }
 
+// Reads the baseline as committed at a git ref. Null when there is no git or no file at that ref.
+export function committedBaseline(root, ref) {
+  try {
+    const text = execFileSync("git", ["-C", root, "show", `${ref}:${BASELINE}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const m = new Map();
+    for (const line of text.split("\n")) {
+      const [f, r, c] = line.split("\t");
+      if (f && r && c) m.set(`${f}\t${r}`, Number(c));
+    }
+    return m;
+  } catch {
+    return null;
+  }
+}
+
+export const total = (m) => [...m.values()].reduce((a, b) => a + b, 0);
+
+// The baseline file may only shrink against what is committed: no entry up, no new entry, total not above.
+export function baselineGrowth(file, committed) {
+  if (!committed) return [];
+  const grew = compare(file, committed);
+  if (total(file) > total(committed) && !grew.length) grew.push(["total\t", total(committed), total(file)]);
+  return grew;
+}
+
 function main() {
   const args = process.argv.slice(2);
   const found = scan();
   const now = tally(found);
   const basePath = join(ROOT, BASELINE);
   const base = readBaseline(basePath);
+  // The baseline itself may not be raised by hand: compare it with HEAD, and with COPY_TELLS_BASE_REF (CI sets origin/develop) when given.
+  const refs = ["HEAD", process.env.COPY_TELLS_BASE_REF].filter(Boolean);
+  for (const ref of refs) {
+    const grewFile = baselineGrowth(base, committedBaseline(ROOT, ref));
+    if (grewFile.length && (args.includes("--check") || args.includes("--update-baseline"))) {
+      console.error(`The baseline file is higher than the one committed at ${ref} (it may only shrink):\n` + grewFile.map(([k, a, b]) => `  ${k.replace("\t", "  ")} ${a} -> ${b}`).join("\n"));
+      process.exit(1);
+    }
+  }
   if (args.includes("--update-baseline")) {
     if (existsSync(basePath)) {
       const grew = compare(now, base);
