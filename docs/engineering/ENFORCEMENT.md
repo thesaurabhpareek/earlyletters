@@ -153,8 +153,8 @@ Gap ids defined here:
 | IAM-R23 | MUST NOT | review; no Supabase credentials in `agents.yml` | review | PINF-01, PINF-05 |
 | IAM-R24 | MUST | access matrix unlisted-function check; review | enforced on develop (functions); review (tables, views) | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
-| SEC-R02 | MUST | `docs/ops/SECRETS.md` | not yet | PINF-05, WS-18 |
-| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
+| SEC-R02 | MUST | `docs/ops/SECRETS.md` | draft in this PR, founder reads | PINF-05, WS-18 |
+| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
 | SEC-R04 | MUST | scoped deploy secrets in GitHub Environment | not yet | PINF-05, WS-14 |
 | SEC-R05 | MUST | incident runbook | not yet | PINF-09, WS-18 |
 | SEC-R06 | MUST | `npm ci` in `.github/actions/setup/action.yml` | enforced on develop | |
