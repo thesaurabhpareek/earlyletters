@@ -3,8 +3,10 @@
 Status: PROPOSED (a read-only check; it decides nothing and changes no code, spec, backlog row or test)
 Date: 21 Nov 2026
 Owner: `mobile`
-Base read: `origin/develop` at `abc7d57e6` (worktree branch `docs/moments-alignment-mobile`)
+Base read: `origin/develop` at `abc7d57e6` (worktree branch `docs/moments-alignment-mobile`; every line cite below is on `abc7d57e6`, and the corrections of 21 Nov were made on `f308da806`)
 Read: `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` (AB), `HARNESS-REPLAN-HYBRID.md` (HR), `row-homes.mjs`, `docs/product/prd/28-moments-tab.md` sections 19.4 and 26b (spec), `docs/BACKLOG.md` BL-1432 to BL-1438 and BL-1447 to BL-1453 (lines 7228 to 7306).
+
+Rulings applied on 21 Nov (docs-only edits): the dependency edits of section 4 items 1 to 3, R227 to PR 6, `moment` to PR 19, the PR 6 owner split, the PR 23 test, the BL-1453 line, G3-x as its own wave A item; the one-picture gap of item 4 is the founder's O-62 with the default of one picture. The findings below are as written on the base.
 
 Labels: a `file:line` was read this session on `abc7d57e6`. UNVERIFIED means I did not read a primary source or could not run the thing. Facts only; where I recommend, the line starts with "Recommend". Fictional family Asha only. Nothing here is a founder decision.
 
@@ -14,7 +16,7 @@ Labels: a `file:line` was read this session on `abc7d57e6`. UNVERIFIED means I d
 
 - (a) PR homes: the homes in spec 26b and BL rows are right for scribe-library (9, 10, 11b, 11c, 18), scribe-picker (11a, 18a, 18b-1a, 18b-1b, 18b-1c, 18d, 19b, 25a), the `moments.json` store (8) and `exportForAttach` (18). Three homes need correction: the tab and nav tests (the list of tests that assert three tabs is incomplete, and the decision id cited is the wrong row), the `moment` capture source (PR 6 versus PR 19), and `routeForReminder` (one more test pins it). PR 6 is owned by `design-systems` in 19.4 but nearly all its files are `mobile` paths.
 - (b) Dependency order: buildable with five edits (section 4). One of them is a gap that no PR owns: today a letter holds one pending picture, and the plan assumes up to 6.
-- (c) Cites: 24 apps/mobile cites checked; 20 true, 2 off by one, 1 false, 1 wrong line range for the end of a table (section 5). Four brief statements marked UNVERIFIED are now answerable from the code (section 5.2).
+- (c) Cites: 27 table rows of apps/mobile cites checked in 5.1; 20 true, 2 off by one, 1 false, 1 wrong line range for the end of a table, and the other three rows are facts without a line (section 5). Four brief statements marked UNVERIFIED are now answerable from the code (section 5.2).
 
 ## 2. (a) PR homes for the rows that touch apps/mobile and modules
 
@@ -32,7 +34,7 @@ Home source: spec 26b (printed by `row-homes.mjs`) and the backlog rows. "Confir
 | Photo guard, release guard photo line | PR 11a, 25a | Confirm | Where "qa scripts" live is UNVERIFIED: if under `scripts/compliance/**` they are in the `protected` tier of `compliance/FENCE.json` (CCO approval plus Karma approval on the head commit). |
 | `moments.json` store, clear, `eraseDeviceFiles` | PR 8 (BL-1433); R221, R246 | Confirm home; edit dependency (section 4 item 2) | `eraseDeviceFiles(): void` exists at `apps/mobile/src/lib/erase-everything.ts:62`, called at `:142` and `:181`. A sync function: the file-first-before-any-await rule of R246 fits. |
 | Tab shell, F1, `tab-jobs`, nav tests, `moments/pick` route row | PR 6; R172 | Correct (3 points below) | See 2.1. |
-| `MOMENT_SOURCES`, `moment` source | PR 6 in 19.4; R227 homed to PR 7 in 26b; R83 homed to 7, 19 | Correct | See 2.2. |
+| `MOMENT_SOURCES`, `moment` source | PR 6 in 19.4; R227 homed to PR 7 in 26b; R83 homed to 7, 19 | Move: `MOMENT_SOURCES` stays in PR 6, R227 goes to PR 6, the `moment` entry of `CAPTURE_SOURCES` goes to PR 19 (MOMENT_SOURCES and CAPTURE_SOURCES are separate lists) | See 2.2. |
 | `routeForReminder`, planner kind, R280 | PR 23; R265, R280, R299 | Confirm home; add the test | See 2.3. |
 | Config plugin usage string, build-time exclusion | PR 11c; R169, R222, R277 | Confirm; Q-9 is answerable | See 5.2. |
 
@@ -58,7 +60,7 @@ Facts that correct AB:
 - `[NS-35-R1] only Home starts` is a spec test title (`docs/product/prd/11-foundations.md:538`). `grep -rn "only Home starts" apps/mobile/test` returns nothing, so no test carries that title today; the pin is `[IA-N3]` (title: "one capture entry: Home starts through startCapture ..."). PR 6 must cite which one it rewrites.
 - `store-family-tab.test.ts` is not named anywhere in AB, HR, 19.4 or the BL rows.
 
-Recommend: PR 6 lists these ten pins in its body, cites RV-01 and RV-02 by id, and keeps the "one doorway" property (the one `startCapture` is the only caller of `/listen` and `/write`) as a rewritten assertion, per R172.
+Recommend: PR 6 lists these seven test pins (`[IA-N1]`, `[IA-N2]`, `[IA-N4]`, `[IA-N6]`, `[NX-30a-R1]`, `[NX-30a-R8]`, `store-family-tab.test.ts:44-68`) and the manifest file `tab-jobs.ts` in its body (`[IA-N3]` changes with the `moment` source in PR 19; the table has ten rows: those seven, `[IA-N3]`, `tab-jobs.ts` and `_layout.tsx`), cites RV-01 and RV-02 by id, and keeps the "one doorway" property (the one `startCapture` is the only caller of `/listen` and `/write`) as a rewritten assertion, per R172.
 
 Owner: 19.4 gives PR 6 to `design-systems`. The files above (`(tabs)/_layout.tsx`, `lib/nav/tab-jobs.ts`, `lib/transitions.logic.ts`, five test files) are `apps/mobile/**` outside `src/components/ui/**`, which is `mobile`'s ownership; only the `glassFallback`, `highlight` and pill-alpha tokens and the brand-parity test (`packages/design-tokens`) are `design-systems`'. Recommend splitting the owner line: tab shell and route row `mobile` with a `design-systems` approval line (the closed-source-list comment at `start-capture.logic.ts:14-16` asks for one), tokens `design-systems`. If the founder prefers one PR, the 290-line, 11-file estimate is ASSUMED and has room.
 
@@ -83,7 +85,7 @@ Recommend: R227 homed to PR 6 for the `tab-jobs.ts` and N-test edits, and `momen
 |---|---|
 | BL-1432 (PR 1 to 5, core) | Keep. `packages/core/src/index.ts:4` has `export * from './rules'`; Q-4 default `export * as moments` avoids a name clash. |
 | BL-1433 (PR 6, 8, 12) | Move PR 6 owner split (2.1); PR 8 add dependency on PR 1 (section 4 item 2). Owner line "design systems, mobile engineer, content" is fine for the row. |
-| BL-1434 (spikes) | Keep. Recommend G3-x is filed in this row as its own item and run in wave A (AB 8.1); it is not in BL-1434's scope text today (scope names G1a-L and G1a-P only; BL-1435 says "to merge" waits on G3-x). |
+| BL-1434 (spikes) | Keep. BL-1434 already carries G3-x as a clause of its G1a-L scope ("the G3-x exclusion spike", with its definition and the O-61 leg); what is missing is G3-x as its own wave A item in spec 19.4 (AB 8.1). |
 | BL-1435 (PR 9, 10, 11b, 11c, 18) | Keep. State in the row that 9a declares the thumbnail view name (2 above). |
 | BL-1436 (PR 13 to 17, 19 to 23) | Edit: PR 15 dependencies (section 4 item 1), PR 19 dependency on 19b (item 3), the multi-picture gap (item 4), PR 23 test list (2.3). |
 | BL-1437 (PR 24) | Keep. |
@@ -117,7 +119,7 @@ Open and not mine: PR 0 label, the founder gates, counsel items; nothing read he
 |---|---|---|
 | `apps/mobile/src/app/(tabs)` | holds `index.tsx`, `book.tsx`, `you.tsx` only | True, plus `_layout.tsx` (a layout, not a screen) |
 | `lib/transitions.logic.ts:43` | `ROUTES` | True (`export const ROUTES = {` at 43) |
-| `transitions.logic.ts:43-57` | existing rows | Off by one: the table closes at line 56 (`} as const satisfies Record<string, Row>`); 11 rows at 44-55 |
+| `transitions.logic.ts:43-57` | existing rows | True: `ROUTES` runs 43 to 58; the last row (`'plus/confirmed'`) is line 57 and `} as const satisfies Record<string, Row>` is line 58 (corrected in the rulings pass; the first read said 56) |
 | `apps/mobile/src/lib/capture/start-capture.logic.ts:26-28` | closed source list and `CAPTURE_ROUTES` | False for lines 26-27: `HOME_CAPTURE_SOURCES` is 19, `CAPTURE_DOORWAYS` 20, `CAPTURE_SOURCES` 21, `CAPTURE_ROUTES` 28. Only line 28 is in the cited range. Source list content (4 + 4 values) is right |
 | `start-capture.logic.ts:7-9` | `photo` "called once the system picker has returned a picture" | True at lines 8-9 (line 7 is not part of it) |
 | `apps/mobile/test/navigation-one-entry.test.ts:199` | `[IA-N1]` bar is `index, book, you` | True |
@@ -144,7 +146,7 @@ Open and not mine: PR 0 label, the founder gates, counsel items; nothing read he
 | "Reanimated 4.5.1 and the other motion packages" (AB 10.2, UNVERIFIED) | present | Now verified: `react-native-reanimated` `4.5.1` (`package.json:57`), `react-native-gesture-handler` `~2.32.0` (`:55`), `expo-haptics` `~57.0.3` (`:35`), `@gorhom/bottom-sheet` `^5.2.14` (`:7`), `expo` `~57.0.26` (`:22`). `expo-image` and `expo-image-picker` are absent from `package.json` |
 | `apps/mobile/modules` four others untouched | `scribe-audio`, `scribe-files`, `scribe-keys`, `scribe-store` | True |
 
-Tally: 24 apps/mobile cites with a line or range. True 20; off by one 2 (`transitions.logic.ts:43-57`, `monthNoteCopy`); wrong range 1 (`scribe-photo/index.ts:1-27`); false 1 (`start-capture.logic.ts:26-28`).
+Tally: 27 table rows, 24 of them with a line or range. True 21; off by one 1 (`monthNoteCopy`); wrong range 1 (`scribe-photo/index.ts:1-27`); false 1 (`start-capture.logic.ts:26-28`).
 
 ### 5.2 AB statements marked UNVERIFIED that develop now answers
 
@@ -172,7 +174,7 @@ Move:
 6. PR 19: depend on 19b, or move `capture-handoff.ts` creation to 18a.
 7. PR 23: name `reminders-cold-start-route.test.ts` as a test it rewrites.
 8. BL-1453 text: `photos-device.test.ts` line 73 becomes 75.
-9. G3-x: file as its own wave A item (BL-1434 or a new row); today only AB asks for it.
+9. G3-x: its own wave A item in spec 19.4 (BL-1434 already carries it as a clause).
 10. PR 6 body: cite RV-01 as well as RV-02, and list `tab-bar.test.ts`, `store-family-tab.test.ts` and `[IA-N2]`, `[IA-N3]`, `[IA-N6]`.
 
 Reject: none.

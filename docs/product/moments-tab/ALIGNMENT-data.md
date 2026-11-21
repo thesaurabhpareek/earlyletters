@@ -1,8 +1,9 @@
 # NS-53 Moments tab: data alignment check (data-architect)
 
 Status: findings only, docs only. No migration, no grant, no classification edit was made. Classification decisions stay with `privacy`.
-Date: 21 Nov 2026. Base: `origin/develop` at `abc7d57e6`.
+Date: 21 Nov 2026. Base: `origin/develop` at `abc7d57e6` (the corrections of 21 Nov were made on `f308da806`).
 Read: `docs/product/moments-tab/ARCHITECTURE-BRIEF.md`, `HARNESS-REPLAN-HYBRID.md`, spec `docs/product/prd/28-moments-tab.md` (sections 17, 17.1, 17.2, 18, 19.4, 26b), `docs/BACKLOG.md` rows BL-1432 to BL-1438 and BL-1447 to BL-1453 (block starting `docs/BACKLOG.md:7214`), `docs/legal/DATA_CLASSIFICATION.md` 4.6 and 4.7, `docs/adr/0032-on-device-sensitive-store.md`, `docs/adr/0028-photo-seal-find-on-device-data.md`, `packages/analytics/src/catalog.ts`, `values.ts`, `registry.ts`, `apps/mobile/src/lib/erase-everything.ts`, `supabase/tests/classification.test.mjs`.
+Rulings applied on 21 Nov (docs-only edits): R250 and the 4.6 rows are PR 8's, with `erase-everything.ts` and `erase-all.test.ts` in its file list; PR 5b carries a 4.6 row (bundled place table, L1); `picker_unavailable` stays a local code (no wire code, no catalog row, reversible) and R167 and R282 are reworded; whether `labels{}` is exported is an OPEN item for `privacy` and the founder; DATA-REQ-001 (`docs/legal/DELETION_AND_EXPORT_SPEC.md:51`) makes the Devices table in `docs/legal/data-policy.md` 4.4 an inventory home, and it needs a device-store row, `privacy` decides. The findings below are as written on the base.
 Labels: READ means I read the line cited. UNVERIFIED means I did not read the primary text or could not check it here. I ran nothing (no `npm run test:db`), because nothing in `supabase/` changed.
 
 ## 1. Verdict in one paragraph
@@ -15,7 +16,7 @@ Labels: READ means I read the line cited. UNVERIFIED means I did not read the pr
 |---|---|---|
 | `moments.json` local store | PR 8, BL-1433 (`docs/BACKLOG.md:7240`; HARNESS-REPLAN-HYBRID.md:29; spec 19.4 line 1029) | Home is right: the store is a device file outside `scribe.db`, so there is no SQL migration and no `supabase/tests/grants.mjs` line. Gap: PR 8's scope text names the store, clear, `eraseDeviceFiles` and schema tests, and no classification row or ADR step (spec line 1029; BACKLOG.md:7241 area). See G1. |
 | ADR 0032 as the pattern | spec 17 row 1 (line 904); brief 2.6 (line 161) | READ: ADR 0032 is `Status: Proposed` (`docs/adr/0032-on-device-sensitive-store.md:3`) and says it holds the days store and "the moments index (NS-51)". It does not name `dayKeys`, `labels` or `hiddenPlaces`. R250 (spec line 1286) already says it is amended or a new ADR is written. No PR carries that step. See G1. |
-| Erase path for the file | PR 8 "clear, `eraseDeviceFiles`" | Function exists: `apps/mobile/src/lib/erase-everything.ts:62`. The days store is wired by a separate import at `erase-everything.ts:42` (`eraseDaysFile`), and `PICKER_CACHE_FOLDER` at line 41. So PR 8 must edit `erase-everything.ts` and `apps/mobile/test/erase-all.test.ts`; both belong to PR 8's file count (about 7 files, ASSUMED) and should be named in its body. |
+| Erase path for the file | PR 8 "clear, `eraseDeviceFiles`" | Function exists: `apps/mobile/src/lib/erase-everything.ts:62`. The days store is wired by a separate import at `erase-everything.ts:42` (`eraseDaysFile`), and `PICKER_CACHE_FOLDER` at line 41. So PR 8 must edit `erase-everything.ts` and `apps/mobile/test/erase-all.test.ts`; both belong to PR 8's file count (the spec's estimate of about 7 files is ASSUMED there; that the two extra files fit is UNVERIFIED, and the row now says about 9) and should be named in its body. |
 | PR 5 synthetic place table | PR 5, BL-1432 (`BACKLOG.md:7228`), 10 rows, `packages/core` test fixtures | Fictional rows, no real coordinates. No classification row is needed if the rows are Asha-only and generated; `privacy` confirms. No migration, no grant. |
 | PR 5b real place table | BL-1451 (`BACKLOG.md:7270`); spec 19.4 line 1026 | A bundled public dataset is L1 by the definition of L1 in `DATA_CLASSIFICATION.md` (Public) [UNVERIFIED: licence read by counsel, G11b, is open]. Gap: the PR scope names licence note, ledger, checksum and scan test, and no inventory row for the bundled table or its version. Add a 4.6 row (bundled file, L1) in the same PR. |
 | Any `supabase/migrations` entry | none proposed | Correct for the first release. The only server data named anywhere is phase 2 lifecycle email rows, "new table and migration (not written here)" (spec line 913). When written they need RLS, an allow and a deny test, column labels, a grants entry and a 4.3 row; I would own that PR. |
@@ -34,7 +35,7 @@ G2. `picker_unavailable` has no owner PR and the default of PR 7 contradicts the
 
 G3. Backup text for pictures is split across two documents and two meanings of "backup". `DATA_CLASSIFICATION.md:672` says `entry_media` is "not in the owner backup" (our own ADR 0024 backup). `DATA_CLASSIFICATION.md:757` says the pictures are "in the device backup". Both can be true, but R235 and R81 say "iPhone backup" only. State both words in the same inventory row (privacy owns wording).
 
-G4. R250 requires that typed place labels and picture labels "stay on this phone, in no backup and no export, or are exported as a labelled section" (spec line 1286). Export duty for the parent's own L4 words is `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). The decision between the two options is `privacy` and the founder. The first release has no picture label (spec line 939), so only the 60 character `labels{}` is affected. UNVERIFIED: I did not re-read the export spec for the exact DATA-REQ id this session.
+G4. R250 requires that typed place labels and picture labels "stay on this phone, in no backup and no export, or are exported as a labelled section" (spec line 1286). Export duty for the parent's own L4 words is `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). The decision between the two options is `privacy` and the founder. The first release has no picture label: UNVERIFIED: spec line 939 lists what is not in the file (a picture identifier, an album identifier, a coordinate, a count, a score, a thumbnail) and does not mention a picture label, so I did not find a source for it and only the 60 character `labels{}` is certainly affected. UNVERIFIED: I did not re-read the export spec for the exact DATA-REQ id this session.
 
 ## 4. (b) The claim that no server table or sync op is needed
 
@@ -53,7 +54,7 @@ Device store `moments.json` (spec 17.1, lines 927 to 939; no row exists yet in `
 |---|---|---|
 | `v` | not stated per field (store is L4) | Integer, no personal content; L2 would be accurate, but a file-level L4 is simpler. `privacy` decides. |
 | `owner` | L4 (store) | Opaque local id, "never a person id" (line 932). Needs a rule for how it is derived; UNVERIFIED, not specified. |
-| `dayKeys[]` | L4 | Dates of days with pictures library-derived, and Not this one is the parent's choice. L4 is stated; fine. |
+| `dayKeys[]` | L4 | Local ISO date strings with no zone; "Not this one" applies to the date as the parent saw it (spec 17.1, line 933). They are dates, so L4 as stated is fine. |
 | `labels{}` | L4 | Free text up to 60 characters and "can hold a child's name" (brief line 169). Correctly L4. Highest-risk field. |
 | `hiddenPlaces[]` | L4 | External place ids, no readable name (line 935). L4 stated. |
 | `homePlace` | L4 | One value per book (R249). A home place is location of a family; L4 is right. |
