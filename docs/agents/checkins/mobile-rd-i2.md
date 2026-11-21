@@ -1,0 +1,1 @@
+19:20 (20 Nov) mobile | done: engineering design for NS-46 to NS-50 written in five files (13 to 17), cites checked | next: open five docs PRs, journal entry | blocked/needs: sandbox disk almost full (sparse checkout, no npm test)

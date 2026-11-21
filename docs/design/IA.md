@@ -1,3 +1,5 @@
+Superseded for the locked pack (requirements rev 2, 20 Nov 2026) by [IA-FINAL-20nov.md](IA-FINAL-20nov.md); the rest of this file is kept as history.
+
 # Information architecture
 
 The map of every place in the iOS app and what each is called. Visible names are the exact words a parent sees; the glossary for those words is `packages/content/BRAND.md`. Read on `develop` at e7b53193 (31 Oct 2026). Where a ruling or decision will change a place, the table says what you see today and what changes, so the map never presents a target as fact. Naming findings and rulings: [NOMENCLATURE_AUDIT_2026-10-31.md](NOMENCLATURE_AUDIT_2026-10-31.md).

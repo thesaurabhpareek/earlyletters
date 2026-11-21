@@ -301,8 +301,26 @@ export const en = {
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
+    // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R9). Replaces discardBody on Review and Listen
+    // once approved; BL-977 switches both screens and retires discardBody. Option A, recommended: the claim NS-09
+    // section 19 enables, plus the R9 clause. "From this phone" matches the experience pass's ON_DEVICE_ONLY pattern,
+    // which covers only that pass's keys; C avoids it. Every option's "cannot be brought back" meets TDD 08 K2: when
+    // the server keeps a let-go held draft (newer words from another phone, or a legal hold:
+    // 20261016000000_sync_v1_server.sql:782-784), the phone returns it as ready with its words (sync/merge.ts:585-591).
+    // The recording file is gone, but the draft comes back. So counsel reads every option until K2 is ruled.
+    // B: "It will be removed, and it cannot be brought back." (no place: also promises the account copy goes).
+    // C: "It will be removed from the phone, and it cannot be brought back." (e2e area A).
+    discardBodyNoUndo: "It will be removed from this phone, and it cannot be brought back.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
+    // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R6). One row per recording whose let-go has not
+    // finished after 3 launches, with Remove now; the same words stay if Remove now does not finish either. Kept here
+    // with the other let-it-go words, so the row reads the same whichever screen shows it (Storage, as the card says,
+    // or Where your letters live: TDD 08 K3). Option A, recommended (e2e area A): no count, and two rows never both
+    // say "One". B: "One recording is still on this phone." (the card's intent; reads as a count).
+    letGoStuck: "A recording you let go is still on this phone.",
+    removeNowButton: "Remove now",
+    removeNowA11yHint: "Tries again to remove this recording.",
     // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
     // it into the letter when it flips (F04-REQ-041); "Paused." is said once the recording has stopped.
     toggleA11y: "Pause or keep talking",
@@ -368,6 +386,18 @@ export const en = {
       title: "That was very short",
       body: "Keep it, or let it go?",
     },
+    // TODO(founder): PROPOSED, needs word approval (BL-925; NS-09-R4a, R4b). Let it go was confirmed but the phone
+    // would not remove the file yet: one muted line under the words, once for that recording on that Review visit,
+    // read by VoiceOver once the screen settles (BL-926). Shown only when the row is still marked discarding (the
+    // delete threw); letItGo also returns false for a missing draft or a row removal that failed after the file went.
+    // What the code does: the launch sweep tries again once per launch, after the first frame (sweep.ts:152-153).
+    // The failure counter (NS-09-R15) and the Storage row (R6) are not built, and Remove now can fail again.
+    // No "we" (only the sanctioned promises say it), and none of "failed", "error", "deleted everywhere", "instantly".
+    // Option A, recommended: says only what the sweep does. B: "This recording is still on this phone. {app} will
+    // finish removing it." (the card's intent; a promise of completion the code retries but cannot ensure).
+    // C: "This recording is not removed yet. {app} tries again each time it opens." (e2e area A; the sweep runs at
+    // launch, not each time the app comes back from the background).
+    letGoPending: "This recording is still on this phone. {app} will try again the next time it starts.",
     emptyTake: {
       title: "Nothing was recorded",
       body: "The recording ended before any sound came in.",

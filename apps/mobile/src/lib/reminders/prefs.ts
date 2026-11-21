@@ -13,6 +13,7 @@
  * | `reminders.time` | `HH:MM`, 07:00 to 21:30 in 15-minute steps | `20:30` |
  * | `reminders.monthNotes` | `on` / `off` | `on` |
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
+ * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
  *
  * While the app lock is on, names are off whatever that key says (F17-REQ-015; CDesO and CCO rule): the stored choice
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
@@ -48,7 +49,14 @@ const K = {
   time: 'reminders.time',
   monthNotes: 'reminders.monthNotes',
   names: 'notifications.lockScreenNames',
+  session: 'reminders.session',
 } as const;
+
+/** Every reminder setting above: cleared when the session ends (session.ts; NS-13-R14). */
+export const REMINDER_SETTING_KEYS: readonly string[] = Object.values(K);
+
+/** `on` while the reminders on this phone were set up inside a signed-in session (session.ts). */
+export const REMINDER_SESSION_KEY = K.session;
 
 const onOff = (key: string, fallback: boolean): boolean => {
   const v = getSetting(key);
@@ -111,9 +119,12 @@ export function lockScreenNamesOn(): boolean {
   return onOff(K.names, LOCK_SCREEN_NAMES_DEFAULT);
 }
 
-/** Visible books, with each child's "Include in my reminders" switch. Hidden books are never reminded. */
+/**
+ * Visible books, with each child's "Include in my reminders" switch and "Quiet this book" (`child_member_prefs.quiet_at`,
+ * read as `Child.quiet`). Hidden books are never reminded; the planner gives a quiet book nothing (planner.ts).
+ */
 export function plannerChildren(): PlannerChild[] {
-  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn }));
+  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn, quiet: c.quiet === true }));
 }
 
 /** Newest save by this phone's user across visible books (smart quiet, F2). Null when nothing is saved yet. */

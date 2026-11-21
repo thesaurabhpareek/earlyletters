@@ -1,5 +1,7 @@
 # Council review of the new-scope pack (19 Nov 2026)
 
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: Karma with the CPO role | Replaces: none | Load when: auditing why a round 1 finding was made; otherwise do not load.
+
 Two review passes, each a separate Claude session reading the roles' skills in full, read-only, against the pack at heads `c838a2a8` and later. Independence is of method only: one account, one model family. Neither pass ran anything on a phone. The second pass asked to read Apple's guidelines page and was not given access, so every Apple rule cited in the pack is UNVERIFIED and must be re-read before submission.
 
 ## Pass 1: CPO, Chief Design Officer, CMO (30 findings)

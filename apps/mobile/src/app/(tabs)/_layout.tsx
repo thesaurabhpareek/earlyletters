@@ -79,7 +79,7 @@ export default function TabsLayout() {
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
           {/* Me (NX-30a, founder 9 Nov; named Me on 11 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
-              last in the bar. It has no lamp and no Back; the header carries the one title. Its rows push the Settings pages
+              last in the bar. It has no lamp and no Back; the header carries the one title, the tab's own (NS-33-R2). Its rows push the Settings pages
               onto the root stack, which goes back to this tab ("Me"). */}
           <Tabs.Screen
             name="you"
@@ -88,7 +88,6 @@ export default function TabsLayout() {
               tabBarIcon: icon(UserIcon),
               tabBarButton: button(t.you),
               headerShown: true,
-              headerTitle: copy.settings.title,
               headerStyle: { backgroundColor: c.bg },
               headerTitleStyle: { color: c.text },
               headerShadowVisible: false,

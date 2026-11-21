@@ -1,7 +1,7 @@
 /**
  * Ready with a picture (NS-01-R3, R20; design spec 3.2): the thumbnail above the prompt, at most 160 pt tall, with
- * a quiet 44 pt "Change" under it (card section 4 step 4). Reading order today: thumbnail, Change, prompt, Speak, Type;
- * R20b asks Change last, which needs a reading-order override (flagged on #838). It scales to the screen width at
+ * a quiet 44 pt "Change" under it (card section 4 step 4). Reading order (R20b as corrected by erratum E40): thumbnail,
+ * Change, prompt, Speak, Type, each control announcing its state (Change is dimmed while a pick is open). It scales to the screen width at
  * accessibility sizes. Absent when nothing was picked or the switch is off. The line under
  * it never names what is in the picture.
  */

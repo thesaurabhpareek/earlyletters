@@ -241,10 +241,16 @@ describe('[NS-01-R20] new controls', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
   });
-  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, prompt, Speak, Type (#838 review B)', () => {
+  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, Change, prompt, Speak, Type (E40; #838 review B)', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
     expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
+    // E40: Change sits under the thumbnail, inside the thumbnail block, before the prompt; Change announces its state.
+    const thumb = readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8');
+    expect(thumb.indexOf('<PhotoFrame')).toBeGreaterThan(-1);
+    expect(thumb.indexOf('testID="ready.photo.change"')).toBeGreaterThan(thumb.indexOf('<PhotoFrame'));
+    expect(thumb).toMatch(/testID="ready.photo.change"[^>]*\/>/);
+    expect(thumb).toMatch(/disabled=\{pick\.busy\}/);
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });

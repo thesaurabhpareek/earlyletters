@@ -6,6 +6,18 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 
 ## Current focus
 - Chapters 03 (DB-R01..R25) and 04 (DQ-R01..R21) drafted 2026-10-03. Most enforcement waits on PR #32, #26 and WS-19 (#31 merged 4 Oct).
+- (20 Nov) Build 13 reviews in your paths: #835 (local migration 11) and #798 (the Find index). `docs/adr/**` (ADR 0028 merged in #797 with no steward routed) and `docs/legal/DATA_CLASSIFICATION.md` rows do not route to you (roster `review_paths`).
+
+## New scope (20 Nov 2026)
+Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
+- The new-scope pack is on `develop` at 697233d3 (#829): `docs/product/VISION.md`, `docs/product/prd/` 00 to 15 (cards NS-01 to NS-37), plan 13, test plan 14, the rank (`docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`), rows BL-923 to BL-949; rows from wave 2 on wait under a founder hold until the founder approves the requirements, and Karma releases them by one status-change PR (`docs/product/prd/13-engineering-plan.md` section 6) (verified 2026-11-20).
+- No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` lines 11 and 17); `AGENTS_ENABLED` not verified (verified 2026-11-20).
+- ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is on `develop` (`docs/adr/0028-photo-seal-find-on-device-data.md`, #797 merged as e9dca86c); its status line still says Proposed and CR-62 is the acceptance record (verified 2026-11-20).
+- Local migration 11 (`entry_media`) ships unconditionally, outside `EXPO_PUBLIC_PHOTOS`: gating only the CREATE would leave a phone whose first version-11 build had the switch off without the table, so every eraser and Keep would need guards and a second create; ADR 0028 D1 and CR-62 ship it with photos; NS-01-R19 keeps the data rights working with the switch off (CR-64 (#852)) (verified 2026-11-20).
+- Phone migrations are append-only, one transaction per step with `PRAGMA user_version` (`apps/mobile/src/lib/db/migrations.ts:1-14`); upgrade tests seed the previous version with Asha data (`apps/mobile/test/migrations.v9.test.ts`); a new column needs a row in `docs/legal/DATA_CLASSIFICATION.md` 4.5 (verified 2026-11-20).
+- BL-931 is the nine-PR photo stack: #834 (merged), #841 (merged, 1513b265), #842, #835 to #840 (verified 2026-11-20).
+- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (CR-65 (#852); #833 comment 7026600796) (verified 2026-11-20).
+- A counted review has line 1 `## Review A|B at <40-hex head sha>: PASS`, or `: PASS WITH NOTES` with `Must fix: none` in the body; CHANGES, FAIL and BLOCKED do not count (CR-63). Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
 - (15 Oct) 12 migrations in `supabase/migrations/`; only files 1-2 are applied (`.github/migrations-applied.txt`). Files 3-12 are pending; WS-01 (PR #32, `fix/db-pending-hardening`, still a draft) proposes edits to files 3-7.
@@ -26,7 +38,7 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 - (15 Oct) Merged since 3 Oct: #25 repo-hygiene, #27 mobile-config, #28 unicode, #29 mobile-store-sqldb, #31 analytics-enums. Still open: #26 db-harness (draft), #30 ci/hardening (founder merge), #32 db-pending-hardening (draft).
 
 ## Decisions and constraints I must respect
-- D-041: migrations only from CI on a tag; `approve-migration` label is founder-only.
+- D-041: migrations only from CI on a tag; the `approve-migration` label is retired and no workflow reads it (D-117, `docs/DECISIONS.md:843`) (verified 2026-11-20).
 - (15 Oct) D-023 (sync engine: outbox push plus cursor pull) is decided by the founder (`docs/DECISIONS.md`, "D-023 (update)"); `20261004100000_sync_engine.sql` is pending, not applied. D-024 `book_access` is approved but not built.
 - (15 Oct) Brief decision 3 and D-053: server entitlement tables are removed by `20261004000000_plus_on_device_only.sql` (pending, not applied).
 - Fixtures use the Asha family only.
