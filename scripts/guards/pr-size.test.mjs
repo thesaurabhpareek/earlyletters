@@ -1,7 +1,7 @@
 // node --test scripts/guards/pr-size.test.mjs (wired into the root `npm test` list). Fixtures are inline numstat text.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { EXCLUDE, GOLDEN_DIRS, MAX_EXCLUDED_LINES, MAX_FILES, MAX_LINES, evaluate, main, measure, parseNumstat } from './pr-size.mjs';
+import { EXCLUDE, GOLDEN_DIRS, MAX_EXCLUDED_LINES, MAX_FILES, MAX_LOCK_LINES, MAX_LINES, evaluate, main, measure, parseNumstat } from './pr-size.mjs';
 
 const rows = (...r) => r.map(([path, lines]) => ({ path, lines }));
 const many = (n, each = 1, dir = 'src') => Array.from({ length: n }, (_, i) => ({ path: `${dir}/f${i}.ts`, lines: each }));
@@ -23,6 +23,18 @@ test('[CODE-R02] a lockfile-only change of 3,000 lines passes', () => {
   const r = evaluate({ rows: rows(['package-lock.json', 3000]) });
   assert.equal(r.ok, true);
   assert.match(r.lines[0], /^lines 0 \/ 400, files 0 \/ 20$/);
+});
+test('[CODE-R02] the lockfile is not capped at 2,000, only at 10,000, and the two caps are separate', () => {
+  const m = measure(rows(['package-lock.json', 3000]));
+  assert.deepEqual([m.lines, m.files, m.capped], [0, 0, false]);
+  const both = measure(rows(['package-lock.json', 3000], ['x/__fixtures__/a.json', 1500]));
+  assert.deepEqual([both.lines, both.capped], [0, false]);
+  const over = measure(rows(['package-lock.json', MAX_LOCK_LINES + 1]));
+  assert.deepEqual([over.lines, over.files, over.capped], [MAX_LOCK_LINES + 1, 1, true]);
+  assert.equal(evaluate({ rows: rows(['package-lock.json', MAX_LOCK_LINES + 1]) }).ok, false);
+  // fixtures over their cap do not drag an in-cap lockfile back in
+  const fx = measure(rows(['package-lock.json', 3000], ['x/__fixtures__/a.json', 2500]));
+  assert.deepEqual([fx.lines, fx.files], [2500, 1]);
 });
 test('[CODE-R02] a lockfile of 1,500 lines beside 300 code lines passes', () => {
   assert.equal(evaluate({ rows: rows(['package-lock.json', 1500], ['a.ts', 300]) }).ok, true);

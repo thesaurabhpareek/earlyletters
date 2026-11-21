@@ -9,8 +9,8 @@
  * Prints `lines 312 / 400, files 11 / 20` on every run. Exit 0 pass, 1 over the limit with no proof, 2 could not run.
  * Counting: `git diff --numstat -M base...head`; binary files count 0; docs text counts (only doc IMAGES are excluded).
  * Excluded, by exact rule (EXCLUDE below): the lockfile, `__fixtures__` folders, the golden corpora listed in
- * GOLDEN_DIRS, `generated` folders and images under docs/. Excluded lines are printed. Apart from the lockfile (its
- * size is a tool's output), they are capped at 2,000: above that they count again, so a folder cannot hide code.
+ * GOLDEN_DIRS, `generated` folders and images under docs/. Excluded lines are printed. They are capped at 2,000 (the lockfile
+ * alone at 10,000, a tool's output): above its cap a kind counts again, so a folder cannot hide code.
  * Exception: the label `size:accepted` applied by the repository owner (read from the issue events; a label by
  * anyone else is ignored and printed) AND a body line `Size exception: <reason>`.
  */
@@ -20,6 +20,7 @@ import { pathToFileURL } from 'node:url';
 export const MAX_LINES = 400;
 export const MAX_FILES = 20;
 export const MAX_EXCLUDED_LINES = 2000;
+export const MAX_LOCK_LINES = 10000;
 export const LABEL = 'size:accepted';
 /** Golden corpora, by directory prefix. A new corpus is a reviewed edit to this list. */
 export const GOLDEN_DIRS = ['apps/mobile/test/__golden__/', 'packages/core/test/golden/'];
@@ -46,24 +47,23 @@ export function parseNumstat(text) {
 }
 
 export function measure(rows) {
-  let lines = 0, files = 0, excluded = 0, capable = 0;
+  let lines = 0, files = 0, excluded = 0, lock = 0, other = 0;
   const why = new Map();
+  const kindOf = (path) => EXCLUDE.find(([, f]) => f(path));
   for (const r of rows) {
-    const rule = EXCLUDE.find(([, f]) => f(r.path));
+    const rule = kindOf(r.path);
     if (!rule) { lines += r.lines; files += 1; continue; }
     excluded += r.lines;
-    if (rule !== EXCLUDE[0]) capable += r.lines;
+    if (rule === EXCLUDE[0]) lock += r.lines; else other += r.lines;
     why.set(rule[0], (why.get(rule[0]) ?? 0) + r.lines);
   }
-  // Above the cap, the capped kinds count again (with their files), so nothing can be hidden by a name.
-  const capped = capable > MAX_EXCLUDED_LINES;
-  if (capped) {
-    for (const r of rows) {
-      const rule = EXCLUDE.find(([, f]) => f(r.path));
-      if (rule && rule !== EXCLUDE[0]) { lines += r.lines; files += 1; }
-    }
+  // Above its cap a kind counts again (with its files), so nothing can be hidden by a name.
+  const lockOver = lock > MAX_LOCK_LINES, otherOver = other > MAX_EXCLUDED_LINES;
+  for (const r of rows) {
+    const rule = kindOf(r.path);
+    if (rule && ((rule === EXCLUDE[0] && lockOver) || (rule !== EXCLUDE[0] && otherOver))) { lines += r.lines; files += 1; }
   }
-  return { lines, files, excluded, capped, why };
+  return { lines, files, excluded, capped: lockOver || otherOver, why };
 }
 
 /** True when the newest `size:accepted` event is a `labeled` by `owner`. Events are oldest first, as GitHub returns them. */
