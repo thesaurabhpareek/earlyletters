@@ -220,4 +220,25 @@ describe('[CISO-2] a pending invite read by a signed-in account does not reach t
     await clearReadPendingInvite();
     expect(kc.items.size).toBe(1);
   });
+
+  it('A marked it, then A to B is published with no signed-out step and no read: the item is gone', async () => {
+    await savePendingInvite(T1, NOW);
+    run(initialAuthState, signedInAs('user-a'));
+    await readPendingInvite(NOW, 'user-a');
+    run(initialAuthState, signedInAs('user-b'));
+    await flush();
+    expect(kc.items.size).toBe(0);
+  });
+
+  it('a failed mark for T1, then a newer link T2, then A signs out: T2 is still there', async () => {
+    await savePendingInvite(T1, NOW);
+    const s = run(initialAuthState, signedInAs('user-a'));
+    kc.failSet = true;
+    await readPendingInvite(NOW, 'user-a');
+    kc.failSet = false;
+    await savePendingInvite(T2, NOW + 5);
+    run(s, signOut);
+    await flush();
+    expect((await readPendingInvite(NOW + 10, null))?.token).toBe(T2);
+  });
 });

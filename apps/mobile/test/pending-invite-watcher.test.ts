@@ -141,4 +141,27 @@ describe('[A-REQ-028] the pending-invite watcher and the join-door rule', () => 
     expect(h.clearRead).toHaveBeenCalledTimes(1);
     expect(h.read).toHaveBeenCalledWith(expect.any(Number), null);
   });
+
+  it('[CISO-2] a pathname change while restoring does not add a second waiter: one push when the session settles', async () => {
+    resetAuthStoreForTests();
+    const run = renderHook(() => PendingInviteWatcher());
+    h.pathname = '/home';
+    run.rerender();
+    h.pathname = '/book';
+    run.rerender();
+    await settle();
+    publishAuth({ status: 'ready', userId: 'user-a', sync: 'on' });
+    await settle();
+    expect(h.read).toHaveBeenCalledTimes(1);
+    expect(h.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('[CISO-2] unmounting while restoring drops the waiter: nothing is read later', async () => {
+    resetAuthStoreForTests();
+    const run = renderHook(() => PendingInviteWatcher());
+    run.unmount();
+    publishAuth({ status: 'ready', userId: 'user-a', sync: 'on' });
+    await settle();
+    expect(h.read).not.toHaveBeenCalled();
+  });
 });
