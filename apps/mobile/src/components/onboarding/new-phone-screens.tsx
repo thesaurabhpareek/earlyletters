@@ -18,6 +18,11 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
 import { useArrival } from '@/lib/first-run/use-arrival';
 
+/** R12: the method line (never the address) closes the body, so a parent who finds the wrong account can tell which sign-in it was. */
+function withMethod(body: string, method: string | null): string {
+  return method ? `${body} ${method}.` : body;
+}
+
 function Arrives({ title, screen, children }: { title: string; screen: string; children: ReactNode }) {
   const block = useRef<View>(null);
   useArrival(block, title, screen);
@@ -42,14 +47,14 @@ export function OpeningBookScreen({ lettersComing }: { lettersComing: boolean })
   );
 }
 
-export function SlowBookScreen({ onTryAgain, onTryAnother }: { onTryAgain: () => void; onTryAnother: () => void }) {
+export function SlowBookScreen({ onTryAgain, onTryAnother, method = null }: { onTryAgain: () => void; onTryAnother: () => void; method?: string | null }) {
   const t = authCopy.newPhone;
   return (
     <Arrives title={t.slowTitle} screen="slow">
       <StateScreen
         kind="error"
         title={t.slowTitle}
-        body={t.slowBody}
+        body={withMethod(t.slowBody, method)}
         primary={{ label: authCopy.outage.retry, onPress: onTryAgain, testID: 'newPhone.tryAgain' }}
         quiet={[{ label: authCopy.consent.noBook.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
       />
@@ -73,14 +78,14 @@ export function OfflineBookScreen({ onTryAgain, onTryAnother }: { onTryAgain: ()
 }
 
 /** "No book here yet" for a returning account with no book (or an unreadable answer), the same words as the consent sheet's. */
-export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: () => void; onTryAnother: () => void }) {
+export function NoBookHereScreen({ onStartBook, onTryAnother, method = null }: { onStartBook: () => void; onTryAnother: () => void; method?: string | null }) {
   const n = authCopy.consent.noBook;
   return (
     <Arrives title={n.title} screen="noBookHere">
       <StateScreen
         kind="empty"
         title={n.title}
-        body={n.body}
+        body={withMethod(n.body, method)}
         primary={{ label: n.startBook, onPress: onStartBook, testID: 'newPhone.startBook' }}
         quiet={[{ label: n.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
       />
@@ -94,7 +99,7 @@ export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: (
  * the export are quiet and never ask for Terms (R4a, R4b). Decided from auth state alone: no network, no wait. The title
  * reuses state A's heading; the body and the export line are PROPOSED keys (auth.newPhone.consentBody and .nothingToCopy).
  */
-export function HeldScreen({ onTryAnother }: { onTryAnother: () => void }) {
+export function HeldScreen({ onTryAnother, method = null }: { onTryAnother: () => void; method?: string | null }) {
   const t = authCopy.newPhone;
   const m = heldScreenModel({ accountDeletion: capabilities.accountDeletion, hasLocalBook: false });
   const quiet = [
@@ -107,7 +112,7 @@ export function HeldScreen({ onTryAnother }: { onTryAnother: () => void }) {
       <StateScreen
         kind="empty"
         title={t.loading}
-        body={m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody}
+        body={withMethod(m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody, method)}
         primary={{ label: authCopy.account.finishSetup, onPress: () => router.push(m.finishSetup.route), testID: 'held.finishSetup' }}
         quiet={quiet}
       />
