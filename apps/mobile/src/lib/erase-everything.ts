@@ -30,8 +30,10 @@ import { stopAnalyticsForErase } from './analytics';
 import { sweepListeningCopies } from './audio-enhance';
 import { reloadAppLock } from './app-lock/controller';
 import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
+import { DEVICE_ID_KEY } from './auth/new-device/key';
 import { PENDING_REQUEST_KEY } from './auth/pending';
 import { closeBackupHandles, deleteBackupFiles } from './backup/files';
+import { removeAllBackupTokens } from './backup/token-vault';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
@@ -94,7 +96,9 @@ export function eraseDeviceFiles(): void {
  * Keychain items a phone that never finished signing in can still hold (they outlive a reinstall on iOS): the name
  * Apple gave at a first sign-in that did not complete, Apple's user id, and an email sign-in link's request time.
  */
-const SIGN_IN_LEFTOVERS = [PENDING_NAME_KEY, APPLE_USER_KEY, PENDING_REQUEST_KEY] as const;
+const SIGN_IN_LEFTOVERS = [PENDING_NAME_KEY, APPLE_USER_KEY, PENDING_REQUEST_KEY, DEVICE_ID_KEY] as const;
+// DEVICE_ID_KEY (NDR-1): the random per-install id for the new-device email. Erase everything makes this phone a new
+// device; Sign out keeps it, so the same phone stays the same device.
 
 /** Steps 3 to 5. Each is safe to repeat. */
 async function finish(): Promise<void> {
@@ -102,7 +106,18 @@ async function finish(): Promise<void> {
   await clearLedger(ledgerDb());
   await clearPendingInvite();
   for (const key of SIGN_IN_LEFTOVERS) await secureStorage.removeItem(key).catch(() => {});
+  // B5-6: the upload tokens (one Keychain item). A failure is HELD, the rest still runs, then it is thrown before the
+  // pending mark goes: the erase stays pending and the next launch repeats this step (safe to repeat).
+  let tokensHeld: unknown = null;
+  let tokensFailed = false;
+  try {
+    await removeAllBackupTokens();
+  } catch (e) {
+    tokensHeld = e;
+    tokensFailed = true;
+  }
   await forgetReminders();
+  if (tokensFailed) throw tokensHeld;
   finishEraseEverything();
 }
 

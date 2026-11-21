@@ -43,6 +43,7 @@ export const EVENTS = [
   'redeem.peeked', 'redeem.accepted', 'redeem.refused', 'redeem.failed', 'redeem.brake', 'redeem.degraded',
   'status.stored', 'status.refused', 'status.failed', 'status.degraded', 'salt.served',
   'device.sent', 'device.skipped', 'device.failed', 'device.degraded', 'device.dark',
+  'fill.done', 'fill.dark',
 ] as const;
 export type EventName = (typeof EVENTS)[number];
 
@@ -94,7 +95,7 @@ export const REASONS = ['account_deletion', 'device_after_deletion'] as const;
 export type Reason = (typeof REASONS)[number];
 
 /** Every function or script that logs. `config` and `content` are the platform owner's document functions. */
-export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content', 'invite-redeem', 'subscription-status', 'apple-token', 'new-device-email'] as const;
+export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content', 'invite-redeem', 'subscription-status', 'apple-token', 'new-device-email', 'new-device-fill'] as const;
 export type FunctionName = (typeof FUNCTIONS)[number];
 
 export interface LogFields {

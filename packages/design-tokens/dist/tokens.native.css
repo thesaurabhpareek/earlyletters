@@ -30,6 +30,7 @@
       --color-edit-mark: #8A5A3B;
       --color-on-destructive: #FFFFFF;
       --color-scrim: #2B272252;
+      --color-media-frame: #E6DED3;
     }
 
     @variant dark {
@@ -61,6 +62,7 @@
       --color-edit-mark: #D9A47E;
       --color-on-destructive: #1E1612;
       --color-scrim: #0000008C;
+      --color-media-frame: #716A62;
     }
   }
 }
