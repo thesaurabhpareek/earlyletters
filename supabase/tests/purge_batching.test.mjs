@@ -1,8 +1,10 @@
 // Bounded purge runs and retry backoff (20261003020000_purge_batching.sql).
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, invite } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}')`);
 await publishPolicies();

@@ -7,6 +7,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const files = process.argv.slice(2);
 const h = await createDb(files);
@@ -203,7 +204,7 @@ check('[M17] the mark travels with the text group only', new Date((await entry(L
 const E1 = id7();
 await push(A, [op('entry.upsert', E1, letter(E1, { text: 'The day you threw the spoon.' }))]);
 const photo = `${CHILD}/${A}/${E1}.jpg`;
-await as(A, `update entries set photo_path = $1 where id = $2`, [photo, E1]);
+await legacyPhotoPath(sys, E1, photo);
 await push(A, [op('entry.upsert', E1, letter(E1, { text: 'The day you threw the spoon, twice.' }), { changed: ['text'] })]);
 const before = book(await pull(B));
 const haveB = before.visible;
