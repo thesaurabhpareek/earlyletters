@@ -12,7 +12,6 @@
  */
 import { capabilities } from '../capabilities';
 import { secureBackupFilesAtLaunch, type SecureResult } from './files';
-import { moveBackupTokensToKeychain } from './launch-migrate';
 
 type Runtime = typeof import('./runtime');
 
@@ -35,7 +34,6 @@ export function startBackup(): SecureResult {
   // B5 (CR-71): a data right, so it runs with the flag off too: an old install may hold a backup file.
   // The result is counts only (failed deletes, a folder that could not be listed); no name or path.
   const secured = secureBackupFilesAtLaunch();
-  void moveBackupTokensToKeychain(); // B5-9: old rows' tokens to the Keychain; with the flag off too, not awaited
   loadBackup()?.startBackupRuntime();
   return secured;
 }

@@ -88,6 +88,26 @@ export function removeBackupTokensFor(profileId: string, storage: KeyValueStorag
   }).catch(() => undefined);
 }
 
+/**
+ * The settled sweep (B5-5): every token whose profile id is not the signed-in account's goes, so tokens of a signed-out
+ * or orphan account (a failed delete, a kill, a cold launch) do not linger. `keep` null (signed out) removes all.
+ * Never throws.
+ */
+export function pruneBackupTokensExcept(keep: string | null, storage: KeyValueStorage = secureStorage): Promise<void> {
+  const prefix = keep ? `${keep.toLowerCase()}:` : null;
+  return serial(async () => {
+    const book = await readBook(storage);
+    let changed = false;
+    for (const k of Object.keys(book)) {
+      if (prefix === null || !k.startsWith(prefix)) {
+        delete book[k];
+        changed = true;
+      }
+    }
+    if (changed) await writeBook(storage, book);
+  }).catch(() => undefined);
+}
+
 /** Erase everything: the whole item. */
 export function removeAllBackupTokens(storage: KeyValueStorage = secureStorage): Promise<void> {
   return serial(() => storage.removeItem(BACKUP_TOKENS_KEY));

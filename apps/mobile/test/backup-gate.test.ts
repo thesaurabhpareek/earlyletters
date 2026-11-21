@@ -90,7 +90,7 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
       for (const s of specifiers(f)) {
         if (/scribe-keys/.test(s)) offenders.push(`${relative(APP, f)} -> ${s}`);
         const target = resolveSpec(f, s);
-        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES && target !== TOKENS) offenders.push(`${relative(APP, f)} -> ${s}`);
+        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES && target !== TOKENS && target !== MIGRATE) offenders.push(`${relative(APP, f)} -> ${s}`);
       }
     }
     expect(offenders).toEqual([]);
@@ -104,7 +104,7 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
   it('gate.ts imports only the capabilities switch, and requires the runtime only behind the flag', () => {
     const src = readFileSync(GATE, 'utf8');
     const imports = [...src.matchAll(/^import\s.*?from\s+['"]([^'"]+)['"]/gm)].map((m) => m[1]);
-    expect(imports).toEqual(['../capabilities', './files', './launch-migrate']);
+    expect(imports).toEqual(['../capabilities', './files']);
     const body = src.slice(src.indexOf('export function loadBackup'));
     const flag = body.indexOf('if (!capabilities.backup) return null;');
     const req = body.indexOf("require('./runtime')");

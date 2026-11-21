@@ -166,7 +166,7 @@ describe('[B5-5] the sign-out seam', () => {
 
   it('and every settled run keeps only the signed-in account\'s file (a source match: the effect is not rendered here)', () => {
     const src = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
-    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) deleteBackupFilesExcept\(sweep\.keep\);/);
+    expect(src).toMatch(/if \(!authSettled\) return;[\s\S]*backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) \{\s*deleteBackupFilesExcept\(sweep\.keep\);/);
   });
 });
 

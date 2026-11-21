@@ -16,16 +16,27 @@ import { nodeDb } from './helpers/node-db';
 const h = vi.hoisted(() => ({
   disk: null as unknown as Disk,
   dbs: new Map<string, import('../src/lib/db/sql').SqlDb>(),
+  opens: [] as string[],
+  excludeSticks: true,
+  excluded: new Set<string>(),
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: {} }));
-vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null }));
+vi.mock('../modules/scribe-files', () => ({
+  ScribeFiles: {
+    setExcludedFromBackup: (uri: string) => {
+      if (h.excludeSticks) h.excluded.add(uri);
+    },
+    isExcludedFromBackup: (uri: string) => h.excluded.has(uri),
+  },
+}));
 vi.mock('expo-sqlite', () => ({
   get defaultDatabaseDirectory() {
     return `${h.disk.documents}SQLite`;
   },
   openDatabaseSync: (name: string) => {
+    h.opens.push(name);
     const db = h.dbs.get(name)!;
     return {
       getFirstSync: (sql: string, p: (string | number)[] = []) => db.get(sql, ...p),
@@ -77,6 +88,9 @@ beforeEach(() => {
   h.disk = createDisk(iosContainer('ASHA-PHONE'));
   layOutApp(h.disk);
   h.dbs.clear();
+  h.opens = [];
+  h.excluded.clear();
+  h.excludeSticks = true;
 });
 
 describe('[B5-6] the token store: one Keychain item, per account', () => {
@@ -127,61 +141,119 @@ describe('[B5-6] the token store: one Keychain item, per account', () => {
   });
 });
 
-describe('[B5-9] existing token rows move to the Keychain once at launch, the column is nulled, a second run changes nothing', () => {
+describe('[B5-9] the signed-in account\'s old token rows move to the Keychain once, after the settled sweep', () => {
   async function run() {
     vi.resetModules();
+    h.opens = [];
     const kc = keychain();
     // launch-migrate uses the app's Keychain wrapper: stand it in with this map
     vi.doMock('../src/lib/supabase/secure-storage', () => ({ secureStorage: kc }));
     const m = await import('../src/lib/backup/launch-migrate');
-    return { m, kc };
+    const files = await import('../src/lib/backup/files');
+    return { m, kc, files };
   }
+  const marker = (name: string, key: string) => h.dbs.get(name)!.get('SELECT value FROM backup_meta WHERE key = ?', key);
+  const AVI_FILE = `backup-${AVI}.db`;
 
-  it('moves the token, nulls the column, writes the marker; the second run moves nothing', async () => {
+  it('moves the token, nulls the column, writes the marker; the second run moves nothing and writes nothing', async () => {
     oldFileWithToken(FILE, 'asha-token');
     const { m, kc } = await run();
-    expect(await m.moveBackupTokensToKeychain()).toEqual({ moved: 1, failed: 0 });
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 1, failed: 0 });
     expect(column(FILE)).toBeNull();
     expect(JSON.parse(kc.map.get(BACKUP_TOKENS_KEY)!)).toEqual({ [`${ASHA}:${ENTRY}`]: 'asha-token' });
-    expect(h.dbs.get(FILE)!.get('SELECT value FROM backup_meta WHERE key = ?', m.TOKENS_IN_KEYCHAIN)).not.toBeNull();
+    expect(marker(FILE, m.TOKENS_IN_KEYCHAIN)).not.toBeNull();
     kc.map.clear();
-    expect(await m.moveBackupTokensToKeychain()).toEqual({ moved: 0, failed: 0 });
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 0, failed: 0 });
     expect(kc.map.size).toBe(0); // the marker stopped it: nothing was written back
   });
 
-  it('a Keychain that refuses: the column keeps the token, no marker, and the next launch moves it', async () => {
+  it('a Keychain that refuses: the column keeps the token, no marker, and the next run moves it', async () => {
     oldFileWithToken(FILE, 'asha-token');
     const { m, kc } = await run();
     kc.failSet = true;
-    expect(await m.moveBackupTokensToKeychain()).toEqual({ moved: 0, failed: 1 });
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 0, failed: 1 });
     expect(column(FILE)).toBe('asha-token');
-    expect(h.dbs.get(FILE)!.get('SELECT value FROM backup_meta WHERE key = ?', m.TOKENS_IN_KEYCHAIN)).toBeNull();
+    expect(marker(FILE, m.TOKENS_IN_KEYCHAIN)).toBeNull();
     kc.failSet = false;
-    expect(await m.moveBackupTokensToKeychain()).toEqual({ moved: 1, failed: 0 });
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 1, failed: 0 });
     expect(column(FILE)).toBeNull();
   });
 
-  it('a file with no token, or one never opened by the app (no tables), is left alone; scribe.db is never opened', async () => {
-    oldFileWithToken(FILE, null);
-    h.dbs.set(`backup-${AVI}.db`, nodeDb().db); // no schema
-    put(h.disk, `${h.disk.documents}SQLite/backup-${AVI}.db`, 64);
+  it('only the kept account: another account\'s file is never opened and its Keychain tokens are pruned; signed out prunes all and opens nothing', async () => {
+    oldFileWithToken(FILE, 'asha-token');
+    oldFileWithToken(AVI_FILE, 'avi-token');
     const { m, kc } = await run();
-    expect(await m.moveBackupTokensToKeychain()).toEqual({ moved: 0, failed: 0 });
-    expect(kc.map.size).toBe(0);
+    await putTokens(AVI, [{ entryId: ENTRY, token: 'avi-old' }], kc);
+    await putTokens('c0ffee00-0000-4000-8000-000000000001', [{ entryId: ENTRY, token: 'orphan-old' }], kc);
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 1, failed: 0 });
+    expect(h.opens).toEqual([FILE]);
+    expect(h.dbs.get(AVI_FILE)!.get<{ upload_token: string }>('SELECT upload_token FROM backup_jobs')!.upload_token).toBe('avi-token');
+    expect(Object.keys(JSON.parse(kc.map.get(BACKUP_TOKENS_KEY)!))).toEqual([`${ASHA}:${ENTRY}`]);
+    h.opens = [];
+    expect(await m.settleBackupTokens(null)).toEqual({ moved: 0, failed: 0 });
+    expect(h.opens).toEqual([]);
+    expect(kc.map.has(BACKUP_TOKENS_KEY)).toBe(false);
   });
 
-  it('runs from startBackup with the flag off (gate.ts), after the exclusion step, and is never awaited', () => {
-    const src = readFileSync(join(__dirname, '../src/lib/backup/gate.ts'), 'utf8');
-    const body = src.slice(src.indexOf('export function startBackup'));
-    expect(body.indexOf('secureBackupFilesAtLaunch()')).toBeLessThan(body.indexOf('void moveBackupTokensToKeychain()'));
-    expect(body.indexOf('void moveBackupTokensToKeychain()')).toBeLessThan(body.indexOf('loadBackup()'));
+  it('never creates a file: with none on the disk, nothing is opened; an account that signed out since (the tombstone) is skipped', async () => {
+    const { m, files } = await run();
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 0, failed: 0 });
+    expect(h.opens).toEqual([]);
+    oldFileWithToken(FILE, 'asha-token');
+    files.endBackupFileFor(ASHA); // signed out: tombstone set, file deleted
+    put(h.disk, `${h.disk.documents}SQLite/${FILE}`, 64); // a stale file is back
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 0, failed: 0 });
+    expect(h.opens).toEqual([]);
+  });
+
+  it('a file that cannot be excluded is deleted and not opened (the store\'s own check)', async () => {
+    oldFileWithToken(FILE, 'asha-token');
+    h.excludeSticks = false;
+    const { m } = await run();
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 0, failed: 1 });
+    expect(h.opens).toEqual([]);
+    expect(h.disk.files.has(`${h.disk.documents}SQLite/${FILE}`)).toBe(false);
+  });
+
+  it('nulls only the rows it moved: a token written meanwhile stays', async () => {
+    const db = oldFileWithToken(FILE, 'asha-token');
+    const { m, kc } = await run();
+    const setItem = kc.setItem;
+    kc.setItem = async (k, v) => {
+      await setItem(k, v);
+      db.run(`INSERT INTO backup_jobs (entry_id, child_id, source, audio_uri, audio_sha256, audio_bytes, captured_at, state, upload_token, updated_at)
+        VALUES ('01928c3e-5a2b-7c3d-8e4f-000000000002', 'c1', 'letter', 'file:///b.m4a', 'y', 1, '2026-10-29T19:00:00.000Z', 'begun', 'asha-token-new', 'now')`);
+    };
+    expect(await m.settleBackupTokens(ASHA)).toEqual({ moved: 1, failed: 0 });
+    expect(column(FILE)).toBeNull();
+    expect(db.get<{ upload_token: string }>(`SELECT upload_token FROM backup_jobs WHERE entry_id = '01928c3e-5a2b-7c3d-8e4f-000000000002'`)!.upload_token).toBe('asha-token-new');
+  });
+
+  it('canary: no token appears in a result, an error or the console, whether the move works or fails', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((k) => vi.spyOn(console, k).mockImplementation(() => undefined));
+    oldFileWithToken(FILE, 'CANARY-TOKEN-asha');
+    const { m, kc } = await run();
+    kc.failSet = true;
+    const bad = await m.settleBackupTokens(ASHA);
+    kc.failSet = false;
+    const good = await m.settleBackupTokens(ASHA);
+    const failing = createTokenStore(ASHA, { ...keychain(), getItem: async () => { throw new Error('locked'); } });
+    const err = await failing.set(ENTRY, 'CANARY-TOKEN-asha').catch((e: Error) => e);
+    const seen = JSON.stringify([bad, good, String((err as Error).message), spies.flatMap((s) => s.mock.calls)]);
+    expect(seen).not.toContain('CANARY');
+    for (const s of spies) s.mockRestore();
+  });
+
+  it('prune and move run from the settled sweep, after the file sweep; the gate no longer starts the move', () => {
+    const provider = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
+    expect(provider).toMatch(/deleteBackupFilesExcept\(sweep\.keep\);[^]*?void settleBackupTokens\(sweep\.keep\);/);
+    const gate = readFileSync(join(__dirname, '../src/lib/backup/gate.ts'), 'utf8');
+    expect(gate).not.toMatch(/launch-migrate|moveBackupTokens/);
   });
 });
 
 describe('[B5-6] the seams', () => {
-  it('Erase everything removes the token item in finish(); sign-out removes the account\'s tokens beside its file', () => {
-    const erase = readFileSync(join(__dirname, '../src/lib/erase-everything.ts'), 'utf8');
-    expect(erase).toMatch(/await removeAllBackupTokens\(\)/);
+  it('sign-out removes the account\'s tokens beside its file', () => {
     const provider = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
     expect(provider).toMatch(/endBackupFileFor\(before\);\s*void removeBackupTokensFor\(before\);/);
   });

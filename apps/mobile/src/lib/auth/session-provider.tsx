@@ -22,6 +22,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { deleteBackupFilesExcept, endBackupFileFor } from '../backup/files';
+import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
@@ -206,7 +207,11 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     // B5-5: and every settled run (a launch included) keeps only the signed-in account's file, so a session that ended
     // while the app was closed, a kill after sign-out and a failed delete are all caught and retried here.
     const sweep = backupSweepFor(sessionUser, before, storedRead.current);
-    if (sweep.run) deleteBackupFilesExcept(sweep.keep);
+    if (sweep.run) {
+      deleteBackupFilesExcept(sweep.keep);
+      // B5-6, B5-9: after the sweep, tokens of any other account leave the Keychain and the kept account's old rows move.
+      void settleBackupTokens(sweep.keep);
+    }
   }, [sessionUser, authSettled]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase

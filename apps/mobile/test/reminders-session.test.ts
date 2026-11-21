@@ -142,7 +142,7 @@ describe('[NS-13-R14] one hook on the user id ends reminders on every path a ses
     // Only once the Keychain has answered (not while restoring), so a launch never mistakes "not read yet" for "signed out".
     expect(provider).toMatch(/const authSettled = state\.status !== 'restoring';/);
     expect(provider).toMatch(
-      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*if \(before && before !== sessionUser\) \{\s*endBackupFileFor\(before\);\s*void removeBackupTokensFor\(before\);\s*\}\s*const sweep = backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) deleteBackupFilesExcept\(sweep\.keep\);\s*}, \[sessionUser, authSettled\]\);/,
+      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*if \(before && before !== sessionUser\) \{\s*endBackupFileFor\(before\);\s*void removeBackupTokensFor\(before\);\s*\}\s*const sweep = backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) \{\s*deleteBackupFilesExcept\(sweep\.keep\);\s*void settleBackupTokens\(sweep\.keep\);\s*\}\s*}, \[sessionUser, authSettled\]\);/,
     );
     expect(provider.match(/settleReminderSession\(/g)).toHaveLength(1);
     expect(provider).not.toMatch(/endReminderSession\(/);
