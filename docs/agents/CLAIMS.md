@@ -10,4 +10,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
-| wave-a-content | content | fix/content-wave-a-capture-review, fix/content-wave-a-book-letter, fix/content-wave-a-settings-errors | #1136, #1137, #1138 | packages/content/src/strings.en.ts, packages/content/src/book.en.ts | 2026-11-21T01:14Z | 2026-11-24T01:14Z | copy rewrite wave A; PRs read as open by REST 2026-11-21 01:14Z |
+| wave-a-content | content | fix/content-wave-a-capture-review, fix/content-wave-a-book-letter, fix/content-wave-a-settings-errors | #1136, #1137, #1138 | packages/content/src/strings.en.ts, packages/content/src/book.en.ts | 2026-11-21T01:14Z | 2026-11-24T01:14Z | copy rewrite wave A; PRs read as open by REST 2026-11-21T01:14ZZ |
