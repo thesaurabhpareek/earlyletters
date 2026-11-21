@@ -178,6 +178,19 @@ describe('[DATA-REQ-040] fail closed without wedging the pull', () => {
     expect(() => f.db.transaction(() => applyPullPage(f.db, p, NOW))).not.toThrow();
     f.close();
   });
+  it('a refused row is undone as a whole (ROLLBACK TO), not left half merged; only the raw guard is swallowed', () => {
+    const f = phone();
+    const before = f.db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', L1)!;
+    // The abort comes late: after the merge already moved server_version and synced_at (statement 2), at takeProvenance's statement.
+    f.db.exec(`CREATE TRIGGER t_late AFTER UPDATE OF engine_version ON entries WHEN NEW.id = '${L1}'
+      BEGIN UPDATE entries SET raw_transcript = 'tampered' WHERE id = NEW.id; END`);
+    let out!: ReturnType<typeof applyPullPage>;
+    f.db.transaction(() => { out = applyPullPage(f.db, page([{ ...row(L1, FIRST, '999'), updated_at: '2026-10-21T09:00:00.000Z' }]), '2026-10-21T09:00:00.000Z'); });
+    expect(out.refused).toBe(1);
+    expect(f.db.get('SELECT * FROM entries WHERE id = ?', L1)).toEqual(before); // every column as it was
+    expect(flag(f)).toBeNull();
+    f.close();
+  });
   it('an error that is not the raw guard still fails the page, as before', () => {
     const f = phone();
     f.db.exec(`CREATE TRIGGER t_other AFTER UPDATE OF synced_at ON entries WHEN NEW.id = '${L1}' BEGIN SELECT RAISE(ABORT, 'other'); END`);
