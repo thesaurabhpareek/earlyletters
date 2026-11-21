@@ -260,17 +260,19 @@ describe('Asha export (golden)', () => {
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
     expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
-    expect(check).toEqual({ ok: true, problems: [], filesChecked: Object.keys(files).length });
+    expect(check).toEqual({ ok: true, problems: [], problemCounts: {}, filesChecked: Object.keys(files).length });
   });
 
-  it('catches a damaged file when checking, by path only', async () => {
+  it('catches a damaged file when checking, by code and count only (never a path)', async () => {
     const { zip, result } = await makeExport();
     const entry = (await readCentralDirectory(access(zip))).find((e) => e.name === 'audio/e2.m4a')!;
     const damaged = zip.slice();
     damaged[entry.localOffset + 30 + entry.name.length + 1000] ^= 0xff;
     const check = await verifyExport(access(damaged), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check.ok).toBe(false);
-    expect(check.problems).toEqual(['hash:audio/e2.m4a']);
+    expect(check.problems).toEqual(['hash']);
+    expect(check.problemCounts).toEqual({ hash: 1 });
+    expect(JSON.stringify(check)).not.toContain('e2.m4a');
   });
 
   it('is identical when made twice from the same phone state', async () => {

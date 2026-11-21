@@ -145,14 +145,15 @@ describe('content rules drift', () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('[NS-48-R28] VOICE.md line 70 is enforced: no notification carries an exclamation mark', () => {
+  it('[NS-48-R28] the VOICE.md notification line is enforced: no notification carries an exclamation mark', () => {
     const voice = readFileSync(join(__dirname, '..', 'VOICE.md'), 'utf8');
-    // The rule is at most one a month across all notifications. A template is sent again and again, so the
-    // test holds the stricter line: none in any notification string, whichever family it sits in.
-    expect(voice).toMatch(/exclamation mark per month across all notifications/);
+    // VOICE.md says none (Q-NTC-7, CL-040), as the test does: a template is sent again and again, so no
+    // notification string carries one, whichever family it sits in.
+    expect(voice).toMatch(/No exclamation marks in notifications \(Q-NTC-7, CL-040\)\./);
+    expect(voice).not.toMatch(/exclamation mark per month/);
     const scoped = [...leaves(en, 'en'), ...leaves(features, 'features')].filter((l) => NOTIFICATION_PATH.test(l.path));
     expect(scoped.filter((l) => l.text.includes('!')).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-    // Approving a monthly exclamation mark means editing VOICE.md line 70 and both places that hold zero:
+    // Approving a monthly exclamation mark means editing the VOICE.md notification line and both places that hold zero:
     // this test and the `notifications` budget in rules.test.ts, together.
     expect(RULES).toMatch(/notifications: 0,/);
   });
