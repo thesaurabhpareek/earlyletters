@@ -124,7 +124,7 @@ These rules come from the 20 and 21 Nov stretch: the Build 13 start PRs, CR-70 t
 
 **AIE-R32 (MUST)** A fix round is one commit that closes every open Must-fix item, pushed once, and reviewers are launched only after the head is stable. *Why:* a new commit voids both counted reviews (CR-70), so each extra push costs two fresh review runs. *Evidence:* #1029 took five rounds, #1031 and #1032 three each. *Enforced by:* review only. A stale-review delta print for `merge-queue.mjs` is proposed as a patch in #1149 (merged as a proposal under `docs/ops/proposed/`, not applied).
 
-**AIE-R33 (MUST)** A required check that shows `cancelled` is re-run with `POST repos/<owner>/<repo>/actions/runs/<run_id>/rerun`, never by pushing an empty commit. *Why:* a push voids the reviews. *Evidence:* `compliance-fence` was cancelled on #1032, #1071 and #1149 (twice) and passed on re-run. *Enforced by:* review only.
+**AIE-R33 (MUST)** A required check that shows `cancelled` is re-run with `POST repos/<owner>/<repo>/actions/runs/<run_id>/rerun`, never by pushing an empty commit. *Why:* a push voids the reviews. *Evidence:* `compliance-fence` was cancelled on #1071 and #1149 while the CI queue was backed up; on #1149 a re-run by REST passed with no new commit. *Enforced by:* review only.
 
 **AIE-R34 (MUST)** A script or report that reads counted-review headers looks at the first three lines of each comment, because the agent marker line can come first. *Why:* a count that reads only line one undercounts. *Evidence:* a first count on 21 Nov found 75 reviews and 10 of 30 PRs with none; the corrected count is 116 reviews and none missing. *Enforced by:* not yet (AIE-G14); `merge-queue.mjs` is the reader of record.
 
