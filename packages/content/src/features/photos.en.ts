@@ -77,6 +77,9 @@ export const photosCopy = {
       // words are kept; the line names no cause and asks for nothing. Never describes the picture.
       // TODO(founder): PROPOSED, needs word approval
       notSaved: 'The photo did not come along with this letter. Your words are kept, and you can add it again.',
+      // The heading over the letter page's quiet add rows (spec 06 section 4a, `book.letter.addGroup`; a level 2 heading).
+      // TODO(founder): PROPOSED, needs word approval
+      addGroup: 'Add to this letter',
       // The picture's file is gone (design spec 01 section 6): the letter reads whole.
       // TODO(founder): PROPOSED, needs word approval
       missing: 'Not on this phone any more',

@@ -6,11 +6,14 @@
  * mounted across the switch. A card opens its letter. It only reads: no add control and no grid of bare tiles
  * (NS-01-R11, R23).
  */
+import { useState } from 'react';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { ChoiceGroup } from '@/components/ui/choice-group';
+import { useIsAccessibilitySize } from '@/lib/a11y';
 import { photos } from '@/lib/photos/copy';
 import { photoUri } from '@/lib/photos/device';
 import { photoA11yLabel } from '@/lib/photos/text';
+import { lensThumbSize } from '@/lib/photos/surface';
 import type { StoredPhoto } from '@/lib/photos/types';
 import type { Child, Entry } from '@/lib/store';
 import { PhotoFrame } from './photo-frame';
@@ -39,16 +42,33 @@ export function LensRow({ mode, onChange }: { mode: LensMode; onChange: (m: Lens
   );
 }
 
-/** The thumbnail a lens card leads with, about 72 pt (design spec 01 section 5.1). */
-const THUMB_PT = 72;
-
-/** One letter in the Photos lens: the Book's own LetterCard, leading with its thumbnail. A row of the Book's list. */
+/**
+ * One letter in the Photos lens: the Book's own LetterCard, leading with its thumbnail. A row of the Book's list. The
+ * thumbnail shows the whole picture, uncropped, 72 pt on its long side, and takes the card's width (up to 160 pt tall)
+ * when the card stacks at accessibility sizes (B-S04, NS-01-R42). A file that is gone shows the card without a
+ * thumbnail and no words (B-S04 thumbMissing, the later design; spec 01 section 6 drew a box, conformance F-27).
+ */
 export function LensCard({ entry, picture, child, onOpen }: { entry: Entry; picture: StoredPhoto | undefined; child: Child; onOpen: (entryId: string) => void }) {
+  const large = useIsAccessibilitySize();
+  const [missing, setMissing] = useState(false);
   if (!picture) return null;
   const label = photoA11yLabel(picture.text);
+  const aspect = picture.width && picture.height ? picture.width / picture.height : 1;
+  const size = lensThumbSize({ aspect, largeText: large });
+  const thumb = (
+    <PhotoFrame
+      uri={photoUri(picture)}
+      label={label}
+      fit="contain"
+      radius="sm"
+      {...('stacked' in size ? { width: '100%', aspectRatio: size.aspect, maxHeight: size.maxHeight } : { width: size.width, height: size.height })}
+      onMissing={() => setMissing(true)}
+      testID={`book.photos.thumb.${entry.id}`}
+    />
+  );
   return (
     <BookRow reduced>
-      <LetterCard entry={entry} child={child} onPress={onOpen} photo={{ label, thumb: <PhotoFrame uri={photoUri(picture)} label={label} width={THUMB_PT} height={THUMB_PT} testID={`book.photos.thumb.${entry.id}`} /> }} />
+      <LetterCard entry={entry} child={child} onPress={onOpen} photo={missing ? undefined : { label, thumb }} />
     </BookRow>
   );
 }

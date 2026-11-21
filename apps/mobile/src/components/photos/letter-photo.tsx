@@ -9,8 +9,9 @@ import { Alert, View, useWindowDimensions } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { announce, useIsAccessibilitySize } from '@/lib/a11y';
-import { ErrorLine } from './error-line';
+import { tokens } from '@scribe/design-tokens';
+import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { ErrorLine } from '@/components/ui/error-line';
 import { photoWordsFieldsShown } from '@/lib/photos/words-setting';
 import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
@@ -91,9 +92,10 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
   const controls = letterPhotoControls({ own, hasPhoto: !!photo, hasWords: words });
   if (!photo) {
     return controls.add ? (
-      <View className="items-start" testID="letter.photo.add">
+      <View className="items-start gap-2" testID="letter.photo.add">
+        {draft ? null : <AddGroupHeading />}
         {notSaved ? <SpokenLine text={draft ? photos.review.notStored : photos.book.letter.notSaved} testID="letter.photo.notSaved" /> : null}
-        <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
+        <Button variant="quiet" size="lg" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
         <ErrorLine message={failed || pick.failed ? photos.capture.openFailed : null} />
       </View>
     ) : null;
@@ -105,16 +107,20 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
           {/* No length cap on the fields: a native cap counts UTF-16 units and could cut a character in half; editPhotoWords keeps 140 and 60 characters a person sees (BL-957). */}
           <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} multiline onChangeText={(t) => (typed.current.text = t)} onBlur={flush} testID="letter.photo.text" />
           <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} onChangeText={(t) => (typed.current.place = t)} onBlur={flush} testID="letter.photo.place" />
-          <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => (flush(), setEditing(false))} testID="letter.photo.editDone" />
+          <Button variant="quiet" size="lg" label={copy.common.doneButton} onPress={() => (flush(), setEditing(false))} testID="letter.photo.editDone" />
         </View>
       ) : null}
       {controls.change ? (
-        <View className="items-start">
-          {!editing && photoWordsFieldsShown() ? <Button variant="quiet" size="md" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
-          <Button variant="quiet" size="md" label={photos.book.letter.changePhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.change" />
+        <View className="items-start gap-2">
+          {/* The "Add to this letter" group holds the add rows only (spec 06 section 4a, IA-R11): here, Change. Words and Remove are not adds. */}
+          <View className="items-start gap-2" testID="letter.photo.group">
+            {draft ? null : <AddGroupHeading />}
+            <Button variant="quiet" size="lg" label={photos.book.letter.changePhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.change" />
+          </View>
+          {!editing && photoWordsFieldsShown() ? <Button variant="quiet" size="lg" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
           <Button
             variant="quiet"
-            size="md"
+            size="lg"
             label={photos.book.letter.removePhoto}
             onPress={() => offerUndo(photos.book.letter.removed, removePhotoFromLetter(photoDeps(), entryId))}
             testID="letter.photo.remove"
@@ -156,12 +162,16 @@ export function LetterPicture({ entryId, own, columnWidth }: { entryId: string; 
 
 function PictureFrame({ photo, own, width, height }: { photo: StoredPhoto; own: boolean; width: number; height: number }) {
   const [missing, setMissing] = useState(false);
+  const { c } = useTheme();
   if (missing) {
     return (
-      <View className="gap-1" testID="letter.photo.missing">
+      <View
+        className="items-start gap-1 px-4 py-3"
+        style={{ borderRadius: tokens.radius.md, borderWidth: tokens.stroke.control, borderColor: c.mediaFrame, backgroundColor: c.surface }}
+        testID="letter.photo.missing">
         <Text variant="callout" tone="muted">{photos.book.letter.missing}</Text>
         {letterPhotoControls({ own, hasPhoto: true, hasWords: true }).remove ? (
-          <Button variant="quiet" size="md" label={photos.book.letter.missingRemove} onPress={() => void removePhotoFromLetter(photoDeps(), photo.entryId)} testID="letter.photo.missingRemove" />
+          <Button variant="quiet" size="lg" label={photos.book.letter.missingRemove} onPress={() => void removePhotoFromLetter(photoDeps(), photo.entryId)} testID="letter.photo.missingRemove" />
         ) : null}
       </View>
     );
@@ -180,6 +190,15 @@ function SpokenLine({ text, testID }: { text: string; testID: string }) {
   return (
     <Text variant="callout" tone="muted" accessibilityLiveRegion="polite" testID={testID}>
       {text}
+    </Text>
+  );
+}
+
+/** The group's level 2 heading over the letter page's add rows (spec 06 section 4a; words are the PROPOSED key book.letter.addGroup). */
+function AddGroupHeading() {
+  return (
+    <Text variant="footnote" caps asHeading={2} tone="muted" testID="letter.photo.groupHeading">
+      {photos.book.letter.addGroup}
     </Text>
   );
 }
