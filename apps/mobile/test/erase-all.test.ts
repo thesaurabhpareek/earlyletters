@@ -885,6 +885,7 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     const log: string[] = [];
     const r = await runEraseEverything({
       ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         log.push('erase');
         return 'erased';
@@ -914,6 +915,7 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
       const log: string[] = [];
       await runEraseEverything({
         ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
         erase: async () => outcome,
         setPhase: (p) => log.push(`phase:${p}`),
         setFailed: (f) => log.push(`failed:${f}`),
@@ -924,6 +926,7 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     const log: string[] = [];
     await runEraseEverything({
       ownerCheck: async () => 'passed',
+      onCheckFailed: () => {},
       erase: async () => {
         throw new Error('disk');
       },

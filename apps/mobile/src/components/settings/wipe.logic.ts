@@ -89,19 +89,38 @@ export type EraseRunOutcome = EraseOutcome | 'cancelled';
  * The check lives here and not in eraseEverything(), so a kill-and-resume of a pending erase never asks again.
  */
 export async function runEraseEverything(deps: {
-  ownerCheck: () => Promise<'passed' | 'cancelled' | 'unavailable'>;
+  ownerCheck: () => Promise<'passed' | 'cancelled' | 'failed' | 'unavailable'>;
+  /** The check failed or was locked out (not a cancel): one line, nothing erased. */
+  onCheckFailed: () => void;
   erase: () => Promise<EraseOutcome>;
   setPhase: (p: ErasePhase) => void;
   setFailed: (f: null | 'failed' | 'signed_in') => void;
   announceDone: () => void;
 }): Promise<EraseRunOutcome> {
-  let check: 'passed' | 'cancelled' | 'unavailable';
+  if (eraseRunning) return 'cancelled'; // a second confirm while one is running does nothing
+  eraseRunning = true;
+  try {
+    return await runOnce(deps);
+  } finally {
+    eraseRunning = false;
+  }
+}
+
+/** Latch: one Erase everything run at a time, from the owner check to the end. */
+let eraseRunning = false;
+
+async function runOnce(deps: Parameters<typeof runEraseEverything>[0]): Promise<EraseRunOutcome> {
+  let check: 'passed' | 'cancelled' | 'failed' | 'unavailable';
   try {
     check = await deps.ownerCheck();
   } catch {
-    check = 'cancelled';
+    check = 'failed';
   }
   if (check === 'cancelled') return 'cancelled';
+  if (check === 'failed') {
+    deps.onCheckFailed();
+    return 'cancelled';
+  }
   deps.setFailed(null);
   deps.setPhase('erasing');
   let r: EraseOutcome;

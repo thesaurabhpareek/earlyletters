@@ -15,6 +15,7 @@ import { copy } from '@/lib/copy';
 import { eraseEverything } from '@/lib/erase-everything';
 import { whileSharing } from '@/lib/app-lock/controller';
 import { haptic } from '@/lib/haptics';
+import { ownerCheckCopy } from '@/lib/security/copy';
 import { ownerCheck } from '@/lib/security/owner-check';
 import { localDeletionAllowed } from '@/lib/store';
 
@@ -81,7 +82,8 @@ export default function EraseEverything() {
     const d = eraseConfirmDialog(e, () => {
       void runEraseEverything({
         // FR-SEC-06: Face ID, Touch ID or passcode after "Erase"; the app lock waits while the system sheet is up.
-        ownerCheck: () => whileSharing(ownerCheck),
+        ownerCheck: () => whileSharing(() => ownerCheck()),
+        onCheckFailed: () => Alert.alert(ownerCheckCopy.eraseCheckFailed), // PROPOSED words
         erase: () => eraseEverything(),
         setPhase,
         setFailed,
