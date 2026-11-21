@@ -78,7 +78,8 @@ export function useAccountDeletion() {
       return false;
     }
     // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
-    recordRequested(r.value);
+    // Not under a second account: the note on the phone is the owner's (HO-911, same guard as refresh).
+    if (bookVisibleNow()) recordRequested(r.value);
     // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
     // then PostHog deletes this phone's persons through analytics-forget.
     analytics.track('account_deletion', { stage: 'confirmed' });
@@ -101,7 +102,7 @@ export function useAccountDeletion() {
     }
     // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
     // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
-    recordCancelled();
+    if (bookVisibleNow()) recordCancelled();
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;

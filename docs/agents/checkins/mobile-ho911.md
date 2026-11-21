@@ -1,1 +1,0 @@
-21 Nov mobile | done: HO-911 guard in use-account-deletion refresh (bookVisibleNow), test account-deletion-second-account, red on old code and mutant | next: reviews; retarget to develop when #879 merges | blocked/needs: #879 merged
