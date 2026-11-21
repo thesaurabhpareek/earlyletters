@@ -66,8 +66,11 @@ await as(A, `update entries set final_text = 'She walked to me.' where id='${ID}
 check('[ARCH-P-01] final_text still changes', (await sys(`select final_text from entries where id='${ID}'`)).rows[0].final_text === 'She walked to me.');
 await as(A, `update entries set in_book = false where id='${ID}'`);
 check('[ARCH-P-01] in_book still changes', (await sys(`select in_book from entries where id='${ID}'`)).rows[0].in_book === false);
-await as(A, `update entries set photo_path='${CHILD}/${A}/${ID}.jpg' where id='${ID}'`);
-check('[ARCH-P-01] photo_path still changes', (await sys(`select photo_path from entries where id='${ID}'`)).rows[0].photo_path.endsWith(`${ID}.jpg`));
+// photo_path is no longer a mutable column: 20261110000000_photo_bucket_closed.sql refuses any new path (SCPHO), so the
+// third mutable-column check moved to sounds_like_me, and the closed door is asserted here as well (not skipped).
+await as(A, `update entries set sounds_like_me = true where id='${ID}'`);
+check('[ARCH-P-01] sounds_like_me still changes', (await sys(`select sounds_like_me from entries where id='${ID}'`)).rows[0].sounds_like_me === true);
+check('[ARCH-P-01] photo_path is refused (SCPHO), the server holds no pictures', (await codeOf(() => as(A, `update entries set photo_path='${CHILD}/${A}/${ID}.jpg' where id='${ID}'`))) === 'SCPHO');
 await as(A, `update entries set deleted_at = now() where id='${ID}'`);
 const t = (await sys(`select deleted_at is not null d, deleted_reason r from entries where id='${ID}'`)).rows[0];
 check('[ARCH-P-01] the tombstone path still works', t.d && t.r === 'user');
