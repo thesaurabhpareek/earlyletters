@@ -2446,7 +2446,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### App (mobile)
 
 #### BL-518 The second reminder prime (after the first month chapter)
-- Status: in-review (PR #1274). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Status: partly done (web journey, see BL-1427; mobile half merged in PR #1274, merge commit 32f4e55fb1615d39365c200237e598d0c459ad2b). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. Only the first is built (`apps/mobile/src/lib/asks/next-ask.logic.ts:7`, SET-02).
 - Scope: offer `reminder_prime` again once after the first month chapter, inside the cap of 2 (`MAX_REMINDER_PRIMES`) and the one-ask-per-session rule.
@@ -7096,7 +7096,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/sync-*.test.ts`.
 
 #### BL-1427 BL-518 web half: a web journey that shows the second reminder prime
-- Status: blocked (PR #1274 merging; it builds the mobile half of BL-518 only). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-518.
+- Status: ready (PR #1274 merged as 32f4e55, the mobile half). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none given (same source as BL-518: C-REQ-001 Rev, F13 6.2 B row 4c).
 - Problem and evidence: BL-518's Done-when says "`test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it". #1274 builds the mobile half: the second prime after the first month chapter, the cap of 2 and the tests. No web journey step for it exists on `develop` (searched `docs/BACKLOG.md` and `apps/mobile/test` for a journey naming the second prime: none found). What remains on BL-518 once #1274 merges: only the web journey.
@@ -7115,7 +7115,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
 
 #### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
-- Status: blocked (PR #1274 merging; the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Status: ready (PR #1274 merged as 32f4e55, the second showing is built there). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
 - Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. On `develop` the prime tracks `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47`, correct for the only showing that exists there. Unverified: how #1274 labels the second.
@@ -7125,7 +7125,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
 
 #### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
-- Status: needs-decision (founder or Karma; product's recommendation is in the Problem line). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-518.
+- Status: needs-decision (founder or Karma; product's recommendation is in the Problem line). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
 - Priority: Low. Gate: none.
 - Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
 - Problem and evidence: Lens B on #1274. On `develop` there is no second prime: `apps/mobile/src/lib/asks/next-ask.logic.ts:58` is the first-prime rule only (`firstLetter && primesShown === 0 && !remindersOn`), and the cap is `MAX_REMINDER_PRIMES = 2` at `:20`. The question arises only if #1274 makes the second prime eligible for someone who said Yes to the first and later turned reminders off in Settings (unverified: this lives only in #1274 and was not read). Whether that matches F13 6.2 B row 4c was not checked either. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
