@@ -46,6 +46,9 @@ const light = {
    *  Increase Contrast and iOS before 26 (council ruling 30, DESIGN-LANGUAGE-V2 4.1). Light keeps surfaceRaised.
    *  Drawn with a 1 pt (`stroke.control`) `line` hairline, `controlBorder` under Increase Contrast. Never used on system bars or sheets. */
   glassFallback: '#FFFFFF',
+  /** Hairline frame round a picture (ruling 27, NS-01-R41). Light keeps `line`: 1.26:1 on bg, so the frame there is
+   *  only the page edge, and the picture's own edge carries the shape. Draw it `stroke.control` wide. */
+  mediaFrame: '#E6DED3',
 } as const;
 
 const dark = {
@@ -70,6 +73,7 @@ const dark = {
   scrim: '#0000008C',
   highlight: '#FFFFFF14',
   glassFallback: '#282421', // ruling 30: one step above surfaceRaised so the ring reads apart from the page
+  mediaFrame: '#716A62', // 3.45:1 on bg, 3.29 surface, 3.15 surfaceRaised (line #33302C is 1.40:1, ruling 27)
 } as const;
 
 /**
@@ -84,6 +88,7 @@ const highContrast = {
     editMark: '#6E4529',
     line: '#6B645B', // was decorative; now a visible 5.5:1 edge
     highlight: '#6B645B', // line strength
+    mediaFrame: '#6B645B', // = line under Increase Contrast
     controlBorder: '#2B2722',
   },
   dark: {
@@ -92,6 +97,7 @@ const highContrast = {
     editMark: '#E8BC9A',
     line: '#B3AA9E',
     highlight: '#B3AA9E', // line strength
+    mediaFrame: '#B3AA9E', // = line under Increase Contrast (8.01:1 on bg)
     controlBorder: '#F2ECE4',
   },
 } as const satisfies Record<'light' | 'dark', Partial<Record<keyof typeof light, string>>>;
@@ -437,6 +443,23 @@ const target = { min: 44, primary: 56, capture: 64, web: 48 } as const;
 /** Stroke widths in pt. `hairline` is decorative only; controls use `control`. */
 const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1.5 } as const;
 
+/**
+ * Picture sizes in pt (NS-01-R3, R39, R42; A-S06, B-S04). A picture is fitted and never cropped, so these are maximum
+ * boxes: the frame takes the picture's own proportions inside them. Draw the frame with `mediaFrame` and `stroke.control`.
+ * Set by design: thumbMaxPt (Ready), thumbAxMaxPt (88 pt from AX3), lensThumbPt (72 pt on the long side).
+ * PROPOSED [U], design to confirm (conformance F-19; no design file sets them): the letter page column ratio 0.75 and
+ * window ratio 0.4 (kept as mobile drew them in lib/photos/surface.ts), and letterAxMaxPt = 88, the existing large-text
+ * step, in place of mobile's 120 so no new step enters the scale.
+ */
+const picture = {
+  thumbMaxPt: 160,
+  thumbAxMaxPt: 88,
+  lensThumbPt: 72,
+  letterColumnRatio: 0.75,
+  letterWindowRatio: 0.4,
+  letterAxMaxPt: 88,
+} as const;
+
 /** Focus ring for Full Keyboard Access, Switch Control and web (WCAG 2.4.7 / 2.4.13). */
 const focusRing = { width: 2, offset: 2 } as const;
 
@@ -535,6 +558,7 @@ export const tokens = {
   motion,
   target,
   stroke,
+  picture,
   focusRing,
 } as const;
 

@@ -48,6 +48,8 @@ const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['editMark', s] as [keyof C, keyof C]),
   ['accent', 'bg'], ['recording', 'bg'], ['destructive', 'bg'],
 ];
+/** The picture frame (ruling 27, NS-01-R41) on the three page surfaces. In light it keeps `line` (see the mediaFrame tests). */
+const FRAME_PAIRS: [keyof C, keyof C][] = (['bg', 'surface', 'surfaceRaised'] as (keyof C)[]).map((s) => ['mediaFrame', s]);
 
 /**
  * Glyph pairs: every icon colour the app draws (tab bar, header, rows, the lock, the recording disc's
@@ -108,6 +110,13 @@ describe('design tokens: colour', () => {
         }
       });
     }
+    for (const hc of [false, true]) {
+      if (mode === 'light' && !hc) continue;
+      it(`${mode}${hc ? ' + Increase Contrast' : ''}: the picture frame mediaFrame passes 3:1 on bg, surface and surfaceRaised (ruling 27)`, () => {
+        const c = palette(mode, hc);
+        for (const [f, b] of FRAME_PAIRS) expect(ratio(c[f], c[b]), `${f} on ${b}`).toBeGreaterThanOrEqual(3);
+      });
+    }
     it(`${mode} + Increase Contrast: muted text and accent reach 7:1, control edges 4.5:1`, () => {
       const c = palette(mode, true);
       for (const s of SURFACES) {
@@ -135,6 +144,48 @@ describe('design tokens: colour', () => {
       }
     });
   }
+});
+
+describe('design tokens: picture frame and sizes (ruling 27, NS-01-R40 to R42, BL-956)', () => {
+  it('mediaFrame is dark #716A62; light keeps line (1.26:1 by the ruling: the frame there is the page edge, not a boundary)', () => {
+    expect(tokens.dark.mediaFrame).toBe('#716A62');
+    expect(tokens.light.mediaFrame).toBe(tokens.light.line);
+  });
+  it('under Increase Contrast the frame follows the hairline colour in both modes (D-S02 note)', () => {
+    for (const m of MODES) expect(tokens.highContrast[m].mediaFrame).toBe(tokens.highContrast[m].line);
+  });
+  it('mediaFrame reaches native and web CSS as --color-media-frame, in every block', () => {
+    expect(nativeCss()).toContain(`--color-media-frame: ${tokens.dark.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.light.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.highContrast.dark.mediaFrame};`);
+  });
+  it('the frame is one control-weight stroke, never the 0.5 pt decorative hairline (R41)', () => {
+    expect(tokens.stroke.control).toBe(1);
+  });
+  const p = tokens.picture;
+  it('the sizes design set are pinned: Ready thumbnail 160 pt, 88 pt from AX3 (A-S06), lens thumbnail 72 pt (B-S04)', () => {
+    expect([p.thumbMaxPt, p.thumbAxMaxPt, p.lensThumbPt]).toEqual([160, 88, 72]);
+  });
+  it('a picture is smaller at large text than at the default size, and no larger than the lens-free Ready thumbnail', () => {
+    expect(p.thumbAxMaxPt).toBeLessThan(p.thumbMaxPt);
+    expect(p.letterAxMaxPt).toBeLessThanOrEqual(p.thumbMaxPt);
+    expect(p.lensThumbPt).toBeLessThan(p.thumbMaxPt);
+  });
+  it('PROPOSED letter-page numbers use the existing 88 pt step, and the ratios are real fractions', () => {
+    expect(p.letterAxMaxPt).toBe(p.thumbAxMaxPt);
+    expect(p.letterColumnRatio).toBeGreaterThan(0);
+    expect(p.letterColumnRatio).toBeLessThan(1);
+    expect(p.letterWindowRatio).toBeGreaterThan(0);
+    expect(p.letterWindowRatio).toBeLessThan(p.letterColumnRatio);
+  });
+  it('Dynamic Type pair: at AX5 on an SE 3 (375 x 667) the letter picture leaves room for the dateline and a first line of words', () => {
+    const se3Height = 667;
+    const dateline = tokens.type.letterDateline.lineHeight * tokens.type.letterDateline.maxScale!;
+    expect(p.letterAxMaxPt + dateline + tokens.space[4]).toBeLessThan(se3Height * 0.4);
+  });
+  it('Dynamic Type pair: on Ready at AX3 and up the thumbnail plus Speak and Type (two 64 pt twins) leave the SE 3 screen to the prompt', () => {
+    expect(p.thumbAxMaxPt + 2 * tokens.target.capture).toBeLessThan(667 / 2);
+  });
 });
 
 describe('design tokens: type', () => {

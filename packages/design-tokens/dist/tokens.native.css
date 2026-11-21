@@ -32,6 +32,7 @@
       --color-scrim: #2B272252;
       --color-highlight: #FFFFFFB3;
       --color-glass-fallback: #FFFFFF;
+      --color-media-frame: #E6DED3;
     }
 
     @variant dark {
@@ -65,6 +66,7 @@
       --color-scrim: #0000008C;
       --color-highlight: #FFFFFF14;
       --color-glass-fallback: #282421;
+      --color-media-frame: #716A62;
     }
   }
 }

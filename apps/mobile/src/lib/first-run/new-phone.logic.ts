@@ -13,6 +13,8 @@
  *
  * Nothing here counts, names a child or carries a letter's words. The result is a view name, never stored.
  */
+import { authCopy } from '@scribe/content';
+import type { AuthMethod } from '@/lib/auth/machine.logic';
 import type { AccountKind } from './account-books.logic';
 import { ACCOUNT_BOOKS_WAIT_MS } from './account-books.logic';
 import type { SyncPhase } from '@/lib/sync/types';
@@ -66,13 +68,26 @@ export function openingView(i: OpeningInput): OpeningView {
   // or 10 seconds have passed, and never show the connection screen or "No book here yet" over a book that is here.
   if (i.hasLocalBook) return firstCycleDone(i) || i.elapsedMs >= OPENING_WAIT_MS ? 'arrived' : 'opening';
 
-  if (i.kind === 'unknown') return i.online ? 'noBook' : 'offline';
+  // R11 (BL-978a): a lost answer is not "no book". With a connection it reads as `opening` until the 10 seconds are used up
+  // (the hook re-asks once inside the window); only then is it "No book here yet", the fail-safe direction.
+  if (i.kind === 'unknown' && i.online) return i.elapsedMs >= OPENING_WAIT_MS ? 'noBook' : 'opening';
   if (!i.online) return 'offline';
   // 10 seconds with no book on the phone, whatever the account has said so far (the account question itself is bounded
   // at the same 10 seconds, so a late answer never leaves the loading screen up).
   if (i.elapsedMs >= OPENING_WAIT_MS) return 'slow';
   if (i.kind === 'hasBook' && STALLED_PHASES.has(i.syncPhase)) return 'slow';
   return 'opening';
+}
+
+/**
+ * R12 (NS-10, BL-978a): the one line that names HOW this phone is signed in, for a parent who finds the wrong account on a
+ * shared screen. The method only, never the address (a shared phone may show it to the other person). Reuses
+ * `auth.account.signedInWith.*` (no new words). Null when the method is not known. Pure; reads nothing.
+ */
+export function methodLine(method: AuthMethod | null): string | null {
+  if (method === null) return null;
+  const w = authCopy.account.signedInWith;
+  return method === 'apple' ? w.apple : method === 'google' ? w.google : method === 'email' ? w.email : w.other;
 }
 
 /**

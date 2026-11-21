@@ -30,6 +30,7 @@
   --color-scrim: #2B272252;
   --color-highlight: #FFFFFFB3;
   --color-glass-fallback: #FFFFFF;
+  --color-media-frame: #E6DED3;
 }
 .dark {
   --color-background: #161412;
@@ -62,6 +63,7 @@
   --color-scrim: #0000008C;
   --color-highlight: #FFFFFF14;
   --color-glass-fallback: #282421;
+  --color-media-frame: #716A62;
 }
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
@@ -95,6 +97,7 @@
     --color-scrim: #0000008C;
     --color-highlight: #FFFFFF14;
     --color-glass-fallback: #282421;
+    --color-media-frame: #716A62;
   }
 }
 @media (prefers-contrast: more) {
@@ -129,6 +132,7 @@
     --color-scrim: #2B272252;
     --color-highlight: #6B645B;
     --color-glass-fallback: #FFFFFF;
+    --color-media-frame: #6B645B;
   }
   .dark {
     --color-background: #161412;
@@ -161,6 +165,7 @@
     --color-scrim: #0000008C;
     --color-highlight: #B3AA9E;
     --color-glass-fallback: #282421;
+    --color-media-frame: #B3AA9E;
   }
 }
 

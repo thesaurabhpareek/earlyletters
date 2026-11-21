@@ -185,6 +185,8 @@ Seats. Review of steps 2 and 4: `security-architect` (review path `supabase/migr
 - Counsel (not answered here): whether the email is a duty (Q10), retention numbers (Q11), the Device ID label (Q9), export of devices seen (Q6).
 - Privacy: reword file 08 section 13 item 2 about the session id (section 1 finding).
 
+- Rotation note: a hex `device_hash` supplied by the app bypasses `DEVICE_HASH_KEY` and the rekey in the sender; it is already written under the NEXT key by `new-device-fill` while a next key is set.
+
 ## 9. What I did not verify
 
 - Every hosted behaviour: the hosted Auth build, whether the access token hook switch exists in the CLI config, whether a role of ours may delete from `auth.sessions` on a hosted project, the real error name on a refresh after the delete, whether the pending-row insert sees the session row.
