@@ -445,8 +445,8 @@ export const SURFACES: readonly Surface[] = [
  */
 export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   appLock: 'PROPOSED (PATH-04): the one line above the App lock switch; the rest of the lock words are still in apps/mobile and move later; the global rules read it through features',
-  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet',
-  billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
+  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet; its "we" lines, each a recorded promise from F08 6.5: sheetBody, waitingKey, quotaReached, writeToUs, restoreWaiting, restoreUnavailable',
+  billing: 'registered text, pinned in part in experience-pass.test.ts (not every leaf); its claims rules (D-082, D-083, D-085) are in rules.test.ts; its one "we" line is plan.payment ("We never see your card details")',
   contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
