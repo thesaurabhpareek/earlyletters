@@ -585,16 +585,16 @@ export const en = {
       private: "Private",
     },
     empty: {
-      bookTitle: "The first page is waiting.",
+      bookTitle: "Your first letter will show up here.",
       bookBody: "Tell {child} one thing about today.",
       bookCta: "Write a letter",
       // v1.1: family members beyond the co-parent.
-      familyTitle: "Family letters will gather here.",
+      familyTitle: "Letters from family will show up here.",
       familyBody: "Invite a grandparent, aunt or uncle to add their words.",
       familyCta: "Invite family",
       privateTitle: "Nothing private yet.",
-      privateBody: "Letters you keep for yourself will rest here.",
-      searchTitle: "No letters with that word yet.",
+      privateBody: "Letters you keep private will show up here.",
+      searchTitle: "No letters match that word.",
     },
     entryMenu: {
       moveToBook: "Add to book",
@@ -648,7 +648,7 @@ export const en = {
     empty: "Letters you add to the book will be here to read together.",
     // The app adds no sentiment of its own; the letters carry the love (VOICE, the app's own words).
     endOfMonth: "That was Month {month}.",
-    endOfBook: "That is every letter so far. More are still being written.",
+    endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
     finishButton: "Close the book",
@@ -757,11 +757,11 @@ export const en = {
     },
     letters10: {
       title: "10 letters.",
-      body: "Ten pieces of {child}'s story, told by you.",
+      body: "Ten letters for {child}.",
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty letters, kept in your words.",
+      body: "Fifty letters for {child}.",
     },
     letters100: {
       title: "100 letters.",
@@ -783,7 +783,7 @@ export const en = {
     },
     firstReadTogether: {
       title: "You read it together.",
-      body: "The first of many times {child} will hear these letters.",
+      body: "The letters are there to read together any time.",
     },
     monthSummary: "{count} letters this month",
     monthSummaryFamily: "{count} letters from family this month", // v1.1
@@ -1252,9 +1252,9 @@ export const en = {
     },
     // Appearance with no letter yet: the glyph specimen at each size.
     previewEmpty: "Aa",
-    notFoundTitle: "This letter is not in the book",
+    notFoundTitle: "This letter isn't in the book",
     // Shown only when a deleted copy of this letter is on the shelf (S37).
-    notFoundDeleted: "It is in Recently deleted.",
+    notFoundDeleted: "It's in Recently deleted.",
     openShelfButton: "Open Recently deleted",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
