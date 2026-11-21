@@ -444,6 +444,7 @@ export const SURFACES: readonly Surface[] = [
  * with one row above or say here why it does not. Every file below is still read by the global rules through IN_APP.
  */
 export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
+  appLock: 'PROPOSED (PATH-04): the one line above the App lock switch; the rest of the lock words are still in apps/mobile and move later; the global rules read it through features',
   backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet',
   billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
   contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
@@ -455,6 +456,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   packs: 'speech pack downloads; no per-file rule set written yet',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  screenStates: 'PROPOSED (#1207): words drafted in the area A, B and D WORDS files, nothing reads them yet; the global rules read them through features',
   speech: 'speech settings; no per-file rule set written yet',
   speechConsent: 'the speech consent card; pinned in apps/mobile/test/speech-consent.test.ts; no per-file rule set written yet',
   words: 'transcription state words; no per-file rule set written yet',
