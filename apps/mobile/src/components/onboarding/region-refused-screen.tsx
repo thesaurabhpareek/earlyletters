@@ -13,8 +13,7 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
 import { fill } from '@/lib/copy';
 import { useArrival } from '@/lib/first-run/use-arrival';
-import { openHelpTarget } from '@/components/settings/help-links.logic';
-import { mailTarget } from '@/components/settings/help-links.logic';
+import { mailTarget, openHelpTarget } from '@/components/settings/help-links.logic';
 
 export function RegionRefusedScreen() {
   const t = authCopy.region;
@@ -28,7 +27,8 @@ export function RegionRefusedScreen() {
         title={title}
         body={t.body}
         quiet={[
-          { label: t.terms, onPress: () => void WebBrowser.openBrowserAsync(brand.web.terms).catch(() => {}), testID: 'region.terms' },
+          { label: t.terms, // A page that will not open changes nothing on this screen (the same rule as the Welcome's links): deliberate, not silent.
+          onPress: () => void WebBrowser.openBrowserAsync(brand.web.terms).catch(() => undefined), testID: 'region.terms' },
           { label: t.contact, onPress: () => void openHelpTarget(mailTarget(), Linking), testID: 'region.contact' },
         ]}
       />

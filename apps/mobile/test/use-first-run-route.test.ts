@@ -48,7 +48,7 @@ vi.mock('react', async () => {
   // A faithful useCallback: the same function while the dependencies hold.
   return { ...m, useCallback: <T,>(fn: T, deps: readonly unknown[]) => m.useMemo(() => fn, deps) };
 });
-vi.mock('@/lib/remote', () => ({ getRemoteConfig: () => ({ killSwitches: h.kill }) }));
+vi.mock('../src/lib/first-run/sign-in-pause', () => ({ signInPaused: () => h.kill.signIn }));
 vi.mock('@/lib/auth/session-provider', () => ({ useAuth: () => h.auth }));
 vi.mock('@/lib/a11y', () => ({ announce: (m: string) => void h.spoken.push(m) }));
 vi.mock('@/lib/store', () => ({

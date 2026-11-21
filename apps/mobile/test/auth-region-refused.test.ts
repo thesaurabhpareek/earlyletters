@@ -39,11 +39,13 @@ describe('[NS-40-R9] a refused sign-up is calm and stores nothing', () => {
     expect(inlineErrorKind(signedOut)).toBeNull();
     expect(failureStillCounts(signedOut, null)).toBe(true);
   });
-  it('[NS-40-R9] mutant: mapping region_refused into OUTAGE_ERRORS makes it an outage and this test sees it', () => {
+  it('[NS-40-R9] mutant: mapping region_refused into OUTAGE_ERRORS makes it an outage and this check sees it', () => {
     const raw = readFileSync(join(SRC, 'lib/first-run/gate.logic.ts'), 'utf8');
-    const set = raw.match(/OUTAGE_ERRORS[^=]*= new Set<AuthErrorKind>\(\[([^\]]*)\]/)?.[1] ?? '';
-    expect(set).not.toMatch(/region_refused/);
-    expect(`${set}, 'region_refused'`).toMatch(/region_refused/);
+    const outageSet = (t: string) => t.match(/OUTAGE_ERRORS[^=]*= new Set<AuthErrorKind>\(\[([^\]]*)\]/)?.[1] ?? '';
+    const refusedIsOutage = (t: string) => /region_refused/.test(outageSet(t));
+    expect(outageSet(raw)).toContain("'network'"); // the check reads the real set
+    expect(refusedIsOutage(raw)).toBe(false);
+    expect(refusedIsOutage(raw.replace("'unknown']);", "'unknown', 'region_refused']);"))).toBe(true);
   });
   it('[NS-40-R9] the screen: a heading, one line, Terms and a get-in-touch action, no Try again, no place or reason named, nothing stored', () => {
     const t = authCopy.region;
@@ -57,9 +59,11 @@ describe('[NS-40-R9] a refused sign-up is calm and stores nothing', () => {
     // Shown after the code step (E62), in place of the sheet's field and line.
     expect(src('app/(auth)/sign-in/code.tsx')).toMatch(/if \(error === 'region_refused'\) return <RegionRefusedScreen \/>;/);
   });
-  it('[NS-40-R9] mutant: a screen with a Try again is caught', () => {
-    const mutant = src('components/onboarding/region-refused-screen.tsx').replace('quiet={[', "primary={{ label: 'Try again', onPress: retry }}\n        quiet={[");
-    expect(mutant).toMatch(/primary=/);
+  it('[NS-40-R9] mutant: a screen with a Try again is caught by the same check', () => {
+    const real = src('components/onboarding/region-refused-screen.tsx');
+    const hasRetry = (t: string) => /primary=|retry|tryAgain/i.test(t);
+    expect(hasRetry(real)).toBe(false);
+    expect(hasRetry(real.replace('quiet={[', "primary={{ label: 'Try again', onPress: retry }}\n        quiet={["))).toBe(true);
   });
 });
 
@@ -86,10 +90,14 @@ describe('[NS-41-R25] a hostile signed signIn true keeps every session', () => {
   });
   it('[NS-41-R25] mutant: ending the session on signIn is caught: the route reads the switch only as a gate input, never signs out', () => {
     const route = src('lib/first-run/use-first-run-route.ts');
-    expect(route).toMatch(/signInPaused: active && getRemoteConfig\(\)\.killSwitches\.signIn === true/);
-    expect(route.match(/killSwitches\.signIn/g)?.length).toBe(1);
-    expect(`${route}\nsignOut()`).toMatch(/signOut\(\)/);
-    expect(route).not.toMatch(/signOut\(/);
+    expect(route).toMatch(/signInPaused: active && signInPaused\(\)/);
+    const endsSession = (t: string) => /signOut\(/.test(t);
+    expect(endsSession(route)).toBe(false);
+    expect(endsSession(`${route}\nif (signInPaused()) signOut();`)).toBe(true);
+    // The reader is fail-open and lazy: it never pulls react-native into a logic module's import graph.
+    const reader = src('lib/first-run/sign-in-pause.ts');
+    expect(reader).not.toMatch(/^import /m);
+    expect(reader).toMatch(/catch \{\n\s+return false;/);
   });
 });
 
@@ -102,8 +110,10 @@ describe('[NS-41-R12] Sign in with Apple is reachable from the outage screen', (
     expect(src('app/onboarding.tsx')).toMatch(/authState\.error === 'email_wait'/);
     expect(src('app/onboarding.tsx')).toContain('appleSignInAvailable()');
   });
-  it('[NS-41-R12] mutant: removing the action is caught', () => {
-    const mutant = src('components/onboarding/outage-screen.tsx').replace('<AppleButton signIn onPress={onApple} />', 'null');
-    expect(mutant).not.toContain('<AppleButton');
+  it('[NS-41-R12] mutant: removing the action is caught by the same check', () => {
+    const real = src('components/onboarding/outage-screen.tsx');
+    const hasApple = (t: string) => t.includes('<AppleButton signIn onPress={onApple} />');
+    expect(hasApple(real)).toBe(true);
+    expect(hasApple(real.replace('<AppleButton signIn onPress={onApple} />', 'null'))).toBe(false);
   });
 });
