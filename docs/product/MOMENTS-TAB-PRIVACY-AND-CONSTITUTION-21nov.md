@@ -17,6 +17,7 @@ Short answer, in five lines:
 3. The place name on a map tile is the one element that almost certainly sends coordinates to Apple. Safer: no place, or a place the parent types.
 4. The new direction reverses several standing rulings (section 6). Each is a reversal the founder must own; this document does not treat any as decided.
 5. "Ask for permission if not given" can only mean: explain, then one ask on the parent's tap, with a working path for a parent who says no. Apple's rules forbid forcing it.
+6. Founder addendum (20 Nov): the tab need not be the default and may be second or centre (section 11); and the library should also drive email and push nudges (section 10). Short answer: email cannot, because the server never sees the library; a local push can only be a fixed neutral one that is indistinguishable from an ordinary evening reminder, and even that reverses the standing no-library-notification ruling, which the founder must own.
 
 ## 1. Sources
 
@@ -167,3 +168,53 @@ What the App Privacy label says:
 - `security`: threat model for thumbnails in the app switcher and screenshots (NS-51-R25) applies to a default tab as it does to the Photo moments sheet.
 
 Content-rule check on this file: no em or en dashes, curly quotes, ellipsis characters or emoji; no model names.
+
+## 10. Nudges driven by library moments: push and email
+
+Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can be second tab or centre tab... this is what would bring engagement... And this would influence email nudges and push notifications nudges not just this app feed."
+
+Standing rulings this meets. The coordinator cites "ML-3: no push from library data". I did not find a row with that id; the text matches NX-39 ruling 3, "No notification is ever derived from the library", with its reason in the NX-39 decision table: "A notification that exists because of a library read discloses a derived fact by existing, whatever its words", and K1 ("No photo in a notification, widget, lock screen or analytics", extended to place, count and any library-derived notification at all). `product` should confirm the ML numbering. One newer row already cuts into this: NS-51-R11 (20 Nov, CL-053 closed Q-PM-8) lets a moment be a ranked source of the evening reminder with one neutral title and body, planned only while the app is open. So the position today is: a neutral local nudge is written into NS-51; NX-39's flat ban still stands in its own file. I treat the NX-39 ban as the standing ruling and NS-51-R11 as a narrow, already-proposed exception that the founder has not been shown as a reversal.
+
+Email. Not possible without a reversal that I recommend against. The server never sees the library (NS-51-R26: a network fake sees zero requests; nothing derived leaves the phone). An email that says anything about pictures would need the phone to tell the server that pictures exist, which is data derived from the library sent off the phone, so by the App Privacy definition it is collected (A7: "If you derive anything from that data and send it off device, the resulting data should be considered separately"). That would change the label from Data Not Collected for Photos or Videos, break K1 and NS-51-R26, and need a new disclosure. Recommended: email never uses the library. It may keep using what it uses today (a fixed schedule and the parent's own typed days), with no sentence, count or timing derived from pictures. A server-sent (remote) push is the same case and is refused for the same reason.
+
+What a compliant on-device local notification would be (PROPOSED; all of it already points the same way as NS-51-R11 and NS-48, with the last two lines stricter):
+1. Scheduled by the phone itself, never by the server, and only while the app is open (no background mode; Q-PM-8). A weekend's pictures taken after the last open do not prompt.
+2. Fixed neutral title and body, the same words used for hidden previews. No thumbnail or attachment, no place, no count, no date range, no "your pictures". Words are `content`'s and `legal`'s; nothing here is final copy.
+3. Nothing about the moment in the notification payload: a tap opens the tab, never a particular day or picture id. The payload carries no identifier from the library (a library identifier in a payload is a leak into the notification system and any log of it).
+4. Counts inside the one-a-day budget with the other evening reminders (NS-32-R1), is skipped for a quiet or hidden book, silenced by a letter already made that day (NS-51-R13), off when Photo moments is off or paused (R15, R16).
+5. Stricter than NS-51-R11, proposed: the moment nudge may only take the slot of the ordinary evening reminder and use the ordinary reminder's exact words, so that its existence tells a lock-screen watcher nothing about pictures. This answers the NX-39 point that a notification discloses a fact by existing. It is not a guarantee: the parent could still infer from a pattern. Counsel and the founder decide whether the neutral-words version is enough or whether the identical-words version is the only acceptable one.
+6. No analytics event, property, bucket or insight may mark a nudge as moment-driven. A "moment nudge shown" event is a library-derived fact leaving the phone (opt-in analytics included). Count it as an ordinary evening nudge. This extends NS-51-R12.
+7. The notification permission is the existing reminder ask, after the first saved letter (K-02). The library tab does not ask for it.
+
+App Review and label implications:
+- A local notification is not "collection": nothing is sent to us or to Apple's push service (UNVERIFIED this session; I read no Apple page on local notifications, and I read App Review only to character 100000, so any promotional-notification rule beyond 5.1.2(i) is UNVERIFIED and counsel and `mobile` should read guideline 4.5.4 before any wording ships). The label stays Data Not Collected if nothing leaves the phone.
+- 5.1.2(i): the notification and library permissions may not be required to use the app; both remain optional with the app working without them.
+- The privacy policy and in-app disclosures must say plainly that reminders may be timed from pictures on the phone, and that this never leaves the phone. That sentence needs a code test (the claims-inventory pattern) before it is published. Those files are in `docs/legal/**`; I do not edit them.
+- Engagement claim: the founder says this would bring engagement. I found no measured evidence in the repo for a lift from library nudges and read none outside it, so I treat that as the founder's belief, not a fact, and I do not rely on it. The existing parent study plan Q4 and Q5 is where a test would live.
+
+Reversals the founder must own in this section (each is his decision, none is made here):
+
+| Earlier ruling | What the ask overturns |
+|---|---|
+| NX-39 ruling 3 and K1 (no notification derived from the library) | Any library-driven nudge, even a neutral one, reverses it. NS-51-R11 already proposes the neutral form; the founder should own it explicitly, with the existence-disclosure reasoning in front of him |
+| NX-39 R26 and R27 (fixed content keys; no library-derived notification) | Same |
+| NS-51-R26 and K1 on server and analytics (nothing derived leaves the phone) | Overturned only if email or remote push uses the library or analytics marks a nudge. Recommended: do not reverse |
+| NX-39 card rule: a notification never carries a place or thumbnail | Overturned only if the nudge shows a picture or place. Recommended: do not reverse |
+
+Counsel questions added:
+
+| Id | Question | Recommended default |
+|---|---|---|
+| CQ-11 | Is a local notification whose timing is derived from library metadata, with fixed neutral words and no payload identifier, acceptable under the privacy policy, the label and App Review? | Yes only in the identical-words form (point 5), with the disclosure sentence and a test; else no |
+| CQ-12 | Does the fact that a notification exists (and when) count as a derived disclosure to anyone who can see the lock screen? | Treat as yes; that is why the identical-words form is proposed |
+| CQ-13 | May any email or remote push use a library-derived signal if the parent opts in separately? | No. Even with consent it makes Photos or Videos metadata collected and changes the label; a separate founder and counsel decision, not a default |
+| CQ-14 | Do the promotional-notification rules in App Review (guideline 4.5.4, not read) apply to a nudge about pictures? | Counsel reads it before any wording; default is opt-in only and never required |
+| CQ-15 | Must analytics be barred from distinguishing a moment-driven nudge from an ordinary one? | Yes |
+
+## 11. Where the tab sits: second or centre
+
+Founder, 20 Nov: it need not be the default; second or centre tab is fine. This is a layout call for `design` and `product`; I give only the privacy and rules read.
+- Today there are three tabs in this order: Home, Book, Me (IA-FINAL). Any fourth tab reverses that and its "Never a place: a Library tab" line; a second position gives Home, the new tab, Book, Me. A true centre needs an odd count (five tabs), which adds a second new tab; I do not recommend inventing one for symmetry.
+- Not being the default is better for privacy and for the rules: K-02 stays intact for a new parent if the tab shows the value page with no ask before the first saved letter, and no library doorway is on the first screen. That removes one reversal from section 6 (the K-02 row) and softens NS-51-R1 (the ask stays on the parent's tap).
+- Engagement placement is not a privacy fact; I did not evaluate it.
+- Wherever it sits, the privacy requirements in sections 4, 7 and 10 apply unchanged: no place, no title, no names; ask only on a tap; always a fallback; the switcher and screenshot protections of NS-51-R25 apply to the tab as a whole.
