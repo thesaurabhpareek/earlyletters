@@ -1108,9 +1108,17 @@ export const en = {
       cta: "Add {child}'s book",
       // Before a name is typed, or when the filled `cta` would pass 22 characters.
       ctaShort: "Add this book",
+      // PROPOSED (spec 10, AB-1, 21 Nov 2026): the local write failed. The page stays, the typed name and date are kept.
+      // Shown in a notice with the common Try again button. A full phone uses errors.phoneFull.
+      saveFailed: "This book did not save. What you typed is still here.",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me row that opens this page. The built title "Add a child" is unchanged until
+      // the founder approves the new words; nothing reads this key yet.
+      rowLabel: "Add a book",
     },
     settings: {
       sectionTitle: "Children",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me group title for the books. Nothing reads this key until the founder approves it.
+      booksSectionTitle: "Books",
       title: "{child}'s book",
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
@@ -1392,6 +1400,9 @@ export const en = {
     helpSubject: "Help with the app",
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
+    // PROPOSED (spec 08, L1, 21 Nov 2026): a Terms or Privacy link the iPhone could not open. ST-NOTICE above the list,
+    // with the common Try again button. Says what did not happen, no cause.
+    legalOpenFailed: "That page did not open. Nothing has changed.",
     versionLabel: "Version",
     // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
     // registered note under About already says it once (CLO-5, 1 Nov 2026).
@@ -1444,6 +1455,8 @@ export const en = {
       line: "Every um and false start stays in.",
     },
     footer: "Either way, we never rewrite your words.",
+    // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
+    saveFailed: "That choice did not save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
