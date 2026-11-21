@@ -29,7 +29,7 @@ import { getAuthSnapshot } from './auth/auth-store';
 import { authUserId } from './auth/machine.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
 import type { AgreementDocument, AgreementRow } from './agreements.logic';
 import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
@@ -62,6 +62,11 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
+import { findBuildEnabled } from './find/flag';
+import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, type EnsureResult } from './find/lifecycle';
+import { rebuildSearchIndex } from './find/rebuild';
+import { searchLetters, type FindResult } from './find/search';
+import { dropSearchView, SEARCH_VIEW } from './find/sources';
 import { SHELF_DAYS } from './shelf-days';
 import {
   SYNC_SETTING,
@@ -117,9 +122,9 @@ export const DB_FILE_NAME = 'scribe.db';
 
 /** Opening failed before or during migration. Code only: SQLite text can quote values. */
 export class StoreOpenError extends Error {
-  constructor(cause: unknown) {
+  constructor() {
     super('local_db_open_failed');
-    this.cause = cause;
+    this.name = 'StoreOpenError';
   }
 }
 
@@ -169,7 +174,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   try {
     opened = (options.open ?? (() => openNativeDb(DB_FILE_NAME)))();
   } catch (e) {
-    return { ok: false, newer: false, error: new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: new StoreOpenError(), migration: null };
   }
   let migration: MigrationResult;
   try {
@@ -180,12 +185,61 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     } catch {
       // already failing; the migration error is the one to report
     }
-    return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
+}
+
+// -- Find (NS-02; ADR 0028 D4) ------------------------------------------------------------
+/** Whether this file holds anything of Find: its index or its view. */
+const findObjectsExist = (db: SqlDb): boolean =>
+  db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name IN ('${SEARCH_TABLE}', '${SEARCH_VIEW}')`) !== null;
+
+/**
+ * The launch catch-up of Find's index (NS-02-R35, R43). With Find off in this build, what an earlier build made (the
+ * index, its map, its settings and the view) is dropped: derived data nobody can reach. With it on, the index is made
+ * or checked and caught up in batches of 200 letters, never while a take is recording, and merged at the end when a
+ * removal waits (lib/find/rebuild.ts). Never throws.
+ */
+export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
+  try {
+    const { db } = ctx();
+    if (findBuildEnabled()) return await rebuildSearchIndex(db);
+    if (findObjectsExist(db)) {
+      dropSearchIndex(db);
+      dropSearchView(db);
+    }
+    return 'off';
+  } catch {
+    return 'unavailable'; // the scan still answers; the next launch tries again
+  }
+}
+
+let findCatchUpFor: unknown = null;
+
+/**
+ * Find's launch catch-up, once per open store, after the first frame (NS-02-R35, R43): the root layout calls it beside
+ * startPacks() and startRemote(), never on the path to the first frame. Returns at once; the work runs in batches.
+ * Does nothing with Find off and nothing of Find on the phone.
+ */
+export function startFindCatchUp(): void {
+  if (!conn?.result.ok || findCatchUpFor === conn) return;
+  findCatchUpFor = conn;
+  if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
+  void ensureFindIndex();
+}
+
+/** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
+export function findIndexReady(): boolean {
+  return searchIndexExists(ctx().db);
+}
+
+/** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
+export function findLetters(raw: string, childId: string): FindResult {
+  return searchLetters(ctx().db, raw, childId);
 }
 
 /** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
@@ -224,7 +278,7 @@ function ctx(): RepoContext {
   if (conn) return conn.ctx;
   const r = openStore();
   const c = conn as { ctx: RepoContext } | null; // openStore sets it on success
-  if (!c) throw r.error ?? new StoreOpenError(null);
+  if (!c) throw r.error ?? new StoreOpenError();
   return c.ctx;
 }
 
@@ -1109,6 +1163,9 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   // in `settings`, never in the Keychain); an expired one goes with everything else.
   const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
   const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  // ADR 0028 D5 step 3: Find's index is dropped before the rows go; deleting the rows of an FTS5 table's shadow tables
+  // one by one would corrupt it. It is made again, empty, by the next launch's catch-up. Whatever the Find switch says.
+  dropSearchIndex(c.db);
   c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
