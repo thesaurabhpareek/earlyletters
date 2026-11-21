@@ -13,11 +13,11 @@ export const reminderCopy = {
     evening: [
       { title: 'A minute to write?', body: 'One thing about today is plenty. A sentence will do.' },
       { title: 'A letter tonight?', body: 'What made you smile today? Say it out loud and keep it.' },
-      { title: 'Dear little one,', body: 'Anything to tell your little one today? A line or two is enough.' },
+      { title: 'Dear little one,', body: 'Anything to tell your little one today? A line is plenty.' },
       { title: 'The house is quiet', body: 'A good moment for a few words to your little one.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
       { title: 'Your voice, kept', body: 'Talk for a minute. One day it can be heard, just as you sounded.' },
-      { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
+      { title: 'Before you sleep', body: 'Something they did or said? Or tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
     // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
@@ -71,7 +71,7 @@ export const reminderCopy = {
     // Reminders on, iOS says no: the intent is kept, nothing is scheduled.
     notSendingYet: 'Not sending yet.',
     // rescheduleReminders could not schedule (it no longer swallows the error).
-    scheduleFailed: 'Could not set reminders just now.',
+    scheduleFailed: "Couldn't set your reminders just now.",
     // The month row while no included book has a birth date yet.
     birthDateNote: 'Starts once a birth date is added.',
     // iOS Provisional or Deliver Quietly: allowed, but not on the lock screen.
