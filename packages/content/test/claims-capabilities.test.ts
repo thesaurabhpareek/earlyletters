@@ -309,6 +309,10 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
+  // "Exactly as you said it" in the store build's first run (D-133 decision 2). The first-run headline is held for founder and counsel
+  // (D-133, D-125 item 9), so this row stays; the packaged card headline (stories) is fixed and its row is gone.
+  { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
+
   // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
   // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
   { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },

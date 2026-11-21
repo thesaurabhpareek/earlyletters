@@ -68,14 +68,16 @@ const ALL = SURFACES.flatMap(([root, value]) => leaves(value, root));
  * pull request that adds this file. `claim` is what the rule matches today.
  */
 const HELD_FOR_COUNSEL: readonly { key: string; rule: Rule['id']; claim: string }[] = [
+  { key: 'features.auth.sheet.privacy', rule: 'coParent', claim: 'invite' },
   { key: 'features.auth.sheet.why', rule: 'safe', claim: 'keeps your book safe' },
   { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'family you' },
   { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'invite' },
+  { key: 'en.trust.signIn.privacy', rule: 'coParent', claim: 'invite' },
   { key: 'en.trust.signIn.why', rule: 'safe', claim: 'keeps your book safe' },
   { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'share it with' },
   { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'family you' },
 ];
-const HELD_CAP = 6;
+const HELD_CAP = 8;
 
 /** Shown only when a book already has a second parent or family writer, which Build 12 cannot create. */
 const ONLY_WITH_A_CO_PARENT = new Set([

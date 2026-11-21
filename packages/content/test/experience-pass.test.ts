@@ -177,7 +177,7 @@ const REGISTERED: Record<string, Text> = {
   'en.plus.legal.agree': 'By continuing, you agree to the Subscription terms and Terms of Service.',
   // Section 3a: sign-in acceptance
   'features.auth.consent.terms.agreeLine': 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
-  'en.trust.signIn.privacy': 'Private by default. You decide what goes in the book.',
+  'en.trust.signIn.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
   'en.trust.signIn.email': 'We use your email only to sign you in and to write to you about your account.',
   // Section 3b: trust lines and the microphone string
   'en.trust.promise':
