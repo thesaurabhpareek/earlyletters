@@ -10,9 +10,10 @@
 // RAISE_OK names functions whose raise reads a public policy document key, never a person's words.
 // KNOWN_GAPS is the work still owed (hosted apply is the founder's step); it may only shrink. It is empty: 20261121040000 added
 // entries_validate_limits, held_drafts_validate_limits, children_validate_limits and dictionary_terms_validate_limits.
-import { createDb } from './harness.mjs';
+import { readFileSync } from 'node:fs';
+import { createDb, users } from './harness.mjs';
 
-const { check, sys, done } = await createDb(process.argv.slice(2));
+const { db, check, sys, done, newChild, publishPolicies, consent } = await createDb(process.argv.slice(2));
 
 const RAISE_OK = new Set(['public.policy_versions_guard']);
 const KNOWN_GAPS = new Set([]);   // empty since 20261121040000 (BL-244); a new content table must ship its trigger
@@ -50,45 +51,116 @@ const raises = (await sys(`
 for (const r of raises) console.log(`      ${r.fn}: a raise names a row column`);
 check('VF-2 no function in public or ops raises with a NEW or OLD column in its message, detail or hint', raises.length === 0);
 
-// VF-3 behaviour. The probe inserts as the system role so RLS is out of the way; the CHECK is what fires.
-const echo = (e) => /Failing row|Key \(.*\)=\(/.test(`${e.message ?? ''} ${e.detail ?? ''}`);
-const probe = async (rel, sql, params) => {
-  await sys('savepoint vf');
-  try { await sys(sql, params); await sys('rollback to vf'); return 'ok'; }
-  catch (e) { await sys('rollback to vf'); return echo(e) ? 'echo' : 'clean'; }
-};
-const big = 'x'.repeat(200001);
-const probes = {
-  children: [`insert into children (id, name, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, ['x'.repeat(61)]],
-  children_nickname: [`insert into children (id, nickname, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, ['x'.repeat(31)]],
-  entries: [`insert into entries (id, final_text) values (gen_random_uuid(), $1)`, ['x'.repeat(20001)]],
-  entries_raw: [`insert into entries (id, raw_transcript) values (gen_random_uuid(), $1)`, ['x'.repeat(40001)]],
-  entries_edits: [`insert into entries (id, author_edits) values (gen_random_uuid(), $1::jsonb)`, [JSON.stringify(['x'.repeat(65536)])]],
-  held_drafts: [`insert into held_drafts (id, typed_text) values (gen_random_uuid(), $1)`, [big.slice(0, 100001)]],
-  held_drafts_prompt: [`insert into held_drafts (id, prompt_key) values (gen_random_uuid(), $1)`, ['x'.repeat(201)]],
-  dictionary_terms: [`insert into dictionary_terms (owner_id, term, kind) values (gen_random_uuid(), $1, 'word')`, ['x'.repeat(81)]],
-  dictionary_terms_forms: [`insert into dictionary_terms (owner_id, term, kind, forms) values (gen_random_uuid(), 'ok', 'word', $1::jsonb)`, [JSON.stringify([{ script: 'latin', text: 'x'.repeat(81) }])]],
-};
-// The refusal is the trigger's: 23514, names the table, and neither message, detail nor hint carries the written value.
+// VF-3 to VF-7 behaviour and catalog. Probes run as the system role so RLS is out of the way; the trigger is what fires.
+// A jsonb array of one string is the string plus 4 bytes (brackets, quotes), so the byte limit is exact: n chars give n + 4 bytes.
+// Probes. Values are distinctive (a Latin family word and a Devanagari one) so a leak into message, detail or hint is found by the
+// actual value, not by a filler character. Each row: [name, table, sql, params, written value to look for in any error text].
+const lat = (n) => 'Asha-'.repeat(Math.ceil(n / 5)).slice(0, n);
+const dev = (n) => 'आशा'.repeat(Math.ceil(n / 3)).slice(0, n);
+const arr = (s) => JSON.stringify([s]);
+const P = (name, table, sql, value, param = value) => ({ name, table, sql, param, value });
+const probes = [
+  P('children.name', 'children', `insert into children (id, name, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, dev(61)),
+  P('children.nickname', 'children', `insert into children (id, nickname, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, lat(31)),
+  P('entries.final_text', 'entries', `insert into entries (id, final_text) values (gen_random_uuid(), $1)`, lat(20001)),
+  P('entries.raw_transcript', 'entries', `insert into entries (id, raw_transcript) values (gen_random_uuid(), $1)`, dev(40001)),
+  P('entries.author_signs_as', 'entries', `insert into entries (id, author_signs_as) values (gen_random_uuid(), $1)`, dev(31)),
+  P('entries.author_edits', 'entries', `insert into entries (id, author_edits) values (gen_random_uuid(), $1::jsonb)`, lat(65533), arr(lat(65533))),
+  P('entries.locked_spans', 'entries', `insert into entries (id, locked_spans) values (gen_random_uuid(), $1::jsonb)`, lat(16381), arr(lat(16381))),
+  P('held_drafts.raw_transcript', 'held_drafts', `insert into held_drafts (id, raw_transcript) values (gen_random_uuid(), $1)`, dev(100001)),
+  P('held_drafts.final_text', 'held_drafts', `insert into held_drafts (id, final_text) values (gen_random_uuid(), $1)`, lat(100001)),
+  P('held_drafts.typed_text', 'held_drafts', `insert into held_drafts (id, typed_text) values (gen_random_uuid(), $1)`, dev(100001)),
+  P('held_drafts.prompt_key', 'held_drafts', `insert into held_drafts (id, prompt_key) values (gen_random_uuid(), $1)`, lat(201)),
+  P('held_drafts.machine_edits', 'held_drafts', `insert into held_drafts (id, machine_edits) values (gen_random_uuid(), $1::jsonb)`, lat(199997), arr(lat(199997))),
+  P('dictionary_terms.term upper', 'dictionary_terms', `insert into dictionary_terms (owner_id, term, kind) values (gen_random_uuid(), $1, 'word')`, dev(81)),
+  P('dictionary_terms.term lower', 'dictionary_terms', `insert into dictionary_terms (owner_id, term, kind) values (gen_random_uuid(), $1, 'word')`, ''),
+  P('dictionary_terms.forms', 'dictionary_terms', `insert into dictionary_terms (owner_id, term, kind, forms) values (gen_random_uuid(), 'ok', 'word', $1::jsonb)`, dev(81),
+    JSON.stringify([{ script: 'devanagari', text: dev(81) }])),
+];
+// At the limit the trigger lets the write through: any later failure (NOT NULL, a foreign key) is not the trigger's.
+const atLimit = [
+  P('children.name', 'children', probes[0].sql, dev(60)),
+  P('children.nickname', 'children', probes[1].sql, lat(30)),
+  P('entries.final_text', 'entries', probes[2].sql, lat(20000)),
+  P('entries.raw_transcript', 'entries', probes[3].sql, dev(40000)),
+  P('entries.author_signs_as', 'entries', probes[4].sql, dev(30)),
+  P('entries.author_edits', 'entries', probes[5].sql, '', arr(lat(65532))),
+  P('entries.locked_spans', 'entries', probes[6].sql, '', arr(lat(16380))),
+  P('held_drafts.typed_text', 'held_drafts', probes[9].sql, dev(100000)),
+  P('held_drafts.prompt_key', 'held_drafts', probes[10].sql, lat(200)),
+  P('held_drafts.machine_edits', 'held_drafts', probes[11].sql, '', arr(lat(199996))),
+  P('dictionary_terms.term upper', 'dictionary_terms', probes[12].sql, dev(80)),
+  P('dictionary_terms.term lower', 'dictionary_terms', probes[12].sql, 'A'),
+];
 const refusal = async (sql, params) => {
   await sys('savepoint vf');
   try { await sys(sql, params); await sys('rollback to vf'); return null; }
   catch (e) { await sys('rollback to vf'); return e; }
 };
-await sys('begin');
-for (const [rel, [sql, params]] of Object.entries(probes)) {
-  const table = rel.replace(/_(nickname|raw|edits|prompt|forms)$/, '');
-  const r = await probe(table, sql, params);
-  const gap = KNOWN_GAPS.has(table);
-  check(`VF-3 ${rel}: an over-length write is refused${gap ? ' and still echoes the row (known gap)' : ' without echoing the row'}`,
-    gap ? r === 'echo' || r === 'ok' : r === 'clean');
-}
-for (const [rel, [sql, params]] of Object.entries(probes)) {
-  const e = await refusal(sql, params);
-  const table = rel.replace(/_(nickname|raw|edits|prompt|forms)$/, '');
+const isTrigger = (e, table) => e !== null && e.code === '23514' && String(e.message).startsWith(`${table}:`);
+const leaks = (e, value) => {
   const text = `${e?.message ?? ''} ${e?.detail ?? ''} ${e?.hint ?? ''}`;
-  check(`VF-4 ${rel}: refused by the validate trigger (23514), table named, no DETAIL or HINT, no value in the text`,
-    e !== null && e.code === '23514' && e.message.startsWith(`${table}:`) && !e.detail && !e.hint && !/xxxxx/.test(text) && !e.message.includes('Failing row'));
+  return /Failing row|Key \(/.test(text) || (value !== '' && text.includes(value.slice(0, 5)));
+};
+
+await sys('begin');
+for (const pr of probes) {
+  const e = await refusal(pr.sql, [pr.param]);
+  const gap = KNOWN_GAPS.has(pr.table);
+  check(`VF-3/4 ${pr.name}: over the limit, refused by the validate trigger (23514), table named, no DETAIL or HINT, no value in the text${gap ? ' (known gap)' : ''}`,
+    gap ? true : isTrigger(e, pr.table) && !e.detail && !e.hint && !leaks(e, pr.value));
+}
+for (const pr of atLimit) {
+  const e = await refusal(pr.sql, [pr.param]);
+  check(`VF-5 ${pr.name}: at the limit, the validate trigger lets the write through`, !isTrigger(e, pr.table));
 }
 await sys('rollback');
+
+// VF-6 the UPDATE path: a stored row, then an over-limit change is refused value-free and an at-limit change is not.
+await sys(`insert into auth.users values ('${users.A}')`);
+await publishPolicies();
+await consent(users.A);
+const kid = await newChild(users.A);
+const upd = (v) => refusal(`update children set name = $1 where id = $2`, [v, kid]);
+await sys('begin');
+const eUp = await upd(dev(61));
+check('VF-6 children: an over-limit UPDATE is refused by the validate trigger, value-free', isTrigger(eUp, 'children') && !eUp.detail && !eUp.hint && !leaks(eUp, dev(61)));
+check('VF-6 children: an at-limit UPDATE is accepted', (await upd(dev(60))) === null);
+await sys('rollback');
+
+// VF-7 the four trigger functions, from the catalog: SECURITY INVOKER, search_path pinned (pg_catalog first, pg_temp last), and
+// EXECUTE held by none of public, anon, authenticated, service_role.
+const fns = ['entries', 'held_drafts', 'children', 'dictionary_terms'].map((t) => `${t}_validate_limits`);
+const cat = (await sys(`
+  select p.proname, p.prosecdef,
+         (select substr(c, 13) from unnest(coalesce(p.proconfig, '{}'::text[])) c where c like 'search_path=%' limit 1) as sp,
+         p.proacl::text as acl,
+         exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.privilege_type = 'EXECUTE' and a.grantee = 0) as pub,
+         has_function_privilege('anon', p.oid, 'execute') as anon,
+         has_function_privilege('authenticated', p.oid, 'execute') as auth,
+         coalesce(has_function_privilege('service_role', p.oid, 'execute'), false) as svc
+    from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = any($1)`, [fns])).rows;
+check('VF-7 all four validate functions exist', cat.length === 4);
+for (const f of cat) {
+  check(`VF-7 ${f.proname}: SECURITY INVOKER`, f.prosecdef === false);
+  check(`VF-7 ${f.proname}: search_path pinned, pg_catalog first and pg_temp last`, /^pg_catalog\b.*pg_temp$/.test(f.sp ?? ''));
+  check(`VF-7 ${f.proname}: EXECUTE held by none of public, anon, authenticated, service_role`, !f.pub && !f.anon && !f.auth && !f.svc);
+}
+
+// VF-8 the revoke is what removes access on a project whose new functions come with EXECUTE for the API roles (legacy default
+// privileges). Rebuild the four functions from the migration's own text under those defaults, and check the revoke took all of them.
+const file = process.argv.slice(2).find((f) => f.includes('_value_free_validation_triggers.sql'));
+check('VF-8 the migration file is in the list', Boolean(file));
+if (file) {
+  await sys('begin');
+  await db.exec(`drop function public.entries_validate_limits() cascade; drop function public.held_drafts_validate_limits() cascade;
+             drop function public.children_validate_limits() cascade; drop function public.dictionary_terms_validate_limits() cascade`);
+  await db.exec(`alter default privileges in schema public grant execute on functions to anon, authenticated, service_role`);
+  await db.exec(readFileSync(file, 'utf8'));
+  const held = (await sys(`select p.proname, r, has_function_privilege(r, p.oid, 'execute') as ok
+      from pg_proc p cross join unnest(array['anon', 'authenticated', 'service_role']) r
+     where p.pronamespace = 'public'::regnamespace and p.proname = any($1)`, [fns])).rows;
+  check('VF-8 under legacy default privileges the migration leaves anon, authenticated and service_role without EXECUTE', held.length === 12 && held.every((x) => !x.ok));
+  await sys('rollback');
+}
 done();

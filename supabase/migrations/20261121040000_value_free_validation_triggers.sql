@@ -1,7 +1,7 @@
 -- BL-244 (API-R10, TDD 06 conflict C-2): a content table refuses an over-limit write without echoing the row.
 --
--- PENDING: not yet applied. Applying it is the founder's step (D-041, CR-73). Apply after 20261121020000 (supabase/APPLY.md,
--- "File 39"). ROLLBACK (forward-fix only): drop the four triggers and the four functions below; the CHECK constraints stay and
+-- PENDING: not yet applied. Applying it is the founder's step (D-041, CR-73). Apply after 20261121030000 (PR #1448, File 39) and 20261121020000 (supabase/APPLY.md,
+-- "File 40"). ROLLBACK (forward-fix only): drop the four triggers and the four functions below; the CHECK constraints stay and
 -- keep refusing, as before, with the row in DETAIL.
 --
 -- The gap. Postgres adds "Failing row contains (...)" to the DETAIL of a CHECK violation. On entries that is a letter (L4) in the
