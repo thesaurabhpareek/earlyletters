@@ -345,7 +345,7 @@ describe('auth error kinds: a server that answered is not a connection that fail
       expect(authErrorKind(retryable(status), 'passkey'), String(status)).toBe('provider');
       for (const context of ['send', 'code', 'link'] as const) expect(authErrorKind(retryable(status), context), `${status} in ${context}`).toBe('unknown');
     }
-    // The words are the copy lane's (provider: "That sign-in did not finish.", unknown: "That did not go through."); here: the kinds' own lines.
+    // The words are the copy lane's (provider: "That sign-in didn't finish.", unknown: "That did not go through."); here: the kinds' own lines.
     for (const context of CONTEXTS) {
       const kind = authErrorKind(retryable(503), context);
       expect(authErrorMessage(kind)).toBe(authErrorMessage(context === 'provider' || context === 'passkey' ? 'provider' : 'unknown'));
