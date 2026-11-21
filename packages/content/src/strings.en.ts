@@ -69,7 +69,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
-      body: "Talk for a minute, or type a few lines. Each letter is there for {child} to read and hear for years.",
+      body: "Talk for a minute, or type a few lines. Each letter is there for {child} to read, and to hear if you spoke it.",
       // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
       // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
       freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
@@ -722,9 +722,9 @@ export const en = {
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence will do." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
       { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
-      { title: "A few words tonight?", body: "A line or two for {child}'s book is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Say a few words to {child}", body: "A minute is plenty. Your recording stays with the letter." },
+      { title: "Say a few words to {child}", body: "Talk or type, whichever is easier tonight." },
       { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
