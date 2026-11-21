@@ -95,6 +95,7 @@ Error registry (from `supabase/migrations` on PR #32 head `f20898c`, `supabase/A
 | `SCTMB` | illegal tombstone transition (use `restore_entry`) | permanent, offer restore |
 | `SCLPG` | last parent cannot leave | permanent |
 | `SCDEL` | the book or letter is deleted | permanent |
+| `SCPHO` | the server holds no pictures: a `photo_path` was set on a letter (BL-870, S1) | permanent, a client bug |
 | `SCPAR` | parents only | permanent |
 | `SCACD` | account deletion pending | permanent until cancelled |
 | `SCPRG` | id was purged; never comes back | permanent, drop local copy from queue |

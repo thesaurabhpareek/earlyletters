@@ -13,7 +13,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
 | CODE-R01 | MUST | review; PR template; CLAUDE.md | enforced on develop (review only) | none |
-| CODE-R02 | MUST | CI PR size check | not yet | CODE-G1 |
+| CODE-R02 | MUST | CI PR size check | proposed, not enforced until the founder pastes the workflow (docs/ops/proposed/pr-size.md; script scripts/guards/pr-size.mjs) | CODE-G1 |
 | CODE-R03 | MUST NOT | review; OPERATING_MODEL section 4 | enforced on develop (review only) | none |
 | CODE-R04 | MUST | review; CI `required` (`npm test`, `test:db`, typecheck) | enforced on develop | none |
 | CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | enforced on develop (#28) | none |
@@ -153,8 +153,8 @@ Gap ids defined here:
 | IAM-R23 | MUST NOT | review; no Supabase credentials in `agents.yml` | review | PINF-01, PINF-05 |
 | IAM-R24 | MUST | access matrix unlisted-function check; review | enforced on develop (functions); review (tables, views) | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
-| SEC-R02 | MUST | `docs/ops/SECRETS.md` | not yet | PINF-05, WS-18 |
-| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
+| SEC-R02 | MUST | `docs/ops/SECRETS.md` | draft in this PR, founder reads | PINF-05, WS-18 |
+| SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
 | SEC-R04 | MUST | scoped deploy secrets in GitHub Environment | not yet | PINF-05, WS-14 |
 | SEC-R05 | MUST | incident runbook | not yet | PINF-09, WS-18 |
 | SEC-R06 | MUST | `npm ci` in `.github/actions/setup/action.yml` | enforced on develop | |

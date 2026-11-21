@@ -2,8 +2,10 @@
 // the ops runbook scripts (20261004200000_ops_deletion_worker.sql).
 // Fictional family "Asha" only (CLAUDE.md). Run all DB tests: npm run test:db
 import { createDb, users } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, asAnon, sys, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, N, S, C } = users;
 // Supabase's storage.objects has owner (uuid, deprecated), owner_id (text) and created_at; the harness stub does not.
 await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now()`);

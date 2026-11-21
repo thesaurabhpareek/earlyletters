@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
 
 ---
 
@@ -4221,6 +4221,215 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Scope: migration and grants, a new private bucket, a signed-URL function, a blob queue, quotas, the label, then the app. The migration is never applied here: it waits for `approve-migration` and the founder.
 - Done when: `npm run test:db` and `npm run test:functions` cover allow and deny per role, and the founder has decided variant B.
 - Source: `24-engineering-handoff.md` section 1.14 and step 5.3.
+
+## First-run build steps, instrumentation and the P0 rows the groups missed (21 Nov 2026, proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. The readiness check (`docs/product/READINESS-20nov.md`, PR #1079) found work in the dependency map that has no BL id: the 21 first-run PRs of `docs/tdd/new-scope/12-first-run-5.md` (FP-1 to FP-20, FP-11 unused), three data rows and two native-security rows beside them, the perf profile half of BL-929, and 100 instrumentation rows. They get ids BL-1021 to BL-1149 below, one row each, in the order the map lists them, so the map id (FP-n, DA-n, NSC-n, IN-...) is named in every title and a reader can go from the map to the row and back. BL-1048 and BL-1049 are two P0 rows no group row names (NS-08-R21 and FR-MKT-44, both added by errata after the groups were written).
+
+Every row is `proposed`: the dispatcher skips it until Karma or the founder sets `ready`. Dependencies are the map's, translated to BL ids; a wait on something that has no BL row is written in Scope. Mode is `pair` where the map names a founder, counsel, device or account step, `agent` where it names none. Nothing here copies or changes a requirement. The P0-to-BL mapping for all 1,052 rows is `docs/product/P0-TO-BL-20nov.md`.
+
+#### BL-1021 NS-38: listing test, review notes, D-161 text (R2, R5) (FP-1)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: content. Milestone: M15. Size: S.
+- Satisfies: NS-38-R2, NS-38-R5.
+- Scope: NS-38: listing test, review notes, D-161 text (R2, R5). Lane content; review principal-architect / compliance-engineer; design wave 1; about 140 lines, 5 files changed. Waits on: nothing outside this map. Founder, counsel or word steps: words (founder); ASC fields R1, R7, R9 are founder steps.
+- Done when: the PR merges inside CODE-R02 (about 140 lines, 5 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-1, first-run drop D (E43).
+
+#### BL-1022 NS-42: consent builder, hash manifest, contract test (R7, R2, R3, FS-21, FS-22) (FP-2)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: NS-42-R2, NS-42-R3, NS-42-R7, NS-42-R18 (notice at collection; the card row says FP-2 or FP-3 carries it, E51).
+- Scope: NS-42: consent builder, hash manifest, contract test (R7, R2, R3, FS-21, FS-22). Lane mobile; review principal-architect / compliance-engineer; design wave 2; about 380 lines, 10 files changed. Waits on: `20261108000000` exists (#634 server half). Founder, counsel or word steps: applying the migration and the later flag are the founder's; counsel Q-D.
+- Done when: the PR merges inside CODE-R02 (about 380 lines, 10 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-2, first-run drop D (E43).
+
+#### BL-1023 NS-42: versioned links, version pin, no invite promise (R9, R13, R14) (FP-3)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1021, BL-1022.
+- Satisfies: NS-42-R9, NS-42-R13, NS-42-R14.
+- Scope: NS-42: versioned links, version pin, no invite promise (R9, R13, R14). Lane mobile; review principal-architect / compliance-engineer; design wave 3; about 220 lines, 8 files changed. Waits on: FP-1 words, FP-2. Founder, counsel or word steps: counsel reads; founder merges legal-adjacent text and publishes the versions.
+- Done when: the PR merges inside CODE-R02 (about 220 lines, 8 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-3, first-run drop D (E43).
+
+#### BL-1024 NS-42: local agreement rows reach the account (R12, FS-23) (FP-4)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1022.
+- Satisfies: NS-42-R12.
+- Scope: NS-42: local agreement rows reach the account (R12, FS-23). Lane mobile; review principal-architect / compliance-engineer; design wave 6; about 300 lines, 7 files changed. Waits on: FP-2; method enum check by `data-architect`. Founder, counsel or word steps: counsel Q-D.
+- Done when: the PR merges inside CODE-R02 (about 300 lines, 7 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-4, first-run drop D (E43).
+
+#### BL-1025 killSwitches.signIn in packages/api, parse and drift tests (CL-111). CL-111 adds libraryDays in the same two f (FP-5)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: sync owner. Milestone: M15. Size: S.
+- Satisfies: NS-41-R25 (P1).
+- Scope: `killSwitches.signIn` in `packages/api`, parse and drift tests (CL-111). CL-111 adds `libraryDays` in the same two files (`kill-switches.ts`, `remote-config.ts`): one PR adds both keys, or whichever merges second rebases and the drift test lists both; coordinate with the days stack owner before opening. Lane sync; review principal-architect / security-architect; design wave 1; about 120 lines, 5 files changed. Waits on: the days stack (`libraryDays`). Founder, counsel or word steps: none.
+- Done when: the PR merges inside CODE-R02 (about 120 lines, 5 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-5, first-run drop D (E43).
+
+#### BL-1026 NS-40, NS-41: region_refused, signIn pause, Apple on outage (R9, R14, R25, R12) (FP-6)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-922, BL-978, BL-1025.
+- Satisfies: NS-40-R14, NS-41-R9, NS-41-R12, NS-41-R25.
+- Scope: NS-40, NS-41: `region_refused`, signIn pause, Apple on outage (R9, R14, R25, R12). Lane mobile; review principal-architect / security-architect; design wave 5; about 330 lines, 10 files changed. Waits on: FP-5; BL-922a, BL-922b, BL-978a (`lib/first-run/*`). Founder, counsel or word steps: words `system.region.*`; staging rows need File 28 applied by the founder. Ruled E62 (20 Nov): Send answers the same for every address; `region_refused` is shown only after the code is entered and the country lookup runs, so the refusal mapping sits after the code step.
+- Done when: the PR merges inside CODE-R02 (about 330 lines, 10 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-6, first-run drop D (E43).
+
+#### BL-1027 NS-41: one address form, reasons, persisted pause, 900 s note (R8, R9, R11, R24) (FP-7)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1032.
+- Satisfies: NS-41-R8, NS-41-R9, NS-41-R11, NS-41-R24.
+- Scope: NS-41: one address form, reasons, persisted pause, 900 s note (R8, R9, R11, R24). Lane mobile; review principal-architect / security-architect; design wave 4; about 330 lines, 11 files changed. Waits on: FP-12 stub kit. Founder, counsel or word steps: words (content, BL-965).
+- Done when: the PR merges inside CODE-R02 (about 330 lines, 11 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-7, first-run drop D (E43).
+
+#### BL-1028 NS-41: eight-digit code in one release (R10, FS-18) (FP-8)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1021, BL-1027.
+- Satisfies: NS-41-R10.
+- Scope: NS-41: eight-digit code in one release (R10, FS-18). Lane mobile; review principal-architect / security-architect; design wave 7; about 300 lines, 14 files changed. Waits on: FP-1, FP-7. Founder, counsel or word steps: `otp_length` and `token_verifications` in the dashboard (founder), same day.
+- Done when: the PR merges inside CODE-R02 (about 300 lines, 14 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-8, first-run drop D (E43).
+
+#### BL-1029 NS-41, NS-45: Apple email-only scope, foreground revocation (O-8, R4) (FP-9)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: NS-45-R4; NS-41 O-8 (Apple name scope, default email only).
+- Scope: NS-41, NS-45: Apple email-only scope, foreground revocation (O-8, R4). Lane mobile; review principal-architect / security-architect; design wave 4; about 250 lines, 6 files changed. Waits on: nothing outside this map. Founder, counsel or word steps: none (default O-8).
+- Done when: the PR merges inside CODE-R02 (about 250 lines, 6 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-9, first-run drop D (E43).
+
+#### BL-1030 NS-40: modules/age-range Swift module and scan (FS-12) (FP-10a)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1045, BL-1046.
+- Satisfies: FR-SEC-14.
+- Scope: NS-40: `modules/age-range` Swift module and scan (FS-12). Lane mobile; review principal-architect / security-architect; design wave 8; about 380 lines, 8 files changed. Waits on: Mac with Xcode 26.2; the spike; NSC-01 (`modules/REVIEWED.sha256`) and NSC-02 (entitlement allowlist) landed by `security-architect` (neither is on develop). Founder, counsel or word steps: App ID capability and the Texas risk acceptance (founder).
+- Done when: the PR merges inside CODE-R02 (about 380 lines, 8 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-10a, first-run drop D (E43).
+
+#### BL-1031 NS-40: signal at launch, entitlement, preflight allowlist, label (R5, R6) (FP-10b)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1030.
+- Satisfies: NS-40-R5, NS-40-R6.
+- Scope: NS-40: signal at launch, entitlement, preflight allowlist, label (R5, R6). Lane mobile; review principal-architect / security-architect; design wave 9; about 260 lines, 9 files changed. Waits on: FP-10a; NSC-02 landed. Founder, counsel or word steps: entitlement approval path (founder); counsel Q46.
+- Done when: the PR merges inside CODE-R02 (about 260 lines, 9 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-10b, first-run drop D (E43).
+
+#### BL-1032 NS-39: lock offer removed, no-prompt and offline tests, stub kit (R9, R1, R2, R12, R14) (FP-12)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: NS-39-R1, NS-39-R2, NS-39-R9, NS-39-R12, NS-39-R14.
+- Scope: NS-39: lock offer removed, no-prompt and offline tests, stub kit (R9, R1, R2, R12, R14). Lane mobile; review principal-architect / design-systems; design wave 3; about 330 lines, 12 files changed. Waits on: none (reads `lib/first-run/*`, edits `onboarding.tsx` only). Founder, counsel or word steps: none.
+- Done when: the PR merges inside CODE-R02 (about 330 lines, 12 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-12, first-run drop D (E43).
+
+#### BL-1033 NS-43: addChildren in one transaction (R9, R6, R10) (FP-13)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1032.
+- Satisfies: NS-43-R6, NS-43-R9, NS-43-R10.
+- Scope: NS-43: `addChildren` in one transaction (R9, R6, R10). Lane mobile; review principal-architect / data-steward; design wave 5; about 280 lines, 6 files changed. Waits on: FP-12; BL-961 part 3 (`store.ts`). Founder, counsel or word steps: O-14 default stands.
+- Done when: the PR merges inside CODE-R02 (about 280 lines, 6 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-13, first-run drop D (E43).
+
+#### BL-1034 NS-44: first-run no-Plus test, allowance titles, free-space line (R1 to R12, FS-31) (FP-14)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1032.
+- Satisfies: NS-44-R1 to NS-44-R12.
+- Scope: NS-44: first-run no-Plus test, allowance titles, free-space line (R1 to R12, FS-31). Lane mobile; review principal-architect / design-systems; design wave 5; about 260 lines, 7 files changed. Waits on: FP-12. Founder, counsel or word steps: words `system.storage.*`.
+- Done when: the PR merges inside CODE-R02 (about 260 lines, 7 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-14, first-run drop D (E43).
+
+#### BL-1035 NS-45: the update-line reader and Me line (R13, FS-33) (FP-15)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: sync owner. Milestone: M15. Size: M.
+- Satisfies: NS-45-R13.
+- Scope: NS-45: the update-line reader and Me line (R13, FS-33). Lane sync; review principal-architect / design-systems; design wave 3; about 330 lines, 10 files changed. Waits on: FP-5 optional; `SystemLine` optional. Founder, counsel or word steps: words; the App Store id (founder).
+- Done when: the PR merges inside CODE-R02 (about 330 lines, 10 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-15, first-run drop D (E43).
+
+#### BL-1036 NS-45: deletion step 1 words, typed-word reason, D1 line (R5, R1) (FP-16a)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965.
+- Satisfies: NS-45-R1, NS-45-R5.
+- Scope: NS-45: deletion step 1 words, typed-word reason, D1 line (R5, R1). Lane mobile; review principal-architect / compliance-engineer; design wave 5; about 250 lines, 7 files changed. Waits on: BL-965 words; BL-961 sheet. Founder, counsel or word steps: counsel reads; founder approves words.
+- Done when: the PR merges inside CODE-R02 (about 250 lines, 7 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-16a, first-run drop D (E43).
+
+#### BL-1037 FR-SEC-06 ownerCheck() for Erase everything; NS-45 titles (FP-16b)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: FR-SEC-06.
+- Scope: FR-SEC-06 `ownerCheck()` for Erase everything; NS-45 titles. Lane mobile; review principal-architect / security-architect; design wave 6; about 200 lines, 5 files changed. Waits on: nothing outside this map. Founder, counsel or word steps: OQ-F4 for Delete account.
+- Done when: the PR merges inside CODE-R02 (about 200 lines, 5 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-16b, first-run drop D (E43).
+
+#### BL-1038 docs/ops/AUTH_SETTINGS.md register and the AUTH_SETUP fix (FS-26) (FP-17)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: design row FS-26 (the auth settings register), not a P0 row.
+- Scope: `docs/ops/AUTH_SETTINGS.md` register and the AUTH_SETUP fix (FS-26). Lane ops; review principal-architect / security-architect; design wave 1; about 150 lines, 3 files changed. Waits on: nothing outside this map. Founder, counsel or word steps: reading hosted values is the founder's.
+- Done when: the PR merges inside CODE-R02 (about 150 lines, 3 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-17, first-run drop D (E43).
+
+#### BL-1039 NS-45: purge-worker titles for R8, R17 (supabase/functions/purge-worker/test) (FP-18)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: sync owner. Milestone: M15. Size: S.
+- Satisfies: NS-45-R8, NS-45-R17.
+- Scope: NS-45: purge-worker titles for R8, R17 (`supabase/functions/purge-worker/test`). Lane sync; review principal-architect / security-architect; design wave 6; about 120 lines, 3 files changed. Waits on: nothing outside this map. Founder, counsel or word steps: the worker deployed is the founder's.
+- Done when: the PR merges inside CODE-R02 (about 120 lines, 3 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-18, first-run drop D (E43).
+
+#### BL-1040 NS-42: sensitive-data withdrawal in Me, Privacy (FR-CMP-16, card row NS-42-R17, E46) (FP-19)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1022, BL-1044.
+- Satisfies: FR-CMP-16, NS-42-R17.
+- Scope: NS-42: sensitive-data withdrawal in Me, Privacy (FR-CMP-16, card row NS-42-R17, E46). Lane mobile; review principal-architect / compliance-engineer; design wave 3; about 300 lines, 8 files changed. Waits on: `data-architect` adds `withdraw_sensitive_data`, including deletion of what is on our servers when the person asks on the sheet (migration task); FP-2 builder. Founder, counsel or word steps: counsel Q48 and the withdraw semantics; words (founder); must ship before anyone outside the family signs in (D-128).
+- Done when: the PR merges inside CODE-R02 (about 300 lines, 8 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-19, first-run drop D (E43).
+
+#### BL-1041 NS-41: bot check on email send: Turnstile token, widget, subprocessor row, label and manifest check, threat ro (FP-20)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1027.
+- Satisfies: none claimed: design rows O-7 and CL-070 (bot check on email send), not P0 ids.
+- Scope: NS-41: bot check on email send: Turnstile token, widget, subprocessor row, label and manifest check, threat row (O-7, CL-070; row 12 of the auth register). Lane mobile; review principal-architect / security-architect; design wave 9; about 380 lines, 10 files changed. Waits on: `legal` adds the Cloudflare Turnstile row to `docs/legal/subprocessors.md` first; founder Cloudflare and Supabase CAPTCHA setup; FP-7. Founder, counsel or word steps: founder (new subprocessor, dashboard CAPTCHA), counsel reads the label effect.
+- Done when: the PR merges inside CODE-R02 (about 380 lines, 10 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-20, first-run drop D (E43).
+
+#### BL-1042 File 28 re-stamp and apply path (DA-1)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: data-architect work the first-run design carries beside FP-1 to FP-20 (the File 28 re-stamp and apply path).
+- Scope: File 28 re-stamp and apply path. Waits on: nothing in this map.
+- Done when: the PR merges with its tests green; the founder applies nothing hosted from this PR.
+- Source: `docs/tdd/new-scope/12-first-run-5.md`; map id DA-1.
+
+#### BL-1043 Purge of never-confirmed auth.users after 7 days (DA-2)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: design rows of 12-first-run-5.md (O-12, unconfirmed sign-ins).
+- Scope: Purge of never-confirmed auth.users after 7 days. Waits on: nothing in this map.
+- Done when: the PR merges with its tests green; the founder applies nothing hosted from this PR.
+- Source: `docs/tdd/new-scope/12-first-run-5.md`; map id DA-2.
+
+#### BL-1044 withdraw_sensitive_data function (DA-3)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: design rows of 12-first-run-5.md (FP-19 needs it, OQ-F9).
+- Scope: withdraw_sensitive_data function. Waits on: nothing in this map.
+- Done when: the PR merges with its tests green; the founder applies nothing hosted from this PR.
+- Source: `docs/tdd/new-scope/12-first-run-5.md`; map id DA-3.
+
+#### BL-1045 modules/REVIEWED.sha256 manifest (NSC-01)
+- Status: proposed (docs/tdd/new-scope/security.md section 2; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: security-architect design row NSC-01.
+- Scope: modules/REVIEWED.sha256 manifest. Waits on: nothing in this map.
+- Done when: the PR merges with its tests green; security-architect has read it.
+- Source: `docs/tdd/new-scope/security.md section 2`; map id NSC-01.
+
+#### BL-1046 Entitlement allowlist in preflight (NSC-02)
+- Status: proposed (docs/tdd/new-scope/security.md section 2; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: security-architect design row NSC-02.
+- Scope: Entitlement allowlist in preflight. Waits on: nothing in this map.
+- Done when: the PR merges with its tests green; security-architect has read it.
+- Source: `docs/tdd/new-scope/security.md section 2`; map id NSC-02.
+
+#### BL-1047 Perf profile with markers: the `perf` build and the content-free marker harness (NS-34-R6)
+- Status: proposed (docs/engineering/readiness-20nov/briefs/platform/BRIEF-BL-929-PERF-perf-profile-and-markers.md; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M.
+- Satisfies: NS-34-R6, NS-34-R3, NS-52-R44, NS-51-R28, FR-OPS-22.
+- Scope: the other half of BL-929: a new `perf` EAS profile cloned from `testflight`, a content-free marker module for launch, save, Book first render and Find, and the guards that keep both out of every store build. BL-929 names only the run sheet. The brief holds the files and the tests.
+- Done when: the brief's tests pass (`[NS-34-R6] markers content-free`, `[FR-OPS-22] the perf flag is off in every other profile`) and a store bundle holds none of the marker code; the new EAS profile is the founder's to approve first.
+- Source: the BRIEF-BL-929-PERF file above, which says "Blocked until: product gives this its own BL row".
+
+#### BL-1048 The new-device sign-in email, built and tested before the first outside family (NS-08-R21)
+- Status: proposed (docs/product/prd/18-errata-after-lock.md E78 and E83; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: M.
+- Satisfies: NS-08-R21.
+- Scope: the email that fires once for a session on a device the account has not used (never the first device, never from the client, email only, no button that acts), the "Not you?" page that signs that session out only on a button press, and the line "We will sign that device out" only once both exist. The device table's privacy read (what the device hash is, its retention, its class and its label line) is open and is the security-architect's. The card is the source of truth; nothing here changes a row.
+- Done when: `[NS-08-R21] new-device email before the first outside family and before the flip` passes, and the security-architect read is on record. Applying anything hosted is the founder's.
+- Source: `docs/product/prd/08-keeping-and-trust.md` row NS-08-R21 (E78, E83; CL-158, #1051). It has no BL row before this one because E83 moved its gate after the group rows were written.
+
+#### BL-1049 Emails to an address a person gave in the app are transactional only (FR-MKT-44)
+- Status: proposed (docs/product/prd/functions/marketing.md FR-MKT-44; Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: FR-MKT-44.
+- Scope: a test over every email the sender can send to an app address: each is one of the classes `LEGAL-REQ-053` lists (a sign-in code, an account or security notice, a deletion receipt, a legal notice), and none is a newsletter, product news, tip, re-engagement or Plus offer; the app has no opt-in for one at 1.0; the waitlist stays a separate list at the mail vendor, never joined to accounts. The card is the source of truth; nothing here changes a row.
+- Done when: a test whose title starts with `[FR-MKT-44]` fails when a template or sender path outside the allowed classes is added, and passes today.
+- Source: `docs/product/prd/functions/marketing.md` row FR-MKT-44 (E75); LEGAL-REQ-053; `docs/emails/CATALOG.md`.
 
 ## Locked pack: P0 rows with no backlog row (20 Nov 2026, proposed)
 
