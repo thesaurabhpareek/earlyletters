@@ -35,7 +35,7 @@ Nothing else starts. Not in the set, although the spec 19.4 text or the replan l
 | PRs 18b-1b, 18b-1c, 11a (BL-1447) | PR 18b-1a |
 | PR 25a (BL-1447; wave D; part of the door) | PR 11a only; the founder pastes the workflow step |
 | PR 19b (BL-1447) | PRs 6, 12, 14, 18a, 18b-1a, 18b-1b, 18b-1c |
-| PR 18d (BL-1447) | PRs 18b-1a, 18b-1c, 19b; a `security-architect` read and a founder-visible note |
+| PR 18d (BL-1453) | PRs 18b-1a, 18b-1c, 19b; a `security-architect` read and a founder-visible note |
 | PR 18b-2, 18c (BL-1447, later) | G1a-P device read-out (and O-53, O-57); the video read-back (R290) |
 | PR 5b (BL-1451) | G11b, the dataset licence read by licensed counsel; silence is never a pass; before PR 22 |
 | PR 7 (BL-1452) | PR 6; O-49 and O-38 (default: do not send) |
@@ -58,7 +58,8 @@ The door (the picker, pictures only) ships only when 18a, 18b-0, 18b-1a, 18b-1b,
 | BL-1434 | G1a-L, G1a-P spikes | mobile engineer | `mobile`, with the founder's phone for device parts |
 | BL-1450 | 18b-0 | security engineer | `security-architect` writes (the handle has no `backlog_owner_names`; `security engineer` is the nearest accepted name and belongs to the `security` handle, so a human assigns it) |
 | BL-1435 | 9, 10, 11b, 11c, 18 | mobile engineer, privacy engineer | `mobile`; `qa` scripts and `privacy` text in 11b; `privacy` text in 11c |
-| BL-1447 | 11a, 18a, 18b-1a, 18b-1b, 18b-1c, 19b, 18d, 25a, later 18b-2, 18c | mobile engineer, qa engineer, privacy engineer | `mobile`, with a `security-architect` read requested in each native PR body; `qa` scripts and `privacy` text in 11a; `qa` writes 25a and the founder pastes the workflow step |
+| BL-1447 | 11a, 18a, 18b-1a, 18b-1b, 18b-1c, 19b, 25a, later 18b-2, 18c | mobile engineer, qa engineer, privacy engineer | `mobile`, with a `security-architect` read requested in each native PR body; `qa` scripts and `privacy` text in 11a; `qa` writes 25a and the founder pastes the workflow step |
+| BL-1453 | 18d | mobile engineer, security engineer | `mobile`; `security-architect` reads |
 | BL-1451 | 5b | mobile engineer, privacy engineer | `mobile`; `privacy` approves |
 | BL-1452 | 7 | analytics engineer | `analytics` |
 | BL-1436 | 13 to 17, 19 to 23 | mobile engineer, design systems | `design-systems` (13, 14), `mobile` (the rest) |
