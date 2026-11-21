@@ -5,6 +5,9 @@
  * (lib/capabilities.ts). Off: no consent sheet, no Settings switch, no
  * PostHog key even if one is set, no startAnalytics(), no recorded yes.
  * packages/analytics stays; analytics returns with consent in v1.1.
+ *
+ * 20 Nov 2026: the SDK is now a dependency (founder approval items on the PR) and the build flag is still off in
+ * every profile. Turning it on in `production` is the founder's separate commit.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -79,9 +82,13 @@ describe('[D-088] every analytics entry point follows the switch', () => {
     expect(src).toMatch(/\{capabilities\.analytics \? \(\s*<ListSection title=\{consentCopy\.analyticsSection\}/);
   });
 
-  it('[D-095] the PostHog SDK is not a dependency and nothing in the app imports it', () => {
+  it('[20 Nov 2026] the PostHog SDK is a pinned dependency, imported only by lib/analytics/index.ts and only after a yes', () => {
     const pkg = JSON.parse(read('package.json')) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
-    expect(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((d) => d.startsWith('posthog'))).toEqual([]);
+    const all = { ...pkg.dependencies, ...pkg.devDependencies };
+    // Founder approval items on the PR: name, version, licence (both MIT). Exact versions, no range.
+    expect(all['posthog-react-native']).toBe('4.87.1');
+    expect(all['@posthog/react-native-plugin']).toBe('2.13.3');
+    expect(Object.keys(all).filter((d) => /posthog/.test(d)).sort()).toEqual(['@posthog/react-native-plugin', 'posthog-react-native']);
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const e of readdirSync(join(APP, dir), { withFileTypes: true })) {
@@ -91,9 +98,12 @@ describe('[D-088] every analytics entry point follows the switch', () => {
       }
     };
     walk('src');
-    // Only a comment may name it (the v1.1 re-add line in lib/analytics/index.ts).
     const code = (f: string) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    expect(files.filter((f) => /posthog-react-native|posthog-sdk/.test(code(f)))).toEqual([]);
-    expect(read('src/lib/analytics/index.ts')).toMatch(/const createClient: PostHogClientFactory \| null = null;/);
+    expect(files.filter((f) => /posthog-react-native|@posthog\//.test(code(f)))).toEqual(['src/lib/analytics/index.ts']);
+    const idx = code('src/lib/analytics/index.ts');
+    // A dynamic import inside the factory: no SDK code runs before the first yes.
+    expect(idx).toMatch(/await import\('posthog-react-native'\)/);
+    expect(idx).not.toMatch(/^import .*posthog-react-native/m);
+    expect(idx).not.toMatch(/@posthog\/react-native-plugin/); // the native plugin is installed for the later crash flip, never imported
   });
 });

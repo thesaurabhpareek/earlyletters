@@ -21,14 +21,19 @@
  *      'granted' (one switch, LEGAL-REQ-003).
  * Screens: `@/lib/analytics/track` (call sites in TRACKING_PLAN section 9).
  */
+import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import { AppState } from 'react-native';
 import {
   createAnalytics,
   createLazyPostHogAdapter,
   createLifecycle,
+  buildPostHogOptions,
+  createBasics,
   createTrackers,
+  keepAllowedAppProperties,
   noopProvider,
+  posthogHostFor,
   type ConsentStatus,
   type KeyValueStorage,
   type PostHogLike,
@@ -38,10 +43,14 @@ import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
 
-// v1.0 (EXPO_PUBLIC_ANALYTICS off, lib/capabilities.ts): no key, so the provider is the no-op and PostHog is never loaded.
+// EXPO_PUBLIC_ANALYTICS off (every profile but production, lib/capabilities.ts): no key, so the provider is the no-op and PostHog is never loaded.
 const KEY = postHogKeyForBuild(analyticsEnabled(), process.env.EXPO_PUBLIC_POSTHOG_KEY);
-/** PostHog US Cloud ingestion host (users and Supabase are in the US). */
-const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+/**
+ * PostHog Cloud ingestion host from `EXPO_PUBLIC_POSTHOG_REGION` (`us` or `eu`; US when unset). The project key and
+ * the region come from the EAS environment, never from a committed file; anything but `eu` is US, so the environment
+ * can never point the app at an arbitrary host.
+ */
+const HOST = posthogHostFor(process.env.EXPO_PUBLIC_POSTHOG_REGION);
 
 /** Device settings table as the analytics key-value store (synchronous SQLite). */
 export const settingsStorage: KeyValueStorage = {
@@ -50,25 +59,34 @@ export const settingsStorage: KeyValueStorage = {
   remove: (k) => deleteSetting(k),
 };
 
-/** Development builds throw on a catalogue violation so the bug is seen at once. Never a value in the message. */
+/**
+ * An event or property that is not in the registry (packages/analytics registry.ts) is dropped by the validator and
+ * counted (`analytics.violationCounts()`); in a development build the kind is also logged, never a value, so the
+ * stray call site is found. Nothing throws: a held event still called by a screen must not break the app.
+ */
 function onViolation(v: Violation): void {
-  if (__DEV__ && v.kind !== 'queue_overflow') throw new Error(`analytics_violation:${v.kind}:${v.event}:${v.property ?? ''}`);
+  if (__DEV__ && v.kind !== 'queue_overflow') console.warn(`analytics_dropped:${v.kind}:${v.event}:${v.property ?? ''}`);
 }
 
 /**
- * The PostHog client factory. None in v1.0: `posthog-react-native` is not a
- * dependency, so no SDK code is in the bundle (D-088, D-095; Metro bundles a
- * dynamic import even when it is never reached). v1.1 re-adds the SDK with
- * `npm install posthog-react-native -w @scribe/mobile` and one line here:
- *
- *   const createClient: PostHogClientFactory | null = async (id) =>
- *     new (await import('posthog-react-native')).default(KEY, { ...buildPostHogOptions({ host: HOST, distinctId: id, onViolation }) });
- *
- * (see packages/analytics `buildPostHogOptions` and `createLazyPostHogAdapter`;
- * the before_send cast is in git history, src/lib/analytics/posthog-sdk.ts).
+ * The PostHog client factory: builds the SDK only after a yes (createLazyPostHogAdapter), with the options pinned in
+ * packages/analytics `buildPostHogOptions` (opt-in default off, file persistence, no lifecycle events, no flags, no
+ * geoip, no replay, no autocapture, `before_send` as the last allowlist gate, crash capture off until crash.ts is
+ * flipped). `posthog-react-native` is imported here and nowhere else.
  */
 type PostHogClientFactory = (distinctId: string) => Promise<PostHogLike>;
-const createClient: PostHogClientFactory | null = null;
+const createClient: PostHogClientFactory | null = async (distinctId) => {
+  const PostHog = (await import('posthog-react-native')).default;
+  const options = {
+    ...buildPostHogOptions({ host: HOST, distinctId, onViolation }),
+    // The app version and build come from expo-constants (already a dependency), so no extra package is needed; the
+    // device name, locale and time zone the SDK reads are dropped here and again by `before_send`.
+    customAppProperties: (props: Parameters<typeof keepAllowedAppProperties>[0]) =>
+      keepAllowedAppProperties({ ...props, $app_version: Constants.nativeAppVersion ?? props.$app_version, $app_build: Constants.nativeBuildVersion ?? props.$app_build }),
+  };
+  // The adapter's `before_send` is typed on the minimal event shape; the SDK's CaptureEvent is a superset.
+  return new PostHog(KEY, options as unknown as ConstructorParameters<typeof PostHog>[1]) as unknown as PostHogLike;
+};
 
 const provider = KEY && createClient ? createLazyPostHogAdapter({ create: createClient }) : noopProvider;
 
@@ -83,6 +101,8 @@ export const analytics = createAnalytics({
 
 export const lifecycle = createLifecycle({ analytics, storage: settingsStorage });
 export const trackers = createTrackers(analytics);
+/** Key taps, surface impressions and timed steps (registered ids only). */
+export const basics = createBasics(analytics);
 
 // ---------------------------------------------------------------------------
 // Consent state for screens
@@ -218,7 +238,11 @@ export async function startAnalytics(opts: { ttfiMs?: number } = {}): Promise<vo
     await lifecycle.launch({ ttfiMs: opts.ttfiMs });
     AppState.addEventListener('change', (state) => {
       if (state === 'background') void lifecycle.background();
-      else if (state === 'active') void lifecycle.foreground();
+      else if (state === 'active') {
+        void lifecycle.foreground().then((fresh) => {
+          if (fresh) basics.newSession(); // one impression per surface per foreground session
+        });
+      }
     });
     let children = listChildren().length;
     subscribe(() => {
