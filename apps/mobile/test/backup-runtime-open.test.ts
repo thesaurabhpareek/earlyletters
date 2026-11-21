@@ -119,6 +119,27 @@ describe('[B5-5] sign-out closes the backup handle, then deletes the file; the b
     expect(h.disk.files.has(at('scribe.db'))).toBe(true);
   });
 
+  it('mid-pass: after sign-out, dbFor for that account throws and re-creates nothing; its next service build (a sign-in) opens again', async () => {
+    const rt = await import('../src/lib/backup/runtime');
+    const files = await import('../src/lib/backup/files');
+    rt.openBackupDbForTests(ASHA);
+    files.endBackupFileFor(ASHA);
+    expect(gone()).toBe(true);
+    const opensBefore = h.opens;
+    expect(() => rt.openBackupDbForTests(ASHA)).toThrow('backup_account_ended');
+    expect(h.opens).toBe(opensBefore);
+    expect(gone()).toBe(true);
+    files.backupAccountStarted(ASHA); // what building the account's next service does
+    expect(() => rt.openBackupDbForTests(ASHA)).not.toThrow();
+    expect(h.disk.files.has(at(FILE))).toBe(true);
+  });
+
+  it('the runtime clears the mark only when it builds an account\'s service', () => {
+    const src = readFileSync(join(__dirname, '../src/lib/backup/runtime.ts'), 'utf8');
+    expect(src).toMatch(/createAccountHost<BackupService>\(\(uid\) => \{\s*backupAccountStarted\(uid\);/);
+    expect(src.match(/backupAccountStarted\(/g)).toHaveLength(1);
+  });
+
   it('a second sign-out, or one for an account that never had a file, changes nothing and does not throw', async () => {
     await import('../src/lib/backup/runtime');
     const { endBackupFileFor } = await import('../src/lib/backup/files');

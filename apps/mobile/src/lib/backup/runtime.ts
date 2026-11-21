@@ -35,7 +35,7 @@ import { APP_ENV } from '../build-env';
 import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { AccountChanged, backupDbFileFor, createAccountHost } from './account';
-import { openSecureBackupFile, registerBackupHandleCloser } from './files';
+import { backupAccountEnded, backupAccountStarted, openSecureBackupFile, registerBackupHandleCloser } from './files';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -422,6 +422,8 @@ const listeners = new Set<() => void>();
 function dbFor(profileId: string): BackupDb {
   let d = backupDbs.get(profileId);
   if (!d) {
+    // B5-5: an account that signed out is not opened again (a pass already running would re-create the deleted file).
+    if (backupAccountEnded(profileId)) throw new Error('backup_account_ended');
     const file = backupDbFileFor(profileId);
     // B5-3: files.ts checks before and after the open and refuses (BackupFileNotExcluded) a file not excluded.
     let close: () => void = () => {};
@@ -468,6 +470,7 @@ async function session(sb: SupabaseClient): Promise<{ uid: string; token: string
 
 let client: SupabaseClient | null = null;
 const host = createAccountHost<BackupService>((uid) => {
+  backupAccountStarted(uid); // a new service is a sign-in: this account may open its file again
   const sb = client!;
   // Only this account's session, never the next one's: a token read after another account signed in stops the call (account.ts).
   const mine = async () => {

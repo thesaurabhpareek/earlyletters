@@ -244,6 +244,23 @@ export function closeBackupHandles(): void {
  * on a deleted file keeps writing to it). Runs with the flag off too. The book is not touched. Never throws.
  */
 export function endBackupFileFor(profileId: string): DeleteResult {
+  endedAccounts.add(profileId.toLowerCase());
   closeHandles(profileId);
   return deleteBackupFilesFor(profileId);
+}
+
+/**
+ * Accounts that signed out (or were replaced) on this phone and have not signed in since. A service pass already
+ * running for such an account must not open its file again, or it would re-create the file just deleted (the
+ * handle was closed, the map entry forgotten). The runtime asks here in `dbFor` and clears the mark when the
+ * account's next service is built (a sign-in). In memory only: a launch starts with no service and no mark.
+ */
+const endedAccounts = new Set<string>();
+
+export function backupAccountEnded(profileId: string): boolean {
+  return endedAccounts.has(profileId.toLowerCase());
+}
+
+export function backupAccountStarted(profileId: string): void {
+  endedAccounts.delete(profileId.toLowerCase());
 }
