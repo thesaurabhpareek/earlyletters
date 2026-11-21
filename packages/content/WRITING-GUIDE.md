@@ -108,6 +108,7 @@ These patterns are what customers notice. The copy tells lint (`npm run lint:cop
 | Empty exclamations | "Great!", "Oops!", "Uh-oh" | Insincere in errors (Apple's guidance says as much). | Drop it, state the fact. |
 | Mirroring the user back | "You are about to delete..." | Wastes the beat. | "This deletes {child}'s book and every letter in it." |
 | Everything is a gift | "treasure", "cherish", "precious" | Sentimental filler. | Let the parent's own words carry feeling. |
+| Polish words | "polished", "cleaned up", "perfect", "improved" | Implies the app made the words better. We only remove and repair. | "Small slips are marked, and you can put any back." |
 
 ## 7. Surface playbooks
 
@@ -187,6 +188,12 @@ Plain, steady, no cleverness. Use the names and numbers as registered. Never sof
 - Read the sentence at the largest text size: it must still make sense when it wraps.
 - Don't build a sentence from parts that other languages must reorder; keep the whole sentence as one string with named placeholders.
 - Dynamic content ({child}, {date}) must read correctly for any value, including a long name.
+- The accessible name of a control contains its visible text (WCAG 2.5.3), so Voice Control users can say what they see.
+- A toast or error is announced with the same string the screen shows. No second, different version for VoiceOver.
+- Don't point: no "above", "below", "the lock", "the button on the left".
+- Decorative icons say nothing to a screen reader. A lock icon beside a line doesn't add a second announcement.
+- Don't carry meaning in a colon or a line break. Each sentence must read right when spoken aloud and when it wraps.
+- "Read at the largest size" needs a phone check (S1-23 in `docs/qa/DEVICE_TEST_PLAN.md`). A diff review can't prove it.
 
 ## 9. Benchmarks: what we took and from where
 
@@ -196,7 +203,10 @@ Read in full or in part this session (20 Nov 2026):
 - **Monzo, Tone of voice** (monzo.com/tone-of-voice). Take: straightforward kindness as the base; plain, spoken-style words; lead with impact on the customer; own the mistake and apologise once; no humour in operational messages or in bad news; different dials by channel.
 - **Mailchimp, Content Style Guide, Voice and tone** (styleguide.mailchimp.com/voice-and-tone). Take: plainspoken, genuine; consider the reader's emotional state first; active voice; positive phrasing; humour only when it fits, otherwise keep a straight face.
 
-Not read this session, so not relied on: Atlassian, Google Material, Shopify Polaris, Headspace, Calm, Duolingo, Airbnb, Stripe, Day One. Two fetches (Atlassian, Material) needed an approval nobody gave; Polaris redirected. They stay on the research list. Do not cite these brands' rules until someone has read the source.
+- **Atlassian Design System, Voice and tone**. Take: one voice, with tone that shifts to the reader's emotional state; no humour in errors or bad news; delight only sparingly.
+- **Microsoft Writing Style Guide, "Brand voice: above all, simple and human" and "Use contractions"** (learn.microsoft.com/en-us/style-guide). Take: voice stays constant while tone adapts; warm and relaxed, crisp and clear, ready to lend a hand; key point first with a clear next step; short everyday words, sentence-style capitals. On contractions: don't mix a contraction with its spelled-out form in the same interface (not "can't" in one place and "cannot" in another), don't join a noun to a verb ("Early Letters's"), and avoid awkward ones like "it'll", "there'd" and "they'd" in UI. The Microsoft voice page says nothing explicit about writing for people under stress; that reading is ours, not theirs.
+
+Not read, so not relied on: GOV.UK style guide (the page redirected and the fetch needed an approval nobody gave), Google developer documentation style (same approval), Wise and Stripe (the sites refused the fetch), Google Material, Shopify Polaris, Headspace, Calm, Duolingo, Intercom, Airbnb, Day One. They stay on the research list. Do not cite these brands' rules until someone has read the source.
 
 ## 10. What is protected
 
