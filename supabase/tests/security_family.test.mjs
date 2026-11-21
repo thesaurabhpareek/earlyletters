@@ -3,6 +3,7 @@
 // notice-window fix, anonymous sessions, letters into deleted books.
 // Test titles carry requirement ids. Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -152,8 +153,8 @@ await as(A, `select public.set_member_auto_add($1, $2, false)`, [CHILD, N]);
 // Photos follow the letters.
 const photoOf = async (author, id) => {
   const p = `${CHILD}/${author}/${id}.jpg`;
-  await as(author, `update entries set photo_path=$1 where id=$2`, [p, id]);
-  await as(author, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [p]);
+  await legacyPhotoPath(sys, id, p);
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [p]);
   return p;
 };
 const nPending = await letter(N);

@@ -64,6 +64,7 @@ import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
 import { useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
@@ -397,6 +398,8 @@ export default function Write() {
               {dateline.text}
             </Text>
           ) : null}
+          {/* A picture chosen on Home sits above the field (NS-01-R3); absent otherwise. */}
+          <PendingPhotoThumb />
           {prompt && (
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
             <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>

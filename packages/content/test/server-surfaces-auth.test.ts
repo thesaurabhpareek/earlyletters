@@ -275,7 +275,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     const SECOND = ['unknown'];
     const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
     const INPUT = ['wrong_code', 'expired', 'invalid_email'];
-    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in'];
+    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in', 'region_refused'];
     const errors = authCopy.errors as Record<string, string>;
     expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
     for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);

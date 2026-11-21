@@ -1,0 +1,4 @@
+# Workflow actions that are still named by tag, one line per use: `<file> | <the uses line, trimmed>`.
+# This list only shrinks (SEC-R10, BRIEF CI-PIN). The test apps/mobile/test/workflow-pins.test.ts fails if
+# a line is added here (it compares with the base branch's copy) or if a listed line is already pinned.
+# The founder's patch docs/ops/proposed/workflows/ci-pins.patch pins them all and empties this list.

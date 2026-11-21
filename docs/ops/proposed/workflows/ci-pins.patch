@@ -1,0 +1,116 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 98cb8030..a39861df 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -30,4 +30,4 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
+-      - uses: actions/setup-node@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+@@ -37,3 +37,3 @@ jobs:
+       - id: modules
+-        uses: actions/cache@v4
++        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+@@ -54,3 +54,3 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+       - uses: ./.github/actions/setup
+@@ -69,3 +69,3 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+       - uses: ./.github/actions/setup
+@@ -80,3 +80,3 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+       - uses: ./.github/actions/setup
+@@ -91,3 +91,3 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+       - uses: ./.github/actions/setup
+diff --git a/.github/workflows/migration-guard.yml b/.github/workflows/migration-guard.yml
+index 625d7f97..ca33bf86 100644
+--- a/.github/workflows/migration-guard.yml
++++ b/.github/workflows/migration-guard.yml
+@@ -19,6 +19,6 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+         with:
+           fetch-depth: 0
+-      - uses: actions/setup-node@v4
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+diff --git a/.github/workflows/web-e2e.yml b/.github/workflows/web-e2e.yml
+index 7d2c5305..f6455a2a 100644
+--- a/.github/workflows/web-e2e.yml
++++ b/.github/workflows/web-e2e.yml
+@@ -42,5 +42,5 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+ 
+-      - uses: actions/setup-node@v4
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+@@ -49,3 +49,3 @@ jobs:
+       - name: Cache npm downloads
+-        uses: actions/cache@v4
++        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+@@ -60,3 +60,3 @@ jobs:
+       - name: Cache Playwright browsers
+-        uses: actions/cache@v4
++        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+@@ -76,3 +76,3 @@ jobs:
+         if: failure()
+-        uses: actions/upload-artifact@v4
++        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+         with:
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index 9256c581..0ce9c453 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -51,5 +51,5 @@ jobs:
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+ 
+-      - uses: actions/setup-node@v4
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+@@ -60,3 +60,3 @@ jobs:
+       - name: Cache npm downloads
+-        uses: actions/cache@v4
++        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+diff --git a/docs/ops/action-pins-allowlist.txt b/docs/ops/action-pins-allowlist.txt
+index d6c6e3dc..d1f82967 100644
+--- a/docs/ops/action-pins-allowlist.txt
++++ b/docs/ops/action-pins-allowlist.txt
+@@ -4,18 +4 @@
+ # The founder's patch docs/ops/proposed/workflows/ci-pins.patch pins them all and empties this list.
+-.github/workflows/ci.yml | - uses: actions/checkout@v4
+-.github/workflows/ci.yml | - uses: actions/setup-node@v4
+-.github/workflows/ci.yml | uses: actions/cache@v4
+-.github/workflows/ci.yml | - uses: actions/checkout@v4
+-.github/workflows/ci.yml | - uses: actions/checkout@v4
+-.github/workflows/ci.yml | - uses: actions/checkout@v4
+-.github/workflows/ci.yml | - uses: actions/checkout@v4
+-.github/workflows/migration-guard.yml | - uses: actions/checkout@v4
+-.github/workflows/migration-guard.yml | - uses: actions/setup-node@v4
+-.github/workflows/web-e2e.yml | - uses: actions/checkout@v4
+-.github/workflows/web-e2e.yml | - uses: actions/setup-node@v4
+-.github/workflows/web-e2e.yml | uses: actions/cache@v4
+-.github/workflows/web-e2e.yml | uses: actions/cache@v4
+-.github/workflows/web-e2e.yml | uses: actions/upload-artifact@v4
+-.github/workflows/web.yml | - uses: actions/checkout@v4
+-.github/workflows/web.yml | - uses: actions/setup-node@v4
+-.github/workflows/web.yml | uses: actions/cache@v4

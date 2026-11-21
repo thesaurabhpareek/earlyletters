@@ -190,7 +190,7 @@ Ids B61 to B87; B81 is unused. Cut or deferred: B76, B77, B79. Active rows 23.
 - T2 (7): B61, B62, B80, B82, B84, B85, B86.
 - T3 (1): B87.
 - Needing the founder beyond a merge: B87 (the schedule), the required-check part of B82, and the label definition in B61 (created only when he runs `bootstrap` or switches the lane on).
-- Every row that touches `scripts/agents/**`, `.github/**`, `.claude/**`, `agents/**` or `docs/agents/**` is a draft PR the founder merges. No row spends money or touches an account or secret.
+- Every row that touches `scripts/agents/**`, `.github/**`, `.claude/**`, `agents/**` or `docs/agents/**` is a PR that Karma approves and merges under CR-73 on two counted reviews (a `security` or `security-architect` lens on the security-lens paths). No row spends money or touches an account or secret.
 
 ## 6a. New operating style, once the rows merge
 

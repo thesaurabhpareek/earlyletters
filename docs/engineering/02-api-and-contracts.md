@@ -42,7 +42,7 @@ The phone is offline-first and cannot be force-upgraded, so every server interfa
 
 **API-R07 (MUST)** A server that stores idempotency keys keeps them at least 24 hours, rejects a reused key with different parameters, and never stores keys built from personal data. *Why:* the same rules Stripe applies; a key tied to a person is L3. *Enforced by:* not yet: no key store exists; applies to the first Edge Function that needs one.
 
-**API-R08 (MUST)** Clients retry only transient failures (network, `5xx`, `429`, `40001`, `40P01`, `57014`) with exponential backoff and jitter (1 s to 5 min) and keep queue order; every `SC***`, `23***` and `42501` is permanent and moves the op to `rejected_writes`; `SCCON` pauses the queue. *Why:* DATA-REQ-043 and TDD 02 3.5; retrying a permanent error loops forever, dropping it loses words. *Enforced by:* not yet: no outbox exists on the device (MOB-02, WS-09).
+**API-R08 (MUST)** Clients retry only transient failures (network, `5xx`, `429`, `40001`, `40P01`, `57014`) with exponential backoff and jitter (1 s to 5 min) and keep queue order; every `SC***`, `23***` and `42501` is permanent and moves the op to `rejected_writes`; `SCCON` pauses the queue. *Why:* DATA-REQ-043 and TDD 02 3.5; retrying a permanent error loops forever, dropping it loses words. *Enforced by:* the outbox: `apps/mobile/src/lib/sync/engine.ts:201, 223` (backoff, `backoffMs` in `lib/sync/errors.ts:37`, full jitter) and `rejected_writes`; the tests that pin the permanent list are not read (U).
 
 ### Errors
 
@@ -64,7 +64,7 @@ The phone is offline-first and cannot be force-upgraded, so every server interfa
 
 **API-R15 (MUST NOT)** Content and L3 ids do not appear in URL paths or query strings for new interfaces; use POST bodies (RPCs) instead. *Why:* LEGAL-REQ-014; platform logs record paths (TDD 06 C-1). *Enforced by:* review; conflict C-1 for existing reads is an open question in chapter 07.
 
-**API-R16 (MUST)** Lists are paginated by a stable keyset cursor, never by offset, with a server-set page cap; sync pulls use a server-assigned monotonic cursor (`server_seq`, D-023), never `updated_at`. *Why:* DB-08: an `updated_at` cursor can skip rows written in the same instant. *Enforced by:* not yet: `server_seq` does not exist (DB-08, WS-09).
+**API-R16 (MUST)** Lists are paginated by a stable keyset cursor, never by offset, with a server-set page cap; sync pulls use a server-assigned monotonic cursor (`server_seq`, D-023), never `updated_at`. *Why:* DB-08: an `updated_at` cursor can skip rows written in the same instant. *Enforced by:* the cursor is `entries.sync_xid` with `(sync_xid, id)` below `pg_snapshot_xmin`, not `server_seq` (ADR 0025, Decision; `supabase/migrations/20261016000000_sync_v1_server.sql`); the cursor test is `supabase/tests/sync_v1_server.test.mjs` (U: file name not opened).
 
 ### Budgets and limits
 
@@ -95,7 +95,13 @@ Error registry (from `supabase/migrations` on PR #32 head `f20898c`, `supabase/A
 | `SCTMB` | illegal tombstone transition (use `restore_entry`) | permanent, offer restore |
 | `SCLPG` | last parent cannot leave | permanent |
 | `SCDEL` | the book or letter is deleted | permanent |
+| `SCPHO` | the server holds no pictures: a `photo_path` was set on a letter (BL-870, S1) | permanent, a client bug |
 | `SCPAR` | parents only | permanent |
+| `SCCAP` | the book already has the most parents allowed (D-069) | permanent, tell the person, `parents_full` |
+| `SCKIL` | an SQL-side kill switch is on (planned) | retry after the window, `paused` |
+| `SCBKO` | backup or escrow switched off on the server | wait, never drop, `paused` |
+| `SCQTA` | the account's backup space is full | tell the person, `quota_full` |
+| `SCSTP` | a sign-in in the last 10 minutes is needed (`step_up_required`) | ask to sign in again, then retry |
 | `SCACD` | account deletion pending | permanent until cancelled |
 | `SCPRG` | id was purged; never comes back | permanent, drop local copy from queue |
 | `SCCID` | invalid or reused client id | permanent |
