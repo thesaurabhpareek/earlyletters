@@ -91,7 +91,7 @@ Voice stays the same. The dial moves. When unsure, go calmer and plainer.
 
 ## 6. The tells: what makes copy sound machine-made
 
-These patterns are what customers notice. The lint (`scripts/content/copy-tells.mjs`, ratchet at its baseline) flags the mechanical ones; reviewers catch the rest.
+These patterns are what customers notice. The copy tells lint (`npm run lint:copy`, added in the lint PR that follows this guide) flags the mechanical ones with a shrink-only baseline; reviewers catch the rest.
 
 | Tell | Looks like | Why it fails | Instead |
 | --- | --- | --- | --- |
@@ -154,11 +154,11 @@ One idea, one line, under 60 characters, an invitation not a reminder. Never sho
 
 | Don't | Do |
 | --- | --- |
-| "Dear little one," / "Anything to tell your little one today? A line or two is enough." | "A minute for {child}?" / "Say whatever's on your mind. A line is plenty." |
-| "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Your voice is part of this" / "A minute is plenty. In years to come, {child} can hear how you sounded." |
+| "Dear little one," / "Anything to tell your little one today? A line or two is enough." | "A minute for the book?" / "Say whatever's on your mind. A line is plenty." |
+| "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Say a few words" / "A minute is plenty. Your recording stays with the letter." |
 | "A page for {weekday}" / "Something from today for the book?" | "Anything from today?" |
 
-(These are guide examples; the final wording is the content agent's job, checked against the rules test and the notification length rule.)
+(These are guide examples and obey the lock-screen rule: no child name, nothing the parent wrote, title under 40 and body under 60 characters. The final wording is the content agent's job, checked against the rules test and the notification tests.)
 
 ### Email
 Subject says what happened or what's asked, in plain words. Preheader adds one useful next fact. Body: what, why they got it, the one thing to do. A calm line for security ("Didn't ask for this? You can ignore it."). Sign "Warmly," then the brand name. Contractions, short paragraphs, no filler. No child names, letter text, pixels or tracked links. Transactional only unless the CMO and counsel have classified it as commercial.
@@ -207,6 +207,9 @@ Do not rewrite these without the named owner:
 - The faithful-edit promise and the D-133 public line: founder-recorded wording.
 - The alpha first-run headline (D-125 item 9).
 - Helpline names and numbers.
+- Emails whose file header says counsel confirms the wording (billing, account including privacy, deletion and policy updates, backup, legal): tone edits wait for the CLO.
+- Anything under `supabase/**` that an email export regenerates (the Supabase Auth templates): needs its own D-041 review.
+- Prompt text. A prompt key is never reused for new wording: a changed prompt gets a new key and a `PROMPT_LIBRARY_VERSION` bump, and the signed published library is the founder's to republish.
 - Real family details: tests use Asha only.
 
 A rewrite that touches meaning (what we promise, what we do, price, data) is not a copy edit. Stop and route it.
