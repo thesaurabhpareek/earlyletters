@@ -23,6 +23,17 @@ ea165f8d65b6e75b540449e92b4886f43607fa02	refs/tags/v4.6.2
 
 The tag is lightweight (no `^{}` line), so that sha is the commit. The same read confirmed 11bd7190 = checkout v4.2.2, 49933ea5 = setup-node v4.4.0, 0057852b = cache v4.3.0. Moving to the newer pins elsewhere in the repo (checkout v7.0.1, cache v6.1.0 and so on) is a major upgrade and needs its own backlog row.
 
+## Verify the four shas once before applying
+
+Run these on a machine that can reach github.com; each line must print the sha shown (checkout v4.2.2, setup-node v4.4.0, cache v4.3.0, upload-artifact v4.6.2). The first three are the shas this repo already uses elsewhere; I read all four from the network on 20 Nov 2026.
+
+```
+git ls-remote https://github.com/actions/checkout refs/tags/v4.2.2        # 11bd71901bbe5b1630ceea73d27597364c9af683
+git ls-remote https://github.com/actions/setup-node refs/tags/v4.4.0      # 49933ea5288caeca8642d1e84afbd3f7d6820020
+git ls-remote https://github.com/actions/cache refs/tags/v4.3.0           # 0057852bfaa89a56745cba8c7296529d2fc39830
+git ls-remote https://github.com/actions/upload-artifact refs/tags/v4.6.2 # ea165f8d65b6e75b540449e92b4886f43607fa02
+```
+
 ## How it is guarded
 
 `apps/mobile/test/workflow-pins.test.ts` (runs in `unit`) fails on any `uses:` that is not a sha, except the lines in `docs/ops/action-pins-allowlist.txt`. The list only shrinks: it fails if a listed line is already pinned, and (against the base branch's copy, `scripts/guards/ratchet-base.mjs`) if the list gained a line. Until the fetch step below exists, a pull request prints `ratchet compare: NOT ENFORCED (founder fetch step missing)` and the reviewer runs `git show origin/develop:docs/ops/action-pins-allowlist.txt | diff - docs/ops/action-pins-allowlist.txt` by hand.
