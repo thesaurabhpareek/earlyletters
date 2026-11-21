@@ -31,7 +31,9 @@ function atV8WithADraft(): SqlDb {
 describe('[SR-C-06] migration 9: Review\'s choices live on the draft', () => {
   it('is the next version after 8 and the latest', () => {
     expect(MIGRATIONS.find((m) => m.version === 9)).toBeDefined();
-    expect(LATEST_VERSION).toBe(9);
+    // v9 is the step right after 8 (v10, the agreements table of #635, follows it; the no-gaps rule is in migrations.test).
+    expect(MIGRATIONS.findIndex((m) => m.version === 9)).toBe(MIGRATIONS.findIndex((m) => m.version === 8) + 1);
+    expect(LATEST_VERSION).toBeGreaterThanOrEqual(9);
   });
 
   it('adds the four review columns to drafts only, null on an existing draft, and queues nothing', () => {

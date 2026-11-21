@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { MoonStarsIcon } from 'phosphor-react-native/src/icons/MoonStars';
-import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
+import { UserIcon } from 'phosphor-react-native/src/icons/User';
 import type { Icon } from 'phosphor-react-native';
 import { Platform, Pressable, type ColorValue, type PressableProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,10 +13,12 @@ import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
+import { youTabHint } from '@/components/settings/you-tab-hint';
 
 /**
- * Three tabs: Tonight, Book, Family (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
- * actions; always visible; single-word labels). JS tabs + Phosphor so iOS, Android and
+ * Tabs: Home, Book, Me (founder, 11 Nov 2026), in every build: servers on or off, alpha or store. Family is never a tab
+ * (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not actions; always visible; single-word labels). The labels are
+ * label-only renames: the files stay `index.tsx` (Home) and `you.tsx` (Me). JS tabs + Phosphor so iOS, Android and
  * the web preview match; NativeTabs (Liquid Glass) is the recorded next step after a
  * device spike (docs/design/COMPONENT_LIBRARY.md section 0.1).
  *
@@ -24,9 +26,12 @@ import { copy } from '@/lib/copy';
  * - 25 pt icons; labels 13 pt Mukta Medium (the type floor), not scaled with Dynamic Type (HIG); on
  *   iOS a long press at accessibility sizes shows the Large Content Viewer instead.
  * - No haptics and no custom transition on tab change (MOTION 5i, 6).
- * - The three titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
+ * - The titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
  * - UIProvider here is a no-op once the root layout mounts it; the ToastHost lifts toasts
  *   above the bar on tab screens.
+ * - No guard, no build rule: the bar is the same three items whatever the build (test/tab-bar.test.ts). Co-parent
+ *   sharing has no tab and no coming-soon screen; the real flow, where a build has it, is a pushed route (/family,
+ *   /invite) reached from a book's settings.
  */
 const BAR = 58;
 const t = copy.tabs;
@@ -44,7 +49,11 @@ export default function TabsLayout() {
   const button = (title: string) =>
     Platform.OS === 'ios'
       ? (props: Record<string, unknown>) => {
-          const { href: _href, ...rest } = props;
+          const { href: _href, ...base } = props;
+          // The Me tab says what it holds, from content (the spec's tabs.youA11yHint), only where the build has sign-in
+          // (components/settings/you-tab-hint.ts): with server features off nothing extra is said.
+          const hint = title === t.you ? youTabHint() : undefined;
+          const rest = hint ? { ...base, accessibilityHint: hint } : base;
           return <Pressable {...(rest as PressableProps)} {...LARGE_CONTENT(title)} />;
         }
       : undefined;
@@ -69,7 +78,22 @@ export default function TabsLayout() {
           }}>
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
-          <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
+          {/* Me (NX-30a, founder 9 Nov; named Me on 11 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
+              last in the bar. It has no lamp and no Back; the header carries the one title, the tab's own (NS-33-R2). Its rows push the Settings pages
+              onto the root stack, which goes back to this tab ("Me"). */}
+          <Tabs.Screen
+            name="you"
+            options={{
+              title: t.you,
+              tabBarIcon: icon(UserIcon),
+              tabBarButton: button(t.you),
+              headerShown: true,
+              headerStyle: { backgroundColor: c.bg },
+              headerTitleStyle: { color: c.text },
+              headerShadowVisible: false,
+              sceneStyle: { backgroundColor: c.bg },
+            }}
+          />
         </Tabs>
         {/* The reminder card after the first letter, over the Book (C-REQ-001 Rev; Review asks for it, lib/asks). Inside
             this ToastHost so its "No reminders" line sits above the tab bar, not over it. */}

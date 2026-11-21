@@ -113,6 +113,16 @@ describe('[S2] the welcome while a joined book is on its way', () => {
     store.named('book-asha', 'Asha');
     expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
   });
+
+  it('the store: a join started with no name does not inherit the previous book\'s name (BL-459)', () => {
+    const store = createJoinWaitStore();
+    store.start('book-asha', 'Asha', 5);
+    // Production starts a wait with a null name; the name arrives later through named().
+    store.start('book-other', null, 40);
+    expect(store.get()).toEqual({ childId: 'book-other', name: null, since: 40 });
+    store.named('book-other', 'Ravi');
+    expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
+  });
 });
 
 describe('[S2] the screens', () => {
@@ -127,7 +137,7 @@ describe('[S2] the screens', () => {
 
   it('the welcome passes which step shows and whether it is in front, and draws the line, "Begin the book" and Try again from the hook', () => {
     const first = code('app/onboarding.tsx');
-    expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;\s*const showContinue = joining\.begin;/);
+    expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;[\s\S]*?const showContinue = continueMayShow\(\{\s*begin: joining\.begin,\s*onWelcome: step === 'welcome',/);
     expect(first).toMatch(/\{showContinue \? \(\s*<View>\s*<Button size="lg" fullWidth disabled=\{disabled\} label=\{cta\}/);
     expect(first).toMatch(/\{joining\.retry \? <Button variant="quiet" size="sm" label=\{familyCopy\.accept\.tryAgain\} onPress=\{joining\.onRetry\}/);
     // #374's controls: the line sits between the reason line and Continue, in the one controls block, and both stay

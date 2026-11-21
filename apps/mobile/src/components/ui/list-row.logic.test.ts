@@ -4,7 +4,7 @@
  * whole rows after the first").
  */
 import { describe, expect, it } from 'vitest';
-import { DIVIDER_INSET, LEADING_COLUMN, dividerInset, showsChevron, withDividers } from './list-row.logic';
+import { DIVIDER_INSET, LEADING_COLUMN, dividerInset, rowLabel, showsChevron, trailingNodePlacement, withDividers } from './list-row.logic';
 
 describe('withDividers', () => {
   it('no rows: nothing at all', () => {
@@ -76,5 +76,37 @@ describe('showsChevron: every pressable row says it can be pressed', () => {
     expect(showsChevron({ ...base, destructive: true })).toBe(false);
     expect(showsChevron({ ...base, disabled: true })).toBe(false);
     expect(showsChevron({ ...base, android: true })).toBe(false);
+  });
+});
+
+describe('rowLabel: the word a tap does is in the label (WCAG 2.5.3 Label in Name; Voice Control "Tap Stop")', () => {
+  const base = { title: 'English', subtitle: 'Getting ready, 40%', pressable: true };
+  it('puts the action word last, after the title, the subtitle and the value', () => {
+    expect(rowLabel({ ...base, actionWord: 'Stop' })).toBe('English, Getting ready, 40%, Stop');
+    expect(rowLabel({ title: 'Reminders', value: 'Few times a week', actionWord: 'Edit', pressable: true })).toBe('Reminders, Few times a week, Edit');
+  });
+  it('without an action word the label is what it always was', () => {
+    expect(rowLabel(base)).toBe('English, Getting ready, 40%');
+    expect(rowLabel({ title: 'Storage', pressable: true })).toBe('Storage');
+    expect(rowLabel({ title: 'Version', value: '1.0.0', pressable: false })).toBe('Version, 1.0.0');
+  });
+  it('a row nothing can press, or a disabled one, names no action', () => {
+    expect(rowLabel({ ...base, actionWord: 'Stop', pressable: false })).toBe('English, Getting ready, 40%');
+    expect(rowLabel({ ...base, actionWord: 'Stop', disabled: true })).toBe('English, Getting ready, 40%');
+  });
+  it('skips empty parts and never leaves a stray comma', () => {
+    expect(rowLabel({ title: 'English', subtitle: '', value: null, actionWord: 'Download', pressable: true })).toBe('English, Download');
+    expect(rowLabel({ title: 'English', subtitle: null, actionWord: '', pressable: true })).toBe('English');
+  });
+});
+
+describe('trailingNodePlacement: a trailing node stacks under the title at accessibility sizes, as a value does', () => {
+  it('beside the title at a normal size, under it at AX sizes', () => {
+    expect(trailingNodePlacement({ ax: false, hasNode: true })).toBe('beside');
+    expect(trailingNodePlacement({ ax: true, hasNode: true })).toBe('under');
+  });
+  it('no node: nothing to place, at any size', () => {
+    expect(trailingNodePlacement({ ax: false, hasNode: false })).toBe('none');
+    expect(trailingNodePlacement({ ax: true, hasNode: false })).toBe('none');
   });
 });

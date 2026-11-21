@@ -43,7 +43,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Steward review by path | The dispatcher assigns a steward any open PR that touches its `review_paths` and lacks its verdict for the head commit. "Fix first" sends the author back to fix it | `agents/roster.json`, `docs/agents/AGENT-COMMS.md` section 7 |
 | Checks in code | Tests, database constraints, CI jobs and lint rules listed per rule in `ENFORCEMENT.md` | the rule's *Enforced by* line |
 | Turning wishes into checks | Each steward's standing duty 2: convert one `not yet` rule into a real check, or a backlog proposal, per run | each steward's charter |
-| Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
+| Red team and founder | Every PR still gets the red-team review and Karma's merge (CR-73); `supabase/**` and auth changes also need the red-team review | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
 Status on 2026-10-03 (not recounted since; see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.

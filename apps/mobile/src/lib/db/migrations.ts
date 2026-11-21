@@ -389,15 +389,101 @@ export const MIGRATIONS: Migration[] = [
       ]);
     },
   },
+  {
+    version: 10,
+    name: 'agreements: the Terms and Privacy accept made at Before you begin, kept on this phone (F2, PR #597 L-A)',
+    up(db) {
+      // PR #597 docs/data/account-experience-schema.md 2.1 (step L-A). Number: v10, the next free one after
+      // #522 took v9 (coordinator, 8 Nov 2026; no gaps, append-only).
+      // Every column is L2. No age column, ever: the age answer stays settings.ageGate.passed (D-026).
+      // No backfill: an install that passed the old gate never saw the agreement, so it gets no row and the
+      // app shows the agreement once (legal-consent 3, counsel Q-C). A record is never made up from use.
+      //   id               L2  UUIDv7
+      //   document         L2  'terms' | 'privacy'
+      //   version          L2  document version shown (build constant)
+      //   action           L2  'accept' | 'acknowledge'
+      //   surface          L2  'first_run.before_you_begin' | 'update.agreement'
+      //   recorded_at      L2  device time of the tap
+      //   app_version      L2
+      //   rendered_sha256  L2  hex SHA-256 of the agreement sentence shown
+      //   uploaded_at      L2  when record_policy_act returned (1.1); null until then
+      //   server_act_id    L2  policy_acceptances.id (1.1)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agreements (
+          id TEXT PRIMARY KEY NOT NULL,
+          document TEXT NOT NULL,
+          version TEXT NOT NULL,
+          action TEXT NOT NULL,
+          surface TEXT NOT NULL,
+          recorded_at TEXT NOT NULL,
+          app_version TEXT NOT NULL,
+          rendered_sha256 TEXT NOT NULL,
+          uploaded_at TEXT,
+          server_act_id TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS agreements_once ON agreements (document, version, action);
+      `);
+    },
+  },
+  {
+    version: 11,
+    name: 'entry_media: the one picture kept with a letter, on this phone only (NS-01, ADR 0028 D1)',
+    up(db) {
+      // ADR 0028 D1. Number: the ADR proposed 10; agreements took 10 first, so this is 11 (append-only, no gaps).
+      // A table and indexes only: no existing row changes, and nothing is queued to the sync outbox. Pull and push
+      // never read or write this table; the push mapper sends photo_path null (NS-01-R15). The picture file is
+      // `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere; the media id, no entry id
+      // in the name); the row decides who owns it.
+      //   id          L2  media id (UUIDv7 made on the phone)
+      //   entry_id    L3  the kept letter (a letter id, as entries.id); null while only a draft owns it
+      //   draft_id    L3  the draft (as drafts.id); null once kept
+      //   kind, ext   L2  'photo' and 'jpg' only (no video in Build 13); enums, as entries.kind
+      //   bytes       L2  size of the stripped copy (as audio_bytes)
+      //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
+      //   width, height L2
+      //   photo_text  L4  the parent's own words about the picture: the app keeps at most 140 characters a person
+      //                   sees (grapheme clusters); the CHECK is only a ceiling in code points, 16 per grapheme, E84 (NS-01-R54)
+      //   place       L4  typed by the parent: at most 60 characters a person sees, ceiling 960 code points, 16 per grapheme, E84. Never
+      //                   read from the picture.
+      //   added_at    L2
+      // No deleted_at: the row is hidden while its letter's entries.deleted_at is set, by join (ADR 0028 D1).
+      // One picture per letter is the unique index, not the table shape (a later build drops that one index).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS entry_media (
+          id TEXT PRIMARY KEY NOT NULL,
+          entry_id TEXT,
+          draft_id TEXT,
+          kind TEXT NOT NULL CHECK (kind = 'photo'),
+          ext TEXT NOT NULL CHECK (ext = 'jpg'),
+          bytes INTEGER NOT NULL,
+          sha256 TEXT NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 2240),
+          place TEXT CHECK (place IS NULL OR length(place) <= 960),
+          added_at TEXT NOT NULL,
+          CHECK ((entry_id IS NULL) <> (draft_id IS NULL))
+        );
+        CREATE INDEX IF NOT EXISTS entry_media_entry_idx ON entry_media (entry_id) WHERE entry_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS entry_media_draft_idx ON entry_media (draft_id) WHERE draft_id IS NOT NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS entry_media_one_photo_idx ON entry_media (COALESCE(entry_id, draft_id));
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
 export class MigrationError extends Error {
-  constructor(public version: number, cause: unknown) {
-    // Code and number only: SQLite messages can quote values (TDD 01 4.2 rule 2).
+  readonly code = 'local_db_migration_failed';
+  /**
+   * A fixed code and the step's version only (TDD 01 4.2 rule 2). The original error is deliberately not
+   * kept, not even as `cause`: SQLite messages can quote stored values (a name, a date), and an error with a
+   * `cause` is serialised whole by crash reporters and loggers.
+   */
+  constructor(public version: number) {
     super(`local_db_migration_failed:${version}`);
-    this.cause = cause;
+    this.name = 'MigrationError';
   }
 }
 
@@ -425,8 +511,8 @@ export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[
         m.up(db, ctx);
         db.exec(`PRAGMA user_version = ${m.version}`);
       });
-    } catch (e) {
-      throw new MigrationError(m.version, e);
+    } catch {
+      throw new MigrationError(m.version);
     }
     to = m.version;
   }

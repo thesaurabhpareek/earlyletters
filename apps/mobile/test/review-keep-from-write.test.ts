@@ -340,3 +340,14 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
     expect(review).toMatch(/const month = monthFor\(child, occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: child\.signsAs, month \}\);/);
   });
 });
+
+describe('Keep the recording while the recording is still being saved', () => {
+  it('says so in a calm line instead of keeping nothing silently', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { en } = await import('@scribe/content');
+    const src = readFileSync(join(__dirname, '..', 'src', 'app', 'review.tsx'), 'utf8');
+    expect(src).toMatch(/if \(!settled\) \{\s*saving\.current = false;\s*(?:\/\/[^\n]*\s*)*if \(isFinishing\(draft\.id\)\) toast\.show\(\{ message: copy\.review\.keepStillSaving \}\);\s*return;/);
+    expect(en.review.keepStillSaving).toBe('This recording is still being saved. Give it a moment, then tap Keep again.');
+  });
+});

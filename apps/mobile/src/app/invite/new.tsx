@@ -1,7 +1,7 @@
 // android: same
 /**
  * Invite a co-parent (EXPERIENCE_PASS_2026-10 S58; PRD V2 F11 6.2 A; B-REQ-007, F11-REQ-001, F11-REQ-004; co-parent
- * only at v1.0, B1). `/invite/new?childId=<id>` from the Family tab or a child's settings.
+ * only at v1.0, B1). `/invite/new?childId=<id>` from the family page or a child's settings.
  *
  * The sheet is about this book: its cover (132 x 176, closed, the child's name) centred at the top, the title, the
  * body, then what the child calls the other parent in the letter face with S06's chips under it, so the cover's foot
@@ -16,8 +16,8 @@
  * signature, so a retry or a second tap is one invite (F11-U15, G-07). Typed codes are not made: build 2 invites
  * are links only (the coordinator's ruling on F11-REQ-001 and -002, 28 Oct 2026).
  *
- * When the share sheet closes after the link was sent, this sheet closes too, and the Family tab says "The invite
- * waits on the Family tab until they join." as its toast (components/family/family-notice.ts), with the pending row
+ * When the share sheet closes after the link was sent, this sheet closes too, and the family page says "The invite
+ * waits until they join." as its toast (components/family/family-notice.ts), with the pending row
  * entering there. When it was dismissed without sending, this sheet stays at Share with the same draft (afterShare).
  *
  * A book that already has two parents (D-069) shows "{child}'s book has two parents." instead of Share, from the
@@ -26,19 +26,19 @@
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused and sends
  * nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { authCopy } from '@scribe/content';
 import { BookCover } from '@/components/book/book-cover';
 import { familyNotice } from '@/components/family/family-notice';
 import { afterShare, inviteSheetView } from '@/components/family/invite-sheet.logic';
-import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/lib/auth/session-provider';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
@@ -68,9 +68,9 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-/** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon. */
+/** Fixed per build (lib/capabilities.ts). Off: nothing is shown; the route sends the person to Tonight. */
 export default function InviteCoParentRoute() {
-  return inviteDestination('invite_new', serverFeaturesEnabled()) === 'flow' ? <InviteCoParent /> : <InviteComingSoon />;
+  return inviteDestination('invite_new', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <InviteCoParent /> : <Redirect href="/" />;
 }
 
 function InviteCoParent() {
@@ -130,7 +130,8 @@ function InviteCoParent() {
       if (!after.close) return;
       haptic('success');
       draft.current = null; // the next invite from this sheet is a new one
-      // The link went out: this sheet closes, and the Family tab says where the invite waits.
+      // The link went out: this sheet closes, and the page under it (the family page, or the book's settings page whose
+      // row opened this sheet) says the invite waits (components/family/family-notice.ts).
       familyNotice.leave(k.done);
       close();
     } catch (e) {

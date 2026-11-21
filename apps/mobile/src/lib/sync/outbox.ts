@@ -791,6 +791,16 @@ export function pendingCount(db: SqlDb): number {
   )!.n;
 }
 
+/**
+ * The sign-out check (BL-449): what the signed-in account can still send. The engine does not start
+ * for an account other than the phone's owner, so rows queued for another account can never drain
+ * under this one; they are not counted here and stay queued for their own account.
+ */
+export function pendingForAccount(db: SqlDb, userId: string): number {
+  const owner = readSetting(db, SYNC_SETTING.owner);
+  return owner !== null && owner !== userId ? 0 : pendingCount(db);
+}
+
 export function rejectedUnseenCount(db: SqlDb): number {
   return db.get<{ n: number }>('SELECT COUNT(*) AS n FROM rejected_writes WHERE seen_at IS NULL AND code <> ?', CONFLICT_CODE)!.n;
 }

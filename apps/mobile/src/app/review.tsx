@@ -48,7 +48,8 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -63,7 +64,9 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
+import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
@@ -74,6 +77,7 @@ import {
   countLine,
   letterHeader,
   primaryDestination,
+  putBackNoteShows,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -89,6 +93,7 @@ import {
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
 import {
+  isShortTake,
   lengthA11y,
   progressClock,
   recordingKept,
@@ -118,10 +123,12 @@ import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSav
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
-import { ensureAudioHash } from '@/lib/capture/recorder';
+import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
 import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
@@ -136,6 +143,8 @@ import {
   getDraftReview,
   getEntry,
   getSetting,
+  beginDiscard,
+  finishDiscard,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -297,7 +306,8 @@ export default function Review() {
   }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
-  // after 300 ms of quiet (F04-REQ-011), and at once when the app leaves the foreground, at Done and at Close.
+  // at most 300 ms after the first change, however long the editing goes on (F04-REQ-011, F06-REQ-036), and at once
+  // when the app leaves the foreground, at Done and at Close.
   // Sample words (development builds) are never saved, so nothing is stored for them either.
   const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
   persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
@@ -315,7 +325,7 @@ export default function Review() {
       writer.flush();
     };
   }, [writer]);
-  // Every change of the person's words goes to the draft (debounced); the words restored on mount are already there.
+  // Every change of the person's words goes to the draft within 300 ms; the words restored on mount are already there.
   const lastWords = useRef(userText);
   useEffect(() => {
     if (userText === lastWords.current) return;
@@ -329,7 +339,18 @@ export default function Review() {
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
-    if (phase === 'transcribing' && draft?.audioUri) requestWords(draft.id);
+    // A slow save on Listen opens Review while the take is still being kept (state 'recording', no length or hash):
+    // wait for that save, show the finished row, and only then ask for words (BL-563; review-settle.logic).
+    if (phase !== 'transcribing' || !draft?.audioUri) return;
+    let live = true;
+    void settleDraft(draft.id, { getDraft, running: finishingTake, waitMs: null }).then((settled) => {
+      if (!live || !settled) return;
+      if (settled !== draft) setDraft(settled);
+      if (settled.state !== 'recording') requestWords(settled.id);
+    });
+    return () => {
+      live = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -379,6 +400,26 @@ export default function Review() {
   const recordAgain = () => {
     haptic('tap');
     router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
+
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
   };
 
   // Mini player for the recording ("Hear it").
@@ -547,6 +588,8 @@ export default function Review() {
         saving.current = false; // held: the draft is untouched
         return;
       }
+      // The row as it is now: a save that finished after Review opened has the real length and file (BL-563).
+      const live = getDraft(draft.id) ?? draft;
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
@@ -568,8 +611,8 @@ export default function Review() {
           soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
           authorSignsAs: child.signsAs,
-          audioUri: draft.audioUri,
-          audioDurationMs: draft.audioDurationMs,
+          audioUri: live.audioUri,
+          audioDurationMs: live.audioDurationMs,
           audioSha256: audio.sha256,
           audioBytes: audio.bytes,
         },
@@ -582,7 +625,7 @@ export default function Review() {
         childIndex: childIndexOf(child.id),
         role: 'parent',
         promptKind: promptKindOf(draft.promptKey),
-        audioMs: draft.audioDurationMs,
+        audioMs: live.audioDurationMs,
         wordCount: wordCountOf(finalText),
         machineEdits: inForce.length,
         editsReverted: reverted.current + setAsideAtSave(view, applied),
@@ -591,6 +634,9 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The picture chosen with this letter (NS-01), stored now that the letter exists. A picture that cannot be stored
+      // never un-keeps the letter (NS-01-R17); with the photos switch off nothing is pending.
+      await commitPendingPhoto(draft.id, finalText);
       // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
       if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
@@ -609,7 +655,17 @@ export default function Review() {
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
     try {
-      const audio = await ensureAudioHash(draft);
+      // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
+      // (BL-563). The take stays; the words wait in Review starts when the save ends.
+      const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
+      if (!settled) {
+        saving.current = false;
+        // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
+        // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
+        if (isFinishing(draft.id)) toast.show({ message: copy.review.keepStillSaving });
+        return;
+      }
+      const audio = await ensureAudioHash(settled);
       // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
       // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
       // It counts later, at the save where its words are first on screen.
@@ -716,6 +772,7 @@ export default function Review() {
       ? wordsCard({
           emptyFile: file === 'empty',
           unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -742,6 +799,7 @@ export default function Review() {
     // The person writes the words for this recording; the app never fills them in (S16).
     write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
     recordAgain,
+    letGo,
     download: () => void startSpeechDownload(language),
     // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
     cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
@@ -910,7 +968,6 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">
               <Text variant="subhead" tone="caution">
@@ -1006,7 +1063,7 @@ export default function Review() {
                     </Animated.View>
                   )}
 
-                  {restored && (
+                  {putBackNoteShows({ restored: !!restored, editing, userText }) && (
                     <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
                       <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
                       <Button size="sm" variant="quiet" onPress={undoPutBack}>
@@ -1073,16 +1130,24 @@ export default function Review() {
                   testID="review.edit"
                   onPress={() => {
                     track('review_action', { action: 'edit_text' });
+                    // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
+                    setRestored(null);
                     setEditing(true);
                   }}>
                   <Text>{pendingCopy.review.editTextButton}</Text>
                 </Button>
               )}
 
-              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
-              {inlineFooter ? footer : null}
             </>
           )}
+          {/* The picture chosen with this letter (NS-01-R7): add, change, take off, with Undo. It comes after the parent's
+              words and their small fixes and before Let it go and Keep (spec 01 section 4), so it never leads the words, and
+              when it is stored after Review opens nothing above it moves. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
+
+          {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. The footer is
+              null until the words are ready. */}
+          {inlineFooter ? footer : null}
           {inlineFooter ? keepFooter : null}
         </ScrollView>
 
@@ -1148,11 +1213,27 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
   );
 }
 
-/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
 function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const detail =
     shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -1161,16 +1242,24 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
       accessibilityHint={pendingCopy.review.editA11yHint}
       accessibilityState={{ expanded: open }}
       testID="review.fixRow"
-      className="min-h-12 flex-row items-center gap-3 py-1">
-      <Text variant="labelSmall">{label}</Text>
-      <Text
-        variant="footnote"
-        className="flex-1"
-        numberOfLines={1}
-        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
-        {detail}
-      </Text>
-      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -1182,6 +1271,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
   type: 'review.type',
   write: 'review.write',
   recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
   download: 'review.getReady',
   cellular: 'review.mobileData',
   later: 'review.later',

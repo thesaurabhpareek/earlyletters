@@ -1,4 +1,4 @@
-import { btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, toChildStep } from './support/app';
+import { agreeBox, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, toChildStep } from './support/app';
 import { expect, test } from './support/journey';
 
 test('[J01] first run: the age question, the promise, the child, the signature, the first letter', async ({ app, record }) => {
@@ -8,12 +8,21 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(app.getByText('We ask everyone the same question.')).toHaveCount(0);
   await expect(app.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
   await expect(app.getByRole('radio', { name: 'No' })).not.toBeChecked();
-  await step('happy', 'The age question', 'The first screen is the launch screen\'s room: the lamp, the opening quotation pair and one neutral question, with nothing preselected. Continue waits, drawn as an outline, until the person picks Yes or No.');
-  await expect(btn(app, 'Continue')).toBeDisabled();
+  await expect(agreeBox(app)).not.toBeChecked();
+  await step('happy', 'Before you begin', 'The first screen is the launch screen\'s room: the lamp, the opening quotation pair, one neutral question with nothing preselected, and an unticked box to agree to the Terms of Service and Privacy Policy, with each document as its own link.');
 
+  // Continue is never disabled: tapped early, it says what is missing and stores nothing.
+  await btn(app, 'Continue').click();
+  await expect(app.getByText('Choose Yes or No.')).toBeVisible();
   await app.getByRole('radio', { name: 'Yes' }).click();
   await expect(app.getByRole('radio', { name: 'Yes' })).toBeChecked();
-  await step('happy', 'Yes is chosen', 'The person taps Yes. It fills softly with a check, and Continue turns on. Only a yes/no flag is stored on the phone, never an age.');
+  await btn(app, 'Continue').click();
+  await expect(app.getByText('Check the box to continue.')).toBeVisible();
+  // Yes without the box: one line above Continue says to check it, and nothing is stored (no extra step, so J01 ids hold).
+
+  await agreeBox(app).click();
+  await expect(agreeBox(app)).toBeChecked();
+  await step('happy', 'Yes and the box', 'Yes fills softly with a check, and so does the box. Only a yes/no flag and the agreement (document versions, time, app version, a fingerprint of the sentence) are stored on the phone, never an age.');
   await btn(app, 'Continue').click();
 
   await expect(btn(app, 'Begin the book')).toBeVisible();

@@ -1,0 +1,140 @@
+# PROPOSED WORKFLOW TEXT. NOT ACTIVE. This file lives under docs/ops/proposed/, where GitHub does not run it.
+# HV2-B19 (docs/agents/harness-v2/BACKLOG.md), requirement HV2-005, design FOUNDER-PAGE-AND-CLAIMS.md section 2.
+#
+# What it does: every 3 hours it runs `node scripts/status/today.mjs` (PR #565) and replaces the body of one
+# pinned issue, the TODAY issue, with the 15 lines it prints. Nothing else. No model, no secret, no checkout of
+# pull request code, no write to the repository.
+#
+# DO NOT ENABLE BEFORE 10 NOV 2026.
+# - CR-5: the GitHub-hosted harness stays off and nothing is bought. This workflow runs no model and costs only
+#   public-repo Actions minutes, but it is a new scheduled workflow, so it needs a CTO ruling first.
+# - CR-22 and D-124 (with D-130): the harness and `.github/**` are frozen until the go/no-go on Mon 9 Nov 2026.
+#   A workflow change between the freeze (Tue 3 Nov) and the go/no-go is forbidden except for an S0 or S1 fix
+#   (CR-22; AUTOMATION.md 0.2 item 17).
+# - As a second guard, the first step below makes every scheduled run a no-op before 2026-11-10T00:00Z, so a
+#   copy applied too early does nothing until the date passes. A manual run (workflow_dispatch) is not gated.
+#
+# Founder steps, in order, on or after 10 Nov (T2: a `.github/**` change and a repository variable):
+#   1. Get the CTO ruling (CR-5, CR-22). Recommended default from the design: no use before 9 Nov.
+#   2. Create an issue titled "TODAY", pin it and lock it to collaborators. Note its number.
+#   3. Settings, Secrets and variables, Actions, Variables: add TODAY_ISSUE = that number. (A variable, not a secret.)
+#   4. Replace every TODO pin below with the full commit SHA of the release you checked, keeping the version comment.
+#   5. Copy this file to .github/workflows/today-page.yml in a PR into `develop` (the default branch; scheduled
+#      workflows run only from the default branch).
+#   6. Run it once with "Run workflow", read the issue, then leave the schedule on.
+# Way back: disable the workflow in the Actions tab (one click) or delete the file. The issue just goes stale and
+# line 1 says "valid until", so a dead cron is visible (design section 2, staleness).
+#
+# Limits, said plainly:
+# - Advisory. It reports; it gates nothing and merges nothing.
+# - It posts as github-actions[bot], not the founder's account, so the TODAY issue is the one place where the
+#   writer is not the shared identity of CR-20. It still proves nothing about who ran what.
+# - Permissions are exactly contents: read and issues: write, as asked. today.mjs also reads pulls and reviews.
+#   On a public repository those reads need no extra scope; that is U (not tested with this token). If a run shows
+#   "unreadable" counts on line 1, the smallest fix is adding `pull-requests: read` (read only). The branch
+#   protection read (founder steps, line 3 of the page) is expected to fail with this token and the page says so.
+# - GitHub may disable a scheduled workflow after 60 days without repository activity; the repo is active.
+# - A scheduled run can start late or be dropped under load. The page carries its own validity time for that.
+name: today-page
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # every 3 hours, off the hour to avoid the busiest minute
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: today-page
+  cancel-in-progress: false
+
+jobs:
+  today:
+    name: today-page
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The workflow-level permissions above apply. No other trigger exists, so no pull request text reaches a step.
+    steps:
+      - name: Date gate (no-op before 10 Nov 2026 on a schedule)
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          go=true
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$(date -u +%s)" -lt "$(date -u -d '2026-11-10T00:00:00Z' +%s)" ]; then
+            go=false
+            echo "Before 10 Nov 2026 (CR-5, CR-22, D-124). Doing nothing."
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the default branch (scripts and three docs only)
+        if: steps.gate.outputs.go == 'true'
+        # TODO pin: replace the zeros with the full SHA of the actions/checkout release you checked.
+        uses: actions/checkout@0000000000000000000000000000000000000000 # TODO v-something; pin before enabling
+        with:
+          # No `ref`: a schedule or dispatch run checks out the default branch. No pull request is ever checked out.
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            docs/agents/CLAIMS.md
+            docs/DECISIONS.md
+            docs/release/dates.json
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node 22 (today.mjs needs 22 or later)
+        if: steps.gate.outputs.go == 'true'
+        # TODO pin: replace the zeros with the full SHA of the actions/setup-node release you checked.
+        uses: actions/setup-node@0000000000000000000000000000000000000000 # TODO v-something; pin before enabling
+        with:
+          node-version: "22"
+
+      - name: Render the TODAY page
+        if: steps.gate.outputs.go == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Read-only GETs through gh, then print. Nothing is written by this step.
+          node scripts/status/today.mjs --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/today.txt"
+          lines="$(wc -l < "$RUNNER_TEMP/today.txt")"
+          [ "$lines" -ge 1 ] && [ "$lines" -le 15 ] || { echo "::error::expected 1 to 15 lines, got $lines"; exit 1; }
+          # The page holds numbers, fixed words and D- ids. Refuse anything that could mention, link or inject.
+          if grep -Eq '[@<>`]|\]\(|https?:' "$RUNNER_TEMP/today.txt"; then
+            echo "::error::the page contains a mention, link, tag or backtick; refusing to publish"; exit 1
+          fi
+          # Markdown hard line breaks so the 15 lines stay 15 lines.
+          sed 's/$/  /' "$RUNNER_TEMP/today.txt" > "$RUNNER_TEMP/body.md"
+
+      - name: Replace the body of the TODAY issue
+        if: steps.gate.outputs.go == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TODAY_ISSUE: ${{ vars.TODAY_ISSUE }}
+        run: |
+          set -euo pipefail
+          case "$TODAY_ISSUE" in ''|*[!0-9]*) echo "::error::repository variable TODAY_ISSUE is not set to an issue number"; exit 1;; esac
+          gh api -X PATCH "repos/$REPO/issues/$TODAY_ISSUE" -F body=@"$RUNNER_TEMP/body.md" --jq '.number' > /dev/null
+          echo "Updated issue #$TODAY_ISSUE"
+
+      - name: Mark line 1 as failed
+        # Best effort: if the run broke, say so on the page. If the whole cron is dead nothing can write, which is
+        # why line 1 also carries "valid until".
+        if: failure() && steps.gate.outputs.go == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TODAY_ISSUE: ${{ vars.TODAY_ISSUE }}
+        run: |
+          set -uo pipefail
+          case "$TODAY_ISSUE" in ''|*[!0-9]*) exit 0;; esac
+          old="$(gh api "repos/$REPO/issues/$TODAY_ISSUE" --jq '.body' 2>/dev/null)" || exit 0
+          rest="$(printf '%s\n' "$old" | sed '1d')"
+          { printf 'LAST RUN FAILED at %s. The lines below are from an earlier run; do not trust their times.  \n' "$(date -u +%Y-%m-%dT%H:%MZ)"; printf '%s\n' "$rest"; } > "$RUNNER_TEMP/failed.md"
+          gh api -X PATCH "repos/$REPO/issues/$TODAY_ISSUE" -F body=@"$RUNNER_TEMP/failed.md" --jq '.number' > /dev/null || true

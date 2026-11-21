@@ -175,7 +175,8 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     for (const name of ['development', 'e2e', 'production']) {
       const withServers = { ...buildEnv(name), EXPO_PUBLIC_SERVER_FEATURES: 'on' };
       expect((await readCapability(withServers)).row, name).toBe(true);
-      expect((await readCapability(buildEnv(name))).row, `${name} as written, servers off`).toBe(false);
+      // As written: production has servers on since build 12 (founder, 8 Nov 2026), so its row shows; development and e2e are servers off, so theirs does not.
+      expect((await readCapability(buildEnv(name))).row, `${name} as written`).toBe(name === 'production');
     }
   });
 
@@ -313,7 +314,7 @@ describe('the Settings row and the route honour it', () => {
     for (const [servers, deletion, signedIn] of states) {
       setServerFeaturesForTests(servers);
       setBuildFlagForTests('accountDeletion', deletion);
-      expect(run(rowCondition!, { capabilities, auth: { signedIn } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
+      expect(run(rowCondition!, { capabilities, auth: { signedIn }, you: { accountReady: true } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
     }
   });
 
@@ -330,7 +331,8 @@ describe('the Settings row and the route honour it', () => {
 
   it('nothing else opens the page: Settings home is the only screen that names the route, and the link allowlist never lets a link reach it', () => {
     const namers = walk(SRC).filter((f) => /['"`]\/settings\/delete-account['"`]/.test(code(readFileSync(f, 'utf8'))));
-    expect(namers.map((f) => relative(SRC, f))).toEqual(['app/settings/index.tsx']);
+    // BL-922a: the held screen's Delete account link (NS-10-R4a) names it in one pure file, shown only with the switch on (test/held-screen-routes.test.ts).
+    expect(namers.map((f) => relative(SRC, f)).sort()).toEqual(['app/settings/index.tsx', 'lib/first-run/held-screen.logic.ts']);
     // The row's tap is the only push to it.
     expect(home.match(/ROUTES\.deleteAccount/g)?.length).toBe(1);
     expect(src('lib/family/entry.logic.ts')).not.toMatch(/delete-account/);

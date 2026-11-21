@@ -4,6 +4,7 @@
 // and held to the content rules by rules.test.ts (the `accountDeletionCopy` row of test/support/copy-surfaces.ts).
 // Content rules apply: no em or en dashes, curly quotes, ellipsis or emoji; calm, no fear or
 // loss language; never gender the child. Placeholders: {child}, {coParent}, {count}, {date}.
+import { brand } from '@scribe/brand';
 
 export const accountDeletionCopy = {
   title: 'Delete account',
@@ -11,12 +12,11 @@ export const accountDeletionCopy = {
   // Step 1 of 2: what happens, export first, subscription.
   what: {
     heading: 'What happens',
-    // Held for counsel (spec chapter 7 and section 7, C8: the deletion lines P8 corrects go to counsel before they
-    // ship). The page shows `intro`, today's words, until counsel clears `introProposed` (S64's words: no photos,
-    // which v1.0 never makes, and the recording backup named). The switch is one line, `HELD.intro` in
-    // apps/mobile/src/components/settings/delete-account.logic.ts; then `introProposed` takes this key's place.
-    intro: 'Deleting your account removes your letters, recordings, photos and books from our servers. You have 30 days to change your mind.',
-    introProposed: 'Deleting your account removes your letters, recordings, books and recording backup from our servers. You have 30 days to change your mind.',
+    // Build 12 (servers on, recording backup off): letters and books are on our servers; recordings and any photos are
+    // not (recordings stay on the phone that made them, v1.0 makes no photos), so none is named. Whether and when
+    // deletion removes server data, and the 30 days, are retention promises that are counsel's (spec chapter 7 and
+    // section 7, C8): this line says no more than the screen did before, less what the build does not hold. For counsel.
+    intro: 'Deleting your account removes your letters and books from our servers. You have 30 days to change your mind.',
     staysNone: "{child}'s book stays with {coParent}, with their letters.",
     staysOne: "{child}'s book stays with {coParent}, with their letters. Your letter leaves it.",
     staysMany: "{child}'s book stays with {coParent}, with their letters. Your {count} letters leave it.",
@@ -99,8 +99,11 @@ export const accountDeletionCopy = {
     // The name of the moment of paper a phone shows while the server is asked (read by a screen reader, never drawn).
     checking: 'One moment.',
   },
-  // The kill path only (no server client in this build): the one place these words may say "stays on this phone".
-  notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
+  // The kill path only: a build whose server client is missing (isSupabaseConfigured false, delete-account.tsx). In a
+  // servers-on build the person may still have an account, with letters on our servers, made on another phone, so this
+  // line claims nothing about the servers and gives the email route (Privacy Policy 8, docs/legal/delete-account-page.md).
+  // Not "everything": the iPhone backup, exports and the Keychain letter count are not on this phone's storage (#672).
+  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
 
   // Each failure says first, or says plainly, that nothing has changed.
   errors: {

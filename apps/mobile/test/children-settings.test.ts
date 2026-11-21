@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en, familyCopy } from '@scribe/content';
 import { addChildBlock, addChildCta, addChildValues, ADD_BUTTON_MAX } from '../src/components/child/add-child-form.logic';
-import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
+import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
 import { peopleRows } from '../src/components/family/family-tab.logic';
 import { inviteHref } from '../src/lib/family/entry.logic';
 
@@ -128,7 +128,7 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
     expect(unsigned).toBe(familyCopy.members.invitedName);
     expect(unsigned).toBe('Your co-parent');
     expect(hideFooter('Asha', unsigned)).toBe("Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Your co-parent still sees Asha's book as before.");
-    expect(bookRow({ serverFeatures: true, coParent: unsigned, invite: inviteHref('settings_child', true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
+    expect(bookRow({ serverFeatures: true, alpha: true, coParent: unsigned, invite: inviteHref('settings_child', true, true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
     // The same words the Family tab uses for a member with no signature (peopleRows draws the tab's rows).
     const tabRows = peopleRows({ signsAs: 'Mama' }, [{ id: 'm2', role: 'parent', signsAs: '' }]);
     expect(tabRows[1]?.signature).toBe(familyCopy.members.invitedName);
@@ -138,17 +138,26 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
 });
 
 describe('[S46] Write this book together', () => {
-  it('server features off: the coming-soon row as today; on, one parent: the invite; two parents: the Family tab', () => {
-    const off = bookRow({ serverFeatures: false, coParent: null, invite: inviteHref('settings_child', false, 'child-asha') });
-    expect(off).toEqual({ value: familyCopy.soon.status, footer: familyCopy.soon.settingsRowHelp, href: inviteHref('settings_child', false, 'child-asha') });
-    const one = bookRow({ serverFeatures: true, coParent: null, invite: inviteHref('settings_child', true, 'child-asha') });
+  it('no flow in the build: no row at all (11 Nov); with the flow, one parent: the invite; two parents: the Family tab', () => {
+    const off = bookRow({ serverFeatures: false, alpha: true, coParent: null, invite: inviteHref('settings_child', false, true, 'child-asha') });
+    expect(off).toBeNull();
+    expect(bookRow({ serverFeatures: true, alpha: false, coParent: null, invite: '/invite' })).toBeNull();
+    const one = bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(one).toEqual({ href: '/invite/new?childId=child-asha' });
-    const two = bookRow({ serverFeatures: true, coParent: 'Papa', invite: inviteHref('settings_child', true, 'child-asha') });
+    const two = bookRow({ serverFeatures: true, alpha: true, coParent: 'Papa', invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(two).toEqual({ value: 'Papa', href: FAMILY_TAB_HREF });
-    // The label: P8's bookRow.label with server features on, the kill path's settingsRow with them off (the same words).
-    expect(familyCopy.soon.settingsRow).toBe('Write this book together');
+    // Karma ruling, 11 Nov 2026: one parent with an invite still pending opens the family page (Share again, Cancel invite stay reachable); no new words.
+    const waiting = bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: inviteHref('settings_child', true, true, 'child-asha'), pendingInvites: true });
+    expect(waiting).toEqual({ href: FAMILY_TAB_HREF });
+    expect(bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: '/invite/new?childId=c', pendingInvites: false })).toEqual({ href: '/invite/new?childId=c' });
+    // A pending invite opens nothing where the build has no flow.
+    expect(bookRow({ serverFeatures: true, alpha: false, coParent: null, invite: '/invite', pendingInvites: true })).toBeNull();
+    expect(bookRow({ serverFeatures: false, alpha: true, coParent: null, invite: '/invite', pendingInvites: true })).toBeNull();
+    expect(code('app/settings/children/[id].tsx')).toMatch(/listPendingInvites\(auth\.client, childId\)/);
+    expect(code('app/settings/children/[id].tsx')).toMatch(/pendingInvites \}\);/);
+    // The label is P8's bookRow.label; the row is drawn only when bookRow returns one.
     expect(familyCopy.bookRow.label).toBe('Write this book together');
-    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{serverFeaturesEnabled\(\) \? familyCopy\.bookRow\.label : familyCopy\.soon\.settingsRow\} value=\{row\.value\}/);
+    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{familyCopy\.bookRow\.label\} value=\{row\.value\}/);
   });
 });
 
@@ -160,5 +169,62 @@ describe('[S46] the editors use the S46 words', () => {
     expect(editors).toMatch(/: e\.signsAsNewOnly\}/);
     expect(x.edit.nameTooLong).toBe('Up to {n} characters.');
     expect(x.edit.signsAsNewOnly).toBe('Letters already written keep their signature.');
+  });
+});
+
+describe('[11 Nov, lens A on #720] the pending-invite read on a book\'s settings page', () => {
+  const page = code('app/settings/children/[id].tsx');
+
+  it('asks the server only where the row can exist: servers on AND an alpha build, signed in, one parent', () => {
+    const base = { serverFeatures: true, alpha: true, signedIn: true, coParent: null };
+    expect(asksPendingInvites(base)).toBe(true);
+    // A servers-on store build never draws the row (bookRow is null), so the request is never made.
+    expect(asksPendingInvites({ ...base, alpha: false })).toBe(false);
+    expect(asksPendingInvites({ ...base, serverFeatures: false })).toBe(false);
+    expect(asksPendingInvites({ ...base, signedIn: false })).toBe(false);
+    // With a co-parent the row already opens the family page: nothing to find out.
+    expect(asksPendingInvites({ ...base, coParent: 'Papa' })).toBe(false);
+    // The same answer as the row's own door, for every build the row can be in.
+    for (const serverFeatures of [false, true]) {
+      for (const alpha of [false, true]) {
+        const row = bookRow({ serverFeatures, alpha, coParent: null, invite: inviteHref('settings_child', serverFeatures, alpha, 'child-asha') });
+        expect(asksPendingInvites({ serverFeatures, alpha, signedIn: true, coParent: null }), `servers ${serverFeatures}, alpha ${alpha}`).toBe(row !== null);
+      }
+    }
+  });
+
+  it('the page asks through that rule, with the build\'s own switches, before it calls the server', () => {
+    expect(page).toMatch(/const asksInvites = asksPendingInvites\(\{ serverFeatures: serverFeaturesEnabled\(\), alpha: PLUS_ALPHA, signedIn: auth\.canSync, coParent \}\);/);
+    expect(page.indexOf('if (!asksInvites || !auth.client || !childId)')).toBeGreaterThan(-1);
+    expect(page.indexOf('if (!asksInvites || !auth.client || !childId)')).toBeLessThan(page.indexOf('listPendingInvites(auth.client, childId)'));
+    expect(page).not.toMatch(/if \(!serverFeaturesEnabled\(\) \|\| !auth\.client/);
+  });
+
+  it('keeps every hook above the early return, so the order of hooks never changes when the book goes (as delete-book.tsx)', () => {
+    const early = page.indexOf('if (!child) return null;');
+    expect(early).toBeGreaterThan(-1);
+    for (const hook of ['useAuth()', 'const [pendingInvites, setPendingInvites] = useState(false);', 'listPendingInvites(auth.client, childId)', 'useToast()', 'useFocusEffect(']) {
+      expect(page.indexOf(hook), hook).toBeGreaterThan(-1);
+      expect(page.indexOf(hook), hook).toBeLessThan(early);
+    }
+    // Nothing after the early return is a hook.
+    expect(page.slice(early)).not.toMatch(/\buse[A-Z]\w*\(/);
+  });
+});
+
+describe('[11 Nov, lens A on #720, item 6] the invite confirmation reaches the page the sheet closes onto', () => {
+  it('a book\'s settings page shows the sheet\'s closing line as its toast, once, the way the family page does', () => {
+    // The row opens the invite sheet over this page (one parent, no invite yet), and the sheet closes back onto it
+    // (useCloseSheet pops the modal): without this, "The invite waits until they join." waited for a family page the
+    // person may never open.
+    const page = code('app/settings/children/[id].tsx');
+    const family = code('app/family.tsx');
+    const reads = /const note = familyNotice\.take\(\);\s*if \(note\) toast\.show\(\{ message: note \}\);/;
+    expect(page).toMatch(reads);
+    expect(family).toMatch(reads);
+    expect(page).toMatch(/useFocusEffect\(\s*useCallback\(\(\) => \{\s*const note = familyNotice\.take\(\);/);
+    // The sheet still leaves the same existing word, and nothing else, as it closes.
+    expect(code('app/invite/new.tsx')).toMatch(/familyNotice\.leave\(k\.done\);\s*close\(\);/);
+    expect(familyCopy.create.done).toBe('The invite waits until they join.');
   });
 });

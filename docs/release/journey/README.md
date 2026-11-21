@@ -47,5 +47,6 @@ git add docs/release/journey/INDEX.md docs/release/journey/steps # never screens
 - **Every flow must pass.** A failing test leaves a partial journey. Fix or report the file, then run it alone with shots (`npm run e2e:web:journey -w @scribe/mobile -- j01-first-run.flow.ts`; the existing exports are reused, so leave `E2E_WEB_REBUILD` off) before you build the index.
 - **Two workers.** Three workers with shots on have pushed a long flow past its 90 s limit; it passes alone.
 - **Before you push**: the Playwright run ended with `N passed` and no `failed`, `flaky` or `skipped` (a failing test leaves a partial journey; the generator checks only that every step has `shot`), and the ids the design spec cites (`docs/design/EXPERIENCE_PASS_2026-10.md`) still point at the screens it means. Step ids are positional: a flow that adds a step renumbers every later one.
+- **The record carries the run day's dates.** The seeded family's dates are relative to the day of the run, so the captured text holds that day's dates (for example "Birthday October 30" or "Deleted October 30. Kept here until November 29.") and a rerun on another day changes them. A step note must not hard-code a date (BL-480 point 2).
 
 The PDF (`apps/mobile/e2e-web/support/build-pdf.sh`) is optional and is never committed.

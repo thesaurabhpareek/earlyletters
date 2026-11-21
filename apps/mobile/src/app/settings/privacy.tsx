@@ -49,7 +49,7 @@ export default function PrivacySettings() {
   const [names, setNames] = useState(lockScreenNamesOn);
   // Names in notifications changes on the Reminders page: re-read it when Privacy comes back.
   useFocusEffect(useCallback(() => setNames(lockScreenNamesOn()), []));
-  const child = getActiveChild()?.name ?? consentCopy.childFallback;
+  const child = getActiveChild()?.name || consentCopy.childFallback;
   const lockOn = useAppLock().enabled;
   const [method, setMethod] = useState<LockMethod>('passcode');
   useEffect(() => {

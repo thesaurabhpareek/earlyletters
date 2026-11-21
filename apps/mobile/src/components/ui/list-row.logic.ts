@@ -46,3 +46,24 @@ export function showsChevron(row: {
   if (row.android || row.disabled || row.destructive || row.hasTrailingNode) return false;
   return row.pressable;
 }
+
+/**
+ * What VoiceOver and Voice Control call a row: the title, the subtitle, the value, and last the word a tap does
+ * (Stop, Download, Remove). The word is part of the label because Voice Control matches the spoken "Tap Stop" against
+ * the label (WCAG 2.5.3 Label in Name), and VoiceOver with hints off would otherwise never learn what a tap does. A
+ * row nothing can press, or one that is disabled, names no action. The hint stays separate and is not repeated here.
+ */
+export function rowLabel(row: { title: string; subtitle?: string | null; value?: string | null; actionWord?: string | null; pressable: boolean; disabled?: boolean }): string {
+  const action = row.pressable && !row.disabled ? row.actionWord : null;
+  return [row.title, row.subtitle, row.value, action].filter(Boolean).join(', ');
+}
+
+/**
+ * Where a trailing node (the speech row's ring and word) sits. Beside the title on a normal text size; under the
+ * title block at accessibility sizes, the way a string value already does (TDD 09 2.3), so the title keeps the width
+ * and nothing breaks mid-word at AX5.
+ */
+export function trailingNodePlacement(row: { ax: boolean; hasNode: boolean }): 'none' | 'beside' | 'under' {
+  if (!row.hasNode) return 'none';
+  return row.ax ? 'under' : 'beside';
+}

@@ -23,9 +23,13 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { audioRows, eraseEntry, finishServerErased, purgeThenRecordLaunch, type AudioEraser } from '../store';
+import { erasePictureOf } from '../photos/device';
+import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, setDraftPictureEraser, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
+
+// A draft let go (Review, Listen, the launch sweep) or deleted (Write) takes its picture at once (ADR 0028 D5).
+setDraftPictureEraser(erasePictureOf);
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.
@@ -34,12 +38,22 @@ export const eraseAudioFile: AudioEraser = (uri, entryId) => {
     removeWholeFrameCopiesOf(uri);
   }
   removeListeningCopy(entryId);
+  erasePictureOf(entryId); // the letter's picture goes with it (NS-01-R16); file first, then its row
 };
 
-/** Stored paths of every other draft and letter, deleted letters included (they can still be restored). */
-function otherAudioUris(entryId: string): string[] {
+/**
+ * Stored paths of every other draft and letter, deleted letters included (they can still be restored). The row
+ * being erased is left out whichever table holds it: a draft keeps its id when it becomes a letter, so one id is
+ * one recording, and a draft erased with its book (eraseBook) must not count as another owner of its own file.
+ */
+function otherAudioUris(id: string): string[] {
   const { drafts, entries } = audioRows();
-  return [...drafts, ...entries.filter((e) => e.id !== entryId)].flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+  return [...drafts, ...entries].filter((r) => r.id !== id).flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+}
+
+/** Erase now on a deleted book, from the shelf (BL-387): every recording of the book, then its rows. */
+export function eraseDeletedBook(id: string): boolean {
+  return eraseBook(id, eraseAudioFile);
 }
 
 /** Erase now, from the shelf. True when the letter and its recording are gone. */

@@ -212,7 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           # The secret is one JSON string: GitHub masks the whole string, not its fields. Mask each field too.
-          node -e 'let r;try{r=JSON.parse(process.env.REVIEW||"")}catch{process.exit(0)}for(const v of Object.values(r))if(typeof v==="string"&&v.trim())console.log("::add-mask::"+v.replace(/\r?\n/g," "))'
+          node -e 'let r;try{r=JSON.parse(process.env.REVIEW||"")}catch{process.exit(0)}for(const v of Object.values(r))if(typeof v==="string"&&v.trim()){const t=v.trim();console.log("::add-mask::"+t.replace(/\r?\n/g," "))}'
           npx tsx scripts/release/with-review-contact.ts
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
         with:
