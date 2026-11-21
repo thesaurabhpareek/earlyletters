@@ -166,6 +166,13 @@ export default function ExportScreen() {
   const percent = running ? Math.round(state.progress.fraction * 100) : 0;
   const phaseText = running ? (state.progress.phase === 'checking' ? s.checking : state.progress.fraction < 0.02 ? e.preparing : s.packing) : '';
 
+  // The waiting line stays in the content, above the pinned button that answers it (S43).
+  const emptyNote = empty ? (
+    <Text variant="subhead" className="text-center" testID="export.empty">
+      {s.emptyNote}
+    </Text>
+  ) : null;
+
   // The one primary, pinned at the bottom (BL-418); the running state's Cancel is a secondary and stays in the content.
   const tooBig = state.kind === 'failed' && exportFailure(state.reason).action === 'writeToUs';
   const primary =
@@ -221,11 +228,7 @@ export default function ExportScreen() {
             </Text>
           )}
           {state.kind === 'failed' && <FailureCard reason={state.reason} />}
-          {empty ? (
-            <Text variant="subhead" className="text-center" testID="export.empty">
-              {s.emptyNote}
-            </Text>
-          ) : null}
+          {emptyNote}
         </View>
       )}
 
