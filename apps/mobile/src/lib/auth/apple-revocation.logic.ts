@@ -7,6 +7,8 @@
  * Pure; apple.ts reads the credential state, session-provider.tsx signs out
  * by the R3 rule (after uploads). Never logs or stores the Apple user id.
  */
+
+import type { PendingUploads } from './machine.logic';
 export const REVOCATION_MIN_GAP_MS = 60_000;
 
 export type RevocationGate = {
@@ -51,8 +53,8 @@ export function startAppleRevocationWatch(deps: {
   check: () => Promise<boolean>;
   /** A revoked Apple ID ends only an Apple session; an email session is never signed out by it. */
   isAppleSession: () => Promise<boolean>;
-  pendingUploads: () => Promise<number>;
-  dispatchSignOut: (pendingUploads: number) => void;
+  pendingUploads: () => Promise<PendingUploads | number>;
+  dispatchSignOut: (pendingUploads: PendingUploads | number) => void;
   onAppActive: (listener: () => void) => () => void;
   onAppleRevoked: (listener: () => void) => () => void;
   now: () => number;
@@ -60,7 +62,8 @@ export function startAppleRevocationWatch(deps: {
   let alive = true;
   const signOut = async () => {
     if (!(await deps.isAppleSession().catch(() => false))) return;
-    const n = await deps.pendingUploads();
+    // BL-1425: a queue that cannot be read is unknown, which sign-out treats as unsynced.
+    const n = await deps.pendingUploads().catch((): PendingUploads => ({ kind: 'unknown' }));
     if (alive) deps.dispatchSignOut(n);
   };
   const gate = createRevocationGate({ check: deps.check, onRevoked: signOut, now: deps.now });

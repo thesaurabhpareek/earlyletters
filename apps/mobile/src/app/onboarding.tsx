@@ -36,11 +36,11 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
+import { appleSignInAvailable } from '@/lib/auth/apple';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
-import { LockOffer } from '@/components/app-lock/lock-offer';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
@@ -574,9 +574,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                   <View className="self-stretch">
                     <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
                   </View>
-                  {/* The app lock, offered once with two equal buttons and off until turned on (F1, CPO-2). Hidden on a
-                      phone with no passcode (components/app-lock/lock-offer.tsx). */}
-                  <LockOffer child={child} />
+                  {/* No app lock offer here (NS-39-R9, NX-31-R14): the lock is offered from Settings, App lock. */}
                 </>
               )}
             </Animated.View>
@@ -670,7 +668,14 @@ export default function Onboarding() {
  */
 function FirstRun() {
   const route = useFirstRunRoute();
-  const { signOut, lastMethod } = useAuth();
+  const { signOut, lastMethod, signInWithApple, state: authState } = useAuth();
+  // NS-41-R12 (card 19): Apple stays reachable when a 429 on SENDING an email (`email_wait`) put the person here, and only then.
+  const emailWait = authState.status === 'signedOut' && authState.error === 'email_wait';
+  // FP-6: Apple's button on the outage screen, only where Apple sign-in is available on this phone.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleAvailable);
+  }, []);
   const method = methodLine(lastMethod);
   // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
   // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
@@ -696,7 +701,7 @@ function FirstRun() {
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
   if (route.screen === 'outage' && route.outage) {
-    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} onApple={appleAvailable && emailWait ? () => void signInWithApple() : undefined} />;
   }
   return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }
