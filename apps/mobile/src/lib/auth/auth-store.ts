@@ -21,6 +21,7 @@
  * state, for the screens.
  */
 import { needsAccountClaim } from './account-claim.logic';
+import { joinWait } from '@/components/family/join-wait.logic';
 import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
 
 export type { PendingUploads } from './machine.logic';
@@ -113,8 +114,12 @@ function announce(): void {
 
 /** Provider only. */
 export function publishAuth(next: AuthState): void {
+  const was = authUserId(snapshot);
   snapshot = next;
   if (!authUserId(next)) confirmed.clear();
+  // BL-1424: a join wait holds the child's name in memory. It ends with the account that started it, for every
+  // sign-out reason, even when no welcome is mounted to clear it (the next account must not read this name).
+  if (!authUserId(next) || (was && authUserId(next) !== was)) joinWait.clear();
   listeners.forEach((l) => l(next));
   announce();
 }

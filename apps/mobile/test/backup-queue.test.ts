@@ -631,6 +631,23 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     expect(r.tmpFiles()).toEqual([]);
   });
 
+  it('[BL-1439] an erased letter dropped by reconcile: its Keychain token goes with the job; another entry\'s token stays', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-erased';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'tus:POST:after'; // begun, its token in the Keychain
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.keychain.set('another-entry', 'asha-token-other');
+    expect(r.keychain.get(item.entryId)).toBe('asha-token-erased');
+    r.items.splice(r.items.indexOf(item), 1);
+    r.make().reconcile();
+    await new Promise((res) => setTimeout(res, 0));
+    expect(r.db().job(item.entryId)).toBeNull();
+    expect([...r.keychain.keys()]).toEqual(['another-entry']); // mutant: no dropToken in reconcile's drop loop leaves it
+  });
+
   it('moved to another book before the upload finished: starts again under that book\'s key', async () => {
     const r = rig();
     const { item, plain } = await r.addRecording(2 * SEGMENT_SIZE);
@@ -976,6 +993,20 @@ describe('[review B m3 on #150] an erased letter stops sending at the next segme
     expect(r.db().job(b.entryId)!.state).toBe('confirmed');
     expect(sha256Hex((await r.serverPlaintext(b.entryId))!)).toBe(sha256Hex(bPlain));
     expect(r.tmpFiles()).toEqual([]);
+  });
+
+  it('[BL-1439] erased mid-upload (goneNow): its Keychain token goes with the job; another entry\'s token stays', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-erased';
+    r.keychain.set('another-entry', 'asha-token-other'); // a different entry of the same store
+    const { item: a } = await r.addRecording(5 * PART + 100);
+    r.onHttp((m) => {
+      if (m === 'PATCH' && r.items.some((x) => x.entryId === a.entryId)) erase(r, a.entryId);
+    });
+    await r.make().drain();
+    await new Promise((res) => setTimeout(res, 0)); // the drop is not awaited by the queue
+    expect(r.db().job(a.entryId)).toBeNull();
+    expect([...r.keychain.keys()]).toEqual(['another-entry']); // mutant: no dropToken in goneNow leaves a's token here
   });
 
   it('erased while it is encrypted: it stops at the next segment and nothing is sent for it', async () => {

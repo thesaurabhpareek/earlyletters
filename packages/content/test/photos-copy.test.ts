@@ -43,4 +43,18 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
   it('[NS-01-R22] no string offers the camera', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/take a photo now|camera/i);
   });
+  it('[NS-01-R17] the line for a photo that was not stored is calm: says the words are kept, offers a retry, no cause or blame', () => {
+    const t = photosCopy.book.letter.notSaved;
+    expect(t).toMatch(/words are kept/i);
+    expect(t).toMatch(/add it again/i);
+    expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
+    expect(t.length).toBeLessThanOrEqual(120);
+  });
+  it('[NS-01-R17] on Review, before Keep, the not-stored line never says kept: offers a retry, no cause or blame (#839 review B)', () => {
+    const t = photosCopy.review.notStored;
+    expect(t).not.toMatch(/\bke(pt|ep)/i);
+    expect(t).toMatch(/add it again/i);
+    expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
+    expect(t.length).toBeLessThanOrEqual(120);
+  });
 });
