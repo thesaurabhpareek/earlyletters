@@ -171,7 +171,7 @@ Content-rule check on this file: no em or en dashes, curly quotes, ellipsis char
 
 ## 10. Nudges driven by library moments: push and email
 
-Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can be second tab or centre tab... this is what would bring engagement... And this would influence email nudges and push notifications nudges not just this app feed."
+Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can be second tab or centre tab [cut] this is what would bring engagement... And this would influence email nudges and push notifications nudges not just this app feed."
 
 Standing rulings this meets. The coordinator cites "ML-3: no push from library data". I did not find a row with that id; the text matches NX-39 ruling 3, "No notification is ever derived from the library", with its reason in the NX-39 decision table: "A notification that exists because of a library read discloses a derived fact by existing, whatever its words", and K1 ("No photo in a notification, widget, lock screen or analytics", extended to place, count and any library-derived notification at all). `product` should confirm the ML numbering. One newer row already cuts into this: NS-51-R11 (20 Nov, CL-053 closed Q-PM-8) lets a moment be a ranked source of the evening reminder with one neutral title and body, planned only while the app is open. So the position today is: a neutral local nudge is written into NS-51; NX-39's flat ban still stands in its own file. I treat the NX-39 ban as the standing ruling and NS-51-R11 as a narrow, already-proposed exception that the founder has not been shown as a reversal.
 
