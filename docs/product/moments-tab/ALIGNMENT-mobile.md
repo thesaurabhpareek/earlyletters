@@ -119,7 +119,7 @@ Open and not mine: PR 0 label, the founder gates, counsel items; nothing read he
 |---|---|---|
 | `apps/mobile/src/app/(tabs)` | holds `index.tsx`, `book.tsx`, `you.tsx` only | True, plus `_layout.tsx` (a layout, not a screen) |
 | `lib/transitions.logic.ts:43` | `ROUTES` | True (`export const ROUTES = {` at 43) |
-| `transitions.logic.ts:43-57` | existing rows | Off by one: the table closes at line 56 (`} as const satisfies Record<string, Row>`); 11 rows at 44-55 |
+| `transitions.logic.ts:43-57` | existing rows | True: `ROUTES` runs 43 to 58; the last row (`'plus/confirmed'`) is line 57 and `} as const satisfies Record<string, Row>` is line 58 (corrected in the rulings pass; the first read said 56) |
 | `apps/mobile/src/lib/capture/start-capture.logic.ts:26-28` | closed source list and `CAPTURE_ROUTES` | False for lines 26-27: `HOME_CAPTURE_SOURCES` is 19, `CAPTURE_DOORWAYS` 20, `CAPTURE_SOURCES` 21, `CAPTURE_ROUTES` 28. Only line 28 is in the cited range. Source list content (4 + 4 values) is right |
 | `start-capture.logic.ts:7-9` | `photo` "called once the system picker has returned a picture" | True at lines 8-9 (line 7 is not part of it) |
 | `apps/mobile/test/navigation-one-entry.test.ts:199` | `[IA-N1]` bar is `index, book, you` | True |
@@ -146,7 +146,7 @@ Open and not mine: PR 0 label, the founder gates, counsel items; nothing read he
 | "Reanimated 4.5.1 and the other motion packages" (AB 10.2, UNVERIFIED) | present | Now verified: `react-native-reanimated` `4.5.1` (`package.json:57`), `react-native-gesture-handler` `~2.32.0` (`:55`), `expo-haptics` `~57.0.3` (`:35`), `@gorhom/bottom-sheet` `^5.2.14` (`:7`), `expo` `~57.0.26` (`:22`). `expo-image` and `expo-image-picker` are absent from `package.json` |
 | `apps/mobile/modules` four others untouched | `scribe-audio`, `scribe-files`, `scribe-keys`, `scribe-store` | True |
 
-Tally: 27 table rows, 24 of them with a line or range. True 20; off by one 2 (`transitions.logic.ts:43-57`, `monthNoteCopy`); wrong range 1 (`scribe-photo/index.ts:1-27`); false 1 (`start-capture.logic.ts:26-28`).
+Tally: 27 table rows, 24 of them with a line or range. True 21; off by one 1 (`monthNoteCopy`); wrong range 1 (`scribe-photo/index.ts:1-27`); false 1 (`start-capture.logic.ts:26-28`).
 
 ### 5.2 AB statements marked UNVERIFIED that develop now answers
 

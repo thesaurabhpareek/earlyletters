@@ -52,7 +52,7 @@ Fictional family Asha only. Evidence labels, used on every claim: a spec row id;
 | Surface | Job | Route (file) | Status today |
 |---|---|---|---|
 | Tab (decides) | Reason, date, city or occasion, two actions; the ask card; the door row; the calm lines (EM section 3, line 163) | `apps/mobile/src/app/(tabs)/moments.tsx` (file name ASSUMED), a tab screen under `(tabs)` (R172); order: second of four with Home as landing (19.3 phase 1 row) | `(tabs)` holds `index.tsx`, `book.tsx`, `you.tsx` only (read: `apps/mobile/src/app/(tabs)`) |
-| Sheet (chooses) | Choose pictures in our day tiles or Apple's picker; tray; one Start; Not now (R269) | `moments/pick`, one row in `ROUTES` (`apps/mobile/src/lib/transitions.logic.ts:43`), a transparent modal with no platform animation so our surface can grow from the card (EM 4.1, line 186); file `apps/mobile/src/app/moments/pick.tsx` (ASSUMED) | No row yet. Existing rows use `presentation: 'modal'` or `'fullScreenModal'` and a `move` key (`transitions.logic.ts:43-56`); whether a transparent presentation fits the `Row` type is UNVERIFIED, PR 6 reads it |
+| Sheet (chooses) | Choose pictures in our day tiles or Apple's picker; tray; one Start; Not now (R269) | `moments/pick`, one row in `ROUTES` (`apps/mobile/src/lib/transitions.logic.ts:43`), a transparent modal with no platform animation so our surface can grow from the card (EM 4.1, line 186); file `apps/mobile/src/app/moments/pick.tsx` (ASSUMED) | No row yet. Existing rows use `presentation: 'modal'` or `'fullScreenModal'` and a `move` key (`transitions.logic.ts:43-57`); whether a transparent presentation fits the `Row` type is UNVERIFIED, PR 6 reads it |
 | Capture (speaks) | Talk or write; the pictures follow into Review; Keep (R85, 9.1) | `/listen` and `/write`, opened only by `startCapture` | Exists. `CAPTURE_ROUTES = ['/listen','/write']`, closed source list `speak, type, notMuchToday, photo` plus four doorways (`apps/mobile/src/lib/capture/start-capture.logic.ts:19-21` for the source lists and `:28` for `CAPTURE_ROUTES`) |
 
 Rule of thumb from EM line 181: the tab never chooses, the sheet never explains, capture never browses.
@@ -598,7 +598,7 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 
 - Every Apple API behaviour: PhotoKit authorization, Limited, fetch options and predicates, location readability under Limited, `PHPickerConfiguration` options and its item provider output, whether a picker pick under SDK 57 raises a permission prompt, `PHPickerViewController` embedding and touch behaviour with non-opaque ancestors, interface-style override, iCloud download behaviour. I read no Apple page. Source of the unknown list: R290, G1a-L, G1a-P (lines 1113, 1333).
 - Whether a per-profile autolinking exclusion works for a local module on EAS (R222; `apps/mobile/package.json:96` is static).
-- Whether a transparent modal fits the existing `ROUTES` row type (`transitions.logic.ts:43-56`).
+- Whether a transparent modal fits the existing `ROUTES` row type (`transitions.logic.ts:43-57`).
 - Whether Caches is outside iPhone backup (MEDIA_THREAT_MODEL P2 says "Verified (vendor)"; R282 says UNVERIFIED against Apple's text; `mobile` confirms).
 - Whether a NS-01 scan pins callers of `PickedFiles.remove` (R272); the content of `photos-capture.test.ts` and `photos-surfaces.test.ts` (not opened).
 - Whether the planner enforces the parent's cadence beneath the 60-in-92-days ceiling (R299).
