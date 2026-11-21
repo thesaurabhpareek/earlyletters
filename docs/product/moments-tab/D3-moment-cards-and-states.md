@@ -36,7 +36,7 @@ A day card is a small paper object: the day's date, up to four of the parent's o
 
 ## 4. How it differs from Apple's picker, and why
 
-Apple's suggestions picker is a system sheet. Its page says <cite index="1-1">it displays several grids of content that lay out visual mementos</cite> and that, after a person selects one, <cite index="1-1">the system shares only the information associated with the chosen suggestion with your app</cite>. Apple's photo picker, by the WWDC20 session as quoted in a developer forum, does not prompt for library access in its default configuration, and the asset identifier is only filled in when the picker is made with library access (second hand, VERIFIED only that the forum says so).
+Apple's suggestions picker is a system sheet. Its page says <cite index="1-1">it displays several grids of content that lay out visual mementos and that, after a person selects one, <cite index="1-1">the system shares only the information associated with the chosen suggestion with your app. Apple's photo picker, by the WWDC20 session as quoted in a developer forum, does not prompt for library access in its default configuration, and the asset identifier is only filled in when the picker is made with library access (second hand, VERIFIED only that the forum says so).
 
 | | Apple's picker (as seen in the founder's screenshots, UNVERIFIED that it is the system sheet) | Our Moments cards (Route B) | Why |
 |---|---|---|---|
