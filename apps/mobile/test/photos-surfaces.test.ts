@@ -380,6 +380,23 @@ describe('[NS-01-R20] new controls', () => {
     expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
     expect(readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8')).not.toMatch(/disabled=/);
   });
+  it('[NS-01-R59] the photo start draws only when a picker is registered: `show` is registered && photoStartShows() (mutant `show: true` fails)', () => {
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    expect(hook).toMatch(/return \{ show: registered && photoStartShows\(\), failed, start \};/);
+    expect(hook).not.toMatch(/show: true/);
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    expect(home).toMatch(/\{photoStart\.show \? <PhotoStartButton /);
+  });
+  it('[NS-01-R3] Home passes the same prompt to Speak, Type and the photo start: the one `prompt.key` on screen, nothing else (mutant: another key fails)', () => {
+    const home = readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8');
+    // The photo start's plan input and the Speak and Type input are built from the prompt Home shows, never from the picture.
+    expect(home).toMatch(/usePhotoStart\(\(\) => startCapture\(\{ source: 'photo', prompt: \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \} \}\)\)/);
+    expect(home).toMatch(/const promptParam = \{ key: prompt\.key, libraryVersion: PROMPT_LIBRARY_VERSION \};/);
+    expect(home).toMatch(/startCapture\(\{ source: 'speak', prompt: promptParam \}\)/);
+    expect(home).toMatch(/startCapture\(\{ source: 'type', prompt: promptParam \}\)/);
+    // No prompt key literal reaches a capture start from Home.
+    expect(home).not.toMatch(/startCapture\(\{[^}]*key: ['"`]/);
+  });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
     expect(src).toMatch(/variant="quiet"/);
