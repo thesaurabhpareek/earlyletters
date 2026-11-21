@@ -23,7 +23,7 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { erasePictureOf } from '../photos/device';
+import { erasePictureOf } from '../photos/erase-picture';
 import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, setDraftPictureEraser, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';

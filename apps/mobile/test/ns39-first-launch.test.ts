@@ -143,9 +143,9 @@ describe('[NS-39-R14] a No discards a held link', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  // RED TODAY (NS-39-R14): answerAgeGate('no') clears the invite only; the held email auth link in memory
-  // (auth/pending.ts setPendingAuthLink) survives a No and would be replayed.
-  it.fails('[NS-39-R14] a No deletes the held email link too', async () => {
+  // Was it.fails while answerAgeGate('no') cleared the invite only. #1128 made a No also take the held email auth link
+  // (auth/pending.ts setPendingAuthLink), so this is now an ordinary test: a No must not leave a link to be replayed.
+  it('[NS-39-R14] a No deletes the held email link too', async () => {
     const { setPendingAuthLink, takePendingAuthLink } = await import('../src/lib/auth/pending');
     const { answerAgeGate } = await import('../src/lib/age-gate');
     setPendingAuthLink({ tokenHash: 'asha-hash', type: 'magiclink' });
