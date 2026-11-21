@@ -423,8 +423,7 @@ function dbFor(profileId: string): BackupDb {
   if (!d) {
     const file = backupDbFileFor(profileId);
     // B5-3: files.ts checks before and after the open and refuses (BackupFileNotExcluded) a file not excluded.
-    const opened = openSecureBackupFile(file, openNativeDb);
-    d = openBackupDb(opened.db, () => new Date().toISOString());
+    d = openSecureBackupFile(file, openNativeDb, (o) => openBackupDb(o.db, () => new Date().toISOString()));
     backupDbs.set(profileId, d);
   }
   return d;

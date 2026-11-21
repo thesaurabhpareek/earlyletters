@@ -149,16 +149,25 @@ export class BackupFileNotExcluded extends Error {
 }
 
 /**
- * The one way the store opens the file (B5-3): check before, open, check again (a new file first exists after the
- * open, and SQLite may have re-created sidecars). A failed check refuses with `BackupFileNotExcluded`, closing the
- * handle if it was opened. Wal and shm files SQLite creates after this are marked at the next check or launch.
+ * The one way the store opens the file (B5-3): check before, open, run the first statements (`firstUse`: the schema,
+ * which is what makes SQLite create the -wal and -shm files in WAL mode), then check again. A failed check refuses
+ * with `BackupFileNotExcluded`, closing the handle. The second check MUST follow `firstUse`: those sidecars hold
+ * the table rows and are created by the first statement, not by the open. Files SQLite creates later in the session
+ * are marked at the next launch.
  */
-export function openSecureBackupFile<T extends { close: () => void }>(name: string, open: (name: string) => T): T {
+export function openSecureBackupFile<T extends { close: () => void }, R>(
+  name: string,
+  open: (name: string) => T,
+  firstUse: (opened: T) => R,
+): R {
   if (!backupFileIsSecure(name)) throw new BackupFileNotExcluded();
   const opened = open(name);
-  if (!backupFileIsSecure(name, true)) {
+  try {
+    const result = firstUse(opened);
+    if (!backupFileIsSecure(name, true)) throw new BackupFileNotExcluded();
+    return result;
+  } catch (e) {
     opened.close();
-    throw new BackupFileNotExcluded();
+    throw e;
   }
-  return opened;
 }

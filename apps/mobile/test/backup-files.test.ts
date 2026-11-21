@@ -189,22 +189,41 @@ describe('[B5-3] a file whose exclusion reads false is deleted and the store ref
     };
     h.mode = 'ignore';
     put(h.disk, at(FILE), 64);
-    expect(() => openSecureBackupFile(FILE, open)).toThrow(BackupFileNotExcluded);
+    expect(() => openSecureBackupFile(FILE, open, (o) => o)).toThrow(BackupFileNotExcluded);
     expect(opened).toEqual([]);
     expect(present(FILE)).toBe(false);
     // A new file: clean before, the OS refuses the mark once it exists: opened, then closed and refused.
-    expect(() => openSecureBackupFile(FILE, open)).toThrow(BackupFileNotExcluded);
+    expect(() => openSecureBackupFile(FILE, open, (o) => o)).toThrow(BackupFileNotExcluded);
     expect(opened).toEqual([FILE]);
     expect(closed).toBe(1);
     h.mode = 'stick';
-    expect(() => openSecureBackupFile(FILE, open)).not.toThrow();
+    expect(() => openSecureBackupFile(FILE, open, (o) => o)).not.toThrow();
     expect(h.excluded.has(at(FILE))).toBe(true);
+  });
+
+  it('WAL: the -wal and -shm files SQLite creates on the first statement (after the open) are excluded before the store is used', () => {
+    const open = (n: string) => {
+      put(h.disk, at(n), 64); // the open creates the main file only
+      return { close: () => undefined };
+    };
+    const firstStatement = () => {
+      put(h.disk, at(`${FILE}-wal`), 64); // the schema write creates the sidecars
+      put(h.disk, at(`${FILE}-shm`), 64);
+      return 'ready';
+    };
+    expect(openSecureBackupFile(FILE, open, firstStatement)).toBe('ready');
+    for (const x of ['', '-wal', '-shm']) expect(h.excluded.has(at(FILE + x)), x).toBe(true);
+    // and one that cannot be marked is refused, with the handle closed
+    h.mode = 'ignore';
+    h.excluded.clear();
+    for (const x of ['', '-wal', '-shm']) h.disk.files.delete(at(FILE + x));
+    expect(() => openSecureBackupFile(FILE, open, firstStatement)).toThrow(BackupFileNotExcluded);
   });
 
   it('pin: runtime.ts opens the file only through openSecureBackupFile (a bare openNativeDb call goes red)', () => {
     const src = readFileSync(join(__dirname, '../src/lib/backup/runtime.ts'), 'utf8');
     const body = src.slice(src.indexOf('function dbFor'), src.indexOf('async function session'));
-    expect(body).toMatch(/openSecureBackupFile\(\s*file\s*,\s*openNativeDb\s*\)/);
+    expect(body).toMatch(/openSecureBackupFile\(\s*file\s*,\s*openNativeDb\s*,\s*\(o\)\s*=>\s*openBackupDb\(/);
     expect(src.match(/openNativeDb\s*\(/g)).toBeNull(); // only ever passed to the checked opener, never called
   });
 
