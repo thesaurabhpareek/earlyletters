@@ -1,5 +1,5 @@
 /**
- * Prompt keys are never reused for new wording (WRITING-GUIDE.md section 10). A rewrite gets a new `-v2` key, the old key
+ * Prompt keys are never reused for new wording (WRITING-GUIDE.md Appendix B, v1.2). A rewrite gets a new `-v2` key, the old key
  * stays in the library marked `retired`, and the library version goes up. An old entry still finds its text by key, so the
  * retired texts below are pinned word for word: a later "fix" to a retired line goes red here. The texts are copied from
  * origin/develop before library version 5. Fixtures use the fictional family Asha only.

@@ -71,7 +71,7 @@ import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
-import { ARRIVAL_SETTING, arrivalToWrite } from '@/lib/first-run/new-phone.logic';
+import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
 import { HeldScreen, NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
@@ -670,7 +670,8 @@ export default function Onboarding() {
  */
 function FirstRun() {
   const route = useFirstRunRoute();
-  const { signOut } = useAuth();
+  const { signOut, lastMethod } = useAuth();
+  const method = methodLine(lastMethod);
   // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
   // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
   // settings table when the store is erased (lib/store.ts eraseEverythingLocal; the Settings row behind it is not offered
@@ -691,7 +692,7 @@ function FirstRun() {
   if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} />;
-  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;
+  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} method={method} />;
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
   if (route.screen === 'outage' && route.outage) {

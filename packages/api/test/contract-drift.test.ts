@@ -125,7 +125,7 @@ describe('[ADR-0017] error codes equal the migrations', () => {
 describe('[CR-69 A5] the kill-switch vocabulary has no second copy that can drift', () => {
   const read = (rel: string) => readFileSync(join(__dirname, '..', '..', '..', rel), 'utf8');
 
-  it('[NS-46-R28] the README names every key and its count, and the ADR 0029 table names the four new ones', () => {
+  it('[NS-46-R28] the README names every key and its count, and the ADR 0029 table names the five new ones', () => {
     const readme = read('packages/api/README.md');
     const line = readme.split('\n').find((l) => l.startsWith('**Kill switches.**')) ?? '';
     for (const k of KILL_SWITCH_KEYS) expect(line, k).toContain('`' + k + '`');
@@ -133,7 +133,7 @@ describe('[CR-69 A5] the kill-switch vocabulary has no second copy that can drif
     const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen'];
     expect(line).toContain(`${words[KILL_SWITCH_KEYS.length]} keys`);
     // One explicit pin: the new-scope list.
-    expect([...NEW_SCOPE_KILL_SWITCH_KEYS]).toEqual(['photoMoments', 'videos', 'signIn', 'libraryDays']);
+    expect([...NEW_SCOPE_KILL_SWITCH_KEYS]).toEqual(['photoMoments', 'videos', 'signIn', 'libraryDays', 'bookSearch']);
     const adr = read('docs/adr/0029-flags-kill-switches-and-preflight.md');
     for (const k of NEW_SCOPE_KILL_SWITCH_KEYS) expect(adr, k).toContain('| `' + k + '` |');
   });

@@ -11,10 +11,12 @@ import type { BackupDb, UploadJob } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
 import { META, createUploadQueue, type BackupSource, type GateReason } from './queue';
 import { HAS_BACKUP_META, createRestore, type BlobDownloader, type RestoreKeyStatus, type RestoreLocal } from './restore';
+import type { TokenStore } from './token-vault';
 import type { HttpLike } from './tus';
 
 export interface BackupServiceDeps {
   db: BackupDb;
+  tokens?: TokenStore;
   vault: KeyVault;
   aead: Aead;
   files: FileIO;
