@@ -757,11 +757,11 @@ export const en = {
     },
     letters10: {
       title: "10 letters.",
-      body: "Ten letters for {child}, spoken by you.",
+      body: "Ten letters for {child}.",
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty letters of yours are in {child}'s book.",
+      body: "Fifty letters are in {child}'s book.",
     },
     letters100: {
       title: "100 letters.",
