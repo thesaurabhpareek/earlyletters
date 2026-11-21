@@ -4,10 +4,10 @@ Status: proposal, 20 Nov 2026. The scripts and tests merged earlier (#897, #898,
 
 ## Do not copy yet: the dry run is red on every pull request
 
-I ran the guard (`scripts/release/label-effect.mjs`) over the 12 newest merged pull requests into `develop`, each with its own base (the commit before the merge), head (the merge) and body:
+I ran the guard (`scripts/release/label-effect.mjs`) over 12 merged pull requests into `develop`, read on 20 Nov 2026 (the list of PRs below; newer ones have merged since), each with its own base (the commit before the merge), head (the merge) and body:
 
 ```
-for n in <12 newest merged>; do sha=$(gh api repos/thesaurabhpareek/earlyletters/pulls/$n --jq .merge_commit_sha)
+for n in <the 12 PR numbers below>; do sha=$(gh api repos/thesaurabhpareek/earlyletters/pulls/$n --jq .merge_commit_sha)
   gh api repos/thesaurabhpareek/earlyletters/pulls/$n --jq '.body // ""' > body.txt
   node scripts/release/label-effect.mjs --base "$sha^" --head "$sha" --body-file body.txt; done
 ```
