@@ -81,16 +81,23 @@ function jwtRole(payload) {
   }
 }
 
+/** Each rule's regex with the `g` flag, built once (not per line): scanning every tracked file runs this loop millions of times. */
+const GLOBAL_RES = SECRET_PATTERNS.map((p) => new RegExp(p.re.source, p.re.flags.includes('g') ? p.re.flags : `${p.re.flags}g`));
+
 /** Findings in one file's text: `[{ line, name }]`. */
 export function scanText(text) {
   const out = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    for (const p of SECRET_PATTERNS) {
-      // `next`: the first non-blank line within four lines (a PEM may have a blank line after its header).
-      const next = lines.slice(i + 1, i + 5).find((l) => l.trim() !== '') ?? '';
+    const line = lines[i];
+    // `next`: the first non-blank line within four lines (a PEM may have a blank line after its header). Worked out only when a rule matches.
+    let next;
+    for (let k = 0; k < SECRET_PATTERNS.length; k++) {
+      const p = SECRET_PATTERNS[k];
+      if (!p.re.test(line)) continue; // cheap first pass: most lines match nothing
+      next ??= lines.slice(i + 1, i + 5).find((l) => l.trim() !== '') ?? '';
       // Every match on the line is tried (a placeholder first must not hide a real value after it); one finding per rule per line.
-      const hit = [...lines[i].matchAll(new RegExp(p.re.source, `${p.re.flags}g`))].find((m) => !p.check || p.check(m, next, lines[i]));
+      const hit = [...line.matchAll(GLOBAL_RES[k])].find((m) => !p.check || p.check(m, next, line));
       if (hit) out.push({ line: i + 1, name: p.name });
     }
   }
