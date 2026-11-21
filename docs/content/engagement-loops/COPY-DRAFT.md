@@ -10,7 +10,7 @@ Reading the counts: T title, B body, N neutral body (names off), S subject, P pr
 
 ## What ran
 
-A script that is not committed ran on every line: ASCII only, zero exclamation marks, the `rules.test.ts` fear, AI, daily-rhythm and gap patterns, the guide v1.2 banned words and the glossary internal terms, the ten `lint:copy` tells (copied from branch `chore/copy-tells-lint`, because `lint:copy` is not on `develop`), the PRD README appendix A lists, push length limits, email length limits, `{child}` never in a title unless names-on only, the names-off rendering, a faith-word scan on lock-screen lines, the days N1 to N11 rules on day lines, a fallback check on every playful line, and a five-word overlap check against the 40 catalogue samples and against each other. Result: 60 lines, 0 failures. Not run: `npm test -w @scribe/content` (these lines are not in `packages/content`, so it cannot see them), `npm run lint:copy`, and any human read-aloud. Four lines are over the 60-character body target and pass the 110 limit: marked below.
+A script that is not committed ran on every line: ASCII only, zero exclamation marks, the `rules.test.ts` fear, AI, daily-rhythm and gap patterns, the guide v1.2 banned words and the glossary internal terms, the ten `lint:copy` tells (copied from branch `chore/copy-tells-lint`, because `lint:copy` is not on `develop`), the PRD README appendix A lists, push length limits, email length limits, `{child}` never in a title unless names-on only, the names-off rendering, a faith-word scan on lock-screen lines, the days N1 to N11 rules on day lines, a fallback check on every playful line, and a five-word overlap check against the 40 catalogue samples and against each other. Result: 60 lines, 0 failures. Not run: `npm test -w @scribe/content` (these lines are not in `packages/content`, so it cannot see them), `npm run lint:copy`, and any human read-aloud. Five lines are over the 60-character body target and pass the 110 limit: marked below.
 
 Read these first, because a script cannot judge them: E3-r3-p, E4-r1-p, E4-r2-p, D1-season-p and D2-labor-p (the wit is a few words each; each has a plain fallback). The closers "A sentence will do" and "is plenty" repeat across the set; rotate them before any key is wired.
 
@@ -22,13 +22,13 @@ Read these first, because a script cannot judge them: E3-r3-p, E4-r1-p, E4-r2-p,
 | E3-r1-f | LP-E3 | local push | tone: plain | A minute on Friday? // One small thing from this week is plenty. | T19/B41 | pass; neutral-safe |
 | E3-r2-p | LP-E3 | local push | tone: playful (fallback E3-r2-f) | The week, in one line // Say the thing you'd tell a friend about first. | T21/B46 | pass; neutral-safe |
 | E3-r2-f | LP-E3 | local push | tone: plain | A line from this week // Say one thing from the week for the book. | T21/B41 | pass; neutral-safe |
-| E3-r3-p | LP-E3 | local push | tone: playful (fallback E3-r3-f) | A Friday idea // Pick any moment from the week. Any size is fine. | T13/B47 | pass; neutral-safe |
+| E3-r3-p | LP-E3 | local push | tone: playful (fallback E3-r3-f) | A Friday idea // Pick any moment from the week. Any size is fine. | T13/B48 | pass; neutral-safe |
 | E3-r3-f | LP-E3 | local push | tone: plain | Friday, whenever suits // Whenever there's a minute, anything from the week will do. | T22/B58 | pass; neutral-safe |
 | E3-r4-p | LP-E3 | local push | tone: playful (fallback E3-r4-f) | One for the weekend // A word that made you laugh, a sound, a look will do. | T19/B52 | pass; neutral-safe |
 | E3-r4-f | LP-E3 | local push | tone: plain | Whenever suits // The book is here whenever you want it. A sentence will do. | T14/B58 | pass; neutral-safe |
-| E4-r1-p | LP-E4 | local push | tone: playful (fallback E4-r1-f) | Saturday, loosely // Whatever from today comes first will do. | T16/B40 | pass; neutral-safe |
+| E4-r1-p | LP-E4 | local push | tone: playful (fallback E4-r1-f) | Saturday, loosely // Whatever from today comes first will do. | T17/B40 | pass; neutral-safe |
 | E4-r1-f | LP-E4 | local push | tone: plain | Saturday // Anything from today? A sentence will do. | T8/B40 | pass; neutral-safe |
-| E4-r2-p | LP-E4 | local push | tone: playful (fallback E4-r2-f) | Saturday, no agenda // Say anything from today, in any order. | T19/B35 | pass; neutral-safe |
+| E4-r2-p | LP-E4 | local push | tone: playful (fallback E4-r2-f) | Saturday, no agenda // Say anything from today, in any order. | T19/B38 | pass; neutral-safe |
 | E4-r2-f | LP-E4 | local push | tone: plain | Anything from today? // Whatever comes to mind is fine. | T20/B31 | pass; neutral-safe |
 | E4-r3-p | LP-E4 | local push | tone: playful (fallback E4-r3-f) | Saturday, in one breath // Something from today, said as fast as you like. | T23/B47 | pass; neutral-safe |
 | E4-r3-f | LP-E4 | local push | tone: plain | A Saturday minute? // Something from the weekend, whenever you have a moment. | T18/B55 | pass; neutral-safe |
