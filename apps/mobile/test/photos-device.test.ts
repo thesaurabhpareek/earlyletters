@@ -186,6 +186,21 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(countOutbox()).toBe(before);
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id='e1'")?.final_text).toBe('She laughed.');
   });
+  it('[NS-01-R35] migration 10 to 11 keeps every letter: every column of every row is byte-identical afterwards (whole-row equality, Asha\'s letters)', () => {
+    // Mutants (run by hand, each turns this red; the final_text-only check above passes the first two): add to migration 11
+    //   UPDATE entries SET updated_at = '2030-01-01T00:00:00Z';   UPDATE entries SET in_book = 0;   UPDATE entries SET final_text = final_text || ' ';
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.slice(0, 10));
+    letter(db, 'e1');
+    letter(db, 'e2', '2026-11-12T00:00:00Z'); // in Recently deleted
+    letter(db, 'e3');
+    db.run("UPDATE entries SET in_book = 0, updated_at = '2026-07-01T10:00:00Z', final_text = 'Asha said \"da\" today.', machine_edits = '[{\"type\":\"filler\"}]' WHERE id = 'e3'");
+    db.run("UPDATE entries SET occurred_on = '2026-03-03', captured_at = '2026-03-04T08:15:00Z', capture_mode = 'spoken', raw_transcript = 'um da da' WHERE id = 'e1'");
+    const before = db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id');
+    expect(before.length).toBe(3);
+    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id')).toEqual(before);
+  });
   it('[D1] the checks hold: photo only, jpg only, 140 and 60 characters, an owner that is either a letter or a draft, one picture per owner', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
