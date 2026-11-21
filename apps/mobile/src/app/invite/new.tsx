@@ -26,6 +26,7 @@
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused and sends
  * nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
+import { SIGNS_AS_MAX, clampText } from '@scribe/core';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -57,7 +58,6 @@ import { getChild, listMembers } from '@/lib/store';
 /** The cover's foot line follows the field after a typing pause, as on S05 and S06. */
 const COVER_PAUSE_MS = 300;
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
-const SIGNS_AS_MAX = 30;
 
 function useSettled<T>(value: T, ms: number): T {
   const [settled, setSettled] = useState(value);
@@ -180,10 +180,9 @@ function InviteCoParent() {
                     label={fill(k.signsAsLabel, { child })}
                     face="serif"
                     value={signsAs}
-                    onChangeText={(v) => setSignsAs(v.slice(0, SIGNS_AS_MAX))}
+                    onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
                     helper={k.signsAsHelp}
                     placeholder={k.signsAsPlaceholder}
-                    maxLength={SIGNS_AS_MAX}
                     autoCapitalize="words"
                     autoCorrect={false}
                     returnKeyType="done"

@@ -9,6 +9,7 @@
  * changing the birthday re-chapters letters without writing to them.
  */
 import { ageOn, parseIsoDate } from './age';
+import { clampGraphemes, fitsGraphemes, graphemeLength } from './length';
 
 /** Matches children.name check (char_length between 1 and 60) in supabase/migrations. */
 export const CHILD_NAME_MAX = 60;
@@ -47,17 +48,16 @@ export function daysBetweenISO(fromISO: string, toISO: string): number {
 }
 
 /**
- * Cuts to at most `max` characters a person would count (code points, never half a
- * surrogate pair or an emoji), and normalises to NFC so a name typed two ways is stored one way.
+ * Cuts to at most `max` characters a person sees (BL-957: graphemes, never half an emoji or a Devanagari conjunct),
+ * and normalises to NFC so a name typed two ways is stored one way.
  */
 export function clampText(raw: string, max: number): string {
-  const chars = Array.from(raw.normalize('NFC'));
-  return chars.length <= max ? chars.join('') : chars.slice(0, max).join('');
+  return clampGraphemes(raw.normalize('NFC'), max);
 }
 
-/** Characters a person would count (code points after NFC). */
+/** Characters a person sees (graphemes after NFC). */
 export function textLength(raw: string): number {
-  return Array.from(raw.normalize('NFC')).length;
+  return graphemeLength(raw.normalize('NFC'));
 }
 
 export type FieldCheck<R extends string> = { ok: true; value: string } | { ok: false; reason: R };
@@ -66,7 +66,7 @@ export type FieldCheck<R extends string> = { ok: true; value: string } | { ok: f
 export function checkChildName(raw: string): FieldCheck<'empty' | 'tooLong'> {
   const value = raw.normalize('NFC').trim();
   if (!value) return { ok: false, reason: 'empty' };
-  if (textLength(value) > CHILD_NAME_MAX) return { ok: false, reason: 'tooLong' };
+  if (!fitsGraphemes(value, CHILD_NAME_MAX)) return { ok: false, reason: 'tooLong' };
   return { ok: true, value };
 }
 
@@ -77,7 +77,7 @@ export function checkChildName(raw: string): FieldCheck<'empty' | 'tooLong'> {
  */
 export function checkFirstRunChildName(raw: string): FieldCheck<'tooLong'> {
   const value = raw.normalize('NFC').trim();
-  if (textLength(value) > CHILD_NAME_MAX) return { ok: false, reason: 'tooLong' };
+  if (!fitsGraphemes(value, CHILD_NAME_MAX)) return { ok: false, reason: 'tooLong' };
   return { ok: true, value };
 }
 
@@ -85,7 +85,7 @@ export function checkFirstRunChildName(raw: string): FieldCheck<'tooLong'> {
 export function checkSignsAs(raw: string): FieldCheck<'empty' | 'tooLong'> {
   const value = raw.normalize('NFC').trim();
   if (!value) return { ok: false, reason: 'empty' };
-  if (textLength(value) > SIGNS_AS_MAX) return { ok: false, reason: 'tooLong' };
+  if (!fitsGraphemes(value, SIGNS_AS_MAX)) return { ok: false, reason: 'tooLong' };
   return { ok: true, value };
 }
 
