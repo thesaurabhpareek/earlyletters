@@ -2367,13 +2367,14 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Done when: the plan row names the drill and its date; B2-13 says how it is run; the flip section names both conditions once the founder has confirmed them; a test on the preflight output for both profiles shows no PASS line for build 2's row.
 
 #### BL-508 The test that the session provider registers the Privacy row is a formatting-sensitive regex
-- Status: ready. Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1252). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
 - Problem and evidence (re-opened on `develop` at e4fd94d): `apps/mobile/test/privacy-sensitive-row.test.ts:256-258` pins the provider with two regexes on its comment-stripped text, an import line and `useEffect(() => { registerSensitiveDataRow(); }, [])`. The effect is at `apps/mobile/src/lib/auth/session-provider.tsx:193-195`. A harmless reformat (another callback shape, the effect moved into a hook) turns the test red while the behaviour holds, and a registration moved somewhere that never runs would still pass. The provider imports React Native and cannot render in Node, and the repo has no component renderer (the header of `apps/mobile/test/helpers/mini-react.ts`: no `react-test-renderer`, tests run in a Node environment); the stand-in covers hooks only.
 - Scope: if the effect can move into a small hook in a file the stand-in can run, replace the regexes with a behavioural check that mounting it registers a source whose `read` follows the auth snapshot. If not, keep the regexes, add a comment on them saying what they pin and what a refactor must keep, and record that here.
 - Done when: either a test fails when the registration call is removed from what runs on mount, or the pin carries its reason and this entry says it is left as it is.
+- Outcome: the effect moved into `useRegisterSensitiveDataRow` (`apps/mobile/src/lib/auth/sensitive-row-hook.ts`, no React Native); the test mounts it on the hook stand-in and checks the row follows the auth snapshot, and the provider pin now only needs the hook call in its body, whatever the formatting. Mutants: removing the registration fails the behaviour test; dropping the provider call fails the pin; a reformat of either passes.
 
 ## Review follow-ups, wave 6 (31 Oct 2026)
 
