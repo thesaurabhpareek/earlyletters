@@ -43,8 +43,7 @@ export function ReminderPrimeAsk() {
   useEffect(() => {
     const take = () => {
       if (!takeReminderPrimeRequest()) return;
-      noteReminderPrimeShown();
-      track('reminder_prime_shown', { source: 'first_letter' });
+      track('reminder_prime_shown', { source: noteReminderPrimeShown() });
       setOpen(true);
     };
     take();
