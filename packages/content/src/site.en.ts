@@ -127,7 +127,7 @@ export const site = {
  */
 const v1_1 = {
   familyBenefit: {
-    title: "The whole family, signed",
+    title: "Letters from the whole family",
     body: "Invite grandparents and close family to add letters of their own. Each one is signed, From Papa, From Nani, and you approve what goes in the book.",
   },
   family: {
