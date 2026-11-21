@@ -28,7 +28,7 @@ export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles())
  * it is unaffected.
  */
 function nativePhoto(): ScribePhotoNative | null {
-  if (nativeForTest !== undefined) return nativeForTest;
+  if (deviceState.native !== undefined) return deviceState.native;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
@@ -55,18 +55,13 @@ export function photoDeps(): PhotoDeps {
  * in this build and the native module is in it. Otherwise (switch off, Expo Go, web, Android) nothing registers, so
  * Home draws no photo start.
  */
-let registered = false;
-let nativeForTest: ScribePhotoNative | null | undefined;
-
-/** Tests only: stand in the scribe-photo module (Node never has it) and start again from an unregistered phone. */
-export function resetPhotoDeviceForTest(native: ScribePhotoNative | null | undefined): void {
-  registered = false;
-  nativeForTest = native;
-}
+// Plain state, read here and set only by the test helper (test/helpers/photo-device-reset.ts), which nothing in the app
+// imports: no reset function ships in the bundle (privacy review B on #837).
+import { deviceState } from './device-state';
 
 export function registerPhotoDevice(): void {
-  if (registered || !photosBuildEnabled()) return;
-  registered = true;
+  if (deviceState.registered || !photosBuildEnabled()) return;
+  deviceState.registered = true;
   const native = nativePhoto();
   if (!native) return;
   const picked = pickedFilesPort();

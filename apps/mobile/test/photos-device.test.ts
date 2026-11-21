@@ -135,11 +135,18 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
     expect(calls).toEqual([DEST]);
     first.cancel(); // an iCloud download still running natively
     expect(await first.done).toEqual({ status: 'cancelled' });
+    // Cancel ends the wait, not the native copy: the picker is not free while it still runs (privacy review B on #837).
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(calls).toEqual([DEST]); // nothing was opened under the running copy
     land(DEST);
     await new Promise((r) => setTimeout(r, 0));
     expect(gone).toEqual([DEST]);
-    picker.open({}); // free again after the cancel
+    picker.open({}); // free once the native copy has finished
     expect(calls).toEqual([DEST, DEST]);
+  });
+  it('[NS-01-R22] no reset function ships in the bundle: resetPhotoDeviceForTest lives only under test/', () => {
+    const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+    for (const f of walk(join(__dirname, '..', 'src')).filter((x) => /\.tsx?$/.test(x))) expect(readFileSync(f, 'utf8'), f).not.toMatch(/resetPhotoDeviceForTest|nativeForTest/);
   });
   it('[C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
     const gone: string[] = [];
