@@ -1,0 +1,73 @@
+/// <reference types="node" />
+/**
+ * Cross-account stores audit (docs/engineering/audits/2026-11-21-cross-account-stores.md, finding F1): the two one-shot
+ * marks a family sheet leaves for the page under it (components/family/family-notice.ts) are module-level. The leave
+ * line carries the child's name (`fill(l.done, { child })`), and the arrival mark says a joined book is waiting. A page
+ * takes them once, but when none does before the session ends they would show to the next account. Same shape as
+ * BL-1424 (join wait): every sign-out and every account switch passes publishAuth, so that is where they end.
+ * Fictional family "Asha" only.
+ */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
+import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SignOutReason } from '../src/lib/auth/machine.logic';
+import { familyNotice, joinedArrival } from '../src/components/family/family-notice';
+
+const run = (from: AuthState, events: AuthEvent[]): AuthState =>
+  events.reduce((s, e) => {
+    const n = authReducer(s, e);
+    publishAuth(n);
+    return n;
+  }, from);
+
+const signedInAs = (userId: string): AuthEvent[] => [
+  { type: 'SIGNED_IN', userId, method: 'email' },
+  { type: 'GATE_LOADED', gate: { termsCurrent: true, ageAttested: true, sensitiveData: true, contentAllowed: true }, sensitiveDeclined: false },
+];
+
+const drain = () => {
+  familyNotice.take();
+  joinedArrival.take();
+};
+
+beforeEach(() => {
+  resetAuthStoreForTests();
+  drain();
+});
+afterEach(() => {
+  drain();
+  resetAuthStoreForTests();
+});
+
+describe('[X-ACCT-1] sign-out ends the family notice and the arrival mark', () => {
+  const reasons: SignOutReason[] = ['user', 'apple_revoked', 'force_reauth', 'switch_account'];
+  for (const reason of reasons) {
+    it(`reason ${reason}: account B does not inherit account A's line or arrival`, () => {
+      let s = run(initialAuthState, signedInAs('user-a'));
+      expect(s.status).toBe('ready');
+      familyNotice.leave('Asha left the book');
+      joinedArrival.leave();
+
+      s = run(s, [{ type: 'SIGN_OUT_REQUESTED', reason, pendingUploads: { kind: 'count', n: 0 } }, { type: 'SIGNED_OUT' }]);
+      s = run(s, signedInAs('user-b'));
+      expect(familyNotice.take()).toBeNull();
+      expect(joinedArrival.waiting()).toBe(false);
+    });
+  }
+
+  it('a line left after the sign-out, for the next account, is kept', () => {
+    const s = run(initialAuthState, signedInAs('user-a'));
+    const next = run(s, [{ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: { kind: 'count', n: 0 } }, { type: 'SIGNED_OUT' }, ...signedInAs('user-b')]);
+    familyNotice.leave('Invite is waiting');
+    publishAuth(next);
+    expect(familyNotice.take()).toBe('Invite is waiting');
+  });
+
+  it('the same account staying signed in keeps its line and arrival', () => {
+    const s = run(initialAuthState, signedInAs('user-a'));
+    familyNotice.leave('Invite is waiting');
+    joinedArrival.leave();
+    publishAuth(s);
+    expect(familyNotice.take()).toBe('Invite is waiting');
+    expect(joinedArrival.take()).toBe(true);
+  });
+});

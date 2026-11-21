@@ -19,6 +19,10 @@ export const familyNotice = {
     waiting = null;
     return m;
   },
+  /** The session that left the line is over (lib/auth/auth-store.ts publishAuth): the next account never reads it. */
+  clear(): void {
+    waiting = null;
+  },
 };
 
 /**
@@ -42,5 +46,9 @@ export const joinedArrival = {
     const a = arrival;
     arrival = false;
     return a;
+  },
+  /** The session that left the mark is over (lib/auth/auth-store.ts publishAuth). */
+  clear(): void {
+    arrival = false;
   },
 };
