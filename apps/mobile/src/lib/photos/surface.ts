@@ -4,6 +4,24 @@
 export const THUMB_MAX_HEIGHT_PT = 160;
 
 /**
+ * The picture's size on the letter page (CL-116 C-01, ruling NS-01-C01-order). PROPOSED numbers, to become a design
+ * token with a pair test (design-systems): below AX3 no taller than the text column times 0.75 and no taller than 40
+ * percent of the window; from AX3 up no taller than LETTER_PICTURE_AX_MAX_PT so the dateline and the first line of
+ * words are on the first screen on an SE 3 at AX5. The picture keeps its own proportions (never cropped or stretched:
+ * R42); the size comes from the stored width and height, so nothing below it moves after the page opens.
+ */
+export const LETTER_PICTURE_COLUMN_RATIO = 0.75;
+export const LETTER_PICTURE_WINDOW_RATIO = 0.4;
+export const LETTER_PICTURE_AX_MAX_PT = 120;
+
+export function letterPictureSize(a: { columnWidth: number; windowHeight: number; aspect: number; largeText: boolean }): { width: number; height: number } {
+  const aspect = a.aspect > 0 ? a.aspect : 4 / 3;
+  const cap = a.largeText ? LETTER_PICTURE_AX_MAX_PT : Math.min(a.columnWidth * LETTER_PICTURE_COLUMN_RATIO, a.windowHeight * LETTER_PICTURE_WINDOW_RATIO);
+  const height = Math.min(a.columnWidth / aspect, cap);
+  return { width: Math.min(a.columnWidth, height * aspect), height };
+}
+
+/**
  * Screens that show a picture draw nothing while App lock is on and the app is not in front, or before it is unlocked
  * (NS-01-R13, NX-39-R36), so the switcher snapshot and a cold open show no picture.
  */
