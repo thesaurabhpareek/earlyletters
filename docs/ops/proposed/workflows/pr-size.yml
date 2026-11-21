@@ -1,0 +1,43 @@
+# Proposed: copy to .github/workflows/pr-size.yml (CODE-R02, CODE-G1; BRIEF CI-PRSIZE; docs/ops/proposed/pr-size.md).
+# Prints `lines N / 400, files N / 20` on every pull request and fails over the limit unless the repository owner applied
+# the label `size:accepted` and the body has a `Size exception: <reason>` line. Advisory until made required.
+# The PR body reaches the script only through an environment variable. The script is the one on develop, not the PR's
+# copy, so a PR cannot loosen the check that measures it. A fork PR gets a read-only token and is not checked
+# (agent PRs are same-repo).
+name: PR size
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+concurrency:
+  group: pr-size-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  pr-size:
+    name: pr size
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: The check as it is on develop
+        run: git worktree add --detach "$RUNNER_TEMP/dev" origin/develop
+      - name: Lines and files against the base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node "$RUNNER_TEMP/dev/scripts/guards/pr-size.mjs" --base "origin/$BASE_REF" --head HEAD

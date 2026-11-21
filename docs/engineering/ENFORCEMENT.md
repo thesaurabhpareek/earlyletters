@@ -13,7 +13,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
 | CODE-R01 | MUST | review; PR template; CLAUDE.md | enforced on develop (review only) | none |
-| CODE-R02 | MUST | CI PR size check | not yet | CODE-G1 |
+| CODE-R02 | MUST | CI PR size check | proposed, not enforced until the founder pastes the workflow (docs/ops/proposed/pr-size.md; script scripts/guards/pr-size.mjs) | CODE-G1 |
 | CODE-R03 | MUST NOT | review; OPERATING_MODEL section 4 | enforced on develop (review only) | none |
 | CODE-R04 | MUST | review; CI `required` (`npm test`, `test:db`, typecheck) | enforced on develop | none |
 | CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | enforced on develop (#28) | none |
