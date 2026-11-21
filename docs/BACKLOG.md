@@ -5515,6 +5515,17 @@ These rows have no BL id. The dispatcher reads three-digit ids only, and four-di
   - Done when: the new migration and its test pass in CI, no file outside `docs/product/prd/18-errata-after-lock.md` and the CL record names `age_signal` as an allowed value, and the migration is NOT applied: it waits for the `approve-migration` label and the founder's apply step.
   - Satisfies: NS-40-R7, FR-PRV-25, PRIV-R21 (the Terms record carries `age_attested: true` and nothing about an age).
 
+## Classification inventory regeneration (21 Nov 2026, proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. One row, asked for on PR #873 (the privacy review noted that section 4.1 of the classification file has not been regenerated since 3 Oct, and that the "every column is labelled" test does not stand in for an up-to-date 4.1). The id comes from `node scripts/agents/next-id.mjs`, which counts the open PRs (PR #1160 holds BL-1150 to BL-1156).
+
+#### BL-1157 Regenerate DATA_CLASSIFICATION section 4.1 from the column comments
+- Status: proposed (PR #873 review, answered by product on 21 Nov; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, privacy engineer. Milestone: M15. Size: S.
+- Satisfies: PRIV-R01 (every stored thing has its row), PRIV-R21 (the classification a parent is told about is the one the database carries).
+- Scope: regenerate `docs/legal/DATA_CLASSIFICATION.md` section 4.1 (Postgres, "generated from the column comments") from the column comments in `supabase/migrations`, so the tables added since 3 Oct appear with their level, and the Planned rows that the migrations have since made real move into 4.1. `privacy` reads the result for levels and retention. The file is under `docs/legal`, so the founder merges this PR (D-125). No migration, no code, no new claim to a parent.
+- Done when: section 4.1 matches the column comments on the day of the PR and says that date, `supabase/tests/classification.test.mjs` names the regeneration date and fails when 4.1 is older than the newest migration that changes a column comment, and `npm run test:db` passes.
+- Source: PR #873 comment of 21 Nov (product answer, "needs its own BL row"); `docs/legal/DATA_CLASSIFICATION.md` 4.1 and the line above 4.5 that says 4.1 is regenerated when a migration is applied.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
