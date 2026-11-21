@@ -28,7 +28,7 @@ import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
 import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
-import { REMINDER_SOURCE, reminderContent } from './payload';
+import { REMINDER_SOURCE, reminderContent, routeForReminder } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
 import { PLAN_ID_PREFIX } from '../billing/plan-reminders.logic';
@@ -38,6 +38,8 @@ import { PLAN_MAX } from './budget';
 export { REMINDER_SOURCE };
 const ANDROID_CHANNEL = 'reminders';
 const STORE_DEBOUNCE_MS = 1200;
+const COLD_START_ROUTE_RETRIES = 5;
+const COLD_START_ROUTE_RETRY_MS = 200;
 
 export type ReminderPermission = 'granted' | 'denied' | 'undetermined';
 
@@ -264,15 +266,32 @@ export function startReminders(): () => void {
     lastForegroundAt = Date.now();
     void rescheduleReminders(); // also picks up a new time zone, a new day, or permission changed in Settings
   });
-  const responses = Notifications.addNotificationResponseReceivedListener((r) => {
-    const data = r.notification.request.content.data;
-    if (!isOurs(data)) return;
-    try {
-      router.navigate(data.kind === 'evening' ? '/' : '/book');
-    } catch {
-      // Router not mounted yet (cold start): the app opens on Tonight anyway.
+  // A tap is routed once, by the notification's own data. The same response can reach both the listener and the
+  // cold-start read below, so the first one wins.
+  let routedKey: string | null = null;
+  const routeResponse = (r: Notifications.NotificationResponse, attempt = 0): void => {
+    const target = routeForReminder(r.notification.request.content.data);
+    if (!target) return;
+    const key = `${r.notification.request.identifier}@${r.notification.date}`;
+    if (attempt === 0) {
+      if (routedKey === key) return;
+      routedKey = key;
     }
-  });
+    try {
+      router.navigate(target);
+    } catch {
+      // Router not mounted yet (cold start): try again after the next frame, a few times, then stay on Tonight.
+      if (attempt < COLD_START_ROUTE_RETRIES) setTimeout(() => routeResponse(r, attempt + 1), COLD_START_ROUTE_RETRY_MS);
+    }
+  };
+  const responses = Notifications.addNotificationResponseReceivedListener((r) => routeResponse(r));
+  // Cold start: the tap that launched the app arrived before this listener existed, so read it (sync, no network).
+  try {
+    const launching = Notifications.getLastNotificationResponse();
+    if (launching) routeResponse(launching);
+  } catch {
+    // Nothing to read: the app opens on Tonight.
+  }
 
   void registerReminderCategory(Notifications.setNotificationCategoryAsync);
   // First launch after an update: plan everything again, after the first frame and not awaited (NS-32-R16, L-03).
