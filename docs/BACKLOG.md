@@ -1637,7 +1637,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: each of the six points is settled in the file it names, or recorded here as left as it is; the book-deletion email and the website page say only what the app does, and the request email says a co-parent is told only if a notice is sent.
 
 #### BL-449 A sign-out wait ends when the queued letters belong to another account [High]
-- Status: ready. Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
+- Status: in-review (PR #1273). Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
 - Satisfies: none given.
 - Why: `pendingCount` has no owner filter (`apps/mobile/src/lib/sync/outbox.ts:786-792`), and the engine does not start when the signed-in account differs from the account that owns the queue (`apps/mobile/src/lib/sync/index.ts:186`, `:206`). Account A signs out with letters queued, account B signs in with sync on, and B's sign-out waits on A's rows forever. The same on develop. From the #359 review (lens A S3): code reading, not run.
 - Scope: end the wait when the queue is not the signed-in account's, for example by counting only that account's rows in the sign-out check, or by not waiting when the engine will not start on a mismatch. The owner picks one in the PR. A's queued rows are left as they are.
