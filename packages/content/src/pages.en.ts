@@ -229,8 +229,8 @@ export const pages = {
         heading: "Or ask by email",
         paragraphs: [
           "If you can't use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
-          "Before we act, we confirm it is you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you don't need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
-          "If you signed in with Apple and chose Hide My Email, say so in your message and we will help you confirm it is you.",
+          "Before we act, we confirm it's you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you don't need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
+          "If you signed in with Apple and chose Hide My Email, say so in your message and we'll help you confirm it's you.",
           "We reply within 10 business days. Once you confirm, your request follows the same steps and timeline as a deletion from the app.",
         ],
       },

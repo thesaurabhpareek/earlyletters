@@ -20,7 +20,7 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3449 / 4000)
+## Description (3454 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -30,7 +30,7 @@ Tell your child one thing about today. The first laugh, the long night, the song
 Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your words are written down on your phone, and the app fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
 Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. We never imitate your voice. Your original recording is always kept exactly as you made it.

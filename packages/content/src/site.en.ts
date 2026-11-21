@@ -37,7 +37,7 @@ export const site = {
     },
     {
       title: "Your voice, kept",
-      body: "The original recording stays with each letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
+      body: "One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
     },
     {
       title: "A minute is plenty",
