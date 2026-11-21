@@ -37,7 +37,7 @@ const light = {
   /** Destructive actions (Delete). Its own role so it can diverge from `recording`, which means
    *  "listening", never "error" (DESIGN_LANGUAGE 2). Value equals recording until design decides (TDD 09 Q1). */
   destructive: '#AC4336', // 5.49:1 on bg, 4.73:1 on accentSoft
-  onDestructive: '#FFFFFF', // 5.35:1 on destructive
+  onDestructive: '#FFFFFF', // 5.82:1 on destructive
   /** Dimmed layer behind sheets and dialogs: ink at 32%, never pure black on paper. */
   scrim: '#2B272252',
 } as const;

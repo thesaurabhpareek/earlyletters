@@ -50,10 +50,11 @@ import { useIsAccessibilitySize } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
-/** The code is set at title1's size (28 pt), so it takes title1's Dynamic Type cap: six digits stay on one line. */
 /** At accessibility sizes the digits sit tight (no letter spacing) and the side padding is halved: 10 digits at the cap are
- *  318 pt with spacing and about 258 pt without, in an inner width of about 303 pt (A11Y audit FE-9). The size does not change. */
+ *  318 pt with spacing and about 258 pt without, in an inner field width of about 317 pt on a 375 pt screen (375 - 2 x 20 gutter - 2 x 8 padding - 2 x 1 border). The figures
+ *  are estimates from font metrics and tokens, not measured on a device (A11Y audit FE-9). The size does not change. */
 const CODE_SPACING_AX = 0;
+/** The code is set at title1's size (28 pt), so it takes title1's Dynamic Type cap: six digits stay on one line. */
 const CODE_TYPE = { fontSize: tokens.type.title1.fontSize, letterSpacing: 6, maxScale: tokens.type.title1.maxScale } as const;
 
 /** "A link and a code are on their way to {email}.": the address in ink, the rest muted. */
