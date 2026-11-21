@@ -42,8 +42,10 @@ const light = {
   scrim: '#2B272252',
   /** Top edge of a raised card: a 1 pt light line (C1 `ui/card`). Decorative only, never the sole edge. */
   highlight: '#FFFFFFB3',
-  /** Solid stand-in for any custom bar or floating control when Reduce Transparency is on (M5 stop control). Equals bg. */
-  barFallback: '#FBF8F3',
+  /** Solid twin of our own glass surfaces (the glass ring around the stop control, M5) under Reduce Transparency,
+   *  Increase Contrast and iOS before 26 (council ruling 30, DESIGN-LANGUAGE-V2 4.1). Light keeps surfaceRaised.
+   *  Drawn with a 1 pt (`stroke.control`) `line` hairline, `controlBorder` under Increase Contrast. Never used on system bars or sheets. */
+  glassFallback: '#FFFFFF',
 } as const;
 
 const dark = {
@@ -67,7 +69,7 @@ const dark = {
   onDestructive: '#1E1612', // 7.42:1 on destructive (dark ink, like onAccent)
   scrim: '#0000008C',
   highlight: '#FFFFFF14',
-  barFallback: '#161412', // = bg
+  glassFallback: '#282421', // ruling 30: one step above surfaceRaised so the ring reads apart from the page
 } as const;
 
 /**

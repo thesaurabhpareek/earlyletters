@@ -31,7 +31,7 @@
       --color-on-destructive: #FFFFFF;
       --color-scrim: #2B272252;
       --color-highlight: #FFFFFFB3;
-      --color-bar-fallback: #FBF8F3;
+      --color-glass-fallback: #FFFFFF;
     }
 
     @variant dark {
@@ -64,7 +64,7 @@
       --color-on-destructive: #1E1612;
       --color-scrim: #0000008C;
       --color-highlight: #FFFFFF14;
-      --color-bar-fallback: #161412;
+      --color-glass-fallback: #282421;
     }
   }
 }

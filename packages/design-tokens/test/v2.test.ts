@@ -18,18 +18,32 @@ describe('v2 colour (T1)', () => {
     expect(ratio(tokens.dark.surface, tokens.dark.bg)).toBeGreaterThan(1.05);
     expect(tokens.dark.surfaceRaised).toBe('#201D1A');
   });
-  it('highlight is a translucent white edge, and barFallback is the opaque page colour in both schemes', () => {
+  it('highlight is a translucent white edge', () => {
     expect(tokens.light.highlight).toBe('#FFFFFFB3');
     expect(tokens.dark.highlight).toBe('#FFFFFF14');
+  });
+  it('glassFallback (ruling 30): dark #282421, light equals surfaceRaised, opaque, and barFallback is gone', () => {
+    expect(tokens.dark.glassFallback).toBe('#282421');
+    expect(tokens.light.glassFallback).toBe(tokens.light.surfaceRaised);
     for (const m of ['light', 'dark'] as const) {
-      expect(tokens[m].barFallback).toBe(tokens[m].bg);
-      expect(tokens[m].barFallback).toMatch(/^#[0-9A-F]{6}$/i); // opaque: Reduce Transparency means no see-through
+      expect(tokens[m].glassFallback).toMatch(/^#[0-9A-F]{6}$/i); // opaque: Reduce Transparency means no see-through
+      expect(tokens[m]).not.toHaveProperty('barFallback');
+    }
+    expect(ratio(tokens.dark.glassFallback, tokens.dark.bg)).toBeGreaterThan(1.1); // the ring reads apart from the page
+  });
+  it('the glass ring edge is a 1 pt hairline: line normally, controlBorder (at least 3:1) under Increase Contrast', () => {
+    expect(tokens.stroke.control).toBe(1);
+    for (const m of ['light', 'dark'] as const) {
+      const hc = { ...tokens[m], ...tokens.highContrast[m] };
+      expect(hc.line, `${m} line under Increase Contrast is also a visible edge`).toBeDefined();
+      expect(ratio(hc.controlBorder, tokens[m].glassFallback), `${m} controlBorder`).toBeGreaterThanOrEqual(3);
+      expect(ratio(hc.line, tokens[m].glassFallback), `${m} line high contrast`).toBeGreaterThanOrEqual(3);
     }
   });
   it('under Increase Contrast the highlight is drawn at line strength, and that edge is at least 3:1 on every surface', () => {
     for (const m of ['light', 'dark'] as const) {
       expect(tokens.highContrast[m].highlight).toBe(tokens.highContrast[m].line);
-      for (const s of ['bg', 'surface', 'surfaceRaised', 'barFallback'] as const) {
+      for (const s of ['bg', 'surface', 'surfaceRaised', 'glassFallback'] as const) {
         expect(ratio(tokens.highContrast[m].highlight, tokens[m][s]), `${m} ${s}`).toBeGreaterThanOrEqual(3);
       }
     }
@@ -37,7 +51,7 @@ describe('v2 colour (T1)', () => {
   it('the new colours reach the generated CSS in both flavours', () => {
     for (const css of [nativeCss(), webCss()]) {
       expect(css).toContain(`--color-highlight: ${tokens.light.highlight};`);
-      expect(css).toContain(`--color-bar-fallback: ${tokens.dark.barFallback};`);
+      expect(css).toContain(`--color-glass-fallback: ${tokens.dark.glassFallback};`);
     }
     expect(webCss()).toContain(`--color-highlight: ${tokens.highContrast.light.highlight};`);
   });

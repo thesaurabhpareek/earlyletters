@@ -28,7 +28,7 @@ const palette = (mode: Mode, hc = false): Record<keyof C, string> => ({ ...token
 
 /** Text pairs: 4.5:1 (WCAG 1.4.3). */
 const TEXT_PAIRS: [keyof C, keyof C][] = [
-  ['text', 'barFallback'], ['textMuted', 'barFallback'], ['accent', 'barFallback'], ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
+  ['text', 'glassFallback'], ['textMuted', 'glassFallback'], ['accent', 'glassFallback'], ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
   ['textMuted', 'bg'], ['textMuted', 'surface'], ['textMuted', 'surfaceRaised'], ['textMuted', 'accentSoft'],
   ['accent', 'bg'], ['accent', 'surface'], ['accent', 'surfaceRaised'], ['accent', 'accentSoft'],
   ['onAccent', 'accent'], ['onDestructive', 'destructive'], ['bg', 'text'],
@@ -36,11 +36,11 @@ const TEXT_PAIRS: [keyof C, keyof C][] = [
   ['recording', 'bg'], ['success', 'bg'], ['caution', 'bg'], ['focus', 'bg'],
   // Status words on every surface they can sit on (A11Y audit 20 Nov): a notice on surface, a selected row on accentSoft.
   ...(['success', 'caution', 'recording', 'destructive', 'focus'] as (keyof C)[]).flatMap((f) =>
-    (['bg', 'surface', 'surfaceRaised', 'accentSoft', 'barFallback'] as (keyof C)[]).map((b) => [f, b] as [keyof C, keyof C]),
+    (['bg', 'surface', 'surfaceRaised', 'accentSoft', 'glassFallback'] as (keyof C)[]).map((b) => [f, b] as [keyof C, keyof C]),
   ),
 ];
 /** Non-text pairs: 3:1 (WCAG 1.4.11): control boundaries, focus, edit marks, filled controls. */
-const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised', 'barFallback'];
+const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised', 'glassFallback'];
 const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['controlBorder', s] as [keyof C, keyof C]),
   ['controlBorder', 'accentSoft'],
