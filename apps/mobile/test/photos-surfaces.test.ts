@@ -399,11 +399,11 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
 });
 
 describe('[NS-01-R20] new controls', () => {
-  it('[NS-01-R20] every new control is a Button of size md (44 pt or more), and on Listen the thumbnail reads before the prompt', () => {
+  it('[NS-01-R20] every new control is a Button of size md or lg (44 pt or more), and on Listen the thumbnail reads before the prompt', () => {
     const md = /BUTTON_MIN_HEIGHT = \{[^}]*\bmd: (\d+)/.exec(readFileSync(join(SRC, 'components', 'ui', 'button.tsx'), 'utf8'));
     expect(Number(md?.[1])).toBeGreaterThanOrEqual(Math.max(44, tokens.target.min));
     for (const f of walk(join(SRC, 'components', 'photos'))) {
-      for (const m of readFileSync(f, 'utf8').matchAll(/<Button\b[^>]*>/g)) expect(m[0], rel(f)).toMatch(/size="md"/);
+      for (const m of readFileSync(f, 'utf8').matchAll(/<Button\b[^>]*>/g)) expect(m[0], rel(f)).toMatch(/size="(md|lg)"/); // lg is 56 pt (BL-1445)
     }
     // Reading order on Ready: thumbnail, prompt, then the red circle (Speak) and "or type instead" (Type) below it.
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
@@ -423,16 +423,16 @@ describe('[NS-01-R20] new controls', () => {
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });
-  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the photo ErrorLine, which announces it and is a live region (#838 review B)', () => {
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the shared ErrorLine (components/ui), which announces it and is a live region (#838 review B)', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
       expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
       expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
     }
-    const line = readFileSync(join(SRC, 'components', 'photos', 'error-line.tsx'), 'utf8');
-    const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
-    expect(body).toMatch(/if \(message\) announce\(message\);/);
-    expect(body).toMatch(/accessibilityLiveRegion="polite"/);
+    const line = readFileSync(join(SRC, 'components', 'ui', 'error-line.tsx'), 'utf8');
+    const body = line.slice(line.indexOf('export function ErrorLine'));
+    expect(body).toMatch(/if \(say\) announce\(say\);/);
+    expect(readFileSync(join(SRC, 'components', 'ui', 'error-line.logic.ts'), 'utf8')).toMatch(/accessibilityLiveRegion: 'polite'/);
   });
   it('[NS-01-R7][NS-33] on Review the picture and its controls come after the letter, its view and small fixes, and before Let it go and Keep (#839 review B)', () => {
     const review = readFileSync(join(SRC, 'app', 'review.tsx'), 'utf8');
@@ -456,7 +456,7 @@ describe('[NS-01-R20] new controls', () => {
     expect(page).not.toMatch(/>\{photos\.capture\.openFailed\}</);
   });
   it('[NS-01-R20][review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
-    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx', 'error-line.tsx']) {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
     }
     expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/listen\.photo\.type[\s\S]{0,0}micDenied|micDenied\.typeButton\} onPress=\{typeInstead\}/);
