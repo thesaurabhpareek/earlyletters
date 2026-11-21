@@ -1,0 +1,1 @@
+21:00 (21 Nov) product | done: NS-53 Moments spec PR #1294 (docs only, PROPOSED); backlog rows BL-1432 to BL-1438 and hand-off note docs/agents/handoffs/MOMENTS-NS53-HARNESS-HANDOFF-21nov.md | next: Karma or the founder sets rows ready after #1294 merges | blocked/needs: freeze answers O-37 to O-42, O-44, O-47 (FREEZE-CHECKLIST 1.1)

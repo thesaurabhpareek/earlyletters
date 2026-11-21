@@ -6808,3 +6808,51 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Scope: one new migration file and its tests, never an edit of an applied migration: a service-role function that limits one member's read of one book's server rows (reversible, never deletes a letter, writes one `access_limit` audit row) and a lever that suspends sign-in for an account without touching the account or its letters. The new functions and any table carry their own grants in the same migration and a line in `supabase/tests/grants.mjs`. The rows BL-1330 and BL-1363 hold the runbook and phone side and name the ids.
 - Done when: the migration file exists with its grants line; `supabase/tests` shows the limit reversing, one audit row per use and no letter deleted, and the suspend lever leaving every letter in place; the file is listed for the founder in `supabase/APPLY.md`; the founder applies it (docs/FOUNDER_TASKS.md).
 
+
+## NS-53 Moments tab: harness hand-off rows (21 Nov 2026, proposed)
+
+Written 21 Nov 2026 by the product agent, docs only. Source: `docs/product/moments-tab/FREEZE-CHECKLIST.md` section 3.1 (placeholders BL-NEW-1 to BL-NEW-7) and `docs/product/prd/28-moments-tab.md` (rows R1 to R268, status PROPOSED; arrives with the spec PR #1294). Ids BL-1432 to BL-1438 come from `node scripts/agents/next-id.mjs` on 21 Nov and were checked against the patches of every open PR (the highest id in an open patch was BL-1431). Mapping: BL-NEW-1 is BL-1432, BL-NEW-2 is BL-1433, BL-NEW-3 is BL-1434, BL-NEW-4 is BL-1435, BL-NEW-5 is BL-1436, BL-NEW-6 is BL-1437, BL-NEW-7 is BL-1438.
+
+Founder ruling of 21 Nov: the first Moments release ships with the photo library read (Route B). The release gates G1 to G11 apply before store submission, not before coding. Native work waits on the G1a device spike and gate G3, as the checklist says. Places and occasions are in scope; faces and naming people are out (open founder question O-30). Every row is `proposed`: Karma or the founder sets `ready` once the spec PR is on `develop`. Nothing here copies or changes a requirement. The hand-off note is `docs/agents/handoffs/MOMENTS-NS53-HARNESS-HANDOFF-21nov.md`.
+
+#### BL-1432 NS-53 Moments: pure core engine (PRs 1 to 5)
+- Status: proposed (docs/product/moments-tab/FREEZE-CHECKLIST.md 3.1; no founder decision needed to start; Karma or the founder sets it to ready once the spec is on develop). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: none.
+- Satisfies: NS-53-R16, NS-53-R17, NS-53-R36, NS-53-R37 to R53, NS-53-R59, NS-53-R201, NS-53-R204 to R207, NS-53-R223, NS-53-R267.
+- Scope: `packages/core/src/moments` (types, reasons, rules.ts data, exclude, group with offsetAt, rank, collage, occasions, momentsFor registry, place.ts with an injected table, a synthetic 10 row table for tests), the `asha-lib-v1` generator and 20 goldens in `packages/core/test/golden/`. No react-native, expo or fs import. There is no core handle: `principal-architect` reviews these PRs. Split into the checklist's PRs 1 to 5, one PR each.
+- Done when: the goldens, property tests and the import-graph test pass, and RSN-SUGGEST is absent from the enum.
+
+#### BL-1433 NS-53 Moments: tab shell, decisions store and content (PRs 6, 8, 12)
+- Status: proposed (docs/product/moments-tab/FREEZE-CHECKLIST.md 3.1; Karma or the founder sets it to ready). Mode: agent. Owner: design systems, mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1432 for types.
+- Satisfies: NS-53-R1 to R10, NS-53-R172, NS-53-R215, NS-53-R221, NS-53-R245, NS-53-R246, NS-53-R192.
+- Scope: the fourth tab behind F1, `tab-jobs`, `MOMENT_SOURCES`, the `moments/pick` route row; the `moments.json` store with the contract of section 17.1 of the spec; the content keys, with the primer naming date, time and place. Three PRs (6, 8, 12), one concern each.
+- Done when: navigation tests, schema tests (corrupt, higher version, rename-write) and the content rules pass.
+
+#### BL-1434 NS-53 Moments: device spike G1a (founder phone)
+- Status: proposed (docs/product/moments-tab/FREEZE-CHECKLIST.md 1.3 and 3.1; needs the founder's phone or a simulator with a script-made Asha library; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-53-R204, NS-53-R255; gate G1a.
+- Scope: the five unknowns of FREEZE-CHECKLIST section 1.3; a read-out with timings and rates only, no place, date, count or album. It does not use the D7 prototype for places.
+- Done when: a dated read-out is filed in `docs/release/<x.y.z>.md`.
+
+#### BL-1435 NS-53 Moments: scribe-library native module and thumbnail view (PRs 9, 10, 11, 18)
+- Status: blocked (BL-1434 read-out; gate G3 to merge; G11a). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: XL (four PRs, one concern each). Depends on: BL-1434.
+- Satisfies: NS-53-R110, NS-53-R220, NS-53-R222, NS-53-R226, NS-53-R228, NS-53-R233, NS-53-R236.
+- Scope: the function list of R220, the `ScribeLibraryThumbnail` view, the config-plugin usage string by profile, the source scans and guard scripts, the copy-for-attach paths in `scribe-photo`. Follows the `expo-native-module` skill. Check `compliance/FENCE.json` before touching `app.config.ts`.
+- Done when: the scans, the iOS compile job and the call-site reachability test pass.
+
+#### BL-1436 NS-53 Moments: screens, flows and places (PRs 13 to 17, 19 to 23)
+- Status: blocked (BL-1433, BL-1435). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: XL (nine PRs, one concern each). Depends on: BL-1433, BL-1435.
+- Satisfies: NS-53-R11 to R36 (screens), NS-53-R208 to R219, NS-53-R232, NS-53-R253, NS-53-R254, NS-53-R265.
+- Scope: PRs 13 and 14 (components) may start once BL-1433 is done and need no native module; PRs 15 to 17 and 19 to 23 follow BL-1435. Place dataset package PR 5b is not in this row: it waits for licensed counsel's reading of the dataset licence (G11b).
+- Done when: the N layer flows (BL-1437) pass and the L3 matrix of the states that differ is baselined.
+
+#### BL-1437 NS-53 Moments: the N test layer (PR 24)
+- Status: proposed (docs/product/moments-tab/FREEZE-CHECKLIST.md 3.1; the Asha generator can start once PR 1 of BL-1432 lands; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1432.
+- Satisfies: NS-53-R225, NS-53-R107, NS-53-R257.
+- Scope: the Asha library script loaded by `simctl addmedia`, Maestro flows through `fixtureSource` and the real module; the canary of R162 extended to attach, Keep, outbox, push mapper and export. Fictional family Asha only.
+- Done when: the script, the flows and the extended canary run in the existing test commands and fail on a seeded leak.
+
+#### BL-1438 NS-53 Moments: release gates G1b to G11 and the F2 flip (PR 25)
+- Status: blocked (founder, counsel, device; the gates apply before store submission, not before coding). Mode: human. Owner: platform, legal, privacy engineer, security engineer. Milestone: M15. Size: M. Depends on: BL-1436.
+- Satisfies: NS-53-R171, NS-53-R222, NS-53-R238 to R244, NS-53-R262.
+- Scope: the guard script that fails the production profile when F2 is on and a gate line is missing; the evidence index of section 21.1 of the spec; Notes for Review under `docs/release/`. The first release includes the library read (Route B, founder ruling 21 Nov); the F2 flip is the founder's. Anything that sends a notification or email is phase 2 and waits.
+- Done when: the guard fails a production build with a missing gate line and passes with all of them; the founder pastes the workflow step.
