@@ -39,7 +39,7 @@ Read these first, because a script cannot judge them: E3-r3-p, E4-r1-p, E4-r2-p,
 | E1-r3-a | LP-E1 | local push | tone: plain | A small Monday one // One sentence from today is a fine start to the week. | T18/B52 | pass; neutral-safe |
 | E1-r3-b | LP-E1 | local push | tone: plain | Monday, one line // Something small from today is plenty. | T16/B37 | pass; neutral-safe |
 | E6-spoke-child | LP-E6 | local push | tone: plain | Any questions lately? // What has {child} been asking about? Say one as it was asked. // neutral: What questions have come up lately? Say one as asked. | T21/B60/N53 | pass; neutral-safe; over 60 target |
-| E6-typed-newborn | LP-E6 | local push | tone: plain | A few words out loud? // {child} can hear it one day. Your own voice suits the book. // neutral: Your own voice suits the book. | T21/B59/N30 | pass; neutral-safe |
+| E6-typed-newborn | LP-E6 | local push | tone: plain | A few words for the book? // Anything about {child} lately? A line is plenty. // neutral: A line is plenty. | T25/B48/N17 | pass; neutral-safe; claims nothing about what the app keeps (guide v1.2 section 8) |
 | E6-first-baby | LP-E6 | local push | tone: plain | Was that a first? // A new sound or a new trick? Say what happened. | T17/B46 | pass; names-on only |
 | E6-first-toddler | LP-E6 | local push | tone: plain | Something new lately? // A new word, skill or favorite? Say it for {child}'s book. | T21/B57 | pass; names-on only |
 | E6-small-newborn | LP-E6 | local push | tone: plain | A quiet one is fine // Anything small about {child} is welcome, or tap Not much today. | T19/B63 | pass; names-on only; over 60 target |
