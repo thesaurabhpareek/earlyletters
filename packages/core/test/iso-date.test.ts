@@ -26,6 +26,26 @@ describe('parseIsoDate', () => {
     expect(() => parseIsoDate('2026-13-12T00:00:00Z', true)).toThrow();
   });
 
+  it('reads the day as written for every offset form: Z, +05:30 and +0530 (no conversion to UTC)', () => {
+    const day = { y: 2026, m: 4, d: 12 };
+    for (const stamp of ['2026-04-12T08:30:00Z', '2026-04-12T08:30:00+05:30', '2026-04-12T08:30:00+0530', '2026-04-12T08:30:00.250-08:00', '2026-04-12T08:30', '2026-04-12T08:30:00']) {
+      expect(parseIsoDate(stamp, true), stamp).toEqual(day);
+    }
+    // The day is the date part as written: 23:30 at -05:00 is already the 13th in UTC, and still reads as the 12th.
+    expect(parseIsoDate('2026-04-12T23:30:00-05:00', true)).toEqual(day);
+    expect(parseIsoDate('2026-04-12T00:30:00+0530', true)).toEqual(day);
+    // Without `stamp`, every one of them is refused.
+    for (const stamp of ['2026-04-12T08:30:00Z', '2026-04-12T08:30:00+05:30', '2026-04-12T08:30:00+0530']) expect(() => parseIsoDate(stamp), stamp).toThrow(InvalidIsoDateError);
+  });
+
+  it('documents that a space-separated timestamp is not an ISO timestamp: it throws, with or without stamp', () => {
+    expect(() => parseIsoDate('2026-04-12 08:30:00')).toThrow(InvalidIsoDateError);
+    expect(() => parseIsoDate('2026-04-12 08:30:00', true)).toThrow(InvalidIsoDateError);
+    expect(() => parseIsoDate('2026-04-12 08:30:00+05:30', true)).toThrow(InvalidIsoDateError);
+    expect(isIsoDate('2026-04-12 08:30:00')).toBe(false);
+    expect(() => ageOn(ASHA, '2026-04-12 08:30:00')).toThrow(InvalidIsoDateError);
+  });
+
   it('never puts the value in the error', () => {
     for (const bad of ['2025-13-45', '2019-02-30 Asha']) {
       try {
