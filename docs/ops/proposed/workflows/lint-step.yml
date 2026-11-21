@@ -1,0 +1,23 @@
+# Proposed new job for .github/workflows/ci.yml, next to `typecheck` (BRIEF CI-LINT; docs/ops/proposed/ci-lint.md).
+# Report-only: it always exits 0, so it cannot block a merge. It prints rule names, paths and counts, never a line of code.
+# The baseline is read from the BASE branch, so a PR cannot raise its own allowance by editing the file.
+  lint:
+    name: lint (report-only)
+    needs: install
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Baseline as it is on the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git show "origin/$BASE_REF:docs/ops/lint-baseline.json" > "$RUNNER_TEMP/lint-base.json" || echo '{}' > "$RUNNER_TEMP/lint-base.json"
+      - name: Lint against the baseline
+        # Phase 2 (after two weeks of clean reports): add --enforce to the line below, and nothing else.
+        run: node scripts/lint/lint.mjs --baseline "$RUNNER_TEMP/lint-base.json"
