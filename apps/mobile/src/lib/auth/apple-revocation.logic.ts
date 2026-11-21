@@ -1,0 +1,42 @@
+/**
+ * NS-45-R4, card O-18 (security G7, Apple TN3194): Apple says this phone's
+ * Apple sign-in was revoked. Two triggers feed one gate: the app coming to the
+ * foreground (this gate, asks Apple at most once per MIN_GAP_MS and never twice
+ * at once), and Apple's own revocation notification (apple.ts, an event, no
+ * read needed).
+ * Pure; apple.ts reads the credential state, session-provider.tsx signs out
+ * by the R3 rule (after uploads). Never logs or stores the Apple user id.
+ */
+export const REVOCATION_MIN_GAP_MS = 60_000;
+
+export type RevocationGate = {
+  /** The app came to the foreground. */
+  onForeground(): Promise<void>;
+};
+
+export function createRevocationGate(deps: {
+  check: () => Promise<boolean>;
+  onRevoked: () => void | Promise<void>;
+  now: () => number;
+  minGapMs?: number;
+}): RevocationGate {
+  const gap = deps.minGapMs ?? REVOCATION_MIN_GAP_MS;
+  let last = Number.NEGATIVE_INFINITY;
+  let running: Promise<void> | null = null;
+  const run = (): Promise<void> => {
+    if (running) return running;
+    if (deps.now() - last < gap) return Promise.resolve();
+    last = deps.now();
+    running = deps
+      .check()
+      .then(async (revoked) => {
+        if (revoked) await deps.onRevoked();
+      })
+      .catch(() => {}) // unknown is not revoked: never sign a person out on a failed read
+      .finally(() => {
+        running = null;
+      });
+    return running;
+  };
+  return { onForeground: run };
+}

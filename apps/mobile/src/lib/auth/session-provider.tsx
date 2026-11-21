@@ -28,9 +28,10 @@ import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } f
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
-import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, takePendingAppleName } from './apple';
+import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
+import { createRevocationGate } from './apple-revocation.logic';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
-import { loadSyncGate, recordConsent as recordConsentAct, saveDisplayName } from './consent';
+import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
 import { openEmailLink } from './email-link.logic';
 import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey } from './errors.logic';
@@ -266,17 +267,26 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     return () => sub.remove();
   }, [checkGate]);
 
-  // A-REQ-033: Apple sign-in revoked on this Apple ID: sign out once letters are uploaded.
+  // A-REQ-033, NS-45-R4, O-18: Apple sign-in revoked on this Apple ID (seen at sign-in, on every foreground, and
+  // on Apple's notification): sign out once letters are uploaded (the R3 rule).
   const signedInUser = isSignedIn(state) ? state.userId : null;
   useEffect(() => {
     if (!signedInUser) return;
     let alive = true;
-    void appleCredentialRevoked().then(async (revoked) => {
-      if (!alive || !revoked) return;
+    const signOut = async () => {
+      if (!alive) return;
       dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: await pendingUploads() });
+    };
+    const gate = createRevocationGate({ check: appleCredentialRevoked, onRevoked: signOut, now: Date.now });
+    void gate.onForeground();
+    const app = AppState.addEventListener('change', (s) => {
+      if (s === 'active') void gate.onForeground();
     });
+    const stop = watchAppleRevocation(() => void signOut());
     return () => {
       alive = false;
+      app.remove();
+      stop();
     };
   }, [signedInUser]);
 
@@ -508,15 +518,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (!sb || cur.status !== 'needsConsent') return { ok: false, error: 'unknown' };
         try {
           await recordConsentAct(sb, step, accepted, cur.method, cur.userId);
-          if (step === 'terms' && accepted) {
-            // Apple shares the name once; it waits in the Keychain until Terms are accepted.
-            const name = await takePendingAppleName();
-            if (name) {
-              await saveDisplayName(sb, cur.userId, name)
-                .then(clearPendingAppleName)
-                .catch(() => {});
-            }
-          }
+          if (step === 'terms' && accepted) await clearPendingAppleName(); // O-8: no Apple name is written to the profile
           dispatch({ type: 'CONSENT_RECORDED', step, accepted });
           return { ok: true };
         } catch (e) {
