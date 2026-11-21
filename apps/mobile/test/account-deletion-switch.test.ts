@@ -240,6 +240,25 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
     }
   });
 
+  it('[BL-1404] never echoes a line: no "=", a ":" separator or spaces give the file and line number only', () => {
+    const secret = 'sb_secret_ashafictional0000';
+    for (const f of FILES) {
+      const cases = [secret, `SERVICE_ROLE_KEY: ${secret}`, `some words ${secret} here`];
+      for (const line of cases) {
+        const out = envFileProblems(f, `# note\n\n${line}\n`);
+        expect(out, `${f} ${line}`).toEqual([`${f}: <unparsable line 3>`]);
+        expect(out.join('\n')).not.toContain(secret);
+      }
+    }
+  });
+
+  it('[BL-1404] a KEY=value line still names the key and never the value', () => {
+    const f = '.env.local';
+    const out = envFileProblems(f, 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_ashafictional0000\n');
+    expect(out).toEqual([`${f}: SUPABASE_SERVICE_ROLE_KEY`]);
+    expect(out.join('\n')).not.toContain('sb_secret');
+  });
+
   it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
     const pre = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
     expect(pre).toMatch(/import \{ envFileProblems \} from '\.\/env-file-guard\.mjs';/);

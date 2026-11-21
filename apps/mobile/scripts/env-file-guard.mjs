@@ -28,12 +28,20 @@ export function envFileLines(text) {
  */
 export function envFileProblems(file, text) {
   const bad = [];
-  for (const line of envFileLines(text)) {
-    const [k, ...v] = line.split('=');
-    if (k === 'EXPO_PUBLIC_APP_ENV') continue;
-    if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
-    if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
-    bad.push(`${file}: ${k}`);
-  }
+  String(text)
+    .split('\n')
+    .forEach((raw, i) => {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) return;
+      const eq = line.indexOf('=');
+      const k = eq === -1 ? '' : line.slice(0, eq).trim();
+      const v = eq === -1 ? '' : line.slice(eq + 1).trim();
+      // Never echo content from a line: a variable name only when there is an "=" and what is before it is a name.
+      const named = eq !== -1 && /^[A-Za-z_][A-Za-z0-9_]*$/.test(k);
+      if (named && k === 'EXPO_PUBLIC_APP_ENV') return;
+      if (named && k === 'EXPO_PUBLIC_SERVER_FEATURES' && v === 'off') return;
+      if (named && k === 'EXPO_PUBLIC_ANALYTICS' && v === 'off') return;
+      bad.push(`${file}: ${named ? k : `<unparsable line ${i + 1}>`}`);
+    });
   return bad;
 }

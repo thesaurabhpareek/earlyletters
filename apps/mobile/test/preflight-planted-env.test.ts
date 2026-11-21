@@ -124,9 +124,8 @@ describe('[BL-506] the preflight, run against a planted .env file', () => {
     }, 120_000);
   }
 
-  // Found in review of #1219, fixed after #1203 merges: scripts/env-file-guard.mjs:32 splits a line on "=" and :36 puts the first
-  // part in the message, so a line with no "=" (a bare secret, or "KEY:value") is printed whole. This is red today by design.
-  it.fails('[BL-506] a line with no "=" does not put its text into the FAIL message (follow-up after #1203)', async () => {
+  // Found in review of #1219: the guard used to print a line with no "=" whole. Fixed in BL-1404.
+  it('[BL-1404] a line with no "=" does not put its text into the FAIL message', async () => {
     const secret = 'sb_secret_ashafictional0000';
     const r = await run(sandbox({ file: '.env.local', text: `${secret}\n` }));
     expect(envLines(r, 'FAIL')).toHaveLength(1);
