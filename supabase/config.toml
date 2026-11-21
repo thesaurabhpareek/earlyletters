@@ -35,7 +35,8 @@ site_url = "https://earlyletters.com"
 # claim it). https://earlyletters.com/auth/callback is both the website page and
 # the app's universal link (the AASA hands /auth/callback to the app), and the
 # app sends exactly this as emailRedirectTo (apps/mobile/src/lib/auth/email.ts).
-# /auth/confirm is not listed until the app accepts it (SIGN-04).
+# /auth/confirm is not listed because no code sends it as a redirect: the app
+# accepts it (SIGN-04) but only ever sends /auth/callback as emailRedirectTo.
 additional_redirect_urls = ["https://earlyletters.com/auth/callback"]
 # Access token lifetime: 15 minutes (TDD 04 3.1).
 jwt_expiry = 900

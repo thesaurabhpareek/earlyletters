@@ -1,0 +1,76 @@
+diff --git a/scripts/agents/merge-queue.mjs b/scripts/agents/merge-queue.mjs
+index ea60ad17..28fe14d3 100644
+--- a/scripts/agents/merge-queue.mjs
++++ b/scripts/agents/merge-queue.mjs
+@@ -85,5 +85,5 @@ export const DEFAULT_REPO = "thesaurabhpareek/earlyletters";
+ export const FALLBACK_REQUIRED = ["applied migrations unchanged", "required", "compliance-fence"];
+ export const MACOS_CHECKS = [/^iOS simulator build/, /^store-profile Release launch/];
+-export const NATIVE_PATHS = [/^apps\/mobile\/ios\//, /^apps\/mobile\/modules\//, /^apps\/mobile\/app\.config\./, /^apps\/mobile\/eas\.json$/, /^package-lock\.json$/];
++export const NATIVE_PATHS = [/^apps\/mobile\/ios\//, /^apps\/mobile\/modules\//, /^apps\/mobile\/app\.config\./, /^apps\/mobile\/eas\.json$/, /^apps\/mobile\/package\.json$/, /^package-lock\.json$/];
+ export const touchesNative = (files) => files.some((f) => [f.filename ?? f, f.previous_filename].some((n) => typeof n === "string" && NATIVE_PATHS.some((re) => re.test(n))));
+ /**
+@@ -195,4 +195,5 @@ export function reviewState(comments, head) {
+   const latestBody = {};
+   const stale = new Set();
++  const staleSha = {};
+   const ignored = new Set();
+   for (const { c } of order) {
+@@ -204,5 +205,5 @@ export function reviewState(comments, head) {
+     }
+     if (r.sha === head) { latest[r.lens] = r.word; latestBody[r.lens] = c.body; }
+-    else if (passes(r.word)) stale.add(r.lens);
++    else if (passes(r.word)) { stale.add(r.lens); staleSha[r.lens] = r.sha; }
+   }
+   const blocked = {};
+@@ -215,4 +216,5 @@ export function reviewState(comments, head) {
+     blocked,
+     staleLenses: [...stale].filter((l) => !(l in latest)),
++    staleShas: staleSha,
+     untrusted: [...ignored].filter((l) => !(l in latest)),
+   };
+@@ -374,4 +376,5 @@ export function formatTable(allRows) {
+   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
+   const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
++  const staleNotes = rows.filter((r) => r.verdict === "STALE-REVIEW").flatMap((r) => r.reviews.staleLenses.map((l) => `note: #${r.number} Review ${l} reviewed ${String(r.reviews.staleShas?.[l] ?? "?").slice(0, 12)}; delta: git diff ${String(r.reviews.staleShas?.[l] ?? "?").slice(0, 12)} ${String(r.head).slice(0, 12)} --stat`));
+   const asks = rows.filter((r) => r.mergeNote).map((r) => r.mergeNote);
+   const days = (r) => Math.floor(r.pushAgeMinutes / 1440);
+@@ -379,5 +382,5 @@ export function formatTable(allRows) {
+     ? ["", `stale-unknown (${stale.length}): mergeability unknown and head older than 7 days; not in the table above, no ready line`, ...stale.map((r) => `  #${r.number} base ${r.base}, last push ${days(r)} days ago, head ${r.head}`)]
+     : [];
+-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...lensNotes, ...asks, ...parked].join("\n");
++  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...staleNotes, ...held, ...lensNotes, ...asks, ...parked].join("\n");
+ }
+ 
+diff --git a/scripts/agents/merge-queue.test.mjs b/scripts/agents/merge-queue.test.mjs
+index 800c472e..f67ad8a0 100644
+--- a/scripts/agents/merge-queue.test.mjs
++++ b/scripts/agents/merge-queue.test.mjs
+@@ -517,2 +517,28 @@ test("CR-73 security lens: an HTML comment block or a line indented four spaces
+   assert.deepEqual(namedLenses("   Lens: security-architect\n"), ["security-architect"]);
+ });
++
++// HG-MQ
++test("[HG-MQ] apps/mobile/package.json is a native path, as in ios-compile.yml, and eas.json stays one (CR-69 A9)", () => {
++  assert.equal(touchesNative(["apps/mobile/package.json"]), true);
++  assert.equal(touchesNative(["apps/mobile/eas.json"]), true);
++  assert.equal(touchesNative(["apps/mobile/version.json"]), false);
++});
++
++test("[HG-MQ] an eas.json-only PR with a skipped compile check is WATCH-RED, and so is a skipped compile with a failed changes job; a docs PR is not held by it", async () => {
++  const skipped = [run(10, "iOS simulator build (no signing)", "skipped"), run(11, "store-profile Release launch (testflight env, no seam, 20 s)", "success")];
++  const comments = [review("A", HEAD), review("B", HEAD)];
++  const eas = await verdict({ comments, runs: [...good, ...skipped], files: ["apps/mobile/eas.json"] });
++  assert.match(eas.verdict, /^WATCH-RED iOS simulator build/);
++  const changesFailed = await verdict({ comments, runs: [...good, ...skipped, run(12, "native files changed?", "failure")], files: ["apps/mobile/package.json"] });
++  assert.match(changesFailed.verdict, /^WATCH-RED iOS simulator build/);
++  const docs = await verdict({ comments, runs: [...good, ...skipped], files: ["docs/x.md"] });
++  assert.equal(docs.verdict, "READY");
++});
++
++test("[HG-MQ] STALE-REVIEW names the older sha and the delta command", async () => {
++  const r = await verdict({ comments: [review("A", OLD), review("B", HEAD)] });
++  assert.equal(r.verdict, "STALE-REVIEW");
++  assert.equal(r.reviews.staleShas.A, OLD);
++  const text = formatTable([r]);
++  assert.ok(text.includes(`Review A reviewed ${OLD.slice(0, 12)}; delta: git diff ${OLD.slice(0, 12)} ${HEAD.slice(0, 12)} --stat`), text);
++});
