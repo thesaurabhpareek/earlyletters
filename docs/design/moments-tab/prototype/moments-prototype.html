@@ -7,7 +7,7 @@
 <title>Moments prototype (Asha examples)</title>
 <style>
 /* ==========================================================================
-   Moments tab, high-fidelity prototype (D7). One file, no network.
+   Moments tab, experience and motion prototype (hybrid: D7 base, extended). One file, no network.
    Colours, radii, spacing, type, elevation and motion values are copied from
    packages/design-tokens/src/tokens.ts. Names marked PROPOSED are not in
    tokens.ts yet (glassFallback, highlight, kicker, video pill alpha).
@@ -63,10 +63,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 h1,h2,h3,p{margin:0}
 
 /* ---------- stage and phone ---------- */
-#proto-strip{position:fixed;top:0;left:0;right:0;height:26px;display:flex;align-items:center;justify-content:center;gap:12px;font:500 12px/1 var(--sans);color:#5b544b;background:#F1E6DC;z-index:50;padding:0 8px;text-align:center}
+#proto-strip{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:center;gap:12px;font:500 12px/1 var(--sans);color:#5b544b;background:#F1E6DC;z-index:50;padding:0 8px;text-align:center}
 [data-theme=dark] #proto-strip{background:#2a221b;color:#cfc5b8}
-#proto-strip button{font:600 12px/1 var(--sans);color:inherit;text-decoration:underline;min-height:26px;padding:0 6px}
-#stage{position:fixed;inset:26px 0 0 0;display:flex;align-items:center;justify-content:center;gap:32px;padding:12px}
+#proto-strip button{font:600 12px/1 var(--sans);color:inherit;text-decoration:underline;min-height:44px;min-width:44px;padding:0 10px}
+#stage{position:fixed;inset:44px 0 0 0;display:flex;align-items:center;justify-content:center;gap:32px;padding:12px}
 #phone-wrap{flex:none;position:relative}
 #phone{position:absolute;left:0;top:0;width:390px;height:844px;transform-origin:0 0;border-radius:56px;background:var(--bg);
   box-shadow:0 0 0 10px #1a1815,0 0 0 11px #3a3631,0 30px 60px rgba(0,0,0,.25);overflow:hidden;color:var(--text)}
@@ -83,13 +83,13 @@ h1,h2,h3,p{margin:0}
 
 /* mobile: the phone fills the viewport */
 @media (max-width:560px){
-  #stage{inset:26px 0 0 0;padding:0;display:block}
+  #stage{inset:44px 0 0 0;padding:0;display:block}
   #phone-wrap{width:100%!important;height:100%!important}
   #phone{width:100%!important;height:100%!important;transform:none!important;border-radius:0;box-shadow:none}
   #statusbar,#island{display:none}
   .tabpane{top:env(safe-area-inset-top,0px)}
   #home-ind{display:none}
-  #panel{position:fixed;left:0;right:0;bottom:0;top:26px;z-index:90;border-radius:0}
+  #panel{position:fixed;left:0;right:0;bottom:0;top:44px;z-index:90;border-radius:0}
   #panel[data-open="0"]{display:none}
 }
 @media (min-width:561px){ #panel-open{display:none} #panel-close{display:none} }
@@ -151,7 +151,7 @@ h1,h2,h3,p{margin:0}
 .seg{display:flex;gap:4px;padding:4px;border-radius:9999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .seg button{flex:1;min-height:44px;border-radius:9999px;color:var(--muted);font:500 calc(16px*var(--ts))/calc(21px*var(--ts)) var(--sans);transition:background-color 150ms linear,color 150ms linear}
 .seg button[aria-selected=true]{background:var(--accentSoft);color:var(--text);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
-@media (min-width:0){ [style*="--ts:1.4"] .seg, [style*="--ts:2.4"] .seg{flex-direction:column;border-radius:24px} }
+[data-ax] .seg{flex-direction:column;border-radius:24px}
 
 /* ---------- value view examples ---------- */
 .hero{padding:6px 20px 14px}
@@ -194,15 +194,15 @@ h1,h2,h3,p{margin:0}
 .layer{position:absolute;inset:0;z-index:60}
 .scrim{position:absolute;inset:0;background:var(--scrim)}
 .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;box-shadow:var(--sheet-shadow);padding:0 20px calc(26px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto;scrollbar-width:none}
-.sheet.full{top:44px;max-height:none;padding:0}
 .grab{height:28px;display:grid;place-items:center;touch-action:none;cursor:grab;position:sticky;top:0;z-index:3;background:var(--bg)}
+.grab::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}
 .grab::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--controlBorder);opacity:.6}
 .doors{margin:14px 0 8px;display:grid;gap:12px}
 .doors dt{color:var(--muted)}
 .doors dd{margin:2px 0 0}
 .btnrow{display:flex;gap:12px}
 .eq{flex:1;display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 12px;border-radius:9999px;background:var(--raised);border:1.5px solid var(--accent);color:var(--text);font:500 calc(18px*var(--ts))/calc(22px*var(--ts)) var(--sans);text-align:center;transition:transform var(--snappy-dur) var(--snappy-ease)}
-[style*="--ts:2.4"] .btnrow,[style*="--ts:1.4"] .btnrow{flex-direction:column}
+[data-ax] .btnrow{flex-direction:column}
 .sys{position:absolute;inset:0;z-index:80;display:grid;place-items:center;background:rgba(0,0,0,.4)}
 .alert{width:270px;border-radius:14px;background:rgba(246,246,246,.96);color:#111;text-align:center;font:400 13px/17px -apple-system,system-ui,sans-serif;overflow:hidden}
 .alert .m{padding:18px 16px 14px}
@@ -215,15 +215,50 @@ h1,h2,h3,p{margin:0}
 [data-rt] .glass{background:var(--glassFallback);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px var(--controlBorder)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .glass{background:var(--glassFallback)} }
 
-/* ---------- pick view ---------- */
-.pick-top{display:flex;justify-content:space-between;align-items:center;padding:0 16px}
-.pill{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:9999px;font:500 calc(16px*var(--ts))/calc(21px*var(--ts)) var(--sans);transition:transform var(--snappy-dur) var(--snappy-ease)}
-.pick-head{padding:10px 20px 6px}
-.filters{display:flex;gap:6px;padding:8px 16px 12px}
-.filters button{min-height:44px;padding:0 16px;border-radius:9999px;color:var(--muted);font:500 calc(15px*var(--ts))/20px var(--sans);box-shadow:inset 0 0 0 1px var(--controlBorder)}
-.filters button[aria-pressed=true]{background:var(--accentSoft);color:var(--text);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 16px 120px}
-[style*="--ts:2.4"] .grid{grid-template-columns:1fr}
+/* ---------- card actions, quiet door rows (hybrid) ---------- */
+.jobline{margin-top:4px;color:var(--muted)}
+.acts{display:flex;gap:12px;margin-top:14px}
+.acts .eq{min-height:48px;font-size:calc(17px*var(--ts));line-height:calc(22px*var(--ts))}
+[data-ax] .acts{flex-direction:column}
+.lead{padding:0;border-radius:12px;overflow:hidden;display:block;width:100%}
+.doorbtn{margin-left:-6px}
+.qrow .cap2{display:block;margin:0 0 2px 0;color:var(--muted)}
+.qrow+.qrow{margin-top:-6px}
+.askcard .eq{min-height:56px}
+
+/* ---------- host sheet: one route, two bodies, one tray, one Start ---------- */
+.sheet.full{top:44px;max-height:none;padding:0;overflow:hidden;display:flex;flex-direction:column}
+.hs-clip{display:flex;flex-direction:column;height:100%;min-height:0;background:var(--bg)}
+.hs-top{display:flex;align-items:center;gap:8px;padding:2px 12px 6px 8px;min-height:52px}
+.hs-top .textbtn{flex:none;padding:0 12px}
+.hs-title{flex:1;min-width:0;text-align:center;font-size:calc(22px*min(var(--ts),1.4));line-height:calc(28px*min(var(--ts),1.4));padding-right:56px;white-space:nowrap}
+[data-ax] .hs-top{flex-direction:column;align-items:flex-start;gap:0}
+[data-ax] .hs-title{text-align:left;padding:0 12px 4px;white-space:normal}
+.hs-body{flex:1;min-height:0;display:grid;position:relative;margin:0 16px;overflow:hidden}
+.hs-body>*{grid-area:1/1;min-height:0}
+.hs-day{background:var(--bg);overflow-y:auto;scrollbar-width:none;z-index:2;padding-bottom:6px}
+.hs-day::-webkit-scrollbar{display:none}
+.hs-apple{z-index:1;display:flex;flex-direction:column;padding:2px 0 6px}
+.hs-label{padding:0 4px 8px;color:var(--muted)}
+.hs-swap{padding:2px 12px;display:flex}
+.hs-foot{background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.hs-limit{margin:0 0 8px;color:var(--text)}
+.hs-row{display:flex;align-items:center;gap:12px;min-height:56px}
+.tray{flex:1;min-width:0;display:flex;gap:6px;overflow:hidden;min-height:44px;align-items:center}
+.tray .tt{flex:none;width:44px;height:44px;border-radius:8px;overflow:hidden;position:relative;background:var(--surface);box-shadow:inset 0 0 0 1px var(--mediaFrame)}
+.tray .tt .tile{position:absolute;inset:0;border-radius:8px;box-shadow:none}
+.tray .tt.pending{background:var(--accentSoft)}
+.tray .tt.pending .tile{display:none}
+.tray-empty{color:var(--muted)}
+.hs-row .btn{flex:none;min-width:120px}
+.hs-cover{position:absolute;inset:0;background:var(--bg);z-index:9}
+.aframe{flex:1;min-height:220px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--mediaFrame);border:1.5px dashed var(--controlBorder);padding:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:var(--surface)}
+.aframe .chips{margin-top:6px}
+.aframe .chips button{min-height:44px}
+.abar{align-self:stretch;padding:8px 10px;border-radius:8px;background:var(--accentSoft);color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 0 12px}
+[data-ax] .grid{grid-template-columns:1fr}
+[data-ax] .gt{aspect-ratio:4/3}
 .gt{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;padding:0;transition:transform var(--snappy-dur) var(--snappy-ease)}
 .gt.pressed{transform:scale(.98)}
 [data-rm] .gt.pressed{transform:none;opacity:.9}
@@ -232,10 +267,17 @@ h1,h2,h3,p{margin:0}
 .gt .badge{position:absolute;right:6px;top:6px;width:26px;height:26px;border-radius:13px;background:var(--accent);color:var(--onAccent);display:grid;place-items:center;opacity:0}
 .gt .badge svg{width:16px;height:16px}
 .gt[aria-pressed=true] .ring,.gt[aria-pressed=true] .badge{opacity:1}
-.pick-foot{position:absolute;left:12px;right:12px;bottom:calc(22px + env(safe-area-inset-bottom,0px));border-radius:28px;padding:8px 8px 8px 20px;display:flex;align-items:center;gap:8px;z-index:6}
-.pick-foot .hint{flex:1;color:var(--text)}
-.btn.sm{min-height:48px;padding:0 20px}
 .btn[disabled]{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--controlBorder);cursor:default}
+.grab[data-off]{visibility:hidden}
+.pill{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:9999px;font:500 calc(16px*var(--ts))/calc(21px*var(--ts)) var(--sans)}
+.nl{color:var(--muted);padding:4px 0}
+/* AX layouts: our frame stays small so the system view keeps the screen (EXH-DES-5); sizes here are capped at 1.4x */
+[data-ax] .hs-label,[data-ax] .hs-swap .textbtn,[data-ax] .tray-empty,[data-ax] .hs-limit,[data-ax] .hs-top .textbtn{font-size:calc(16px*1.4);line-height:calc(21px*1.4)}
+[data-ax] .hs-row .btn{font-size:calc(18px*1.4);line-height:calc(22px*1.4);min-width:96px;padding:0 16px}
+[data-ax] .hs-top .textbtn{min-height:44px}
+[data-ax] .hs-label{padding-bottom:4px}
+[data-ax] .aframe{min-height:0}
+.aframe{--ts:1}
 
 /* ---------- capture ---------- */
 .cap{background:var(--bg);z-index:65;overflow:hidden}
@@ -283,9 +325,9 @@ h1,h2,h3,p{margin:0}
 #panel h3{font:600 12px/16px var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
 #panel p{font:400 13px/18px var(--sans);color:var(--muted);margin:0 0 6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{min-height:36px;padding:0 12px;border-radius:9999px;font:500 13px/1 var(--sans);box-shadow:inset 0 0 0 1px var(--controlBorder)}
+.chips button{min-height:44px;padding:0 12px;border-radius:9999px;font:500 13px/1 var(--sans);box-shadow:inset 0 0 0 1px var(--controlBorder)}
 .chips button[aria-pressed=true]{background:var(--accentSoft);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
-.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;font:500 14px/18px var(--sans)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font:500 14px/18px var(--sans)}
 .sw input{appearance:none;width:46px;height:28px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--controlBorder);position:relative;cursor:pointer;flex:none;margin:0}
 .sw input::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:11px;background:var(--controlBorder);transition:transform 150ms linear}
 .sw input:checked{background:var(--accentSoft);box-shadow:inset 0 0 0 1.5px var(--accent)}
@@ -322,27 +364,37 @@ h1,h2,h3,p{margin:0}
           <div class="scrim" data-scrim></div>
           <section class="sheet" id="primer-sheet" role="dialog" aria-modal="true" aria-labelledby="pr-t">
             <div class="grab" id="pr-grab" aria-hidden="true"></div>
-            <h2 class="t-title2" id="pr-t" tabindex="-1">Show pictures here?</h2>
+            <h2 class="t-title2" id="pr-t" tabindex="-1">Show days from your pictures?</h2>
+            <p class="t-body" id="pr-sentence" style="margin-top:8px"></p>
+            <details class="t-body" style="margin:12px 0 14px"><summary class="textbtn">What this means</summary>
             <dl class="doors t-body">
-              <div><dt class="t-kicker">What it reads</dt><dd>Only the date of each picture, on this phone, to find days that might make a letter.</dd></div>
-              <div><dt class="t-kicker">What it keeps</dt><dd>Your answer, on this phone. Nothing is added to your pictures.</dd></div>
-              <div><dt class="t-kicker">What it never does</dt><dd>Never looks at what is in a picture or who is in it. Never writes anything for you.</dd></div>
-              <div><dt class="t-kicker">If you say not now</dt><dd>Days and ideas are still here. You can change this any time in Settings.</dd></div>
-            </dl>
+              <div><dt class="t-kicker">Shown</dt><dd>The sentence above, and the policy link.</dd></div>
+              <div><dt class="t-kicker">Records</dt><dd>Your answer, on this phone.</dd></div>
+              <div><dt class="t-kicker">Never</dt><dd>This answer saves no picture, date, album, place or count.</dd></div>
+              <div><dt class="t-kicker">If you say not now</dt><dd>Choosing pictures yourself, days and ideas all keep working.</dd></div>
+            </dl></details>
             <div class="btnrow"><button class="eq" id="pr-continue" data-press>Continue</button><button class="eq" id="pr-notnow" data-press>Not now</button></div>
           </section>
         </div>
 
-        <!-- pick pictures for a day (D3 7) -->
+        <!-- host sheet: one route, two bodies, one tray, one Start -->
         <div class="layer" id="L-pick" hidden>
           <div class="scrim" data-scrim></div>
           <section class="sheet full" id="pick-sheet" role="dialog" aria-modal="true" aria-labelledby="pick-t">
-            <div class="grab" id="pick-grab" aria-hidden="true"></div>
-            <div class="pick-top"><button class="pill glass" id="pick-close" data-press>Close</button></div>
-            <div class="pick-head"><h2 class="t-title1" id="pick-t" tabindex="-1"></h2><p class="t-body" id="pick-label"></p></div>
-            <div class="filters" role="group" aria-label="Show"><button aria-pressed="true" data-f="all">All</button><button aria-pressed="false" data-f="photo">Photos</button><button aria-pressed="false" data-f="video">Videos</button></div>
-            <div class="grid" id="pick-grid"></div>
-            <div class="pick-foot glass"><span class="hint t-sub" id="pick-hint">Choose one or more to add.</span><button class="pill" id="pick-clear" data-press hidden>Clear</button><button class="btn sm" id="pick-add" data-press disabled>Add</button></div>
+            <div class="hs-clip" id="hs-clip">
+              <div class="grab" id="pick-grab" aria-hidden="true"></div>
+              <div class="hs-top"><button class="textbtn" id="pick-notnow" data-press>Not now</button><h2 class="t-title2 hs-title" id="pick-t" tabindex="-1"></h2></div>
+              <div class="hs-body" id="hs-body">
+                <div class="hs-day" id="body-day"><p class="t-body hs-label" id="pick-label"></p><div class="grid" id="pick-grid"></div></div>
+                <div class="hs-apple" id="body-apple" hidden></div>
+                <div class="hs-cover" id="hs-cover" hidden aria-hidden="true"></div>
+              </div>
+              <div class="hs-swap" id="hs-swap-row"><button class="textbtn" id="hs-swap" data-press>Choose other pictures</button></div>
+              <div class="hs-foot">
+                <p class="t-sub hs-limit" id="hs-limit" role="status" hidden></p>
+                <div class="hs-row"><div class="tray" id="tray" role="group" aria-label="Pictures chosen for this letter"></div><button class="btn" id="pick-start" data-press disabled aria-disabled="true">Start</button></div>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -383,10 +435,19 @@ h1,h2,h3,p{margin:0}
   </div>
 
   <aside id="panel" data-open="0" aria-label="Prototype controls">
-    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Prototype controls</h2><button id="panel-close" class="textbtn" style="min-height:36px">Close</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Prototype controls</h2><button id="panel-close" class="textbtn" style="min-height:44px">Close</button></div>
     <p>Examples only. Every picture is drawn. The family is the fictional Asha. Nothing here is saved or sent.</p>
-    <h3>Screen state</h3>
+    <h3>Access state of the tab</h3>
     <div class="chips" id="states"></div>
+    <h3>Sheet layout (decided by the device matrix)</h3>
+    <div class="chips" id="layouts"></div>
+    <h3>Door when never asked</h3>
+    <div class="chips" id="doorask"></div>
+    <h3>Primer wording under test</h3>
+    <div class="chips" id="primerv"></div>
+    <h3>Sheet unhappy paths</h3>
+    <p>Open a day or the Choose pictures row first, then try these.</p>
+    <div class="chips" id="simbtns"><button id="sim-inactive">Phone goes inactive</button><button id="sim-active">Phone comes back</button><button id="sim-lock">App lock engages</button></div>
     <div style="margin-top:8px"><div class="chips"><button id="replay">Replay arrival</button><button id="restart">Reset all</button></div></div>
     <h3>Settings that change motion and look</h3>
     <label class="sw">Reduce Motion<input type="checkbox" role="switch" id="rm"></label>
@@ -394,9 +455,7 @@ h1,h2,h3,p{margin:0}
     <label class="sw">Dark theme<input type="checkbox" role="switch" id="dark"></label>
     <h3>Text size</h3>
     <div class="chips" id="sizes"></div>
-    <h3>Tab bar preview only</h3>
-    <p>Moves the Moments tab in the bar. Nothing else on the screen changes.</p>
-    <div class="chips" id="pos"></div>
+    <div class="chips" id="pos" hidden></div>
     <h3>Glass check</h3>
     <p id="glasscount"></p>
     <h3>Motion that just played</h3>
@@ -424,18 +483,18 @@ const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const root = document.documentElement;
 
 /* damped spring sampled into a CSS linear() easing, so the web matches the app's springs */
-function spring(k,c,m){
+function spring(k,c,m,clamp){
   const dt=1/240; let x=0,v=0,t=0; const pts=[0];
   for(let i=0;i<4800;i++){
     const a=(-k*(x-1)-c*v)/m; v+=a*dt; x+=v*dt; t+=dt;
-    if(i%8===7) pts.push(x);
-    if(Math.abs(x-1)<.0008 && Math.abs(v)<.01) break;
+    if(i%8===7) pts.push(clamp?Math.min(x,1):x);
+    if(Math.abs(x-1)<.006 && Math.abs(v)<.15) break;   /* cut within 0.6% of rest: the token's perceptual 0.4 s */
   }
   pts.push(1);
   const ok = window.CSS && CSS.supports && CSS.supports("animation-timing-function","linear(0,1)");
   return { d:Math.round(t*1000), e: ok ? "linear("+pts.map(p=>p.toFixed(4)).join(",")+")" : T.motion.easing };
 }
-const SP = { standard: spring(T.motion.standard.k,T.motion.standard.c,1), snappy: spring(T.motion.snappy.k,T.motion.snappy.c,1) };
+const SP = { standard: spring(T.motion.standard.k,T.motion.standard.c,1), snappy: spring(T.motion.snappy.k,T.motion.snappy.c,1), sheet: spring(T.motion.standard.k,T.motion.standard.c,1,true) };   /* sheet = standard with overshoot clamped: no bounce */
 root.style.setProperty("--standard-ease",SP.standard.e); root.style.setProperty("--standard-dur",SP.standard.d+"ms");
 root.style.setProperty("--snappy-ease",SP.snappy.e); root.style.setProperty("--snappy-dur",SP.snappy.d+"ms");
 
@@ -457,21 +516,16 @@ const say = t => { const l=$("#live"); l.textContent=""; setTimeout(()=>{l.textC
    Drawn placeholder pictures (no photographs, no faces, nothing real)
    ========================================================================== */
 const PAL = [
-  ["#F3C98B","#FFE2A8","#9DB5A0","#6F8F7A"], ["#8FA7C2","#D9E4EE","#B7C9A8","#7C9A83"],
-  ["#F0C7B0","#FBE6D3","#C9A27A","#8A5A3B"], ["#B881AF","#EBD3E3","#9FB3C8","#6C86A3"],
-  ["#E8D9A8","#FFF1C9","#A8C0A0","#7B9B86"], ["#C7D6E3","#F4EEE4","#D8B98E","#B58A5E"]
+  ["#F1E6DC","#FBF8F3","#DCC9B6","#C4A98E"], ["#EADFD2","#F7F1E8","#CFC0AE","#B9A58F"],
+  ["#F3E4D6","#FBF4EA","#D6BFA8","#BFA088"], ["#E9E0D6","#F6F0E7","#D1C2B3","#BCAC9A"],
+  ["#F0E8DB","#FAF6EE","#D8C8B4","#C1AE96"], ["#EDE3D8","#F8F2E9","#D3C3B1","#BDAA95"]
 ];
 let artN = 0;
 function rng(s){ return () => (s = (s*1664525 + 1013904223) >>> 0) / 4294967296; }
 function art(seed){
   const r = rng(seed*9973+7), p = PAL[seed % PAL.length], id = "g"+(++artN);
-  const sx = 14+r()*72, sy = 16+r()*24, sr = 8+r()*9, h1 = 52+r()*12, h2 = 68+r()*10;
-  let extra = "";
-  const k = seed % 3;
-  if(k===0){ const tx = 20+r()*60; extra = '<rect x="'+(tx-1.2)+'" y="'+(h1-2)+'" width="2.4" height="12" fill="#6b4e37"/><circle cx="'+tx+'" cy="'+(h1-7)+'" r="9" fill="#6F8F7A"/>'; }
-  else if(k===1){ const kx = 20+r()*60, ky = 20+r()*18; extra = '<path d="M'+kx+' '+ky+' l7 8 l-7 11 l-7 -11z" fill="#F0C7B0" opacity=".95"/><path d="M'+kx+' '+(ky+19)+' q4 10 -2 22" stroke="#fff" stroke-width=".8" fill="none" opacity=".8"/>'; }
-  else { const bx = 18+r()*50; extra = '<rect x="'+bx+'" y="'+(h2-5)+'" width="22" height="3.2" rx="1.2" fill="#8A5A3B"/><rect x="'+(bx+2)+'" y="'+(h2-2)+'" width="1.6" height="6" fill="#8A5A3B"/><rect x="'+(bx+18)+'" y="'+(h2-2)+'" width="1.6" height="6" fill="#8A5A3B"/>'; }
-  return '<svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+p[0]+'"/><stop offset="1" stop-color="'+p[1]+'"/></linearGradient></defs><rect width="100" height="100" fill="url(#'+id+')"/><circle cx="'+sx+'" cy="'+sy+'" r="'+sr+'" fill="#FFF6DC" opacity=".88"/><path d="M0 '+h1+' Q '+(25+r()*20)+' '+(h1-13-r()*8)+' 55 '+(h1+2)+' T 100 '+(h1-4)+' V100 H0Z" fill="'+p[2]+'"/><path d="M0 '+h2+' Q 30 '+(h2-10)+' 60 '+(h2+3)+' T 100 '+(h2-2)+' V100 H0Z" fill="'+p[3]+'" opacity=".96"/>'+extra+'</svg>';
+  const cx = 18+r()*64, cy = 22+r()*30, cr = 12+r()*14, h1 = 54+r()*14, h2 = 72+r()*10;
+  return '<svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+p[0]+'"/><stop offset="1" stop-color="'+p[1]+'"/></linearGradient></defs><rect width="100" height="100" fill="url(#'+id+')"/><circle cx="'+cx+'" cy="'+cy+'" r="'+cr+'" fill="#FFFFFF" opacity=".45"/><path d="M0 '+h1+' Q '+(25+r()*20)+' '+(h1-12-r()*8)+' 55 '+(h1+2)+' T 100 '+(h1-4)+' V100 H0Z" fill="'+p[2]+'" opacity=".7"/><path d="M0 '+h2+' Q 30 '+(h2-9)+' 60 '+(h2+3)+' T 100 '+(h2-2)+' V100 H0Z" fill="'+p[3]+'" opacity=".6"/></svg>';
 }
 const I = {
   play:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg>',
@@ -505,10 +559,10 @@ function reveal(rootEl){
    Data: fictional Asha only
    ========================================================================== */
 const DAYS = {
-  day1:{ id:"day1", date:"Saturday 14 June", label:"At the park with Nani", place:"Maple Park", letter:false,
+  day1:{ id:"day1", date:"Saturday 14 June", label:"At the park with Nani", place:"Pune", letter:false,
     photos:[{s:1},{s:2},{s:3},{s:4,v:"0:14"},{s:5},{s:6},{s:7},{s:8},{s:9}] },
-  day2:{ id:"day2", date:"Thursday 12 June", label:"", place:"Lakeside Market", letter:false, photos:[{s:10},{s:11},{s:12},{s:13},{s:14}] },
-  day3:{ id:"day3", date:"Sunday 8 June", label:"Asha's first mango", place:"Nani's garden", letter:true, photos:[{s:15},{s:16}] },
+  day2:{ id:"day2", date:"Thursday 12 June", label:"", place:"Pune", letter:false, photos:[{s:10},{s:11},{s:12},{s:13},{s:14}] },
+  day3:{ id:"day3", date:"Sunday 8 June", label:"Asha's first mango", place:"Lisbon", letter:true, photos:[{s:15},{s:16}] },
   day4:{ id:"day4", date:"Tuesday 3 June", label:"", letter:false, photos:[{s:17,v:"0:42"}] }
 };
 const PROMPTS = ["What makes Asha laugh?","What did Asha do today that surprised you?","What is Asha holding on to these days?","What would you tell Asha about this week?"];
@@ -517,7 +571,7 @@ const KEY_DAYS = ["day1","day2","day3","day4"];
 /* ==========================================================================
    State
    ========================================================================== */
-const S = { perm:"undetermined", part:"foryou", empty:false, mode:"talk", tab:"moments", pos:"second",
+const S = { quiet:false, doorAsk:true, primer:"A", perm:"undetermined", part:"foryou", empty:false, mode:"talk", tab:"moments", pos:"second",
   aside:new Set(), hiddenPlaces:new Set(), lastHide:null, letters:new Set(["day3"]), scroll:{foryou:0,recent:0}, limitedExtra:false,
   promptIdx:0, expanded:null, lastAside:null, ts:1, cold:true };
 
@@ -529,26 +583,27 @@ function collage(d){
   const ph = d.photos.slice(0,4), n = ph.length, vid = ph.some(p=>p.v);
   return '<button class="collage c'+n+'" data-open="'+d.id+'" aria-label="Photos from '+d.date+(vid?", includes a video":"")+'">'+ph.map(tile).join("")+'</button>';
 }
+function acts(){ return '<div class="acts"><button class="eq" data-continue data-press>Continue</button><button class="eq" data-notnow data-press>Not now</button></div>'; }
 function dayCard(part, d){
   if(d.place && S.hiddenPlaces.has(d.place)) return '';
   const hasLetter = S.letters.has(d.id);
   return '<article class="card day" data-key="'+part+':'+d.id+'" data-kind="day" data-day="'+d.id+'" aria-labelledby="h-'+part+d.id+'">'
     + collage(d)
-    + '<div class="cbody"><div class="chead"><h3 class="t-title2 ctitle" id="h-'+part+d.id+'">'+d.date+'</h3>'+more("More for "+d.date)+'</div>'
+    + '<div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">Pictures from your phone</p><h3 class="t-title2" id="h-'+part+d.id+'" style="margin-top:2px">'+d.date+'</h3></div>'+more("More for "+d.date)+'</div>'
     + (d.place?'<p class="t-sub muted placeline" data-place="'+d.place+'">'+I.pin+'<span>'+d.place+'</span></p>':'')
     + (d.label?'<p class="t-body clabel">'+d.label+'</p>':'')
     + '<div class="letterrow" data-letterrow'+(hasLetter?'':' hidden')+'>'+I.letter+'<span class="t-sub">A letter is here</span><button class="textbtn" data-readletter>Read it'+I.right+'</button></div>'
-    + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Write about this</span></button></div></article>';
+    + acts()+'</div></article>';
 }
 const OCC = { occ:["A day you marked","Asha's birthday"], holiday:["A day you ticked","Diwali"] };
 function occCard(part,id){
   id = id||"occ"; const o = OCC[id];
   return '<article class="card rule" data-key="'+part+':'+id+'" data-kind="occ" aria-labelledby="h-'+part+id+'"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">'+o[0]+'</p><h3 class="t-title2" id="h-'+part+id+'" style="margin-top:2px">'+o[1]+'</h3></div>'+more("More for "+o[1])+'</div>'
-    + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Tell Asha</span></button></div></article>';
+    + acts()+'</div></article>';
 }
 function monthCard(part){
   return '<article class="card rule" data-key="'+part+':month" data-kind="month" aria-labelledby="h-'+part+'month"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">Monthiversary</p><h3 class="t-title2" id="h-'+part+'month" style="margin-top:2px">Asha is Month 14</h3></div>'+more("More for Asha is Month 14")+'</div>'
-    + '<button class="cta t-label" data-compose data-press>'+I.plus+'<span>Tell Asha</span></button></div></article>';
+    + acts()+'</div></article>';
 }
 function yagoCard(part){
   return '<article class="card" data-key="'+part+':yago" data-kind="yago" aria-labelledby="h-'+part+'yago" style="box-shadow:var(--pop-shadow),inset 0 1px 0 var(--hl)"><div class="cbody"><div class="chead"><div class="ctitle"><p class="t-kicker kicker">A year ago</p><h3 class="t-title2" id="h-'+part+'yago" style="margin-top:2px">A letter from June 3</h3></div>'+more("More for A letter from June 3")+'</div>'
@@ -584,38 +639,39 @@ const live = () => S.perm==="full" || S.perm==="limited";
 function cover(){
   return '<svg class="cover cover-breath" viewBox="0 0 120 160" aria-hidden="true"><rect x="6" y="4" width="108" height="152" rx="8" fill="var(--accent)"/><rect x="6" y="4" width="14" height="152" rx="6" fill="#00000022"/><rect x="34" y="40" width="64" height="2" rx="1" fill="var(--onAccent)" opacity=".7"/><rect x="34" y="52" width="46" height="2" rx="1" fill="var(--onAccent)" opacity=".5"/><circle cx="66" cy="102" r="16" fill="none" stroke="var(--onAccent)" stroke-width="2" opacity=".8"/></svg>';
 }
+function doorRow(cap){ return '<div class="qrow" data-qrow data-doorrow>'+(cap?'<span class="t-sub cap2">'+cap+'</span>':'')+'<button class="textbtn doorbtn" data-door>Choose pictures</button></div>'; }
 function quietRow(){
   const p = S.perm;
-  if(p==="notnow") return '<div class="qrow" data-qrow><p class="t-sub">Pictures are off for now. Days and ideas are still here.</p><button class="textbtn" data-showpics>Show pictures</button></div>';
-  if(p==="denied") return '<div class="qrow" data-qrow><p class="t-sub">Pictures are off. Days and ideas are still here.</p><p class="t-foot muted" style="margin-top:4px">To show pictures later, turn on Photos for this app in Settings.</p><button class="textbtn" data-settings>Open Settings</button></div>';
-  if(p==="restricted") return '<div class="qrow" data-qrow><p class="t-sub">Pictures cannot be used on this phone. Days and ideas are still here.</p></div>';
+  if(p==="notnow") return doorRow()+'<div class="qrow" data-qrow><button class="textbtn doorbtn" data-showpics>Show days from my pictures</button></div>';
+  if(p==="denied") return doorRow()+'<div class="qrow" data-qrow><p class="t-sub">Pictures are off for this app. Days and ideas are still here.</p><button class="textbtn doorbtn" data-settings>Open Settings</button></div>';
+  if(p==="restricted") return doorRow()+'<div class="qrow" data-qrow><p class="t-sub">Pictures cannot be used by this app on this phone. Days and ideas are still here.</p></div>';
+  if(p==="off") return doorRow();
   return "";
 }
 function partHTML(part){
   const ids = order(part).filter(id=>!S.aside.has(part+":"+id));
   let h = '<div class="cards">'+ids.map(id=>cardFor(part,id)).join("")+'</div>';
-  if(part==="recent" && S.empty) h = '<div class="empty">'+cover()+'<h2 class="t-title2">Nothing here yet</h2><p class="t-body">You can still tell Asha about today.</p><button class="cta t-label" data-compose data-press style="margin-top:16px">'+I.plus+'<span>Tell Asha</span></button></div>';
-  if(part==="recent" && S.perm==="limited") h += '<div class="qrow" data-qrow><p class="t-sub">You chose some pictures. Only those show here.</p><button class="textbtn" data-choosemore>Choose more pictures</button></div>';
+  if(part==="recent" && S.empty) h = '<div class="empty">'+cover()+'<h2 class="t-title2">You can tell Asha about today any time.</h2><button class="cta t-label" data-compose data-press style="margin-top:16px">'+I.plus+'<span>Tell Asha</span></button></div>';
+  if(part==="recent" && S.perm==="limited") h += '<div class="qrow" data-qrow><span class="t-sub cap2">Change which pictures this app can use.</span><button class="textbtn doorbtn" data-choosemore>Pictures used for days</button></div>'+doorRow("Start a letter from any picture.");
+  else if(part==="recent") h += doorRow();
   if(part==="foryou") h += quietRow();
   return h;
 }
 
 /* value view before permission: our own drawn examples, labelled (D5 R7, A3 R3) */
+const PSENT = {
+  A:"This app reads the date, the time and the place of your pictures, on this phone and only while Moments is open, to suggest days to tell Asha about.",
+  B:"You can choose pictures yourself any time. If you would like suggestions, this app can read the date, time and place of your pictures, on this phone, while Moments is open.",
+  C:"To suggest days, this app reads the date, time and place of your pictures. It happens on this phone, only while Moments is open."
+};
 function v0HTML(){
-  return '<div id="v0">'
-  + '<div class="hero" data-hero><h2 class="t-title1">Start a letter from what you already have</h2><p class="t-body">Pictures, days that matter and small ideas, all in one place. You choose what becomes a letter.</p></div>'
-  + '<div class="gutter">'
+  return '<div id="v0"><section id="part-foryou" class="gutter part" style="padding-top:8px"><div class="cards">'+monthCard("foryou")+promptCard("foryou")+'</div>'
+  + '<article class="card askcard" id="askcard"><div class="cbody"><h2 class="t-title2">Show days from your pictures?</h2><p class="t-body muted" style="margin-top:6px">'+PSENT.C+'</p><div class="btnrow" style="margin-top:14px"><button class="eq" id="ask-btn" data-press>Show days</button><button class="eq" id="ask-notnow" data-press>Not now</button></div></div></article>'
+  + (S.doorAsk?doorRow():'')
   + ex("pics", '<div class="collage c3" aria-hidden="true">'+[{s:21},{s:22},{s:23}].map(tile).join("")+'</div>',
       "A picture can start a letter","Pick one, then say what it meant. The picture goes in the book beside your words.",
       '<p class="t-caption muted">June 3, A walk with Nani</p><p class="t-letter">"She pointed at every dog we passed."</p>')
-  + ex("days", '<div class="drawn" aria-hidden="true">'+I.crescent+'</div>',
-      "Days that matter","Birthdays, months and the days you mark. A good day to tell Asha something.",
-      '<p class="t-caption muted">Asha is Month 14</p><p class="t-letter">"She is walking along the sofa now."</p>')
-  + ex("ideas", '<div class="qcard" aria-hidden="true"><p class="t-kicker muted">A question for Asha</p><p class="t-prompt" style="margin-top:4px">What makes Asha laugh?</p></div>',
-      "Ideas for when you are not sure","Short questions to answer out loud. Skip any that do not fit.",
-      '<p class="t-caption muted">A few words you might say</p><p class="t-letter">"The fan going round. Every single time."</p>')
-  + '</div><p class="t-body promise">It stays in your words.</p>'
-  + '<div class="gutter"><article class="card askcard" id="askcard"><div class="cbody"><h2 class="t-title2">Show pictures here?</h2><p class="t-body muted" style="margin-top:6px">Pictures on this phone can show you days that might make a letter. You can pick which ones.</p><div class="btnrow" style="margin-top:14px"><button class="btn" id="ask-btn" data-press style="flex:1">Show pictures</button></div><p class="t-foot muted" style="margin-top:10px">You can change this any time in Settings.</p></div></article></div></div>';
+  + '</section></div>';
 }
 function ex(id, art, title, body, more){
   return '<article class="card example" data-ex="'+id+'" tabindex="0" role="button" aria-expanded="false" aria-label="An example: '+title+'">'
@@ -632,12 +688,13 @@ const scrollEl = $("#mscroll");
 function switchHTML(){
   return '<div class="switch" id="switchbar"><div class="seg" role="tablist" aria-label="Moments"><button role="tab" id="tab-foryou" aria-selected="'+(S.part==="foryou")+'" data-part="foryou">For you</button><button role="tab" id="tab-recent" aria-selected="'+(S.part==="recent")+'" data-part="recent">Recent</button></div></div>';
 }
-function markState(){ const k = S.perm==="undetermined"?(S.cur==="primer"?"primer":"value"):(S.empty?"empty":S.perm); $$("#states button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.k===k)); }
+function markState(){ const k = S.quiet?"quiet":S.perm==="undetermined"?(S.cur==="primer"?"primer":"value"):(S.empty?"empty":S.perm); $$("#states button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.k===k)); }
 function render(o){
   o = o||{}; markState();
-  const head = '<header class="mhead"><h1 class="t-display" id="mtitle" tabindex="-1">Moments</h1></header>';
+  const head = '<header class="mhead"><h1 class="t-display" id="mtitle" tabindex="-1">Moments</h1><p class="t-body jobline">Choose a day to tell Asha about.</p></header>';
   let body = "";
-  if(S.perm==="undetermined") body = v0HTML();
+  if(S.quiet) body = '<section id="part-foryou" class="gutter part" style="padding-top:8px"><div class="cards">'+promptCard("foryou")+'</div>'+doorRow()+'</section>';
+  else if(S.perm==="undetermined") body = v0HTML();
   else if(live()) body = switchHTML()+'<section id="part-foryou" role="tabpanel" aria-labelledby="tab-foryou" class="gutter part" '+(S.part==="foryou"?"":"hidden")+'>'+partHTML("foryou")+'</section><section id="part-recent" role="tabpanel" aria-labelledby="tab-recent" class="gutter part" '+(S.part==="recent"?"":"hidden")+'>'+partHTML("recent")+'</section>';
   else body = '<section id="part-foryou" class="gutter part" style="padding-top:8px" aria-label="For you">'+partHTML("foryou")+'</section>';
   scrollEl.innerHTML = head + body;
@@ -657,14 +714,8 @@ function bindScroll(){
 
 /* cold launch: only content enters, controls never (A1 R2, R4; A2 R27; A3 R12) */
 function coldEnter(){
-  const visible = $$(".card, .hero, .empty, .qrow", scrollEl).filter(e=>!e.closest("[hidden]"));
-  if(S.perm==="undetermined"){
-    const hero = $("[data-hero]");
-    if(M.rm){ A(hero,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); mlog("MT-A3-R1","value view: one 200 ms fade of the opening block");
-    } else { A(hero,[{opacity:0,transform:"translateY("+T.motion.heroEnter.dy+"px)"},{opacity:1,transform:"none"}],{d:T.motion.heroEnter.ms,e:SP.standard.e}); mlog("MT-A3-R1","value view: opening block heroEnter, dy "+T.motion.heroEnter.dy+", "+T.motion.heroEnter.ms+" ms, standard"); }
-    return;
-  }
-  enterList(visible.slice(0,T.motion.staggerMax), 0, "MT-A1-R2");
+  const visible = $$(".card, .empty, .qrow", scrollEl).filter(e=>!e.closest("[hidden]"));
+  enterList(visible.slice(0,S.perm==="undetermined"?3:T.motion.staggerMax), 0, "MT-A1-R2");
 }
 function enterList(nodes, base, id){
   if(M.rm){ nodes.forEach(n=>A(n,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs,delay:base})); mlog(id||"MT-A1-R2","content in place with one "+T.motion.fadeMs+" ms fade, no travel, no stagger"); return; }
@@ -778,9 +829,9 @@ function dismissable(grab, panel, onDismiss){
 }
 dismissable($("#pr-grab"), $("#primer-sheet"), dy=>{ $("#primer-sheet").style.transform=""; chooseNotNow(dy); });
 
-function openPrimer(){ openLayer($("#L-primer"),{id:"MT-T2-R3"}); setTimeout(()=>$("#pr-t").focus({preventScroll:true}),30); }
+function openPrimer(){ $("#pr-sentence").textContent = PSENT[S.primer]; openLayer($("#L-primer"),{id:"MT-T2-R3"}); setTimeout(()=>$("#pr-t").focus({preventScroll:true}),30); }
 async function chooseNotNow(){
-  await closeLayer($("#L-primer"));
+  if(!$("#L-primer").hidden) await closeLayer($("#L-primer"));
   S.perm = "notnow"; S.part="foryou"; say("Pictures are off for now. Days and ideas are still here.");
   transitionToLive("MT-A3-R16","Not now");
 }
@@ -831,6 +882,10 @@ scrollEl.addEventListener("click", e=>{
   const t = e.target;
   const seg = t.closest("[data-part]"); if(seg){ switchPart(seg.dataset.part); return; }
   const ask = t.closest("#ask-btn"); if(ask){ openPrimer(); return; }
+  if(t.closest("#ask-notnow")){ chooseNotNow(); return; }
+  const dr = t.closest("[data-door]"); if(dr){ openHost({ day:null, card:dr }); return; }
+  const nn = t.closest("[data-notnow]"); if(nn){ setAside(nn.closest(".card")); return; }
+  const ct = t.closest("[data-continue]"); if(ct){ const cd=ct.closest(".card"); if(cd.dataset.kind==="day") openPick(cd.dataset.day, cd); else composeFrom(cd, ct); return; }
   const exCard = t.closest(".example"); if(exCard){ toggleExample(exCard); return; }
   if(t.closest("[data-showpics]")){ openPrimer(); return; }
   if(t.closest("[data-settings]")){ toast("Settings opens here (simulated).",null); return; }
@@ -903,13 +958,13 @@ async function setAside(card){
   card.style.pointerEvents="none"; card.inert = true;
   if(M.rm){
     await A(card,[{opacity:1},{opacity:0}],{d:T.motion.fadeMs,fill:"forwards"}); card.remove();
-    mlog("MT-T4-R15","card set aside: "+T.motion.fadeMs+" ms fade, gap closes at once");
+    mlog("EM-12","card set aside: "+T.motion.fadeMs+" ms fade, gap closes at once");
   } else {
     await A(card,[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"});
     card.style.overflow="hidden";
     await A(card,[{height:h+"px",marginBottom:mb+"px",padding:"8px"},{height:"0px",marginBottom:"0px",padding:"0px"}],{d:SP.standard.d,e:SP.standard.e,fill:"forwards"});
     card.remove();
-    mlog("MT-T4-R15","card fades "+T.motion.exitMs+" ms, cards below close the gap on standard, "+SP.standard.d+" ms");
+    mlog("EM-12","card fades "+T.motion.exitMs+" ms, cards below close the gap on standard, "+SP.standard.d+" ms");
   }
   toast("Set aside.","Undo");
 }
@@ -938,7 +993,7 @@ function undoAside(){
   const tmp = document.createElement("div"); tmp.innerHTML = cardFor(l.part,l.id);
   const el = tmp.firstElementChild; cards.insertBefore(el, before);
   reveal(el);
-  if(M.rm){ A(el,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); mlog("MT-T4-R16","card returns in place by fade, "+T.motion.fadeMs+" ms"); }
+  if(M.rm){ A(el,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); mlog("EM-13","card returns in place by fade, "+T.motion.fadeMs+" ms"); }
   else { A(el,[{opacity:0,transform:"translateY("+T.motion.enter.dy+"px)"},{opacity:1,transform:"none"}],{d:T.motion.enter.ms}); mlog("MT-T4-R16","card returns to its slot with enter, "+T.motion.enter.ms+" ms"); }
   say("Back where it was.");
 }
@@ -987,51 +1042,168 @@ function chooseMore(){
 }
 
 /* ==========================================================================
-   Pick pictures view and capture, with the picture carried (A4)
+   Host sheet: ONE route, TWO bodies (our day tiles; Apple's picker), one tray, one Start.
+   Apple's view is never faded, scaled or moved while mounted (EXH-SEC-6): our paper cover goes over it as a hard cut.
    ========================================================================== */
-const P = { day:null, sel:new Set(), filter:"all", srcCard:null, trigger:null };
-function openPick(dayId, card){
-  const d = DAYS[dayId]; P.day=d; P.sel=new Set(); P.filter="all"; P.srcCard=card; P.trigger=card;
-  $("#pick-t").textContent = d.date; $("#pick-label").textContent = d.label; $("#pick-label").hidden = !d.label;
-  $$(".filters button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f==="all"));
-  drawGrid(); updateFoot();
-  openLayer($("#L-pick"),{id:"MT-A1-R13"}); setTimeout(()=>$("#pick-t").focus({preventScroll:true}),30);
-  $("#pick-sheet").scrollTop = 0;
+const LIMIT = 6;
+const H = { open:false, busy:false, day:null, sel:new Set(), ext:[], body:"day", srcCard:null, layout:"A", apple:"ok", extN:0, held:false };
+H.items = () => (H.day ? H.day.photos.filter(p=>H.sel.has(p.s)) : []).concat(H.ext);
+const CLIP_FULL = "inset(0px 0px 0px 0px round 28px 28px 0px 0px)";
+function sheetGeom(){ const sr=$("#pick-sheet").getBoundingClientRect(), sc=$("#screen").getBoundingClientRect(), k=getK(); return {t:(sr.top-sc.top)/k, w:sr.width/k, h:sr.height/k}; }
+function clipFor(r){ const g=sheetGeom(), t=r.t-g.t; return "inset("+t+"px "+(g.w-r.l-r.w)+"px "+(g.h-t-r.h)+"px "+r.l+"px round 8px 8px 8px 8px)"; }
+function flyTile(seed, a, b, d, e){
+  const c=document.createElement("div"); c.className="carry";
+  c.style.cssText="left:"+a.l+"px;top:"+a.t+"px;width:"+a.w+"px;height:"+a.h+"px;border-radius:8px;box-shadow:none;transform-origin:0 0";
+  c.innerHTML=art(seed); $("#screen").appendChild(c);
+  return A(c,[{transform:"none"},{transform:"translate("+(b.l-a.l)+"px,"+(b.t-a.t)+"px) scale("+(b.w/a.w)+","+(b.h/a.h)+")"}],{d,e,fill:"forwards"}).then(()=>c.remove());
 }
+function openPick(dayId, card){ openHost({ day:DAYS[dayId], card }); }
+async function openHost(o){
+  if(H.open||H.busy) return;
+  H.open=true; H.busy=true; H.day=o.day||null; H.sel=new Set(); H.ext=[]; H.extN=0; H.srcCard=o.card||null; H.apple="ok"; H.held=false;
+  H.body = H.day ? "day" : "apple";
+  const layer=$("#L-pick"), sh=$("#pick-sheet"), scrim=$("[data-scrim]",layer);
+  $("#pick-t").textContent = H.day ? H.day.date : "Choose pictures";
+  $("#pick-label").textContent = (H.day&&H.day.label)||""; $("#pick-label").hidden = !(H.day&&H.day.label);
+  $("#body-day").hidden = H.body!=="day"; $("#body-day").style.opacity=""; $("#body-apple").hidden = H.body!=="apple";
+  $("#hs-swap-row").hidden = !H.day;
+  drawGrid(); renderApple(); renderTray(); setSwapLabel();
+  $("#hs-cover").hidden = H.body!=="apple";   // Apple's view starts under a still paper cover, never a spinner
+  const src = (o.card && H.day) ? $(".collage .tile",o.card) : null, rect = src ? rectIn(src) : null;
+  lastFocus = document.activeElement;
+  layer.hidden=false; setInert(true); $("#body-day").scrollTop=0;
+  let done;
+  if(M.rm){
+    A(scrim,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); done=A(sh,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs});
+    mlog("EM-01","tab to sheet, Reduce Motion: scrim and sheet cross-fade "+T.motion.fadeMs+" ms, no travel, no carry");
+  } else if(rect){
+    const g=$(".gt .tile",$("#pick-grid")), dst=rectIn(g); g.style.visibility="hidden";
+    A(scrim,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs});
+    done=A(sh,[{clipPath:clipFor(rect)},{clipPath:CLIP_FULL}],{d:SP.sheet.d,e:SP.sheet.e});
+    A($("#hs-body"),[{opacity:0},{opacity:0,offset:.6},{opacity:1}],{d:SP.sheet.d,e:SP.sheet.e});
+    flyTile(H.day.photos[0].s, rect, dst, SP.sheet.d, SP.sheet.e).then(()=>{ g.style.visibility=""; });
+    mlog("EM-01","tab to sheet: one paper surface grows from the tapped tile on standard, "+SP.sheet.d+" ms, no overshoot; the lead tile is carried; the rest fades in from 60% of the way; scrim "+T.motion.fadeMs+" ms");
+  } else {
+    A(scrim,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); done=A(sh,[{transform:"translateY(100%)"},{transform:"none"}],{d:SP.sheet.d,e:SP.sheet.e});
+    mlog("EM-02","door to sheet: the sheet rises on standard, "+SP.sheet.d+" ms, no overshoot, no carry (a text row has no picture to carry)");
+  }
+  await done;
+  if(H.body==="apple"){ await A($("#hs-cover"),[{opacity:1},{opacity:0}],{d:T.motion.fadeMs,fill:"forwards"}); $("#hs-cover").hidden=true; mlog("EM-03","Apple's view was mounted after the sheet stopped; our cover fades "+T.motion.fadeMs+" ms, Apple's view never changes opacity"); }
+  H.busy=false; $("#pick-t").focus({preventScroll:true});
+}
+function setSwapLabel(){ $("#hs-swap").textContent = H.body==="day" ? "Choose other pictures" : "This day's pictures"; }
+async function swapBody(to){
+  if(H.busy||H.body===to) return; H.busy=true;
+  const day=$("#body-day"), ap=$("#body-apple");
+  if(to==="apple"){
+    ap.hidden=false; renderApple();
+    await A(day,[{opacity:1},{opacity:0}],{d:T.motion.swapMs,fill:"forwards"}); day.hidden=true; day.style.opacity="";
+  } else {
+    day.hidden=false; await A(day,[{opacity:0},{opacity:1}],{d:T.motion.swapMs}); ap.hidden=true;
+  }
+  H.body=to; setSwapLabel(); H.busy=false;
+  mlog("EM-04","body swap: only our day layer cross-fades, "+T.motion.swapMs+" ms (swapMs); Apple's view is never faded; picks stay in the tray");
+  say(to==="apple"?"Choose pictures":"This day's pictures");
+}
+$("#hs-swap").onclick = ()=>swapBody(H.body==="day"?"apple":"day");
 function drawGrid(){
-  const d=P.day;
-  $("#pick-grid").innerHTML = d.photos.filter(p=>P.filter==="all"||(P.filter==="video"?!!p.v:!p.v)).map((p,i)=>{
-    const pr = P.sel.has(p.s);
-    return '<button class="gt" data-s="'+p.s+'" aria-pressed="'+pr+'" aria-label="'+(p.v?"Video, "+p.v:"Photo")+'">'+tile(p)+'<span class="ring"></span><span class="badge">'+I.check+'</span></button>';
+  if(!H.day){ $("#pick-grid").innerHTML=""; return; }
+  $("#pick-grid").innerHTML = H.day.photos.map(p=>{
+    const pr=H.sel.has(p.s);
+    return '<button class="gt" data-s="'+p.s+'" aria-pressed="'+pr+'" aria-label="'+(p.v?"Video, "+p.v:"Picture")+'">'+tile(p)+'<span class="ring"></span><span class="badge">'+I.check+'</span></button>';
   }).join("");
   reveal($("#pick-grid"));
 }
 $("#pick-grid").addEventListener("click",e=>{
-  const g = e.target.closest(".gt"); if(!g) return;
-  const s = +g.dataset.s; const on = !P.sel.has(s);
-  on?P.sel.add(s):P.sel.delete(s);
-  g.setAttribute("aria-pressed", on);
+  const g=e.target.closest(".gt"); if(!g) return;
+  const s=+g.dataset.s, on=!H.sel.has(s);
+  if(on && H.items().length>=LIMIT){ renderTray(true); say($("#hs-limit").textContent); return; }
+  on?H.sel.add(s):H.sel.delete(s); g.setAttribute("aria-pressed",on);
   if(on && !M.rm) A($(".badge",g),[{transform:"scale(.8)"},{transform:"scale(1)"}],{d:SP.snappy.d,e:SP.snappy.e});
-  updateFoot();
+  renderTray();
 });
-$$(".filters button").forEach(b=>b.onclick=()=>{ P.filter=b.dataset.f; $$(".filters button").forEach(x=>x.setAttribute("aria-pressed", x===b)); drawGrid(); });
-function updateFoot(){
-  const n = P.sel.size;
-  $("#pick-add").disabled = !n; $("#pick-add").textContent = n ? "Add "+n : "Add";
-  $("#pick-clear").hidden = !n;
-  $("#pick-hint").textContent = n ? "" : "Choose one or more to add.";
-  $("#pick-hint").style.display = n?"none":"";
+function renderTray(forceLimit){
+  const items=H.items(), full=items.length>=LIMIT, pend=items.some(p=>p.pending);
+  $("#tray").innerHTML = items.length ? items.map(p=>'<span class="tt'+(p.pending?' pending':'')+'" data-s="'+p.s+'">'+(p.pending?'':tile({s:p.s}))+'</span>').join("") : '<span class="t-sub tray-empty">Choose one or more to start.</span>';
+  const lim=$("#hs-limit");
+  lim.hidden = !(full||pend||forceLimit);
+  lim.textContent = (full||forceLimit) ? "That is as many as one letter holds." : "One picture is still arriving. You can start now.";
+  const st=$("#pick-start"); st.disabled = !items.length; st.setAttribute("aria-disabled",String(!items.length));
+  $("#pick-grab").toggleAttribute("data-off", items.length>0);   // swipe-down is off while anything is chosen
 }
-$("#pick-clear").onclick = ()=>{ P.sel.clear(); drawGrid(); updateFoot(); };
-async function closePick(){ await closeLayer($("#L-pick")); if(P.trigger && document.contains(P.trigger)) { const f=$(".collage",P.trigger)||P.trigger; f.focus && f.focus({preventScroll:true}); } }
-$("#pick-close").onclick = closePick;
-$("#L-pick [data-scrim]").onclick = closePick;
-dismissable($("#pick-grab"), $("#pick-sheet"), async dy=>{ const from="translateY("+dy+"px)"; $("#pick-sheet").style.transform=""; await closeLayer($("#L-pick"),{from}); });
-$("#pick-add").onclick = ()=>{
-  const sel = P.day.photos.filter(p=>P.sel.has(p.s));
-  const lead = $(".gt[aria-pressed=true] .tile", $("#pick-grid"));
-  openCapture({ photos:sel, day:P.day, from:"pick", srcRect: lead?rectIn(lead):null, srcSeed:sel[0].s, words:"", sourceCard:P.srcCard });
-};
+function renderApple(){
+  const f=$("#body-apple");
+  if(H.apple==="failed"){
+    f.innerHTML='<div class="aframe"><p class="t-body">We could not open your pictures just now.</p><div class="chips"><button data-sim="retry">Try again</button></div><button class="textbtn" data-sim="nopic">Tell Asha without a picture</button><p class="t-foot muted">Prototype note: a letter never needs a picture, so Talk and Write stay one tap away in this state.</p></div>'; return;
+  }
+  f.innerHTML='<div class="aframe" role="group" aria-label="Placeholder for the system picture picker">'
+   +'<p class="t-kicker">Placeholder frame</p>'
+   +'<p class="t-body">The phone\'s own picture picker appears here. It is the system\'s view, so this prototype does not draw it and the app cannot style it.</p>'
+   +(H.layout==="B"?'<p class="abar t-foot">Layout B: the system\'s own top bar sits here. Our Not now, tray and Start stay ours.</p>':'')
+   +'<p class="t-foot muted">Prototype only. Pretend the parent did this inside the system view:</p>'
+   +'<div class="chips"><button data-sim="add2">Choose two</button><button data-sim="add1">Choose one more</button><button data-sim="icloud">Choose one from iCloud</button><button data-sim="clearx">Put those back</button><button data-sim="fail">The picker fails</button></div></div>';
+}
+$("#body-apple").addEventListener("click",e=>{
+  const b=e.target.closest("[data-sim]"); if(!b) return; const k=b.dataset.sim;
+  const add=(n,pending)=>{ for(let i=0;i<n;i++){ if(H.items().length>=LIMIT){ renderTray(true); return; } H.ext.push({s:40+(H.extN++%6),pending:!!pending}); } renderTray(); };
+  if(k==="add2") add(2); else if(k==="add1") add(1);
+  else if(k==="icloud"){ add(1,true); const p=H.ext[H.ext.length-1]; setTimeout(()=>{ if(p&&H.open){ p.pending=false; renderTray(); const t=$("#tray .tt:last-child"); if(t) A(t,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); } },3500); mlog("EM-14","iCloud pick: a flat paper box in the tray, no spinner, no shimmer; it fills in with one "+T.motion.fadeMs+" ms fade when it arrives"); }
+  else if(k==="clearx"){ H.ext=[]; renderTray(); }
+  else if(k==="fail"){ H.apple="failed"; renderApple(); say("We could not open your pictures just now."); }
+  else if(k==="retry"){ H.apple="ok"; renderApple(); }
+  else if(k==="nopic"){ hostStart(true); }
+});
+async function hostNotNow(){
+  if(!H.open||H.busy) return; H.busy=true;
+  const layer=$("#L-pick"), sh=$("#pick-sheet"), scrim=$("[data-scrim]",layer);
+  if(H.body==="apple") $("#hs-cover").hidden=false;      // hard cut over Apple's view before anything moves
+  H.sel.clear(); H.ext=[];
+  const card=(H.srcCard&&document.contains(H.srcCard))?H.srcCard:null, src=(card&&H.day)?$(".collage .tile",card):null;
+  if(M.rm){
+    await Promise.all([A(scrim,[{opacity:1},{opacity:0}],{d:T.motion.fadeMs,fill:"forwards"}),A(sh,[{opacity:1},{opacity:0}],{d:T.motion.fadeMs,fill:"forwards"})]);
+    mlog("EM-09","Not now, Reduce Motion: sheet and scrim fade "+T.motion.fadeMs+" ms; picks dropped, nothing announced");
+  } else if(src && H.body==="day"){
+    const r=rectIn(src), g=$(".gt .tile",$("#pick-grid")), a=rectIn(g);
+    g.style.visibility="hidden";
+    A(scrim,[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"});
+    A($("#hs-body"),[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"});
+    flyTile(H.day.photos[0].s, a, r, T.motion.enter.ms, T.motion.easing);
+    await A(sh,[{clipPath:CLIP_FULL},{clipPath:clipFor(r)}],{d:T.motion.enter.ms,e:T.motion.easing,fill:"forwards"});
+    mlog("EM-08","Not now: content fades "+T.motion.exitMs+" ms while the paper returns to the card tile in "+T.motion.enter.ms+" ms (shorter than the way in, timed, no settle); picks dropped, nothing announced");
+  } else {
+    await Promise.all([A(scrim,[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"}),A(sh,[{transform:"none"},{transform:"translateY(100%)"}],{d:T.motion.exitMs,fill:"forwards"})]);
+    mlog("EM-09","Not now: the sheet leaves in "+T.motion.exitMs+" ms; picks dropped, nothing announced");
+  }
+  finishHost(); const f=(card&&H.day)?$(".collage",card):null, tgt=f||lastFocus; if(tgt&&tgt.focus) tgt.focus({preventScroll:true});
+}
+function finishHost(keep){
+  const layer=$("#L-pick"); layer.hidden=true; setInert(!!keep);
+  $$("*",layer).forEach(n=>n.getAnimations&&n.getAnimations().forEach(a=>a.cancel())); layer.getAnimations().forEach(a=>a.cancel());
+  $("#pick-sheet").getAnimations().forEach(a=>a.cancel());
+  H.open=false; H.busy=false; H.held=false; $("#hs-cover").hidden=true; $("#tray").style.visibility=""; updateGlass();
+}
+$("#pick-notnow").onclick = hostNotNow;
+$("#L-pick [data-scrim]").onclick = ()=>{ if(!H.items().length) hostNotNow(); };   // a stray tap never throws picks away
+(function(){ let y0=null, dy=0; const grab=$("#pick-grab"), panel=$("#pick-sheet");
+  grab.addEventListener("pointerdown",e=>{ if(H.items().length||H.busy) return; y0=e.clientY; dy=0; grab.setPointerCapture(e.pointerId); });
+  grab.addEventListener("pointermove",e=>{ if(y0==null) return; dy=Math.max(0,(e.clientY-y0)/getK()); panel.style.transform="translateY("+dy+"px)"; });
+  const up=()=>{ if(y0==null) return; y0=null; if(dy>90){ panel.style.transform=""; hostNotNow(); } else { const d=dy; panel.style.transform=""; if(d>0&&!M.rm) A(panel,[{transform:"translateY("+d+"px)"},{transform:"none"}],{d:SP.snappy.d,e:SP.snappy.e}); } };
+  grab.addEventListener("pointerup",up); grab.addEventListener("pointercancel",up); })();
+$("#pick-start").onclick = ()=>hostStart();
+async function hostStart(none){
+  const items = none ? [] : H.items(); if(H.busy||(!items.length&&!none)) return; H.busy=true;
+  const layer=$("#L-pick"), sh=$("#pick-sheet"), scrim=$("[data-scrim]",layer);
+  if(H.body==="apple") $("#hs-cover").hidden=false;
+  const els=$$("#tray .tt"), rects=els.map(rectIn);
+  $("#tray").style.visibility="hidden";
+  const ctx={ photos:items, day:H.day, from:"tray", words:"", sourceCard:H.srcCard, carries:items.map((p,i)=>rects[i]?{seed:p.s,rect:rects[i]}:null).filter(Boolean) };
+  // in sequence, never both at once: the sheet leaves while the pictures stay and fly; capture was mounted beneath it
+  const cap = openCapture(ctx,{under:true});
+  const leave = Promise.all([A(scrim,[{opacity:1},{opacity:0}],{d:M.rm?T.motion.fadeMs:T.motion.exitMs,fill:"forwards"}),A(sh,[{opacity:1},{opacity:0}],{d:M.rm?T.motion.fadeMs:T.motion.exitMs,fill:"forwards"})]);
+  await Promise.all([cap,leave]);
+  finishHost(true); $("#L-cap").style.zIndex="";
+}
+
 function composeFrom(card, btn){
   if(!card){ openCapture({photos:[],day:null,from:"empty",words:"",sourceCard:null}); return; }
   const kind = card.dataset.kind;
@@ -1049,7 +1221,8 @@ function getK(){ return +getComputedStyle($("#phone")).getPropertyValue("--k") |
 function rectIn(el){ const r=el.getBoundingClientRect(), s=$("#screen").getBoundingClientRect(), k=getK(); return {l:(r.left-s.left)/k,t:(r.top-s.top)/k,w:r.width/k,h:r.height/k}; }
 
 const C = { open:false, listening:false, t0:0, timer:null, ctx:null, srcCard:null };
-async function openCapture(ctx){
+async function openCapture(ctx, opt){
+  opt = opt||{};
   if(C.open) return;           // a double tap opens one capture (A4 R2)
   C.open = true; C.ctx = ctx; C.srcCard = ctx.sourceCard;
   const layer = $("#L-cap");
@@ -1062,35 +1235,28 @@ async function openCapture(ctx){
   $("#L-cap").classList.remove("compact");
   setMode(S.mode,true);
   resetTalk();
-  layer.hidden = false; setInert(true); layer.style.opacity="";
+  layer.hidden = false; setInert(true); layer.style.opacity=""; if(opt.under) layer.style.zIndex="55";
   $("#cap-lamp").style.opacity="";
   const slot = $("#slot");
-  const dst = slot ? rectIn(slot) : null;
-  const carry = !M.rm && ctx.srcRect && dst;
+  const dsts = [slot].concat($$("#cap-photos .strip .tile")).filter(Boolean);
+  let list = null;
+  if(!M.rm){ if(opt.under && ctx.carries && ctx.carries.length) list = ctx.carries; else if(ctx.srcRect && slot) list = [{seed:ctx.srcSeed, rect:ctx.srcRect}]; }
   const write = S.mode==="write";
-  // arrival: write rises (platform), talk dissolves (route.dissolveMs); Reduce Motion: one fade
-  if(M.rm){
+  if(opt.under){
+    mlog("EM-07", M.rm ? "Start, Reduce Motion: the sheet fades "+T.motion.fadeMs+" ms and capture is already there with the pictures in place; no flight" : "Start: capture was mounted beneath the sheet; the sheet leaves in "+T.motion.exitMs+" ms while the chosen pictures stay and fly from the tray to their places, "+T.motion.carryMs+" ms; never both at once");
+  } else if(M.rm){
     A(layer,[{opacity:0},{opacity:1}],{d:T.motion.fadeMs}); mlog("MT-A4-R9","capture opens with one "+T.motion.fadeMs+" ms fade; picture in place from the first frame");
   } else if(write){
     A(layer,[{transform:"translateY(100%)"},{transform:"none"}],{d:SP.standard.d,e:SP.standard.e}); mlog("MT-A4-M3","write rises like the platform sheet, standard spring, "+SP.standard.d+" ms");
   } else {
     A(layer,[{opacity:0},{opacity:1}],{d:T.motion.dissolveMs,e:"linear"}); mlog("MT-A4-M4","talk dissolves in, route.dissolveMs "+T.motion.dissolveMs+" ms");
   }
-  // lamp returns for write (M7); talk has no lamp
   const lamp = $("#cap-lamp"); lamp.hidden = (S.mode!=="write");
-  if(!M.rm && S.mode==="write") A(lamp,[{opacity:0},{opacity:1}],{d:T.motion.lampReturnMs,e:"linear"});
-  // the photo is carried from the card or the picked tile into its slot (A4 option B, M10); never when Reduce Motion
-  if(carry){
-    slot.style.visibility="hidden";
-    const c = document.createElement("div"); c.className="carry";
-    c.style.cssText="left:"+ctx.srcRect.l+"px;top:"+ctx.srcRect.t+"px;width:"+ctx.srcRect.w+"px;height:"+ctx.srcRect.h+"px";
-    c.innerHTML = art(ctx.srcSeed); $("#screen").appendChild(c);
-    const sx = dst.w/ctx.srcRect.w, sy = dst.h/ctx.srcRect.h;
-    const dx = dst.l-ctx.srcRect.l, dy = dst.t-ctx.srcRect.t;
-    c.style.transformOrigin="0 0";
-    await A(c,[{transform:"translate("+0+"px,"+0+"px) scale(1,1)"},{transform:"translate("+dx+"px,"+dy+"px) scale("+sx+","+sy+")"}],{d:T.motion.carryMs,fill:"forwards"});
-    slot.style.visibility=""; c.remove();
-    mlog("MT-A4-M10","picture carried to its place, "+T.motion.carryMs+" ms, bezier; words and controls already still");
+  if(!M.rm && !opt.under && S.mode==="write") A(lamp,[{opacity:0},{opacity:1}],{d:T.motion.lampReturnMs,e:"linear"});
+  if(list){
+    const hid=[];
+    await Promise.all(list.map((c,i)=>{ const d=dsts[i]; if(!d) return null; d.style.visibility="hidden"; hid.push(d); return flyTile(c.seed,c.rect,rectIn(d),T.motion.carryMs,T.motion.easing); }));
+    hid.forEach(d=>d.style.visibility="");
   }
   setTimeout(()=>$("#cap-h").focus({preventScroll:true}),30);
   updateGlass();
@@ -1201,17 +1367,19 @@ $("#tabbar").addEventListener("click",e=>{
    Panel, settings, scaling, glass counter
    ========================================================================== */
 const STATES = [
-  ["value","First open: ask on tap"],["primer","Primer (Continue or Not now)"],["full","Allowed (full)"],["limited","Limited"],["notnow","Not now"],["denied","Denied"],["restricted","Restricted"],["empty","Empty"]
+  ["value","Never asked"],["primer","Never asked, primer open"],["notnow","Not now"],["full","Granted (full)"],["limited","Limited"],["denied","Declined"],["restricted","Restricted"],["off","Library flag off"],["quiet","Quiet or hidden book"],["empty","Granted, no days"]
 ];
 function goState(k){
   closeMenu(); $("#L-sys").hidden=true;
-  ["#L-primer","#L-pick"].forEach(s=>{ $(s).hidden=true; });
+  ["#L-primer","#L-pick"].forEach(s=>{ $(s).hidden=true; }); H.open=false; H.busy=false; H.sel=new Set(); H.ext=[]; $("#L-cap").style.zIndex=""; S.quiet=false;
   if(C.open){ $("#L-cap").hidden=true; C.open=false; stopTalk(); }
   setInert(false);
   if(toastEl){ toastEl.remove(); toastEl=null; }
   S.aside.clear(); S.hiddenPlaces.clear(); S.lastHide=null; S.lastAside=null; S.limitedExtra=false; S.empty=false; S.seenEx=new Set(); S.expanded=null; SEEN.clear();
   S.tab="moments"; $("#pane-moments").hidden=false; $("#pane-other").hidden=true; drawTabs(false);
   if(k==="value"||k==="primer"){ S.perm="undetermined"; }
+  else if(k==="quiet"){ S.perm="full"; S.quiet=true; S.part="foryou"; }
+  else if(k==="off"){ S.perm="off"; S.part="foryou"; }
   else if(k==="empty"){ S.perm="full"; S.empty=true; S.part="recent"; }
   else { S.perm=k; S.part = (k==="full"||k==="limited")?"recent":"foryou"; }
   S.scroll={foryou:0,recent:0};
@@ -1229,12 +1397,20 @@ $("#restart").onclick = ()=>{ S.promptIdx=0; S.letters=new Set(["day3"]); goStat
 $("#rm").onchange = e=>{ M.rm = e.target.checked; root.toggleAttribute("data-rm", M.rm); mlog("MT-A1-R16","Reduce Motion "+(M.rm?"on":"off")+": every move now uses its documented alternative"); if(S.perm==="undetermined") armExamples(); };
 $("#rt").onchange = e=>{ root.toggleAttribute("data-rt", e.target.checked); updateGlass(); };
 $("#dark").onchange = e=>{ root.dataset.theme = e.target.checked?"dark":"light"; };
-$("#sizes").innerHTML = [["1","Default"],["1.4","Large"],["2.4","AX5"]].map(s=>'<button data-v="'+s[0]+'" aria-pressed="'+(s[0]==="1")+'">'+s[1]+'</button>').join("");
+$("#sizes").innerHTML = [["1","Default"],["1.4","Large"],["1.7","AX1"],["2.4","AX5"]].map(s=>'<button data-v="'+s[0]+'" aria-pressed="'+(s[0]==="1")+'">'+s[1]+'</button>').join("");
 $("#sizes").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; $$("#sizes button").forEach(x=>x.setAttribute("aria-pressed", x===b)); S.ts=+b.dataset.v; root.style.setProperty("--ts", b.dataset.v); $("#phone").style.setProperty("--ts", b.dataset.v); document.body.style.setProperty("--ts", b.dataset.v);
-  // attribute used by the stacked-switch rules
-  $("#phone").setAttribute("style", $("#phone").getAttribute("style")); };
+  root.toggleAttribute("data-ax", +b.dataset.v>=1.7); };
 $("#pos").innerHTML = [["second","Second tab (Home, Moments, Book, Me)"],["first","Default tab (Moments first)"]].map(s=>'<button data-v="'+s[0]+'" aria-pressed="'+(s[0]==="second")+'">'+s[1]+'</button>').join("");
 $("#pos").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; $$("#pos button").forEach(x=>x.setAttribute("aria-pressed", x===b)); S.pos=b.dataset.v; drawTabs(true); mlog("Tab bar preview","order changed in the bar only; no other screen changes"); };
+$("#layouts").innerHTML = [["A","A: system bars hidden"],["B","B: system top bar kept"]].map(x=>'<button data-v="'+x[0]+'" aria-pressed="'+(x[0]==="A")+'">'+x[1]+'</button>').join("");
+$("#layouts").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; $$("#layouts button").forEach(x=>x.setAttribute("aria-pressed",x===b)); H.layout=b.dataset.v; if(H.open) renderApple(); };
+$("#doorask").innerHTML = [["1","Shown below the ask card"],["0","Hidden until answered"]].map(x=>'<button data-v="'+x[0]+'" aria-pressed="'+(x[0]==="1")+'">'+x[1]+'</button>').join("");
+$("#doorask").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; $$("#doorask button").forEach(x=>x.setAttribute("aria-pressed",x===b)); S.doorAsk=b.dataset.v==="1"; if(S.perm==="undetermined"&&!S.quiet) render({cold:false}); };
+$("#primerv").innerHTML = ["A","B","C"].map(x=>'<button data-v="'+x+'" aria-pressed="'+(x==="A")+'">Variant '+x+'</button>').join("");
+$("#primerv").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; $$("#primerv button").forEach(x=>x.setAttribute("aria-pressed",x===b)); S.primer=b.dataset.v; if(!$("#L-primer").hidden) $("#pr-sentence").textContent=PSENT[S.primer]; };
+$("#sim-inactive").onclick = ()=>{ if(!H.open) return; H.held=true; $("#hs-cover").hidden=false; mlog("EM-10","phone goes inactive: our paper cover goes over the sheet as a hard cut; picks are held in memory"); };
+$("#sim-active").onclick = ()=>{ if(!H.open||!H.held) return; H.held=false; if(H.body==="day") $("#hs-cover").hidden=true; else $("#hs-cover").hidden=true; mlog("EM-10","phone comes back: the cover lifts, the tray still holds the picks"); };
+$("#sim-lock").onclick = async ()=>{ if(!H.open) return; H.sel.clear(); H.ext=[]; H.held=false; $("#hs-cover").hidden=false; await Promise.all([A($("#L-pick [data-scrim]"),[{opacity:1},{opacity:0}],{d:T.motion.exitMs,fill:"forwards"}),A($("#pick-sheet"),[{transform:"none"},{transform:"translateY(100%)"}],{d:T.motion.exitMs,fill:"forwards"})]); finishHost(); mlog("EM-11","App lock engages: the sheet closes, picks and temporary copies are dropped, nothing is written"); };
 $("#panel-open").onclick = ()=>$("#panel").dataset.open="1";
 $("#panel-close").onclick = ()=>$("#panel").dataset.open="0";
 function updateGlass(){
@@ -1246,7 +1422,7 @@ function updateGlass(){
 function fit(){
   const wrap=$("#phone-wrap"), phone=$("#phone");
   if(window.innerWidth<=560){ wrap.style.width=wrap.style.height=""; phone.style.setProperty("--k","1"); return; }
-  const k = Math.min(1,(window.innerHeight-26-24-22)/844);
+  const k = Math.min(1,(window.innerHeight-44-24-22)/844);
   wrap.style.width = (390*k)+"px"; wrap.style.height=(844*k)+"px"; phone.style.transform="scale("+k+")"; phone.style.setProperty("--k",k);
 }
 window.addEventListener("resize",fit);
@@ -1254,7 +1430,7 @@ document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   if(!$("#L-sys").hidden) return;
   if(C.open){ closeCapture(); return; }
-  if(!$("#L-pick").hidden){ closePick(); return; }
+  if(!$("#L-pick").hidden){ hostNotNow(); return; }
   if(!$("#L-primer").hidden){ chooseNotNow(); }
 });
 $("#L-primer [data-scrim]").onclick = chooseNotNow;

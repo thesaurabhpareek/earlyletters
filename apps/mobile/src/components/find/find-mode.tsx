@@ -5,7 +5,7 @@
  * book shown to the signed-in account). Reads this phone only; the query lives in this component's state and is gone
  * when it unmounts (R14); nothing here logs, counts or sends a term.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { findCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
@@ -16,31 +16,41 @@ import { entryDateline, entryDatelineA11y } from '@/components/book/date-change.
 import { announce, useTheme } from '@/lib/a11y';
 import { fill } from '@/lib/copy';
 import { createQueryDebounce } from '@/lib/find/debounce';
-import type { FindResult } from '@/lib/find/search';
 import { findAvailableNow, findLetters, getEntry, listEntriesForChild, type Child } from '@/lib/store';
 import { copy } from '@/lib/copy';
-import { excerptRuns, findView, rowLabel } from './find-view.logic';
+import { excerptRuns, FIND_EMPTY, FIND_FIELD_PROPS, findReducer, findView, rowLabel } from './find-view.logic';
 
 /** `paused` is the remote pause, read by the Book (findPausedNow); Find imports no remote module (R22). */
 export function FindMode({ child, paused, onCancel, onOpen }: { child: Child; paused: boolean; onCancel: () => void; onOpen: (id: string) => void }) {
   const { c } = useTheme();
-  const [raw, setRaw] = useState('');
-  const [result, setResult] = useState<FindResult | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [{ raw, result, failed }, dispatch] = useReducer(findReducer, FIND_EMPTY);
   const hasLetters = listEntriesForChild(child.id).length > 0;
   const on = findAvailableNow({ paused, hasLetters });
 
   const run = useRef<(q: string) => void>(() => {});
   run.current = (q) => {
     try {
-      setFailed(false);
-      setResult(findLetters(q, child.id));
+      dispatch({ type: 'found', result: findLetters(q, child.id) });
     } catch {
-      setFailed(true);
+      dispatch({ type: 'failed' });
     }
   };
   const debounce = useMemo(() => createQueryDebounce((q) => run.current(q)), []);
   useEffect(() => () => debounce.dispose(), [debounce]);
+
+  // The query and the excerpts are the parent's words: they do not outlive the screen being drawn (R14). FindMode is
+  // not unmounted when it draws nothing, so going dark clears them here, and Cancel clears them too.
+  useEffect(() => {
+    if (on) return;
+    debounce.cancel();
+    dispatch({ type: 'clear' });
+  }, [on, debounce]);
+  useEffect(() => () => dispatch({ type: 'clear' }), []);
+  const cancel = () => {
+    debounce.cancel();
+    dispatch({ type: 'clear' });
+    onCancel();
+  };
 
   const view = findView(result, failed);
   const hits = result?.status === 'done' ? result.hits : [];
@@ -57,20 +67,19 @@ export function FindMode({ child, paused, onCancel, onOpen }: { child: Child; pa
             label={findCopy.fieldLabel}
             labelHidden
             accessibilityHint={findCopy.fieldHint}
-            placeholder={fill(findCopy.placeholder, { child: child.name || 'your child' })}
+            placeholder={fill(findCopy.placeholder, { child: child.name })}
             value={raw}
             onChangeText={(t) => {
-              setRaw(t);
+              dispatch({ type: 'typed', raw: t });
               debounce.push(t);
             }}
             autoFocus
-            autoCorrect={false}
-            spellCheck={false}
+            {...FIND_FIELD_PROPS}
             returnKeyType="search"
             onSubmitEditing={() => debounce.flush()}
           />
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={findCopy.cancel} onPress={onCancel} style={{ minHeight: tokens.target.min, justifyContent: 'center' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={findCopy.cancel} onPress={cancel} style={{ minHeight: tokens.target.min, justifyContent: 'center' }}>
           <Text variant="body">{findCopy.cancel}</Text>
         </Pressable>
       </View>

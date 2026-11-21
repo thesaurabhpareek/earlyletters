@@ -81,6 +81,8 @@ const EXEMPT: Record<string, string> = {
   plusPriceLine: 'pricing.test.ts',
   HELPLINE_DIRECTORY: 'helplines.test.ts',
   HELPLINE_MAX_AGE_DAYS: 'helplines.test.ts',
+  CONSENT_LOCALE: 'consent-manifest.test.ts',
+  CONSENT_SHOWN_IDS: 'consent-manifest.test.ts',
 };
 
 describe('content rules drift', () => {

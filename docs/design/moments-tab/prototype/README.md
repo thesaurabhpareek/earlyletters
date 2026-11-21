@@ -1,68 +1,46 @@
-# Moments prototype (Asha examples)
+# Moments prototype (Asha examples): experience and motion, hybrid
 
-File: `moments-prototype.html`. One self-contained file, no network, no build. Open it in a browser. On a phone it fills the screen and the controls sit behind the "Controls" link at the top. On a desktop it shows an iPhone-sized frame and a side panel.
+File: `moments-prototype.html`. One self-contained file (about 108 KB), no network, no remote loads, no external fonts, no build. Open it in a browser. On a phone it fills the screen and the controls sit behind the "Controls" link at the top. On a desktop it shows an iPhone-sized frame and a side panel.
 
-Status: PROPOSED design prototype. It changes no token, component or screen in the repo.
+Status: PROPOSED design prototype. It changes no token, component or screen in the repo. The spec it shows is `docs/product/moments-tab/EXPERIENCE-AND-MOTION.md`; the motion ids in the live "Motion that just played" list (EM-01 to EM-14) are the ids of that spec's motion map. It extends the D7 prototype (wip/moments-d7, abffeecd).
 
-Founder ruling of 21 Nov applied: the first Moments release ships with the photo library read. So the prototype's main path is the library path: value view, ask on tap (primer, then the phone's own alert), Not now, Limited, denied. No state is drawn as a later phase. Founder ruling of 21 Nov also applied: places and special occasions are part of Moments. Day cards show a place label (fictional: Maple Park, Lakeside Market, Nani's garden) and occasion cards show a birthday, a monthiversary, a ticked holiday, and parent-marked days. The card menu offers Not this one and Hide this place. No faces, no people names, no counts, no gaps, no streaks, no machine titles. Place labels reverse ML-6 and the earlier no-place rule; the founder owns that reversal, and where a real place name comes from (typed by the parent, or read from the photo and reverse geocoded) is still open for security and counsel.
+## What this version adds to D7
+
+- The tab in every access state, from the panel's "Access state of the tab": Never asked, Never asked with the primer open, Not now, Granted (full), Limited, Declined, Restricted, Library flag off, Quiet or hidden book, Granted with no days.
+- Cards with the new anatomy: lead tile, reason line, city or occasion line, and two actions of equal weight (Continue and Not now). Places are city level only (Pune, Lisbon), never a venue.
+- The tab's doors: a quiet "Choose pictures" row in the states where it belongs, the limited-library row beside it in Limited (different labels, each with a one-line purpose), and the ask card with Show days and Not now at equal size.
+- The host sheet: one sheet, two bodies. Tap a day card's lead tile or Continue to open it with our day tiles; tap "Choose other pictures" to swap to a neutral, labelled placeholder frame where the system's own picker would be. The placeholder does NOT imitate that picker. Its prototype-only buttons pretend the parent chose pictures there (two, one more, one from iCloud), put them back, or make the picker fail.
+- The tray and the one Start: still thumbnails (abstract paper tones), one calm limit line with no digit, Start disabled until something is chosen, swipe-down and scrim tap off while anything is chosen, Not now always on screen.
+- The tab to sheet expand: one empty paper surface grows from the tapped lead tile (a clip that animates from the tile's frame to the full sheet, radius 8 to 28), the lead tile is carried to its place, the rest fades in from 60 percent of the way. The curve is the `standard` spring sampled from the token stiffness and damping with overshoot clamped, so there is no bounce.
+- Start to capture: capture sits beneath the sheet, the sheet leaves in 160 ms, and the chosen tray tiles fly into capture's picture slots in 320 ms. The Reduce Motion form is a 200 ms cross-fade with no flight.
+- Not now on the sheet: the paper returns to the card's lead tile in 280 ms with the lead tile carried back; nothing is announced.
+- Not now on a card: fade 160 ms, the gap closes, Undo stays. No confetti, no counts.
+- Unhappy paths from the panel: the phone goes inactive (a paper cover goes over the sheet as a hard cut, picks held), comes back, and App lock engages (the sheet closes, picks dropped). In the placeholder: an iCloud pick (a flat paper box in the tray, no spinner, fills in after a few seconds) and "The picker fails" (a calm line, Try again, and a row to tell Asha without a picture).
+- Switches: Sheet layout A (system bars hidden) or B (system top bar kept; the placeholder labels where that bar would sit); Door when never asked (shown below the ask card, or hidden until answered); Primer wording A, B or C from the CMO review; text sizes Default, Large, AX1 and AX5 (AX1 and above switch the sheet to one column and move Not now to its own row); Reduce Motion (also read from the phone's setting), Reduce Transparency, dark theme.
 
 ## What is real
-- Colours (light and dark), radii, spacing, type sizes and line heights, elevation, and every duration, spring and curve value are copied from `packages/design-tokens/src/tokens.ts`. The two springs are sampled from the token stiffness and damping into a CSS `linear()` easing.
-- Words come from D5 (`wip/moments-d5`), with the tab named Moments. No machine title, no count, no streak, no guilt, no brand name typed.
-- Behaviour: all state changes, the For you and Recent switch with each part keeping its place, set aside with Undo, "Another question", example cards that settle once and open in place, pick pictures with check badges, the capture handoff, Keep, and the return mark on the source card.
-- Settings that work: Reduce Motion (also read from the phone's setting), Reduce Transparency, dark theme, text size (Default, Large, AX5 style scaling), live glass counter (max three).
-- Contrast is the token pairs. Targets are at least 44 pt (56 pt for the ask and the primer buttons).
+
+- Colours (light and dark), radii, spacing, type sizes and line heights, elevation, and every duration and curve are copied from `packages/design-tokens/src/tokens.ts`. The two springs are sampled from the token stiffness and damping into a CSS `linear()` easing, cut within 0.6 percent of rest so `standard` ends at about 392 ms.
+- Behaviour: every state change above, the For you and Recent switch, Another question, set aside with Undo, the primer and the simulated system alert, capture with Talk and Write, and Keep.
+- Contrast is the token pairs. Targets are at least 44 pt (56 pt for Start and the ask buttons).
 
 ## What is placeholder
-- Every picture is a drawn SVG (sun, hills, a tree, a kite, a bench). No photograph, no face. The family is the fictional Asha. The dates are invented and carry no year.
+
+- Every picture is an abstract paper-tone tile. No photograph, no face, no scene. The family is the fictional Asha, and the dates carry no year.
+- The system's picker is a labelled frame, not a drawing of it. Nothing inside Apple's view can be styled by us; see the spec's section 11.
 - Fonts: Literata and Mukta are not bundled, so Georgia and the system sans stand in.
-- The iOS permission alert is simulated and labelled. Its button words are UNVERIFIED and Apple's, not ours.
-- Home, Book and Me are stubs. "Read it" and "Open Settings" show a plain note.
-- PROPOSED values not yet in `tokens.ts`: `glassFallback`, `highlight` (design language v2 4.1), the `kicker` style, the video pill alpha 0.68 (A2 R12 asks for 0.6 or more), `heroEnter` (dy 12, 420 ms), `momentCarry` 320 ms.
-- The four primer lines (what it reads, keeps, never does, if you say not now) are drafts for `content` and counsel.
-- Nothing is stored or sent. Reload resets everything.
+- The system permission alert is simulated and labelled; its button words are the phone's, not ours.
+- All words are placeholders for `content` and the privacy chief. The three primer sentences are the CMO's drafts.
+- `carryMs` 320 is a PROPOSED token (not in `tokens.ts` yet). The O-27 ruling on the tray flight is the founder's.
+- Home, Book and Me are stubs. Nothing is stored or sent. Reload resets everything.
 
-## Motions and sources
-Each play is also written in the live "Motion that just played" list in the panel, with the row id. "RM" is the Reduce Motion form.
+## Known differences from the spec and the ruling
 
-| Motion | Value | RM | Source row |
-|---|---|---|---|
-| Cold launch, first six cards enter | opacity, y 8, 280 ms, 30 ms stagger | one 200 ms fade, no travel | MT-A1-R2, MT-A2-R27, MT-A3-R12 |
-| Value view opening block | dy 12, 420 ms, standard | 200 ms fade | MT-A3-R1 |
-| Examples settle once, one at a time | frames rise 12 pt, crescent draws 1200 ms, question fades 200 ms | shown complete | MT-A3-R4 |
-| Example opens in place | height 280 ms, content after 80 ms | instant, 200 ms fade | MT-A3-R5 |
-| Press | cards 0.98, controls 0.97, snappy | opacity 0.9 only | MT-A4 M1, M2, MT-A1-R4 |
-| Primer sheet rises, swipe down is Not now | standard spring, scrim 200 ms | 200 ms fade | MT-T2-R3, D2 S2 |
-| Continue to the alert | nothing of ours moves | same | MT-A3-R8 |
-| Allow, Limited, Don't Allow, Not now | leave 160, gap 280, list from 160, 590 ms in all | 200 ms cross-fade | MT-A3-R10, R16, MT-T2 |
-| Limited: choose more | day inserts, 280 ms | 200 ms fade | MT-A3-R17 |
-| Picture arrives | 200 ms opacity from the paper tile, once per picture | same (opacity) | MT-A2-R8, MT-A3-R13 |
-| For you and Recent switch | cross-fade 150 ms in place | same | MT-A1-R10 |
-| Another question | words cross-fade 150 ms, height on standard | height at once | MT-A1-R10, MT-A2-R23, R24 |
-| Set aside | fade 160 ms, gap closes on standard | 200 ms fade, gap at once | MT-T4-R15, MT-A1-R14 |
-| Hide this place | its days fade 160 ms, gaps close on standard; Undo restores | 200 ms fade, gaps at once | MT-T4-R15, R16 |
-| Undo | returns to its slot with enter 280 ms | 200 ms fade | MT-T4-R16 |
-| Card tap opens pick pictures | sheet rises on standard | 200 ms fade | D3 7.1 |
-| Pick, Add: capture opens | talk dissolves 280 ms; write rises on standard | 200 ms fade | MT-A4 M3, M4, R9 |
-| Picture carried into capture | 320 ms, bezier (option B, spike) | none, picture in place at frame 1 | MT-A4 M10, MT-A4-R8, R9 |
-| Write lamp returns | 280 ms | none | MT-A4 M7 |
-| Keyboard: picture goes compact | standard layout move | instant | MT-A4 M9 |
-| Talk and write swap | 150 ms in place, picture still | same | MT-A4 M6 |
-| Listening glow | one 7500 ms breath loop | static | MT-A1-R15, tokens `breathIdleMs` |
-| Keep, the saved moment | scale 0.9, chip at 250, leaves at 550, done by 900 | chip fade, one cross-fade | MT-A4 M14, MOTION 5e |
-| Return mark on the card | 200 ms fade | same | MT-A4 M16 |
-| Empty state breath | 8000 ms, the only loop on the tab | off | MT-A1-R15, tokens `emptyBreathMs` |
-| Tab swap | the platform's cut | same | MT-T1-R7 |
-| Tab bar preview toggle | 150 ms fade, prototype only | same | none (prototype aid) |
-
-## Where the source docs disagree, and what I chose
-- Primer: a sheet (D2, T2, concept) rather than an inline card (A3).
-- Cold launch stagger: first six cards (A2, A3, T4), not three (A1).
-- Switch and prompt cross-fade: 150 ms (A1, T4), not 200 ms (D1) or 120 out and 160 in (A2).
-- Video marker shows the length (A2, D3). Concept and D1 say no length until security and counsel clear the read.
-- Set aside is in a More menu, and also on long press (D1, D3, T4). Swipe is not built.
-- After Keep the prototype returns to Moments (concept, brief). The current ruling lands on the Book (A4-R20, MT-T1-R15).
-- Tab position: Home default and Moments second, per D1. The side switch only reorders the bar.
+- After Keep the prototype returns to the Moments tab so the source card's "A letter is here" mark can be seen. The current ruling lands on the Book (A4-R20); return-to-tab is open (O-19).
+- The web clip animates `clip-path` where the app animates the growing surface's frame and radius with the content laid out once at final size.
+- Apple's view is never faded, scaled or moved in the spec; the prototype only models that with a paper cover that fades while the placeholder stays still.
+- The sampled spring cut is a prototype convenience: it can leave about 5 pt of final movement on a full-screen travel.
 
 ## Not verified
-Device frame budgets, VoiceOver on a phone, real iOS alert wording, Safari spring easing. The page was loaded in a headless Chrome and the console had no errors; screenshots were reviewed by eye.
+
+Frame budgets on an iPhone SE 3, VoiceOver on a phone, the real system alert wording, Safari's `linear()` easing, and everything Apple's picker does. The page was run in headless Chrome and the console had no errors; screenshots of the tab states, the sheet at Default and AX5, the placeholder body and the capture hand-off were reviewed by eye.

@@ -1,11 +1,18 @@
-// NS-01 photo with a letter in Node, no phone: the strip and the metadata guard, backing out, the words rule, the
-// parent's own words and place, and failed picks. The real store, the caps against its CHECK and the erase paths run in
+// NS-01 photo with a letter in Node, no phone: the strip and the metadata guard, backing out, the words rule, a second
+// picture with its confirm and Undo, changes that never touch the words or the recording, the quiet day, the parent's own
+// words and place, and failed picks. The real store, the caps against its CHECK and the erase paths run in
 // photos-device, photos-phone and erase-all.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { newQuietMark } from '../src/components/book/quiet-day.logic';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
+import { cardLabelWithPhoto, photoChapters, photosLens } from '../src/lib/photos/lens';
+import { photos } from '../src/lib/photos/copy';
 import { canKeepWithPhoto, commitPhoto, PHOTO_FREE_MARGIN_BYTES, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
-import type { PhotoPicker } from '../src/lib/photos/types';
+import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
 
 const ONE = { entryId: 'e1', finalText: 'She laughed at the dog today.', text: null as string | null };
@@ -175,8 +182,86 @@ describe('[NS-01-R5] a picture without words cannot be kept', () => {
   });
 });
 
+describe('[NS-01-R7] a second picture replaces only after confirm, with Undo', () => {
+  it('[NS-01-R7] asks first, keeps the first until confirmed, and Undo inside 10 seconds restores it', async () => {
+    const { d, store, files, clock } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg({ seed: 1 }) });
+    const first = store.get('e1')!;
+    const ask = await addPhotoToLetter(d, { ...ONE, bytes: makeJpeg({ seed: 2 }) });
+    expect(ask.status).toBe('needs_confirm');
+    expect(store.get('e1')).toEqual(first);
+    expect(files.disk.size).toBe(1);
+
+    const done = await addPhotoToLetter(d, { ...ONE, bytes: makeJpeg({ seed: 2 }) }, true);
+    expect(done.status).toBe('replaced');
+    if (done.status !== 'replaced' || !done.ticket) throw new Error('no ticket');
+    expect(store.get('e1')!.mediaId).not.toBe(first.mediaId);
+    expect(files.disk.has(photoPath(first))).toBe(true); // the first file waits for the window
+    clock.t += UNDO_WINDOW_MS - 1;
+    expect(await undoPhotoChange(d, done.ticket)).toBe(true);
+    expect(store.get('e1')).toEqual(first);
+    expect(files.disk.size).toBe(1);
+  });
+  it('[NS-01-R7] after 10 seconds Undo is refused and settling removes the first file', async () => {
+    const { d, store, files, clock } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg({ seed: 1 }) });
+    const first = store.get('e1')!;
+    const done = await addPhotoToLetter(d, { ...ONE, bytes: makeJpeg({ seed: 2 }) }, true);
+    if (done.status !== 'replaced' || !done.ticket) throw new Error('no ticket');
+    clock.t += UNDO_WINDOW_MS + 1;
+    expect(await undoPhotoChange(d, done.ticket)).toBe(false);
+    await settlePhotoChange(d, done.ticket);
+    expect(files.disk.has(photoPath(first))).toBe(false);
+    expect(files.disk.size).toBe(1);
+  });
+  it('[NS-01-R7] remove is one tap with Undo for 10 seconds', async () => {
+    const { d, store, files } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const before = store.get('e1')!;
+    const ticket = removePhotoFromLetter(d, 'e1')!;
+    expect(store.get('e1')).toBeNull();
+    expect(files.disk.size).toBe(1);
+    expect(await undoPhotoChange(d, ticket)).toBe(true);
+    expect(store.get('e1')).toEqual(before);
+  });
+  it('[NS-01-R7] a replace that fails leaves the first picture in place', async () => {
+    const files = memoryFiles();
+    const { d, store } = deps({ files });
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg({ seed: 1 }) });
+    const first = store.get('e1')!;
+    const bad = await addPhotoToLetter(d, { ...ONE, bytes: Uint8Array.of(1, 2, 3) }, true);
+    expect(bad.status).toBe('replaced');
+    expect(store.get('e1')).toEqual(first);
+    expect(files.disk.size).toBe(1);
+  });
+});
+
+describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
+  it('[NS-01-R25] a "Not much today" mark is refused with 0 files and 0 rows, and its page draws no picture control', async () => {
+    const mark = newQuietMark({ id: 'q1', occurredOn: '2026-06-12', capturedAt: '2026-06-12T20:00:00Z' });
+    const { d, files, store } = deps();
+    const r = await addPhotoToLetter(d, { entryId: mark.id, finalText: mark.finalText, bytes: makeJpeg(), text: null });
+    expect(r.status === 'added' && r.result.status).toBe('needs_words');
+    expect(files.writes + store.puts).toBe(0);
+    // The letter page offers Add only on a letter with words; a mark has none (D-084), so it draws nothing.
+    const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).toMatch(/const words = draft \|\| finalText\.trim\(\)\.length > 0;/);
+    expect(page).toMatch(/return controls\.add \? \(/); // author and words, through letterPhotoControls
+  });
+});
+
 describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
-  it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
+  it('[NS-01-R21][BL-957] the letter page keeps 140 and 60 characters a person sees: no maxLength on its fields (UTF-16 units), and editing caps by characters', async () => {
+    const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).not.toMatch(/maxLength/);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const ki = '\u0915\u093F';
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
+    expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
+  });
+  it('[NS-01-R9a] the picture has a fixed label: [NS-01-R9] no typed words, the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
   });
@@ -286,5 +371,90 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     await runPick(p).done;
     expect(calls.permission).toBe(0);
     expect(Object.keys(p).filter((k) => /permission|authori[sz]/i.test(k))).toEqual(['requestPermission']); // only the spy we added
+  });
+});
+
+describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
+  const L = (id: string, over: object = {}) => ({ id, inBook: true, ...over });
+  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, bytes: 1, sha256: 'x', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
+  const ids = (lens: ReturnType<typeof photosLens>) => [...lens.photos.keys()].sort();
+
+  it('[NS-01-R10] offered only when a kept, open letter has a picture; no empty state otherwise', () => {
+    expect(photosLens([L('a')], [])).toEqual({ visible: false, photos: new Map() });
+    expect(photosLens([L('a')], [P('a')]).visible).toBe(true);
+    // a picture whose letter is not kept, a quiet day, a closed seal or a letter in Recently deleted does not count
+    expect(photosLens([L('a', { inBook: false })], [P('a')]).visible).toBe(false);
+    expect(photosLens([L('a', { kind: 'not_much' })], [P('a')]).visible).toBe(false);
+    expect(photosLens([L('a')], [P('a')], { isClosedSeal: () => true }).visible).toBe(false);
+    expect(photosLens([L('a')], [P('a', { deletedAt: '2026-11-12T00:00:00Z' })]).visible).toBe(false);
+  });
+  it('[NS-01-R10a] the Photos lens appears with the first picture', () => {
+    expect(photosLens([L('a'), L('b')], []).visible).toBe(false);
+    expect(photosLens([L('a'), L('b')], [P('a')]).visible).toBe(true); // the first picture of one kept, open letter
+  });
+  it('[NS-01-R10b] a sealed letter\'s picture waits', () => {
+    // Only the closed seal's picture waits; an open letter's picture still counts. (No seal state exists on this phone yet:
+    // lib/photos/seal.ts is the one seam, and the hook passes it.)
+    const sealed = (id: string) => id === 's';
+    const lens = photosLens([L('s'), L('o')], [P('s'), P('o')], { isClosedSeal: sealed });
+    expect(ids(lens)).toEqual(['o']);
+    expect(photosLens([L('s')], [P('s')], { isClosedSeal: sealed }).visible).toBe(false);
+    const hook = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hook).toMatch(/photosLens\(letters, photoDeps\(\)\.store\.all\(\), \{ isClosedSeal \}\)/);
+    expect(readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'seal.ts'), 'utf8')).toMatch(/export const isClosedSeal = \(_entryId: string\): boolean => false;/);
+  });
+  it('[NS-01-R10c] no lens without a picture', () => {
+    for (const letters of [[], [L('a')], [L('a', { inBook: false })]]) expect(photosLens(letters, []).visible).toBe(false);
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
+  });
+  it('[NS-01-R11] the lens shows no count and no add control', () => {
+    // Mutant "add a count to the header": any size, length or digit in the lens components' rendered strings fails these.
+    const lensSrc = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'photos-lens.tsx'), 'utf8');
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(lensSrc).not.toMatch(/\.size\b|\.length\b|Add a photo|addPhoto|\+ /);
+    expect(book).not.toMatch(/lens\.photos\.size|photos\.size\}/);
+    expect(book).not.toMatch(/book\.lens[^\n]*(count|total)/i);
+    for (const s of [photos.book.lens.label, photos.book.lens.months, photos.book.lens.photos]) expect(s).not.toMatch(/\d|\{count\}|\{n\}/);
+    const lens = photosLens([L('a'), L('b'), L('c')], [P('a'), P('b'), P('c')]);
+    expect(Object.keys(lens).sort()).toEqual(['photos', 'visible']); // no total anywhere
+  });
+  it('[review B on #840] the lens hook reads nothing while the switch is off, re-reads on letter changes only, keeps its object when nothing changed; the list resets on a lens switch; the card says one stop; the bar reads the list on screen', () => {
+    const hook = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'hooks.ts'), 'utf8');
+    const fn = hook.slice(hook.indexOf('export function usePhotosLens'));
+    expect(fn.indexOf('if (!on || !childId) return EMPTY_LENS;')).toBeGreaterThan(-1);
+    expect(fn.indexOf('if (!on || !childId) return EMPTY_LENS;')).toBeLessThan(fn.indexOf('photoDeps()')); // nothing read with the switch off
+    expect(fn).toMatch(/subscribeTo\('entries', update\)/);
+    expect(fn).toMatch(/sameLens\(prev, next\) \? prev : next/);
+    const book = readFileSync(join(__dirname, '..', 'src', 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/compactMonth\(sections, topKey \?\? sections\[0\]\?\.key \?\? null\)/); // N4: not chapters[0]
+    expect(book).not.toMatch(/chapters\[0\]/);
+    expect(book).toMatch(/scrollTo\?\.\(\{ y: 0, animated: false \}\)/);
+    expect(cardLabelWithPhoto('Tuesday, 3 March. She laughed.', 'Rain boots')).toBe('Tuesday, 3 March. She laughed. Rain boots');
+    expect(cardLabelWithPhoto('She laughed', 'Rain boots')).toBe('She laughed. Rain boots');
+    expect(cardLabelWithPhoto('She laughed!', 'Rain boots')).not.toMatch(/\.\.|!\./);
+  });
+  it('[NS-01-R11] lists the Book\'s own chapters, newest first, keeping only letters that have a picture, and keeps no count', () => {
+    const lens = photosLens([L('a'), L('b'), L('c'), L('d')], [P('a'), P('b'), P('d')]);
+    expect(ids(lens)).toEqual(['a', 'b', 'd']);
+    // The Book's chapters, newest first as the Book reads; a chapter whose letters have no picture is dropped.
+    const chapters = [
+      { key: 'm7', data: [{ id: 'd' }, { id: 'c' }] },
+      { key: 'm6', data: [{ id: 'x' }] },
+      { key: 'm5', data: [{ id: 'b' }, { id: 'a' }] },
+    ];
+    expect(photoChapters(chapters, lens.photos).map((c) => [c.key, c.data.map((e) => e.id)])).toEqual([['m7', ['d']], ['m5', ['b', 'a']]]);
+    expect(chapters[0].data.length).toBe(2); // the Book's own chapters are not changed
+    expect(Object.keys(lens).sort()).toEqual(['photos', 'visible']); // no total anywhere
+  });
+  it('[NS-01-R12] the lens disappears quietly when the last picture goes', async () => {
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const letters = [L('e1')];
+    expect(photosLens(letters, store.all()).visible).toBe(true);
+    removePhotoFromLetter(d, 'e1');
+    expect(photosLens(letters, store.all())).toEqual({ visible: false, photos: new Map() });
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    expect(photosLens([], store.all()).visible).toBe(false); // its letter is gone
   });
 });

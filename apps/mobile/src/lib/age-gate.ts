@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { AGE_GATE_PASSED_KEY as PASSED, AGE_GATE_STOPPED_KEY as STOPPED_AT, answerGate, decideGate } from './age-gate.logic';
 import { agreementRows, decideEntry, type AgreementSurface, type EntryDecision } from './agreements.logic';
+import { clearPendingEmailRequest, takePendingAuthLink } from './auth/pending';
 import { clearPendingInvite } from './family/pending-invite';
 import { deleteSetting, getSetting, hasAgreement, recordAgreement, setSetting, subscribeTo, uuidv7 } from './store';
 
@@ -21,7 +22,8 @@ function readDecision(now = Date.now()): EntryDecision {
 
 /**
  * Records the answer: a boolean for Yes, the time of a No. Nothing else is written.
- * A No also drops an invite link that opened the app (it is never used by someone under 18).
+ * A No also drops an invite link that opened the app and an email sign-in link held in memory (NS-39-R14: nothing that
+ * came with a link is kept; neither is used by someone under 18).
  */
 export function answerAgeGate(answer: 'yes' | 'no'): void {
   const s = answerGate(answer, Date.now());
@@ -32,6 +34,8 @@ export function answerAgeGate(answer: 'yes' | 'no'): void {
     deleteSetting(PASSED);
     setSetting(STOPPED_AT, s.stoppedAt!);
     void clearPendingInvite();
+    takePendingAuthLink();
+    void clearPendingEmailRequest(); // the typed address (memory) and the sent-email time (Keychain)
   }
 }
 

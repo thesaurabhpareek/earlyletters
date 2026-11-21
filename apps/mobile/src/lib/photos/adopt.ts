@@ -7,11 +7,25 @@ import { clearPhotoNotSaved, markPhotoNotSaved } from './failures';
 import type { PendingPhoto } from './pending';
 import type { PhotoDeps } from './types';
 
-let adopting = false;
+/**
+ * One adopt at a time, in the order asked (BL-1444 gap 2). A second adopt waits for the first and then looks at the
+ * picture again, so it is neither dropped nor run twice: once the first has stored the picture there is nothing left
+ * to adopt. `dropQueuedAdopts` ends the wait of every adopt that has not started (sign-out, account switch, Erase
+ * everything), so a queued adopt cannot store a picture the parent has just left behind.
+ */
+let tail: Promise<void> = Promise.resolve();
+let epoch = 0;
 
-export async function adoptPending(pending: PendingPhoto | null, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
-  if (!pending?.source || adopting) return;
-  adopting = true;
+/** Adopts that have not started will not run. One already running finishes (it cannot be cancelled halfway). */
+export function dropQueuedAdopts(): void {
+  epoch++;
+}
+
+/** Resolves when no adopt is running or waiting (the ones asked before this call). Never rejects. */
+export const adoptsIdle = (): Promise<void> => tail;
+
+async function adoptNow(pending: PendingPhoto | null, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
+  if (!pending?.source) return;
   try {
     const r = await pending.commit(deps(), { entryId: ownerId, finalText, requireWords });
     if (r === null || r.status === 'needs_words') return;
@@ -19,7 +33,13 @@ export async function adoptPending(pending: PendingPhoto | null, deps: () => Pho
     else markPhotoNotSaved(ownerId);
   } catch {
     markPhotoNotSaved(ownerId);
-  } finally {
-    adopting = false;
   }
+}
+
+export function adoptPending(pending: PendingPhoto | null, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
+  if (!pending?.source) return Promise.resolve();
+  const asked = epoch;
+  const run = tail.then(() => (asked === epoch ? adoptNow(pending, deps, ownerId, finalText, requireWords) : undefined));
+  tail = run.catch(() => undefined);
+  return run;
 }

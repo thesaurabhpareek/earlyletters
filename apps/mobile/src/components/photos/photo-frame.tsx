@@ -6,7 +6,7 @@
  * in the picture (the app writes none).
  */
 import { useState } from 'react';
-import { Image, View } from 'react-native';
+import { Image, View, type DimensionValue } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import { usePictureCovered } from '@/lib/photos/hooks';
@@ -14,9 +14,12 @@ import { usePictureCovered } from '@/lib/photos/hooks';
 export interface PhotoFrameProps {
   uri: string;
   label: string;
-  width?: number;
-  height?: number;
+  width?: DimensionValue;
+  height?: DimensionValue;
+  maxHeight?: number;
   aspectRatio?: number;
+  /** The frame's corner: `md` on the letter page, `sm` on a lens thumbnail (B-S04). */
+  radius?: 'sm' | 'md';
   /** 'contain' shows the whole picture inside the box, uncropped (NS-01-R42); the default fills it. */
   fit?: 'cover' | 'contain';
   /** The file is gone: the caller draws its own "not on this phone any more" box. */
@@ -24,11 +27,11 @@ export interface PhotoFrameProps {
   testID?: string;
 }
 
-export function PhotoFrame({ uri, label, width, height, aspectRatio, fit = 'cover', onMissing, testID }: PhotoFrameProps) {
+export function PhotoFrame({ uri, label, width, height, maxHeight, aspectRatio, radius = 'md', fit = 'cover', onMissing, testID }: PhotoFrameProps) {
   const { c } = useTheme();
   const covered = usePictureCovered();
   const [failed, setFailed] = useState(false);
-  const box = { width, height, aspectRatio, borderRadius: tokens.radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, overflow: 'hidden' as const };
+  const box = { width, height, maxHeight, aspectRatio, borderRadius: tokens.radius[radius], borderWidth: tokens.stroke.control, borderColor: c.mediaFrame, backgroundColor: c.surface, overflow: 'hidden' as const };
   if (covered || failed) return <View style={box} testID={testID ? `${testID}.blank` : undefined} accessible accessibilityIgnoresInvertColors accessibilityRole="image" accessibilityLabel={label} />;
   return (
     <View style={box} testID={testID}>

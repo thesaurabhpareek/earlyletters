@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+vi.mock('expo-application', () => ({ nativeBuildVersion: '42' }));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
 let minted = 0;
 vi.mock('../src/lib/supabase/client', () => ({

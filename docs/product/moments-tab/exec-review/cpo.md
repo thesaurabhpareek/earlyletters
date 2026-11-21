@@ -1,3 +1,5 @@
+> v2-era document; dispositions superseded by spec section 27 and 27b at PR #1314; kept as review history.
+
 # Executive review: Chief Product Officer, NS-53 Moments tab master requirements
 
 Reviewed: `docs/product/prd/28-moments-tab.md` at commit 5bebd892 on `wip/moments-prd` (1187 lines, NS-53-R1 to R191, open questions O-01 to O-36).
