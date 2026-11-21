@@ -460,8 +460,8 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 |---|---|---|---|---|---|
 | Q109 | Religion by inference from a day list kept on the phone | CUL-Q6, Q-DAY-11 | NS-47, NS-46 | C | NS-47 ask slip, tradition browse, tradition days, day-name switch (Drop C) |
 | Q110 | The day list left out of Save a copy | CUL-Q5 | NS-47-R10 | C | Same; with Q55 |
-| Q111 | The label answer and the Privacy Policy sentence for the day list | CUL-Q7 | NS-47-R23 | B | NS-47 store rules in the Drop B candidate |
-| Q112 | A local day note that names a faith day: Apple 4.5.4 and the licence agreement | CUL-Q11 | NS-46-R35, R36; NS-47-R12, R13; NS-48-R9 | B | Day-name switch (Drop C); the Drop B default needs the founder's acceptance |
+| Q111 | The label answer and the Privacy Policy sentence for the day list | CUL-Q7 | NS-47-R23 | B | NS-47 Drop C items; in a Drop B candidate the label check is an internal G5 check and the card names no counsel read for it |
+| Q112 | A local day note that names a faith day: Apple 4.5.4 and the licence agreement | CUL-Q11 | NS-46-R35, R36; NS-47-R12, R13; NS-48-R9 | B | Part (c) blocks the Drop B days release (card 21 names "the consent line read by counsel" as its gate); the rest blocks the day-name switch (Drop C) |
 | Q113 | The right to use calendar and day source tables | FR-DAY-23, Q-DAY-10 | NS-46-R12, R23 | B | Any NS-46 row whose date is copied from a source |
 | Q114 | Tradition-reviewer records | NS-46-R23, DL-8 | NS-46-R23 | C | Each tradition's rows (Drop C) |
 | Q115 | Does a picture index plus a day list amount to inference | CUL-Q14 | NS-51-R6, R7 | C | NS-51 |
@@ -510,13 +510,13 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 - **Default.** Yes to (a) while NS-47-R4 holds; add the sentence as a minor change; tell the parent in plain words either way.
 - **If no.** The label row changes in the same build; the ask stays off until it does.
 - **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
-- **Blocks.** The NS-47 store rules in a Drop B candidate need the default applied with the founder's dated acceptance; Drop C needs the answer. Note: the old cell for CUL-Q7 said "Q57(f)-adjacent"; Q57 is sanctions, and the related question here is Q54.
+- **Blocks.** Drop C needs the answer. For a Drop B candidate the card (21, release line and NS-47 section 22) gates the label by an internal check at G5 (`privacy` re-runs it, NS-47-R23) and lists CUL-Q5 to Q7 and Q11 as "on record or the fallback list"; Drop B uses the fallback list, so this answer is not a Drop B gate by the card's own words. Note: the old cell for CUL-Q7 said "Q57(f)-adjacent"; Q57 is sanctions, and the related question here is Q54.
 
 ### 8.5 Q112 (new). A local day note that names a faith day: Apple 4.5.4 and the licence agreement (CUL-Q11)
 - **Facts.**
   - **Apple 4.5.4** (read 20 Nov 2026 at https://developer.apple.com/app-store/review/guidelines/; the page text has no last-updated date): push notifications "should not be used to send sensitive personal or confidential information", and "should not be used for promotions or direct marketing purposes unless customers have explicitly opted in ... via consent language displayed in your app's UI, and you provide a method in your app for a user to opt out". V. The text names push; a day note is a local notification.
   - **The licence agreement.** The cards say Developer Program License Agreement Attachment 1 section 2.2 names local notifications used for marketing and requires opt-in consent language and an opt-out (NS-46-R35), and section 2.3 limits excessive local notifications (NS-48 section 17). U: I did not read the agreement.
-  - **What the product does.** A ticked day sends a 09:00 local note that sells and promotes nothing (NS-46-R27). Its lock-screen title and body are neutral for every family, tradition, culture-led or national day; a day's own name shows only for allowlisted seasonal and civic days, or behind a local switch that is off by default and forced off while App lock is on (NS-46-R36; NS-47-R12, R13, R38; ADR 0033; errata E45). The yearly timing of a note is a residual the cards accept (NS-47-R22). V (cards; nothing is built).
+  - **What the product does.** A ticked day sends a 09:00 local note that sells nothing (NS-46-R27) and advertises no feature, new day, the Days page or an update (NS-46-R35). Its lock-screen title and body are neutral for every family, tradition, culture-led or national day; a day's own name shows only for allowlisted seasonal and civic days, or behind a local switch that is off by default and forced off while App lock is on (NS-46-R36; NS-47-R12, R13, R38; ADR 0033; errata E45). The yearly timing of a note is a residual the cards accept (NS-47-R22). V (cards; nothing is built).
   - **Not Q41.** Q41 is about plan notices (NS-32). CUL-Q11 had been mapped to Q41, which is a different subject; this question replaces that mapping.
 - **(a)** Does 4.5.4, or the agreement, reach a local day note?
 - **(b)** Is a note that names a faith day "sensitive personal or confidential information" in the sense of 4.5.4 when the parent has turned the day-name switch on? Is a neutral note on a faith day, arriving each year, a disclosure in itself?
@@ -525,7 +525,7 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 - **Default.** Treat 4.5.4 as applying; neutral title and body; names only behind the local switch; no feature advertised in any day note; one-tap untick and Clear all.
 - **If no.** (b) counsel names the fallback: the switch is removed and every day note is neutral. (c) the consent line and the opt-out are written to counsel's words.
 - **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
-- **Blocks.** The day-name switch (Drop C). For Drop B (seasonal, family, civic days, no tradition days) the default is applied with the founder's dated acceptance (FR-CMP-12).
+- **Blocks.** Part (c), the read of the line before the first tick and the opt-out, blocks the Drop B days release: card 21 lists "the consent line read by counsel" among the gates of its Drop B row and of the NS-46 release unit, and a default never substitutes for a read that gates a flag (FR-CMP-12). Parts (a), (b) and (d) block the day-name switch (Drop C).
 
 ### 8.6 Q113 (new). The right to use calendar and day source tables (FR-DAY-23, Q-DAY-10)
 - **Facts.**
@@ -545,13 +545,13 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 ### 8.7 Q114 (new). Tradition-reviewer records (NS-46-R23, DL-8)
 - **Facts.**
   - Before a tradition's rows ship, a member of that tradition reviews them. The record names a pseudonymous reviewer id, the tradition id, the date and "read"; the person's name stays outside the repository (NS-46-R23). V (card).
-  - Proposed place for the records: `docs/legal/evidence/days/<tradition-id>.md` (PROPOSED in `compliance.md` FR-CMP-32). Whether the repository is public or private was not checked.
+  - Proposed place for the records: `docs/legal/evidence/days/<tradition-id>.md` (PROPOSED in `compliance.md` FR-CMP-32). The repository is public (`gh api repos/thesaurabhpareek/earlyletters --jq .visibility` returned `public`, 21 Nov 2026). V. So the default record form puts a pseudonymous reviewer id paired with a tradition id in a public place.
   - The library names and prefills are also read against App Review 1.1.1 (read 20 Nov: "Defamatory, discriminatory, or mean-spirited content, including references or commentary about religion ... national/ethnic origin"). V.
 - **(a)** Does a record that pairs a pseudonymous reviewer with a tradition reveal something about that person's religion, so that it needs a basis, a notice or a different form?
 - **(b)** What agreement should sit behind a reviewer's read (confidentiality, no claim that the reviewer speaks for a community, compensation, no right in our texts)? Counsel drafts; we do not sign anything.
 - **(c)** May any public line say a tradition's days were reviewed by a member of it? (The card's marketing rule says no tradition is named as an audience, NS-46-R47.)
-- **Default.** Record only the four fields; no name anywhere in the repository; no public line about the review; the 1.1.1 read date goes in the same record.
-- **If no.** Counsel names a different record form (for example the review held outside the repository, with a hash in it).
+- **Default.** Record only the four fields in the public repository (pseudonymous reviewer id, tradition id, date, "read"); no name anywhere in it; no public line about the review; the 1.1.1 read date goes in the same record. Counsel should read (a) knowing the default is public.
+- **If no.** Counsel names a different record form (for example the review held outside the public repository, with only a hash in it).
 - **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
 - **Blocks.** Each tradition's rows (Drop C).
 
