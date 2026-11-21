@@ -208,3 +208,46 @@ describe('[NX-31-R12] a push that was out when the engine stopped is not applied
     expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox WHERE attempts > 0 OR next_attempt_at IS NOT NULL')!.n).toBe(0);
   });
 });
+
+describe('[NX-31-R12] the restore-mode push, then the second pull (risk 19)', () => {
+  const allOk = (held: Held) => ok({ results: (held.args.p_ops as { op: string }[]).map((o) => ({ op: o.op, ok: true })), paused: false, stopped: false });
+  function phoneWithABook(): void {
+    insertBook(db, { id: BOOK, name: 'Asha', birthday: '2026-03-01', at: NOW });
+    takeOwnership(db, A, ctx);
+  }
+
+  it('control: restore answer, the push of what is on the phone, then the second pull lands its page while the engine runs', async () => {
+    phoneWithABook();
+    const server = holdingServer();
+    start(server.supabase).start();
+    await vi.waitFor(() => expect(server.pushes).toHaveLength(1));
+    server.pushes[0].answer(allOk(server.pushes[0]));
+    await vi.waitFor(() => expect(server.pulls).toHaveLength(1));
+    server.pulls[0].answer(ok(reset()));
+    await vi.waitFor(() => expect(server.pushes).toHaveLength(2)); // the restore push
+    server.pushes[1].answer(allOk(server.pushes[1]));
+    await vi.waitFor(() => expect(server.pulls).toHaveLength(2));
+    server.pulls[1].answer(ok(pageOf([LETTER])));
+    await vi.waitFor(() => expect(readSetting(db, SYNC_SETTING.lastSyncedAt)).not.toBeNull());
+    expect(count(db, 'entries')).toBe(1);
+  });
+
+  it('stop() while the push that follows the restore answer is out: no second pull is asked, no page lands, the push answer is not applied', async () => {
+    phoneWithABook();
+    const server = holdingServer();
+    start(server.supabase).start();
+    await vi.waitFor(() => expect(server.pushes).toHaveLength(1));
+    server.pushes[0].answer(allOk(server.pushes[0]));
+    await vi.waitFor(() => expect(server.pulls).toHaveLength(1));
+    server.pulls[0].answer(ok(reset())); // the restore answer makes the phone queue its rows again
+    await vi.waitFor(() => expect(server.pushes).toHaveLength(2));
+    const queued = pendingCount(db);
+    expect(queued).toBeGreaterThan(0);
+    engine.stop(); // the session ends while the restore push is out
+    server.pushes[1].answer(allOk(server.pushes[1]));
+    await engine.sync();
+    expect(server.pulls).toHaveLength(1); // no second pull
+    expect(pendingCount(db)).toBe(queued); // the push answer was not applied
+    expect(count(db, 'entries')).toBe(0);
+  });
+});

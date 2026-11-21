@@ -89,6 +89,7 @@ Also worth a reader's time: no function is executable by `PUBLIC` or `anon` (0 o
 | C-7 | D-021 (12 months for key-unwrap logs) against 24 months built (`20261023000000:1602`) | counsel Q51 (already open) |
 | C-8 | CLOSED. Media text ceilings: `data-and-sync.md` L11 was amended on develop to 2240 and 960 (as built; 1120 and 480 superseded), which matches `14-media-library-video.md` F1. Only [U] remains: #835's head was not read | none |
 | C-9 | NS-51-R6 "in the phone database" against R23 "excluded from backup" | resolved by CR-69 A4 (a file); product to confirm on #934 |
+| C-10 | Gate of the new-device email. E78 / NS-08-R21 gated it before the backup flip; the founder decided (`DECISIONS-20nov.md` section 8 item 7) before the first outside family. Resolved by E83 (CL-158): "The new-device sign-in email is built, tested and read by `security-architect` before the first family outside the founder's own signs in." It still gates the backup flip too, the earlier gate first. The privacy read of the device table comes first and decides its retention, class and label (02i S10) | closed by E83; engineering builds to the stricter gate |
 
 ## 7. Gaps (each has a default; none needs a decision today)
 
@@ -106,7 +107,7 @@ Existing ids keep their numbers (G-1 to G-21 above; G-12 and G-14 are not used i
 |---|---|---|---|---|
 | G-2 | 10 columns in `insights._letters` and `_book_family` have no label; `classification.test.mjs:14` reads schema `public` only. Fix: a new migration with the 10 comments (data-architect) and a test over `ops`, `insights`, `sync_private` and the phone's `migrations.ts` comments (`qa`). Detail in 8.4 | data-architect (migration), `qa` (test) | G10 [E] | CDO return, 01a Q-2 (AGREE) |
 | G-3 | `held_drafts_gone` has no age sweep. Period comes from the same number as G-23: the longest offline period a phone may have, stated by `sync` | data-architect with `sync` | G10 [E]; no sweep until `sync` answers | CDO return, 02a Q-a3 |
-| G-4 | `dictionary_terms` is unreachable (no grant, no writer). Leave it. Condition: a test shows account purge and book purge cover it | data-architect | G10 [E] | CDO return, 02a Q-a2 |
+| G-4 | `dictionary_terms` is unreachable (no grant, no writer). CLOSED as by design (E80): the dictionary is phone only and the table stays built and unreachable until a card names a synced dictionary. Kept condition: a test shows account purge and book purge cover it (G10 [E]); whether to drop the table is open to data-architect and `mobile` | data-architect | closed; test G10 [E] | E80; CDO return, 02a Q-a2 |
 | G-5 | `legal_holds` released rows are never deleted. Default stands (keep) until counsel names a period | `privacy`, counsel | COUNSEL, no gate | B7; CDO return, 02b Q-b1 |
 | G-6 | `subscription_report_rates` windows have no age sweep (`subscription_status` rows go with the account) | data-architect | G10 [E] | CDO return, 02c Q-c1, Q-c2 |
 | G-7 | No script proves every policy has an allow and a deny test. Stays as in section 7; owner `qa`, standing duty 1 of data-architect; gate G10 [E] | `qa`, data-architect | G10 [E] | none in the record |
@@ -186,6 +187,17 @@ This closes the reviewer note that the pack's ids did not line up with the legal
 - Migration count. The CDO skill (`.claude/skills/early-letters-cdo/SKILL.md:115, 175`) says `develop` has 26 migration files. Counted on `origin/develop` this session: 31 under `supabase/migrations`; `.github/migrations-applied.txt` records 2; so 29 are not recorded as applied [V]. This pack already says 31. The skill is not mine to edit; Karma routes the fix.
 - B4 (device backup of `scribe.db`, recordings, pictures): COUNSEL and FOUNDER. Recommendation: accept for 1.0. One part is open and is `mobile`'s to answer: whether the safety tiers sit inside `scribe.db`, and so inside the backup, before any screen says they "stay on this phone" (CDO return, B4).
 - Q-5 below: plan state is labelled L3 as built; the conflict with ADR 0013 and the legal document goes to `privacy` and counsel (C-2).
+
+### 8.9 Errata E1 to E83, CL-001 to CL-158 (`docs/product/prd/18-errata-after-lock.md`, develop `55574906c`; E74 to E83 change this pack)
+
+- E74 (audit rows): no screen. A person's own `audit_events` and `deletion_requests` rows go in `account.json` in Save a copy only. "Own" is actor or account owner; another member shows as "another member", with no name, email or id; a test on the export file checks that no letter words, recording or child name are in it. A definer function returns only the caller's rows (data-architect, 02i S12, design only); no API role gets a grant on the table. This keeps G-13's key allowlist as a condition for the producing function and C-4's sentence fix.
+- E78 (new-device email): not built for 1.0. It needs a new server sender, a device table and a stop page; the device table is designed, not built (02i S10, design only), gated by NS-08-R21. E83 (CL-158) moves the timing to before the first outside family signs in, and it still gates the backup flip. Conflict C-10 is resolved by E83. The privacy read of the device table comes first. Line gating (E78, kept by E83): "The line \"We will sign that device out\" is still shown only once the one-session lever and the stop page exist."
+- E79 (push): no APNs key, no push token table, no push entitlement in 1.0. 01b P-1 holds; 02i adds no token table.
+- E80 (dictionary): phone only, never synced, copied or put in a server export; G-4 is closed as by design above. Where on the phone it is stored (schema 10 has no table) is open to `mobile` and data-architect [U].
+- E81 (alert cap): the cap binds the new-device sender of NS-08-R21, which E83 builds before the first outside family, and any later sender. That sender needs cap state (02i S11, design only): first 5 in an hour one by one, the rest folded into one summary, a ceiling of 20 alert emails per account per day (engineering's number, [E]).
+- E82 (lock screen): no data-model change; no row here.
+- E75 to E77: no change to this pack (marketing and alert sets belong to `privacy` and `sync`).
+
 
 ## Questions for the council
 
