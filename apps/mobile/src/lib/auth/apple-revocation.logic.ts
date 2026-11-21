@@ -78,3 +78,14 @@ export function startAppleRevocationWatch(deps: {
 export function isAppleSession(session: { user?: { app_metadata?: { provider?: unknown } } } | null | undefined): boolean {
   return session?.user?.app_metadata?.provider === 'apple';
 }
+
+/** Calls `listener` each time the app becomes active. `subscribe` is AppState.addEventListener in the app. Returns the remover. */
+export function onAppBecameActive(
+  subscribe: (event: 'change', handler: (state: string) => void) => { remove: () => void },
+  listener: () => void,
+): () => void {
+  const sub = subscribe('change', (st) => {
+    if (st === 'active') listener();
+  });
+  return () => sub.remove();
+}

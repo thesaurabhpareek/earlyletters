@@ -68,8 +68,10 @@ export async function clearPendingAppleName(): Promise<void> {
 }
 
 /**
- * A-REQ-033: true when Apple says this phone's Apple sign-in was revoked or
- * no longer exists. False when not an Apple user, not iOS, or unknown.
+ * A-REQ-033: true only when Apple says this phone's Apple sign-in was REVOKED.
+ * False for AUTHORIZED, TRANSFERRED and NOT_FOUND (pinned by test, open
+ * question for the CTO in PR 1125), when not an Apple user, not iOS, or when
+ * the read fails: a network error must never sign a person out.
  */
 export async function appleCredentialRevoked(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;

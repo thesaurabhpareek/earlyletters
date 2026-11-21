@@ -29,7 +29,7 @@ import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
-import { isAppleSession, startAppleRevocationWatch } from './apple-revocation.logic';
+import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -277,10 +277,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
       pendingUploads,
       dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
-      onAppActive: (l) => {
-        const sub = AppState.addEventListener('change', (st) => st === 'active' && l());
-        return () => sub.remove();
-      },
+      onAppActive: (l) => onAppBecameActive((e, h) => AppState.addEventListener(e, h), l),
       onAppleRevoked: watchAppleRevocation,
       now: Date.now,
     });

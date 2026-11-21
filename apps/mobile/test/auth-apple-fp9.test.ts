@@ -4,7 +4,7 @@
  * Apple's notification. Fictional family "Asha" only.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRevocationGate, isAppleSession, startAppleRevocationWatch } from '../src/lib/auth/apple-revocation.logic';
+import { createRevocationGate, isAppleSession, onAppBecameActive, startAppleRevocationWatch } from '../src/lib/auth/apple-revocation.logic';
 
 const { signInAsync, store, listeners } = vi.hoisted(() => ({
   signInAsync: vi.fn(),
@@ -169,5 +169,52 @@ describe('[NS-45-R4] the signed-in effect sets up and removes its listeners', ()
     expect(isAppleSession({ user: { app_metadata: { provider: 'apple' } } })).toBe(true);
     expect(isAppleSession({ user: { app_metadata: { provider: 'email' } } })).toBe(false);
     expect(isAppleSession(null)).toBe(false);
+  });
+});
+
+describe('[NS-45-R4] coming back to the foreground ends a revoked Apple session', () => {
+  const setup = (checks: boolean[], uploads = 2) => {
+    const active: Array<() => void> = [];
+    const t = { v: 5_000_000 };
+    const dispatchSignOut = vi.fn();
+    const check = vi.fn(async () => checks.shift() ?? false);
+    startAppleRevocationWatch({
+      check,
+      isAppleSession: async () => true,
+      pendingUploads: async () => uploads,
+      dispatchSignOut,
+      onAppActive: (l) => (active.push(l), () => {}),
+      onAppleRevoked: () => () => {},
+      now: () => t.v,
+    });
+    return { active, t, dispatchSignOut, check };
+  };
+
+  it('firing the foreground listener after the gap reads again and signs out with the waiting uploads', async () => {
+    const h = setup([false, true], 2);
+    await vi.waitFor(() => expect(h.check).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 5)); // let the start read finish
+    h.t.v += 61_000;
+    h.active[0]();
+    await vi.waitFor(() => expect(h.dispatchSignOut).toHaveBeenCalledWith(2)); // mutant: foreground never reaches the gate
+  });
+
+  it('a revoked read at start signs out without waiting for a foreground', async () => {
+    const h = setup([true], 0);
+    await vi.waitFor(() => expect(h.dispatchSignOut).toHaveBeenCalledWith(0));
+  });
+
+  it('the AppState adapter calls the listener only when the app becomes active, and removes itself', () => {
+    let handler: (s: string) => void = () => {};
+    const remove = vi.fn();
+    const listener = vi.fn();
+    const off = onAppBecameActive((_e, h) => ((handler = h), { remove }), listener);
+    handler('background');
+    handler('inactive');
+    expect(listener).not.toHaveBeenCalled();
+    handler('active');
+    expect(listener).toHaveBeenCalledTimes(1); // mutant: handler never calls the listener
+    off();
+    expect(remove).toHaveBeenCalledTimes(1);
   });
 });
