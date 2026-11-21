@@ -28,9 +28,9 @@ export const emailLegal = {
   /** One line near the top of the footer, saying why this email arrived. */
   whyYouGotThis: {
     transactional:
-      `You're getting this because it's about your ${brand.name} account. We only send what you need to know.`,
+      `You are getting this because it is about your ${brand.name} account. We only send what you need to know.`,
     commercial:
-      `You're getting this because you asked for news from ${brand.name}. Your account and your books are not affected if you unsubscribe.`,
+      `You are getting this because you asked for news from ${brand.name}. Your account and your books are not affected if you unsubscribe.`,
   },
 
   /* Optional additions (not in the brief contract). */
@@ -45,10 +45,10 @@ export const emailLegal = {
   /** The page the unsubscribe link opens: one button, no sign-in, no questions. */
   unsubscribePage: {
     heading: "Stop these emails?",
-    body: `You'll stop getting news from ${brand.name}. Account emails, like sign-in links and plan reminders, still come, because you need them.`,
+    body: `You will stop getting news from ${brand.name}. Account emails, like sign-in links and plan reminders, still come, because you need them.`,
     button: "Unsubscribe",
-    done: "Done. You won't get these emails again. Changed your mind? You can sign up again any time.",
-    error: "That didn't go through. Try again, or reply to any of our emails and we'll do it for you.",
+    done: "Done. You will not get these emails again. Changed your mind? You can sign up again any time.",
+    error: "That did not go through. Please try again, or reply to any of our emails and we will do it for you.",
   },
 } as const;
 

@@ -58,7 +58,7 @@ const PLUS_INCLUDES =
 const NO_PARTIAL_REFUNDS =
   "Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time.";
 /** The app reports a cancellation made in iOS Settings only when it next opens (D-080). */
-const ALREADY_CANCELLED = "If you have already cancelled, there's nothing to do.";
+const ALREADY_CANCELLED = "If you have already cancelled, there is nothing to do.";
 /** After Plus, recordings are kept only on the phone (customer review CUS-08). */
 const EXPORT_NOW_AND_THEN = "Recordings are kept on this phone, and in your iPhone's own backup if you use one. Export a copy now and then.";
 /** v1.0 family is the co-parent only (D-055; content review CNT-04). */
@@ -75,21 +75,21 @@ export const billingEmails = {
     preheader: "Free until {trialEndDate}. A copy of what you agreed to, to keep.",
     heading: "Plus is on, free until {trialEndDate}",
     body: [
-      "Thanks for trying Plus. This is your copy of what you agreed to on {agreedDate}. Keep it for your records.",
+      "Thank you for trying Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
       "Your plan: {planName}. The free trial runs until {trialEndDate}.",
       PLUS_INCLUDES,
       "After the trial, Plus renews automatically at {price} {billingPeriod} until you cancel. Apple charges your Apple Account {price} on {trialEndDate}, then again every {periodUnit} on that date, until you cancel.",
       "To avoid being charged, cancel by {cancelByDate}, at least 24 hours before the trial ends. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
-      "Deleting the app or your account doesn't cancel Plus.",
-      "We'll remind you before the trial ends, by email and in the app.",
+      "Deleting the app or your account does not cancel Plus.",
+      "We will remind you before the trial ends, by email and in the app.",
       STAYS_FREE,
       NO_PARTIAL_REFUNDS,
       REFUNDS_AND_TERMS,
     ],
     cta: MANAGE_CTA,
     fallback: FALLBACK,
-    safety: "Didn't start a trial? Reply to this email and a person will help.",
+    safety: "Did not start a trial? Reply to this email and a person will help.",
     category: 'billing',
     kind: 'transactional',
   },
@@ -101,20 +101,20 @@ export const billingEmails = {
     preheader: "A copy of your plan, the price and how to cancel, for your records.",
     heading: "Plus is on. Thank you.",
     body: [
-      "This is your copy of what you agreed to on {agreedDate}. Keep it for your records.",
+      "This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
       "Your plan: {planName}, {price} {billingPeriod}, charged by Apple to your Apple Account.",
       PLUS_INCLUDES,
       "Plus renews automatically at {price} {billingPeriod} until you cancel. Your next renewal is on {renewalDate}.",
       "To avoid the next charge, cancel by {cancelByDate}, at least 24 hours before it renews. Plus keeps working until then.",
       CANCEL_STEPS,
-      "Deleting the app or your account doesn't cancel Plus.",
+      "Deleting the app or your account does not cancel Plus.",
       STAYS_FREE,
       NO_PARTIAL_REFUNDS,
       REFUNDS_AND_TERMS,
     ],
     cta: MANAGE_CTA,
     fallback: FALLBACK,
-    safety: "Didn't buy this? Reply to this email and a person will help.",
+    safety: "Did not buy this? Reply to this email and a person will help.",
     category: 'billing',
     kind: 'transactional',
   },
@@ -123,16 +123,16 @@ export const billingEmails = {
   'trial-ending-week': {
     id: 'trial-ending-week',
     subject: "Your free trial ends on {trialEndDate}",
-    preheader: "Nothing to do if you want to keep Plus. If not, here's how to cancel.",
+    preheader: "Nothing to do if you want to keep Plus, and an easy way out if not.",
     heading: "A reminder before your trial ends",
     body: [
       "Your free trial of {planName} ends on {trialEndDate}.",
       "If you keep it, Plus renews automatically: Apple charges {price} on {trialEndDate}, then again every {periodUnit} on that date, until you cancel.",
-      "If you'd rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
+      "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
       ALREADY_CANCELLED,
       STAYS_FREE,
-      "We'll send one more reminder a few days before the trial ends.",
+      "We will send one more reminder a few days before the trial ends.",
     ],
     facts: [
       { label: "Plan", value: "{planName}" },
@@ -151,16 +151,16 @@ export const billingEmails = {
   'trial-ending-long': {
     id: 'trial-ending-long',
     subject: "Your Plus trial ends on {trialEndDate}",
-    preheader: "The date it ends, the price after, and how to cancel before then.",
-    heading: "A heads-up before your trial ends",
+    preheader: "An early reminder, so the date and the price are never a surprise.",
+    heading: "An early reminder about your trial",
     body: [
       "Your free trial of {planName} ends on {trialEndDate}.",
       "If you keep it, Plus renews automatically: Apple charges {price} on {trialEndDate}, then again every {periodUnit} on that date, until you cancel.",
-      "If you'd rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
+      "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
       ALREADY_CANCELLED,
       STAYS_FREE,
-      "We'll send another reminder closer to the date.",
+      "We will send another reminder closer to the date.",
     ],
     facts: [
       { label: "Plan", value: "{planName}" },
@@ -184,7 +184,7 @@ export const billingEmails = {
     body: [
       "Your free trial of {planName} ends on {trialEndDate}. This is our last reminder before then.",
       "If you keep it, Plus renews automatically: Apple charges {price} on {trialEndDate}, then again every {periodUnit} on that date, until you cancel.",
-      "If you'd rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
+      "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
       ALREADY_CANCELLED,
       STAYS_FREE,
@@ -211,11 +211,11 @@ export const billingEmails = {
       "Your plan, {planName}, renews automatically on {renewalDate}.",
       "Apple will charge {price} for another year, unless you cancel by {cancelByDate}.",
       PLUS_INCLUDES,
-      "If you want to keep it, there's nothing to do.",
+      "If you want to keep it, there is nothing to do.",
       CANCEL_STEPS,
       ALREADY_CANCELLED,
       STAYS_FREE,
-      "We'll send one more reminder about a week before it renews.",
+      "We will send one more reminder about a week before it renews.",
     ],
     facts: [
       { label: "Plan", value: "{planName}" },
@@ -234,11 +234,11 @@ export const billingEmails = {
     id: 'annual-renewal-short',
     subject: "Plus renews on {renewalDate}",
     preheader: "Apple charges {price} for another year unless you cancel by {cancelByDate}.",
-    heading: "Your plan renews on {renewalDate}",
+    heading: "A quick reminder about your plan",
     body: [
       "Your plan, {planName}, renews automatically on {renewalDate}, at {price} for another year.",
-      "If you want to keep it, there's nothing to do.",
-      "If you'd rather not continue, cancel by {cancelByDate}. Plus keeps working until {renewalDate}.",
+      "If you want to keep it, there is nothing to do.",
+      "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until {renewalDate}.",
       CANCEL_STEPS,
       ALREADY_CANCELLED,
       STAYS_FREE,
@@ -263,7 +263,7 @@ export const billingEmails = {
     preheader: "What your plan includes, what it costs, and how to change it.",
     heading: "Once a year, a short reminder about your plan",
     body: [
-      "We send this once a year, so you always know what Plus costs and when it renews. There's nothing you need to do.",
+      "We send this once a year, so nothing about Plus is ever a surprise. There is nothing you need to do.",
       "Your plan: {planName}. It costs {price} {billingPeriod}, charged by Apple, and renews automatically until you cancel. Your next charge is on {renewalDate}.",
       PLUS_INCLUDES,
       "You can cancel any time. Plus keeps working until the end of the {periodUnit} you paid for.",
@@ -282,12 +282,12 @@ export const billingEmails = {
   'price-increase': {
     id: 'price-increase',
     subject: "A change to the price of Plus",
-    preheader: "Nothing changes unless you agree. Here's the new price and when it starts.",
+    preheader: "Nothing changes unless you agree. What is new, and when it starts.",
     heading: "The price of Plus changes on {effectiveDate}",
     body: [
       "From {effectiveDate}, your plan, {planName}, will cost {newPrice} {billingPeriod}. Today you pay {oldPrice}.",
       "We never raise your price unless you agree. Apple will ask you to agree to the new price.",
-      "If you agree, your plan renews at {newPrice} from {effectiveDate}. If you don't, it won't renew, and Plus ends when your current {periodUnit} ends.",
+      "If you agree, your plan renews at {newPrice} from {effectiveDate}. If you do not, it will not renew, and Plus ends when your current {periodUnit} ends.",
       "You can also cancel any time, before or after the change.",
       CANCEL_STEPS,
       STAYS_FREE,
@@ -307,9 +307,9 @@ export const billingEmails = {
   // L2 review: auto-renew turned off (trial or paid). No offer, no "are you sure" (AB 2863 save-offer rule).
   'plus-cancelled': {
     id: 'plus-cancelled',
-    subject: "Plus won't renew",
+    subject: "Plus will not renew",
     preheader: "Plus stays on until {accessEndDate}, and everything you made stays yours.",
-    heading: "Your plan won't renew",
+    heading: "Done. Your plan will not renew.",
     body: [
       "You turned off renewal for {planName}, so there will be no further charges.",
       "Plus keeps working until {accessEndDate}.",
@@ -318,7 +318,7 @@ export const billingEmails = {
       FREE_ALWAYS,
       "If you change your mind, you can turn renewal back on in Settings, Plan, any time.",
     ],
-    safety: "Didn't turn this off? On your iPhone, open Settings, tap your name, then Subscriptions, or reply to this email.",
+    safety: "Did not turn this off? On your iPhone, open Settings, tap your name, then Subscriptions, or reply to this email.",
     category: 'billing',
     kind: 'transactional',
   },
@@ -348,9 +348,9 @@ export const billingEmails = {
     preheader: "What it costs, and how to stop it. Your book stays open either way.",
     heading: "Plus is still on",
     body: [
-      "You have {planName} at {price} {billingPeriod}. If you're not using it right now, you can cancel and keep everything you made.",
+      "You have {planName} at {price} {billingPeriod}. If you are not using it right now, you can cancel and keep everything you made.",
       "Your book stays open, free.",
-      "If you want to keep it, there's nothing to do.",
+      "If you want to keep it, there is nothing to do.",
       CANCEL_STEPS,
     ],
     cta: MANAGE_CTA,
