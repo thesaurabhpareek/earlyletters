@@ -252,7 +252,7 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
     // No ftyp box, no part of the original, no plaintext hash left the phone in a form the scan can read. This is a
-    // scan, not a proof: it does not cover every encoding (see "Not covered" in `helpers/leak-scan.ts`, BL-1455).
+    // scan, not a proof: it does not cover every encoding (see "Not covered" in `helpers/leak-scan.ts`, BL-1473).
     // [BL-456] 16-byte shingles of the whole take, each at every offset of every body (`helpers/leak-scan.ts`).
     expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     // [BL-1417 to BL-1419] and as base64, hex or a byte list; in the URL, headers and RPC arguments; across joins of bodies.
