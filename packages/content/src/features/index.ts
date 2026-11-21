@@ -2,6 +2,7 @@
 // re-export in each old file so imports still work. Every string here obeys VOICE.md and is
 // checked by test/rules.test.ts.
 export { accountDeletionCopy } from './account-deletion.en';
+export { appLockLines } from './app-lock.en';
 export { authCopy } from './auth.en';
 export { backupCopy } from './backup.en';
 export { billingCopy } from './billing.en';
@@ -19,6 +20,7 @@ export { speechConsentCopy, speechSettingsCopy } from './speech.en';
 export { languageNames, wordsCopy } from './words.en';
 
 import { accountDeletionCopy } from './account-deletion.en';
+import { appLockLines } from './app-lock.en';
 import { authCopy } from './auth.en';
 import { backupCopy } from './backup.en';
 import { billingCopy } from './billing.en';
@@ -38,6 +40,7 @@ import { languageNames, wordsCopy } from './words.en';
 /** Every feature's copy in one object, for the rules test. */
 export const features = {
   accountDeletion: accountDeletionCopy,
+  appLock: appLockLines,
   auth: authCopy,
   backup: backupCopy,
   billing: billingCopy,
