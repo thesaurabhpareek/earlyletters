@@ -11,47 +11,54 @@ Fictional family Asha only. Labels: SOURCE-READ means I read the text this sessi
 
 ## 1. The new PR list, with dependencies and waves
 
-33 items (the 26 numbered PRs 0 to 25, plus 5b, 18a, 18b-1a, 18b-1b, 18b-2, 18c and 19b). Each stays under CODE-R02 (400 lines, 20 files). The spec table in 19.4 is the source; this is the same list as a dependency graph.
+40 items (the 26 numbered PRs 0 to 25, plus 0b, 3b, 5b, 11 split into 11a, 11b and 11c, 18a, 18b-0, 18b-1a, 18b-1b, 18b-1c, 18b-2, 18c, 18d and 19b; the seven added after the challenger read are 0b, 3b, the 11 split, 18b-0, 18b-1c and 18d). Each stays under CODE-R02 (400 lines, 20 files); the spec table in 19.4 is the source and carries the split plans of the rows at 380 or 400 lines; this is the same list as a dependency graph with a wave column.
 
-| # | Concern | Owner | Size | Depends on | Wave | Can start now |
-|---|---|---|---|---|---|---|
-| 0 | Spec edit with the sweep of D14 (this change) | `product` | docs | none | A | Yes (done on this branch; needs the founder only for the flip) |
-| 1 | Types, reasons (no RSN-ALBUM), `rules.ts` (`NEAR_SECONDS`, `MIN_SPAN`), five verbs | `mobile` | 300 | 0 | A | Yes |
-| 2 | Exclude, group, qualification (span rule), near-duplicate rule, goldens | `mobile` | 380 | 1 | B | After 1 |
-| 3 | Rank, collage, tile order (heart, else middle session), property tests | `mobile` | 350 | 2 | B | After 2 |
-| 4 | Occasions, `momentsFor` registry, slots | `mobile` | 380 | 1 | A | After 1 |
-| 5 | `place.ts` with an injected table, home-place rarity rule, goldens | `mobile` | 300 | 1 | B | Yes, with a synthetic 10 row table |
-| 5b | Place table package, licence note | `mobile`, `privacy` | generated | licence read by licensed counsel (G11b) | later (before 22) | No |
-| 6 | Tab shell behind F1, `moments/pick` route row | `design-systems` | 250 | 1 | A | Yes |
-| 7 | Analytics decision (no-change note by default, O-49) | `analytics` | 150 | 6 | B | After 6 |
-| 8 | `moments.json` store (no album or picture members) | `mobile` | 250 | 0 | A | Yes |
-| 9 | `scribe-library` access and fetch | `mobile` | 400 | G1a-L read-out; G3 to merge | B | No |
-| 10 | Native thumbnail view | `mobile` | 300 | 9 | C | No |
-| 11 | Config plugin by profile, build-time exclusion of `scribe-library`, guard scripts (library and photo lines) | `privacy`, `qa` | 400 | 9 (library guards); 18b-1a (photo guard) | C | No |
-| 12 | Content: tab, ask, primer, states, door and host strings, value proposition (after O-48) | `content` | 380 | none | A | Yes (door and host strings wait one day for the limits decision, O-54) |
-| 13 | `MomentCard`, `DayCollage`, `ExampleCard` | `design-systems` | 400 | 6, 12 | B | After 6, 12 |
-| 14 | `PermissionAsk`, state lines, door row, Limited calm line, host sheet frame and tray (placeholder body) | `design-systems` | 350 | 12 | B | After 12 |
-| 15 | `use-moments`, ACC state function, kill switches | `mobile` | 350 | 4, 8, 9 | C | No |
-| 16 | For you with no library, value view | `mobile` | 300 | 13, 14, 15 | C | No |
-| 17 | Primer, ask, Recent, day sheet (no album chooser, no grid) | `mobile` | 300 | 10, 16 | D | No |
-| 18a | `AttachRequest` type and the one stripper contract | `mobile` | 150 | none | A | Yes |
-| 18 | Copy-for-attach from library assets: Swift `exportForAttach` in `scribe-library` (R220), then the existing `reencodeUpright` strips it; `scribe-photo` and its scan are not edited | `mobile` | 300 | 9, 18a | C | No |
-| 18b-1a | `scribe-picker`: modal multi-select of pictures in our sheet, native contract, temp lifecycle, scans, classification and threat rows | `mobile`, `security-architect` read | 250 | 18a; simulator read-out of G1a-P; Apple reference read (EXH-ENG-17) | B | After the simulator read-out |
-| 18b-1b | Date read with canary-GPS fixture | `mobile`, `security-architect` read | 120 | 18b-1a | B | After 18b-1a |
-| 18b-2 | Inline host (LATER) | `mobile` | 150 | G1a-P device read-out; G11a-photo | E | No |
-| 18c | Video in the picker (LATER) | `mobile` | UNVERIFIED | G1a-P read-back of what the container keeps | E | No |
-| 19 | Capture hand-off from a day | `mobile` | 300 | 6, 17, 18 | D | No |
-| 19b | Hand-off from a picked set to capture | `mobile` | 250 | 6, 12, 14, 18a, 18b-1a | C | No |
-| 20 | Reduced viewer: one plain full-width enlarge | `mobile` | 150 | 17 | D | No |
-| 21 | Five verbs, Me list with Hidden choices, Turn off | `mobile` | 250 | 8, 17 | D | No |
-| 22 | Places on cards, Hide this place | `mobile` | 300 | 5, 5b, 17, 21 | D | No |
-| 23 | Home pointer, nudges from phone-held facts, planner change (R280) | `mobile` | 300 | 4, 6 | D | No |
-| 24 | N layer: Asha library script, Maestro flows (host sheet through `fixturePicker`), L3 and L4 | `qa` | 350 | 9, 17 | D | The Asha generator, after 1 |
-| 25 | Release read-out guard step (library and photo lines) | `qa`, founder pastes the workflow step | 150 | 11 | E | No |
+| # | Concern | Owner | Lines (ASSUMED) | Files (ASSUMED) | Depends on | Wave | Can start now |
+|---|---|---|---|---|---|---|---|
+| 0 | Spec edit (PR #1314); needs `size:accepted` and a `Size exception` line from the founder | `product` | docs, over 400 by construction | about 9 (spec, experience spec, replan, freeze list, prototype, proposals) | founder G10 for the flip only; founder for the size label | A | Yes |
+| 0b | Sweep of D14 (R286), docs, by section | `product` | docs, about 250 each, split by section if over 380 | 1 to 2 | 0 | A | After 0 |
+| 1 | Types, reasons (no RSN-ALBUM), `rules.ts` with the PROPOSED values of spec 7.2a, five verbs | `mobile` | 300 | about 7 (types, reasons, rules, verbs, domain enums, two tests); `NEAR_SECONDS`, `MIN_SPAN`, the place-share threshold and the junk bar carry the PROPOSED values of 7.2a with `MOMENTS_RULES_VERSION` | 0 | A | Yes |
+| 2 | Exclude, group, qualification (both span predicates), near-duplicate rule, goldens | `mobile` | 380 | about 8; AT THE LINE, split plan 2a (`exclude`, `group`, `offsetAt`, about 200) and 2b (qualification with both span predicates behind a rules field, near-duplicate rule, `asha-lib-v1` goldens, about 200) | 1 | B | After 1 |
+| 3 | Rank, collage, tile order (heart, else middle session), property tests | `mobile` | 350 | about 7 | 2 | B | After 2 |
+| 3b | R205 real-library harness (counts only), sets the values of 7.2a | `qa` | 300 | about 6 (script, README, one test, package script, two fixtures) | 3, 2 | B | After 3 |
+| 4 | Occasions, `momentsFor` registry, slots | `mobile` | 380 | about 9; AT THE LINE, split plan 4a (`occasions`, `momentsFor`, about 200) and 4b (slots, holidays table, about 180) | 1 | A | After 1 |
+| 5 | `place.ts` with an injected table, home-place rarity rule, goldens | `mobile` | 300 | about 6 | 1 | B | Yes, with a synthetic 10 row table |
+| 5b | Place table package, licence note, checksum test | `mobile`, `privacy` approve | about 120 not generated; the data is excluded up to 2,000 lines | about 5, plus generated data | licence read by licensed counsel (G11b) | later (before 22) | No |
+| 6 | Tab shell behind F1, `moments/pick` route row | `design-systems` | 250 | about 10 | 1 | A | Yes |
+| 7 | Analytics decision (no-change note by default, O-49) | `analytics` | 150 | about 4 | 6 | B | No |
+| 8 | `moments.json` store (no album or picture members) | `mobile` | 250 | about 7 | 0 | A | Yes |
+| 9 | `scribe-library` access and fetch | `mobile` | 400 | about 12; AT THE LINE, split plan 9a (access status, request, TS surface, `nullSource`, about 200) and 9b (columnar fetch, `fixtureSource`, about 200) | G1a-L read-out; G3 and G3-x to merge | B | No |
+| 10 | Native thumbnail view | `mobile` | 300 | about 8 | 9 | C | No |
+| 11a | Photo guard (plist, entitlements, manifest, G11a-photo line) | `qa` scripts, `privacy` text | 200 | about 6 | 18b-1a (nothing in the library chain) | C | No |
+| 11b | Library guards and the F2 allow list with its test | `qa` scripts, `privacy` text | 300 | about 8 | 9 | C | No |
+| 11c | Config plugin usage string by profile and build-time exclusion of `scribe-library` | `mobile`, `privacy` text | 250 | about 5 | 11b; G3-x spike read-out | C | No |
+| 12 | Content: tab, ask, primer, states, door and host strings, value proposition (after O-48) | `content` | 380 | about 8; AT THE LINE, split plan 12a (tab, reasons, states) and 12b (ask, primer, door, host strings) | none | A | Yes (door and host strings wait one day for O-54) |
+| 13 | `MomentCard`, `DayCollage`, `ExampleCard` | `design-systems` | 400 | about 14; AT THE LINE, split plan 13a (`MomentCard`, `DayCollage`) and 13b (`ExampleCard` and its tests) | 6, 12 | B | No |
+| 14 | `PermissionAsk`, state lines, door row, host sheet frame and tray, L3 baseline of the frame | `design-systems` | 380 | about 14; AT THE LINE, split plan 14a (ask, switch, state lines, door row) and 14b (host sheet frame, tray, L3 baseline) | 12 | B | No |
+| 15 | `use-moments`, ACC state function, kill switches K1, K2, K4 (R170) | `mobile` | 350 | about 9 | 4, 8, 9 | C | No |
+| 16 | For you with no library, value view | `mobile` | 300 | about 8 | 13, 14, 15 | C | No |
+| 17 | Primer, ask, Recent, day sheet | `mobile` | 300 | about 9 | 10, 16 | D | No |
+| 18a | `AttachRequest` type and the one stripper contract | `mobile` | 150 | about 4 | none | A | Yes |
+| 18 | Copy-for-attach: `exportForAttach` in `scribe-library`, wiring to `reencodeUpright` | `mobile` | 300 | about 9 (Swift `exportForAttach`, TypeScript wiring, the `scribe-library` function-list scan, tests) | 9, 18a | C | No |
+| 18b-0 | Picker threat-model rows (docs) | `security-architect` | docs, about 80 | 1 to 2 | none | A | Yes |
+| 18b-1a | `scribe-picker`: modal presenter, one pick, TS surface, `fixturePicker`, scans, classification row | `mobile`, `security-architect` read | 330 | about 12 (podspec, module config, Swift, `index.ts`, logic, scans, `fixturePicker`, tests) | 18a, 18b-0, simulator read-out of G1a-P, Apple reference read (EXH-ENG-17) | B | No |
+| 18b-1b | Date read with canary-GPS fixture and its own scan | `mobile`, `security-architect` read | 120 | about 4 | 18b-1a | B | No |
+| 18b-1c | Multi-select contract (R272), original deleted through `PickedFiles.remove` | `mobile`, `security-architect` read | 330 | about 8 | 18b-1a | B | No |
+| 18b-2 | Inline host (LATER) | `mobile` | 150 | about 3 (a first guess; own estimate after the device read-out) | 18b-1a, G1a-P device read-out, 11a | E | No |
+| 18c | Video in the picker, with `stripVideo` in `scribe-picker` (LATER) | `mobile` | UNVERIFIED, own estimate after the read-back | UNVERIFIED | 18b-1a, 18b-1c, G1a-P read-back (R290) | E | No |
+| 18d | Capture Add to the host sheet; `pickOne` retired; the one PR that edits `scribe-photo` pins (R296) | `mobile`, `security-architect` read | 250 | about 8 (Swift and TypeScript removal, three NS-01 scan edits, tests) | 18b-1a, 18b-1c, 19b | D | No |
+| 19 | Capture hand-off from a day | `mobile` | 300 | about 8 | 6, 17, 18 | D | No |
+| 19b | Hand-off from a picked set to capture | `mobile` | 250 | about 7 | 6, 12, 14, 18a, 18b-1a, 18b-1b (the date chip, R274), 18b-1c | C | No |
+| 20 | Reduced viewer: one plain full-width enlarge | `mobile` | 150 | about 4 | 17 | D | No |
+| 21 | Five verbs, Me list with Hidden choices, Turn off | `mobile` | 250 | about 8 | 8, 17 | D | No |
+| 22 | Places on cards, Hide this place | `mobile` | 300 | about 8 | 5, 5b, 17, 21 | D | No |
+| 23 | Home pointer, nudges from phone-held facts, planner change (R280) | `mobile` | 300 | about 8 | 4, 6 | D | No |
+| 24 | N layer: Asha library script, Maestro flows, L3 and L4 (not the host sheet baseline) | `qa` | 350 | about 12 (the host-sheet L3 baseline is in PR 14, not here) | 9, 14, 17, 18b-1a | D | The Asha generator, after 1 |
+| 25 | Release read-out guard step (library and photo lines) | `qa`, founder pastes the workflow step | 150 | about 4 | 11a (photo line), 11b (library line) | E | No |
 
-Waves. A (parallel): 1, then 4, plus 6, 8, 12, 18a, the G1a-L spike and the G1a-P simulator spike (a throwaway branch, never merged). B: 2, 3, 5, 9, 13, 14, 7, then 18b-1a and 18b-1b once the simulator read-out and the Apple reference read are on file. C: 10, 11, 15, 18, 16, 19b. D: 17, 19, 20, 21, 22, 23, 24. E: 25, the gate read-outs, the F2 flip, and later 18b-2 and 18c (not on the first-release critical path). The sized rows sum to about 8,560 changed lines (ASSUMED; 30 of 33 items carry a number: PR 0 is docs, 5b is generated data and 18c is not sized until the read-back). The figure of about 8,400 in the first draft did not match the table. The honest size of the change (EXH-ENG-16): fewer lines in the library part, more device and review time, more and smaller PRs.
+Waves. A (parallel): 1, then 4, plus 0b, 6, 8, 12, 18a, 18b-0, the G1a-L spike and the G1a-P simulator spike (a throwaway branch, never merged). B: 2, 3, 3b, 5, 9, 13, 14, 7, then 18b-1a, 18b-1b and 18b-1c once the simulator read-out and the Apple reference read are on file. C: 10, 11a, 11b, 11c (after the G3-x spike), 15, 18, 16, 19b. D: 17, 18d, 19, 20, 21, 22, 23, 24. E: 25, the gate read-outs, the F2 flip, and later 18b-2 and 18c (not on the first-release critical path). The sized rows sum to about 9,900 changed lines (ASSUMED, computed by script from the table; 35 of 40 items carry a number: 0, 0b, 18b-0 are docs, 5b is mostly generated data, 18c is not sized until the read-back). The sums of about 8,400 and about 8,560 are replaced; none is measured. PR 0 is over CODE-R02 by construction and needs the founder's `size:accepted` label and `Size exception` body line (spec 19.4).
 
-The door (the picker, pictures only) ships only when 18a, 18b-1a, 18b-1b and 19b exist and the photo flag's legal set is in the same build (R278); it does not wait for any of 9, 10, 11 (library guards), 15, 16, 17, so it can ship even if every library gate fails (D4), but not without counsel and not before 19b (EXH-ENG-4, EXH-PRV-1).
+The door (the picker, pictures only) ships only when 18a, 18b-0, 18b-1a, 18b-1b, 18b-1c, 19b and 11a exist and the photo flag's legal set is in the same build (R278); it does not wait for any of 9, 10, 11b, 11c, 15, 16, 17, so it can ship even if every library gate fails (D4), but not without counsel and not before 19b (EXH-ENG-4, EXH-PRV-1). PR 25 needs 11a for the photo line and 11b for the library line. Capture Add keeps `pickOne` until 18d.
 
 ## 2. What can start now, and what must wait
 
@@ -99,8 +106,8 @@ PR #1296, branch `docs/moments-harness-handoff`. I read the rows on the branch a
 - Scope: G1a-L, the five library unknowns plus whether a Favorites flag is readable under Limited. G1a-P, section 21 of the spec: the hidden-bars matrix (Layout A or B), Apple's first-time text per access state, what the item provider gives for date and GPS, picks under Limited, per-type limits and what the picker shows at the limit, VoiceOver and Switch Control task completion, iCloud and eight concurrent downloads, app lock and the switcher snapshot, theme override, a video pick under Expo defaults for SDK 57 (surprise permission prompt), what a video container keeps for location. A throwaway branch, never merged; an Asha library built for the purpose (no real family library); read-outs hold timings, rates and yes or no only.
 - Done when: dated read-outs are filed in `docs/release/<x.y.z>.md`.
 
-#### BL-1435 NS-53 Moments: scribe-library native module and thumbnail view (PRs 9, 10, 11, 18)
-- Status: blocked (BL-1434 G1a-L read-out; gate G3 to merge; G11a-lib). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: XL (four PRs, one concern each). Depends on: BL-1434, BL-NEW-8 for 18a.
+#### BL-1435 NS-53 Moments: scribe-library native module and thumbnail view (PRs 9, 10, 11b, 11c, 18; the photo guard 11a is in BL-NEW-8)
+- Status: blocked (BL-1434 G1a-L read-out; gate G3 to merge; G11a-lib). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: XL (five PRs, one concern each; 9 and 11b are split in two if a review round adds lines). Depends on: BL-1434 including the G3-x exclusion spike, BL-NEW-8 for 18a.
 - Satisfies: NS-53-R110, NS-53-R220, NS-53-R222, NS-53-R226, NS-53-R228, NS-53-R233, NS-53-R236, NS-53-R277.
 - Scope: the function list of R220 (no picker functions; the picker is BL-NEW-8), the `ScribeLibraryThumbnail` view for cards and day tiles, the config-plugin usage string by profile and the build-time exclusion of `scribe-library` where F2 is off, the source scans and guard scripts, copy-for-attach from library assets (PR 18, which depends on the PR 18a type): the Swift function `exportForAttach(localId, plainName)` lives in `scribe-library` and writes the original to `Caches/ImagePicker`; the existing `reencodeUpright` in `scribe-photo` strips it; `scribe-photo` is not edited and has no PhotoKit (CH-ENG-2). Follows the `expo-native-module` skill. Check `compliance/FENCE.json` before touching `app.config.ts`.
 - Done when: the scans, the iOS compile job, the call-site reachability test and the binary and plist scan (no photo-library usage string or PhotoKit symbol in a profile where F2 is off) pass.
@@ -114,7 +121,7 @@ PR #1296, branch `docs/moments-harness-handoff`. I read the rows on the branch a
 #### BL-1437 NS-53 Moments: the N test layer (PR 24)
 - Status: proposed (HARNESS-REPLAN-HYBRID.md; the Asha generator can start once PR 1 of BL-1432 lands; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1432.
 - Satisfies: NS-53-R225, NS-53-R107, NS-53-R257, NS-53-R297.
-- Scope: the Asha library script loaded by `simctl addmedia`, Maestro flows through `fixtureSource`, `fixturePicker` and the real module; the flows stop at the host sheet because Maestro cannot drive inside Apple's out-of-process picker (the picker is a named device row); the canary of R162 extended to attach (library, picker), Keep, outbox, push mapper and export. Fictional family Asha only.
+- Scope: PR 3b, the R205 real-library harness in the `experiments/` style (counts only; reads the parent's junk marks from one local file of day keys; sets the values of spec 7.2a), owner `qa`, depends on PR 3; and the Asha library script loaded by `simctl addmedia`, Maestro flows through `fixtureSource`, `fixturePicker` and the real module; the flows stop at the host sheet because Maestro cannot drive inside Apple's out-of-process picker (the picker is a named device row); the canary of R162 extended to attach (library, picker), Keep, outbox, push mapper and export. Fictional family Asha only.
 - Done when: the script, the flows and the extended canary run in the existing test commands and fail on a seeded leak; the picker device rows are listed in `DEVICE_TEST_PLAN.md`.
 
 #### BL-1438 NS-53 Moments: release gates G1b to G11 and the F2 flip (PR 25)
@@ -123,7 +130,7 @@ PR #1296, branch `docs/moments-harness-handoff`. I read the rows on the branch a
 - Scope: the guard script that fails the production profile when F2 is on and a G11a-lib line is missing, and when the door is on and the G11a-photo line is missing; the evidence index of section 21.1; Notes for Review under `docs/release/`; the five founder signatures (RV-23 for the door); G4 (with the new tasks), G5 (frame and task completion), G6 (mode-scoped claim test) and G7 picker rows; the counsel packet sub-items (Q1 (c), (d), Q4 (b), Q6 (b), Q7 (b), Q8 (b)). The first release includes the library read (Route B, founder ruling 21 Nov); the F2 flip is the founder's. Anything that sends a notification or email is phase 2 and waits.
 - Done when: the guard fails a production build with a missing gate line (either part) and passes with all of them; the founder pastes the workflow step.
 
-#### BL-NEW-8 NS-53 Moments: scribe-picker module and picked-set hand-off (PRs 18a, 18b-1a, 18b-1b, 19b; later 18b-2, 18c)
+#### BL-NEW-8 NS-53 Moments: scribe-picker module and picked-set hand-off (PRs 18a, 18b-0, 18b-1a, 18b-1b, 18b-1c, 11a, 19b, 18d; later 18b-2, 18c)
 - Status: proposed (HARNESS-REPLAN-HYBRID.md; 18a can start now; 18b-1a waits for the G1a-P simulator read-out and the Apple reference read). Mode: agent. Owner: mobile engineer, with a `security-architect` read requested in each native PR body. Milestone: M15. Size: L (four PRs now, two later, one concern each). Depends on: none for 18a; BL-1434 (G1a-P simulator part) for 18b-1a; BL-1433 and the PR 14 door row for 19b.
 - Satisfies: NS-53-R88, NS-53-R269, NS-53-R271, NS-53-R272, NS-53-R273, NS-53-R274, NS-53-R279, NS-53-R282, NS-53-R283, NS-53-R296, NS-53-R297.
 - Scope: PR 18a, the `AttachRequest` type and the one stripper contract. PR 18b-1a, new local module `apps/mobile/modules/scribe-picker` (custom Swift through expo-modules-core, podspec iOS 17.0, no new dependency, one plain `PHPickerConfiguration()` with no library and no identifier), modal multi-select of pictures only in our sheet, the native contract (limit enforced twice, bounded concurrency, per-item closed codes, cleanup, iCloud progress and Cancel), the scans of R271, the `DATA_CLASSIFICATION.md` 4.6 row, the threat-model rows. PR 18b-1b, the date read (its own function in `scribe-picker`, run before the strip) with an allow-list of keys, the canary-GPS fixture and its own scan; the `scribe-photo` scan is not changed. The original is deleted by the existing TypeScript `PickedFiles.remove`, called from new hand-off code (R272). PR 19b, hand-off from a picked set to capture. Later: 18b-2 (inline host, after the picker device read-out) and 18c (video, after the read-back). `scribe-photo` is not edited by these PRs and keeps its pins; the one PR that edits it is the named PR 18d (capture Add moves to the host sheet, `pickOne` retired or kept strip-only, the NS-01 pins updated with a `security-architect` read and a founder-visible note, R296). Follows the `expo-native-module` skill; the door depends on nothing in `scribe-library`.
