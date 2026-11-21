@@ -7320,7 +7320,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `a122a9c9`. Si
 - Test: `supabase/tests/purged_id_never_returns.test.mjs`.
 
 #### BL-1456 A No on the age gate keeps the held email sign-in link in memory
-- Status: in-review (PR #1128; the fix is in its diff: `age-gate.ts` adds `takePendingAuthLink()` and `clearPendingEmailRequest()` to the No branch; open, head `c0820d12`, and the check named "fence" failed per the founder's note, unverified here; FP-12 also waits on the CCO approval comment). Mode: agent. Owner: mobile engineer. Milestone: M12. Size: XS. Depends on: none.
+- Status: blocked (PR #1128 is open with two PASS reviews and the required checks green; it is blocked only by the compliance-fence job, run 44868812941, which reports "paths needing CCO review changed: apps/mobile/src/lib/age-gate.ts" and "no cco approval for head c0820d1202d279b45a5ee844a6c9b6f6f6e36cea"; the fence counts approvals only from the repository owner login, so the founder's CCO approval line is the only thing missing; the coordinator read the log, not re-read here). Mode: agent. Owner: mobile engineer. Milestone: M12. Size: XS. Depends on: none.
 - Priority: Medium (a link opened by someone who then says they are under 18 could still be replayed). Gate: none.
 - Satisfies: NS-39-R14.
 - Problem and evidence: `answerAgeGate('no')` in `apps/mobile/src/lib/age-gate.ts` ends with `void clearPendingInvite();` and clears nothing from `apps/mobile/src/lib/auth/pending.ts` (`setPendingAuthLink`, `takePendingAuthLink`) on `develop`. The test says so (`apps/mobile/test/ns39-first-launch.test.ts:146-148`).
