@@ -6,7 +6,7 @@
  * Started by the screen cover (components/account/account-layer.tsx), once, for the life of the session provider.
  * Reads nothing else, records nothing, sends nothing.
  */
-import { bookVisibleNow, notifyStoreChanged } from '../store';
+import { bookVisibleNow, notifyStoreChanged, resumeFindCatchUp } from '../store';
 import { subscribeAuth } from './auth-store';
 
 export function watchAccountScope(): () => void {
@@ -16,5 +16,6 @@ export function watchAccountScope(): () => void {
     if (now === last) return;
     last = now;
     notifyStoreChanged();
+    if (now) resumeFindCatchUp(); // A is back: letters written meanwhile were skipped by Find's seam (NS-02-R24)
   });
 }
