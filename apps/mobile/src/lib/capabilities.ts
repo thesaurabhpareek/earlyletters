@@ -64,8 +64,7 @@
  *
  *   ANALYTICS         `EXPO_PUBLIC_ANALYTICS=on` in the build's env. Anything else, or
  *                     nothing, is OFF. Off in every profile (decision of 15 Oct 2026,
- *                     delegated by the founder; D-088) except `production`, which is on since the
- *                     founder's decision of 20 Nov 2026 (PostHog Cloud, opt-in). Where it is off: no consent sheet, no Settings
+ *                     delegated by the founder; D-088): no consent sheet, no Settings
  *                     switch, no PostHog client even when `EXPO_PUBLIC_POSTHOG_KEY` is set,
  *                     and startAnalytics() does nothing. Analytics returns with consent later.
  *
