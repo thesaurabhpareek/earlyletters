@@ -7,13 +7,14 @@
 -- drop the five functions below; drop table ops.security_events. Audit rows already written stay (append-only).
 --
 -- 1. Audit writers (audit_events allows the four actions since 20261002020000; no code wrote them):
---    legal_hold_placed, legal_hold_released: an AFTER trigger on public.legal_holds, so the row is written
+--    legal_hold_placed, legal_hold_released (also a delete of a still-active hold): an AFTER trigger on public.legal_holds, so the row is written
 --      by whatever places or releases a hold (the printed SQL statement, a later function), never forgotten.
 --      actor_kind 'support', no actor id; detail is scope and reason_code only (closed enums, no matter_ref).
 --    support_access: ops_support_access(), service role only. Writes ops.audit_log first (runbook break_glass,
 --      "no row, no act"), then the audit_events row. detail is the reason code only.
 --    export_created: record_export_created(files, bytes, manifest_sha256), a signed-in person's own row.
---      detail is exactly files, bytes, manifest_sha256 (a 64-hex hash). At most 5 rows per person per day;
+--      detail is exactly files, bytes, manifest_sha256 (a 64-hex hash) and source 'device'.
+--      The row is SELF-ATTESTED: the phone says it saved a file; the server cannot check it (CR-71 C3-1). At most 5 rows per person per day;
 --      the sixth call writes nothing and returns false (a client must never fail an export over it).
 -- 2. ops.security_events: its own store, never part of audit_events and never exported. No API role holds
 --    any privilege (schema ops is closed; RLS on with no policy; the service role reaches it only through the
@@ -41,6 +42,13 @@ begin
     insert into public.audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
     values (null, 'support', 'legal_hold_placed', 'legal_hold', new.id, case when new.scope = 'child' then new.scope_id end,
             jsonb_build_object('scope', new.scope, 'reason_code', new.reason_code));
+  elsif tg_op = 'DELETE' then
+    -- A hold removed while still active is a release too (row gone: the audit row is the only trace).
+    if old.released_at is null then
+      insert into public.audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
+      values (null, 'support', 'legal_hold_released', 'legal_hold', old.id, case when old.scope = 'child' then old.scope_id end,
+              jsonb_build_object('scope', old.scope, 'reason_code', old.reason_code, 'deleted', true));
+    end if;
   elsif old.released_at is null and new.released_at is not null then
     insert into public.audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
     values (null, 'support', 'legal_hold_released', 'legal_hold', new.id, case when new.scope = 'child' then new.scope_id end,
@@ -49,7 +57,7 @@ begin
   return null;
 end;
 $$;
-create trigger legal_holds_audit after insert or update on public.legal_holds
+create trigger legal_holds_audit after insert or update or delete on public.legal_holds
   for each row execute function public.legal_holds_audit();
 
 -- --- 1b. Support access ---------------------------------------------------------
@@ -58,6 +66,12 @@ create or replace function public.ops_support_access(p_operator text, p_ticket t
 returns bigint language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_id bigint;
 begin
+  if p_reason_code is null or p_reason_code !~ '^[a-z][a-z0-9_]{0,39}$'
+     or p_ticket is null or p_ticket !~ '^[A-Za-z0-9][A-Za-z0-9_.:#-]{0,79}$'
+     or p_operator is null or p_operator !~ '^[A-Za-z0-9][A-Za-z0-9_.@-]{0,79}$'
+     or p_subject_type is null or p_subject_type not in ('profile', 'child', 'entry', 'membership', 'deletion_request') then
+    raise exception 'support access record out of range' using errcode = '22023';
+  end if;
   perform public.ops_audit_write(p_operator, 'break_glass', p_reason_code, p_ticket,
     case when p_subject_type = 'profile' then p_subject end, p_child, case when p_subject_type = 'entry' then p_subject end);
   insert into public.audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
@@ -76,12 +90,14 @@ begin
      or p_manifest_sha256 is null or p_manifest_sha256 !~ '^[0-9a-f]{64}$' then
     raise exception 'export record out of range' using errcode = '22023';
   end if;
+  -- One lock per person, so two concurrent calls cannot both pass the cap.
+  perform pg_advisory_xact_lock(hashtextextended('export_created:' || v_me::text, 0));
   if (select count(*) from public.audit_events where actor_id = v_me and action = 'export_created' and at > now() - interval '1 day') >= 5 then
     return false;
   end if;
   insert into public.audit_events (actor_id, actor_kind, action, subject_type, subject_id, detail)
   values (v_me, 'user', 'export_created', 'export', null,
-          jsonb_build_object('files', p_files, 'bytes', p_bytes, 'manifest_sha256', p_manifest_sha256));
+          jsonb_build_object('files', p_files, 'bytes', p_bytes, 'manifest_sha256', p_manifest_sha256, 'source', 'device'));
   return true;
 end;
 $$;
@@ -118,6 +134,8 @@ comment on column ops.security_events.subject_hash is 'L3 keyed hash (16 bytes) 
 comment on column ops.security_events.request_id is 'L2 request id, 12 hex';
 comment on column ops.security_events.detail is 'L2 numbers and booleans only (ops.security_detail_ok)';
 
+-- The retention setting is not an authority: any definer function (or the owner) can set it. The guard stops
+-- statements, not a database owner; ops_security_events_retention() is the only code that sets it.
 create or replace function ops.security_events_guard()
 returns trigger language plpgsql set search_path = pg_catalog, ops, pg_temp as $$
 begin
@@ -154,7 +172,8 @@ returns int language plpgsql security definer set search_path = pg_catalog, publ
 declare v int;
 begin
   perform set_config('app.security_events_retention', 'on', true);
-  delete from ops.security_events where at < p_now - interval '12 months';
+  -- The caller's clock is not trusted: a future p_now would delete every row. Never later than the server's now.
+  delete from ops.security_events where at < least(coalesce(p_now, now()), now()) - interval '12 months';
   get diagnostics v = row_count;
   perform set_config('app.security_events_retention', 'off', true);
   return v;

@@ -463,7 +463,7 @@ Runbook access log (12 months, kept after account deletion as a security log), a
 
 ##### `ops.security_events`
 
-Service only; 12 months; never part of an export (CR-71 C3; privacy confirms the period).
+Service only; 12 months; never part of an export (CR-71 C3; privacy confirms the period). The table is stored as L3 under rule 1 (`subject_hash` is L3, every other column L2).
 
 | Column | Level | Note |
 |---|---|---|
