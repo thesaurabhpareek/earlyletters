@@ -82,4 +82,32 @@ describe('[BL-1461] the revocation wait line', () => {
     expect(r.result.current).toBeNull();
     expect(h.spoken).toEqual([]);
   });
+
+  it('sync off: nothing is sent and the sign-out finishes at once, so the line never shows', () => {
+    const state = run([
+      { type: 'SIGNED_IN', userId: 'asha-1', method: 'apple' },
+      { type: 'GATE_LOADED', gate: { ...gate, contentAllowed: false }, sensitiveDeclined: false },
+      { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: 2 },
+    ]);
+    expect(state.status).toBe('signingOut');
+    if (state.status === 'signingOut') expect(state.waitingForUploads).toBe(false);
+    const r = renderHook(() => useRevocationWaitLine(state, LINE));
+    vi.advanceTimersByTime(REVOCATION_WAIT_LINE_DELAY_MS * 10);
+    expect(r.result.current).toBeNull();
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('a wait that turns off after the line shows hides it again (letters sent, or sync turned off)', () => {
+    for (const end of [{ type: 'UPLOADS_DRAINED' }, { type: 'GATE_LOADED', gate: { ...gate, contentAllowed: false }, sensitiveDeclined: false }] as AuthEvent[]) {
+      h.spoken.length = 0;
+      let state = waiting('apple_revoked');
+      const r = renderHook(() => useRevocationWaitLine(state, LINE));
+      vi.advanceTimersByTime(REVOCATION_WAIT_LINE_DELAY_MS);
+      expect(r.result.current).toBe(LINE);
+      state = authReducer(state, end);
+      expect(state.status === 'signingOut' && state.waitingForUploads).toBe(false);
+      r.rerender();
+      expect(r.result.current).toBeNull();
+    }
+  });
 });

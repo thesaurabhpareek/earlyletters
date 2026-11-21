@@ -8,7 +8,11 @@ import type { AuthState } from './machine.logic';
 /** A wait shorter than this shows no line. */
 export const REVOCATION_WAIT_LINE_DELAY_MS = 3000;
 
-/** True only for the wait after Apple revoked the sign-in: never for a sign-out the person asked for. */
+/**
+ * True only for the wait after Apple revoked the sign-in, and only while letters are really waiting to be sent
+ * (`waitingForUploads`): with sync off nothing is sent and the sign-out ends at once, so "sent first" would be untrue.
+ * Never for a sign-out the person asked for.
+ */
 export function isRevocationWait(s: AuthState): boolean {
-  return s.status === 'signingOut' && s.reason === 'apple_revoked';
+  return s.status === 'signingOut' && s.reason === 'apple_revoked' && s.waitingForUploads;
 }

@@ -38,9 +38,8 @@ import { announce, useFocusOnMount, useIsAccessibilitySize, useScheme, useTheme 
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
-import type { AuthState } from './machine.logic';
 import { useAuth } from './session-provider';
-import { useRevocationWaitLine } from './use-revocation-wait-line';
+import { RevocationWaitLine } from './revocation-wait-line';
 
 const tryAgainLabel = copy.common.tryAgainButton;
 
@@ -172,19 +171,6 @@ export function Busy({ label }: { label: string }) {
       <ActivityIndicator color={c.accent} />
       <Text variant="subhead" tone="muted">
         {label}
-      </Text>
-    </View>
-  );
-}
-
-/** BL-1461: why the app has not moved on during the Apple revocation wait. Muted small UI sans, a status for VoiceOver. */
-export function RevocationWaitLine({ state }: { state: AuthState }) {
-  const line = useRevocationWaitLine(state, authCopy.account.signOutRevokedWaiting);
-  if (line === null) return null;
-  return (
-    <View accessible accessibilityRole="text" accessibilityLabel={line} accessibilityLiveRegion="polite">
-      <Text variant="footnote" tone="muted">
-        {line}
       </Text>
     </View>
   );
@@ -346,10 +332,10 @@ export function AccountGate({
 
   if (s.status === 'checkingConsent' || s.status === 'signingOut') {
     return (
-      <View className="gap-2">
+      <>
         <Busy label={authCopy.consent.settingUp} />
         <RevocationWaitLine state={s} />
-      </View>
+      </>
     );
   }
 
