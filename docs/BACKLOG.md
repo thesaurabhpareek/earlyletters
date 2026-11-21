@@ -1771,7 +1771,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: each point is fixed with a test, or recorded here as left as it is.
 
 #### BL-461 Spec and test nits after the P7-7 corrections (#381): cover pin, `COVER_SIZES` comment, card-to-page wording, v1 PRD line, F13 enums
-- Status: ready. Mode: agent. Owner: design systems (points 1 to 3), analytics engineer (point 5), content (point 4). Milestone: M11. Size: S. Depends on: none.
+- Status: partly done (points 1 to 3 in review in the PR below; point 3 was already corrected on develop; points 4 and 5 stay with content and analytics engineer). Mode: agent. Owner: design systems (points 1 to 3), analytics engineer (point 5), content (point 4). Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
