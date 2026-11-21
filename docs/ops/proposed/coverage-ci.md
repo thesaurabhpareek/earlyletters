@@ -60,6 +60,6 @@ About 6 to 8 minutes on a 2-core runner in parallel with `unit`, so the critical
 
 | Test | Plain | Instrumented | Handling |
 |---|---|---|---|
-| `apps/mobile/test/billing-plan-reminders.test.ts` "a synthetic year" | about 70 s (own timeout 120 s) | about 170 s | This one test, matched by its own title, is left out of the coverage run only (`testNamePattern` in `apps/mobile/vitest.coverage.config.ts`). BL-443 adds a stride knob so the skip can go. |
+| `apps/mobile/test/billing-plan-reminders.test.ts` "a synthetic year" | about 70 s (own timeout 120 s) at stride 1; about a third of that at the default stride of 15 | about 170 s at stride 1 | Runs in the coverage run at the default stride (`SCRIBE_REMINDER_STRIDE`, BL-443, #1322); the coverage-only skip is gone. Nightly would run every day (`nightly-reminder-stride.md`). |
 | `apps/mobile/test/decode-uri-component-shim.test.ts` (loads `metro.config.js`) | about 2 s | over 5 s | 30 s per-test timeout in every coverage config (`INSTRUMENTED` in `scripts/coverage/preset.ts`). |
 | `apps/mobile/test/sync-e2e.test.ts` (PGlite, 120 s `beforeAll`) | about 20 s | 60 s to over 120 s on a loaded machine | Runs as is; flaky only when the runner is shared with other jobs. Do not run `coverage` on the same runner as `db`. |

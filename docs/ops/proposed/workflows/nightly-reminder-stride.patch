@@ -1,0 +1,15 @@
+--- a/.github/workflows/nightly.yml
++++ b/.github/workflows/nightly.yml
+@@ -77,6 +77,12 @@
+       # and the property test is one test; 100000 runs took about 20 s locally.
+       - name: Property test
+         run: npm test -w @scribe/core -- test/verify.fuzz.test.ts test/verify.r01.fuzz.test.ts --testTimeout=900000
++      # BL-443: pull requests check every 15th day of the reminder year; nightly checks every day.
++      # The test sizes its own timeout from the stride (about 366 x 2 s at most); about 70 s plain.
++      - name: Reminder planner, every day of the year
++        env:
++          SCRIBE_REMINDER_STRIDE: '1'
++        run: npm test -w @scribe/mobile -- test/billing-plan-reminders.test.ts
+ 
+   db:
+     name: database (real stack)
