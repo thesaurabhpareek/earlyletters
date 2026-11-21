@@ -456,6 +456,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   packs: 'speech pack downloads; no per-file rule set written yet',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  screenStates: 'PROPOSED (#1207): words drafted in the area A, B and D WORDS files, nothing reads them yet; the global rules read them through features',
   speech: 'speech settings; no per-file rule set written yet',
   speechConsent: 'the speech consent card; pinned in apps/mobile/test/speech-consent.test.ts; no per-file rule set written yet',
   words: 'transcription state words; no per-file rule set written yet',

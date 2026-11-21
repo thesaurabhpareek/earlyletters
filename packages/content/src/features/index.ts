@@ -16,6 +16,7 @@ export { newDevicePageCopy } from './new-device.en';
 export { packsCopy } from './packs.en';
 export { playerCopy } from './player.en';
 export { reminderCopy } from './reminders.en';
+export { screenStates } from './screen-states.en';
 export { speechConsentCopy, speechSettingsCopy } from './speech.en';
 export { languageNames, wordsCopy } from './words.en';
 
@@ -34,6 +35,7 @@ import { newDevicePageCopy } from './new-device.en';
 import { packsCopy } from './packs.en';
 import { playerCopy } from './player.en';
 import { reminderCopy } from './reminders.en';
+import { screenStates } from './screen-states.en';
 import { speechConsentCopy, speechSettingsCopy } from './speech.en';
 import { languageNames, wordsCopy } from './words.en';
 
@@ -54,6 +56,7 @@ export const features = {
   packs: packsCopy,
   player: playerCopy,
   reminders: reminderCopy,
+  screenStates,
   speech: speechSettingsCopy,
   speechConsent: speechConsentCopy,
   words: wordsCopy,
