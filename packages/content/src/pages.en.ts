@@ -228,9 +228,9 @@ export const pages = {
       {
         heading: "Or ask by email",
         paragraphs: [
-          "If you can't use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
-          "Before we act, we confirm it's you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you don't need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
-          "If you signed in with Apple and chose Hide My Email, say so in your message and we'll help you confirm it's you.",
+          "If you cannot use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
+          "Before we act, we confirm it is you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you do not need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
+          "If you signed in with Apple and chose Hide My Email, say so in your message and we will help you confirm it is you.",
           "We reply within 10 business days. Once you confirm, your request follows the same steps and timeline as a deletion from the app.",
         ],
       },
@@ -261,13 +261,13 @@ export const pages = {
       {
         heading: "If you have Plus",
         paragraphs: [
-          "Deleting your account doesn't cancel Plus. Billing continues through Apple until you cancel it in your Apple Account subscription settings. You can cancel before or after deleting your account.",
+          "Deleting your account does not cancel Plus. Billing continues through Apple until you cancel it in your Apple Account subscription settings. You can cancel before or after deleting your account.",
         ],
       },
       {
         heading: "Only want to remove some letters?",
         paragraphs: [
-          "You don't have to delete your account to remove a letter. Delete it from the letter itself, and it waits in Recently deleted for 30 days in case you change your mind. A parent can also delete a whole book from that child's page in Settings.",
+          "You do not have to delete your account to remove a letter. Delete it from the letter itself, and it waits in Recently deleted for 30 days in case you change your mind. A parent can also delete a whole book from that child's page in Settings.",
           "If you never made an account, your letters and recordings are only on your phone. Deleting the app removes them from it.",
         ],
       },
