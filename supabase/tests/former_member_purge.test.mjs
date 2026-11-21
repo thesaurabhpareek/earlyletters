@@ -6,8 +6,10 @@
 // drafts on the server. Current members are purged with the book as before.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7 } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { db, check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, C, N, S } = users;
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),

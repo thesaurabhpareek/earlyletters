@@ -3,8 +3,9 @@
   "journey": "review-and-edits",
   "kind": "happy",
   "title": "Change words",
-  "note": "The person may edit any word themselves, in the letter face. Done returns.",
+  "note": "The person may change any word themselves, in place on the same sheet: no box inside the letter, the sheet's edge turns to the accent line, and Done sits in the header (S18).",
   "from": "J06-07",
+  "shot": "screens/J06-08.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,15 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Hear it Close Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Private letters stay with you. You can add them to the book later. Done",
+  "text": "Done Close Read it back To Asha · Month 7 From Mama Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Done",
   "lines": [
-    "Hear it",
+    "Done",
     "Close",
-    "Asha · 7 months",
     "Read it back",
-    "We only fixed what got in the way of your words. Nothing added.",
+    "To Asha · Month 7",
+    "From Mama",
     "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
-    "Private letters stay with you. You can add them to the book later.",
     "Done"
   ]
 }

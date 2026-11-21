@@ -18,6 +18,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7, EXPECTED_PROBE } from './harness.mjs';
 import { GRANTS, COLUMNS, grantRows } from './grants.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { db, check, as, sys, one, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -52,8 +53,8 @@ const aHeld = '0192f000-0000-7000-8000-0000000000aa';
 await as(A, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
   values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', 'You smiled.')`, [aHeld, A, CHILD]);
 await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'discarded')`, ['0192f000-0000-7000-8000-0000000000ab', A, CHILD]);
-await as(A, `update entries set photo_path=$1 where id=$2`, [photo, aBook]);
-await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
+await legacyPhotoPath(sys, aBook, photo);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
 // No app path writes dictionary_terms today (20261023060000 grants it to nobody), so the fixture row is the owner's insert.
 await sys(`insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, CHILD]);
 for (const u of [A, B, N]) await as(u, `insert into child_member_prefs (child_id, profile_id, signs_as) values ($1, $2, 'Papa')`, [CHILD, u]);
@@ -154,6 +155,8 @@ const READS = [
   ['subscription_status', 'select 1 from subscription_status', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_consents', 'select 1 from subscription_consents', [],                ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_report_rates', 'select 1 from subscription_report_rates', [],        ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261028010000: guess counters for invite-redeem, written only by invite_redeem_by_code().
+  ['invite_redeem_failures', 'select 1 from invite_redeem_failures', [],              ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -228,7 +231,7 @@ const WRITES = [
   ['policy_documents: add a document', `insert into policy_documents (key, title, needs_affirmative_act) values ('matrix-doc', 'x', false)`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['policy_documents: delete a document', `delete from policy_documents where key = 'matrix-doc'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  ['storage: upload to own folder', null,                                             ['42501', '42501', '42501', '42501', '42501', '42501']],
   // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
   ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -255,6 +258,8 @@ const WRITES = [
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-04-12"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261111010000 (CR-71 C3): a person's own export row; the sixth call a day writes nothing.
+  ['record_export_created', `select public.record_export_created(1, 10, '${'ab'.repeat(32)}')`,  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   // D-069 (20261005000000): the book already has two parents, so a further co-parent invite is SCCAP.
   ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['SCCAP', 'SCCAP', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
@@ -315,6 +320,7 @@ const HELPERS = {
   'is_child_member(uuid)': [`select public.is_child_member('${CHILD}') v`, [true, true, true, false, true, '42501']],
   'is_child_parent(uuid)': [`select public.is_child_parent('${CHILD}') v`, [true, true, false, false, false, '42501']],
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
+  'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/${uuid7()}.jpg') v`, [false, false, false, false, false, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
@@ -565,9 +571,9 @@ check('[20261023060000] a table, sequence or function created after every file g
 
 // ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
 // The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the
-// invite-redeem function, as service_role, may run it. It is not built yet. When a migration adds it,
-// every overload must be closed to PUBLIC, anon and authenticated and open to service_role, and it is
-// never an RPC or helper of the matrix above. The two probes show the rule is not empty: Postgres's
+// invite-redeem function, as service_role, may run it. 20261028010000 builds it. Every overload must be
+// closed to PUBLIC, anon and authenticated and open to service_role, and it is never an RPC or helper
+// of the matrix above. The two probes show the rule is not empty: Postgres's
 // default grant (PUBLIC) fails it, and the grants the migration must make pass it.
 const redeemFacts = async () => (await sys(`select coalesce(array_to_string(p.proacl, ','), '') acl,
     has_function_privilege('anon', p.oid, 'execute') anon_x, has_function_privilege('authenticated', p.oid, 'execute') auth_x,
@@ -581,6 +587,7 @@ check('[review B N8] invite_redeem_by_code: executable by service_role only, and
 const redeemProbe = async (grants) => {
   await db.exec('begin');
   try {
+    await db.exec(`drop function if exists public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[])`);
     await db.exec(`create function public.invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea, p_user_subjects text[],
       p_device_subjects text[], p_ip_subjects text[]) returns jsonb language sql set search_path = pg_catalog, public, pg_temp as $$ select '{}'::jsonb $$`);
     if (grants) await db.exec(grants);

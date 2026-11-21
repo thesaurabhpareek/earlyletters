@@ -2,17 +2,27 @@
  * Reminders (PRD C F1, F2, C-REQ-001 to -011): local notifications only.
  *
  * For the coordinator: call `startReminders()` once at boot (root layout,
- * after the store is ready). For the priming card after the first letter
- * (C-REQ-001), on "Yes, evenings": if `await needsPriming()`, show
- * `<ReminderPrimingSheet>` and call `enableReminders()` from its one button;
- * otherwise call `enableReminders()` straight away. For the Settings home
- * row: `remindersSummary()`.
+ * after the store is ready). Both doors that turn reminders on (the Settings
+ * switch and the card after the first letter, C-REQ-001) call
+ * `turnOnReminders()`, which goes straight to the iOS alert: there is no sheet
+ * in front of it (CDesO-3). For the Settings home row: `remindersSummary()`.
  */
 import { copy } from '../copy';
 import { reminderCopy } from './copy';
 import type { ReminderPrefs, ReminderTime } from './planner';
 import { readPrefs } from './prefs';
 
+export {
+  addNotificationClass,
+  budgetedSlots,
+  chooseOnePerDay,
+  IOS_PENDING_LIMIT,
+  NOTIFICATION_CLASSES,
+  PLAN_MAX,
+  TOTAL_MAX,
+  type NotificationClass,
+  type NotificationClassId,
+} from './budget';
 export { reminderCopy } from './copy';
 export {
   clampReminderTime,
@@ -26,17 +36,25 @@ export {
   type ReminderTime,
   type ReminderWindow,
 } from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, readPrefs, writePrefs } from './prefs';
-export { ReminderPrimingSheet } from './priming-sheet';
+export { anchorAt, LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writeOnSince, REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
+export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
   currentPlan,
   disableReminders,
   enableReminders,
+  forgetReminders,
   getReminderPermission,
-  needsPriming,
+  getReminderPermissionDetail,
+  intendedPlan,
+  lastScheduleResult,
+  nextReminder,
   rescheduleReminders,
   startReminders,
+  subscribeScheduleResult,
+  turnOnReminders,
   type ReminderPermission,
+  type ScheduleResult,
+  type TurnOnResult,
 } from './scheduler';
 
 /** "8:30 PM" (en-US) or "20:30" (en-GB), in the device's English locale. */
@@ -48,11 +66,14 @@ export function formatReminderTime(t: ReminderTime, locale?: string): string {
   }
 }
 
-/** Value for the Settings home row: "Off", "Paused" or "A few times a week, 8:30 PM". */
+/**
+ * Value for the Settings home row: "Off" or "A few times a week, 8:30 PM". A pause left from before the one switch
+ * (EXPERIENCE_PASS_2026-10 S34 retired "Pause all reminders") reads as Off, as the Reminders screen's switch does
+ * (components/settings/reminders.logic.ts remindersSwitchOn); turning the switch on clears it. No migration.
+ */
 export function remindersSummary(prefs: ReminderPrefs = readPrefs()): string {
   const r = copy.settings.reminders;
-  if (!prefs.enabled) return reminderCopy.settings.offSummary;
-  if (prefs.paused) return reminderCopy.settings.pausedSummary;
+  if (!prefs.enabled || prefs.paused) return reminderCopy.settings.offSummary;
   const cadence =
     prefs.cadence === 'weekly' ? r.weeklyLabel : prefs.cadence === 'everyEvening' ? r.everyEveningLabel : prefs.cadence === 'off' ? r.offLabel : r.fewTimesLabel;
   return `${cadence}, ${formatReminderTime(prefs.time)}`;

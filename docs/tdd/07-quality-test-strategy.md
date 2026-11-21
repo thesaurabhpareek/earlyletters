@@ -329,10 +329,10 @@ Pre: Asha's book with a Mama letter and a Papa letter; signed in as Mama; online
 
 **E2E-09 Account deletion** (C-REQ-019, LEGAL-REQ-029, DATA-REQ-012, K-22)
 Pre: Mama is creator of Asha's book with co-parent Papa and contributor Nani; Mama holds a sandbox subscription.
-1. Settings, Your data, Delete account. Assert Export is offered first.
+1. Settings, Delete account. Assert Export is offered first.
 2. Continue; assert the subscription notice with a manage link appears before the final confirm.
 3. Assert the co-parent line says Mama's letters leave the shared book.
-4. Type to confirm. Assert the signed-out state and the 30-day undo message.
+4. Type to confirm. Assert the scheduled page: the date 30 days out, Cancel deletion and Sign out of this phone (S64; the app stays signed in until that tap).
 5. Sign in again within the window; tap Cancel deletion; assert letters are back.
 6. Repeat to completion with clock +31 days and the purge worker run; then run `ops/verify-deletion.mjs` against the local stack: no rows or objects for Mama except pseudonymised acceptances and the suppression hash; Papa still reads the book and Nani's letters remain.
 

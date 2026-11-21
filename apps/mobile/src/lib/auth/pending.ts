@@ -47,8 +47,13 @@ export async function sessionSavedOnPhone(sessionKey: string): Promise<boolean> 
   }
 }
 
-/** Spent by a sign-in, and dropped by "Not my account". */
+/**
+ * Spent by a sign-in, and dropped by "Not my account" and every sign-out. The address typed for an
+ * email sign-in goes with it (memory only, so also with server features off): after a link or code
+ * sign-in, or a sign-out, the next sign-in starts with an empty field (S01).
+ */
 export async function clearPendingEmailRequest(): Promise<void> {
+  pendingEmail = null;
   if (!serverFeaturesEnabled()) return;
   await secureStorage.removeItem(PENDING_REQUEST_KEY).catch(() => {});
 }

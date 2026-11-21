@@ -32,6 +32,7 @@ import {
   type SpeechPlan,
   type Tier,
 } from './catalog';
+import { downloadMotion, type DownloadMotion } from './speech-download.logic';
 import { pickTier } from './tiers';
 
 export type SpeechPackPhase =
@@ -161,25 +162,18 @@ export async function ensureSpeechFor(
   return { ok: true, path: asrPath };
 }
 
-/** Download progress (0..1) across a language's packs, or null when nothing is in flight. */
-export function combineProgress(language: SpeechLanguage, latest: ReadonlyMap<string, SpeechPackProgress>): number | null {
-  const plan = planFor([language]);
-  let done = 0;
-  let total = 0;
-  let active = false;
+/**
+ * What a language's download is doing: progress (0..1) only while bytes move, else the stage of a pack that is
+ * queued, being checked or finishing (speech-download.logic.ts). Waiting for Wi-Fi and failures are not here.
+ */
+export function speechDownloadMotion(language: SpeechLanguage, latest: ReadonlyMap<string, SpeechPackProgress>): DownloadMotion {
   const h = speechPackHost();
-  for (const id of plan.packs) {
-    const bytes = SPEECH_MODELS[id].bytes;
-    total += bytes;
-    if (h.packPath(id)) {
-      done += bytes;
-      continue;
-    }
-    const p = latest.get(id);
-    if (p && p.phase !== 'failed' && p.phase !== 'cancelled' && p.phase !== 'removed') active = true;
-    done += p ? Math.min(bytes, p.bytesDone) : 0;
-  }
-  return active && total > 0 ? done / total : null;
+  return downloadMotion(planFor([language]).packs, (id) => SPEECH_MODELS[id as SpeechModelId].bytes, (id) => h.packPath(id) !== null, latest);
+}
+
+/** Download progress (0..1) across a language's packs, or null when no bytes are moving (queued and waiting are not). */
+export function combineProgress(language: SpeechLanguage, latest: ReadonlyMap<string, SpeechPackProgress>): number | null {
+  return speechDownloadMotion(language, latest).progress;
 }
 
 // ---------------------------------------------------------------------------

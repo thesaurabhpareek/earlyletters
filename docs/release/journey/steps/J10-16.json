@@ -1,0 +1,35 @@
+{
+  "id": "J10-16",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "A typed letter",
+  "note": "Typed letters have the words and the signature, with \"Typed\" provenance, and no player or recording line.",
+  "from": "J10-01",
+  "shot": "screens/J10-16.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Monday, October 26, 2026 Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw. From Mama Typed Make private Delete",
+  "lines": [
+    "Aa",
+    "Monday, October 26, 2026",
+    "Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw.",
+    "From Mama",
+    "Typed",
+    "Make private",
+    "Delete"
+  ]
+}

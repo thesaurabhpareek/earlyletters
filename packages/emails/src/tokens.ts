@@ -107,6 +107,14 @@ export const type = {
 } as const;
 
 /** 4px scale, same steps as @scribe/design-tokens `space`. */
+/**
+ * Long words and raw URLs wrap instead of widening the sheet on a 375px phone (TPL-01). Both properties: `anywhere`
+ * lets a table cell shrink below a long token (`break-word` alone does not change min-content width in Chromium),
+ * and `word-break: break-word` covers older WebKit (iOS Mail before 15.4) that lacks `anywhere`. Applied to the sheet
+ * and footer cells (both properties inherit) and repeated on every text element for clients that drop inheritance.
+ */
+export const wrap = { overflowWrap: 'anywhere', wordBreak: 'break-word' } as const;
+
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 9: 40, 10: 48, 12: 64 } as const;
 
 export const layout = {

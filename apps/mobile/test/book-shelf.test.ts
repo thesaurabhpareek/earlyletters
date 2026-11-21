@@ -72,7 +72,8 @@ describe('the shelf screen (S38, source)', () => {
 
   it('fills {child} in "Back in Asha\'s book." and carries "Open"; after Erase now, "Letter erased." with no action', () => {
     expect(d.restoredToast).toBe("Back in {child}'s book.");
-    expect(screen).toMatch(/fill\(d\.restoredToast, \{ child: /);
+    // Filled by restoredLine (shelf.logic, tested in p5-critics.test.ts), which never leaves {child} empty (L9).
+    expect(screen).toMatch(/message: restoredLine\(d, child\?\.name\)/);
     expect(screen).toMatch(/action: \{ label: d\.openButton/);
     expect(screen).toMatch(/toast\.show\(\{ message: d\.erasedToast \}\)/);
   });

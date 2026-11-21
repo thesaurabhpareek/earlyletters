@@ -22,6 +22,7 @@ import {
   sameEntitlements,
   sanitizeSnapshot,
   serializePlanCache,
+  STILL_LISTED_MS,
   type BookFacts,
 } from '../src/lib/billing/plan.logic';
 
@@ -55,7 +56,9 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
 
   it('own monthly subscription: active until the period end, renews', () => {
     const p = planFromSnapshot(snap([tx()], [status()]));
-    expect(p.view).toEqual({ state: 'active', effectiveUntil: at(20), verifiedAt: NOW, environment: 'production', isTester: false });
+    // CR-46: a renewal is due, so the engine keeps Plus until 7 days past the period end in case the phone is offline
+    // across it. The Plan screen still shows the period end (planLine below).
+    expect(p.view).toEqual({ state: 'active', effectiveUntil: at(27), verifiedAt: NOW, environment: 'production', isTester: false });
     expect(plusOn(p, NOW)).toBe(true);
     expect(p.details).toMatchObject({ productId: 'plus.monthly', period: 'month', ownership: 'purchased', willAutoRenew: true, cancelBy: at(19) });
     expect(planLine(p, NOW)).toEqual({ kind: 'renews', on: localDateOf(at(20)) });
@@ -86,16 +89,82 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
     expect(planLine(p, NOW)).toEqual({ kind: 'grace' });
   });
 
-  it('grace without a date from Apple: on until the next check (one day)', () => {
+  it('grace without a date from Apple: on until the next check (at most 7 days, C-NFR-004)', () => {
     const p = planFromSnapshot(snap([tx({ expiresAt: at(-1) })], [status({ expiresAt: at(-1), state: 'inGracePeriod' })]));
-    expect(p.view.effectiveUntil).toBe(at(1));
+    expect(p.view.effectiveUntil).toBe(at(7));
   });
 
-  it('Apple still lists a subscription past its end (renewal not on this phone yet): on for a day, not called a payment problem', () => {
+  it('Apple still lists a subscription past its end (renewal not on this phone yet): on for 7 days, not called a payment problem', () => {
     const p = planFromSnapshot(snap([tx({ expiresAt: at(-0.5) })]));
     expect(p.view.state).toBe('active');
     expect(plusOn(p, NOW)).toBe(true);
-    expect(plusOn(p, at(1.5))).toBe(false);
+    expect(plusOn(p, at(1.5))).toBe(true);
+    expect(plusOn(p, at(6.9))).toBe(true);
+    expect(plusOn(p, at(7))).toBe(false);
+  });
+
+  it('[C-NFR-004, RT-SUB-13] offline renewal grace is 7 days, pinned to the PRD line (CR-46: fail open for a payer)', () => {
+    expect(STILL_LISTED_MS).toBe(7 * 86_400_000);
+    const prd = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'prd', 'C-habits-pricing-settings.md'), 'utf8');
+    const line = prd.split('\n').find((l) => l.includes('**C-NFR-004'));
+    expect(line).toContain('The last known entitlement is cached for 7 days.');
+    // The ruling that settles it (RT-SUB-13, FOUNDER_QUEUE T6).
+    const rulings = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'agents', 'cto', 'RULINGS.md'), 'utf8');
+    expect(rulings).toMatch(/^### CR-46 Offline renewal grace is 7 days, from C-NFR-004/m);
+    // A payer whose renewal has not reached this phone, offline for 6 days after the last read, still has Plus.
+    const offline = planFromSnapshot(snap([tx({ expiresAt: at(-0.1) })], [status({ expiresAt: at(-0.1) })]));
+    expect(plusOn(offline, at(6))).toBe(true);
+    // A fresh read that no longer lists it is Free at once: the 7 days never outlive Apple's answer.
+    const lapsed = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(-0.1), willAutoRenew: false })]));
+    expect(plusOn(lapsed, NOW)).toBe(false);
+  });
+
+  describe('[CR-46, RT-SUB-13] offline across the period end: Plus stays on until 7 days past the last verified expiry', () => {
+    it('read before the expiry, then offline past it: on until expiry plus 7 days, off after', () => {
+      // The last read is NOW; the monthly period ends in 3 days and the renewal never reaches this offline phone.
+      const offline = planFromSnapshot(snap([tx({ expiresAt: at(3) })], [status({ expiresAt: at(3) })]));
+      expect(offline.view.effectiveUntil).toBe(at(10));
+      expect(plusOn(offline, at(3))).toBe(true);
+      expect(plusOn(offline, at(3.5))).toBe(true);
+      expect(plusOn(offline, at(9.9))).toBe(true);
+      expect(plusOn(offline, at(10))).toBe(false);
+      // The Plan screen keeps Apple's period end; only the engine's window is longer.
+      expect(offline.details.periodEnd).toBe(at(3));
+    });
+
+    it('read after the expiry while Apple still listed it: on until 7 days past that read', () => {
+      const listed = planFromSnapshot(snap([tx({ expiresAt: at(-2) })], [status({ expiresAt: at(-2) })]));
+      expect(listed.view.state).toBe('active');
+      expect(listed.view.effectiveUntil).toBe(at(7));
+      expect(plusOn(listed, at(6.9))).toBe(true);
+      expect(plusOn(listed, at(7))).toBe(false);
+    });
+
+    it('back online with a renewal: the window moves to the new period end', () => {
+      const before = planFromSnapshot(snap([tx({ expiresAt: at(3) })], [status({ expiresAt: at(3) })]));
+      expect(plusOn(before, at(10))).toBe(false);
+      // Back online on day 5: Apple lists the renewed period, ending on day 33.
+      const read = at(5);
+      const renewed = planFromSnapshot(snap([tx({ expiresAt: at(33), purchasedAt: at(3) })], [status({ expiresAt: at(33) })], read));
+      expect(renewed.view.state).toBe('active');
+      expect(renewed.view.verifiedAt).toBe(read);
+      expect(renewed.details.periodEnd).toBe(at(33));
+      expect(plusOn(renewed, at(10))).toBe(true);
+      expect(plusOn(renewed, at(39.9))).toBe(true);
+      expect(plusOn(renewed, at(40))).toBe(false);
+    });
+
+    it('back online and no longer listed: Free at once, the 7 days never outlive Apple\'s answer', () => {
+      const lapsed = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(3), willAutoRenew: false })], at(5)));
+      expect(plusOn(lapsed, at(5))).toBe(false);
+    });
+
+    it('cancelled at the last read (will not renew): no renewal to wait for, so Plus ends at the period end', () => {
+      const cancelled = planFromSnapshot(snap([tx({ expiresAt: at(3) })], [status({ expiresAt: at(3), willAutoRenew: false })]));
+      expect(cancelled.view.effectiveUntil).toBe(at(3));
+      expect(plusOn(cancelled, at(2.9))).toBe(true);
+      expect(plusOn(cancelled, at(3))).toBe(false);
+    });
   });
 
   it('[K-28] Family Sharing: the co-parent has Plus as their own entitlement; nothing to cancel or refund', () => {
@@ -110,7 +179,8 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
     const p = planFromSnapshot(snap([tx({ ownership: 'familyShared', expiresAt: at(300) }), tx({ productId: 'plus.annual', expiresAt: at(40) })]));
     expect(p.details.ownership).toBe('purchased');
     expect(p.details.productId).toBe('plus.annual');
-    expect(p.view.effectiveUntil).toBe(at(300));
+    // The later of the two, plus CR-46's 7 days (no status from Apple, so a renewal may be due).
+    expect(p.view.effectiveUntil).toBe(at(307));
   });
 
   it('upgraded and revoked transactions never count', () => {
@@ -152,6 +222,45 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
   it('[C-NFR-004] a cache read 9 days ago with a period still paid keeps Plus on', () => {
     const p = planFromSnapshot(snap([tx({ expiresAt: at(20) })], [], at(-9)));
     expect(plusOn(p, NOW)).toBe(true);
+  });
+});
+
+describe('[SUB-05] offer codes: a free period is free, not paid', () => {
+  // A redeemed offer code with free months: StoreKit says offerType offer_code, freePeriod true, isTrial false.
+  const coded = (months: number, over: Partial<NativeTransaction> = {}) =>
+    tx({ isTrial: false, offerType: 'offer_code', freePeriod: true, purchasedAt: at(-1), expiresAt: at(months * 30 - 1), ...over });
+
+  it('1 month and 3 months free from a code: trial, "free until", with the cancel-by day', () => {
+    for (const months of [1, 3]) {
+      const t = coded(months);
+      const p = planFromSnapshot(snap([t], [status(t)]));
+      expect(p.view.state, String(months)).toBe('trial');
+      expect(p.details.status).toBe('trial');
+      expect(planLine(p, NOW)).toEqual({ kind: 'trial', until: localDateOf(t.expiresAt!), cancelBy: localDateOf(at(months * 30 - 2)) });
+      expect(plusOn(p, NOW)).toBe(true);
+    }
+  });
+
+  it('a paid offer-code period (no free period) stays active and "renews"', () => {
+    const t = coded(1, { freePeriod: false });
+    const p = planFromSnapshot(snap([t], [status(t)]));
+    expect(p.view.state).toBe('active');
+    expect(planLine(p, NOW)).toMatchObject({ kind: 'renews' });
+  });
+
+  it('the native fields survive validation and the device cache; unknown offer kinds read as other', () => {
+    const raw = { entitlements: [{ ...coded(3) }, { ...tx({ productId: 'plus.annual' }), offerType: 'something_new', freePeriod: 'yes' }], statuses: [], checkedAt: NOW };
+    const clean = sanitizeSnapshot(raw)!;
+    expect(clean.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(clean.entitlements[1].offerType).toBe('other');
+    expect('freePeriod' in clean.entitlements[1]).toBe(false);
+    expect(parsePlanCache(serializePlanCache(clean))?.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(planFromSnapshot(clean).view.state).toBe('trial');
+  });
+
+  it('a snapshot without the fields (an older cache, or before iOS 17.2 for a code) reads as before', () => {
+    const p = planFromSnapshot(snap([tx()], [status()]));
+    expect(p.view.state).toBe('active');
   });
 });
 

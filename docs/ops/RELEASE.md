@@ -7,7 +7,7 @@ Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-04
 - Every row marked **v1.1** below (sign-in setup, database migrations, Edge Functions, the demo account, the co-parent exit) **applies to the v1.0 store release**.
 - Rows that say v1.0 has no sign-in, no account or no server (5.2 step 4, 5.3 step 3, 6.4, 6.8, section 10's opening line) are superseded for the store release.
 - The alpha runs on the preview lane; this train's store lane starts once the submission date is set.
-- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4, Proposed).
+- The one-lineage merge is done: `main` came into `develop` in #497 (1 Nov 2026) and the merge-back to `main` is #515, so the cut from `main` (1.1) no longer waits on it.
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
@@ -23,14 +23,16 @@ approved and released  -->  tag ios-v1.0.0 on the RC's commit  -->  GitHub Relea
 alongside, never inside the binary:  migrations (APPLY.md order, founder)  |  packs, config, content (scripts/packs, founder's key)
 ```
 
-Dates for v1.0 (ROADMAP 2.1): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+Original dates for v1.0 (ROADMAP 2.1, superseded; the current dates follow this line): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+
+Current dates: the build 2 freeze is Tue 3 Nov and the go/no-go is Mon 9 Nov (D-130). The first store build is targeted for submission on Tue 1 Dec (D-121) and is re-planned after the go/no-go (D-106).
 
 Who does what:
 
 | Step | Who | Never |
 |---|---|---|
 | Code, tests, docs on a wave branch | agents | agents never commit, push, build, submit, publish or apply (COORDINATION 6) |
-| Merge to `develop`, open the release PR, tag, run builds and submissions | coordinator | no build from an untagged commit for TestFlight or the App Store |
+| Merge to `develop`, open the release PR, tag, run builds and submissions | coordinator | no build from an untagged commit for the App Store, or for TestFlight after the alpha (the two alpha builds come from `develop`, `docs/release/TESTFLIGHT.md`) |
 | Approve the release PR, the submission, live migrations, pack and config publishing, legal text going public | founder | no secret in a chat, issue, repo or email (FOUNDER_TASKS) |
 
 ## 1. Branches, tags and CI gates
@@ -39,7 +41,7 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (proposed: Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; D-089 planned Tue 27 Oct; proposed until the founder confirms), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; the date was confirmed by the founder on 30 Oct, D-130, and the hour is the coordinator's; D-089 planned Tue 27 Oct), right after the release PR. **Hold lifted (1 Nov 2026):** CR-30 held the cut because `main` and `develop` shared history only to 3 Oct (a trial release merge on 31 Oct conflicted in 45 files). The founder approved the lineage merge early: `main` came into `develop` in #497 and the merge-back is #515. With one lineage, the cut goes ahead at the Tue 3 Nov freeze as first planned, after the release PR from `develop` into `main`. The first store build targets Tue 1 Dec (D-121). The Tue 3 Nov freeze still applies to the alpha builds, which come from `develop`. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
 - `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
@@ -92,7 +94,7 @@ npx eas-cli@24.10.0 init            # creates or links the EAS project for slug 
 | Profile | Bundle id | Distribution | Use | Status |
 |---|---|---|---|---|
 | `development` | `com.earlyletters.scribe.dev` | internal (ad hoc, registered devices) | dev client on the founder's phones; device spikes with Instruments (S1-17) | exists |
-| `preview` | `com.earlyletters.scribe.preview` | internal | release JavaScript for timing and most device checks; no StoreKit products | exists |
+| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); no App Store products on this record: Plus lives on the production record only (ids unique across the account, observed 1 Nov 2026; TESTFLIGHT step 2.5) | exists |
 | `production` | `com.earlyletters.scribe` | store (default) | release candidates (internal TestFlight on the production record) and the App Store | exists, `autoIncrement: true` |
 | `testflight` | `com.earlyletters.scribe.preview` | store | C0 and C1 (preview lane, `docs/release/TESTFLIGHT.md`) | exists on `develop` (PR #100) |
 | `e2e` | `.preview` | simulator, `withoutCredentials` | Maestro suite (`EXPO_PUBLIC_E2E=1`) | requested (B-1) |
@@ -129,6 +131,10 @@ Build budget (D-092): EAS Free gives 15 iOS builds a month, shared by both lanes
 
 After the freeze, C1 builds come from `testflight.yml` run on the latest RC tag, so families test the RC's commit in the preview record.
 
+Licenses page: Settings, Licenses lists what ships in the iOS app and nothing else, from `apps/mobile/src/generated/licences.json` (generated from `package-lock.json` and `scripts/licences/components.mjs`; `npm test` fails while a shipped package has no theme or the file is stale). Before each RC tag:
+- [ ] `npm run licences:verify -w @scribe/mobile` exits 0 on the RC commit. It exports the production iOS bundle, reads its source map and the autolinked native modules, and exits 1 if any npm package is in the build but not listed, listed but not built, or in the source map but not in `package-lock.json`. Record the line it prints ("N npm packages in the iOS build, N listed") in `docs/release/<x.y.z>.md`.
+- [ ] After the first EAS production build of the release, the pod list in the build log matches `NON_NPM` in `components.mjs` (Google Sign-In and its dependencies are listed by major version, since no Podfile.lock is kept).
+
 Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). Whoever changes the source regenerates it in the same PR; the drift test in `npm test` fails otherwise. The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`. The job refuses any other ref, refuses a listing that promises sharing while server features are off (BL-440), waits for the founder's approval in the `app-store` environment, adds the review contact and copyright from the secret, and runs `eas metadata:push`. GitHub shows the Run workflow button only for workflows on the default branch, so the job is available once the release PR has merged to `main` (V: GitHub docs, per the 15 Oct review). EAS Metadata cannot upload screenshots: upload them by hand (6.3).
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
@@ -140,14 +146,14 @@ What stands (ADR 0022 decision 8, founder, 15 Oct):
 - Limit: every Claude session runs on the founder's GitHub account, which is an admin. The rulesets and the approval stop the harness App and anyone without admin rights. A session on the founder's credentials is held by the written rule (COORDINATION.md) and by the founder seeing each approval request.
 
 Proposed (17 Oct, not decided; ADR 0026 decision 1, Proposed; SR-3 and SR-11 in `docs/security/SECRETS_REVIEW.md`, on #206). It takes effect when the founder accepts ADR 0026 decision 1; until then the 15 Oct gate above stands:
-- Environment `app-store`: the approver account (a second account only the founder holds) is the only required reviewer, with prevent self-review on and admin bypass off; the same deployment rules. Create it with `scripts/release/github-settings.ts` (on #236; FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SR-11).
+- Environment `app-store` (the approver account below is withdrawn, CR-19, 31 Oct; the reviewer waits for CR-20): the approver account (a second account only the founder holds) is the only required reviewer, with prevent self-review on and admin bypass off; the same deployment rules. Create it with `scripts/release/github-settings.ts` (on #236; FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SR-11).
 - Rulesets, for immutability only (SR-3): `ios-v*` and `db-v*` tags cannot be moved or deleted, and `release/*` cannot be force-pushed or deleted; no bypass list. They do not decide who may create a tag, because every session uses the same account; the approver's click is the control.
 - Limit: the founder's account still owns the repository and can change these settings back; `github-settings.ts --verify` (on #236) reads them back, and the durable fix is a founder decision after the alpha (AF-27 in `docs/release/AUTOMATION.md`).
 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
 | `EXPO_TOKEN` | Expo robot token used only for the store lane (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
-| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Optional `notes` overrides `storeListing.reviewNotes`; `demoUsername`, `demoPassword` and `demoRequired` only if a demo account exists (v1.1) | metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Servers-off production profile: optional `notes` overrides `storeListing.reviewNotes`. Servers-on production profile (build 12, `scripts/release/with-review-contact.ts`): `demoUsername` (the demo email address) and `demoPassword` (the password of the mailbox that receives the sign-in code; the app has no password sign-in) are required; `notes`, `inviteLink` and `inviteExpiry` are refused. The script sends `appReviewCopy.notesServersOn` with both filled in, and sends them as the sign-in fields with `demoRequired: true`; Sign in with Apple is the other way in. Servers-off profile: `inviteLink` and `inviteExpiry` are refused, and `demoUsername` and `demoPassword` are optional. Never put a real link or date in the repository | metadata push |
 
 A malformed secret fails with a fixed message and is never echoed to the public log. The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
 
@@ -157,9 +163,9 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 - **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli@24.10.0 credentials -p ios`.
 - **Capabilities:** EAS enables the entitlements in the config on the App ID during the build (Sign in with Apple, Associated Domains; DEVICE_TEST_PLAN S1-06 turns that Assumption into V). Check the App ID in Certificates, Identifiers & Profiles after the first build (AUTH_SETUP 2.1).
 - **No push key.** The app schedules only local notifications (reminders and plan reminders) and never asks for a push token (no `getDevicePushTokenAsync` or `getExpoPushTokenAsync` in `apps/mobile`). expo-notifications' own plugin, which prebuild applies because the package is installed, writes `aps-environment`; `app.config.ts` removes it, so no remote push entitlement is configured (F: `expo prebuild` and `expo config --type introspect` show no `aps-environment`; `apps/mobile/test/config.test.ts` checks the introspected entitlements of every profile and the preflight checks the generated ones; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so an interactive `eas build` does not offer to create a push key (eas-cli 24.10.0, `IosCredentialsProvider.js`); if it ever asks "Would you like to set up Push Notifications for your project?", answer No.
-- **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli@24.10.0 device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
+- **Internal builds** (`development`) are ad hoc: each iPhone is registered first (`npx eas-cli@24.10.0 device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
 - **App Store Connect API key for `eas submit`:** made through `eas credentials` (App Store Connect: Manage your API Key) so later submissions are non-interactive (V: Expo "Submit to the Apple App Store"); creating team keys is an Account Holder or Admin action (A). It never leaves EAS and the founder's password manager.
-- **The Sign in with Apple `.p8` key** used by the purge worker (and, from v1.1, by the `apple-token` Edge Function parked on Line B, G-03) is a different key with a different job (AUTH_SETUP 2.4, SECURITY.md 5; Line B's AUTH_SETUP 2.7 describes `apple-token`). It is not a signing credential.
+- **The Sign in with Apple `.p8` key** used by the purge worker and by the `apple-token` Edge Function (built in #139, G-03) is a different key with a different job (AUTH_SETUP 2.4 and 2.7, SECURITY.md 5). It is not a signing credential.
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
 
 ## 5. TestFlight
@@ -215,7 +221,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 
 ### 6.4 App Review information
 - [ ] **Contact information** (name, email, phone in international format) and **Notes** (at most 4,000 bytes) (V: Apple "Platform version information"). Both are pushed by the metadata job (3.4): contact from `ASC_REVIEW_CONTACT_JSON`, notes from `storeListing.reviewNotes` in `packages/content` (BL-341 finishes them).
-- [ ] **No demo account for v1.0.** v1.0 is on this phone only: no sign-in, account or sync (PR #54), so "Sign-in required" is No. The notes say so. If sign-in ships (v1.1), the demo-account plan returns: a non-expiring account on production with the fictional family "Asha" only, kept between versions.
+- [ ] **Review path.** Servers-off build: no sign-in, account or sync, so "Sign-in required" is No and the notes say so (`storeListing.reviewNotes`). Servers-on build (build 12): sign-in is REQUIRED (founder ruling, 10 Nov 2026: account first), so "Sign-in required" is a founder decision for the reviewer path (NX-05, a founder step) and the notes must describe exactly that path. Co-parent surfaces may show "coming soon" in build 12, so the reviewer does not join the Asha sample book with an invite link. STALE until code catches up: `appReviewCopy.notesServersOn` (`packages/content/src/release/app-review.en.ts`) still says "SIGN-IN IS OPTIONAL" and walks through an invite link, and `with-review-contact.ts` still requires `inviteLink` and `inviteExpiry`; do not submit a servers-on build with those notes (list in the pull request that made this change). A reviewer note that says "no sign-in" on a servers-on build is refused (BL-341).
 - [ ] Notes cover: a family memory journal parents fill by talking or typing; everything stays on the phone; answer Yes to the 18+ question; how to reach Plus (BL-341); speech models and language packs download as data checked against a signed manifest and contain no code (guideline 2.5.2, V); a birthday or due date files letters by month and nothing is a health service (D-004 5.1.1(ix) positioning). Describe every feature specifically; generic notes are rejected under 2.3.1(a) (V).
 
 ### 6.5 Export compliance (encryption)
@@ -259,18 +265,18 @@ No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 ## 9. Packs, remote config and content publishing
 
-D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below are `publish.ts`'s development-only path, which overwrites without `upload`'s checks. The secret key lives only in the founder's password manager.
+D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below follow its steps 1, 6 and 7. The primary's secret key lives in the founder's password manager and in the key file of PACKS_HOSTING step 1, outside every checkout.
 
 1. Once: `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`; both public key lines go into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
-2. Each publish, on the founder's machine:
+2. Each publish, on the founder's machine (PACKS_HOSTING steps 6 and 7):
    ```bash
-   export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...        # from the password manager, this shell only
-   npx tsx scripts/packs/publish.ts packs   --base-url https://packs.<Q-001 host> --min-app 1.0.0
-   npx tsx scripts/packs/publish.ts config  [--kill <switch>] [--unkill <switch>]
-   npx tsx scripts/packs/publish.ts content
+   # the key file of PACKS_HOSTING step 1, outside every checkout; never `export` the key (it stays in ~/.zsh_history)
+   npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream
+   set -a; . ~/.config/early-letters/r2.env; set +a        # the upload credentials, PACKS_HOSTING step 5
+   npx tsx scripts/packs/publish.ts upload
    ```
-   The script validates every text pack, writes `dist/packs/`, signs the manifest, config and content, checks each signature the way a phone does, bumps each document's version by one and rewrites `supabase/functions/{config,content}/published.ts`. It uploads and deploys nothing; it prints the commands (F: `scripts/packs/publish.ts`).
-3. Run the printed upload commands (`wrangler r2 object put` up to 300 MB, `rclone copyto` above, F) and deploy: `npx supabase functions deploy config --no-verify-jwt --use-api` and the same for `content`.
+   `release` writes `dist/release/`, signs the manifest, the remote config (from `scripts/packs/remote-config.json`, where the kill switches are set) and the content bundle, checks each signature the way a phone does, and bumps the versions in `supabase/functions/{config,content}/published.ts`; during the alpha, skip item 3 of its printed next steps (PACKS_HOSTING step 6). `upload` sends packs first and the manifest last, overwrites and deletes nothing, then runs `verify` against the host (F: `scripts/packs/publish.ts`).
+3. Not this path: `publish.ts packs`, `config`, `content` and `all` are development only; they print `wrangler` commands that overwrite without `upload`'s checks (the header of `scripts/packs/publish.ts`).
 4. Commit the changed `published.ts` and `scripts/packs/remote-config.json` in a PR the same day: git history is the audit log of what was served (C-NFR-009).
 5. Staging first, then production, with one phone checking each (DEVICE_TEST_PLAN S1-16 for packs; a kill switch reaches an open app within about 5 minutes, ADR 0016 6).
 6. Kill switches available today (F: `remote-config.json`): `sync`, `invites`, `photos`, `packDownloads`, `serverContent`. `readTogetherFreeSessions` may only be raised (D-009). `forceReauthEpoch` signs everyone out once (G-06; use only for a security incident).
@@ -280,7 +286,7 @@ D-115: the founder creates and holds the signing keys and publishes on one compu
 Not run for v1.0: the on-device build makes no Supabase call (PR #54). This section is the plan for when server features turn on.
 
 
-The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is built: `.github/workflows/deploy-db.yml` (PR #36) applies migrations to staging and, on a `db-v*` tag, to production through the `production` environment. Follow APPLY.md for anything that workflow does not cover.
+The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is built: `.github/workflows/deploy-db.yml` (PR #36) applies migrations to staging and, on a `db-v*` tag, to production through the `db-production` environment (#236). Follow APPLY.md for anything that workflow does not cover.
 
 | Order | File | APPLY.md | Needed by |
 |---|---|---|---|
@@ -323,6 +329,7 @@ Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
 - [ ] DEVICE_TEST_PLAN items for this milestone, including S2-17 (plan reminders, D-094) and TF-11 (no analytics host, D-095) once #123 merges: evidence file <path>
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
+- [ ] 0.9.0 test pages (CR-60): the founder has released the hold on them, or this release PR does not carry `apps/web/content/legal/*/0.9.0.md` and the versioned routes
 - [ ] Release option: manual (1.0) or phased (updates)
 - [ ] After release: tag ios-vX.Y.Z on the RC's commit; G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
 ```

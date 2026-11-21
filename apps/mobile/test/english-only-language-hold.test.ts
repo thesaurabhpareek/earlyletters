@@ -50,6 +50,7 @@ vi.mock('../src/lib/models/speech-consent', () => ({
 vi.mock('../src/lib/models/speech-packs', () => ({
   bindSpeechPacks: () => {},
   combineProgress: () => null,
+  speechDownloadMotion: () => ({ progress: null, stage: null }),
   ensureSpeechFor: async (language: string) => {
     fake.downloads.push(language);
     return { ok: true };
@@ -158,7 +159,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('[D-111 item 4] switch on: a recording in another language waits for its language', () => {
-  it('is never handed to the recogniser, never fails, downloads nothing, and the notice is flagged', async () => {
+  it('[NS-17-R10] is never handed to the recogniser, never fails, downloads nothing, and the notice is flagged', async () => {
     const queue = await launch(true);
     addDraft('draft-es', 'es');
     queue.requestWords('draft-es');

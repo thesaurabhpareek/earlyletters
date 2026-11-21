@@ -4,7 +4,7 @@
  *
  * `{app}` (the public name) is filled here, once, from packages/brand, so
  * in-app copy never types the name and screens can render strings such as
- * `copy.ageGate.stopBody` as they are (CLAUDE.md: the name lives only in
+ * `copy.ageGate.stopTitle` as they are (CLAUDE.md: the name lives only in
  * packages/brand). Every other placeholder is left for `fill`.
  *
  * Feature-local copy files (`*copy.ts` under src/) are allowed for strings a
@@ -31,8 +31,22 @@ export function withBrandName<T>(value: T, name: string = brand.name): T {
 
 export const copy: typeof en = withBrandName(en);
 
+/**
+ * The words shown for a child with no name (NX-31-R3): onboarding.childFallback, "your child". The name may stay
+ * empty; the stored value is never replaced, only the sentence is filled.
+ */
+export function childLabel(name: string | null | undefined): string {
+  return name?.trim() ? name : copy.onboarding.childFallback;
+}
+
 export function fill(text: string, values: Record<string, string | number> = {}): string {
-  return renderTemplate(text, values);
+  const child = values.child;
+  if (typeof child !== 'string' || child.trim()) return renderTemplate(text, values);
+  const label = childLabel(child);
+  const out = renderTemplate(text, { ...values, child: label });
+  // A template that opens with {child} ("{child}'s book") starts with a capital when the words stand in for the name.
+  // Only the template decides: text that merely begins with the same words is left as written.
+  return text.startsWith('{child}') ? out.charAt(0).toUpperCase() + out.slice(1) : out;
 }
 
 /** English plural choice for counted strings until packages/content has plural forms (TDD 09 7.2 item 2). */
@@ -63,7 +77,6 @@ export const pendingCopy = {
     removeChild: copy.onboarding.child.removeA11y,
     signsAsTitleMany: copy.onboarding.signsAs.titleMany,
     andJoin: copy.common.andJoin,
-    mishearTitle: copy.onboarding.promise.mishearTitle,
   },
   listen: copy.listen,
   review: {
@@ -94,9 +107,6 @@ export const pendingCopy = {
   },
   readTogether: {
     emptyBody: copy.readTogether.empty,
-  },
-  reader: {
-    deletedUndoBody: copy.reader.deletedBody,
   },
   tonight: {
     waitingTitle: copy.tonight.draftWaiting.title,

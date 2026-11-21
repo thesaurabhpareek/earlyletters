@@ -498,7 +498,7 @@ Order is RICE adjusted for legal floors and dependencies (I).
 | 3 | G-12 | Trial timeline in the store view; local notifications and cards at D-022 targets | v1.0.1, before 8 Dec 2026 | The Terms promise it and the first trials end mid December |
 | 4 | G-01 | Campaign tokens, device-assigned arms, arm on account (L2), per-arm aggregate view, ASC CSV reader | v1.1 | Every later item needs a readout |
 | 5 | G-15 | Annual trial to 1 month for new subscribers (founder) | v1.1 (ASC) | Best-evidence trial length; removes the long-trial notice duty |
-| 6 | G-16 | Redeem button and Settings row; founding-family year; support and partner codes | v1.0.1 or v1.1 | Tiny build; unlocks partners, thanks and repair |
+| 6 | G-16 | Redeem button and Settings row (shipped in v1.0, SUB-06, 31 Oct 2026); founding-family year; support and partner codes | v1.0 (codes once Ready for Sale) | Tiny build; unlocks partners, thanks and repair |
 | 7 | G-07 | E1: welcome screen against the 4-story intro | v1.1 | The intro ships in v1.1 anyway; test it rather than assume it |
 | 8 | G-04 | Major Update event for v1.1; Mother's Day event for v1.3 | v1.1, v1.3 | Free search and Today-tab surface |
 | 9 | G-08 | The first seven days, with back-off from G-11 | v1.2 | The biggest retention lever, after measurement exists |

@@ -6,7 +6,7 @@
  * Fictional family "Asha" (born 2025-04-12) only.
  */
 import { describe, expect, it } from 'vitest';
-import { ageLabel, ageOn, chapterOf, dateline } from '../src';
+import { ageLabel, ageOn, chapterOf, dateline, isBeforeBirth } from '../src';
 
 const ASHA = '2025-04-12';
 
@@ -65,8 +65,8 @@ describe('ageOn: month anniversaries on short months', () => {
 
   it('refuses dates that are not YYYY-MM-DD', () => {
     for (const bad of ['12/04/2025', '2025-4-12', '', 'yesterday', '20250412']) {
-      expect(() => ageOn(bad, '2026-04-12'), bad).toThrow(/Invalid ISO date/);
-      expect(() => ageOn(ASHA, bad), bad).toThrow(/Invalid ISO date/);
+      expect(() => ageOn(bad, '2026-04-12'), bad).toThrow(/invalid_iso_date/);
+      expect(() => ageOn(ASHA, bad), bad).toThrow(/invalid_iso_date/);
     }
   });
 
@@ -129,5 +129,28 @@ describe('dateline and chapters', () => {
     expect(chapterOf(ASHA, '2025-05-12')).toBe(1);
     expect(chapterOf(ASHA, '2026-04-12')).toBe(12);
     expect(chapterOf('2027-01-31', '2027-02-28')).toBe(1);
+  });
+});
+
+describe('isBeforeBirth: a book that is not born yet (P3 critics\' pass S2)', () => {
+  it('no birthday (started with "Not here yet" and a due date) is before the birth, on any day', () => {
+    expect(isBeforeBirth(null, '2026-10-28')).toBe(true);
+    expect(isBeforeBirth(undefined, '2026-10-28')).toBe(true);
+    expect(isBeforeBirth('', '2026-10-28')).toBe(true);
+  });
+
+  it('a birthday after the day is before the birth; the day of birth and every day after are not', () => {
+    expect(isBeforeBirth(ASHA, '2025-04-11')).toBe(true);
+    expect(isBeforeBirth(ASHA, '2024-10-01')).toBe(true);
+    expect(isBeforeBirth(ASHA, ASHA)).toBe(false);
+    expect(isBeforeBirth(ASHA, '2025-04-13')).toBe(false);
+    expect(isBeforeBirth(ASHA, '2026-10-28')).toBe(false);
+  });
+
+  it('agrees with ageOn and dateline: "before birth" is exactly a negative number of days', () => {
+    for (const on of ['2025-04-10', '2025-04-11', '2025-04-12', '2025-04-13', '2025-05-12', '2026-04-12']) {
+      expect(isBeforeBirth(ASHA, on), on).toBe(ageOn(ASHA, on).days < 0);
+      expect(ageLabel(ageOn(ASHA, on)) === 'before birth', on).toBe(isBeforeBirth(ASHA, on));
+    }
   });
 });

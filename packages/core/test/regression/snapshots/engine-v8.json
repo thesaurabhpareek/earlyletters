@@ -1,0 +1,372 @@
+{
+  "engineVersion": 8,
+  "items": {
+    "type-filler": {
+      "text": "Asha saw the duck.",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 0,
+          "end": 4,
+          "original": "Um, ",
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "type-filler-midsentence": {
+      "text": "Asha was, very sleepy.",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 10,
+          "end": 14,
+          "original": "uh, ",
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "type-repeat": {
+      "text": "Asha looked at the duck.",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 18,
+          "end": 22,
+          "original": " the",
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "type-false-start": {
+      "text": "she was happy.",
+      "applied": [
+        {
+          "type": "false_start",
+          "start": 0,
+          "end": 9,
+          "original": "She was, ",
+          "replacement": "",
+          "source": "model"
+        }
+      ],
+      "rejected": []
+    },
+    "type-stt-fix": {
+      "text": "Asha ate peas and Mumma laughed.",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 4,
+          "original": "Usha",
+          "replacement": "Asha",
+          "source": "rule"
+        },
+        {
+          "type": "stt_fix",
+          "start": 18,
+          "end": 22,
+          "original": "mama",
+          "replacement": "Mumma",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "type-stt-fix-case-only": {
+      "text": "Asha slept",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 4,
+          "original": "asha",
+          "replacement": "Asha",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "type-punctuation": {
+      "text": "She is happy.",
+      "applied": [
+        {
+          "type": "punctuation",
+          "start": 0,
+          "end": 3,
+          "original": "she",
+          "replacement": "She",
+          "source": "model"
+        },
+        {
+          "type": "punctuation",
+          "start": 7,
+          "end": 12,
+          "original": "happy",
+          "replacement": "happy.",
+          "source": "model"
+        }
+      ],
+      "rejected": []
+    },
+    "type-agreement": {
+      "text": "she has a cold but she is still smiling",
+      "applied": [
+        {
+          "type": "agreement",
+          "start": 4,
+          "end": 8,
+          "original": "have",
+          "replacement": "has",
+          "source": "model"
+        }
+      ],
+      "rejected": []
+    },
+    "type-paragraph": {
+      "text": "Asha slept.\n\nThen she woke.",
+      "applied": [
+        {
+          "type": "paragraph",
+          "start": 11,
+          "end": 12,
+          "original": " ",
+          "replacement": "\n\n",
+          "source": "model"
+        }
+      ],
+      "rejected": []
+    },
+    "level-verbatim-keeps-fillers": {
+      "text": "um she, uh, walked to Mumma",
+      "applied": [],
+      "rejected": []
+    },
+    "locked-phrase-kept": {
+      "text": "she said the the moon is hers",
+      "applied": [],
+      "rejected": [
+        "repeat:overlaps_protected"
+      ]
+    },
+    "emphasis-kept": {
+      "text": "I love you, I love you so much.",
+      "applied": [],
+      "rejected": []
+    },
+    "quote-kept": {
+      "text": "Asha said \"bau bau\" to the cat.",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 4,
+          "original": "Asia",
+          "replacement": "Asha",
+          "source": "rule"
+        }
+      ],
+      "rejected": []
+    },
+    "neg-drop-not": {
+      "text": "She did not cry.",
+      "applied": [],
+      "rejected": [
+        "filler:not_a_filler"
+      ]
+    },
+    "neg-drop-not-as-repeat": {
+      "text": "Asha is not sad.",
+      "applied": [],
+      "rejected": [
+        "repeat:not_a_repeat"
+      ]
+    },
+    "neg-can-to-cannot": {
+      "text": "I can come.",
+      "applied": [],
+      "rejected": [
+        "agreement:changes_negation"
+      ]
+    },
+    "neg-no-to-yes": {
+      "text": "She said no.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:stt_fix_not_dictionary"
+      ]
+    },
+    "neg-contraction-dropped": {
+      "text": "She didn't cry.",
+      "applied": [],
+      "rejected": [
+        "agreement:changes_negation"
+      ]
+    },
+    "neg-never-removed": {
+      "text": "She never cries.",
+      "applied": [],
+      "rejected": [
+        "filler:not_a_filler"
+      ]
+    },
+    "neg-no-no-kept": {
+      "text": "No, no, she would not let go.",
+      "applied": [],
+      "rejected": []
+    },
+    "num-digit-changed": {
+      "text": "Asha slept 3 hours.",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ]
+    },
+    "num-word-changed": {
+      "text": "Asha is two years old.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:stt_fix_not_dictionary"
+      ]
+    },
+    "num-word-as-agreement": {
+      "text": "Asha is two years old.",
+      "applied": [],
+      "rejected": [
+        "agreement:agreement_stem_mismatch"
+      ]
+    },
+    "num-twice-to-once": {
+      "text": "She waved twice.",
+      "applied": [],
+      "rejected": [
+        "agreement:agreement_stem_mismatch"
+      ]
+    },
+    "num-time-changed": {
+      "text": "They played until 3:30.",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ]
+    },
+    "num-removed-as-filler": {
+      "text": "She has two teeth now.",
+      "applied": [],
+      "rejected": [
+        "filler:not_a_filler"
+      ]
+    },
+    "add-clause-punctuation": {
+      "text": "Asha laughed.",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ]
+    },
+    "add-sentence-paragraph": {
+      "text": "Asha laughed.",
+      "applied": [],
+      "rejected": [
+        "paragraph:paragraph_not_whitespace"
+      ]
+    },
+    "add-summarize-type": {
+      "text": "Asha laughed.",
+      "applied": [],
+      "rejected": [
+        "summarize:type_not_allowed_at_level"
+      ]
+    },
+    "add-rewrite-type": {
+      "text": "Asha laughed.",
+      "applied": [],
+      "rejected": [
+        "rewrite:type_not_allowed_at_level"
+      ]
+    },
+    "add-stale-offsets": {
+      "text": "Asha laughed.",
+      "applied": [],
+      "rejected": [
+        "filler:original_mismatch"
+      ]
+    },
+    "fix-noun-plural": {
+      "text": "We saw the dog with Asha.",
+      "applied": [],
+      "rejected": [
+        "agreement:agreement_stem_mismatch"
+      ]
+    },
+    "fix-tense": {
+      "text": "She said she was hungry.",
+      "applied": [],
+      "rejected": [
+        "agreement:changes_tense"
+      ]
+    },
+    "fix-pronoun": {
+      "text": "Daddy gave her the spoon.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:stt_fix_not_dictionary"
+      ]
+    },
+    "fix-question-to-statement": {
+      "text": "Did she sleep?",
+      "applied": [],
+      "rejected": [
+        "punctuation:changes_sentence_type"
+      ]
+    },
+    "name-child-to-other-name": {
+      "text": "Asha said hi to Ashu.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:overlaps_protected"
+      ]
+    },
+    "name-child-lowercased": {
+      "text": "Asha said hi to Ashu.",
+      "applied": [],
+      "rejected": [
+        "punctuation:overlaps_protected"
+      ]
+    },
+    "name-nickname-to-child": {
+      "text": "Asha said hi to Ashu.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:overlaps_protected"
+      ]
+    },
+    "name-dropped-as-filler": {
+      "text": "Asha said hi to Ashu.",
+      "applied": [],
+      "rejected": [
+        "filler:overlaps_protected"
+      ]
+    },
+    "name-stranger-becomes-child": {
+      "text": "Dada came home.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:stt_fix_protected_word"
+      ]
+    },
+    "name-split-by-space": {
+      "text": "Asha came home.",
+      "applied": [],
+      "rejected": [
+        "punctuation:overlaps_protected"
+      ]
+    }
+  }
+}

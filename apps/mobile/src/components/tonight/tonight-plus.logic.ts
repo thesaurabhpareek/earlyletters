@@ -1,0 +1,105 @@
+/**
+ * Tonight and Plus (SR-C-08; F14-REQ-040, F14-REQ-041; catalog row RT-TON-03). Pure parts, no React Native import, so
+ * they are unit tested in test/tonight-plus.test.ts.
+ *
+ * 1. The standing line. Once the free letters are used and Plus is off, Tonight says so before the person records, not
+ *    only at Review after the recording: one line above Speak and Type, `billingCopy.tonight.plusLine`. A state, never
+ *    a count, never a price, and no button (F14-REQ-040). The rule is the Keep step's own (packages/core decideKeepLetter), read
+ *    through the billing API (usePlan, lettersKeptNow, freeLettersAllowance), so the line and the gate never disagree.
+ *
+ * 2. Held letters. One held letter keeps its own card. Two or more fold into one row, "Letters waiting to be kept."
+ *    (no count: founder decision F5, the council refused "{count} letters waiting"), where the newest of them would be; tapping the row opens the list of their cards in place. Every other
+ *    card keeps its place and order (newest first).
+ */
+import { decideKeepLetter, type PlanView } from '@scribe/core';
+import { billingCopy } from '@scribe/content';
+import { copy } from '@/lib/copy';
+import type { DraftCard } from './draft-card.logic';
+
+/* ------------------------------------------------------------------ */
+/* The standing line                                                   */
+/* ------------------------------------------------------------------ */
+
+export type PlusLineInput = {
+  /** The engine's plan view (usePlan().view). */
+  plan: PlanView;
+  /** ISO time now. */
+  now: string;
+  /** Letters kept on this account (lettersKeptNow), or null while it has not been read yet. */
+  lettersKept: number | null;
+  /** The free-letter allowance (freeLettersAllowance). */
+  allowance: unknown;
+  /**
+   * An alpha build (PLUS_ALPHA, lib/billing/alpha.ts: TestFlight and development). Karma's ruling on #508: the line never
+   * shows in alpha, at any count; at the 100-letter cap the alpha note (billingCopy.alpha.note) applies instead, on the
+   * Plus surfaces #552 names. Passed in, not imported, so this stays pure and both builds are tested.
+   */
+  alpha: boolean;
+};
+
+/**
+ * True when Tonight shows the standing line: the next letter kept would meet the Keep sheet, because the free letters
+ * are used and Plus is not on (lapsed included). Never in an alpha build. Never before the ledger has been read, so a slow read shows nothing
+ * rather than a wrong line.
+ */
+export function plusLineShows(input: PlusLineInput): boolean {
+  if (input.alpha) return false;
+  if (input.lettersKept == null) return false;
+  return decideKeepLetter({ now: input.now, plan: input.plan, lettersKept: input.lettersKept, allowance: input.allowance }).kind === 'offer';
+}
+
+/** What the line says. No number, no price, no action. */
+export function plusLine(): string {
+  return billingCopy.tonight.plusLine;
+}
+
+/* ------------------------------------------------------------------ */
+/* Held letters                                                        */
+/* ------------------------------------------------------------------ */
+
+/** From this many held letters, they fold into one row. */
+export const HELD_COLLAPSE_AT = 2;
+
+export type HeldRow = {
+  kind: 'held';
+  /** Stable key for the list. */
+  id: 'held';
+  /** How many held letters the row folds; used only to close the list when it changes, never shown (F5). */
+  count: number;
+  /** "Letters waiting to be kept." No count (F5). */
+  title: string;
+  /** The held letters' own cards, newest first, shown when the row is open. */
+  cards: DraftCard[];
+};
+
+export type TonightRow = { kind: 'card'; card: DraftCard } | HeldRow;
+
+/**
+ * Tonight's rows from its cards (draftCards, newest first). Fewer than HELD_COLLAPSE_AT held cards: one row per card,
+ * unchanged. Otherwise the held cards become one row, placed where the newest held card was.
+ */
+export function tonightRows(cards: readonly DraftCard[]): TonightRow[] {
+  const held = cards.filter((c) => c.state === 'held');
+  if (held.length < HELD_COLLAPSE_AT) return cards.map((card) => ({ kind: 'card', card }));
+  const rows: TonightRow[] = [];
+  for (const card of cards) {
+    if (card.state !== 'held') rows.push({ kind: 'card', card });
+    else if (card === held[0]) rows.push(heldRow(held));
+  }
+  return rows;
+}
+
+function heldRow(cards: DraftCard[]): HeldRow {
+  return { kind: 'held', id: 'held', count: cards.length, title: copy.tonight.draft.heldMany, cards };
+}
+
+/** How many letters the folded row holds; 0 when there is no folded row. Tonight closes the list when it changes. */
+export function heldCountOf(rows: readonly TonightRow[]): number {
+  for (const r of rows) if (r.kind === 'held') return r.count;
+  return 0;
+}
+
+/** The row's action, closed or open. */
+export function heldRowAction(open: boolean): string {
+  return open ? copy.tonight.draft.heldHideButton : copy.tonight.draft.heldShowButton;
+}

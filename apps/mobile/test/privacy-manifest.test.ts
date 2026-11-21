@@ -37,6 +37,7 @@ const VARIABLES = [
   'EXPO_PUBLIC_BACKUP',
   'EXPO_PUBLIC_STATUS_REPORT',
   'EXPO_PUBLIC_ANALYTICS',
+  'EXPO_PUBLIC_ACCOUNT_DELETION',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   'EXPO_PUBLIC_E2E',
   'EAS_BUILD_PROFILE',
@@ -227,11 +228,25 @@ describe('LEGAL-REQ-043 collected data types: exactly true for each build', () =
     expect(manifestFor(profileEnv('testflight')).NSPrivacyCollectedDataTypes).toEqual([]);
   });
 
-  it('development and production (servers off) declare nothing collected', () => {
-    for (const name of ['development', 'production']) {
-      expect(eas.build[name]?.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-      expect(manifestFor(profileEnv(name)).NSPrivacyCollectedDataTypes, name).toEqual([]);
+  it('development (servers off) declares nothing collected', () => {
+    expect(eas.build.development?.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(manifestFor(profileEnv('development')).NSPrivacyCollectedDataTypes).toEqual([]);
+  });
+
+  it('production (build 12: servers on, backup and status report off) declares the server-on set, linked, App Functionality only', () => {
+    const env = profileEnv('production');
+    expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env.EXPO_PUBLIC_BACKUP).toBe('off');
+    expect(env.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
+    const collected = manifestFor(env).NSPrivacyCollectedDataTypes ?? [];
+    expect(typesOf(collected)).toEqual([...SERVER_ON].sort());
+    for (const c of collected) {
+      expect(c.NSPrivacyCollectedDataTypeLinked, c.NSPrivacyCollectedDataType).toBe(true);
+      expect(c.NSPrivacyCollectedDataTypeTracking, c.NSPrivacyCollectedDataType).toBe(false);
+      expect(c.NSPrivacyCollectedDataTypePurposes, c.NSPrivacyCollectedDataType).toEqual(['NSPrivacyCollectedDataTypePurposeAppFunctionality']);
     }
+    expect(manifestFor(env).NSPrivacyTracking).toBe(false);
+    expect(manifestFor(env).NSPrivacyTrackingDomains).toEqual([]);
   });
 
   it('a servers-off build declares nothing even with every build flag set in the shell', () => {
@@ -285,6 +300,12 @@ describe('LEGAL-REQ-043 collected data types: exactly true for each build', () =
     }
     // The analytics switch alone sends nothing (no SDK), so it must not change the manifest either.
     expect(manifestFor({ ...profileEnv('preview'), EXPO_PUBLIC_ANALYTICS: 'on' })).toEqual(manifestFor(profileEnv('preview')));
+  });
+
+  it('the Delete account switch changes nothing in the manifest: it shows or hides a row, and no data is kept differently (founder, 30 Oct 2026)', () => {
+    for (const value of ['on', 'off']) {
+      expect(manifestFor({ ...profileEnv('preview'), EXPO_PUBLIC_ACCOUNT_DELETION: value })).toEqual(manifestFor(profileEnv('preview')));
+    }
   });
 
   it('follows exactly the switches app.config.ts records in extra, in every combination', () => {

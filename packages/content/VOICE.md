@@ -1,5 +1,7 @@
 # Early Letters voice guide
 
+> How a sentence should sound, with before and after pairs, tone by moment and the review checklist: `WRITING-GUIDE.md`. Read it first for any copy change. If this file and the guide disagree, stop and ask `content` (guide section 1). Open conflicts are listed there; none is edited away here.
+
 Scope: every word outside the app.
 
 ## Who we talk to
@@ -10,18 +12,18 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 **Warm.** We sound like a kind friend, not a brand.
 **Calm.** Short sentences. No hurry, no hype.
-**Literary, lightly.** A little care in the phrasing, and sometimes a smile.
+**Literary, lightly.** A little care in the phrasing, and sometimes a smile. (Where a smile is allowed is a PROPOSED policy in `WRITING-GUIDE.md` section 4, humour; the CMO and founder have not ruled on it.)
 
 ## Brand idea in one sentence
 
-Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice, kept exactly as you said it.
+Early Letters: letters to your child, in your own words and voice. Parents fill the book by talking, or by typing. It stays in your words.
 
 ## Do and don't
 
 | Do | Don't |
 | --- | --- |
 | "Tell {child} about today." | "Capture every precious moment." |
-| "Kept exactly as you said it." | "We shape your words into a story." |
+| "It stays in your words." | "We shape your words into a story." |
 | "On a quiet day, tap Not much today." | "It has been 5 days since your last letter." |
 | "Read together at bedtime." | "Unlock bedtime mode." |
 | "From Nani" | "Contributor: Grandmother" |
@@ -34,7 +36,7 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 ## The no-machine-writing rule
 
-We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
+We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." What a small fix is, said the same way everywhere: "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." Not "what the microphone got wrong" (an um is not the microphone's fault) and not "slips of the tongue".
 
 ## The app's own words
 
@@ -59,18 +61,19 @@ No fear, no pressure, no counting. No deadlines, no warnings about what might sl
 
 Families speak how they speak. Hindi and English in the same sentence is a feature, not an error. Never call it "mixed" or "broken" language. Never promise translation. Say: "Your words stay in the language you said them." Use examples from real code-switching families, and keep relationship names as families use them: Nani, Dadi, Papa, Amma.
 
-At v1.0 (founder, 3 Oct 2026, D-056) letters can be spoken in seven languages: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
+Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven languages. The first store build is English only (D-121), and a language appears in the picker only after its own gate; don't promise others in public copy before then. The seven: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
 
 ## How to write a notification
 
-- One idea, one line, under 60 characters if possible.
+- One idea, one line. The rules test enforces a title of 40 characters or fewer and a body of 110 or fewer; the house target is a body under 60 (WRITING-GUIDE.md section 2 for the limits, section 8 "Push notifications" for the target).
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
-- At most one exclamation mark per month across all notifications.
+- No exclamation marks in notifications (Q-NTC-7, CL-040).
 
-Good: "Anything to tell {child} today?"
-Good: "A minute before bed? {child}'s book is open."
+Good: "Anything to tell {child} today?" (only where the parent has turned names on for the lock screen)
+Good: "A minute before bed? {child}'s book is open." (same: names on only)
+Good, no name: "A minute for the book?"
 Bad: "7 days in a row. Keep it going."
 
 ## Writing for grandparents
@@ -81,7 +84,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
 - Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
-- Make them feel wanted, not managed: "Your stories belong in {child}'s book."
+- Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 
 ## Saying what the product does today
@@ -117,11 +120,24 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 **Proof before words.** Every privacy claim is registered in `docs/legal/claims-registry.yaml` with counsel approval (LEGAL-REQ, ENGINEERING_REQUIREMENTS) before a public page or store listing goes live.
 
+## Words we lean on too much
+
+A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
+
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save and a crash, where the words are on the phone). Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
+- **"That did not work this time".** Name what did not finish: "That didn't save", "That sign-in didn't finish", "That didn't go through".
+- **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
+- **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
+- **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"A minute is plenty." and "A line is plenty."** Two lines, not a template. Rotate them, and keep a repeated line to one surface.
+- **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
+- **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
+
 ## How to write an email
 
 - Transactional only, and only when something happened: a sign-in link or code, an invite, a security change, a deletion step, an export, a billing reminder the law asks for.
 - Subject says what happened, in plain words. Preview text adds the one useful next fact.
-- One action at most. Calm about security: "Did not ask for this? You can ignore it."
+- One action at most. Calm about security: "Didn't ask for this? You can ignore it."
 - No child's name, no letter text, nothing from the book. Nothing loads from a server: the logo travels inside the email as an inline attachment, there are no web fonts, no tracking pixels and no tracked links.
 - Where an email states the privacy promise, it uses `en.trust` word for word (D-061).
 - Signed "Warmly," then the brand name. Every email has a plain-text version. Copy lives in `packages/content/src/emails/*.en.ts`, one file per group, each email an `EmailCopy` (`emails/types.ts`). Catalog: `docs/emails/CATALOG.md`.

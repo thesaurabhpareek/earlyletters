@@ -5,6 +5,7 @@
   "title": "Put back",
   "note": "The original words return, marked for a moment, with Undo beside them.",
   "from": "J06-03",
+  "shot": "screens/J06-04.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -20,14 +21,14 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Hear it Close Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Put back. Undo Close With small fixes Exactly as said 1 small fix Took out a repeat you Change words Private letters stay with you. You can add them to the book later. Add to Asha's book Keep private",
+  "scrolls": false,
+  "text": "Hear it Close Read it back To Asha · Month 7 From Mama Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Put back. Undo Close With small fixes Exactly as said 1 small fix Took out a repeat you Change words Add to Asha's book Keep private",
   "lines": [
     "Hear it",
     "Close",
-    "Asha · 7 months",
     "Read it back",
-    "We only fixed what got in the way of your words. Nothing added.",
+    "To Asha · Month 7",
+    "From Mama",
     "Asha,",
     "um,",
     "today you",
@@ -42,7 +43,6 @@
     "Took out a repeat",
     "you",
     "Change words",
-    "Private letters stay with you. You can add them to the book later.",
     "Add to Asha's book",
     "Keep private"
   ]

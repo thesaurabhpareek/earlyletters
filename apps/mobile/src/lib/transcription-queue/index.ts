@@ -30,8 +30,8 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
-import { capabilities } from '../capabilities';
 import { removeWholeFrameCopies } from '../capture/adts-file';
+import { captureBusy, onCaptureBusy } from '../capture/busy';
 import {
   deleteSetting,
   dictionaryFor,
@@ -53,6 +53,7 @@ import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelI
 import {
   bindSpeechPacks,
   combineProgress,
+  speechDownloadMotion,
   ensureSpeechFor,
   installedPathsFor,
   onSpeechPacksBound,
@@ -63,6 +64,7 @@ import {
   type SpeechPackHost,
   type SpeechPackProgress,
 } from '../models/speech-packs';
+import type { DownloadStage } from '../models/speech-download.logic';
 import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
@@ -73,6 +75,8 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
+import { RUNNING_MARKER, countsAsMemoryKill, runningMarker } from './kill-marker';
+import { heardLanguagesForBuild } from '../language/heard-languages';
 import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
@@ -102,6 +106,10 @@ const sampleWords = new Map<string, TranscribeResult>();
 /** Recordings whose clearer listening copy is due (made only while idle, one at a time). */
 const copiesDue = new Set<string>();
 let copying: Promise<void> | null = null;
+/** The app is active (on screen, not in the app switcher): where a running job's marker says the app is (kill-marker.ts). */
+let appActive = true;
+/** The large model is running a job now (its marker is written). */
+let markerOn = false;
 
 const whisper = createWhisperTranscriber();
 const sample = createSampleTranscriber();
@@ -158,7 +166,7 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
   // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
-  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(heardLanguagesForBuild())] });
   // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
   // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
   try {
@@ -168,6 +176,10 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   }
 
   const onApp = (s: AppStateStatus) => {
+    appActive = s === 'active';
+    // First, before anything async: the app switcher (where a swipe-away happens) makes the app inactive, and a
+    // marker that says `away` is never counted as a memory kill at the next launch (BL-572, kill-marker.ts).
+    if (markerOn) setSetting(RUNNING_MARKER, runningMarker(appActive));
     if (s === 'active') {
       askedDownload.clear();
       dispatch({ type: 'foreground', value: true });
@@ -176,12 +188,18 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
       retries.foreground(); // a download retry that came due while the app was away runs now
     } else if (s === 'background') {
       dispatch({ type: 'foreground', value: false });
-      controller?.abort(); // the job goes back to the queue and starts again on return
-      void (runningJob ?? Promise.resolve()).then(() => releaseContexts());
+      stopJobAndFreeModel(); // the job goes back to the queue and starts again on return
     }
   };
   const app = AppState.addEventListener('change', onApp);
   stopFns.push(() => app.remove());
+  // A take being recorded (BL-572): the job stops, the model leaves memory, and the queue starts again when the
+  // take is kept or discarded. The capture layer says so itself (capture/busy.ts); no screen reports it.
+  const onCapture = (busy: boolean) => {
+    dispatch({ type: 'recording', value: busy });
+    if (busy) stopJobAndFreeModel();
+  };
+  stopFns.push(onCaptureBusy(onCapture));
   stopFns.push(subscribeStore(() => queueMicrotask(syncLetters)));
   stopFns.push(onSpeechPacksBound(() => watchPacks()));
   // A language picked after a yes downloads at once; before a yes, picking only stores it (D-087).
@@ -191,10 +209,18 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   watchPacks();
 
   noteInterruptedLaunch();
+  appActive = AppState.currentState === 'active' || AppState.currentState === 'unknown';
   state = reduce(state, { type: 'foreground', value: AppState.currentState !== 'background' });
+  state = reduce(state, { type: 'recording', value: captureBusy() });
   syncLetters();
   refreshReady();
   return stopTranscriptionQueue;
+}
+
+/** Stops the running job (it goes back to the queue, never counted as a failure) and frees the model once it has. */
+function stopJobAndFreeModel(): void {
+  controller?.abort();
+  void (runningJob ?? Promise.resolve()).then(() => releaseContexts());
 }
 
 function stopTranscriptionQueue(): void {
@@ -244,6 +270,7 @@ export function retryWords(id: string): void {
  * so it also records a yes. Nothing else may call this on its own.
  */
 export async function startSpeechDownload(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+  retries.asked(language); // a tap starts the automatic retries over
   setSpeechDownloadChoice('yes');
   await requestSpeechFor(language, opts);
 }
@@ -254,6 +281,9 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
  */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; automatic?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
+  // After the automatic tries stopped on a link that kept failing, only a tap (startSpeechDownload, which calls
+  // retries.asked first) starts it again: opening Review or a waiting letter does not.
+  if (retries.gaveUp(language)) return;
   const { automatic, ...rest } = opts;
   const r = await ensureSpeechFor(language, automatic ? { ...rest, allowCellularOnce: false, wifiOnly: true } : rest).catch(
     () => ({ ok: false as const, reason: 'download_failed' }),
@@ -279,19 +309,31 @@ const retries = new DownloadRetries<SpeechLanguage>({
  * `packsCopy.failures[code]` with Try again (`startSpeechDownload`) instead of a wait that never ends.
  */
 export function speechDownloadFailure(language: SpeechLanguage): string | null {
-  if (speechDownloadHold(language) !== null || speechDownloadProgress(language) !== null) return null;
+  if (speechDownloadHold(language) !== null) return null;
+  const motion = speechDownloadMotion(language, packProgress);
+  if (motion.progress !== null || motion.stage !== null) return null;
   const host = speechPackHost();
   for (const id of planFor([language]).packs) {
     if (host.packPath(id)) continue;
     const p = packProgress.get(id);
-    if (p?.phase === 'failed' && p.failure) return p.failure;
+    if (p?.phase === 'failed' && p.failure) {
+      // After MAX_STOPPED_RUNS automatic runs the retries wait for a tap: the line must not say "by itself".
+      return p.failure === 'download_failed' && retries.gaveUp(language) ? 'download_stopped' : p.failure;
+    }
+    // Stopped (Settings, or an abort nobody asked for): nothing restarts it, so it is shown with Try again.
+    if (p?.phase === 'cancelled') return 'cancelled';
   }
   return null;
 }
 
-/** Download progress (0..1) for a language, or null when nothing is downloading. */
+/** Download progress (0..1) for a language, or null when no bytes are moving (queued or waiting is not moving). */
 export function speechDownloadProgress(language: SpeechLanguage): number | null {
   return combineProgress(language, packProgress);
+}
+
+/** When no bytes are moving: a pack waiting its turn, being checked or finishing (said in words, never as 0%). */
+export function speechDownloadStage(language: SpeechLanguage): DownloadStage | null {
+  return speechDownloadMotion(language, packProgress).stage;
 }
 
 /** Why a language's download is waiting, if it is: Wi-Fi, space, offline. */
@@ -398,7 +440,7 @@ function pump(): void {
 
 /** Listening copies wait for an idle queue in the foreground: words always come first. */
 function makeNextListeningCopy(): void {
-  if (copying || !state.foreground) return;
+  if (copying || !state.foreground || state.recording) return;
   const id = copiesDue.values().next().value as string | undefined;
   if (!id) return;
   copiesDue.delete(id);
@@ -427,7 +469,8 @@ interface Source {
 
 function sourceFor(job: Job): Source | null {
   const d = getDraft(job.id);
-  if (d) return d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
+  // A take still being saved (state 'recording') has no final file or length yet: words wait for it (BL-563).
+  if (d) return d.state !== 'recording' && d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
   const e = getEntry(job.id);
   if (e && e.transcriptStatus === 'waiting' && e.audioUri) return { audioUri: e.audioUri, durationMs: e.audioDurationMs ?? null, childId: e.childId };
   return null;
@@ -442,16 +485,15 @@ async function transcriberFor(language: SpeechLanguage): Promise<Transcriber | n
 /**
  * A large model killed by the system (jetsam) ends the app with no error to
  * catch. A marker written while a job runs and found at the next launch
- * counts as one memory failure; two move the phone to the compact tier
- * (tiers.ts, TDD 03 5.2).
+ * counts as one memory failure only when it says the app was active
+ * (kill-marker.ts, BL-572): a swipe-away, an update or a background end
+ * never counts. Two move the phone to the compact tier (tiers.ts, TDD 03 5.2).
  */
-const RUNNING_MARKER = 'speech.jobRunning';
-
 function noteInterruptedLaunch(): void {
-  if (getSetting(RUNNING_MARKER)) {
-    recordMemoryFailure();
-    deleteSetting(RUNNING_MARKER);
-  }
+  const found = getSetting(RUNNING_MARKER);
+  if (found === null) return;
+  if (countsAsMemoryKill(found)) recordMemoryFailure();
+  deleteSetting(RUNNING_MARKER);
 }
 
 async function runJob(id: string): Promise<void> {
@@ -480,13 +522,16 @@ async function runJob(id: string): Promise<void> {
   };
   const ctrl = new AbortController();
   controller = ctrl;
-  if (transcriber === whisper) setSetting(RUNNING_MARKER, '1');
+  if (transcriber === whisper) {
+    markerOn = true;
+    setSetting(RUNNING_MARKER, runningMarker(appActive));
+  }
   try {
     const child = source.childId ? getChild(source.childId) : null;
     const dictionary = child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : [];
     const res = await transcriber.transcribe(
       { audioUri: source.audioUri, durationMs: source.durationMs, dictionary, language: job.language },
-      { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total }) },
+      { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total, fraction: p.fraction }) },
     );
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
     deliver(id, res, transcriber.isSample);
@@ -507,6 +552,7 @@ async function runJob(id: string): Promise<void> {
     }
   } finally {
     if (controller === ctrl) controller = null;
+    markerOn = false;
     deleteSetting(RUNNING_MARKER);
   }
 }

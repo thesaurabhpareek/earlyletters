@@ -1,0 +1,37 @@
+.enter {
+  animation: pageRise 560ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+}
+/* The curtain: warm night first, then the colour of the page that is arriving, so a dark page into a cream one
+   passes through warmth and never through grey. --veil-end is set from the new page's own background. */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: var(--veil-end, #161412);
+  animation: veilEnd 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.veil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 70% at 50% 62%, rgba(243, 201, 139, 0.4), transparent 70%),
+    linear-gradient(160deg, #161412 0%, #261f1a 50%, #3b302a 100%);
+  animation: veilNight 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes pageRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes veilNight {
+  0%, 25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes veilEnd {
+  0%, 40% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enter, .veil, .veil::before { animation: none; }
+}

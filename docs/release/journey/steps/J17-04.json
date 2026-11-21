@@ -1,11 +1,12 @@
 {
   "id": "J17-04",
   "journey": "family-coming-soon",
-  "kind": "unhappy",
-  "title": "I was invited, but invites are not open yet",
-  "note": "Someone who was invited sees the same coming-soon sheet instead of an invite screen: they can write their own book now and the shared book comes later.",
+  "kind": "happy",
+  "title": "No \"I was invited\" door",
+  "note": "No invite can exist without a server, so the button that could only open a coming-soon sheet is gone. It is back when server features are on (J21). An invite link that is opened still lands on the coming-soon sheet.",
   "from": "J01-03",
-  "route": "/invite",
+  "shot": "screens/J17-04.png",
+  "route": "/onboarding",
   "viewport": {
     "width": 402,
     "height": 874
@@ -20,20 +21,12 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Close Coming soon Write to your child, together Soon your child's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name your child calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read your child's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Tell me when it's here",
+  "scrolls": false,
+  "text": "The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Your first two letters are free. Begin the book",
   "lines": [
-    "Close",
-    "Coming soon",
-    "Write to your child, together",
-    "Soon your child's other parent can write in this same book, from their own phone.",
-    "One book, two voices",
-    "Your letters and theirs sit side by side, each signed with the name your child calls you.",
-    "Each from your own phone",
-    "Write whenever it suits you, and read every shared letter wherever you are.",
-    "Private to your family",
-    "Only the people you invite can read your child's book. A letter you keep private stays yours.",
-    "We're building it now. Until then, every letter you write stays on this phone.",
-    "Tell me when it's here"
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Your first two letters are free.",
+    "Begin the book"
   ]
 }

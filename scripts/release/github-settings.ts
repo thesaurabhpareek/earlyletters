@@ -45,12 +45,20 @@ export const FOREIGN_ENVIRONMENTS = ['Production', 'Preview'];
 /** Both report on every pull request today (AUTOMATION 2.1). #30 and RA-20-03 add more later. */
 export const REQUIRED_CHECKS = ['required', 'applied migrations unchanged'];
 
-export type BranchSpec = { branch: string; approvals: number };
-/** `main` needs one approving review (the approver); `develop` none until AF-21 (D-107). */
+export type BranchSpec = { branch: string; approvals: number; extraChecks?: string[] };
+/**
+ * `main` needs one approving review (the approver); `develop` none until AF-21 (D-107).
+ * `develop` also requires `compliance-fence` (CR-27). Not `main`: a release PR into `main` carries compliance
+ * paths while `main` has no FENCE.json yet, so the fence's bootstrap path fails it and a required check would
+ * block every release.
+ */
 export const BRANCHES: BranchSpec[] = [
-  { branch: 'develop', approvals: 0 },
+  { branch: 'develop', approvals: 0, extraChecks: ['compliance-fence'] },
   { branch: 'main', approvals: 1 },
 ];
+
+/** Every check a branch requires: the shared ones plus its own. */
+export const checksFor = (spec: BranchSpec) => [...REQUIRED_CHECKS, ...(spec.extraChecks ?? [])];
 
 export type RulesetSpec = { name: string; target: 'branch' | 'tag'; include: string[]; rules: string[] };
 /**
@@ -79,7 +87,7 @@ export function environmentBody(spec: EnvironmentSpec, approverId: number) {
 
 export function protectionBody(spec: BranchSpec) {
   return {
-    required_status_checks: { strict: false, contexts: REQUIRED_CHECKS },
+    required_status_checks: { strict: false, contexts: checksFor(spec) },
     enforce_admins: true,
     required_pull_request_reviews: { required_approving_review_count: spec.approvals, dismiss_stale_reviews: spec.approvals > 0 },
     restrictions: null,
@@ -123,7 +131,7 @@ export function plan(approverId: number, existingRulesets: { id: number; name: s
       method: 'PUT',
       path: `repos/${REPO}/branches/${b.branch}/protection`,
       body: protectionBody(b),
-      why: `protect ${b.branch}: pull request, ${REQUIRED_CHECKS.join(' and ')}, ${b.approvals} approval(s), no bypass, no force push or deletion`,
+      why: `protect ${b.branch}: pull request, ${checksFor(b).join(' and ')}, ${b.approvals} approval(s), no bypass, no force push or deletion`,
     });
   }
   for (const r of RULESETS) {
@@ -185,7 +193,7 @@ export function protectionDrift(spec: BranchSpec, live: LiveProtection | undefin
   if (!live) return [`branch ${spec.branch}: not protected`];
   const out: string[] = [];
   const contexts = live.required_status_checks?.contexts ?? [];
-  for (const c of REQUIRED_CHECKS) if (!contexts.includes(c)) out.push(`branch ${spec.branch}: check "${c}" is not required`);
+  for (const c of checksFor(spec)) if (!contexts.includes(c)) out.push(`branch ${spec.branch}: check "${c}" is not required`);
   if (live.enforce_admins?.enabled !== true) out.push(`branch ${spec.branch}: administrators can bypass`);
   if (!live.required_pull_request_reviews) out.push(`branch ${spec.branch}: pull requests are not required`);
   else if ((live.required_pull_request_reviews.required_approving_review_count ?? 0) < spec.approvals) {

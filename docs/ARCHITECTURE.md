@@ -15,7 +15,8 @@ Every factual claim about a model, library, licence, price or limit cites a page
 > | "Auth - magic link" | Sign in with Apple plus email link and 6-digit code at v1.0; Google in v1.1 | PRD A, D-044 |
 > | Web contribution page on `apps/web` | **v1.1.** v1.0 family members write from the iOS app | D-002, PRD K-35 |
 > | AI gateway and cloud transcription (`AIC`, `OAI`, step 3 model pass) | **Not in v1.0.** On-device transcription and rules-only fixes; gateway in v1.1 with consent | PRD section 3.0 |
-> | Analytics (`OBS`) | PostHog and Sentry, opt-in only, at launch | D-003, PRD K-01 |
+> | Analytics (`OBS`) | PostHog and Sentry, opt-in only, at launch. **Amended 20 Nov 2026 by the founder:** PostHog Cloud is the only vendor, for events and crash reports; no Sentry. Not yet a `DECISIONS.md` row; ADR 0036 (PROPOSED) records it. In-app analytics is off in every build until the founder turns it on (D-124) | D-003, D-124, `docs/analytics/instrumentation/posthog-standard.md:3`, ADR 0036 |
+> | Photos, seals, Find, notification budget, first run, days (new scope, NS-01 to NS-52) | Read `docs/tdd/new-scope/architecture.md` first, and its section 8 for what is built and what is still an open pull request. This document still draws PowerSync, server photos and an AI gateway | `docs/tdd/new-scope/architecture.md`, ADR 0028 to 0035 |
 > | Speech model in the app sandbox | Model in Application Support, excluded from backup; recordings stay in a backed-up directory | ADR 0001, D-033 |
 > | Section 7 cost model | See TDD 06 section 4 and TDD 10 section 5.2 for the current estimates (model egress, PowerSync clients) | TDD 06, TDD 10 |
 
@@ -299,7 +300,7 @@ Open questions: Does a meaningful share of target families code-switch? Is the L
 
 ## 12. Decisions index
 
-ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh), 0013 Apple-native subscriptions (StoreKit 2 direct; supersedes 0007's digital half), 0101 UI component library. Dated product and architecture decisions: `docs/DECISIONS.md`. Milestones: `docs/ROADMAP.md`.
+ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh), 0013 Apple-native subscriptions (StoreKit 2 direct; supersedes 0007's digital half), 0101 UI component library. ADRs 0014 to 0035 also exist, most of them Proposed (0029 to 0035 filed on 20 Nov 2026 for the new scope); read each file's `Status` line, and `docs/adr/CROSSWALK-new-scope.md` for the id map. Dated product and architecture decisions: `docs/DECISIONS.md`. Milestones: `docs/ROADMAP.md`.
 
 ## Sources (opened 1 Oct 2026)
 

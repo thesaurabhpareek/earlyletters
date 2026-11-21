@@ -6,8 +6,9 @@
  * `?seed=asha` fills the store with the fictional family; `?seed=asha-waiting`
  * does the same with a recording waiting for its words, and `?seed=asha-quiet`
  * with a kept recording in which nobody spoke, `?seed=asha-marks`
- * with two quiet-day marks as older builds saved them, and `?seed=asha-plus` with Plus on
- * (the same family, so Keep is not gated).
+ * with two quiet-day marks as older builds saved them, `?seed=asha-plus` with Plus on
+ * (the same family, so Keep is not gated), and `?seed=asha-hidden` with a second book, Avi's,
+ * hidden on this phone (Settings, Hidden books).
  */
 import * as SQLite from 'expo-sqlite';
 import { useEffect, useState } from 'react';
@@ -24,8 +25,8 @@ export function useStoreReady(): boolean {
       await warm.closeAsync();
       const preview = __DEV__ || process.env.EXPO_PUBLIC_WEB_PREVIEW === '1';
       const seed = new URLSearchParams(window.location.search).get('seed');
-      if (preview && (seed === 'asha' || seed === 'asha-waiting' || seed === 'asha-quiet' || seed === 'asha-marks' || seed === 'asha-plus')) {
-        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting', quiet: seed === 'asha-quiet', marks: seed === 'asha-marks', plus: seed === 'asha-plus' });
+      if (preview && (seed === 'asha' || seed === 'asha-waiting' || seed === 'asha-quiet' || seed === 'asha-marks' || seed === 'asha-plus' || seed === 'asha-hidden')) {
+        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting', quiet: seed === 'asha-quiet', marks: seed === 'asha-marks', plus: seed === 'asha-plus', hidden: seed === 'asha-hidden' });
       }
       ready = true;
       if (live) setOk(true);

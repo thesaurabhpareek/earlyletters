@@ -1,0 +1,33 @@
+{
+  "id": "J22-50",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Sign in to invite",
+  "note": "From the Family tab's invite: you both sign in, each on your own phone. About this book, so its cover sits beside the title.",
+  "shot": "screens/J22-50.png",
+  "route": "/sign-in",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Sign in to invite a co-parent You both sign in, each on your own phone. Asha Continue with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
+  "lines": [
+    "Sign in to invite a co-parent",
+    "You both sign in, each on your own phone.",
+    "Asha",
+    "Continue with email",
+    "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+    "Not now"
+  ]
+}

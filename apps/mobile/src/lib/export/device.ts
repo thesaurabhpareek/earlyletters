@@ -1,9 +1,14 @@
 /**
  * Export on the phone (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, -056).
- * Free in every plan state and fully offline: it reads only the local store
- * and files, never the network or the entitlement (C-NFR-004).
+ * Letters that are waiting (held at Keep, not read back) are in it too (PL-2).
+ * Free in every plan state and works offline: it reads the local store and
+ * files, never the entitlement (C-NFR-004). The one network read is the
+ * server's consent record and the person's profile for account.json, when signed in
+ * (server-records.logic.ts): bounded by the read timeout, and when it cannot
+ * be read the export still finishes and says why.
  *
- * Flow: snapshot the store, write the ZIP to the app cache (never backed
+ * Flow: snapshot the store, add the server's consent record and profile when they can be read,
+ * write the ZIP to the app cache (never backed
  * up), re-read it and check every hash, then hand it to the share sheet. The
  * temporary ZIP is deleted when the share sheet closes, when the person
  * stops, when anything fails, and by `cleanupExports()` on the next visit.
@@ -16,14 +21,21 @@ import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { STORAGE_KEYS as ANALYTICS_KEYS } from '@scribe/analytics';
+import { ENDPOINT_CLASSES } from '@scribe/api';
 import { ENGINE_VERSION } from '@scribe/core';
+import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
-import { currentUserId, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, type Entry } from '../store';
-import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
+import { getSupabaseOrNull } from '../supabase/client';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, type Entry } from '../store';
+import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
+import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
+import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
-import { verifyExport, type RandomAccess } from './verify';
+import { readOpenRequest } from '../account-deletion/open-request';
+import { deletionRequestOpen, exportScope } from './scope.logic';
+import { ExportCheckFailedError, verifyExport, type RandomAccess } from './verify';
 
 export { ExportCancelledError, ExportTooLargeError } from './pack';
 
@@ -34,13 +46,7 @@ export class ExportLowSpaceError extends Error {
   }
 }
 
-export class ExportCheckFailedError extends Error {
-  /** Paths and codes only. */
-  constructor(readonly problems: string[]) {
-    super('export_check_failed');
-    this.name = 'ExportCheckFailedError';
-  }
-}
+export { ExportCheckFailedError };
 
 export interface ExportProgress {
   phase: ExportPhase;
@@ -94,20 +100,32 @@ function consentOnThisPhone(): ExportSnapshot['consent'] {
   return phoneConsent(getSetting(AGE_GATE_PASSED) === '1', getSetting(ANALYTICS_KEYS.consent));
 }
 
-/** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted. */
+/** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted; more while a deletion request is open. */
 export function exportSnapshot(now = new Date()): ExportSnapshot {
   const me = currentUserId();
   const own = (e: Entry) => !e.authorId || !me || e.authorId === me;
-  const children: SnapshotChild[] = [
-    ...listChildren().map((c) => ({ ...c, hidden: false })),
-    ...listHiddenChildren().map((c) => ({ ...c, hidden: true })),
-  ];
-  const entries: SnapshotEntry[] = children.flatMap((c) =>
-    listEntriesForChild(c.id).map((e) => {
+  // While an account-deletion request is open the export also holds what the request moved: the books the server
+  // closed and the Recently deleted letters (DATA-REQ-053, BL-446; scope.logic.ts).
+  const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), currentAuthUserId(), now.getTime());
+  const scope = exportScope(
+    { listed: listChildren, hidden: listHiddenChildren, closedByServer: listClosedBooks, live: listEntriesForChild, deleted: listDeletedEntriesForChild },
+    requestOpen,
+  );
+  const children: SnapshotChild[] = scope.map((b) => ({ ...b.book, hidden: b.hidden, role: myRoleIn(b.book.id) }));
+  const entries: SnapshotEntry[] = scope.flatMap((b) =>
+    b.letters.map((e) => {
       const state = e.captureMode !== 'typed' ? fileState(e.audioUri) : { exists: false, size: null };
-      return { ...e, childId: e.childId ?? c.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
+      return { ...e, childId: e.childId ?? b.book.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
     }),
   );
+  // Letters that are waiting (PL-2, 1.6.0): held at Keep, not read back, typed and not kept. Every plan state.
+  const books = new Set(children.map((c) => c.id));
+  const waiting = listWaitingForExport()
+    .filter((d) => books.has(d.childId))
+    .map((d) => {
+      const state = d.captureMode !== 'typed' ? fileState(d.audioUri) : { exists: false, size: null };
+      return { ...d, audioOnPhone: state.exists, audioSizeOnPhone: state.size, changedWords: waitingChangedWords(getDraftReview(d.id), d) };
+    });
   return {
     generatedAt: now.toISOString(),
     appVersion: Constants.expoConfig?.version ?? '0.0.0',
@@ -117,12 +135,51 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     signedIn: me !== null,
     children,
     entries,
+    waiting,
     // Conflict copies are the author's own words: kept on this phone until they pick, and in every export (F16-REQ-023).
     otherVersions: listConflicts().map((c) => ({
       entryId: c.entryId, finalText: c.words.final_text, editLevel: c.words.edit_level, machineEdits: c.words.machine_edits, keptAt: c.at,
     })),
     consent: consentOnThisPhone(),
+    // withServerRecords() replaces this when the server's record can be read.
+    consentHistory: noConsentHistory(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
+    profile: noProfile(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
+    dictionary: phoneDictionary(children),
   };
+}
+
+/** The words each book always spells your way on this phone: the child's name and your signature. */
+function phoneDictionary(children: SnapshotChild[]): ExportDictionaryTerm[] {
+  return children.flatMap((c) =>
+    dictionaryFor({ childName: c.name, childBirthday: c.birthday, signsAs: c.signsAs }).map((d) => ({
+      child_id: c.id,
+      term: d.term,
+      kind: d.kind,
+      heard_as: [...d.heardAs],
+      source: 'phone' as const,
+    })),
+  );
+}
+
+/** Own rows only: row-level security limits each read to the signed-in account (server-records.logic.ts). */
+function supabaseReader(): ServerRecordsReader | null {
+  const sb = getSupabaseOrNull();
+  // supabase-js's builder types are too deep to check structurally (TS2589); the real-stack check
+  // (apps/mobile/test/live/export-server-reads.live.ts) runs this same reader on a real supabase-js client.
+  return sb ? postgrestReader(sb as unknown as PostgrestLike) : null;
+}
+
+/** Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
+  const server = await readServerRecords({
+    authUserId: currentAuthUserId(),
+    ownerId: currentUserId(),
+    reader: supabaseReader(),
+    timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
+    now: () => new Date(),
+    cancelled: () => signal?.aborted === true,
+  });
+  return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
 /** What the screen shows before export starts ("What is inside" counts). */
@@ -217,7 +274,8 @@ async function renderPdf(html: string, locale: string): Promise<Uint8Array> {
  */
 export async function runExport(opts: { onProgress?: (p: ExportProgress) => void; signal?: { aborted: boolean } } = {}): Promise<ExportResult> {
   cleanupExports();
-  const snapshot = exportSnapshot();
+  const snapshot = await withServerRecords(exportSnapshot(), opts.signal);
+  if (opts.signal?.aborted) throw new ExportCancelledError();
   const estimate = estimateExportBytes(snapshot);
   if (estimate > MAX_EXPORT_BYTES) throw new ExportTooLargeError();
   try {

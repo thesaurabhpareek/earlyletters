@@ -1,7 +1,7 @@
 import { brand } from '@scribe/brand';
 import { assetFor } from '@scribe/brand/registry';
 import type { CSSProperties } from 'react';
-import { ASSET_ORIGIN, dark, fonts, layout, light, space } from '../tokens';
+import { ASSET_ORIGIN, dark, fonts, layout, light, space, wrap } from '../tokens';
 import { NotMso } from './mso';
 import { Block } from './primitives';
 import { cls, useEmailAssets, type LogoMode } from './theme';
@@ -133,6 +133,7 @@ function TextWordmark({ text }: { text: string }) {
           fontWeight: 500,
           letterSpacing: '0.2px',
           color: light.ink,
+          ...wrap,
         }}
       >
         {text}

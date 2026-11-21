@@ -3,8 +3,9 @@
   "journey": "errors",
   "kind": "unhappy",
   "title": "Unknown route (404)",
-  "note": "A designed not-found screen in the product voice replaces Expo Router's \"Unmatched Route\" page. It never shows the address, and has one way back: Back to Tonight. Reached by a malformed or old link.",
+  "note": "A designed not-found screen replaces Expo Router's \"Unmatched Route\" page: the shared state screen with the window drawing, \"Nothing at this link\" and \"Your book is right where you left it.\", inside 20 pt gutters, with Back to Tonight full width at the bottom. It never shows or logs the address. Reached by a malformed or old link.",
   "from": "J00-open",
+  "shot": "screens/J19-01.png",
   "route": "/this-page-does-not-exist",
   "viewport": {
     "width": 402,
@@ -21,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "We could not find that page The link may be old or mistyped. Your book is right where you left it. Back to Tonight",
+  "text": "Nothing at this link Your book is right where you left it. Back to Tonight",
   "lines": [
-    "We could not find that page",
-    "The link may be old or mistyped. Your book is right where you left it.",
+    "Nothing at this link",
+    "Your book is right where you left it.",
     "Back to Tonight"
   ]
 }

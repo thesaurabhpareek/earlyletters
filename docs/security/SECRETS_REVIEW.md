@@ -1,5 +1,7 @@
 # Release secrets and permissions review (RA-01-01)
 
+**Withdrawn 31 Oct 2026 (`docs/agents/cto/RULINGS.md` CR-19, CR-20):** the approver account (AF-02) was a second personal GitHub account for the founder, which GitHub's Terms do not allow for free (one free personal account, plus one machine account used only for automated tasks). Every mention of it below is history. Until PR authors are an identity other than the founder's account, no required approval above 0 can be met (CR-20).
+
 Status: S01 review of the release automation plan (`docs/release/AUTOMATION.md` revision 2 and ADR 0026, on `develop` at c9a192d), Fri 16 Oct 2026. Package RA-01-01 (AUTOMATION.md section 5): done before any secret is added. File owner: S01 (`docs/security/**`). Revised Fri 23 Oct 2026 on #206: an owner and a "By" for every fix, from the content review (comment 6247630897), and the staging rows moved to the 17 Oct rule, from the correctness review (comment 6247806622).
 
 This file is a review and a checklist. Nothing here sets, reads or changes a secret, a variable, an environment or a setting; agents never do (AUTOMATION.md 2.11). Every value named below is a name only.
@@ -192,6 +194,16 @@ To be renamed `db-production` (SR-2). Approver; tag `db-v*` only. Workflow: S20.
 |---|---|---|---|---|---|
 | `SUPABASE_DB_URL_PROD` | `deploy-db.yml`, job `deploy to production` | As staging, for production | yearly; on suspicion | As staging | As staging |
 
+### 4.2b The private backup repository `earlyletters-backups` (BL-566, D-138)
+
+Not a GitHub environment of this repository: a separate private repository, so its Actions secrets are readable only by that repository's writers (the founder). Added by the BL-566 PR (#622). Owner: founder. Store: the repository's Actions secrets, and the password manager (the password, the age private key and its paper copy). Dates are written by the founder at the time of setting, in section 11, as dates only.
+
+| Name | Read by | Scope it must have | Rotate | A leak shows as | Revoke and replace |
+|---|---|---|---|---|---|
+| `BACKUP_DB_URL` (called `STAGING_DB_URL` in #622; the free-tier PR #685 renames it and points production at it). **Shared by two workflows:** `supabase-backup.yml` (steps "Check the connection" and "Dump, check, count, encrypt") and `supabase-free-limits.yml` (weekly), so a leak is a leak of both | Session-pooler URL for the role `scribe_backup` from `docs/ops/backup/backup-role.sql`: read only, `BYPASSRLS` (so a dump holds every family's letters), connection limit 2, no `pg_read_all_data`, no read of `auth.sessions`, `auth.refresh_tokens`, `auth.one_time_tokens` or the Vault (checked by `supabase/tests/backup_role.test.mjs` and by the job each night). It still reads every family's data and the consent pepper (a database setting), and `auth.users` token columns that may hold unexpired one-time-code hashes (UNVERIFIED: see `backup-role.sql` header): treat the URL as sensitive as the database itself | every 180 days: first due 180 days after the day the password is set (the founder records both dates in section 11); at once on suspicion, and at once if the password was typed in the SQL Editor (its query history keeps it) | No GitHub pattern for a Postgres URL [V3]. Unknown connections in the project's Postgres logs (1 day on Free); a `scribe_backup` session outside 10:00 to 11:00 UTC (backup) and 16:00 to 17:00 UTC on Mondays (limits) | Supabase: `\password scribe_backup` from psql, update the secret, run the workflow once. To stop it at once: `alter role scribe_backup nologin;` |
+| `BACKUP_AGE_RECIPIENT` | same | The founder's age PUBLIC key (`age1...`). Not a secret in itself; a secret only so the file name of the key is not advertised | none; replace if the private key is lost or copied | n/a | New `age-keygen`; older artifacts need the older private key until they expire (7 days) |
+| The age private key (`~/.config/earlyletters/backup-key.txt`) | the founder's Mac only, for the monthly drill | Never in GitHub. One paper copy with the escrow papers | on suspicion of copy; after any laptop loss | n/a | New key as above |
+
 ### 4.3 `testflight`
 
 Approver until AF-21, then none; ref `develop` only. Workflow: S20.
@@ -341,7 +353,7 @@ All 175 remote branches were scanned on 16 Oct [R]. They hold 23 distinct workfl
 | `agents.yml` | `develop` | `schedule`; dispatch | `AGENTS_APP_PRIVATE_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` (repository) | none; `agents` after the move | `plan`: contents read, issues write, pull requests read, checks read, actions read. `run`: contents write, pull requests write, issues write, checks read, actions read, id-token write | no trigger, but repository secrets reach any branch |
 | `claude.yml` | `develop` and every branch cut from it | `issue_comment`, `issues`; **`pull_request_review`, `pull_request_review_comment`** | `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` (repository) | none | `claude`: contents write, pull requests write, issues write, actions read, id-token write | **yes (SR-1)** |
 | `deploy-db.yml` | `develop` (#205, merged Sun 18 Oct, replaced the push to `main` [R, 23 Oct]) | push to `develop`; dispatch on `develop` as the catch-up; tags `db-v*` | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `staging`, `production` | `contents: read` | no |
-| `testflight.yml` | `develop`; #145 | dispatch | `EXPO_TOKEN` (repository) | none; RA-20-06a adds `testflight` | `contents: read` | no trigger, but the repository secret reaches any branch |
+| `testflight.yml` | `develop`; #145 | dispatch; `pull_request` only for a PR that edits this file (#404, the job is skipped by its `if`, so it only registers the workflow) | `EXPO_TOKEN` (repository) | none; RA-20-06a adds `testflight` | `contents: read` | the pull_request run builds nothing and a fork PR gets no secrets; the repository secret still reaches any branch |
 | `web.yml`, `web-e2e.yml` | `main` | `pull_request` (paths); push | none | none | `contents: read` | no |
 | `fence.yml` | #30 | `pull_request_target` | none; `GITHUB_TOKEN` only | none | `contents: read`, `pull-requests: read` | no: it checks out nothing and runs only the base commit's rules [R] |
 | `security.yml` | #30 | `pull_request`; push; `schedule`; dispatch | none | none | `contents: read` | no |
@@ -508,6 +520,7 @@ Log (dates, names and settings only, never a value):
 |---|---|---|
 | 16 Oct 2026 | Review written; settings read back as in section 2 | S01 |
 | 23 Oct 2026 | Owners and dates added; staging rows set to `develop` only; settings re-read (sections 3 and 8.1) | coordinator's fix agent, for S01 |
+| 8 Nov 2026 | Section 4.2b added: the backup repository's database URL, age key and recipient (owner, store, rotation every 180 days). Set date and first due date: pending the founder, to be written here as dates | `ops` (BL-566 review; `security` to confirm) |
 
 ## 12. Sources
 

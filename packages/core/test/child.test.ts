@@ -11,6 +11,7 @@ import {
   checkBirthday,
   checkChildName,
   checkDueDate,
+  checkFirstRunChildName,
   checkSignsAs,
   clampText,
   daysBetweenISO,
@@ -145,5 +146,18 @@ describe('editing the birthday of an older baby fixes "0 days"', () => {
   });
   it('a birthday moved later than a letter puts that letter before birth', () => {
     expect(monthOfAgeOn('2026-10-04', '2026-09-01')).toBeNull();
+  });
+});
+
+describe('[NX-31-R3] the first book may have no name', () => {
+  it('[NX-31-R3] the first-run name check accepts empty', () => {
+    expect(checkFirstRunChildName('')).toEqual({ ok: true, value: '' });
+    expect(checkFirstRunChildName('   ')).toEqual({ ok: true, value: '' });
+    expect(checkFirstRunChildName(' Asha ')).toEqual({ ok: true, value: 'Asha' });
+    expect(checkFirstRunChildName('a'.repeat(CHILD_NAME_MAX))).toEqual({ ok: true, value: 'a'.repeat(CHILD_NAME_MAX) });
+    expect(checkFirstRunChildName('a'.repeat(CHILD_NAME_MAX + 1))).toEqual({ ok: false, reason: 'tooLong' });
+  });
+  it('later books keep their rule: checkChildName still refuses empty', () => {
+    expect(checkChildName('')).toEqual({ ok: false, reason: 'empty' });
   });
 });

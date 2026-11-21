@@ -3,8 +3,9 @@
  * StateScreen and InlineState (COMPONENTS 2.15a): the one pattern for loading, empty, error and
  * not-found states (state-screen.logic.ts holds the rules).
  *
- *   StateScreen   the whole screen is the state (a stale link, a missing draft, microphone off, a
- *                 crash). A centred block with 20 pt gutters: the picture, the heading in title2, one
+ *   StateScreen   the whole screen is the state (a stale link, a missing draft, microphone off; a
+ *                 crash is components/resilience/plain-screen.tsx's, which draws the same block without
+ *                 providers). A centred block with 20 pt gutters: the picture, the heading in title2, one
  *                 sentence in body; the primary action is full width at the bottom, a quiet second
  *                 option beneath it. Pass `header` for the modal's Close (ModalHeader). Content scrolls,
  *                 actions stay put, so nothing clips at AX5.

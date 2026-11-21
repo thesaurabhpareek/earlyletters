@@ -119,7 +119,12 @@ describe('[F14-REQ-037] words seen: a letter counts at the save where its words 
     // The transcription finished with no words: no longer waiting, raw and words still empty.
     raw.run("UPDATE entries SET transcript_status = NULL WHERE id IN (?, ?)", v, w);
     raw.run("UPDATE entries SET server_version = '100' WHERE id = ?", w); // the server has this one: its raw is fixed there
+    // The letter page offers "Write the words" only where the write can happen (P5 critics' pass S3): the same rows.
+    expect(store.canTypeWordsFor(v)).toBe(true);
+    expect(store.canTypeWordsFor(w)).toBe(false);
+    expect(store.canTypeWordsFor('no-such-letter')).toBe(false);
     expect(store.setTypedWordsForWaitingEntry(v, 'You hummed the bath song.')).toBe(true);
+    expect(store.canTypeWordsFor(v)).toBe(false); // it has words now
     expect(store.getEntry(v)).toMatchObject({ rawTranscript: 'You hummed the bath song.', finalText: 'You hummed the bath song.', captureMode: 'mixed' });
     expect(store.setTypedWordsForWaitingEntry(v, 'again')).toBe(false); // once
     expect(store.setTypedWordsForWaitingEntry(w, 'Not this one.')).toBe(false);
@@ -178,5 +183,21 @@ describe('[F14-REQ-023] the ledger never decreases', () => {
     store.undeleteEntry(id);
     store.setEntryInBook(id, false);
     expect(counts()).toEqual({ recorded: 1, present: 1 });
+  });
+});
+
+describe('[D-133] a note kept through the store counts like a letter', () => {
+  it('saveLetterFromDraft with kind note counts it in the save transaction, the same as a letter', () => {
+    const c = asha();
+    const text = 'Asha, you waved at the bus.';
+    const d = store.createDraft({ childId: c, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text });
+    store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'note', occurredOn: '2026-10-03', capturedAt: now(), captureMode: 'typed', editLevel: 'verbatim', promptKey: null,
+      engineVersion: 5, rawTranscript: text, machineEdits: [], finalText: text, inBook: true, soundsLikeMe: null, childId: c, authorSignsAs: 'Mama', audioUri: null,
+    });
+    expect(store.getEntry(d.id)?.kind).toBe('note');
+    expect(counts()).toEqual({ recorded: 1, present: 1 });
+    keepTyped(c);
+    expect(counts()).toEqual({ recorded: 2, present: 2 });
   });
 });

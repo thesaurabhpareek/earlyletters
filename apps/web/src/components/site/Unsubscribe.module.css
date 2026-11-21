@@ -1,0 +1,82 @@
+/* Owner: E2 (back-end). The unsubscribe page: the same quiet night page as the 404, plus one button. */
+.page {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  min-height: 100dvh;
+  padding: 4rem var(--gutter);
+  background:
+    radial-gradient(ellipse 70vmax 45vmax at 50% 42%, color-mix(in srgb, var(--lamp) 9%, transparent), transparent 70%),
+    var(--night);
+  color: var(--night-ink);
+  text-align: center;
+}
+
+.line {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.1rem);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.body {
+  margin: 0;
+  max-width: 30em;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--night-ink-muted);
+  text-wrap: balance;
+}
+
+.form {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.button {
+  min-height: 48px;
+  padding: 0 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--night-accent) 60%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--night-accent);
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background-color var(--fade-ms) var(--ease-standard);
+}
+
+.button:hover {
+  background: color-mix(in srgb, var(--night-accent) 12%, transparent);
+}
+
+.button:focus-visible,
+.home:focus-visible {
+  outline: 2px solid var(--night-accent);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.25rem;
+  color: var(--night-accent);
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, var(--night-accent) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}

@@ -30,6 +30,18 @@ describe('prompts', () => {
     expect(promptLibrary(ctx(partial), PROMPTS).source).toBe('packaged');
   });
 
+  it('[P3 critics S2] a server library from before the pre-birth set (library v2, no `before` block) is not used: the packaged library is', () => {
+    // The bundle a phone may already have: today's prompts minus the `before` blocks, otherwise complete and valid.
+    const v2 = bundle(promptBlocks.filter((b) => b.band !== 'before'));
+    expect(promptBlocks.some((b) => b.band === 'before')).toBe(true);
+    const r = promptLibrary(ctx(v2), PROMPTS);
+    expect(r.source).toBe('packaged');
+    // A book before the birth therefore still has its set, and no age-band prompt stands in for it.
+    expect(r.prompts.filter((p) => p.band === 'before').map((p) => p.key)).toEqual(PROMPTS.filter((p) => p.band === 'before').map((p) => p.key));
+    // The same bundle with the `before` blocks is used.
+    expect(promptLibrary(ctx(bundle(promptBlocks)), PROMPTS).source).toBe('server');
+  });
+
   it('ignores server content when the kill switch is on', () => {
     expect(promptLibrary(ctx(bundle(promptBlocks), true), PROMPTS).source).toBe('packaged');
   });

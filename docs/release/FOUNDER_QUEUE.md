@@ -1,0 +1,262 @@
+# Founder queue: every step only you can do, in one order
+
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the 28 Oct queue and the Build 12 section are history; open founder items are in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
+**Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
+- `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
+- `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
+- If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
+
+**This file is a list of steps, not a live status.** For where things stand now, run `npm run release:ready` (it reads the setup steps live and changes nothing; see the top of `docs/release/FOUNDER_QUEUE.md`). If this file and the output of `release:ready` disagree, `release:ready` wins.
+
+Last verified: 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct), read against `origin/develop` at 6bfb94a9 and GitHub REST. The only later re-read was on 30 Oct and covered one item (W0-14a). Nothing below has been re-verified since. Build state has moved on since 30 Oct (see `docs/release/BUILD_GATE_2026-11-08.md` and merged #697); this file does not say where the builds stand.
+
+- **Counts as of 30 Oct, not today:** Wave 0 had 10 of 15 open, 3 partly done, 2 done. Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting was still on), item 6 (secret scanning and push protection on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, done on 29 Oct; b to f open).
+- **What the repo could see on 28 Oct** (`node scripts/founder/check.mjs`): default branch `main`; no branch protection on `develop` or `main` (`main` had only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 26 migration files recorded as applied. Run the checker again for today's answer.
+- **W0-14a (Apple Developer Program enrolment)** was recorded done on 30 Oct: Active as of 29 Oct, from the founder's own confirmation emails. The shortest path to build 1 is the last section of [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md), also dated 30 Oct.
+- **Boxes in `docs/FOUNDER_TASKS.md`:** 2 of 57 were ticked when this branch was cut (FT-01 and FT-48); that file carries its own date. Steps done outside the repo (Apple, Expo, Supabase) are marked "unverified": tell the coordinator and the line changes.
+
+How to use it: work top to bottom. Each item gives the steps (or the exact section that holds them), your hands-on time, what it unblocks, and how its status can be checked. "Same as" lists the ids in older lists that this item replaces; the index at the end maps every old id. Older lists stay as they are: `docs/FOUNDER_TASKS.md` (FT), `docs/release/AUTOMATION.md` section 4 (AF), [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md) (steps 1 to 12), the 15 Oct alpha plan on commit 1ae1ace6 (F01 to F27, see `docs/release/ALPHA_PLAN.md`), and `docs/agents/BOARD.md` line 85. Where they disagree on dates, the dates in this file are not authoritative either: dates come from the dates file the coordinator names.
+
+**The checker.** From your computer, signed in to `gh`: `node scripts/founder/check.mjs` (add `--json` for a machine copy). It only reads, through GitHub REST GET calls. Exit 0: all checked items done; 1: something open; 2: nothing open but something unreadable. Your own `gh` login reads branch protection; an agent token may not.
+
+Never paste a secret into a chat, an issue, the repo or an email (`docs/FOUNDER_TASKS.md:9`).
+
+---
+
+## Build 12 founder actions (Tue 10 Nov 2026, newest first, read before everything below)
+
+Written by the release and operations engineer from the founder's 10 Nov answers to Karma's list and Karma's resulting rulings. Heads were read through GitHub REST on 10 Nov 2026 (UTC); a head moves when a branch is pushed, so re-read before you type a sha. One entry per action. "Words" is the exact sentence that unblocks it; a merge always names the PR and the full 40-character sha, so nobody merges a head you did not see.
+
+### What the rulings are (so every other document can be checked against them)
+
+- Sign-in is REQUIRED in Build 12 and signup must work (founder, 10 Nov, in his own words). Co-parent surfaces may show "coming soon" in Build 12; this replaces the earlier "hidden". Anything that says sign-in is optional, or that the reviewer joins the Asha sample book with an invite link, is stale. **Update, Thu 19 Nov 2026:** the "coming soon" half is superseded by D-161 (founder, 11 Nov; shipped by #720): no co-parent surface says "coming soon" in any build, and a co-parent surface shows only with server features on in an alpha build (D-162, shipped by #737 and #720). Sign-in required stands.
+- Your answers of 10 Nov, as Karma recorded them: item 1 "Sure." (settled by Karma on 10 Nov as the ruling above; see F1); item 2 "Decide. I approve." (the words are approved); item 3 "You decide." (Karma set the two-phone test, F5); item 4 "Approved" (Memory Library F1 to F15 as Karma recommended).
+- Decision-day fallback rule for Build 12, in plain words (from `product`'s Build 12 plan of 9 Nov, gates G1 to G8): on the decision day, which is two working days before the submit date, ask one question per gate G1 to G8: is its dated evidence file in the release record, yes or no. Every answer yes: submit the account-first Build 12. Any answer no: submit the staged on-device binary (server features off) and ship account-first as 1.0.1. There is no partial account-first. The submit date itself is UNVERIFIED (the programme document was not read), so the decision day has no calendar date yet; F2 asks you to name it. The gate table is in the pull request that carries this change.
+- Two-phone test slide rule: the test is Thu 12 Nov only if you do F2 and F3 by the end of Wed 11 Nov (time zone not stated; I assume Pacific). If you do not, the test moves one day for every day F2 or F3 is late, and so does everything that waits for it.
+
+### Heads read through REST on 10 Nov 2026 (all open, all draft, none merged)
+
+| PR | Base | Head (40 characters) |
+|---|---|---|
+| #700 child name optional on the server (migration) | develop | `4bf5c449ed0485c7f3853c003d4f7500d999726e` |
+| #701 first book name may be empty, date required | develop | `dc7bf25fbdba580eb87167ec3b0a1b4d1d97658d` |
+| #722 sign-in-first gate, outage and local-start logic | develop | `df703307135f7102cb80a2d3b3f8abe54a7159f9` |
+| #724 account-first Welcome and sign in, outage and offline screens | develop | `d4a9983b22fcd121fcf0bd43736d91246a643d11` |
+| #728 account-first code screen, consent hand-off | develop | `3da02d5fb920cd57f03eb5f99d528de581b9a69b` |
+| #738 the You tab as signed in, signed out and local start | develop | `0cd8e1f176ab6bbd50404a401e8fd0d4dc96db57` |
+| #764 S17 tier 0, Opening your book on a new phone | `feat/mobile-you-tab-states` (a stack branch, not develop) | `6787af24a525ede3e257d80c6a92162f4a9356de` |
+| #760 counsel packet addendum (Q78 to Q91, Q103) | develop | `f6e08de98407960f8293c542410254b5e433410f` |
+| #761 founder-device run sheet, Memory Library spikes | develop | `1a3f8cce1fde008ffd7787840bbdc5ea325b3d31` |
+| #763 Memory Library parent study plan | develop | `a510bb61ddc3d97c5c8fd31e955e29afeb0baf03` |
+| #768 store, microphone, site and reminder lines true whether or not servers are on | develop | `67fd7c3ac7970b05e825feb4ddf93ca59f393e97` |
+| #769 store and site lines for sign-in and sync | `fix/content-store-copy-true-either-way-10nov` (stacked on #768) | read it fresh; it changes (last read `c55cc73247c98ebe39e23a83403201daed57198b`) |
+| #766 | develop | superseded by #768 and #769; do not merge (last read `3767bcaf86246fb650fd997cb9cfa2ab3ae3bb9a`) |
+| #767 groom co-parent work (BL-882 to BL-889) | develop | `046fcd3ec730ce7cadfe051bfa2e2dfae7620142` |
+
+The #760, #761 and #763 heads match the ones you were given. #700 is stamped `20261109000000`; as of `origin/develop` at `526c9b8b3` it is not in `.github/migrations-applied.txt`.
+
+### The actions
+
+| # | By | Who | What | How long | Blocks | Words to unblock |
+|---|---|---|---|---|---|---|
+| F1 | Settled 10 Nov | Founder | Nothing to do. Item 1 is settled: sign-in is required in Build 12 and signup must work. Co-parent surfaces may show "coming soon" (superseded by D-161 on 11 Nov: nothing says "coming soon" in any build; see the update above). Kept so the numbering holds | 0 | Nothing | None |
+| F2 | Wed 11 Nov | Founder | Name each stack merge: the PR and the 40-character head, for #700, #701, #722, #724, #728, #738 and, when its base has merged, #764. Merge #700 first (its migration must be applied before any servers-on build that contains #701; see F4). Re-read each head right before you type it | 10 minutes to read, plus the merge clicks | The two-phone test (F5); Build 12 itself | "merge #700 at 4bf5c449ed0485c7f3853c003d4f7500d999726e", then one such line per PR with the head you see that day |
+| F3 | Wed 11 Nov | Founder | Say "build": the go to cut the Build 12 candidate from the merged stack | 1 minute | The two-phone test (F5); the release candidate | "build" |
+| F4 | After #700 merges | Founder (production database access) | Apply the #700 migration to production, then record it in `supabase/APPLY.md` and `.github/migrations-applied.txt` (gate G8). Applying production changes is yours; the ops role does not touch it | 15 minutes (my estimate, not measured) | Any servers-on build that contains #701 reaching a person | "applied 20261109000000 on production" |
+| F5 | Thu 12 Nov, one block | Founder with two phones, and a second runner if you name one | The two-phone test, gate G9 (the S17 Tier 0 screen, #764, on a new phone). One block of about 2.5 hours | 150 minutes | G9; the Build 12 decision | "start the two-phone test" on the day, after F2 and F3 are done |
+| F6 | Wed 11 Nov | Founder | Send the counsel packet yourself (#760: Q78 to Q91 plus Q103). Only you merge `docs/legal`, so nobody else sends or merges it | 15 minutes to send (my estimate) | Counsel's read of Q78 to Q91 and Q103; gate G7 counts counsel's answers or your written risk acceptance | "sent the counsel packet" and then "merge #760 at f6e08de98407960f8293c542410254b5e433410f" |
+| F7 | Before the NX-05 step below | Founder | Sign off the reviewer sign-in path (NX-05). It stays a founder step: you make the path a reviewer can use to sign in, and the Notes for Review must describe exactly that path. Today's committed notes still describe the retired path (see the stale list in the pull request) | Not measured | Gate G6 (Notes for Review) and G4 (a reviewer path run by someone who is not you) | "NX-05 reviewer path is <the path>" |
+| F8 | Before the spikes | Founder | Give the explicit build go for the Memory Library spike harness. Not given yet | 1 minute | Everything in F9 | "build the spike harness" |
+| F9 | Over 16 days after F8 | Founder with three phones | Run the Memory Library device spikes from the run sheet in #761: about 8 hours 40 minutes in total over 16 days | 520 minutes in all | The Memory Library decision | "spike run <n> done" per sheet, and "merge #761 at 1a3f8cce1fde008ffd7787840bbdc5ea325b3d31" |
+| F10 | Before the study opens | Founder | Parent study (#763): sign the bars | Not measured | The study starting | "I sign the bars in #763 at a510bb61ddc3d97c5c8fd31e955e29afeb0baf03" |
+| F11 | Before the study opens | Founder | Set the incentive figure | 2 minutes | Recruiting | "the incentive is <amount>" |
+| F12 | Before the study opens | Founder | Set the participant count | 2 minutes | Recruiting | "the study has <n> parents" |
+| F13 | Before the study opens | Founder | Choose the recruiting routes | Not measured | Recruiting | "recruit through <routes>" |
+| F14 | Before the study opens | Founder | Name a second runner | 2 minutes | Running sessions when you cannot | "second runner is <name>" |
+| F15 | Before the study opens | Founder | Verify the support lines (the addresses and numbers participants are given) work | Not measured | Starting the study | "support lines checked" |
+| F16 | Before the Build 12 cut | Founder | Merge #768 (store, microphone, site and reminder lines true either way). The microphone string is compiled into the app, so it must be in before the cut; it holds counsel-read lines, so read them first. #766 is superseded by #768 and #769: do not merge #766 | 10 minutes to read (my estimate) | The Build 12 cut | "merge #768 at 67fd7c3ac7970b05e825feb4ddf93ca59f393e97" |
+| F17 | After the decision day, with the servers-on flip | Founder | Merge #769 only together with the `eas.json` servers-on flip, and only if account-first ships. If the fallback ships (staged on-device binary), do not merge it. Its head moves, so read it fresh | 5 minutes (my estimate) | The store and site lines for sign-in and sync | "merge #769 at <40-char sha read that day>" |
+| F18 | After the Build 12 screenshots are final | Founder (by hand) | Re-render `docs/store/screenshots/ios-6.9in/06-privacy.png` from `captions.json`, then upload it in App Store Connect by hand. Nobody else touches the store account | Not measured | The privacy screenshot matching the new lines | "06-privacy.png uploaded" |
+
+None of F8 and F10 to F15 has been given. #676 (drop dormant sign-in capabilities) is merged and resolved: Karma confirms it keeps the Apple sign-in entitlement and associated domains when servers are on, so it does not conflict with required sign-in (not re-read by me). F7 and F8 to F15 have no date from the founder; "before" means ahead of the thing it blocks.
+
+### Co-parent decisions (from the #767 body, BL-882 to BL-889; none blocks Build 12)
+
+#767 is an open draft at `046fcd3ec730ce7cadfe051bfa2e2dfae7620142`. Each line is the question and the recommendation written in that PR; none is decided. Say the number and "yes" or your change.
+
+1. Who may be invited first: a second parent only (two-parent cap, D-099, D-124)? Recommended: yes; grandparents later (D-055).
+2. Must the invitee have their own account and confirm 18+ before seeing anything? Recommended: yes, with Decline leaving no row.
+3. Is Leave offered in the first sharing release? Recommended: no, until left books are listed with read, export and delete (D-113); BL-885 does that first.
+4. When a parent deletes their account, what happens to the shared book? Recommended: the other parent keeps it; the leaver's letters are deleted or exported per the spec; counsel confirms.
+5. Ship the separated-households safety floor (FAM-11) with first sharing? Recommended: yes.
+6. Counsel: invitee consent wording and second-parent consent for a child's data (D-050 is Washington-specific). Recommended: send the BL-883 spec to counsel before BL-884 is built.
+7. Should the coming-soon page name a date or offer "tell me"? Recommended: neither (SET-08).
+8. Fold BL-882 (the one coming-soon state) into #720, or a separate PR? Recommended: fold in.
+9. Which release carries real sharing (a 1.0.x under D-121)? Recommended: decide after BL-883 sizes it.
+
+Open and unverified in that PR: whether Apple accepts a visible "coming soon" placeholder (guideline 2.1). The Notes for Review must say it is a placeholder and what Build 12 includes, and hiding the surfaces stays the fallback. D-126 ("no coming soon surface") needs a D-### entry from you to be amended for Build 12; none is written. **Update, Thu 19 Nov 2026:** written. D-161 (founder, 11 Nov) rules out a "coming soon" co-parent surface in every build, so D-126 is extended rather than amended and the placeholder question falls away; D-162 records the one join-door rule (server features on AND an alpha build). Item 8 above is moot: #720 merged with no coming-soon state, so BL-882 as drafted in #767 needs re-scoping.
+
+
+## 0. Dated steps from the CTO run (Fri 30 Oct 2026)
+
+The coordinator's proposed order for the weekend, from `docs/release/TESTFLIGHT.md` ("Where build 1 stands"). The freeze is Tue 3 Nov 5:00 AM PT and the go/no-go Mon 9 Nov (the two dates were confirmed by the founder on 30 Oct and the hour is the coordinator's; the earlier proposal was Thu 5 Nov, `docs/release/AUTOMATION.md` section 6). The other dates below are proposals. Minutes are your hands-on time: the named steps' own figures where they give one, and the coordinator's estimate for rows 1, 4, 5a, 5b and 7; the waits are not yours. Never paste a secret into a chat. This section repeats steps that W0-08, W0-09, W0-14 and Q2-01 to Q2-10 hold, in the order for the weekend; those ids stay the record.
+
+| # | By | Step | Minutes | Unblocks |
+|---|---|---|---|---|
+| 1 | Fri 30 Oct | Check whether Porkbun DNSSEC is on for `earlyletters.app`; if it is, turn it off, remove its DS record and start the 24 to 48 hour wait. Then open the Cloudflare account and add the `earlyletters.app` zone. If DNSSEC was off, recreate the DNS records and the CAA records there and then switch the nameservers at Porkbun the same day; if it was on, wait until `dig +short DS earlyletters.app` prints nothing before you switch the nameservers (TESTFLIGHT step 4 item 1 and `docs/ops/PACKS_HOSTING.md` 'If earlyletters.app is not on Cloudflare yet'; the nameserver switch starts a wait of up to a day). Also confirm that the repository variable `AGENTS_ENABLED` is not `true` (Settings, Secrets and variables, Actions, Variables; the founder decided on 30 Oct that no harness is switched on) | 10 (of step 4's 150), plus 1 | Everything in step 4, which holds the only multi-day wait |
+| 2 | Sat 31 Oct | Expo account and `eas init`; send the project id and the account name (step 3.1) | 20 | Every `eas build`; the one-line project-id PR |
+| 3 | Sat 31 Oct | App Store Connect: the `.preview` App ID, the app record, internal testers; send the app record's numeric Apple ID (step 2 items 1 to 4) | 45, plus about 5 for each internal tester | Build 1 upload; builds from GitHub |
+| 4 | Sat 31 Oct | Forward the counsel relay document (a Claude document, not in the repo; its link is in chat; items 26 to 28 are new) to counsel | 5 | Counsel's read of the Delete account lines (D-129's switch does not wait for it) |
+| 5a | Sat 31 Oct to Sun 1 Nov | Step 4 items 3 and 4 that do not need the host: `keygen` twice on your computer, `publish release`, and the one PR with the two public keys and the published versions (merged before build 1 and before the freeze commit, so both builds carry it; TESTFLIGHT 'Where build 1 stands', AUTOMATION 0.2 item 7) | about 60 | Clears the two preflight FAILs (words from speech also need row 5b) |
+| 5b | When the Cloudflare zone is Active (Sun 1 Nov if DNSSEC was off; Mon 2 Nov or later if it was on) | R2 bucket and its custom domain, then `upload` and `verify` (the signed release may go up after the build; only the keys PR must be merged first) | about 80 (5a and 5b make step 4's 150, less row 1's 10) | The speech model download on the phones |
+| 6 | Sun 1 to Mon 2 Nov, after rows 2, 3 and 5a are merged (the project-id, `ascAppId` and pack-key pull requests) | Build 1: create the "Family" group with automatic distribution off (unverified before the first upload, step 5), then `git switch develop && git pull`, `npm ci`, `doctor`, `preflight` (expect 0 FAIL), `eas build`, `eas submit`, add to "Family" (step 5) | 30, plus about 10 the first time for `eas credentials` | Testers on build 1 |
+| 7 | Mon 2 Nov, before step 6 item 3 of row 8 | GitHub settings, on your computer, signed in to `gh` as the owner: `bash scripts/release/apply-branch-settings.sh` (it prints the live state and each step it would take), then `--apply`, then `--verify`. `--apply` first asks you to confirm in Vercel that the Production Branch is `main` and that `AGENTS_ENABLED` is not `true`; any other answer stops it with nothing changed, so the protection waits too. It sets the merge settings, protection on `develop` and `main` (required checks `required` and `applied migrations unchanged`, no required approval) and three rulesets, retargets the Copilot review ruleset from the default branch to `main` only (Copilot review then no longer applies to pull requests into `develop`), switches the default branch to `develop`, and disables `agents.yml`. Settle `release/ios-v1.0` first: it is a stale branch from the closed #76, W0-08 says to delete it, and the new ruleset "release branches keep their history" makes every `release/*` branch undeletable, so archive and delete it before `--apply` (you said yes on 30 Oct): `git fetch origin`, then `git tag -a archive/release/ios-v1.0 1494d35165321bb55e1cab56649c459158961def -m "Archive of release/ios-v1.0"`, `git push origin refs/tags/archive/release/ios-v1.0`, check that `git ls-remote --tags origin 'refs/tags/archive/release/ios-v1.0^{}'` prints `1494d35165321bb55e1cab56649c459158961def`, then `git push --force-with-lease=refs/heads/release/ios-v1.0:1494d35165321bb55e1cab56649c459158961def origin :refs/heads/release/ios-v1.0`. `--apply` also asks before going on while any `release/*` branch exists. Vercel's Production Branch is a Vercel project setting, so `--undo` cannot fix a wrong production deploy: if a production deploy ever comes from a branch other than `main`, use Instant Rollback in Vercel and set the Production Branch back to `main` (CR-9). On the Hobby plan it goes back only to the deploy just before, and after a rollback new pushes stop going live until you choose Undo Rollback in Vercel (vercel.com/docs/instant-rollback). `--undo` puts the default branch, the rebase, delete-on-merge, update-branch and squash-title settings, the Copilot ruleset and the branch protection back; the three new rulesets, the disabled `agents.yml`, and the auto-merge and merge-commit switches it set stay as they are. Do not run `github-settings.ts` first: it asks `main` for one approving review, it needs a second GitHub account, which is withdrawn (CR-19), and every session posts as you. The Environments come after: `staging` by hand as TESTFLIGHT step 6 item 2 says (branch `develop` only, you as the reviewer), and `testflight` before any dispatch of `testflight.yml`. Builds 1 and 2 can both be built from your computer, so the Expo robot-user token as the `testflight` environment secret (step 3.2, 10) and the App Store Connect API key with role App Manager (step 2.6, 15) are only for builds from GitHub, and `testflight.yml` has not been dispatched yet | about 20 (an estimate; the script has not been run) | Branch protection before any agent runs; the default branch (AF-05), so the nightly runs (B2-22) and the Run workflow button appears for `deploy-db.yml` (step 6 item 3); builds from GitHub |
+| 8 | Mon 2 Nov, starting early | Build 2 setup: step 6 (staging, 90) and step 12 (the purge worker, 60, which needs staging) first, then steps 7, 8 and 9 (auth, Apple sign-in, EAS variables: 120 + 45 + 10). Step 10, the website links, is optional (15). The Delete account row needs one more thing by Mon 2 Nov noon PT (D-129): the sole-parent drill (S1-35, S2-13, AL-07.6a; block 8 of the T11 run sheet, 60 minutes by that sheet's own estimate, never run) on a development client with the switch on against staging. Whether a development client that can do it exists is not confirmed. If the purge worker runs and the drill passes, set `EXPO_PUBLIC_ACCOUNT_DELETION` to `on` in the EAS `preview` environment (step 9 shows how the other variables are set); if either is missing at noon, do nothing, and the row stays hidden, which is the default | 325, plus 60 for the drill | Build 2; the Delete account row, only if the purge worker and the drill both pass by Mon 2 Nov noon PT (D-129) |
+| 9 | Tue 3 Nov, after the freeze commit | Build 2: step 11, preflight, build, submit, add to "Family" only | 20 | Family on build 2 |
+
+Rows 7 and 8 both fall on Mon 2 Nov: about 6 hours, or 7 with the drill, before build 1's spill-over, with the freeze the next morning. If that is too much, row 8 moves to Tue 3 Nov and Wed 4 Nov, row 9 (build 2) moves with it because steps 6 to 9 are build 2's prerequisites, and the go/no-go on Mon 9 Nov still has room; the cost is that the Delete account row then stays hidden (D-129 needs the purge worker and the drill by Mon 2 Nov noon PT).
+
+The default branch stays `main` until row 7 (Mon 2 Nov; W0-09 waits; `docs/agents/cto/RULINGS.md` CR-2, which also says B2-22 needs it by the day build 2 is cut). The four questions only you could answer were put to you on 30 Oct and answered the same day: no paid harness (CR-5), the Privacy row shows On or Off in build 2 and the withdrawal comes before any friend signs in (BL-485 option (b)), the Delete account row is hidden in the alpha builds unless the purge worker and the sole-parent drill pass by Mon 2 Nov noon PT, and the freeze Tue 3 Nov with the go/no-go Mon 9 Nov. They are recorded in `docs/DECISIONS.md` as D-127 to D-130 (PR #406, merging with this one).
+
+## 0a. Release test decisions (Sun 1 Nov 2026, from `docs/qa/RELEASE_TEST_PLAN.md`, CR-37)
+
+Each row carries Karma's recommendation. Nothing here is settled until you answer.
+
+| # | By | Step | Minutes | Unblocks |
+|---|---|---|---|---|
+| T1 | Mon 9 Nov (go/no-go) | Decide which P0 gaps gate the 1 Dec submission. Karma recommends gating on every build 1 P0 row that protects a promise or a store duty (the RT-REL, RT-PRV, RT-AGE and RT-PAY-21 rows, plus RT-WRD-03, RT-LCH-09, RT-DSP-05 and RT-NET-01) and shipping the rest as known issues with owners (plan section 7) | 20 | A submission scope that can be met |
+| T2 | Fri 6 Nov | Device hours: borrow an iPhone XR, a 12 or 13 mini and an iPhone 11 for one session each, or name who runs them. Karma recommends borrowing; each hits a limit the SE 3 and a current phone cannot (plan section 3) | 15, plus the sessions | RT-WRD-03, RT-LCH-09 and the 414 pt and notch rows |
+| T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
+| T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
+| T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
+| T6 | Settled, nothing for you to do | Settled by CR-46 (1 Nov): a payer whose renewal falls while offline keeps Plus for 7 days past the last verified expiry, as C-NFR-004 says; after that the letter is held, never lost (RT-SUB-13). The code change is PR #517 | 0 | RT-SUB-13 |
+
+## 1. Wave 0: this week, smallest first
+
+Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for these; only you can do them.
+
+**W0-01 Detach connectors from the three Early Letters scheduled tasks.** Open. About 5 minutes.
+- Steps: claude.ai, Scheduled tasks. Open "Early Letters: agent lane (every 4 hours)", "Early Letters daily PRD update" and "Early Letters daily docs run". Remove every connector **except Claude_Code_Remote**: the tasks get `add_repo`, and so GitHub, from that connector. Remove Supabase, Vercel, Gmail, PayPal, Square, Figma, Google_Drive, Google_Calendar, Claude_Docs, and on the PRD update and the docs run also Google_Sheets, Google_Docs, Notion, Resend and Wispr_Flow. Read on 28 Oct (list_triggers, read only): the agent lane carries 10 connectors, the PRD update and the docs run 15 each, Claude_Code_Remote on all three.
+- Correction: the retro synthesis (Wave 0 item 1) said to remove every connector including Claude_Code_Remote. That would take away `add_repo`. Keeping it leaves one known risk: Claude_Code_Remote also lets an unattended run change scheduled tasks, so the prompts' "never change this schedule" line stays the only guard (R1-04).
+- Unblocks: any safe re-enable of W0-02 or W0-03.
+- Verify: the task's connector list is empty in claude.ai. The checker cannot see it.
+
+**W0-02 Disable the agent lane.** Done 28 Oct 06:05 UTC (11:05 PM PT Tue 27 Oct) by the retro session: `enabled: false`, `updated_at` 06:05:39 UTC (list_triggers, read 28 Oct). Its connectors are still attached (W0-01).
+- Re-enable only after a supervised run leaves a journal entry and a board tick, with the procedure-only prompt from retro package R1-04. The live prompt still cites issue #127 as "Decisions in force".
+
+**W0-03 Pause the daily PRD update until after the go/no-go (Mon 9 Nov; it was 5 Nov), then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
+
+**W0-04 Close #309 and turn off automatic Vercel Agent pull requests for the website project.** Partly done: #309 (author `vercel[bot]`, into `main`) was closed unmerged on 28 Oct at 06:16 UTC (REST). Still open: turn off automatic Vercel Agent pull requests so another one does not arrive. About 3 minutes. The Vercel setting's exact name is unverified.
+- Why: #309 adds Vercel Web Analytics and flips the guard test in `legal.test.ts` from "must not mention" to "must mention" (retro synthesis section 1, row 21).
+- Verify: `gh api repos/thesaurabhpareek/earlyletters/pulls/309 --jq .state` prints `closed`.
+
+**W0-05 Decide #316.** Open: #316 is open (REST, 28 Oct). 1 minute. Recommendation in the synthesis: close it. Making it spend the credit needs W0-09, an `ANTHROPIC_API_KEY` secret and `AGENTS_ENABLED=true` (`.github/workflows/agents.yml:42`), which starts an unattended lane in freeze week. Decision brief: R1-09.
+- Verify: #316 state.
+
+**W0-06 Secret scanning, push protection and Dependabot alerts.** Partly done. 2 minutes.
+- Read 28 Oct (REST `security_and_analysis`): secret scanning **enabled**, push protection **enabled**, Dependabot security updates disabled. Dependabot alerts: unreadable with an agent token (HTTP 403).
+- Steps left: GitHub, Settings, Code security: turn on "Dependabot alerts" if it is off. CodeQL default setup and Dependabot updates are AF-24, after the alpha.
+- Verify: checker `secret-scanning` and `dependabot-alerts`.
+- Same as: AF-24 (part).
+
+**W0-07 Reissue `EXPO_TOKEN` from an Expo robot user.** Unverified (secrets cannot be read). 10 minutes.
+- Steps: `docs/security/SECRETS_REVIEW.md` section 1. A robot user with the Developer role, never a personal token. Put it in the GitHub Environment `testflight` once W0-08 creates it; keep any repository `EXPO_TOKEN` until one `testflight.yml` run with the environment secret is green (AUTOMATION AF-07, AF-22).
+- Unblocks: every build from GitHub Actions.
+- Same as: TESTFLIGHT step 3.2, AF-07 (token part).
+
+**W0-08 Branch protection on `develop` and `main`, the approver account and the environments.** Open. About 30 minutes. Interim (30 Oct): row 7 of section 0 applies protection with no required approval by `scripts/release/apply-branch-settings.sh` first; the approver account, the approvals and the Environments below come after.
+- Before: the approver account (AF-02) is withdrawn on 31 Oct 2026 (`docs/agents/cto/RULINGS.md` CR-19): GitHub's Terms allow one free account per person plus one free machine account "used exclusively for performing automated tasks", so a second personal account for the founder is not an option. The separate identity goes to the agents, not the founder (CR-20). The branch `release/ios-v1.0` still exists (REST, 28 Oct); #76, which targeted it, is closed. Delete the branch first, or expect `--verify` to flag it (`docs/FOUNDER_TASKS.md` FT-20, "Your call").
+- Steps: **do not run these now** (CR-8: `github-settings.ts` needs the withdrawn approver account; row 7 of section 0 replaces them). Kept as history: on your computer, signed in to `gh` as owner, at `develop`'s head: `npm ci`, then `npx tsx scripts/release/github-settings.ts --approver <approver login>` (dry run; read it), then the same with `--apply`, then `--verify`, which must print "Settings match the spec". Required checks it sets: `required` and `applied migrations unchanged` (`scripts/release/github-settings.ts:46`). Then confirm in Settings that the Release launch check from `.github/workflows/ios-compile.yml` is required too if you want it to block merges (the script does not list it). Then add environment secrets, in the order of `SECRETS_REVIEW.md` section 9.
+- Unblocks: no direct pushes to `develop` or `main`; environments `staging` and `testflight` with a reviewer; every secret after it.
+- Verify: checker `protection-develop` and `protection-main`.
+- Same as: FT-20, AF-02, AF-03, AF-07 (environments), AF-23 (rulesets the script also sets), TESTFLIGHT step 6.2.
+
+**W0-09 Default branch to `develop`.** Open: default branch is `main` (REST, 28 Oct). 10 minutes. WAITS (30 Oct): do not do this by hand yet; `docs/agents/cto/RULINGS.md` CR-2 says why and what must be true first, and row 7 of section 0 does it, with the protection, on Mon 2 Nov. The ruleset in the Before list is retargeted to `main` by that script.
+- Before: (1) in Vercel, confirm the website's Production Branch is `main`; (2) the ruleset "Copilot review for default branch" targets `~DEFAULT_BRANCH`, so add `main` to it by name first, or `main` loses its deletion and force-push rules (retro synthesis section 1, row 4).
+- Steps: GitHub, Settings, General, Default branch: `develop`.
+- After: `nightly.yml` and `testflight.yml` register; `agents.yml` registers but stays idle while `AGENTS_ENABLED` is unset; the "Kill harness nightly-size dispatch" scheduled task disables itself on its next run (its step 1).
+- Unblocks: the Run workflow button for `testflight.yml` and `deploy-db.yml` (TESTFLIGHT steps 5 and 6.3), the scheduled nightly (B2-22).
+- Verify: checker `default-branch` and `workflows-registered`.
+- Same as: AF-05; BOARD line 85 ("AF-05").
+
+**W0-10 Decide #302** (the child's first name on the live website, D-118). Open: #302 is open into `main` (REST, 28 Oct). 15 minutes to decide. Keep it knowing it is permanent in a public repo and site, after a privacy view; or use the fictional family. Separately, decide with counsel whether to check public git history for details from before #52. Decision brief: R1-09.
+
+**W0-11 Confirm or amend D-117's operating rule in one line.** Open. 5 minutes. The question: may the coordinator keep merging `supabase/**`, auth, payments and `.github/**` after two review passes (`docs/DECISIONS.md:810`)? Synthesis recommendation: yes, plus a weekly skim of a list of those merges (R1-03 prints it).
+
+**W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by the go/no-go (Mon 9 Nov). Answered 30 Oct for the spend: no paid harness, `agents.yml` is not provisioned (D-127); trimming the roster is still open. Briefs: R1-09.
+
+**W0-13 Engage counsel and send one packet built from #163.** Open. #163 merged 1 Nov 05:54 UTC (d182e92): send `docs/legal/COUNSEL_PACKET.md` 1.5.0 from `develop`, which now includes Q57 (sanctions, the country check, no name screening; D-131, D-136, D-137). Hours. Ask which texts apply to the alpha and the "Friends" group.
+- Unblocks: legal pages in final form, Friends signing in, submission.
+- Same as: FT-03, FT-18, F07; feeds F22, FT-31, FT-33, FT-41, FT-46, FT-47.
+
+**W0-14 Build 1 prerequisites.** Partly done: a is done (29 Oct); b to f are open. Hours to days. The letters below keep their names, but do the rest in the order of the last section of [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md): step 4 item 1 first (c, the DNS wait is the only multi-day one), then 3.1 (d), then step 2 (b), then the rest of step 4 (c), then step 5 (e). f is step 6, which TESTFLIGHT "What each build needs" lists for build 2 only.
+- **a. Apple Developer Program enrolment** as an individual, then accept the agreements. **Done 29 Oct 2026**: Active, from the founder's own confirmation emails (an agent cannot see Apple, so the checker cannot confirm it; whether the latest agreements are accepted is not in the emails). Was 45 minutes plus Apple's check. It unblocked every Apple step. Steps: TESTFLIGHT step 1. Same as FT-01, F01, AF-01.
+- **b. App Store Connect: `.preview` App ID, app record, testers, groups** "Founder" and "Family" internal and "Friends" external, automatic distribution off on each; the App Store Connect API key with role App Manager (step 2.6; needed only for builds from GitHub, not for build 1 from your computer). 45 minutes plus 5 per tester. Steps: TESTFLIGHT step 2. Status unverified. Same as FT-07 (2.1, 2.2), FT-08, F08, AF-09.
+- **c. Pack signing keys, pack host and the signed English release** (D-115: required for build 1). About 2.5 hours plus DNS. Steps: TESTFLIGHT step 4 and `docs/ops/PACKS_HOSTING.md`. Status: open, `TRUSTED_SIGNING_KEYS` is empty (`packages/api/src/keys.ts:19`). Verify: checker `trusted-signing-keys` (needs 2: primary and backup). Same as FT-16, F09, F13, AF-08, AF-12.
+- **d. Expo account and project id.** 20 minutes, then a one-line PR by S20. Steps: TESTFLIGHT step 3.1. Status unverified. Same as FT-17 (account part), F02, AF-04. The token is W0-07.
+- **e. Build 1:** on `develop` (`git switch develop && git pull`, then `npm ci`), `npx tsx scripts/release/doctor.ts` (it reads the working tree, so it FAILs on a stale branch), then the preflight, build, submit, add to "Family". 30 minutes plus the queue. Steps: TESTFLIGHT step 5 (choose App Manager if `eas submit` asks for a key role). Same as F12, AF-10, FT-25 (first build).
+- **f. `scribe-staging`** in a Supabase organization the agents' connector is not authorized for; a named publishable key; legacy keys off. 1.5 hours. Steps: TESTFLIGHT step 6.1, `docs/release/ENVIRONMENTS.md`, AUTOMATION AF-06. Status unverified. Same as F04, AF-06, FT-10 (create part).
+
+**W0-15 Decide /support and its mailbox, and start a content-free data-request log** before anyone outside the founding family installs. Open. 20 minutes.
+
+---
+
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
+
+## 2. Next: build 2 and the alpha
+
+Order follows TESTFLIGHT "What each build needs". Status for each is unverified unless stated.
+
+| Id | Step (exact steps in) | Time | Unblocks | Status and how to verify | Same as |
+|---|---|---|---|---|---|
+| Q2-01 | Staging schema through CI: one catch-up run of `deploy-db.yml` on `develop`, approve, then a PR recording the files; then APPLY steps 6 (pepper), 7 (purge cron), 8 (beta policy versions `terms` and `sensitive-data`), 15 (settings, statement logging off), spend cap on (TESTFLIGHT step 6.3 and 6.4) | 1 h | every server feature in build 2 | Checker `migrations-applied`: 2 of 26 files recorded in `.github/migrations-applied.txt` on 28 Oct | FT-10, F16, AF-13 (seeding) |
+| Q2-02 | Supabase Auth on staging with Resend SMTP; click and open tracking off (TESTFLIGHT step 7; `docs/ops/AUTH_SETUP.md` 1, 4, 5.1, 6) | 2 h | email sign-in in build 2 | unverified | FT-12, FT-13, F05, F10 |
+| Q2-03 | Email code length: 6 or 8; the dashboard and `EXPO_PUBLIC_EMAIL_OTP_LENGTH` must match (TESTFLIGHT step 7, "Your call") | 5 min | sign-in for anyone outside the family | open | FT-04 item 8 |
+| Q2-04 | Sign in with Apple: key, Team ID, email relay, Supabase Apple provider with the `.preview` id (TESTFLIGHT step 8) | 45 min | Apple sign-in in build 2 | unverified | FT-07 (2.4, 2.5), FT-12 (2.6), F11 |
+| Q2-05 | EAS `preview` environment variables (TESTFLIGHT step 9) | 10 min | build 2 reaching staging | unverified; `eas env:list --environment preview` | F06, FT-17 (variables) |
+| Q2-06 | Website links: Vercel `APPLE_TEAM_ID`, `IOS_BUNDLE_ID`, then the two `curl` checks (TESTFLIGHT step 10) | 15 min | sign-in and invite links opening the app | #144 merged into `main` (TESTFLIGHT step 10); the Vercel values and the checks unverified | F15, FT-31 (well-known part) |
+| Q2-07 | Staging function secrets and deploys (`apple-token`, `purge-worker`, `config`, `content`), purge schedule (TESTFLIGHT step 12; `docs/ops/SECURITY.md` 1.1) | 1 h | Delete account in build 2 | unverified; each function's health path answers 200 (AUTOMATION 0.2 row 12) | FT-11, F17, AF-13 (functions) |
+| Q2-08 | Escrow parts 1 and 2 (`docs/ops/BACKUP_RUNBOOK.md` B2 to B7) | 2.5 h | restore through escrow | unverified; whether build 2 still needs it: ask the build thread | F18, F20 |
+| Q2-09 | Plus in the sandbox, optional: Paid Apps agreement, tax and bank; `plus.monthly`, `plus.annual` exist on the production record only; `.preview` cannot carry them (TESTFLIGHT step 2.5, 1 Nov correction) | 1 h 45 min | Plus checks | unverified | FT-06, FT-09, F14 |
+| Q2-10 | Build 2: `preflight:alpha`, build `preview`, submit, add to "Family" only (TESTFLIGHT step 11) | 20 min | the alpha with servers | open | F24 |
+| Q2-11 | Drills on real phones: AUTH_SETUP section 11 and two-phone sync (F19); backup drill (F23); build 2 checks the SE 3 kill subset (F25); StoreKit D-1 to D-12 need a TestFlight build of the `production` profile after Mon 9 Nov (1 Nov correction, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`), not build 2 | 5 h | go/no-go evidence | unverified | F19, F23, F25, FT-22, FT-39 |
+| Q2-12 | Mac kit run for ADR 0027 V3 and V4: `npm run adts-parity -w @scribe/experiments` (`experiments/README.md` section 8) | unverified | ADR 0027 | open (BOARD line 85, by Fri 30 Oct) | BOARD line 85 |
+| Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 85 |
+| Q2-14 | R-17 sign-off: read `docs/security/REVIEW_R17_CHECKLIST.md` and the staging `test:db` evidence; record "R-17 passed" | 30 min | Friends may sign in (D-100) | open; a D-id records it | F21 |
+| Q2-15 | Friends: build 1 to Beta App Review for "Friends", invite by email (AF-11 replaces F26's route of adding friends as App Store Connect users, AUTOMATION section 4 intro) | 30 min plus review | friends on build 1 | unverified | AF-11, F26 |
+| Q2-16 | Dates answered 30 Oct (D-130: freeze Tue 3 Nov, go/no-go Mon 9 Nov; the freeze hour, 13:00 UTC, is the coordinator's); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
+| Q2-17 | Upgrade Vercel to Pro (Hobby is non-commercial; AUTOMATION 0.1 item 10) | 10 min | commercial use of the site | unverified; price unverified | AF-15 |
+
+---
+
+## 3. After the alpha
+
+| Id | Step (exact steps in) | Time | Status | Same as |
+|---|---|---|---|---|
+| Q3-01 | Actions settings: read-only default permissions, no PR creation by Actions, `pull_request_target` for `fence.yml` only, SHA pinning required (AUTOMATION AF-20) | 20 min | open | AF-20 |
+| Q3-02 | CODEOWNERS for the approver, then "Require review from Code Owners" (AF-21) | 10 min | open | AF-21 |
+| Q3-03 | Remaining environments; delete the repository `EXPO_TOKEN` after one green environment run (AF-22) | 30 min | open | AF-22 |
+| Q3-04 | CodeQL default setup and Dependabot updates (AF-24; alerts are W0-06) | 10 min | open | AF-24 |
+| Q3-05 | App Store Connect API team keys; private feedback repository; machine user or organization decision; `R17_PASSED` (AF-25 to AF-28) | 1.5 h | open | AF-25, AF-26, AF-27, AF-28 |
+| Q3-06 | Production: the `com.earlyletters.scribe` record, App Privacy answers by hand, production Supabase in the separate organization, external test information (AUTOMATION "Production") | unverified | open | AF-40 to AF-43, FT-23, FT-43 (privacy answers) |
+| Q3-07 | v1.0 submission path; its 3 Oct dates have moved (`docs/release/ALPHA_PLAN.md:3`): FT-19 mailing address, FT-21 recordings, FT-26 C1 families, FT-27 reviewers, FT-28 and FT-35 trademark, FT-29 Small Business Program, FT-30 DPAs, FT-32 C1, FT-33 and FT-41 counsel, FT-34 languages, FT-36 support resources, FT-37 insurance, FT-38 screenshots, FT-40 C1 exit, FT-42 Hindi script (D-031 is Open, due 30 Oct, `docs/DECISIONS.md:215`), FT-43 listing, FT-44 release PR, FT-45 submit, FT-46 to FT-51 | per FT item | open | the FT ids named |
+| Q3-08 | Account hygiene: password manager and two-factor on every console (FT-02), Porkbun lock and DNSSEC (FT-05), DNS records (FT-14) | 3 h | unverified | FT-02, FT-05, FT-14 |
+| Q3-09 | Entity decision: made 31 Oct 2026 (D-134, individual account, no LLC now); the `com.earlyletters.scribe` record no longer waits. Counsel confirmation stays open under COUNSEL_PACKET Q47 | 0 | done | D-134 |
+| Q3-10 | Engage counsel and send the first-build question set from `docs/store/app-store-staged-1.0-proposal.md`. Promise wording stays out of the listing until counsel answers (D-125). B-fast on Mon 16 Nov needs your signed counsel deferral (D-121) | 1 h | open | D-121, D-125 |
+| Q3-11 | Ask Apple whether a converted account keeps its apps: not needed. Conversion is not the planned route; D-134 plans app transfer to a separately enrolled organization if one is ever formed (an app with one released version can be transferred, bundle id included). Whether conversion keeps apps stays unverified | 0 | not needed | D-134 |
+
+---
+
+## 4. Index: every old id, once
+
+| Source | Where each id went |
+|---|---|
+| FT (`docs/FOUNDER_TASKS.md`) | FT-01 W0-14a. FT-02 Q3-08. FT-03 W0-13. FT-04: item 1 answered by D-097, item 2 by D-098, item 3 by D-099, item 4 D-045 still "Recommended" (`DECISIONS.md:303`), item 5 unverified, item 6 W0-14f and Q3-06, item 7 answered 15 Oct (`FOUNDER_TASKS.md:95`), item 8 Q2-03. FT-05 Q3-08. FT-06 Q2-09. FT-07 W0-14b and Q2-04. FT-08 W0-14b. FT-09 Q2-09. FT-10 W0-14f and Q2-01. FT-11 Q2-07. FT-12 Q2-02 and Q2-04. FT-13 Q2-02. FT-14 Q3-08. FT-15 cut for the alpha (neither alpha build offers Google sign-in, `docs/release/TESTFLIGHT.md:199`). FT-16 W0-14c. FT-17 W0-14d and Q2-05. FT-18 W0-13. FT-19 Q3-07. FT-20 W0-08. FT-21 Q3-07. FT-22 Q2-11. FT-23 Q3-06. FT-24 overtaken by D-095 (no analytics SDK in v1.0) unless W0-12a changes it. FT-25 W0-14e. FT-26 to FT-30 Q3-07. FT-31 Q2-06 and W0-13. FT-32 to FT-38 Q3-07. FT-39 Q2-11 and Q3-07. FT-40 to FT-51 Q3-07. FT-52 answered by D-084. FT-53 answered by D-082 and D-083. FT-54 answered by D-074 and D-086. FT-55 answered by D-073 and D-085, then D-100. FT-56 see D-087 (whether it covers the birthday: unverified). FT-57 unverified. |
+| AF (`docs/release/AUTOMATION.md` section 4) | AF-01 W0-14a. AF-02 and AF-03 W0-08. AF-04 W0-14d. AF-05 W0-09. AF-06 W0-14f. AF-07 W0-08 and W0-07. AF-08 W0-14c. AF-09 W0-14b. AF-10 W0-14e. AF-11 Q2-15. AF-12 W0-14c. AF-13 Q2-01 and Q2-07. AF-14 overtaken: the harness runs on the macOS runner (AUTOMATION 0.2 row 13, measured 24 Oct). AF-15 Q2-17. AF-20 Q3-01. AF-21 Q3-02. AF-22 Q3-03. AF-23 W0-08. AF-24 W0-06 and Q3-04. AF-25 to AF-28 Q3-05. AF-40 to AF-43 Q3-06. |
+| TESTFLIGHT steps | 1 W0-14a. 2 W0-14b (2.5 is Q2-09). 3 W0-14d and W0-07. 4 W0-14c. 5 W0-14e. 6 W0-14f, W0-08 and Q2-01. 7 Q2-02 and Q2-03. 8 Q2-04. 9 Q2-05. 10 Q2-06. 11 Q2-10. 12 Q2-07. |
+| F (alpha plan, 1ae1ace6 section 4) | F01 W0-14a. F02 W0-14d. F03 overtaken by D-111 (alpha calls resolved 17 Oct; item by item unverified). F04 W0-14f. F05 Q2-02. F06 Q2-05. F07 W0-13. F08 W0-14b. F09 W0-14c. F10 Q2-02. F11 Q2-04. F12 W0-14e. F13 W0-14c. F14 Q2-09. F15 Q2-06. F16 Q2-01. F17 Q2-07. F18 Q2-08. F19 Q2-11. F20 Q2-08. F21 Q2-14. F22 W0-13. F23 Q2-11. F24 Q2-10. F25 Q2-11. F26 Q2-15. F27 Q2-16. W (daily merge window) overtaken by D-117. |
+| BOARD line 85 | TESTFLIGHT steps 1 to 5: W0-14a to e. Mac kit run: Q2-12. Scratch branch: Q2-13. AF-05: W0-09. Dates (answered 30 Oct): Q2-16. |
+| Retro Wave 0 | Items 1 to 15 are W0-01 to W0-15. |

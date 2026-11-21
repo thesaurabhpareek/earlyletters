@@ -24,7 +24,7 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
-**Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/BOARD.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
+**Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/CLAIMS.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
 Priority order the dispatcher uses: fix your open PRs first, then answer handoffs, then reviews, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
 
@@ -32,7 +32,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 **Added 15 Oct, from the first two weeks.**
 - **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
-- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until Karma merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
 
 ## 3. Memory: how you keep context between runs
 
@@ -86,13 +86,14 @@ Two board facts are not reviews and do not change how you review. A line under "
 
 ## 7. The founder digest
 
-The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for the founder (oldest first, with the red-team verdict), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
+The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for Karma (oldest first, with the red-team verdict), and the few acts only the founder can do (CR-73), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
 
 ## 8. Hard limits (every agent, every run)
 
 - Never buy, subscribe, sign up, accept terms, or spend money. Never send email, post publicly, or contact anyone outside this repository. Non-engineering agents produce drafts in the repo only.
 - Never touch secrets, store accounts, or remote Supabase projects; never apply a migration anywhere (backlog rule 8). Never edit an applied migration.
 - Never edit `.github/workflows/` (the Claude GitHub App cannot), `agents/roster.json`, or another agent's charter or memory. Edit `CLAUDE.md` only when your backlog task says so. Propose any other such change in your journal or PR body.
+- **Compliance paths are fenced (CR-27).** `compliance/FENCE.json` lists two tiers. Protected paths (`compliance/`, compliance migrations and tests, the regulatory-compliance skill, the `regulatory-affairs` charter) may be changed only by its assigned agents, with the `agent:<handle>` label plus the Chief Compliance Officer's and Karma's approvals on the head commit. CCO-review paths (the age gate, consent SQL) may be changed by their owners with the CCO's approval on the head. Otherwise open a handoff to `regulatory-affairs` (`compliance/README.md`).
 - Never edit requirement documents (`docs/prd/`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`). Propose changes in the PR body. The product agent may edit `docs/BACKLOG.md`; others change only their own task's status line, as the backlog rules say.
 - Never put real family details, the founder's personal information, or anything from the founder's private life into code, docs, issues or memory. Tests use the fictional family "Asha".
 - Mark what you verified versus what you assumed. Never invent library APIs, prices, or legal facts.

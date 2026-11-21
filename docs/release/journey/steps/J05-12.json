@@ -1,0 +1,43 @@
+{
+  "id": "J05-12",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Back on Tonight, waiting for its words",
+  "note": "Review closes and the queue carries on. Tonight shows the recording as a card waiting for its words, with Open.",
+  "from": "J05-11",
+  "shot": "screens/J05-12.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days Good afternoon, Mama. Who came to meet Asha this week? What did they say? Another thought Friday 0:02 A recording, waiting for its words. Open Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "Good afternoon,",
+    "Mama.",
+    "Who came to meet Asha this week? What did they say?",
+    "Another thought",
+    "Friday",
+    "0:02",
+    "A recording, waiting for its words.",
+    "Open",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}
