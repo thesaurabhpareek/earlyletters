@@ -151,7 +151,7 @@ describe('[NS-01-R6][NX-39-R8] the strip is an allow list (privacy review B on #
 });
 
 describe('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
-  it('[NS-01-R4][NX-39-R14] a picked picture that is let go writes 0 rows and 0 files', () => {
+  it('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
     const { store, files } = deps();
     const s = new PhotoSession();
     s.pick({ uri: 'picker://one' });

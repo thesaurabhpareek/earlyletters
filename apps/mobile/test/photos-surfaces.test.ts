@@ -13,7 +13,12 @@ import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
-import { pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { coveredForAppState, pictureCovered, pictureHidden, THUMB_AX_MAX_HEIGHT_PT, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
+import { photoStartShows } from '../src/lib/photos/start-shows';
+import { PendingPhoto } from '../src/lib/photos/pending';
+import { registerPhotoPicker, registerPending } from '../src/lib/photos/registry';
+import { setPhotosForTest } from '../src/lib/photos/flag';
+import { planCapture } from '../src/lib/capture/start-capture.logic';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
 import { fixture, insertBook } from './helpers/store-fixture';
@@ -98,15 +103,36 @@ describe('[NS-01-R2][NX-39-R2] the photo start asks no library question', () => 
   });
 });
 
+describe('[NS-01-R4][NX-39-R14] backing out writes nothing (behaviour)', () => {
+  it('[NS-01-R4][NX-39-R14] a pending picture that is discarded leaves no file, no row and no held picture, whichever way the parent leaves', async () => {
+    for (const leave of ['Close', 'Let it go', 'swipe back to Home']) {
+      const removed: string[] = [];
+      const files = { read: async () => Uint8Array.of(1), remove: async (u: string) => void removed.push(u), sweep: async () => undefined };
+      const p = new PendingPhoto(files);
+      await p.set({ uri: 'file:///c/ImagePicker/one.jpg' });
+      expect(p.source?.uri, leave).toBe('file:///c/ImagePicker/one.jpg');
+      await p.discard(); // what Close, Let it go and Home's focus all call (discardPendingPhoto)
+      expect([p.source, removed], leave).toEqual([null, ['file:///c/ImagePicker/one.jpg']]);
+    }
+  });
+});
+
 describe('[NS-01-R3] the prompt does not depend on the picture', () => {
-  it('[NS-01-R3] with 3 different pictures and one fixed state the chosen prompt is identical', () => {
+  it('[NS-01-R3] the prompt does not depend on the picture', () => {
     const state = { birthday: '2026-04-01', today: '2026-11-11', daysSinceLastEntry: 2, recentKeys: [], shuffle: 0, leftKey: null, childName: 'Asha' };
     const picked: string[] = [];
     for (const uri of ['picker://a', 'picker://b', 'picker://c']) {
       const s = new PhotoSession();
       s.pick({ uri });
       picked.push(selectPrompt(tonightPromptInput(state), PROMPTS).key); // the input has no place for the picture
+      // The session is held while the plan is made: the route the photo start takes carries the same prompt params as Speak
+      // and Type for that prompt, whatever was picked (the request has no field a picture could ride in).
+      const prompt = { key: picked[picked.length - 1], libraryVersion: 3 };
+      expect(s.source?.uri).toBe(uri);
+      expect(planCapture({ source: 'photo', prompt })).toEqual({ kind: 'photo', pathname: '/listen', params: { promptKey: prompt.key, promptLibraryVersion: '3' } });
     }
+    const first = planCapture({ source: 'speak', prompt: { key: picked[0], libraryVersion: 3 } });
+    expect(first.kind === 'route' && first.params).toEqual({ promptKey: picked[0], promptLibraryVersion: '3' });
     expect(new Set(picked).size).toBe(1);
     expect(Object.keys(state).some((k) => /photo|picture|uri/i.test(k))).toBe(false);
   });
@@ -218,7 +244,7 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
   });
   it('[NS-01-R19] the Home start is guarded by the switch and a registered picker (absent, not dead)', () => {
-    const hook = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-start.ts'), 'utf8');
+    const hook = readFileSync(join(SRC, 'lib', 'photos', 'start-shows.ts'), 'utf8');
     expect(hook).toMatch(/photoSurfaces\(\{ build: photosBuildEnabled\(\), paused \}\)\.start && getPhotoPicker\(\) !== null/);
     expect(readFileSync(join(SRC, 'app', '(tabs)', 'index.tsx'), 'utf8')).toMatch(/photoStart\.show \? <PhotoStartButton/);
   });
@@ -241,7 +267,8 @@ describe('[NS-01-R20] new controls', () => {
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
   });
-  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, Change, prompt, Speak, Type (E40; #838 review B)', () => {
+  it('[NS-01-R20b] VoiceOver order on Ready', () => {
+    // E40: thumbnail, Change, prompt, Speak, Type; Type keeps the picture.
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{photos\.capture\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
     expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
@@ -286,6 +313,43 @@ describe('[NS-01-R20] new controls', () => {
     expect(thumb).toMatch(/fit="contain"/);
     expect(thumb).not.toMatch(/aspectRatio=/);
     expect(THUMB_AX_MAX_HEIGHT_PT).toBe(88);
+  });
+  it('[NS-01-R13a][NX-39-R36] the switcher snapshot shows no picture', () => {
+    // The phase mapping the hook uses: only 'active' draws a picture; inactive (the snapshot moment), background and anything
+    // else cover it. The mutant `usePictureCovered returns false` fails the source pins below.
+    expect(coveredForAppState('active')).toBe(false);
+    for (const phase of ['inactive', 'background', 'unknown', '']) expect(coveredForAppState(phase), phase).toBe(true);
+    const hooks = readFileSync(join(SRC, 'lib', 'photos', 'hooks.ts'), 'utf8');
+    expect(hooks).toMatch(/export function usePictureCovered\(\): boolean \{\s*const phase = useAppPhase\(\);\s*return coveredForAppState\(phase\);\s*\}/);
+    // Every Image goes through PhotoFrame, which draws the opaque box when covered, at once.
+    const frame = readFileSync(join(SRC, 'components', 'photos', 'photo-frame.tsx'), 'utf8');
+    expect(frame).toMatch(/const covered = usePictureCovered\(\);/);
+    expect(frame).toMatch(/if \(covered \|\| failed\) return <View [^>]*accessibilityLabel=\{label\} \/>;/);
+    for (const f of walk(join(SRC, 'components', 'photos')).filter((x) => /\.tsx$/.test(x) && !/photo-frame\.tsx$/.test(x))) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/<Image\b/);
+    }
+  });
+  it('[NS-01-R13b] no picture before unlock', () => {
+    // pictureCovered with the lock on and not yet unlocked covers a picture even in front. No caller passes `unlocked` today
+    // (surface.ts takes the always-blank ruling instead): a follow-up when App lock state is read here.
+    expect(pictureHidden({ lockOn: true, unlocked: false, phase: 'active' })).toBe(true);
+    expect(pictureHidden({ lockOn: true, unlocked: true, phase: 'active' })).toBe(false);
+    expect(pictureCovered('active', true, false)).toBe(true);
+  });
+  it('[NS-01-R59] no picker, no photo controls', () => {
+    // No native module: nothing registered, so no start, no Change, no Add; absent, never dead.
+    setPhotosForTest(true);
+    try {
+      registerPhotoPicker(null);
+      registerPending(null);
+      expect(photoStartShows(false)).toBe(false);
+    } finally {
+      setPhotosForTest(null);
+    }
+    const pick = readFileSync(join(SRC, 'lib', 'photos', 'use-photo-pick.ts'), 'utf8');
+    expect(pick).toMatch(/ready: registered && getPhotoPicker\(\) !== null/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'pending-photo-thumb.tsx'), 'utf8')).toMatch(/if \(!pending \|\| !source\) return null;/);
+    expect(readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8')).not.toMatch(/disabled=/);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');

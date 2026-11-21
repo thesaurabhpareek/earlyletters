@@ -1,15 +1,10 @@
 /** Home's photo start: whether it draws, and what a tap does. The tap opens the system picker and nothing else. */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { photoSurfaces, photosBuildEnabled } from './flag';
-import { photosPausedNow } from './pause';
 import { getPending, getPhotoPicker } from './registry';
+import { photoStartShows } from './start-shows';
 import { runPick } from './session';
 import { useRegisteredPhotoDevice } from './use-registered';
-
-export function photoStartShows(paused = photosPausedNow()): boolean {
-  return photoSurfaces({ build: photosBuildEnabled(), paused }).start && getPhotoPicker() !== null;
-}
 
 /** `onPicked` runs only for a chosen picture; Cancel returns to Home untouched. */
 export function usePhotoStart(onPicked: () => void): { show: boolean; failed: boolean; start: () => void } {

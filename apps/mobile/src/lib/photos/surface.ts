@@ -23,6 +23,12 @@ export function pictureHidden(input: { lockOn: boolean; unlocked: boolean; phase
 export const PHOTO_BLANK_WITHOUT_APP_LOCK = true;
 
 /** True when a picture must not be drawn right now: the app is not in front (inactive covers the snapshot moment). */
+/** The hook's phase mapping, pure so it can be pinned: only a phone in front ('active') shows a picture; 'inactive' (the switcher
+ * snapshot is taken), 'background', 'unknown' and any other state cover it (NS-01-R13a). */
+export function coveredForAppState(phase: string): boolean {
+  return pictureCovered(phase === 'active' || phase === 'inactive' ? phase : 'background');
+}
+
 export function pictureCovered(phase: 'active' | 'inactive' | 'background', lockOn = false, unlocked = true): boolean {
   return pictureHidden({ lockOn: lockOn || PHOTO_BLANK_WITHOUT_APP_LOCK, unlocked, phase });
 }
