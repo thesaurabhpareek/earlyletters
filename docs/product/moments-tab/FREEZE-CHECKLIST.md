@@ -94,7 +94,7 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 
 ### 1.3a Pending inputs not yet landed
 
-- `EXPERIENCE-AND-MOTION.md` has landed (`docs/product/moments-tab/`, with the prototype under `docs/design/moments-tab/prototype/`). Spec section 29 summarises it; the two row edits it flagged (5.3, R186) are applied; its open items are O-27 (extended) and O-56 to O-59. Its R144, R106, R120 and R253 row changes wait for the founder's rulings.
+- `EXPERIENCE-AND-MOTION.md` has landed (`docs/product/moments-tab/`, with the prototype under `docs/design/moments-tab/prototype/`). Spec section 29 summarises it; the two row edits it flagged (5.3, R186) are applied; its open items are O-27 (extended) and O-56 to O-59. Its R144, R106, R120 and R253 row changes are applied as PROPOSED text (fix pass), each with its founder-decision id (O-27 with O-58, O-56, O-56 with O-48, D2 with O-56) and none in force until answered; the contradictions found on the re-read are C-45 to C-53 and spec 14.6.
 - The market benchmark landed (`MARKET-BENCHMARK.md`, `origin/wip/moments-benchmark`, head 18c27847) and is folded in (spec 27c, experiments E8 to E11).
 - An independent challenger read of EXH-ENG-1, EXH-ENG-4 and EXH-ENG-7 (see `HARNESS-REPLAN-HYBRID.md` section 4).
 
