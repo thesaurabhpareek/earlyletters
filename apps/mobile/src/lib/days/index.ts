@@ -5,8 +5,8 @@
  */
 import { type DaysPort, type DaysRead, expoDaysPort, readDays, removeDays, sweepDaysTemp } from './store-file';
 
-let real: DaysPort | null = null;
-let swept = false;
+let real: DaysPort | null = null,
+  swept = false;
 const port = (): DaysPort | null => (real ??= expoDaysPort());
 
 /** The days of `owner` ('local' or an owner key); a file of anyone else reads as empty (fail closed). */
@@ -28,7 +28,6 @@ function clearFile(): boolean {
     return false;
   }
 }
-
 /** Sign-out on any path, or another account signing in (NS-47-R15). Synchronous, never throws. */
 export const endDaysSession = (): boolean => clearFile();
 

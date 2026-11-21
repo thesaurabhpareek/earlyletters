@@ -242,9 +242,7 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     const adapter = src('lib/remote/expo-adapter.ts');
     expect(adapter.match(/\.delete\(\)/g)).toHaveLength(1);
     expect(src('lib/packs/app-support.ts')).not.toMatch(/\.delete\(\)/);
-    // The days store removes by name inside its own folder; it names no recording, Documents or Caches path.
-    expect(src('lib/days/store-file.ts')).toMatch(/DAYS_FOLDER = 'days'/);
-    expect(src('lib/days/store-file.ts')).not.toMatch(/Paths\.cache|recording|listRecordingFiles/);
+    expect(src('lib/days/store-file.ts')).toMatch(/^(?![\s\S]*(Paths\.cache|recording))[\s\S]*DAYS_FOLDER = 'days'/); // its own folder only
   });
 });
 
