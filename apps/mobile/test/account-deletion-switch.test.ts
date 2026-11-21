@@ -252,11 +252,41 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
     }
   });
 
-  it('[BL-1404] a KEY=value line still names the key and never the value', () => {
+  it('[BL-1404] a secret-looking text before "=" is never printed as a name, whatever follows the "="', () => {
     const f = '.env.local';
-    const out = envFileProblems(f, 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_ashafictional0000\n');
-    expect(out).toEqual([`${f}: SUPABASE_SERVICE_ROLE_KEY`]);
-    expect(out.join('\n')).not.toContain('sb_secret');
+    const names = ['sb_secret_ashafictional0000', 'ghp_ashafictional0000', 'sk_live_ashafictional0000', 'sb_secret_abc', 'abcDEF123456789==', 'export EXPO_PUBLIC_X', 'expo_public_lower', 'SUPABASE_SERVICE_ROLE_KEY'];
+    for (const n of names) {
+      for (const tail of ['1', '', ' ', 'abcDEF123456789==']) {
+        const out = envFileProblems(f, `${n}=${tail}\n`);
+        expect(out, `${n}=${tail}`).toEqual([`${f}: <unparsable line 1>`]);
+      }
+    }
+  });
+
+  it('[BL-1404] a padded-base64 value after a name is never printed', () => {
+    const out = envFileProblems('.env', 'EXPO_PUBLIC_SUPABASE_ANON_KEY=abcDEF123456789==\n');
+    expect(out).toEqual(['.env: EXPO_PUBLIC_SUPABASE_ANON_KEY']);
+    expect(out.join('\n')).not.toContain('abcDEF');
+  });
+
+  it('[BL-1404] a very long name is not echoed: 200,000 characters give the line number only', () => {
+    const long = `EXPO_PUBLIC_${'A'.repeat(200_000)}`;
+    for (const line of [`${long}=1`, `${'x'.repeat(200_000)}=1`]) {
+      const out = envFileProblems('.env', `\n${line}\n`);
+      expect(out).toEqual(['.env: <unparsable line 2>']);
+    }
+    expect(envFileProblems('.env', `EXPO_PUBLIC_${'A'.repeat(64)}=1\n`)[0].length).toBeLessThan(100);
+  });
+
+  it('[BL-1404] an EXPO_PUBLIC_* name still names the key and never the value', () => {
+    const f = '.env.local';
+    const out = envFileProblems(f, 'EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ashafictional0000\n');
+    expect(out).toEqual([`${f}: EXPO_PUBLIC_SUPABASE_ANON_KEY`]);
+    expect(out.join('\n')).not.toContain('sb_publishable');
+  });
+
+  it('[BL-1404] `export KEY=value` is unparsable: reported by line, still a problem', () => {
+    expect(envFileProblems('.env', `export ${VAR}=on\n`)).toEqual(['.env: <unparsable line 1>']);
   });
 
   it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
