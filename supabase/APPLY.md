@@ -1272,3 +1272,9 @@ What it changes: three service-only tables in schema `ops` (`account_sessions_se
 
 `20261121010000_new_device_sender_functions.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 36. Adds three service-only definer functions (`ops_new_device_record`, `ops_new_device_pending_take`, `ops_new_device_token_mint`); no table, column or existing grant changes. **Check:** `select has_function_privilege('service_role', 'public.ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'execute');` is true, and false for `anon` and `authenticated`. **Rollback:** drop the three functions.
 
+
+## File 38: the new-device fill and re-key functions (NDS-2, NDS-5 of PR #1206, data-architect)
+
+`20261121020000_new_device_fill_rekey.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 37. Adds two service-only definer functions: `ops_new_device_pending_fill` (sets class and device hash on one pending row, once, for the named profile and session) and `ops_new_device_rekey` (DEVICE_HASH_KEY overlap rotation: `current`, `rekeyed` or `unknown`, never inserts). No table, column or existing grant changes. Nothing calls them yet: the app's fill call (a JWT-verified Edge Function) and the sender's use of the re-key are separate PRs. Do not turn `NEW_DEVICE_EMAIL` on before the fill call exists (NDS-2).
+
+**Check [U] (hosted, founder):** `select has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute');` and the same for `public.ops_new_device_rekey(uuid,bytea,bytea)` are true, and false for `anon` and `authenticated` [U]; `select proname from pg_proc where proname in ('ops_new_device_pending_fill','ops_new_device_rekey') and prosecdef;` returns two rows [U]. **Rollback:** drop the two functions.
