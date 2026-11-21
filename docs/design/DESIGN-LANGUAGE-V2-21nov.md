@@ -1,6 +1,6 @@
-# Design language v2: the uplift (proposal, 21 Nov 2026)
+# Design language v2: the uplift (version of record, 21 Nov 2026)
 
-Status: **ADOPTED 21 Nov 2026. This is the version of record for the design language.** Decision of record: issue #1221 (Karma, with the Chief Design Officer, CPO, CTO and CMO; the founder delegated, so no wait for Mon 23 Nov). F1 is ruled as in that comment: the uplift enters the first store build for tokens, shared card and button, first run and empty, Review, Book home without the tab bar, capture polish, letter reading and Settings, each only after it passes the screen gate below; a screen that fails stays on its current look and nothing blocks submission. The three spike-gated items (system tab bar, system sheets, SF Symbols) wait for the SDK 58 upgrade and device spikes and ship after submission. Where this file and the council rulings (Project doc `infra/exec-rulings-2026-11-21-design-uplift.md`) differ, the rulings win. Author: `design-systems`, with the Chief Design Officer view. This file changes no token or component file; the work lands in later pull requests. Any new word on a screen stays PROPOSED until `content` clears it, and a PROPOSED word does not ship (see the block below).
+Status: **ADOPTED 21 Nov 2026. This is the version of record for the design language.** Decision of record: issue #1221 (Karma, with the Chief Design Officer, CPO, CTO and CMO; the founder delegated, so no wait for Mon 23 Nov). F1 is ruled as in that comment: the uplift enters the first store build for tokens, shared card and button, first run and empty, Review, Book home without the tab bar, capture polish, letter reading and Settings, each only after it passes the screen gate below; a screen that fails stays on its current look and nothing blocks submission. The three spike-gated items (system tab bar, system sheets, SF Symbols) wait for the SDK 58 upgrade and device spikes and ship after submission. Where this file and the council rulings differ, the rulings win. The rulings are copied into section 8 of this file (the Project doc `infra/exec-rulings-2026-11-21-design-uplift.md` cannot be read from `develop`); the ids T, C, M, W and A3 are defined in section 9. Author: `design-systems`, with the Chief Design Officer view. This file changes no token or component file; the work lands in later pull requests. Any new word on a screen stays PROPOSED until `content` clears it, and a PROPOSED word does not ship (see the block below).
 
 ## Agents: read this first
 
@@ -8,7 +8,7 @@ Read this file and the council rulings before you touch `packages/design-tokens`
 
 Do:
 - Keep content on paper: letters, the book, prompts and cards never use glass.
-- Use glass only on navigation and control surfaces, at most three glass surfaces on one screen, each with a solid fallback (`barFallback` or `glassFallback`) for Reduce Transparency, Increase Contrast and iOS earlier than 26.
+- Use glass only on navigation and control surfaces, at most three glass surfaces on one screen, our own glass surfaces (the stop control ring and any floating control) get the solid `glassFallback` under Reduce Transparency, Increase Contrast and iOS earlier than 26. The system tab bar and system sheets are never painted or replaced with a solid look: the system adapts them (NativeTabs on iOS 18 and earlier draws the standard system bar).
 - Ship now what the build order allows: the paper tab bar and the `@gorhom/bottom-sheet` sheets stay. Terracotta means recording.
 - Change words only by case (W1). Content rules and the constitution apply.
 - Run the gate on every screen you touch: iPhone SE 3 and the largest iPhone, AX5 with letter text never truncated, Bold Text, VoiceOver order and labels, Reduce Motion, Reduce Transparency, Increase Contrast, light and dark, 44 pt targets, no dev or test seam in the store bundle (check B-8), and the store-profile Release launch passing. Say whether your evidence is simulator or device; simulator evidence is not device evidence.
@@ -31,7 +31,7 @@ Founder feedback that started this: the drawn screens look "much more basic than
 
 Public name: always `{app}` here; the value lives only in `packages/brand/index.ts`. Family in examples: Asha.
 
-## 0. What I could not verify (read this first)
+## 0. What I could not verify
 
 1. **The design canvas and the phone page were not opened.** This session has no tool that reads a claude.ai canvas or artifact (slug `99700692-40d2-4407-8168-0c556f67aa19`; phone page slug `fd3d2aa4-9a13-4225-ab51-faa4cdf4e4e4`). The audit below uses what is in the repo: the tokens, `docs/design/*`, `docs/design/e2e/INDEX.md` screen ids, and two real renders (`docs/design/calm-brand/after/tonight-light.png`, `book-empty-light.png`). Where I say a screen "reads basic", the evidence is the code, the spec or those renders, not the canvas. If the canvas is drawn flatter than the build, the fix is to redraw it from this proposal.
 2. **Nothing was run on a device.** No simulator, no iPhone, no iPhone SE 3. Every contrast ratio below is computed with the WCAG 2.x formula, not seen. Glass, blur and motion are described, not observed.
@@ -95,7 +95,7 @@ Principles from v0.3 stay (voice is the treasure, written for 2 a.m., quiet UI a
 
 **R3. Type has a ladder with a job per rung.** Serif for what a person said or what they will keep; sans for everything that does something. Kickers are title case, not all caps. Numbers that change (the recording timer) use tabular figures.
 
-**R4. Symbols, not stickers.** On iOS, chrome and actions use SF Symbols in the weight of the text beside them. Symbol effects are used for exactly three moments: recording (breathe), Speak to Stop (Magic Replace), Kept (Draw On). Each has a Reduce Motion static form and never replaces a word.
+**R4. Symbols, not stickers.** On iOS, chrome and actions use SF Symbols in the weight of the text beside them. Symbol effects are used for exactly three moments: recording (breathe), the stop control (Magic Replace), Kept (Draw On). Each has a Reduce Motion static form and never replaces a word. Symbol effects arrive with C4 (after submission); until then the Phosphor form ships. No new word is introduced: the built words stay (the stop control reads "Finish", O-3 in area A).
 
 **R5. The book is an object.** Empty and first-run screens show the closed book cover, not a blank page. It is the app's one illustration, in paper and ink, with no faces and no mascot.
 
@@ -106,11 +106,11 @@ Fixed from before and not negotiable: no streaks, points, badges, confetti or pr
 | # | Screen (id) | Before (as built or specified) | After (v2) |
 |---|---|---|---|
 | 1 | First run welcome (E-S02) | Quotation mark, serif title, three lines, buttons on flat paper. | The closed book cover is the hero object (R5), the lamp light stays, title in `display`, one prominent pill on the accent, the second action as a plain text button, agreement line in `footnote` with links. |
-| 2 | Capture, recording (A-S05) | Red disc with a breathing glow. | Concentric breathing rings (the glow stays) around a system-weight mic; "Listening." in `title2` serif; timer in the new `timer` style with tabular figures; "Say it however it comes." as `subhead`; "Let it go" as a quiet button and the stop control (council ruling A3) is a glass ring around the red disc, so terracotta keeps meaning recording and the glass ring is the one floating control on this screen; under Reduce Transparency the ring is the solid `glassFallback` with a hairline. No waveform. |
+| 2 | Capture, recording (A-S05) | Red disc with a breathing glow. | The existing breathing glow (soft aura layers that never fill, count or show a fraction, so never a progress ring) around the Phosphor mic; a system-weight SF Symbol mic with the breathe effect follows with C4, after submission; "Listening." in `title2` serif; timer in the new `timer` style with tabular figures; "Say it however it comes." as `subhead`; "Let it go" as a quiet button and the stop control (A3, built word "Finish") is a glass ring around the red disc, so terracotta keeps meaning recording and the glass ring is the one floating control on this screen; under Reduce Transparency the ring is the solid `glassFallback` with a hairline. No waveform. |
 | 3 | Review of a take (A-S07) | A sheet with To, day, From, words, Keep. | Letter on a raised paper card with the dateline above, machine-edited words keep the dotted `editMark`, the bar at the bottom is one prominent "Keep" on the accent with "Let it go" beside it as plain text; the card has the v2 shadow and highlight. |
-| 4 | Keep sheet (E-S10) | A custom bottom sheet. | After the device spike, the system sheet at medium detent (until then the `@gorhom/bottom-sheet` sheet stays, with case-only word changes), a grabber, a 34 pt radius, title in `title2` serif, one prominent action, Cancel leading. Words unchanged. |
-| 5 | Book home (B-S01) | Title, cover band, month list on flat paper, paper tab bar. | Large serif title, the cover band as the one lit object with a v2 shadow, month rows with larger padding and concentric radius, and, once SDK 58 and the device spike land, the system floating tab bar (glass) that minimises on scroll. Until then the paper tab bar stays (Book home ships without the tab bar change). |
-| 6 | A letter, reading view (B-S08) | Text column, dateline, "This letter" list. | A measure cap of about 62 characters, 12 pt paragraph gap, dateline in `letterDateline`, a quiet play row, the signature in italic serif, and a toolbar with standard back and one overflow menu. Reading Size stays. |
+| 4 | Keep sheet (E-S10) | A custom bottom sheet. | After the device spike, the system sheet at medium detent (until then the `@gorhom/bottom-sheet` sheet stays, with case-only word changes), a grabber, the system sheet radius, title in `title2` serif, one prominent action, Cancel leading. Words unchanged. |
+| 5 | Book home (B-S01) | Title, cover band, month list on flat paper, paper tab bar. | Large serif title, the cover band as the one lit object with a v2 shadow, month rows with larger padding and concentric radius, and, only if the SDK 58 device spike passes, the system tab bar (glass on iOS 26 and later). Whether it minimises on scroll is decided by that spike (ruling 32), because Expo says minimise on scroll does not work with FlatList lists such as the Book. Until then the paper tab bar stays (Book home ships without the tab bar change). |
+| 6 | A letter, reading view (B-S08) | Text column, dateline, "This letter" list. | A measure cap of about 62 characters, 12 pt paragraph gap, dateline in `letterDateline`, a quiet play row, the signature in italic serif, and a toolbar with standard back and one overflow menu. Reading size stays. The tab bar hides on this pushed route (ruling 32). |
 | 7 | Settings home (C-S01) | Stock grouped list. | iOS 26 list metrics (taller rows, larger group radius), title-case section headers, SF Symbols at text weight in muted tint, no coloured icon tiles. |
 | 8 | An empty state (B-S01.empty) | Quote mark, serif line, button. | The closed cover at 3:4 on a soft shadow, "The first page is waiting." in `title1`, one line of `body`, one prominent button. Nothing counts what is missing. |
 
@@ -126,7 +126,7 @@ All colour values below were checked with the WCAG 2.x formula on 21 Nov 2026. E
 | `dark.surfaceRaised` | `#201D1A` | `#27231F` | text 13.29:1, muted 6.80:1, accent 7.10:1; layer step against `bg` 1.10 to 1.18 (decorative, so no 3:1 needed; the highlight below carries the edge) |
 | new `light.highlight` | none | `#FFFFFFB3` (top edge of a raised card) | decorative only |
 | new `dark.highlight` | none | `#FFFFFF14` | decorative only |
-| new `light.barFallback`, `dark.barFallback` | none | `= bg` at full opacity | used when Reduce Transparency is on, for any custom bar or floating control |
+| new `dark.glassFallback` (light keeps `surfaceRaised`) | none | dark `#282421`, with a 1 pt `line` hairline and `controlBorder` under Increase Contrast (ruling 30) | our own glass surfaces (the stop control ring, floating controls) under Reduce Transparency, Increase Contrast and iOS earlier than 26. Neither `glassFallback` nor the earlier `barFallback` exists in `packages/design-tokens` yet; `barFallback` is dropped, and `glassFallback` is added by T1 with its contrast pair tests. System bars and sheets are not painted with it. |
 | `highContrast` | exists | add `highlight` as `line` strength | Increase Contrast |
 
 Rule: the accent colours the background of the one primary action (Apple's own prominent button rule), never the symbols of several controls.
@@ -157,7 +157,7 @@ Rule: the accent colours the background of the one primary action (Apple's own p
 | `elevation[1]` | y2 / 6 / 6% | two layers: `0 1px 2px rgba(43,39,34,0.06), 0 4px 12px rgba(43,39,34,0.05)` |
 | `elevation[2]` | y6 / 16 / 10% | `0 2px 4px rgba(43,39,34,0.06), 0 10px 24px rgba(43,39,34,0.09)` |
 | `elevation[3]` | y12 / 32 / 16% | `0 4px 8px rgba(43,39,34,0.08), 0 18px 40px rgba(43,39,34,0.14)` |
-| new `material` | none | `{ bar: 'system', sheet: 'system', card: 'solid', overMedia: 'ultraThin' }`. It names which layer uses what; `system` means the platform component, with `barFallback` under Reduce Transparency. No glass in `card`. |
+| new `material` | none | `{ bar: 'system', sheet: 'system', card: 'solid', overMedia: 'clearGlass35' }`. It names which layer uses what; `system` means the platform component, which adapts itself to Reduce Transparency and Increase Contrast (we do not paint it). A control floating over a picture is clear glass with a 35 percent dim (area A 3a, ruling 28; the dim is a token and the CDesO picks 35 or 45 from measurements). Our own glass surfaces use `glassFallback`. No glass in `card`. |
 
 Native shadows need two `shadow*` layers; React Native supports one per view, so the second layer is a wrapping view. Mobile to confirm cost on an SE 3.
 
@@ -176,7 +176,7 @@ Native shadows need two `shadow*` layers; React Native supports one per view, so
 | `motion.heroEnter` | `{ dy: 12, durationMs: 420 }`, content only, first run and empty states, on `standard`; Reduce Motion: 200 ms fade |
 | `motion.symbol` | `{ record: 'breathe', swap: 'magicReplace', kept: 'drawOn' }`; each has a static Reduce Motion form; Draw On needs SF Symbols 7, so it is guarded by OS version |
 | existing `breath`, `file`, `lamp`, `route` | unchanged |
-| haptics | unchanged: light impact on record start and stop, notification success on Keep, selection on Reading Size, none during playback (matches HIG "complement, consistent, short, optional") |
+| haptics | unchanged: light impact on record start and stop, notification success on Keep, selection on Reading size, none during playback (matches HIG "complement, consistent, short, optional") |
 
 ### 4.7 Icons
 
@@ -189,7 +189,7 @@ Source: decision of record on #1221. Every step passes the screen gate in the bl
 1. **Tokens T1 to T6**, then shared components C1 to C3 and C7 (card, prominent button, list row, section header in title case).
 2. **M2 with C5** (first run and empty, the book cover as the hero object), then **Review** (A-S07 card and Keep action).
 3. **Book home (B-S01) without the tab bar.** The paper tab bar stays.
-4. **M5 capture polish** with the glass ring stop control (A3), **M6 letter reading** (measure cap, paragraph rhythm), **M1 Settings** (side screen, may move on its own).
+4. **M5 capture polish** with the glass ring stop control (A3), the Phosphor mic and the existing glow (symbol effects follow with C4), **M6 letter reading** (measure cap, paragraph rhythm), **M1 Settings** (side screen, may move on its own).
 5. **Spike-gated, after submission:** C4 SF Symbols, C6 sheets (then M4), M3 system tab bar, all after the SDK 58 upgrade.
 
 What ships now and stays: the paper tab bar and `@gorhom/bottom-sheet` sheets, Phosphor behind `Icon`. Minimum iOS 17.0 (D-098).
@@ -198,19 +198,47 @@ What ships now and stays: the paper tab bar and `@gorhom/bottom-sheet` sheets, P
 
 A spike passes only when every line below holds. Simulator evidence does not close a line.
 
-1. **System tab bar (M3):** native tabs are stable in the SDK 58 build (no `unstable` import); minimise on scroll works; labels stay single words; the Large Content Viewer works at AX sizes; VoiceOver reads tabs in order and never disables one; Reduce Transparency and Increase Contrast show the solid fallback; iPhone SE 3 passes; the letter page route still hides or shows the bar as ruled (ruling 32).
-2. **System sheets (C6, then M4):** detents (medium and large) work; the grabber is present and VoiceOver can resize the sheet; swipe to dismiss asks to confirm when there are unsaved changes; one sheet at a time; AX5 text is never truncated or clipped; the keyboard does not hide the primary action; Cancel is leading and the one prominent action is trailing; iOS 17 to 25 shows the solid fallback.
-3. **SF Symbols (C4):** each symbol has an accessibility label; weight tracks the text beside it under Bold Text; the three symbol effects (breathe, Magic Replace, Draw On) have a static Reduce Motion form; Draw On is guarded by OS version; Phosphor remains the fallback behind `Icon`; the `moon.stars` Home glyph is kept (ruling 34).
+1. **System tab bar (M3):** native tabs are stable in the SDK 58 build (no `unstable` import); labels stay single words; the Large Content Viewer works at AX sizes; VoiceOver reads tabs in order and never disables one; the Home cluster (Speak and Type) is not covered by the bar, although Expo says the bar height cannot be measured; Book lists still behave, because Expo says minimise on scroll and scroll to top do not work with FlatList (minimising is not a pass criterion: the spike decides it, ruling 32); AX5 and Bold Text on an iPhone SE 3; the letter page, a pushed route, hides the bar (ruling 32); the Home glyph is still found by people (item 3). The bar is the system bar on every iOS version (standard look before 26, glass on 26 and later) and adapts itself under Reduce Transparency and Increase Contrast.
+2. **System sheets (C6, then M4):** detents (medium and large) work; the grabber is present and VoiceOver can resize the sheet; swipe to dismiss asks to confirm when there are unsaved changes; one sheet at a time; AX5 text is never truncated or clipped; the keyboard does not hide the primary action; Cancel is leading and the one prominent action is trailing; before iOS 26 the sheet is the standard system sheet (not a custom solid one).
+3. **SF Symbols (C4):** each symbol has an accessibility label; weight tracks the text beside it under Bold Text; the three symbol effects (breathe, Magic Replace, Draw On) have a static Reduce Motion form; Draw On is guarded by OS version; Phosphor remains the fallback behind `Icon`; the Home glyph stays `moon.stars` behind one mapping-table entry (ruling 34) and first-run testing re-tests whether people find Home with it; if they do not, change that one row.
 4. **All three:** light and dark, Bold Text, Reduce Motion, Reduce Transparency, Increase Contrast, store-profile Release launch, no dev or test seam in the bundle (check B-8), and the evidence file says simulator or device for each line.
 
 ## 6. What needs the founder
 
 1. **Is the system look the goal?** Decided: yes, content stays paper, navigation goes system, but the tab bar and sheets move only after SDK 58 and their device spikes (F1, #1221).
 2. **Which two screens felt most basic?** I could not open the canvas, so I chose the eight above from the repo. Two named screens would change the rollout order.
-3. **Minimum iOS version.** RULED: the minimum iOS is 17.0 (D-098). Glass needs iOS 26 and Draw On needs SF Symbols 7, so on iOS 17 to 25 the bar, sheet and ring use the solid fallback (`barFallback`, `glassFallback`), the content layer is unchanged, and Draw On falls back to its static Reduce Motion form. The proposal's earlier wording that the older-iOS case was unknown is superseded.
+3. **Minimum iOS version.** RULED: the minimum iOS is 17.0 (D-098). Glass needs iOS 26 and Draw On needs SF Symbols 7, so on iOS 17 to 25 our own glass surfaces (the stop control ring) use the solid `glassFallback`, the system tab bar and sheets are the standard system ones (NativeTabs on iOS 18 and earlier draws the standard system bar), the content layer is unchanged, and Draw On falls back to its static Reduce Motion form. The proposal's earlier wording that the older-iOS case was unknown is superseded.
 
 Everything else is inside the design-systems rules and has been decided here.
 
 ## 7. Content-rule self-check
 
-Text in this file has no em or en dashes, curly quotes, ellipsis characters or emoji; the new words in section 3.1 (none beyond the repo's own) are marked PROPOSED where they differ from the canvas wording and go to `content`. No streak, points, badge, or gap-counting language appears.
+Text in this file has no em or en dashes, curly quotes, ellipsis characters or emoji; the words quoted in section 3.1 are taken from the canvas or the repo and were not checked against built keys in `packages/content`; any that is not built is PROPOSED, goes to `content`, and does not ship until cleared. No streak, points, badge, or gap-counting language appears.
+
+## 8. Council rulings of record (copied from the Project doc, 21 Nov 2026)
+
+Source: `infra/exec-rulings-2026-11-21-design-uplift.md` (Karma with the CPO, CTO, Chief Design Officer and CMO), applied by decision of record on #1221. Where this file differs, these win.
+
+1. **Content stays paper, navigation goes system: ruled, with two swaps behind device spikes.** Glass only on the navigation and control layer, at most three glass surfaces, one container per cluster, solid `glassFallback` under Reduce Transparency, iOS before 26 or Increase Contrast (rulings 30 and 35 of 20 Nov).
+2. **System tab bar:** not on the SDK 57 path (`expo-router/unstable-native-tabs`); it moves with the SDK 58 upgrade and after the ruling 32 device spike (T-MIN). Until then the polished paper bar stays. NativeTabs on iOS 18 and earlier draws the standard system bar, not a solid one. Ruling 32 ("no change") wins over any "native tab bar" line until the spike passes.
+3. **System sheets:** yes in principle (D-051), one import in `ui/sheet.tsx`, after a device pass on VoiceOver resize, AX5 and our accessibility overrides. `@gorhom/bottom-sheet` stays meanwhile.
+4. **Stop control:** a glass ring around the red disc (A3), not a bare glass circle; terracotta means recording.
+5. **Spike acceptance:** the Home cluster (Speak and Type) is not covered by the bar; Book lists still behave (minimise on scroll and scroll to top do not work with FlatList); AX5 and Bold Text on an iPhone SE 3; Home glyph still found (ruling 34). Full list in 5.1.
+6. **Screen order** (replaces the proposal): tokens and shared card and button; first run and empty; Review; Book home without the tab bar; capture polish; letter reading; Settings; then the spike-gated three (SF Symbols, system sheets, system tab bar). The founder can name two screens in one line and that overrides this list.
+7. **Minimum iOS stays 17.0 (D-098).** Glass, minimise on scroll and Draw On are iOS 26 or SF Symbols 7 features with a guarded static form on older versions. Apple's split as measured on 7 Jun 2026: iOS 26 on 79 percent of all iPhones; five months old, no iOS 17 share found. Each SF Symbol needs its minimum OS checked before it ships.
+8. **F1 (founder question, delegated):** the uplift enters the first store build only as set out in the status line and the addendum at the top.
+9. Rulings of 20 Nov that this file relies on (`docs/design/e2e/RULINGS-20nov.md`): 28 glass dim token at 35 percent; 30 `glassFallback`; 32 tab bar no change, letter page hides it; 34 Home glyph `moon.stars`, re-test; 35 chrome-only icons, Phosphor behind `Icon`.
+
+## 9. Key to ids used in this file
+
+| Id | Meaning |
+|---|---|
+| T1 to T6 | The token groups of section 4, in order: T1 colour (4.1, includes `glassFallback`), T2 type, T3 radius, T4 elevation and material, T5 spacing, T6 motion and haptics |
+| C1, C2, C3, C7 | Shared components: C1 card (shadow, highlight, concentric radius), C2 prominent button, C3 list row, C7 section header in title case |
+| C4, C5, C6 | C4 SF Symbols on iOS (section 4.7), C5 the book cover as the hero object (R5), C6 system sheets |
+| M1 to M6 | Screen work: M1 Settings (C-S01), M2 first run and empty (E-S02, B-S01.empty), M3 system tab bar, M4 Keep sheet (E-S10), M5 capture polish (A-S05), M6 letter reading (B-S08) |
+| W1 | The words rule: the only word change allowed is case (for example an all-caps kicker to title case). No word is added, removed or reworded; anything else goes to `content` and stays PROPOSED until cleared |
+| A3 | The capture control spec in area A (`docs/design/e2e/A-capture/DESIGN.md`): a glass ring around the red disc. Not the audit finding A3 in section 2 |
+| Rulings 25 to 37 | `docs/design/e2e/RULINGS-20nov.md` |
+
+The T, C and M mapping is read from sections 4, 5 and 3.1 of this file and the build order on #1221; the backlog rows are the record if they differ.
