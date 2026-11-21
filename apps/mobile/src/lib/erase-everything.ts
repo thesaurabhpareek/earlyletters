@@ -31,6 +31,7 @@ import { sweepListeningCopies } from './audio-enhance';
 import { reloadAppLock } from './app-lock/controller';
 import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
 import { PENDING_REQUEST_KEY } from './auth/pending';
+import { closeBackupHandles, deleteBackupFiles } from './backup/files';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
@@ -56,6 +57,10 @@ const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
  */
 export function eraseDeviceFiles(): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
+  // B5-4: the backup state file and its sidecars go too, after any open handle is closed. Synchronous, so no await
+  // can come before it; it throws when a file will not go, so the rows stay and the next try repeats this.
+  closeBackupHandles();
+  deleteBackupFiles();
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)

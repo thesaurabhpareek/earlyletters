@@ -141,7 +141,7 @@ describe('[NS-13-R14] one hook on the user id ends reminders on every path a ses
     // Only once the Keychain has answered (not while restoring), so a launch never mistakes "not read yet" for "signed out".
     expect(provider).toMatch(/const authSettled = state\.status !== 'restoring';/);
     expect(provider).toMatch(
-      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*\}, \[sessionUser, authSettled\]\);/,
+      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*if \(before && before !== sessionUser\) endBackupFileFor\(before\);\s*\}, \[sessionUser, authSettled\]\);/,
     );
     expect(provider.match(/settleReminderSession\(/g)).toHaveLength(1);
     expect(provider).not.toMatch(/endReminderSession\(/);

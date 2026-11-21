@@ -1,6 +1,6 @@
 /**
  * The recording-backup state file on this phone (`backup-<profile id>.db` and its -wal, -shm and -journal
- * sidecars): its name, its exclusion from the phone's backup, and (PR 2) its removal. CR-71 B5; BRIEF B5.
+ * sidecars): its name, its exclusion from the phone's backup, and its removal (Erase everything, sign-out). CR-71 B5; BRIEF B5.
  *
  * A data right, like the photo sweep: it works with `capabilities.backup` off, because an install that once ran a
  * build with the flag on may hold the file. So it imports only expo-file-system, expo-sqlite (the folder) and the
@@ -170,4 +170,80 @@ export function openSecureBackupFile<T extends { close: () => void }, R>(
     opened.close();
     throw e;
   }
+}
+
+export interface DeleteResult {
+  deleted: number;
+  /** Files that would not go (a count only; no name or path is kept or logged). */
+  failed: number;
+}
+
+function deleteAll(files: File[]): DeleteResult {
+  let deleted = 0;
+  let failed = 0;
+  for (const f of files) {
+    if (deleteFile(f)) deleted += 1;
+    else failed += 1;
+  }
+  return { deleted, failed };
+}
+
+/**
+ * Erase everything (B5-4): every backup state file and sidecar, whichever account it belongs to. Synchronous, so it
+ * can sit inside `eraseDeviceFiles()` with no await before it. THROWS when the folder cannot be listed (an empty
+ * answer there would read as "nothing to delete") or a file will not go, so the erase stays pending and repeats.
+ * Never touches scribe.db*.
+ */
+export function deleteBackupFiles(): DeleteResult {
+  const r = deleteAll(listBackupFiles());
+  if (r.failed > 0) throw new Error('backup_file_delete');
+  return r;
+}
+
+/**
+ * Sign-out (B5-5): the one account's file and sidecars, by exact name (no listing). The caller has closed the
+ * handle first. Never throws; a file left is deleted or refused at the next launch's check. The book is not touched.
+ */
+export function deleteBackupFilesFor(profileId: string): DeleteResult {
+  const name = `backup-${profileId.toLowerCase()}.db`;
+  if (!isBackupFileName(name)) return { deleted: 0, failed: 0 };
+  try {
+    const found = filesNamed(name);
+    return found ? deleteAll(found.files) : { deleted: 0, failed: 0 };
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+}
+
+/**
+ * Open handles are the runtime's, which this file must not import (flag off loads none of it). The runtime hands its
+ * closer here when it loads; with the flag off none is registered, and none is open.
+ */
+type HandleCloser = (profileId: string | null) => void;
+let handleCloser: HandleCloser | null = null;
+
+export function registerBackupHandleCloser(close: HandleCloser | null): void {
+  handleCloser = close;
+}
+
+function closeHandles(profileId: string | null): void {
+  try {
+    handleCloser?.(profileId);
+  } catch {
+    // A handle that will not close must not stop the delete that follows.
+  }
+}
+
+/** Erase everything: close every open backup handle. */
+export function closeBackupHandles(): void {
+  closeHandles(null);
+}
+
+/**
+ * Sign-out (B5-5, D1): close this account's backup handle, then delete its file. The order matters (an open handle
+ * on a deleted file keeps writing to it). Runs with the flag off too. The book is not touched. Never throws.
+ */
+export function endBackupFileFor(profileId: string): DeleteResult {
+  closeHandles(profileId);
+  return deleteBackupFilesFor(profileId);
 }

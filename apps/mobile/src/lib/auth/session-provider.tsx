@@ -21,6 +21,7 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { endBackupFileFor } from '../backup/files';
 import { settleReminderSession } from '../reminders/session';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
@@ -204,6 +205,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const before = lastSessionUser.current;
     lastSessionUser.current = sessionUser;
     void settleReminderSession(before, sessionUser);
+    // B5-5: the account that ended or was replaced loses its backup state file on this phone (the book stays, D1).
+    if (before && before !== sessionUser) endBackupFileFor(before);
   }, [sessionUser, authSettled]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
