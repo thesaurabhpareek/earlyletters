@@ -548,3 +548,22 @@ Placeholders E-INSTR-2 and E-INSTR-3: not resolved here. E-INSTR-2 means three d
 Founder note: E87 (d) and E92 add one line to the founder's digest, both defaults that stand with no CL id until accepted. Separately, #1066 asks the founder about Q-S14 and RSK-47, the date channel: product recommends accepting it as a residual risk, with claim discipline (NS-47-R22), and does not recommend an in-app-only choice for the first Days build; that is a founder line on #1066 and is not decided here. Nothing here is counsel-only.
 
 Signed: Chief Product Officer (Claude role) with product, 21 Nov.
+
+## Seventh round, E97 (21 Nov, content, PROPOSED; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E97: PROPOSED, the humour policy lives in the writing guide, not in the locked notification catalogue (21 Nov, content; extends Q-FD-27; Q-NTC-14)
+
+Question: may wit appear in notifications and the saved-letter line, and where? Q-FD-27 (CL-032, closed 20 Nov) says a little playfulness on Friday and Saturday notes, Monday and Sunday small and slow. The founder chose a wider scope on 21 Nov from a set of options (a selection, not words he typed; Project doc `infra/exec-rulings-2026-11-21-witty-tone-scope.md`, not in this repo).
+
+Proposed ruling (the founder approves the words key by key before anything turns on, BL-965; every witty line keeps a plain fallback; nothing here changes a shipped or locked line):
+
+- Wit may live in three places: a Friday or Saturday note (Q-FD-27; Monday and Sunday none; a push, so one neutral string and zero exclamation marks, Q-FD-18, NS-47-R12), one dry line when a letter is saved (never fanfare, never fixed, rotated; in the app), and the five public days (seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day; in the app only, after the phone is open).
+- Lock-screen text stays the neutral frame until Q-FD-18 is answered; a Friday or Saturday note may be playful inside that frame. Every witty line keeps a plain fallback.
+- Never on first-run consent screens, errors, money, deletion, safety, grief or hard seasons.
+- Never tied to a day the parent ticked, a festival, a tradition, a country or a region; the five public days above are the only dated exception (Q-FD-5: the app stores none of them; NS-47-R20: no line chosen from language, locale, time zone or a name).
+- No puns or wordplay, none on the child's name. No exclamation marks in a push (Q-NTC-7). Never at the parent's expense.
+- The full policy is `packages/content/WRITING-GUIDE.md` section 4. The shape rule in `notification-catalogue.md` section 7 (no same shape three times in a row) already covers rotation.
+
+New question for the register: Q-NTC-14 (Q-NTC-10 is already the moment-nudge class on develop), humour in the catalogue and the saved-letter line, PROPOSED as written above; extends Q-FD-27; the founder's selection of 21 Nov is the basis, and approval of the words is separate.
+
+Edited in place: none. The first draft of this text sat in `notification-catalogue.md` as section 7.1 and a Q-NTC-10 row (that id was taken on develop; see Q-NTC-14) (PR #1183); it was moved here because the catalogue is CURRENT (LOCKED rev 2) and this repo changes locked cards through this file. Plan delta: none (no re-size); content, design-systems.
