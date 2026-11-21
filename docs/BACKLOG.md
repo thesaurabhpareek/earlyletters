@@ -4781,6 +4781,356 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-06/pm5; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
+#### BL-1100 Weekly read-out template and support tally sheet (IN-07/pm5)
+- Status: proposed (docs/product/instrumentation/05-plus-growth-foundations.md; Karma or the founder sets it to ready). Mode: agent. Owner: founder. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Weekly read-out template and support tally sheet. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-07/pm5; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1101 system.* events dark, MetricKit class-only reader (IN-08/pm5)
+- Status: proposed (docs/product/instrumentation/05-plus-growth-foundations.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1094.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: system.* events dark, MetricKit class-only reader. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-08/pm5; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1102 Server aggregate view for Plus and release health, k at least 10 (IN-09/pm5)
+- Status: proposed (docs/product/instrumentation/05-plus-growth-foundations.md; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: BL-1094.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Server aggregate view for Plus and release health, k at least 10. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: approve-migration.
+- Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-09/pm5; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1103 Website page counter (IN-10/pm5)
+- Status: proposed (docs/product/instrumentation/05-plus-growth-foundations.md; Karma or the founder sets it to ready). Mode: agent. Owner: founder. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Website page counter. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: CPO ruling FR-MKT-34; host choice.
+- Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-10/pm5; chain: instrumentation, IN (phase 4) (readiness map PR #1079, section 2.11).
+
+#### BL-1104 Id registry (slugs and IA ids) plus the test against IA (IN-01/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Id registry (slugs and IA ids) plus the test against IA. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: IA-FINAL merged.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-01/pm1; chain: instrumentation, IN (phase 0) (readiness map PR #1079, section 2.11).
+
+#### BL-1105 No-event-before-consent and no-autocapture tests over first run and capture; update the (IN-02/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1104.
+- Satisfies: FR-DAT-01.
+- Scope: No-event-before-consent and no-autocapture tests over first run and capture; update the FR-DAT-01 test. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-02/pm1; chain: instrumentation, IN (phase 0) (readiness map PR #1079, section 2.11).
+
+#### BL-1106 Tester-sheet rows for NS-39, 43, 44, 45 if rounds run; first-launch row on the NS-34 sheet (IN-03/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: S. Depends on: BL-929.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Tester-sheet rows for NS-39, 43, 44, 45 if rounds run; first-launch row on the NS-34 sheet. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder runs rounds.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-03/pm1; chain: instrumentation, IN (phase 0) (readiness map PR #1079, section 2.11).
+
+#### BL-1107 Typed screen, ui, perf helpers, dedupe, validator V1 to V16 (IN-04/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1104.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Typed screen, ui, perf helpers, dedupe, validator V1 to V16. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: event standard merged (#1042).
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-04/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1108 screen.<screen_id>.viewed from the router hook (IN-05/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1107.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: screen.<screen_id>.viewed from the router hook. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-05/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1109 Wire capture.* events and sheet taps; capture.media.saved behind the photos flag (IN-06/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1107.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Wire capture.* events and sheet taps; capture.media.saved behind the photos flag. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-06/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1110 Home impressions: prompt, slips, plus line (IN-07/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1107.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Home impressions: prompt, slips, plus line. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-07/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1111 notifications.* wiring (IN-08/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1107.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: notifications.* wiring. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-08/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1112 onboarding.summary.sent, with E-INSTR-2 parts held until counsel (IN-09/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: pair. Owner: analytics engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: onboarding.summary.sent, with E-INSTR-2 parts held until counsel. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: counsel.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-09/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1113 Perf markers (H1) and the three perf.*.measured events (confirm owner with ops) (IN-10/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1047.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Perf markers (H1) and the three perf.*.measured events (confirm owner with ops). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: perf build.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-10/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1114 Canary suite over every flow here (IN-11/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1109.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Canary suite over every flow here. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-11/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1115 Reporting view for server onboarding.* counts, only if FQ-01 is ruled in (supaba (IN-12/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Reporting view for server onboarding.* counts, only if FQ-01 is ruled in (supaba. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder ruling FQ-01; approve-migration.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-12/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1116 Dashboards as code for section 7 (IN-13/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1108, BL-1109, BL-1110, BL-1111.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Dashboards as code for section 7. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: host decision.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-13/pm1; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1117 Consent wording, label, D-### superseding D-095 and D-124, host and subprocessor entries, (IN-14/pm1)
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: S. Depends on: BL-1112, BL-1114.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Consent wording, label, D-### superseding D-095 and D-124, host and subprocessor entries, counsel read. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder; counsel.
+- Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-14/pm1; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1118 Keeping registry rows (section 2b), denied names and the closed id list for screens and (IN-K1)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Keeping registry rows (section 2b), denied names and the closed id list for screens and controls (Table 1) as a typed list plus the closed-allowlist test `[IN-K1]`. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: schema convention merged (#1042).
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1119 T0 emit-nothing test and the no-import source scan ([IN-K2], [IN-K3]) (IN-K2)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-1118.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: T0 emit-nothing test and the no-import source scan ([IN-K2], [IN-K3]). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K2; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1120 Retire account_deletion, letter_deleted, export_started.letters_bucket and the d (IN-K3)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1118.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Retire account_deletion, letter_deleted, export_started.letters_bucket and the d. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K3; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1121 T1 weekly keeping summary: bucketed counters, consent-time id only, weekly, buckets only (IN-K4)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1118, BL-1120.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: T1 weekly keeping summary: bucketed counters, consent-time id only, weekly, buckets only (`[IN-K4]`, `[IN-K6]`, `[IN-K7]`). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K4; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1122 Screen, tap and impression wiring for C-S04, C-S06, C-S08, C-S10, C-S12 under the flag, (IN-K5)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1118.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Screen, tap and impression wiring for C-S04, C-S06, C-S08, C-S10, C-S12 under the flag, inert by default. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K5; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1123 Canary fixtures through export, let-go, erase, versions, held screens ([IN-K5]) (IN-K6)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1119.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Canary fixtures through export, let-go, erase, versions, held screens (`[IN-K5]`). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K6; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1124 Weekly keeping read-out in docs/research/: format, SQL view for purge receipts a (IN-K7)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Weekly keeping read-out in docs/research/: format, SQL view for purge receipts a. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: data-steward and data-architect files.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K7; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1125 Flip-time rows reserved for NS-08 (R9, R21): server totals for upload failure classes and (IN-K8)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Flip-time rows reserved for NS-08 (R9, R21): server totals for upload failure classes and storage against the 500 MB line. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: NS-08 flip decision (founder).
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K8; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1126 Consent sheet sentence and label change draft for T1 and T2 (door lines); these gate the (IN-K9)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: BL-1121.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Consent sheet sentence and label change draft for T1 and T2 (door lines); these gate the production release. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder and counsel.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K9; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1127 Founder and counsel decision: free-only hosting path for PostHog, or a hosted free tier, (IN-K10)
+- Status: proposed (docs/product/instrumentation/03-keeping-and-trust.md (PR #1041); Karma or the founder sets it to ready). Mode: human. Owner: founder. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Founder and counsel decision: free-only hosting path for PostHog, or a hosted free tier, or none (section 11). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder.
+- Source: `docs/product/instrumentation/03-keeping-and-trust.md (PR #1041)`, row IN-K10; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1128 Founder rules F-1, F-2, F-3 and F-10; the production erratum; subprocessor and label (IN-DA-01)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Founder rules F-1, F-2, F-3 and F-10; the production erratum; subprocessor and label notes drafted. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder rules F-1, F-2, F-3, F-10.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-01; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1129 EXPLAIN every insights view on seeded data; index only where over budget; state (IN-DA-02)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: EXPLAIN every insights view on seeded data; index only where over budget; state. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-02; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1130 Write reporting_reader migration and reporting_role.test.mjs with the rows in se (IN-DA-03)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: BL-1129.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Write reporting_reader migration and reporting_role.test.mjs with the rows in se. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: approve-migration.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-03; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1131 Views weekly_second_voice and weekly_invites_accepted (5.1) with tests and colum (IN-DA-04)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Views weekly_second_voice and weekly_invites_accepted (5.1) with tests and colum. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: approve-migration.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-04; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1132 Counters migration (5.2), kill switch, _bump call sites in peek_invite and the e (IN-DA-05)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: BL-1130.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Counters migration (5.2), kill switch, _bump call sites in peek_invite and the e. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: E-INSTR-1; approve-migration.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-05; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1133 Withdrawal route: ops.forget_quota_anon migration (6a), withdrawal reason in ana (IN-DA-10)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Withdrawal route: ops.forget_quota_anon migration (6a), withdrawal reason in ana. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder F-1, F-3; withdrawal erratum; legal text; approve-migration.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-10; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1134 Release gate: the staging deletion drill passes and the policy retention number equals (IN-DA-11)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-1133, BL-1060.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Release gate: the staging deletion drill passes and the policy retention number equals the PostHog setting. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-11; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1135 Tier 0 snippets and the weekly read-out job in the ops repo (IN-DA-06)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: S. Depends on: BL-1131.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Tier 0 snippets and the weekly read-out job in the ops repo. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: secret (founder).
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-06; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1136 Metabase on demand: saved questions as text in the ops repo, runbook, credential rotation step (IN-DA-07)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S. Depends on: BL-1130.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Metabase on demand: saved questions as text in the ops repo, runbook, credential rotation step. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-07; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1137 Staging drill: events under a test id reach PostHog, forget (account and withdrawal (IN-DA-08)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-1132, BL-1133.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Staging drill: events under a test id reach PostHog, forget (account and withdrawal paths) removes them; counters with the kill switch off write nothing. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-08; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1138 Fallback B design (separate project, 30 day raw, daily roll-up) only if F-1 or F-3 say no (IN-DA-09)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Fallback B design (separate project, 30 day raw, daily roll-up) only if F-1 or F-3 say no. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: only if F-1 or F-3 say no.
+- Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-09; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1139 Replace the three date-bearing throws with code-only errors; test (IN-ops-01)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Replace the three date-bearing throws with code-only errors; test. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-01; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1140 R1 to R3 lint or scan tests, typed device log lib/diagnostics/log.ts (IN-ops-02)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: R1 to R3 lint or scan tests, typed device log lib/diagnostics/log.ts. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-02; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1141 Canary tests R4 and R5 (IN-ops-03)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1140.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Canary tests R4 and R5. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-03; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1142 Gate tests OG-1, OG-2, OG-7 (seam-guard extension, proposed as a patch under (IN-ops-04)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Gate tests OG-1, OG-2, OG-7 (seam-guard extension, proposed as a patch under `docs/ops/proposed/`). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder applies the patch.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-04; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1143 Perf marker module and registry rows for perf.*.measured (with H1 of MEASUREMENT (IN-ops-05)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Perf marker module and registry rows for perf.*.measured (with H1 of MEASUREMENT. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: event standard merged (#1042).
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-05; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-1144 Weekly ops report script (numbers only, one issue) and SLO table (IN-ops-06)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Weekly ops report script (numbers only, one issue) and SLO table. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder applies workflow.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-06; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1145 Runbooks: crash-triage, perf-regression, observability-leak (IN-ops-07)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Runbooks: crash-triage, perf-regression, observability-leak. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-07; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1146 Evidence file template and no-real-family-data scan for docs/ops/evidence/ (IN-ops-08)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Evidence file template and no-real-family-data scan for docs/ops/evidence/. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-08; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
+
+#### BL-1147 Crash client wrapper, dark: scrubber, consent gate, per-class caps, tests at a mocked transport (IN-ops-09)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1139, BL-1140, BL-1141.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Crash client wrapper, dark: scrubber, consent gate, per-class caps, tests at a mocked transport. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder F1, F4; approves dependency.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-09; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1148 OTel spike on one Edge Function (1 hour, no commit) (IN-ops-10)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: OTel spike on one Edge Function (1 hour, no commit). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder opens account (F3).
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-10; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
+#### BL-1149 Upptime-style check job in the private repo (checks and issues, no Pages) (IN-ops-11)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
+- Scope: Upptime-style check job in the private repo (checks and issues, no Pages). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
+- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder adds secrets.
+- Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-11; chain: instrumentation, IN (phase 3) (readiness map PR #1079, section 2.11).
+
 ## Locked pack: P0 rows with no backlog row (20 Nov 2026, proposed)
 
 Written 20 Nov 2026 by the product agent, docs only. `docs/product/prd/BACKLOG-GAPS.md` found P0 rows on the locked cards and in the function reviews that no row names; the 38 rows below take them in groups, one id per group. The group number (G01 to G38) is the same in `BACKLOG-GAPS.md`, which holds the row lists and the group-to-id table (section 5.1); if the two differ, this file wins. Every row is `proposed`: the dispatcher skips it until Karma or the founder sets `ready`, and a row of size L is split into reviewable PRs at that point (rule 5 above). Nothing here copies or changes a requirement; the cards and function files stay the source of truth.
