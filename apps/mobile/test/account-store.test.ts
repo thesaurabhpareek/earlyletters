@@ -65,7 +65,9 @@ function seedEveryList(): void {
   const db = store.localSqlDb();
   const now = '2026-11-20T09:00:00.000Z';
   store.saveEntry(letter({ id: id7(), childId: asha, transcriptStatus: 'waiting' }));
-  store.saveEntry(letter({ id: id7(), childId: asha, transcriptStatus: 'unreviewed' }));
+  const review = id7();
+  store.saveEntry(letter({ id: review, childId: asha }));
+  db.run("UPDATE entries SET transcript_status = 'unreviewed' WHERE id = ?", review); // entries.ts WORDS_UNREVIEWED
   const gone = id7();
   store.saveEntry(letter({ id: gone, childId: asha }));
   store.deleteEntry(gone);
