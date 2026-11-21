@@ -129,7 +129,7 @@ export const familyCopy = {
     /** After an invite that can no longer work: back to the paste field. */
     pasteAnother: 'Paste another link',
     /** The membership limit, as the invitee meets it while looking or joining. */
-    tryLater: 'Please wait a little while, then try again.',
+    tryLater: 'Wait a little while, then try again.',
   },
 
   /** Leaving a shared book (F11 6.2 D; F11-REQ-011, F11-REQ-027, F11-REQ-028; R4 PT-14, PT-15). Nothing is preselected. */
@@ -196,12 +196,12 @@ export const familyCopy = {
     already_member: "You're already part of this book.",
     not_found: "That link doesn't open an invite. Check it and try again.",
     not_parent: "Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",
-    rate_limited: "That's a lot of invites for one day. You can send more tomorrow.",
+    rate_limited: "You've sent a lot of invites. Wait a while, then try again.",
     consent_needed: 'Finish setting up your account first.',
     book_deleted: "This book isn't available.",
     signed_out: 'Sign in again to continue.',
     network: 'This phone is offline. Try again once it is back online.',
-    unknown: 'That did not go through. Try again.',
+    unknown: "That didn't go through. Try again.",
     /** SCCAP (F11-U10, F11-REQ-026): the invitee's line. The inviter's sheet shows create.full instead. */
     book_full: 'This book already has two parents. Ask the person who invited you.',
     /** SCLPG: the only parent of a book cannot leave it (DATA-REQ-016). */
@@ -209,9 +209,9 @@ export const familyCopy = {
     /** 42501: a parent tried something only the server's own paths may do. Never offered by the app. */
     not_allowed: "That isn't possible from here.",
     /** An invite code or token collided twice in a row (code_taken, token_taken, closed); the app already retried once. */
-    retry_new_invite: 'That did not go through. Try again.',
+    retry_new_invite: "That didn't go through. Try again.",
     /** SCCID twice in a row: the same action and words as retry_new_invite. */
-    id_taken: 'That did not go through. Try again.',
+    id_taken: "That didn't go through. Try again.",
     /**
      * SCCON family-share (D-050, F11-REQ-018): only when the server's app.family_share_consent_required
      * is on, which follows a release with the family-share sheet; this build has no sheet.
@@ -222,6 +222,6 @@ export const familyCopy = {
      * nothing was sent; Cancel invite still works. Open invites and a link already on this phone stay
      * as they are. Shown to the inviter and to the invitee, so it never names the child.
      */
-    paused: 'Invites are paused for now. Please try again a little later.',
+    paused: 'Invites are paused for now. Try again a little later.',
   },
 } as const;
