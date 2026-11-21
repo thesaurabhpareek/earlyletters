@@ -762,7 +762,7 @@ export const en = {
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty letters are in {child}'s book.",
+      body: "Fifty letters for {child}.",
     },
     letters100: {
       title: "100 letters.",
