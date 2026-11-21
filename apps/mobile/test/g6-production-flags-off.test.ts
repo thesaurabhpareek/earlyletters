@@ -237,7 +237,10 @@ describe('G6 allowlist: a new EXPO_PUBLIC_* flag cannot appear unreviewed', () =
   const known = [...CARD_FLAGS, ...OTHER_PUBLIC_ENV];
 
   it('[NS-49-R25] G6 every EXPO_PUBLIC_* name read in src and app.config.ts is a card flag or a named other switch', () => {
-    expect(unknownPublicEnv(appSourceTexts(), known)).toEqual([]);
+    // A new name fails here on purpose. Decide: if it is a card flag that may never be on in a store build, add it to
+    // CARD_FLAGS; if it is a switch, key or URL with its own pin, add it to OTHER_PUBLIC_ENV (both above in this file).
+    const unknown = unknownPublicEnv(appSourceTexts(), known);
+    expect(unknown, `unlisted EXPO_PUBLIC_* name(s) ${unknown.join(', ')}: add each to CARD_FLAGS or OTHER_PUBLIC_ENV in g6-production-flags-off.test.ts`).toEqual([]);
   });
 
   it('[NS-49-R25] G6 positive control: a fixture that reads an unlisted flag is reported, a listed one is not', () => {
