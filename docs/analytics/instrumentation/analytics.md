@@ -92,7 +92,7 @@ Defined in `00-event-standard.md`: three-segment dotted names, closed areas and 
 ## 6. Buckets, identity, versioning, consent
 
 - Buckets: existing sets in `catalog.ts` and `buckets.ts`; new shared `ms_bucket` and `build_kind` (standard section 6). Raw numbers never leave `buckets.ts`.
-- Identity: no person id. Random id at consent, retired on withdrawal, new id after a later yes, so periods cannot be joined; SDK `persistence: 'memory'`, `personProfiles: 'identified_only'`, `disableGeoip: true`, flush on our timer [V `posthog.ts`, `consent.ts`]. Session replay, surveys, remote flags, error autocapture stay off.
+- Identity: no person id. Random id at consent, retired on withdrawal, new id after a later yes, so periods cannot be joined; SDK `persistence: 'file'` (founder ruling, 21 Nov 2026: the one consent-time id must survive launches so FR-DAT-21 weekly making families can be counted; the id is a device-local file, deleted on withdrawal and Erase, never joined to an account), `personProfiles: 'identified_only'`, `disableGeoip: true`, flush on our timer [V `posthog.ts`, `consent.ts`]. Session replay, surveys, remote flags, error autocapture stay off.
 - Versioning: per event `v` (standard section 8); today `schema_version` is one catalogue-wide number (currently 5) pinned by a fingerprint test [V TRACKING_PLAN 3.2].
 - Consent: nothing before a choice; `track()` returns `dropped_no_consent`; SDK not loaded; sheet only after the first saved letter (`analyticsConsentDue`) [V TRACKING_PLAN 7]. Wording and timing changes go to `privacy` and the founder.
 - Sampling: unchanged (TRACKING_PLAN 5.3), now including basics: `ui.*.impressed` and `screen.*.viewed` sampled first.
@@ -144,6 +144,7 @@ New dependencies proposed: none. `posthog-react-native` already present. Any cra
 | IN-07 | 2 | Five funnels saved in PostHog; weekly read-out inputs | analytics, decision-science | S | IN-05 | account creation: yes |
 | IN-08 | 3 | Turn on in the production profile behind the consent gate (section 1a: erratum, label, subprocessor, policy, sheet wording, release-gate rewrite) | founder, counsel, ops | S | IN-04, IN-05, IN-09, IN-DS-06 (deletion drill, `data-steward.md`), erratum E-INSTR-1 | yes |
 | IN-09 | 1 | Make the three date-bearing error messages static (`age.ts:15`, `child.ts:28` and `child.ts:33`, from OBSERVABILITY-WITHOUT-CONTENT section 3, not re-read by me) before any crash tool ships; one message with no interpolated value per throw, a typed error class carries the closed code | owner of `packages/core` (role UNVERIFIED), `privacy` reviews | S | none | no |
+| IN-10 | 2 | PR `Tracking:` line, PR template and CI check script (`posthog-standard.md` section 6.2); workflow edit is a founder hand-off | analytics engineer | S | IN-04 | yes (workflow edit) |
 
 ## 11. Founder and counsel decisions
 

@@ -69,7 +69,7 @@ Deviations (a verb PostHog's list does not have). Each needs a reason a funnel o
 | `dismiss` | closing a slip without acting is neither `cancel` nor `end` | slips, cards |
 | `reach` | a limit or milestone is hit with no action behind it | free allowance reached |
 
-Folded into PostHog verbs (no deviation): shown, impressed, peeked, exposed, selected become `view` or `update`; tapped becomes `click`; delivered, shared, notice sent become `send`; suppressed, discarded become `cancel`; revoked, withdrawn become `remove`; failed, violated, raised become `fail`; redeemed, answered become `submit`; held and sealed become `create` on a `letter_hold` or `letter_seal` object; used becomes `start`; synced becomes `complete`; closed and finished become `end`. `tap` is not a verb: `click` is the PostHog word and means a tap on a phone, including a VoiceOver activate.
+Folded into PostHog verbs (no deviation, except `complete` below): shown, impressed, peeked, exposed, selected become `view` or `update`; tapped becomes `click`; delivered, shared, notice sent become `send`; suppressed, discarded become `cancel`; revoked, withdrawn become `remove`; failed, violated, raised become `fail`; redeemed, answered become `submit`; held and sealed become `create` on a `letter_hold` or `letter_seal` object (`plus:letter_hold_create`, `keeping:letter_seal_create`); used becomes `start`; closed and finished become `end`. Synced becomes `complete`, which is one of the nine deviations in the table above, not a fold. `tap` is not a verb: `click` is the PostHog word and means a tap on a phone, including a VoiceOver activate.
 
 ### 2.5 Adding a verb, area or category
 
@@ -123,7 +123,7 @@ Domain names:
 |---|---|---|---|
 | `capture.letter.saved` | #1042, 04, #1040 | `capture:letter_save` (deviation) |  |
 | `family.invite.accepted` | #1042, 04, #1052 | `family:invite_accept` (deviation) |  |
-| `notifications.reminder.delivered` | #1042, 04, #1040 | `notifications:reminder_send` | evening class only; PM5 line 128 says no delivered event: PM4 and PM5 disagree, `product` to settle |
+| `notifications.reminder.delivered` | #1042, 04, #1040 | (none) | server-only, not sent to PostHog (the phone cannot observe it; `00-event-standard.md` section 7 `side: server`); PM5 line 128 says no delivered event: PM4 and PM5 disagree, `product` to settle. If the phone ever sees a reminder opened, that is a separate row |
 | `keeping.download.started` | #1042 | `keeping:download_start` |  |
 | `keeping.deletion.started` | #1042 | `keeping:deletion_start` |  |
 | `keeping.deletion.reverted` | #1042 | `keeping:deletion_restore` (deviation) |  |
@@ -147,7 +147,7 @@ Domain names:
 | `keeping.letter.sealed` | 02 | `keeping:letter_seal_create` | a seal is a record created; the opening time is never an event (FR-DAT-27) |
 | `family.invite.created` | 04 | `family:invite_create` |  |
 | `family.invite.failed` | 04 | `family:invite_fail` |  |
-| `family.invite.shared` | 04 | `family:invite_send` |  |
+| `family.invite.shared` | 04 | `family:invite_share_send` | RULING: `family.invite.sent` keeps `family:invite_send` (the invite was handed out); `shared` gets its own object so the two funnel steps stay apart and V8 can tell them apart |
 | `family.invite.peeked` | 04, #1052 | (none) | SERVER counter in PM4 and #1052: not on the wire |
 | `family.second_voice.reached` | 04, #1052 | (none) | SERVER weekly count (k = 10): not on the wire |
 | `family.second_voice.kept` | #1052 | (none) | SERVER view: not on the wire |
@@ -164,7 +164,7 @@ Domain names:
 | `capture.take.saved` | 05 | `capture:take_save` (deviation) |  |
 | `plus.allowance.reached` | 05 | `plus:allowance_reach` (deviation) |  |
 | `plus.code.redeemed` | 05 | `plus:code_submit` |  |
-| `plus.letter.held` | 05 | `plus:letter_create` |  |
+| `plus.letter.held` | 05 | `plus:letter_hold_create` |  |
 | `plus.offer.closed` | 05 | `plus:offer_end` |  |
 | `plus.plan.changed` | 05 | `plus:plan_update` |  |
 | `plus.plan.started` | 05 | `plus:plan_start` |  |
@@ -172,7 +172,7 @@ Domain names:
 | `system.app.opened` | 05 | `system:app_open` (deviation) |  |
 | `system.error.raised` | 05 | `system:error_fail` |  |
 | `system.session.ended` | 05 | `system:session_end` |  |
-| `system.diagnostic.received` | 05 | `system:diagnostic_add` | meaning not clear to me and `receive` is not allowed; PM5 to say what it is or drop it [UNVERIFIED] |
+| `system.diagnostic.received` | 05 | `system:diagnostic_add` | meaning not clear to me and `receive` is not allowed; PM5 to say what it is or drop it [UNVERIFIED: meaning] |
 | `capture.author.changed` | #1040 | `capture:author_update` |  |
 | `capture.edit.declined` | #1040 | `capture:edit_decline` (deviation) |  |
 | `capture.letter.started` | #1040 | `capture:letter_start` |  |
@@ -183,14 +183,14 @@ Domain names:
 | `notifications.reminder.declined` | #1040 | `notifications:reminder_decline` (deviation) |  |
 | `onboarding.account.completed` | #1040 | `onboarding:account_complete` (deviation) |  |
 | `onboarding.book.saved` | #1040 | `onboarding:book_save` (deviation) |  |
-| `onboarding.email.sent` | #1040 | `onboarding:email_send` |  |
+| `onboarding.email.sent` | #1040 | (none) | server-only, not sent to PostHog (the phone cannot observe it; `00-event-standard.md` section 7 `side: server`) |
 | `onboarding.first_letter.completed` | #1040 | `onboarding:first_letter_complete` (deviation) |  |
 | `onboarding.region.refused` | #1040 | `onboarding:region_decline` (deviation) |  |
 | `onboarding.sensitive.accepted` | #1040 | `onboarding:sensitive_accept` (deviation) |  |
 | `onboarding.sign_in.completed` | #1040 | `onboarding:sign_in_complete` (deviation) |  |
 | `onboarding.sign_in.dismissed` | #1040 | `onboarding:sign_in_dismiss` (deviation) |  |
 | `onboarding.sign_in.failed` | #1040 | `onboarding:sign_in_fail` |  |
-| `onboarding.summary.sent` | #1040 | `onboarding:summary_send` |  |
+| `onboarding.summary.sent` | #1040 | (none) | server-only, not sent to PostHog (the phone cannot observe it; `00-event-standard.md` section 7 `side: server`) |
 | `onboarding.terms.accepted` | #1040 | `onboarding:terms_accept` (deviation) |  |
 | `system.pack.started` | #1040 | `system:pack_start` |  |
 | `capture.child.selected` | #1040 | `capture:child_update` |  |
@@ -206,19 +206,26 @@ Domain names:
 | `keeping.account.deleted` | #1041 | `keeping:account_delete` |  |
 | `keeping.consent.declined` | #1041 | (none) | CANNOT EXIST: a decline means nothing is sent (V15). Count it on the phone or not at all |
 | `keeping.export.failed` | #1041 | `keeping:export_fail` |  |
-| `keeping.export.shared` | #1041 | `keeping:export_send` | PM3 itself denies it (share destination, FR-DAT-27); no wire name |
+| `keeping.export.shared` | #1041 | (none) | NO EVENT (FR-DAT-27: no event on the share destination); PM3 itself denies it |
 | `keeping.letter.restored` | #1041 | `keeping:letter_restore` (deviation) |  |
 | `keeping.phone.erased` | #1041 | `keeping:phone_delete` | sent only if sent before the erase; the erase clears the queue first |
 | `keeping.recording.missing` | #1041 | `keeping:recording_fail` | reason enum |
-| `keeping.security.notice_sent` | #1041 | `keeping:security_notice_send` |  |
-| `keeping.slip.shown` | #1041 | `keeping:slip_view` | PM3 itself denies it (birthday-week slip, FR-DAT-27); no wire name |
-| `keeping.summary.sent` | #1041 | `keeping:summary_send` |  |
+| `keeping.security.notice_sent` | #1041 | (none) | server-only, not sent to PostHog (the phone cannot observe it; `00-event-standard.md` section 7 `side: server`) |
+| `keeping.slip.shown` | #1041 | (none) | NO EVENT (FR-DAT-27: the slip is the birthday-week Save a copy; no event on it) |
+| `keeping.summary.sent` | #1041 | (none) | server-only, not sent to PostHog (the phone cannot observe it; `00-event-standard.md` section 7 `side: server`) |
 | `keeping.take.let_go` | #1041 | `keeping:take_delete` |  |
 | `keeping.version.removed` | #1041 | `keeping:version_remove` |  |
 | `keeping.version.restored` | #1041 | `keeping:version_restore` (deviation) |  |
 | `system.crash.reported` | #1044 | (none) | REPLACED by PostHog `$exception` reduced as in section 4; no custom crash event |
 | `system.fault.recorded` | #1044 | `system:fault_add` | non-fatal fault with a closed code; or drop it and use `$exception` with the same class (ops to choose) |
 | `system.sync.failed` | #1044 | `system:sync_fail` |  |
+
+No-event list (FR-DAT-27 and the server rule). None of these has a wire name, and a registry row for any of them fails review:
+- The share destination of an export (`keeping.export.shared`).
+- The birthday-week Save a copy slip (`keeping.slip.shown`).
+- Days notes (month or birthday notes): no event on showing, opening or acting on them.
+- No event for a seal's opening time or a typed-day delivery.
+- No email opens or clicks, ever (no tracking pixel, no tracked link). Server sends (reminders, onboarding and keeping emails and summaries) are counted on the server as aggregates, never sent to PostHog.
 
 Checks I ran on this table: every new name is 60 characters or fewer, has one colon and ends in a verb of 2.4. Meaning for a few rows is the PM file's, which I did not re-derive; the owner fixes a wrong row in a later edit.
 
@@ -233,7 +240,7 @@ Checks I ran on this table: every new name is 60 characters or fewer, has one co
 | V6 | Adds: a bool property starts `is_` or `has_` and nothing else does; no `_date` or `_timestamp` suffix; at most 12 properties per event |
 | V7 | Adds the whole tokens `date` and `timestamp` to the banned list |
 | V9 | Unchanged (2 to 8 steps, window enum, 40 characters) |
-| V16, V17 | V17 pins the SDK options of section 3.4 and the error options of section 4.2 |
+| V16, V17 | V17 pins the SDK options of section 3.4 (including `persistence: 'file'`) and the error options of section 4.2 |
 | V18 (new) | One module: only `packages/analytics/src/posthog.ts` imports `posthog-react-native` or `@posthog/react-native-plugin`; no file calls `.capture(`, `.captureException(`, `.identify(`, `.screen(`, `.captureLog` or a survey API outside it; no `PostHogProvider` anywhere. A lint rule plus a test (PostHog's handbook: "let nothing else call `posthog.capture`" and block it with a lint rule [V]) |
 
 ## 3. How we use PostHog here
@@ -253,8 +260,8 @@ Checks I ran on this table: every new name is 60 characters or fewer, has one co
 ### 3.3 Identity: anonymous only, and what that costs us
 
 - Distinct id: the random id made at consent (`consent.ts`), lowercase uuid, same format everywhere (PostHog: use one id format on every platform, `user-456` and `USER-456` are two people [V best-practices]). Never an email, account id, Supabase user id, device id or `appAccountToken`.
-- We never call `identify` with an account id, an email or anything that could be joined to one. We call `identify` zero times: PostHog's mobile default is identified-only, which means events are anonymous unless a profile already exists [V posthog.com/docs/data/anonymous-vs-identified-events]; `personProfiles` is set in `posthog.ts` per `data-steward.md` section 7 [V from #1037].
-- On withdrawal: `optOut()` then `reset()`, retire the id, clear the queue (`00-event-standard.md` section 11). A later yes makes a new id. We never reuse an old or deleted id (PostHog: avoid reusing a deleted distinct id; deletion is asynchronous and reuse gives unexpected results [V posthog.com/docs/privacy/data-storage]).
+- We never call `identify` with an account id, an email or anything that could be joined to one. We call `identify` zero times: PostHog's mobile default is identified-only, which means events are anonymous unless a profile already exists [V posthog.com/docs/data/anonymous-vs-identified-events; that page names Android, iOS and Flutter, not React Native, so it is UNVERIFIED for React Native]. Because of that, `personProfiles` is set explicitly in `posthog.ts` per `data-steward.md` section 7 [V from #1037] and never left to the default.
+- The id is kept in a device-local file across launches (3.4) and is never joined to an account. On withdrawal: `optOut()` then `reset()`, retire the id, delete the file, clear the queue (`00-event-standard.md` section 11). A later yes makes a new id. We never reuse an old or deleted id (PostHog: avoid reusing a deleted distinct id; deletion is asynchronous and reuse gives unexpected results [V posthog.com/docs/privacy/data-storage]).
 - Servers do not send to PostHog at all, so PostHog's warning about catch-all ids like `system` or `backend` [V best-practices] cannot apply. If that ever changes, those events must be sent with person processing off, not with a made-up id.
 
 What anonymous-only costs us, from PostHog's own page [V anonymous-vs-identified-events]:
@@ -274,24 +281,26 @@ Options and defaults are from the React Native library page [V posthog.com/docs/
 |---|---|---|---|
 | `defaultOptIn` | `true` | `false` | nothing tracked until `optIn()`; belt and braces, since the SDK is also constructed only after a yes (V15) |
 | `disabled` | `false` | `true` in every profile except `production` | no data from dev, e2e, preview |
-| `captureAppLifecycleEvents` | `true` (since 4.39.0) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
+| `captureAppLifecycleEvents` | `true` (since 4.39.0 [UNVERIFIED: version note not on the page I read]) | `false` | the defaults send events we did not register; our own `system:app_open` replaces them |
 | `sendFeatureFlagEvent` | `true` | `false` | flags are off; it would send `$feature_flag_called` |
 | `preloadFeatureFlags` | `true` | `false` | no flag requests |
-| `disableRemoteFeatureFlags` | `false` (4.49.0+) | `true` | experiments use our own exposure event (3.10) |
-| `disableGeoip` | `false` | `true` | no location from IP |
+| `disableRemoteFeatureFlags` | `false` (4.49.0+ [UNVERIFIED version note]) | `true` | experiments use our own exposure event (3.10) |
+| `disableGeoip` | `false` | `true` (a setting to set in `posthog.ts`; I did not read the code, so UNVERIFIED that it is set today) | no location from IP |
 | `enableSessionReplay` | `false` | `false` (never) | replay records screens; never |
-| `persistence` | `file` | `memory` | nothing on disk; cost: a queue is lost if the app is killed [V data-steward section 4] |
+| `persistence` | `file` | `file` (RULING, founder, 21 Nov 2026, replacing `memory`) | see the paragraph below this table |
 | `flushAt` | 20 | 20 | default is fine |
 | `flushInterval` | 10000 ms | 10000 ms | default; we also flush on background |
 | `maxBatchSize` | 100 | 100 | must be higher than `flushAt` [V] |
-| `maxQueueSize` | 1000 | 100 [E: memory-only queue, bounded; a phone offline for a day sends far fewer than 100 of our events] | bound memory, bound a retry storm |
+| `maxQueueSize` | 1000 | 100 [E: bounded queue; a phone offline for a day sends far fewer than 100 of our events] | bound the queue, bound a retry storm |
 | `errorTracking.autocapture` | not stated | section 4.2 | |
 | `before_send` | `undefined` | our allowlist function (3.5) | returning `null` drops the event [V] |
 | `host` | `https://us.i.posthog.com` | our proxy host (3.7) | EU Cloud is `https://eu.i.posthog.com` [V]; region is counsel's |
 
 Autocapture, logs and surveys:
+Why `file` and not `memory` (RULING, founder, 21 Nov 2026): the one random id made at consent must survive app launches. With `memory`, every launch would be a new anonymous person, and weekly making families (FR-DAT-21) could not be counted at all. The id is reset on withdrawal (`optOut()` then `reset()`, section 3.3) and is never joined to an account. The cost, stated plainly: the SDK keeps the id, and any unsent queue, in a device-local file on the phone. That file is deleted on withdrawal and on Erase (V15 tests both). It holds no content, since `before_send` (3.5) has already reduced every event. How the file is kept when the app is killed or offline is the SDK's; its retry and overflow behaviour is UNVERIFIED (3.6).
+
 - Autocapture comes from `PostHogProvider` (`captureScreens`, `captureTouches`) [V from the page as read in the brief; the options table I re-read did not list them, so the provider options are UNVERIFIED this session]. We do not use `PostHogProvider` at all (V18), so there is nothing to switch off by option.
-- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
+- Logs: the page lists no config option, only the calls `captureLog`, `logger.*`, `flushLogs` (4.44.0+ [UNVERIFIED version note]) [V]. Control is "never call them" (V18). Surveys: no config option either, a separate install guide [V]. Control: never install or render them.
 - The Expo config plugin `posthog-react-native/expo` and what needs a development build (session replay, native crash capture): the page I re-read only shows install commands; the plugin and source map settings are on the source maps page (section 4.5) [V], and the "needs a development build" statement from the brief is UNVERIFIED.
 
 ### 3.5 `before_send`: the last gate
@@ -300,7 +309,7 @@ Autocapture, logs and surveys:
 
 ### 3.6 Offline, flush and retry
 
-- Events are queued in memory (`persistence: 'memory'`), flushed at 20 events or every 10 seconds, and on going to the background. Capture time is the SDK's, so late sends still land in the right hour.
+- Events are queued by the SDK (`persistence: 'file'`, 3.4), flushed at 20 events or every 10 seconds, and on going to the background. Capture time is the SDK's, so late sends still land in the right hour.
 - PostHog says not to assume event ordering [V best-practices]. No funnel step may depend on two events that could arrive together within a second unless the funnel is ordered by the SDK timestamp; V9 funnels use steps that are separate user actions.
 - How the React Native SDK retries after being offline, and whether it drops the oldest event at `maxQueueSize`, is not written on the pages I read [UNVERIFIED]. QA step in 6.3: airplane mode, send 150 events, restore the network, count.
 - A single distinct id sending about 5,000 events a minute hits a rate limit and loses ordering [V best-practices]. Ours sends about 300 a month per parent, so only a bug can reach it. The client caps itself at 60 events a minute [E: my proposal] and drops the rest, counted by reason.
@@ -309,7 +318,7 @@ Autocapture, logs and surveys:
 
 PostHog recommends routing events through your own domain [V best-practices]. Its managed reverse proxy is free for PostHog Cloud users, handles SSL and routing, runs through Cloudflare, and removes the `Cookie` header before forwarding [V posthog.com/docs/advanced/proxy]. Default: use the managed proxy on a domain of ours, so the host in the app is ours and can be changed without an app update. Costs and risks:
 - It adds Cloudflare to the path: a subprocessor question for counsel [UNVERIFIED how counsel reads it].
-- The page says nothing about client IP forwarding or stripping [V]. IP stays a risk until the project setting that discards client IP data is on: best-practices mentions that setting exists [V], where the toggle is I did not read [UNVERIFIED]. It is on in our project, and `disableGeoip` is already true.
+- The page says nothing about client IP forwarding or stripping [V]. IP stays a risk until the project setting that discards client IP data is on: best-practices mentions that setting exists [V], where the toggle is I did not read [UNVERIFIED]. The project setting must be on before IN-08 [UNVERIFIED that it is on today; no project settings were read], and `disableGeoip: true` is the planned SDK value (3.4), a setting to set and not a present fact.
 - A DNS record on our domain is a founder step. If the founder declines, the app talks to PostHog directly and the host option is the Cloud host.
 
 ### 3.8 Free-plan cap, billing limit and alerts
@@ -320,7 +329,7 @@ PostHog recommends routing events through your own domain [V best-practices]. It
 
 ### 3.9 Internal and test traffic
 
-Section 3.2 (`is_internal`, one switch). Test builds that never construct the SDK send nothing. The canary and the throwaway project use fake Asha data and a different project token; the production token is in no test. PostHog's web call `setInternalOrTestUser()` is for a browser SDK [V best-practices]; I did not find a React Native equivalent [UNVERIFIED], which is why we use our own property.
+Section 3.2 (`is_internal`, one switch). Test builds that never construct the SDK send nothing. The canary and the throwaway project use fake Asha data and a different project token; the production token is in no test. PostHog's web call `setInternalOrTestUser()` is for a browser SDK [V best-practices]; I did not find a React Native equivalent [UNVERIFIED: whether `setInternalOrTestUser()` exists on React Native], which is why we use our own property.
 
 ### 3.10 Experiments: our own exposure event, flags off
 
@@ -426,10 +435,10 @@ One row per event in `packages/analytics/src/catalog.ts`, rendered to `docs/anal
 | area | one of nine; equals the category without `_vN` |
 | decision | one sentence: the decision this event informs and who reads it ("whether people keep the first letter", read by the founder weekly). No decision, no event |
 | owner | role from `agents/roster.json` |
-| trigger | one line: when it fires; never describes content; never fires at a birthday, due date or seal time (FR-DAT-27, TRACKING_PLAN 6.4) |
-| properties | per property: name, type (enum, bool or bounded int), closed values or range, required or optional; at most 12 |
+| trigger | one line: when it fires; never describes content; never fires at a birthday, due date or seal time (FR-DAT-27, TRACKING_PLAN 6.4); never an email open or click |
+| properties | per property: name, type (enum, bool or bounded int), closed values or range, required or optional; at most 12 per event (the shape is `PropSpec` in `schema.ts` [UNVERIFIED: not read]; global properties and the ten `$` keys do not count) |
 | class | L1 or L2; sensitivity flag `none` |
-| side | `phone` (a wire event) or `server`, `store`, `support` (never sent to PostHog) |
+| side | `phone` (a wire event) or `server`, `store`, `support` (never sent to PostHog; a non-phone row has no wire name, it uses its dotted name from `00-event-standard.md` and V1 does not apply) |
 | consent_gate | `analytics_consent` for `phone`; `none_server_aggregate` for `server`; `n/a` otherwise |
 | source | requirement ids (FR, NS, PRD) and the PM file section |
 | v | integer, starts at 1 |
@@ -449,10 +458,10 @@ Tracking: not needed, because <one reason>
 ```
 
 CI check (a small script in the `unit` job, not yet written):
-- Fails if the body has zero or more than one line starting `Tracking:`.
-- With `Tracking: none` or `not needed`, fails if the diff touches `catalog.ts`, `ids.ts`, `registry.md` or any file that imports the module.
+- Reads the PR body from the event payload of a `pull_request` workflow with `edited` in its `types` (so editing the body re-runs it), or with `gh pr view --json body` [UNVERIFIED which; the workflow is not written]. Fails if the body has zero or more than one line starting `Tracking:`.
+- With `Tracking: none` or `not needed`, fails if the diff touches `catalog.ts`, `ids.ts`, `registry.md` or any file that imports the module (found with a grep for `from '.*analytics'`).
 - With `events added or changed`, fails if a named event is not in the registry diff, or the registry diff has an event not named.
-The PR template and the script are a backlog row (IN-10, `analytics engineer`). Who may edit `.github` I did not check [UNVERIFIED]; if it is the founder's, it is a hand-off.
+The PR template and the script are a backlog row (IN-10, `analytics engineer`). Workflow edits are the founder's under the standing rule, so the workflow part is a hand-off to the founder; the script itself is `analytics engineer`'s.
 
 ### 6.3 Per-event QA checklist (one tick each, in the PR)
 
@@ -488,6 +497,7 @@ One PostHog dashboard per launch, rotated: tiles for the five funnels (`analytic
 | Cap | 1,000,000 a month | pricing [V] |
 
 Arithmetic:
+- Assumption: one consenting parent per family. With two consenting parents the per-family figure roughly doubles and the families at the cap roughly halve.
 - Consenting parents at the cap: 1,000,000 / 300 = 3,333 (low); 1,000,000 / 400 = 2,500 (high).
 - Families at the cap: 3,333 / 0.8 = 4,167 (low); 2,500 / 0.8 = 3,125 (high).
 - Today's beta, 25 families, all consenting: 25 x 300 = 7,500 a month, 0.75 percent of the cap.
@@ -520,6 +530,25 @@ Owners fix their own files in their next edit; none of this PR edits a PM file. 
 | PRIV-R21, FR-DAT-04 | stand | Consent sheet and its Shown, Records, Never, Decline lines: wording is the founder's and counsel's, adds crashes |
 | LEGAL-REQ-014, LEGAL-REQ-027 | stand | No content in any event, log or crash report; data-map row (done for the `$` fields; the rest is IN-DS-01) |
 
+## 7a. Adapter alignment
+
+The adapter branch is `feat/analytics-posthog-adapter` (head 1014088e when last read, no PR yet, 4 ahead and 7 behind develop; I read it through a review, not in code). It must be updated to this standard before it merges. Where it diverges:
+- Grammar: it still builds the old past-tense, no-colon, 40-character names (`NAME_RULES` in `registry-rules.ts`) and defers the rename to a separate PR. Until IN-03 lands, V1 (colon grammar, 60 characters) is not enforced there.
+- Validators: it builds V1 to V10 and V16 only (static rules in `registry-rules.ts`; V11 to V15 are runtime). V17 exists only as a constant (`REQUIRED_POSTHOG_OPTIONS`) and V18 is not built. Its V8 has no exemption for `server`, `store` and `support` rows. It carries `grandfathered` and `heldNames`, which this standard does not know: IN-03 removes them or this file adds them.
+- Persistence: it sets `persistence: 'file'`, which matches the 21 Nov ruling in 3.4. Any test or doc that says `memory` is wrong.
+- Row fields: its `RegistryRow` has `stage, decision, when, area, reqs, level` plus `status`. Section 6.1 needs more:
+
+| 6.1 field | Adapter field |
+|---|---|
+| name, area, decision, status | same |
+| trigger | `when` (rename) |
+| source | `reqs` (rename) |
+| class | `level` (rename) |
+| owner, side, consent_gate, v, supersedes, funnels, sampling, properties | new |
+| (none) | `stage` is not in 6.1: keep or drop at IN-03 |
+
+- Project settings: its `REQUIRED_PROJECT_SETTINGS` says "Region chosen (US recommended)" and "Data retention 12 months or less"; this standard leaves region to counsel and says free retention is 1 year (3.8). Reconcile in one place.
+
 ## 8. Unverified items (read before relying on this file)
 
 1. Colon event names in funnels, retention, trends and HogQL: PostHog's handbook uses them; no page confirms the UI (2.8).
@@ -538,6 +567,10 @@ Owners fix their own files in their next edit; none of this PR edits a PM file. 
 14. Who may edit `.github` (PR template, CI) and what PostHog's `schema-management` page now says (5 row 26).
 15. The two outside incident references in section 5 (titles only).
 16. What the client IP, Cloudflare and proxy mean for the App Store label and counsel's view of the subprocessor list.
+17. Whether `setInternalOrTestUser()` exists on React Native (3.9).
+18. What `system.diagnostic.received` means (2.9).
+19. How the SDK keeps and clears its `file` persistence when the app is killed or offline (3.4, 3.6); `disableGeoip` and the project IP setting are not confirmed as set (3.4, 3.7).
+20. Version notes in 3.4 (4.39.0, 4.49.0, 4.44.0) are not on the page I read.
 
 ## 9. Open decisions
 
