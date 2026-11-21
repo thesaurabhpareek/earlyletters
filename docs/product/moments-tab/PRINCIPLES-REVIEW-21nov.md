@@ -395,3 +395,10 @@ What would answer it: parent study H13 (ask after the first letter against insid
 - The "customer value" ordering in section 8 is judgment; no parent evidence exists in the repo and I found none outside it.
 
 Content-rule check on this file: ASCII only; no em or en dashes, curly quotes, ellipsis characters or emoji; no model names; the child is `{child}` and the family is Asha.
+
+## 12. How to use this file
+
+- Read section 0, section 6 and section 8 first. They are the decisions.
+- Sections 3 and 4 are the evidence. A row marked U was relayed and should be re-read at its source before a PR cites it.
+- Each AMEND row carries proposed rule text for the PR that changes the rule, one rule per PR, with the tests in section 5d.
+- Nothing here changes a rule until the founder says so and the owner of the file edits it.
