@@ -69,7 +69,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
-      body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
+      body: "Talk for a minute, or type a few lines. Each letter is there for {child} to read, and to hear if you spoke it.",
       // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
       // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
       freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
@@ -80,9 +80,9 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
-      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
-      body2: "We never rewrite your words, shorten them or write for you.",
+      // S04, directly under the title: the second sentence of the D-133 line, then the two other claims.
+      // The title is held for the founder and counsel (D-133, D-125 item 9): the default view removes ums and repeats and a speech model can mishear.
+      body2: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -135,7 +135,7 @@ export const en = {
       spokenAddress: "{first}, hidden, at {domain}",
       spokenAddressNoFirst: "hidden, at {domain}",
       useAnother: "Use another account",
-      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
+      useAnotherHint: "Signs out and goes back to the start. Your book isn't made yet.",
       cta: "Continue",
     },
 
@@ -278,8 +278,9 @@ export const en = {
       kicker: "A month ago",
       a11y: "A letter from {date}. Opens the letter.",
     },
+    // No title here: a private letter reaches this moment too, so a line saying "the book" would be false for it.
+    // The saved moment's own line is review.destination.* (rules.test.ts pins that this card has no title).
     afterSave: {
-      title: "Kept.",
       body: "One more page for {child}.",
       reviewButton: "Read it back",
       doneButton: "Done for tonight",
@@ -419,10 +420,10 @@ export const en = {
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     // Zero fixes, three honest wordings.
-    noChanges: "Nothing to fix. This is exactly what you said.",
-    noChangesAfterUndo: "Every fix put back. This is exactly what you said.",
+    noChanges: "Nothing to fix.",
+    noChangesAfterUndo: "Every fix put back.",
     // A language with no fix rules yet: never a "nothing needed fixing" claim there.
-    noChangesNoRules: "Exactly as you said it.",
+    noChangesNoRules: "Nothing was fixed.",
     originalLabel: "Exactly what you said",
     cardYouSaid: "You said",
     cardNowReads: "Now it reads",
@@ -686,7 +687,7 @@ export const en = {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the red circle and talk, in the language you speak.",
+      howStep1: "Tap the red circle and talk.",
       howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
@@ -718,18 +719,18 @@ export const en = {
 
   notifications: {
     evening: [
-      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
+      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence will do." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
+      { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
-      { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
+      { title: "Say a few words to {child}", body: "Talk or type, whichever is easier." },
+      { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
-      body: "Whenever you like, there is a page for today. Just talk.",
+      body: "Open it whenever you like. A few words are enough.",
     },
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
@@ -1225,7 +1226,7 @@ export const en = {
     // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book couldn't open",
-      body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
+      body: "Export saves a copy of the recordings and book files it can read, as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       // The Try again button's words while it opens the book again, and the line after an open that did not work.
