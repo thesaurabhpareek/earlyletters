@@ -65,7 +65,7 @@ describe('[NS-01-R4][NS-01-R52] leaving without the letter takes the picked pict
     const start = body('lib/photos/use-photo-start.ts', 'useFocusEffect(', '\n  );');
     expect(start).toMatch(/useCallback\(\(\) => \{\s*void getPending\(\)\?\.discard\(\);\s*\}, \[\]\)/);
   });
-  it('[NS-01-R5b] Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
+  it('Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
     const save = body('app/review.tsx', 'const save = async (inBook: boolean) => {', 'const keepRecordingOnly =');
     const kept = save.indexOf('saveLetterFromDraft(');
     const stored = save.indexOf('await commitPendingPhoto(draft.id, finalText);');
