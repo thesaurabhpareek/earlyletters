@@ -54,7 +54,8 @@ export async function firstRun(page: Page, name = CHILD) {
 export function journey(record: Recorder, code: string, name: string, start = 1, first?: string) {
   let n = start - 1;
   let last = first;
-  // BL-480: ids used by THIS journey call. A fresh scope per call, so nine J24 tests that each record J24-01 are not a clash.
+  // BL-480: ids used by THIS journey call; the map is per call, so a repeat inside one call throws. The J24 tests do not
+  // rely on that: each has its own start id (AX1 01-03, AX3 04-06, AX5 07-09, hi/es/zh/fr/ar/pt 10-15; BL-1643).
   const seen = new Map<string, string>();
   return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number }): Promise<string> => {
     n += 1;
