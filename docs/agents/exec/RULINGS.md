@@ -400,6 +400,178 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Revisit when: a second writer of own rows ships to a store build, or counsel changes DATA-REQ-040's scope.
 - Signed: Karma (CTO)
 
+## Batch 3 (21 Nov, council)
+
+These entries sit after the entries PR #1377 landed, in a separate trailing block. Numbers continue past the highest id per seat on `develop` (checked again after #1377 merged: no id in this section collides) and in citations under `docs/` (CPO-19, CDesO-13, CPrivO-13, CDO-21, CLO-20, CCO-15, CISO-2). Not checked: other open PRs that touch this file and the Project docs. If a number collides at merge, renumber the later one. Each seat is a Claude role (COUNCIL section 1), none is counsel, and every claim about a law is UNVERIFIED because no source was read for it in this session. Evidence is the review files for PRs #1414, #1417, #1421 and #1435, the spec `docs/product/prd/28-moments-tab.md` (v3, PROPOSED) and the audit `docs/engineering/audits/2026-11-21-cross-account-stores.md` (PR #1427, head `ad05420f34a50d2f0ead5a6b5e384d29d2472213`).
+
+Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a flag. Each ruling fixes a build default so the draft PRs can finish. Each default is a PROPOSED value in `packages/core/src/moments/rules.ts` (with `MOMENTS_RULES_VERSION` bumped) or a named constant carrying an `ASSUMED:` comment, so one grep finds them for the G4 card sort and the PR 3b harness, which may change any of them. None changes what a person is promised, scope or dates, so none is founder-only. The spec text is not edited here: the `product` agent writes the erratum lines named below.
+
+### CPO-19 M1: a day with an even number of sessions takes the earlier middle session (21 Nov 2026, CPO with CDesO, CDO and Karma)
+- Question: for tile 1 (spec 7.3, R281(c)) a day with 2 or 4 sessions has two middle sessions. Earlier or later? (#1417 `collage.ts`, `Math.floor((n-1)/2)`.)
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDesO (the grid reads in time order, so earlier leads), CDO (must be one deterministic rule on every phone), Karma.
+- Verdict: RULED.
+- Ruling: the earlier middle session. Inside it, the candidate nearest that session's middle, ties to the earlier time then the lower id.
+- Reason: a two-session day is the common busy day, so this is the common case. Neither choice is more true to the day, and the earlier one is the one a parent lived first. What matters is that two phones agree, and this rule is a pure function of the input.
+- Evidence: review A of #1417 (assumptions list); the test at `collage.test.ts` pins it; spec 7.3 is silent.
+- Door: two-way. Way back: change the index expression and the golden; no stored data depends on it.
+- Founder-only: no.
+- Next: builder of #1417 adds one `ASSUMED:` line and keeps the test; `product` adds a one-line erratum to 7.3.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-20 M2: at most one video tile, also among fallbacks (21 Nov 2026, CPO with CDesO)
+- Question: when a tile is replaced (iCloud-only, MT-P6-R17), may the replacement be a second video?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDesO, CDO.
+- Verdict: RULED.
+- Ruling: never. A card shows at most one video tile, whatever the path. If only videos remain, the card has fewer tiles.
+- Reason: 7.3 says "at most one video tile" with no exception, and a card of two moving pictures reads as a different product from the one the layouts describe.
+- Evidence: review A of #1417; spec 7.3 and R41/R44.
+- Door: two-way. Way back: drop the cap on the fallback pass. Founder-only: no.
+- Next: none beyond the `ASSUMED:` line.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-21 M3: the longest-gap rule uses virtual edges, with tests (21 Nov 2026, CPO with CDO and CDesO)
+- Question: "the picture at the middle of the longest remaining gap" (7.3): are the day's first start and last end edges of a gap?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDO (determinism), CDesO (spread across the day), Karma.
+- Verdict: RULED.
+- Ruling: yes. The edges are the earliest candidate start and the latest candidate end of that day (never midnight), so a one-session day still gets a spread tile. Ties: the longer gap, then the earlier time, then the lower id. Two goldens are owed: the longest gap is an edge, and two equal gaps.
+- Reason: without edges a one-session day has no gap at all and tiles 2 to 4 would be an arbitrary fill. The spec intent is "the rest by spread".
+- Evidence: review A of #1417, three survivors (gap tie, `dayStart`, `hiEdge`) that no test pins.
+- Door: two-way. Way back: remove the edges and the goldens. Founder-only: no.
+- Next: #1417 adds the goldens and kills the three survivors; `product` writes the 7.3 erratum.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-22 M4: when a day has an attached and a hearted picture, tile 1 is the attached one (21 Nov 2026, CPO with CDesO)
+- Question: R281(c) says "tile 1 is a heart, else the middle"; 7.3 lists attached pictures before hearted ones. Which leads?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDesO, CPrivO (explicit teaching), CDO.
+- Verdict: RULED.
+- Ruling: the order of 7.3 wins. An attached picture (the parent put it in a letter for this day) is tile 1, a heart is next, and R281(c) is read as "among pictures not already attached". The reason line RSN-HEART still follows its own precedence and is not changed by this.
+- Reason: attaching is a stronger and more deliberate act than a heart, and 7.3 is the section that states the order. The spec must not say two things.
+- Evidence: review A of #1417 (not marked by the builder); spec 7.3 and NS-53-R41, R44.
+- Door: two-way. Way back: swap the first two passes. Founder-only: no.
+- Next: `product` writes the R281(c) and R41 erratum so both read the same.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-23 M5: under the span predicate a busy day needs 4 candidates (21 Nov 2026, CPO with CDO)
+- Question: #1421 gates the span predicate on `BUSY_HOURS_COUNT` (4). R281(a) says a busy day counts `BUSY_DAY` (5). The 7.2a golden is 4 candidates in one session spanning 2 h 05, which qualify (1 h 40 does not).
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDO (the harness measures junk rate, so one named field), Karma.
+- Verdict: RULED.
+- Ruling: 4 under the span predicate, held in its own rules field so it has one home in `rules.ts`. `BUSY_DAY` 5 stays for the sessions-only reading. The PR 3b harness and the G4 sort may move either value.
+- Reason: a golden is a worked example the spec states in numbers, and the builder matches it. R281(a) is the looser prose. Four candidates in one long session (2 h or more) is a plausible busy day, so this is the choice that shows more days, and the junk bar (at most 3 in 10 before any use of "Not this one") is what checks it.
+- Evidence: review A of #1421 (assumption 2); spec 7.2a golden and R281(a).
+- Door: two-way. Way back: one value. Founder-only: no.
+- Next: `product` rewrites R281(a) so the count is stated for each predicate; #1421 renames to the PR 1 field.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-24 M6: a video is its own candidate and does not break a picture chain (21 Nov 2026, CPO with CDO)
+- Question: a video is never folded into a picture group. But `near.ts` makes a video between two pictures break their chain. Intended?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CDO, CDesO.
+- Verdict: RULED.
+- Ruling: a video is always its own candidate and is never merged. The picture chain is computed over pictures only, so a video between two near pictures does not split them. A burst id on a video is ignored.
+- Reason: the chain break was a side effect nobody chose, and it would count one moment as two candidates, pushing a quiet day over the busy bar.
+- Evidence: review A of #1421 (assumption 3 and the surviving mutant at `exclude.ts:41`); 7.3 "a video is not merged into a group".
+- Door: two-way. Way back: revert the chain change. Founder-only: no.
+- Next: #1421 adds the two tests (video with a burst id; video between two near pictures).
+- Signed: Chief Product Officer (Claude role)
+
+### CDO-21 M7: a missing capture date crosses the native bridge as NaN (21 Nov 2026, CDO with Karma)
+- Question: how does a missing `creationDate` reach core? #1421 drops `0` or `NaN`.
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): Karma (bridge), CPrivO (no new field).
+- Verdict: RULED.
+- Ruling: the native layer writes NaN into the Float64 time column for a missing date. Core drops any time that is not finite or is 0 or less, and the contract line says so. No separate "has date" column.
+- Reason: a baby book has no real picture dated at or before the epoch, and a reset camera clock produces exactly that, so dropping it is right. NaN cannot collide with a real value. One sentinel keeps the contract to one line.
+- Evidence: review A of #1421 (note 4); `exclude.ts:38`.
+- Door: two-way. Way back: add a column. Founder-only: no.
+- Next: #1421 adds one test each for Infinity and a negative date; PR 9 contract states it; G1a-L confirms the date behaviour on a device (UNVERIFIED).
+- Signed: Chief Data Officer (Claude role)
+
+### CPrivO-13 M8: drop the HIDDEN and NOT_USER_LIBRARY subtype bits (21 Nov 2026, CPrivO with CISO, CDO and Karma)
+- Question: #1421 `AssetColumns` carries HIDDEN and NOT_USER_LIBRARY bits, which imply reading `isHidden` and `sourceType`, outside the closed `READ_SET_V1` (NS-53-R37). Drop or allow? And who owns the bit values?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CISO (the scan fails the build on any other property name), CDO, Karma.
+- Verdict: RULED.
+- Ruling: drop both bits. Hidden is excluded because the fetch never sets `includeHiddenAssets`; non-user-library by the fetch's explicit source option. Those are fetch options, not property reads, so the set does not widen. Core keeps only date, screenshot, recording, animation and panorama checks. The `SUBTYPE` and `KIND_*` values have one owner, `columns.ts`, and PR 9 imports them.
+- Reason: this collects less and keeps the closed set closed. Widening READ_SET_V1 is a founder approval (R37 OPEN, O-15), and I do not ask for it when the fetch already does the job.
+- Evidence: review A of #1421 (note 2); spec 7.1 and R37. Whether Apple's fetch options behave as the spec says is UNVERIFIED (a G1a-L item).
+- Door: two-way. Way back: widen the set, which needs the founder. Founder-only: only the READ_SET_V1 approval itself, which this ruling does not touch.
+- What moves: hidden and source exclusion move from core to the fetch options, which the spec states (7.1) but whose behaviour is UNVERIFIED. G1a-L must confirm it on a device before the Moments flag goes on. Errata owed by `product`: 7.1 (core no longer sees these bits) and R38 (its list of what core drops loses hidden and non-user-library).
+- Next: #1421 removes the bits and their tests; the scan of R37 stays as written. Dropping the bits removes a layer, so a test or scan must prove the fetch never sets `includeHiddenAssets` and does pass the source option explicitly (`includeAssetSourceTypes`, whose default is UNVERIFIED).
+- Signed: Chief Privacy Officer (Claude role, not counsel), with CISO (Claude role, not an auditor)
+
+### CPO-25 M9: place and rotation defaults (21 Nov 2026, CPO with CPrivO, CDO and CDesO)
+- Question: #1414 and #1417 carry unmarked defaults. Which stand?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CPrivO (place is a sensitive read), CDO, CDesO.
+- Verdict: RULED, each a PROPOSED default.
+- Ruling: (a) a tie for home gives no home and so no place line. (b) The share denominator counts placed candidates only (it shows fewer lines, never more). (c) A stay needs at least 2 days with a gap of 0 days. (d) `majorityShare` 0.5, strict. (e) `minPicturesAtPlace` 3, which matches the Asha golden of 3 and 3. (f) `maxRun` 7, and a longer run is dropped whole. (g) `ROTATE_K` 5, which has no spec or review source (P6 says only that the card sort sets it): it is a PROPOSED default to be set by the card sort, not derived from anything, and `tiles` 4 (4 matches the 2 by 2 layout of 7.3). All go into `rules.ts` as PROPOSED values with the version bumped, and the rotation text `localDate|bookId` is fixed as the contract two phones share, with a test that varies `bookId`.
+- Reason: every choice leans to showing less when unsure, which is the abstain-over-guess posture of R204. The values carry no promise. The card sort has the numbers' real answer.
+- Evidence: reviews A of #1414 (notes 4 and 5, assumptions) and #1417 (notes 1 and 7, assumptions).
+- Door: two-way. Way back: edit the values; a version bump invalidates nothing stored. Founder-only: no.
+- Next: #1435 gains the rules fields; #1414 and #1417 take them from `MOMENTS_RULES`; `ASSUMED:` lines everywhere. Reconcile the two table types so `PlaceIndex` is the one shape (review of #1414).
+- Signed: Chief Product Officer (Claude role)
+
+### CPrivO-14 M10: the fixture that holds a coordinate leaves `src` (21 Nov 2026, CPrivO with CISO)
+- Question: `place-fixture.ts` in `packages/core/src` has `lat` and `lon` fields and is bundled by Metro. R61 and the scans of R43 and R202 read `packages/core/src/moments`.
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CISO, Karma.
+- Verdict: RULED.
+- Ruling: move it to `packages/core/test/moments/`. Nothing in `src` takes a coordinate. If a dev harness needs a source, it gets pre-computed cell ids with no coordinate. Add the import-graph assertion that no file in `src` imports from `test` (required, because the header comment claims one exists). Keep one hash function (the duplicate in a test-only file is fine).
+- Reason: R61 says no coordinate field on a model, route, log or fixture. A coordinate in app code is a surface that the scan would have to allow-list, and an allow-list is weaker than a move.
+- Evidence: review A of #1414 (note 1); spec R61, R228.
+- Door: two-way. Way back: move it back and write the allow-list entry. Founder-only: no.
+- Next: #1414 moves the file in the same PR (it stays over the 400-line gate, which is Karma's `size:accepted` call and not this ruling).
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-15 C1 (audit F5): analytics consent and id are per person (21 Nov 2026, CPrivO with CLO, CCO, CISO and CDO)
+- Question: analytics consent and the random id live in the settings table, per phone. On a shared phone, account B inherits A's yes and the same id. Per person, or per phone?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CLO and CCO (consent is the person's own, not the phone's; law not read this session, UNVERIFIED, counsel to confirm), CISO, CDO (a rotated id breaks linkage across people), Karma.
+- Verdict: RULED as a build gate, with no promise changed. Analytics is off in v1.0 and no SDK is in the bundle, so nothing is live.
+- Ruling: per person. At every user change and at sign-out, in the same place as `joinWait.clear()` in `publishAuth`, analytics consent goes back to unanswered and the id is rotated. The reset clears the stored consent in the settings table (`lib/analytics/index.ts:46-50`), not only memory, and the test reads the table. No analytics SDK may ship before that is built and tested. Nothing here changes any words a person reads.
+- Reason: it keeps less and asks again, so it only tightens the opt-in promise. A yes given by one person on a shared phone is not a yes from the next.
+- Evidence: audit F5; review B of #1427 (accurate, latent); `lib/analytics/index.ts:46-110`.
+- Decision rights: internal behaviour that keeps less, latent (no SDK), and not a user promise under CR-73.
+- Door: two-way. Way back: remove the reset. Founder-only: no for the build gate. If the founder wants a per-phone choice, or the policy says otherwise, that is his.
+- Next: one backlog row, ready only when an analytics SDK is on the plan (`product`); `security-architect` adds the test through `publishAuth`.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CISO-2 C2 (audit F6): a pending invite token is cleared at sign-out only if a signed-in session had read it (21 Nov 2026, CISO with CPrivO, CLO and CPO)
+- Question: a saved invite token survives sign-out and a user change for up to 14 days, and the server treats it as a single-use bearer not bound to a person. Keep, clear when a session had read it, or shorten the cap?
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CPrivO, CLO (the invite is the inviter's offer, not a right of the next account), CPO (A-REQ-028: it survives sign-in and a kill), Karma.
+- Verdict: RULED for the middle path. The 14-day cap is not touched and is founder-only.
+- Ruling: clear the token at sign-out or user change only when a signed-in session had already read it. The "had read it" mark is persisted with the token, in the same Keychain item (for example the id of the signed-in user whose session read it). Develop stores only `{token, receivedAt}` (`pending-invite.ts:10-27`) and reads it once, at `invite/index.tsx:96` or in the launch watcher, so a mark held in memory would be lost on a kill and relaunch and the leak would stay. The clear runs next to `joinWait.clear()` (`auth-store.ts:123`), on sign-out and on any user change. "Open the link, then sign in" still works, and so does a kill and relaunch. A token nobody read in a signed-in session stays. Default if asked about the cap: keep 14 days, unchanged.
+- Accepted residue: a token saved while A is signed in, before any screen has read it, then A signs out and B signs in and reads it: it is unread, so it stays, which is the intended open-link-then-sign-in path. The clear is an async Keychain call fired from the synchronous `publishAuth`, and `clearPendingInvite` swallows a locked Keychain (`pending-invite.ts:39-45`), so a failed clear is fail-open and the 14 days still bounds it.
+- Decision rights: internal behaviour that keeps less. It is not a user promise under CR-73, and the cap (A-REQ-028) is untouched.
+- Reason: this closes the one case that is a leak, "A saw the preview, signs out, B taps". It does not make the invite shorter-lived for anyone who has not yet signed in, so the A-REQ-028 promise holds.
+- Evidence: audit F6; review B of #1427; `lib/family/pending-invite.ts:9-45`; `accept_child_invite` (single use, expiry).
+- Door: two-way. Way back: remove the clear. Founder-only: the cap (A-REQ-028 is a promise).
+- Next: a fix PR from `sync` or `mobile`, test first, through `publishAuth`. The test must cover kill and relaunch between the read and the sign-out, and a user change with no null step in between. CDesO has no new word to write.
+- Signed: CISO (Claude role, not an auditor), with the Chief Privacy Officer (Claude role, not counsel)
+
+### CISO-3 C3 (audit F8 to F11): fix F8 now, accept F9 to F11 (21 Nov 2026, CISO with CPrivO and CPO)
+- Question: what to do with the four lower findings.
+- Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CPrivO, CPO, Karma.
+- Verdict: RULED.
+- Ruling: F8 fix now, one concern: key the new-device report `inFlight` by the user id the call was asked for, and check that the access token read inside `reportOnce` after its await belongs to that same user, so B's report can never carry A's token and B does not lose its new-device email because A's report was in flight (`report.ts:24-47`). F9 accept: one install id per phone is by design, and the privacy data map gets one row saying an operator can link two accounts on one phone (a public policy sentence, if any, goes to counsel and the founder). F10 accept: a draft id and a 5 second window, no words. F11 accept: an unowned local book is offered to the first account that signs in (A-REQ-015); `product` adds a check that the claim is an explicit choice and never automatic. Recorded as an accepted exposure of the phone's first holder, not as "no person data": `bookVisibleTo` returns true for an unowned book to any signed-in user (`account-scope.logic.ts:35-37`), so a second person who signs in first sees the pre-account book (child name, letters) before any claim choice. Sync stays off until the claim, so nothing leaves the phone. It is A-REQ-015 by design and not fixed here. F2 to F4 stay queued as in the audit.
+- Reason: F8 is the only one that suppresses a security notice for a real person. The others are intended or carry no person data.
+- Evidence: audit F8 to F11; review B of #1427 confirms the file and line cites. F11 behaviour was not run.
+- Door: two-way. Way back: revert the keying. Founder-only: no.
+- Next: one fix PR (`sync` or `mobile`) with a failing test first.
+- Signed: CISO (Claude role, not an auditor)
+
+### Hand-back table, batch 3
+
+| Q | Verdict | Next action | Unblocks |
+|---|---|---|---|
+| M1 earlier middle session | RULED CPO-19 | #1417 `ASSUMED:` line; product erratum to 7.3 | #1417 |
+| M2 one video, also on fallback | RULED CPO-20 | none | #1417 |
+| M3 virtual edges | RULED CPO-21 | #1417 two goldens | #1417 |
+| M4 attached before heart | RULED CPO-22 | product erratum R281(c), R41 | #1417 |
+| M5 count 4 under span | RULED CPO-23 | product rewrites R281(a); #1421 uses the PR 1 field | #1421 |
+| M6 video never breaks a chain | RULED CPO-24 | #1421 two tests | #1421 |
+| M7 missing date is NaN | RULED CDO-21 | PR 9 contract line | #1421 |
+| M8 drop two subtype bits | RULED CPrivO-13 | #1421 removes bits; test the fetch options; G1a-L confirms | #1421 |
+| M9 place and rotation defaults | RULED CPO-25 | #1435 gains the rules fields | #1414, #1417, #1435 |
+| M10 fixture out of `src` | RULED CPrivO-14 | #1414 moves the file | #1414 |
+| C1 analytics per person | RULED CPrivO-15 | a row, gated on an SDK | none (latent) |
+| C2 invite token | RULED CISO-2 (mark stored in the Keychain item; cap stays, founder-only) | fix PR; test covers kill and relaunch | none; #1427 is docs |
+| C3 F8 to F11 | RULED CISO-3 (F11 recorded as accepted exposure) | F8 fix PR keyed by requested user and token user | #1428 and #1427 are not blocked |
+
 ### CCO-7 PR #1448 (compliance gates migration, a re-cut of #424) passes the compliance fence for merge into develop only (Sat 21 Nov 2026, CCO via Karma's session; not counsel)
 - Question: PR #1448 adds the sign-up compliance gates as files: migration `20261121030000_compliance_gates.sql` (`hook_before_user_created`, `ops.restricted_jurisdictions`, `geo_ip_ranges`, `compliance_check_counts`, `regulatory_watch`), their tests and grants, `supabase/APPLY.md` File 39 and the compliance scripts. Does it meet the CCO checklist in `compliance/README.md`, and for what?
 - Tier and type: T2 (database, a fenced path, a sign-up door); complicated.
