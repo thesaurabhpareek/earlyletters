@@ -232,7 +232,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const next = nextReportMark(reportMark.current, state);
     reportMark.current = next.mark;
-    if (next.call && sb) void reportNewDeviceFor(sb);
+    if (next.call && sb && state.status === 'ready') void reportNewDeviceFor(sb, state.userId);
   }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
@@ -261,11 +261,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodForEvent(event, methodRef.current) });
       } else if (event === 'SIGNED_OUT') {
-        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
-        // Keychain only, so it is safe inside this callback (no Supabase call).
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
         methodRef.current = null; // a signed-out run keeps no method for the next session
+        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
+        // Cross-account audit F2: and the Apple user id, like Sign out, under-18 and revoked do.
+        // Both are Keychain only, so safe inside this callback (no Supabase call).
+        void forgetAppleUser();
       }
     });
     const stopRefresh = startAutoRefreshWhileActive();
