@@ -10,7 +10,7 @@ import { familyCopy } from '@/lib/family/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
+import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setChildQuiet, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
 import { familyNotice } from '@/components/family/family-notice';
 import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, childRowTitle, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
@@ -183,6 +183,22 @@ export default function ChildSettings() {
           <ToggleRow title={fill(s.familyCanReadLabel, { child: name })} value={child.familyCanRead} onValueChange={() => {}} disabled />
         </ListSection>
       )}
+
+      {/* Quiet this book (BL-985, F12-REQ-011): beside Hide, and offered with one book too. Only the label and the toggle:
+          children.quiet.help is held back until Home's prompt, the Save a copy slip and Read together read Child.quiet
+          (test/children-quiet-control.test.ts fails the day this page or any screen mentions it before then). */}
+      <ListSection>
+        <ToggleRow
+          title={copy.children.quiet.label}
+          value={child.quiet === true}
+          onValueChange={(on) => {
+            setChildQuiet(child.id, on);
+            haptic('success');
+            toast.show({ message: fill(on ? copy.children.quiet.quietedToast : copy.children.quiet.offToast, { child: name }) });
+          }}
+          testID="child.quiet"
+        />
+      </ListSection>
 
       {listChildren().length > 1 && (
         <ListSection footer={hideFooter(name, coParent)}>
