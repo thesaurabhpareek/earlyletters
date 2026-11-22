@@ -266,10 +266,17 @@ function keepWordsOfRefusedUpload(db: SqlDb, row: OutboxRow, now: string): boole
  */
 function takeProvenance(db: SqlDb, row: PulledRow): void {
   const raw = row.raw_transcript ?? '';
-  db.run(
-    'UPDATE entries SET engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at) WHERE id = ?',
-    row.engine_version ?? null, row.captured_at ?? null, row.id,
-  );
+  // captured_at and engine_version change only inside this window (migration 13, BL-1497): another flag, another
+  // key, so the raw_transcript guard is never open while these two are written. Set, used and deleted here.
+  db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('provenance_takeover', ?)", row.id);
+  try {
+    db.run(
+      'UPDATE entries SET engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at) WHERE id = ?',
+      row.engine_version ?? null, row.captured_at ?? null, row.id,
+    );
+  } finally {
+    db.run("DELETE FROM settings WHERE key = 'provenance_takeover'");
+  }
   // The only writer of a set raw_transcript (BL-412, migration 12). The statement names the column only when the
   // value differs, and the entry-scoped flag lives for that one statement: set, used and deleted here, in the pull's
   // transaction (a rollback removes it too), so it cannot outlive the call or serve another entry.
@@ -715,7 +722,7 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
 function mergeRows(db: SqlDb, rows: PulledRow[], owner: string | null, epoch: number, now: string): number {
   let refused = 0;
   for (const r of rows) {
-    // A row that meets the raw_transcript trigger (migration 12) is undone and skipped, so one bad row cannot roll
+    // A row that meets a local entry-column trigger (migrations 12 and 13) is undone and skipped, so one bad row cannot roll
     // the whole page back and make every later pull fail the same way. Any other error still fails the page.
     db.exec('SAVEPOINT pulled_row');
     try {
@@ -723,7 +730,8 @@ function mergeRows(db: SqlDb, rows: PulledRow[], owner: string | null, epoch: nu
       else mergeOtherRow(db, r, owner, epoch, now);
       db.exec('RELEASE pulled_row');
     } catch (e) {
-      if (!String((e as { message?: unknown })?.message ?? '').includes('raw_transcript is immutable')) throw e;
+      const msg = String((e as { message?: unknown })?.message ?? '');
+      if (!msg.includes('raw_transcript is immutable') && !msg.includes('(BL-1497)')) throw e;
       db.exec('ROLLBACK TO pulled_row');
       db.exec('RELEASE pulled_row');
       refused++;
@@ -811,7 +819,7 @@ export interface PullOutcome {
   pulled: number;
   /** Some book's digest differs from the server's: pull again with ids. */
   wantIds: boolean;
-  /** Rows skipped because they met the raw_transcript trigger (a count only, no words). */
+  /** Rows skipped because they met a local entry-column trigger (migrations 12 and 13; a count only, no words). */
   refused: number;
 }
 
