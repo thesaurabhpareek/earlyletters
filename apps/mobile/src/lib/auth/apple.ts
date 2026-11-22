@@ -59,7 +59,7 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
 }
 
 /**
- * BL-1505, fail closed. A failed write must not leave the previous person's id to be read as this one's: drop it,
+ * BL-1505, fail quiet (handled here, visible to the revocation watch only). A failed write must not leave the previous person's id to be read as this one's: drop it,
  * and if it cannot be dropped, mark the id unknown so the revocation watch skips (false) instead of asking Apple
  * about the wrong person. Never signs anyone out, never logs the id. The mark is memory only.
  */

@@ -1,6 +1,6 @@
 /**
  * [BL-1505] A failed Keychain write of the Apple user id must not leave the previous person's id to be
- * checked as the new person's. Fail closed: the stale id is cleared, or when it cannot be, the revocation
+ * checked as the new person's. Fail quiet: the stale id is cleared, or when it cannot be, the revocation
  * watch skips (false) instead of reading Apple's state for the wrong person. Fictional family "Asha" only.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -86,6 +86,18 @@ describe('[BL-1505] a failed write of the Apple id fails closed', () => {
     h.removeFails = false;
     await signInWithApple(sb);
     expect(h.store.get(APPLE_USER_KEY)).toBe('apple-user-b');
+    expect(await appleCredentialRevoked()).toBe(true);
+    expect(h.state).toHaveBeenCalledWith('apple-user-b');
+  });
+
+  it('forgetAppleUser clears the unknown mark, so the watch asks Apple again', async () => {
+    h.store.set(APPLE_USER_KEY, 'apple-user-a');
+    h.setFails = true;
+    h.removeFails = true;
+    await signInWithApple(sb);
+    h.removeFails = false;
+    await forgetAppleUser();
+    h.store.set(APPLE_USER_KEY, 'apple-user-b');
     expect(await appleCredentialRevoked()).toBe(true);
     expect(h.state).toHaveBeenCalledWith('apple-user-b');
   });
