@@ -101,3 +101,46 @@ describe('[BL-269] [AX5 Button] labels and no truncation (static markup; not foc
     expect(html).toContain('role="button"');
   });
 });
+
+/**
+ * BL-1577: the same promises at the default text size (harness.fontScale 1), and each part of the label pinned on its own.
+ * The aria-label repeats the subtitle and the value, so `toContain(text)` alone would stay green if the visible subtitle or
+ * value node were dropped. These look for the text as its own node (`>text<`) and for the exact label.
+ * Note: AX5 above is 3.12 (the harness constant); the on-device seam uses 3.571. Left as it is on purpose.
+ */
+describe.each([
+  ['default size', 1],
+  ['AX5', AX5],
+])('[BL-1577] [%s] each part of a row and a group is its own node and its own label part', (_name, scale) => {
+  beforeEach(() => {
+    harness.fontScale = scale;
+  });
+
+  it('draws the title, the subtitle and the value as separate whole nodes, with no line limit', () => {
+    const html = renderMarkup(<ListRow title={LONG_TITLE} subtitle={LONG_SUBTITLE} value="Sounds like me" onPress={() => {}} />);
+    expect(html).toContain(`>${LONG_TITLE}<`);
+    expect(html).toContain(`>${LONG_SUBTITLE}<`);
+    expect(html).toContain('>Sounds like me<');
+    expect(html).not.toMatch(NO_LINE_LIMIT);
+  });
+
+  it('names the row as title, subtitle, value, then the action word, in that order', () => {
+    const html = renderMarkup(<ListRow title="Reading size" subtitle="How big the words are" value="Large" actionWord="Change" onPress={() => {}} />);
+    expect(html).toContain('aria-label="Reading size, How big the words are, Large, Change"');
+  });
+
+  it('names the group, shows its label when asked, and keeps each choice whole', () => {
+    const options = [
+      { value: 'sounds', label: 'Sounds like me' },
+      { value: 'not', label: 'Not quite' },
+    ];
+    const html = renderMarkup(<ChoiceGroup label="Does this sound like Asha" showLabel options={options} value="sounds" onChange={() => {}} />);
+    expect(html).toContain('role="radiogroup"');
+    expect(html).toContain('aria-label="Does this sound like Asha"');
+    expect(html).toContain('>Does this sound like Asha<');
+    expect(html.match(/role="radio"/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="Not quite"');
+    expect(html).toContain('>Not quite<');
+    expect(html).not.toMatch(NO_LINE_LIMIT);
+  });
+});
