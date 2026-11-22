@@ -33,8 +33,7 @@ describe('[NS-53-R36] the shipped registry', () => {
     expect(find('S7').serverSafe).toBe(false);
   });
   it('is frozen, so a caller cannot widen a surface at run time', () => {
-    expect(Object.isFrozen(SOURCES)).toBe(true);
-    expect(SOURCES.every((s) => Object.isFrozen(s) && Object.isFrozen(s.surfaces))).toBe(true);
+    expect(Object.isFrozen(SOURCES) && SOURCES.every((s) => Object.isFrozen(s) && Object.isFrozen(s.surfaces))).toBe(true);
   });
 });
 

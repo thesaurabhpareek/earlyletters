@@ -12,8 +12,7 @@ import type { HolidayKey, HolidayRegion } from './holidays';
 import { type Slot } from './domain';
 import type { RegistryId } from './registry';
 
-/** The four slots in order are the shared `SLOTS` of domain.ts (6.3). */
-export type SlotName = Slot;
+export type SlotName = Slot; // the four slots in order are `SLOTS` of domain.ts (6.3)
 
 export type MomentCard =
   | { slot: 'today'; hits: OccasionHit[] }
