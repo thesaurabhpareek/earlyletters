@@ -108,6 +108,22 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
     expect(p95(t)).toBeLessThanOrEqual(BUDGETS.switchMs);
   });
 
+  it('[BL-434] the Book\'s first chapter (light read) and Tonight\'s reads fit the budgets; neither selects machine_edits', () => {
+    const chapter = time(SAMPLES, () => {
+      expect(entries.listForBook(f.ctx, ASHA).slice(0, CHAPTER_SIZE)).toHaveLength(CHAPTER_SIZE);
+    });
+    expect(p95(chapter)).toBeLessThanOrEqual(BUDGETS.chapterMs);
+    const tonight = time(SAMPLES, () => {
+      expect(entries.recentPromptKeys(f.ctx, ASHA, 10).length).toBeGreaterThan(0);
+      expect(entries.latestOccurredOn(f.ctx, ASHA)).not.toBeNull();
+      entries.listOccurredBetween(f.ctx, ASHA, '2024-01-01', '2024-01-10');
+    });
+    expect(p95(tonight)).toBeLessThanOrEqual(BUDGETS.switchMs);
+    // The whole Tonight read is cheaper than the old whole-book read it replaced.
+    const old = time(SAMPLES, () => entries.listForChild(f.ctx, ASHA));
+    expect(p95(tonight)).toBeLessThan(p95(old));
+  });
+
   it('[BL-1402] planted slow read: the budget check turns red on a slow path and green on the real one', () => {
     const slow = time(5, () => {
       // Planted slowness: an unindexed scan repeated until it costs more than the chapter budget.

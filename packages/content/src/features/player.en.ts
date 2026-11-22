@@ -12,9 +12,9 @@ export const playerCopy = {
   scrubLabel: 'Position in the recording',
   /** VoiceOver value of the scrubber: "0:32 of 1:12". */
   positionText: '{elapsed} of {total}',
-  notOnPhone: 'The recording for this letter is not on this phone.',
-  notOnPhoneReadAloud: 'The recording for this letter is not on this phone. Read this one aloud together.',
-  cannotPlay: 'This recording will not play here. It is still kept, and every export includes it.',
+  notOnPhone: "The recording for this letter isn't on this phone.",
+  notOnPhoneReadAloud: "The recording for this letter isn't on this phone. Read this one aloud together.",
+  cannotPlay: "This recording won't play here. It's still kept, and every export includes it.",
   loading: 'Getting the recording ready',
   /** The switch between the listening copy and the untouched original (founder decision 8). */
   originalLabel: 'Original recording',

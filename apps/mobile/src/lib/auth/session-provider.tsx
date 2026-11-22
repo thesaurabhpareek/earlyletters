@@ -37,6 +37,7 @@ import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
 import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
+import { adoptDeviceOnlyLocal, bindDeviceOnlyOwners } from './local-claim';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -189,6 +190,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       setClaimReaders(null);
     };
   }, [sb]);
+  // CPO-30: the days and moments files follow the signed-in person (sign-in sets the owner, sign-out puts it back to 'local').
+  useEffect(() => bindDeviceOnlyOwners(), []);
   useEffect(() => publishAuth(state), [state]);
   // BL-967 (NS-13-R14, R13, R15): one hook on the signed-in user id. When it goes (Sign out and account deletion finish
   // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end; and
@@ -232,7 +235,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const next = nextReportMark(reportMark.current, state);
     reportMark.current = next.mark;
-    if (next.call && sb) void reportNewDeviceFor(sb);
+    if (next.call && sb && state.status === 'ready') void reportNewDeviceFor(sb, state.userId);
   }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
@@ -261,8 +264,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodForEvent(event, methodRef.current) });
       } else if (event === 'SIGNED_OUT') {
-        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
-        // Keychain only, so it is safe inside this callback (no Supabase call).
+        // H1 and audit F2: a sign-out Supabase made itself (revoked elsewhere) drops the Apple user id and the pending request.
+        // The Apple id goes first, so nothing below can skip it. Keychain only, so safe inside this callback.
+        void forgetAppleUser();
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
         methodRef.current = null; // a signed-out run keeps no method for the next session
@@ -428,7 +432,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       claimPending,
       keepLettersHere() {
         const cur = stateRef.current;
-        if (isSignedIn(cur)) confirmAccountClaim(cur.userId);
+        // CPO-30: the days and moments files that are still 'local' join the account first, then the claim is confirmed.
+        if (isSignedIn(cur)) void adoptDeviceOnlyLocal(cur.userId).then((ok) => ok && confirmAccountClaim(cur.userId)); // a failed adopt leaves the claim prompt up and the local files alone
       },
       async notMyAccount() {
         // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never

@@ -1,21 +1,6 @@
+import { clampGraphemes } from '@scribe/core';
 import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from './types';
 import { photos } from './copy';
-
-// Hermes has no Intl.Segmenter (ADR 0014). There a cluster is a base character with its marks (accents, vowel signs,
-// variation selectors) and skin tones, joined across a ZWJ or an Indic virama, or a pair of regional indicators (a flag).
-const VIRAMA = '[\\u094D\\u09CD\\u0A4D\\u0ACD\\u0B4D\\u0BCD\\u0C4D\\u0CCD\\u0D4D\\u0DCA]';
-const EXTEND = `(?:(?!${VIRAMA})[\\p{M}\\u{1F3FB}-\\u{1F3FF}])`;
-const BASE = '[^\\p{M}\\u200D]';
-const CLUSTER = new RegExp(`[\\u{1F1E6}-\\u{1F1FF}]{2}|${BASE}${EXTEND}*(?:(?:${VIRAMA}${EXTEND}*|\\u200D)${BASE}${EXTEND}*)*(?:${VIRAMA}${EXTEND}*)?|[\\s\\S]`, 'gu');
-
-/** Migration 11's CHECK keeps 16 code points for each character a person sees (E84, NS-01-R54): a ceiling, never the limit. */
-export const CODE_POINTS_PER_CHARACTER = 16;
-
-/** The characters a person sees: Intl.Segmenter where the engine has one, the rule above where it does not. */
-const graphemes = (s: string): string[] => {
-  const Seg = (Intl as unknown as { Segmenter?: new (l?: string, o?: { granularity: 'grapheme' }) => { segment(s: string): Iterable<{ segment: string }> } }).Segmenter;
-  return Seg ? Array.from(new Seg(undefined, { granularity: 'grapheme' }).segment(s), (x) => x.segment) : (s.match(CLUSTER) ?? []);
-};
 
 /**
  * The parent's words about a picture (NS-01-R21): optional, trimmed at the ends, null when empty. The limit counts
@@ -23,23 +8,11 @@ const graphemes = (s: string): string[] => {
  * only, so the cut never splits one. Migration 11's CHECK is only a ceiling in code points, 16 per grapheme (E84), which fits
  * every RGI emoji: the product cap is graphemes only and the ceiling never cuts them. Only a character longer than 16 code points
  * (a stack of marks) makes the cut stop before the ceiling, so the store never refuses what was kept. The app never fills the words in or suggests them, and never edits what is typed beyond
- * the ends and the length. Small on purpose: BL-957 (wave 2) moves one grapheme helper into packages/core.
+ * the ends and the length. These two fields are local only, so the local ceiling (16 per character) is the only code point limit.
  */
 function capTyped(typed: string | null | undefined, max: number): string | null {
   const t = (typed ?? '').trim();
-  if (!t) return null;
-  const ceiling = max * CODE_POINTS_PER_CHARACTER;
-  let kept = '';
-  let characters = 0;
-  let points = 0;
-  for (const g of graphemes(t)) {
-    const n = Array.from(g).length;
-    if (characters === max || points + n > ceiling) break;
-    kept += g;
-    characters += 1;
-    points += n;
-  }
-  return kept.trimEnd() || null;
+  return t ? clampGraphemes(t, max).trimEnd() || null : null;
 }
 export const normalizePhotoText = (typed: string | null | undefined): string | null => capTyped(typed, PHOTO_TEXT_MAX);
 

@@ -35,13 +35,15 @@ describe('off by default (CPO-2)', () => {
     expect(INITIAL.locked).toBe(false);
   });
 
-  it('off, it never locks, never covers and never asks', () => {
+  it('off, it never locks and never asks; it covers only while the app is not in front (BL-1407)', () => {
     let s = run(INITIAL, { type: 'launch', enabled: false, grace: 'immediately' });
     expect(s.locked).toBe(false);
-    s = run(s, { type: 'appState', phase: 'inactive', at: T0 });
     expect(coverShown(s)).toBe(false);
+    s = run(s, { type: 'appState', phase: 'inactive', at: T0 });
+    expect(coverShown(s)).toBe(true);
     s = run(s, { type: 'appState', phase: 'background', at: T0 }, { type: 'appState', phase: 'active', at: T0 + 3_600_000 });
     expect(s.locked).toBe(false);
+    expect(coverShown(s)).toBe(false); // back in front: no cover
     expect(shouldAutoPrompt(s)).toBe(false);
   });
 });

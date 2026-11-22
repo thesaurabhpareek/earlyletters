@@ -10,7 +10,14 @@ import { getPending } from './registry';
 export async function discardPendingPhotoOnLeaving(): Promise<void> {
   dropQueuedAdopts();
   try {
-    await adoptsIdle();
+    // An adopt asked after the drop, while this waits, is not queued behind what was already waited for: it would run
+    // beside the discard and lose its picture. It is a letter that was kept, so it finishes; wait again until none
+    // arrived, then discard in the same step (BL-1535).
+    let idle: Promise<void>;
+    do {
+      idle = adoptsIdle();
+      await idle;
+    } while (adoptsIdle() !== idle);
     await getPending()?.discard();
   } catch {
     // Nothing here may stop a sign-out or an erase.

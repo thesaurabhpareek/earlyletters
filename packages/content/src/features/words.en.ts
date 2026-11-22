@@ -12,15 +12,15 @@ export const wordsCopy = {
   listeningA11y: 'Writing down what you said, part {n} of {count}',
   pack: {
     title: 'Your {name} words are on their way',
-    body: 'Your voice is kept now. The words will follow as soon as this phone is ready for {name}.',
+    body: 'Recording kept. The words will follow as soon as this phone is ready for {name}.',
     progress: 'Getting ready, {n}%',
-    waitingForWifi: 'Getting ready when you are on Wi-Fi.',
+    waitingForWifi: "Getting ready when you're on Wi-Fi.",
     noSpace: 'This phone needs a little more free space first.',
     // Shown before any download starts, so the size and the Wi-Fi rule are known first (BL-375).
-    sizeLine: 'The download is about {size} MB and starts when you are on Wi-Fi.',
+    sizeLine: "The download is about {size} MB and starts when you're on Wi-Fi.",
     keepButton: 'Keep my voice',
     typeButton: 'Type it instead',
-    keptToast: 'Your voice is kept. The words will follow.',
+    keptToast: 'Recording kept. The words will follow.',
     // Shown when the person has not yet said yes to the one-time download (D-087). {size} is this phone's plan.
     askTitle: 'Get your {name} words ready',
     askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
@@ -54,7 +54,7 @@ export const wordsCopy = {
     readItBackButton: 'Read it back',
     readyBody: 'Words are ready. Read it back.',
     // Words arrived while the letter was closed: shown exactly as said, no fix proposed yet.
-    arrivedNote: 'These words are exactly as you said them. Nothing has been fixed.',
+    arrivedNote: 'These words are as they arrived. Nothing has been fixed.',
     // The sheet where a person writes the words for a letter whose recording has none.
     writeTitle: 'Write the words',
     writeLabel: 'Words for this recording',
@@ -62,7 +62,7 @@ export const wordsCopy = {
     cancelButton: 'Not now',
   },
   unavailable: {
-    title: 'Your voice is kept',
+    title: 'Recording kept',
     body: 'Words cannot be written down on this phone yet. Keep the recording now and the words can come later. You can also type it.',
   },
 };

@@ -26,12 +26,13 @@
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused and sends
  * nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
+import { SIGNS_AS_MAX, clampGraphemes } from '@scribe/core';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { authCopy } from '@scribe/content';
 import { BookCover } from '@/components/book/book-cover';
-import { familyNotice } from '@/components/family/family-notice';
+import { familyNotice, noticeOwner } from '@/components/family/family-notice';
 import { afterShare, inviteSheetView } from '@/components/family/invite-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -57,7 +58,6 @@ import { getChild, listMembers } from '@/lib/store';
 /** The cover's foot line follows the field after a typing pause, as on S05 and S06. */
 const COVER_PAUSE_MS = 300;
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
-const SIGNS_AS_MAX = 30;
 
 function useSettled<T>(value: T, ms: number): T {
   const [settled, setSettled] = useState(value);
@@ -114,6 +114,7 @@ function InviteCoParent() {
     setBusy(true);
     setError(null);
     const s = signsAs.trim();
+    const owner = noticeOwner(); // before the awaits: who started this share
     try {
       let invite;
       try {
@@ -132,7 +133,7 @@ function InviteCoParent() {
       draft.current = null; // the next invite from this sheet is a new one
       // The link went out: this sheet closes, and the page under it (the family page, or the book's settings page whose
       // row opened this sheet) says the invite waits (components/family/family-notice.ts).
-      familyNotice.leave(k.done);
+      familyNotice.leave(k.done, owner);
       close();
     } catch (e) {
       const kind = inviteErrorKind(e);
@@ -180,10 +181,9 @@ function InviteCoParent() {
                     label={fill(k.signsAsLabel, { child })}
                     face="serif"
                     value={signsAs}
-                    onChangeText={(v) => setSignsAs(v.slice(0, SIGNS_AS_MAX))}
+                    onChangeText={(v) => setSignsAs(clampGraphemes(v, SIGNS_AS_MAX, SIGNS_AS_MAX))}
                     helper={k.signsAsHelp}
                     placeholder={k.signsAsPlaceholder}
-                    maxLength={SIGNS_AS_MAX}
                     autoCapitalize="words"
                     autoCorrect={false}
                     returnKeyType="done"

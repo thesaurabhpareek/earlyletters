@@ -44,6 +44,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lamp } from '@/components/ui/lamp';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
@@ -54,10 +55,10 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { deleteEntry, getSetting, listBookEntries, countBookLetters, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { bookHandoff, createArrivalGate, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
+import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -97,7 +98,7 @@ export default function Book() {
   // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
   // these are, so the arrival waits for the right book.
-  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listEntriesForChild(active.id) : [] }));
+  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listBookEntries(active.id) : [] }));
   const entries = read.entries;
   const loaded = read.childId === (active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
@@ -141,10 +142,9 @@ export default function Book() {
 
   useEffect(() => {
     if (!active) return;
-    const reread = () => setRead({ childId: active.id, entries: listEntriesForChild(active.id) });
-    // The initialiser has just read this book: read again only for another book, or on a change (no second read at mount).
-    if (read.childId !== active.id) reread();
-    return subscribe(reread);
+    // Subscribe, then read once more and keep that read only if it differs from the initialiser's: a change between the
+    // initialiser's read and this subscribe is picked up at once (BL-1428).
+    return watchBook({ childId: active.id, read: listBookEntries, subscribe, set: setRead });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
@@ -262,7 +262,7 @@ export default function Book() {
   useFocusEffect(
     useCallback(() => {
       if (!activeId) return;
-      const letters = listEntriesForChild(activeId).filter((e) => e.kind !== 'not_much').length;
+      const letters = countBookLetters(activeId);
       trackBookOpened({ childIndex: childIndexOf(activeId), letters, role: 'parent' });
     }, [activeId]),
   );
@@ -459,13 +459,16 @@ export default function Book() {
             {/* S24: the closed cover the person named and signed in first run, 160 x 214, centred and still (the lamp is
                 the only light). Decorative to VoiceOver: the heading above already says "Asha's book", so the reader
                 hears the title, the body and the button, never the name twice. No count of what is missing. */}
-            <View className="flex-1 items-center justify-center gap-8 px-5">
-              <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
-              <EmptyState align="center" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
-            </View>
-            <View className="px-5 pb-6">
-              <Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />
-            </View>
+            <PinnedActionLayout
+              center
+              insetBottom={false}
+              contentContainerClassName="gap-8 px-5"
+              action={<Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />}>
+              <View className="items-center">
+                <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
+              </View>
+              <EmptyState align="start" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+            </PinnedActionLayout>
           </View>
         ) : (
           <>

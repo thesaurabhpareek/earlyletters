@@ -620,7 +620,7 @@ Copy:
 | `review.edits.repeat.explain` | A word said twice in a row. One is kept. | CHG |
 | `review.edits.misheardName.explain` | A misheard name, spelled your way. | CHG |
 | `review.edits.punctuation.explain` | Commas and periods, where you paused. | CHG (US) |
-| `review.edits.grammarSlip.explain` | A slip of the tongue, like "a apple". Only that word changed. | CHG |
+| `review.edits.grammarSlip.explain` | A small slip, like "a apple". Only that word changed. | CHG |
 | `review.edits.paragraph.explain` | A long pause. A new paragraph starts here. | CHG |
 | `review.edits.script.explain` | The same word, in the script you chose. | CHG |
 | `review.edits.*.label` | Took out a sound / a restart / a repeat, Spelled your way, Punctuation, One word fixed, New paragraph, Your script | KEEP |
@@ -687,7 +687,7 @@ Copy:
 | `review.destination.filedChip` | Kept in Month {month} | NEW (as #181: "Kept" is the word the person just tapped; the website's "Filed in Month 9" card stays the motion benchmark) |
 | `review.destination.filedChipNewborn` | Kept in the first weeks | NEW |
 | `review.destination.filedChipBefore` | Kept in Before You | NEW |
-| `review.destination.privateToast` | Kept just for you. | KEEP (chip with LockSimple) |
+| `review.destination.privateToast` | Kept private. | KEEP (chip with LockSimple) |
 | `review.destination.voiceOnlyToast` | Recording kept on this phone. | KEEP (true at this moment: a backup upload, when backup is on, comes after the save) |
 | `billingCopy.keepGate.secondFreeNote` | That was your second free letter. | KEEP, once: on the second kept letter it shows as the Book's toast after the landing (no action, 4 s), not under the chip, where the hand-off leaves no time to read it (D-082) |
 
