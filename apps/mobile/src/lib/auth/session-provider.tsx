@@ -261,13 +261,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodForEvent(event, methodRef.current) });
       } else if (event === 'SIGNED_OUT') {
+        // H1 and audit F2: a sign-out Supabase made itself (revoked elsewhere) drops the Apple user id and the pending request.
+        // The Apple id goes first, so nothing below can skip it. Keychain only, so safe inside this callback.
+        void forgetAppleUser();
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
         methodRef.current = null; // a signed-out run keeps no method for the next session
-        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
-        // Cross-account audit F2: and the Apple user id, like Sign out, under-18 and revoked do.
-        // Both are Keychain only, so safe inside this callback (no Supabase call).
-        void forgetAppleUser();
       }
     });
     const stopRefresh = startAutoRefreshWhileActive();

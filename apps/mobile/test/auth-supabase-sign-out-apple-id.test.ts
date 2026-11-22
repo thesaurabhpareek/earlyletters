@@ -22,6 +22,12 @@ describe('[F2] a sign-out Supabase made itself forgets the Apple user id', () =>
     expect(branch).toContain("dispatch({ type: 'SIGNED_OUT' })");
   });
 
+  it('[BL-1508] it runs first, so a throw further down the branch cannot skip it', () => {
+    const branch = provider.match(/else if \(event === 'SIGNED_OUT'\) \{([\s\S]*?)\n      \}\n/)?.[1] ?? '';
+    expect(branch.indexOf('void forgetAppleUser();')).toBeGreaterThanOrEqual(0);
+    expect(branch.indexOf('void forgetAppleUser();')).toBeLessThan(branch.indexOf("dispatch({ type: 'SIGNED_OUT' })")); // mutant: move it back to the end
+  });
+
   it('the revocation watch still needs a signed-in user, so no id is read after the session is gone', () => {
     expect(provider).toMatch(/useEffect\(\(\) => \{\s*if \(!signedInUser\) return;\s*return startAppleRevocationWatch\(/);
   });
