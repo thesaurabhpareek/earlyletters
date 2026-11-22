@@ -3753,7 +3753,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Status: partly done (PR #1585: `listen.tsx` stores the pick against the draft once it exists, at recording start; the literal Scope 'as soon as the pick returns' is not met and nothing is stored before a draft exists; follow-up is BL-1665). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-01-R43.
 - Problem: the picked picture is stored with the draft only once Review opens; a kill before that loses it.
-- Scope: write the stored copy and the `entry_media` row against the draft as soon as the pick returns; the photo sweep removes an orphan file after a kill between file and row (NS-01-R32 shape).
+- Scope: write the stored copy and the `entry_media` row against the draft when recording starts (NS-01-R43: a kill before Review keeps nothing earlier); the photo sweep removes an orphan file after a kill between file and row (NS-01-R32 shape).
 - Fails on old code: `[NS-01-R43]` with a kill injected after the pick.
 - Done when: R43 passes and the sweep test for orphans passes.
 
@@ -8811,12 +8811,12 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the rule is written where queueing is described or Karma records that none exists.
 
 #### BL-1665 BL-955 follow-up: write the picked picture against a durable owner at pick time
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
-- Priority: Medium. Gate: none.
+- Status: partly done, part c decided not built (exec review of CPO, CDO and CPrivO; reason: PRD NS-01-R43 only promises that a kill before Review keeps nothing, PR #1585 already stores the pick at recording start, and a pending-pick store would keep a picture with no letter against R4 and Let it go and need an ADR 0028 amendment). Parts a and b are done; only the draft-then-let-go test remains. The comment fix is already on develop (`listen.tsx` line 443 now reads 'one stored at record start went with the draft above'); whether a draft-then-let-go picture test exists is [UNVERIFIED] (none found in `let-it-go.test.ts` or `ns09-let-go-source.test.ts`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
 - Satisfies: Refines BL-955 (NS-01-R43; PR #1585).
-- Problem and evidence: PR #1585 stores the pick at recording start, when the draft exists, so a kill between the pick and the start loses it. The literal Scope of BL-955, 'as soon as the pick returns', is not met. Also missing: a test that keeps a draft, lets go and checks the picture goes too. The comment `// "The photo goes too": nothing of it was stored` at the discard site in `apps/mobile/src/app/listen.tsx` (near line 443) is now false.
-- Scope: write the picked picture against a durable owner before the draft exists (for example a pending-pick row the draft later adopts); add the draft-then-let-go test; correct the comment.
-- Done when: a kill right after the pick leaves the picture and the next launch finds it; the let-go test fails if the picture stays; the comment matches the code.
+- Problem and evidence: PR #1585 stores the pick at recording start, when the draft exists, so a kill between the pick and the start loses it. The literal Scope of BL-955, 'as soon as the pick returns', is not built, by decision (see Status). Also missing: a test that keeps a draft, lets go and checks the picture goes too. The comment `// "The photo goes too": nothing of it was stored` at the discard site in `apps/mobile/src/app/listen.tsx` (near line 443) is now false.
+- Scope: add the draft-then-let-go test. Not built: a durable owner before the draft exists.
+- Done when: the let-go test fails if the picture stays.
 
 #### BL-1666 BL-776 follow-up: the device step, and the stale 'no way to Recently deleted' line
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
