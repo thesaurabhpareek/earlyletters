@@ -1,6 +1,6 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { expect, type Recorder } from './journey';
+import { canary, expect, type Recorder } from './journey';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
@@ -20,11 +20,11 @@ export async function passAgeGate(page: Page) {
 
 export async function startOnboarding(page: Page) {
   await btn(page, 'Begin the book').click();
-  await expect(btn(page, 'That sounds right')).toBeVisible();
+  await expect(btn(page, 'Continue')).toBeVisible();
 }
 
 export async function toChildStep(page: Page) {
-  await btn(page, 'That sounds right').click();
+  await btn(page, 'Continue').click();
   await expect(page.getByText('Who is this book for?')).toBeVisible();
 }
 
@@ -63,16 +63,17 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 }
 
 // `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
-export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
+export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
 
 /** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
-export const selectedTab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name, selected: true });
+export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, selected: true });
 
 /**
  * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no
  * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
  */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
+  canary(page, text);
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();

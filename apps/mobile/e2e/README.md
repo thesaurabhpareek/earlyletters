@@ -182,6 +182,24 @@ Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed
 
 **Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. A pass means kept and checked as above on the Simulator; the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`) is the device half of the gate.
 
+## 10. Timing runs: cold start and record start (BL-1403, feeds BL-044)
+
+Two flows measure what the SQL perf test (`test/perf.sql.test.ts`, BL-1402) cannot: `flows/E2E-18-timing-cold-start.yaml` (kill the app, launch, stop the clock when Tonight is visible) and `flows/E2E-19-timing-record-start.yaml` (tap Speak, stop the clock when the recording screen is visible). Each repeats 200 times and kills the app between runs. They carry the tag `e2e-timing`, which `config.yaml` excludes, so the suite and `bin/run-suite.sh` never run them; run them by name, once per release candidate.
+
+Budgets (named here from their sources, not new ones): cold start p50 1.2 s and p90 2.0 s (A-NFR-001, PRD 7.1); tap to recording p95 500 ms (PRD 7.1, DEVICE_TEST_PLAN S1-10); the others are BL-408's. The clock is the Maestro host's and includes Maestro's own command time, so a figure is an upper bound; the founder's phone run under BL-044 (FT-22, FT-39) stays the gate, and this README does not mark it done.
+
+Build: the `e2e` profile (request B-1 in `TESTID_REQUESTS.md`), not built yet; until it is, nothing here has been run.
+
+```bash
+# from the repo root, one simulator booted, APP_ID set as in section 4
+maestro test apps/mobile/e2e/flows/E2E-18-timing-cold-start.yaml 2>&1 | tee ~/cold.log
+maestro test apps/mobile/e2e/flows/E2E-19-timing-record-start.yaml 2>&1 | tee ~/record.log
+cat ~/cold.log ~/record.log > ~/timing.log
+node apps/mobile/e2e/bin/timing-summary.mjs ~/timing.log
+```
+
+The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text. Once the table is filed under BL-044, delete the raw Maestro log.
+
 ## Sources (opened 3 Oct 2026)
 
 - Maestro docs (docs.maestro.dev): launchApp (`clearState`, `clearKeychain`, `stopApp`, `permissions`, `arguments`; iOS arguments arrive through UserDefaults), Permissions (default grants all; `unset` makes the system prompt appear), Nested flows, Conditions, Parameters and constants (`MAESTRO_` shell variables, defaults with `||`), JavaScript (GraalJS sandbox, `http`, `json`, `output`), Workspace configuration (`flows`, `includeTags`, `excludeTags`, `executionOrder`), Commands (`openLink`, `pressKey`, `stopApp`, `swipe`, `back`, `setAirplaneMode`, `setDarkMode`, `takeScreenshot`, `extendedWaitUntil`, `hideKeyboard`, `inputText`), CLI reference (`--udid`, `--format JUNIT`, `--include-tags`, `--test-output-dir`), install script (`MAESTRO_VERSION`).

@@ -9,7 +9,8 @@ import { getAppearance } from '@/components/child/child-store';
 import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
-import { headerCard, planRowFor } from '@/components/settings/settings-home.logic';
+import { SignedOutCard } from '@/components/settings/signed-out-card';
+import { headerCard, planRowFor, youTabView } from '@/components/settings/settings-home.logic';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { useAppLock } from '@/lib/app-lock/controller';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -20,7 +21,7 @@ import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { childRowTitle } from '@/components/child/child-settings.logic';
 import { remindersSummary } from '@/lib/reminders';
-import { getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
+import { currentUserId, getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -105,22 +106,34 @@ export default function Settings() {
     provider: auth.account.provider,
     signsAs: getActiveChild()?.signsAs,
   });
+  // The You tab's named state (A signed in, B signed out, C local start, 0 no sign-in). B versus C is the sync owner;
+  // `accountReady` is the one meaning of "has an account" the card and the Delete account row share (GAP 2).
+  const you = youTabView({ signIn: capabilities.signIn, status: auth.state.status, owner: currentUserId() });
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       {/* Header card, then the Plan row in every build (CCO-9, settings-ia.md 3 [F]; CTO ruling 8 Nov 2026): the Terms
           and Subscription Terms send people to "Settings, Plan", so a row labelled Plan is always here, one tap from home. */}
-      <ListSection>
-        <ListRow
-          title={card.title}
-          subtitle={card.subtitle}
-          trailing={card.route ? 'chevron' : 'none'}
-          accessibilityHint={card.hint}
-          onPress={card.route ? go(ROUTES.account) : undefined}
-          testID="settings.headerCard"
-        />
-        <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
-      </ListSection>
+      {!you.signedOutCard ? (
+        <ListSection>
+          <ListRow
+            title={card.title}
+            subtitle={card.subtitle}
+            trailing={card.route ? 'chevron' : 'none'}
+            accessibilityHint={card.hint}
+            onPress={card.route ? go(ROUTES.account) : undefined}
+            testID="settings.headerCard"
+          />
+          <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
+        </ListSection>
+      ) : (
+        <>
+          <SignedOutCard localStart={you.localStartLine} />
+          <ListSection>
+            <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
+          </ListSection>
+        </>
+      )}
 
       <ListSection title={copy.children.settings.sectionTitle}>
         {s.children.map((ch: Child) => (
@@ -171,7 +184,7 @@ export default function Settings() {
 
       {/* Delete account only while signed in: signed out there is no account here to delete (#358 review). And only in a build
           with EXPO_PUBLIC_ACCOUNT_DELETION=on (founder, 30 Oct 2026; it implies server features): without it the row is absent. */}
-      {capabilities.accountDeletion && auth.signedIn ? (
+      {capabilities.accountDeletion && auth.signedIn && you.accountReady ? (
         <ListSection>
           <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
         </ListSection>

@@ -4,15 +4,23 @@
  * the route renders exactly what Build 11 did: nothing here lists the books, listens to the store, reads or watches the
  * network, or starts a timer (route.logic.ts; tested as behaviour in test/use-first-run-route.test.ts). Records and sends
  * nothing.
+ *
+ * NX-36-S17: a ready, sync-on session with no book asks its account first (use-new-phone.ts) and is held on "Opening your
+ * book" until the account has said it has no book, so the child step is never shown while the book may be on its way. A
+ * signed-in session that cannot ask yet (the consent gate still being read, or unreadable, or a sign-out finishing) is held
+ * too (gate.logic.ts heldNewPhoneView); a `needsConsent` session is held on the finish-setup screen (BL-922a); only sync declined keeps the earlier route.
  */
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { announce } from '@/lib/a11y';
-import type { AuthState } from '@/lib/auth/machine.logic';
+import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
+import { authUserId, isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
-import { subscribe, listChildren } from '@/lib/store';
-import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
+import { currentUserId, listChildren, subscribe } from '@/lib/store';
+import { signInPaused } from './sign-in-pause';
+import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, heldNewPhoneView, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
+import { useNewPhone } from './use-new-phone';
 import { useOnline } from './use-online';
 import { failureStillCounts, firstRunScreen, type FirstRunScreen } from './welcome.logic';
 
@@ -28,6 +36,23 @@ export interface FirstRunRoute extends FirstRunGateResult {
   tryAgain: () => void;
   /** The steps report that the person is past their welcome step: nothing typed there is ever swapped out for a sign-in screen. */
   markPastWelcome: () => void;
+  /**
+   * "Use another account" signed the person out: first run goes back to its start. The route now does this itself when the
+   * session ends (a signed-in to signedOut change of the auth status), which also covers a sign-out that waited for queued
+   * uploads; this call is kept as belt and braces for the immediate case. The latch is cleared, so with no session the route
+   * answers the Welcome, never the child step with Continue live (D-160). A person who chose the local start keeps the steps.
+   * Nothing with the switch off.
+   */
+  restartFromWelcome: () => void;
+  /**
+   * NX-36-S17: Try again on the slow and offline screens: asks the account again and nudges the pull, or, while the consent
+   * gate could not be read (`ready` with sync `unknown`), re-reads that gate.
+   */
+  retryOpening: () => void;
+  /** NX-36-S17: "Start a book" on No book here yet (the person chose to begin one: the child step). */
+  startBook: () => void;
+  /** NX-36-S17: the account has said it holds a book, so the opening screen may say "Your letters are coming across." */
+  accountHasBook: boolean;
 }
 
 export function useFirstRunRoute(): FirstRunRoute {
@@ -87,13 +112,55 @@ export function useFirstRunRoute(): FirstRunRoute {
     if (active) setPastWelcome(true);
   }, [active]);
 
+  // The session really ended (signed in, then signedOut): first run goes back to its start whatever ended it: "Use another
+  // account" (also after a wait for queued uploads, which resolves later than the tap), a revoked or expired session, a
+  // forced sign-in. Otherwise the steps would stay up with no account and Continue would make a local-only book in a build
+  // with server features on (D-160). Not on restoring or a cold start (there was no session to lose), not while a wait for
+  // uploads is cancelled (that goes back to ready), and not for a person who chose the local start (the gate keeps the steps).
+  const wasSignedIn = useRef(isSignedIn(auth.state));
+  const status = auth.state.status;
+  useEffect(() => {
+    const signedIn = isSignedIn(stateRef.current);
+    if (active && wasSignedIn.current && status === 'signedOut') setPastWelcome(false);
+    wasSignedIn.current = signedIn;
+  }, [active, status]);
+
+  const restartFromWelcome = useCallback(() => {
+    if (active) setPastWelcome(false);
+  }, [active]);
+
+  const hasLocalBook = active && listChildren().length > 0;
+  // BL-961: another account signed in on a phone that holds this owner's book is held (gate step `otherAccount`) and its
+  // account is never asked for books here: the phone's one owner is someone else (08-keeping K8, OQ-5).
+  const phoneOwner = active ? currentUserId() : null;
+  const visible = bookVisibleTo({ owner: phoneOwner, sessionUser: active ? authUserId(auth.state) : null });
+  // A ready session with sync on and no book asks its account first (NX-36-S17). A session whose consent gate is still being
+  // read, could not be read, or whose sign-out has not finished is held meanwhile (heldNewPhoneView): it may yet become sync
+  // on, and the first pull would bring the account's book. A session that declined sync keeps the earlier route (`new`); one with consent
+  // still to give is held on the finish-setup screen (`consent`, heldNewPhoneView); so does every
+  // build with the switch off (nothing here is read then).
+  const asks = active && visible && auth.state.status === 'ready' && auth.state.sync === 'on';
+  const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });
+  const held = active && !hasLocalBook ? heldNewPhoneView(auth.state, online) : undefined;
   const inputs = gateInputsFromAuth({
     serverFeatures: active,
     authState: auth.state,
-    hasLocalBook: active && listChildren().length > 0,
+    hasLocalBook,
     localStartChosen,
     online,
+    newPhone: np.view ?? held ?? 'new',
+    phoneOwner,
+    // FP-6: the cached signed config's `killSwitches.signIn`; only read with the switch on (hide-only, fail-open).
+    signInPaused: active && signInPaused(),
   });
+  // Try again while the consent gate could not be read re-reads that gate (the provider's own read; sync on then asks the
+  // account). Otherwise it is the account question again.
+  const gateUnread = active && auth.state.status === 'ready' && auth.state.sync === 'unknown';
+  const { refreshGate } = auth;
+  const retryOpening = useCallback(() => {
+    if (gateUnread) void refreshGate().catch(() => undefined);
+    else np.retry();
+  }, [gateUnread, refreshGate, np.retry]);
   const result = firstRunGate({ ...inputs, signInFailed: inputs.signInFailed && failureStillCounts(auth.state, setAside) });
   const restoring = restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0);
   // After the reconnect effect above (effects run in order), so that effect still sees the previous render's step.
@@ -109,5 +176,9 @@ export function useFirstRunRoute(): FirstRunRoute {
     chooseLocalStart,
     tryAgain,
     markPastWelcome,
+    restartFromWelcome,
+    retryOpening,
+    startBook: np.startBook,
+    accountHasBook: np.hasBook,
   };
 }

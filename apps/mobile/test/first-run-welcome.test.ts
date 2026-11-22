@@ -211,7 +211,7 @@ describe('[NX-36-S3] Outage and offline', () => {
   it('[NX-31-R18] the local start, once chosen, leaves the outage screen for the existing first run', () => {
     const inputs = { ...gateInputsFromAuth({ serverFeatures: true, authState: failed, hasLocalBook: false, localStartChosen: true }), localStartFallback: true };
     expect(firstRunGate(inputs).step).toBe('childStep');
-    expect(onboarding).toMatch(/<FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} \/>/);
+    expect(onboarding).toMatch(/<FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} onSignedOut=\{route\.restartFromWelcome\} \/>/);
   });
   it('[NX-31-R19] the outage screen is a StateScreen from the standard components, not hand-drawn', () => {
     expect(outage).toMatch(/import \{ StateScreen \} from '@\/components\/ui\/state-screen'/);
@@ -286,7 +286,8 @@ describe('[NX-31-R17] first run keeps the person where they are once past the we
     }
   });
   it('[NX-31-R17] the steps report that they are past their welcome step, and the route is told', () => {
-    expect(onboarding).toMatch(/if \(step !== 'welcome'\) onPastWelcome\?\.\(\);/);
+    // The Welcome start reports once it leaves the Welcome (handoff.logic reportsPastWelcome; the signed-in start waits to move off the promise step).
+    expect(onboarding).toMatch(/if \(reportsPastWelcome\(\{ start, step \}\)\) onPastWelcome\?\.\(\);/);
     expect(onboarding).toMatch(/onPastWelcome=\{route\.markPastWelcome\}/);
   });
 });
@@ -299,7 +300,7 @@ describe('[NX-36-S2] the servers-off store build is unchanged', () => {
         expect(firstRunGate(gateInputsFromAuth({ serverFeatures: false, authState, hasLocalBook, online: false })).step).toBe('unchanged');
       }
     }
-    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} \/>;/);
+    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} onSignedOut=\{route\.restartFromWelcome\} \/>;/);
   });
   it('[NX-31-R17] the screens that ship unchanged are still wired as they were', () => {
     for (const k of ['startButton', 'signInButton'] as const) expect(onboarding).toContain(`o.welcome.${k}`);

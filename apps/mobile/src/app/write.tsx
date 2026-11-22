@@ -30,7 +30,7 @@
  *
  * Typed letters skip Review (S20). A destination tap saves the words, then hands the letter to Review's one Keep step
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
- * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
+ * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Home as a draft.
  *
  * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
  * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.
@@ -54,7 +54,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession, leavesForeground, writePageFull } from '@/components/capture/write-session.logic';
 import { writeDateline } from '@/components/tonight/draft-card.logic';
 import { anotherThought, anotherThoughtShown } from '@/components/tonight/prompt.logic';
 import { PlusLine } from '@/components/tonight/plus-line';
@@ -64,6 +64,7 @@ import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
 import { useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
@@ -174,9 +175,13 @@ export default function Write() {
       { initial: initialText },
     ),
   );
+  const [pageFull, setPageFull] = useState(() => writePageFull(initialText.length));
   const onChange = (value: string) => {
     if (pageEmptinessChanged(session.latest(), value)) setText(value);
     session.change(value);
+    // Renders only when the page becomes full or stops being full (BL-378), never per keystroke.
+    const full = writePageFull(value.length);
+    if (full !== pageFull) setPageFull(full);
   };
 
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
@@ -318,8 +323,8 @@ export default function Write() {
     anotherOpacity.value = motion.reduced ? (offerAnother ? 1 : 0) : withTiming(offerAnother ? 1 : 0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
   }, [offerAnother, motion.reduced, anotherOpacity]);
   const anotherStyle = useAnimatedStyle(() => ({ opacity: anotherOpacity.value }));
-  const promptOut = motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
-  const promptIn = motion.reduced ? undefined : FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
+  const promptOut = FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
+  const promptIn = FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
   const promptLayout = motion.reduced ? undefined : LinearTransition.duration(tokens.motion.enter.durationMs);
 
   if (!child) return null;
@@ -348,8 +353,14 @@ export default function Write() {
       <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
     </View>
   );
-  const status =
-    saveState === 'saved' ? (
+  const status = pageFull && saveState !== 'failed' ? (
+    <View key="full" className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.pageFull">
+      <WarningCircleIcon size={14} color={c.textMuted} weight="bold" />
+      <Text variant="footnote" className="shrink">
+        {copy.write.tooLong}
+      </Text>
+    </View>
+  ) : saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
         <CheckIcon size={14} color={c.textMuted} weight="bold" />
         <Text variant="footnote" className="shrink">
@@ -387,6 +398,8 @@ export default function Write() {
               {dateline.text}
             </Text>
           ) : null}
+          {/* A picture chosen on Home sits above the field (NS-01-R3); absent otherwise. */}
+          <PendingPhotoThumb />
           {prompt && (
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
             <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>
@@ -401,25 +414,29 @@ export default function Write() {
               <Button variant="quiet" size="sm" icon={ArrowsClockwiseIcon} label={copy.tonight.newPromptButton} className="-ml-4 self-start" onPress={swapPrompt} testID="write.anotherThought" />
             </Animated.View>
           ) : null}
-          <TextField
-            ref={field}
-            variant="letter"
-            label={pendingCopy.write.label}
-            labelHidden
-            // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
-            // undisturbed, and the person's words are never written back into the field. The field grows with the
-            // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
-            className="mt-3 flex-none"
-            inputClassName="flex-none"
-            defaultValue={initialText}
-            onChangeText={onChange}
-            onSelectionChange={(e) => {
-              selectionEnd.current = e.nativeEvent.selection.end;
-            }}
-            onContentSizeChange={onContentSizeChange}
-            scrollEnabled={false}
-            placeholder={copy.tonight.typing.placeholder}
+          {/* A taller or shorter prompt moves the page on the same transition as the prompt; Reduce Motion: no layout move,
+              the prompt itself fades (BL-420). */}
+          <Animated.View layout={promptLayout}>
+            <TextField
+              ref={field}
+              variant="letter"
+              label={pendingCopy.write.label}
+              labelHidden
+              // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
+              // undisturbed, and the person's words are never written back into the field. The field grows with the
+              // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
+              className="mt-3 flex-none"
+              inputClassName="flex-none"
+              defaultValue={initialText}
+              onChangeText={onChange}
+              onSelectionChange={(e) => {
+                selectionEnd.current = e.nativeEvent.selection.end;
+              }}
+              onContentSizeChange={onContentSizeChange}
+              scrollEnabled={false}
+              placeholder={copy.tonight.typing.placeholder}
           />
+          </Animated.View>
           {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
               above the keyboard and push "Add to the book" off the screen. */}
           {inlineFooter ? footer : null}

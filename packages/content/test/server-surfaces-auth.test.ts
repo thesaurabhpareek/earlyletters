@@ -26,7 +26,7 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.bodies.settings': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
   'sheet.bodies.invite': 'Sign in on this phone to carry on.',
   'sheet.bodies.invite_create': 'Sign in on this phone to carry on.',
-  'sheet.notConfigured': 'Signing in is not available right now. Nothing on this phone has changed.',
+  'sheet.notConfigured': "Signing in isn't available right now. Nothing on this phone has changed.",
   'errors.network': 'Nothing has changed. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
   // Led with "Your letters are safe." in the S52 table (amended 28 Oct, #360); Build 12 leads with "Nothing has changed." instead.
@@ -36,10 +36,10 @@ const CHAPTER_7: Record<string, string> = {
   'errors.rate_limited': 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
   'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
-  'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+  'errors.provider': "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
   'errors.session_expired': 'You were signed out. Sign in again to carry on.',
   'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
-  'errors.unknown': 'That did not go through. Nothing has changed.',
+  'errors.unknown': "That didn't go through. Nothing has changed.",
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
   // S54
@@ -161,6 +161,25 @@ const REGISTERED: Record<string, string> = {
   'consent.terms.notNow': 'Not now',
 };
 
+/**
+ * The eleven words the founder approved for the first-run Welcome and the outage and offline screens (#724), on Tue 10 Nov
+ * 2026 (Pacific), word for word. A later change to any of them needs a new approval, so this test fails first. The
+ * agreement line is the registered consent line itself (above), not a copy of it.
+ */
+const FIRST_RUN_APPROVED: Record<string, string> = {
+  'sheet.bodies.sign_in_first': 'Sign in to begin your book.',
+  'sheet.agreeLine': REGISTERED['consent.terms.agreeLine'],
+  'firstRun.errors.provider': "That sign-in didn't finish. Try again, or try another way.",
+  'outage.title': 'Sign-in cannot be reached right now.',
+  'outage.body': 'Try again in a moment.',
+  'outage.retry': 'Try again',
+  'outage.startLocal': 'Start on this phone',
+  'outage.startLocalNote': 'Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.',
+  'outage.backOnline': 'You are back online.',
+  'offline.title': 'Sign-in needs a connection.',
+  'offline.body': 'Connect to the internet, then tap Try again.',
+};
+
 describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
   it('has every CHG and NEW row of S52 to S56, word for word', () => {
     for (const [key, words] of Object.entries(CHAPTER_7)) expect(at(key), key).toBe(words);
@@ -184,6 +203,12 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
       expect(line).not.toMatch(/Apple|Google|an hour|\d/);
       expect(line).toMatch(/a few minutes/);
     }
+  });
+
+  it('has the eleven founder-approved first-run Welcome, outage and offline words, word for word (#724, 10 Nov)', () => {
+    for (const [key, words] of Object.entries(FIRST_RUN_APPROVED)) expect(at(key), key).toBe(words);
+    // The Welcome and the consent sheet say one sentence, so neither can drift from the registered line.
+    expect(authCopy.sheet.agreeLine).toBe(authCopy.consent.terms.agreeLine);
   });
 
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {
@@ -250,7 +275,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     const SECOND = ['unknown'];
     const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
     const INPUT = ['wrong_code', 'expired', 'invalid_email'];
-    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in'];
+    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in', 'region_refused'];
     const errors = authCopy.errors as Record<string, string>;
     expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
     for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);
@@ -265,7 +290,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe|^Nothing has changed/);
     for (const kind of Object.keys(errors)) expect(errors[kind], kind).not.toMatch(/\bsafe\b/);
     // The four the ruling changed keep their table words after the new first sentence.
-    expect(errors.provider).toBe('Nothing has changed. That sign-in did not finish. Try again, or try another way.');
+    expect(errors.provider).toBe("Nothing has changed. That sign-in didn't finish. Try again, or try another way.");
     expect(authCopy.sheet.notConfigured).toContain('Nothing on this phone has changed.');
   });
 

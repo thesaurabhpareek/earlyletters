@@ -40,7 +40,7 @@ export const familyEmails = {
     cta: { label: "Join the book", urlVar: "{inviteUrl}" },
     fallback: FALLBACK,
     safety: "Not expecting this? You can ignore this email. Nothing happens unless you join.",
-    whyText: `You are getting this email because {inviter} entered your address in ${brand.name}.`,
+    whyText: `You're getting this email because {inviter} entered your address in ${brand.name}.`,
     category: 'family',
     kind: 'transactional',
   },

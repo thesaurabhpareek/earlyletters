@@ -94,7 +94,7 @@ For parents of babies and young children, from the first weeks to the first year
 Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,
   // App Store Connect fields (D-063).
-  supportUrl: brand.web.origin,
+  supportUrl: `${brand.web.origin}/support`,
   marketingUrl: brand.web.origin,
   privacyPolicyUrl: brand.web.privacy,
   supportEmail: brand.support.email,

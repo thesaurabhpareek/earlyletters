@@ -115,7 +115,7 @@ export function WelcomeSignIn() {
         </Text>
       ) : null}
       {invited ? (
-        <Button variant="quiet" size="sm" label={o.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} testID="welcome.invited" />
+        <Button variant="quiet" size="sm" label={o.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent, PLUS_ALPHA) as Href)} testID="welcome.invited" />
       ) : null}
     </View>
   );

@@ -25,6 +25,7 @@ import {
 } from '../src/lib/backup/format';
 import type { ByteSink, ByteSource } from '../src/lib/backup/ports';
 import { fakeM4a, nodeAead, nodeVault, sha256Hex } from './helpers/backup-node';
+import { scanRequests } from './helpers/leak-scan';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
 const ASHA = 'a5a5a5a5-0000-4000-8000-000000000001';
@@ -114,15 +115,12 @@ describe('[F08-REQ-020] object format v1: header, 64 KiB AES-256-GCM segments, h
     const plain = fakeM4a(3 * SEGMENT_SIZE);
     const s = await seal(plain);
     const hay = Buffer.from(s.bytes);
-    // The ftyp box is the recording's own first 16 bytes (size, "ftyp", major brand, minor version), not the 4 letters:
-    // any 4 bytes of ciphertext equal "ftyp" by chance (1 in 2^32 per byte), 16 bytes cannot (2^-128).
-    const start = plain.subarray(0, 16);
-    expect(start.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
-    expect(hay.includes(start), 'the sealed object carries the start of the recording').toBe(false);
-    expect(hay.includes(Buffer.from(sha256Hex(plain), 'hex'))).toBe(false);
-    expect(hay.includes(Buffer.from(sha256Hex(plain)))).toBe(false);
+    // [BL-456] 16-byte shingles of the whole take against every offset of the sealed object (`helpers/leak-scan.ts`);
+    // the 4 letters "ftyp" alone are no signature (1 in 2^32 per byte of ciphertext).
+    expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
+    // [BL-1417] ...and as base64, hex or a byte list of the take, and the hash in either form (`scanRequests`).
+    expect(scanRequests([{ kind: 'the sealed object', body: hay }], [plain])).toEqual([]);
     expect(hay.includes(Buffer.from(s.fileKey))).toBe(false);
-    expect(hay.includes(Buffer.from(plain.subarray(1000, 1064)))).toBe(false);
   });
 
   it('is deterministic for a saved key block and nonce prefix (a resumed upload sends the same bytes)', async () => {

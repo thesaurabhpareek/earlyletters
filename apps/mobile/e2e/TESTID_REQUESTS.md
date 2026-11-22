@@ -45,7 +45,7 @@ Column "Flows" names the flow files that use the id (E2E-nn). Ids marked *(optio
 | `gate.stop.mistake` | "I answered by mistake" button (only after 24 h) | 01 |
 
 ### Tabs (`app/(tabs)/_layout.tsx`)
-Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. The custom iOS `tabBarButton` spreads its props onto the `Pressable`, so the id should arrive; check once. Flows: almost all.
+Set `tabBarButtonTestID` per screen: `tab.tonight` (labelled Home), `tab.book`, `tab.you` (labelled Me). There is no Family tab; the family page (`/family`) is a pushed page. The custom iOS `tabBarButton` spreads its props onto the `Pressable`, so the id should arrive; check once. Flows: almost all.
 
 ### First run (`app/onboarding.tsx`)
 | testID | Element | Flows |
@@ -130,10 +130,11 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 ### Add a child (`components/child/add-child-form.tsx`)
 `addChild.screen`, `addChild.name`, `addChild.when` (ChoiceGroup), `addChild.bornToday` (the Born today chip), `addChild.add` (the primary; the app's id, first requested as `addChild.save`). Flows: 07.
 
-### Family and invites (`app/(tabs)/family.tsx`, `app/invite/*`)
+### Family and invites (`app/family.tsx`, `app/invite/*`)
 | testID | Element | Flows |
 |---|---|---|
 | `family.screen`, `family.member` (repeated), `family.invite`, `family.pending` (repeated), `family.pending.shareAgain`, `family.pending.cancel`, `family.finishSetup`, `family.leave` (not rendered in build 2, D-113), `family.leftNote` | Family tab | 13 |
+| `child.bookRow` | the "Write this book together" row in a child's settings (`settings/children/[id].tsx`); only in a build with the co-parent flow; opens the invite, or the family page once a co-parent has joined | 13 |
 | `inviteNew.screen`, `inviteNew.signsAs`, `inviteNew.share`, `inviteNew.close` | invite a co-parent | 13 |
 | `invite.screen`, `invite.paste.input`, `invite.paste.continue`, `invite.ask`, `invite.join`, `invite.joining`, `invite.joined`, `invite.signsAs`, `invite.open`, `invite.error`, `invite.close` | I was invited (asks before it joins, BL-322) | 13 |
 | `leave.screen`, `leave.choice.keep`, `leave.choice.take_out`, `leave.confirm`, `leave.close` | leave a shared book (`app/invite/leave.tsx`; shows coming soon in build 2, D-113) | 13 |

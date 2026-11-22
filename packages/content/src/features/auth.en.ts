@@ -69,7 +69,7 @@ export const authCopy = {
       passkey: 'Last time you used a passkey.',
     },
     // The kill path only (a build with no project settings).
-    notConfigured: 'Signing in is not available right now. Nothing on this phone has changed.',
+    notConfigured: "Signing in isn't available right now. Nothing on this phone has changed.",
     busy: 'Signing you in',
   },
 
@@ -104,6 +104,9 @@ export const authCopy = {
      */
     // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
+    // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
+    noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
+    announceResend: 'You can send another email.',
   },
 
   /**
@@ -116,7 +119,7 @@ export const authCopy = {
    */
   firstRun: {
     errors: {
-      provider: 'That sign-in did not finish. Try again, or try another way.',
+      provider: "That sign-in didn't finish. Try again, or try another way.",
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
@@ -138,6 +141,26 @@ export const authCopy = {
     // anyone in by itself. It reads the connection when Try again is tapped, and it goes back to sign in on its own when
     // the connection returns, so the line says what the person does.
     body: 'Connect to the internet, then tap Try again.',
+  },
+  // NX-36-S17 Tier 0 (docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md section 4.2): a signed-in phone with no book, on an
+  // account that has one. None of these is a registered row. Words are the spec's, pending the founder's approval of
+  // each row. Not here on purpose: arrivedWords and the recording sentence (Tier 1 and 2, counsel-read).
+  newPhone: {
+    // State A: the heading, then one sentence. States no place and no count.
+    loading: 'Opening your book.',
+    loadingBody: 'Your letters are coming across.',
+    // The arrival line on the first Book after arrival (D4: one place), and for an empty book.
+    arrivedPlain: 'Your book is here.',
+    // State C. The buttons reuse outage.retry and consent.noBook.tryAnother.
+    slowTitle: 'Your book is taking a while.',
+    slowBody: 'Check your connection, then try again.',
+    // State D. Its sentence reuses offline.body.
+    offlineTitle: 'Opening your book needs a connection.',
+    // BL-922a, NS-10-R0 and R4b: the held screen for an account with consent still to give. PROPOSED (words packet 20 Nov rows
+    // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
+    // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
+    consentBody: 'Finish setting up to open your book here.',
+    nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
   },
 
   verify: {
@@ -162,6 +185,27 @@ export const authCopy = {
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
+    // Account-first slice 4a (exec council decision, 9 Nov 2026, D). Shown when the account already has a book and this phone
+    // holds a book or letters: "Keep in this account" adds the phone's book to it as a second book, and nothing is merged or
+    // deleted (the recordings stay on the phone that made them). Each says where letters go, so counsel reads it, and each
+    // needs founder word approval. What is true: every book the server accepts is added as its own book; one it would refuse
+    // (no birthday or due date, or an id the phone did not make) stays on the phone and is not added. The screen cannot know
+    // that before the tap. Nothing is deleted either way (apps/mobile/test/first-run-new-account.test.ts runs the claim on a
+    // real phone database).
+    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
+    // Not new words: the registered sentence of `sheet.bodies.settings` (and `first_letter`, `account.signedOutBody`), word for
+    // word. A test pins that it is the second sentence of `sheet.bodies.settings`.
+    recordingsNote: 'Recordings are kept on the phone that made them.',
+    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
+  },
+
+  // FP-6 (NS-40-R9, R14), PROPOSED, HOLD for counsel and the founder: the refused-region screen (system.region.*). No reason is
+  // given, and nothing here says where the person is or why. Terms and Get in touch are its two quiet actions (not "Contact us": rules.test.ts allows "us" only in registered disclosures).
+  region: {
+    title: "{app} can't be set up from here.",
+    body: 'If you think this is wrong, get in touch.',
+    terms: 'Terms',
+    contact: 'Get in touch',
   },
 
   errors: {
@@ -180,11 +224,13 @@ export const authCopy = {
     rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
-    provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+    provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',
-    unknown: 'That did not go through. Nothing has changed.',
+    // FP-6, PROPOSED (E-S04.refused-region; the full screen is `region` below). Never names a reason, a place or a rule.
+    region_refused: "{app} can't be set up from here.",
+    unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
     // SIGN-06: the same refusal, reached after the link was already checked with the server (verify started), so the
@@ -267,6 +313,9 @@ export const authCopy = {
     signOutBody: 'Your letters stay on this phone. Sign in again any time.',
     // Shown while the outbox drains (F16, A-REQ-033): sign-out never drops a queued letter.
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
+    // BL-1461: while the wait runs after Apple revoked the sign-in at launch (A-REQ-033). Shown after a short delay.
+    // COUNCIL-LOCKED under the founder's delegation (21 Nov), replaceable by the founder; not founder-approved.
+    signOutRevokedWaiting: "Your newest letters are still on this phone. They're sent first, then this phone signs out.",
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).

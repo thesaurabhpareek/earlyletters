@@ -11,7 +11,8 @@
  *   the screen changes (WCAG 2.2.1, DESIGN_LANGUAGE 11.5). Without an action it leaves
  *   after `durationMs` (default 4 s), and never while a screen reader is running.
  * - Announced once (iOS announce(), Android polite live region). Focus is not moved.
- * - Undo and Close are 44 pt. Sits above the home indicator and any bottom bar (`bottomOffset`).
+ * - Undo and Close are 44 pt. Sits above the home indicator and any bottom bar (`bottomOffset`). From AX1 up the
+ *   words take the full width and Undo and Close sit under them, at the end (NS-33-R4, `toastLayout`).
  * Motion: enter y 8 to 0 + fade (280 ms), exit 160 ms; swipe down to dismiss (Gesture
  * Handler). Reduce Motion: fades only. Haptics: none on show; `tap` on Undo.
  */
@@ -24,8 +25,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { Button, IconButton } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { createToastStore } from '@/components/ui/toast.logic';
-import { announce, useScreenReader, useTheme } from '@/lib/a11y';
+import { createToastStore, toastLayout } from '@/components/ui/toast.logic';
+import { announce, useFontScale, useScreenReader, useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -58,6 +59,8 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
   const { c } = useTheme();
   const motion = useMotion();
   const screenReader = useScreenReader();
+  // From AX1 up the words take the full width and Undo and Close go under them (NS-33-R4, toast.logic.ts).
+  const stacked = toastLayout(useFontScale()) === 'stacked';
   const dy = useSharedValue(0);
   // The first show() of this box enters with the box; a replacement only fades its words in.
   const firstKey = React.useRef(entryKey);
@@ -97,6 +100,25 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
     });
   const drag = useAnimatedStyle(() => ({ transform: [{ translateY: dy.value }] }));
 
+  const controls = (
+    <>
+      {action ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          label={action.label}
+          testID={action.testID}
+          onPress={() => {
+            haptic('tap');
+            action.onPress();
+            onHide();
+          }}
+        />
+      ) : null}
+      <IconButton icon={XIcon} label={copy.common.closeButton} size="md" onPress={dismiss} color={c.bg} iconWeight="bold" />
+    </>
+  );
+
   return (
     <Animated.View
       entering={motion.enter(0)}
@@ -110,25 +132,12 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
             entering={swapped ? SWAP_IN : undefined}
             exiting={entryKey !== undefined ? SWAP_OUT : undefined}
             accessibilityLiveRegion="polite"
-            className="min-h-14 flex-row items-center gap-2 rounded-lg bg-foreground py-2 pl-5 pr-2"
+            className={stacked ? 'min-h-14 gap-1 rounded-lg bg-foreground py-3 pl-5 pr-2' : 'min-h-14 flex-row items-center gap-2 rounded-lg bg-foreground py-2 pl-5 pr-2'}
             style={{ boxShadow: tokens.elevation[2].web }}>
-            <Text variant="callout" tone="inverse" className="flex-1 py-1">
+            <Text variant="callout" tone="inverse" className={stacked ? 'py-1' : 'flex-1 py-1'}>
               {message}
             </Text>
-            {action ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                label={action.label}
-                testID={action.testID}
-                onPress={() => {
-                  haptic('tap');
-                  action.onPress();
-                  onHide();
-                }}
-              />
-            ) : null}
-            <IconButton icon={XIcon} label={copy.common.closeButton} size="md" onPress={dismiss} color={c.bg} iconWeight="bold" />
+            {stacked ? <View className="flex-row flex-wrap items-center justify-end gap-2">{controls}</View> : controls}
           </Animated.View>
         </Animated.View>
       </GestureDetector>
