@@ -44,10 +44,12 @@ describe('[PR10] the launch cleanup runs once the owner is settled', () => {
 
   it('a signed-in person runs it once the session is released, not before', () => {
     const r = rig();
-    r.fire();
+    r.subs.forEach((l) => l());
     expect(r.cleanup).not.toHaveBeenCalled();
     r.st.user = 'asha';
-    r.fire();
+    r.subs.forEach((l) => l()); // the raw subscription runs before the owner is bound: never starts it for a signed-in session
+    expect(r.cleanup).not.toHaveBeenCalled();
+    r.ins.forEach((l) => l()); // onSignedIn: after the bind
     expect(r.cleanup).toHaveBeenCalledTimes(1);
   });
 
@@ -64,7 +66,7 @@ describe('[PR10] boot wiring (source)', () => {
   it('startServices calls it through safely, and the wiring is gated by the flag', () => {
     expect(src('app/_layout.tsx')).toMatch(/safely\(startMomentsCleanup\)/);
     const w = src('lib/moments/launch.ts');
-    expect(w).toMatch(/on: MOMENTS_TAB_ON/);
+    expect(w).toMatch(/on: boolean = MOMENTS_TAB_ON/);
     expect(src('lib/moments/launch.logic.ts')).toMatch(/if \(!d\.on\) return/);
   });
   it('the pure part imports nothing', () => {

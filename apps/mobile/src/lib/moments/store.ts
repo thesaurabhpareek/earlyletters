@@ -99,8 +99,9 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
       if (!p) return;
       const r = readMoments(p, owner);
       if (r.state === 'foreign' && r.owner !== 'local') {
-        removeMoments(p);
+        const gone = removeMoments(p);
         tell();
+        if (!gone) throw new MomentsStoreError(); // a foreign file stays: the caller can report the code; the next launch retries
         return;
       }
       if (r.state !== 'ok' || !liveBooks) return; // a kept 'local' file reads foreign here: left alone

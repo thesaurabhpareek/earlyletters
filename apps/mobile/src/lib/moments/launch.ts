@@ -5,9 +5,9 @@ import { MOMENTS_TAB_ON } from '../nav/moments-tab';
 import { startMomentsLaunchCleanup } from './launch.logic';
 import { momentsStore } from './store';
 
-export function startMomentsCleanup(): () => void {
+export function startMomentsCleanup(on: boolean = MOMENTS_TAB_ON): () => void {
   return startMomentsLaunchCleanup({
-    on: MOMENTS_TAB_ON,
+    on,
     auth: {
       userId: currentAuthUserId,
       settledSignedOut: () => getAuthSnapshot().status === 'signedOut',
