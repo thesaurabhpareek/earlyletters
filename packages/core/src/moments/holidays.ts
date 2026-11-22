@@ -50,8 +50,9 @@ function weekdayDate(y: number, m: number, weekday: number, nth: number | 'last'
 /** The holidays on one local calendar day (YYYY-MM-DD) for a region. No region, no holiday. */
 export function holidaysOn(day: string, region: HolidayRegion | null): HolidayKey[] {
   const { y, m, d } = parseIsoDate(day);
-  if (!region) return [];
-  return TABLES[region]
+  const table = region && Object.hasOwn(TABLES, region) ? TABLES[region] : null;
+  if (!table) return [];
+  return table
     .filter((r) => r.m === m && ('d' in r ? r.d === d : weekdayDate(y, m, r.weekday, r.nth) === d))
     .map((r) => r.key);
 }
