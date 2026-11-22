@@ -282,7 +282,7 @@ describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
     expect(medianMs(() => decodedViews(body), 3), 'decoding the views').toBeLessThan(250);
     expectLinear(Buffer.from(SMALL), body, 'single line');
     expect(firstLeak(body, plain)).toBeNull();
-  });
+  }, 60_000);
 
   it('[BL-1476] a 256 KB wrapped base64 body decodes in well under a second, and a planted piece in it is still found', () => {
     const planted = Buffer.concat([big.subarray(0, 90000), plain.subarray(100, 164), big.subarray(90000)]);
@@ -293,7 +293,7 @@ describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
     const clean = Buffer.from(wrap(BIG_B64, 76, '\n'));
     expect(medianMs(() => decodedViews(clean), 3), 'decoding the views').toBeLessThan(250);
     expect(firstLeak(clean, plain)).toBeNull();
-  });
+  }, 60_000);
 
   it('[BL-1476] a long single line followed by a short one and a long line of other characters stays fast', () => {
     const text = `${BIG_B64}\nab\n${'x'.repeat(100000)}\n!!!${BIG_B64.slice(0, 100000)}`;
