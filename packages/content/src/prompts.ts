@@ -10,7 +10,8 @@
 import type { Prompt } from '@scribe/core';
 export type { Prompt, PromptBand, PromptKind } from '@scribe/core';
 // 3: added the `before` band, eight openings for a book whose child is not born yet (P3 critics' pass S2).
-export const PROMPT_LIBRARY_VERSION = 3;
+// 4: four more `before` openings, twelve in all (BL-535, F13-REQ-008). No earlier key is reused or reworded.
+export const PROMPT_LIBRARY_VERSION = 4;
 
 export const PROMPTS: Prompt[] = [
   // Openings, any age
@@ -102,6 +103,10 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.before.sounds", text: "What does your home sound like these days?", band: "before", kind: "opening" },
   { key: "opening.before.here", text: "Where are you today, and what is around you? Tell {child}.", band: "before", kind: "opening" },
   { key: "opening.before.find", text: "What do you want {child} to find in this book one day?", band: "before", kind: "opening" },
+  { key: "opening.before.place", text: "Where is a place you love, and what is it like there?", band: "before", kind: "opening" },
+  { key: "opening.before.humming", text: "What song do you find yourself humming lately?", band: "before", kind: "opening" },
+  { key: "opening.before.people", text: "Who is someone you would like {child} to know about one day?", band: "before", kind: "opening" },
+  { key: "opening.before.keep", text: "What is a small thing from these weeks that you want to keep?", band: "before", kind: "opening" },
 
   // Gap: easy ways back in, never about time away
   { key: "gap.any.right-now", text: "What is {child} doing right now, this very minute?", band: "any", kind: "gap" },

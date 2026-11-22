@@ -1,7 +1,8 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+# No slash: also matches a symlink named node_modules (a worktree link once slipped into #641).
+node_modules
 
 # Expo
 .expo/
@@ -103,3 +104,10 @@ docs/release/journey/INDEX.text-only.md
 # coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
 coverage/
 !/scripts/coverage/
+
+# web (from main, one-lineage merge)
+apps/web/.next*
+apps/web/next-env.d.ts
+apps/web/*.tsbuildinfo
+apps/web/e2e/.results/
+__pycache__/

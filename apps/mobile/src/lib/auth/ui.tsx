@@ -39,6 +39,7 @@ import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
 import { useAuth } from './session-provider';
+import { RevocationWaitLine } from './revocation-wait-line';
 
 const tryAgainLabel = copy.common.tryAgainButton;
 
@@ -189,12 +190,13 @@ export function PrivacyLine({ text }: { text: string }) {
 }
 
 /** Apple's own button (ASAuthorizationAppleIDButton): approved artwork, localized, accessible (HIG). */
-export function AppleButton({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+export function AppleButton({ onPress, disabled, signIn }: { onPress: () => void; disabled?: boolean; signIn?: boolean }) {
   const dark = useScheme() === 'dark';
   return (
     <View pointerEvents={disabled ? 'none' : 'auto'} style={{ opacity: disabled ? 0.5 : 1 }}>
       <AppleAuthentication.AppleAuthenticationButton
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+        // The sheet says "Continue with Apple"; the account-first Welcome says "Sign in with Apple" (BRAND.md form, 9 Nov ruling).
+        buttonType={signIn ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
         buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
         cornerRadius={SHEET.button / 2}
         style={{ height: SHEET.button, width: '100%' }}
@@ -328,7 +330,14 @@ export function AccountGate({
     );
   }
 
-  if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
+  if (s.status === 'checkingConsent' || s.status === 'signingOut') {
+    return (
+      <>
+        <Busy label={authCopy.consent.settingUp} />
+        <RevocationWaitLine state={s} />
+      </>
+    );
+  }
 
   // Consent still missing, or (BL-347) the claim screen was never answered: one way back to it.
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;

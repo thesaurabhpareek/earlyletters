@@ -35,6 +35,7 @@ import {
   type PackManifest,
   type TrustedKey,
 } from '../../packages/api/src/index';
+import { TRUSTED_SIGNING_KEYS } from '../../packages/api/src/keys';
 import { textRulesPackId } from '../../packages/core/src/lang/languages';
 import { LANGUAGE_CODES } from '../../packages/core/src/lang/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
@@ -545,7 +546,7 @@ describe('release directory', () => {
       expect(untrusted.stdout + untrusted.stderr).not.toContain(key.secretKey);
     }, 60_000);
 
-    it('`verify` reports what a phone would see: today, with keys.ts empty, the served manifest is not trusted', async () => {
+    it('`verify` reports what a phone would see: a manifest signed with a key keys.ts does not list is not trusted', async () => {
       // Async spawn: the release server runs in this process, so a sync spawn would block it from answering.
       const r = await new Promise<{ status: number | null; stdout: string }>((resolve) => {
         const child = spawn(tsx, [path.join(REPO, 'scripts/packs/publish.ts'), 'verify', '--base-url', served.url], { cwd: REPO, env: process.env });
@@ -554,7 +555,8 @@ describe('release directory', () => {
         child.on('close', (status) => resolve({ status, stdout }));
       });
       expect(r.status).toBe(1);
-      expect(r.stdout).toMatch(/trusted key ids: NONE/);
+      // Whatever keys.ts lists today (none before the first ceremony), verify names them.
+      expect(r.stdout).toContain(`trusted key ids: ${TRUSTED_SIGNING_KEYS.map((k) => k.keyId).join(', ') || 'NONE'}`);
       expect(r.stdout).toMatch(/FAIL pack-manifest: signature check failed \(unknown_key\)/);
     }, 60_000);
   });

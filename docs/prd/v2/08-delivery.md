@@ -426,7 +426,7 @@ Some files every feature needs. Each has one owner; everyone else changes it by 
 | Requests to S03, S16 and S20 | Those streams | Each keeps one standing "requests" PR a day that batches every request received by 15:00 UTC; it merges as one slot in the next session (R5 EQ-33) |
 | `docs/legal/DATA_CLASSIFICATION.md` | S17 | Put the rows under "Data classes touched" in the PR body; S17 lands them within a working day. This departs from 07 section 1.2 item 4 ("same PR") to keep one writer; the founder confirms [R] |
 | `docs/BACKLOG.md` | PM lane | Each PR may change only its own task's Status line (ADR 0011) |
-| `docs/DECISIONS.md`, `docs/agents/**` | Coordinator | `BOARD.md` is append-only except your own claim line (COORDINATION section 3) |
+| `docs/DECISIONS.md`, `docs/agents/**` | Coordinator | claims live in `CLAIMS.md`, one row each; edit only your own row (COORDINATION section 2) |
 | `CLAUDE.md`, `.github/CODEOWNERS` | Founder | Propose in a PR body |
 | `docs/prd/v2/**` | PM lane | Propose in a PR body (ADR 0011: agents never edit requirement documents) |
 | `docs/adr/**` | Coordinator for edits to an existing ADR | A stream proposing a decision adds a new ADR file in its PR (section 8.1) |
@@ -787,7 +787,7 @@ from origin/develop. Use your own git worktree.
 Read: CLAUDE.md; docs/agents/COORDINATION.md; docs/prd/v2/_AUTHORING.md sections 3b, 6, 7;
 docs/prd/v2/08-delivery.md sections 3.3 (your row), 4, 6.2, 6.3 (your items), 7 and 8.3;
 docs/prd/v2/07-quality-bar.md section 1; the spec sections named in your brief.
-Then add your claim line to docs/agents/BOARD.md.
+Then add your claim row to docs/agents/CLAIMS.md.
 Rules: edit only the files your stream owns (08 section 3.3). One WP or BL per pull request,
 except the pairs 08 section 6.3 counts as one slot (S02 BL-331 rest with BL-332, and peek_invite
 with BL-334; S11 BL-433 with BL-406; S16 the copy delta with WP-F21-01, G-21 and BL-390; S18
@@ -799,7 +799,7 @@ Test titles start with the requirement ID in brackets. Fixtures use the fictiona
 Do not commit. docs/agents/COORDINATION.md section 6 says agents never commit or push; until the
 founder answers Q3 and the coordinator edits that section, leave your changes uncommitted in your
 worktree and attach `git diff` (with new files) to your report. The coordinator runs the checks,
-commits on your branch, opens the PR and updates your claim line on BOARD.md.
+commits on your branch, opens the PR and deletes your claim row in CLAIMS.md.
 Never push to develop or main, apply a migration, set or read a secret, deploy, publish packs or
 config, or edit a requirement document. Migration files get their timestamp at merge.
 If your work is on branch auto/2026-10-05-fixes, start from your files there.

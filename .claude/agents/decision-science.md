@@ -16,6 +16,7 @@ Decisions about Early Letters rest on measurement designed in advance, with hone
 - `docs/analytics/decision-science/**`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/prd/PRD.md` goals, `docs/analytics/TRACKING_PLAN.md`, `docs/research/USER_RESEARCH.md`.
 - The latest `docs/agents/BRIEF-*.md`, decision 12 (opt-in analytics, self-learning loop) and the pricing decisions.
 

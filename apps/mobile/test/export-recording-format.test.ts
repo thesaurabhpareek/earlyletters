@@ -48,8 +48,10 @@ const validator = (def: string) => ajv.getSchema(`${exportJsonSchema.$id}#/$defs
 const json = (files: Record<string, Uint8Array>, path: string) => JSON.parse(strFromU8(files[path]));
 
 describe('[ADR 0027] each recording is named and labelled by its own container', () => {
-  it('the schema is 1.2.0', () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.2.0');
+  it('the schema is 1.2.0 or later (ADTS arrived in 1.2.0; 1.3.0 adds the consent history, BL-323)', () => {
+    const [major, minor] = EXPORT_SCHEMA_VERSION.split('.').map(Number);
+    expect(major).toBe(1);
+    expect(minor).toBeGreaterThanOrEqual(2);
   });
 
   it('reads the container from the stored file name: only `.aac` is ADTS, everything else stays M4A as before', () => {

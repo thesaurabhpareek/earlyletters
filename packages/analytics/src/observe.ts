@@ -30,7 +30,7 @@ export type AuthLike =
   | { status: 'checkingConsent'; method: AuthMethodValue | null }
   | { status: 'needsConsent'; method: AuthMethodValue | null; error?: string }
   | { status: 'ready' }
-  | { status: 'signingOut'; reason: 'user' | 'apple_revoked' | 'switch_account' };
+  | { status: 'signingOut'; reason: 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth' };
 
 const AUTH_REASONS = new Set<string>([
   'cancelled', 'network', 'expired', 'wrong_code', 'code_paused', 'rate_limited', 'invalid_email',
@@ -87,7 +87,8 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
       return;
     }
     if (next.status === 'signedOut' && SIGNED_IN.has(p.status)) {
-      const reason = p.status === 'signingOut' ? p.reason : 'session_lost';
+      // A forced re-sign-in (remote config epoch, BL-597) is the founder ending the session, not the person: counted as lost, so the allowlist gains no value.
+      const reason = p.status === 'signingOut' && p.reason !== 'force_reauth' ? p.reason : 'session_lost';
       a.track('signed_out', { reason });
     }
   };

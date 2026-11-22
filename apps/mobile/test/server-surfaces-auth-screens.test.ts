@@ -253,7 +253,7 @@ describe('[S54] Check your email', () => {
 
   it('[P8a lens B2] S01\'s side: only a wrong code adds to the list and only a code sign-in clears it, per address; a link never reads it', () => {
     const provider = read('lib', 'auth', 'session-provider.tsx');
-    const pending = read('lib', 'auth', 'pending.ts');
+    const pending = read('lib', 'auth', 'pending-memory.ts');
     expect(between(provider, 'async sendEmailLink(email)', 'async verifyEmailCode(')).not.toMatch(/WrongCode|codeEntryPause/);
     const byCode = between(provider, 'async verifyEmailCode(', 'async verifyEmailLink(');
     expect(byCode).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(email\), Date\.now\(\)\);\s*if \(pause\.paused\) \{/);
@@ -363,7 +363,7 @@ describe('[S55] before your book syncs', () => {
 
   it('shows every registered sentence of each step (no consent sentence dropped)', () => {
     for (const k of ['title', 'body', 'use', 'declineHelp', 'changeLater', 'agreeButton', 'declineButton']) expect(sensitive, k).toContain(`sc.${k}`);
-    for (const k of ['title', 'body', 'agreeLine', 'termsLink', 'privacyLink', 'healthLink', 'agree', 'notNow']) expect(terms, k).toContain(`t.${k}`);
+    for (const k of ['title', 'body', 'agreeLine', 'termsLink', 'privacyLink', 'agree', 'notNow']) expect(terms, k).toContain(`t.${k}`);
   });
 
   it('the agree line sits right above the button it describes', () => {
@@ -437,7 +437,7 @@ describe('[S56] Account', () => {
     const out = between(account, 'if (!auth.signedIn) {', 'const provider');
     expect(out).toMatch(/<BookCover name=\{active\.name\} size="sm"/);
     expect(out).toMatch(/\{a\.signedOutTitle\}/);
-    expect(out).toMatch(/fill\(a\.signedOutBody, \{ child: active\?\.name \?\? authCopy\.consent\.childFallback \}\)/);
+    expect(out).toMatch(/fill\(a\.signedOutBody, \{ child: active\?\.name \|\| authCopy\.consent\.childFallback \}\)/);
     expect(out).toMatch(/errors\.session_expired/);
   });
 

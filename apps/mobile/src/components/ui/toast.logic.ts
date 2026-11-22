@@ -5,6 +5,16 @@
  * anywhere replaces the toast on screen everywhere: a stale "Letter restored." can never sit under
  * "Erased from this phone.". Tested in test/toast.test.ts.
  */
+import { isAccessibilitySize } from '@/lib/a11y.logic';
+
+/**
+ * How the toast lays out its words and buttons (NS-33-R4): one row below accessibility sizes. From AX1 up the words
+ * take the full width and Undo and Close sit under them, at the end, so no word is split by a narrow column (at AX5 on
+ * an SE 3 the row left the words 101 pt, and "deleted." is 206 pt). Tested in test/toast-large-text.test.ts.
+ */
+export function toastLayout(fontScale: number): 'row' | 'stacked' {
+  return isAccessibilitySize(fontScale) ? 'stacked' : 'row';
+}
 
 export type ToastEntry<O> = {
   /** Unique per show(): timers, announcements and closes act on this key only. */

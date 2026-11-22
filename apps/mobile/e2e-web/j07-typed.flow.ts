@@ -63,7 +63,7 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   const step = journey(record, 'J07', 'typed-letter', 8, 'J07-04');
   await firstRun(app);
   const write = async (text: string) => {
-    await tab(app, 'Tonight').click();
+    await tab(app, 'Home').click();
     await btn(app, /^Type/).click();
     await app.getByRole('textbox').first().fill(text);
     await expect(btn(app, /^Add to .*book/)).toBeEnabled();
@@ -87,10 +87,10 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await step('unhappy', 'The third letter is held', 'The third Keep, from Write, opens the Plus sheet instead of saving. The typed words are still on the phone as a draft; nothing was lost. (Plus itself needs a real iPhone: Apple\'s store view does not exist on web.)');
   await btn(app, 'Keep it here for now').click();
   await expect(app.getByText('You waved at the dog.')).toBeVisible();
-  await step('happy', 'The held letter waits on Tonight', 'Tonight shows the waiting letter with its words as typed (5.8 row 5c).');
+  await step('happy', 'The held letter waits on Home', 'Home shows the waiting letter with its words as typed (5.8 row 5c).');
 });
 
-test('[J07b] close a half-written letter: the draft waits on Tonight', async ({ app, record }) => {
+test('[J07b] close a half-written letter: the draft waits on Home', async ({ app, record }) => {
   const step = journey(record, 'J07', 'typed-letter', 5, 'J07-01');
   await firstRun(app);
   await btn(app, /^Type/).click();

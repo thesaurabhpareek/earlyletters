@@ -16,7 +16,7 @@
  * is here, when the welcome is no longer the step showing (first run went on or left), or at sign-out.
  */
 import { familyCopy } from '@scribe/content';
-import { renderTemplate } from '@scribe/core';
+import { fill } from '@/lib/copy';
 import type { SyncPhase } from '@/lib/sync/types';
 
 export interface JoinWait {
@@ -48,7 +48,7 @@ const NO_WAIT: WelcomeJoinView = { line: null, begin: true, retry: false };
 export function joinWaitLine(name: string | null, state: 'waiting' | 'notYet'): string {
   const a = familyCopy.accept;
   if (!name) return state === 'waiting' ? a.joinedWaitingUnknown : a.joinedNotYetUnknown;
-  return renderTemplate(state === 'waiting' ? a.joinedWaiting : a.joinedNotYet, { child: name });
+  return fill(state === 'waiting' ? a.joinedWaiting : a.joinedNotYet, { child: name });
 }
 
 export function welcomeJoinView(i: {
@@ -69,6 +69,19 @@ export function welcomeJoinView(i: {
   return stalled
     ? { line: joinWaitLine(i.wait.name, 'notYet'), begin: true, retry: i.syncOn }
     : { line: joinWaitLine(i.wait.name, 'waiting'), begin: false, retry: false };
+}
+
+/**
+ * While Try again is in flight the stalled view stays (BL-460 point 5, council D3): the line, "Begin the book" and
+ * Try again do not flip to the quiet "on its way" view until the sync has answered. No new words. The wait itself
+ * (welcomeJoinView, joinWaitEnds) is unchanged: a book that arrived, or a welcome no longer showing, still wins.
+ */
+export function holdStalledWhileRetrying(
+  view: WelcomeJoinView,
+  i: { retrying: boolean; wait: JoinWait | null; onWelcome: boolean; bookHere: boolean },
+): WelcomeJoinView {
+  if (!i.retrying || !i.wait || !i.onWelcome || i.bookHere) return view;
+  return { line: joinWaitLine(i.wait.name, 'notYet'), begin: true, retry: true };
 }
 
 /** The wait is over: the book is here, the welcome is no longer the step showing, or the account signed out. */

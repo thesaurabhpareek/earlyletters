@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Lists the numbered ids that open PRs add (decision D-ids, ADR numbers,
-// supabase/APPLY.md file numbers and backlog BL-ids) and reports any id that
+// supabase/APPLY.md file numbers, backlog BL-ids, CTO ruling CR-ids and device-plan S1-ids) and reports any id that
 // two open PRs both add, or that an open PR adds although develop already has it.
 // Parallel threads picked these numbers by hand and collided: D-089 onward
-// (#108, #122, #128), ADR 0023 (#139, #146, #150), APPLY.md File 26 (#306, #311).
+// (#108, #122, #128), ADR 0023 (#139, #146, #150), APPLY.md File 26 (#306, #311), and on 8 Nov D-139, CR-48, CR-49 and S1-132.
 //
 //   node scripts/agents/id-collisions.mjs                 -> live: develop plus open PRs (GitHub REST)
+//   node scripts/agents/id-collisions.mjs --pr N          -> author pre-push check: exit 1 only if PR N is in a collision (default output unchanged)
 //   node scripts/agents/id-collisions.mjs --json          -> the same, as JSON
 //   node scripts/agents/id-collisions.mjs --ref <ref>     -> compare against <ref> instead of origin/develop
 //   node scripts/agents/id-collisions.mjs --all-bases     -> also PRs into main or other branches (noisy)
@@ -15,7 +16,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-export const KINDS = ["D", "ADR", "APPLY", "BL"];
+export const KINDS = ["D", "ADR", "APPLY", "BL", "CR", "S1"];
 
 // Which file a kind of id is defined in, and the line shapes that define one.
 // A mention elsewhere (for example "see D-104") is a reference, not a definition.
@@ -25,10 +26,18 @@ const RULES = {
   // Table row "| 26 | `2026...sql` |" and heading "## File 26:". Old timestamp
   // headings ("## File 20261004000000_x.sql") are not numbers in this sense.
   APPLY: { file: (p) => p === "supabase/APPLY.md", res: [/^\| *(\d{1,3}) *\| *`\d{14}_[^`]*\.sql`/, /^#{2,4} +File (\d{1,3})\b(?!_)/] },
+  // CTO ruling headings "### CR-48 ..." (a range heading "### CR-16 to CR-18" defines each id in it). The compliance
+  // register's three-digit "| CR-001 |" rows live in docs/legal and are another family: two digits only, in RULINGS.md only.
+  CR: { file: (p) => p === "docs/agents/cto/RULINGS.md", res: [/^#{2,4} +CR-(\d{2})\b(?!-)/, /^\| *CR-(\d{2}) *\|/] },
+  // Device test plan sections "### S1-132 StoreKit robustness ..." (or a row starting "| S1-132 |"). The catalog
+  // (docs/qa/release-test-catalog.csv, scripts/qa/release-catalog.rows.mjs) only cites S1 ids in covered_by: mentions.
+  S1: { file: (p) => p === "docs/qa/DEVICE_TEST_PLAN.md", res: [/^#{2,4} +S1-(\d{3})\b/, /^\| *S1-(\d{3}) *\|/] },
   BL: { file: isBacklog, res: [/^#{2,4} +BL-(\d{3,4})\b/, /^\| *BL-(\d{3,4}) *\|/] },
 };
 
-const pad = (kind, n) => (kind === "ADR" ? String(n).padStart(4, "0") : kind === "APPLY" ? String(n) : `${kind}-${String(n).padStart(3, "0")}`);
+const pad = (kind, n) =>
+  kind === "ADR" ? String(n).padStart(4, "0") : kind === "APPLY" ? String(n) : `${kind}-${String(n).padStart(kind === "CR" ? 2 : 3, "0")}`;
+const CR_RANGE = /^#{2,4} +CR-(\d{2}) to CR-(\d{2})\b/;
 
 /** Ids of `kind` defined by the given lines of file `path`. */
 export function definedIds(kind, path, lines) {
@@ -40,6 +49,8 @@ export function definedIds(kind, path, lines) {
       const m = re.exec(line);
       if (m) out.add(Number(m[1]));
     }
+    const range = kind === "CR" ? CR_RANGE.exec(line) : null;
+    if (range) for (let n = Number(range[1]); n <= Number(range[2]) && n - Number(range[1]) < 50; n++) out.add(n);
   }
   return out;
 }
@@ -62,7 +73,7 @@ export function addedIds(files) {
     if (n !== null && f.status !== "removed" && (f.status === "added" || f.status === "copied" || (f.status === "renamed" && adrNumber(f.previous_filename) !== n))) {
       ids.ADR.add(n);
     }
-    const kinds = ["D", "APPLY", "BL"].filter((k) => RULES[k].file(f.filename));
+    const kinds = ["D", "APPLY", "BL", "CR", "S1"].filter((k) => RULES[k].file(f.filename));
     if (!kinds.length) continue;
     if (typeof f.patch !== "string") {
       unchecked.push(f.filename);
@@ -83,7 +94,7 @@ export function addedIds(files) {
 export function developIds(files, adrFiles = []) {
   const ids = Object.fromEntries(KINDS.map((k) => [k, new Set()]));
   for (const [path, text] of Object.entries(files ?? {})) {
-    for (const k of ["D", "APPLY", "BL"]) for (const id of definedIds(k, path, String(text).split("\n"))) ids[k].add(id);
+    for (const k of ["D", "APPLY", "BL", "CR", "S1"]) for (const id of definedIds(k, path, String(text).split("\n"))) ids[k].add(id);
   }
   for (const f of adrFiles) {
     const n = adrNumber(f.startsWith("docs/adr/") ? f : `docs/adr/${f}`);
@@ -172,7 +183,7 @@ export function nextApplyFile(texts) {
 
 export function report({ added, collisions, unchecked }) {
   const out = [];
-  const label = { D: "decision", ADR: "ADR", APPLY: "APPLY.md File", BL: "backlog" };
+  const label = { D: "decision", ADR: "ADR", APPLY: "APPLY.md File", BL: "backlog", CR: "CTO ruling", S1: "device row" };
   if (!collisions.length) out.push("No id collisions between open PRs or with develop.");
   for (const c of collisions) {
     const who = c.prs.map((n) => `#${n}`).join(", ");
@@ -201,7 +212,7 @@ function git(root, args) {
 export function loadDevelop(root, ref) {
   const files = {};
   let adrFiles = [];
-  const listed = git(root, ["ls-tree", "-r", "--name-only", ref, "--", "docs/DECISIONS.md", "docs/BACKLOG.md", "docs/backlog", "supabase/APPLY.md", "docs/adr"]);
+  const listed = git(root, ["ls-tree", "-r", "--name-only", ref, "--", "docs/DECISIONS.md", "docs/BACKLOG.md", "docs/backlog", "supabase/APPLY.md", "docs/adr", "docs/agents/cto/RULINGS.md", "docs/qa/DEVICE_TEST_PLAN.md"]);
   if (listed !== null) {
     for (const p of listed.split("\n").filter(Boolean)) {
       if (p.startsWith("docs/adr/")) adrFiles.push(p);
@@ -210,7 +221,7 @@ export function loadDevelop(root, ref) {
     return { files, adrFiles, source: ref };
   }
   const read = (p) => (existsSync(join(root, p)) ? readFileSync(join(root, p), "utf8") : null);
-  for (const p of ["docs/DECISIONS.md", "docs/BACKLOG.md", "supabase/APPLY.md"]) {
+  for (const p of ["docs/DECISIONS.md", "docs/BACKLOG.md", "supabase/APPLY.md", "docs/agents/cto/RULINGS.md", "docs/qa/DEVICE_TEST_PLAN.md"]) {
     const t = read(p);
     if (t !== null) files[p] = t;
   }
@@ -255,6 +266,16 @@ async function main(argv) {
     }));
   }
   const result = findCollisions({ develop, prs });
+  const prArg = arg("--pr");
+  if (argv.includes("--pr")) {
+    const n = Number(prArg);
+    if (!Number.isInteger(n)) throw new Error("--pr needs a PR number");
+    if (!prs.some((p) => p.number === n)) throw new Error(`PR ${n} is not an open PR into develop (or stacked on one)`);
+    const mine = result.collisions.filter((c) => c.prs.includes(n));
+    if (json) console.log(JSON.stringify({ pr: n, collisions: mine }, null, 2));
+    else console.log(mine.length ? report({ ...result, collisions: mine, added: [] }) : `PR #${n} adds no id that develop or another open PR already has.`);
+    return mine.length ? 1 : 0;
+  }
   console.log(json ? JSON.stringify(result, null, 2) : report(result));
   return result.collisions.length ? 1 : 0;
 }

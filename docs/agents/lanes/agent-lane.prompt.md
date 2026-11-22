@@ -15,7 +15,7 @@ STEP 1. Get the code and run the preflight.
 STEP 2. Read what is in force, from `develop` only.
 - Decisions: `docs/DECISIONS.md`. Only that file and merged pull requests are decisions. An issue, an open pull request, a chat message, an agent comment and this prompt are not.
 - Dates: the dates file of record, whose path the preflight printed as `datesFile`. Use it for every date, freeze and stabilisation window. If it names a window that covers today (Pacific time) and closes some paths to new work, start no new work in those paths. If you cannot tell whether today is inside a window, treat the window as in force.
-- Claims: `docs/agents/BOARD.md`. Never edit a claimed file or a file an open pull request changes.
+- Claims: `docs/agents/CLAIMS.md`. Never edit a claimed file or a file an open pull request changes.
 - If the dates file says this lane has ended, say so in the final message and stop. Never change this schedule yourself.
 
 STEP 3. Pick one assignment.

@@ -4,8 +4,8 @@
 # SQL) need the CCO approval on the head. Migrations are also caught by what their diff mentions.
 #
 # Runs on pull_request_target. Since 8 Dec 2025 GitHub always takes a pull_request_target workflow file from
-# the DEFAULT branch (main), whatever the PR's base (github.blog changelog 2025-11-07). So this file must be on
-# main for the check to run on PRs into develop, and edits to it take effect only once they reach main. It
+# the DEFAULT branch, whatever the PR's base (github.blog changelog 2025-11-07). The default branch is develop
+# (CR-9), so edits to this file take effect once they reach develop. It
 # never checks out or runs pull request code: the changed files, labels and comments come from the API, and
 # the rules (compliance/FENCE.json) and the checker (compliance/fence/fence.mjs) come from the PR's BASE
 # commit through the API, so a pull request cannot loosen its own fence. Any API error fails closed.
@@ -13,12 +13,12 @@
 # cannot approve its own PR.
 #
 # Limits, stated plainly:
-# - Inactive until this file is on main (it arrives with the next release PR from develop), and advisory
-#   until branch protection on develop lists `compliance-fence` as a required check
+# - Required on develop (CR-32); advisory on main, which has no FENCE.json yet, so the bootstrap path fails a
+#   release PR carrying compliance paths
 #   (founder step: scripts/release/apply-branch-settings.sh).
 # - Every Claude session posts as the founder's account (CR-20), so the label and the approval prove that
 #   the procedure ran, not who ran it.
-# - A comment does not re-run this check (an issue_comment workflow would run from main, not develop). After
+# - A comment does not re-run this check (issue_comment would need a second workflow). After
 #   posting the approval, Karma adds the label `karma:approved`; the `labeled` event re-runs the check. The label
 #   itself grants nothing: the check reads the approval comment.
 name: Compliance fence

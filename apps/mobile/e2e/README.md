@@ -23,8 +23,8 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-03 | `E2E-03-speak-save-offline.yaml` | Speak, Review, keep the recording as a letter waiting for its words; Keep the book sheet and Not now; background stops and keeps the take; kill during recording is recovered | offline, no model |
 | E2E-04 | `E2E-04-type-a-letter.yaml` | Type a letter with Devanagari; no first-note card; text back exactly; kill right after Save leaves it exactly once | offline |
 | E2E-05 | `E2E-05-language-hindi-packs.yaml` | Add Hindi; its text pack downloads to installed and appears in Storage alone; offline and kill-switch states | network (part 1) |
-| E2E-06 | `E2E-06-read-together-plus-gate.yaml` | 3 free Read together sessions, then the Plus gate; remote config raises it to 5 | offline, config seam |
-| E2E-07 | `E2E-07-add-child-plus-gate.yaml` | Add a child after first run: Plus gate from the Book (2 taps) and from Settings; Not now creates nothing | offline |
+| E2E-06 | `E2E-06-read-together-no-gate.yaml` | Read together is free with no limit (D-082, F14-REQ-029): 6 sessions in a row, then a 7th after a relaunch, all open with no Plus sheet; reading one letter is never limited | offline, seed `asha` |
+| E2E-07 | `E2E-07-add-child-no-gate.yaml` | Add a child after first run needs no gate (D-083, F14-REQ-029): the form opens from the Book (2 taps), Avi's book is added and the switcher lists both; Settings, Add a child opens the same form with no gate | offline, seed `asha` |
 | E2E-08 | `E2E-08-delete-and-undo.yaml` | Delete, Undo, delete again: gone from the book, also after relaunch | offline |
 | E2E-09 | `E2E-09-account-deletion.yaml` | Account deletion: Export offered first, typed confirm, scheduled; cancel; server row scheduled then cancelled | backend |
 | E2E-10 | `E2E-10-export.yaml` + `bin/inspect-export.sh` | Export offline with no Plus UI; ZIP contents and manifest hashes | offline |
@@ -181,6 +181,24 @@ node apps/mobile/e2e/kill/run-kill-harness.mjs --merge /tmp/k1/report.json /tmp/
 Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed), `--point-runs N` (default runs/10), `--delay-ms A-B`, `--seed N`, `--self-check N` (planted runs of each kind, default 2), `--bundle-id` (must match the `.app`), `--keep-app`, `--json`. A bad number exits 2. A report's seed replays its delays only with the same `--self-check` value, because the plants draw from the same random stream first. `--merge` refuses a shard given twice and shards with other settings or another build.
 
 **Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. A pass means kept and checked as above on the Simulator; the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`) is the device half of the gate.
+
+## 10. Timing runs: cold start and record start (BL-1403, feeds BL-044)
+
+Two flows measure what the SQL perf test (`test/perf.sql.test.ts`, BL-1402) cannot: `flows/E2E-18-timing-cold-start.yaml` (kill the app, launch, stop the clock when Tonight is visible) and `flows/E2E-19-timing-record-start.yaml` (tap Speak, stop the clock when the recording screen is visible). Each repeats 200 times and kills the app between runs. They carry the tag `e2e-timing`, which `config.yaml` excludes, so the suite and `bin/run-suite.sh` never run them; run them by name, once per release candidate.
+
+Budgets (named here from their sources, not new ones): cold start p50 1.2 s and p90 2.0 s (A-NFR-001, PRD 7.1); tap to recording p95 500 ms (PRD 7.1, DEVICE_TEST_PLAN S1-10); the others are BL-408's. The clock is the Maestro host's and includes Maestro's own command time, so a figure is an upper bound; the founder's phone run under BL-044 (FT-22, FT-39) stays the gate, and this README does not mark it done.
+
+Build: the `e2e` profile (request B-1 in `TESTID_REQUESTS.md`), not built yet; until it is, nothing here has been run.
+
+```bash
+# from the repo root, one simulator booted, APP_ID set as in section 4
+maestro test apps/mobile/e2e/flows/E2E-18-timing-cold-start.yaml 2>&1 | tee ~/cold.log
+maestro test apps/mobile/e2e/flows/E2E-19-timing-record-start.yaml 2>&1 | tee ~/record.log
+cat ~/cold.log ~/record.log > ~/timing.log
+node apps/mobile/e2e/bin/timing-summary.mjs ~/timing.log
+```
+
+The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text.
 
 ## Sources (opened 3 Oct 2026)
 

@@ -7,7 +7,7 @@ Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-04
 - Every row marked **v1.1** below (sign-in setup, database migrations, Edge Functions, the demo account, the co-parent exit) **applies to the v1.0 store release**.
 - Rows that say v1.0 has no sign-in, no account or no server (5.2 step 4, 5.3 step 3, 6.4, 6.8, section 10's opening line) are superseded for the store release.
 - The alpha runs on the preview lane; this train's store lane starts once the submission date is set.
-- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4, Proposed).
+- The one-lineage merge is done: `main` came into `develop` in #497 (1 Nov 2026) and the merge-back to `main` is #515, so the cut from `main` (1.1) no longer waits on it.
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
@@ -23,7 +23,9 @@ approved and released  -->  tag ios-v1.0.0 on the RC's commit  -->  GitHub Relea
 alongside, never inside the binary:  migrations (APPLY.md order, founder)  |  packs, config, content (scripts/packs, founder's key)
 ```
 
-Dates for v1.0 (ROADMAP 2.1): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+Original dates for v1.0 (ROADMAP 2.1, superseded; the current dates follow this line): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+
+Current dates: the build 2 freeze is Tue 3 Nov and the go/no-go is Mon 9 Nov (D-130). The first store build is targeted for submission on Tue 1 Dec (D-121) and is re-planned after the go/no-go (D-106).
 
 Who does what:
 
@@ -39,7 +41,7 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; the date was confirmed by the founder on 30 Oct, D-130, and the hour is the coordinator's; D-089 planned Tue 27 Oct), right after the release PR. **Held (CR-30, 31 Oct 2026):** `main` and `develop` share history only to 3 Oct, and a trial release merge on 31 Oct conflicted in 45 files, so `release/1.0` is not cut at the build 2 freeze. Order after the Mon 9 Nov go/no-go: one PR bringing `main` into `develop` (ADR 0026 decision 4), then the release PR from `develop` into `main`, then the cut. The first store build targets Tue 1 Dec (D-121). The Tue 3 Nov freeze still applies to the alpha builds, which come from `develop`. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; the date was confirmed by the founder on 30 Oct, D-130, and the hour is the coordinator's; D-089 planned Tue 27 Oct), right after the release PR. **Hold lifted (1 Nov 2026):** CR-30 held the cut because `main` and `develop` shared history only to 3 Oct (a trial release merge on 31 Oct conflicted in 45 files). The founder approved the lineage merge early: `main` came into `develop` in #497 and the merge-back is #515. With one lineage, the cut goes ahead at the Tue 3 Nov freeze as first planned, after the release PR from `develop` into `main`. The first store build targets Tue 1 Dec (D-121). The Tue 3 Nov freeze still applies to the alpha builds, which come from `develop`. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
 - `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
@@ -92,7 +94,7 @@ npx eas-cli@24.10.0 init            # creates or links the EAS project for slug 
 | Profile | Bundle id | Distribution | Use | Status |
 |---|---|---|---|---|
 | `development` | `com.earlyletters.scribe.dev` | internal (ad hoc, registered devices) | dev client on the founder's phones; device spikes with Instruments (S1-17) | exists |
-| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); StoreKit products only after TESTFLIGHT step 2.5 | exists |
+| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); no App Store products on this record: Plus lives on the production record only (ids unique across the account, observed 1 Nov 2026; TESTFLIGHT step 2.5) | exists |
 | `production` | `com.earlyletters.scribe` | store (default) | release candidates (internal TestFlight on the production record) and the App Store | exists, `autoIncrement: true` |
 | `testflight` | `com.earlyletters.scribe.preview` | store | C0 and C1 (preview lane, `docs/release/TESTFLIGHT.md`) | exists on `develop` (PR #100) |
 | `e2e` | `.preview` | simulator, `withoutCredentials` | Maestro suite (`EXPO_PUBLIC_E2E=1`) | requested (B-1) |
@@ -129,6 +131,10 @@ Build budget (D-092): EAS Free gives 15 iOS builds a month, shared by both lanes
 
 After the freeze, C1 builds come from `testflight.yml` run on the latest RC tag, so families test the RC's commit in the preview record.
 
+Licenses page: Settings, Licenses lists what ships in the iOS app and nothing else, from `apps/mobile/src/generated/licences.json` (generated from `package-lock.json` and `scripts/licences/components.mjs`; `npm test` fails while a shipped package has no theme or the file is stale). Before each RC tag:
+- [ ] `npm run licences:verify -w @scribe/mobile` exits 0 on the RC commit. It exports the production iOS bundle, reads its source map and the autolinked native modules, and exits 1 if any npm package is in the build but not listed, listed but not built, or in the source map but not in `package-lock.json`. Record the line it prints ("N npm packages in the iOS build, N listed") in `docs/release/<x.y.z>.md`.
+- [ ] After the first EAS production build of the release, the pod list in the build log matches `NON_NPM` in `components.mjs` (Google Sign-In and its dependencies are listed by major version, since no Podfile.lock is kept).
+
 Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). Whoever changes the source regenerates it in the same PR; the drift test in `npm test` fails otherwise. The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`. The job refuses any other ref, refuses a listing that promises sharing while server features are off (BL-440), waits for the founder's approval in the `app-store` environment, adds the review contact and copyright from the secret, and runs `eas metadata:push`. GitHub shows the Run workflow button only for workflows on the default branch, so the job is available once the release PR has merged to `main` (V: GitHub docs, per the 15 Oct review). EAS Metadata cannot upload screenshots: upload them by hand (6.3).
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
@@ -147,7 +153,7 @@ Proposed (17 Oct, not decided; ADR 0026 decision 1, Proposed; SR-3 and SR-11 in 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
 | `EXPO_TOKEN` | Expo robot token used only for the store lane (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
-| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Optional `notes` overrides `storeListing.reviewNotes`; `demoUsername`, `demoPassword` and `demoRequired` only if a demo account exists (v1.1) | metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Servers-off production profile: optional `notes` overrides `storeListing.reviewNotes`. Servers-on production profile (build 12, `scripts/release/with-review-contact.ts`): `demoUsername` (the demo email address) and `demoPassword` (the password of the mailbox that receives the sign-in code; the app has no password sign-in) are required; `notes`, `inviteLink` and `inviteExpiry` are refused. The script sends `appReviewCopy.notesServersOn` with both filled in, and sends them as the sign-in fields with `demoRequired: true`; Sign in with Apple is the other way in. Servers-off profile: `inviteLink` and `inviteExpiry` are refused, and `demoUsername` and `demoPassword` are optional. Never put a real link or date in the repository | metadata push |
 
 A malformed secret fails with a fixed message and is never echoed to the public log. The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
 
@@ -215,7 +221,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 
 ### 6.4 App Review information
 - [ ] **Contact information** (name, email, phone in international format) and **Notes** (at most 4,000 bytes) (V: Apple "Platform version information"). Both are pushed by the metadata job (3.4): contact from `ASC_REVIEW_CONTACT_JSON`, notes from `storeListing.reviewNotes` in `packages/content` (BL-341 finishes them).
-- [ ] **No demo account for v1.0.** v1.0 is on this phone only: no sign-in, account or sync (PR #54), so "Sign-in required" is No. The notes say so. If sign-in ships (v1.1), the demo-account plan returns: a non-expiring account on production with the fictional family "Asha" only, kept between versions.
+- [ ] **Review path.** Servers-off build: no sign-in, account or sync, so "Sign-in required" is No and the notes say so (`storeListing.reviewNotes`). Servers-on build (build 12): sign-in is REQUIRED (founder ruling, 10 Nov 2026: account first), so "Sign-in required" is a founder decision for the reviewer path (NX-05, a founder step) and the notes must describe exactly that path. Co-parent surfaces may show "coming soon" in build 12, so the reviewer does not join the Asha sample book with an invite link. STALE until code catches up: `appReviewCopy.notesServersOn` (`packages/content/src/release/app-review.en.ts`) still says "SIGN-IN IS OPTIONAL" and walks through an invite link, and `with-review-contact.ts` still requires `inviteLink` and `inviteExpiry`; do not submit a servers-on build with those notes (list in the pull request that made this change). A reviewer note that says "no sign-in" on a servers-on build is refused (BL-341).
 - [ ] Notes cover: a family memory journal parents fill by talking or typing; everything stays on the phone; answer Yes to the 18+ question; how to reach Plus (BL-341); speech models and language packs download as data checked against a signed manifest and contain no code (guideline 2.5.2, V); a birthday or due date files letters by month and nothing is a health service (D-004 5.1.1(ix) positioning). Describe every feature specifically; generic notes are rejected under 2.3.1(a) (V).
 
 ### 6.5 Export compliance (encryption)
@@ -323,6 +329,7 @@ Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
 - [ ] DEVICE_TEST_PLAN items for this milestone, including S2-17 (plan reminders, D-094) and TF-11 (no analytics host, D-095) once #123 merges: evidence file <path>
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
+- [ ] 0.9.0 test pages (CR-60): the founder has released the hold on them, or this release PR does not carry `apps/web/content/legal/*/0.9.0.md` and the versioned routes
 - [ ] Release option: manual (1.0) or phased (updates)
 - [ ] After release: tag ios-vX.Y.Z on the RC's commit; G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
 ```

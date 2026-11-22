@@ -26,6 +26,47 @@ describe('[BL-275] Maestro flows', () => {
     expect(run.stdout).toMatch(/^lint-flows: \d+ flows and \d+ subflows OK/m);
   }, SPAWN_TIMEOUT_MS);
 
+  it('[F14-REQ-029] no flow expects a Plus sheet from Read together or Add a child (D-082, D-083)', async () => {
+    // Plus gates only keeping a new letter. A flow that taps one of these and then asserts the
+    // Plus sheet is visible tests a gate D-082 and D-083 removed (the old E2E-06 and E2E-07).
+    const NEVER_GATED = new Set(['book.readTogether', 'switcher.addChild', 'settings.addChild']);
+    const YAML = await import('yaml');
+    const found: string[] = [];
+    const scan = (file: string, list: unknown) => {
+      if (!Array.isArray(list)) return;
+      let lastTap: string | null = null;
+      for (const cmd of list as Record<string, unknown>[]) {
+        if (!cmd || typeof cmd !== 'object') continue;
+        const tap = cmd.tapOn as { id?: string } | undefined;
+        const seen = cmd.assertVisible as { id?: string } | undefined;
+        if (seen?.id?.startsWith('plusGate') && lastTap && NEVER_GATED.has(lastTap)) found.push(`${file}: ${lastTap} then ${seen.id}`);
+        lastTap = typeof tap?.id === 'string' ? tap.id : null;
+        const nested = (cmd.repeat as { commands?: unknown } | undefined)?.commands ?? (cmd.retry as { commands?: unknown } | undefined)?.commands;
+        scan(file, nested);
+      }
+    };
+    for (const dir of ['flows', 'subflows']) {
+      for (const f of readdirSync(join(E2E, dir)).filter((n) => n.endsWith('.yaml'))) {
+        const docs = YAML.parseAllDocuments(readFileSync(join(E2E, dir, f), 'utf8'));
+        scan(`${dir}/${f}`, docs[1]?.toJS());
+      }
+    }
+    expect(found).toEqual([]);
+    // The rewritten flows say what they prove.
+    const tagsOf = (f: string) => YAML.parseAllDocuments(readFileSync(join(E2E, 'flows', f), 'utf8'))[0].toJS().tags as string[];
+    expect(tagsOf('E2E-06-read-together-no-gate.yaml')).toEqual(expect.arrayContaining(['E2E-06', 'F14-REQ-029', 'D-082']));
+    expect(tagsOf('E2E-07-add-child-no-gate.yaml')).toEqual(expect.arrayContaining(['E2E-07', 'F14-REQ-029', 'D-083']));
+  });
+
+  it('the suite runner names only flow files that exist', () => {
+    const suite = readFileSync(join(E2E, 'bin', 'run-suite.sh'), 'utf8');
+    const block = /FLOWS=\(\n([\s\S]*?)\n\)/.exec(suite)?.[1] ?? '';
+    const names = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    expect(names.length).toBeGreaterThan(10);
+    const files = new Set(readdirSync(join(E2E, 'flows')));
+    expect(names.filter((n) => !files.has(`${n}.yaml`))).toEqual([]);
+  });
+
   it('E2E-17 runs in two parts and the suite runner inspects both exports for originals only', () => {
     const flows = readdirSync(join(E2E, 'flows')).filter((f) => f.startsWith('E2E-17'));
     expect(flows.sort()).toEqual(['E2E-17a-export-listening-copy.yaml', 'E2E-17b-export-original-only.yaml']);

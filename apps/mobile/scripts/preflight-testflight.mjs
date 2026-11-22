@@ -27,6 +27,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
+import { createReport, expo as expoIn, extraPermissions, forbiddenNativeProblems, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
+import { STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -50,7 +52,7 @@ if (!Object.hasOwn(ALPHA, PROFILE)) {
 }
 const SPEC = ALPHA[PROFILE];
 
-const results = [];
+const { results, pass, warn, fail, unverified, check } = createReport();
 const notes = [];
 /**
  * Founder steps (docs/release/TESTFLIGHT.md, same numbers and names). Each is `open` (seen missing here),
@@ -77,37 +79,10 @@ const step = (n, state, why) => {
   const rank = { done: 0, check: 1, open: 2 };
   if (!prev || rank[state] > rank[prev.state]) founder.set(n, { state, why });
 };
-const add = (level, msg) => results.push({ level, msg });
-const pass = (msg) => add('PASS', msg);
-const warn = (msg) => add('WARN', msg);
-const fail = (msg) => add('FAIL', msg);
-const unverified = (msg) => add('UNVERIFIED', msg);
-const check = (cond, good, problem) => (cond ? pass(good) : fail(problem));
 const read = (p) => readFileSync(p, 'utf8');
 
-/** Runs the Expo CLI found in this repo's node_modules (no network, no npx lookup). */
-function expo(args, cwd, env) {
-  let cli;
-  try {
-    cli = require.resolve('expo/bin/cli');
-  } catch {
-    return { status: 1, stdout: '', stderr: 'expo is not installed: run `npm install` at the repo root.' };
-  }
-  return spawnSync(process.execPath, [cli, ...args], {
-    cwd,
-    env: { ...process.env, CI: '1', EXPO_NO_TELEMETRY: '1', EXPO_NO_GIT_STATUS: '1', ...env },
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
-}
-
-function parseJsonOut(r) {
-  try {
-    return JSON.parse(r.stdout.slice(r.stdout.indexOf('{')));
-  } catch {
-    return null;
-  }
-}
+/** Runs the Expo CLI found in this repo's node_modules (preflight-lib.mjs). */
+const expo = (args, cwd, env) => expoIn(MOBILE, args, cwd, env);
 
 /** Every `<key>NAME</key>` in a plist, in order (enough for the checks below; not a plist parser). */
 const plistKeys = (text) => [...text.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
@@ -189,6 +164,12 @@ if (prof) {
     `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the language picker offers English only, D-111 item 4)`,
     `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(profEnv.EXPO_PUBLIC_ENGLISH_ONLY)}; both alpha builds must say "on" (D-111 item 4: the alpha transcribes English only), or the picker offers all seven languages.`,
   );
+  // D-125 item 2: the spoken-language list says English alone too, so the two switches agree in both alpha builds.
+  check(
+    (profEnv.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').trim().toLowerCase() === 'en',
+    `${PROFILE} profile: EXPO_PUBLIC_SPOKEN_LANGUAGES=en (the alpha hears English only, D-111 item 4)`,
+    `${PROFILE} profile EXPO_PUBLIC_SPOKEN_LANGUAGES is ${JSON.stringify(profEnv.EXPO_PUBLIC_SPOKEN_LANGUAGES)}; both alpha builds must say "en" (D-111 item 4, D-125 item 2).`,
+  );
   for (const [flag, what] of [
     ['EXPO_PUBLIC_BACKUP', 'recording backup (T27, after the restore drill)'],
     ['EXPO_PUBLIC_STATUS_REPORT', 'the subscription status report (when WP-F14-15 ships)'],
@@ -215,7 +196,21 @@ if (prof) {
 }
 {
   const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-  check(!onProfiles.includes('production'), `server features are on only in: ${onProfiles.join(', ') || 'none'} (never production before the store submission is re-planned)`, 'The production profile has EXPO_PUBLIC_SERVER_FEATURES=on. Turning the switch on in the store profile is the founder\'s call after the R-17 gate and the legal pages (D-100); put it back to "off".');
+  // Build 12 (founder, 8 Nov 2026): the production profile is servers on, against scribe-prod, so "never production" is gone. What this
+  // script still holds is the pairing the store build's honesty rests on: servers on in production only with the store environment
+  // (EXPO_PUBLIC_APP_ENV=production, so the alpha-only co-parent flow stays hidden: lib/family/entry.logic.ts, lib/billing/alpha.ts) and
+  // backup, status report and analytics off. The full production list is `npm run preflight:production`. Servers off in production is
+  // the kill path and passes. The switch itself is also guarded by test/config.test.ts and packages/content/test/claims-capabilities.test.ts.
+  const productionEnv = eas.build?.production?.env ?? {};
+  const productionOn = onProfiles.includes('production');
+  const stillOff = ['EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_STATUS_REPORT', 'EXPO_PUBLIC_ANALYTICS'].filter((k) => String(productionEnv[k] ?? '').trim().toLowerCase() === 'on');
+  check(
+    !productionOn || (productionEnv.EXPO_PUBLIC_APP_ENV === 'production' && stillOff.length === 0),
+    productionOn
+      ? `production profile has server features on with EXPO_PUBLIC_APP_ENV=production and backup, status report and analytics off (server features on in: ${onProfiles.join(', ')})`
+      : `production profile has server features off (the kill path; server features on in: ${onProfiles.join(', ') || 'none'})`,
+    `The production profile has server features on but ${productionEnv.EXPO_PUBLIC_APP_ENV === 'production' ? '' : `EXPO_PUBLIC_APP_ENV is ${JSON.stringify(productionEnv.EXPO_PUBLIC_APP_ENV)} (it must be "production", or the store build would show alpha-only co-parent surfaces); `}${stillOff.length ? `${stillOff.join(', ')} ${stillOff.length > 1 ? 'are' : 'is'} on (they stay off in the store build)` : ''}. Run \`npm run preflight:production\` for the full list.`,
+  );
   const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
@@ -227,6 +222,15 @@ if (prof) {
   const shell = process.env.EXPO_PUBLIC_E2E;
   check(shell === undefined || shell.trim() === '', 'EXPO_PUBLIC_E2E is not set in this shell', `EXPO_PUBLIC_E2E is set in this shell (${JSON.stringify(shell)}), and a local build reads the shell: unset it before building ${PROFILE} (B-9; apps/mobile/e2e/README.md section 9 sets it only for the simulator build).`);
   unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_E2E (this script cannot read it); if it does, app.config.ts refuses the EAS build (B-9). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs the project id, step 3).`);
+}
+{
+  // BL-958 (flag rows of NS-01 and NS-02; gate G6): the photo and Find flags stay off in every store profile, production
+  // included, until the table in scripts/release/store-flags.mjs allows a profile. Every alpha build checks all of them.
+  const problems = storeFlagProblems(eas);
+  const names = STORE_FLAGS.map((f) => f.env).join(', ');
+  if (problems.length) for (const p of problems) fail(storeFlagMessage(p));
+  else pass(`${names} off in every store profile (${storeProfiles(eas).join(', ')}; BL-958)`);
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no ${names} (this script cannot read it; a value there turns the feature on in this build). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
 {
@@ -276,18 +280,22 @@ if (cfg) {
     `config extra says backup=${cfg.extra?.backup}, statusReport=${cfg.extra?.statusReport}, which does not follow the profile's switches.`,
   );
 
-  // Permissions: the microphone string, and nothing else asked for.
-  const audio = (cfg.plugins ?? []).find((p) => Array.isArray(p) && p[0] === 'expo-audio')?.[1] ?? {};
+  // Permissions (LEGAL-REQ-007): the microphone, notifications (no Info.plist key) and Face ID for the app lock; nothing else.
+  const pluginOptions = (name) => (cfg.plugins ?? []).find((p) => Array.isArray(p) && p[0] === name)?.[1] ?? {};
+  const audio = pluginOptions('expo-audio');
   const mic = String(audio.microphonePermission ?? '');
-  check(mic.length > 20 && !/\{app\}|TODO|example\.com|Allow \$\(PRODUCT_NAME\)/.test(mic), `microphone purpose string: "${mic}"`, `Microphone purpose string is missing, default or holds a placeholder (got "${mic}").`);
+  check(purposeStringProblem(mic) === null, `microphone purpose string: "${mic}"`, `Microphone purpose string is missing, default or holds a placeholder (got "${mic}").`);
   check(audio.enableBackgroundRecording === false && audio.enableBackgroundPlayback === false, 'no background audio modes (LEGAL-REQ-011)', 'Background audio is on: it must stay off (LEGAL-REQ-011).');
+  // App lock (F1): without this option the plugin writes its own default ("Allow $(PRODUCT_NAME) to use Face ID").
+  const faceId = String(pluginOptions('expo-local-authentication').faceIDPermission ?? '');
+  check(purposeStringProblem(faceId) === null, `Face ID purpose string (app lock): "${faceId}"`, `Face ID purpose string is missing, the library default or holds a placeholder (got "${faceId}"). It comes from src/lib/permission-copy.ts faceId (LEGAL-REQ-007, F17 Q3).`);
   const asked = JSON.stringify([cfg.ios?.infoPlist ?? {}, cfg.plugins ?? []]);
-  const extraPerms = [...new Set(asked.match(/(camera|photo|photos|location|contacts|faceID|bluetooth|calendars|speechRecognition|userTracking|notifications?)Permission|NS[A-Za-z]+UsageDescription/g) ?? [])];
-  check(extraPerms.length === 0, 'config asks for no permission besides the microphone', `Config names other permissions: ${extraPerms.join(', ')}. Every unused permission is a question App Review will ask.`);
+  const extraPerms = extraPermissions(asked);
+  check(extraPerms.length === 0, 'config asks for no permission besides the microphone, notifications and Face ID (app lock)', `Config names other permissions: ${extraPerms.join(', ')}. Every unused permission is a question App Review will ask.`);
 
   // Privacy manifest declared.
   const pm = cfg.ios?.privacyManifests;
-  check(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0, `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories)`, 'No privacy manifest in the config (ios.privacyManifests), or tracking is not false.');
+  check(privacyManifestDeclared(pm), `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories)`, 'No privacy manifest in the config (ios.privacyManifests), or tracking is not false.');
   // Collected data follows the build's switches (BL-349; src/lib/privacy-manifest.ts; S17 worksheet 3.2 and 3.4).
   const collected = (pm?.NSPrivacyCollectedDataTypes ?? []).map((c) => String(c.NSPrivacyCollectedDataType).replace('NSPrivacyCollectedDataType', ''));
   if (SERVER_ON)
@@ -368,18 +376,7 @@ try {
 // ---------------------------------------------------------------- 4a. no secret key in any EXPO_PUBLIC_ value (every profile)
 // Every EXPO_PUBLIC_ value the code names is inlined into the bundle whatever the server switch says, and both alpha
 // profiles read the same EAS "preview" environment. So a secret exported here fails build 1 as well as build 2.
-/** 'secret key' or 'service_role key' when a value is one of Supabase's server keys, otherwise null. */
-function secretKind(value) {
-  if (/^sb_secret_/.test(value)) return 'secret key';
-  if (/^eyJ/.test(value)) {
-    try {
-      if (JSON.parse(Buffer.from(value.split('.')[1] ?? '', 'base64url').toString('utf8')).role === 'service_role') return 'service_role key';
-    } catch {
-      /* not a readable JWT: not this check's business */
-    }
-  }
-  return null;
-}
+// secretKind (preflight-lib.mjs): 'secret key' or 'service_role key' when a value is one of Supabase's server keys.
 {
   const leaked = Object.entries(process.env)
     .filter(([k]) => k.startsWith('EXPO_PUBLIC_'))
@@ -487,9 +484,7 @@ let packMissing = false;
   const stepFourMissing = [];
   let keyIds = [];
   try {
-    const keysSource = read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, '');
-    keySet = /^\s*\{[^}]*publicKey\s*:/m.test(keysSource);
-    keyIds = [...keysSource.matchAll(/keyId\s*:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
+    ({ keySet, keyIds } = signingKeys(read(join(REPO, 'packages/api/src/keys.ts'))));
   } catch {
     /* treated as not set */
   }
@@ -521,7 +516,7 @@ let packMissing = false;
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
   let manifestPublished = false;
   try {
-    manifestPublished = !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(read(join(REPO, 'supabase/functions/config/published.ts')));
+    manifestPublished = packManifestPublished(read(join(REPO, 'supabase/functions/config/published.ts')));
   } catch {
     /* treated as not published */
   }
@@ -595,9 +590,17 @@ if (ios) {
     usage = usage.filter((k) => k !== 'NSLocalNetworkUsageDescription');
     notes.push('The generated Info.plist holds NSLocalNetworkUsageDescription (and a Bonjour entry) from expo-dev-client. A build phase ("Strip Local Network Keys for Release") removes them from the Release app that TestFlight gets; the phase is present, but the stripped result is UNVERIFIED until the first build is inspected. If App Review or a tester ever sees a local-network prompt, remove expo-dev-client from the testflight build.');
   }
-  check(usage.length === 1 && usage[0] === 'NSMicrophoneUsageDescription', 'generated Info.plist asks for the microphone only (NSMicrophoneUsageDescription; the dev-client local-network key is stripped from Release)', `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected only NSMicrophoneUsageDescription.`);
-  const modes = /<key>UIBackgroundModes<\/key>\s*<array>([\s\S]*?)<\/array>/.exec(ios.plist)?.[1];
-  check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
+  const usageProblems = plistUsageProblems(usage);
+  check(
+    usageProblems.missing.length === 0 && usageProblems.extra.length === 0,
+    `generated Info.plist asks for the microphone and Face ID only (${REQUIRED_PLIST_USAGE.join(', ')}; the dev-client local-network key is stripped from Release)`,
+    `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected exactly ${REQUIRED_PLIST_USAGE.join(' and ')} (missing: ${usageProblems.missing.join(', ') || 'none'}; extra: ${usageProblems.extra.join(', ') || 'none'}).`,
+  );
+  // BL-864 (NX-39-R4, R51): no background mode, task identifier, location key, photo-add key, extension target or app group.
+  // The photo-library key needs its flag and content string; no store profile turns the flag on (BL-958), so none is allowed here.
+  const forbidden = forbiddenNativeProblems({ plist: ios.plist, entitlements: ios.entitlements, pbxproj: ios.pbxproj });
+  for (const p of forbidden) fail(`Generated native project: ${p.text}`);
+  if (!forbidden.length) pass('generated native project: no background mode, location key, photo-add key, extension target, app group or CoreLocation (BL-864)');
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
   if (ios.privacy !== null) {
@@ -675,7 +678,7 @@ if (cfg) {
     if (prof?.environment === 'preview')
       notes.push('This profile reads the same EAS "preview" environment as build 2, so the staging URL and publishable key are inlined in this bundle too. Both are public by design and unused here: with the switch off no client is constructed. A secret key in that environment would ship in this build as well (the 4a check above).');
   }
-  notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under THIS App Store Connect record: the .preview record needs its own products and the Paid Apps agreement before sandbox purchases load. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
+  notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under the production App Store Connect record only: product ids are unique across the account (observed 1 Nov 2026), so a .preview build cannot load Plus; Plus in the sandbox needs a TestFlight build of the production profile (after the 9 Nov go/no-go, D-124); until then use the Xcode StoreKit configuration file. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }
 
 // ---------------------------------------------------------------- founder steps this script cannot see

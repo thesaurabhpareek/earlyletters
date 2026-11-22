@@ -13,3 +13,8 @@ export { onboardingStories, STORY_VISUALS } from './stories.en';
 export type { StoryCard, StoryVisual } from './stories.en';
 export * from './features';
 export { testflightCopy } from './release/testflight.en';
+export { appReviewCopy } from './release/app-review.en';
+export { allHelplineSources, HELPLINE_DIRECTORY, helplineProblems, HELPLINE_MAX_AGE_DAYS, HELPLINES, helplinesDueOn, helplinesFor } from './helplines';
+export type { Helpline, HelplineRegion, HelplineSource, RegionHelplines, SourceCheck } from './helplines';
+export { CONSENT_LOCALE, CONSENT_SHOWN_IDS, consentShownText } from './consent-shown';
+export type { ConsentShownId } from './consent-shown';

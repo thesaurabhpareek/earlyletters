@@ -10,14 +10,33 @@
  * Hiding the book. "Hide this book" is not destructive (nothing is deleted), and in a book with two parents its footer
  * says hiding is only for you (`children.settings.hideShared`, with the other parent's own signature).
  *
- * "Write this book together". With server features off, the coming-soon row as today. With them on, one parent: the
- * row opens the invite sheet; two parents: its value is the other parent's signature ("Papa") and it opens the Family
- * tab. The screen labels it `familyCopy.bookRow.label` with server features on and `familyCopy.soon.settingsRow` with
- * them off (the same words, S46).
+ * "Write this book together". Only where this build has the flow: one parent, the row opens the invite sheet; two
+ * parents, its value is the other parent's signature ("Papa") and it opens the family page. Anywhere else there is no row.
  */
-import { dueDatePassed } from '@scribe/core';
+import { checkChildName, dueDatePassed } from '@scribe/core';
 import { familyCopy } from '@scribe/content';
-import { copy, fill } from '@/lib/copy';
+import { childLabel, copy, fill } from '@/lib/copy';
+import { inviteDestination } from '@/lib/family/entry.logic';
+
+/**
+ * The title of a book's row in Settings, Children (NX-36 S14, audit table): the name as stored, or, for a book made
+ * without one (NX-31-R3), the fallback "your child" with a capital, as a row title starts a line. The stored name is
+ * never changed.
+ */
+export function childRowTitle(name: string | null | undefined): string {
+  const label = childLabel(name);
+  return name?.trim() ? label : label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/**
+ * The line under the Name field in Settings, the book, Name: why the name cannot be saved, or null. A book made without
+ * a name (NX-31-R3) opens this field empty, and that is not a mistake: this row is how a name gets added later. So
+ * nothing is said until the field differs from what it opened with. Clearing a name that was there still says so.
+ */
+export function nameEditorError(stored: string, draft: string): string | null {
+  if (draft === stored) return null;
+  return checkChildName(draft).ok ? null : copy.childrenExtra.edit.nameEmpty;
+}
 
 /** Per-book setting on this phone: the due-date card was put away with "Hide". Holds the due date it was hidden for. */
 export const BORN_CARD_HIDDEN_PREFIX = 'child.bornCardHidden.';
@@ -61,18 +80,31 @@ export function hideFooter(childName: string, coParent: string | null): string {
   return coParent ? `${body} ${fill(s.hideShared, { coParent, child: childName })}` : body;
 }
 
-export type BookRow = { value?: string; footer?: string; href: string };
+/** Null: there is no row (no flow in this build). A row is only ever the real thing. */
+export type BookRow = { value?: string; href: string };
 
-/** The Family tab, where a book's two parents are shown (S57). */
+/** The book's two parents are shown on /family, a pushed route and not a tab (founder, 11 Nov 2026). */
 export const FAMILY_TAB_HREF = '/family';
 
 /**
- * "Write this book together": coming soon (server features off), the invite (one parent) or the Family tab (two).
+ * Whether the page asks the server which invites this book still has pending (lib/family/invites.ts listPendingInvites,
+ * an RPC to sync_books). Only where the row can exist: the same join-door rule the row itself follows (inviteDestination
+ * 'settings_child'), so a servers-on store build, where `bookRow` is always null, never makes the call. Also only while
+ * signed in with sync available, and only for one parent: with a co-parent the row already opens the family page.
+ */
+export function asksPendingInvites(input: { serverFeatures: boolean; alpha: boolean; signedIn: boolean; coParent: string | null }): boolean {
+  return inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'flow' && input.signedIn && !input.coParent;
+}
+
+/**
+ * "Write this book together": the invite (one parent, no invite pending) or the family page (two parents, or one parent
+ * while an invite is pending, so Share again and Cancel invite stay reachable; Karma ruling, 11 Nov 2026), only where this build has the flow
+ * (inviteDestination). Where it does not, there is NO row: no "Coming soon" value, no footer, no chevron, no screen.
  * `invite` is where the invite entry leads in this build (lib/family/entry.logic.ts inviteHref).
  */
-export function bookRow(input: { serverFeatures: boolean; coParent: string | null; invite: string }): BookRow {
-  const soon = familyCopy.soon;
-  if (!input.serverFeatures) return { value: soon.status, footer: soon.settingsRowHelp, href: input.invite };
+export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string; /** An invite the server still lists for this book (open or expired). Absent: none. */ pendingInvites?: boolean }): BookRow | null {
+  if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') return null;
   if (input.coParent) return { value: input.coParent, href: FAMILY_TAB_HREF };
+  if (input.pendingInvites) return { href: FAMILY_TAB_HREF };
   return { href: input.invite };
 }
