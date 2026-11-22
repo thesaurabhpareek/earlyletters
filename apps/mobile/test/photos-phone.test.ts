@@ -84,8 +84,8 @@ describe('[ADR 0028 D1] the store adds one empty table and writes nothing until 
   });
 });
 
-describe('[NS-01-R16] delete, restore and purge treat letter and picture as one', () => {
-  it('[NS-01-R16] delete hides the picture and restore brings it back with no picture write', () => {
+describe('[NS-01-R16a][NS-01-R16b][NS-01-R16c] delete, restore and purge treat letter and picture as one', () => {
+  it('[NS-01-R16a][NS-01-R16b] delete hides the picture and restore brings it back with no picture write', () => {
     const db = phone('0012');
     const store = entryMediaStore(db);
     store.put(row('e1', 'm1'));
@@ -96,7 +96,7 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual(['m1']);
   });
 
-  it('[NS-01-R16] the eraser removes a letter\'s picture, the file first and then its row, and a draft\'s the same way; nothing else is touched', async () => {
+  it('[NS-01-R16c] the eraser removes a letter\'s picture, the file first and then its row, and a draft\'s the same way; nothing else is touched', async () => {
     const db = phone('0013');
     const store = entryMediaStore(db);
     const files = expoPhotoFiles();
@@ -114,7 +114,7 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual(['m3']);
   });
 
-  it('[NS-01-R16] the eraser goes through the stored-name guard: a row whose id climbs out of photos/ loses its row, and the file it names stays (review N3 on #841)', () => {
+  it('[NS-01-R16c] the eraser goes through the stored-name guard: a row whose id climbs out of photos/ loses its row, and the file it names stays (review N3 on #841)', () => {
     const db = phone('0013');
     const elsewhere = put(h.disk, `${h.disk.documents}notes.jpg`, 1);
     entryMediaStore(db).put(row('e1', '../../../Documents/notes'));
