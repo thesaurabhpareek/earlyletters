@@ -1,6 +1,6 @@
 # Proposal: refuse a release candidate tag unless develop launches green (BL-1480, CR-74)
 
-Status: proposal, 22 Nov 2026. This pull request changes nothing under `.github/`; the founder applies the patch. Door: two-way (delete the job and the `needs` line).
+Status: applied on 22 Nov 2026 in PR #1641 (Karma, CR-73; the patch is `docs/ops/proposed/workflows/release-ios-launch-gate.patch`). The text below is the original proposal. Door: two-way (delete the job and the `needs` line).
 
 ## Why
 
