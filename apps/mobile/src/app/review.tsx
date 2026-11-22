@@ -417,12 +417,18 @@ export default function Review() {
         style: 'destructive',
         onPress: () => {
           haptic('warning');
-          const gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          let gone = false;
+          try {
+            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          } catch {
+            gone = false; // any throw is the same as not removed yet
+          }
           // Not removed yet (BL-926): stay on Review, say so once; the launch sweep tries again.
           if (!gone) {
             setLetGoPending(true);
             return;
           }
+          setLetGoPending(false);
           if (router.canGoBack()) router.back();
           else router.replace('/');
         },
@@ -732,6 +738,12 @@ export default function Review() {
   useEffect(() => {
     if (saveFailed) announce(r.saveFailed);
   }, [saveFailed, r.saveFailed]);
+
+  // BL-926: the line belongs to one recording; another recording on this Review starts clean.
+  useEffect(() => {
+    setLetGoPending(false);
+    letGoTold.current = null;
+  }, [draft?.id]);
 
   // BL-926: a Let it go the phone would not finish is said aloud once for this recording (iOS VoiceOver ignores live regions).
   useEffect(() => {
