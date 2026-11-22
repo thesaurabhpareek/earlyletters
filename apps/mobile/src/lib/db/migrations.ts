@@ -499,6 +499,51 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 13,
+    name: 'the other four entry columns get their own phone-side rules: four triggers (BL-1497, BL-412 follow-up)',
+    up(db) {
+      // One rule per column, each the phone's copy of what its only legitimate writers do. Triggers only; no data
+      // is read or changed, and no settings row is written here. Naming a column with its own value always passes.
+      //  - captured_at: changes only for the entry named in settings('provenance_takeover'), which takeProvenance
+      //    (merge.ts, a pulled own row after the first keep, ADR 0025 row C) sets and deletes in the same transaction.
+      //  - engine_version: the same scope, and also while the words have not arrived (raw_transcript is '': the one
+      //    setWordsOnce statement) or the version is still 0 or NULL.
+      //  - author_id: NULL to a value only (the first sign-in claim, ownership.ts; the server row for an own letter).
+      //  - child_id: only while the letter has never synced (synced_at IS NULL; entries.ts upsert).
+      // Messages hold no words, ids or names.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_captured_at_set_once
+        BEFORE UPDATE OF captured_at ON entries
+        WHEN NEW.captured_at IS NOT OLD.captured_at
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.captured_at is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_engine_version_set_once
+        BEFORE UPDATE OF engine_version ON entries
+        WHEN NEW.engine_version IS NOT OLD.engine_version
+          AND COALESCE(OLD.engine_version, 0) <> 0
+          AND OLD.raw_transcript <> ''
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.engine_version is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_author_id_set_once
+        BEFORE UPDATE OF author_id ON entries
+        WHEN OLD.author_id IS NOT NULL AND NEW.author_id IS NOT OLD.author_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.author_id is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_child_id_fixed_once_synced
+        BEFORE UPDATE OF child_id ON entries
+        WHEN OLD.synced_at IS NOT NULL AND NEW.child_id IS NOT OLD.child_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.child_id is fixed once synced (BL-1497)');
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

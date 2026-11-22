@@ -826,6 +826,22 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Recorded with this ruling: an `Amended by CR-74` line under the CR-73 Ruling and under the CR-72 code-merge bullet (the log is append-only, so those lines are added and the original lines stand), and `docs/agents/COORDINATION.md` section 11 (watch items), edited in place.
 - Revisit when: a merged app-code PR is found to break the launch check after the merge, twice, or the founder says so. Karma
 
+### CR-145 Council lock on the sign-out, Book and prime rows: BL-1407, BL-1428, BL-1430, BL-1461, BL-1462, BL-1465, BL-1198, BL-1464 (Sat 21 Nov 2026, Karma, on the founder's delegation)
+- The founder's words, as relayed to the writer of this entry: "lock those decisions, exec review with all". The words are not quoted from the chat itself; this is the instruction the product agent was given. Seats that read the rows: CPO, Design, Privacy, CLO, CCO, CISO, CDO, content.
+- Ruling:
+  - BL-1407: option (a). A letter's words are covered in the app switcher whatever App lock says, with no new words. For: CPO, Design, Privacy, CISO, CLO. The row is `ready` until a builder PR opens, then `in-review (PR #n)`. Whether iOS snapshots the body with App lock off is UNVERIFIED; the device check stays the founder's.
+  - BL-1428: option B, one extra read in the effect. CPO for B, CDO preferred A; the row owner picks and Karma ruled B.
+  - BL-1430: a person who ever said Yes is never primed again, held as a device-only L2 boolean. For: Privacy, Design. Against: CPO, CDO (keep the behaviour). Karma broke the tie. Subject to F13 6.2 B row 4c: the spec wins.
+  - BL-1461: one line, shown after a short delay and only while `signingOut` with reason `apple_revoked`. Words, council-locked under the delegation and replaceable by the founder: "Your newest letters are still on this phone. They're sent first, then this phone signs out." They reach users only through a store build, which is his. Dissent: CLO, CPO, Design and Privacy said the words are the founder's (CR-73); CCO said the line must be true.
+  - BL-1462: no time cap for 1.0 (A-REQ-033 as written; Apple's sources set no deadline, CCO). For: CPO, CCO, CLO. Against: CISO, Design, Privacy (a cap, with letters kept). Revisit when device evidence shows how long the wait runs, or the founder asks. Any cap must keep every letter on the phone. The CISO's 7 days was a picked number, not a derived one. The accepted risk matches `docs/ops/runbooks/sign-everyone-out.md:36`.
+  - BL-1465: both edges accepted and the row closed. CDO dissent: edge (a) is a real defect, fixable by writing the flag when the sheet is shown; no row is filed.
+  - BL-1198: a null or an error from the Keychain means unknown, never signed out; the state file is deleted only on a positive signed-out signal. The device check remains the founder's; the row stays blocked on that result for the flag, and the code half is ready.
+  - BL-1464: `ready` (CDO ruling); its data-map line goes to `docs/ops/proposed/`, not `docs/legal/**`.
+- Why: these rows were waiting on a decision with no owner; the founder delegated the technical calls (CR-72) and asked for them to be locked after a read by every seat. Dissent is recorded above so a later reader can see who disagreed.
+- What stays the founder's: the BL-1461 words (replaceable by him, and shipped only by his store build), the device checks, and any change to A-REQ-033. The council did not change a requirement.
+- Door: two-way. Way back: one line from the founder replaces any of these; BL-1461 and BL-1462 are the likeliest to be reopened.
+- Edited in this ruling's PR: the status and a Council ruling line on each of these rows in `docs/BACKLOG.md`, and the statuses of BL-1426 and BL-1429 (done, PRs #1344 and #1351). Nothing under `docs/legal/**` or in `docs/DECISIONS.md` was edited. Karma
+
 ### CR-148 PR #1448 (compliance gates migration) passes Karma's checklist for merge into develop (Sat 21 Nov 2026, Karma, with CCO-7)
 - Question: after CCO-7, does PR #1448 meet the engineering checklist in `compliance/README.md`?
 - Tier and type: T2; complicated.

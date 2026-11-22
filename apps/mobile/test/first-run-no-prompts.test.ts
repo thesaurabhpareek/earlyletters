@@ -4,7 +4,8 @@
  * scans, as the design says (docs/tdd/new-scope/12-first-run-4.md section 14, FS-5, FS-8). The device half of R2 (no
  * iOS prompt through "The book is open.") is a human run on the Asha-only install; it is not claimed here.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -48,15 +49,15 @@ const read = (f: string) => strip(readFileSync(f, 'utf8'));
 export const withoutTypeOnly = (src: string) =>
   src.replace(/typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown').replace(/^\s*(?:import|export)\s+type\b[^;]*;/gm, '');
 
-/** Every local file the entry reaches through `@/` or relative imports, itself included. */
-export function importGraph(entry: string): string[] {
+/** Every local file the entry reaches through `@/` or relative import, dynamic import or bare require(), itself included. */
+export function importGraph(entry: string, { requires = true }: { requires?: boolean } = {}): string[] {
   const seen = new Set<string>();
   const stack = [entry];
   while (stack.length) {
     const file = stack.pop()!;
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const m of withoutTypeOnly(read(file)).matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)) {
+    for (const m of withoutTypeOnly(read(file)).matchAll(requires ? /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"]([^'"]+)['"]/g : /(?:\bfrom|\bimport)\s*\(?\s*['"]([^'"]+)['"]/g)) {
       const spec = m[1]!;
       const base = spec.startsWith('@/') ? join(SRC, spec.slice(2)) : spec.startsWith('.') ? resolve(dirname(file), spec) : null;
       if (!base) continue;
@@ -82,6 +83,35 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
     expect(withoutTypeOnly("const m = await import('../app-lock/controller');")).toMatch(/app-lock\/controller/);
   });
 
+  // The walk must follow a bare require() too: Metro bundles `require('./x')` like an import, and a first-run module that
+  // reached an asking module through one would otherwise hide from the scan (follow-up of the NS-39 fix, #1353).
+  it('[NS-39-R2] the walk follows a bare require() and a require inside a function (positive control)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'asha-walk-'));
+    try {
+      const w = (name: string, body: string) => writeFileSync(join(dir, name), body);
+      w('entry.ts', "export const a = () => require('./viaRequire');\nconst typed = require('./typedOnly') as typeof import('./typeRef');\n");
+      w('viaRequire.ts', "export const b = require(\"./deep\");\n");
+      w('deep.ts', "export const c = 1;\n");
+      w('typedOnly.ts', "export const d = 1;\n");
+      w('typeRef.ts', "export const e = 1;\n");
+      const reached = importGraph(join(dir, 'entry.ts')).map((f) => f.slice(dir.length + 1)).sort();
+      expect(reached).toEqual(['deep.ts', 'entry.ts', 'typedOnly.ts', 'viaRequire.ts']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('[NS-39-R2] the walk does not read a word that merely ends in require as a require', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'asha-walk-'));
+    try {
+      writeFileSync(join(dir, 'entry.ts'), "export const a = required('./other');\nexport const b = prerequire('./other');\n");
+      writeFileSync(join(dir, 'other.ts'), 'export const o = 1;\n');
+      expect(importGraph(join(dir, 'entry.ts')).map((f) => f.slice(dir.length + 1))).toEqual(['entry.ts']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('[NS-39-R2] no first-run module asks for a permission or authenticates', () => {
     expect(offenders(FIRST_RUN_FILES.map((f) => join(SRC, f)), PROMPT_PATTERN)).toEqual([]);
   });
@@ -92,11 +122,35 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   const REACHED_NOT_CALLED = ['lib/auth/apple.ts', 'lib/auth/ui.tsx', 'lib/billing/plan-reminders.ts', 'lib/reminders/scheduler.ts'];
 
   it('[NS-39-R2] nothing else the first-run screen imports, at any depth, asks or authenticates', () => {
-    const graph = importGraph(ENTRY);
+    const graph = importGraph(ENTRY, { requires: false });
     expect(graph.length).toBeGreaterThan(20); // the walk really walked
     // The lock offer and the lock controller (Face ID) must not be in the screen's tree at all.
     expect(graph.map((f) => f.slice(SRC.length + 1)).filter((f) => f.startsWith('components/app-lock/') || f === 'lib/app-lock/controller.ts')).toEqual([]);
     expect(offenders(graph, PROMPT_PATTERN).sort()).toEqual(REACHED_NOT_CALLED);
+  });
+
+  // With bare require() followed (Metro bundles it like an import) the walk reaches one more asking module: the lock
+  // controller, through the one lazy `require` in lib/photos/device.ts (appLocked), which runs only when a photo pick lands
+  // and so never in first run. It is named here, not allowed in general: a second lazy edge, or a lock offer, shows red.
+  const REACHED_ONLY_BY_REQUIRE = ['lib/app-lock/controller.ts'];
+  const LAZY_EDGE = 'lib/photos/device.ts';
+
+  it('[NS-39-R2] following require() adds only the lock controller, and only through the one lazy edge in photos/device.ts', () => {
+    const rel = (fs: string[]) => fs.map((f) => f.slice(SRC.length + 1));
+    const importsOnly = new Set(importGraph(ENTRY, { requires: false }));
+    const full = importGraph(ENTRY);
+    const added = full.filter((f) => !importsOnly.has(f));
+    expect(rel(added)).toContain('lib/app-lock/controller.ts');
+    expect(rel(full).filter((f) => f.startsWith('components/app-lock/'))).toEqual([]); // the lock offer is still not in the tree
+    expect(offenders(full, PROMPT_PATTERN).sort()).toEqual([...REACHED_NOT_CALLED, ...REACHED_ONLY_BY_REQUIRE].sort());
+    // The edge is the one require of the lock controller in device.ts, and it sits inside a function (the other require there
+    // is the native photo module, which is not an asking module).
+    const device = read(join(SRC, LAZY_EDGE));
+    expect([...device.matchAll(/\brequire\s*\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1]).filter((x) => /app-lock/.test(x!))).toEqual(['../app-lock/controller']);
+    expect(device).toMatch(/function appLocked\(\)[^{]*\{\s*return \(require\(/);
+    // And no other file reaches the controller through a require.
+    const others = full.filter((f) => f !== join(SRC, LAZY_EDGE) && /\brequire\s*\(\s*['"][^'"]*app-lock\/controller['"]/.test(read(f))).map((f) => f.slice(SRC.length + 1));
+    expect(others).toEqual([]);
   });
 });
 

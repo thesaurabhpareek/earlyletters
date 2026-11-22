@@ -21,8 +21,8 @@ const LIB: Prompt[] = [
 const base: MomentsInput = { today: '2026-11-21', birth: '2025-04-12', marked: [], holidayRegion: null, state: 'normal', prompts: LIB };
 const slots = (over: Partial<MomentsInput> = {}) => momentsFor({ ...base, ...over }).map((c) => c.slot);
 const letter = { ref: 'letter-1', date: '2025-11-21' };
-const lib = { source: 'S7' as const, ref: 'day-2026-11-15' };
-const picked = { source: 'S5' as const, ref: 'letter-2' };
+const lib = { source: 'S7' as const, ref: 'day-2026-11-15', day: '2026-11-15' };
+const picked = { source: 'S5' as const, ref: 'letter-2', day: '2025-11-02' };
 
 describe('[NS-53-R10] four slots in one order, an empty slot absent', () => {
   it('has the order today, look back, pictures, question', () => {
@@ -176,5 +176,51 @@ describe('[NS-53-R27] [NS-53-R33] the same inputs give the same list', () => {
       { kind: 'ticked' as const, date: '2026-11-12', ref: 'b' },
     ];
     expect(momentsFor({ ...full, marked })).toEqual(momentsFor({ ...full, marked: [...marked].reverse() }));
+  });
+});
+
+describe('[NS-53-R24] [NS-53-R253] CPO-27: no library pictures card in a hard stretch or a quiet book', () => {
+  it.each(['hard', 'quiet'] as const)('suppresses a library day (S7) when %s, even with the library readable', (state) => {
+    expect(slots({ state, pictures: lib, libraryReadable: true })).toEqual(['question']);
+  });
+  it.each(['hard', 'quiet'] as const)('keeps pictures the parent picked (S5) visible when %s: protective reading, parent-chosen', (state) => {
+    expect(slots({ state, pictures: picked })).toEqual(['pictures', 'question']);
+  });
+  it('still shows the library day on a normal day', () => {
+    expect(slots({ pictures: lib, libraryReadable: true })).toEqual(['pictures', 'question']);
+  });
+});
+
+describe('[NS-53-R25] CPO-26: hard versus quiet', () => {
+  const key = (state: MomentsInput['state']) => (momentsFor({ ...base, state }).find((c) => c.slot === 'question') as { promptKey: string }).promptKey;
+  it('asks the hard kind in a hard stretch only; a quiet book asks an opening', () => {
+    expect(key('hard')).toBe('h.any.1');
+    expect(key('quiet')).not.toBe('h.any.1');
+    expect(key('quiet')).toMatch(/^o\.any/);
+  });
+  it('shows no question, and does not throw, when every prompt is retired or together-only', () => {
+    const none: Prompt[] = [
+      { key: 'r', text: 'x', band: 'any', kind: 'opening', retired: true },
+      { key: 't', text: 'y', band: 'any', kind: 'together' },
+    ];
+    expect(slots({ prompts: none })).toEqual([]);
+    expect(slots({ prompts: none, state: 'hard' })).toEqual([]);
+  });
+});
+
+describe('[NS-53-R29] CDO-22: excluded days and days that cannot be worked out', () => {
+  it('drops a picture or look-back candidate whose day is on the exclude list, and only that', () => {
+    const out = (excludedDays: string[]) => slots({ lookBack: letter, pictures: lib, libraryReadable: true, excludedDays });
+    expect(out(['2026-11-15'])).toEqual(['lookBack', 'question']);
+    expect(out(['2025-11-21'])).toEqual(['pictures', 'question']);
+    expect(out(['2026-01-01'])).toEqual(['lookBack', 'pictures', 'question']);
+    expect(slots({ pictures: picked, excludedDays: ['2025-11-02'] })).toEqual(['question']);
+  });
+  it('fails closed: a candidate with no day, a bad day or an unknown source is dropped', () => {
+    expect(slots({ pictures: { source: 'S5', ref: 'a' } as never })).toEqual(['question']);
+    expect(slots({ pictures: { ...picked, day: '2026-02-30' } })).toEqual(['question']);
+    expect(slots({ pictures: { ...picked, day: 'tomorrow' } })).toEqual(['question']);
+    expect(slots({ pictures: { ...lib, source: 'S9' as never }, libraryReadable: true })).toEqual(['question']);
+    expect(slots({ lookBack: { ref: 'x', date: 'nope' } })).toEqual(['question']);
   });
 });

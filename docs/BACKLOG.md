@@ -5704,7 +5704,8 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113.
 
 #### BL-1198 Backup: a locked Keychain that returns null reads as no session
-- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Status: blocked (device result: whether a locked Keychain read returns null; the founder's device check gates the backup flag, the code half is ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Council ruling (21 Nov 2026, CR-145): the rule is recorded: a null or an error from the Keychain means unknown, never signed out, and the state file is deleted only on a positive signed-out signal. The code half (the rule and its test) is ready to build with BL-1199; the device check stays the founder's, so the row stays blocked on that result for turning the flag on.
 - Satisfies: BRIEF B5, CR-71 B5.
 - Blocks: backup flag on (`EXPO_PUBLIC_BACKUP`); decide the rule before the flag goes on.
 - Scope: needs a device check: with the phone locked, does the Keychain read return null instead of throwing, so the backup code treats it as no session; decide the rule (retry, defer or treat as unknown) before the flag goes on, and test it.
@@ -5839,7 +5840,8 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: none; the device row D-4 stays the founder's.
 
 #### BL-1407 With App lock off, nothing covers a letter's words in the app switcher: cover them, or say so
-- Status: needs-founder (no FT id yet; the question is below; Karma may file it in `docs/FOUNDER_TASKS.md`). Mode: human (a decision, then agent work). Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145; no builder PR is open on 21 Nov, it becomes `in-review (PR #n)` when one opens). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): option (a), cover a letter's words in the app switcher whatever App lock says, with no new words (so no content or claims change). For: CPO, Design, Privacy, CISO, CLO. Scope is (a) only. Whether iOS snapshots the body with App lock off is UNVERIFIED and stays a device check for the founder (row D-1).
 - Satisfies: NX-39-R36. Cited: `docs/security/MEDIA_THREAT_MODEL.md` P6, gap G-2, device row D-1.
 - Question for the founder: when App lock is off, the app switcher snapshot can show a letter's words; do you want (a) the app to cover letter text in the switcher whatever App lock says, or (b) to leave it and say in the copy that App lock is what covers it? There is no default until you decide.
 - Evidence: the model says the cover (`PrivacyCover`) draws only while the lock is on (`apps/mobile/src/components/app-lock/app-lock-layer.tsx:10`, `privacy-cover.tsx:26`, `apps/mobile/src/lib/app-lock/controller.ts:55` to `:58`); those lines were not re-read here. Picture blanking is PR #838 (open).
@@ -7087,7 +7089,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
 
 #### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
-- Status: in-review (PR #1344; was ready: PR #1273 merged as d9c392736, so the probe it pins is on `develop`; BL-1425 is done in PR #1319). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Status: done (PR #1344, merged as 0fadb04b1). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` since #1273 the registration at `:266-274` is `registerUploadQueue({ pendingCount: () => { const userId = currentAuthUserId(); return userId ? pendingForAccount(localSqlDb(), userId) : pendingCount(localSqlDb()); }, ... })`, and `pendingForAccount` is in `apps/mobile/src/lib/sync/outbox.ts`.
@@ -7105,7 +7107,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: the web journey run (`docs/qa`), plus the existing `test/next-ask.test.ts`.
 
 #### BL-1428 BL-458 part 3: how the Book catches an `entries` event between its first read and its subscribe
-- Status: needs-decision (the mobile engineer picks between the two options; no D- or Q- id yet). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145: option B). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): option B, one extra read in the effect. CPO for B; the CDO preferred A. The row owner picks and Karma ruled B, so the mobile engineer builds B and records it here. A mount-time list read is the cost named in the options; the test must show an `entries` event between the initialiser read and the subscribe is picked up.
 - Priority: Low. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: BL-458 point 3. The Book reads its letters in the `useState` initialiser and subscribes in an effect, so an `entries` event between the two is missed until the next event (BL-458 Problem (3); unverified on a device). BL-458 stays `partly done` after #1287 merges; this row is the open part.
@@ -7115,7 +7118,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
 
 #### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
-- Status: in-review (PR #1351; the data-map line is held for the founder as a proposed legal-file edit in `docs/ops/proposed/bl-1429-data-map-line.md`). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
+- Status: done (PR #1351, merged as 03314815c; the data-map line is still held for the founder in `docs/ops/proposed/bl-1429-data-map-line.md`). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
 - Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. Verified on `develop` after #1274 merged: `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47` is sent for every showing, so the second showing (built at `next-ask.logic.ts:75`) is labelled `first_letter` too. #1274 did not touch that file.
@@ -7125,7 +7128,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
 
 #### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
-- Status: needs-decision (founder or Karma). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
+- Status: ready (council ruling CR-145). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
+- Council ruling (21 Nov 2026, CR-145): a person who ever said Yes to the reminder prime is never primed again, kept as a device-only boolean (layer L2, no server field, nothing in analytics). For: Privacy, Design. Against: CPO and CDO, who would keep the behaviour. Karma broke the tie. Subject to F13 6.2 B row 4c (`docs/prd/v2/features/F13*.md`): the spec wins, and if row 4c reads against this the builder stops and files the conflict instead of building. Scope becomes the rule plus a `test/next-ask.test.ts` case named for it; no D-### proposal is needed beyond CR-145.
 - Priority: Low. Gate: none.
 - Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
 - Problem and evidence: Lens B on #1274. The second-prime rule now exists on `develop` (PR #1274): `apps/mobile/src/lib/asks/next-ask.logic.ts:75` returns `reminder_prime` when `!firstLetter && firstMonthDone && primesShown === 1 && primeAllowed(primesShown) && !remindersOn`, with the cap `MAX_REMINDER_PRIMES = 2` at `:20`. `primesShown` counts showings from any source and does not record whether the person said Yes, so someone who said Yes to the first and later turned reminders off in Settings becomes eligible once the first month is done. Whether that matches F13 6.2 B row 4c was not checked. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
@@ -7223,7 +7227,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Test: a new file beside `apps/mobile/test/auth-machine.test.ts`.
 
 #### BL-1461 What the person sees while the Apple revocation wait runs (the busy screen gives no reason)
-- Status: needs-decision (founder: the words are his, per CR-73 and `packages/content/VOICE.md`; a copy question, nothing is written until he rules). Mode: agent. Owner: mobile engineer, content. Milestone: M5. Size: XS. Depends on: BL-450 (done).
+- Status: ready (council ruling CR-145; the words are council-locked under the founder's delegation and replaceable by him). Mode: agent. Owner: mobile engineer, content. Milestone: M5. Size: XS. Depends on: BL-450 (done).
+- Council ruling (21 Nov 2026, CR-145): show one line, after a short delay, only while `state.status === 'signingOut'` and `state.reason === 'apple_revoked'`. Words, locked by the council under the delegation: "Your newest letters are still on this phone. They're sent first, then this phone signs out." The founder can replace them, and they reach users only through a store build, which is his. Dissent recorded: CLO, CPO, Design and Privacy said the words are the founder's (CR-73); CCO said the line must be true, so the builder checks it against the BL-1462 behaviour (letters kept on the phone). Run the copy rules test and `npm run lint:copy`.
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: A-REQ-033, BL-451.
 - Problem and evidence: since PR #1332 a revocation noticed at launch can wait for unsent letters, and while it waits the person sees the busy screen with no reason. The waiting row that explains a sign-out the person asked for (`signOutWaiting` at `packages/content/src/features/auth.en.ts:315`, shown on the Account view) is not on screen at launch, and no line says why the app has not moved on. Not run on a device.
@@ -7232,7 +7237,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: the founder's words are recorded as a D-### or in this row, and the screen test passes.
 
 #### BL-1462 Offline at launch the Apple revocation wait has no time cap
-- Status: needs-decision (founder: a cap changes what the app promises about letters; any cap must keep the letters on the phone). Mode: agent. Owner: auth owner (S01), security engineer. Milestone: M5. Size: S. Depends on: BL-450 (done).
+- Status: superseded (by CR-145: no cap for 1.0, a revisit trigger is recorded; nothing is built from this row). Mode: agent. Owner: auth owner (S01), security engineer. Milestone: M5. Size: S. Depends on: BL-450 (done).
+- Council ruling (21 Nov 2026, CR-145): no time cap on the Apple revocation wait for 1.0, which is A-REQ-033 as written; Apple's sources set no deadline for it (CCO). For: CPO, CCO, CLO (recorded). Against: CISO, Design, Privacy, who wanted a cap with the letters kept. Revisit when device evidence shows how long the wait runs, or when the founder asks. Any cap must keep every letter on the phone; the CISO's 7 days was a picked number, not a derived one. The accepted risk matches `docs/ops/runbooks/sign-everyone-out.md:36` (a phone that is offline or has queued letters stays signed in until it is online and the queue has drained).
 - Priority: Medium. Gate: none.
 - Satisfies: none given. Related: A-REQ-033 (the row's words are "only after unsynced letters sync").
 - Problem and evidence: with PR #1332, offline at launch with the gate unreadable and letters queued, the person stays signed in with a revoked Apple credential until the phone is online or the queue is empty: the poll at `apps/mobile/src/lib/auth/session-provider.tsx:313-317` retries every 10 s and nothing ends the wait. That matches the requirement's words, and the #1332 body offers a draft line for a cap that the founder may want to rule on. A cap must never discard a letter: letters stay on the phone, sync off, as the `off` path already does.
@@ -7249,7 +7255,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: removing or inverting the `=== 'on'` guard makes the test fail.
 
 #### BL-1464 The Keep the book re-offer reports trigger `first_letter` because `third_letter` is not in the analytics allowlist
-- Status: proposed (Karma, PR #1346 comment 7067852509: it changes the analytics allowlist and the schema version, so it stays proposed until the data steward has seen it; Karma or the founder sets `ready`). Mode: agent. Owner: analytics engineer, mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145, CDO ruling). Mode: agent. Owner: analytics engineer, mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): ready. The data-map line for the new `third_letter` value goes to `docs/ops/proposed/` for the founder, as a proposed legal-file edit, not into `docs/legal/**` (DATA-REQ-001).
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: BL-519 (done in PR #1331).
 - Problem and evidence: the sign-in sheet is opened with `trigger: 'first_letter'` at `apps/mobile/src/app/review.tsx:528`, and the allowlist `SIGN_IN_TRIGGER` has `first_letter`, `invite`, `invite_create`, `sign_in` and `settings` only (`packages/analytics/src/catalog.ts:95`, `packages/analytics/src/values.ts:78`, `apps/mobile/src/lib/auth/pending.ts:61-63`). So the re-offer after the third letter reports as `first_letter`, and the insights loop cannot tell the first offer from the re-offer. Adding a value changes the schema, so the catalog's version header (`catalog.ts:209` onward lists each bump) takes a new line.
@@ -7257,7 +7264,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: the analytics catalog and values tests pass with the new value and the new version; a test shows the re-offer reports `third_letter` and the first offer still reports `first_letter`; the analytics allowlist test (no free text) still passes.
 
 #### BL-1465 Keep the book re-offer: the "Later" inference differs from a literal Later tap in two edges
-- Status: needs-decision (founder: what the person is promised, and whether either edge is worth an explicit dismissal record; a decision, not a build; no builder takes this row until it is ruled). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-519 (done).
+- Status: superseded (by CR-145: both edges accepted; nothing is built from this row). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-519 (done).
+- Council ruling (21 Nov 2026, CR-145): accept both edges as the behaviour of the Later inference. Dissent recorded: the CDO holds that edge (a), an offer the person never saw counting as a Later, is a real defect that is fixable by writing the flag when the sheet is shown; no row is filed for it, and the founder or Karma can file one XS row if device use shows it matters.
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: BL-519 (done in PR #1331), BL-1463.
 - Problem and evidence: BL-519 infers "Later" as offered before and still signed out, because the sheet records no explicit dismissal. By code reading it differs from a literal Later tap in two edges. (a) The flag is set when the ask is decided (`apps/mobile/src/lib/asks/index.ts:101-103`), not when the sheet is shown or closed, so an offer the person never saw (the sheet is pushed after a delay at `apps/mobile/src/app/review.tsx:528`) counts as a Later. (b) A person who took the offer, signed in, and later signed out before the third letter is signed out and offered-before, so they are asked again though they never tapped Later. Not run on a device.
@@ -7275,7 +7283,7 @@ Start-now set, exactly: PR 0b (PR 0 is done: merged as #1314), PRs 1 to 4, PR 5 
 Founder ruling of 21 Nov: the first Moments release ships with the photo library read (Route B). The release gates G1b to G11 apply before store submission, not before coding. Places and occasions are in scope; faces and naming people are out (O-30). Owners: the harness accepts only the Owner names of `agents/roster.json` `backlog_owner_names` (`scripts/agents/lib.test.mjs` fails on any other). `product` and `security-architect` have an empty `backlog_owner_names`, and the roster is not edited in this PR, so the workaround stands: BL-1448 (PR 0b, written by `product`) names `content` as Owner so the dispatcher can hand it out, and BL-1450 (written by `security-architect`) names `security engineer`, which the roster gives to the `security` handle, so the dispatcher would hand BL-1450 to `security` unless the Scope line is read; each row says so in its Status or Scope line. Founder item: add an owner name to each of those two handles in a separate change if the harness should assign this work.
 
 #### BL-1448 NS-53 Moments: the spec edit and the D14 sweep (PRs 0, 0b)
-- Status: ready (start-now set, Karma ruling 21 Nov. Dependency check: Depends on is none; the only spec dependency, PR 0, is merged as #1314, `d8654a215`, confirmed an ancestor of `origin/develop`. PR 0 merged after the `size:accepted` label for O-60 was applied; only PR 0b, the D14 sweep, remains). Mode: agent. Owner: content (`product` has no `backlog_owner_names`, so the row names `content`, which the roster accepts; PR 0b is a docs sweep that needs no founder account or secret). Milestone: M15. Size: M (docs). Depends on: none.
+- Status: in-progress (PR 0b open, branch docs/ns53-moments-spec-d14-sweep; was ready; start-now set, Karma ruling 21 Nov. Dependency check: Depends on is none; the only spec dependency, PR 0, is merged as #1314, `d8654a215`, confirmed an ancestor of `origin/develop`. PR 0 merged after the `size:accepted` label for O-60 was applied; only PR 0b, the D14 sweep, remains). Mode: agent. Owner: content (`product` has no `backlog_owner_names`, so the row names `content`, which the roster accepts; PR 0b is a docs sweep that needs no founder account or secret). Milestone: M15. Size: M (docs). Depends on: none.
 - Satisfies: NS-53-R216, R268, R286, R219, R243.
 - Scope: PR 0 is done: the spec edit merged as PR #1314 (`d8654a215`). What remains is PR 0b, the sweep of D14 (R286) as its own docs PR, section by section so each stays under about 380 changed lines (about 250 each, 1 to 2 files), row ids unchanged. PR 0b is in the start-now set; it is the row 0b of spec 19.4, whose owner there is `content` like this row; `product` reviews it.
 - Done when: PR 0b merged (PR 0 is already merged). Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 0: NS-53-R216, R219, R243; PR 0b: NS-53-R268, R286.
@@ -7638,7 +7646,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Low. Gate: none.
 - Satisfies: audit F2 and F3 (docs/engineering cross-account audit; not re-read here).
 - Problem and evidence: review B on PR #1439 (checked against review A's leftover id); PR #1441.
-- Scope: make a failed write of the Apple user id visible to the caller instead of swallowed, so a stale id cannot be left behind.
+- Scope: a failed write of the Apple user id is handled inside apple.ts (stale id removed, else marked unknown), visible to the revocation watch only, and fails quiet; a stale id cannot be left behind.
 - Done when: a test with a failing Keychain write shows the failure is surfaced; it fails on the old code.
 
 #### BL-1506 The wrong-code map keyed by typed addresses is never cleared

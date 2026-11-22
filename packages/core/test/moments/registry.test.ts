@@ -9,7 +9,7 @@ const find = (id: string) => SOURCES.find((s) => s.id === id)!;
 const withSource = (id: string, patch: Partial<SourceSpec>): SourceSpec[] => SOURCES.map((s) => (s.id === id ? { ...s, ...patch } : s));
 
 describe('[NS-53-R36] the shipped registry', () => {
-  it('passes its own check', () => {
+  it('passes its own check (the check runs here, in the tests, not when the app loads)', () => {
     expect(() => assertRegistry(SOURCES)).not.toThrow();
   });
   it('has S1 to S7 and the holiday table, each once', () => {

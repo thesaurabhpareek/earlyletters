@@ -1,7 +1,8 @@
 /**
  * The source registry (NS-53-R36). Each source lists the surfaces it may reach as data, so a later push, email or
  * widget cannot start reading a source by accident. The library (S7) is never push or email in the first release.
- * `assertRegistry` is the build-time check; the tests run it on the shipped table and on deliberately wrong ones.
+ * `assertRegistry` is test-only: registry.test.ts runs it on the shipped table and on deliberately wrong ones, so the
+ * app never runs it at load.
  */
 import type { SourceId } from './domain';
 
@@ -48,4 +49,3 @@ export function assertRegistry(sources: readonly SourceSpec[]): void {
     if (s.id === 'S7' && (s.pushSafe || s.serverSafe || s.surfaces.some((x) => x !== 'card'))) bad();
   }
 }
-assertRegistry(SOURCES);
