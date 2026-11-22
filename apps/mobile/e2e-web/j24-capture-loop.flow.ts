@@ -11,6 +11,12 @@ import { canary, expect, test } from './support/journey';
  */
 const SCALES = { AX1: 1.786, AX3: 2.643, AX5: 3.571 } as const;
 const LANGS = ['hi', 'es', 'zh', 'fr', 'ar', 'pt'] as const;
+/**
+ * BL-1643: each test records under its own step ids (steps/J24-NN.json), so no test overwrites another's records.
+ * The scale tests record three steps each, the language tests one each: J24-01..09, then J24-10..15.
+ */
+const SCALE_START = { AX1: 1, AX3: 4, AX5: 7 } as const;
+const LANG_START = { hi: 10, es: 11, zh: 12, fr: 13, ar: 14, pt: 15 } as const;
 const LETTER = 'You put both hands on the window today and watched the rain.';
 
 const open = (page: Page, q: string) => page.goto(`${process.env.E2E_WEB_SEAM_URL}/?seed=asha&${q}`);
@@ -23,7 +29,7 @@ async function expectNoSideClipping(page: Page) {
 
 for (const [name, scale] of Object.entries(SCALES)) {
   test(`[J24] capture loop at ${name}: write, keep, land in the Book (emulation evidence, not device evidence)`, async ({ app, record }) => {
-    const step = journey(record, 'J24', `capture-loop-${name.toLowerCase()}`, 1, 'J07-01');
+    const step = journey(record, 'J24', `capture-loop-${name.toLowerCase()}`, SCALE_START[name as keyof typeof SCALE_START], 'J07-01');
     await open(app, `e2eFontScale=${scale}`);
     await expect(btn(app, 'Speak')).toBeVisible();
     await expect(btn(app, /^Type/)).toBeVisible();
@@ -43,7 +49,7 @@ for (const [name, scale] of Object.entries(SCALES)) {
 
 for (const lang of LANGS) {
   test(`[J24] capture loop with the page in ${lang}: language and direction set, loop still completes (emulation evidence, not device evidence)`, async ({ app, record }) => {
-    const step = journey(record, 'J24', `capture-loop-${lang}`, 1, 'J07-01');
+    const step = journey(record, 'J24', `capture-loop-${lang}`, LANG_START[lang], 'J07-01');
     await open(app, `e2eLang=${lang}`);
     await expect(btn(app, /^Type/)).toBeVisible();
     await expect(app.locator('html')).toHaveAttribute('lang', lang);
