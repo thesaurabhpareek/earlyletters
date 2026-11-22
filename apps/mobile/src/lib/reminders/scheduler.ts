@@ -27,7 +27,7 @@ import { AppState, Platform } from 'react-native';
 import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { anchorAt, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
+import { anchorAt, lastMadeLetter, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
 import { REMINDER_SOURCE, reminderContent, routeForReminder } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
@@ -158,6 +158,7 @@ export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): 
     lastSaveAt: lastOwnSaveAt(),
     lastForegroundAt,
     anchorAt: anchorAt(),
+    lastLetter: lastMadeLetter(),
   });
 }
 

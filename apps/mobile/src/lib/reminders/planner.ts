@@ -34,7 +34,7 @@
  * Not here (P1, later): `gentleReturn`, plan notices, per-book "pause celebrations".
  */
 import { en } from '@scribe/content';
-import { eligibleFloorIndexes, floorIndexOfKey, selectNotificationKey, type KeySelector } from '@scribe/core';
+import { eligibleFloorIndexes, floorIndexOfKey, recencyBand, selectNotificationKey, type KeyInput, type KeySelector, type LastLetterKind } from '@scribe/core';
 import { childLabel, fill } from '../copy';
 import { budgetedSlots, chooseOnePerDay, PLAN_MAX, TOTAL_MAX } from './budget';
 import { reminderCopy } from './copy';
@@ -85,7 +85,15 @@ export interface PlannerChild {
   quiet?: boolean;
 }
 
+/** The newest made letter as the layers read it (NS-48-R27): epoch ms of `captured_at` and its kind, null when unknown. */
+export interface LastLetter {
+  at: number;
+  kind: LastLetterKind | null;
+}
+
 export interface PlanInput {
+  /** The newest letter this phone's user made (prefs.ts `lastMadeLetter`). Absent: the layers do not run (the floor). */
+  lastLetter?: LastLetter | null;
   now: number;
   timeZone: string;
   prefs: ReminderPrefs;
@@ -323,9 +331,9 @@ function inQuietHours(fireAt: number, timeZone: string, window: ReminderWindow):
 }
 
 /** The injected selector's key if it is one of ours; otherwise the floor, so a note is never without words. */
-function chooseKey(select: KeySelector, slot: number, minutesOfDay: number): string {
+function chooseKey(select: KeySelector, slot: number, minutesOfDay: number, layers: Pick<KeyInput, 'recency' | 'lastKind'> = {}): string {
   try {
-    const key = select({ slotOrdinal: slot, minutesOfDay });
+    const key = select({ slotOrdinal: slot, minutesOfDay, ...layers });
     const index = floorIndexOfKey(key); // eligible now only: no evening-worded key before 17:00 (NS-48-R12)
     if (index !== null && eligibleFloorIndexes(minutesOfDay).includes(index)) return key;
   } catch {
@@ -366,6 +374,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   const anchorDay = input.anchorAt != null && Number.isFinite(input.anchorAt) ? dayNumber(zonedParts(input.anchorAt, timeZone)) : null;
   const lastDay = anchorDay !== null ? anchorDay + BACKOFF_LAST_DAY : dayNumber(today) + monthHorizon - 1;
   const eveningLastDay = anchorDay !== null ? anchorDay + BACKOFF_LAST_DAY : dayNumber(today) + horizon - 1;
+  const lastLetterDay = input.lastLetter && Number.isFinite(input.lastLetter.at) ? dayNumber(zonedParts(input.lastLetter.at, timeZone)) : null;
   const awake = input.children.filter((c) => !c.quiet);
   const included = awake.filter((c) => c.included);
   const out: PlannedNotification[] = [];
@@ -432,7 +441,9 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);
       const minutesOfDay = time.hour * 60 + time.minute;
-      const key = chooseKey(select, ordinal, minutesOfDay);
+      // Recency is the fire date minus the newest made letter's date in this zone, at plan time (NS-48-R3).
+      const band = lastLetterDay !== null ? recencyBand(n, lastLetterDay) : null;
+      const key = chooseKey(select, ordinal, minutesOfDay, { recency: band, lastKind: input.lastLetter?.kind ?? null });
       const variant = floorIndexOfKey(key) ?? 0;
       const nameIdx = namedSlotIndex(ordinal, eligibleFloorIndexes(minutesOfDay));
       const named = prefs.namesOnLockScreen && included.length > 0 ? included[nameIdx % included.length].name : null;
