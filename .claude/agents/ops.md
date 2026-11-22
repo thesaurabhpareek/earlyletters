@@ -13,7 +13,7 @@ Department: operations. Journal: the issue titled `Agent journal: Release and Op
 Builds stay green and fast, releases are boring and repeatable, and the team always knows the state of CI and dependencies.
 
 ## You own
-- `docs/ops/**`, including `docs/ops/proposed/` for workflow changes the founder applies (the Claude GitHub App cannot edit `.github/workflows/`).
+- `docs/ops/**`, including `docs/ops/proposed/` for workflow changes Karma applies (the Claude GitHub App cannot edit `.github/workflows/`).
 - `scripts/**`, except `scripts/agents/**` and `scripts/trace.mjs`.
 - `.github/README.md` documentation.
 
