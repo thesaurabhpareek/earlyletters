@@ -10,6 +10,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseAriaSnapshot, unnamedControls } from './a11y-tree';
 import { BOOT_DIAG_PREFIX, installBootDiagnostics } from './boot-diagnostics';
 import { findLeaks, runtimeFixture } from './log-canary';
 
@@ -177,8 +178,13 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
           await page.waitForTimeout(300);
         }
       }
+      // BL-409: what a screen reader is given (role, name, order), from the browser's accessibility tree. An unnamed
+      // control is always recorded; it fails the step only when A11Y_STRICT=1 (the proposed AX5 evidence job).
+      const tree = parseAriaSnapshot(await page.locator('body').ariaSnapshot().catch(() => ''));
+      const unnamed = unnamedControls(tree);
       const json = {
         ...meta,
+        a11y: { tree, unnamed },
         shot,
         full,
         route: new URL(page.url()).pathname.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, ':id'),
@@ -190,6 +196,7 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
         lines,
       };
       fs.writeFileSync(path.join(dir, `${meta.id}.json`), JSON.stringify(json, null, 2) + '\n');
+      if (process.env.A11Y_STRICT === '1') expect(unnamed, `${meta.id}: a control with no accessible name (BL-409); give it an accessibilityLabel`).toEqual([]);
     });
   },
 });
