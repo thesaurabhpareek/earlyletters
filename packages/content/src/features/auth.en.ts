@@ -69,7 +69,7 @@ export const authCopy = {
       passkey: 'Last time you used a passkey.',
     },
     // The kill path only (a build with no project settings).
-    notConfigured: 'Signing in is not available right now. Nothing on this phone has changed.',
+    notConfigured: "Signing in isn't available right now. Nothing on this phone has changed.",
     busy: 'Signing you in',
   },
 
@@ -119,7 +119,7 @@ export const authCopy = {
    */
   firstRun: {
     errors: {
-      provider: 'That sign-in did not finish. Try again, or try another way.',
+      provider: "That sign-in didn't finish. Try again, or try another way.",
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
@@ -224,13 +224,13 @@ export const authCopy = {
     rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
-    provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+    provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',
     // FP-6, PROPOSED (E-S04.refused-region; the full screen is `region` below). Never names a reason, a place or a rule.
     region_refused: "{app} can't be set up from here.",
-    unknown: 'That did not go through. Nothing has changed.',
+    unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
     // SIGN-06: the same refusal, reached after the link was already checked with the server (verify started), so the
