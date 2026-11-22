@@ -9,10 +9,14 @@ export const CONTROL_ROLES = ['button', 'link', 'switch', 'checkbox', 'radio', '
 
 const LINE = /^\s*- ([a-z]+)(?: "((?:[^"\\]|\\.)*)")?/;
 
+/** Playwright quotes a whole key when the name holds YAML-special text: `- 'button "Asha''s book"':`, apostrophe doubled. */
+const QUOTED_KEY = /^(\s*- )'((?:[^']|'')*)'/;
+
 export function parseAriaSnapshot(snapshot: string): A11yNode[] {
   const out: A11yNode[] = [];
   for (const line of snapshot.split('\n')) {
-    const m = LINE.exec(line);
+    const q = QUOTED_KEY.exec(line);
+    const m = LINE.exec(q ? `${q[1]}${q[2].replace(/''/g, "'")}` : line);
     if (!m) continue; // `- text: ...`, `- /url: ...` and continuation lines carry no role of their own
     if (m[1] === 'text') continue;
     out.push({ role: m[1], name: (m[2] ?? '').replace(/\\(.)/g, '$1'), order: out.length });
