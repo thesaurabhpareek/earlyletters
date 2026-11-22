@@ -10,6 +10,10 @@
  * assertion that needs the source text (who may call confirmAccountClaim, and
  * from where) is marked SOURCE; it is what turns a planted automatic claim red.
  *
+ * NOT covered (do not read this as the whole guarantee): an app restart with a session already stored (the
+ * RESTORED path with consent done), native Apple and Google callbacks reaching the provider, and the rendered
+ * provider and claim sheet (only their source is checked). Those need device or e2e tests.
+ *
  * Fictional family "Asha" only; the accounts are ids, never people.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -20,7 +24,7 @@ import type { SqlDb } from '../src/lib/db/sql';
 import type { AuthEvent, AuthState, SyncGate } from '../src/lib/auth/machine.logic';
 import { authReducer, initialAuthState } from '../src/lib/auth/machine.logic';
 import { pendingCount, readSetting, SYNC_SETTING } from '../src/lib/sync/outbox';
-import { takeOwnership } from '../src/lib/sync/ownership';
+import { AccountMismatchError, takeOwnership } from '../src/lib/sync/ownership';
 import { phoneHoldsAnyRow } from '../src/lib/auth/account-claim.logic';
 import { nodeDb } from './helpers/node-db';
 
@@ -116,7 +120,35 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
     expect(pendingCount(db)).toBe(0);
   });
 
-  it('SOURCE: confirmAccountClaim is called from one place, the "Keep in this account" handler, and keepLettersHere from one tap', () => {
+  it('a phone that already belongs to account A: account B signing in claims and adopts nothing of A\'s', async () => {
+    const A = '0192f0aa-0000-7000-8000-0000000000a9';
+    takeOwnership(db, A, ctx);
+    const queued = pendingCount(db);
+    vi.resetModules();
+    const store: Store = await import('../src/lib/auth/auth-store');
+    const adopted: string[] = [];
+    store.onSignedIn((userId) => {
+      try {
+        takeOwnership(db, userId, ctx);
+        adopted.push(userId);
+      } catch (e) {
+        if (!(e instanceof AccountMismatchError)) throw e;
+      }
+    });
+    store.setClaimReaders({ owner: () => readSetting(db, SYNC_SETTING.owner), hasLocalData: () => phoneHoldsAnyRow(db) });
+    let state: AuthState = initialAuthState;
+    for (const e of [{ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: PARENT, method: 'email' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false }] as AuthEvent[]) {
+      state = authReducer(state, e);
+      store.publishAuth(state);
+    }
+    store.confirmAccountClaim('0192f0aa-0000-7000-8000-0000000000d4'); // a tap for any other id does nothing
+    expect(adopted).toEqual([]);
+    expect(owner(db)).toBe(A);
+    expect(pendingCount(db)).toBe(queued);
+    expect(db.get<{ n: number }>("SELECT COUNT(*) AS n FROM entries WHERE author_id = ?", PARENT)?.n ?? 0).toBe(0);
+  });
+
+  it('SOURCE: every reference to confirmAccountClaim, keepLettersHere and takeOwnership is on the short allowed list', () => {
     const src = join(__dirname, '..', 'src');
     const files: string[] = [];
     const walk = (dir: string) => {
@@ -127,23 +159,31 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
       }
     };
     walk(src);
-    const rel = (p: string) => p.slice(src.length + 1);
-    const calls = (word: string) =>
-      files
-        .filter((p) => !p.endsWith(join('lib', 'auth', 'auth-store.ts')))
-        .flatMap((p) => readFileSync(p, 'utf8').split('\n').map((l, i) => ({ f: rel(p), i, l })).filter(({ l }) => new RegExp(`\\b${word}\\(`).test(l) && !/^\s*(\*|\/\/)/.test(l)))
-        .map(({ f }) => f);
-    // The one caller of confirmAccountClaim is the provider (the interface line `keepLettersHere(): void;` has no confirm call).
-    expect(calls('confirmAccountClaim')).toEqual([join('lib', 'auth', 'session-provider.tsx')]);
-    const provider = readFileSync(join(src, 'lib', 'auth', 'session-provider.tsx'), 'utf8');
-    // It sits inside keepLettersHere() { ... } and nowhere else (not an effect, not a listener).
-    const handler = provider.match(/keepLettersHere\(\) \{([\s\S]*?)\n {6}\},/);
+    const code = (p: string) => readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/.*$/gm, '$1');
+    // Any identifier reference counts (calls, aliases, bare passes, re-exports), comments excluded.
+    const refs = (word: string, except: string[] = []) => {
+      const out: Record<string, number> = {};
+      for (const p of files) {
+        const f = p.slice(src.length + 1);
+        if (except.includes(f)) continue;
+        const k = (code(p).match(new RegExp(`\\b${word}\\b`, 'g')) ?? []).length;
+        if (k) out[f] = k;
+      }
+      return out;
+    };
+    const provider = join('lib', 'auth', 'session-provider.tsx');
+    const consent = join('app', '(auth)', 'sign-in', 'consent.tsx');
+    // (c) confirmAccountClaim: the provider's import and its one call, nothing else, in any form.
+    expect(refs('confirmAccountClaim', [join('lib', 'auth', 'auth-store.ts')])).toEqual({ [provider]: 2 });
+    const providerCode = code(join(src, provider));
+    const handler = providerCode.match(/keepLettersHere\(\) \{([\s\S]*?)\n {6}\},/);
     expect(handler).not.toBeNull();
     expect(handler![1]).toMatch(/confirmAccountClaim\(/);
-    expect(provider.replace(handler![0], '')).not.toMatch(/confirmAccountClaim\(/);
-    // keepLettersHere is invoked only from the claim sheet's button handler (onPress), never from an effect.
-    const consent = readFileSync(join(src, 'app', '(auth)', 'sign-in', 'consent.tsx'), 'utf8');
-    expect(calls('keepLettersHere').filter((f) => !f.endsWith('session-provider.tsx'))).toEqual([join('app', '(auth)', 'sign-in', 'consent.tsx')]);
-    expect(consent).toMatch(/onPress=\{\(\) => \{\s*haptic\('tap'\);\s*auth\.keepLettersHere\(\);\s*\}\}/);
+    expect(providerCode.replace(handler![0], '')).not.toMatch(/confirmAccountClaim\b(?!,)/);
+    // (a) keepLettersHere: the interface line and the handler in the provider, one use in the claim sheet; no effect, alias or pass-through.
+    expect(refs('keepLettersHere')).toEqual({ [provider]: 2, [consent]: 1 });
+    expect(code(join(src, consent))).toMatch(/onPress=\{\(\) => \{\s*haptic\('tap'\);\s*auth\.keepLettersHere\(\);\s*\}\}/);
+    // (b) takeOwnership runs only from the sync wiring (the released-session listener and the engine start), each import plus one call.
+    expect(refs('takeOwnership', [join('lib', 'sync', 'ownership.ts')])).toEqual({ [join('lib', 'sync', 'index.ts')]: 2, [join('lib', 'sync', 'engine.ts')]: 2 });
   });
 });
