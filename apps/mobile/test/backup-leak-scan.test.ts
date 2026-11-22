@@ -198,9 +198,9 @@ const FORMS_1476: Array<[string, (b: Uint8Array) => Buffer]> = [
   ['hex with a 0x prefix on each byte, comma and space', (b) => Buffer.from(hexPairs(b).map((h) => `0x${h}`).join(', '))],
   ['percent-encoded bytes (every byte)', (b) => Buffer.from(hexPairs(b).map((h) => `%${h}`).join(''))],
   ['percent-encoded bytes (plain characters left as they are, as a URL encoder writes them)', (b) => Buffer.from(Array.from(b, (x) => (/[A-Za-z0-9]/.test(String.fromCharCode(x)) ? String.fromCharCode(x) : `%${x.toString(16).padStart(2, '0')}`)).join(''))],
-  ['base64 wrapped at 76 characters with CRLF', (b) => Buffer.from(wrap(b.toString('base64'), 76, '\r\n'))],
-  ['base64 wrapped at 64 characters with LF', (b) => Buffer.from(wrap(b.toString('base64'), 64, '\n'))],
-  ['base64 wrapped at 20 characters, line breaks written as JSON escapes', (b) => Buffer.from(JSON.stringify({ blob: wrap(b.toString('base64'), 20, '\n') }))],
+  ['base64 wrapped at 76 characters with CRLF', (b) => Buffer.from(wrap(Buffer.from(b).toString('base64'), 76, '\r\n'))],
+  ['base64 wrapped at 64 characters with LF', (b) => Buffer.from(wrap(Buffer.from(b).toString('base64'), 64, '\n'))],
+  ['base64 wrapped at 20 characters, line breaks written as JSON escapes', (b) => Buffer.from(JSON.stringify({ blob: wrap(Buffer.from(b).toString('base64'), 20, '\n') }))],
 ];
 
 describe('[BL-1476] a recording written as separated hex, 0x hex, percent-encoded or wrapped base64 is found', () => {
