@@ -72,6 +72,20 @@ function seeded() {
   return f;
 }
 
+/** Runs `fn` and returns each SELECT the repos sent (the real SQL, not a copy) with its plan lines. */
+function plansOf(f: ReturnType<typeof seeded>, fn: (ctx: typeof f.ctx) => void): string[][] {
+  const seen: { sql: string; params: Parameters<typeof f.db.get>[1][] }[] = [];
+  const spy = {
+    ...f.db,
+    get: (sql: string, ...params: never[]) => (seen.push({ sql, params }), f.db.get(sql, ...params)),
+    all: (sql: string, ...params: never[]) => (seen.push({ sql, params }), f.db.all(sql, ...params)),
+  } as typeof f.db;
+  fn({ ...f.ctx, db: spy });
+  return seen.map(({ sql, params }) =>
+    f.db.all<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, ...(params as never[])).map((r) => r.detail),
+  );
+}
+
 describe('[BL-1402] the local store at five years, SQL path on a CI machine', () => {
   const f = seeded();
 
@@ -108,7 +122,7 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
     expect(p95(t)).toBeLessThanOrEqual(BUDGETS.switchMs);
   });
 
-  it('[BL-434] the Book\'s first chapter (light read) and Tonight\'s reads fit the budgets; neither selects machine_edits', () => {
+  it('[BL-434] the Book\'s whole light read (listForBook, then the first chapter sliced) and Tonight\'s reads fit the budgets; neither selects machine_edits', () => {
     const chapter = time(SAMPLES, () => {
       expect(entries.listForBook(f.ctx, ASHA).slice(0, CHAPTER_SIZE)).toHaveLength(CHAPTER_SIZE);
     });
@@ -133,5 +147,20 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
     expect(within(slow, BUDGETS.chapterMs)).toBe(false);
     const real = time(5, () => entries.listForChild(f.ctx, ASHA));
     expect(within(real, BUDGETS.chapterMs)).toBe(true);
+  });
+
+  // [BL-1627] Loose on purpose: "uses entries_child" and "no full scan of entries", never the whole plan text.
+  const usesEntriesChild = (plan: string[]) => plan.some((l) => /SEARCH entries USING (COVERING )?INDEX entries_child/.test(l));
+  const noFullScan = (plan: string[]) => !plan.some((l) => /^SCAN entries/.test(l));
+
+  it.each([
+    ['listOccurredBetween', (c: typeof f.ctx) => entries.listOccurredBetween(c, ASHA, '2024-01-01', '2024-01-10')],
+    ['latestOccurredOn', (c: typeof f.ctx) => entries.latestOccurredOn(c, ASHA)],
+    ['recentPromptKeys', (c: typeof f.ctx) => entries.recentPromptKeys(c, ASHA, 10)],
+  ])('[BL-1627] Tonight read %s searches entries_child and never scans all of entries', (_name, run) => {
+    const plans = plansOf(f, (c) => void run(c));
+    expect(plans).toHaveLength(1);
+    expect(usesEntriesChild(plans[0])).toBe(true);
+    expect(noFullScan(plans[0])).toBe(true);
   });
 });
