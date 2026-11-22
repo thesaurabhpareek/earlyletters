@@ -97,6 +97,9 @@ describe('[BL-456] negative control and mutants', () => {
     // A plant at an offset just after a 64-stride shingle start leaves no whole 16-byte shingle at stride 64.
     const from = 64 * 200 + 1;
     const hay = plant(plain.subarray(from, from + 63), 321);
+    // The byte just before the plant is random, and with chance 1 in 256 it equals plain[from - 1]: the stride-64
+    // shingle at `from - 1` would then match whole and the control below would fail with no bug in the scan. Pin it.
+    hay[320] = plain[from - 1] ^ 0xff;
     const coarse = (h: Buffer) => {
       for (let at = 0; at + SHINGLE <= plain.length; at += 64) if (h.includes(plain.subarray(at, at + SHINGLE))) return true;
       return false;
