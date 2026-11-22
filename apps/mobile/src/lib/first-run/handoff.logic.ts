@@ -119,6 +119,35 @@ export function runFinishOnce(latch: { current: boolean }, finish: () => void): 
 }
 
 /**
+ * Makes a book per call, remembering the ones already made so a retry after a throw keeps them (BL-1658). `finish` maps
+ * one call per name in order; if the second throws, the first is already in the store, and the retry must not make it
+ * again. A call at a position that already has a book of the same make (`same`) returns that book; a throw sends the next
+ * call back to position 0 (the retry starts the list again); `total()` calls in a row complete a run and do the same.
+ * A position whose remembered book is for something else (the names were edited between tries) is forgotten from there.
+ * `made` is the caller's memory (a ref's array), so it outlives renders. Makes nothing but what `make` makes.
+ */
+export function resumeBooks<A, T>(made: { arg: A; book: T }[], make: (arg: A) => T, same: (a: A, b: A) => boolean, total: () => number): (arg: A) => T {
+  let at = 0;
+  return (arg) => {
+    const kept = made[at];
+    if (kept && same(kept.arg, arg)) {
+      at = (at + 1) % Math.max(total(), 1);
+      return kept.book;
+    }
+    made.length = at;
+    try {
+      const book = make(arg);
+      made.push({ arg, book });
+      at = (at + 1) % Math.max(total(), 1);
+      return book;
+    } catch (e) {
+      at = 0;
+      throw e;
+    }
+  };
+}
+
+/**
  * The account-first child step's name field says the name is optional (NX-31-R3); other builds keep "Name". Only for
  * one child: with more than one name on the step every name is needed (firstRunChildBlock), so the first row goes back
  * to "Name" the moment "Add another child" is tapped, never "Name, if you like" beside a Continue that waits for it.
