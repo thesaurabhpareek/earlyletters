@@ -20,11 +20,11 @@ export async function passAgeGate(page: Page) {
 
 export async function startOnboarding(page: Page) {
   await btn(page, 'Begin the book').click();
-  await expect(btn(page, 'That sounds right')).toBeVisible();
+  await expect(btn(page, 'Continue')).toBeVisible();
 }
 
 export async function toChildStep(page: Page) {
-  await btn(page, 'That sounds right').click();
+  await btn(page, 'Continue').click();
   await expect(page.getByText('Who is this book for?')).toBeVisible();
 }
 

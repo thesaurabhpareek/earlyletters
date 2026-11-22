@@ -121,11 +121,18 @@ describe('NS-53 the Moment type (R59, R201)', () => {
   });
 });
 
+/** The only imports from outside moments/, each file named: the pure age and prompt modules, which import nothing. */
+const OUTSIDE: Record<string, string[]> = { 'holidays.ts': ['../age'], 'occasions.ts': ['../age'], 'slots.ts': ['../age', '../prompts'] };
+
 describe('NS-53 the engine stays pure (CODE-R10, R43)', () => {
-  it('[NS-53-R43] moments imports only its own files and the pure core age and prompts modules: no react-native, expo, node, fs or network module', () => {
+  it('[NS-53-R43] age.ts and prompts.ts, the two modules moments may import, import nothing themselves', () => {
+    for (const f of ['age.ts', 'prompts.ts']) expect(readFileSync(join(__dirname, '..', '..', 'src', f), 'utf8'), f).not.toMatch(/^\s*(import|export)[^;]*from\s/m);
+  });
+
+  it('[NS-53-R43] moments imports only its own files and the named pure modules: no react-native, expo, node, fs or network module', () => {
     for (const f of sources) {
       const specs = [...read(f).matchAll(/(?:import|export)[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
-      for (const s of specs) expect(s.startsWith('./') || ['../age', '../prompts'].includes(s), `${f} imports ${s}`).toBe(true);
+      for (const s of specs) expect(s.startsWith('./') || (OUTSIDE[f] ?? []).includes(s), `${f} imports ${s}`).toBe(true);
       expect(read(f), f).not.toMatch(/\brequire\(|import\(/);
     }
   });

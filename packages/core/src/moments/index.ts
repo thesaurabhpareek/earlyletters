@@ -5,3 +5,5 @@ export * from './types';
 export * from './verbs';
 export * from './holidays';
 export * from './occasions';
+export * from './registry';
+export * from './slots';
