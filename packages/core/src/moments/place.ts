@@ -26,9 +26,9 @@ function dayNumber(iso: string): number | null {
   if (!m) return null;
   const y = Number(m[1]);
   const mo = Number(m[2]);
-  const d = Number(m[3]);
-  const t = new Date(Date.UTC(y, mo - 1, d));
-  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return null;
+  const t = new Date(Date.UTC(y, mo - 1, Number(m[3])));
+  // A day that overflows its month (30 February, day 00) lands in another month, so year and month suffice.
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1) return null;
   return t.getTime() / 86_400_000;
 }
 

@@ -118,6 +118,15 @@ describe('[CPO-25] place defaults are PROPOSED rules fields, read from MomentsRu
     expect(line({ placeId: LIS, window: w })).toBeNull();
     expect(line({ placeId: LIS, window: w, rules: { ...RULES, placeRareShare: 0.2 } })).not.toBeNull();
   });
+  it('minPicturesAtPlace and maxRun are read from the rules, not constants', () => {
+    expect(dayPlace(rep(LIS, 3), { ...RULES, minPicturesAtPlace: 4 })).toBeNull();
+    expect(dayPlace(rep(LIS, 2), { ...RULES, minPicturesAtPlace: 2 })).toBe(LIS);
+    const W3 = windowPlaces([...rep(SEA, 60), ...rep(LIS, 5)]);
+    const g = { table: T, window: W3, hidden: new Set<string>(), machineLabels: true };
+    const run = (n: number) => Array.from({ length: n }, (_, i) => ({ dayKey: `2026-10-${String(10 + i).padStart(2, '0')}`, placeId: LIS, isBirthDay: false }));
+    expect(placeStays(run(4), { ...g, rules: { ...RULES, maxRun: 3 } })).toEqual([]);
+    expect(placeStays(run(10), { ...g, rules: { ...RULES, maxRun: 10 } })).toHaveLength(1);
+  });
   it('(b) the share denominator counts placed candidates only: unplaced pictures never make a place rarer', () => {
     const plain = windowPlaces([...rep(SEA, 17), ...rep(LIS, 3)]);
     const withNone = windowPlaces([...rep(SEA, 17), ...rep(LIS, 3), ...rep(null, 500)]);
