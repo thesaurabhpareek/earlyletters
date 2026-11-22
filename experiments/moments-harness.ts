@@ -4,19 +4,27 @@
  * See README section 9.
  */
 import { readFileSync } from 'node:fs';
-import { parseExport, parseJunk, render, runGrid } from './moments-harness-lib';
+import { HarnessError, parseExport, parseJunk, render, runGrid } from './moments-harness-lib';
 
 export function main(argv: readonly string[], read: (p: string) => string, out: (s: string) => void): number {
   if (argv.length !== 2) {
     out('usage: moments-harness <export.json> <junk-days.txt>');
     return 1;
   }
+  // A read error from the system quotes the path, and a path can name a person or a place: print fixed words only.
+  const safeRead = (p: string): string => {
+    try {
+      return read(p);
+    } catch {
+      throw new HarnessError('cannot read an input file (missing or unreadable)');
+    }
+  };
   try {
-    out(render(runGrid(parseExport(read(argv[0])), parseJunk(read(argv[1])))));
+    out(render(runGrid(parseExport(safeRead(argv[0])), parseJunk(safeRead(argv[1])))));
     return 0;
   } catch (e) {
-    // The message names the problem, never a row, a date or a place.
-    out(`failed: ${e instanceof Error ? e.message.split('\n')[0].slice(0, 120) : 'unknown'}`);
+    // Only our own fixed messages are printed; anything else is reduced to fixed words. Never a row, a date, a place or a path.
+    out(`failed: ${e instanceof HarnessError ? e.message : 'unexpected input; nothing was read out'}`);
     return 1;
   }
 }

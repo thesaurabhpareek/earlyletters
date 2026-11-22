@@ -7,8 +7,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { main } from './moments-harness';
 import { groupByDay } from '../packages/core/src/moments/group';
-import { cells, choose, evaluateCell, parseExport, parseJunk, render, rulesFor, runGrid, toWindow } from './moments-harness-lib';
-import { GRID } from './moments-bar';
+import { cells, choose, evaluateCell, isEligible, parseExport, parseJunk, render, rulesFor, runGrid, toWindow, WRONG_REASON_STATUS } from './moments-harness-lib';
+import { GRID, MAX_WRONG_REASONS } from './moments-bar';
 
 const LIB = readFileSync(join(__dirname, 'fixtures/moments-asha-library.json'), 'utf8');
 const JUNK = readFileSync(join(__dirname, 'fixtures/moments-asha-junk.txt'), 'utf8');
@@ -107,5 +107,58 @@ describe('moments real-library harness', () => {
     expect(new Set(rows.map((r) => r.place))).toEqual(new Set(['cell-home', 'cell-away']));
     expect(rows.every((r) => Number.isInteger(r.t) && r.t > 0)).toBe(true);
     expect(LIB).not.toMatch(/lat|lon|filename|name/i);
+  });
+
+  it('[NS-53-R205] a missing or unreadable file prints fixed words, never the path', () => {
+    const out: string[] = [];
+    expect(main(['/nonexistent/asha-private/export.json', 'junk'], (p) => readFileSync(p, 'utf8'), (s) => out.push(s))).toBe(1);
+    expect(out.join('')).not.toMatch(/nonexistent|asha-private|ENOENT|export\.json/);
+    expect(out.join('')).toContain('cannot read an input file');
+    const odd: string[] = [];
+    const boom = (): string => {
+      throw new Error("EACCES: permission denied, open '/home/someone/secret-place.json'");
+    };
+    expect(main(['a', 'b'], boom, (s) => odd.push(s))).toBe(1);
+    expect(odd.join('')).not.toMatch(/someone|secret|EACCES/);
+  });
+
+  it('[NS-53-R205] negative control: one wrong reason makes a cell ineligible, however many days qualify', () => {
+    expect(MAX_WRONG_REASONS).toBe(0);
+    expect(isEligible(10, 10, 0)).toBe(true);
+    expect(isEligible(10, 10, 1)).toBe(false);
+    expect(isEligible(10, 2.9, 0)).toBe(false);
+    expect(isEligible(0, 0, 0)).toBe(false);
+  });
+
+  it('[NS-53-R205] negative control: days more than 90 days before the newest asset do not count', () => {
+    // The fixture holds three busy, hearted days in late 2025, outside the window. Without the 90-day filter they would qualify.
+    const { window, offsetAt } = toWindow(rows);
+    const all = groupByDay(window, offsetAt, rulesFor({ predicate: 'span', minSpanHours: 2, nearSeconds: 10, nearGroupMax: 60, placeRareShare: 0.15 }));
+    expect(all.filter((d) => d.dayKey < '2025-12-31').length).toBe(3);
+    expect(at('span', 2).qualifyingDays).toBe(19);
+    expect(at('span', 2).windowDays).toBeLessThanOrEqual(90);
+    expect(run.results.every((r) => r.windowDays <= 90)).toBe(true);
+  });
+
+  it('[NS-53-R281] a junk key outside the window is counted apart and never as a junk day', () => {
+    expect(run.junkMarksInWindow).toBe(3);
+    expect(run.junkMarksOutside).toBe(1);
+    expect(at('span', 2).junkDays).toBe(2);
+    const text = render(run);
+    expect(text).toContain('junk marks in the 90-day window: 3; outside it, ignored: 1');
+    expect(text).toContain('repair bar after one use: 20%');
+  });
+
+  it('[NS-53-R205] the wrong-reason count is documented as a placeholder in the code, the output and the README', () => {
+    expect(WRONG_REASON_STATUS).toMatch(/^placeholder/);
+    expect(render(run)).toContain('wrong-reason count: placeholder');
+    const lib = readFileSync(join(__dirname, 'moments-harness-lib.ts'), 'utf8');
+    expect(lib).toContain('PLACEHOLDER that cannot fail today');
+    const readme = readFileSync(join(__dirname, 'README.md'), 'utf8');
+    expect(readme).toMatch(/wrong-reason count is a placeholder that cannot fail today/);
+  });
+
+  it('[NS-53-R205] the eligibility rate is per 14 days, as the spec decision rule says', () => {
+    expect(at('span', 2).qualifyingPer14).toBeCloseTo((19 * 14) / at('span', 2).windowDays, 10);
   });
 });

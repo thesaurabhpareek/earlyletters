@@ -4,6 +4,7 @@
  * time, and returns COUNTS ONLY. Nothing here returns or prints an id, a day key, a date, a place
  * or a picture. The bar and decision rule are in moments-bar.ts (written before this file).
  */
+// Deliberate deep imports from core: the harness reads the engine's own modules, not a public barrel, so a run uses exactly the rules the app ships.
 import { dayPlace, windowPlaces } from '../packages/core/src/moments/place';
 import { groupByDay, type DayGroup } from '../packages/core/src/moments/group';
 import { qualifyDay } from '../packages/core/src/moments/qualify';
@@ -12,6 +13,24 @@ import { MOMENTS_RULES, WINDOW_DAYS, type MomentsRules, type SpanPredicate } fro
 import { KIND_IMAGE, KIND_VIDEO } from '../packages/core/src/moments/columns';
 import type { LibraryWindow } from '../packages/core/src/moments/types';
 import { GRID, JUNK_BAR, MAX_WRONG_REASONS, MIN_QUALIFYING_PER_14_DAYS } from './moments-bar';
+
+/** An error whose message is safe to print: fixed words, never an input line, path or value. */
+export class HarnessError extends Error {}
+
+/**
+ * HONEST STATUS of the wrong-reason count: it is a PLACEHOLDER that cannot fail today. core/moments
+ * has no shown-reason logic yet (reasons.ts holds only the closed list and REASON_PRECEDENCE), so the
+ * "shown" reason below is derived here from the same predicates the check then tests, and agrees with
+ * itself by construction. It becomes a real check when core ships its own table-driven reasons (spec
+ * NS-53-R205; PR 4 builds the occasions and the momentsFor registry, and no PR row names the library
+ * reasons separately, so that owner is to be named by the spec). Until then, a 0 here proves nothing.
+ */
+export const WRONG_REASON_STATUS = 'placeholder: cannot fail until core ships its own shown-reason logic (spec NS-53-R205, PR 4 and its follow-up)';
+
+/** Eligibility of a cell (spec 7.2a: at least 3 of every 14 days qualify, and zero wrong reasons). */
+export function isEligible(qualifying: number, per14: number, wrong: number): boolean {
+  return qualifying > 0 && per14 >= MIN_QUALIFYING_PER_14_DAYS && wrong <= MAX_WRONG_REASONS;
+}
 
 /** One asset of the export: only what the engine reads. No filename, no coordinate. */
 export interface ExportRow {
@@ -143,7 +162,8 @@ export function evaluateCell(
     // The shown reason: the strongest library reason whose predicate is true (REASON_PRECEDENCE order).
     const order = REASON_PRECEDENCE.filter((r): r is (typeof LIBRARY_REASONS)[number] => (LIBRARY_REASONS as readonly string[]).includes(r));
     const shown = order.find((r) => preds[r](d)) ?? null;
-    // Property check: the shown reason's predicate is true, and no stronger reason's predicate is true.
+    // Property check (PLACEHOLDER, see WRONG_REASON_STATUS): `shown` is computed from these same
+    // predicates, so this cannot fail today. It is not evidence about core's own reasons.
     const ok = shown !== null && preds[shown](d) && order.slice(0, order.indexOf(shown)).every((r) => !preds[r](d));
     if (!ok) wrong++;
   }
@@ -156,7 +176,7 @@ export function evaluateCell(
     junkDays: junk,
     junkShare: qualifying === 0 ? null : junk / qualifying,
     wrongReasons: wrong,
-    eligible: qualifying > 0 && per14 >= MIN_QUALIFYING_PER_14_DAYS && wrong <= MAX_WRONG_REASONS,
+    eligible: isEligible(qualifying, per14, wrong),
   };
 }
 
@@ -186,7 +206,10 @@ export function choose(results: readonly CellResult[]): CellResult | null {
 export interface Run {
   results: CellResult[];
   chosen: Record<SpanPredicate, CellResult | null>;
-  junkMarksGiven: number;
+  /** Marks whose day falls inside the 90-day window ending at the newest asset. */
+  junkMarksInWindow: number;
+  /** Marks outside that window: ignored, counted apart. */
+  junkMarksOutside: number;
 }
 
 export function runGrid(rows: readonly ExportRow[], junkKeys: ReadonlySet<string>): Run {
@@ -198,7 +221,11 @@ export function runGrid(rows: readonly ExportRow[], junkKeys: ReadonlySet<string
     results.push(...rs);
     chosen[predicate] = choose(rs);
   }
-  return { results, chosen, junkMarksGiven: junkKeys.size };
+  const all = groupByDay(window, offsetAt, MOMENTS_RULES);
+  const last = all.length ? dayIndex(all[all.length - 1].dayKey) : -Infinity;
+  let inWindow = 0;
+  for (const k of junkKeys) if (dayIndex(k) <= last && dayIndex(k) > last - WINDOW_DAYS) inWindow++;
+  return { results, chosen, junkMarksInWindow: inWindow, junkMarksOutside: junkKeys.size - inWindow };
 }
 
 const pct = (x: number | null) => (x === null ? 'n/a' : `${(x * 100).toFixed(0)}%`);
@@ -207,9 +234,11 @@ const pct = (x: number | null) => (x === null ? 'n/a' : `${(x * 100).toFixed(0)}
 export function render(run: Run): string {
   const L: string[] = [];
   L.push('Moments real-library harness: counts and rates only. Nothing else is printed or written.');
-  L.push(`junk marks read: ${run.junkMarksGiven}; junk bar before use of "Not this one": ${pct(JUNK_BAR.beforeNotThisOne)}`);
+  L.push(`junk marks in the 90-day window: ${run.junkMarksInWindow}; outside it, ignored: ${run.junkMarksOutside}`);
+  L.push(`junk bar before any use of "Not this one": ${pct(JUNK_BAR.beforeNotThisOne)}; repair bar after one use: ${pct(JUNK_BAR.afterNotThisOne)}`);
+  L.push(`wrong-reason count: ${WRONG_REASON_STATUS}`);
   for (const p of ['span', 'busyHours'] as const) {
-    L.push('', `predicate ${p}: minSpanH nearS groupMax placeRare | windowDays qualifying per14 junkDays junk wrong eligible`);
+    L.push('', `predicate ${p}: minSpanH nearS groupMax placeRare | windowDays qualifying per14 junkDays junk wrong(placeholder) eligible`);
     for (const r of run.results.filter((x) => x.predicate === p)) {
       L.push(
         `  ${r.minSpanHours} ${r.nearSeconds} ${r.nearGroupMax} ${r.placeRareShare} | ${r.windowDays} ${r.qualifyingDays} ${r.qualifyingPer14.toFixed(1)} ${r.junkDays} ${pct(r.junkShare)} ${r.wrongReasons} ${r.eligible ? 'yes' : 'no'}`,
@@ -238,7 +267,7 @@ export function parseJunk(text: string): Set<string> {
   for (const line of text.split(/\r?\n/)) {
     const t = line.trim();
     if (t === '') continue;
-    if (!DAY_KEY.test(t) || Number.isNaN(dayIndex(t))) throw new Error('junk file: every line must be a day key, YYYY-MM-DD');
+    if (!DAY_KEY.test(t) || Number.isNaN(dayIndex(t))) throw new HarnessError('junk file: every line must be a day key, YYYY-MM-DD');
     out.add(t);
   }
   return out;
@@ -250,13 +279,13 @@ export function parseExport(text: string): ExportRow[] {
     j = JSON.parse(text) as { rows?: unknown };
   } catch {
     // Node's own message quotes the text; ours never does.
-    throw new Error('export: not valid JSON');
+    throw new HarnessError('export: not valid JSON');
   }
-  if (!Array.isArray(j.rows)) throw new Error('export: expected {"rows": [...]}');
+  if (!Array.isArray(j.rows)) throw new HarnessError('export: expected {"rows": [...]}');
   return j.rows.map((r) => {
     const x = r as ExportRow;
     if (typeof x.t !== 'number' || typeof x.off !== 'number' || (x.kind !== 'image' && x.kind !== 'video')) {
-      throw new Error('export: each row needs t, off and kind');
+      throw new HarnessError('export: each row needs t, off and kind');
     }
     return { t: x.t, off: x.off, kind: x.kind, fav: !!x.fav, burst: x.burst ?? null, place: x.place ?? null, durMs: x.durMs ?? 0, sub: x.sub ?? 0 };
   });
