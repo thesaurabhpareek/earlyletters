@@ -98,7 +98,7 @@ Tab set (DC-4, RULED): Home, Moments, Book, Me, Home as landing, one constant `i
 - Light between tabs. O-25 (RULED) is plain paper: no lamp on the tab or any Moments card. MOTION 5l rule 1 says the lamp never cuts, and the other tabs' lamps share `persistKey="tabs"`. So leaving Home or the Book for Moments must let the old light go, and the return must bring it back. PROPOSED: Moments calls `useUnlitRoom()` while focused, so every lamp eases to 0 over `lamp.leaveMs` (160 ms) and back over `returnMs` (280 ms). ASSUMED to work for sibling tabs; that hook was written for a covering screen (MOTION 5k). UNVERIFIED which of the two the Lamp component does when the arriving tab has no lamp; `mobile` reads `lamp.tsx` and `lamp.logic.ts` first and, if the hook does not fit, says so and the answer is a one-row addition to the lamp table (a `plain` scene at intensity 0), not a new token.
 - Re-tapping the current tab scrolls to the top with the platform's own scroll (T1-R11); whether React Navigation's JS tabs do this unaided is UNVERIFIED.
 - Arrival by notification or `scribe://moments` (G-09, O-22): typedDay, birthday and monthAge land on Moments at scroll 0 with For you selected and no card highlighted; `evening` lands on Home. No wash, no scroll-to, no card moves. With App lock on the lock comes first. The first-view settle applies only if it has never played.
-- The shell test. `apps/mobile/test/tab-bar.test.ts` (VERIFIED, read this session) asserts exactly three tabs: `expect(SCREENS).toEqual(['index', 'book', 'you'])`, a test named "three tabs at 320 pt and 375 pt keep 44 pt targets", and `indexOf('name="you"')` after `book`. Adding Moments as the second tab fails all three unless `mobile` updates the test in the same PR to `['index', 'moments', 'book', 'you']` and renames the width test. The width arithmetic itself still passes: 320 / 4 = 80 pt and 375 / 4 = 93.75 pt, both over the 44 pt target, and the existing bound allows a label of up to 9 letters at 13 pt (0.62 em per letter is the test's own estimate), so "Moments" at 7 fits. Large Content Viewer and the fixed 13 pt label rule apply to the fourth tab (NX-30a-R4). The widths are arithmetic, not seen; A11Y audit FE-1 (tab label cap) and DM-13 still need a phone.
+- The shell test. `apps/mobile/test/tab-bar.test.ts` now declares four routes, `expect(SCREENS).toEqual(['index', 'moments', 'book', 'you'])`, and asserts the bar a build draws is still three while the flag is off: `visibleTabIds(MOMENTS_TAB_ON)` is `['index', 'book', 'you']`. The width test and the `you`-last check stay in step with that. The width arithmetic itself still passes: 320 / 4 = 80 pt and 375 / 4 = 93.75 pt, both over the 44 pt target, and the existing bound allows a label of up to 9 letters at 13 pt (0.62 em per letter is the test's own estimate), so "Moments" at 7 fits. Large Content Viewer and the fixed 13 pt label rule apply to the fourth tab (NX-30a-R4). The widths are arithmetic, not seen; A11Y audit FE-1 (tab label cap) and DM-13 still need a phone.
 - Reduce Motion for all of this: tab swap unchanged (it is already a cut); the settle becomes a 200 ms fade; the lamp jumps to its level.
 
 ### 3.2 Day-card reveal: how a card and its pictures appear
@@ -256,7 +256,7 @@ Maestro stops at the host sheet and cannot reach inside Apple's view, nor count 
 3. The Reduce Motion table in 4.1 as data: every move id has a form, and a test walks the whole table.
 4. Timeline ceilings: every Moments move is at most 420 ms and every sequence at most 900 ms (EM-16 is 590, the card Not now about 510, the tab settle 340).
 5. `shouldCoverMoments(route, appState, lockEnabled)` truth table (G-01), and that the flight plan ends when the cover condition becomes true.
-6. Tab bar: `tab-bar.test.ts` updated to four tabs in the same PR as the tab.
+6. Tab bar: `tab-bar.test.ts` declares four routes and asserts three visible while the flag is off (done with the flag); the flag-on four-tab bar still needs a device check.
 7. Source scans on the Moments tree: no `withRepeat`, no progress or activity component, no `shimmer`, no direct `AccessibilityInfo` read, no number literal used as a duration.
 8. Easing and duration come from tokens only; no colour or size typed in a screen.
 
@@ -330,7 +330,7 @@ Layering and touch behaviour are not frame evidence, so the simulator can answer
 ### 8.3 Conflicts and corrections found while writing
 
 1. EXP and the PRD still call the flight off by default; the closure says ON after DM-11 and DM-12. The closure is later and cites the founder. Followed here.
-2. `tab-bar.test.ts` asserts three tabs; the closure (DC-4) has four. Section 3.1.
+2. `tab-bar.test.ts` declares four routes and three visible with the flag off; the closure (DC-4) has four with it on. Section 3.1.
 3. TDD 01's "Start within 100 ms, complete 350 ms" and a 320 ms flight only fit together if "complete" is the move's own length. Section 3.4.
 4. O-25 (plain paper) and T1-R8 (a Moments lamp scene) disagree; O-25 wins, and the cost is the light between tabs, section 3.1.
 5. EM-16 in EXP names "ask and examples"; C-45 left one example. The 590 ms is carried unchanged because the list's six-card entry sets it, not the examples.

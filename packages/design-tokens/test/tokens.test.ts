@@ -227,9 +227,15 @@ describe('design tokens: type', () => {
 describe('design tokens: motion and targets', () => {
   const m = tokens.motion;
   it('no timed motion exceeds the 2 s ceiling, and the content sequence fits under 900 ms', () => {
-    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
+    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs, m.carry.ms]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
     expect(m.enter.durationMs + m.staggerMs * (m.staggerMax - 1)).toBeLessThanOrEqual(m.sequenceMaxMs);
     expect(m.reduceMotion.durationMs).toBe(m.fadeMs);
+  });
+  it('the Moments flight carries in 320 ms (O-58): one move, at most 420 ms, and the leave fits inside it', () => {
+    expect(m.carry.ms).toBe(320);
+    expect(m.carry.ms).toBeLessThanOrEqual(420);
+    expect(m.exitMs).toBeLessThanOrEqual(m.carry.ms);
+    expect(m.carry.ms).toBeLessThanOrEqual(m.sequenceMaxMs);
   });
   it('the saved moment files the letter in order, and inside the 900 ms sequence (MOTION 5e)', () => {
     expect(0).toBeLessThan(m.file.chipAtMs);
