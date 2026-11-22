@@ -1296,6 +1296,39 @@ New block: ids are `RT-B9-01` to `RT-B9-13` in `docs/qa/release-test-catalog.csv
 | RT-B9-12 | Plus offline and grace (#517) | Check lines 33 to 36 | Offline line; held letter; 7-day grace in AL-09 |
 | RT-B9-13 | Notes count (#510) | Check line 19 | Keep sheet on the third item |
 
+## Part 5. New-scope device journeys (BL-948; `docs/product/prd/14-test-plan.md` sections 4 and 5)
+
+One row per journey J-N1 to J-N27 that needs a phone, P0 rows first. Row ids are `DJ-N<number>` (the journey number), so they cannot collide with S1, DL or RT ids. J-N6, J-N7, J-N17, J-N18, J-N22, J-N25 and J-N26 need no phone and are not here (they run as unit, source or journey tests). Every row is planned and has not run. J-N28 onward is out of this row's scope.
+
+**Rows expected, in order:** DJ-N19, DJ-N21, DJ-N23, DJ-N24, DJ-N27 (the P0 device journeys the row names), then the other P0 rows DJ-N1, DJ-N2, DJ-N4, DJ-N9, DJ-N10, DJ-N11, DJ-N14, DJ-N16, then the P1 rows DJ-N3, DJ-N5, DJ-N8, DJ-N12, DJ-N13, DJ-N15, DJ-N20. That is 20 rows.
+
+**Settings on every row (section 5):** a separate install signed in to a test account that holds only the fictional Asha book; the phones listed in the Phone column (the SE 3 on the newest iOS, a current large iPhone on the latest iOS, a second phone on the same account where the row says two phones); and, as a walk, the largest accessibility text size with Bold Text, VoiceOver, Voice Control, Switch Control, Reduce Motion, Increase Contrast, Smart Invert, dark mode and Low Power Mode, with airplane mode where the row says so. No real name, letter, picture or voice appears in any note, screenshot or log. Results go in `docs/qa/evidence/<date>-<build>-<phone>.md`, one line per row id, with the Priority and Card below. A waiver is never allowed for a P0 row marked (loss) or (leak) or for a name or words on a lock screen or a guilt or count line (section 6).
+
+| Row | Priority | Card | Phone | Journey and what to check (Given/When/Then in short) | Extra settings |
+|---|---|---|---|---|---|
+| DJ-N19 | P0 (loss) | NS-13, NS-11, NS-23 | SE 3 | Quiet a book. Then no reminder, no Save a copy slip and no past letter shows for it; unquiet it and all three return. | Dark mode; VoiceOver on the quiet toggle |
+| DJ-N21 | P0 (loss) | NS-08 | SE 3 | Sign out with backup off. The sheet says recordings stay on this phone; after sign out, count every recording: all still on the phone. | Airplane mode for the second pass; VoiceOver; AX5 text |
+| DJ-N23 | P0 (loss) | NS-17 | SE 3 | English-only build, a take spoken in another language. Review marks it in one tap, the words leave view, the audio stays, nothing is lost. | VoiceOver; Reduce Motion |
+| DJ-N24 | P0 (leak) | NS-13 | SE 3 | Default settings, reminders on, one week with the real clock or the moved date: no notification shows the child's name or any letter words on the lock screen. | Show Previews on and Never; Focus summary; Low Power Mode |
+| DJ-N27 | P0 | NS-32 | SE 3 | A trial ends and a reminder is due the same day: the plan notice arrives on time. | Sandbox account; moved date; Low Power Mode |
+| DJ-N1 | P0 (loss) | NS-09 | SE 3 | Let go of a take, kill the app midway, reopen: the take is gone and its audio file is gone. | Kill by app switcher; airplane mode |
+| DJ-N2 | P0 | NS-10 | SE 3 plus a second phone | New phone: sign in, consent outstanding, reach the book; no page claims a recording is here. | VoiceOver; AX5 text |
+| DJ-N4 | P0 (guilt line) | NS-13, NS-32 | SE 3 | A week of silence (moved date): reminders slow then stop; no line counts the gap. Spot check that the first scheduled notes appear; the rest runs as a planner unit test. | Show Previews on; dark mode |
+| DJ-N9 | P0 | NS-01, NS-36 | SE 3 | Add a picture to a letter, delete the letter, restore it: the picture follows each step; the export holds it. | Reduce Motion; AX5 text |
+| DJ-N10 | P0 (leak) | NS-02, NS-36 | SE 3 | Find a word, open the letter, Back keeps the search; hide the letter, it is no longer found; no network call in the whole run. | Airplane mode throughout; VoiceOver; AX5 text |
+| DJ-N11 | P0 | NS-05 | SE 3 | Share one letter: the text sent equals the kept words byte for byte, nothing added. Compare against the app's stored text on a Mac. | Share sheet to Notes and Messages |
+| DJ-N14 | P0 | NS-06, NS-36 | SE 3 plus a second phone | Seal a letter for a day; from two time zones check it opens at the same instant. | Set each phone's zone by hand |
+| DJ-N16 | P0 (loss) | NS-17 | SE 3 | A recording in a language that is not offered: kept, no invented words, the letter says its words are waiting. | VoiceOver |
+| DJ-N3 | P1 | NS-13 | SE 3 | Reminder at the chosen hour, tap, land on the prompt, speak, keep; tomorrow the words differ. | Low Power Mode; Focus on |
+| DJ-N5 | P1 | NS-13 | SE 3 | Fly across time zones (change the zone by hand): no reminder in the night. | Automatic time zone off then on |
+| DJ-N8 | P1 | NS-11 | SE 3 | Birthday week: the slip appears once, save a copy to Files, it does not return; the copy equals Take the book with you. | Share sheet; Files |
+| DJ-N12 | P1 | NS-21, NS-33 | SE 3 | Open a letter at the largest text size with VoiceOver: heading, list, Share, Delete in order; nothing truncated. | AX5 text; Bold Text; Voice Control |
+| DJ-N13 | P1 | NS-37, NS-34 | SE 3 | 1,000 Asha letters and 300 pictures: scroll the Book with no frame over 16.7 ms. | Low Power Mode off, then on |
+| DJ-N15 | P1 | NS-33, NS-34 | SE 3 | Every screen with Reduce Motion on: no moving loop. | Reduce Motion; Increase Contrast; Smart Invert |
+| DJ-N20 | P1 | NS-33 | SE 3 | VoiceOver only: start, stop, review, undo a fix and Keep a letter with no sighted help. | VoiceOver; Switch Control pass |
+
+**Record:** a line per row id in the evidence file: phone, iOS version, build and profile, pass or fail, and for each fail a GitHub issue with a severity (S0 for any loss, leak, name or words on a lock screen). Rows not run say why. UNVERIFIED until the founder runs them: nothing here has run on a phone.
+
 ## Facts and assumptions this plan rests on
 
 | Item | Status |

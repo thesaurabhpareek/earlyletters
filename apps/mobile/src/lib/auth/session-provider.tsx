@@ -592,13 +592,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       },
 
       async signOutOtherDevices() {
-        if (!sb) return { ok: false, error: 'not_available' };
+        if (!sb) return { ok: false, error: 'sign_out_others_failed' };
         try {
           const { error } = await sb.auth.signOut({ scope: 'others' });
           if (error) throw error;
           return { ok: true };
         } catch (e) {
-          return { ok: false, error: authErrorKind(e, 'provider') };
+          return { ok: false, error: authErrorKind(e, 'sign_out_others') };
         }
       },
     }),

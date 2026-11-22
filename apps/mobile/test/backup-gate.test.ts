@@ -27,6 +27,7 @@ const FILES = join(BACKUP, 'files.ts');
 // token-vault.ts (the upload tokens in the Keychain, B5-6) and launch-migrate.ts (the launch move, B5-9) are data rights too.
 const TOKENS = join(BACKUP, 'token-vault.ts');
 const MIGRATE = join(BACKUP, 'launch-migrate.ts');
+const READBACK = join(BACKUP, 'readback.ts'); // pure flag read-back (BL-1409): imports only photos/strip, loads no backup runtime
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
@@ -90,10 +91,14 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
       for (const s of specifiers(f)) {
         if (/scribe-keys/.test(s)) offenders.push(`${relative(APP, f)} -> ${s}`);
         const target = resolveSpec(f, s);
-        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES && target !== TOKENS && target !== MIGRATE) offenders.push(`${relative(APP, f)} -> ${s}`);
+        if (target && target.startsWith(BACKUP + '/') && target !== GATE && target !== FILES && target !== TOKENS && target !== MIGRATE && target !== READBACK) offenders.push(`${relative(APP, f)} -> ${s}`);
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('readback.ts imports only the strip pass', () => {
+    expect(specifiers(READBACK)).toEqual(['../photos/strip']);
   });
 
   it('only runtime.ts, behind the gate, touches the native module', () => {

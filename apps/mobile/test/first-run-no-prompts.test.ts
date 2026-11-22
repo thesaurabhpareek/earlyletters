@@ -242,40 +242,40 @@ export function lockRuleBreaks(raw: string): string[] {
 describe('[NS-39-R2] device.ts reaches the lock only through its lazy read', () => {
   const GOOD = "function appLocked(): boolean {\n  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;\n}\n";
 
-  it('[NS-39-R2-1] positive control: the lazy read passes, and an extra app-lock mention is counted', () => {
+  it('[NS-39-R2] positive control: the lazy read passes, and an extra app-lock mention is counted', () => {
     expect(lockRuleBreaks(GOOD)).toEqual([]);
     expect(lockRuleBreaks(GOOD + "import { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-1');
     expect(lockRuleBreaks(GOOD + "const m = await import('../app-lock/prefs');\n")).toContain('NS-39-R2-1');
   });
 
-  it('[NS-39-R2-1] device.ts holds exactly the expected number of app-lock matches', () => {
+  it('[NS-39-R2] device.ts holds exactly the expected number of app-lock matches', () => {
     const src = strip(readFileSync(DEVICE, 'utf8'));
     expect((src.match(/app-lock/g) ?? []).length).toBe(EXPECTED_APP_LOCK_MATCHES_IN_DEVICE);
     // After type-only references are erased, one runtime reference is left: the lazy require.
     expect((withoutTypeOnly(src).match(/app-lock/g) ?? []).length).toBe(1);
   });
 
-  it('[NS-39-R2-2] positive control: a re-export of the lock is caught', () => {
+  it('[NS-39-R2] positive control: a re-export of the lock is caught', () => {
     expect(lockRuleBreaks(GOOD + "export { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
     expect(lockRuleBreaks(GOOD + "export * from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
     expect(lockRuleBreaks(GOOD + "export {\n  getAppLockState,\n} from \"../app-lock/controller\";\n")).toContain('NS-39-R2-2');
   });
 
-  it('[NS-39-R2-2] device.ts re-exports nothing from the lock', () => {
+  it('[NS-39-R2] device.ts re-exports nothing from the lock', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/\bexport\b[^;]*?\bfrom\s*['"][^'"]*app-lock/);
   });
 
-  it('[NS-39-R2-3] positive control: a top-level require of the lock is caught, an indented lazy one is not', () => {
+  it('[NS-39-R2] positive control: a top-level require of the lock is caught, an indented lazy one is not', () => {
     expect(lockRuleBreaks(GOOD + "const lock = require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
     expect(lockRuleBreaks(GOOD + "require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
     expect(lockRuleBreaks(GOOD).includes('NS-39-R2-3')).toBe(false);
   });
 
-  it('[NS-39-R2-3] device.ts has no require of the lock at the top level of the file', () => {
+  it('[NS-39-R2] device.ts has no require of the lock at the top level of the file', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/^(?=\S).*?\brequire\s*\(\s*['"][^'"]*app-lock/m);
   });
 
-  it('[NS-39-R2-4] positive control: the lock calls are flagged, a name that only looks similar is not', () => {
+  it('[NS-39-R2] positive control: the lock calls are flagged, a name that only looks similar is not', () => {
     for (const call of ['authenticateAsync(opts)', 'unlockApp()', 'turnOnAppLock()', 'turnOffLock()', 'confirmForExport()', 'whileSharing(fn)', 'startAppLock()', 'markPrompted()', 'readLockAbility()']) {
       expect(LOCK_CALL_PATTERN.test(call), call).toBe(true);
     }
@@ -283,11 +283,11 @@ describe('[NS-39-R2] device.ts reaches the lock only through its lazy read', () 
     expect(LOCK_CALL_PATTERN.test('const unlocked = false;')).toBe(false);
   });
 
-  it('[NS-39-R2-4] device.ts makes none of those calls', () => {
+  it('[NS-39-R2] device.ts makes none of those calls', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(LOCK_CALL_PATTERN);
   });
 
-  it('[NS-39-R2-4] the whole file keeps every rule (Asha photo path)', () => {
+  it('[NS-39-R2] the whole file keeps every rule (Asha photo path)', () => {
     expect(lockRuleBreaks(readFileSync(DEVICE, 'utf8'))).toEqual([]);
     // mutant in memory: each offending line added to the real source is caught by the rule it targets
     const real = readFileSync(DEVICE, 'utf8');
