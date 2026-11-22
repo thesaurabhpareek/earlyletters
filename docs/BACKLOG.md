@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; BL-1537 to BL-1565 are used (section "Follow-ups from the reviews of PRs #1470 to #1484"); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; BL-1537 to BL-1577 are used (section "Follow-ups from the reviews of PRs #1470 to #1484"); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes.
 
 ---
 
@@ -740,7 +740,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 | BL-266 | AX5 stacking pass on every P0 screen [High] | in-progress (mobile-polish), then device check FT-39 |
 | BL-267 | Motion rules | done (`src/lib/motion.ts`) |
 | BL-268 | Accessibility lint rules | in-progress (rules R1 to R6 as `apps/mobile/test/a11y-lint.test.ts`; touchable role and label, `numberOfLines` on letter text and layout-animation imports (M2) still need a syntax-aware rule) |
-| BL-269 | Component tests at default size and AX5 | in-review (draft PR #1500; BL-278 is done; stacking at AX5 stays on the device plan) |
+| BL-269 | Component tests at default size and AX5 | in-review (PR #1500, ready; BL-278 is done; stacking at AX5 stays on the device plan) |
 | BL-270 | Native tabs | ready (cut first if late) |
 | BL-271 | Increase Contrast and Reduce Transparency variants | deferred (v1.1 or later; T5-20) |
 | BL-272 | Recording-without-words state | ready |
@@ -1375,7 +1375,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Scope: Capture hi, es, zh, fr, ar (forced RTL) and pt at default and AX3 and AX5 on the two-up controls (Birthday | Not here yet, Add to Asha's book, Keep it word for word, Sounds like me | Not quite, tab labels). Add the missing screens: Storage, Spoken language, Help, Write to us, in-app Terms and Privacy, About, a lock-screen notification example, Tonight for a not-yet-born child, a second waiting draft, a long Book. Add the interruption states and the short, silent and model-missing end states (device captures paired with BL-279).
 - Done when: `INDEX.md` lists the new steps and the critiques can be re-run on them. Each listed screen has a captured step.
 - Test: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
-- Update: the J24 flow and its seam build are in draft PR #1504; the flow has not been run (it needs dependencies and a patched CI); the proposed workflow patch is `docs/ops/proposed/workflows/e2e-web.patch`.
+- Update: the J24 flow and its seam build are in PR #1504 (ready for review); the flow has not been run (it needs dependencies and a patched CI); the proposed workflow patch is `docs/ops/proposed/workflows/e2e-web.patch`.
 
 #### BL-411 Localisation position for v1.0 is stated; letter fixtures and layout checks for ar, hi, zh; per-language suggestion sets [High]
 - Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M.
@@ -8091,11 +8091,11 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: tests: a first sign-in with no claim deletes the `local` file; Keep re-keys it; Not my account keeps it; a second account sees empty; mutant: skip the owner check dies.
 
 #### BL-1560 Stale L1 mentions of find.secureDelete in lifecycle.ts and 02-find.md (now L2)
-- Status: proposed (Karma request). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: XS. Depends on: none.
+- Status: in-review (draft PR #1520 fixes `lifecycle.ts` line 17 and `02-find.md` lines 186 and 207). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: docs/legal/DATA_CLASSIFICATION.md 4.5 (find.secureDelete is L2; not re-read here).
-- Problem and evidence: `apps/mobile/src/lib/find/lifecycle.ts` line 17 says L1 (line 38 does not mention it); `docs/product/prd/02-find.md` line 207 is the `find.secureDelete` L1 row (line 186 as cited is about `letter_search_rows` and ADR 0028, check it); a second `packages/analytics/src/lifecycle.ts` exists and is not involved. The README fix is #1490, open at write time and not merged.
-- Scope: change those two mentions to L2 (and line 186 only if it is wrong), citing DATA_CLASSIFICATION 4.5; comments and docs only.
+- Problem and evidence: `apps/mobile/src/lib/find/lifecycle.ts` line 17 says L1 (line 38 does not mention it); `docs/product/prd/02-find.md` line 207 is the `find.secureDelete` L1 row (line 186 is wrong too, per review); a second `packages/analytics/src/lifecycle.ts` exists and is not involved. The README fix is #1490, open at write time and not merged.
+- Scope: change `lifecycle.ts` line 17 and `02-find.md` lines 186 and 207 to L2; the fix is draft PR #1520, citing DATA_CLASSIFICATION 4.5; comments and docs only.
 - Done when: a grep for find.secureDelete near L1 in those two files finds nothing; no behaviour change.
 
 #### BL-1561 Engineering chapter 01: reconcile the workflow-edit wording in the CODE-R02 enforcement sentence with the practice ruled for #1486 and HARNESS section 12
@@ -8106,9 +8106,9 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: recommendation for Karma: say in those places what is true of each actor, the agents App cannot push workflow files (HARNESS section 12), a workflow change is a PR or a proposal under `docs/ops/proposed/` that needs two independent reviews including security, and no required check or branch protection changes without the founder; a workflow change is reversible by revert. Karma decides; the chapter is edited after the ruling.
 - Done when: The chapter, ENFORCEMENT.md, the ruling and HARNESS section 12 say the same thing.
 
-## Further follow-ups from the reviews and rulings (BL-1562 to BL-1565)
+## Further follow-ups from the reviews and rulings (BL-1574 to BL-1577)
 
-#### BL-1562 PR #1495 follow-ups: the RELEASE.md tag-writer sentence, WAIT-CI versus WATCH-RED, the skipped compile rule and the gate's target
+#### BL-1574 PR #1495 follow-ups: the RELEASE.md tag-writer sentence, WAIT-CI versus WATCH-RED, the skipped compile rule and the gate's target
 - Status: proposed (review of PR #1495). Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: CR-74 and docs/ops/RELEASE.md (not re-read here).
@@ -8116,7 +8116,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: fix the RELEASE.md 3.4 tag-writer bypass sentence; make the proposal text say WATCH-RED; accept a 'skipped' compile only when the launch run is green; note or fix that the gate proves the tip of `develop`, not the tagged commit; add a test for `main()`, which is untested.
 - Done when: each of the five is done or recorded as left, with the line it points at; a test fails when `main()` is changed.
 
-#### BL-1563 PR #1476 notes: make owner a required argument of leave(), and test a stale leave(msg, A) against B's waiting line
+#### BL-1575 PR #1476 notes: make owner a required argument of leave(), and test a stale leave(msg, A) against B's waiting line
 - Status: proposed (review of PR #1476). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-1500 and BL-1501 (not re-read here).
@@ -8124,18 +8124,34 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: make `owner` a required argument of `leave()`; add a test that a stale `leave(msg, A)` does not replace B's waiting line.
 - Done when: the call without an owner does not type-check; the stale-leave test fails on the old code.
 
-#### BL-1564 PR #1504 notes: global-setup spreads process.env into every build, and the B-8 export is iOS only
+#### BL-1576 PR #1504 notes: global-setup spreads process.env into every build, and the B-8 export is iOS only
 - Status: proposed (review of PR #1504). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-410 (not re-read here).
-- Problem and evidence: review notes on PR #1504 (draft at write time).
+- Problem and evidence: review notes on PR #1504 (ready for review at write time).
 - Scope: unset `EXPO_PUBLIC_E2E` explicitly in non-seam builds, where `global-setup` spreads `process.env` into every build; B-8 exports `--platform ios` only, so add a web scan if a web store bundle ever exists (a note until then).
 - Done when: a test shows a non-seam build has no `EXPO_PUBLIC_E2E`; the web-scan note is recorded.
 
-#### BL-1565 PR #1500 notes: default-size cases and the subtitle, value and group-label mutants
+#### BL-1577 PR #1500 notes: default-size cases and the subtitle, value and group-label mutants
 - Status: proposed (review of PR #1500). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-269 (not re-read here).
-- Problem and evidence: review notes on PR #1500 (draft at write time).
+- Problem and evidence: review notes on PR #1500 (ready for review at write time).
 - Scope: add the default-size cases; add mutants for the subtitle, the value and the group label.
 - Done when: each new mutant dies; the default-size cases pass.
+
+#### BL-1578 BL-463 follow-ups: en.plus.legal needs a counsel decision, and dated docs need a retired-key note
+- Status: proposed (review of PR #1521; point 1 is fixed in draft PR #1521). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-463 (not re-read here).
+- Problem and evidence: review of PR #1521: BL-463 point 1 is fixed in draft PR #1521; points 2 and 3 remain.
+- Scope: point 2: record the counsel decision on `en.plus.legal` (counsel decides; nothing is written into legal text by an agent); point 3: add a 'dated, key retired in #383' note to the stale dated docs that still name the key.
+- Done when: the counsel decision is recorded; each stale dated doc carries the note.
+
+#### BL-1579 PR #1503 follow-ups: inventory the uuid, int and timestamptz casts, and PostgREST's own parse of create_child(p_date_of_birth date)
+- Status: proposed (review of PR #1503; File 42; the API change is a founder call). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: BL-244 and API-R10 (not re-read here).
+- Problem and evidence: PR #1503 made cast errors value-free; review notes: the other casts were not inventoried, and PostgREST parses the `date` parameter of `create_child(p_date_of_birth date)` itself before the function runs.
+- Scope: inventory every uuid, int and timestamptz cast that can print a value, and test each; changing `p_date_of_birth` to text changes the API, so it is a founder call and is only proposed here; after the founder applies the migration, spot-check the hosted logs once.
+- Done when: the inventory is filed with a test per reachable cast; the founder's answer on the API change is recorded; one hosted log spot-check is done.
