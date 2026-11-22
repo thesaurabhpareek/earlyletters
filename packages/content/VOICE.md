@@ -156,7 +156,7 @@ A line that sounds automatic stops being heard. These earned their place once an
 
 - No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and the celebration strings (code namespace `en.moments`) never count days, runs or gaps.
 - The celebration strings (`en.moments`, not the Moments tab) celebrate what exists. No comparisons, no totals per person, no mention of Plus.
-- The tab is called Moments. It is a place, not a thing a person makes: nothing the parent writes or says is called a moment, and push and email never say "your moments", count them or put the word in a subject line (BRAND.md glossary, D6).
+- The tab is called Moments. It is a place, not a thing a person makes: nothing the parent writes or says is called a moment, and push and email never say "your moments", count them or put the word in a subject line (BRAND.md glossary).
 - The store and the website speak to adults. No "kids", no "for children", nothing that suggests a child uses the app alone. Adults doing things "on their own phone" is fine.
 - Digital only for now. No print, printed books, hard copies, photo books or ordering a copy. "Large print" as a reading size is fine.
 - No string says "beta" (D-060). The app keeps one quiet "early version, can make mistakes" note in Settings, About. The store listing also avoids "early version", "early access", "preview" and the like (App Review 2.2).

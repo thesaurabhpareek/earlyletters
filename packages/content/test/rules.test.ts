@@ -1036,8 +1036,8 @@ describe('glossary (BRAND.md)', () => {
     for (const ok of ['Moments', 'Open Moments', 'Try again in a moment.', 'One moment.', 'A good moment for a few words to {child}.', 'Give it a moment, then tap Keep again.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
   });
 
-  it('[BRAND-MOMENTS-2] store metadata does not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
-    expect(offenders(STORE, /\bmoments\b/i)).toEqual([]);
+  it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
+    expect(offenders([...STORE, ...SITE], /\bmoments\b/i)).toEqual([]);
   });
 
   it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
