@@ -103,3 +103,25 @@ describe('[F3] the sign-in hand-offs end with the session', () => {
     await clearPendingInvite();
   });
 });
+
+describe('[BL-1506] the wrong-code pause memory ends with the session', () => {
+  it('is empty after sign-out, and after a change of account', async () => {
+    const { noteWrongCode, wrongCodeTimes } = await import('../src/lib/auth/pending');
+    for (const second of [[{ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 0 }, { type: 'SIGNED_OUT' }], signedInAs('user-b')] as AuthEvent[][]) {
+      resetAuthStoreForTests();
+      const s = run(initialAuthState, signedInAs('user-a'));
+      noteWrongCode('Asha@Example.com', 1000);
+      expect(wrongCodeTimes('asha@example.com')).toEqual([1000]);
+      run(s, second);
+      expect(wrongCodeTimes('asha@example.com')).toEqual([]);
+    }
+  });
+
+  it('a sign-in in progress keeps the pause', async () => {
+    const { noteWrongCode, wrongCodeTimes, clearWrongCodes } = await import('../src/lib/auth/pending');
+    noteWrongCode('asha@example.com', 5);
+    run(initialAuthState, signedInAs('user-a'));
+    expect(wrongCodeTimes('asha@example.com')).toEqual([5]);
+    clearWrongCodes('asha@example.com');
+  });
+});

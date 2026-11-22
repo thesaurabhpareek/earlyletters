@@ -15,7 +15,7 @@ import { secureStorage } from '../supabase/secure-storage';
 import { decodePendingRequest, encodePendingRequest, type PendingEmailRequest } from './email-link.logic';
 import { setPendingEmail } from './pending-memory';
 
-export { getPendingEmail, setPendingAuthLink, setPendingEmail, takePendingAuthLink } from './pending-memory';
+export { clearWrongCodes, getPendingEmail, noteWrongCode, setPendingAuthLink, setPendingEmail, takePendingAuthLink, wrongCodeTimes } from './pending-memory';
 
 export const PENDING_REQUEST_KEY = 'scribe.auth.pendingEmailRequest';
 
@@ -69,7 +69,6 @@ export function asSignInTrigger(v: unknown): SignInTrigger {
 }
 
 let trigger: SignInTrigger = 'settings';
-const wrongCodes = new Map<string, number[]>();
 
 export function setSignInTrigger(t: SignInTrigger): void {
   trigger = t;
@@ -77,18 +76,4 @@ export function setSignInTrigger(t: SignInTrigger): void {
 
 export function getSignInTrigger(): SignInTrigger {
   return trigger;
-}
-
-/** Wrong-code times per address, for the client pause (errors.logic codeEntryPause). Memory only. */
-export function wrongCodeTimes(email: string): number[] {
-  return wrongCodes.get(email.trim().toLowerCase()) ?? [];
-}
-
-export function noteWrongCode(email: string, at: number): void {
-  const k = email.trim().toLowerCase();
-  wrongCodes.set(k, [...(wrongCodes.get(k) ?? []), at].slice(-10));
-}
-
-export function clearWrongCodes(email: string): void {
-  wrongCodes.delete(email.trim().toLowerCase());
 }
