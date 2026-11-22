@@ -1315,3 +1315,7 @@ select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_cr
 ```
 
 **Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.
+
+## File 40: value-free validation triggers on the content tables (BL-244, API-R10, TDD 06 C-2, data-architect)
+
+`20261121040000_value_free_validation_triggers.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 39 (#1448, 20261121030000), which sorts before it. Adds four BEFORE INSERT OR UPDATE row triggers (`entries_validate_limits`, `held_drafts_validate_limits`, `children_validate_limits`, `dictionary_terms_validate_limits`) that test the same length and size limits as the existing CHECKs and raise 23514 with a fixed message (table and rule, no value, no DETAIL), so the CHECK never gets to echo the row. No table, column, CHECK or table grant changes; the four trigger functions are executable by no API role. **Check [U] (hosted, founder):** `select count(*) from pg_trigger where tgname like '%\_validate\_limits' and not tgisinternal;` is 4. **Rollback:** drop the four triggers and four functions.

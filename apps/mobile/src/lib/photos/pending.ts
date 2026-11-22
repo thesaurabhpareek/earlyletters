@@ -111,14 +111,22 @@ export class PendingPhoto {
   async commit(deps: PhotoDeps, input: { entryId: string; finalText: string; requireWords?: boolean }): Promise<CommitResult | null> {
     const cur = this.session.source;
     if (!cur) return null;
+    // What is being kept is fixed now: a pick that lands while the original is read is a different picture (BL-1489).
+    const { text, place } = this.session;
     let result: CommitResult;
     try {
       const bytes = await this.files.read(cur.uri);
-      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text: this.session.text, place: this.session.place, sourceUri: cur.uri, requireWords: input.requireWords });
+      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text, place, sourceUri: cur.uri, requireWords: input.requireWords });
     } catch {
       result = { status: 'failed' };
     }
     if (result.status === 'needs_words') return result; // nothing was read into a copy; the picture stays pending
+    if (this.session.source !== cur) {
+      // Replaced while this ran: the new pick and its words stay; only this picture's original goes.
+      if (this.previous?.asset === cur) this.previous = null;
+      await this.files.remove(cur.uri);
+      return result;
+    }
     await this.discard();
     return result;
   }

@@ -100,6 +100,85 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   });
 });
 
+// ---- device.ts: the one file that may name the lock controller, and only lazily -------------------------------------
+// lib/photos/device.ts reads the lock state when a pick lands, through one lazy `require` inside appLocked() and its
+// `typeof import` type. Nothing else in it may reach app-lock. Derived from the source on develop: line 81 of device.ts
+// holds exactly two "app-lock" strings (the require specifier and the typeof import specifier) and no other line holds one.
+const DEVICE = join(SRC, 'lib', 'photos', 'device.ts');
+export const EXPECTED_APP_LOCK_MATCHES_IN_DEVICE = 2;
+/** What asks for Face ID, opens the lock, or starts the lock's own flows. */
+export const LOCK_CALL_PATTERN = /authenticateAsync|\b(?:unlock|turnOn|turnOff|confirmForExport|whileSharing|startAppLock|markPrompted|readLockAbility)\w*\(/;
+
+/** Which of the device.ts lock rules a source breaks. Empty means it keeps all of them. Comments are stripped first. */
+export function lockRuleBreaks(raw: string): string[] {
+  const src = strip(raw);
+  const breaks: string[] = [];
+  if ((src.match(/app-lock/g) ?? []).length !== EXPECTED_APP_LOCK_MATCHES_IN_DEVICE) breaks.push('NS-39-R2-1');
+  if (/\bexport\b[^;]*?\bfrom\s*['"][^'"]*app-lock/.test(src)) breaks.push('NS-39-R2-2');
+  if (/^(?=\S).*?\brequire\s*\(\s*['"][^'"]*app-lock/m.test(src)) breaks.push('NS-39-R2-3');
+  if (LOCK_CALL_PATTERN.test(src)) breaks.push('NS-39-R2-4');
+  return breaks;
+}
+
+describe('[NS-39-R2] device.ts reaches the lock only through its lazy read', () => {
+  const GOOD = "function appLocked(): boolean {\n  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;\n}\n";
+
+  it('[NS-39-R2-1] positive control: the lazy read passes, and an extra app-lock mention is counted', () => {
+    expect(lockRuleBreaks(GOOD)).toEqual([]);
+    expect(lockRuleBreaks(GOOD + "import { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-1');
+    expect(lockRuleBreaks(GOOD + "const m = await import('../app-lock/prefs');\n")).toContain('NS-39-R2-1');
+  });
+
+  it('[NS-39-R2-1] device.ts holds exactly the expected number of app-lock matches', () => {
+    const src = strip(readFileSync(DEVICE, 'utf8'));
+    expect((src.match(/app-lock/g) ?? []).length).toBe(EXPECTED_APP_LOCK_MATCHES_IN_DEVICE);
+    // After type-only references are erased, one runtime reference is left: the lazy require.
+    expect((withoutTypeOnly(src).match(/app-lock/g) ?? []).length).toBe(1);
+  });
+
+  it('[NS-39-R2-2] positive control: a re-export of the lock is caught', () => {
+    expect(lockRuleBreaks(GOOD + "export { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
+    expect(lockRuleBreaks(GOOD + "export * from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
+    expect(lockRuleBreaks(GOOD + "export {\n  getAppLockState,\n} from \"../app-lock/controller\";\n")).toContain('NS-39-R2-2');
+  });
+
+  it('[NS-39-R2-2] device.ts re-exports nothing from the lock', () => {
+    expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/\bexport\b[^;]*?\bfrom\s*['"][^'"]*app-lock/);
+  });
+
+  it('[NS-39-R2-3] positive control: a top-level require of the lock is caught, an indented lazy one is not', () => {
+    expect(lockRuleBreaks(GOOD + "const lock = require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
+    expect(lockRuleBreaks(GOOD + "require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
+    expect(lockRuleBreaks(GOOD).includes('NS-39-R2-3')).toBe(false);
+  });
+
+  it('[NS-39-R2-3] device.ts has no require of the lock at the top level of the file', () => {
+    expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/^(?=\S).*?\brequire\s*\(\s*['"][^'"]*app-lock/m);
+  });
+
+  it('[NS-39-R2-4] positive control: the lock calls are flagged, a name that only looks similar is not', () => {
+    for (const call of ['authenticateAsync(opts)', 'unlockApp()', 'turnOnAppLock()', 'turnOffLock()', 'confirmForExport()', 'whileSharing(fn)', 'startAppLock()', 'markPrompted()', 'readLockAbility()']) {
+      expect(LOCK_CALL_PATTERN.test(call), call).toBe(true);
+    }
+    expect(LOCK_CALL_PATTERN.test('getAppLockState().locked')).toBe(false);
+    expect(LOCK_CALL_PATTERN.test('const unlocked = false;')).toBe(false);
+  });
+
+  it('[NS-39-R2-4] device.ts makes none of those calls', () => {
+    expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(LOCK_CALL_PATTERN);
+  });
+
+  it('[NS-39-R2-4] the whole file keeps every rule (Asha photo path)', () => {
+    expect(lockRuleBreaks(readFileSync(DEVICE, 'utf8'))).toEqual([]);
+    // mutant in memory: each offending line added to the real source is caught by the rule it targets
+    const real = readFileSync(DEVICE, 'utf8');
+    expect(lockRuleBreaks(real + "\nexport { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
+    expect(lockRuleBreaks(real + "\nconst lock = require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
+    expect(lockRuleBreaks(real + "\nconst ok = await LocalAuthentication.authenticateAsync();\n")).toContain('NS-39-R2-4');
+    expect(lockRuleBreaks(real + "\nconst a = '../app-lock/prefs';\n")).toContain('NS-39-R2-1');
+  });
+});
+
 describe('[NS-39-R12] first run shows no teaser and no price', () => {
   it('[NS-39-R12] the scan flags a teaser (positive control)', () => {
     expect(TEASER_PATTERN.test("import { billingCopy } from '@/lib/billing/copy'")).toBe(true);
