@@ -82,7 +82,7 @@ export const photosCopy = {
       addGroup: 'Add to this letter',
       // The picture's file is gone (design spec 01 section 6): the letter reads whole.
       // TODO(founder): PROPOSED, needs word approval
-      missing: 'Not on this phone any more',
+      missing: 'Not on this phone anymore',
       // TODO(founder): PROPOSED, needs word approval
       missingRemove: 'Remove',
     },
