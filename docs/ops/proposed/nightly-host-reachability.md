@@ -9,6 +9,8 @@ BL-414 asks for a nightly check that every hosted speech model URL still answers
 ```yaml
   model-hosts:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +34,7 @@ BL-414 asks for a nightly check that every hosted speech model URL still answers
           process.exit(bad ? 1 : 0);
           "
 ```
-No secret is used. The job sends only a file request to the model hosts, the same request a phone makes.
+The job gets a read-only token (`permissions: contents: read`, BL-1477); nothing else is granted to it. No secret is used. The job sends only a file request to the model hosts, the same request a phone makes.
 
 ## Not included
 The mirror host itself: see the PR body (founder decision, D-046 and D-097).
