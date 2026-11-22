@@ -8910,12 +8910,13 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 ### Ready now (pick up now, or after the named check inside the row)
 
 #### BL-1787 Paused screen says the take ends when the phone locks; the stopped line has a lock case
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
-- Priority: P1 for the cut line (exec review: agreed; words only). Gate: none. Lane: content.
+- Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 for the cut line (exec review: agreed; a words-first fix). Gate: none. Lane: content owns the words; mobile wires the case.
 - Satisfies: PER1-001 (P1 if a device confirms), PER1-002 (same root); ruled rows PER1-001 and PER1-002 (D-087 stays as written).
 - Problem and evidence: the paused screen does not say a take ends when the phone auto-locks, and the stopped line says the take ended "when you left the app" even when the phone locked. A silent loss of a 2 a.m. take is the trust event. Read from code and text only; no device run yet (UNVERIFIED).
-- Scope: words in `packages/content` only: one line on the paused screen, and a lock case for the stopped line (illustrative, content decides: "The recording stopped when the phone locked. Everything before that is kept."). Locking is told once at the start of Listen. The rule for when the screen stays awake does not change (D-087). No amendment request here; that is BL-1807 and only if BL-1786 shows spoken words are lost.
-- Done when: the lines exist, pass `packages/content/test/rules.test.ts` and `npm run lint:copy`, and the stopped line has a lock case chosen by the stop reason.
+- Scope: content writes one line on the paused screen and a stopped line for the lock case. `StopReason` in `apps/mobile/src/lib/capture/recorder.ts:63` is `'user' | 'background' | 'interruption' | 'dismiss'` with no lock reason: a lock arrives as `background`. So the lock line is worded for the case the code can tell: "left the app or the phone locked" (content decides the exact words), and mobile selects it by the existing `background` reason. Mobile adds a distinct lock reason only if a code trace shows it can be told apart cheaply; if not, the general line stands. Locking is told once at the start of Listen. The rule for when the screen stays awake does not change (D-087). No amendment request here; that is BL-1807 and only if BL-1786 shows spoken words are lost.
+- Promise limit: the live line "Everything before that is kept" (`packages/content/src/features/words.en.ts:33`) is not extended to the new case. The new line does not promise that words are kept until BL-1786 or a code trace of the background path shows that they are; until then the new line says only what happened.
+- Done when: the lines exist and pass `packages/content/test/rules.test.ts` and `npm run lint:copy`; the stopped line has the "left the app or the phone locked" case selected by the `background` reason; the new line makes no keep promise unless the trace is cited in this row.
 
 #### BL-1790 Back never spills over the first lines at the largest text (not droppable)
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
@@ -8934,7 +8935,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: tests show each announcement fires once, after the settle for the first, and with the count for the second.
 
 #### BL-1722 Purchase-confirmed screen: focus on arrival, Done reachable, a plain line when Save a copy fails
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
 - Priority: P1. Gate: none. Lane: mobile.
 - Satisfies: CDO-A-003 (P1).
 - Problem and evidence: the confirmed screen does not move focus or announce on arrival, Done can fall below the fold at large text, and a failed Save a copy says nothing.
@@ -8942,11 +8943,11 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: tests cover the arrival announcement, Done in view at AX5 by the layout arithmetic, and the failed-share line.
 
 #### BL-1723 "Not much today" always answers
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
 - Priority: P1 (stays behind BL-1709 in the drop order). Gate: none. Lane: mobile.
 - Satisfies: CDO-B-015 (P1).
 - Problem and evidence: the tap can do nothing when the mark cannot be saved, so a tired parent gets no answer.
-- Scope: a saved quiet-day mark, or a calm line when it cannot be saved. Never silent, never a count, never a gap.
+- Scope: a saved quiet-day mark, or a calm line when it cannot be saved. The line is words from content, written first in `packages/content`, rules test applies. Never silent, never a count, never a gap.
 - Done when: a test shows the saved path and the failed-save path each show a response.
 
 #### BL-1720 Sign-in sheet frame, title and provider buttons: modal flag, role and label read once
@@ -8954,7 +8955,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P1. Gate: none. Lane: mobile.
 - Satisfies: CDO-A-018 (P1, the code part; the device check rides in BL-1700).
 - Problem and evidence: the shared sheet frame, title and provider buttons are not set once, so each sign-in screen may miss the modal flag, role or label for VoiceOver.
-- Scope: fix the shared frame, title and provider buttons once; every sign-in screen inherits them. Related: BL-1797 and BL-1754 (not filed here).
+- Scope: fix the shared frame, title and provider buttons once; every sign-in screen inherits them. Related: BL-1797 (sheet focus return; not filed here) and BL-1702 (small controls).
 - Done when: a test shows the frame carries the modal flag, the title has the header role and each provider button has a label.
 
 #### BL-1789 Large text: the Play pill sits under the dateline, or a Play bar is pinned
@@ -8962,7 +8963,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P1. Gate: none. Lane: mobile (design systems writes the spec line).
 - Satisfies: PER3-008 (P1).
 - Problem and evidence: at accessibility sizes the person who came to hear the voice scrolls past the whole letter to reach Play. The length at AX5 is an estimate from tokens; BL-1786 re-checks it on the real screen and does not hold this up.
-- Scope: at accessibility sizes put the Play pill directly under the dateline on the letter page and in Read together, or pin a Play bar at the bottom. The order at default sizes does not change. Letter text stays uncapped (D-027).
+- Scope: at accessibility sizes put the Play pill directly under the dateline on the letter page and in Read together. This is the chosen layout (the smaller change); a pinned Play bar is not built unless the CDesO rules it at the BL-1786 sitting. The order at default sizes does not change. Letter text stays uncapped (D-027).
 - Done when: a layout test shows Play reachable without scrolling at AX5 on the letter page and in Read together, and default size is unchanged.
 
 #### BL-1791 Read together at AX1 and above: page buttons at the end of the scroll or one pinned Next
@@ -8970,7 +8971,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P1. Gate: none. Lane: mobile.
 - Satisfies: PER3-006 (P1).
 - Problem and evidence: from AX1 up, two stacked page buttons leave one or two lines of the letter. Audit rule 3 (a pinned primary takes under a quarter of the viewport) is the test. Arithmetic, re-checked at BL-1786.
-- Scope: put the page buttons at the end of the letter's scroll, or keep one pinned "Next letter" and move "Back one" into the scroll. Swiping stays as the second way. The Large print floor is BL-1798 and builds after this row.
+- Scope: put the page buttons at the end of the letter's scroll. This is the chosen layout; a pinned "Next letter" with "Back one" in the scroll is not built unless the CDesO rules it at the BL-1786 sitting. Swiping stays as the second way. The Large print floor is BL-1798 and builds after this row.
 - Done when: a test shows a pinned primary under a quarter of the viewport at AX5 and the letter has room for several lines.
 
 #### BL-1823 Three small words for a reader new to apps: Size beside Aa, Done reading, Earlier letter
@@ -9002,7 +9003,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P2. Gate: none. Lane: mobile.
 - Satisfies: PER1-010 (P2); rides with BL-1707 in one change if that is built.
 - Problem and evidence: name, date and step are not saved to the local store until the end, so a relaunch mid-way starts over.
-- Scope: write each answer to the local store when given and resume the same step on relaunch. The date of birth stays required and is never pre-set (D-087). Nothing leaves the phone.
+- Scope: write each answer to the local store when given and resume the same step on relaunch. The date of birth stays required and is never pre-set (D-087). Nothing leaves the phone. The answers go in the same local store, with the same protection, as the saved profile: no new store and no change to the data map (DATA-REQ-001 check).
 - Done when: a test shows a relaunch after each step resumes at that step with the answers kept.
 
 #### BL-1744 A tapped Moments link or notification opens the day it names (check the G-09 spec first)
@@ -9010,7 +9011,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P1 (dark behind the Moments flag). Gate: read the G-09 spec first. Lane: mobile.
 - Satisfies: CDO-B-005 (P1); G-09, O-22.
 - Problem and evidence: a tapped link or notification lands on Home, not the day it names.
-- Scope: step one is to read the G-09 spec and write in this row whether it fits the code; if it contradicts the spec, stop and report. Then route the link to the named day with a fallback to Home when the day does not exist.
+- Scope: the first step of the run, before any code, is to read the G-09 spec and write in this row whether it fits the code; if it contradicts the spec, stop and report. Then route the link to the named day with a fallback to Home when the day does not exist.
 - Done when: a test shows the route opens the named day and the missing-day fallback; the G-09 check is recorded here.
 
 #### BL-1753 A test fails when a component animates without the shared motion hook
