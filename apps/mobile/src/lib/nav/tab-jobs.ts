@@ -12,9 +12,9 @@ import { HOME_CAPTURE_SOURCES, type CaptureSource } from '@/lib/capture/start-ca
 
 export type TabJob = {
   /** The screen name in app/(tabs)/_layout.tsx. */
-  id: 'index' | 'book' | 'you';
+  id: 'index' | 'moments' | 'book' | 'you';
   /** The label key in `en.tabs`. */
-  tabsKey: 'tonight' | 'book' | 'you';
+  tabsKey: 'tonight' | 'moments' | 'book' | 'you';
   /** One or two lowercase words; no two tabs share one, or share a first word (N2). */
   verb: string;
   /** The capture sources this tab offers. Only Home's list is non-empty (N3). */
@@ -26,3 +26,16 @@ export const TAB_JOBS = [
   { id: 'book', tabsKey: 'book', verb: 'read', captureEntries: [] },
   { id: 'you', tabsKey: 'you', verb: 'look after', captureEntries: [] },
 ] as const satisfies readonly TabJob[];
+
+/**
+ * The fourth tab, second in the bar (CPO-17), built behind EXPO_PUBLIC_MOMENTS_TAB (lib/nav/moments-tab.ts). It is not in
+ * TAB_JOBS: that list is the bar a build with the flag off draws. `tabJobs(true)` is the bar with the flag on. The
+ * `tabsKey` is the PROPOSED `tabs.moments` content key (see momentsTabLabel); `say`, `read` and `look after` are
+ * untouched, and Moments offers no capture entry (N3: only Home starts).
+ */
+export const MOMENTS_TAB_JOB: TabJob = { id: 'moments', tabsKey: 'moments', verb: 'choose', captureEntries: [] };
+
+/** The manifest for a flag value: Home, Moments, Book, Me when on; the three as before when off. */
+export function tabJobs(momentsOn: boolean): readonly TabJob[] {
+  return momentsOn ? [TAB_JOBS[0], MOMENTS_TAB_JOB, TAB_JOBS[1], TAB_JOBS[2]] : TAB_JOBS;
+}

@@ -47,6 +47,22 @@ const SERVICE_ONLY = [
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
   `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
+  // 20261111010000 (CR-71 C3)
+  `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
+  `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
+  // 20261121000000 (NS-08-R21)
+  `select public.ops_end_session('${A}', '${A}')`, `select public.ops_new_device_sign_out(decode(repeat('00', 32), 'hex'))`,
+  `select public.ops_new_device_retention()`,
+  // 20261121010000 (NS-08-R21 sender)
+  `select public.ops_new_device_record('${A}', decode(repeat('00', 16), 'hex'), 'other')`, `select public.ops_new_device_pending_take()`,
+  `select public.ops_new_device_token_mint('${A}', '${A}', decode(repeat('00', 32), 'hex'))`,
+  // 20261121020000 (NDS-2 fill, NDS-5 re-key)
+  `select public.ops_new_device_pending_fill('${A}', '${A}', 'other', decode(repeat('00', 16), 'hex'))`,
+  `select public.ops_new_device_rekey('${A}', decode(repeat('00', 16), 'hex'), decode(repeat('01', 16), 'hex'))`,
+  // 20261121030000 (CR-26)
+  `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
+  `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
+  `select public.ops_compliance_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

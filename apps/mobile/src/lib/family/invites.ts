@@ -31,6 +31,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { brand } from '@scribe/brand';
+import { clampGraphemes, SIGNS_AS_MAX } from '@scribe/core';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { publishInviteAccepted } from '../auth/auth-store';
 import { byteaArg, type InviteDraft } from './invite-draft.logic';
@@ -56,9 +57,9 @@ export interface CreatedInvite {
   madeBy: 'device' | 'server';
 }
 
-/** A sign-off is at most 30 characters (the invite and settings fields). */
-function signOff(s: string | null | undefined): string | null {
-  return s?.trim().slice(0, 30).trim() || null;
+/** A sign-off is at most 30 code points, cut on a whole character (the server's CHECK counts code points). */
+export function signOff(s: string | null | undefined): string | null {
+  return clampGraphemes(s?.trim() ?? '', SIGNS_AS_MAX, SIGNS_AS_MAX).trim() || null;
 }
 
 /**

@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
+import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility, visibleTabIds } from '../src/lib/nav/moments-tab';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8');
@@ -24,7 +25,10 @@ const SCREENS = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) =>
 
 describe('the You tab', () => {
   it('[NX-30a-R1] the last tab is You and it opens Settings home', () => {
-    expect(SCREENS).toEqual(['index', 'book', 'you']);
+    // Moments (PRD 28, CPO-17) is declared second and hidden with the flag off, so the bar a build draws is still the three.
+    expect(SCREENS).toEqual(['index', 'moments', 'book', 'you']);
+    expect(visibleTabIds(MOMENTS_TAB_ON)).toEqual(['index', 'book', 'you']);
+    expect(visibleTabIds(MOMENTS_TAB_ON).at(-1)).toBe('you');
     expect(layout).toMatch(/<Tabs\.Screen\s+name="you"[\s\S]*?title: t\.you,/);
     expect(en.tabs.you).toBe('Me');
     // The route is Settings home itself, re-exported: one component, not a copy.
@@ -38,7 +42,8 @@ describe('the You tab', () => {
     for (const name of SCREENS) {
       const line = layout.split('\n').find((l) => l.includes(`name="${name}"`)) ?? '';
       const block = name === 'you' ? layout.slice(layout.indexOf('name="you"')) : line;
-      expect(block, name).toMatch(/tabBarButton: button\(t\.\w+\)/);
+      // Moments' label is PROPOSED content: it comes from momentsTabLabel, not a copy.tabs key yet.
+      expect(block, name).toMatch(name === 'moments' ? /tabBarButton: button\(momentsLabel\)/ : /tabBarButton: button\(t\.\w+\)/);
     }
     // The iOS wrapper spreads the library's own props (role "tab", selected state, label) and only adds the viewer title.
     expect(layout).toMatch(/<Pressable \{\.\.\.\(rest as PressableProps\)\} \{\.\.\.LARGE_CONTENT\(title\)\} \/>/);
@@ -47,7 +52,8 @@ describe('the You tab', () => {
     expect(layout).not.toMatch(/options=\{\{[^}]*\bhref:/);
   });
 
-  it('[NX-30a-R6] no tab is guarded and Family is not a tab: the bar is the same in every build', () => {
+  it('[NX-30a-R6] no tab is guarded and Family is not a tab: the bar is the same in every build, with the flag off', () => {
+    expect(Object.keys(momentsTabVisibility(MOMENTS_TAB_ON)).sort()).toEqual(['tabBarButton', 'tabBarItemStyle']);
     expect(layout).not.toMatch(/Tabs\.Protected|FAMILY_TAB|name="family"/);
     expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('name="book"'));
   });
@@ -64,13 +70,16 @@ describe('the You tab', () => {
     expect(block).not.toMatch(/headerLeft/);
   });
 
-  it('[NX-30a-R8] three tabs at 320 pt and 375 pt keep 44 pt targets and whole labels', () => {
+  it('[NX-30a-R8] the bar at 320 pt and 375 pt keeps 44 pt targets and whole labels, three tabs and four with the flag on', () => {
     const BAR = Number(/const BAR = (\d+);/.exec(layout)?.[1]);
     for (const width of [320, 375]) {
-      expect(width / SCREENS.length).toBeGreaterThanOrEqual(tokens.target.min);
-      // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Home".
-      const widest = Math.max(...Object.values(en.tabs).map((l) => l.length)) * tokens.minFontSize * 0.62;
-      expect(widest).toBeLessThan(width / SCREENS.length);
+      for (const count of [visibleTabIds(false).length, visibleTabIds(true).length]) {
+        expect(width / count).toBeGreaterThanOrEqual(tokens.target.min);
+        // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Home"; with the flag on, the proposed "Moments".
+        const labels = [...Object.values(en.tabs), ...(count === 4 ? [momentsTabLabel({ ...en.tabs, moments: 'Moments' })] : [])];
+        const widest = Math.max(...labels.map((l) => l.length)) * tokens.minFontSize * 0.62;
+        expect(widest).toBeLessThan(width / count);
+      }
     }
     expect(tokens.minFontSize).toBe(13);
     // The item: 5 pt padding + 25 pt icon + 18 pt label line + 5 pt, inside BAR with 4 pt above.

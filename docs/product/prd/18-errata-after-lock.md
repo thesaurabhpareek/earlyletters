@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E86; E85 and E86 PROPOSED) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E96; E85 to E96 PROPOSED) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -439,3 +439,141 @@ Edited in place: none (PROPOSED). Plan delta: card 21 (the ten lines above) and 
 Founder note: E85 adds one line to the founder's digest (`22-final-holistic-spec.md` section 7), a default that stands, with no CL id until accepted. E86 adds none. Nothing here is counsel-only. No D-entry in `docs/DECISIONS.md` is touched.
 
 Signed: Karma (CTO role, product side) with product; renumbered by the product agent on 21 Nov.
+
+## Ninth round, E87 to E94 (21 Nov, Karma with product, from the review threads on #1056, #1058, #1057, #1059 and #1066)
+
+Source: the open docs PRs #1056 (compliance rows), #1058 (legal register), #1057 (counsel packet), #1059 (data inventory) and #1066 (security risk rows), and the product answers posted on each on 21 Nov. Each of those PRs proposed an erratum number of its own, and those numbers collided with each other and with E83 to E86 on develop. The numbers were reserved so that no fourth claimant appears: E87 for #1056 and #1058 together plus the card 21 Drop B reconciliation asked on #1057; E88 for #1059; E89 to E94 for the six items of #1066 (the numbers E87 to E92 on that PR shift by two). Product writes the rows; the PRs keep them as proposals and cite this file. Same rule as the eighth round: every row is PROPOSED, nothing is accepted until Karma or the founder says so, no locked card is edited, engineering builds to the card until then, and no CL closure id is claimed. Which text wins while these are PROPOSED: the card and the locked files. No D-entry in `docs/DECISIONS.md` is changed or drafted. Other open PRs may also add ids to this file, so re-check the open PR file lists before merging. One open PR (#830, analytics instrumentation) uses the placeholders E-INSTR-2 and E-INSTR-3 and says "real numbers from E87 when ruled"; E87 to E94 are taken here, so its real numbers start at E95.
+
+### E87: Notes for Review rows on NS-46 and NS-52, and one Drop B gate for card 21 (21 Nov, Karma with product; NS-46-R50 (new), NS-52-R45 (new), card 21 COUNSEL row and Drop B row; #1056, #1058, #1057; PROPOSED)
+
+Status: PROPOSED. Parts (a) to (c) are additions or a reconciliation and product recommends accepting them. Part (d) is a founder line.
+
+Question: three things are missing or disagree. (a) NS-46 has no P0 row for the Notes for Review section (Days: a library to tick, local reminders, off until ticked, how to stop); only NS-47-R23, NS-49-R16, NS-49-R27 and NS-51-R31 name the Notes. (b) NS-52 has no row for the Notes section or for re-answering the age-rating questionnaire when media is on. (c) Card 21 disagrees with itself: the COUNSEL row (line 107) says the Drop B subset needs only the licence question for a copied table, while the Drop B gate cell (line 165) also needs the consent line read by counsel. (d) NS-51-R32 (flags only narrow, and Erase, sweep and Export still work) is P1 while the build it protects is gated at P0 (b).
+
+Ruling (proposed):
+1. Add NS-46-R50, P0 (b): when a build turns the days flag on, its Notes for Review section says what the days library is, that reminders are local, that they are off until a parent ticks a day, and how to stop them; the text is checked by the FR-CMP-03 comparison (2.5.19). It adds disclosure only.
+2. Add NS-52-R45, P0 (b): when a build turns media on, the age-rating questionnaire is re-answered and the answers are saved in the gate record, and the Notes section says what media is read and that it stays on the phone. R1 to R44 exist, so R45 is the next free id. (The id NS-52-R43 proposed on #1058 is an analytics row and is not used.) It adds disclosure only.
+3. Card 21 follows its stricter cell. The Drop B subset needs the licence question for any copied table and the consent line read by counsel (Attachment 1 2.2). The strict cell governs: it shows less and sends less, and a counsel answer is never defaulted. The COUNSEL row is reconciled to it by this erratum; no gate moves, because the packet (#1057) already follows the strict cell.
+4. NS-51-R32 to P0 (b): product recommends it, and it is not applied here. It moves what gates a drop, so it goes in the founder digest (`22-final-holistic-spec.md` section 7). Recommendation: accept the raise.
+
+What a parent sees: nothing changes in the app. These rows are about what the store reviewer reads and when a release may go.
+
+Edited in place: none (PROPOSED). Plan delta: card 21 gains NS-46-R50 and card 27 gains NS-52-R45 (sections 7 and their gate lines); the card 21 COUNSEL row (line 107) says "the licence question for any copied table and the consent line read by counsel"; the Notes check PR and the NS-52 gate record name the two rows; `functions/compliance.md` FR-CMP-03, 25 and 39 bind to them once the #1056 file lands; the "Proposed card rows" section on #1056 and the pointers on #1058 cite E87 and stop describing the rows as E85 or E84; no new backlog row, no re-size, no re-order; `mobile`, `compliance-engineer`, `content`, `legal`.
+
+### E88: the "days.clearedNote" setting has two levels and no owner (21 Nov, Karma with product; NS-47-R15, ADR 0032, NS-47 section 11; #1059, data inventory C-13; PROPOSED)
+
+Status: PROPOSED.
+
+Question: #1059 proposed three items. Two are already rows on develop and are not repeated: the day-name switch at sign-out is E85, and the `culture.asked` lint conflict is E86. The third is not a card error but needs a card line: the one-shot setting `days.clearedNote` is L1 in `02i-schema-designed-not-built.md` line 52 and L2 in `docs/tdd/new-scope/13-days-culture-home.md` line 90, and no text says whose it is. It says "your days were cleared" after a session the system ended. If it is one value on the phone, the next account to sign in could be told that a list existed, and NS-47-R15 says that account "is never told it existed".
+
+Ruling (proposed): it is per account and L2, the safer reading. It stores one more person-keyed value for a short time and tells nobody else anything.
+1. The note is stored under a key that holds the hash of the user id, in the way `asks.daysAsked.<ownerKey>` is (E86), so only the account whose session ended reads it.
+2. It is deleted right after it is shown, at that account's Erase everything and Delete account, and at the sign-out of any other account it is simply not read.
+3. The level is L2 until `privacy` rules otherwise, and that row lives in `docs/legal/DATA_CLASSIFICATION.md` 4.5 on #873, which the founder merges.
+
+What a parent sees: the same calm line as before, once, for the account whose list was cleared. A different account on the phone sees nothing.
+
+Shown, Records, Never, Decline (PRIV-R21; the parent agrees to nothing here, so the lines are short):
+- Shown: the one calm line already in the Days design, once.
+- Records: one local one-shot value, on this phone only, until it is shown or the account is erased.
+- Never: a server row, an export, an event, a count of how often it was shown, a mention to another account.
+- Decline: nothing to decline; the line has no button other than the normal way out.
+
+Given, When, Then: Given account A's session was ended by the system and A had 3 days ticked, When B signs in on the same phone, Then B sees no line about cleared days and 0 keys of A's are read; When A signs in, Then the line shows once and the key is gone.
+
+Edited in place: none (PROPOSED). Plan delta: NS-47-R15 gains one clause naming the key and the "not read by another account" rule; `02i` line 52 and `13-days-culture-home.md` line 90 agree on L2 once `privacy` rules; the test `[NS-47-R15]` (the same one E85 extends) gains the B-signs-in step; no new backlog row (BL-1010 and BL-1015 carry it), no re-size; `privacy`, `data-architect`, `mobile`, `qa`. No founder line.
+
+### E89: NS-52 second account, and the files that belong to a letter (21 Nov, Karma with product; NS-52 (second-account row, new), the `[X4-R1]` list; #1066 CC-9; PROPOSED)
+
+Question: NS-52 has no second-account row for Variant A, which is the default (Q-PM-3, CL-048). With Variant A the media live on the phone as files of the letter, and the `[X4-R1]` list of things an account may not read across does not name attached files, poster frames or thumbnails. A second account on the same phone must not see them.
+
+Ruling (proposed): add one NS-52 row, P0 (a): Given account A has a letter with a picture, a video, its poster frame and thumbnail, When account B signs in on the same phone, Then B reads 0 of those files by any path and the `[X4-R1]` enumeration lists attached files, poster frames and thumbnails. It shows less, stores nothing new and sends nothing.
+
+Edited in place: none (PROPOSED). Plan delta: card 27 gains the row (next free id after the NS-52-R45 of E87); the `[X4-R1]` list names the three file kinds; `docs/legal/DATA_CLASSIFICATION.md` is not touched; BL-961 (the enumeration) gains the three names; no re-size, no re-order; `mobile`, `security-architect`, `qa`. No founder line.
+
+### E90: Variant B media, the sealed letter and a member who leaves (21 Nov, Karma with product; NS-52-R21, NS-52-R22; #1066 CC-10; PROPOSED)
+
+Question: both rows are for Variant B only, which is not the default. NS-52-R21 (media encrypted, short-lived signed links bound to a member, a non-member, a left member and a second account get nothing) has no cell for a sealed letter. NS-52-R22 (delete, Let it go, Delete account and a legal hold) has no cell for a member who leaves or is removed.
+
+Ruling (proposed): add to R21 a sealed-letter cell and to R22 a leave and removal cell, each stated in the card's own Given, When, Then form by `security-architect` and `data-architect` when Variant B is chosen. Product does not write the cell text now: what a sealed letter or a removed member may read is decided with the Variant B choice (Q-PM-3). No priority change. Variant B stays off; these rows cost nothing until it is chosen.
+
+Edited in place: none (PROPOSED). Plan delta: card 27 NS-52-R21 and R22 gain one clause each, and their tests gain the two cells; the access matrix test is extended only when Variant B is chosen; no new backlog row, no re-size; `security-architect`, `data-architect`, `qa`. No founder line.
+
+### E91: where a picture thumbnail may live (21 Nov, Karma with product; NS-51 section 10, FR-SEC-33; #1066 CC-11; PROPOSED)
+
+Question: the card (NS-51 section 10) says thumbnails of library pictures are kept in memory only. `functions/risk-security.md` FR-SEC-33 on #1066 says no thumbnail is written outside `Caches`. No acceptance row says either, so a build may do either and pass.
+
+Ruling (proposed): memory only, the stricter reading: nothing is written, so nothing can be left behind or backed up. If `mobile` shows a measured need for a cache (the sheet is too slow without it), the exception is a separate erratum with the folder named, and `Caches` is then the most that may be written. Add one row to NS-51, P0 (a): after the sheet closes, 0 files hold a thumbnail of a library picture.
+
+Edited in place: none (PROPOSED). Plan delta: card 27 gains the row; FR-SEC-33 says "memory only" in place of "outside `Caches`" once accepted; no re-size; `mobile`, `security-architect`. No founder line.
+
+### E92: two day-name rows are P1 beside P0 rows that say the same thing (21 Nov, Karma with product; NS-50-R9, NS-47-R26, NS-47-R37, NS-47-R12, NS-47-R38; #1066 CC-12; PROPOSED)
+
+Question: NS-50-R9 (the app-switcher snapshot of Home and Me shows no day name) is P1, while NS-47-R26 states the same snapshot rule as P0 (a). NS-47-R37 (a typed day's words show on a lock screen only behind the day-name switch) is P1, while R12 and R38, which govern the same lock screen, are P0 (a). A P1 row can slip a drop; the rule it repeats cannot.
+
+Ruling (proposed): raise NS-50-R9 and NS-47-R37 to P0 (a), with their tests unchanged. They add no behaviour, because the P0 rows already require it; they only make the test gate the drop. Product recommends it. It moves what gates a drop, so it is not applied here and goes in the founder digest (`22-final-holistic-spec.md` section 7), the same way as the NS-51-R32 raise in E87.
+
+Edited in place: none (PROPOSED). Plan delta: if accepted, the two priority cells on cards 21 and its tdd rows change, and the P0 counts in the drop table and on #1056 go up by two (three with NS-51-R32 of E87); no new backlog row, no re-size; `qa`, `mobile`, `compliance-engineer`. Founder line: one line in the digest with the E87 (d) line, default that stands: accept.
+
+### E93: the one-a-day budget must exist before the flag can be on (21 Nov, Karma with product; NS-46-R28, NS-46-R30; #1066 CC-13; PROPOSED)
+
+Question: NS-46-R30 puts the one-a-day rule in one pure function in `lib/reminders/budget.ts`, P0 (a). Nothing says the days flag cannot be on in a build before that file and its property test exist. A build could ship the library with the old planner.
+
+Ruling (proposed): add one sentence to NS-46-R30: a release profile that turns the days flag on fails a build test unless `budget.ts` and its property test exist and pass. It sends less (no extra reminders) and adds no data.
+
+Edited in place: none (PROPOSED). Plan delta: card 21 NS-46-R30 gains the sentence and its test name gains the flag check; the flag test of NS-46-R28 cites it; BL-966 (the planner) is unchanged and the Drop B gate cell already names `budget.ts`; no new backlog row, no re-size; `mobile`, `qa`. No founder line.
+
+### E94: no copies of the day store in other places, and risk pointers (21 Nov, Karma with product; NS-47-R6, NS-47-R11, the section 13 tables; #1066 CC-14 and CC-15; PROPOSED)
+
+Question: NS-47-R6 already says the days store is never in the Keychain and not in the `settings` table, and sits in Application Support outside the backup. It names no ban on the other places a copy could land: an app group container, a widget, the iCloud key-value store, the pasteboard and a donation index. And the section 13 tables of the cards do not point to the risk rows (RSK ids) that score them.
+
+Ruling (proposed): add to NS-47-R6 one clause: no copy of a day, a day name or a day note is written to an app group, a widget, iCloud key-value, the pasteboard or a donation index, with a test that fails if a day string appears in any of them. Each section 13 table gains one line pointing to its RSK ids once #1066 lands. It stores less and sends nothing.
+
+Edited in place: none (PROPOSED). Plan delta: card 21 NS-47-R6 gains the clause and a test name; FR-SEC-40 on #1066 cites it; the section 13 tables of cards 21 and 27 gain a pointer line; no new backlog row, no re-size; `security-architect`, `mobile`, `qa`. No founder line.
+
+### E95: analytics may be built before the production-readiness app build; basics default-on is a PROPOSED change to the consent design (21 Nov, Chief Product Officer with product; FR-DAT-01, D-095, D-124 item 3; D-163; replaces the former placeholder E-INSTR-1, now E95; PROPOSED)
+
+Question: FR-DAT-01 says no event, counter or payload is sent, queued or written in any 1.0.x build, and D-095 and D-124 item 3 say the same for the whole 1.0 line. The founder's instruction of 20 Nov (D-163) is to implement analytics before the production-readiness app build. The three lines and the instruction cannot both hold for the production build.
+
+Ruling (proposed): for the production build only, D-095 and D-124 item 3 are superseded by D-163 and stand for every other profile. The founder's second instruction (D-163, verbatim) is that page-view, click and impression instrumentation ("basics") is collected for every user, not behind an opt-in. Basics default-on is a PROPOSED change to the consent design: it contradicts FR-DAT-01's "nothing before a yes", PRIV-R21's consent ask for these events and the LEGAL-REQ and DATA-REQ default. Until counsel answers, the default stays built: the consent ask, the consent gate and the LEGAL-REQ-043 privacy-manifest test (updated by its owner through review, never bypassed). Engineering builds the basics path so that default-on versus ask-first is one switch, and ships whichever counsel and the founder confirm. `EXPO_PUBLIC_ANALYTICS` is on in `production` and off in every other profile until the founder says otherwise; the build test (`IN-02`, `IN-04/an`, `IN-DS-08`) fails if any other profile sets it on or if any event outside the closed allowlist is sent.
+
+What still binds: no entry text, transcript, audio, child name, date of birth, account id or other content in any event, log or crash report; a closed allowlist with the registry as the only send path; no autocapture, no replay, no cross-app tracking, no Apple tracking prompt. A visible off switch in Settings is recommended; the founder decides. Not decided here: counsel's answer on which regions and which events may run without a consent ask and what the privacy policy, store label and in-app disclosure must say; the consent wording, the PostHog account and key, the region (D-163). The flag may land off; it is set on in `production` only after the gates in D-163 close, including counsel's answer on no-consent basics and the privacy policy, label and disclosure updated and merged by the founder (`docs/legal` is founder-only).
+
+Edited in place: none (PROPOSED). FR-DAT-01 in the pack is not edited until the founder confirms D-163 and E95. The former placeholder E-INSTR-1, now E95 is replaced by `E95` in the instrumentation files and READINESS-20nov.md in this PR.
+
+Plan delta: the production analytics flip, with basics default-on as a PROPOSED change to the consent design (a re-order of the turn-on row `IN-08/an`: it gains the counsel answer on no-consent basics and the founder-merged policy, label and disclosure as gates; the rows that build the consent ask stay, no re-size). `docs/BACKLOG.md` gains the engineering-ready analytics rows in two client lanes (a later `product` PR); the turn-on row `IN-08/an` keeps its gates (counsel read, consent wording, label and policy, deletion drill, release-gate rewrite) and now sits before the production-readiness app build in the order; no re-size of the rows already proposed; `analytics`, `mobile`, `qa`, `privacy`, `ops`. Founder line: confirm D-163 reads true and set the consent wording, the PostHog account and key, and the region when the rows reach them.
+
+Placeholders E-INSTR-2 and E-INSTR-3: not resolved here. E-INSTR-2 means three different things in the files (an extension of `onboarding.summary.sent` in `01-capture-and-first-run.md`, locking tiers T0 to T3 and R-K1 to R-K3 in `03-keeping-and-trust.md`, ids in event names in `00-event-standard.md` section 12), so no single number fits. E-INSTR-3 (a new area needs a CPO ruling) has no ruled area yet. Each keeps its placeholder, is open, and takes a real number from the next free erratum number (E96 is now name rotation) when ruled. The E87 range named in those files is stale, because E87 to E94 are taken.
+
+Founder note: E87 (d) and E92 add one line to the founder's digest, both defaults that stand with no CL id until accepted. Separately, #1066 asks the founder about Q-S14 and RSK-47, the date channel: product recommends accepting it as a residual risk, with claim discipline (NS-47-R22), and does not recommend an in-app-only choice for the first Days build; that is a founder line on #1066 and is not decided here. Nothing here is counsel-only.
+
+Signed: Chief Product Officer (Claude role) with product, 21 Nov.
+
+### E96: name rotation counts the eligible pool, not the included books (20 Nov, Karma ruling R23 over R20; NS-48-R20, NS-48-R23; #1032; PROPOSED)
+
+Question: NS-48-R20 says that with several included books the subject child is picked by ordinal modulo the included books, independent of how many name-bearing variants a pool holds. The planner that shipped in #1032 (`namedSlotIndex` in `apps/mobile/src/lib/reminders/planner.ts`) does not do that. It counts the name-bearing variants that came before the slot, over the pool eligible at the reminder's time of day, then takes that count modulo the included books. NS-48-R23 says an update re-plans every pending note without changing the built titles and bodies. The two rows cannot both hold for a family with two or more books.
+
+Ruling (proposed; Karma ruled R23 over R20 on 20 Nov): the shipped rotation stays. From 17:00 the eligible pool is all eight built variants, so the count is the one the planner used before #1032 and no pending note changes. Reading R20 literally would change which book is named on a large share of the pending evening notes (see the evidence line) and reschedule every family with two or more books on the first plan after the update. This is a record of a code-versus-card deviation. It changes no user-facing promise, adds no stored value and sends nothing, and the NS-48-R20 test proves the built alternation only, as its own comment says. The row NS-48-R20 is not edited here; it is read as "the subject child is picked by the name-bearing count over the eligible pool, modulo the included books". Before 17:00 the pool is five variants and the count runs over those five; no earlier rotation existed for that range.
+
+Evidence, as far as it can be checked from the repo (21 Nov, develop `ccac54d08`). Read: `namedSlotIndex` and its comment at `planner.ts:260-276`; the call at `planner.ts:437`; the #1032 diff (7 files) and its description. Ran: `npx vitest run test/reminders-key.test.ts` in `apps/mobile` (12 passed) and `npx vitest run test/notification-key.test.ts` in `packages/core` (7 passed). Ran a throwaway test, not committed, that calls `namedSlotIndex` for ordinals 0 to 799 with the pool `eligibleFloorIndexes` returns at 20:30: that pool is all eight variants and the result equals the no-pool default (the pre-#1032 formula, read from `git show 32fc2f52^:apps/mobile/src/lib/reminders/planner.ts`) for all 800 ordinals; against ordinal modulo books, it differs for 400 of 800 ordinals with two books and 534 of 800 with three. Not reproduced: the #1032 description's old-versus-new grid (6156 cells, 180006 planned notes, zero differences); it is the author's statement and is not relied on here.
+
+Edited in place: none (PROPOSED). Plan delta: no new backlog row, no re-size, no code change; card 21 NS-48-R20 is read as above once the founder or Karma confirms; the `[NS-48-R20]` test keeps its name and claims alternation only; a later change to the rotation needs its own erratum and a re-plan note under NS-48-R23; `mobile`, `qa`. No founder line.
+
+## Seventh round, E97 (21 Nov, content, PROPOSED; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E97: PROPOSED, the humour policy lives in the writing guide, not in the locked notification catalogue (21 Nov, content; extends Q-FD-27; Q-NTC-14)
+
+Question: may wit appear in notifications and the saved-letter line, and where? Q-FD-27 (CL-032, closed 20 Nov) says a little playfulness on Friday and Saturday notes, Monday and Sunday small and slow. The founder chose a wider scope on 21 Nov from a set of options (a selection, not words he typed; Project doc `infra/exec-rulings-2026-11-21-witty-tone-scope.md`, not in this repo).
+
+Proposed ruling (the founder approves the words key by key before anything turns on, BL-965; every witty line keeps a plain fallback; nothing here changes a shipped or locked line):
+
+- Wit may live in three places: a Friday or Saturday note (Q-FD-27; Monday and Sunday none; a push, so one neutral string and zero exclamation marks, Q-FD-18, NS-47-R12), one dry line when a letter is saved (never fanfare, never fixed, rotated; in the app), and the five public days (seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day; in the app only, after the phone is open).
+- Lock-screen text stays the neutral frame until Q-FD-18 is answered; a Friday or Saturday note may be playful inside that frame. Every witty line keeps a plain fallback.
+- Never on first-run consent screens, errors, money, deletion, safety, grief or hard seasons.
+- Never tied to a day the parent ticked, a festival, a tradition, a country or a region; the five public days above are the only dated exception (Q-FD-5: the app stores none of them; NS-47-R20: no line chosen from language, locale, time zone or a name).
+- No puns or wordplay, none on the child's name. No exclamation marks in a push (Q-NTC-7). Never at the parent's expense.
+- The full policy is `packages/content/WRITING-GUIDE.md` section 4. The shape rule in `notification-catalogue.md` section 7 (no same shape three times in a row) already covers rotation.
+
+New question for the register: Q-NTC-14 (Q-NTC-10 is already the moment-nudge class on develop), humour in the catalogue and the saved-letter line, PROPOSED as written above; extends Q-FD-27; the founder's selection of 21 Nov is the basis, and approval of the words is separate.
+
+Edited in place: none. The first draft of this text sat in `notification-catalogue.md` as section 7.1 and a Q-NTC-10 row (that id was taken on develop; see Q-NTC-14) (PR #1183); it was moved here because the catalogue is CURRENT (LOCKED rev 2) and this repo changes locked cards through this file. Plan delta: none (no re-size); content, design-systems.

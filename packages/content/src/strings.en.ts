@@ -79,10 +79,11 @@ export const en = {
     },
 
     promise: {
-      title: "Exactly as you said it.",
-      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
-      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
-      body2: "We never rewrite your words, shorten them or write for you.",
+      title: "It stays in your words.",
+      // S04, directly under the title: the true promise (D-133), then the two other claims. The title and this line
+      // are the sanctioned sentence, "It stays in your words. Every change is marked, and your original recording is
+      // kept unchanged." Every build uses it, the alpha included (founder, 31 Oct 2026).
+      body2: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -242,7 +243,7 @@ export const en = {
       resumeButton: "Keep talking",
       stopButton: "Finish",
       saving: "Saving your words.",
-      saved: "Saved, in your words.",
+      saved: "Saved.",
       savedLetter: "Signed and kept.",
       transcribing: "Writing down what you said.",
     },
@@ -350,7 +351,7 @@ export const en = {
     button: "Not much today",
     confirmBody: "Marks today without writing anything.",
     // True at any hour; the same words as `book.quietDay.a11y`.
-    savedToast: "A quiet day, kept.",
+    savedToast: "Marked as a quiet day.",
     undo: "Undo",
   },
 
@@ -379,7 +380,7 @@ export const en = {
     keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
-      title: "The recording did not save",
+      title: "The recording didn't save",
     },
     // BL-379: under about a second, with no words from it. Let it go comes first; nothing is removed without a confirm.
     shortTake: {
@@ -409,7 +410,7 @@ export const en = {
     },
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
     // What happened, then where the words are (LNG-05).
-    saveFailed: "That did not save. Your words are still here.",
+    saveFailed: "That didn't save. Your words are still here.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -419,10 +420,10 @@ export const en = {
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     // Zero fixes, three honest wordings.
-    noChanges: "Nothing to fix. This is exactly what you said.",
-    noChangesAfterUndo: "Every fix put back. This is exactly what you said.",
+    noChanges: "Nothing to fix here.",
+    noChangesAfterUndo: "Every fix put back.",
     // A language with no fix rules yet: never a "nothing needed fixing" claim there.
-    noChangesNoRules: "Exactly as you said it.",
+    noChangesNoRules: "Nothing was changed.",
     originalLabel: "Exactly what you said",
     cardYouSaid: "You said",
     cardNowReads: "Now it reads",
@@ -440,7 +441,7 @@ export const en = {
     voiceOnlyButton: "Keep the recording",
     waiting: {
       title: "Your voice is kept",
-      body: "Your words follow once the download is done.",
+      body: "Your words will appear once the download finishes.",
     },
     // Development builds only: the sample transcriber's words are never saved.
     dev: {
@@ -486,7 +487,7 @@ export const en = {
     },
     lock: {
       button: "Keep this as said",
-      explain: "Locked phrases stay exactly as you said them, slips and all.",
+      explain: "Locked phrases are never fixed, slips and all.",
       lockedLabel: "Kept as said",
       unlockButton: "Allow small fixes",
     },
@@ -522,7 +523,7 @@ export const en = {
     typeButton: "Type",
     photoButton: "Add a photo",
     saveButton: "Save note",
-    savedToast: "Noted. It is in Month {month}.",
+    savedToast: "Added to Month {month}.",
     widgetLabel: "Quick note for {child}",
     lockScreenLabel: "Note for {child}",
   },
@@ -572,7 +573,7 @@ export const en = {
     // D-084: a quiet-day mark is the app's own small line, never a letter: no text, no signature.
     quietDay: {
       label: "A quiet day",
-      a11y: "{date}. A quiet day, kept.",
+      a11y: "{date}. Marked as a quiet day.",
       remove: "Remove this mark",
       removedToast: "Mark removed.",
     },
@@ -717,14 +718,17 @@ export const en = {
   },
 
   notifications: {
+    // TODO(founder): PROPOSED, needs word approval (BL-966c; NS-32-R13, NS-13-R33; words-packet row 18, option A). The
+    // one line iOS shows for a reminder when previews are hidden. No name, count, day or brand.
+    previewPlaceholder: "Something for the book, whenever you have a minute.",
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
+      { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
+      { title: "A few words tonight?", body: "A line or two for {child}'s book." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
-      { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
+      { title: "Say a few words to {child}", body: "Talk or type, whichever is easier." },
+      { title: "Before you sleep", body: "Something {child} did or said? Or tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
@@ -925,7 +929,6 @@ export const en = {
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
       accountScheduledTitle: "Your account is set to be deleted",
-      accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
       accountScheduledDateLabel: "Deletion date",
       cancelDeletionButton: "Cancel deletion",
     },
@@ -1108,9 +1111,17 @@ export const en = {
       cta: "Add {child}'s book",
       // Before a name is typed, or when the filled `cta` would pass 22 characters.
       ctaShort: "Add this book",
+      // PROPOSED (spec 10, AB-1, 21 Nov 2026): the local write failed. The page stays, the typed name and date are kept.
+      // Shown in a notice with the common Try again button. A full phone uses errors.phoneFull.
+      saveFailed: "This book did not save. What you typed is still here.",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me row that opens this page. The built title "Add a child" is unchanged until
+      // the founder approves the new words; nothing reads this key yet.
+      rowLabel: "Add a book",
     },
     settings: {
       sectionTitle: "Children",
+      // PROPOSED (IA OI-3, 21 Nov 2026): the Me group title for the books. Nothing reads this key until the founder approves it.
+      booksSectionTitle: "Books",
       title: "{child}'s book",
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
@@ -1392,6 +1403,9 @@ export const en = {
     helpSubject: "Help with the app",
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
+    // PROPOSED (spec 08, L1, 21 Nov 2026): a Terms or Privacy link the iPhone could not open. ST-NOTICE above the list,
+    // with the common Try again button. Says what did not happen, no cause.
+    legalOpenFailed: "That page did not open. Nothing has changed.",
     versionLabel: "Version",
     // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
     // registered note under About already says it once (CLO-5, 1 Nov 2026).
@@ -1444,6 +1458,8 @@ export const en = {
       line: "Every um and false start stays in.",
     },
     footer: "Either way, we never rewrite your words.",
+    // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
+    saveFailed: "That choice did not save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a

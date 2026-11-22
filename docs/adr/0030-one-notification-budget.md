@@ -26,3 +26,8 @@
 - One test: no local date holds two budgeted notes, with two books and a birthday and a month note on one date.
 - A far-dated `libraryDay` is the first dropped when the ceiling bites; the cards accept that.
 - Owner of the planner change: `mobile`.
+
+## Update, 21 Nov 2026 (principal-architect; status unchanged)
+
+- The registry and the chooser are on `develop` in `apps/mobile/src/lib/reminders/budget.ts` (BL-966a, #1088): `TOTAL_MAX` 60, `PLAN_MAX` 4, five class rows, `chooseOnePerDay`, `budgetedSlots`, `addNotificationClass`; the tests are in `apps/mobile/test/reminders-budget.test.ts`.
+- Wired in the planner (BL-966b, #1089): `apps/mobile/src/lib/reminders/planner.ts` imports `budgetedSlots`, `chooseOnePerDay`, `PLAN_MAX` and `TOTAL_MAX` from `./budget` and calls the first two. Whether the Consequences tests above are all written is not verified here.

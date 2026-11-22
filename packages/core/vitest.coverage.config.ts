@@ -4,11 +4,11 @@
  * two points below the 16 Oct 2026 measurement (docs/qa/COVERAGE.md).
  *
  * The verifier and language fuzz tests run 2000 generated cases here instead
- * of 10000 (same seed, so the same first 2000 cases). Instrumented, one 10000
- * run blocks its worker for about 40 s in a single synchronous call, and on a
- * busy machine vitest's worker-to-main report times out ("Timeout calling
- * onTaskUpdate") although every test passed. `npm test` and CI `unit` keep the
- * full 10000; nightly runs 100000. An explicit SCRIBE_FUZZ_RUNS still wins.
+ * of 10000 (same seed, so the same first 2000 cases). Since BL-443 (#1322) each
+ * fuzz property is also cut into `it` blocks of 2000 cases sharing one PRNG, so
+ * no single call blocks a worker for long; this cap only trims the total
+ * instrumented time. `npm test` and CI `unit` keep the full 10000; nightly runs
+ * 100000. An explicit SCRIBE_FUZZ_RUNS still wins.
  */
 import { defineConfig } from 'vitest/config';
 import { coverage, INSTRUMENTED } from '../../scripts/coverage/preset';

@@ -13,11 +13,12 @@
  * - VoiceOver: the layer is modal; on arrival the heading takes focus and the title is said once (useArrival).
  * - It only covers. Nothing under it unmounts, and nothing is deleted, moved or sent.
  */
-import { useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { FullWindowOverlay } from 'react-native-screens';
 import { StateScreenView } from '@/components/ui/state-screen';
 import { useTheme } from '@/lib/a11y';
+import { watchAccountScope } from '@/lib/auth/account-scope';
 import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
 import { authCopy } from '@/lib/auth/copy';
 import { authUserId } from '@/lib/auth/machine.logic';
@@ -33,6 +34,8 @@ const noOwner = (): string | null => null;
 
 export function AccountLayer() {
   const auth = useAuth();
+  // The store's lists are read through the same check (lib/store.ts shown); tell their readers when it changes.
+  useEffect(() => watchAccountScope(), []);
   const sessionUser = authUserId(auth.state);
   const readOwner = sessionUser ? currentUserId : noOwner;
   const owner = useSyncExternalStore(subscribeToOwner, readOwner, readOwner);
