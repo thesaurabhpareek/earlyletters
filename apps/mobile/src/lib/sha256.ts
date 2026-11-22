@@ -1,9 +1,14 @@
 /**
  * SHA-256 of a string's UTF-8 bytes, as lower-case hex. Pure and synchronous, so the agreement record
  * (agreements.logic.ts) can name the exact sentence shown without an async native call, and the same code runs in
- * Node tests (test/agreements.test.ts checks it against node:crypto). Used only for short public text: it is a
- * fingerprint of what was shown, not a password or key hash.
+ * Node tests (test/agreements.test.ts checks it against node:crypto). Used today for two things:
+ *  - a fingerprint of the exact public sentence a person was shown (agreements.logic.ts, auth/consent.ts);
+ *  - an identifier hash of a signed-in user id: ownerKey (auth/local-claim.ts) keeps the first 16 hex as the owner
+ *    label on the Moments and days files, so the id itself is not written there.
+ * It is NOT a security key hash and NOT for secrets: there is no salt, no stretching and no key, and the 16 hex is a
+ * label, not a credential. Never pass it a password, token, key or private text and treat the result as protected.
  */
+
 const K = new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
   0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
