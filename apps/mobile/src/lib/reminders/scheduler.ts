@@ -183,10 +183,15 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
 async function apply(): Promise<void> {
   // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
   if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
+  // Reminders off: nothing to plan and nothing to read. An empty plan already applied (`lastSignature` is '') means
+  // none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or a failure)
+  // still reads once, to cancel what was scheduled earlier (BL-1189).
+  const off = !readPrefs().enabled;
+  if (off && lastSignature === '') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   // A pause drops library notes from the plan, so the signature changes and the pending ones are cancelled below.
   // Typed days and every other kind stay (NS-46-R33).
-  const plan = withoutLibraryNotes(await currentPlan(Date.now(), pendingPlanNotices(scheduled)), libraryDaysAllowed(reader()));
+  const plan = off ? [] : withoutLibraryNotes(await currentPlan(Date.now(), pendingPlanNotices(scheduled)), libraryDaysAllowed(reader()));
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   for (const s of scheduled) {
