@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { authCopy } from '@scribe/content';
 import { BookCover } from '@/components/book/book-cover';
-import { familyNotice } from '@/components/family/family-notice';
+import { familyNotice, noticeOwner } from '@/components/family/family-notice';
 import { afterShare, inviteSheetView } from '@/components/family/invite-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -114,6 +114,7 @@ function InviteCoParent() {
     setBusy(true);
     setError(null);
     const s = signsAs.trim();
+    const owner = noticeOwner(); // before the awaits: who started this share
     try {
       let invite;
       try {
@@ -132,7 +133,7 @@ function InviteCoParent() {
       draft.current = null; // the next invite from this sheet is a new one
       // The link went out: this sheet closes, and the page under it (the family page, or the book's settings page whose
       // row opened this sheet) says the invite waits (components/family/family-notice.ts).
-      familyNotice.leave(k.done);
+      familyNotice.leave(k.done, owner);
       close();
     } catch (e) {
       const kind = inviteErrorKind(e);

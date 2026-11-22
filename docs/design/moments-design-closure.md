@@ -1,6 +1,6 @@
 # Moments design closure: rulings and completeness audit
 
-Status: RULED (design items) and PROPOSED (the additions in section 3, for `product` to fold into `docs/product/prd/28-moments-tab.md`)
+Status: RULED (design items). The additions in section 3 were folded into `docs/product/prd/28-moments-tab.md` section 22d by `product` on 21 Nov 2026 (ids NS-53-G01 to NS-53-G10, with the review notes N1 to N4 and the corrections listed in section 4); where this file and the PRD differ, the PRD wins
 Date: 21 Nov 2026
 Author: Chief Design Officer (Claude role), with Karma (CTO) in the same session
 Scope: every design item left OPEN in PRD 28 sections 21 to 23, `docs/product/moments-tab/EXPERIENCE-AND-MOTION.md` (EXP) and the prototype notes, plus an audit of what a build needs.
@@ -8,7 +8,7 @@ Scope: every design item left OPEN in PRD 28 sections 21 to 23, `docs/product/mo
 ## 0. Honest limits and how to read this
 
 - I am a role a Claude session plays. I tested nothing on a phone. Every statement about Apple's picker or a frame budget is UNVERIFIED until a device row (DM-01 to DM-13, G5, G7) is run by the founder or a device operator.
-- Founder words, 21 Nov 2026: "Decide all open with exec, and make sure all requirements are closed as well as all designs." Later the same day: "I agree with all your recommendations. Continue. Approved." The founder decided four items himself (DC-1, DC-2, DC-3 value, DC-5); they are marked FOUNDER-DECIDED. The rest are RULED by CDesO. Anything that changes what a user is promised stays founder-only under CR-73; none of the rulings below adds a promise, and DC-5 only raises privacy.
+- Founder words, 21 Nov 2026: "Decide all open with exec, and make sure all requirements are closed as well as all designs." Later the same day: "I agree with all your recommendations. Continue. Approved." The founder decided four items himself: DC-1 for the never-asked state only, DC-2, DC-3 (the value, and O-27 confirmed in chat on 21 Nov 2026 by "Yes lock those decisions", as relayed to `product` in the brief for the folding PR), and DC-5; they are marked FOUNDER-DECIDED. The rest are RULED (by CDesO, or by Karma and the CPO where DC-1 says so). Anything that changes what a user is promised stays founder-only under CR-73; none of the rulings below adds a promise, and DC-5 only raises privacy.
 - Consulted in writing before ruling: the CPO and Privacy reviews in `docs/product/moments-tab/exec-review/` (cpo.md, privacy.md, ciso.md), read in this session. I did not get a live answer from either seat; where I overrule an earlier agent's text I say so.
 - Ids `DC-n` are local to this file. Entering them in `docs/agents/exec/RULINGS.md` as `CDesO-<n>` is done at merge, after checking the log and open PRs for the next free number.
 - Status words in section 2: SPECIFIED (cited), UNVERIFIED (specified, not seen on a device), GAP (no spec text; section 3 supplies it).
@@ -16,10 +16,10 @@ Scope: every design item left OPEN in PRD 28 sections 21 to 23, `docs/product/mo
 
 ## 1. Rulings
 
-### DC-1 Door in the never-asked state (O-56; also the Recent foot). FOUNDER-DECIDED
+### DC-1 Door in the never-asked state (O-56). FOUNDER-DECIDED for ACC-0; the Recent foot (ACC-2) is RULED by Karma and the CPO
 - Options: (a) a quiet "Choose pictures" text row below the ask card, never beside it, never inside the primer (EXP 2.2, EXH-DES-15); (b) only after the parent has answered (R270, D2, EXH-CPO-1); (c) in the ask card as a third button.
-- Ruling: (a), as the founder decided ("door below the ask card in the never-asked state"). ACC-1, ACC-3, ACC-4, ACC-5 and flag-off keep the door as the first row. ACC-2: the door is the last row of Recent (my ruling, same logic; R270 said not on ACC-2). Never a third button, never in the primer, never in a notification.
-- Applies to `product` as row edits: R270 and D2 are amended to this text; R106, R120, R253 take EXP 12 as written. G4 task T4 still compares door shown against door hidden, as evidence, not as a gate.
+- Ruling: (a), as the founder decided ("door below the ask card in the never-asked state"). ACC-1, ACC-3, ACC-4, ACC-5 and flag-off keep the door as the first row. ACC-2: the door is the last row of Recent. This part is RULED by Karma (CTO) and the CPO, not decided by the founder: his words covered only the never-asked state (R270 said not on ACC-2). Never a third button, never in the primer, never in a notification.
+- Applied by `product` as row edits in PRD 28: R270 and D2 are amended to this text; R106, R120, R253 take EXP 12 as written. G4 task T4 still compares door shown against door hidden, as evidence, not as a gate.
 - Risk vs return: risk that the door takes some yes answers and cannot be measured (EXP 4.12, no event; O-38 and O-49 stay No). Return: the tab works for a parent who is not ready to answer, and the first thing a parent who says no sees works.
 - Way back: one constant in the tab's state table; a content-only change. Two-way.
 - Challenger (CPO, EXH-CPO-1): "the door takes yes answers and we cannot measure it." Answered: the five-parent T4 and the diary measure it by asking; we do not add telemetry to answer a design doubt (O-38 stays No).
@@ -27,18 +27,18 @@ Scope: every design item left OPEN in PRD 28 sections 21 to 23, `docs/product/mo
 
 ### DC-2 Host sheet layout (O-53 and O-57). FOUNDER-DECIDED: Layout B
 - Options: A (Apple's bars both hidden); B (top bar kept, bottom bar hidden); C (Apple's picker as its own sheet, no inline host, no tray for Apple's picks).
-- Ruling: build Layout B. The founder approved B. Build rule, so engineering never reopens it: `PICKER_BARS` is one constant of three values (`both-hidden`, `bottom-hidden`, `none`), default `bottom-hidden`. A is allowed only when DM-02 shows Albums, Options, the privacy badge, the first-show panel and continuous selection reachable with both bars hidden; never hide Options. C is taken when any of these hold: DM-02 fails the B list; DM-11 (SE 3 memory) fails; DM-09 shows the cover cannot hide Apple's view in the switcher and dismissal on background is not acceptable to a parent holding picks. C is the same route and frame with the inline host off.
+- Ruling: build Layout B. The founder approved B. Build rule, so engineering never reopens it: `PICKER_BARS` is one constant of three values (`both-hidden`, `bottom-hidden`, `none`), default `bottom-hidden`. A is allowed only when DM-02 shows Albums, Options, the privacy badge, the first-show panel and continuous selection reachable with both bars hidden; never hide Options. C is taken when any of these hold: DM-02 fails the B list; DM-11 (SE 3 memory) fails; DM-09 shows the cover cannot hide Apple's view in the switcher (a parent's picks must not be dropped by a background event, so there is no dismiss-and-drop fallback in B or A; G-01 is reconciled to this). C is the same route and frame with the inline host off. Review B note N1: `PICKER_BARS` selects the configuration of a new embedded-picker view; it is not a flag on `pickOne`, so Layout C is the only layout buildable today.
 - Risk vs return: risk is that Apple's top bar carries an Add we cannot hide (then Start stays primary and Add is a second route to one `AttachRequest`, EXP 4.8). Return: Apple's own Cancel and Albums stay, less custom chrome to fail at AX5.
 - Way back: change one constant; C is the shipped fallback today.
 - Challenger (design-systems): "A is cleaner." Answered: clean is taste; B keeps Apple's controls where Apple tests them, and A needs a device matrix we do not have.
 - Source: EXP 4.8, 9.2; PRD 23 (O-53, O-57).
 
-### DC-3 Start hand-off flight and the token (O-27 and O-58). Value FOUNDER-DECIDED, flight RULED
+### DC-3 Start hand-off flight and the token (O-27 and O-58). Value and O-27 FOUNDER-DECIDED, flight default RULED
 - Options: (a) no flight, a 200 ms cross-fade; (b) tray tiles fly into capture's slots in 320 ms; (c) flight only for our own tiles, not Apple's picks.
-- Ruling: the founder approved `motion.carry` { ms: 320 }. It lands in `packages/design-tokens/src/tokens.ts` with tests (a timeline test stepped ms by ms on three phone sizes, as `transitions.test.ts` does). Flight (b) ships ON when the tray shows thumbnails and DM-11 and DM-12 pass; otherwise (a). Reduce Motion never flies. The 160 ms leave runs in parallel, so the sequence is 320 ms, under the 420 single-move and 900 total caps.
+- Ruling: the founder approved `motion.carry` { ms: 320 }. It lands in `packages/design-tokens/src/tokens.ts` with tests (a timeline test stepped ms by ms on three phone sizes, as `transitions.test.ts` does). Flight (b) is default OFF until DM-11 and DM-12 pass, then ON (the founder confirmed O-27 on 21 Nov 2026 by "Yes lock those decisions"); while it is off the hand-off is (a). It needs a root-level overlay (Review B note N4). Reduce Motion never flies. The 160 ms leave runs in parallel, so the sequence is 320 ms, under the 420 single-move and 900 total caps.
 - Risk vs return: risk is dropped frames on an iPhone SE 3 (UNVERIFIED, DM-12). Return: the founder's "these came with you" feel, only where a parent just placed real tiles. Nothing else in Moments flies.
 - Way back: `carryMs` read behind one boolean; false gives the cross-fade. Two-way.
-- Challenger (CPO, R144 text): "an option that carries one thing is off by default." Answered: that default existed before the founder approved the value; the DM-12 gate keeps the safe form.
+- Challenger (CPO, R144 text): "an option that carries one thing is off by default." Answered: the default stays off, as the CPO asked, until the device rows pass; then it turns on, which is the founder's confirmed choice.
 - Source: EXP 5.4, 6 (EM-07); PRD 23 (O-27, O-58), 14.5 R144.
 
 ### DC-4 Tab position (O-01; with O-06). RULED
@@ -147,49 +147,50 @@ Layers are the PRD's (L0 unit, L2 component, L3 baseline on an iPhone SE 3 and i
 - Given the app returns to `active`, Then the cover is removed in the next frame with no animation and focus returns to the element that had it.
 - Given any other tab is focused and App lock is off, Then no cover mounts (no change to Home, Book, Me, and no new promise).
 - Given App lock is on, Then the existing lock layer governs and the scoped cover never doubles it (one cover mounted, test by count).
-- Given the picker sheet is open, Then the picks are held in memory, and the paper cover of EXP 4.7 item 5 is this same component, not a second one. If DM-09 shows the cover cannot hide Apple's view in the snapshot, the sheet dismisses on background and the picks are dropped.
+- Given the picker sheet is open, Then the picks are held in memory, and the paper cover of EXP 4.7 item 5 is this same component, not a second one. If DM-09 shows the cover cannot hide Apple's view in the snapshot, DC-2 decides: Layout C is taken (Apple's picker is its own sheet, no inline host, no tray for Apple's picks), so no parent's picks are held in our frame; a pick is never dropped by a background event under B or A (the earlier text here, "dismiss and drop the picks", is withdrawn because it contradicted DC-2). Review B note N2: the cover needs its own focused-route signal and boot wiring beside `AppLockLayer`.
 - Test: L0 `shouldCoverMoments(route, appState, lockEnabled)` truth table (3 routes by 3 states by 2 lock settings, 18 rows); L2 mount count is 1; L5 G7 row: switcher snapshot with lock off on the tab, the day sheet and the picker, with a still photo for the record only.
 
 ### G-02 A card with no picture
-- Given a card of kind age day, typed day, question, public holiday, or an occasion with no pictures, Then it uses the day card anatomy without the lead tile: reason line (kicker), date heading, optional occasion or parent label, optional "A letter is here" row, then Continue and Not now at 48 pt (44 minimum), equal in size, width and outline.
+- Given a card of kind age day, typed day, question, public holiday, or an occasion with no pictures, Then it uses the day card anatomy without the lead tile: reason line (kicker), date heading, optional occasion or parent label, optional "A letter is here" row, then Continue and Not now at 48 pt ASSUMED (44 pt minimum, R156), equal in size, width and outline.
 - Given Continue or the card's heading area is tapped on such a card, Then the expand origin is the card's own measured frame (an empty paper surface, nothing carried); if it is not measured, the door's rise (EXP 5.2); Reduce Motion is the 200 ms cross-fade of EXP 5.1.
 - Given a question card, Then Continue opens capture directly, with no pick sheet, and "Another thought" swaps the words in place with a short cross-fade (A2-R23 to R26).
 - No tile means no blank box: the card is shorter, never padded to the height of a picture card (L3 baseline: height of a no-picture card at default size is at most 60 percent of a picture card on the SE 3 ASSUMED, tuned at the card sort).
 - Test: L0 card model kinds to anatomy table; L3 baselines per kind at default and AX5; L4 name per G-04.
 
 ### G-03 Undo control
-- Given Not now or any card menu verb is tapped, Then one Undo row appears in the tab, pinned above the tab bar, full width less the 16 pt page margin, paper `surface` with a `line` hairline, no shadow, 44 pt minimum height, one line "Set aside" (content key) with a text button "Undo" at the trailing edge (leading at AX1 and above, stacked, still 44 pt).
-- It never times out, never covers a card action: the scroll content gets bottom inset equal to the row height plus 8 pt while it shows. A second set-aside replaces the row, and Undo then returns only the latest card; earlier ones are in Me with "Start again" (R54).
-- It leaves on Undo, on a tab switch, on 3 further taps elsewhere ASSUMED, or on leaving the tab; leaving never changes the effect.
-- Undo returns the card to its slot with `enter` (8 pt, 280 ms) and plays `tap`; Reduce Motion a 200 ms fade, no haptic dependence. VoiceOver: "Set aside" politely on arrival, "Back where it was" on Undo, focus to the restored card.
-- Test: L2 inset applied; L3 at AX5 the row stacks and does not cover Continue; L4 reachable by Switch Control; L5 S1-23 walk.
+- Given Not now or any card menu verb is tapped, Then one Undo row appears in the tab, pinned above the tab bar, full width less a 16 pt ASSUMED page margin, paper `surface` with a `line` hairline, no shadow, 44 pt minimum height, one line "Set aside" (content key) with a text button "Undo" at the trailing edge (leading at AX1 and above, stacked, still 44 pt minimum).
+- It never times out and no tap elsewhere removes it (the earlier "3 further taps" clause is withdrawn: it contradicted "never times out" and EXP 5.7). It never covers a card action: the scroll content gets a bottom inset equal to the row height plus 8 pt ASSUMED while it shows. A second set-aside replaces the row, and Undo then returns only the latest card; earlier ones are in Me with "Start again" (R54).
+- It leaves only on Undo, on a second set-aside (replaced), on a tab switch, or on leaving the tab; leaving never changes the effect.
+- Pinned-bar check at AX5 (PRD 15: a pinned control stays under a quarter of the screen): on an iPhone SE 3 (667 pt high) at AX5 with Bold Text the pinned Undo row, stacked, is at most 25 percent of the screen height (166 pt); if it is taller, it is not pinned: it sits as the first row of the scroll content instead, with the same words and the same 44 pt targets.
+- Undo returns the card to its slot with `enter` (8 pt, 280 ms, the existing tokens) and plays `tap`; Reduce Motion a 200 ms fade, no haptic dependence. VoiceOver: "Set aside" politely on arrival, "Back where it was" on Undo, focus to the restored card.
+- Test: L2 inset applied; L3 at AX5 the row stacks, does not cover Continue, and the pinned height is at most 25 percent of the screen on the SE 3; L4 reachable by Switch Control; L5 S1-23 walk.
 
 ### G-04 Card accessibility structure and Voice Control (settles PRD 14.1 "not settled"; DC-6)
 - Given a card, Then its accessibility elements, in order, are: (1) the information group, one non-actionable element named by R214 (reason, date, place when shown, the parent's own label); (2) Continue; (3) Not now; (4) the menu button. The lead tile is not a separate stop (it duplicates Continue) but still opens the sheet by touch. Four stops a card, at most 16 in For you.
 - Given Voice Control, Then each control's accessible name begins with its visible label (WCAG 2.5.3 Label in Name): "Continue" with the date in a hint, never a name that omits the word on screen; the numbers overlay disambiguates repeated names.
 - Custom actions on the information group: "Not this one", "Hide this place", "Name this day", each also a visible menu item. No gesture without a button (R150).
-- Given the ask card, Then it is one container with two buttons of equal weight, named "Show days" and "Not now".
-- Test: L4 element order and names for 6 card kinds; L2 `accessibilityLabel` starts with the visible label for every card control; L5 S1-23 with VoiceOver, Voice Control and Switch Control.
+- Given the ask card, Then it is one container with two buttons of equal weight, each named by its visible label (the words are `content`'s; "Show days" and "Not now" are placeholders).
+- Test: keyed on the visible label, never on a typed-in name: L2 reads the visible text of each control from its content key (the string the screen draws) and asserts the control's `accessibilityLabel` starts with it, for every card control and the ask card's two buttons, so a copy change by `content` cannot break the test and a name that drops the word on screen always does; L4 element order for 6 card kinds; L5 S1-23 with VoiceOver, Voice Control and Switch Control.
 
 ### G-05 Primer sheet layout
-- Given the parent taps "Show days", Then the primer rises as a sheet over the tab: grabber hidden, content scrolls, title (our words), the one sentence (variant A), the policy link, one disclosure "What this means" holding Shown, Records, Never, Decline (R218), then Continue and Not now, equal in size and weight (R71), 56 pt tall, side by side at default and stacked Continue first from AX1.
+- Given the parent taps "Show days", Then the primer rises as a sheet over the tab: grabber hidden, content scrolls, title (our words), the one sentence (variant A), the policy link, one disclosure "What this means" holding Shown, Records, Never, Decline (R218), then Continue and Not now, equal in size and weight (R71), 56 pt tall ASSUMED, side by side at default and stacked Continue first from AX1.
 - At AX5 on an SE 3 the sheet is a full-height scroll; Continue and Not now sit at the end of the scroll, not pinned, so no pinned bar covers more than 25 percent of the screen (PRD 15); every line wraps, none truncates; the disclosure opens in place.
-- Not now and swipe-down are equal and final: the tab shows ACC-1 with the move of EM-16 (590 ms in all; Reduce Motion 200 ms cross-fade). Apple's alert is never shown by a gesture other than Continue.
+- Not now and swipe-down are equal and final: the tab shows ACC-1 with the move of EM-16 (590 ms in all, ASSUMED until DM-12; Reduce Motion 200 ms cross-fade). Apple's alert is never shown by a gesture other than Continue.
 - Test: L3 at default, AX3, AX5, light and dark; L4 VoiceOver reads title, sentence, disclosure state, then the buttons; L5 DM-07.
 
 ### G-06 SE 3 first-screen budget (iPhone SE 3, 375 by 667 pt, default text size)
 - Given the tab in ACC-0, ACC-1, ACC-2 (For you), ACC-4 and ACC-5, Then the heading, the job line, and the first card's date heading plus both of its action buttons are fully visible without scrolling; in ACC-0 the ask card's two buttons are visible after at most one real card.
 - At AX1 and above, only the heading and the first card's reason and date need to be visible, and the ask card is never more than one card from the top (R211).
-- Performance: no frame over 16.7 ms during EM-01, EM-12 and a fling of Recent on the SE 3 (DM-12); tray thumbnails 44 pt fixed with at most 6 decoded at once ASSUMED, tuned at DM-11; if DM-11 fails, the tray has no thumbnails and EM-07 does not fly.
+- Performance: no frame over 16.7 ms (the 60 Hz budget; the 120 Hz budget is DM-12's) during EM-01, EM-12 and a fling of Recent on the SE 3 (DM-12); tray thumbnails 44 pt fixed with at most 6 decoded at once ASSUMED, tuned at DM-11; if DM-11 fails, the tray has no thumbnails and EM-07 does not fly.
 - Test: L3 baselines per state with a frame assertion `maxY(Continue, Not now) <= tabBarTop`; L5 DM-11 and DM-12.
 
 ### G-07 The "Earlier" month list (R210)
 - Given Recent shows its newest 14 days (ASSUMED), Then one quiet text row "Earlier" follows, 44 pt minimum, no number, no count; tapping pushes one plain screen of month rows, newest first, each a text row with the month and year only (no count of days); a month opens the same day cards under one heading.
-- AX5: rows are single column, wrap, 56 pt minimum; the back control is the platform's. No pull to refresh, no spinner; a flat paper tile while a month reads (A1-R12). VoiceOver: the screen has one heading; each row reads "March 2026, button".
+- AX5: rows are single column, wrap, 56 pt minimum ASSUMED; the back control is the platform's. No pull to refresh, no spinner; a flat paper tile while a month reads (A1-R12). VoiceOver: the screen has one heading; each row reads "March 2026, button".
 - Test: L2 rows without digits other than the year; L3 default and AX5; L4 names.
 
 ### G-08 Me: Moments settings
-- Given Me, Then one group named for the feature (content key) holds, in this order: Photos access (on or off in words, never by colour alone, R78; Turn off removes the on-phone data at once), Hide places (a switch, off by default, R232), Hidden days and places (opens a list with Remove on each and one "Start again", behind App lock when it is on, R65), Reminders if shipped. Every row at least 56 pt, one line at default, wrapping at AX5, state spoken ("On", "Off").
+- Given Me, Then one group named for the feature (content key) holds, in this order: Photos access (on or off in words, never by colour alone, R78; Turn off removes the on-phone data at once), Hide places (a switch, off by default, R232), Hidden days and places (opens a list with Remove on each and one "Start again", behind App lock when it is on, R65), Reminders if shipped. Every row at least 56 pt ASSUMED, one line at default, wrapping at AX5, state spoken ("On", "Off").
 - Turn off asks nothing and shows no count of what was removed; one calm line after. No red; Turn off is a text row, not destructive (it stores nothing).
 - Test: L3 at AX5, L4 states spoken, L2 Turn off empties the moments file (R115).
 
@@ -204,9 +205,9 @@ Layers are the PRD's (L0 unit, L2 component, L3 baseline on an iPhone SE 3 and i
 
 ## 4. What remains
 
-- GAPs: none left without proposed text. G-01 to G-10 are PROPOSED until `product` folds them into PRD 28 and the PRD row edits named in DC-1 (R106, R120, R253, R270, D2) and DC-6 (R211) are made; this file edits no PRD, token or code.
+- GAPs: none left without text. G-01 to G-10 are folded into PRD 28 section 22d (NS-53-G01 to NS-53-G10) together with the PRD row edits of DC-1 (R106, R120, R253, R270, D2), DC-3 (R144) and DC-6 (R211). Corrections made at the fold: DC-1's ACC-2 door is RULED, not FOUNDER-DECIDED; DC-3's flight is default OFF until DM-11 and DM-12 pass, then ON; G-01 and DC-2 agree on a DM-09 failure (Layout C); G-03's Undo no longer leaves on taps; G-04's test is keyed on the visible label; unmarked numbers carry ASSUMED. This file edits no token or code.
 - Not closed by design and not a design gap: every U row above needs a phone (DM-01 to DM-13, G5, G7, S1-23). Until run, no accessibility claim for starting from a picture is made (R293).
-- Token: `motion.carry` { ms: 320 } is approved and lands with its tests in the Start hand-off PR.
-- Hand-offs: `product` (PRD edits), `mobile` (G-01 scoped cover, constants `PICKER_BARS`, `initialRouteName`, `carryMs`), `content` (set-aside word, G-03, G-05, G-07, G-08 strings), `qa` (device rows).
+- Token: `motion.carry` { ms: 320 } is approved and lands with its tests in the Start hand-off PR (PRD 19.4 row 19c).
+- Hand-offs: `product` (PRD edits, done in PRD 22d), `mobile` (G-01 scoped cover, PR 6b; constants `PICKER_BARS`, `initialRouteName`, `carryMs`), `content` (set-aside word, G-03, G-05, G-07, G-08 strings), `qa` (device rows).
 
 Signed: Chief Design Officer (Claude role)

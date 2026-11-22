@@ -27,6 +27,7 @@ import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BUILDS, buildEnv as webBuildEnv } from '../e2e-web/support/builds';
 import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 import { envFileLines, envFileProblems } from '../scripts/env-file-guard.mjs';
 
@@ -194,11 +195,14 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
   });
 
   it('the web e2e build with servers on sets it, so flows that open Delete account (j24-style) still see the row; the server-off builds need nothing', () => {
-    const setup = code(readFileSync(join(APP, 'e2e-web/support/global-setup.ts'), 'utf8'));
-    const onBuild = setup.slice(setup.indexOf('build(ON_DIST, {'), setup.indexOf('});', setup.indexOf('build(ON_DIST, {')));
-    expect(onBuild).toMatch(/EXPO_PUBLIC_SERVER_FEATURES: 'on',/);
-    expect(onBuild).toMatch(/EXPO_PUBLIC_ACCOUNT_DELETION: 'on',/);
-    expect(setup.match(/EXPO_PUBLIC_ACCOUNT_DELETION/g)?.length).toBe(1);
+    // The builds moved from global-setup.ts to e2e-web/support/builds.ts (BL-410): read the data, not the text.
+    const env = (name: string) => webBuildEnv(BUILDS.find((b) => b.name === name)!.env);
+    expect(env('server-on').EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env('server-on').EXPO_PUBLIC_ACCOUNT_DELETION).toBe('on');
+    // Only that one build sets it; the server-off builds need nothing.
+    expect(BUILDS.filter((b) => webBuildEnv(b.env).EXPO_PUBLIC_ACCOUNT_DELETION !== undefined).map((b) => b.name)).toEqual(['server-on']);
+    // And global-setup passes each build's env through (it does not drop it).
+    expect(code(readFileSync(join(APP, 'e2e-web/support/global-setup.ts'), 'utf8'))).toMatch(/\.\.\.buildEnv\(b\.env\)/);
   });
 
   it('app.config.ts records it in extra by the same rule (on only, and with the server switch) and the preflight reports the state without ever failing on it', () => {
