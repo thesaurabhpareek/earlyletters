@@ -40,7 +40,7 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { createMomentsStore, momentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError } = await import('../src/lib/moments/store');
+const { createMomentsStore, momentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError, turnOffMoments } = await import('../src/lib/moments/store');
 const { parseMoments, serializeMoments, emptyMoments } = await import('../src/lib/moments/store.logic');
 const { expoMomentsPort, readMoments, writeMoments, removeMoments, MOMENTS_FILE, MOMENTS_TMP } = await import('../src/lib/moments/store-file');
 
@@ -272,6 +272,16 @@ describe('[CDO-23] launch cleanup removes rows for a book the phone no longer li
     seed(JSON.stringify(file()));
     await fresh().cleanupAtLaunch(null);
     expect(onDisk().homePlace).toEqual({ [BOOK]: 'ext:place-2' });
+  });
+});
+
+describe('[PR10] Turn off wipes the file (R246 item 2)', () => {
+  it('turnOffMoments deletes the file, a local one too, and temp, and says true', () => {
+    for (const o of [A, 'local']) {
+      seed(JSON.stringify(file(o)));
+      expect(turnOffMoments()).toBe(true);
+      expect(names()).toEqual([]);
+    }
   });
 });
 
