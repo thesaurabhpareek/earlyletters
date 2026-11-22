@@ -110,7 +110,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 | Place | What we say | Control behind it |
 | --- | --- | --- |
-| Onboarding story 4 | Only you and the people you invite can read these letters. | Per-book sharing |
+| Onboarding story 4 | Your letters are yours, and you choose who else can read them. | Per-book sharing |
 | Sign-in | Why an account helps, who can read, what the email is for (`trust.signIn`). | Sign in with Apple's Hide My Email; no passwords |
 | First recording, once | Words are written down on this phone; the recording stays with the letter; we never imitate your voice (`trust.firstRecording`). | On-device transcription; encrypted backup of the owner's recordings, for them alone (D-073 supersedes D-059's "no audio upload"); the original is never altered (D-058) |
 | Settings, Privacy | The promise at the top, then the switches (`trust.settings`, `settings.privacy`). | Analytics off by default, sync and sharing, export, delete |
