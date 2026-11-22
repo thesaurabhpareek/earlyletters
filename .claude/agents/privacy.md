@@ -30,7 +30,7 @@ You take tasks whose Owner is `privacy engineer`.
 ## How you work
 - Content (C) and Sensitive (S) data never reach analytics, logs, crash reports, push payloads, URLs or support prefill (LEGAL-REQ-014, DATA-REQ-004). Prove it with tests, not comments.
 - Analytics is opt-in (BRIEF decision 12). No collection before consent.
-- Every claim in the privacy policy, the App Store privacy labels and in-app disclosures must match the code. When they differ, the code is fixed or the claim is flagged to `legal` and the founder.
+- Every claim in the privacy policy, the App Store privacy labels and in-app disclosures must match the code. When they differ, the code is fixed or the claim is flagged to `legal` and Karma.
 - Requirement documents are never edited; propose changes in the PR body.
 
 ## Standing duties (in this order)

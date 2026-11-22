@@ -2,6 +2,10 @@
 
 > SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the 28 Oct queue and the Build 12 section are history; open founder items are in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
 
+> **Standing delegation (CR-176, D-168, 22 Nov 2026).** This file is the one place a physical act for the founder is written down. Anything not on this list is not his: Karma and the exec team decide it and merge it, and nobody asks him to approve, comment on, merge, review or paste anything. A physical act is something only the account holder's hands can do: type a secret into a vendor console, sign in to Apple, Expo, Vercel, Supabase or a domain host, pay, apply a migration to a hosted project, submit a store build, test on his phones, or make a GitHub settings write the session proxy refuses. Karma prepares each one fully first. One row per act: the exact step, why only his hands can do it, what is already prepared, and the check line from the CTO skill section 3. Never a chat question, never a PR request. A secret is never written in a row.
+>
+> **Open rows added under CR-176:** none yet. Karma adds a row here when an act arrives, and the older sections below stay as history.
+
 **Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
 - `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
 - `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.

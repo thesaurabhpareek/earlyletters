@@ -8,7 +8,7 @@
 
 - One SQLite file is backed up whole, so a record that must be excluded from the backup cannot live in `scribe.db` (E37).
 - The primitive exists: `setExcludedFromBackup(uri, excluded)` in `apps/mobile/modules/scribe-files/index.ts:11`; read-back precedent in `apps/mobile/src/lib/packs/app-support.ts` and `lib/model-files.ts`. There is no change bus on it.
-- The days store holds tradition and faith-related choices; the moments index (NS-51) holds local asset ids. Both are L4 until `privacy` rules. [Proposal: the class is not yet in `docs/legal/DATA_CLASSIFICATION.md`; founder-merged.]
+- The days store holds tradition and faith-related choices; the moments index (NS-51) holds the parent's day choices and labels and no picture, album or asset id (R247, Amendment 1 item 2). Both are L4 until `privacy` rules. [Proposal: the class is not yet in `docs/legal/DATA_CLASSIFICATION.md`; founder-merged.]
 
 ## Decision (items 1 to 6 are [CR-69] A4; items 7 to 9 are proposals)
 

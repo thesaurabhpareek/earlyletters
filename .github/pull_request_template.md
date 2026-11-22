@@ -27,7 +27,7 @@ perf: n/a | checked-by: (test or command) | not-measured
 
 ## Review notes
 
-Who must review (independent reviews under D-107; `supabase/`, `.github/workflows/` and auth also D-041), what to look at first, and merge order if it matters.
+Who must review (independent reviews under D-107; Karma merges under CR-70, CR-73 and CR-176, so never write "founder review needed" or ask him to approve, comment, merge or paste; a physical act goes in `docs/release/FOUNDER_QUEUE.md`; `supabase/`, `.github/workflows/` and auth also D-041), what to look at first, and merge order if it matters.
 
 ## How it was checked
 

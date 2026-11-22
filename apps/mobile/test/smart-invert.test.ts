@@ -11,16 +11,72 @@ import { describe, expect, it } from 'vitest';
 
 const APP = resolve(__dirname, '..');
 const SRC = join(APP, 'src');
-const PICTURE_TAG = /^(Image|ExpoImage|SvgImage|ImageBackground|Animated\.Image|PhotoFrame|Photo[A-Z]\w*|Thumbnail\w*)$/;
+const PICTURE_TAG = /^(Image|ExpoImage|SvgImage|ImageBackground|Animated\.Image|PhotoFrame|Photo[A-Z]\w*|Thumbnail\w*|PictureCard|Avatar)$/;
 /**
  * Names this guard does not hold to the prop at the call site. A prop on a custom component does nothing by itself, so
  * PhotoFrame is exempt only because the guard below reads photo-frame.tsx and requires every Image and the blank box in
- * it to carry the prop. A name ending in Button is a control, not a picture (PhotoStartButton is a text button with an
- * icon glyph); its icon is not a person's photograph.
+ * it to carry the prop.
  */
 const SELF_PROTECTING = new Set(['PhotoFrame']);
-const isPictureTag = (name: string) => PICTURE_TAG.test(name) && !SELF_PROTECTING.has(name) && !/Button$/.test(name);
+/**
+ * BL-1443: the only way a name that looks like a picture passes without the prop. It replaces the old `Button$` suffix
+ * rule, which let any name ending in Button through. Each entry needs a reason; a stale entry fails the guard below.
+ */
+const NOT_A_PICTURE: Record<string, string> = {
+  PhotoStartButton: 'a text button with an icon glyph, not a person\'s photograph',
+};
+/**
+ * BL-1443: an image is found by where it is imported from, so `import { Image as Pic } from 'react-native'`,
+ * `import FastImage from 'react-native-fast-image'` and `const Pic = Image` are all pictures under their new names.
+ * `default` means the default import.
+ */
+const IMAGE_SOURCES: Record<string, string[]> = {
+  'react-native': ['Image', 'ImageBackground'],
+  'expo-image': ['Image', 'ImageBackground'],
+  'react-native-svg': ['Image'],
+  'react-native-fast-image': ['default', 'FastImage'],
+};
+/**
+ * BL-1443 decision: bare PictureCard and Avatar call sites are checked (the stricter default, CTO ruling wave 9). Today
+ * src has neither component; one added later must carry the prop at every call site until it is allowlisted here.
+ */
 const PROP = 'accessibilityIgnoresInvertColors';
+
+/** Local names bound to an image component: imported from an image source (with aliases), or `const X = <image name>`. */
+export function imageNames(source: string): Set<string> {
+  const code = stripComments(source);
+  const names = new Set<string>();
+  for (const m of code.matchAll(/import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
+    const wanted = IMAGE_SOURCES[m[2]];
+    if (!wanted) continue;
+    const clause = m[1];
+    const def = /^([A-Za-z_$][\w$]*)\s*(,|$)/.exec(clause);
+    if (def && wanted.includes('default')) names.add(def[1]);
+    const ns = /\*\s+as\s+([A-Za-z_$][\w$]*)/.exec(clause);
+    if (ns) for (const w of wanted) if (w !== 'default') names.add(`${ns[1]}.${w}`);
+    const braces = /\{([^}]*)\}/.exec(clause);
+    if (braces) {
+      for (const part of braces[1].split(',')) {
+        const [imported, local] = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/);
+        if (imported && wanted.includes(imported)) names.add((local ?? imported).trim());
+      }
+    }
+  }
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$.]*)\s*;/g)) {
+      if (names.has(m[2]) && !names.has(m[1])) {
+        names.add(m[1]);
+        grew = true;
+      }
+    }
+  }
+  return names;
+}
+const picturePredicate = (source: string) => {
+  const imported = imageNames(source);
+  return (name: string) => (PICTURE_TAG.test(name) || imported.has(name)) && !SELF_PROTECTING.has(name) && !NOT_A_PICTURE[name];
+};
 
 /** Decorative, never a person's picture. Each needs a reason; a stale entry fails the guard below. */
 const ALLOWED: Record<string, string> = {
@@ -30,7 +86,7 @@ const ALLOWED: Record<string, string> = {
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 /** Opening tags of picture elements, read with brace depth so `=>` and `>` inside `{}` do not end a tag early. */
-export function pictureTags(source: string, wanted: (name: string) => boolean = isPictureTag): { tag: string; text: string }[] {
+export function pictureTags(source: string, wanted: (name: string) => boolean = picturePredicate(source)): { tag: string; text: string }[] {
   const code = stripComments(source);
   const found: { tag: string; text: string }[] = [];
   const open = /<([A-Za-z][\w.]*)/g;
@@ -130,5 +186,52 @@ describe('[NS-33-R11] Smart Invert ignores pictures', () => {
     expect(frameProblems(real.replace('accessible accessibilityIgnoresInvertColors accessibilityRole', 'accessible accessibilityRole'))).toEqual(['View']); // the blank box loses it
     expect(frameProblems(real.replace(/accessibilityIgnoresInvertColors/g, 'accessibilityIgnoresInvertColors={false}'))).toEqual(['Image', 'View']);
     expect(frameProblems('export function PhotoFrame() { return null; }')).toEqual(['no Image', 'no blank box']);
+  });
+
+  // BL-1443: the guard reads import sources and an explicit allowlist, not tag names and a suffix.
+  const aliased = readFileSync(join(APP, 'test/fixtures/smart-invert/aliased-image-without-prop.fixture.txt'), 'utf8');
+  const aliasedOk = readFileSync(join(APP, 'test/fixtures/smart-invert/aliased-image-with-prop.fixture.txt'), 'utf8');
+
+  it('[NS-33-R11] an aliased or third-party image without the prop fails the scan', () => {
+    expect(offenders(aliased)).toEqual(['Pic', 'ExpoPic', 'FastImage', 'Snap', 'ImageBackground']);
+  });
+
+  it('[NS-33-R11] the same aliased images pass once each sets the prop', () => {
+    expect(offenders(aliasedOk)).toEqual([]);
+  });
+
+  it('[NS-33-R11] mutant: a tag-name-only scan (the old guard) misses the aliased images, the import-source scan does not', () => {
+    const byNameOnly = (src: string) => pictureTags(src, (n) => PICTURE_TAG.test(n)).filter((t) => !setsProp(t.text)).map((t) => t.tag);
+    expect(byNameOnly(aliased)).toEqual(['ImageBackground']); // five images, the old guard sees one
+    expect(offenders(aliased)).toHaveLength(5);
+  });
+
+  it('[NS-33-R11] import sources: react-native, expo-image, svg and fast-image, with aliases, namespaces and const aliases', () => {
+    expect([...imageNames(aliased)].sort()).toEqual(['ExpoPic', 'FastImage', 'Image', 'ImageBackground', 'Pic', 'Snap']);
+    expect([...imageNames("import * as RN from 'react-native';")]).toEqual(['RN.Image', 'RN.ImageBackground']);
+    expect(offenders("import * as RN from 'react-native';\n<RN.Image source={s} />")).toEqual(['RN.Image']);
+    expect([...imageNames("import { View, Text as T } from 'react-native';")]).toEqual([]); // not images
+    expect(offenders("import { Image } from 'some-other-package';\n<Pane />")).toEqual([]);
+  });
+
+  it('[NS-33-R11] a name ending in Button is not exempt by its suffix: only the explicit allowlist passes', () => {
+    expect(offenders('<PhotoStartButton onPress={f} />')).toEqual([]); // allowlisted, with a reason
+    expect(offenders('<PhotoSaveButton uri={u} />')).toEqual(['PhotoSaveButton']); // same suffix, not on the list
+    expect(offenders('<ThumbnailButton uri={u} />')).toEqual(['ThumbnailButton']);
+  });
+
+  it('[NS-33-R11] every allowlisted name has a reason and still appears in src (no stale entry)', () => {
+    const text = all.map((f) => readFileSync(f, 'utf8')).join('\n');
+    for (const [name, why] of Object.entries(NOT_A_PICTURE)) {
+      expect(why.length, name).toBeGreaterThan(10);
+      expect(text.includes(`<${name}`) || text.includes(`function ${name}`) || text.includes(`const ${name}`), name).toBe(true);
+    }
+  });
+
+  it('[NS-33-R11] bare PictureCard and Avatar call sites are checked (BL-1443 stricter default)', () => {
+    expect(offenders('<PictureCard uri={u} />')).toEqual(['PictureCard']);
+    expect(offenders('<Avatar uri={u} />')).toEqual(['Avatar']);
+    expect(offenders(`<PictureCard uri={u} ${PROP} />`)).toEqual([]);
+    expect(offenders(`<Avatar uri={u} ${PROP} />`)).toEqual([]);
   });
 });
