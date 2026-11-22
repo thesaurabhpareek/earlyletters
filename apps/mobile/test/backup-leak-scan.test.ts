@@ -312,6 +312,19 @@ describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
     expect(ms).toBeLessThan(250);
   });
 
+  it('[BL-1476] padding in the middle: a 20+ line, a short padded line, then the leak line is still found (raw and JSON-escaped breaks)', () => {
+    const lead = 'A'.repeat(24);
+    const leak = plain.subarray(100, 164).toString('base64');
+    for (const [name, brk] of [['CRLF', '\r\n'], ['LF', '\n'], ['JSON-escaped', '\\n']] as const) {
+      const text = `${lead}${brk}abcd==${brk}${leak}`;
+      expect(firstLeak(Buffer.from(text), plain), name).not.toBeNull();
+      expect(firstLeak(Buffer.from(JSON.stringify({ k: text })), plain), `${name} in JSON`).not.toBeNull();
+    }
+    const wrapped = wrap(leak, 22, '\n');
+    expect(firstLeak(Buffer.from(`${lead}\nabcd==\n${wrapped}`), plain), 'leak wrapped after padding').not.toBeNull();
+    expect(firstLeak(Buffer.from(JSON.stringify(`${lead}\nabcd==\n${leak}`)), plain), 'JSON.stringify escapes').not.toBeNull();
+  });
+
   it('[BL-1476] the named gap stays open: base64 wrapped with spaces or tabs, or broken inside the first 20 characters, is not found', () => {
     const b64 = plain.subarray(100, 164).toString('base64');
     expect(firstLeak(around(Buffer.from(wrap(b64, 20, ' '))), plain), 'spaces').toBeNull();

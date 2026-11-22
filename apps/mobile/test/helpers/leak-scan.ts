@@ -25,7 +25,7 @@
  * [BL-1476] Four more text forms are decoded before the shingle scan: hex with space or colon separators (`89 50 4e`,
  * `89:50:4e`), hex with a `0x` prefix per byte (`0x89, 0x50`), percent-encoded bytes (`%89%50`, with plain characters
  * left in between), and base64 wrapped over lines (a raw or JSON-escaped line break between the lines).
- * Wrapped base64 is matched in linear time (a 256 KB body takes well under a second; the first version backtracked
+ * Wrapped base64 is matched in linear time, and each line is also scanned alone (padding may sit on any line, and Node stops decoding at the first `=`) (a 256 KB body takes well under a second; the first version backtracked
  * quadratically). Known gap: base64 wrapped with spaces or tabs between the lines, or broken inside its first 20
  * characters (or with a line under 4 characters in the middle), is not decoded, so a recording written that way passes the scan.
  */
@@ -127,18 +127,17 @@ export function wrappedBase64Spans(text: string): Array<{ flat: string; start: n
 export function decodedViews(hay: Uint8Array): Buffer[] {
   const text = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength).toString('latin1');
   const out: Buffer[] = [];
-  // The lines of a wrapped run are decoded joined, below; decoding each line alone as well would only repeat the work 4 times per line.
-  const wrapped = wrappedBase64Spans(text);
-  const pieces: string[] = [];
-  let from = 0;
-  for (const w of wrapped) { pieces.push(text.slice(from, w.start), ' '.repeat(w.end - w.start)); from = w.end; }
-  pieces.push(text.slice(from));
-  const single = pieces.join('');
-  for (const m of single.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
+  // Single-run pass on the original text, never blanked: Node's decoder stops at the first '=', so a joined run with padding
+  // in the middle would hide the lines after it. Each line is also found alone here.
+  for (const m of text.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
   for (const m of text.matchAll(HEX_RUN)) for (let c = 0; c < 2; c++) out.push(Buffer.from(m[0].slice(c), 'hex'));
   for (const m of text.matchAll(SEP_HEX_RUN)) out.push(Buffer.from(m[0].replace(/0x|[ :,]/gi, ''), 'hex'));
-  for (const { flat } of wrapped) {
-    for (let c = 0; c < 4; c++) out.push(Buffer.from(flat.slice(c), 'base64'));
+  // Joined lines: split at each run of '=' (padding may sit on any line), then decode each piece at the four alignments.
+  for (const { flat } of wrappedBase64Spans(text)) {
+    for (const piece of flat.split(/=+/)) {
+      if (piece.length < 22) continue;
+      for (let c = 0; c < 4; c++) out.push(Buffer.from(piece.slice(c), 'base64'));
+    }
   }
   if (text.includes('%')) {
     const plainText = text.replace(PERCENT_BYTE, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
