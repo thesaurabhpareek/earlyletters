@@ -65,7 +65,7 @@ describe('[NS-01-R4][NS-01-R52] leaving without the letter takes the picked pict
     const start = body('lib/photos/use-photo-start.ts', 'useFocusEffect(', '\n  );');
     expect(start).toMatch(/useCallback\(\(\) => \{\s*void getPending\(\)\?\.discard\(\);\s*\}, \[\]\)/);
   });
-  it('[NS-01-R5][NS-01-R17] Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
+  it('[NS-01-R5b] Review\'s Keep stores the pending picture once the letter exists, before it finishes', () => {
     const save = body('app/review.tsx', 'const save = async (inBook: boolean) => {', 'const keepRecordingOnly =');
     const kept = save.indexOf('saveLetterFromDraft(');
     const stored = save.indexOf('await commitPendingPhoto(draft.id, finalText);');
@@ -150,8 +150,8 @@ describe('[NS-01-R3] the prompt does not depend on the picture', () => {
   });
 });
 
-describe('[NS-01-R13][NX-39-R36] the switcher snapshot is blank', () => {
-  it('[NS-01-R13][NX-39-R36] with App lock on, a picture is not drawn when the app is not in front or not unlocked', () => {
+describe('[NS-01-R13a][NS-01-R13b][NX-39-R36] the switcher snapshot is blank', () => {
+  it('[NS-01-R13a][NS-01-R13b][NX-39-R36] with App lock on, a picture is not drawn when the app is not in front or not unlocked', () => {
     for (const phase of ['inactive', 'background'] as const) expect(pictureHidden({ lockOn: true, unlocked: true, phase })).toBe(true);
     expect(pictureHidden({ lockOn: true, unlocked: false, phase: 'active' })).toBe(true); // cold open
     expect(pictureHidden({ lockOn: true, unlocked: true, phase: 'active' })).toBe(false);
@@ -362,7 +362,7 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
   it.fails('[NS-01-R50] writing tools are off on photo words and place', () => {
     expect(PHOTO_WORDS_WRITING_TOOLS_OFF, 'OPEN: R50 needs the native setting of ADR 0039').toBe(true);
   });
-  it('[NS-01-R50b] the fields stay off in production until the setting exists', () => {
+  it('[NS-01-R50] the fields stay off in production until the setting exists', () => {
     expect(photoWordsFieldsShown('production', false)).toBe(false);
     expect(photoWordsFieldsShown('preview', false)).toBe(true);
     expect(photoWordsFieldsShown('development', false)).toBe(true);
@@ -401,8 +401,8 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
   });
 });
 
-describe('[NS-01-R20] new controls', () => {
-  it('[NS-01-R20] every new control is a Button of size md or lg (44 pt or more), and on Listen the thumbnail reads before the prompt', () => {
+describe('[NS-01-R20a][NS-01-R20b] new controls', () => {
+  it('[NS-01-R20a][NS-01-R20b] every new control is a Button of size md or lg (44 pt or more), and on Listen the thumbnail reads before the prompt', () => {
     const md = /BUTTON_MIN_HEIGHT = \{[^}]*\bmd: (\d+)/.exec(readFileSync(join(SRC, 'components', 'ui', 'button.tsx'), 'utf8'));
     expect(Number(md?.[1])).toBeGreaterThanOrEqual(Math.max(44, tokens.target.min));
     for (const f of walk(join(SRC, 'components', 'photos'))) {
@@ -426,7 +426,7 @@ describe('[NS-01-R20] new controls', () => {
     const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
     expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
   });
-  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use the shared ErrorLine (components/ui), which announces it and is a live region (#838 review B)', () => {
+  it('[NS-01-R17a][NS-33] "That photo could not be opened" is said aloud: both places use the shared ErrorLine (components/ui), which announces it and is a live region (#838 review B)', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
       expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
@@ -448,7 +448,7 @@ describe('[NS-01-R20] new controls', () => {
     expect(photo).toBeLessThan(review.indexOf('{inlineFooter ? keepFooter : null}'));
     expect(photo).toBeLessThan(review.indexOf('</ScrollView>')); // the pinned footer is after the scroll
   });
-  it('[NS-01-R17][NS-33] on a draft the not-stored line never says kept, and it and both openFailed lines are said aloud (#839 review B)', () => {
+  it('[NS-01-R17a][NS-01-R58][NS-33] on a draft the not-stored line never says kept, and it and both openFailed lines are said aloud (#839 review B)', () => {
     const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).toMatch(/<SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\}/);
     expect(photos.review.notStored).not.toMatch(/\bke(pt|ep)/i);
@@ -458,7 +458,7 @@ describe('[NS-01-R20] new controls', () => {
     expect(page.match(/<ErrorLine message=\{failed \|\| pick\.failed \? photos\.capture\.openFailed : null\} \/>/g)).toHaveLength(2);
     expect(page).not.toMatch(/>\{photos\.capture\.openFailed\}</);
   });
-  it('[NS-01-R20][review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
+  it('[review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
     }
@@ -534,7 +534,7 @@ describe('[NS-01-R20] new controls', () => {
     // No prompt key literal reaches a capture start from Home.
     expect(home).not.toMatch(/startCapture\(\{[^}]*key: ['"`]/);
   });
-  it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
+  it('[NS-01-R20a] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');
     expect(src).toMatch(/variant="quiet"/);
     expect(src).toMatch(/size="md"/);
@@ -555,7 +555,7 @@ describe('[NS-01-R22] the system picker is the only source', () => {
   });
 });
 
-describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exactly one checked', () => {
+describe('[NS-01-R10a][NS-33-R3] the lens is one radio group of two radios, exactly one checked', () => {
   it('[NS-01-R48] the lens choice is a radio group: [NS-33-R3] LensRow is a segmented ChoiceGroup labelled for VoiceOver, never a tablist of buttons, and the group gives radiogroup, radio and checked', () => {
     const lens = readFileSync(join(SRC, 'components', 'photos', 'photos-lens.tsx'), 'utf8');
     const row = lens.slice(lens.indexOf('export function LensRow'), lens.indexOf('\n}\n', lens.indexOf('export function LensRow')));
@@ -570,7 +570,7 @@ describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exact
     expect(group).toMatch(/accessibilityRole="radio"\s+accessibilityState=\{\{ checked \}\}/);
     expect(photos.book.lens.label.length).toBeGreaterThan(0);
   });
-  it('[NS-33-R3][NS-01-R10] the lens row stays mounted across the switch: both lenses are the one SectionList, the row in its header (#840 review A)', () => {
+  it('[NS-33-R3][NS-01-R10a] the lens row stays mounted across the switch: both lenses are the one SectionList, the row in its header (#840 review A)', () => {
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
     expect(book.match(/<LensRow /g)).toHaveLength(1);
     expect(book.match(/<AnimatedSectionList\b/g)).toHaveLength(1);
@@ -596,8 +596,8 @@ describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exact
   });
 });
 
-describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
-  it('[NS-01-R23] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
+describe('[NS-01-R23a][NS-01-R23b] the Book empty button only moves to Home; the lens cannot start a letter', () => {
+  it('[NS-01-R23a] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
     const f = join(SRC, 'app', '(tabs)', 'book.tsx');
     const sf = parse(f);
     let found = false;
@@ -625,7 +625,7 @@ describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot 
     }
     expect(Object.keys(photos.book.lens).filter((k) => /add|start/i.test(k))).toEqual([]);
   });
-  it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
+  it('[NS-01-R23b] the lens copy has no "Add photos" button word', () => {
     expect(JSON.stringify(photos.book.lens)).not.toMatch(/add/i);
   });
 });
