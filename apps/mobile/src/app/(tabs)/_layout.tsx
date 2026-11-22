@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
+import { ImagesIcon } from 'phosphor-react-native/src/icons/Images';
 import { MoonStarsIcon } from 'phosphor-react-native/src/icons/MoonStars';
 import { UserIcon } from 'phosphor-react-native/src/icons/User';
 import type { Icon } from 'phosphor-react-native';
@@ -13,6 +14,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
+import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility } from '@/lib/nav/moments-tab';
 import { youTabHint } from '@/components/settings/you-tab-hint';
 
 /**
@@ -35,6 +37,7 @@ import { youTabHint } from '@/components/settings/you-tab-hint';
  */
 const BAR = 58;
 const t = copy.tabs;
+const momentsLabel = momentsTabLabel(t);
 
 export default function TabsLayout() {
   const { c } = useTheme();
@@ -77,6 +80,8 @@ export default function TabsLayout() {
             },
           }}>
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
+          {/* Moments (PRD 28, CPO-17): second of four, behind EXPO_PUBLIC_MOMENTS_TAB. Flag off, the route is hidden from the bar. */}
+          <Tabs.Screen name="moments" options={{ title: momentsLabel, tabBarIcon: icon(ImagesIcon), tabBarButton: button(momentsLabel), ...momentsTabVisibility(MOMENTS_TAB_ON) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
           {/* Me (NX-30a, founder 9 Nov; named Me on 11 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
               last in the bar. It has no lamp and no Back; the header carries the one title, the tab's own (NS-33-R2). Its rows push the Settings pages
