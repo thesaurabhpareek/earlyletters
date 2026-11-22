@@ -188,7 +188,7 @@ describe('[F16-REQ-018] switch on, signed in: the remote kill switch through sta
     store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
     const stop = sync.startSync();
     auth.publishAuth({ status: 'ready', userId: MAMA, sync: 'on' });
-    // BL-347 (F02-REQ-019): this phone's book belongs to no account yet, so sync waits for "Keep them here".
+    // BL-347 (F02-REQ-019): this phone's book belongs to no account yet, so sync waits for "Keep in this account".
     expect(auth.syncAllowed()).toBe(false);
     expect(spies.createSyncEngine).not.toHaveBeenCalled();
     auth.confirmAccountClaim(MAMA);
@@ -216,7 +216,7 @@ describe('[F16-REQ-018] switch on, signed in: the remote kill switch through sta
     store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
     const stop = sync.startSync();
     auth.publishAuth({ status: 'ready', userId: MAMA, sync: 'on' });
-    // BL-347 (F02-REQ-019): this phone's book belongs to no account yet, so sync waits for "Keep them here".
+    // BL-347 (F02-REQ-019): this phone's book belongs to no account yet, so sync waits for "Keep in this account".
     expect(auth.syncAllowed()).toBe(false);
     expect(spies.createSyncEngine).not.toHaveBeenCalled();
     auth.confirmAccountClaim(MAMA);

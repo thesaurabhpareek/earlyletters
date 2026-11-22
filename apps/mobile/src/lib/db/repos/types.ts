@@ -114,8 +114,9 @@ export interface Member {
  * recording starts); ready: audio closed and hashed, or a typed draft;
  * unrecoverable: the file is empty, kept for the parent to decide;
  * discarding: Let it go was confirmed (F04-REQ-009). The file is deleted next,
- * then the row; a kill in between leaves this state, and the launch sweep only
- * removes the row, never re-attaching the file.
+ * then the row; a kill in between, or a file that will not delete, leaves this
+ * state, and the launch sweep deletes the file if still there, then the row,
+ * never re-attaching the file (capture/sweep.ts, BL-923).
  */
 export type DraftState = 'recording' | 'ready' | 'unrecoverable' | 'discarding';
 

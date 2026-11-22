@@ -5,6 +5,8 @@
  * rules reach these strings through the website and pages copy that quotes
  * them, so the quoting itself is what is pinned here.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en, features, pages, PLUS_PRICE, PLUS_TRIAL, plusPriceLine, site, storeListing } from '../src';
 
@@ -50,5 +52,37 @@ describe('Plus prices (D-082)', () => {
 
   it('[D-083] no in-app string names an amount: the app shows Apple\'s own sheet', () => {
     expect(IN_APP.filter((l) => /\$\d/.test(l.text)).map((l) => l.path)).toEqual([]);
+  });
+});
+
+/**
+ * Comms validation 31 Oct 2026 (SUB-01, SUB-02): the legal documents a buyer opens from Apple's sheet state the same
+ * prices as pricing.ts and the same "What Plus adds" as the store sheet. Counsel notes, appendices and changelogs are
+ * history and are not scanned.
+ */
+describe('[SUB-01, SUB-02] legal documents match the shipping prices and what Plus adds', () => {
+  const LEGAL = join(__dirname, '..', '..', '..', 'docs', 'legal');
+  const body = (file: string) =>
+    readFileSync(join(LEGAL, file), 'utf8')
+      .split(/\n## (?:Appendix|Changelog)/)[0]
+      .split('\n')
+      .filter((l) => !/^\s*(?:>\s*)?\*\*\[COUNSEL/.test(l));
+
+  it.each(['terms-of-service.md', 'subscription-terms.md'])('%s states only the D-082 prices', (file) => {
+    const amounts = body(file).flatMap((l) => [...l.matchAll(/\$\d+\.\d{2}/g)].map((m) => m[0]));
+    expect(amounts.length, file).toBeGreaterThanOrEqual(2);
+    expect(amounts.filter((a) => a !== PLUS_PRICE.monthly && a !== PLUS_PRICE.yearly), file).toEqual([]);
+    expect(amounts).toContain(PLUS_PRICE.monthly);
+    expect(amounts).toContain(PLUS_PRICE.yearly);
+  });
+
+  it('Subscription Terms "What Plus adds" equals billingCopy.store.features, word for word', () => {
+    const text = readFileSync(join(LEGAL, 'subscription-terms.md'), 'utf8');
+    const section = text.split('\n## What Plus adds\n')[1]?.split('\n## ')[0] ?? '';
+    const bullets = section
+      .split('\n')
+      .filter((l) => l.startsWith('- '))
+      .map((l) => l.slice(2).trim());
+    expect(bullets).toEqual([...features.billing.store.features]);
   });
 });

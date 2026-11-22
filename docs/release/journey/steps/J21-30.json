@@ -1,0 +1,33 @@
+{
+  "id": "J21-30",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "From a child's settings",
+  "note": "With the switch on the row opens the invite itself. \"Family can read\" (the family-contributor switch) stays hidden: contributors are not in v1.0 (B1).",
+  "shot": "screens/J21-30.png",
+  "route": "/invite/new",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha Invite Asha's co-parent They can write to Asha and read the whole book, from their own phone. You both sign in, each on your own phone. Sign in",
+  "lines": [
+    "Close",
+    "Asha",
+    "Invite Asha's co-parent",
+    "They can write to Asha and read the whole book, from their own phone.",
+    "You both sign in, each on your own phone.",
+    "Sign in"
+  ]
+}

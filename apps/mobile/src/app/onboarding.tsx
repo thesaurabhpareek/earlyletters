@@ -28,7 +28,7 @@
  * trigger `sign_in`, "I was invited" opens /invite. Both are hidden with server features off. Once sign-in or
  * joining brings a book to this phone, first run is over and the person lands on the Book, never on Tonight.
  */
-import { router, type Href } from 'expo-router';
+import { router, usePathname, type Href } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
@@ -36,14 +36,19 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type Text as RNText, type TextInput } from 'react-native';
+import { appleSignInAvailable } from '@/lib/auth/apple';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, latestDueDate, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
+import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
+import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { firstRunBookNames, firstRunChildBlock } from '@/components/onboarding/child-step.logic';
+import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
 import { WELCOME_LOCKUP } from '@/components/onboarding/welcome-lockup.logic';
@@ -59,7 +64,18 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
-import { capabilities } from '@/lib/capabilities';
+import { useAuth } from '@/lib/auth/session-provider';
+import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
+import { SignedInNote } from '@/components/onboarding/signed-in-note';
+import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
+import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
+import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
+import { HeldScreen, NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
+import { OutageScreen } from '@/components/onboarding/outage-screen';
+import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
+import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
@@ -67,7 +83,13 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
+import { addChild, getActiveChildId, getSetting, listChildren, setActiveChildId, setSetting, subscribe, todayISO } from '@/lib/store';
+import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
+import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
+import { useFirstRunGate } from '@/lib/account-deletion';
+import { useWelcomeJoinWait } from '@/components/family/join-wait';
+import { familyCopy } from '@/lib/family/copy';
+import { PLUS_ALPHA, plusLineFor } from '@/lib/billing/alpha';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -75,8 +97,6 @@ const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
 const MAX_FIRST_RUN_CHILDREN = 6;
 /** The cover takes a typed name after a pause this long, with no motion per letter (S05). */
 const COVER_PAUSE_MS = 300;
-/** With the keyboard up and less free height than this (iPhone SE), the cover steps aside so the form never scrolls (S05). */
-const COVER_MIN_FREE_HEIGHT = 640;
 /** The row that holds Back on every step but the welcome (min-h-12). */
 const BACK_ROW = 48;
 /** The welcome's layout under the lockup (S03): the hero 32 pt below it, the body 16 below that, the free line 12. */
@@ -100,21 +120,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-/** How tall the keyboard is right now (0 when it is down). */
-function useKeyboardHeight(): number {
-  const [height, setHeight] = useState(0);
-  useEffect(() => {
-    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return height;
-}
-
-export default function Onboarding() {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome, onSignedOut }: { localStartChosen?: boolean; onPastWelcome?: () => void; onSignedOut?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -123,23 +129,47 @@ export default function Onboarding() {
   const nameFields = useRef<(TextInput | null)[]>([]);
   const signsAsField = useRef<TextInput>(null);
   const dateField = useRef<DateFieldHandle>(null);
-  const [step, setStep] = useState<Step>('welcome');
+  // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
+  // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
+  // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
+  const { state: authState, configured, account, signOut } = useAuth();
+  const [leaving, setLeaving] = useState(false);
+  // signOut() answers 'done' or 'waiting' (queued letters still uploading) and can reject. Either way the auth state decides
+  // what shows next; this only keeps a second tap from starting another sign-out while one is in flight.
+  const startAgain = () => {
+    if (useAnotherBusy({ pressing: leaving, authStatus: authState.status })) return;
+    setLeaving(true);
+    signOut()
+      // Signed out: the route forgets that the steps were past the welcome, so the person lands on the Welcome (D-160).
+      // A sign-out that is still waiting on uploads, or that failed, leaves the session and the steps as they are.
+      .then((outcome) => {
+        if (outcome === 'done') onSignedOut?.();
+      })
+      .catch(() => undefined)
+      .finally(() => setLeaving(false));
+  };
+  const [start] = useState<Step>(() =>
+    firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
+  );
+  const accountFirst = start !== 'welcome';
+  const [step, setStep] = useState<Step>(start);
   const [names, setNames] = useState<string[]>(['']);
   const [expecting, setExpecting] = useState(false);
   // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days".
   const [birthday, setBirthday] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [signsAs, setSignsAs] = useState('');
-  // The date block arrives once the first letter of the name is in (S05), and stays.
+  // The date block arrives once the first letter of the name is in (S05), and stays. Account first the name is optional,
+  // so the block is there from the start (handoff.logic.ts dateBlockShown) and this only matters to the old flow.
   const [dateShown, setDateShown] = useState(false);
   // The person tapped a Continue that is waiting: the reason line shows its warning mark (S05).
   const [nudged, setNudged] = useState(false);
   // Tapping during "The book is open." lands the cover on its open state at once (S08: any tap completes it).
   const [settled, setSettledOpen] = useState(false);
-  const child = joinNames(names, 'your child');
+  const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  const doors = visibleCoParentDoors(capabilities.coParent);
+  const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
@@ -148,20 +178,51 @@ export default function Onboarding() {
   const typedSignsAs = useSettled(signsAs, COVER_PAUSE_MS);
   const [chosenSignsAs, setChosenSignsAs] = useState<string | null>(null);
   const coverSignsAs = (chosenSignsAs === signsAs ? signsAs : typedSignsAs).trim();
-  const keyboard = useKeyboardHeight();
-  const { height: windowHeight } = useWindowDimensions();
-  const showCover = keyboard === 0 || windowHeight - keyboard >= COVER_MIN_FREE_HEIGHT;
+  // Beside the heading, under it at accessibility text sizes, or away while the keyboard leaves under 480 pt (S05).
+  const coverPlace = useCoverPlace();
 
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this phone, first run is
   // over (no second book is made by mistake), and the person lands on the Book, where the letters that came back
   // are, never on Tonight (EXPERIENCE_PASS 5.8 rows 12 and 13).
+  // Only while the welcome, or the sign-in sheet over it, is in front (components/family/welcome-handoff.logic.ts): the
+  // join sheet waits for Open or Close (S59, P8b), and no other screen is ever pulled back to the Book.
+  // Account first: a person who opened signed in is on the promise step, not the welcome, and has not moved on. If their
+  // account's book arrives it must hand over to the Book, never leave them to make a second book, so that one step is
+  // asked as the welcome (handoff.logic.ts welcomeHandoffStep). The route now holds a signed-in phone with no book on
+  // "Opening your book" until the account has said it has no book (NX-36-S17, lib/first-run/new-phone.logic.ts), so
+  // this is the second guard, for a book that lands under the promise step anyway.
+  const handoffStep = welcomeHandoffStep({ start, step });
+  const pathname = usePathname();
   useEffect(() => {
-    if (step !== 'welcome') return;
+    if (!welcomeMayLeave(handoffStep, pathname)) return;
     const done = () => {
       if (listChildren().length > 0) router.replace('/book');
     };
     done();
     return subscribe(done);
+  }, [handoffStep, pathname]);
+  // Closed the join sheet before the joined book arrived (S59, P8b, critics' pass S2): while it is on its way the welcome
+  // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back. Leaving the
+  // welcome ends the wait.
+  const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
+  const joinLine = joining.line;
+  // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
+  // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
+  // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
+  // The local start was chosen on the outage screen (route) or by tapping "Begin the book" here: either keeps the button.
+  const [chosenHere, setLocalStartChosen] = useState(false);
+  const localStartChosen = chosenOnOutage || chosenHere;
+  const showContinue = continueMayShow({
+    begin: joining.begin,
+    onWelcome: step === 'welcome',
+    authState,
+    localStartChosen,
+    hasLocalBook: () => listChildren().length > 0,
+  });
+  // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
+  useEffect(() => {
+    firstRunWelcome.set(step === 'welcome');
+    return () => firstRunWelcome.set(false);
   }, [step]);
 
   useEffect(() => {
@@ -186,6 +247,12 @@ export default function Onboarding() {
   };
 
   useFocusOnMount(heading, step !== 'welcome', step);
+  // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  // A person who opened signed in is on the promise step and has typed nothing: they are past it only once they move on, so
+  // signing out under it (consent's "Try another way") lands on the Welcome (handoff.logic.ts reportsPastWelcome).
+  useEffect(() => {
+    if (reportsPastWelcome({ start, step })) onPastWelcome?.();
+  }, [start, step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
@@ -197,7 +264,11 @@ export default function Onboarding() {
     return () => clearTimeout(id);
   }, [step, shown]);
 
-  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const next = () => {
+    // "Begin the book" with no session is the local start (R18): remembered here, in memory, so the way back is not closed.
+    if (continueTapIsLocalStart({ onWelcome: step === 'welcome', authState })) setLocalStartChosen(true);
+    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  };
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));
@@ -209,36 +280,31 @@ export default function Onboarding() {
   };
 
   const finish = () => {
+    // Opened signed in, and the session is gone (one frame before the route puts the Welcome back): no book with no account (D-160).
+    if (!finishMayMakeBook({ start, hasSession: hasSessionState(authState) })) return;
     // Every book made in first run is free (twins or more share the date).
     if (childBlock) return;
-    const created = names
-      .map((n) => checkChildName(n))
-      .flatMap((n) => (n.ok ? [n.value] : []))
-      .map((n) =>
-        addChild({
-          name: n,
-          birthday: expecting ? null : birthday,
-          dueDate: expecting ? dueDate : null,
-          signsAs: signsAs.trim(),
-        }),
-      );
+    const created = firstRunBookNames(names).map((n) =>
+      addChild({
+        name: n,
+        birthday: expecting ? null : birthday,
+        dueDate: expecting ? dueDate : null,
+        signsAs: signsAs.trim(),
+      }),
+    );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     router.replace('/');
   };
 
+  // The account-first name field says the name is optional (NX-36 S7); other builds keep "Name" and no help line.
+  const nameWords = (index: number, value: string) =>
+    childNameFieldWords({ accountFirst, index, nearLimit: nearLimit(textLength(value), CHILD_NAME_MAX), multiple: names.length > 1 }, o.child);
+
   // Why Continue is waiting, in words (never only a greyed button).
   const today = todayISO();
-  const childBlock = ((): string | null => {
-    if (names.some((n) => !checkChildName(n).ok)) return names.length > 1 ? o.child.needNameMany : copy.childrenExtra.nameRequired;
-    if (expecting) {
-      if (!dueDate) return o.child.needDueDate;
-      return checkDueDate(dueDate, today).ok ? null : copy.childrenExtra.edit.dueDateRange;
-    }
-    if (!birthday) return fill(o.child.needBirthday, { child: namedCount ? child : 'your child' });
-    return checkBirthday(birthday, today).ok ? null : copy.childrenExtra.edit.birthdayFuture;
-  })();
+  const childBlock = firstRunChildBlock({ names, expecting, birthday, dueDate, today });
   // Twins or more: the reason agrees in number with the title (S06).
   const signsAsBlock = checkSignsAs(signsAs).ok ? null : fill(namedCount > 1 ? o.signsAs.needSignsAsMany : o.signsAs.needSignsAs, { child });
   const block = step === 'child' ? childBlock : step === 'signsAs' ? signsAsBlock : null;
@@ -258,10 +324,35 @@ export default function Onboarding() {
       signsAsField.current?.focus();
       return;
     }
-    const missing = names.findIndex((n) => !checkChildName(n).ok);
+    const missing = names.length > 1 ? names.findIndex((n) => !n.trim()) : -1;
     if (missing >= 0) nameFields.current[missing]?.focus();
     else dateField.current?.focus();
   };
+
+  // Controls never animate in (MOTION principle 2). On every step but the last they follow the step's content in the scroll;
+  // on "The book is open." they are pinned below it (S08): the cover, the line and the speech card scroll above one button.
+  const pinned = step === 'finish';
+  const controls = (
+    <>
+      {block ? <ReasonLine text={block} raised={nudged} /> : null}
+      {joinLine ? (
+        <View className="items-center gap-1 pb-2" testID="onboarding.joinWait">
+          <Text variant="body" className="text-center" accessibilityLiveRegion="polite">
+            {joinLine}
+          </Text>
+          {joining.retry ? <Button variant="quiet" size="sm" label={familyCopy.accept.tryAgain} loading={joining.retrying} onPress={joining.onRetry} testID="onboarding.joinWait.retry" /> : null}
+        </View>
+      ) : null}
+      {showContinue ? (
+        <View>
+          <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
+          {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
+              reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
+          {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
+        </View>
+      ) : null}
+    </>
+  );
 
   // The welcome's words arrive one after another (S03); under Reduce Motion, one fade.
   const enterAt = (ms: number) => (motion.reduced ? motion.enter(0) : motion.enter(0)?.delay(ms));
@@ -279,7 +370,7 @@ export default function Onboarding() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
-            {step !== 'welcome' && <BackButton onPress={back} />}
+            {backShown({ accountFirst, step }) && <BackButton onPress={back} />}
           </View>
 
           {shown === step ? (
@@ -300,12 +391,12 @@ export default function Onboarding() {
                   </Animated.View>
                   <Animated.View entering={enterAt(150)} style={{ marginTop: WELCOME.bodyGap }}>
                     <Text variant="body" tone="muted" className="text-center">
-                      {fill(o.welcome.body, { child: 'your child' })}
+                      {fill(o.welcome.body, { child: o.childFallback })}
                     </Text>
                   </Animated.View>
                   <Animated.View entering={enterAt(180)} style={{ marginTop: WELCOME.freeGap }}>
                     <Text variant="footnote" className="text-center">
-                      {o.welcome.freeLine}
+                      {plusLineFor(PLUS_ALPHA, o.welcome.freeLine)}
                     </Text>
                   </Animated.View>
                 </>
@@ -322,7 +413,7 @@ export default function Onboarding() {
                   {/* A small fix, shown: the real engine's marks on a fictional sentence (S04). */}
                   <PromiseSample />
                   <View className="gap-6">
-                    <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: 'your child' })} />
+                    <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: o.childFallback })} />
                     <IconRow icon={LockSimpleIcon} text={o.promise.privateNote} />
                   </View>
                 </>
@@ -330,16 +421,9 @@ export default function Onboarding() {
 
               {step === 'child' && (
                 <>
-                  <View className="flex-row items-start gap-4">
-                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                      {o.child.title}
-                    </Text>
-                    {showCover ? (
-                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                        <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
-                      </Animated.View>
-                    ) : null}
-                  </View>
+                  <CoverHeading title={o.child.title} headingRef={heading} place={coverPlace}>
+                    <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                  </CoverHeading>
                   <View className="gap-3">
                     {names.map((n, i) => (
                       <TextField
@@ -347,7 +431,8 @@ export default function Onboarding() {
                         ref={(r) => {
                           nameFields.current[i] = r;
                         }}
-                        label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
+                        label={i === 0 ? nameWords(i, n).label : o.child.nameLabelMore}
+                        face="serif"
                         value={n}
                         onChangeText={(v) => setNameAt(i, v)}
                         placeholder={i === 0 ? o.child.namePlaceholder : undefined}
@@ -362,7 +447,7 @@ export default function Onboarding() {
                             ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
                             : i === names.length - 1 && names.length > 1
                               ? o.child.addAnotherHelp
-                              : undefined
+                              : (nameWords(i, n).help ?? undefined)
                         }
                         trailing={
                           i > 0 ? (
@@ -375,14 +460,14 @@ export default function Onboarding() {
                       <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
                     )}
                   </View>
-                  {dateShown ? (
-                    <Animated.View entering={motion.enter()} className="gap-4">
+                  {dateBlockShown({ dateShown, accountFirst }) ? (
+                    <Animated.View entering={accountFirst ? undefined : motion.enter()} className="gap-4">
                       <ChoiceGroup
-                        label={o.child.birthdayLabel}
+                        label={o.child.bornQuestion}
                         value={expecting ? 'expecting' : 'born'}
                         onChange={(v) => setExpecting(v === 'expecting')}
                         options={[
-                          { value: 'born', label: o.child.birthdayLabel },
+                          { value: 'born', label: o.child.bornLabel },
                           { value: 'expecting', label: o.child.expectingLabel },
                         ]}
                       />
@@ -402,8 +487,7 @@ export default function Onboarding() {
                               value={expecting ? dueDate : birthday}
                               onChange={expecting ? setDueDate : setBirthday}
                               startISO={today}
-                              min={expecting ? today : undefined}
-                              max={expecting ? latestDueDate(today) : today}
+                              {...dateRange(expecting ? 'due' : 'born', today)}
                             />
                           </View>
                         </View>
@@ -411,22 +495,19 @@ export default function Onboarding() {
                       </View>
                     </Animated.View>
                   ) : null}
+                  {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
+                  {accountFirst && hasSessionState(authState) ? (
+                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={startAgain} busy={useAnotherBusy({ pressing: leaving, authStatus: authState.status })} />
+                  ) : null}
                 </>
               )}
 
               {step === 'signsAs' && (
                 <>
-                  <View className="flex-row items-start gap-4">
-                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                      {signsAsTitle}
-                    </Text>
-                    {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
-                    {showCover ? (
-                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                        <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
-                      </Animated.View>
-                    ) : null}
-                  </View>
+                  {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
+                  <CoverHeading title={signsAsTitle} headingRef={heading} place={coverPlace}>
+                    <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                  </CoverHeading>
                   <TextField
                     ref={signsAsField}
                     label={signsAsTitle}
@@ -449,18 +530,20 @@ export default function Onboarding() {
                     </ChipGroup>
                     <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
-                  {/* The spoken language, under a hairline, with no footer (S06). */}
-                  <View className="gap-4">
-                    <Separator />
-                    <ListSection>
-                      <ListRow
-                        title={copy.settingsHome.languageLabel}
-                        trailing={languageInfo(spoken.primary.code).native}
-                        onPress={() => setLanguageOpen(true)}
-                        accessibilityHint={languageCopy.picker.rowHint}
-                      />
-                    </ListSection>
-                  </View>
+                  {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
+                  {showOnboardingLanguageRow(hearsOnlyEnglish(heardLanguagesForBuild())) && (
+                    <View className="gap-4">
+                      <Separator />
+                      <ListSection>
+                        <ListRow
+                          title={copy.settingsHome.languageLabel}
+                          trailing={languageInfo(spoken.primary.code).native}
+                          onPress={() => setLanguageOpen(true)}
+                          accessibilityHint={languageCopy.picker.rowHint}
+                        />
+                      </ListSection>
+                    </View>
+                  )}
                 </>
               )}
 
@@ -491,6 +574,7 @@ export default function Onboarding() {
                   <View className="self-stretch">
                     <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
                   </View>
+                  {/* No app lock offer here (NS-39-R9, NX-31-R14): the lock is offered from Settings, App lock. */}
                 </>
               )}
             </Animated.View>
@@ -499,14 +583,7 @@ export default function Onboarding() {
             <View className="flex-1" testID="onboarding.handoff" />
           )}
 
-          {/* Controls never animate in (MOTION principle 2). */}
-          {block ? <ReasonLine text={block} raised={nudged} /> : null}
-          <View>
-            <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
-            {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
-                reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
-            {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
-          </View>
+          {pinned ? null : controls}
           {step === 'welcome' && (capabilities.signIn || doors.joinButton) && (
             // Two doors, not offers: quiet text, no icon, no border, no line about accounts (S03).
             <View className={largeText ? 'mt-2 items-center' : 'mt-2 flex-row flex-wrap justify-center'} style={{ columnGap: WELCOME.doorGap }}>
@@ -516,13 +593,16 @@ export default function Onboarding() {
                 </Button>
               ) : null}
               {doors.joinButton ? (
-                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)}>
+                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent, PLUS_ALPHA) as Href)}>
                   <Text variant="callout">{o.welcome.joinButton}</Text>
                 </Button>
               ) : null}
             </View>
           )}
         </ScrollView>
+        {/* "The book is open." pins its one primary below the scroll, so "Write the first one" is whole on an iPhone SE and
+            is the first thing reached at accessibility text sizes, whatever the speech card above it grows to (S08). */}
+        {pinned ? <View className="px-6 pb-6 pt-3">{controls}</View> : null}
       </KeyboardAvoidingView>
       <LanguagePicker visible={languageOpen} onClose={() => setLanguageOpen(false)} onSelect={chooseLanguage} selected={spoken.primary.code} />
     </SafeAreaView>
@@ -563,4 +643,65 @@ function ReasonLine({ text, raised }: { text: string; raised: boolean }) {
       )}
     </Animated.View>
   );
+}
+
+/**
+ * The route every "no book" path ends at: a cold launch with no book, Tonight, the Book tab and the Family tab (each
+ * redirects here), and a sign-in on another phone. While a request to delete the account is open it is never the
+ * welcome: the deletion screen takes its place, so "Begin the book" is not offered and a book cannot be made over the
+ * request (lib/account-deletion/open-request.ts chooseScreen; critics' pass 30 Oct 2026, M1).
+ */
+export default function Onboarding() {
+  const gate = useFirstRunGate();
+  if (gate.screen === 'deletion' && gate.request) return <OpenDeletionScreen request={gate.request} />;
+  if (gate.screen === 'checking') return <CheckingScreen />;
+  return <FirstRun />;
+}
+
+/**
+ * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
+ * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. A signed-in phone with no book is "Opening your
+ * book" (NX-36-S17: the loading, slow, offline and No book here yet screens, components/onboarding/new-phone-screens.tsx)
+ * until its account has said it has no book; when the book arrives, Tonight. Everything else, and every build with the
+ * switch off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step
+ * of the steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
+ */
+function FirstRun() {
+  const route = useFirstRunRoute();
+  const { signOut, lastMethod, signInWithApple, state: authState } = useAuth();
+  // NS-41-R12 (card 19): Apple stays reachable when a 429 on SENDING an email (`email_wait`) put the person here, and only then.
+  const emailWait = authState.status === 'signedOut' && authState.error === 'email_wait';
+  // FP-6: Apple's button on the outage screen, only where Apple sign-in is available on this phone.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleAvailable);
+  }, []);
+  const method = methodLine(lastMethod);
+  // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
+  // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
+  // settings table when the store is erased (lib/store.ts eraseEverythingLocal; the Settings row behind it is not offered
+  // on a phone that has signed in, so on such a phone only a fresh install reaches that: nothing in account deletion calls
+  // eraseEverythingLocal or releases the owner).
+  useEffect(() => {
+    if (!route.arrivedFromAccount) return;
+    const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));
+    if (next) setSetting(ARRIVAL_SETTING, next);
+    router.replace('/');
+  }, [route.arrivedFromAccount]);
+  // "Try another way" signs out; the session ending puts the route back on the Welcome (use-first-run-route.ts). A sign-out
+  // that fails leaves the screen as it is (the person can try again), and is never an unhandled rejection.
+  const tryAnother = () => {
+    signOut().catch(() => undefined);
+  };
+  if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen lettersComing={route.accountHasBook} />;
+  if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.screen === 'finishSetup') return <HeldScreen onTryAnother={tryAnother} />;
+  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} method={method} />;
+  if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
+  if (route.screen === 'welcome') return <WelcomeSignIn />;
+  if (route.screen === 'outage' && route.outage) {
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} onApple={appleAvailable && emailWait ? () => void signInWithApple() : undefined} />;
+  }
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }

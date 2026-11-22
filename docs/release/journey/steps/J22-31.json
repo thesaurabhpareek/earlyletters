@@ -1,0 +1,34 @@
+{
+  "id": "J22-31",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Sign in, from Account",
+  "note": "The same sheet, about this book: what signing in makes true, in one sentence.",
+  "from": "J22-30",
+  "shot": "screens/J22-31.png",
+  "route": "/sign-in",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Sign in Your letters come with you to a new phone, and Asha's other parent can write in the same book. Asha Continue with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
+  "lines": [
+    "Sign in",
+    "Your letters come with you to a new phone, and Asha's other parent can write in the same book.",
+    "Asha",
+    "Continue with email",
+    "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+    "Not now"
+  ]
+}

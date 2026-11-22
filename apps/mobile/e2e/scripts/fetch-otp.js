@@ -18,11 +18,20 @@
 //   Address, Text, HTML: Assumption from the Mailpit API v1; check on first run.
 //
 // The code length follows MAESTRO_OTP_LENGTH (default 6, AUTH_SETUP 4.4).
+// OTP_PURPOSE=link (E2E-12 LINK=1) needs the token hash from the real email, so only mailpit serves it.
 
 var email = typeof E2E_EMAIL !== 'undefined' ? String(E2E_EMAIL) : '';
 var source = typeof OTP_SOURCE !== 'undefined' && OTP_SOURCE ? String(OTP_SOURCE) : 'admin';
+var purpose = typeof OTP_PURPOSE !== 'undefined' && OTP_PURPOSE ? String(OTP_PURPOSE) : 'code';
 var otpLength = parseInt(output.e2e.readVar('MAESTRO_OTP_LENGTH') || '6', 10);
 if (!email) throw new Error('E2E_EMAIL is not set');
+// SIGN-03: the link path needs the link from the email the app asked for (it carries this phone's PKCE
+// challenge). generate_link mints a new non-PKCE token, so GET /verify answers with tokens in the fragment
+// and the app refuses them (email-link.logic.ts, "This link can't be used here"): fail now, with the reason.
+if (purpose === 'link' && source !== 'mailpit') {
+  throw new Error('The link variant (LINK=1) needs OTP_SOURCE=mailpit and a local stack with our templates (SIGN-02); ' +
+    'admin generate_link mints a non-PKCE link that the app refuses by design.');
+}
 
 function codeFrom(text) {
   var re = new RegExp('(?:^|\\D)(\\d{' + otpLength + '})(?:\\D|$)');
@@ -73,6 +82,9 @@ if (source === 'admin') {
   output.tokenHash = link ? link[1] : '';
   output.userId = '';
   if (!output.otp) throw new Error('no ' + otpLength + '-digit code in the email');
+  if (purpose === 'link' && !output.tokenHash) {
+    throw new Error('no token_hash link in the email: the stack sends the default template, not ours (SIGN-02, supabase/templates)');
+  }
 } else {
   throw new Error('OTP_SOURCE must be admin or mailpit');
 }

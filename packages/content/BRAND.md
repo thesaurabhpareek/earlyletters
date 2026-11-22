@@ -4,13 +4,15 @@ The name, store name, category, tagline and print title live in `packages/brand/
 
 ## Positioning statement
 
-For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice, exactly as you said them, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+For parents of young children who would rather talk than write, Early Letters keeps letters to your child, in your own words and voice. You talk for a minute, or type, and each letter goes into your child's book with the recording beside it. Unlike fill-in-the-blank baby books, photo apps or journals that write for you, it never rewrites a word: every small fix is marked and can be undone. It stays in your words, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+
+Positioning A, founder decision D-139 (1 Nov 2026). It replaces the descriptor "the baby memory book you fill by talking" and the store name "Early Letters: Memory Book".
 
 ## Naming system
 
 - **Early Letters** is the brand. Never alone on first mention to a new audience.
-- **Early Letters + memory book** is how we introduce ourselves, with one descriptor only: "Early Letters, the baby memory book you fill by talking." Use at any first contact: App Store, homepage hero, ads.
-- **Early Letters: Memory Book** is the App Store name only.
+- **Early Letters + the descriptor** is how we introduce ourselves, with one descriptor only: "Early Letters: letters to your child, in your own words and voice." Use at any first contact: App Store description's first line, homepage, link previews, ads, the app's one-line description (`en.app.oneLine`). Where the name is already on screen (a logo, a title), the line stands alone: "Letters to your child, in your own words and voice."
+- **Early Letters: Baby Journal** is the App Store name only, with the subtitle "For parents who'd rather talk" (`packages/brand`). "Journal" is there for search; it never names the product in prose.
 - **Early Letters** alone is fine once context is set: after the hero, in email to existing users, in the app.
 - **Early Letters: Year One**, **Year Two**, and so on, name the printed books. No other book-line names.
 - **Notes** and **letters** are the two things people make. A note is quick. A letter is longer. Both live in the memory book.
@@ -20,16 +22,16 @@ For parents of young children, Early Letters is the baby memory book you fill by
 
 ## Messaging pillars
 
-### 1. Exactly as you said it
+### 1. It stays in your words
 Your words, never ours.
-- On-device transcription only fixes microphone and grammar slips.
+- On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
 - We never rewrite your words. Every sentence is one the person actually said.
-- Every language stays as spoken: seven languages at v1.0, each in its own script, never translated. Hindi and English in one sentence arrives in v1.1.
+- Every language stays as spoken, each in its own script, never translated. Seven languages is the plan (D-056); the first store build is English only (D-121), and each language appears after its own gate (D-125 item 2). Don't promise one in public copy until it ships. Hindi and English in one sentence arrives in v1.1.
 
 ### 2. A voice to come back to
 Read it, and hear it.
-- The original recording is kept with each letter, on your phone by default, with optional encrypted backup that only you can restore or play (D-073). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
+- The original recording is kept with each letter, on your phone by default, with optional encrypted backup. We hold a recovery key, and the copy says so (D-102). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
 - Read together plays your letters in your own voice at bedtime. The moving word highlight arrives in v1.1.
 - Free PDF export any time. Printed books, starting with Early Letters: Year One, come later.
 
@@ -41,6 +43,8 @@ Love from everyone, pressure from no one.
 - Organised by month of age.
 
 ## Contrast lines
+
+Website and store only, never in the app, an email or a push. Owner: CMO. Open for the CMO (`WRITING-GUIDE.md` section 1): these lines use "not X, Y" and "Just talk", which the writing guide lists as tells, and "Every sentence is one you actually said" was found false under D-133 by the council review. Not edited here.
 
 **Versus fill-in-the-blank baby books:** "No blanks to fill. Just talk, and the page is yours."
 "Not 'First word: ____'. The whole story of the first word, told by the person who heard it."
@@ -82,8 +86,9 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Concept | Use | Banned in copy | Notes |
 |---|---|---|---|
 | The product | Early Letters (from `brand.name`) | EL, the app (as a name), Scribe, Lumira, Letters (alone) | Never typed in `packages/content/src`. |
-| Descriptor | "the baby memory book you fill by talking" | "the memory book you fill by talking", other variants | One descriptor everywhere. |
-| What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except about paper competitors), album, scrapbook | Store keywords may keep search terms. |
+| Descriptor | "letters to your child, in your own words and voice" (after the name: "Early Letters: letters to your child, in your own words and voice.") | "the baby memory book you fill by talking" and its variants (retired by D-139), other variants of the line | One descriptor everywhere. Enforced by `test/rules.test.ts`. |
+| App Store name and subtitle | "Early Letters: Baby Journal"; "For parents who'd rather talk" | "Early Letters: Memory Book" (retired by D-139) | From `brand.storeName` and `brand.subtitle` only. |
+| What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except about paper competitors), album, scrapbook | "Journal" is allowed in the store name, subtitle and keywords, for search only (D-139). Store keywords may keep other search terms. Prose keeps "book" and "letter". |
 | Printed product | Early Letters: Year One (from `brand.printTitle`) | yearbook, photo book | Not promised in v1.0. |
 | Longer piece someone makes | letter | entry, post, memory, story, journal entry | |
 | Short piece someone makes | note | quick entry, moment | Only ever something a person makes. |
@@ -93,6 +98,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | The words from a recording | your words; "what you said" | transcript (in app copy), caption | Legal pages may say "transcript". |
 | The edit feature (D-074, D-086) | Word for word, only where the feature is named: the promise, Settings, the store, the website | Any word that says software tidied or cleaned a letter, polished, improved, corrected | Founder decision. In review and on the letter page we say what happened ("Took out a sound") and use "Exactly as said" only when it is true. |
 | What the machine changes | small fix (each one named by what happened), shown as a mark you can undo | edits, corrections, improvements | D-086. The Review views are "With small fixes" and "Exactly as said". |
+| What a small fix is, in one sentence | "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." | "what the microphone got wrong", "slips of the tongue", "the slips a microphone makes" | One phrasing on every surface (comms validation LNG-18, 31 Oct 2026). Shorter forms keep "small slips". |
 | The untouched words | "Exactly what you said"; setting "Exactly as said" | raw transcript, original text | |
 | Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |
@@ -109,9 +115,26 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Apple identity | Apple Account | Apple ID, iCloud account, store account | |
 | Google identity | Google Account | Google ID, Gmail account | |
 | Email sign-in | sign-in link; 6-digit code | magic link, login link, one-time password, OTP | "Magic link" only as Supabase's dashboard name in internal docs. |
-| Sign-in buttons | Sign in with Apple; Sign in with Google | Apple login, Google sign-in, log in | "Sign in with Google is now on your account". |
+| Sign-in buttons | Sign in with Apple; Sign in with Google; Sign in with email | Apple login, Google sign-in, log in, "Continue with Google", "Continue with email" | "Sign in with Google is now on your account". The app's buttons and the emails use the same words (LNG-13). Name a provider only where the build offers it. |
+| Sign out elsewhere | Sign out other devices | Sign out of other devices, log out everywhere | Button and Account row (LNG-14). |
 | Action | sign in / sign out | log in, log out, login | |
 | Privacy promise | private by default; "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
-| Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |
+| Footer line | brand name, then the tagline "It stays in your words." | other tagline variants | `emailChrome.footer.nameLine`. |
+
+## Internal terms, and what a parent sees instead (CR-25, 31 Oct 2026)
+
+Two vocabularies, one door, one direction. Code, schema, test names and spec section 12 keep the internal term on the left, because those names hold the guarantees (renaming `raw_transcript` to something soft would invite an edit to it). Anything a parent can read uses the term on the right: app, store, website, email, help, the export README and the printed book. Spec sections that describe what a parent sees use the right-hand term too. `test/rules.test.ts` blocks the left-hand words in parent-facing copy. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are not changed here.
+
+| Internal term | What a parent sees | Notes |
+|---|---|---|
+| `raw_transcript`, raw text | "Exactly what you said"; setting "Exactly as said" | Immutable. Never renamed. |
+| `EditType`, edit, `verifyEdits` | small fix, marked and undoable | No parent word for the check itself. |
+| take | recording | "Take your time" and "this can take a minute" are the verb and stay. |
+| entry | letter (long) or note (short) | The export file `data/entries.json` is a format contract (D-096) and keeps its name. |
+| draft | "Waiting to be kept." | A recording whose words are not kept yet. |
+| held letter, Keep gate | "Waiting to be kept."; the action is Keep; the plan is Plus | The gate is never named in copy. |
+| language pack, speech pack, text-rules pack | language; Settings > Languages and speech; "download" for the act | "Speech models" may stay where the file itself is meant. |
+| chapter | month | Already in the table above. |
+| `scribe` | nothing | The codename lives in repo, packages and bundle id only. |

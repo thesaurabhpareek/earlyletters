@@ -2,7 +2,9 @@
  * Resend (email processor) calls used by the deletion pipeline.
  *
  * Verified against resend.com docs on 3 Oct 2026:
- *  - Send: POST https://api.resend.com/emails with {from, to, subject, text};
+ *  - Send: POST https://api.resend.com/emails with {from, to, subject, text} and, for the library emails,
+ *    `html` plus inline `attachments` ({filename, content, content_type, content_id}; not on the batch
+ *    endpoint, so one request per email; packages/emails src/send.ts);
  *    `Idempotency-Key` header (at most 256 characters, kept 24 hours; the same
  *    key with the same payload returns the first response, a different
  *    payload is a validation error).
@@ -22,6 +24,9 @@ export interface OutgoingEmail {
   to: string;
   subject: string;
   text: string;
+  /** HTML part; its `cid:` images are in `attachments`. */
+  html?: string;
+  attachments?: { filename: string; content: string; content_type: string; content_id: string }[];
   /** Stable per logical email (for example `receipt:<request id>`), so a retried run never sends twice. */
   idempotencyKey: string;
   replyTo?: string;
@@ -42,6 +47,8 @@ export async function sendEmail(fetchFn: FetchFn, apiKey: string, mail: Outgoing
       to: [mail.to],
       subject: mail.subject,
       text: mail.text,
+      ...(mail.html ? { html: mail.html } : {}),
+      ...(mail.attachments?.length ? { attachments: mail.attachments } : {}),
       ...(mail.replyTo ? { reply_to: mail.replyTo } : {}),
     }),
   }, timeoutMs);

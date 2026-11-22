@@ -3,11 +3,13 @@
  * StateScreen and InlineState (COMPONENTS 2.15a): the one pattern for loading, empty, error and
  * not-found states (state-screen.logic.ts holds the rules).
  *
- *   StateScreen   the whole screen is the state (a stale link, a missing draft, microphone off, a
- *                 crash). A centred block with 20 pt gutters: the picture, the heading in title2, one
- *                 sentence in body; the primary action is full width at the bottom, a quiet second
- *                 option beneath it. Pass `header` for the modal's Close (ModalHeader). Content scrolls,
- *                 actions stay put, so nothing clips at AX5.
+ *   StateScreen   the whole screen is the state (a stale link, a missing draft, microphone off; a
+ *                 crash is components/resilience/plain-screen.tsx's, which draws the same block without
+ *                 providers). A block with 20 pt gutters, centred in the space above the action: the picture
+ *                 centred, the heading in title2 and one sentence in body on the start edge (E4); the primary
+ *                 action is full width at the bottom, a quiet second option beneath it. Pass `header` for the
+ *                 modal's Close (ModalHeader). Content scrolls; the actions are pinned below AX1 and join the
+ *                 end of the scroll from AX1 (PinnedActionLayout, BL-418), so nothing clips at AX5.
  *   InlineState   the state of one region inside a screen that has other content (Review while words
  *                 are on their way, a failed transcription). Same words, drawn as a calm card.
  *
@@ -25,13 +27,14 @@
  */
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import type { ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { Breathe } from '@/components/motion/breathe';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LineArt, type LineArtName } from '@/components/ui/line-art';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { actionLayout, STATE_LAYOUT, STATE_SPEC, stateA11y, stateVisual, type StateAction, type StateKind } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
@@ -64,6 +67,11 @@ export type StateScreenProps = Common & {
 
 /** The one entrance: a token-length fade. It is also the Reduce Motion form, so it always runs. */
 const ARRIVE = FadeIn.duration(tokens.motion.fadeMs).easing(STANDARD_EASING).reduceMotion(ReduceMotion.Never);
+
+const hasActions = (kind: StateKind, primary: Common['primary'], quiet: Common['quiet']) => {
+  const layout = actionLayout(kind, primary, quiet);
+  return Boolean(layout.primary) || layout.quiet.length > 0;
+};
 
 function Actions({ kind, primary, quiet }: Pick<Common, 'kind' | 'primary' | 'quiet'>) {
   const layout = actionLayout(kind, primary, quiet);
@@ -117,24 +125,25 @@ export function StateScreenView({ kind, title, body, art, glyph, drawing, primar
   return (
     <SafeAreaView className="flex-1 bg-background">
       {header}
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: L.gutter, paddingVertical: tokens.space[6] }} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={ARRIVE} {...stateA11y(kind)} style={{ alignItems: 'center', gap: tokens.space[4] }}>
-          {picture}
-          <View style={{ alignItems: 'center', gap: tokens.space[2] }}>
-            <Text variant={L.title} asHeading style={{ textAlign: 'center' }}>
+      <PinnedActionLayout
+        center
+        insetBottom={false}
+        contentContainerStyle={{ paddingVertical: tokens.space[6] }}
+        action={hasActions(kind, primary, quiet) ? <Actions kind={kind} primary={primary} quiet={quiet} /> : null}>
+        <Animated.View entering={ARRIVE} {...stateA11y(kind)} style={{ gap: tokens.space[4], paddingHorizontal: L.gutter }}>
+          <View style={{ alignItems: L.align.picture }}>{picture}</View>
+          <View style={{ gap: tokens.space[2] }}>
+            <Text variant={L.title} asHeading>
               {title}
             </Text>
             {body ? (
-              <Text variant={L.body} tone="muted" style={{ textAlign: 'center' }}>
+              <Text variant={L.body} tone="muted">
                 {body}
               </Text>
             ) : null}
           </View>
         </Animated.View>
-      </ScrollView>
-      <View style={{ paddingHorizontal: L.gutter, paddingBottom: tokens.space[3], paddingTop: tokens.space[2] }}>
-        <Actions kind={kind} primary={primary} quiet={quiet} />
-      </View>
+      </PinnedActionLayout>
     </SafeAreaView>
   );
 }

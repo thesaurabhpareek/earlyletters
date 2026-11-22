@@ -44,12 +44,12 @@ export const pages = {
     path: "/about",
     title: `About ${brand.name}`,
     metaDescription:
-      `${brand.name} is the baby memory book you fill by talking. Your words kept exactly as you said them, private by default, made by an independent maker.`,
+      `${brand.name}: letters to your child, in your own words and voice. It stays in your words, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
         paragraphs: [
-          `${brand.name} is the baby memory book you fill by talking. Parents speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
+          `${brand.name} keeps letters to your child, in your own words and voice. Parents fill the book by talking, or by typing notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
           "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Mama or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
           `${brand.name} is for families in the United States. Accounts are for adults 18 and over.`,
         ],
@@ -58,7 +58,7 @@ export const pages = {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, transcription fixes only small slips: a misheard word, a missing full stop, a stray um, or a one-word grammar slip like we was to we were. We call this Word for word. Every small fix is marked on the page, so you can see it and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "In practice, we take out the ums and accidental repeats, spell your names your way, and put in capital letters and full stops, and we mark each fix. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
           "Every fix is recorded and can be undone. Exactly what you said is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
           "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
@@ -68,9 +68,9 @@ export const pages = {
         paragraphs: [
           "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
-          "Recordings stay on your phone, and in your iPhone's own backup if you use one. We do not upload them.",
+          "Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
           "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, and we hold the keys. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
-          "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics stay off until you say yes, and they never include letter text, recordings, photos, names or birthdays.",
+          "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics never include letter text, recordings, photos, names or birthdays.",
           "You can export your whole book, free, at any time, and delete your own letters, recordings or account whenever you like. The Privacy Policy has the full detail.",
         ],
       },
@@ -95,7 +95,7 @@ export const pages = {
     path: "/why",
     title: `Why ${brand.name}`,
     metaDescription:
-      `Most of what a family says to a small child is said once. ${brand.name} keeps those words exactly as they were said, in the voice that said them.`,
+      `Most of what a family says to a small child is said once. ${brand.name} keeps those words, and the voice that said them.`,
     sections: [
       {
         heading: "Said once",
@@ -112,24 +112,24 @@ export const pages = {
         ],
       },
       {
-        heading: "Exactly as you said it",
+        heading: "It stays in your words",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. Not to make them neater, not to make them sound more like a greeting card. Transcription only fixes the slips a microphone makes, a misheard word or a missing full stop, and every fix is kept and can be undone. The sentence that ends up in the book is one you actually said.",
-          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The way your own language says it, because those were the right words. The way you always say the name. Smooth those out and you get something easier to read and less true.",
-          "A letter to {child} is not a performance. It is you, on an ordinary day, and that is the version worth keeping. Not the best version. Yours.",
+          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",
+          "You do not need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
       },
       {
         heading: "A voice to come back to",
         paragraphs: [
-          "Words on a page are one thing. The sound of a voice is another. Each letter keeps its original recording, so one day {child} can read the words and hear them too: the pause before the punchline, the sleepy mumble at the end of a long night, the story of the first steps told again and again.",
-          "Read together plays a letter in your own voice, with the letter on the page. It is made for bedtime, for a lap and a small hand on the screen, and for years of asking to hear the same one twice.",
+          "Each letter also keeps its recording, so one day {child} can hear the words as well as read them: the pause before the punchline, the sleepy mumble at the end of a long night.",
+          "Read together plays a letter in your own voice, with the letter on the page. It is made for bedtime, and for hearing the same one twice.",
         ],
       },
       {
         heading: "Small days count",
         paragraphs: [
-          "There is no right amount to say. A minute is plenty. On a quiet day, Not much today is a complete answer. Nothing counts days, nothing keeps score, and nothing nudges you with a number.",
+          "There is no right amount to say. A minute is plenty. On a quiet day, Not much today is a complete answer. Nothing counts days or keeps score.",
           "The book does not ask to be finished. It stays open for the next thing you want to tell {child}, whether that is tomorrow or next month.",
         ],
       },
@@ -137,7 +137,7 @@ export const pages = {
         heading: "Two parents, one book",
         paragraphs: [
           "A child is surrounded by voices. Both parents can write to {child}, each letter signed the way the family says it. From Mama. From Papa. From Amma.",
-          "Each of you keeps private letters until you add them to the book, and the book belongs to you both. One child, two voices that love them, in one place.",
+          "Each of you keeps private letters until you add them to the book, and the book belongs to you both.",
         ],
       },
       {
@@ -149,7 +149,7 @@ export const pages = {
       {
         heading: "Said once. Heard for years.",
         paragraphs: [
-          "That is the whole idea. Talk to {child} today, in your own words and your own voice. Written early, read for years, and one day {child} will know exactly how it sounded when you said it.",
+          "Talk to {child} today, in your own words and your own voice. Written early, read for years, and one day {child} will know exactly how it sounded when you said it.",
         ],
       },
     ],
@@ -277,7 +277,7 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: `This page is not in the book. Head back to ${brand.name}, the baby memory book you fill by talking.`,
+    metaDescription: `This page is not in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
     sections: [
       {
         heading: "We looked under every month. This page is not in the book.",

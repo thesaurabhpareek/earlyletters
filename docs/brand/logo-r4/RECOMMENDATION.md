@@ -46,7 +46,7 @@ The 3:1 floor is WCAG 1.4.11 for graphical objects. Tile edges are not required 
 - Checked: luminance contrast for every pairing above, and a grayscale and one-colour render (`accessibility-check.png`, made with browser filters).
 - Not checked: colour-blindness simulation with a validated tool, testing with people, print proofs, or physical emboss. Colour carries no meaning in either option, and both keep the same shapes in grayscale, which is why I expect them to hold, but that is an expectation, not a test.
 - The one-colour column in the proof drops pixels from the thin serifs of the wordmark. That comes from the crude browser threshold at 34 px, not from the logo files. Print and emboss use the single-ink vectors.
-- Trademark clearance (BL-355) is still open for every option.
+- Trademark clearance (BL-366) is still open for every option.
 
 ## Files
 - A: `packages/brand/assets/logo/primary` plus the touchpoint folders already in the registry. New: Android adaptive layers and Play icon in `options-r4/A-approved/touchpoints/android-sizes`.

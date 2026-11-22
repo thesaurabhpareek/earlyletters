@@ -3,8 +3,9 @@
   "journey": "letter-detail",
   "kind": "unhappy",
   "title": "Delete asks first",
-  "note": "Delete opens a small sheet: \"Delete this letter?\", \"You can undo this for 30 days from Recently deleted.\" The safe choice, \"Keep it\", is the large primary button and the default; \"Delete letter\" is the quiet red one. (D-085.)",
+  "note": "Delete opens a small sheet: \"Delete this letter?\", \"It waits in Recently deleted for 30 days.\" The safe choice, \"Keep it\", is the large primary button and the default; \"Delete letter\" is the quiet red one with the Trash icon. No Close in its header: \"Keep it\" and a swipe down are the ways out. (D-085.)",
   "from": "J10-05",
+  "shot": "screens/J10-06.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -20,12 +21,11 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Delete this letter? Close You can undo this for 30 days from Recently deleted. Keep it Delete letter",
+  "scrolls": false,
+  "text": "Delete this letter? It waits in Recently deleted for 30 days. Keep it Delete letter",
   "lines": [
     "Delete this letter?",
-    "Close",
-    "You can undo this for 30 days from Recently deleted.",
+    "It waits in Recently deleted for 30 days.",
     "Keep it",
     "Delete letter"
   ]

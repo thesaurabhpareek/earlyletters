@@ -1,0 +1,46 @@
+{
+  "id": "J04-06",
+  "journey": "tonight-and-prompts",
+  "kind": "unhappy",
+  "title": "A typed letter left mid-sentence",
+  "note": "Closing keeps the words. Tonight shows them on their own card, newest first, with \"Pick it up\"; the recording waiting on Review keeps its card below (J07-05).",
+  "from": "J04-01",
+  "shot": "screens/J04-06.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday You found your toes this morning and Pick it up Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good afternoon,",
+    "Mama.",
+    "What was cooking in your kitchen today?",
+    "Another thought",
+    "Friday",
+    "You found your toes this morning and",
+    "Pick it up",
+    "Friday",
+    "0:31",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

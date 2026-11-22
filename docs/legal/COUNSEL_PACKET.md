@@ -1,364 +1,788 @@
 ---
-title: Counsel packet, Early Letters v1.0 and after
-version: 1.0.0
+title: Counsel packet, Early Letters v1.0 (option B) and after
+version: 1.9.0
 status: for counsel
-date: 2026-10-03
+date: 2026-11-21
 owner: founder
-prepared_by: AI (Claude), legal and privacy counsel support (legal-alignment agent)
+prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 ---
 
-> **This packet was prepared by an AI. It is not legal advice.** No attorney-client relationship exists. It collects, in one prioritised list, every open legal question in `docs/legal/` (Terms 1.5.0, Subscription Terms 1.4.0, Privacy Policy 1.4.0, Consumer Health Data Privacy Policy 1.2.0, in-app disclosures 1.4.0, privacy labels 1.3.0, subprocessors 1.3.0, data-policy 1.2.0, deletion spec 1.2.0, LEGAL-REQ 1.2.0, compliance register 1.3.0, DATA_CLASSIFICATION 1.4.0, POLICY_VERSIONING 1.1.0, the memos), `docs/agents/DEBATES.md`, `docs/DECISIONS.md` and the future backlog (`docs/backlog/future/01` to `05`). Facts are tagged **V** (verified on an opened page or file), **S** (secondary source) or **U** (unverified). Every question has a default that the product follows if counsel does not answer by the deadline.
+> **This packet was prepared by an AI. It is not legal advice, and no attorney-client relationship exists.** It collects every open legal question about the v1.0 build the founder chose on 15 Oct 2026 (option B), as questions, not conclusions. Each has a default the product follows if counsel has not answered by the date named; dates are milestone ids from PRD V2 `docs/prd/v2/08-delivery.md` section 2.1 (branch `docs/prd-v2`, PR #124). Facts are tagged **V** (verified on a page or file opened, with the date), **S** (secondary) or **U** (unverified). Source checks are in `BENCHMARK.md`. The published drafts contain no notes for counsel by the founder's direction of 15 Oct; everything counsel must confirm is here and in the pull request description.
 
 ## 0. How to use this packet
 
-- **The product, in one paragraph.** Early Letters is an iOS memory book for adults (18+ only) who speak or type letters to their child. Transcription runs on the phone in seven languages. Recordings never leave the phone in v1.0. Letter text syncs to Supabase (US) once the person signs in (Apple, Google or email link) and gives a separate sensitive-data consent. Co-parents share a book; other family members come later. Plus ($3.99 a month or $29.99 a year, with free trials) is sold only through Apple, checked on the phone, shared through Apple Family Sharing, and gates only Read together after 3 free sessions per book and books for more children. Analytics are opt-in PostHog. US App Store only. Published by the founder as an individual. Founder decisions: `docs/DECISIONS.md` D-051 to D-070.
-- **The calendar (ROADMAP 2.0).** Package to counsel Fri 9 Oct. External TestFlight beta (15 to 25 families) from Mon 19 Oct. Answers after **Fri 23 Oct** move the submission date. Feature freeze Mon 26 Oct (anything that needs code must be decided before). Counsel sign-off and legal pages published **Thu 29 Oct**. App Privacy answers and store listing Fri 30 Oct. **Submit 2 to 6 Nov.** Release 9 to 20 Nov. First Plus trial reminders from about 2 Dec. California AB 1043 applies from 1 Jan 2027. v1.1 about 6 to 8 weeks after launch.
-- **Priorities.** **A** blocks submission (answer by 23 Oct unless stated). **B** needed before release, before the external beta, or before a dated event. **C** needed before a later feature ships.
-- **Time estimate for counsel:** tier A about 6 to 8 hours; tier B about 3 hours; tier C as each feature comes.
+**New in 1.9.0 (21 Nov 2026).** Adds section 9 (Q123 to Q132, Moments tab, NS-53) and corrects the Q129 default to the founder's O-44 decision (disclose the iPhone backup in one plain line). Sections 1 to 8 are unchanged.
 
-## 1. The top 10
+**New in 1.8.0 (20 Nov 2026).** Section 8 adds Q109 to Q122: the questions the days, cultural background and media cards (NS-46 to NS-52) left as "needs a number from legal" (CUL-Q5, Q6, Q7, Q11, Q14; FR-DAY-23; tradition-reviewer records; L-14 to L-19; C-9 to C-11). CUL-Q6 is widened to inference (CJEU C-184/20); CUL-Q11 (a day note that names a faith day) no longer maps to Q41. Sections 1 to 7 are unchanged.
 
-| Rank | # | Question | Deadline |
-|---|---|---|---|
-| 1 | Q1 | Individual publisher: personal exposure, notices address, and Apple guideline 5.1.1(ix) | 23 Oct (texts); 27 Nov (entity hedge) |
-| 2 | Q8 | Q-003: subscription notices and records with Apple-only billing and no server | 23 Oct (Terms text); 29 Oct (rest) |
-| 3 | Q2 | Washington MHMDA consent: one consent or two, a parent's consent for a child's data, other people's health data in a letter | 23 Oct |
-| 4 | Q5 | Age: Texas SB 2420 now and California AB 1043 from 1 Jan 2027 | 29 Oct (v1.0); 20 Nov (AB 1043 release plan) |
-| 5 | Q7 | Q-005: privacy label "Linked" or "Not linked" for analytics | 29 Oct |
-| 6 | Q4 | COPPA: an adults-only app about a child; a baby's voice in a parent's recording | 29 Oct |
-| 7 | Q9 | Training-data terms behind the Hindi and Mandarin speech models | 23 Oct |
-| 8 | Q10 | Trademark clearance for "Early Letters" given the App Store name collision | 23 Oct (search); before submission (opinion) |
-| 9 | Q15 | Liability cap and carve-outs for an individual publisher holding children's letters | 23 Oct |
-| 10 | Q6 | Q-004: a spoken-language code in opt-in analytics | 16 Oct (before the external beta) |
+**New in 1.7.0 (20 Nov 2026).** Section 7 adds the questions raised by the locked new-scope requirements (cards NS-01 to NS-37) and their engineering designs. It merges each repeated question into the existing number, adds two new ones (Q107, Q108), and marks which block the Build 13 store candidate. Sections 1 to 6 are unchanged apart from section 6 items 9 to 12.
 
-## 2. Summary of every question
+**The product, in one paragraph (option B).** Early Letters is an iOS memory book for adults (18 and over only) who speak or type letters to their child. Speech becomes text on the phone; no audio or text goes to any speech or AI service. People can start without an account; signing in (Apple, or an emailed link and code) syncs letters to Supabase in the US after a separate sensitive-data consent, and lets two parents share a child's book as equals. The owner's recordings can be backed up, free, off until turned on, with its own consent: each recording is encrypted on the phone, the encrypted copy is stored in a private Supabase Storage bucket, and we keep an escrow copy of the key. The escrow private key is a function secret in a separate Supabase project (`scribe-escrow`) that runs only the recovery service, and is also on two sealed paper copies. The service writes an append-only log row for every key it opens (reasons: restore, rotation, legal), holds a restore 24 or 72 hours, takes approval only from a device enrolled at least 7 days before the request (D-108), and emails the owner on request, on release and on rotation (D-102 wording). The server side is on `feat/backup-server` (ad222eb, PR #151, not merged); the phone side is not built, so the drafts say backup is not available yet. Plus is the membership after 2 free letters: US $4.99 a month with the first month free, or US $49.99 a year with the first 2 months free, sold only by Apple, shared through Family Sharing. D-080 and D-081 plan a status report (plan, trial end, renewal date, cancelled flag) and a consent record so that we can email the auto-renewal reminders; neither is built (the `subscription-status` handler is a shell), so the drafts say our servers do not receive purchases. Phone reminders and a purchase confirmation with Save a copy are built (D-094). No analytics or crash reporting in v1.0 (D-095). US App Store only. Published by the founder as an individual (D-004).
 
-| # | Tier | Title | Deadline | Default if unanswered |
-|---|---|---|---|---|
-| Q1 | A | Individual publisher and 5.1.1(ix) | 23 Oct / 27 Nov | Publish as an individual; mailing address; entity started only if the founder chooses by 27 Nov |
-| Q2 | A | MHMDA and Connecticut consent design | 23 Oct | One sensitive-data consent before first sync; no second consent at co-parent invite; HN-5 runbook |
-| Q3 | A | Consumer Health Data policy content and "homepage" links | 23 Oct | Link from the website footer, the App Store description and Settings |
-| Q4 | A | COPPA scope | 29 Oct | Does not apply; `child-input` flag off |
-| Q5 | A/B | Age assurance (Texas SB 2420, California AB 1043) | 29 Oct / 20 Nov | 18+ gate plus Declared Age Range in memory; a 1.0.x before 1 Jan 2027 that requests the signal |
-| Q6 | B | Q-004 language code in analytics | 16 Oct | Ship option (a), the closed seven-code list on two events |
-| Q7 | A | Q-005 label linkage | 29 Oct | Declare Linked; tracking section empty |
-| Q8 | A | Q-003 subscription notices | 23 Oct / 29 Oct | The memo's position: Apple's receipts plus on-device reminders; no emails; per-release evidence |
-| Q9 | A | Speech model training-data terms | 23 Oct | Do not host the Hindi fine-tune; Hindi uses the shared model; Belle stays a candidate |
-| Q10 | A | Trademark | 23 Oct / 2 Nov | Proceed under the name; file intent-to-use if the search is clear |
-| Q11 | A | Processor contracts (Resend, Cloudflare R2, Vercel, PostHog, Supabase entity) | 23 Oct | Accept the vendors' standard DPAs as listed |
-| Q12 | B | IP address plus a language-revealing file name at download hosts | 29 Oct | Disclose (Privacy Policy 8); mirror models to our host later |
-| Q13 | A | Deletion clock and the email provider's 30-day copy | 23 Oct | State the exception; keep the completion email |
-| Q14 | A | "Free, always" promise scope | 23 Oct | As drafted, co-parent scope only |
-| Q15 | A | Liability cap, carve-outs, indemnity | 23 Oct | Greater of 12 months' fees or $50; carve-outs in 21.2; keep the narrow indemnity |
-| Q16 | A | Binding promises (no training, never imitate a voice, faithful transcription, 90-day shutdown, successor) | 23 Oct | Keep all |
-| Q17 | A | Claims registry: "Your recordings stay on this phone" and the trust lines | 23 Oct | Approve as qualified in the Privacy Policy |
-| Q18 | A | Arbitration, custom EULA, support phone number | 23 Oct | Courts plus small claims; custom EULA; a real phone number |
-| Q19 | B | Pre-account local use (browsewrap) | 29 Oct | Sign-in-wrap only, plus the 18+ gate |
-| Q20 | B | CCPA, CalOPPA and other state laws | 29 Oct | Comply voluntarily; no "Limit" link |
-| Q21 | B | Staff-access and transparency commitments | 29 Oct | "Logged through our support tools"; keep the request-count commitment |
-| Q22 | C | Launch geography and overseas family | Before family members ship; DPDP by May 2027 | US storefront only |
-| Q23 | A | Security review findings with legal effect | Before 19 Oct (H1); before submission (H3) | Fix before the external beta and submission |
-| Q24 | B | Export classification (encryption) in App Store Connect | 30 Oct | "Uses only exempt standard encryption" |
-| Q25 | B | Support resources row ("If you are struggling") | 16 Oct | Verified national resources; general-information disclaimer |
-| Q26 | B | Retention periods marked "proposed" | 29 Oct | Adopt as proposed |
-| Q27 | B | CSAM reporting, legal process, custody disputes, DMCA | Before release | Counsel-led runbook; no proactive scanning |
-| Q28 | B | Breach readiness: state laws and the FTC Health Breach Notification Rule | Before release | Treat HBNR as applicable for readiness |
-| Q29 | C | Account deletion in a shared book; fiduciaries and legacy access | Before v1.1 | Deletion removes the author's letters; executor runbook later |
-| Q30 | C | Later features (counsel batch from the future backlog) | Before each feature | Not built until answered |
-| Q31 | B | Draft legal text for TestFlight testers (DEBATES Q-009) | 16 Oct | Publish drafts as 0.9.0 to C0 and C1 only; counsel text as 1.0.0 with re-consent |
+**Decisions behind it.** Founder, 13 and 14 Oct (PR #128, D-100 to D-108). Delegated, 15 Oct (PR #122, D-093 to D-099). Founder, 15 Oct: option B, backup free for everyone; and the direction for legal pages (plain, short, no internal references, name only services the code uses, no separate health notice pending Q32).
 
-## 3. Tier A: blocks submission
+**The calendar (PRD V2 08 section 2.1).** T05 Fri 23 Oct: this packet to counsel. T17 Fri 13 Nov: counsel comments. T19 Mon 23 Nov: switch-on internal TestFlight. T20 Tue 1 Dec: legal pages live as drafts. T22 Mon 7 Dec: first outside families. T27 Mon 18 Jan 2027: backup on for C1 families who opt in. T32 Fri 1 Jan 2027: California AB 1043. T30 by Fri 23 Apr 2027: counsel sign-off. T36 3 to 5 May 2027: submission.
 
-### Q1. Individual publisher, personal exposure and Apple guideline 5.1.1(ix)
-- **Context.** The founder publishes under a personal Apple Developer account with no company (D-004, restated D-064). The founder's legal name is the App Store seller and must appear in the Terms (Apple's minimum EULA terms require the developer's name and address, Terms 26.1(h)) and the privacy notices. There is no liability shield. Apple 5.1.1(ix) (opened 3 Oct 2026): apps that "require sensitive user information should be submitted by a legal entity that provides the services, and not by an individual developer." The app is about a child, declares Sensitive Info (due date) on its label and publishes a Consumer Health Data policy. D-004 rates the rejection risk medium likelihood, high impact; the fallback (entity, D-U-N-S, organisation account, likely a new app record) takes about 2 to 6 weeks (U).
-- **Questions.** (a) May "we" refer to an individual throughout, and may the notices use a mailing address (PO box or mail service) rather than a home address, for each notice that needs one (Terms 26.1(h), CAN-SPAM if commercial email ever starts, privacy notices)? (b) Does anything in the drafts increase personal exposure beyond what an entity would face (for example the non-amendable promises in Terms 13 and 17)? (c) Is our 5.1.1(ix) mitigation (Lifestyle category, no health language in metadata, review notes describing a family journal where the due date is optional) reasonable, and should the founder start an entity in parallel now? (d) Which insurance (technology errors and omissions, cyber) is worth pricing for an individual holding children's letters? (e) When an entity is formed later, is moving the Terms and privacy notices to it a "major" change needing re-consent (POLICY_VERSIONING 2.1 item 9)?
-- **Default if unanswered.** Publish as an individual with a mailing address; no entity until the founder decides by 27 Nov (D-004 hedge); answer any 5.1.1(ix) question from App Review within a day.
-- **Deadline.** 23 Oct for (a) and (b), because the name and address go into the published texts on 29 Oct. 27 Nov for (c), the D-004 hedge date.
-- **Documents.** Terms 1.1, 26.1(h), 27.3, 28, counsel note at the top; Privacy Policy 1, 20, CN-1; CHD policy 7, HN-10; Subscription Terms "Questions"; register CR-130; DECISIONS D-004, D-064; ROADMAP 7.
+**Priorities.** **A** blocks the first outside family (T22) or submission. **B** before a dated event in the row. **C** before a later feature.
 
-### Q2. Washington MHMDA and Connecticut consent design
-- **Context.** Letters are free text and can hold health details about the parent, the child or a third person; the due date reveals a pregnancy. MHMDA has no revenue threshold and a private right of action (register CR-031, RCW 19.373 opened 2 Oct). The app asks for one separate "sensitive-data" consent after account creation and before the first sync, and the server refuses content writes without it (`can_write_content()`, SQLSTATE `SCCON`). The live consent text (`sensitiveConsent.body`) still says "share it with the family you choose"; v1.0 is co-parent only (D-055), so the content owner must change it to "your co-parent".
-- **Questions.** (a) Is one consent enough, or does sharing with a co-parent need a second "separate and distinct" consent at the first invite (RCW 19.373.030; D-050)? With co-parents only, is sharing "necessary to provide" the book the person requested? (b) The Act has no parent or guardian mechanism: can a parent's consent cover health data about their child? (c) A letter by one author about another adult's health (HN-5): how do we honour that adult's deletion request when only the author may delete their words? (d) Connecticut: does stopping sync and offering deletion satisfy the reported 15-day stop-processing rule on revocation (U), or must synced letters be erased? (e) Is the proposed consent text (CHD policy HN-4) compliant: categories, purpose, recipients, how to withdraw?
-- **Default if unanswered.** One consent before first sync with the HN-4 text naming the co-parent; no second consent; the HN-5 runbook (ask the author; if no action in 45 days, take the letter out of the shared book and keep it in the author's private letters); withdrawal stops sync and offers deletion.
-- **Deadline.** 23 Oct; a second consent would be code and must be decided before feature freeze on 26 Oct.
-- **Documents.** CHD policy 4, HN-4, HN-5; Privacy Policy 13, CN-16; LEGAL-REQ-006; register CR-020, CR-031; `packages/content` `sensitiveConsent`; DECISIONS D-050.
+**What is in the packet (branch `docs/legal-v1-server`).** Published drafts: Privacy Policy 3.0.0, Terms of Service 4.1.0 and Subscription Terms 4.1.0 (plain-form texts carrying develop's 4.0.0 content, D-082, D-083), service providers 2.1.0, delete-account page copy 1.1.0. Internal: in-app disclosures 3.4.0, App Privacy answers 2.1.0, ENGINEERING_REQUIREMENTS 2.2.0, POLICY_VERSIONING 1.3.0, compliance register 1.6.0 (facts only), DATA_CLASSIFICATION 1.5.0 (backup tables, section 4.3.1), BENCHMARK 1.1.0. The separate Consumer Health Data Privacy Policy is removed pending Q32; its last text is in git history. **Not yet updated for option B** (S17 follow-ups): `data-policy.md` 1.2.0, `DATA_CLASSIFICATION.md` outside section 4.3.1, `DELETION_AND_EXPORT_SPEC.md` 1.2.0, and the dated memos in `memos/`, which are records of 2 and 3 Oct.
 
-### Q3. Consumer Health Data policy content and "homepage" links
-- **Context.** Washington requires a separate CHD privacy policy linked prominently from the "homepage", which includes the app's download page (RCW 19.373.010, .020). `store.en.ts` ends with Terms and Privacy links only; the website thread builds `/health-privacy` (D-063).
-- **Questions.** (a) Does the CHD policy 1.2.0 meet RCW 19.373.020's content list? (b) Is a third legal line in the App Store description ("Consumer Health Data Privacy Policy: https://earlyletters.com/health-privacy") plus a website footer link and a Settings link enough? (c) Does MHMDA apply in the same way to an individual "regulated entity"?
-- **Default.** Add the store description line (request to the content owner), the website footer link and the Settings > Legal row.
-- **Deadline.** 23 Oct (store listing approved 30 Oct; website live 19 Oct).
-- **Documents.** CHD policy (all), HN-6, HN-10; in-app disclosures 4; Privacy Policy 2, 13, 16; `packages/content/src/store.en.ts`.
+Section references below are to the published drafts: Privacy 2 (what we collect), 3 (who can see), 4 (backup and the recovery key), 5 (use), 6 (providers), 7 (retention and deleting), 8 (children), 9 (health details), 10 (rights), 11 (security), 13 (changes). Terms 3 (account), 4 (books and co-parents), 5 (content), 6 (transcription), 7 (backup), 8 (Plus), 10 (ending), 12 (closing), 14 (liability), 16 (disputes), 18 (Apple).
 
-### Q4. COPPA scope
-- **Context.** Users are adults; the child never signs in or uses the app; information about the child comes from the parent (FTC COPPA FAQ A.8, opened 2 Oct). Recordings never leave the phone in v1.0. Features that would prompt a child to speak (`together` prompts, sibling letters) sit behind the `child-input` flag, off in production until a written opinion (LEGAL-REQ-059). The amended Rule's compliance date was 22 April 2026 (S).
-- **Questions.** (a) Confirm COPPA does not apply to v1.0 as designed. (b) Confirm in writing that a baby's or toddler's voice in the background of a parent's recording is information provided by the parent, not collected from the child. (c) Should we still adopt the written retention policy and security programme the amended Rule describes (we recommend yes; `data-policy.md` is the retention policy)?
-- **Default.** COPPA does not apply; flag stays off; adopt the written programme anyway.
-- **Deadline.** 29 Oct.
-- **Documents.** Privacy Policy 12, CN-2; register CR-001, CR-002; LEGAL-REQ-045, -059; future backlog CVL-19 (Q30).
+**Built and not yet built (checked 16 Oct 2026 on `develop` ef79bd3, `feat/backup-server` ad222eb, `feat/db-v1-gate` 3d2d440, `feat/platform-v1-contracts` feea25f, `chore/pack-host-ios17` e55c721).** The published drafts describe only what the code does, or say plainly that a feature is not available yet. These are planned in PRD V2 but have no implementing code, so the drafts leave them out; each is added back, with notice under POLICY_VERSIONING, in the release that builds it:
 
-### Q5. Age assurance: Texas SB 2420 now, California AB 1043 from 1 Jan 2027
-- **Context.** The app asks "Are you 18 or older?" before first use, stores only a boolean (D-026), repeats the confirmation at sign-in, and uses Apple's Declared Age Range in memory where available. Texas SB 2420 is reported in effect in 2026 with developer duties to use the store's age category and parental-consent signals (register CR-004, S). California AB 1043 takes effect 1 Jan 2027: a developer must request the age signal "when the developer's app is downloaded and launched", and receiving a signal gives "actual knowledge" of the age range; penalties up to $2,500 (negligent) and $7,500 (intentional) per affected child (Kelley Drye FAQ, S, opened 3 Oct 2026). v1.1 lands after 1 Jan 2027, so a 1.0.x release may be needed (T5-15).
-- **Questions.** (a) Is a neutral self-declaration plus Declared Age Range enough for an adults-only general-audience app today? (b) What exactly must change by 1 Jan 2027 for AB 1043 (request the signal at every launch or once; what to do with "unknown")? (c) Is excluding teen parents (under 18) the right call? (d) Is a store signal that a user is a minor "actual knowledge" requiring the `close_underage_account` runbook even when the person said "Yes" at our gate?
-- **Default.** v1.0 as built; a 1.0.x in December 2026 that requests the OS or store signal at launch, holds it in memory, and treats any minor signal as actual knowledge; teen parents excluded.
-- **Deadline.** 29 Oct for (a) and (c); 20 Nov for (b) and (d) so a 1.0.x can ship before 1 Jan 2027.
-- **Documents.** Terms 1.5, 2.1; Privacy Policy 2, 12, CN-2; LEGAL-REQ-002; register CR-004, CR-005; DECISIONS D-026; future backlog T5-15.
-
-### Q7. DEBATES Q-005: privacy label linkage for analytics
-- **Context.** Opt-in PostHog uses a random ID per consent period, no IP, no person properties, no IDFA or IDFV; nothing on our servers stores or joins it. The phone keeps retired IDs (at most 20) so it can ask the stateless `analytics-forget` function to delete events at account deletion. Apple: data is linked unless de-identified before collection and never re-linked, and "Personal Information and Personal Data, as defined under relevant privacy laws, are considered linked" (quoted in TRACKING_PLAN 10). Plan-state events (`plan_changed`) make Purchases an analytics data type too. The tracking section is empty either way (no third-party data for ads, no brokers).
-- **Question.** Is analytics data "Linked" or "Not linked" on Apple's label, given that a random persistent ID is likely CCPA personal information and that we keep the ability to link IDs for deletion? Should the random ID be declared under Identifiers > User ID with the Analytics purpose?
-- **Default.** Declare Usage Data, Diagnostics and Purchases (Analytics) as **Linked**, add Analytics to User ID, keep the public no-reidentification commitment in Privacy Policy section 6 (labels 1.3.0 section 1.3 has the full analysis and both manifests).
-- **Deadline.** 29 Oct (App Privacy answers are entered by 30 Oct).
-- **Documents.** `app-store-privacy-labels.md` 1.2, 1.3, 1.4, 3.3; Privacy Policy 6, CN-18, CN-21; TRACKING_PLAN 10; DEBATES Q-005; future backlog T5-01.
-
-### Q8. DEBATES Q-003: subscription notices and records with Apple-only billing
-- **Context.** Plus is Apple-only and checked on the device; no server of ours sees purchases (D-053, ADR 0013). The earlier Subscription Terms promised acknowledgment, trial, renewal and yearly emails and an emailed consent record. Full analysis, verified law texts and eleven sub-questions: `docs/legal/memos/q-003-subscription-notices.md`. Laws checked 3 Oct 2026: California 17602 (V), New York GBL 527-a (V; "app notification" is an allowed channel), Virginia 59.1-207.46 (V; renewal notice only for renewals of more than 12 months), Utah 13-70 (V; renewal notice only for terms over 45 days; trial notice at least 3 days before), Massachusetts 940 CMR 38.00 (V), NYC rule from 1 Oct 2026 (S), ROSCA (S); the FTC's 2024 rule stays vacated and the March 2026 ANPRM is the latest step (V, S).
-- **Questions.** Memo C-1 to C-11, in short: (C-1) do the state duties fall on us with Apple as merchant of record; (C-2) are on-device local notifications plus an in-app note a compliant notice, given they fail if the app is deleted or notifications are off; (C-3) is an in-app confirmation with "Save a copy" a retained acknowledgment; (C-4) Massachusetts monthly receipts; (C-5) proof of consent held only by Apple plus our per-release evidence; (C-6) does California's yearly reminder reach monthly plans; (C-7) Virginia scope; (C-8) NYC scope; (C-9) does "keep current price for existing subscribers" keep the Terms' price promise; (C-10) ROSCA disclosure through Apple's store view; (C-11) the server fallback if C-2 or C-4 is "no".
-- **Default.** The memo's position: Apple's receipts and price-change messages; on-device reminders in the D-022 windows on the purchaser's phones; in-app confirmation with Save a copy; existing subscribers keep their price; no emails; per-release evidence instead of per-purchase records.
-- **Deadline.** 23 Oct for C-1 to C-3 (Terms and Subscription Terms text, and the scheduler before feature freeze); 29 Oct for C-4 to C-10; C-11 before the first trial reminders (about 2 Dec) if C-2 is "no".
-- **Documents.** Terms 14 (all); Subscription Terms (all); in-app disclosures 3; LEGAL-REQ-046 to -050; POLICY_VERSIONING 1, 7.3; register CR-050 to CR-052; DECISIONS D-022, D-049, D-053; ADR 0013; DEBATES Q-003; future backlog G-12.
-
-### Q9. Training-data terms behind the Hindi and Mandarin speech models
-- **Context.** ADR 0015 picks per-language models for on-device transcription. The Hindi model is `vasista22/whisper-hindi-small` (Apache-2.0 weights), converted and quantised by us and hosted on our own download host ("ours, not uploaded" yet); its card lists GramVaani, ULCA, Shrutilipi and FLEURS among its training data. The Mandarin candidate `BELLE-2/Belle-whisper-large-v3-turbo-zh` (Apache-2.0) lists AISHELL-2 and HKUST (LDC) data; it is built and hashed but not chosen (ADR 0015 M-1). ADR 0015 notes: "an Apache-2.0 licence on weights does not settle the terms of the data they were trained on." Upstream OpenAI Whisper files (MIT) are downloaded from Hugging Face. A Hindi-English fine-tune is planned for v1.1 (future backlog).
-- **Questions.** (a) May we commercially distribute (from our own host, inside a paid app) a converted copy of a model whose weights are Apache-2.0 but whose training sets include data under research-only or restrictive terms (for example LDC corpora or datasets with non-commercial terms)? (b) What attribution and notice must the app's licences screen carry? (c) What diligence is enough (dataset licence review, a written representation from the model author)? (d) The same for any future Hinglish fine-tune: which datasets may we fine-tune on?
-- **Default.** Do not upload or ship the Hindi fine-tune until cleared; Hindi uses the shared multilingual model (ADR 0015 says turbo until the Hindi file is hosted). Belle stays a candidate and does not ship.
-- **Deadline.** 23 Oct (the Hindi file upload is a founder task before the release build; feature freeze 26 Oct).
-- **Documents.** ADR 0015 (training-data caution, M-1, M-2, next steps); register CR-123; `apps/mobile/src/lib/models/catalog.ts`; Settings > Legal > Licences (`packages/content/src/features/licences.en.ts`); future backlog 01 (Hinglish).
-
-### Q10. Trademark clearance and the name collision
-- **Context.** "Early Letters" is not cleared (register CR-122; `packages/brand`: "Not yet trademark-cleared"). App Store search for "early letters" returns 19 US apps, all phonics, alphabet or letter-writing apps (pm-4, iTunes Search API, 3 Oct 2026, F). Domains earlyletters.com and earlyletters.app are bought (D-063); the bundle id `com.earlyletters.scribe` is permanent after the first upload.
-- **Questions.** (a) Does a clearance search show a registered or common-law mark that blocks "Early Letters" for a memory-journal app (Classes 9 and 42 at least, and 16 if printed books come)? (b) Do the existing letter-learning apps create likelihood-of-confusion risk? (c) Should the founder file an intent-to-use application now as an individual, knowing an entity may hold it later (assignment)? (d) If risk is material, rename before submission rather than after growth?
-- **Default.** Proceed under the name; file an intent-to-use application if the search is clear; rename only on a counsel "stop".
-- **Deadline.** Search by 23 Oct (store listing approval 30 Oct); opinion before submission (2 Nov).
-- **Documents.** `packages/brand/index.ts`; register CR-122; store listing; future backlog G-02.
-
-### Q11. Processor contracts
-- **Context.** v1.0 processors: Supabase (database, auth, functions; DPA names Supabase Pte. Ltd.), PostHog (US Cloud), Resend (email; DPA of 31 Dec 2025, no AI-training clause found, keeps sent messages 30 days), Vercel (website; paid Pro needed for the training opt-out), and the download host (Cloudflare R2 candidate; Customer DPA v6.4, 3 Apr 2026). Hugging Face serves public model files directly and is treated as an independent host, not a processor. RevenueCat and PowerSync are not used. Detail: `subprocessors.md` 1.3.0.
-- **Questions.** (a) Are these DPAs adequate as CCPA service-provider and MHMDA processor terms? (b) Is Resend's CCPA-style limit enough without an explicit no-training clause, given no letter content goes through it? (c) Does the Singapore contracting entity for Supabase affect our "data lives in the United States" statements? (d) Is Hugging Face correctly outside the processor list?
-- **Default.** Accept the standard DPAs as listed; publish the list with contacts at /subprocessors.
-- **Deadline.** 23 Oct.
-- **Documents.** `subprocessors.md`; Privacy Policy 8, CN-7, CN-11; CHD policy 5, HN-7; register CR-124.
-
-### Q13. Deletion clock and the email provider's 30-day copy
-- **Context.** The published promise is erasure from live systems in 31 days, backups in 38 days and processors in 45 days. The deletion worker sends a completion email through Resend when deletion executes (about day 30), and Resend keeps sent messages for 30 days, so that email and its address remain until about day 60. Version 1.4.0 of the Privacy Policy states this as the one exception.
-- **Questions.** (a) Is the stated exception acceptable under MHMDA (deletion flow-down to processors) and the CCPA? (b) Or should we drop the completion email (Apple does not require one), or choose a provider with shorter retention?
-- **Default.** Keep the email and the stated exception.
-- **Deadline.** 23 Oct.
-- **Documents.** Privacy Policy 10, CN-12; CHD policy 6; data-policy 5; deletion spec 2.1, DATA-REQ-036; LEGAL-REQ-031.
-
-### Q14. "Free, always" scope
-- **Context.** Terms 13 promises writing, reading, playing recordings, export and writing with a co-parent free "for as long as we operate the Service", and 13.3 makes Section 13 non-amendable for existing users. Earlier drafts also promised family members' letters free; v1.0 has co-parents only (D-055), so 1.5.0 narrows the promise to what exists. Which books are free (D-007, D-008) is described as Plus scope in 14.1, not as a permanent promise.
-- **Questions.** (a) Is the open-ended promise enforceable and wise (FTC "free" claims, register CR-012)? (b) Does it bind an asset buyer through 17.2 and 27.3? (c) Should the founder extend the permanent promise to other family members when they ship?
-- **Default.** As drafted; the founder decides (c) when contributors ship.
-- **Deadline.** 23 Oct.
-- **Documents.** Terms 13, 14.1, 17.2, 25.4, 27.3; Subscription Terms "What stays free"; store listing subscription paragraph; `billingCopy.store.promise`.
-
-### Q15. Liability cap, carve-outs and indemnity
-- **Context.** Terms 21.1 caps liability at the greater of 12 months' fees or $50 and 21.2 carves out fraud, intentional misconduct, gross negligence, violation of law, death or personal injury and anything California Civil Code 1668 forbids. The publisher is an individual with no shield (Q1). Lawyer 1 L2 doubts a $50 floor for lost family recordings (unconscionability, Civil Code 1670.5). In v1.0 recordings never reach our servers, which lowers the data-loss exposure for audio. Terms 22 is a narrow user indemnity.
-- **Questions.** (a) Is the cap enforceable for consumers in California? (b) Should a security breach or a breach of the 6.2 promises (no training, no sale, never imitate a voice) sit outside the cap or carry a higher one? (c) Keep or drop the user indemnity? (d) Does Apple's minimum term 5 ("may not limit Your liability to the end user beyond what is permitted by applicable law") change anything?
-- **Default.** As drafted; keep the indemnity.
-- **Deadline.** 23 Oct.
-- **Documents.** Terms 20, 21, 22; memos/lawyer-1.md L2; DECISIONS D-004 point 2.
-
-### Q16. Binding promises
-- **Context.** Terms 6.2 (never sold, no ads, no training, never imitate a voice), 11 (faithful transcription, enforced in code by the verifier and an immutable raw transcript), 17 (at least 90 days' notice before closing; export throughout; successor must keep 6, 13 and 17). The trust lines repeat these word for word in the app, the store listing, the website and the welcome email (D-061).
-- **Questions.** (a) Can an individual publisher keep these, including in a sale or insolvency (a trustee may reject the contract, Lawyer 1 L5)? (b) Should a wind-down reserve be funded, and in what form (future backlog T5-04)? (c) Is "We never imitate your voice" safe as an absolute (no synthetic voice, no voice cloning, no generative speech enhancement; LEGAL-REQ-019)?
-- **Default.** Keep all; reserve decided by the founder later.
-- **Deadline.** 23 Oct.
-- **Documents.** Terms 6.2, 11, 17, 27.3; Privacy Policy 6, 18; in-app disclosures 3b; register CR-010, CR-011; future backlog T5-04, T5-08.
-
-### Q17. Claims registry: "Your recordings stay on this phone" and the trust lines
-- **Context.** The microphone purpose string is now "{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone." (D-061). The first-recording line says "the recording stays with your letter". In v1.0 nothing uploads audio; the user's own iPhone backup includes recordings (D-033), and the user can export and share them. The claims registry and its content test (LEGAL-REQ-044) are not built yet.
-- **Questions.** (a) Are the microphone string and trust lines accurate enough as absolutes, given the Privacy Policy section 9 qualification for the user's own device backup and exports? (b) Must the registry exist before submission, or is a manual review of `packages/content` enough for v1.0?
-- **Default.** Approve as qualified; manual claims review for v1.0; the registry in v1.1.
-- **Deadline.** 23 Oct.
-- **Documents.** in-app disclosures 3b; privacy labels 4; Privacy Policy short version, 9; `packages/content` `trust`, `permissions`; LEGAL-REQ-044; register section 3.
-
-### Q18. Arbitration, EULA and support phone
-- **Context.** The Terms default to courts plus small claims (Option B, arbitration, is drafted for counsel). Terms 26.1 tracks Apple's ten minimum EULA terms; 26.1(h) needs a real support phone number.
-- **Questions.** (a) Courts or arbitration? (b) Custom EULA in App Store Connect (one document governs) or Apple's Standard EULA plus these Terms? (c) Is a phone number unavoidable for an individual (a forwarding number is fine)?
-- **Default.** Courts plus small claims; custom EULA; a forwarding phone number.
-- **Deadline.** 23 Oct (App Store Connect fields by 30 Oct).
-- **Documents.** Terms 23, 26.1, Appendix B items 1 and 2; memos/lawyer-1.md L3, L4.
-
-### Q23. Security review findings with legal effect
-- **Context.** The independent review (`docs/reviews/2026-10-04-security-privacy.md`) found: **H1**, an email sign-in link from anyone signs the phone into that person's account and uploads every local letter to it; **H3**, Sign in with Apple refresh tokens are never captured, so account deletion cannot revoke them (App Store 5.1.1(v)); **M2**, invite tokens travel in the URL path, so the Privacy Policy claim that they travel where servers do not log was false (removed in 1.4.0).
-- **Questions.** (a) If H1 happens to a beta family (letters uploaded to a stranger's account), is it a reportable breach under state law or MHMDA? (b) If H3 is not fixed by submission, may we ship with deletion receipts saying `apple: no_token`, or is it a 5.1.1(v) blocker? (c) Anything else in the review that changes a legal text?
-- **Default.** H1 fixed before the external beta (19 Oct); H3 fixed before submission; the M2 claim stays removed until the link moves to a fragment.
-- **Deadline.** 16 Oct for (a); 23 Oct for (b).
-- **Documents.** Privacy Policy 3, 10, 11, CN-23; data-policy 4.1, 4.2; deletion spec 2.6.3; LEGAL-REQ-029; SECURITY.md 5.
-
-## 4. Tier B: before the external beta, release, or a dated event
-
-### Q6. DEBATES Q-004: a spoken-language code in opt-in analytics
-- **Context.** PRD 7.10 classifies a person's languages as L4 (a possible proxy for national origin or ethnicity). The analytics catalogue sends `lang`, one of the seven v1.0 codes, on `language_set` and `pack_download` only, after opt-in, never next to letter, family or Plus events. Since migration `20261005000000` each letter's language is also stored on the server (`entries.language`, L4, readable only by its author), and the server view `insights.language_mix` counts families per language with k = 10. pm-1 and pm-5 ask to extend it to a weekly per-language quality event (future backlog CVL-05), and to replace `model = hindi_small` on capture events with a tier.
-- **Questions.** (a) Is the closed seven-code `lang` property acceptable as L2 (with the Privacy Policy section 13 disclosure)? (b) Is the k-anonymised server view acceptable without consent? (c) May the weekly per-language quality event and the "my language isn't here" counter (CVL-16, a message the person chooses to send, no person id) follow?
-- **Default.** Ship option (a) as coded; the server view as built; (c) waits.
-- **Deadline.** 16 Oct (before external TestFlight testers opt in on 19 Oct); (c) before v1.1.
-- **Documents.** TRACKING_PLAN 6.2; DATA_CLASSIFICATION 4.7, 4.9, open issue 2; Privacy Policy 3, 13, CN-22; DEBATES Q-004; future backlog CVL-05, CVL-16, T5-26.
-
-### Q12. IP address plus a language-revealing file name at download hosts
-- **Context.** When a person picks a language, the app downloads that language's pack and model from the download host (Cloudflare R2 candidate, DEBATES Q-001) or Hugging Face. The host sees an IP address and a file name such as the Hindi model.
-- **Questions.** (a) Is that personal information that needs more than the Privacy Policy section 8 disclosure (for example under the CCPA or MHMDA)? (b) Should we mirror every model to our own host so only one disclosed processor sees it?
-- **Default.** Disclose; mirror later (D-046).
-- **Deadline.** 29 Oct.
-- **Documents.** Privacy Policy 3, 8, CN-11; subprocessors 2; privacy labels 1.2; DATA_CLASSIFICATION 4.8.
-
-### Q19. Pre-account local use
-- **Context.** People can write and keep letters on the phone before creating an account; Terms acceptance happens at sign-in (A-REQ-034), after the 18+ gate.
-- **Question.** Is browsewrap acceptable for pre-account local use, or should the welcome screen link the Terms?
-- **Default.** Sign-in-wrap only; the welcome screen gains a quiet Terms and Privacy link if counsel prefers.
-- **Deadline.** 29 Oct.
-- **Documents.** Terms 1.5 counsel note; in-app disclosures 3a.
-
-### Q20. CCPA, CalOPPA and other state laws
-- **Context.** We are likely below every CCPA threshold and do not sell or share (Privacy Policy CN-4). We comply voluntarily. Since 1 Jan 2026 the CCPA regulations treat personal information of consumers under 16 as sensitive where the business knows the age (11 CCR 7001(bbb), S). Connecticut applies to any controller processing sensitive data from 1 Jul 2026 (S).
-- **Questions.** (a) Do 7027(m) purposes mean no "Limit" link is needed? (b) When would a risk assessment be due? (c) Is the California notice at collection complete for v1.0?
-- **Default.** Voluntary compliance; no "Limit" link; a light risk assessment written now.
-- **Deadline.** 29 Oct.
-- **Documents.** Privacy Policy 15, 16, CN-4; register CR-013 to CR-022.
-
-### Q21. Staff-access and transparency commitments
-- **Context.** Ops scripts write an `ops.audit_log` row before reading anyone's data, but dashboard SQL reads are not logged until database-level auditing exists. The Privacy Policy now says access "through our support tools" is logged. It also commits to publishing legal-request counts.
-- **Questions.** (a) Is "through our support tools" accurate and enough? (b) Keep the transparency-report commitment for an individual publisher, and with what wording (future backlog T5-02, CN-9)?
-- **Default.** As drafted; keep the commitment.
-- **Deadline.** 29 Oct.
-- **Documents.** Privacy Policy 7, CN-8, CN-9; CHD policy 5; LEGAL-REQ-025; future backlog T5-02.
-
-### Q24. Export classification (encryption) in App Store Connect
-- **Context.** v1.0 uses only TLS and Apple's own platform encryption; there is no app-level encryption of audio in v1.0 (backup is later). App Store Connect asks an export-compliance question.
-- **Question.** Is "uses only exempt (standard) encryption" the right answer for v1.0, with no BIS filing?
-- **Default.** Answer exempt.
-- **Deadline.** 30 Oct.
-- **Documents.** Register CR-089, CR-121.
-
-### Q25. The "If you are struggling" support row
-- **Context.** The safety classifier is deferred to v1.1 (D-059); v1.0 ships a static, always-available row in Settings with resources. Terms 20.3 says prompts and resource cards are general information only.
-- **Question.** Does a static resources list need anything beyond verified, current US resources and the Terms 20.3 disclaimer (no clinician sign-off, which D-034 required only for the classifier)?
-- **Default.** Verified national resources, re-checked each release; no clinician sign-off. Re-checked in primary sources (988lifeline.org, postpartum.net), including the 988 language options, before submit (D-087; founder task FT-36).
-- **Scope (D-087).** The list is shown as United States only ("They are for people in the United States."). Nothing picks lines by region and no country is stored (LEGAL-REQ-058). When a second storefront opens, extend this question: a verified list per region (a directory such as findahelpline.com or IASP, or national lines checked one by one) and whether the region comes from the device or the storefront. Not needed for v1.0.
-- **Deadline.** 16 Oct (before the external beta).
-- **Documents.** Terms 20.3; CHD policy 2; Privacy Policy 5, 13; DECISIONS D-034, D-059.
-
-### Q26. Retention periods marked "proposed"
-- **Context.** Analytics 12 months, support email 2 years, consent records life of account plus 3 years (pseudonymised), deletion records 3 years, no deletion of inactive accounts (a keepsake is opened years later).
-- **Questions.** (a) Approve the periods. (b) Is "no inactivity deletion" consistent with storage-limitation duties (OQ-11)? (c) Do consent records kept 3 years after deletion conflict with MHMDA's narrow deletion exceptions (they hold no health data)?
-- **Default.** Adopt as proposed.
-- **Deadline.** 29 Oct.
-- **Documents.** Privacy Policy 10; data-policy 6; deletion spec 6; POLICY_VERSIONING 7.1; register section 6 questions 7.
-
-### Q27. CSAM reporting, legal process, custody disputes, DMCA
-- **Context.** Terms 9.4 (verified court orders), 10.3 (NCMEC reporting of apparent CSAM), Privacy Policy 7 (legal requests). No photos in v1.0 lowers but does not remove the CSAM question (letters and, later, photos). Custody disputes are foreseeable. A DMCA agent is not registered.
-- **Questions.** (a) Do we owe 18 U.S.C. 2258A reports as a provider, and what preservation runbook is required? (b) The verification standard and notice rule for court orders and subpoenas in custody disputes (Stored Communications Act)? (c) Register a DMCA agent?
-- **Default.** Counsel-led runbooks; no proactive scanning; no DMCA agent until public sharing exists.
-- **Deadline.** Before release (9 Nov).
-- **Documents.** Terms 9, 10; Privacy Policy 7; LEGAL-REQ-056, -057; register CR-112, CR-113; future backlog T5-13.
-
-### Q28. Breach readiness
-- **Context.** State breach laws apply; the FTC Health Breach Notification Rule may arguably apply to a multi-author journal (register CR-030). Recordings never reach our servers in v1.0, which narrows the content at risk to letter text and child profiles.
-- **Questions.** (a) Does HBNR apply? (b) Which clock governs our incident plan? (c) Do the notification templates in `docs/ops/runbooks/incident-notification.md` meet the content rules of the main states?
-- **Default.** Treat HBNR as applicable for readiness; shortest clock.
-- **Deadline.** Before release.
-- **Documents.** LEGAL-REQ-039; register CR-017, CR-030, CR-111; incident runbook.
-
-### Q31. Draft legal text for TestFlight testers (DEBATES Q-009)
-- **Context.** Sign-in and sync need published `terms` and `sensitive-data` rows (the server refuses content writes without them). External testers start 19 Oct; counsel signs off 29 Oct.
-- **Questions.** (a) May friendly-family testers accept the current drafts (notes stripped, the founder's name and a mailing address filled, a pre-release line on top) as version 0.9.0? (b) Is counsel's text then offered as 1.0.0 with re-consent and a short-notice approval, rather than 30 days' notice? (c) Anything in the drafts that must not go to testers even as pre-release text?
-- **Default.** As (a) and (b); C0 and C1 only, never the store build.
-- **Deadline.** 16 Oct.
-- **Documents.** POLICY_VERSIONING 2.4, 3, 6; DEBATES Q-009; FOUNDER_TASKS FT-23, FT-41.
-
-## 5. Tier C: before later features ship
-
-### Q22. Launch geography and overseas family
-- **Context.** US storefront only. With no web contribution page in v1.0, overseas grandparents cannot contribute yet. India's DPDP Rules' fiduciary duties are expected around May 2027 (S).
-- **Questions.** When family members (including overseas grandparents) can write, does accepting their letters "offer services" in India (DPDP section 3) or target the EU or UK (GDPR Article 3(2))? Geo-limit, add a contributor notice, or comply?
-- **Default.** US only; revisit before the family release.
-- **Deadline.** Before family members or the web page ship (v1.1 or later); DPDP view by May 2027.
-- **Documents.** Privacy Policy 17, CN-14; register CR-100 to CR-102; future backlog T5-28.
-
-### Q29. Account deletion in a shared book; fiduciaries
-- **Context.** Account deletion removes the author's letters from every book, including one shared with a co-parent (PRD K-22). A "leave my letters for {child}" option would need a licence that survives deletion. Executors and fiduciaries (California RUFADAA) and a legacy contact are later (future backlog T5-12).
-- **Questions.** (a) May a surviving licence let letters stay for the child after the author deletes their account? (b) The proof standard and release scope for executors; the RUFADAA designation tool.
-- **Default.** As drafted (removal); no fiduciary release without counsel.
-- **Deadline.** Before v1.1.
-- **Documents.** Terms 8.4 counsel note; Privacy Policy 10, CN-13; deletion spec OQ-1; register CR-018; future backlog T5-12, FAM items.
-
-### Q30. Later features (counsel batch from the future backlog and DEBATES)
-Each is answered before its feature ships; the default is "not built until answered".
-
-| Item | Source | Question |
+| Planned | State of the code | How the drafts handle it |
 |---|---|---|
-| Server transcription and the AI gateway | T5-07, BL-304; LEGAL-REQ-004, -020 | Consent text naming providers (Apple 5.1.2(i)); Groq zero retention; DeepInfra DPA; is it a "major" policy change (POLICY_VERSIONING 2.1 item 1)? |
-| Family hearing each other's recordings, backup | FAM-03, D-032 scheme, ADR 0006; LEGAL-REQ-022(a), -023 | Server-wrapped keys and "encrypted" claims; breach safe harbours with escrow; Privacy Policy and Terms 12 rewrite |
-| Other family members and the web page | D-055; LEGAL-REQ-005, -010, -035 | Contributor notice, age confirmation, rights without an account, D-039 (contributors see birthday month and day only), MHMDA sharing consent |
-| Plus "follows the book" across Apple families and Android | DEBATES Q-008, G-09 | A purchase-derived date on our server (L3): CCPA "commercial information", Purchases label as App Functionality, privacy policy change |
-| The child's own voice and "sounds" moments | CVL-19, T5-08; LEGAL-REQ-059 | Written COPPA opinion before the `child-input` flag turns on |
-| Importing a non-user's voice note | CVL-12 | Consent of the person recorded; Penal Code 632; biometric definitions |
-| "We never imitate a voice" as a product rule and claim | CVL-04, T5-08 | Wording for the Privacy Policy and the claims registry; CI denylist |
-| Native-speaker accuracy reviewers | CVL-02 | Are reviewers processors; what they may see |
-| Hinglish fine-tune | 01-capture-voice-languages | Training-data terms (as Q9) |
-| Pricing and onboarding experiment arms | G-01, T5-21 | Arm values as L2; label effect |
-| Shower-guest recordings | G-10 | Recording consent (Penal Code 632) |
-| Account-anniversary email | G-13 | Transactional or commercial (CAN-SPAM) |
-| Share-sheet messages | G-14 | CAN-SPAM reading of messages a user sends through the share sheet |
-| Translated UI and legal text | T5-19 | California Civil Code 1632 for contracts negotiated in Spanish, Chinese and other languages |
-| Printed books | T5-27, Terms 15 | Print Terms, sales tax, PCI scope, EU GPSR if EU sales start |
-| Insights agent data | INSIGHTS_LOOP, D-070 | Reports in the repo stay content-free and k-anonymised; confirm no consent is needed for k-anonymised aggregates |
+| Push notifications (co-parent letter notices, restore alerts on other devices) | Payload shapes only (`packages/api/src/server/push.ts`); no sender, no token table | Not mentioned. Reminders on the phone are local notifications |
+| New-device sign-in notice and device records | No `account_sessions_seen` table and no sender; the copy exists only | Not mentioned (Terms 3.2 asks people to tell us) |
+| Subscription status report, purchase consent record and reminder emails (D-080, D-081) | `subscription-status` handler is a shell; nothing written; no sender | Our servers do not receive purchases; reminders are on the phone only |
+| Recording backup, phone side | Contract only (`packages/api/src/server/recovery-key.ts`); server on `feat/backup-server` | Privacy 4 and Terms 7.2 say not available yet and describe how it will work |
+| Email suppression record after unsubscribe | None; the website marks the Resend contact unsubscribed | Not mentioned |
+| Sign-in again before account deletion; phones clear their data after deletion | Neither built | Not mentioned |
 
-## 6. Not counsel questions, but they block submission
+Cloudflare R2 arrives with PR #126 (signed remote config, pack manifest and content bundle from `packs.earlyletters.app`, D-097) and PR #162 (the upload pipeline). The drafts name R2 for what #126 uses, so this branch merges after #126.
 
-These are listed so counsel sees the whole picture; each has an owner outside legal.
+## 1. What option B changed (one page)
 
-1. **Governance migration applied** (`20261002020000_data_governance.sql` drops `safety_events` and fixes the book-creator cascade): pending on the live project; production must be built from all migrations (D-041) before the Privacy Policy is published (CN-10, CN-13). Owner: founder.
-2. **Apple token capture** (security review H3) before submission; **email-link account binding** (H1) before external testers. Owner: auth.
-3. **Plus reminder scheduler and confirmation sheet** (Q-003 memo section 9) before feature freeze 26 Oct. Owner: payments, content.
-4. **Content strings:** `sensitiveConsent.body` says "the family you choose" (co-parent only, D-055); `plus.legal.renewAnnual` and `renewMonthly` hard-code trial lengths; the store description needs the CHD policy link. Owner: content.
-5. **Privacy manifest** in `app.config.ts` (security review L7; labels 3.3). Owner: mobile.
-6. **Website pages** at /terms, /privacy, /health-privacy, /subprocessors, /delete-account (and a URL for the Subscription Terms) by 19 Oct, with no logging on `/i/*`. Owner: website thread.
-7. **Download host choice** (DEBATES Q-001) and its DPA. Owner: founder.
-8. **Founder fields:** {PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}, {SUPPORT_PHONE}, {COUNTY}, the Subscription Terms URL, the policy archive URL.
+| Area | Before (develop drafts of 3 Oct; PR #81 drafts of 4 Oct) | Option B (15 Oct) | Decision | Drafts | Questions |
+|---|---|---|---|---|---|
+| Accounts and sign-in | 3 Oct: sign-in with sync. #81: none | Optional sign-in after the first letter; Apple, or an email link and code (new-device email planned, not built) | D-100; F02 | Privacy 2, 5, 11; Terms 3 | Q46, Q56 |
+| Letters on our server | 3 Oct: synced. #81: none | Synced after a separate sensitive-data consent; not end-to-end encrypted | D-100; F16 | Privacy 2, 3, 9 | Q43, Q48 |
+| Co-parent sharing | 3 Oct: co-parent only. #81: not in v1.0 | Two parents per book, equals; the inviting parent can undo a join within 72 hours; after that, no removal between parents | D-100, D-099; F11 | Terms 3.3, 4; Privacy 3 | Q48, Q53 |
+| Recording backup | 3 Oct and #81: none; recordings said to stay on the phone | Free, opt-in, own consent; encrypted on the phone; stored in Supabase Storage; escrow in a separate recovery service; log and email per use; holds; Stop link. Not available yet: the drafts say so | D-073, D-100, D-102, D-108; F08 6.5 | Privacy 4, 7; Terms 7; label | Q42, Q45, Q47, Q50 |
+| Plus and reminders | 3 Oct: the earlier prices (superseded by D-082), Read together gate, no emails. #81: 2 free letters, no reminders | 2 free letters then Plus; $4.99 and $49.99; reminders on the phone (built); status report, consent record and reminder emails planned, not built | D-080 to D-082, D-103, D-094; F14 | Terms 8; Subscription Terms; Privacy 2, 7 | Q41, Q37, Q52 |
+| Analytics | Opt-in PostHog | None in v1.0 | D-095 | Privacy 2; label | Q38 closed; Q7 deferred |
+| Health details | Separate Consumer Health Data Privacy Policy | One paragraph in the Privacy Policy (section 9); separate notice removed pending counsel | Founder, 15 Oct | Privacy 9 | Q32 |
+| Deletion | 31, 38, 45 day clock | Same clock; adds backup and keys when backup ships; named exceptions | F17 8.4 | Privacy 7; delete-account page | Q51, Q13 |
+| Privacy label | 3 Oct 1.3.0: no audio. #81 2.0.0: the no-data answer | 1.4.0: Contact Info, User Content, User ID, Sensitive Info; Audio Data and Device ID when backup ships; Purchase History only if the status report ships; no Usage or Diagnostics | D-100; F17 8.5 | Label 1.4.0 | Q54 |
+| Website email list | #81 Q34 | Still collected through Resend | ADR 0010 | Privacy 2; delete-account page | Q34 |
 
-## 7. Where each question came from
+## 2. Questions for option B, in R4's order (PRD V2 `reviews/R4-privacy-trust.md`, 13 Oct)
 
-| # | Sources |
-|---|---|
-| Q1 | D-004, D-064; Terms counsel note and Appendix B 13; register CR-130; CHD HN-10; Privacy CN-1 |
-| Q2 | CHD HN-4, HN-5; Privacy CN-16; LEGAL-REQ-006; D-050; memos/lawyer-2.md "Needs a human lawyer" 1 and 4; register section 6 questions 3, 11, 13 |
-| Q3 | CHD HN-6, HN-10; Privacy CN-3 |
-| Q4 | Privacy CN-2; lawyer-2 M1 and question 5; register questions 2 and 15 |
-| Q5 | Terms 2 counsel note; lawyer-1 H4 and question 2; register CR-004, CR-005, question 6; T5-15 |
-| Q6 | DEBATES Q-004; DATA_CLASSIFICATION open issue 2; T5-26; pm-1 asks (05 section 7.1) |
-| Q7 | DEBATES Q-005; TRACKING_PLAN 10; labels 1.3; T5-01 |
-| Q8 | DEBATES Q-003; memos/q-003-subscription-notices.md; lawyer-1 H1, M1, M2, M8, question 1; register question 1; ADR 0013 consequences; G-12 |
-| Q9 | ADR 0015 training-data caution; 05 section 7.1 (Hinglish) |
-| Q10 | Register CR-122; G-02 |
-| Q11 | subprocessors 4; Privacy CN-7 |
-| Q12 | Privacy CN-11; DATA_CLASSIFICATION 4.8 |
-| Q13 | Privacy CN-12; deletion spec DATA-REQ-036 |
-| Q14 | Terms 13 counsel note; lawyer-1 L6; register CR-012 and question 10 |
-| Q15 | Terms 21 counsel note; lawyer-1 L2 and question 3; Terms Appendix B 9 |
-| Q16 | Terms Appendix B 5; lawyer-1 L5; T5-04, T5-08 |
-| Q17 | labels 4; in-app disclosures 3b; D-061 effects ("counsel to confirm privacy labels section 4") |
-| Q18 | Terms Appendix B 1 and 2; lawyer-1 L3, L4 and question 4 |
-| Q19 | Terms 1.5 counsel note |
-| Q20 | Privacy CN-4; lawyer-2 question 6 |
-| Q21 | Privacy CN-8, CN-9; lawyer-2 question 7; 05 section 7 (legal owner list) |
-| Q22 | Privacy CN-14; register questions 5; T5-28 |
-| Q23 | `docs/reviews/2026-10-04-security-privacy.md` H1, H3, M2 |
-| Q24 | Register CR-089, CR-121 |
-| Q25 | D-034, D-059 |
-| Q26 | Privacy CN-12; deletion spec OQ-11; register question 7 |
-| Q27 | Terms 9 and 10 counsel notes; Appendix B 8; register question 9; T5-13; 05 section 7 (CSAM applicability) |
-| Q28 | Register question 4, CR-030 |
-| Q29 | Terms 8 counsel note; Appendix B 6; deletion spec OQ-1; T5-12; 05 section 7 (RUFADAA tool) |
-| Q30 | 05 sections 7 and 7.1; DEBATES Q-008; 01, 02, 03, 04 future backlog counsel items |
-| Q31 | DEBATES Q-009 (backlog-consolidation) |
+### Q41 (A). Auto-renewal notices with the status report (R4 question 1; PT-08 to PT-10; F14 Q-C1 to Q-C12)
+- **Context.** Apple is the merchant. D-080 and D-081 plan a status report (plan, trial end, renewal date, cancelled flag) and a first-purchase consent record (product, offer type, Subscription Terms version, time) so the server can email the notices; neither is built, and the drafts say our servers do not receive purchases. What is built: the purchasing iPhone schedules local reminders and shows a confirmation with Save a copy. The Subscription Terms say reminders "can arrive late or not at all". Laws were read on 3 Oct (V per the Q-003 memo); none re-read on 15 Oct (blocked).
+- **Questions.** (a) May the Terms describe the reminders as best-effort when 17602(b) requires notice for trials over 31 days and terms of a year or more? (b) Is a phone notice enough for a buyer who never signs in, or must the Plus step ask for an email or route through sign-in? (c) After account deletion while Apple still bills, may and must we keep email, plan and next date until the subscription ends (the drafts no longer say so, because nothing is kept today)? (i) Until the status report ships, are phone-only reminders enough for v1.0? (d) Must the scheduler project renewals it has not seen? (e) Is a pseudonymised consent record adequate proof under 17602(a)(6)? (f) What must an offer code say, and may its free period exceed 31 days? (g) Is the confirmation with Save a copy a retained acknowledgment? (h) Does 17602(h)'s annual reminder reach monthly plans (the app sends one)?
+- **Update 31 Oct 2026 (Terms 4.1.0 section 8.9; Subscription Terms 4.1.0; review SUB-03, SUB-04).** The app's reminders, in-app note and confirmation name no amount (D-083), and our own emails about Plus are not sent in the first store build (D-121). California 17602(b)(1) (a trial over 31 days, which the 2-month annual trial is) and (b)(2) (initial term of a year or more) are read in `docs/emails/COMPLIANCE.md` 5.1 as requiring a notice with the amount and frequency of charges; (h) asks for an annual reminder with the amount; (a)(3) an acknowledgment with the offer terms. Whether Apple's own receipts and emails reach these buyers in those windows, with the amount, is Unverified, as is whether the duties fall on us when Apple is merchant of record. Two routes: (i) a narrow D-083 exception so those notices show StoreKit's displayed price and period (the amount then comes from Apple, never typed), after which Terms 8.9 changes to say the app's reminders give the price; or (ii) counsel confirms in writing that Apple's messages satisfy (b)(1), (b)(2) and (h). Also Unverified: that Apple's receipt shows the amount charged for these products (check in the TestFlight sandbox pass). Terms 8.11 relies on choosing "keep current price for existing subscribers" in App Store Connect for every price change (avoids New York's 14-day pro-rata refund route, memo C-9); the billing grace period is 16 days (D-048). Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated in July 2025 and an advance notice of rulemaking was published on 13 March 2026 (as noted on 3 Oct 2026; not re-read). Lifetime option (not offered): California AB 2426 licence disclosure. The full 4.0.0 notes are in `CHANGES-2026-10-31.md`, last section.
+- **Default.** Phone reminders as built; if the status report ships, the billing-notice record is kept until the subscription ends and the consent record is pseudonymised; no code over 31 days free. **Deadline.** T17. **Drafts.** Terms 8; Subscription Terms; Privacy 2, 7, 10.
 
-Superseded and closed since the 2 Oct memos (no longer questions): PowerSync no-training clause (not used, D-023); RevenueCat terms (not used, D-053); Groq zero retention and DeepInfra DPA for v1.0 (no cloud transcription, D-059; they move to Q30); Standard-mode escrow disclosure and breach safe harbours for v1.0 (no backup; Q30); on-device safety tiering as "collection" (no classifier in v1.0; returns with v1.1); server-side purchase consent rows (D-049 superseded; Q8); store "beta" line (decided, D-060).
+### Q42 (A). Recording backup with escrow (R4 question 2; PT-01, PT-02, PT-22, PT-24)
+- **Questions.** (a) Is Privacy 4 enough, including its sentence that someone with the recovery key and a copy of our stored data could open backups without the recovery service, a log entry or an email? Supabase hosts every piece: the encrypted files and sealed keys in the main project, and the recovery key as a function secret in the separate escrow project. (f) Privacy 4 says we email the owner on each use except a legal request the law forbids us to disclose; the code emails on restore and rotation, and a legal use has no code path yet. Is that wording right? (b) With us holding a key, is a breach of the backup store a breach of unencrypted personal information for state safe-harbour purposes? (c) Does server-held voice audio make recordings biometric data or consumer health data under MHMDA when no voiceprint is made? (d) Does backup need its own consent act (the build default), or can the sensitive-data consent cover it? (e) Is "We never listen to your recordings" safe as an absolute, given the legal-order use?
+- **Default.** As drafted; own consent act; treat a store breach as reportable. **Deadline.** T17; backup consent text before T27.
+
+### Q43 (A). Privacy claims (R4 question 3; PT-03, PT-25, PT-26)
+- **Questions.** Approve or replace "Your book is shared only with the co-parent you invite" (sign-in line), "Private by default" (store, app) and the staff line ("We don't look at your letters. The few ways we could are written in our Privacy Policy."). Privacy 3 says letters are not end-to-end encrypted, that we could read them, and when we do; is that enough while dashboard access is not separately logged?
+- **Default.** In-app disclosures 3.4.0 section 1. **Deadline.** T17.
+
+### Q44 (A). Real families under draft texts (R4 question 4; PT-31; old Q31)
+- **Questions.** May the founding family (T19) and the first outside families (T22) sign in and sync under texts marked draft (published as 0.9.0 per POLICY_VERSIONING 2.4), with 1.0.0 offered later with re-consent? What must the 0.9.0 consent say?
+- **Default.** No outside family signs in before T17 comments. **Deadline.** T17.
+
+### Q45 (A). COPPA revisited for backup (R4 question 5; old Q4)
+- **Question.** With backup, a baby's voice in the background of a parent's recording reaches our servers, encrypted. Does that change the view that COPPA does not apply?
+- **Default.** Does not apply; `child-input` flag off. **Deadline.** T17.
+
+### Q46 (B). Age assurance (R4 question 6; PT-11, PT-12; old Q5)
+- **Questions.** Old Q5 (a) to (d); may an age signal be stored with the Terms acceptance as compliance evidence; how are installs made before 1 Jan 2027 handled under AB 1043?
+- **Default.** No age signal on the server; request the OS signal at launch from T32. **Deadline.** T17 for AB 1043.
+
+### Q47 (A). Publisher identity and key custody (R4 question 7; PT-30; old Q1, #81 Q36)
+- **Questions.** Old Q1 (a) to (e), plus: does the founder's personal custody of the sealed escrow key copies change the entity and insurance advice? If an entity is formed, can the first published texts name it?
+- **Default.** Individual with a mailing address; founder decides at T15. **Deadline.** T15.
+
+### Q48 (A). Consent design (R4 question 8; PT-23; D-050; old Q2)
+- **Questions.** Is sharing with the other parent "necessary to provide" the shared book, or is a separate sharing consent needed at the first invite (one is built, switched off)? Connecticut: on withdrawal, is stop-and-offer-deletion enough, or must synced letters be erased within 15 days (U)? Does Privacy 9 plus the in-app agreement meet MHMDA's consent content rules?
+- **Default.** One consent naming the co-parent; stop and offer deletion. **Deadline.** T17.
+
+### Q49 (B). Death, incapacity and fiduciary access (R4 question 9; PT-17; old Q29)
+- **Questions.** The Terms have no fiduciary clause. Should they say that a verified executor, legal representative or the child's guardian may receive one export of a sole parent's book, with no account takeover? What documents should we require (California RUFADAA and similar)? Should "leave my letters for my child" after account deletion be offered?
+- **Default.** No clause; runbook before C1. **Deadline.** T17.
+
+### Q50 (B). Safety removal, custody and legal orders (R4 question 10; PT-16; old Q27)
+- **Questions.** The evidence standard for limiting a parent's access (Terms 4.4); answering court orders and subpoenas, including a legal-order use of the escrow key (Privacy 4 promises notice unless the law forbids it); CSAM reporting duty (Terms 9) now that recordings can reach our servers; whether a DMCA agent is needed.
+- **Default.** Counsel-led runbooks; notice unless forbidden. **Deadline.** T17.
+
+### Q51 (B). Deletion exceptions and retention (R4 question 11; old Q13, Q26)
+- **Questions.** Approve the kept records in Privacy 7 and the delete-account page. **Conflict:** D-021 sets key-unwrap logs at 12 months; PRD V2 F08 and F17 set them at 24; the drafts say 24. Also the email provider's 30-day copy of the completion email, the one exception to the 45-day provider clock.
+- **Default.** 24 months; the coordinator amends D-021 if counsel agrees. **Deadline.** T17.
+
+### Q52 (C). Grief case and billing notices (R4 question 12; PT-18)
+- **Question.** If a family asks us to stop all email after a loss, may billing notices stop while Apple still bills?
+- **Default.** They continue. **Deadline.** T30.
+
+## 3. Further questions for option B
+
+### Q53 (A). Two parents per book
+- **Question.** Terms 3.3 and 4 make two parents equals: the parent who sent the invite can undo the join within 72 hours (`undo_parent_join`, on `feat/db-v1-gate`), and after that neither can remove the other; leaving has a choice with nothing preselected. Enforceable and fair for separating parents?
+- **Default.** As drafted. **Deadline.** T17.
+
+### Q54 (A). App Privacy answers 1.4.0
+- **Questions.** (a) Is backed-up audio "collected" and "linked" when we hold a key? (b) Is the random per-install ID a Device ID (only `backup_devices` uses one)? (c) If the status report ships, is it Purchase History for App Functionality? (d) If push ships, do push tokens need a row? (e) Is any row optional to disclose?
+- **Default.** Declare what the release build sends, linked (labels 3.2 and 3.4). **Deadline.** T17; final at T30.
+
+### Q55 (B). Export classification with app-level encryption (old Q24)
+- **Question.** Backup adds AES-256-GCM and X25519 sealing to protect the user's own data. Is "uses only exempt encryption" still the right App Store Connect answer?
+- **Default.** Exempt. **Deadline.** T23.
+
+### Q56 (B). Sign-in codes as sensitive personal information
+- **Question.** Sign-in links and codes travel by email through Resend. Are they "account log-in" credentials under the CCPA's sensitive personal information definition, and does that change Resend's contract or the California disclosure?
+- **Default.** Treat them as sensitive; no change to the text. **Deadline.** T17.
+
+### Q57 (A). Sanctions: blocked places, and no name screening (D-131, D-137)
+- **Context.** We take no payments (Apple sells Plus) and offer the app only on the US storefront. Terms 2.4 asks every user to confirm they are not in an embargoed place and not on a US restricted-party list. Under D-131 a sign-up check (not yet live) refuses requests whose IP address maps to North Korea, Iran, Cuba, Syria, Russia or Belarus; the planned web contribution page also refuses Crimea, Sevastopol, Donetsk and Luhansk. Under D-137 we do not screen names against the SDN List or other restricted-party lists, because it would mean collecting legal names, and in practice dates of birth, that the product otherwise never needs. Our reading rests on A Framework for OFAC Compliance Commitments (a risk-based approach, size and sophistication as factors) and the Enforcement Guidelines (31 CFR 501 Appendix A), read 1 Nov 2026. We know OFAC civil liability is generally strict and that program rules bar services to a blocked person with no payment threshold, so this lowers cost, not exposure. Instead of a sweep, support checks a name on a report or escalation, and a possible match is suspended, never deleted, and brought to you the same day (`docs/ops/runbooks/sanctions-match.md`). Privacy 12 discloses the check (D-136).
+- **Questions.** (a) Is the Terms confirmation plus the country block a reasonable programme for a free consumer service with no payments of its own, or must we screen names? If screening, against which lists and with what data. (b) Is the app subject to the EAR at all (15 CFR 734.7, "published")? (c) If it is: the 5D992.c self-classification and any 740.17 reporting; whether License Exception CCD (740.19) covers Russia and Belarus; whether blocking sign-up is enough when US-storefront downloads are not gated by place. (d) Kherson and Zaporizhzhia: block them on the web page too? (e) On a match: is account data or a prepaid subscription "blocked property" needing a report within 10 business days (31 CFR 501.603), and is suspending without deleting right? (f) Is the Privacy 12 wording enough, and is a country derived in memory and not kept "collected" for the App Privacy label (we read it as not collected; label unchanged, CPrivO-2)?
+- **Default.** Country block as D-131, no name screening, Privacy 12 as drafted, label unchanged. **Deadline.** Before the sign-up check is switched on, and before any sign-in outside the family (T22).
+
+## 4. Questions carried from PR #81 (Q32 to Q40)
+
+| # | #81 question | Status under option B | Default |
+|---|---|---|---|
+| Q32 | Is a separate consumer health data policy needed? | **Live, and the main health question.** We now hold letters that may mention health and due dates that show a pregnancy. The founder removed the separate notice pending this answer. Does Washington's MHMDA (RCW 19.373.020, U) require a separate policy with its own homepage and app-store link, or is Privacy 9 enough? Nevada and Connecticut likewise | No separate notice; Privacy 9. If counsel says it is required, restore the notice from git history and add the links |
+| Q33 | Is "we do not receive your letters" accurate? | Closed by option B; see Q43 | n/a |
+| Q34 | Website email list: CAN-SPAM postal address, consent record, CalOPPA, GDPR for EEA or UK visitors | Live. Are the "it is ready" emails commercial, so that every one needs the postal address? | Postal address in every footer once supplied; no EEA targeting |
+| Q35 | Custom licence or Apple's Standard EULA? | Live (old Q18). Terms 18 keeps Apple's minimum terms, so either works | Custom licence from the Terms; a forwarding phone number |
+| Q36 | Individual publisher | Merged into Q47 | Mailing address service |
+| Q37 | Subscription terms with Apple as merchant | **Restated: the form.** A one-page Subscription Terms linked above Apple's view and from Settings, Plan, plus Terms 8. Is a separate page right, and must the 2-letter allowance sit beside Apple's price? Notices are Q41 | Separate page and Terms 8 |
+| Q38 | Usage reports | Closed for v1.0 by D-095; returns in v1.1 with Q6 and Q7 | n/a |
+| Q39 | $50 floor, courts, California law | Live. With recordings on our servers, is the cap acceptable for loss of backed-up recordings? | As drafted (Terms 14, 16) |
+| Q40 | Narrowed free promises | Restated for Terms 4.1.0. Terms 8.3 ("Past letters are never put behind a payment") and the list in 8.2 cannot be changed for existing users. Is that the right line? Notes carried from the 4.0.0 Terms (31 Oct 2026, D-082): the 8.2 list is keeping the first 2 letters, reading every kept letter and playing its recordings, and exporting everything. Unlimited writing and co-parent writing left the permanent list, because under D-082 a third kept letter needs Plus; the founder decides whether co-parent writing belongs on it (old Q14). Read together and starting a book for each child are free today but stated in 8.4, not in the permanent list. "Two" is a floor: a later decision may raise the allowance, never lower it. "Stays fully usable" became "stays readable", since without Plus a book cannot take a third kept letter. The promise is binding and advertised, and 8.3 makes it non-amendable for existing users, which limits later options; confirm "as long as we operate the Service" as the outer limit and how it binds a buyer of the business (Terms 19). Who Plus covers is settled (8.14: the holder, and a co-parent through Family Sharing or their own plan). | As drafted |
+
+## 5. Questions carried from 1.0.0 (Q1 to Q31)
+
+Full text is in this file's 1.0.0 version (git history). Only the change is shown.
+
+| # | Title | Status |
+|---|---|---|
+| Q1 | Individual publisher, 5.1.1(ix) | Live; see Q47 (5.1.1(ix) re-read 15 Oct, V) |
+| Q2 | MHMDA and Connecticut consent | Live; see Q48 |
+| Q3 | Health policy content and homepage links | Folded into Q32 |
+| Q4 | COPPA | See Q45 |
+| Q5 | Age assurance | See Q46 |
+| Q6, Q7 | Analytics language code; label linkage | Deferred to v1.1 (D-095); v1.0 label questions are Q54 |
+| Q8 | Subscription notices with no server | Superseded by Q41 |
+| Q9 | Speech model training-data terms | Live, unchanged |
+| Q10 | Trademark | Live, unchanged |
+| Q11 | Processor contracts | Live: Supabase (main and recovery projects; will hold encrypted audio), Cloudflare R2 (app settings, language and speech files, after #126), Resend (sign-in, deletion and backup emails; billing emails if built), Vercel; PostHog not in v1.0. Hugging Face is an independent host |
+| Q12 | IP and a language file name at download hosts | Live |
+| Q13 | Deletion clock and the email provider's copy | See Q51 |
+| Q14 | "Free, always" | Superseded by Q40. Note from develop 1.2.0 (31 Oct 2026, Terms 4.0.0): under D-082 the Terms 13.1 list became keeping the first two letters, reading every kept letter and playing its recordings, and exporting everything; unlimited writing and co-parent writing left the permanent list, for the founder to decide |
+| Q15 | Liability cap | See Q39 |
+| Q16 | Binding promises | Live; adds "we never listen to your recordings" (Q42 e) |
+| Q17 | "Your recordings stay on this phone" | Closed: the microphone string drops it (label 1.4.0 section 5) |
+| Q18 | Arbitration, licence, phone | See Q35 |
+| Q19 | Pre-account local use | Live, unchanged |
+| Q20 | CCPA, CalOPPA, other states | Live; Privacy 10 now gives a short California paragraph instead of the category table. Is that a sufficient notice at collection? |
+| Q21 | Staff access, transparency report | Live; the drafts no longer promise a transparency report. Should they? |
+| Q22 | Launch geography | Live (US only) |
+| Q23 | Security review findings | Live; H1 and H3 are in the gate before any outside sign-in (T16) |
+| Q24 | Export classification | See Q55 |
+| Q25 | Support resources row | Live, unchanged |
+| Q26 | Retention marked "proposed" | See Q51 |
+| Q27 | CSAM, legal process, custody, DMCA | See Q50 |
+| Q28 | Breach readiness, HBNR | Live; backup adds audio and the escrow key to the incident scope (Q42 b) |
+| Q29 | Shared-book deletion; fiduciaries | See Q49 |
+| Q30 | Later features | Live |
+| Q31 | Draft text for TestFlight testers | See Q44 |
+
+## 6. Not counsel questions, but they block the first outside family or submission
+
+1. **Founder facts.** The published drafts carry bracketed blanks: [legal name], [mailing address], [county], [effective date], [phone number] (the last only if a custom licence is used). Also needed: the Subscription Terms URL, an archive URL for past versions, each provider's privacy contact (for requests under Washington law), and the support mailbox provider.
+2. **Services the code uses (checked 16 Oct 2026).** Supabase and Resend: in the code on develop. Cloudflare R2: in #126 (`packs.earlyletters.app` for the signed remote config, pack manifest, content bundle and self-hosted speech files), not yet on develop; the drafts name it for exactly that, and this branch merges after #126. Recording backup: in the private Supabase Storage bucket `entry-audio` on `feat/backup-server`, not R2, so the texts say backups are stored with Supabase. Hugging Face: speech model files still download from it, so the texts name it. Sign in with Google: shown only when the build sets `EXPO_PUBLIC_GOOGLE_*` client IDs; the texts leave it out, so a build that sets them needs one added line. PostHog: the SDK is in `package.json` but never constructed while `EXPO_PUBLIC_ANALYTICS` is off. Website analytics: none. On `main` (0a5a222) `WebAnalytics` is not mounted in the root layout; Vercel production has only `RESEND_API_KEY`, `RESEND_SEGMENT_ID` and `UNSUBSCRIBE_SECRET` (checked by name by the coordinator, 15 Oct), so `NEXT_PUBLIC_ANALYTICS` is not set; and the live Content-Security-Policy is `connect-src 'self'`, which would block it. No analytics line is needed. `apps/web/test/legal.test.ts` on `main` fails if the layout ever mounts it, and `apps/web/e2e/http.e2e.ts` checks `connect-src 'self'`.
+3. **The build switch.** Every `eas.json` profile still sets `EXPO_PUBLIC_SERVER_FEATURES` off. These texts describe the switch-on build and must not be published for a build that has it off.
+4. **The R-17 gate** (BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349) before anyone outside the family signs in (T16).
+5. **Strings that contradict the drafts** (in-app disclosures 3.4.0 section 3, requests to S16).
+6. **Website.** The site renders `docs/legal` from `main`. Per the comment in `apps/mobile/test/privacy-documents.test.ts` (not checked on `main` here), #169 took `/health-privacy`, `/subprocessors` and `/delete-account` off the website and moved their content into `/privacy`. Before develop is next merged into main, confirm the website loader no longer reads the removed `consumer-health-data-notice.md`, and that the deletion text of `delete-account-page.md` is in the page `/privacy` serves. `/subscription-terms` is still to be added.
+7. **Vendor and operations facts in the drafts, not code.** The deletion clock (live systems 31 days, backups 38, providers 45, the email provider's 30-day copy), the quarterly seal check and the two paper copies, two-factor access for the founder, 10 business days to answer a deletion email and 2 years for support email. The founder confirms each; BENCHMARK marks the vendor pages unverified.
+8. **S17 follow-ups:** `data-policy.md`, `DATA_CLASSIFICATION.md` outside 4.3.1, `DELETION_AND_EXPORT_SPEC.md`.
+9. **The Privacy Policy's build list (added 20 Nov 2026).** `privacy-policy.md:21` says the first App Store build has servers off. `app-store-privacy-labels.md:84` says the first store build, Build 12, has servers on with sign-in required (D-157, D-160). The founder corrects the build list before any servers-on store build links the policy. Q108 depends on it.
+10. **Two defects that hold the Build 13 cut (plan #847 Q1 default) and touch what we tell people.** (a) NS-10-R3: on a phone that holds account A's book, account B signs in and sees that book. The gate opens the local book for any session (`apps/mobile/src/lib/first-run/gate.logic.ts:123-125`), and sync only refuses to upload (`apps/mobile/src/lib/sync/ownership.ts:49`). That contradicts the Q43 line "Your book is shared only with the co-parent you invite". The fix is BL-961. (b) NS-10-R7: if an answer is lost and the person retries, the consent step writes a second acceptance row, because each call mints a new key (`apps/mobile/src/lib/auth/consent.ts:117`). The fix is BL-978. Engineering fixes both; neither is a question for counsel.
+11. **The invitation text (added 20 Nov 2026).** `privacy-policy.md:90` says an invitation "names the parent who sent it". The message the app composes also names the child (`apps/mobile/src/lib/family/share-text.ts:8`). Co-parent sharing is alpha-only (D-162), so the founder fixes the sentence before NS-25 reaches a store build.
+12. **Founder decisions from the privacy design that are not for counsel.** Pictures in the iPhone backup (CR-62 item 7; default yes). The owner backup and pictures (ADR 0028 Q4; default no; needed by the Build 13 freeze). Merge BL-868 before the photo export (CR-62 item 3). The X2 scope (default: our sending features, not the parent's own export). One inventory PR per wave. Each has a default in force.
+
+## 7. Questions from the locked new-scope pack (20 Nov 2026; BL-949)
+
+**Where these come from.**
+- **The cards** are the requirements the founder approved on 19 Nov ("I approve all requirements."), locked on 20 Nov. They live in `docs/product/prd/` on branch `docs/prd-lock-v1-20nov` at `450bcb4a` (PR #846) and are cited by NS id, row or section. The council record lists four questions "not fully closed" (`15-council-review.md`): sibling voice, version retention, plan-notice windows and typed-day retention. BL-949 adds a fifth and a sixth: a typed name syncing with a letter, and how long the founder keeps testers' numbers.
+- **The engineering designs** of 20 Nov raised the rest. They are not yet in the repo; the target is `docs/tdd/new-scope/`. They are cited by file and section, for example "privacy 6" or "security 8".
+- **The plan** is #847 (`17-engineering-project-plan.md` on `docs/engineering-project-plan-20nov` at `94603780`).
+- **Code facts** were read on `develop` at `20553b18`, 20 Nov 2026.
+
+**What counsel is asked.** Each question gives the facts, the questions, the default the product follows until counsel answers, what changes if counsel says no, and what it blocks. Where a card and a design disagree, the card wins, and the entry says so.
+
+**How the numbers work.** A topic that already has a 1.5.0 number keeps it, and its new parts continue its letters. Where a 1.5.0 question has unlettered parts, they count as (a), (b) and so on in the order written. For example, Q46's parts are old Q5, the stored age signal and AB 1043 for earlier installs, so its new part is (d). The two new questions take Q107 and Q108. The numbers in between are claimed by open drafts: Q58 to Q74 by #598, Q75 to Q77 by BL-780, and Q78 to Q106 by #760. A search of every remote branch on 20 Nov found no Q107 or higher.
+
+**"Q6" means two things.** In the seal designs and in #847 Q3, "Q6" is ADR 0028's Q6 (`docs/adr/0028-photo-seal-find-on-device-data.md:254`), not this packet's Q6 (deferred analytics). The counsel part of ADR 0028 Q6 is Q107 and Q50(e) below. Whether to build the sealed letter is the founder's decision (#847 Q3).
+
+**How "blocks" is read.**
+- **Build 13** is the Build 13 store candidate under the #847 Q1 and Q2 defaults: servers on, the keeping rows in, photo and Find merged with their flags off in `production`.
+- **"Flag"** means an `EXPO_PUBLIC_*` flag turning on in `production`.
+
+No Build 13 flag waits on counsel. The Build 13 store candidate waits on Q41, as in 1.5.0, and on Q108(a).
+
+### 7.1 Index
+
+| Q | 1.7.0 | Cards | Raised by | Blocks Build 13 | Gates later |
+|---|---|---|---|---|---|
+| Q32 | merged | NS-06A, NS-12, NS-13, NS-18, NS-25 | privacy OQ-C10; 08-keeping 6; data-and-sync OQ-C1 | No | NS-06A, NS-12, NS-25 store build |
+| Q40 | merged | NS-24; frame 7 | 10-reading 7; council T1, T2 | No | Any public NS-24 line |
+| Q41 | merged | NS-32, NS-13, NS-18 | council "not fully closed"; BL-949 item 4; 11-foundations NS-32 | Store candidate (as 1.5.0) | BL-966 store build |
+| Q43 | merged | NS-01, NS-05, NS-06B, NS-08, NS-10, NS-11, NS-32 | privacy OQ-C7, OQ-F4; security OQ-S6; 08-keeping OQ-4 | No; lines stay absent until read | Photo flag (Build 14), NS-05, NS-06B, NS-08-R8, NS-11 |
+| Q44 | merged | NS-03; frame 3; NS-10 | NS-03 R1; security 3.5 | No | First pilot contact |
+| Q45 | merged | NS-16, NS-05, NS-03, NS-08, NS-28, NS-01 | BL-949 item 1; privacy OQ-C1, OQ-F5; security OQ-S4, OQ-S5; 09-capture 11; 10-reading 7; data-and-sync OQ-C1 | No | Share flag outside the founder's family, Arm V, NS-16 flag, NS-08 flip |
+| Q46 | merged | NS-16 | 09-capture 11 | No | NS-16 flag |
+| Q48 | merged | NS-16, NS-01, NS-05, NS-06A, NS-12, NS-25 | BL-949 item 2; privacy OQ-C2, OQ-C4; 09-capture 11; 10-reading 7; data-and-sync OQ-C1 | No | NS-16 flag, NS-25 store build, NS-06A, NS-12 |
+| Q49 | merged | NS-25, NS-06B | privacy OQ-C8; data-and-sync OQ-C1 | No | NS-06B, NS-25 store build |
+| Q50 | merged | NS-06B, NS-25 | security OQ-S6, OQ-S8; privacy OQ-C8; 10-reading 7 | No | NS-06B, NS-25 store build |
+| Q51 | merged | NS-12, NS-18, frame 3, NS-03, NS-09, NS-08 | BL-949 items 3, 5, 6; privacy OQ-C6, OQ-F7; security OQ-S7; 08-keeping OQ-7, OQ-DS4; 09-capture 11 | No | NS-12, NS-18, pilot start |
+| Q54 | merged | NS-16, NS-06B, NS-01, NS-25, NS-26, NS-08 | BL-949 item 2; privacy OQ-C3, OQ-C5; data-and-sync OQ-C1; CR-62 item 2 | No (label unchanged) | NS-16 flag, NS-06B, photo flag |
+| Q107 | new | NS-06B | NS-06 B17; privacy OQ-C9; 10-reading 7; data-and-sync OQ-C1; CR-62 item 1 | No | NS-06B |
+| Q108 | new | NS-12, NS-36 | privacy F-3, OQ-F9, P-5; security 3.7; 08-keeping 6 | Store candidate, part (a) | NS-12 |
+
+Twelve more questions are cited by the cards but need no new text. They are listed in 7.16.
+
+### 7.2 Q32 (merged). Health details in new places
+- **Facts.** Q32's default stands: there is no separate health notice, and Privacy 9 covers health details. The new places a health detail can sit:
+  - an earlier version of a letter, kept on our server today; once NS-12 ships, only its author sees it (Q108);
+  - a Firsts label ("a first can be a health fact", NS-06 B17), which syncs with the letter and reaches the co-parent;
+  - the words of a typed reminder day, such as "baby due" (NS-18 section 5), which stay on the phone;
+  - the NS-25 invite sheet, which tells the inviting parent that earlier letters, a due date among them, become visible to the second parent (NS-25-R16).
+
+  Our own notification wording never names a due date (NS-13 section 17; NS-18 section 6).
+- **(b)** Does any of these places change the Q32 answer?
+- **Default.** Each is letter content or the parent's own words, class L4, covered by Privacy 9.
+- **If no.** The separate notice returns from git history (Q32 default) and names these places. NS-06A and NS-12 wait for it.
+
+### 7.3 Q40 (merged). Read the year back, and free features with no public promise
+- **Facts.**
+  - Ruling T1 (`16-council-review-round-2.md` section 3): Read together, and Read the year back (NS-24), have no session limit and no Plus gate. Public copy may say "Read together is free" only in the form the current listing uses, with no "forever" and no "never limited".
+  - Ruling T2: every capability that ships free in 1.0.x stays free (principle 6). Public copy says nothing either way.
+  - The closing paragraph of Terms 8.2 says Read together does not need Plus today, but it is not on the 8.2 list itself (`terms-of-service.md:100-105`). T1 and NS-24 cite this as "Terms 8.4"; that is a slip, because 8.4 is "What Plus is".
+- **(d)** May NS-24 copy say it is free in the T1 form without joining the 8.2 list?
+- **(e)** Does an internal rule that is never published (T2) bind us in any way?
+- **Default.** No public line for NS-24 beyond the current listing.
+- **If no.** NS-24 copy says nothing about price.
+
+### 7.4 Q41 (merged). Plan notices under the one notification budget (NS-32)
+- **Facts.**
+  - **The windows are data** in `apps/mobile/src/lib/billing/plan-reminders.logic.ts:65-76`. Each is measured back from the trial or period end:
+    - a trial over 31 days: 21 to 16 days before;
+    - a shorter trial: 8 to 5 days before;
+    - every trial that will convert: 5 to 4 days before;
+    - an annual plan that will renew: 31 to 30 days before, and again 8 to 6 days before;
+    - a yearly notice on each anniversary of the first purchase, for monthly plans too (lines 28 to 31).
+  - **How they fire.** At most 4 are pending (`:48`). Each fires at 10:00 local time when its window allows, never in quiet hours. A missed window is skipped, never sent late (`:23-27`). Only the purchaser's phones get them, and none fire once auto-renew is off (`:17-22`).
+  - **The budget (NS-32 section 3).** Plan notices sit outside the one-a-day budget, ranked first, so a day can bring 2 notifications. Every class, plan notices included, uses the interruption level `active`, never `time-sensitive`. Focus and Scheduled Summary can therefore hold them (NS-32 section 5).
+  - **When nothing shows.** If notifications are off in iOS Settings, nothing is scheduled, and Settings, Plan shows the date. "Show Previews" is the person's setting (`16-council-review-round-2.md` section 6, Apple pages read 20 Nov).
+- **(j)** Do these windows match each state's timing rule, as read in the Q-003 memo, section 5?
+- **(k)** Is a local notice enough when iOS may hold it in a Focus or a Scheduled Summary, or never show it because notifications are off? Or must plan notices be `time-sensitive`, or reach the buyer another way?
+- **(l)** May a missed window be skipped, or must a late notice go out?
+- **Default.** Windows as built, level `active`, missed windows skipped, plan notices outside the budget.
+- **If no.**
+  - (j): the window data changes in one file, with its tests.
+  - (k): `time-sensitive` needs its own entitlement (U), and the 09-capture design adds a preflight check that refuses it (09-capture 1.5), so the change would also need a `security-architect` read. A second route would be the emails of D-080 and D-081, which are not built and are not sent from the first store build (D-121).
+  - (l): a late-notice rule in the same file.
+- **Blocks.** The store candidate, as Q41 already does (priority A). The NS-32 code (BL-966) does not wait for the answer (11-foundations NS-32).
+
+### 7.5 Q43 (merged). New lines that make a claim
+- **Facts.** Each line below is written by `content` as a PROPOSED key and sent to counsel with its rendered text.
+  - **Pictures.** "Pictures stay on this phone" and the account-deletion text for pictures (NS-01-R31, R32). Pictures sit in the iPhone backup, and no line says so yet (CR-62 items 4 and 7; `privacy-policy.md:37` names recordings only).
+  - **The sealed letter (NS-06 B12, B16).** "Hidden, not locked" and the honest limits. We could read a sealed letter, because letters are not end-to-end encrypted (`privacy-policy.md:55`). An author west of the sealing zone sees the letter open on the evening before the shown day (CR-62 item 5).
+  - **Sharing and copies.** NS-05's line on where a shared letter goes. NS-11's "as private as where you put it".
+  - **Recordings and backup.** The NS-08-R8 keep-safe line naming iCloud Backup. The backup claims rule allows only "your iPhone's own backup", so the line fails that rule today (`packages/content/test/claims-capabilities.test.ts:206-211`; 08-keeping K6). The NS-10-R13 recording sentence is held back as "counsel-read" (`packages/content/src/features/auth.en.ts:145-147`).
+  - **Reminders.** NS-32's "Gentle reminders, at most one a day" (NS-32 section 19).
+  - **A defect against a 1.5.0 line.** "Your book is shared only with the co-parent you invite" does not hold today when a second account signs in on a phone that holds the first account's book. The Build 13 cut waits for that fix (section 6 item 10).
+- **(c)** Please read each line before its feature is on.
+- **(d)** May the NS-08-R8 line name iCloud Backup as a real copy, without implying that a recording cannot be lost?
+- **(e)** Is "hidden, not locked", with the evening-before sentence, enough for a letter we could read?
+- **Default.** Each line stays absent until counsel has read it (08-keeping OQ-4: the new phone shows only `arrivedPlain`, and there is no R8 line). Picture lines land with the photo flag.
+- **If no.** The line stays absent, or counsel's words replace it.
+
+### 7.6 Q44 (merged). People outside the app: pilot parents and testers
+- **Facts.**
+  - **The pilot (NS-03).** No parent is contacted before a dated counsel read of the consent text and the scripts is on record (NS-03-R1). The parent's recording arm, Arm V, also needs the voice read in Q45(d) (NS-03-R2). The texts come with BL-935, not this packet. #847 puts counsel's read at Fri 27 Nov.
+  - **Testers.** They type numbers into their own messages, and the app composes nothing (frame section 3, ruling D5).
+- **(c)** Does the pilot consent, in both versions (each with its own hash), say what a study run by message needs, when nothing from the study reaches the app or our servers?
+- **(d)** Does a tester's hand-sent message need any notice beyond the fixed question wording?
+- **Default.** No pilot arm starts before the read (NS-03 section 5). Tester numbers are handled as D5 sets out.
+- **If no.** The pilot texts change before any contact. Nothing changes in the app.
+
+### 7.7 Q45 (merged). A child's voice or picture
+- **Facts.**
+  - **The X2 rule.** A child's voice or picture that leaves the phone through one of our features needs a security read and a counsel read first (frame section 7). NS-05's own section 3 names only Q45; the frame and the designs require both reads (security K-1), and the frame is followed.
+  - **No feature asks a child to speak.** The NS-16 strings are scanned to prove it (NS-16-R5).
+  - **NS-16, someone else speaks.** The parent types the speaker's name: 1 to 30 characters, written once (`supabase/migrations/20261002020000_data_governance.sql:95`; `packages/api/src/server/sync.ts:157`). The words sync as the account holder's letter. The recording stays on the phone until a backup flip.
+  - **NS-05 Level 1, share a letter.** The parent's own share sheet sends the stored copy of the picture, with its metadata stripped, and we receive nothing. The security read lists conditions P1 to P4 (security 3.3).
+  - **NS-03 Arm V.** The parent sends one recording from Export to a relative, and the team never receives it. The security read lists conditions V1 to V4 (security 3.5).
+  - **The rule.** 16 CFR 312 (https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312), U: not opened 20 Nov, because the host was blocked in this session.
+- **(b)** A sibling or another child may speak a letter on the parent's phone, signed with a typed name. Does that change the 1.5.0 reading that COPPA does not apply? Nothing invites a child, and the letter is the parent's.
+- **(c)** A picture of the child may leave through the parent's own share sheet (NS-05 Level 1; NS-03 Arm W once its file shows a picture). Is "the same as Export: the parent's own act, and nothing reaches our servers" right?
+- **(d)** Are the voice lines of the Arm V consent and instruction enough, including the residual risks: the relative's messaging provider keeps a copy, and a forward cannot be undone?
+- **(e)** NS-05 Level 3 and NS-28 would host copies; no build is planned. What would counsel need to see before any design?
+- **Default.**
+  - (b): `EXPO_PUBLIC_SIGN_AS_OTHER` stays off in `production` until (b), Q46(d) and Q48(d) are answered.
+  - (c): Level 1 ships text only, and the picture PR is held.
+  - (d): the pilot runs Arm W only.
+  - (e): nothing is hosted.
+- **If no.** NS-16 stays off in store builds, Level 1 stays text only, there is no Arm V, and NS-28 stays parked.
+
+### 7.8 Q46 (merged). A speaker whose age we cannot know
+- **Facts.** The account holder confirms they are 18 or older (`privacy-policy.md:33`). NS-16 lets anyone the parent hands the phone to speak a letter. The speaker gives no age and makes no attestation, and nothing about them is recorded (ruling D9; NS-16-R18).
+- **(d)** Does the 18-and-over rule, or the AB 1043 age signal in Q46, reach a speaker who has no account?
+- **Default.** Nothing is asked of the speaker. The NS-16 flag stays off in `production`.
+- **If no.** NS-16 stays off.
+
+### 7.9 Q48 (merged). Other adults in a letter, and the second parent
+- **Facts.**
+  - **The speaker's name.** It is stored in `entries.author_signs_as`, class L3. The co-parent sees it through `book_entries` (`data_governance.sql:210`), and the export carries it as `author.signs_as`. It is never logged and never searched (NS-16-R8). A list of up to 20 names used before stays on the phone and is cleared at sign-out (NS-16-R15).
+  - **The Review line.** "Ask before you record someone else" (intent) is an instruction, not an attestation, and no record is kept (ruling D9).
+  - **The speaker has no account with us.** We never delete, edit or hide another author's letter on someone else's request (DSR-R04, `docs/engineering/08-data-rights-and-legal-requests.md:35`).
+  - **Backup.** At a backup flip, another adult's voice reaches our server (Q42(c)).
+  - **Pictures of other adults.** #760 Q84 (open draft) asks this for pictures.
+  - **Co-parent sharing.** It stays alpha-only (D-162, `docs/DECISIONS.md:669`).
+- **(d)** Is the instruction line, with no record, enough when the account holder records another adult's voice and words and types their name? The name syncs, and the co-parent sees it.
+- **(e)** Suppose that adult asks us to delete their words, voice or name. Is it enough to forward the request to the account holder and change nothing?
+- **(f)** Does a right to delete reach part of a letter, such as an earlier version (Q108) or a sentence about someone else?
+- **(g)** Does the NS-25 invite sheet's notice that earlier letters, a due date among them, become visible (NS-25-R16) meet the consent content asked in (c)?
+- **Default.**
+  - (d): NS-16 stays off in `production`.
+  - (e): we forward the request and change nothing.
+  - (f): the author can remove a version (ruling D8) or edit the letter. No one else can delete it; a co-parent can only set a family letter aside from the book (DSR-R04).
+  - (g): one consent that names the co-parent, alpha only.
+- **If no.**
+  - (d): NS-16 stays off, or gains what counsel names.
+  - (e): a counsel-led support runbook.
+  - (f): a removal path, still to be designed.
+  - (g): the separate sharing consent, which is built and switched off.
+
+### 7.10 Q49 (merged). Fiduciary access to sealed letters
+- **Facts.** A sealed letter is hidden from every reader except its author until its day (ADR 0028 D3a, CR-62). If the account is deleted before the letter opens, the letter is deleted with it (ruling D6). The Terms have no fiduciary clause (Q49).
+- **(d)** If an executor or guardian receives the one export that Q49 proposes, does it include letters sealed until a later day?
+- **Default.** As NS-06 B12 and B17: only the author's own export carries a sealed letter, and the runbook comes before C1.
+- **If no.** The runbook says what is released.
+
+### 7.11 Q50 (merged). A letter hidden from the other parent, and removing a parent
+- **Facts.**
+  - **Who can read a sealed letter.** The seal columns are the author's only, class L4. The server's clock decides when the letter opens. Someone with server access could read the words (security 3.6).
+  - **What the card says.** NS-06 B17: an author may hide a letter from the other parent unless counsel's Q50 answer says otherwise. The plan and ADR 0028 (CR-62 item 1) say no seal code is written until counsel answers (#847 Q3). The card wins on scope; the plan sets the order.
+  - **Removing a parent.** Ruling D11: the Terms' 72-hour undo is the only removal until Q53 is answered.
+- **(e)** May an author hide a letter from the other parent until a day? What must happen to it under a custody order or a subpoena before that day?
+- **(f)** Is the 72-hour undo enough for a parent who is in danger, or must support be able to remove a parent on evidence (Terms 4.4)?
+- **Default.** (e) as NS-06 B12 and B17. (f) ruling D11.
+- **If no.** (e) the other parent can see a sealed letter, or the seal is not built. (f) a counsel-led removal runbook and a server path.
+
+### 7.12 Q51 (merged). Retention clocks the new scope sets
+
+| Data | Where | Clock (default) | Source |
+|---|---|---|---|
+| Earlier versions (`entry_versions`) | Server | Written by a trigger on every change to the words, the in-book flag or the fixes (`supabase/migrations/20261002020000_data_governance.sql:175-185`). Kept for the life of the letter: deleted when the letter is purged (`on delete cascade`, `20260930000000_scribe_core.sql:157`). Once NS-12 ships, the author can remove one (D8); it is deleted at once and leaves backups on the 38-day clock | NS-12-R6, R7 |
+| Removing a version under a legal hold | Server | Refused with a plain line, as the purge is (`20261023020000_purge_legal_holds.sql`) | security 3.7, OQ-S7 |
+| Typed days (NS-18) | Phone settings and the iOS pending list | Deleted the day after delivery, at sign-out and by Erase everything. Never synced. Not exported (card default) | NS-18 sections 11, 23 |
+| Testers' hand-sent numbers | Founder's private sheet | 90 days after the round | Ruling D5, frame section 3 |
+| Pilot notes and contacts; consent records | Founder's private store | Notes 30 days after the read-out (2 working days after a withdrawal); consent records 12 months | Ruling D4; NS-03-R4, R5 |
+| A let-go draft held on the server | Server | Purged when the discard is acknowledged (D7). Kept if its words changed on another phone, or under a legal hold (`20261016000000_sync_v1_server.sql:782-784`); the draft then comes back as one the parent can keep | 08-keeping K2, OQ-7 |
+
+- **Conflict.** The privacy design says a removed version leaves backups "7 days later" (its section 4 row and OQ-C6), but its own section 1.4 says 38 days. The published clock (Privacy 7: 38 days) is the default.
+- **(d)** May earlier versions be kept for the life of the letter until the author removes them, or do they need a clock?
+- **(e)** May we refuse to remove a version while a legal hold covers the account?
+- **(f)** Must the export, which Terms 8.2 says covers "everything", carry typed days, a setting that stays on the phone?
+- **(g)** Are the tester and pilot clocks acceptable?
+- **(h)** May the promise behind "Let it go" stand with the two server exceptions, or must they be stated?
+- **Default.** As the table.
+- **If no.** Each clock is one constant or one runbook line. Typed days would join an export minor.
+
+### 7.13 Q54 (merged). App Privacy answers for the new scope
+- **Facts.**
+  - **Name and Other User Content** are already declared as collected and linked (`docs/legal/app-store-privacy-labels.md:45, 57`).
+  - **Photos or Videos** is "No" (`:54`). That stays true only while pictures never leave the phone (NS-01-R15, R26, R61). The picture label read is BL-841 and #760 Q79.
+  - **The seal clock.** `seal_opens_at` is local midnight in the sealing zone, stored in UTC, so it states that zone's UTC offset exactly. It is the author's only, class L4 (CR-62 item 2).
+  - **One build.** The label and the privacy manifest change in the same build as the behaviour (PRIV-R18).
+- **(f)** Is the typed name of someone who is not a user, synced with a letter, a new Contact Info row, or only a change to the "Why" text? The card says the label "possibly" changes. The privacy design reads it as no change (privacy P-6). The card's default holds: the flag stays off until counsel answers.
+- **(g)** Is a stored UTC offset of the sealing zone Coarse Location? Q20 covers state law.
+- **Default.** (f) no answer changes, the "Why" text gains the typed name, and the NS-16 flag stays off. (g) not a Location row, and the seal is never described to counsel or in copy as location-free.
+- **If no.** (f) the row changes in the NS-16 build. (g) a Location row in the seal build, or an ADR change to store only the day.
+
+### 7.14 Q107 (new). A letter kept for a day, and the child who may read it later
+- **Facts.**
+  - **How the seal works.** The author picks a day, from tomorrow to the child's 25th birthday (NS-06-B11; founder default OQ-B3). The letter is hidden from every reader but the author, the other parent included, until local midnight of that day in the zone where it was sealed (ADR 0028 D3a). "Open now" ends the seal early and cannot be undone.
+  - **Nothing is delivered.** There is no child account and no feature for a child (frame section 7). If the account is deleted first, the letter goes with it (D6).
+  - **Banned words.** "for when they turn 18", "delivered to your child", "time capsule", "locked" and "secure" (NS-06 B16, B18).
+  - **Whether to build it** is the founder's decision (#847 Q3). Its default is in scope, with no seal code until counsel answers.
+- **(a)** Does a seal day tied to the child's age (for example 18) create any duty to the child, such as delivery, notice or access, especially if the parent dies or deletes the account first (see Q49(d))?
+- **(b)** May copy ever name an age, as in "open at 18", and in what words?
+- **(c)** Does offering a day up to 25 years ahead create any duty to keep the service or the letter that long, beside the 90-day shutdown pledge (Q16)?
+- **Default.** Ordinary dates only, no age wording, nothing delivered, and no seal code until counsel answers.
+- **If no.** (a) the seal is not built, or is limited as counsel says. (b) counsel's words. (c) a nearer latest day, or a stated limit.
+- **Blocks.** NS-06 Part B (wave 5).
+
+### 7.15 Q108 (new). Earlier versions on our server today
+- **Facts.**
+  - **What is kept.** On every change, a trigger keeps the old words, the in-book flag and the fixes as a row in `entry_versions`, with the id of whoever made the change (`supabase/migrations/20261002020000_data_governance.sql:175-185`).
+  - **Who can read it.** No client role has had a grant on that table since 23 Oct (`20261023060000_explicit_grants.sql:49-51`). No screen and no export reads it; the founder could, through the dashboard (Privacy 3).
+  - **What the policy says.** Privacy 2 lists "the words you speak or type, the original transcript, each small fix the app made, and the final text" (`privacy-policy.md:35`), with no earlier versions.
+  - **What the export carries.** Phone conflict copies (`data/other-versions.json`), but no server versions. The spec says the export carries "every entry_versions row" (`DELETION_AND_EXPORT_SPEC.md:337`).
+  - **Where the gap is live.** Servers are on in the store build (`app-store-privacy-labels.md:84`).
+- **(a)** Must Privacy 2 and 7 name earlier versions now? Is adding them a clarification of an existing practice (POLICY_VERSIONING 2.2) or a material change (2.1)?
+- **(b)** Does a request to see or export (Privacy 10) reach earlier versions, which no export carries today? The California access right is Cal. Civ. Code 1798.110 (https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.110), U: not opened 20 Nov, because the host was blocked in this session.
+- **(c)** When NS-12 ships, must the author's own export include them?
+- **Default.**
+  - (a): the founder names them in the next policy PR, as a minor change (privacy OQ-F9).
+  - (b): no rule is written. The founder decides with `privacy`.
+  - (c): not exported. That is the card's default (NS-12 section 23), and the card wins. The privacy design rules the other way (P-5), so the spec line goes to the founder.
+- **If no.** (a) the line ships as a major change, with notice. (b) a server-side export path. (c) an export minor that adds `history/`.
+- **Blocks.** Part (a) blocks the Build 13 store candidate, because it is in the policy that a servers-on store build links. Parts (b) and (c) gate NS-12.
+
+### 7.16 Cited by the cards, no new text
+
+| Q | Now also gates | Source |
+|---|---|---|
+| Q9, Q12 | NS-17, for each language added | NS-17 section 17; 09-capture 11 |
+| Q11, Q47 | NS-07 printable book, NS-30 print sale | NS-07 section 4.17 |
+| Q16 | The four open-ended promises (frame section 7) | Frame section 7 |
+| Q19 | NS-10 | NS-10 section 17 |
+| Q20 | NS-06B, with Q54(g) | NS-06 B17 |
+| Q22 | NS-03 relatives abroad | NS-03 section 1 |
+| Q28, Q55 | The NS-08 flip | NS-08 section 17 |
+| Q42 | The NS-08 flip; NS-16 (another adult's voice, (c)); NS-28 | NS-08, NS-16, NS-28 |
+| Q53 | NS-25 store build (D11 until answered; with Q50(f)) | NS-25 section 17; security OQ-S8 |
+
+Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) asks about typed occasions and the wording of local reminders for the Memory Library (its Q103 to Q105). NS-18 raises the same facts, so counsel can answer them together.
+
+## 8. Questions from the days, cultural background and media cards (20 Nov 2026)
+
+**Where these come from.**
+- **Cards.** `docs/product/prd/21-days-cultural-photos-home.md` (NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture suggestions, NS-50 Home today) and `docs/product/prd/27-photo-moments-and-media.md` (NS-51 photo moments, NS-52 pictures and videos), read on `develop` 9e4757459dc3, 20 Nov 2026. Function reviews: `functions/cultural-background-data.md` (CUL-Q5 to Q7, Q11, Q14), `functions/days-library.md` (FR-DAY-23, Q-DAY-10, Q-DAY-11), `functions/legal.md` (L-14 to L-19), `functions/compliance.md` (C-9 to C-11 and the second addendum).
+- **Why these were stuck.** Each of those files said "needs a number from legal". CUL-Q11 was mapped to Q41, which is about plan notices (NS-32), not about a day note that names a faith day. The card 21 gate ("counsel answers CUL-Q5 to Q7 and Q11 before production; the flag stays off") could not close without numbers.
+- **How the numbers work.** These are new questions, Q109 to Q122, because no existing number covers them. Where one extends an earlier question, it says so; counsel may answer them together. Q107 and Q108 are taken (section 7). Open drafts claim Q61 to Q74 (#598) and Q78 to Q106 (#760); nothing open claims Q109 or above (checked 20 Nov 2026).
+- **Overlap with #760.** Its Q103 to Q105 ask about the wording of local reminders for the Memory Library. Q112 asks about a day note. Counsel can answer them together.
+- **"Deadline."** The cards give order and gates, never dates (ruling T5). So each question's deadline is the gate it blocks: the answer is needed before that flag turns on in `production`. No calendar date is invented here. The dated milestones of section 0 (T30, 23 Apr 2027) still apply to the packet as a whole.
+- **Not legal advice.** Every reading below is an engineering reading; counsel must confirm. Facts are tagged V (read this session in a named file or page) or U (not read).
+
+### 8.1 Index
+
+| Q | Topic | Old id | Cards | Priority | Blocks (flag in `production`) |
+|---|---|---|---|---|---|
+| Q109 | Religion by inference from a day list kept on the phone | CUL-Q6, Q-DAY-11 | NS-47, NS-46 | C | NS-47 ask slip, tradition browse, tradition days, day-name switch (Drop C) |
+| Q110 | The day list left out of Save a copy | CUL-Q5 | NS-47-R10 | C | Same; with Q55 |
+| Q111 | The label answer and the Privacy Policy sentence for the day list | CUL-Q7 | NS-47-R23 | B | NS-47 Drop C items; in a Drop B candidate the label check is an internal G5 check and the card names no counsel read for it |
+| Q112 | A local day note that names a faith day: Apple 4.5.4 and the licence agreement | CUL-Q11 | NS-46-R35, R36; NS-47-R12, R13; NS-48-R9 | B | Part (c) blocks the Drop B days release (card 21 names "the consent line read by counsel" as its gate); the rest blocks the day-name switch (Drop C) |
+| Q113 | The right to use calendar and day source tables | FR-DAY-23, Q-DAY-10 | NS-46-R12, R23 | B | Any NS-46 row whose date is copied from a source |
+| Q114 | Tradition-reviewer records | NS-46-R23, DL-8 | NS-46-R23 | C | Each tradition's rows (Drop C) |
+| Q115 | Does a picture index plus a day list amount to inference | CUL-Q14 | NS-51-R6, R7 | C | NS-51 |
+| Q116 | A child's picture or video leaving the phone on the parent's act | L-14 | NS-52, NS-51, NS-05 | C | NS-52 Variant B; any video through a door |
+| Q117 | Biometric laws and a design that never matches | L-15 | NS-51-R33, NS-52-R29 | C | Nothing now; any matching feature |
+| Q118 | Another adult's voice in a parent's video | L-16 | NS-52 | C | NS-52 video |
+| Q119 | Library read on the phone only: "collection" and notice at collection | L-17 | NS-51 | C | NS-51 |
+| Q120 | Terms, retention and deletion for hosted media | L-18 | NS-52 Variant B | C | NS-52 Variant B only |
+| Q121 | A printed QR code to a hosted video page | L-19 | NS-52 print | C | Nothing; not built |
+| Q122 | Apple's platform terms for the library read and the Journaling picker | C-9, C-10, C-11 | NS-49 level 2, NS-51 | C | NS-49 level 2, NS-51 |
+
+### 8.2 Q109 (new). Religion by inference from a day list kept on the phone (CUL-Q6, Q-DAY-11)
+- **Facts.**
+  - **What is kept.** Only the days a parent ticks, and a date the parent moved, plus a content-free "asked" flag. The tradition and the country picked in the ask are a browse filter held in memory until the sheet closes (NS-47-R1, R2; `cultural-background-data.md` FR-CUL-02). V.
+  - **Where.** A file in Application Support outside `scribe.db`, excluded from the iPhone backup, per account, cleared at sign-out; class L4. Never in analytics, logs, crash reports, a server table or Save a copy (NS-47-R4, R6, R8, R9, R10; ADR 0032). V (cards and ADR; no build exists).
+  - **We receive nothing.** A network fake sees 0 requests carrying a day id, tradition or country (NS-47-R4). The App Store territory is the United States only (LEGAL-REQ-058, cited by `compliance.md` section 3c, G5). V for the citation.
+  - **Inference.** A ticked day that belongs to one faith may reveal that faith. The CJEU held on 1 Aug 2022 (C-184/20) that data from which special-category information can be indirectly inferred are themselves special-category data under GDPR Article 9. U: I read only a commentary page (https://www.thomashelbing.com/en/wissen/dsgvo-hub/rechtsprechung/1.4.15-eugh-vyriausioji), not the judgment or Article 9. Whether C-184/20 reaches religion through a ticked day is for counsel.
+  - **Earlier wording.** CUL-Q6 asked only whether Article 9 or a US state rule reaches device-only data. This question widens it, as below.
+- **(a)** Is a list of ticked days that includes a faith day "data liable to reveal" religion under Article 9(1) as read after C-184/20, even when it is stored only on the user's phone?
+- **(b)** If yes, is a maker that never receives the data a controller or a processor for it, or neither? Does the household exemption for the parent matter (U, not read)?
+- **(c)** Does EU or UK law reach an app offered only in the US storefront, for example when the account holder is in the EU? Does the answer to (b) change that?
+- **(d)** Which US state laws that name religious belief (or inferred religion) as sensitive data, if any, reach data the maker never receives? U: no state statute was read.
+- **(e)** Is a tick an explicit consent act for Article 9(2)(a) and for the door lines of `docs/agents/COORDINATION.md` section 10 (PRIV-R21), or is it a choice that needs no record because nothing leaves the phone? The line before the first tick says the data stays on the phone and how to stop it (NS-46-R35, NS-47-R29).
+- **Default.** Design as if the answer to (a) is yes: optional, explicit, withdrawable in one tap, never received, equal-weight "Not now". Until counsel answers, the ask slip, the tradition browse, tradition days and the day-name switch stay off in `production`; the plain browse-and-tick list (the CUL-Q8 fallback, no question about the family) is the only form.
+- **If no.** (a) no extra duty beyond the design. If yes with duties on the maker: remove the tradition browse and the ask and keep seasonal, family and civic days only, or add the notice and basis counsel names. (c) EU wording and a territory statement as counsel says.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-47 ask slip, tradition browse, tradition days, day-name switch (Drop C). Does not block Build 13.
+
+### 8.3 Q110 (new). The day list left out of Save a copy (CUL-Q5)
+- **Facts.** Save a copy holds no day, tradition or country; one line on the Days page says so (NS-47-R10). The file can be shared on, which is why the list is left out. V (card). Q55 covers export classification.
+- **(a)** Is leaving the list out of Save a copy consistent with the access and portability rights the Privacy Policy (section 10) describes, given we hold no copy and the parent sees the list on screen? California access right: Cal. Civ. Code 1798.110, U: not opened.
+- **(b)** Must the Privacy Policy or the Days line say that the list is not exported, and where?
+- **Default.** Left out; the one line says so; no export section.
+- **If no.** Save a copy gains a days section, with the risk that a forwarded file shows a faith day; `privacy` and the founder decide the file's warning.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-47-R10 in Drop C. Read with Q55.
+
+### 8.4 Q111 (new). The label answer and the Privacy Policy sentence for the day list (CUL-Q7)
+- **Facts.**
+  - Apple's label rule: data processed only on the device is not "collected" (App Privacy Details, read earlier on 20 Nov by `compliance.md` as S2, not re-read now). The card says Apple lists religious or philosophical beliefs as Sensitive Info and that derived data sent off the device is considered separately. U.
+  - The cards keep the answer "not collected" while NS-47-R4 holds, add one plain Privacy Policy sentence, and re-run the label per build (NS-47-R23; FR-CUL-23). The sentence, in intent: an optional list of days, kept on the phone only, never sent to us.
+  - The law's meaning of "collect" is not Apple's (Q20, Q54).
+- **(a)** May the label stay "not collected" for the day list?
+- **(b)** Is the Privacy Policy sentence enough, and is adding it a clarification (POLICY_VERSIONING 2.2) or a material change (2.1)?
+- **(c)** Does a notice-at-collection duty arise for data we never receive (with Q20)?
+- **Default.** Yes to (a) while NS-47-R4 holds; add the sentence as a minor change; tell the parent in plain words either way.
+- **If no.** The label row changes in the same build; the ask stays off until it does.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Drop C needs the answer. For a Drop B candidate the card (21, release line and NS-47 section 22) gates the label by an internal check at G5 (`privacy` re-runs it, NS-47-R23) and lists CUL-Q5 to Q7 and Q11 as "on record or the fallback list"; Drop B uses the fallback list, so this answer is not a Drop B gate by the card's own words. Note: the old cell for CUL-Q7 said "Q57(f)-adjacent"; Q57 is sanctions, and the related question here is Q54.
+
+### 8.5 Q112 (new). A local day note that names a faith day: Apple 4.5.4 and the licence agreement (CUL-Q11)
+- **Facts.**
+  - **Apple 4.5.4** (read 20 Nov 2026 at https://developer.apple.com/app-store/review/guidelines/; the page text has no last-updated date): push notifications "should not be used to send sensitive personal or confidential information", and "should not be used for promotions or direct marketing purposes unless customers have explicitly opted in ... via consent language displayed in your app's UI, and you provide a method in your app for a user to opt out". V. The text names push; a day note is a local notification.
+  - **The licence agreement.** The cards say Developer Program License Agreement Attachment 1 section 2.2 names local notifications used for marketing and requires opt-in consent language and an opt-out (NS-46-R35), and section 2.3 limits excessive local notifications (NS-48 section 17). U: I did not read the agreement.
+  - **What the product does.** A ticked day sends a 09:00 local note that sells nothing (NS-46-R27) and advertises no feature, new day, the Days page or an update (NS-46-R35). Its lock-screen title and body are neutral for every family, tradition, culture-led or national day; a day's own name shows only for allowlisted seasonal and civic days, or behind a local switch that is off by default and forced off while App lock is on (NS-46-R36; NS-47-R12, R13, R38; ADR 0033; errata E45). The yearly timing of a note is a residual the cards accept (NS-47-R22). V (cards; nothing is built).
+  - **Not Q41.** Q41 is about plan notices (NS-32). CUL-Q11 had been mapped to Q41, which is a different subject; this question replaces that mapping.
+- **(a)** Does 4.5.4, or the agreement, reach a local day note?
+- **(b)** Is a note that names a faith day "sensitive personal or confidential information" in the sense of 4.5.4 when the parent has turned the day-name switch on? Is a neutral note on a faith day, arriving each year, a disclosure in itself?
+- **(c)** Is a day note "promotion or direct marketing"? If a reminder the parent chose by ticking is not, is the line before the first tick plus the opt-out (NS-46-R35, NS-47-R21) still the right design?
+- **(d)** A parent's own typed day follows the same switch (E45). Does a parent's typed word on a lock screen differ in any way?
+- **Default.** Treat 4.5.4 as applying; neutral title and body; names only behind the local switch; no feature advertised in any day note; one-tap untick and Clear all.
+- **If no.** (b) counsel names the fallback: the switch is removed and every day note is neutral. (c) the consent line and the opt-out are written to counsel's words.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Part (c), the read of the line before the first tick and the opt-out, blocks the Drop B days release: card 21 lists "the consent line read by counsel" among the gates of its Drop B row and of the NS-46 release unit, and a default never substitutes for a read that gates a flag (FR-CMP-12). Parts (a), (b) and (d) block the day-name switch (Drop C).
+
+### 8.6 Q113 (new). The right to use calendar and day source tables (FR-DAY-23, Q-DAY-10)
+- **Facts.**
+  - Sources the library review names: timeanddate, Hebcal, the Naval Observatory's public service, the Baha'i World Centre. The review read the pages "as a reader", not their terms of use or licence. V (`days-library.md` line 501 and FR-DAY-23). U: I read none of the terms.
+  - The design: compute what a rule computes (fixed days, nth weekday, Western and Orthodox Easter by the computus); take only moon-sighting and lunisolar dates, and astronomical instants, from a source whose terms allow it; cite it in the data (NS-46-R12, R23; DL-4). Every table cell is a date or the literal `n/r` (NS-46-R1).
+  - The review's view, to be confirmed by counsel: a date is a fact, but a compiled table may be protected and a bulk copy of a commercial list is the risk. U.
+  - The federal holiday names come from 5 U.S.C. 6103 (the cards); U: not opened by me.
+- **(a)** May we use each named source's dates, and on what terms (licence, attribution, where shown)?
+- **(b)** Is computing a rule-based date from a published rule free of any duty?
+- **(c)** Does an `authority` field citing the source in our data meet an attribution duty?
+- **(d)** Is a refresh of the library (a whole-library fetch, NS-46-R48) any different from a bundled table?
+- **Default.** Compute every rule date; cite each table; copy nothing; a source with no confirmed right ships as `n/r`.
+- **If no.** That source's rows are removed or licensed; the moving days that depend on it are not offered.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Any NS-46 row whose date is copied from a source, including the astronomical days (Drop B).
+
+### 8.7 Q114 (new). Tradition-reviewer records (NS-46-R23, DL-8)
+- **Facts.**
+  - Before a tradition's rows ship, a member of that tradition reviews them. The record names a pseudonymous reviewer id, the tradition id, the date and "read"; the person's name stays outside the repository (NS-46-R23). V (card).
+  - Proposed place for the records: `docs/legal/evidence/days/<tradition-id>.md` (PROPOSED in `compliance.md` FR-CMP-32). The repository is public (`gh api repos/thesaurabhpareek/earlyletters --jq .visibility` returned `public`, 21 Nov 2026). V. So the default record form puts a pseudonymous reviewer id paired with a tradition id in a public place.
+  - The library names and prefills are also read against App Review 1.1.1 (read 20 Nov: "Defamatory, discriminatory, or mean-spirited content, including references or commentary about religion ... national/ethnic origin"). V.
+- **(a)** Does a record that pairs a pseudonymous reviewer with a tradition reveal something about that person's religion, so that it needs a basis, a notice or a different form?
+- **(b)** What agreement should sit behind a reviewer's read (confidentiality, no claim that the reviewer speaks for a community, compensation, no right in our texts)? Counsel drafts; we do not sign anything.
+- **(c)** May any public line say a tradition's days were reviewed by a member of it? (The card's marketing rule says no tradition is named as an audience, NS-46-R47.)
+- **Default.** Record only the four fields in the public repository (pseudonymous reviewer id, tradition id, date, "read"); no name anywhere in it; no public line about the review; the 1.1.1 read date goes in the same record. Counsel should read (a) knowing the default is public.
+- **If no.** Counsel names a different record form (for example the review held outside the public repository, with only a hash in it).
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Each tradition's rows (Drop C).
+
+### 8.8 Q115 (new). Does a picture index plus a day list amount to inference (CUL-Q14)
+- **Facts.** The moments index (NS-51) holds picture dates and identifiers only, in its own L4 file; it reads the ticked-day dates in memory to widen a moment and never copies them (NS-51-R6, R7; ADR 0032). Nothing reads faces, people, places or albums by name (NS-51-R5, R33). V (card). The thresholds in R7 are PROPOSED.
+- **(a)** Does a date cluster that falls on a day the parent ticked, held in memory, amount to a sensitive inference, in a family context or under Q109?
+- **(b)** Does the index alone (dates, counts, clusters of a child's pictures) count as sensitive data?
+- **Default.** Both files stay on the phone and are never joined in storage; the in-memory read is the only join; NS-51 stays off in `production`.
+- **If no.** NS-51 does not read the ticked-day dates; moments widen on birthdays and month-age days only.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-51.
+
+### 8.9 Q116 (new). A child's picture or video leaving the phone on the parent's act (L-14; extends Q45)
+- **Facts.**
+  - Variant A (default): no media path in a push, 0 bytes of media uploaded; media stay on the phone and in the iPhone backup, which is Apple's (NS-52-R19). Variant B (not chosen; the founder's decision, Q-PM-3 in card 27, closed as CL-048 with the default accepted: Variant A): media stored on our servers, readable by the second parent (NS-52-R21 to R25). The share sheet carries at most one picture and never a video (NS-52-R37). Save a copy includes every item (NS-52-R17). V (card).
+  - 16 CFR 312.2 treats a child's image or voice as personal information when collected online (`compliance.md` source S10, read earlier, not re-read now). U.
+  - Q45 already asks about a child's picture and voice through the share sheet and Arm V; this question is about stored, shared, exported and printed pictures and video.
+- **(a)** May a child's picture and video leave the phone through Variant B storage, the share sheet, Save a copy or print, on the parent's act?
+- **(b)** Is the parent the provider under child-data law, and are we a service that hosts a parent's content about a child, not an operator collecting from a child?
+- **(c)** What must counsel see before Variant B (X2 and E23: a security read and a counsel read)?
+- **Default.** Variant A first; no video through any door; the flags stay off in `production` until read.
+- **If no.** Variant B is not built; the share carries text only (as Q45(c)).
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 Variant B; a video through NS-05 or NS-11; NS-05 with a picture.
+
+### 8.10 Q117 (new). Biometric laws and a design that never matches (L-15)
+- **Facts.** No face, voice or body measurement exists; nothing reads faces, people or Apple's People data (NS-51-R33), a video's sound is never analysed (NS-52-R6), and no model describes or tags media (NS-52-R29). A source scan fails the build on any such API. V (card). The Illinois definition lists "a retina or iris scan, fingerprint, voiceprint, or scan of hand or face geometry" and does not include photographs (740 ILCS 14/10; the page text was cut, `legal.md` S9); the rest of that act and Texas and Washington law were not read. U.
+- **(a)** Confirm that a design with no face, voice or body measurement is outside BIPA, Texas CUBI, RCW 19.375 and GDPR Article 9 biometric data.
+- **(b)** Does storing and playing back a video, with no analysis, change the answer?
+- **Default.** Nothing is built that matches or measures; counsel confirms.
+- **If no.** Counsel names what must change; media features stay off.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Nothing now. Any face, "same person" or voice-matching feature is a new question first (FR-LEG-24).
+
+### 8.11 Q118 (new). Another adult's voice in a parent's video (L-16; with CR-041)
+- **Facts.** A video can record another adult speaking. The Terms section 5.5 (recordings) and the add-media sheet carry an instruction line to add it only with their agreement; there is no attestation tick (D9; FR-LEG-25). The sound stays in the file and is never transcribed (NS-52-R6). V (card, `legal.md`). Recording-consent statutes were not read. U.
+- **(a)** Does a parent's own video that records another adult engage recording-consent law, and who bears the exposure?
+- **(b)** Is an instruction line enough, or does counsel want a different line?
+- **Default.** Instruction line only.
+- **If no.** Counsel's words; NS-52 video stays off until they are in.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 video.
+
+### 8.12 Q119 (new). Library read on the phone only: "collection" and notice at collection (L-17; extends Q20)
+- **Facts.** NS-51, once the parent turns it on, reads each picture's creation date and a system identifier on the phone, and nothing leaves it (NS-51-R5, R26); Apple's label does not count that as collected (S2). The law's meaning of "collect" differs (Q20). The Privacy Policy and the where-it-lives lines say it in plain words (FR-LEG-21; NS-51-R42). V (card).
+- **(a)** Is that read "collection" under CCPA or any notice-at-collection duty?
+- **(b)** Are the plain-words lines enough?
+- **Default.** Tell the parent in plain words anyway.
+- **If no.** Counsel's notice wording; NS-51 waits for it.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-51 (with Q122).
+
+### 8.13 Q120 (new). Terms, retention and deletion for hosted media (L-18; extends Q51)
+- **Facts.** Only if Variant B is chosen: the Terms licence (section 5.2) would cover hosted media; retention, the deletion clock and media in backups follow the letters' rules (D8). Not built. V (`legal.md`).
+- **(a)** Is the same licence, retention and deletion clock right for hosted media of a child?
+- **(b)** What must Privacy 2, 3 and 7 and the Terms say for media in a server backup?
+- **Default.** Same as letters (D8).
+- **If no.** Counsel's clocks and words before any upload.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-52 Variant B only.
+
+### 8.14 Q121 (new). A printed QR code to a hosted video page (L-19)
+- **Facts.** A QR code in a printed book could link to a hosted page of a child's video. Anyone holding the book could open the link; signed links cannot be revoked one by one (Supabase signed URLs, `legal.md` S11). Not built and not specced (FR-LEG-27). V (`legal.md`).
+- **(a)** May this ever be offered, and under what limits?
+- **Default.** Not built.
+- **If no.** No change.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** Nothing; a spec would wait for the answer.
+
+### 8.15 Q122 (new). Apple's platform terms for the library read and the Journaling picker (C-9, C-10, C-11; NS-49-R27, R35)
+- **Facts.**
+  - **5.1.1(iii)** (read 20 Nov 2026): apps "should only request access to data relevant to the core functionality" and, "where possible, use the out-of-process picker or a share sheet rather than requesting full access to protected resources like Photos". V. NS-01 and NS-49 level 1 use the picker with no permission; NS-51 asks for library access after the parent turns it on (NS-51-R1, R3).
+  - **5.1.1(ii)**: "Ensure your purpose strings clearly and completely describe your use of the data." V. The string exists only in a profile whose flag is on (NS-51-R2).
+  - **NS-49 level 2** uses Apple's Journaling Suggestions picker and an entitlement; no permission string (NS-49-R6, R15). The licence agreement clause 3.3.3(H), as the cards state it, allows the API only "for journaling purposes", with the use clearly evident in marketing text and the interface (NS-49-R35). U: not read by me. The store name is "Early Letters: Baby Journal" (`packages/brand/index.ts`, V), while the brand glossary keeps "journal" out of prose (`BRAND.md`; founder item Q-FD-34).
+  - Suggestions can carry Health-derived items; the app reads only photos (NS-49-R10). Whether 5.1.3 applies is U.
+- **(a)** Will App Review accept a library read for moments when the out-of-process picker exists (5.1.1(iii))?
+- **(b)** Is Photos permission data "sensitive" under any rule the packet lists? (Apple 5.1.3 health data is not it.)
+- **(c)** What do the licence agreement's clauses say about Photos library data beyond 3.3.3(H)?
+- **(d)** Does the store name plus the button words make the journaling purpose "clearly evident" for 3.3.3(H)? Does 5.1.3 touch a feature that reads only photos?
+- **(e)** Is a library permission for a child's pictures acceptable under 5.1.1, and does the purpose string need more than "dates, on this phone"?
+- **Default.** NS-51 ships limited-library-first with the Notes for Review explaining it, and the flag stays off if App Review objects; NS-49 level 2 stays off until (d) is read.
+- **If no.** NS-51 is dropped or reduced to the picker; level 2 is not shipped; the label is unchanged.
+- **Deadline.** Before the flag named under Blocks turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-49 level 2; NS-51.
+
+## 9. Questions from the Moments tab (NS-53; drafted 21 Nov 2026)
+
+> Draft for counsel review. Prepared by an AI (legal drafting support); not legal advice; no attorney-client relationship exists. Every legal conclusion below is marked "counsel must confirm". Nothing here says anything is compliant or legal. The "default if counsel is silent" is what the product does, not a legal view.
+
+**Placement.** This section was first merged (#1316, `ddbf7691`) after the Changelog, with the version line untouched, so it would not collide with the open draft for section 8 (#1057). #1057 has since merged (`ab52389c`). In version 1.9.0 the section sits above the Changelog, and the version line and Changelog row are updated.
+
+**Where it comes from (all heads read on 21 Nov 2026).**
+- The spec `docs/product/prd/28-moments-tab.md` on `wip/moments-prd-v3` at `b31a389b8afb3e747f61d19e098f2bc22a65800d`: section 21.3 (the ten questions), 21.2 (money), 21.1 (calendar), G2, section 16.1 (proposed promise text). The spec is PROPOSED; nothing in it is decided, built or in `docs/DECISIONS.md`. Spec rows R135 and R166 were reworded in PR #1314 (branch `docs/moments-prd-v3`, head `f52cd5a2f426951497ebfc145d809d031371127f`) and no longer say "never leaves the phone" or "we hold nothing"; the other spec citations in this section were read at `b31a389b` and are not re-checked against the newer head (UNVERIFIED).
+- `docs/product/moments-tab/exec-review/hybrid-legal.md` on `wip/moments-hybrid-review-legal` at `4d001e1da8b3b521b9467d3f4a8aef484913889d` (EXH-LEG-1 to EXH-LEG-15) and `hybrid-privacy.md` on `wip/moments-hybrid-review-privacy` at `0b1218108926ca43dc0602c8be5d1202d4adbb80` (EXH-PRV-1 to EXH-PRV-13). Both are Claude-role reviews, not counsel. Their statements about Apple text are as they report them; I did not re-read Apple's pages, so each Apple quotation is UNVERIFIED here until counsel or `legal` reads it.
+- The earlier brief in `docs/product/moments-tab/exec-review/clo.md` on `develop`, "Counsel brief: the ten questions".
+
+**How the numbers work.** The spec numbers its ten questions Q1 to Q10 inside its own table. Those clash with this packet's Q1 to Q10 (1.0.0 questions). So here they take the next free packet numbers, and the spec number is kept in brackets. The repo's id check (`scripts/agents/next-id.mjs`, `id-collisions.mjs`) covers D, ADR, APPLY, BL, CR and S1 ids only, not packet question numbers. I therefore checked by hand: develop's packet ends at Q108; the open drafts claim Q58 to Q74 (#598), Q75 to Q77 (BL-780), Q78 to Q106 (per the #760 title; its branch's separate draft file `docs/legal/COUNSEL_PACKET_MEMORY_LIBRARY_DRAFT.md` has headings from Q78 to Q106, and #760 no longer lists `COUNSEL_PACKET.md` among its files) and Q109 to Q122 (#1057, section 8; its head `f80e67bb` ends at Q122); a scan, on 21 Nov 2026, of the file lists of all 193 open PRs (counted at the same time; this number changes daily) found only #1057, #830 (the develop-into-main release snapshot, which carries develop's file ending at Q108) and this PR touching `docs/legal/COUNSEL_PACKET.md`; no open PR or head read mentions Q123 to Q132 in a docs file; no `wip/moments-*` branch adds a packet number. I did not re-read every `wip/*` branch for this re-check. The next free numbers are Q123 to Q132. Re-run this check at merge; if #1057 grows past Q122, shift this block and nothing else.
+
+**Build profiles used below** (read from `apps/mobile/eas.json` on develop): `development`, `e2e` and `testflight` have `EXPO_PUBLIC_SERVER_FEATURES` off; `preview` and `production` have it on; `EXPO_PUBLIC_BACKUP` is off in all; no profile sets `EXPO_PUBLIC_PHOTOS`. Spec flags: **F1** the picker door (Apple's system picker, no permission), **F2** the library read on the phone (date, time and place of pictures, after a primer), **F3** an Apple geocoder (not planned), **F4** picture-timed reminders (off). The first store build is the `production` profile, so servers are ON in it.
+
+### 9.1 Proposed promise text, before and after (founder approves; counsel must confirm)
+
+Founder-only: what a user is promised. Nothing below is live. O-48 in the spec is the founder's approval; no public line ships before it. Source: spec section 16.1 and R285.
+
+| Surface | Before | After (PROPOSED) | True when |
+|---|---|---|---|
+| Lead line | "days suggested from your pictures" (the earlier lead the spec replaces; I found no live public copy of it in `packages/content` or the store text on develop, so "before" is the spec's own earlier wording) | "Pictures start the story. Your voice finishes it." Second line: "We never write a word for you." | The second line is true in every build (the constitution in `CLAUDE.md`) |
+| First run, library read granted (Full or Limited), F2 on | None found | "Pick pictures from a day, then tell {child} about it. If you like, {app} can suggest days from the date, time and place of your pictures, read on this phone." | F2 on and approved with its gates |
+| First run, declined, Not now, Restricted or library off | None found | "Pick pictures from a day you want to remember, then say what was happening." Button: "Choose pictures" | F1 only; every build |
+| First run, Limited | None found | "Pick pictures from a day, then tell {child} about it." One calm line says which pictures this tab can use, with a "Choose pictures" button | F1 plus a limited library read |
+| Store description and screenshots | None found | "Pick pictures from a day you want to remember, then say what was happening. Your words stay yours. It never adds a word to your letter." | Every build |
+| Store promotional text (only after F2 is approved and gates are on record) | None found | "Let the app suggest days from the date, time and place of your pictures, read on this phone, or choose pictures yourself any time." | F2 on |
+| Primer, variant A (default, R192) | None found | "{app} reads the date, the time and the place of your pictures, on this phone and only while Moments is open, to suggest days to tell {child} about." | F2 on |
+| Primer, variant B (challenger) | None found | "You can choose pictures yourself any time. If you would like suggestions, {app} can read the date, time and place of your pictures, on this phone, while Moments is open." | F2 on |
+| Primer, variant C | None found | "To suggest days, {app} reads the date, time and place of your pictures. It happens on this phone, only while Moments is open." | F2 on |
+
+Words the spec bars from every line: the tab name in store text, "stays on your phone", "no account", "private" as a bare headline, "Apple Photos", "memories", "highlights", "daily", "every day", "never ask again", "we only see what you pick" (EXH-LEG-3: true only with no access; false with the library read on), "a better App Review story".
+
+Questions this raises for counsel are inside Q123 (label and consent), Q130 (absolute sentences) and Q128 (Terms). Counsel must confirm that none of the "after" lines is a misleading statement in any build in which it appears.
+
+### 9.2 Index
+
+| Packet Q | Spec Q | Topic | Requirement ids | Profiles it bites | Blocks | Default if silent |
+|---|---|---|---|---|---|---|
+| Q123 | 1 | Label, consent, purpose string, phone-only primer record | R81, R72, R37, R61, R166, R182, 8.5, EXH-LEG-4, EXH-LEG-7 | `production`, `preview` (F2) | G2, store submission | F2 stays dark; label and policy unchanged |
+| Q124 | 2 | Picture-timed reminders (4.5.4, 5.1.2(vi)) | R132 to R135, R191, R181, R80, F4 | none in the first release | Phase 2 | F4 off |
+| Q125 | 3 | Naming a city from picture location; the in-memory home place | R61, R63, R64, R117, 7a.2 | `production`, `preview` (F2) | G2, G3 | Place lines off; date-only cards |
+| Q126 | 4 | Location in a library or picked picture (DPLA 3.3.3(F)); readable under Limited | R37, R61, R72, R75, EXH-LEG-5, EXH-LEG-6 | F2 and F1 | G2, G3 | Date-only cards |
+| Q127 | 5 | Trademark: "Moments" as a tab label (trademark attorney) | R8, R194, O-28 | store listing, screenshots | O-28 | Fallback label in screenshots |
+| Q128 | 6 | Terms: other people's children, approximate labels, no scanning, knowledge duty | R93, R97, R103, R104, EXH-LEG-7(d) | F1 and F2 | G2, store submission | Terms 4.2.0 not published; library read waits |
+| Q129 | 7 | Deletion promise versus a picture copy in an iPhone backup | R97, R166, R81, R235, O-44, EXH-LEG-14, EXH-PRV-1 | F1 and F2, any build that keeps a picture | G2 | Disclose the iPhone backup of kept pictures in one plain policy line; do not exclude the folder (founder, O-44, 21 Nov 2026) |
+| Q130 | 8 | Policy mechanics: material change, Significant Change API, CalOPPA, absolute sentences | R135, R166, R81, R175, R193, H-11, EXH-LEG-3 | `production` | Store submission | Say what we receive, never where it lives |
+| Q131 | 9 | Publisher and liability (5.1.1(ix)); entity; cover; public address | G10, O-47 | store submission | G10 | Founder starts an entity in parallel |
+| Q132 | 10 | Place dataset licence; later geocoder caching | R61, R62, R117, G8, G11b | F2 places | G11b | No places; geocoder not built |
+
+No eleventh question (EXH-LEG-13). The picker door's questions are lettered sub-items under the numbers above. Per the spec's G2 row, the door is independent of the spec's Q1 to Q4 and Q10 (here Q123 to Q126 and Q132) and not independent of Q5 to Q7 and Q9 (here Q127 to Q129 and Q131). Counsel must confirm that reading.
+
+### 9.3 Q123 (spec Q1). Label and consent for a build that reads dates and places on the phone, servers on
+- **Facts.** The F2 read takes the date, time and rounded place of pictures in the parent's library, in memory on the phone, after a primer. Nothing library-derived is meant to leave the phone or be stored (R162). The first store build has servers on. The label of record today answers "Photos or Videos: No" and "Location: No" for a build with no photo feature (`app-store-privacy-labels.md` lines 50 and 54).
+- **(a)** Is "Photos or Videos: not collected" and "Precise Location: not collected" a correct answer for a `production` build that reads picture dates and coordinates only on the phone, keeps picture copies on the phone only, and has servers on? The spec's reviewers read Apple's definition of "collect" (data leaves the device and is held beyond the real-time request) as supporting "not collected"; that is UNVERIFIED here and counsel must confirm. Any picture upload or sync (the spec's Variant B) would change it at once.
+- **(b)** Is the purpose string (date, time and place named, no claim about analysing the content of pictures) enough? Is a phone-only record of the primer answer enough, with no server consent row?
+- **(c)** Apple's first-time picker text (EXH-LEG-4): if the system picker shows its own onboarding text in a state where our primer has told the parent something different (Full access), what does counsel advise about showing both? Until read, the spec holds the inline picker out of the Full-access state. G1a records, per access state, whether the text shows and its exact words.
+- **(d)** A picked picture is stored on the phone as a stripped copy after Keep (EXH-LEG-1, EXH-LEG-7). Does that change the "Photos or Videos" row or the sentence "We do not collect ... photos" (Privacy Policy 3.0.0 line 45)?
+- **Default.** F2 stays dark; label, policy and in-app text unchanged; the door waits for its own paperwork (see Q128 to Q130).
+
+### 9.4 Q124 (spec Q2). Picture-timed reminders
+- **Facts.** A reminder timed from picture dates on the phone, with the same words as the ordinary evening reminder (R133 to R135). F4 is off in the first release.
+- **(a)** Is such a reminder "promotions or direct marketing" (App Review 4.5.4) or "use-based data mining" (5.1.2(vi)), under either reading of whether "Photo APIs" there means all photo data or only depth and facial data? Both texts are UNVERIFIED here; counsel must confirm.
+- **(b)** Does an identical-words reminder mislead anyone, given that the opt-in discloses it?
+- **Default.** F4 off. **Blocks** phase 2 only.
+
+### 9.5 Q125 (spec Q3). Naming a city from picture location, on the phone
+- **Facts.** A nearest-place lookup runs against a bundled table on the phone; no request leaves. A single "home place" lives in memory and in `moments.json` as a parent correction (R249).
+- **(a)** Is naming a city from picture location metadata on the phone acceptable under App Review 5.1.1(ii) and 5.1.2(ii) and (iii)? Counsel must confirm.
+- **(b)** Is the in-memory or stored home place a "profile" that needs its own disclosure under the state precise-geolocation definitions (EX-CLO-15)?
+- **Default.** Place lines off; date-only cards.
+
+### 9.6 Q126 (spec Q4). Location data duties for a picture
+- **Facts.** The Apple Developer Program License Agreement 3.3.3(F)(ii), as the legal reviewer read it, covers applications that "otherwise obtain a user's location through the use of the Apple Software or Apple Services" and requires notice and consent before location data is "collected, transmitted or otherwise used" (EXH-LEG-5; verbatim reading UNVERIFIED by me).
+- **(a)** Does that clause, or any other, treat location embedded in a library picture as location data needing separate notice or consent? Is location readable and usable under Limited access (G1a-L records the technical answer)?
+- **(b)** A file the parent picks through the system picker can carry coordinates. If our code opens it only to read a date and then re-encodes it without location, does that count as obtaining or using location data? The spec's default for the door is a date chip only, with no place from a picked picture, and a build test that fails if the picker code touches a location property or tag.
+- **(c)** Video: the metadata removal API for a re-encoded video is UNVERIFIED (NS-52-R5); until the spike passes, text says "pictures" only (EXH-LEG-6).
+- **Default.** Date-only cards; no place from a picked picture. **Blocks** G2 and G3.
+
+### 9.7 Q127 (spec Q5). "Moments" as a tab label (trademark attorney, not the same counsel)
+- **Facts.** The tab label appears in the tab bar and so in screenshots; no filing is planned while the word is in-app only (spec 21.2).
+- **Questions.** Is "Moments" clear for this software in classes 9, 42 and 45 (two USPTO-derived records were opened by the CLO role; a wider search was not)? May it appear in screenshots? Which fallback label is lowest risk? Does it change the search for "Early Letters"? Counsel must confirm.
+- **Default.** Fallback label in screenshots; in-app label per founder.
+
+### 9.8 Q128 (spec Q6). Terms for pictures, other people's children and approximate labels
+- **Facts.** Terms 4.1.0 do not mention pictures (a search of the file finds none). The door is the first place a parent attaches a picture of someone else's child.
+- **(a)** Do the draft clauses (the parent confirms they may use the pictures they add, including pictures of other people and their children; dates and place names are computed, not the parent's words; no scanning; optional library read) fit inside Apple's minimum custom EULA terms and California law?
+- **(b)** The same question for pictures the parent picks through the system picker, including other people's children (EXH-PRV-10: Apple's People album is inside the picker).
+- **(c)** Does reading the library on the phone create any knowledge duty (18 U.S.C. 2258A)? Counsel must confirm.
+- **Default.** Terms 4.2.0 not published; the library read and the door wait.
+
+### 9.9 Q129 (spec Q7). Deletion promise versus a picture copy in an iPhone backup
+- **Facts.** A kept letter's picture copy sits in the app container and is part of the parent's iPhone backup; `data-policy.md` lines 138 and 145 already say so, and no parent-facing line says so yet (CR-62 item 4). Privacy Policy 3.0.0 line 37 and Terms 7.3 name recordings in the iPhone backup, not pictures.
+- **(a)** Does a picture copy in an iPhone backup change our deletion promise, the label, or what we may say in answer to an access or deletion request?
+- **(b)** Temporary located originals in `Caches/ImagePicker` and the system's iCloud download after a pick (EXH-LEG-14): do they belong in the answer?
+- **(c)** Is a carve-out sentence enough if the folder is not excluded from backup, or does counsel prefer exclusion (the CLO role does, because it makes the promise true)? Founder decision O-44 sits beside this.
+- **Default.** Disclose the iPhone backup of kept pictures in one plain line of the policy text; do not exclude the folder from backup. This is the founder's decision of 21 Nov 2026 (O-44), reversing the earlier default of exclusion. Counsel must confirm the wording and whether disclosure is enough. What Apple's backup does with a deleted file is UNVERIFIED. Part (c) above is kept as the question to counsel; the CLO role's preference for exclusion is recorded there as a view, not the default. **Blocks** G2.
+
+### 9.10 Q130 (spec Q8). Policy mechanics and absolute sentences
+- **Facts.** The library read and the door change behaviour; the policy and label must change in the same build (R81, R240).
+- **(a)** Is the library read a material change needing notice and re-show, including to TestFlight testers? Does Apple's Significant Change API apply (UNVERIFIED)?
+- **(b)** Does CalOPPA need anything beyond the build-list fix (Privacy Policy 3.0.0 line 21; see `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`)?
+- **(c)** Which absolute sentences are unsafe ("never leaves the phone", "we hold nothing", "we only see what you pick")? The spec says sentences state what we receive, never where something lives (H-11), and that every sentence about the picker names its mode: no access, Limited or Full (EXH-LEG-3). Counsel must confirm.
+- **Default.** "We do not receive" wording with a version bump and re-show.
+
+### 9.11 Q131 (spec Q9). Publisher and liability
+- **Questions.** With Moments, is an individual publisher at risk under App Review 5.1.1(ix)? Should an entity exist before the first submission? What cover is realistic for errors and omissions and cyber for a one-person publisher holding family data? What address may be public? Existing packet Q47 asks the publisher-identity part; this question adds what Moments changes.
+- **Default.** The founder starts an entity in parallel (decide-by Fri 27 Nov in the spec's calendar; PROPOSED). **Blocks** G10.
+
+### 9.12 Q132 (spec Q10). Place data licence and any later geocoder
+- **Questions.** Does the chosen offline dataset's licence permit bundling in a paid app, and what attribution or share-alike duty follows? If Apple's geocoder is ever wanted, may results be cached, what consent text and label change follow, and does it conflict with Apple's one-request-per-action rule (Attachment 6 UNVERIFIED)?
+- **Default.** Offline table only; geocoder not built. **Blocks** G11b.
+
+### 9.13 Capped brief ordering (a proposal for the founder; the cap and the engagement are the founder's, O-40)
+Counsel cost is UNVERIFIED and the founder sets the cap. Silence is not a pass: any part counsel does not answer stays dark. If the cap forces cuts, the order below keeps the questions that gate the most shipping first and cuts last the ones whose default is already "off".
+
+| Order | Packet Q | Why here |
+|---|---|---|
+| 1 | Q123 | Gates the library read and the label for the `production` profile |
+| 2 | Q126 | Gates date and place use; its default (date-only) is a real product cost |
+| 3 | Q129 | Gates the door and the library; the promise and the label depend on it |
+| 4 | Q128 | Gates the door and store submission |
+| 5 | Q130 | Policy mechanics for the same release |
+| 6 | Q131 | Gates the founder sign-off; may be a separate engagement |
+| 7 | Q125 | Default (date-only cards) is acceptable; ask if budget allows |
+| 8 | Q127 | A different attorney; separate cap; the fallback label is available |
+| 9 | Q124 | Phase 2 only; F4 off |
+| 10 | Q132 | No places by default; ask only if the place table is wanted |
+
+A first cut (orders 1 to 6) answers everything the spec says the door and the library need together. Whether that is an adequate or sufficient brief is for counsel and the founder; counsel must confirm.
+
+### 9.14 What counsel is not asked to do
+Nothing here asks counsel to approve the product copy in 9.1 as marketing, to set price, or to rule on anything outside these ten topics. The contradictions between published drafts and the hybrid design are listed in `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`; they are fixes `legal` drafts as Privacy Policy 3.1.0, Terms 4.2.0, in-app disclosures 3.5.0 and label 2.3.0 (spec R266), held as draft-for-counsel.
 
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9.0 | 2026-11-21 | Adds section 9 (Q123 to Q132, Moments tab, NS-53; merged in #1316) above this Changelog, where it was first appended after it. Q129 default corrected to the founder's O-44 decision of 21 Nov 2026 (disclose the iPhone backup in one plain policy line; do not exclude the folder); the 9.2 index row and the C-3 note in `PRIVACY-CONTRADICTIONS.md` follow. Version 1.9.0 because 1.8.0 is used by #1057 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.8.0 | 2026-11-20 | Adds section 8 (Q109 to Q122) for the locked cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`, `develop` 9e4757459dc3): CUL-Q5, Q6 (widened to religion by inference, with the controller and US-storefront sub-questions), Q7, Q11 (now Q112, not Q41), Q14; FR-DAY-23 (the right to use source tables); tradition-reviewer records; L-14 to L-19; C-9 to C-11 with the Journaling picker terms. Version 1.8.0 because 1.7.0 is used and #598 names 1.6.0 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.7.0 | 2026-11-20 | Adds section 7 (BL-949): the questions raised by the locked new-scope pack (`docs/prd-lock-v1-20nov` at 450bcb4a) and its engineering designs of 20 Nov. Repeated questions are merged into Q32, Q40, Q41, Q43 to Q46, Q48 to Q51 and Q54, with new lettered parts. Two are new: Q107 (a sealed letter and the child who may read it later) and Q108 (earlier versions already on our server, which the policy does not name). Q107 is the first free number, because open drafts claim Q58 to Q106 (#598, BL-780, #760). Twelve cited questions are unchanged (7.16). Section 6 gains items 9 to 12. Version 1.7.0, because #598 names 1.6.0 for its renumbering of Q58 to Q60 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
+| 1.5.0 | 2026-11-01 | Adds Q57 (sanctions: the D-131 country block, no name screening under D-137, the Privacy 12 country-check wording under D-136). Chief Legal Officer (Claude role, not a lawyer), CLO-3. |
+| 1.4.0 | 2026-10-31 | Terms and Subscription Terms are the plain-form 4.1.0 texts. The reviewers' notes that sat inside develop's 4.0.0 texts are carried here: Q41 gains the 31 Oct update (California notices without the amount, the two routes, Unverified items, price-change setting, grace period, federal status); Q40 gains the free-list notes (co-parent writing, the floor, binding promise). Full notes word for word in `CHANGES-2026-10-31.md`, last section. Version 1.4.0 because 1.3.0 is used (POLICY_VERSIONING 2.4). |
+| 1.3.0 | 2026-10-31 | Merge of develop (31 Oct) into the rebuilt packet of PR #163. Kept the 1.1.0 structure; the 1.2.0 product-paragraph prices (D-082) were already in it; the Q14 note on the Terms 4.0.0 free list is carried into the superseded-questions table. Version 1.3.0 because 1.1.0 and 1.2.0 are used (POLICY_VERSIONING 2.4). Also: version list in section 0 brought up to date; Privacy Policy 3.0.0 carries the D-116 exception to the 31-day erasure promise and a drafted "never for marketing" bullet, both unconfirmed; the packet's text about Terms 3.1.0 and Subscription Terms 3.1.0 is superseded by develop's 4.0.0 texts, whose content differs from the server-product wording the packet's questions were written against (see the PR body). |
+| 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
+| 1.1.0 | 2026-10-16 | Rebuilt for option B and the founder's 15 Oct direction for legal pages: a one-page table of what changed; R4's twelve questions in R4's order (Q41 to Q52); Q53 to Q56; #81's Q32 to Q40 restated (Q32 is now the health notice question, with the separate notice removed); the 1.0.0 questions with their status; and the code checks of the services the texts name. 16 Oct: the review of PR #163 (two reviews) found claims the code contradicts or has not built; the drafts now describe only built features or say a feature is not available yet, and section 0 lists each. Decision ids follow develop (D-100 to D-108). The 1.1.0 addendum drafted in PR #81 was never merged; its questions are carried here. |
 | 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |

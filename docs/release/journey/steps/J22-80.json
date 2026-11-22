@@ -1,0 +1,41 @@
+{
+  "id": "J22-80",
+  "journey": "sign-in",
+  "kind": "unhappy",
+  "title": "Paused after five wrong codes",
+  "note": "Typing a code waits for 15 minutes. One line, read as one: the letters are safe, when a code can be tried again, and that the link in the newest email and Apple or Google still sign in. \"Send a new email\", another address and Not now still work.",
+  "from": "J22-08",
+  "shot": "screens/J22-80.png",
+  "route": "/sign-in/code",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Not now Check your email A link and a code are on their way to mama@example.invalid . Tap the link on this phone, or type the code here. Code Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so does signing in with Apple or Google. Send a new email You can send another in a minute. Use a different email Trouble signing in? Continue",
+  "lines": [
+    "Not now",
+    "Check your email",
+    "A link and a code are on their way to",
+    "mama@example.invalid",
+    ".",
+    "Tap the link on this phone, or type the code here.",
+    "Code",
+    "Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so does signing in with Apple or Google.",
+    "Send a new email",
+    "You can send another in a minute.",
+    "Use a different email",
+    "Trouble signing in?",
+    "Continue"
+  ]
+}

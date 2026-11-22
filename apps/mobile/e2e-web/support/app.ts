@@ -1,15 +1,19 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { expect, type Recorder } from './journey';
+import { canary, expect, type Recorder } from './journey';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
 
 export const btn = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
 
-/** Age gate: Yes, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
+/** The agreement box on Before you begin (F2): a native checkbox named by its sentence. */
+export const agreeBox = (page: Page) => page.getByRole('checkbox', { name: 'I agree to the Terms of Service and Privacy Policy.' });
+
+/** Before you begin: Yes, the agreement box, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
 export async function passAgeGate(page: Page) {
   await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
 }
@@ -59,19 +63,30 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 }
 
 // `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
-export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
+export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
 
 /** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
-export const selectedTab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name, selected: true });
+export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, selected: true });
 
 /**
  * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no
  * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
  */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
+  canary(page, text);
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
+}
+
+/**
+ * The reminder card after the phone's first letter (C-REQ-001 Rev, DR-12 B; components/asks/reminder-prime-ask.tsx):
+ * answers "No reminders" so a journey about something else can go on over the Book. Asserts the card was there.
+ */
+export async function noRemindersAfterFirstLetter(page: Page) {
+  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
+  await btn(page, 'No reminders').click();
+  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
 }
 
 /** Local calendar day `days` from today (negative = earlier), YYYY-MM-DD, in the browser's time zone (the same machine). */

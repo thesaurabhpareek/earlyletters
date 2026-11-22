@@ -1,0 +1,34 @@
+{
+  "id": "J21-01",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Welcome, with \"I was invited\"",
+  "note": "With server features on the door is back (D-100 amends D-087): Begin the book, and a quiet \"I was invited\" for a parent whose partner already started one.",
+  "from": "J01-02",
+  "shot": "screens/J21-01.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Your first two letters are free. Begin the book I already have a book I was invited",
+  "lines": [
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Your first two letters are free.",
+    "Begin the book",
+    "I already have a book",
+    "I was invited"
+  ]
+}

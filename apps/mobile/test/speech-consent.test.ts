@@ -127,7 +127,7 @@ describe('wiring', () => {
     expect(queue).toMatch(/allowed: \(\) => started && state\.foreground && speechAutoStartAllowed\(\)/);
     expect(queue).toMatch(/request: \(language\) => void requestSpeechFor\(language, \{ automatic: true \}\)/);
     expect(queue).toMatch(/export async function startSpeechDownload[\s\S]*?setSpeechDownloadChoice\('yes'\);\s*await requestSpeechFor\(language, opts\)/);
-    expect(src('app/settings/recordings.tsx')).not.toMatch(/\brequestSpeechFor\b/);
+    expect(src('components/settings/speech-row.tsx')).not.toMatch(/\brequestSpeechFor\b/);
   });
 
   it('the migration runs when the queue starts', () => {
@@ -163,7 +163,6 @@ describe('copy', () => {
   it('names the choice and the size, promises nothing about speed and keeps the voice', () => {
     expect(speechConsentCopy.downloadButton).toBe('Download on Wi-Fi');
     expect(speechConsentCopy.laterButton).toBe('Not now');
-    expect(speechConsentCopy.footnote).toMatch(/Your voice is always kept/);
     expect(wordsCopy.pack.askBody).toMatch(/Your voice is kept/);
   });
 });

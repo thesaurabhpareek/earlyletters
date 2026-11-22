@@ -3,8 +3,9 @@
   "journey": "plus",
   "kind": "unhappy",
   "title": "Restore purchases cannot reach the App Store",
-  "note": "Restore asks StoreKit. With no store (web) the app answers calmly that the App Store could not be reached and to try again. On a phone with no Plus purchase it would say none was found.",
+  "note": "Restore asks StoreKit; while it checks, the row reads \"Checking with the App Store\". With no store (web) the answer shows under the row, with the warning mark: the App Store could not be reached, try again in a moment. On a phone with no Plus purchase it would say none was found.",
   "from": "J12-01",
+  "shot": "screens/J12-02.png",
   "route": "/settings/plus",
   "viewport": {
     "width": 402,
@@ -21,18 +22,15 @@
     }
   },
   "scrolls": false,
-  "text": "Plan Plus Your first two letters are free. Plus lets you keep adding. Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters. Manage subscription Change or cancel in Apple's subscriptions screen. Restore purchases Finds Plus bought with this Apple Account. Apple handles payment for Plus. We never see your card details. The App Store could not be reached. Please try again in a moment. Plus is not available on this device yet.",
+  "text": "Plan Plus Plus is not available on this device yet. Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Restore purchases Finds Plus bought with this Apple Account. The App Store could not be reached. Please try again in a moment. Apple handles payment for Plus. We never see your card details.",
   "lines": [
     "Plan",
     "Plus",
-    "Your first two letters are free. Plus lets you keep adding.",
-    "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters.",
-    "Manage subscription",
-    "Change or cancel in Apple's subscriptions screen.",
+    "Plus is not available on this device yet.",
+    "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.",
     "Restore purchases",
     "Finds Plus bought with this Apple Account.",
-    "Apple handles payment for Plus. We never see your card details.",
     "The App Store could not be reached. Please try again in a moment.",
-    "Plus is not available on this device yet."
+    "Apple handles payment for Plus. We never see your card details."
   ]
 }

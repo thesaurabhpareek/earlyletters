@@ -33,6 +33,8 @@ Labels used throughout: **F** fact (observed in the repo or by running it on 3 O
 | L5 end to end | Maestro on iOS simulator, mitmproxy for network assertions; Playwright for the web contribution page once `apps/web` exists | about 2% (15 flows) | nightly and release candidate; device runs for gates | the 15 flows in section 3 |
 | L6 manual and evidence | scripted checklists in `docs/qa/` (**R**) | n/a | binary release | VoiceOver and AX5 pass, device budgets, mail-client links, StoreKit sandbox, App Store Connect settings |
 
+**L2 today (BL-278, no new dependency).** `apps/mobile/vitest.component.config.ts` runs `test/component/*.test.tsx`: the real component rendered to markup with `react-native-web` and `react-dom/server`, native seams (reanimated, uniwind, fonts, a11y hooks, icons) stood in by `test/component/setup.tsx`, text size set through `test/component/harness.ts`. `vitest.config.ts` lists it as a project beside the node suite, so `npm test` runs both and a file filter still works. It reads labels, roles and truncation classes (static markup runs no effects, so a live-region announcement is not proven here; that stays with the logic tests); it does not do layout, touch targets or focus order (those need a device or the jest-expo spike in LD-27). A component that imports a new native module needs one more stand-in in `setup.tsx`.
+
 **R** The rule for where a test goes: if a behaviour can be decided by a pure function, the test is L1 and the screen merely calls the function; a Maestro flow only proves that the wiring exists. This keeps the 15 E2E flows stable and the PR loop fast.
 
 ### 1.2 What exists (F, counted by running the suites on 3 Oct 2026)
@@ -329,10 +331,10 @@ Pre: Asha's book with a Mama letter and a Papa letter; signed in as Mama; online
 
 **E2E-09 Account deletion** (C-REQ-019, LEGAL-REQ-029, DATA-REQ-012, K-22)
 Pre: Mama is creator of Asha's book with co-parent Papa and contributor Nani; Mama holds a sandbox subscription.
-1. Settings, Your data, Delete account. Assert Export is offered first.
+1. Settings, Delete account. Assert Export is offered first.
 2. Continue; assert the subscription notice with a manage link appears before the final confirm.
 3. Assert the co-parent line says Mama's letters leave the shared book.
-4. Type to confirm. Assert the signed-out state and the 30-day undo message.
+4. Type to confirm. Assert the scheduled page: the date 30 days out, Cancel deletion and Sign out of this phone (S64; the app stays signed in until that tap).
 5. Sign in again within the window; tap Cancel deletion; assert letters are back.
 6. Repeat to completion with clock +31 days and the purge worker run; then run `ops/verify-deletion.mjs` against the local stack: no rows or objects for Mama except pseudonymised acceptances and the suppression hash; Papa still reads the book and Nani's letters remain.
 

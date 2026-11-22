@@ -1,0 +1,39 @@
+{
+  "id": "J04-10",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "Another thought, before the birth",
+  "note": "Fourteen presses: each shows a different prompt from the eight, never the one that was on screen, and never a newborn one. Nothing is counted.",
+  "from": "J04-09",
+  "shot": "screens/J04-10.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · Before You Good afternoon, Mama. What does your home sound like these days? Another thought Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · Before You",
+    "Good afternoon,",
+    "Mama.",
+    "What does your home sound like these days?",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

@@ -3,7 +3,7 @@
  *
  * - The service runs only for the account released to sync (lib/auth/auth-store.ts
  *   `currentAuthUserId()`: consent complete and, when this phone's letters belong to no account
- *   yet, "Keep them here" tapped). A session that is still consenting, or that ends with "Not my
+ *   yet, "Keep in this account" tapped). A session that is still consenting, or that ends with "Not my
  *   account", gets no service: nothing is listed, uploaded or restored for it, and no escrow
  *   request is opened in its name. The sign-in help promises nothing on this phone changes.
  * - Each account keeps its own backup state, one `backup-<profile id>.db` per account, so another

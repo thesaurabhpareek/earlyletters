@@ -102,7 +102,7 @@ Review counts in this file are directional (R2 section 1). Privacy stays a desig
 | Return to work | about 3 to 4 months for many US parents [A]; return-to-work timing source not opened (R2 section 8.3) | Second drop-off [A] | Gentle month-age notes, a few evenings a week (F13) |
 | Trial end | month 1 (monthly) or month 2 (annual) after a Plus trial starts | Pay or not | Notices, nothing held back (F14) |
 | Toddler | 1 to 3 years | Language bursts; grandparents more involved | Names dictionary, co-parent, v1.1 family (F07, F11, F30) |
-| Read-together age | about 2 to 5 years | Shared reading at bedtime [F] R2-S29 | Read together (F10) |
+| Read-together age | about 2 to 5 years [A] | Shared reading, which the AAP encourages from birth through kindergarten [F] R2-S29; bedtime as the moment is [A] | Read together (F10) |
 | Handover | 18 years | The letters change hands | Export in open formats; shutdown pledge (F15) |
 
 ## 6. What each persona must never experience

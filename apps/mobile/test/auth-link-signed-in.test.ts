@@ -88,7 +88,7 @@ describe('[F02-REQ-020] what the refusals say (reviews A and B of PR #139)', () 
     expect(authCopy.verify.refusedTitle).not.toBe(authCopy.verify.title);
     expect(authCopy.verify.refusedTitle).not.toMatch(/\.$/);
     const screen = readFileSync(join(__dirname, '..', 'src/app/(auth)/sign-in/verify.tsx'), 'utf8');
-    expect(screen).toMatch(/const refused = error === 'other_phone' \|\| error === 'already_signed_in';/);
+    expect(screen).toMatch(/const refused = error === 'other_phone' \|\| error === 'other_phone_spent' \|\| error === 'already_signed_in';/);
     expect(screen).toMatch(/<SheetTitle>\{refused \? v\.refusedTitle : v\.title\}<\/SheetTitle>/);
     expect(screen).toMatch(/error === 'already_signed_in' \? \(\s*<QuietButton label=\{v\.close\} onPress=\{close\} \/>\s*\) :/);
   });

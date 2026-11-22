@@ -18,9 +18,12 @@ Every screen feels premium and calm, and works for everyone: VoiceOver, the larg
 - `docs/design/**`.
 
 ## You read first
+- `packages/content/WRITING-GUIDE.md`: how every customer-facing line should sound. Read it before writing or changing any string, email, push or store copy; run `npm run lint:copy`.
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/design/DESIGN_LANGUAGE.md`, `BENCHMARK.md`, `COMPONENT_LIBRARY.md`, `COMPONENTS.md`, `MOTION.md`, `SOUND.md`.
 - `docs/adr/0101-ui-component-library.md`: React Native Reusables with Uniwind.
 - `docs/tdd/09-accessibility-design-system.md`.
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` sections 2 to 5 (your cards: NS-11, NS-14, NS-21, NS-22, NS-33; cards by id in `docs/product/prd/`), the design specs in `docs/design/specs/` the cards cite, `docs/product/prd/14-test-plan.md` section 5 (device settings), and your rows BL-927 and the one-page delta that opens BL-938. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `design systems`.

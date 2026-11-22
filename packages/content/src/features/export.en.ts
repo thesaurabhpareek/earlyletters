@@ -3,7 +3,7 @@
  * Export words. `{app}` is the public name, filled from packages/brand by the export builder.
  *
  * Screen strings that already exist are reused from content:
- * `settings.export.title`, `.body`, `.button`, `.preparing`, `.ready`.
+ * `settings.export.title`, `.button`, `.preparing`, `.ready`.
  */
 export const exportCopy = {
   screen: {
@@ -15,7 +15,8 @@ export const exportCopy = {
     // D-074: what the machine changes is a "small fix", never a tidy-up.
     includesData: 'A data file with your words as heard, every small fix, and the final text',
     // Option B (D-100): letters sync, so the line is about the export only, never a claim that nothing leaves
-    // the phone. The export is built on this phone (lib/export reads no network). Counsel claims review.
+    // the phone. The export is built on this phone; signed in, it also reads the person's own consent record
+    // and profile from the server for account.json (BL-323, BL-529), and sends nothing. Counsel claims review.
     offlineNote: 'The export is made on this phone. It goes only where you send it.',
     // Above the disabled button while the book has no letter.
     emptyNote: 'You can export once the book has a letter.',
@@ -30,12 +31,11 @@ export const exportCopy = {
     privacyNotice: 'This file holds your letters and recordings, unlocked. Keep it somewhere private.',
     afterShare: 'The copy on this phone has been cleared away. Export again any time.', // D-074 glossary
     againButton: 'Export again',
-    failedTitle: 'The export did not finish',
-    failedBody: 'Your letters and recordings are all still here. Please try again.',
+    failedTitle: "The export didn't finish",
+    failedBody: 'Your letters and recordings are all still here. Try again.',
     // Too big: the title, then `settingsHome.helpValue` "Write to us" as the primary (S43).
     tooBigTitle: 'This book is too big for one file',
-    tooBigBody: 'This export is larger than one file can hold. Write to us and we will help you get every letter out.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the button says it)
-    lowSpaceBody: 'This phone needs more free space first.',
+    lowSpaceBody: 'This phone needs more free space. Free some up, then try again.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
   },
 
@@ -52,6 +52,23 @@ export const exportCopy = {
     waitingForWords: 'This recording is kept. Its words have not been written down yet.',
     recordingElsewhere: 'Not on this phone',
     exactlyHeard: 'Exactly what you said',
+  },
+
+  /**
+   * Header lines of each waiting/*.txt file (PL-2, F14-REQ-039): a letter that is not in the book yet.
+   * The person's own words follow: typed, or exactly as heard. Nothing is tidied, since nothing was kept.
+   */
+  waitingFile: {
+    status: 'Waiting',
+    reasons: {
+      held_at_keep: 'Not kept yet. It waits on this phone until you keep it.',
+      waiting_for_words: 'Its words have not been written down yet.',
+      not_read_back: 'Not read back yet.',
+      typed_draft: 'Still being written.',
+      unrecoverable: 'This recording has no sound in it.',
+    },
+    typed: 'What you wrote',
+    changed: 'Your words, as you changed them',
   },
 
   /** index.html, the offline reader. */
@@ -83,10 +100,14 @@ export const exportCopy = {
     'letters/    Every letter and note as a plain text file, one folder per child and month.',
     'audio/      Every recording on this phone, exactly as it was made (AAC audio, as .m4a or .aac).',
     '            Open them in any music or video player.',
+    'waiting/    Letters that are waiting to be kept or read back, when you have any:',
+    '            your own words as a plain text file and the original recording.',
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
     '            account.json: your plan, whether you were signed in, the books you belong to,',
-    '            and the choices you made on this phone (see below).',
+    '            the names we always spell your way, your consent choices and, when you are',
+    '            signed in, your profile (see below).',
+    '            waiting.json, when you have any: the letters that are waiting.',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',
     '            It works with no connection and no app.',
@@ -101,6 +122,21 @@ export const exportCopy = {
     'account.json says whether you answered yes to "Are you 18 or older?" on this phone,',
     'and your choice about sharing usage and crash reports ("not_answered" if you have',
     'not answered). These are the answers kept on this phone.',
+    '',
+    'YOUR CONSENT HISTORY',
+    '',
+    'When you are signed in, our server keeps a record of each time you agreed to, declined',
+    'or acknowledged our terms, and each privacy choice you made or withdrew. account.json',
+    'holds that record under "consent_history" when it could be read while the export was',
+    'made. If it could not, "status" says why ("not_signed_in", "unavailable" or',
+    '"different_account"), and nothing from this phone is left out because of it.',
+    '',
+    'YOUR PROFILE',
+    '',
+    'When you are signed in, account.json also holds your profile as our server keeps it,',
+    'under "profile", when it could be read while the export was made: the name on your',
+    'account, your usual "From" name (a book can have its own, in "memberships"), and when',
+    'you made your account. Its "status" works the same way as the consent history\'s.',
     '',
     'CHECKING THE FILES',
     '',

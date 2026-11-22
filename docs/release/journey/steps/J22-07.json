@@ -1,0 +1,40 @@
+{
+  "id": "J22-07",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Check your email",
+  "note": "The address the email went to is on screen. Tap the link on this phone, or type the code: a full code goes on its own; Continue stays for VoiceOver and Switch Control (S54). Not now sits top right.",
+  "from": "J22-06",
+  "shot": "screens/J22-07.png",
+  "route": "/sign-in/code",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Not now Check your email A link and a code are on their way to mama@example.invalid . Tap the link on this phone, or type the code here. Code Send a new email You can send another in a minute. Use a different email Trouble signing in? Continue",
+  "lines": [
+    "Not now",
+    "Check your email",
+    "A link and a code are on their way to",
+    "mama@example.invalid",
+    ".",
+    "Tap the link on this phone, or type the code here.",
+    "Code",
+    "Send a new email",
+    "You can send another in a minute.",
+    "Use a different email",
+    "Trouble signing in?",
+    "Continue"
+  ]
+}
