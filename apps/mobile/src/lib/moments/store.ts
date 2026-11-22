@@ -19,6 +19,7 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
   let owner = initialOwner,
     generation = 0,
     swept = false,
+    keptLocal = false, // the last sign-out kept a 'local' file: a local write still running must not delete it
     queue: Promise<unknown> = Promise.resolve();
   const listeners = new Set<() => void>();
   const tell = () => listeners.forEach((l) => l());
@@ -45,7 +46,7 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
       const next = fn(r.state === 'ok' ? r.file : L.emptyMoments(who));
       if (!next || (await writeMoments(p, next)) !== 'ok') return UNAVAILABLE;
       if (started !== generation) {
-        removeMoments(p); // a clear landed during the write: nothing of it may stay
+        if (!(keptLocal && who === 'local')) removeMoments(p); // a clear landed during the write: nothing of it may stay
         return DROPPED;
       }
       tell();
@@ -56,15 +57,20 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
   }
 
   return {
-    /** Sign-in or any owner change. Queued writes of the old owner are dropped and a file of another signed-in owner is removed; a 'local' file is kept, as the days store does (ADR 0032 amendment). */
+    /**
+     * Sign-in or any owner change. Queued writes of the old owner are dropped and a file of another owner is removed,
+     * a 'local' file nobody adopted included (the claim step calls `adoptLocal` BEFORE this, on an explicit confirm;
+     * ADR 0032 item 4, CDO-24). Signing out calls this with 'local', which keeps a kept 'local' file.
+     */
     setOwner(key: string): void {
       if (key === owner) return;
       owner = key;
       generation += 1;
+      keptLocal = false;
       try {
         const p = getPort();
         const r = p ? readMoments(p, key) : null;
-        if (p && r?.state === 'foreign' && r.owner !== 'local') removeMoments(p); // a 'local' file is kept, as the days store keeps it for the late adopt
+        if (p && r?.state === 'foreign') removeMoments(p);
       } catch {
         // the next sign-in, sign-out, launch or Erase tries again
       }
@@ -106,13 +112,32 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
-    /** Deletes the file and temp now, drops queued writes. False when a file would not go. */
-    clearNow(): boolean {
+    /** The claim step, on an explicit "Keep in this account": a 'local' file becomes the new owner's, rows unchanged. 'none' when there is no local file; 'failed' leaves the file as it was. */
+    adoptLocal(key: string): Promise<'adopted' | 'none' | 'failed'> {
+      const started = generation;
+      const run = queue.then(async (): Promise<'adopted' | 'none' | 'failed'> => {
+        if (started !== generation) return 'failed';
+        const p = port();
+        if (!p) return 'failed';
+        const r = readMoments(p, 'local');
+        if (r.state === 'empty' || r.state === 'foreign') return 'none';
+        if (r.state !== 'ok') return 'failed';
+        return (await writeMoments(p, { ...r.file, owner: key })) === 'ok' ? 'adopted' : 'failed';
+      });
+      queue = run.catch(() => {});
+      return run;
+    },
+    /** Deletes the file and temp now, drops queued writes. False when a file would not go. `keepLocal` (sign-out only): a 'local' file stays. */
+    clearNow(keepLocal = false): boolean {
       generation += 1;
+      keptLocal = false;
       let gone = false;
       try {
         const p = getPort();
-        gone = p ? removeMoments(p) : true;
+        if (p && keepLocal && ['ok', 'newer'].includes(readMoments(p, 'local').state)) {
+          keptLocal = true;
+          gone = true;
+        } else gone = p ? removeMoments(p) : true;
       } catch {
         // gone stays false
       }
@@ -125,8 +150,8 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
 let real: MomentsPort | null = null;
 export const momentsStore = createMomentsStore(() => (real ??= expoMomentsPort()));
 
-/** Sign-out on any path, or another account signing in. Synchronous, never throws. */
-export const endMomentsSession = (): boolean => momentsStore.clearNow();
+/** Sign-out on any path, or another account signing in. Synchronous, never throws. A 'local' file stays. */
+export const endMomentsSession = (): boolean => momentsStore.clearNow(true);
 
 /** CODE-R15: callers branch on `code`, never on the message. */
 export class MomentsStoreError extends Error {

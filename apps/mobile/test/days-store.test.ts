@@ -40,7 +40,7 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { createDaysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
+const { createDaysStore, daysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
 const { parseDays } = await import('../src/lib/days/store.logic');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
 
@@ -317,9 +317,51 @@ describe('[NS-47-R15] an owner change drops writes and retries a stale clear', (
     expect(await s.tickDay(DAY)).toEqual({ ok: true });
     await s.clearNow();
     await writeDays(expoDaysPort()!, file('local'));
-    const local = text();
+    s.setOwner(A); // a FIRST sign-in that is not a claim: the claim step never adopted, so the local file is deleted (E73, CPO-30)
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[CPO-30] the claim step adopts a local file only on an explicit confirm; sign-out keeps it', () => {
+  it('adoptLocal rewrites a local file to the new owner, keeps the ticks, and the new owner reads it after setOwner', async () => {
+    seed(JSON.stringify(file('local')));
+    const s = fresh('local');
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(JSON.parse(text())).toEqual(file(A));
     s.setOwner(A);
-    expect(text()).toBe(local);
+    expect(names()).toEqual([DAYS_FILE]); // setOwner keeps the file it was adopted into
+    expect(s.load()).toMatchObject({ state: 'ok', file: { owner: A } });
+  });
+
+  it('adoptLocal leaves another owner\'s file alone and says none when there is no local file', async () => {
+    seed(JSON.stringify(file(B)));
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+    expect(JSON.parse(text()).owner).toBe(B);
+    removeDays(expoDaysPort()!);
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+  });
+
+  it('sign-out (endDaysSession) keeps a local file, as "Not my account" must; a signed-in owner\'s file still goes; Erase takes both', async () => {
+    seed(JSON.stringify(file('local')));
+    expect(endDaysSession()).toBe(true);
+    expect(JSON.parse(text()).owner).toBe('local');
+    expect(daysStore.clearNow()).toBe(true); // Erase and the other callers keep deleting everything
+    expect(names()).toEqual([]);
+    seed(JSON.stringify(file(A)));
+    expect(endDaysSession()).toBe(true);
+    expect(names()).toEqual([]);
+  });
+
+  it('a local write still running when sign-out keeps the file is not deleted behind it', async () => {
+    const s = createDaysStore(() => expoDaysPort(), 'local');
+    let release!: () => void;
+    h.hold = new Promise<void>((r) => (release = r));
+    const running = s.tickDay(DAY);
+    await new Promise((r) => setTimeout(r, 0));
+    s.clearNow(true);
+    release();
+    expect(await running).toEqual(DROPPED);
+    expect(JSON.parse(text()).owner).toBe('local');
   });
 });
 
