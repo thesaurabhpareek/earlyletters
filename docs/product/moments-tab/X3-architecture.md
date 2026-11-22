@@ -215,13 +215,13 @@ moments.json  v1
   index:    [ { dayKey, startMs, endMs, timeOfDay, reason, assetIds (<= 6) } ]    L4, rebuilt on foreground
   window:   { scannedFromMs, scannedToMs }                                       so a refresh is incremental
   decisions: { dismissed: [ dayKey ] }                                            L4, the parent's own choices
-  notify:   { slotId (random), dayKey } | null                                    for removing one pending note
+  notify:   { slotId (random), dayKey } | null                                    for removing one pending reminder
 ```
 
 Decisions:
 - What is persisted is derived structure only. A day is "done" when a letter exists for it, read from the letters, never copied into this file (one source of truth; NS-51-R13 reads the day's letter). A day is "dismissed" only when the parent taps Not this one; that is one row of a date.
 - Size: the index holds the last 90 days by default (NS-51-R7 default) and at most 30 moments (NS-51-R6). The Recent list needs more than that. Recent pages older days by scanning on demand into memory only (section 9); it is never persisted. This is a change to NS-51-R6 and R8 only in that the tab shows a list; the stored cap stays 30. Reversal 7 in section 15.
-- Pause (Q-PM-12, CL-057): empties `index` and `window` and removes the pending note; keeps `decisions` (a dismissed date reveals no picture). Turn off, sign-out, Erase everything and Delete account delete the whole file first, before any await (ADR 0032 item 3; NS-51-R16, R17).
+- Pause (Q-PM-12, CL-057): empties `index` and `window` and removes the pending reminder; keeps `decisions` (a dismissed date reveals no picture). Turn off, sign-out, Erase everything and Delete account delete the whole file first, before any await (ADR 0032 item 3; NS-51-R16, R17).
 - Backup: exclusion set and read back; a false read-back deletes the file and refuses to write (ADR 0032 item 2; NS-51-R6, R23). A restored phone starts off and does not ask again by itself.
 - Protection: file protection no weaker than `scribe.db` (ADR 0032 item 4). Per account: account B starts off and never reads A's file (NS-51-R24, ADR 0038).
 - Writes are atomic (temp, rename). A corrupt file is deleted and rebuilt; nothing is shown from a half file.
@@ -231,7 +231,7 @@ Decisions:
 - Layer: unit, device.
 
 ### MT-X3-R10 Clear order
-- Given sign-out, Erase everything, Delete account or Turn off, Then the moments file is deleted first, pending moment notes are removed, `eraseDeviceFiles` and the `[X4-R1]` enumeration list the file, and a scan finds zero bytes of it (NS-51-R17; BL-961).
+- Given sign-out, Erase everything, Delete account or Turn off, Then the moments file is deleted first, pending moment reminders are removed, `eraseDeviceFiles` and the `[X4-R1]` enumeration list the file, and a scan finds zero bytes of it (NS-51-R17; BL-961).
 - Layer: db, e2e.
 
 ## 8. Test seams and the three sources
@@ -309,7 +309,7 @@ Each row is a state the tab must handle quietly. None shows an error string with
 | Time zone or clock change, DST | Index rebuilt for the affected window; notification re-planned (NS-32-R16) | unit |
 | Account switch or sign-out mid-scan | Result discarded when the owner key differs; file cleared per ADR 0032 | unit |
 | App locked, app inactive, app switcher | Thumbnails replaced by an opaque box before the snapshot, with or without App lock (NS-51-R25, E18); a result that returns while locked is discarded | device |
-| Kill switch turns on | Tab hides, pending moment notes removed on next foreground, file kept until the parent turns off or erases (rollback, section 16) | unit |
+| Kill switch turns on | Tab hides, pending moment reminders removed on next foreground, file kept until the parent turns off or erases (rollback, section 16) | unit |
 | Parent deletes a source picture | Drops quietly; a moment below threshold vanishes (NS-51-R22) | unit |
 | Two start doors in a row (tap compose twice) | `startCapture` plans once; `capture-handoff` is single-slot and cleared on read | unit |
 
@@ -320,13 +320,13 @@ Existing rules to respect: ML-3 (no push is created from library data; fixed tex
 Architecture:
 - `packages/core` exports `momentSignal(ctx)`, which returns `{ fresh: boolean; dayKey }` and nothing else: no count, no asset id, no time of day, no reason. `nudge.ts` runs at foreground, only if `notifications.momentNudge` is on, access is on and the index is fresh, then passes at most one candidate to `planner.ts`.
 - The planner already takes candidates with a class and rank; a moment is a ranked `evening` candidate below `monthAge` (NS-51-R11), so `chooseOnePerDay` keeps one a day and the 60 total with no new class (ADR 0030; N-2).
-- The identifier is `el.m.<random>`, not `el.day.<isoDate>`: random per plan, and the `slotId` is kept in `moments.json` so it can be removed one by one, and every pending `el.m.` note is removed by prefix on pause, off, sign-out and Erase (extends ADR 0033 item 6). ML-3 says "random id", so this is stricter than ADR 0030's day-shaped id, which is for typed days and birthdays.
+- The identifier is `el.m.<random>`, not `el.day.<isoDate>`: random per plan, and the `slotId` is kept in `moments.json` so it can be removed one by one, and every pending `el.m.` reminder is removed by prefix on pause, off, sign-out and Erase (extends ADR 0033 item 6). ML-3 says "random id", so this is stricter than ADR 0030's day-shaped id, which is for typed days and birthdays.
 - Words: one neutral title and one neutral body, one string each, used for every tone and every state, never naming pictures, a place, a day or {child} on the lock screen (ADR 0033 items 1 and 2; Q-PM-9). The founder's example "Some pictures from the weekend are here" names pictures and a time window; under Q-PM-9 default it appears only inside the app. Whether it may appear on the lock screen with names on and App lock off is the founder's call (section 23, question 3).
 - Timing: planned for the next quiet-hours-safe evening slot, never within an hour of one that is already pending, and removed when a letter is made that day (NS-51-R13).
 - Background: none. A weekend's pictures taken after the last open do not prompt (NS-51-R11, Q-PM-8). That is a real limit on "reason to come back" through push; the honest answer is that library-driven push is weaker than the founder may expect, and the daily push still works from dates (birthday, month age, typed days) which need no library.
 
 What this overturns (reversal the founder owns): ML-3's "no push is created from library data". Even with fixed words, the existence of a notification on a given day is derived from the library. Timing alone tells anyone who watches the phone that "there is something to write about today". Two designs follow; I recommend the first.
-- 11a (recommended, no reversal needed): the push planner never reads library data. The existing evening reminder and date-based notes stay as they are. The tab shows moments when opened. The "moment signal" reaches push only as dates the phone already knows.
+- 11a (recommended, no reversal needed): the push planner never reads library data. The existing evening reminder and date-based reminders stay as they are. The tab shows moments when opened. The "moment signal" reaches push only as dates the phone already knows.
 - 11b (the founder's ask taken literally): `nudge.ts` as above, behind its own switch, default off, with the founder signing the ML-3 reversal and counsel reading the 5.1.1 and label notes.
 
 ### MT-X3-R15 The planner sees one boolean
@@ -334,7 +334,7 @@ What this overturns (reversal the founder owns): ML-3's "no push is created from
 - Layer: unit (allowlist test named in ADR 0033, with a positive control: a note carrying an asset id must fail it).
 
 ### MT-X3-R16 Switches stop the signal
-- Given Pause, Turn off, `notifications.momentNudge` off, a quiet or hidden book, an expecting-only plan, or App lock with day names off, When the planner runs, Then no moment candidate exists and every pending `el.m.` note is gone.
+- Given Pause, Turn off, `notifications.momentNudge` off, a quiet or hidden book, an expecting-only plan, or App lock with day names off, When the planner runs, Then no moment candidate exists and every pending `el.m.` reminder is gone.
 - Layer: unit, device (seed a pending and a delivered note first, then switch, then assert both gone; the CHECKS-AND-BALANCES C-06 pattern in ADR 0033).
 
 ### MT-X3-R17 One a day, 60 total
@@ -440,7 +440,7 @@ Switches, in order of reach:
 | `EXPO_PUBLIC_PHOTO_MOMENTS` | build flag, local family (E20) | off in every EAS profile; a test fails a release profile that enables it before gates close (NS-51-R32) | Module, usage string and Route B code present or absent |
 | `killSwitches.photoMoments` | remote, can only hide (D-035, `capabilities.ts:258-268`, CODE-R19) | not set | Hides Recent and library moments; phase 1 For you stays |
 | `killSwitches.momentsTab` (PROPOSED) | remote, hide only | not set | Hides the whole tab |
-| `killSwitches.momentNudge` (PROPOSED) | remote, hide only | not set | Removes pending moment notes on next foreground |
+| `killSwitches.momentNudge` (PROPOSED) | remote, hide only | not set | Removes pending moment reminders on next foreground |
 | Photo moments row in Me | parent, local, per account | off | Opt-in, Pause, Turn off (NS-51-R1, R15, R16) |
 | `notifications.momentNudge` | parent, local | off | Only if 11b is built |
 | email preference | parent, server-side | off | Only if the email job is built; migration is a hand-off |
@@ -460,7 +460,7 @@ Rollback, by layer:
 
 ## 17. Content-free observability
 
-Rules: OBS-R01, R02, R05, R08, R10; ADR 0036 (PostHog only, opt-in, allowlisted registry); NS-51-R27 and R28 (no library signal in analytics; canary finds nothing); D-124 (in-app analytics off for 1.0).
+Rules: OBS-R01, R02, R05, R08, R10; ADR 0036 (PostHog only, allowlisted registry); NS-51-R27 and R28 (no library signal in analytics; canary finds nothing); D-124 (in-app analytics off for 1.0, opt-in) as superseded by D-163 for the production build only (page-view, click and impression events for every user, off in production until its gates close; the content ban stands).
 
 Principle: the library must not be observable even as a number. A count of pictures, moments or unwritten days is a library signal and a gap count. A scan duration correlates with library size. So:
 - Device diagnostics (local, L1 and L2 only): a closed `MomentsLog` allowlist of `{ code, outcome }` where `code` is a `LibraryErrorCode` or a closed state name (`intro`, `asking`, `off`, `limited`, `ready`, `paused`) and `outcome` is `ok`, `degraded` or `failed`. No ids, dates, counts, durations, album names or paths. No `console.*` (CODE-R20).

@@ -133,7 +133,7 @@ Label table the integrator can paste, per route (all PROPOSED, subject to counse
 | Precise or Coarse Location | No | No (Location item discarded) | No (no place read) | No, unless a place is derived and sent |
 | Contacts | No | No (Contact item discarded) | No | No |
 | Health and Fitness | No | No (Workout, State of Mind discarded) | No | No |
-| Usage Data | No | No | No | No, unless opt-in analytics is on (BRIEF decision 12) |
+| Usage Data | No | No | No | No for Moments-specific events (content ban: no entry text, transcript, audio or child name in any event); basic page-view, click and impression events follow D-163 (every user, off in production until its gates close; counsel still decides the label, D-163 item 5b) |
 | Tracking | No | No | No | No |
 | Name, Email, Sensitive Info, Other User Content, User ID | Yes | Yes | Yes | Yes |
 
@@ -202,7 +202,7 @@ MT-X2-R22. A child's picture is the parent's, not ours.
 Given a picture of a child is attached to a letter, Then it is Content class (C) in `docs/legal/DATA_CLASSIFICATION.md` section 4, never in analytics, logs, crash reports, push payloads, URLs or support prefill (LEGAL-REQ-014, DATA-REQ-004). Layer: U. Classification row: `privacy` and `data-architect` own it; not changed here.
 
 MT-X2-R23. Other people in a picture.
-Given a picture has an adult or another child in it, Then we do nothing different; we never identify them. The policy's co-parent line is unchanged: a co-parent can read the letters in a shared book. If an attached picture shows a third person, that is the parent's own content. Question for counsel (CQ-X2-3): does a shared-book picture of another family's child need a line in the Terms. Default: yes, one line, under the existing content clause. Layer: R.
+Given a picture has an adult or another child in it, Then we do nothing different; we never identify them. LATER RELEASE (the first store build has no co-parent). The policy's co-parent line is unchanged: a co-parent can read the letters in a shared book. If an attached picture shows a third person, that is the parent's own content. Question for counsel (CQ-X2-3): does a shared-book picture of another family's child need a line in the Terms. Default: yes, one line, under the existing content clause. Layer: R.
 
 MT-X2-R24. No third-party SDK on this tab.
 Given 5.1.4(a) and 1.3 mention third-party analytics, Then the tab adds no analytics or ad SDK, no tracking and no ATT prompt (LEGAL-REQ-016). Layer: U (the denylist BL-117 is not yet proven in CI, per S11 gap 4 and follow-up 6.1; that remains open).
@@ -266,10 +266,12 @@ These are statements the tab can show. Each avoids the banned phrases in F7 and 
 | N3 | We never read where a picture was taken. | R12, R9; no place APIs, no geocoder |
 | N4 | We never write a title or a caption for you. Your words are yours. | constitution; `verifyEdits`; no title field filled by a machine |
 | N5 | We never use your pictures for ads, and we never use them to train models. | R5; no ad SDK; policy |
-| N6 | We do not count your pictures or the days you did not write. | NS-51-R12 content test |
+| N6 | We do not count your pictures. (Corrected 22 Nov 2026: "or the days you did not write" named a gap.) | NS-51-R12 content test |
 | N7 | You choose which pictures we can see. You can change it in Settings at any time. | NS-51-R14, R18 |
 | N8 | Say no, and nothing else changes. | R15 |
 | N9 | A reminder never shows a picture or a place. | R26 |
+
+Marked 22 Nov 2026 by `product`: D-165 item 1 records that "We never write a word for you." is superseded because it uses "we" against PRD D5-F3. N1 to N5 also open with "we"; treat them as DRAFT intents for `content` to rephrase without "we" (N7 is the form that survives). Not rewritten here.
 
 Check against banned words: none uses "stays on this phone", "never leaves", "no one else", "only you can read" or "no accounts". N1 and N3 are the form that survives. Whether N1 may stand where a letter with an attached picture syncs is a counsel question (R4).
 
@@ -317,7 +319,7 @@ Each is "PROPOSED to reverse", never decided here. The brief lists the first fiv
 - Screenshot or app-switcher snapshot of the tab shows a child's face: NS-51-R25 replaces thumbnails with an opaque box before the snapshot (S12). Policy line: we say this plainly in security, not as a promise to the parent.
 - A parent denies notifications and still opts in to email: allowed; they are separate channels.
 - A parent unsubscribes from nudge email: transactional email still arrives (S13 rule 5); the in-app tab is unchanged.
-- A parent on a shared book: the co-parent sees only letters, not the library read (S9 section 3, lines 53 and 54). The tab is per person.
+- LATER RELEASE (no co-parent in the first store build). A parent on a shared book: the co-parent sees only letters, not the library read (S9 section 3, lines 53 and 54). The tab is per person.
 
 ## 7. Constitution, privacy and accessibility checks
 

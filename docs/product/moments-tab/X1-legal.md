@@ -104,7 +104,7 @@ The "never create a biometric identifier" sentence (1.1.0 of the register alread
 
 ### 5.3 In-app disclosures (now 3.4.0), proposed 3.5.0
 - Permission primer for days from pictures. Under COORDINATION section 10 and PRIV-R21, anything a person agrees to carries four lines (draft, for `content` and `mobile` to complete):
-  - Shown: the primer text by `packages/content` key, with the Privacy Policy version link. Draft words: "Show days from your pictures. The app reads only when pictures were taken, on your phone. It does not look at what is in them." Then Apple's own system sheet.
+  - Shown: the primer text by `packages/content` key, with the Privacy Policy version link. DORMANT: not for the store, Privacy text or any string until NS-51-R26 and R28 are green and counsel agrees (the "only" is a claim code must prove). Draft words: "Show days from your pictures. The app reads only when pictures were taken, on your phone. It does not look at what is in them." Then Apple's own system sheet.
   - Records: PRIV-R21 row: document `in-app-disclosures` and its version, action (turned on, turned off), method, surface, times, app and OS version, language, hash of the words shown. Never a picture, date, count or identifier. Whether a phone-only toggle needs a server row at all is for counsel (Q-X1-9). Default: no server row; phone-only setting.
   - Never: no picture, filename, album, place, date, face or person in the record, in analytics, logs or crash reports.
   - Decline and withdraw: "Not now" and a system "Don't Allow" both leave the tab working with our own examples and the system picker; no second ask by us; Settings link only when the parent looks for it (NS-51-R19). Export and deletion unaffected.
@@ -280,7 +280,7 @@ Counsel must confirm every answer. A default is only what we build until counsel
 
 - Parent denies, limits or later revokes in Settings: the tab keeps showing real things; no prompt about it (NS-51-R19); the day index is removed when the parent turns the feature off.
 - Parent on iOS below 17.2: Route A is absent; value page and prompts still work. Minimum is iOS 17.0 (D-098).
-- A child's other parent has a different setting: nothing about one parent's library or days is shown to the other (BL-1309 pattern).
+- LATER RELEASE (the first store build has no co-parent). A child's other parent has a different setting: nothing about one parent's library or days is shown to the other (BL-1309 pattern).
 - Account deletion and Erase everything: the day index is cleared on the phone; kept pictures follow the existing deletion spec (I did not re-read it; `DELETION_AND_EXPORT_SPEC.md` is not mine to edit; propose in a PR body if the index needs a line).
 - Shared screens and Save a copy: the day index is not in a copy (BL-1307 pattern, NS-51 rows). Kept pictures: counsel to confirm the export promise (UNVERIFIED which rows apply).
 - Screenshots and recordings of the tab show real faces: our own store screenshots must use generated Asha images only (CR-002, 4+ appropriateness).
