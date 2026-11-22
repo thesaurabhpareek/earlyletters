@@ -23,3 +23,46 @@ export function closeDelayMs(now: number, openedAt: number, seconds: number, spe
   if (holdOpen) return null;
   return Math.max(0, windowEndsAt(openedAt, seconds, speechDoneAt) - now);
 }
+
+export interface UndoTimerPorts {
+  now: () => number;
+  setTimer: (fn: () => void, ms: number) => unknown;
+  clearTimer: (handle: unknown) => void;
+}
+
+/**
+ * The close timer of ONE offered undo. Each offer owns its own handle, so an older toast's dismissal (the toast store
+ * calls it synchronously when a new toast replaces it) can only stop its own timer, never the newer one's.
+ */
+export function createUndoTimer(
+  ports: UndoTimerPorts,
+  w: { openedAt: number; speechDoneAt?: number; holdOpen?: boolean },
+  seconds: number,
+  onExpire: () => void,
+) {
+  let handle: unknown = null;
+  let stopped = false;
+  const stop = () => {
+    stopped = true;
+    if (handle !== null) ports.clearTimer(handle);
+    handle = null;
+  };
+  const arm = () => {
+    if (handle !== null) ports.clearTimer(handle);
+    handle = null;
+    if (stopped) return;
+    const wait = closeDelayMs(ports.now(), w.openedAt, seconds, w.speechDoneAt, w.holdOpen);
+    if (wait === null) return;
+    handle = ports.setTimer(() => {
+      handle = null;
+      stopped = true;
+      onExpire();
+    }, wait);
+  };
+  /** The undo line finished being spoken at `at`: the window now runs from there. */
+  const speechDone = (at: number) => {
+    w.speechDoneAt = at;
+    arm();
+  };
+  return { arm, stop, speechDone };
+}

@@ -4,7 +4,7 @@
 // Pure Node test: no react-native import. Fictional family Asha.
 import { describe, expect, it } from 'vitest';
 import { removePhotoFromLetter, undoPhotoChange } from '../src/lib/photos/attach';
-import { closeDelayMs, windowOpen } from '../src/lib/photos/undo-window';
+import { closeDelayMs, createUndoTimer, windowOpen } from '../src/lib/photos/undo-window';
 import { deps, makeJpeg } from './photos-helpers';
 import type { StoredPhoto } from '../src/lib/photos/types';
 
@@ -74,5 +74,49 @@ describe('undoPhotoChange reads the helper', () => {
     a.ticket.holdOpen = true;
     a.clock.t += 3_600_000;
     expect(await undoPhotoChange(a.d, a.ticket)).toBe(true);
+  });
+});
+
+describe('createUndoTimer: one timer per offered undo', () => {
+  const rig = () => {
+    let t = T0;
+    let id = 0;
+    const timers = new Map<number, { at: number; fn: () => void }>();
+    const ports = { now: () => t, setTimer: (fn: () => void, ms: number) => (timers.set(++id, { at: t + ms, fn }), id), clearTimer: (h: unknown) => void timers.delete(h as number) };
+    const advance = (ms: number) => {
+      t += ms;
+      [...timers].filter(([, v]) => v.at <= t).forEach(([k, v]) => (timers.delete(k), v.fn()));
+    };
+    return { ports, advance, timers };
+  };
+  it('[NS-01-R38b] a second change replaces the first toast, VoiceOver off: the first one stopping does not cancel the second, which closes at the base time', () => {
+    const r = rig();
+    const closed: string[] = [];
+    const first = createUndoTimer(r.ports, { openedAt: T0 }, 10, () => closed.push('first'));
+    first.arm();
+    r.advance(3_000);
+    const second = createUndoTimer(r.ports, { openedAt: T0 + 3_000 }, 10, () => closed.push('second'));
+    second.arm();
+    first.stop(); // the store calls the replaced toast's dismissal inside show(), after the new timer is armed
+    r.advance(9_999);
+    expect(closed).toEqual([]);
+    r.advance(1);
+    expect(closed).toEqual(['second']);
+  });
+  it('stop prevents the close, and speech done re-arms from the speech end', () => {
+    const r = rig();
+    const closed: number[] = [];
+    const a = createUndoTimer(r.ports, { openedAt: T0 }, 10, () => closed.push(1));
+    a.arm();
+    a.speechDone(T0 + 4_000);
+    r.advance(13_999);
+    expect(closed).toEqual([]);
+    r.advance(1);
+    expect(closed).toEqual([1]);
+    const b = createUndoTimer(r.ports, { openedAt: 0 }, 10, () => closed.push(2));
+    b.arm();
+    b.stop();
+    r.advance(60_000);
+    expect(closed).toEqual([1]);
   });
 });

@@ -23,7 +23,7 @@ import { photoDeps, photoUri, pickedFilesPort } from '@/lib/photos/device';
 import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
 import { photosPausedNow } from '@/lib/photos/pause';
 import { useLetterPhoto } from '@/lib/photos/hooks';
-import { closeDelayMs } from '@/lib/photos/undo-window';
+import { createUndoTimer } from '@/lib/photos/undo-window';
 import { UNDO_WINDOW_MS } from '@/lib/photos/types';
 import { photoA11yLabel } from '@/lib/photos/text';
 import { letterPhotoControls, letterPictureSize } from '@/lib/photos/surface';
@@ -50,41 +50,39 @@ export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryI
 
   // The toast closes when the undo window does (undo-window.ts): the button never outlives the action. The window waits for
   // VoiceOver to finish the undo line. Switch Control has no React Native signal yet: holdOpen stays false (BL-954 follow-up).
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stopUndoTimer = () => {
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    undoTimer.current = null;
-  };
-  useEffect(() => stopUndoTimer, []);
+  const stops = useRef(new Set<() => void>());
+  useEffect(() => () => stops.current.forEach((f) => f()), []);
   const offerUndo = (message: string, ticket: UndoTicket | null) => {
     if (!ticket) return;
     const deps = photoDeps();
-    stopUndoTimer();
-    let listener: { remove: () => void } | null = null;
-    const done = () => {
-      stopUndoTimer();
-      listener?.remove();
-      listener = null;
-    };
-    const arm = () => {
-      stopUndoTimer();
-      const wait = closeDelayMs(Date.now(), ticket.openedAt, UNDO_WINDOW_MS / 1000, ticket.speechDoneAt, ticket.holdOpen);
-      if (wait === null) return;
-      undoTimer.current = setTimeout(() => {
+    // One timer per offer: the toast store calls the REPLACED toast's onDismiss during show(), which must not stop this one.
+    const timer = createUndoTimer(
+      { now: Date.now, setTimer: (fn, ms) => setTimeout(fn, ms), clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) },
+      ticket,
+      UNDO_WINDOW_MS / 1000,
+      () => {
         done();
         toast.hide();
         void settlePhotoChange(deps, ticket);
-      }, wait);
-    };
-    // The toast speaks its message and Undo once; the window runs from the end of that, plus its seconds.
-    listener = AccessibilityInfo.addEventListener('announcementFinished', () => {
-      ticket.speechDoneAt = Date.now();
-      arm();
+      },
+    );
+    const label = photos.book.letter.undo;
+    // The toast speaks `${message} ${label}.` once (toast.tsx); only the end of THAT announcement moves the window.
+    const spoken = `${message} ${label}.`;
+    let listener: { remove: () => void } | null = AccessibilityInfo.addEventListener('announcementFinished', (e) => {
+      if (e?.announcement === spoken) timer.speechDone(Date.now());
     });
-    arm();
+    function done() {
+      timer.stop();
+      listener?.remove();
+      listener = null;
+      stops.current.delete(done);
+    }
+    stops.current.add(done);
+    timer.arm();
     toast.show({
       message,
-      action: { label: photos.book.letter.undo, onPress: () => (done(), void undoPhotoChange(deps, ticket)) },
+      action: { label, onPress: () => (done(), void undoPhotoChange(deps, ticket)) },
       onDismiss: () => (done(), void settlePhotoChange(deps, ticket)),
     });
   };
