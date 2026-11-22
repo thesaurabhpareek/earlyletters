@@ -54,6 +54,7 @@ Before you write or change any customer-facing line, read `packages/content/WRIT
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
 - Safety tiers stay on the device; there is no server table for them.
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes).
+- One exception, the founder's (D-118, confirmed 21 Nov 2026): the website copy in `apps/web/src/content/site.ts` uses his child's first name, one spelling, and no other file may. Do not flag it or remove it.
 
 ## Agents
 - How the harness works, end to end: `docs/agents/HARNESS.md`. The team (26 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
