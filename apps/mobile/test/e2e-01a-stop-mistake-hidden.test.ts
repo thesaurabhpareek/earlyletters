@@ -19,7 +19,7 @@ describe('[BL-1510] E2E-01a stop line is hidden, not just absent', () => {
     // After the tap the stop screen is still there and the question did not come back.
     const afterTap = sub.slice(sub.indexOf('tapOn'));
     expect(afterTap).toMatch(/assertVisible:\s*\n\s*id: "gate\.stop"/);
-    expect(afterTap).toMatch(/assertNotVisible:\s*\n\s*id: "gate\.screen"/);
+    expect(afterTap).toMatch(/assertNotVisible:\s*\n\s*id: "gate\.continue"/);
   });
 
   it('every stop-screen check in the flow goes through the subflow', () => {
