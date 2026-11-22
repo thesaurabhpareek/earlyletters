@@ -174,7 +174,13 @@ If you have no pepper yet for this project, make one. This writes it to a file o
 ( umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
-Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Read the value in plain Terminal with `cat "$HOME/el-secrets/consent-pepper-early-letters.txt"` (no editor or viewer, so no recent-file or swap copy), type or copy it into your password manager, then clear the screen with `clear` and close the Terminal tab. Save it in the password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Do not print the value on the screen at all: Terminal scrollback, screen recordings and screen sharing would keep it. Put it on the clipboard and paste it straight into your password manager:
+
+```bash
+tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
+```
+
+Paste it into the password manager, then clear the clipboard with `printf '' | pbcopy`, and, if Universal Clipboard was on, copy any harmless word on a nearby iPhone or iPad too. (The clipboard managers are already off from the first paragraph of B1.) If you really must read it, run `cat` on the file, then press Cmd+K, close the window, and confirm in the Terminal Edit menu that scrollback is cleared [U: not tried on a Mac]; never use `clear` alone, it leaves the scrollback readable. Save it in the password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
@@ -317,7 +323,7 @@ Stop if: any row differs. Do not start Part G. Which test explains each row is i
 | 25 | 35 | `audit_writers_security_events.test.mjs` |
 | 26, 27 | 36 | `new_device_sign_in.test.mjs` |
 | 28 | 37, 38 | `new_device_sender.test.mjs`, `new_device_fill_rekey.test.mjs` |
-| 29 | 40 | `value_free_validation.test.mjs` (row 29 counts every trigger named `%_validate_limits`: if a later file adds a similar trigger on another table it reads 5 or more; that is not a failure, tell the data architect the number) |
+| 29 | 40 | `value_free_validation.test.mjs` (row 29 counts every trigger named `%_validate_limits`: if a later file adds a similar trigger on another table it reads 5 or more; that is the one exception to the "Stop if: any row differs" rule below: it is not a failure, tell the data architect the number) |
 
 Row 16 lists three policies, not two as APPLY.md's File 33 check says: `entry_photos_no_anonymous` is also on the folder [V: local run]. The APPLY.md line is out of date on that one point; this sheet does not edit it. The File 18 and 19 tables (subscription status, backup) are covered by `subscription_status.test.mjs`, `audio_backup.test.mjs`, `audio_backup_escrow.test.mjs`, `audio_backup_purge.test.mjs`, `backup_role.test.mjs` in CI; no hosted check is added for them because both stay dark (guard in Part G).
 
