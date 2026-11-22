@@ -1,4 +1,9 @@
 /** Photo with a letter: shapes and the ports the logic runs against (tests use in-memory ones). */
+export const PHOTO_TEXT_MAX = 140;
+/** The parent's typed place for a picture (NS-01-R21, PROPOSED cap). Never read from the file. */
+export const PHOTO_PLACE_MAX = 60;
+/** Undo after a replace or a remove (NS-01-R7). */
+export const UNDO_WINDOW_MS = 10_000;
 /** One picture per letter at P0. */
 export const STORED_EXT = 'jpg' as const;
 
@@ -57,6 +62,23 @@ export const isStoredName = (name: string): boolean => /^[0-9A-Za-z-]{1,64}\.jpg
  */
 export interface OrientationBaker {
   bake(original: Uint8Array, source?: { uri?: string }): Promise<Uint8Array | null>;
+}
+
+/** What the system picker hands back. Only the still of a Live Photo is ever read. */
+export interface PickedAsset {
+  uri: string;
+  /** A Live Photo's paired video. Never read, never stored (NX-39-R12). */
+  pairedVideoUri?: string | null;
+}
+
+export type PickOutcome =
+  | { status: 'picked'; asset: PickedAsset }
+  | { status: 'cancelled' }
+  | { status: 'failed' };
+
+/** The system picker. No permission method exists on this port on purpose (NS-01-R2). */
+export interface PhotoPicker {
+  open(handlers: { onProgress?: (fraction: number) => void }): { done: Promise<PickOutcome>; cancel(): void };
 }
 
 /**

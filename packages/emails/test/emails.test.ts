@@ -298,6 +298,11 @@ describe('templates', () => {
   it('ports every email develop had: sign-in, welcome, co-parent invite, deletion receipts, export', () => {
     for (const id of ['sign-in-link', 'welcome', 'coparent-invite', 'account-deletion-scheduled', 'account-deletion-cancelled', 'account-deleted', 'export-ready']) {
       expect(templatesById[id], id).toBeDefined();
+      // BL-442: ported means it renders, with words in both parts, not only that its template is registered.
+      const r = all.find((x) => x.name === id);
+      expect(r, `${id} rendered`).toBeDefined();
+      expect(r!.html.trim().length, `${id} html`).toBeGreaterThan(0);
+      expect(r!.text.trim().length, `${id} text`).toBeGreaterThan(0);
     }
   });
 

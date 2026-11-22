@@ -201,7 +201,7 @@ export function decideKeepLetter(input: KeepLetterInput): KeepLetterDecision {
 /**
  * Decide the other Plus gates (extra themes). Backup is not one: it is free
  * (D-111 item 6). The first matching rule wins (TDD 08 2.2):
- *  1. Own Plus while a parent of the book (Family Sharing included; never
+ *  1. Own Plus while a parent of the book, or on an account-level surface with no role (Family Sharing included; never
  *     another member's Plus, Terms 14.12).
  *  2. Suppressions: first run, birthday, contributor, offline.
  *  3. Otherwise offer, asking to sign in first when signed out.
@@ -213,8 +213,9 @@ export function decide(input: DecideInput): Decision {
   if (!isGatedFeature(feature) || feature === 'keep_letter') throw new Error('decide: not a gated feature');
   const ownPlus = planActive(viewer.own, input.now);
 
-  // Plus is the person's own (their Apple Account, or Apple Family Sharing), used in books they parent (Terms 14.12).
-  if (ownPlus && viewer.roleInBook === 'parent') return { kind: 'allow', via: 'plus_own' };
+  // Plus is the person's own (their Apple Account, or Apple Family Sharing), used in books they parent (Terms 14.12)
+  // and on account-level surfaces (no book, no role; R-3). A contributor's own Plus never covers a book they do not parent.
+  if (ownPlus && (viewer.roleInBook === 'parent' || viewer.roleInBook === null)) return { kind: 'allow', via: 'plus_own' };
 
   if (input.surface === 'first_run') return { kind: 'quiet', reason: 'first_run' };
   if (input.isBirthday) return { kind: 'quiet', reason: 'birthday' };

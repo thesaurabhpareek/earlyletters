@@ -9,8 +9,11 @@
  * | Key | Value |
  * |---|---|
  * | `asks.reminderPrimes` | times the reminder prime was shown, from any source (cap MAX_REMINDER_PRIMES) |
+ * | `asks.reminderPrimeYes` | `on` once the person said Yes to the reminder prime; they are never primed again (BL-1430). Device only, L2, no text or names; the erase-all path clears every settings row |
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
+ * | `asks.keepBookReoffered` | `on` once the one re-offer of Keep the book was made (after the third letter, BL-519) |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
+ * | `asks.firstLetterAt` | time (ms epoch) of the first letter, for the second prime after the first month (BL-518) |
  * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
  *
  * Sessions are tracked here, not by the analytics lifecycle, because analytics is off in the whole 1.0 line
@@ -21,14 +24,19 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
-import { localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+import { firstMonthDone, localDay, nextAsk, reminderPrimeSource, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+
+type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
 export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
 const K = {
   primes: 'asks.reminderPrimes',
+  primeYes: 'asks.reminderPrimeYes',
   keepBook: 'asks.keepBookOffered',
+  keepBookReoffer: 'asks.keepBookReoffered',
   firstLetterSession: 'asks.firstLetterSession',
+  firstLetterAt: 'asks.firstLetterAt',
   lastAskDay: 'asks.lastAskDay',
 } as const;
 
@@ -64,10 +72,20 @@ export function noteAsked(now = Date.now()): void {
   noteAskShown(); // the analytics consent sequencer reads the same rule
 }
 
-/** The reminder prime appeared (after the first letter, or from Settings): counts toward the cap of 2. */
-export function noteReminderPrimeShown(): void {
+/**
+ * The reminder prime appeared: counts toward the cap of 2. Returns the analytics `source` for this showing
+ * (`first_letter` for the first, `first_month` for the second), read before the count moves (BL-1429).
+ */
+export function noteReminderPrimeShown(): ReminderPrimeSource {
+  const source = reminderPrimeSource(count(K.primes));
   setSetting(K.primes, String(count(K.primes) + 1));
   noteAsked();
+  return source;
+}
+
+/** The person said Yes to the reminder prime (either Yes button): it never shows again, even if they turn reminders off later (BL-1430). */
+export function noteReminderPrimeYes(): void {
+  setSetting(K.primeYes, 'on');
 }
 
 /**
@@ -77,20 +95,26 @@ export function noteReminderPrimeShown(): void {
 export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean }, now = Date.now()): NextAsk {
   try {
     if (input.firstLetter && getSetting(K.firstLetterSession) === null) setSetting(K.firstLetterSession, String(session));
+    if (input.firstLetter && getSetting(K.firstLetterAt) === null) setSetting(K.firstLetterAt, String(now));
+    const at = Number(getSetting(K.firstLetterAt));
     const stored = Number(getSetting(K.firstLetterSession));
     const ask = nextAsk({
       lettersSaved: lettersOnPhone(),
       firstLetter: input.firstLetter,
       primesShown: count(K.primes),
+      primeAnsweredYes: getSetting(K.primeYes) === 'on',
       remindersOn: readPrefs().enabled,
       signInOffered: input.signInOffered,
       keepBookOffered: getSetting(K.keepBook) === 'on',
+      keepBookReoffered: getSetting(K.keepBookReoffer) === 'on',
       firstLetterSession: Number.isFinite(stored) && stored > 0 ? stored : null,
       session,
       askShownThisSession: askSession === session,
       askShownToday: getSetting(K.lastAskDay) === localDay(now),
+      firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
     if (ask === 'keep_book') {
+      if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
       setSetting(K.keepBook, 'on');
       noteAsked(now);
     }

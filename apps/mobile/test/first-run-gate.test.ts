@@ -197,6 +197,8 @@ const KINDS_AS_OUTAGE: Record<AuthErrorKind, boolean> = {
   cancelled: false, expired: false, wrong_code: false, code_paused: false, invalid_email: false, provider: false,
   session_expired: false, under_18: false, consent_unavailable: false, other_phone: false, other_phone_spent: false,
   already_signed_in: false,
+  // FP-6 (NS-40-R9): a refusal is its own screen, never the outage screen.
+  region_refused: false,
 };
 const AUTH_STATES: Record<AuthState['status'], { state: AuthState; session: boolean }> = {
   restoring: { state: { status: 'restoring' }, session: false },
