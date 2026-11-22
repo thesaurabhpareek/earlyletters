@@ -1299,6 +1299,31 @@ describe('[NS-01-R16c][ADR 0028 D5] every erase path takes a picture, the file f
     expect([has(second), mediaRows()]).toEqual([false, []]);
   });
 
+  it('[NS-01-R16c][BL-1665] a draft whose picture was stored at recording start (BL-955) takes it along when it is let go: the file first, then its row, and the draft is gone', async () => {
+    const app = await launch();
+    const f = family(app);
+    const { adoptPending } = await import('../src/lib/photos/adopt');
+    const { photoDeps } = await import('../src/lib/photos/device');
+    const { PendingPhoto } = await import('../src/lib/photos/pending');
+    const { makeJpeg } = await import('./photos-helpers');
+    const A = 'file:///c/ImagePicker/asha.jpg';
+    const original = new Map([[A, makeJpeg({ exif: true })]]);
+    const pending = new PendingPhoto({
+      read: async (u) => original.get(u)!,
+      remove: async (u) => void original.delete(u),
+      sweep: async () => void original.clear(),
+    });
+    await pending.set({ uri: A });
+    await adoptPending(pending, photoDeps, f.draftId, '', false); // the call Listen makes when recording starts
+    const stored = db.all<{ id: string }>('SELECT id FROM entry_media WHERE draft_id = ?', f.draftId);
+    expect(stored).toHaveLength(1);
+    const file = `${PHOTOS()}/${stored[0].id}.jpg`;
+    expect(has(file)).toBe(true);
+    const steps = { beginDiscard: app.store.beginDiscard, deleteFile: (u: string) => void h.disk.files.delete(u), finishDiscard: app.store.finishDiscard };
+    expect(letItGo(f.draftId, f.draft, steps)).toBe(true);
+    expect([has(file), mediaRows(), app.store.getDraft(f.draftId)]).toEqual([false, [], null]);
+  });
+
   it('[NS-01-R16c][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
     let app = await launch();
     const f = family(app);
