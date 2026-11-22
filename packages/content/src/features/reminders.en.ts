@@ -9,7 +9,7 @@
  * means the same idea with or without names.
  */
 const NEUTRAL_TITLE = 'Something for the book today';
-const LOCK_BODY_NEUTRAL = 'A day you chose to mark. A few words, if you like.';
+const LOCK_BODY_NEUTRAL = 'Whenever you have a minute.';
 
 export const reminderCopy = {
   neutral: {

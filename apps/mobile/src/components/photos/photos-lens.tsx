@@ -50,8 +50,10 @@ export function LensRow({ mode, onChange }: { mode: LensMode; onChange: (m: Lens
  */
 export function LensCard({ entry, picture, child, onOpen }: { entry: Entry; picture: StoredPhoto | undefined; child: Child; onOpen: (entryId: string) => void }) {
   const large = useIsAccessibilitySize();
-  const [missing, setMissing] = useState(false);
+  // The picture whose file is gone, by id: a replaced picture for the same letter is a new picture and shows again.
+  const [missingId, setMissingId] = useState<string | null>(null);
   if (!picture) return null;
+  const missing = missingId === picture.mediaId;
   const label = photoA11yLabel(picture.text);
   const aspect = picture.width && picture.height ? picture.width / picture.height : 1;
   const size = lensThumbSize({ aspect, largeText: large });
@@ -62,7 +64,7 @@ export function LensCard({ entry, picture, child, onOpen }: { entry: Entry; pict
       fit="contain"
       radius="sm"
       {...('stacked' in size ? { width: '100%', aspectRatio: size.aspect, maxHeight: size.maxHeight } : { width: size.width, height: size.height })}
-      onMissing={() => setMissing(true)}
+      onMissing={() => setMissingId(picture.mediaId)}
       testID={`book.photos.thumb.${entry.id}`}
     />
   );
