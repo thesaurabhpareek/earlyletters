@@ -8235,7 +8235,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: when it merges, file each review note as a line here; check that the sweep has a mutant and that a cold start with a stale key is covered by a test.
 - Done when: each review note is done or recorded as left; the cold-start test exists.
 
-## Review follow-ups from PRs #1504, #1495, #1487, #1515, #1529 and #1532 (BL-1591 to BL-1601)
+## Review follow-ups from PRs #1504, #1495, #1487, #1515, #1529, #1532 and #1533 (BL-1591 to BL-1607)
 
 #### BL-1591 supabase-env-https test: pass-through checks read raw source
 - Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -8249,17 +8249,9 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review B notes on PR #1504: BUILDS has four entries; apps/mobile/e2e-web/support/build-index.mjs line 133 (the template text) and docs/release/journey/INDEX.md line 3 say three builds.
+- Problem and evidence: Review B notes on PR #1504: BUILDS has four entries; apps/mobile/e2e-web/support/build-index.mjs and the text it generates in docs/release/journey/INDEX.md say three builds.
 - Scope: change both to four, or to wording that does not count; regenerate INDEX.md from the script.
 - Done when: grep for 'three builds' in e2e-web and docs/release/journey finds nothing.
-
-#### BL-1593 e2e-web global-setup leaks process.env between builds
-- Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
-- Priority: Low. Gate: none.
-- Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review B notes on PR #1504: global-setup spreads process.env first, so a shell with EXPO_PUBLIC_E2E=1 leaks into the non-seam builds; it fails closed through B-9 but the failure is confusing.
-- Scope: build each env from an explicit allowlist or clear the E2E variables before each build; add a test that sets the variable and checks the non-seam builds.
-- Done when: a shell variable cannot change a non-seam build, and the test fails without the fix.
 
 #### BL-1594 Launch gate proves the tip of develop, not the tagged commit
 - Status: proposed (review of PR #1495). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
@@ -8297,9 +8289,9 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Status: proposed (Review B on PR #1529). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review B at c8935ddb on PR #1529: if one of the days and moments stores adopts and the other fails, a later sign-out drops one store's rows (rare). The PR body also says a failed adoption write leaves the local file, which the next setOwner then deletes.
-- Scope: decide a retry or keep rule for a failed or partial adoption, then build it with a test per case.
-- Done when: the rule is written in the row, and a test covers partial adopt then sign-out.
+- Problem and evidence: Review B at c8935ddb on PR #1529 (scenario 5, note N1): if one store adopted and the other failed, the adopted store's file (owner key) is deleted at sign-out while the other stays local, so that store's rows are lost (rare; nothing leaks to the next user).
+- Scope: decide whether that outcome is the ruled one or needs a retry or keep rule; at least add a one-line test or comment stating it.
+- Done when: the outcome is stated in a test or comment, or a rule is written and built with a test.
 
 #### BL-1599 Stale sha256Hex comment in lib/auth/local-claim.ts
 - Status: proposed (Review B on PR #1529). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -8334,12 +8326,12 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: each of the three has a test that fails without the fix.
 
 #### BL-1603 Spec 28 section 18 event names: amend to the catalog names
-- Status: proposed (review of PR #1533 (Moments analytics events)). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
-- Priority: Low. Gate: none (Karma ruling: snake_case stays).
+- Status: proposed (review of PR #1533). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Spec 28 section 18 uses dotted event names; the catalog uses moments_card_impressed and moments_card_tapped with one property, slot (look_back or question).
-- Scope: amend spec 28 section 18 to the catalog names and property; no other change.
-- Done when: grep of spec 28 section 18 finds no dotted moments event name.
+- Problem and evidence: Review notes on PR #1533: keep snake_case; spec 28 section 18 uses dotted names while the catalog has moments_card_impressed and moments_card_tapped with one property, slot (look_back or question). The review asks product to amend section 18 and R251 to the catalog names.
+- Scope: amend spec 28 section 18 and R251 to the catalog names and property; no other change.
+- Done when: spec 28 section 18 and R251 show no dotted moments event name.
 
 #### BL-1604 P0 test: at most one Moments impression per slot per local day
 - Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -8353,9 +8345,9 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: The forbidden ^moment_ pattern does not match moments_, and moment_shown still exists in the catalog.
-- Scope: add a registry test that allows only moments_card_impressed and moments_card_tapped among moments_ names; decide whether moment_shown stays or is removed, and record the choice.
-- Done when: the test exists and moment_shown has a recorded fate.
+- Problem and evidence: Review B on PR #1533: the forbidden ^moment_ pattern does not match moments_card_*; the intent (only the celebration family, or all Moments events) cannot be told from the code. The fate of moment_shown is already BL-1496.
+- Scope: add a registry test that allows only moments_card_impressed and moments_card_tapped among moments_ names; the moment_shown question stays with BL-1496.
+- Done when: the registry test exists and fails when a third moments_ event name is added.
 
 #### BL-1606 Add ids.ts and registry.ts rows for the two Moments events with the wiring PR
 - Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -8369,6 +8361,6 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Status: proposed (review of PR #1533). Mode: agent. Owner: founder. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: founder and counsel must confirm before the flag goes on (what users are promised stays his, CR-73).
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Open: should child_count_bucket (including none) ride on Moments impression events; counsel and CPrivO must confirm the App Store label (Linked or Not linked) and the policy wording.
-- Scope: CDO and CPrivO answer on child_count_bucket; counsel confirms the label and wording; the answers are recorded in docs/agents/exec/RULINGS.md.
-- Done when: all three answers are recorded before EXPO_PUBLIC_MOMENTS_TAB is turned on.
+- Problem and evidence: Review B (privacy lens) on PR #1533: child_count_bucket (none, one, two, three_plus) rides on every event including the two Moments events, so that a child exists is inferable from any opted-in stream; the reviewer judged it acceptable for awareness, not a block. The same review says the App Store label stays correct for 1.0 because no analytics ships, and that the label and policy wording must be revisited when analytics ships.
+- Scope: proposed: CDO and CPrivO decide whether Moments impressions should carry child_count_bucket; counsel confirms the App Store label and policy wording when analytics ships.
+- Done when: proposed: the answers are recorded (for example in docs/agents/exec/RULINGS.md) before analytics ships.
