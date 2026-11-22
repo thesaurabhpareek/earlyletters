@@ -12,6 +12,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const KEY = 'sb_publishable_asha';
+// Same pattern as settings-help.test.ts: drop block and line comments so a comment cannot satisfy a source check.
+const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const SPREAD = /\.\.\.buildEnv\(b\.env\)/;
+
 const HTTP = ['http://localhost:54321', 'http://127.0.0.1:54321', 'http://192.168.1.20:54321', 'http://10.0.0.5', 'http://asha.supabase.co'];
 
 describe('[BL-600] store builds refuse plain http', () => {
@@ -47,7 +51,12 @@ describe('[BL-600] the server-on web e2e build keeps its Supabase client', () =>
     const env = buildEnv(on.env);
     expect(env.EXPO_PUBLIC_APP_ENV).toBe('preview');
     expect(env.EXPO_PUBLIC_SUPABASE_URL).toBe(MOCK_SUPABASE_URL);
-    const src = fs.readFileSync(path.join(__dirname, '../e2e-web/support/global-setup.ts'), 'utf8');
-    expect(src).toMatch(/\.\.\.buildEnv\(b\.env\)/);
+    const src = code(fs.readFileSync(path.join(__dirname, '../e2e-web/support/global-setup.ts'), 'utf8'));
+    expect(src).toMatch(SPREAD);
+  });
+  it('[BL-1591] a spread that appears only in a comment does not satisfy the pass-through check', () => {
+    expect(code('// env: { ...process.env, ...buildEnv(b.env) }\nconst x = 1;')).not.toMatch(SPREAD);
+    expect(code('/* ...buildEnv(b.env) */ const x = 1;')).not.toMatch(SPREAD);
+    expect(code('env: { ...process.env, ...buildEnv(b.env) }, // pass through')).toMatch(SPREAD);
   });
 });
