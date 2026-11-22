@@ -274,7 +274,8 @@ function KeepPlayingChip({ on, onChange }: { on: boolean; onChange: (on: boolean
 
 /** The end of the book (S31): the moon draws on once above the line, then nothing moves. Buttons from the first frame. */
 function EndOfBook({ onClose, onAgain, line }: { onClose: () => void; onAgain: () => void; line?: string }) {
-  const rt = copy.readTogether;
+  // A year ends on its own line (BL-947): the same heading, other words.
+  const rt = line ? { ...copy.readTogether, endOfBook: line } : copy.readTogether;
   const reduced = useReducedMotion();
   return (
     <PinnedActionLayout
@@ -293,7 +294,7 @@ function EndOfBook({ onClose, onAgain, line }: { onClose: () => void; onAgain: (
       <View accessibilityLiveRegion="polite" className="gap-8" testID="readTogether.end.live">
         <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
         <Text variant="title1" asHeading>
-          {line ?? rt.endOfBook}
+          {rt.endOfBook}
         </Text>
       </View>
     </PinnedActionLayout>
