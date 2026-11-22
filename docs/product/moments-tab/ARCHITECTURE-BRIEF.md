@@ -494,7 +494,7 @@ Rule: no number in this table becomes a test threshold until G1b writes its read
 
 ## 8. The 41-item plan as an architecture critical path
 
-Source: HR section 1 table (41 items, five waves), spec 19.4. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
+Source: HR section 1 table (41 items, five waves; 43 with PRs 6b and 19c from the 21 Nov design closure fold), spec 19.4. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
 
 ### 8.1 The three spikes and what each decides
 
@@ -590,7 +590,7 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 | Apple's picker looks like Apple inside a paper app; first-time text, badge and numbers cannot be styled (RK-H1) | Trust seam | Frame only; never restyle Apple's view (EM 4.7, 4.10) |
 | Suggestions feel wrong or watching (RK-3, RK-4, RK-H2) | Place and occasion cards | Offline city-level table only; Not this place; Hide this place; the junk bar; G4 |
 | 20,000-item library slow on SE 3 (RK-6) | Launch and scroll | Date-window scans only; no launch work; section 7 |
-| Plan is 41 items and about 10,130 lines (HR line 60, ASSUMED) | Review load; each AT THE LINE item may split again | `stacked-prs`; CODE-R02 split plans recorded in 19.4 |
+| Plan is 43 items and about 10,580 lines (HR line 60 and spec 19.4, ASSUMED; 41 and 10,130 before 6b and 19c) | Review load; each AT THE LINE item may split again | `stacked-prs`; CODE-R02 split plans recorded in 19.4 |
 | Existing nav tests assert one capture entry and three tabs | Silent loosening | RV-02 signed first; the rewrite keeps the property "one doorway" |
 | Spec contradictions I found (Q-2, the `scanDates` name, the line 73 versus 75 citation, `routeForReminder`, `PlannedKind`) | Engineers start from different rows | This brief names a default for each; `product` owns the spec fix |
 
