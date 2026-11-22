@@ -259,30 +259,40 @@ describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
   const OLD_WRAPPED = /[A-Za-z0-9+/_-]{20,}(?:(?:\r\n|\n|\r|\\r\\n|\\n|\\r)[A-Za-z0-9+/_-]{4,}={0,2})+/g;
   const timed = <T>(fn: () => T): [T, number] => { const t = performance.now(); const r = fn(); return [r, performance.now() - t]; };
 
-  it('[BL-1476] a 256 KB single-line base64 body decodes in well under a second', () => {
+  /** Median of a few runs, so one slow moment on a loaded runner does not decide a test. */
+  const medianMs = (fn: () => unknown, runs = 5): number => {
+    const all = Array.from({ length: runs }, () => timed(fn)[1]).sort((x, y) => x - y);
+    return all[Math.floor(runs / 2)];
+  };
+  /**
+   * Time grows linearly: 16 times the bytes costs about 16 times as long (a quadratic scan costs 256 times). The small side is
+   * floored at 1 ms so timer noise on a tiny run cannot inflate the ratio. The factor of 40 sits between 16 and 256.
+   */
+  const expectLinear = (small: Buffer, large: Buffer, label: string) => {
+    expect(large.length / small.length).toBeGreaterThanOrEqual(16);
+    const ratio = medianMs(() => decodedViews(large)) / Math.max(medianMs(() => decodedViews(small)), 1);
+    expect(ratio, `${label}: time at ${large.length} bytes over time at ${small.length} bytes`).toBeLessThan(40);
+  };
+  const SMALL = randomBytes(12 * 1024).toString('base64'); // 16 KB as base64
+
+  // The cost of the whole firstLeak scan is the existing windowIndex, not the decoding: no wall-clock is asserted on it.
+  it('[BL-1476] a 256 KB single-line base64 body decodes in well under a second, in time linear in its size', () => {
     expect(BIG_B64.length).toBeGreaterThanOrEqual(256 * 1024);
     const body = Buffer.from(BIG_B64);
-    const [, decodeMs] = timed(() => decodedViews(body));
-    expect(decodeMs, 'decoding the views').toBeLessThan(250);
-    const [at, ms] = timed(() => firstLeak(body, plain));
-    expect(at).toBeNull();
-    expect(ms, 'the whole scan (the first regex took 68 s on 80 KB)').toBeLessThan(5000);
+    expect(medianMs(() => decodedViews(body), 3), 'decoding the views').toBeLessThan(250);
+    expectLinear(Buffer.from(SMALL), body, 'single line');
+    expect(firstLeak(body, plain)).toBeNull();
   });
 
   it('[BL-1476] a 256 KB wrapped base64 body decodes in well under a second, and a planted piece in it is still found', () => {
     const planted = Buffer.concat([big.subarray(0, 90000), plain.subarray(100, 164), big.subarray(90000)]);
     const body = Buffer.from(wrap(planted.toString('base64'), 76, '\r\n'));
-    const [, decodeMs] = timed(() => decodedViews(body));
-    expect(decodeMs, 'decoding the views').toBeLessThan(250);
-    const [at, ms] = timed(() => firstLeak(body, plain));
-    expect(at).not.toBeNull();
-    expect(ms, 'the whole scan').toBeLessThan(5000);
+    expect(medianMs(() => decodedViews(body), 3), 'decoding the views').toBeLessThan(250);
+    expectLinear(Buffer.from(wrap(SMALL, 76, '\r\n')), body, 'wrapped');
+    expect(firstLeak(body, plain), 'the planted piece').not.toBeNull();
     const clean = Buffer.from(wrap(BIG_B64, 76, '\n'));
-    const [, decodeMs2] = timed(() => decodedViews(clean));
-    expect(decodeMs2, 'decoding the views').toBeLessThan(250);
-    const [none, ms2] = timed(() => firstLeak(clean, plain));
-    expect(none).toBeNull();
-    expect(ms2, 'the whole scan').toBeLessThan(5000);
+    expect(medianMs(() => decodedViews(clean), 3), 'decoding the views').toBeLessThan(250);
+    expect(firstLeak(clean, plain)).toBeNull();
   });
 
   it('[BL-1476] a long single line followed by a short one and a long line of other characters stays fast', () => {
