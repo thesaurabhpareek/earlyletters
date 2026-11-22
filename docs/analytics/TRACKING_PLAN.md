@@ -284,7 +284,7 @@ Migration `supabase/migrations/20261004300000_insights_aggregates.sql`, tested b
 |---|---|---|
 | `weekly_keeping_families` | ISO week (UTC) | families, families_with_book_letter, letters, spoken_letters, typed_letters, complete |
 | `letters_per_active_family` | week | active_families, letters_per_family_mean, p50, p90, families_two_plus_voices |
-| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, matured flags |
+| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, increments first_letter_d2_7 and first_letter_d8_30, matured flags. Nested counts are published only while every pair differs by 0 or at least k (BL-326, review L12) |
 | `family_invites` | week x role (co_parent, contributor) | sent, accepted, accepted_within_7d |
 | `retention_cohorts` | first-letter week x week offset (0 to 12, 26) | cohort_writers, active_writers (completed weeks only) |
 | `language_mix` | week x language (seven codes or other) | families. Reports `available: false` until `public.entries.language` exists (owner: language/sync; the column must be L4) |

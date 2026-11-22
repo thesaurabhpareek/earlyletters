@@ -68,6 +68,24 @@ const invites = [
   ...range(1, 3).map((f) => invite(C(f), A(f), 'contributor', 1, N(f))),
 ];
 
+// BL-326 cohorts (weeks 6 to 9): accounts that write 2 hours, 3 days and 10 days after sign-up.
+// [week, accounts, within 1 day, in days 2 to 7, in days 8 to 30]
+const COHORTS = [[6, 40, 20, 3, 7], [7, 50, 20, 10, 4], [8, 50, 15, 10, 10], [9, 50, 20, 3, 4]];
+const cohortUsers = [];
+const cohortLetters = [];
+COHORTS.forEach(([wk, n, a, b, c], ci) => {
+  for (let i = 1; i <= n; i++) {
+    const uid = id('e200', ci * 100 + i);
+    cohortUsers.push([uid, id('d300', ci * 100 + i), W(wk, '1 hour')]);
+    const off = i <= a ? 4 : i <= a + b ? 73 : i <= a + b + c ? 241 : null;
+    if (off) {
+      entryN++;
+      cohortLetters.push(`(${id('f100', entryN)}, ${id('d300', ci * 100 + i)}, ${uid}, 'letter', ${W(wk, '1 hour')}::date, ${W(wk, `${off} hours`)}, 'spoken', 1,
+        'Asha laughed at the dog today', 'Asha laughed at the dog today', '[]'::jsonb, true, 'not_needed', ${W(wk, `${off} hours`)})`);
+    }
+  }
+});
+
 await db.exec(`
   set session_replication_role = replica;
   insert into auth.users (id) values ${users.map(([u]) => `(${u})`).join(', ')};
@@ -77,6 +95,13 @@ await db.exec(`
   insert into entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version,
                        raw_transcript, final_text, machine_edits, in_book, approval, created_at)
     values ${letters.join(',\n')};
+  insert into auth.users (id) values ${cohortUsers.map(([u]) => `(${u})`).join(', ')};
+  insert into profiles (id, signs_as, created_at) values ${cohortUsers.map(([u, , at]) => `(${u}, 'Papa', ${at})`).join(', ')};
+  insert into children (id, name, date_of_birth, created_by) values ${cohortUsers.map(([u, c]) => `(${c}, 'Asha', date '2025-04-12', ${u})`).join(', ')};
+  insert into child_members (child_id, profile_id, role) values ${cohortUsers.map(([u, c]) => `(${c}, ${u}, 'parent')`).join(', ')};
+  insert into entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version,
+                       raw_transcript, final_text, machine_edits, in_book, approval, created_at)
+    values ${cohortLetters.join(',\n')};
   insert into child_invites (id, child_id, invited_by, token_hash, role, expires_at, accepted_by, accepted_at, created_at)
     values ${invites.join(',\n')};
   set session_replication_role = origin;
@@ -119,7 +144,7 @@ check('no public function is executable by anon (structural rule holds)',
   !(await sys(`select has_function_privilege('anon', 'public.insights_aggregates(int)', 'execute') ok`)).rows[0].ok);
 
 // ── k-anonymity across every published cell ───────────────────────────────
-const COUNT_COLS = /^(families|families_with_book_letter|letters|spoken_letters|typed_letters|active_families|families_two_plus_voices|new_accounts|first_letter_d1|first_letter_d7|first_letter_d30|sent|accepted|accepted_within_7d|cohort_writers|active_writers)$/;
+const COUNT_COLS = /^(families|families_with_book_letter|letters|spoken_letters|typed_letters|active_families|families_two_plus_voices|new_accounts|first_letter_d1|first_letter_d7|first_letter_d30|first_letter_d2_7|first_letter_d8_30|sent|accepted|accepted_within_7d|cohort_writers|active_writers)$/;
 const bad = [];
 for (const v of PUBLISHED) {
   for (const r of await rows(v)) {
@@ -153,6 +178,28 @@ const f3 = await at('first_letter_conversion', 'cohort_week', 3);
 const f1 = await at('first_letter_conversion', 'cohort_week', 1);
 check('sign-up cohort of 12 all wrote within a day', Number(f3.new_accounts) === 12 && Number(f3.first_letter_d1) === 12);
 check('sign-up cohort of 41: 31 wrote within a day (remainder 10)', Number(f1.new_accounts) === 41 && Number(f1.first_letter_d1) === 31 && Number(f1.first_letter_d7) === 31);
+
+// BL-326: nested counts never differ by 1 to 9 (security review L12).
+const num = (v) => (v === null || v === undefined ? null : Number(v));
+const c6 = await at('first_letter_conversion', 'cohort_week', 6);
+const c7 = await at('first_letter_conversion', 'cohort_week', 7);
+const c8 = await at('first_letter_conversion', 'cohort_week', 8);
+const c9 = await at('first_letter_conversion', 'cohort_week', 9);
+check('[BL-326] d7 is withheld when d7 - d1 is 3 (20, 23); d1 and d30 stay',
+  num(c6.first_letter_d1) === 20 && c6.first_letter_d7 === null && num(c6.first_letter_d30) === 30 && c6.first_letter_d2_7 === null);
+check('[BL-326] d30 is withheld when d30 - d7 is 4 (30, 34); d7 stays and d2_7 is the increment 10',
+  num(c7.first_letter_d7) === 30 && c7.first_letter_d30 === null && num(c7.first_letter_d2_7) === 10 && c7.first_letter_d8_30 === null);
+check('[BL-326] every difference at least k: all three counts and both increments are published',
+  num(c8.first_letter_d1) === 15 && num(c8.first_letter_d7) === 25 && num(c8.first_letter_d30) === 35 && num(c8.first_letter_d2_7) === 10 && num(c8.first_letter_d8_30) === 10);
+check('[BL-326] d30 is withheld against d1 when d7 is hidden (d30 - d1 = 7)',
+  num(c9.first_letter_d1) === 20 && c9.first_letter_d7 === null && c9.first_letter_d30 === null);
+check('[BL-326] a published increment of 0 is publishable (cohort of 12: d1 = d7)', f3.first_letter_d2_7 === null || Number(f3.first_letter_d2_7) === 0);
+const nested = [];
+for (const r of await rows('first_letter_conversion')) {
+  const v = [r.first_letter_d1, r.first_letter_d7, r.first_letter_d30].map(num).filter((x) => x !== null);
+  for (let i = 0; i < v.length; i++) for (let j = i + 1; j < v.length; j++) { const d = v[j] - v[i]; if (d >= 1 && d < 10) nested.push(`${r.cohort_week}: ${v[i]} to ${v[j]}`); }
+}
+check('[BL-326] no pair of published first-letter counts differs by 1 to 9', nested.length === 0 || console.log(`      ${nested.join(', ')}`));
 
 // ── 4. Family invites ──────────────────────────────────────────────────────
 const co = await at('family_invites', 'week', 1, `and role = 'co_parent'`);
