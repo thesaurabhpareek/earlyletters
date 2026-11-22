@@ -34,10 +34,12 @@ export const buildEnv = (extra: Record<string, string>): Record<string, string> 
 
 /**
  * BL-1576: the shell env a build inherits. global-setup spreads the parent environment into every build, so a stray
- * `EXPO_PUBLIC_E2E` in the shell would otherwise reach the plain, seed and server-on bundles. Only the seam build
- * may carry the e2e switch, and it gets it from its own env in BUILDS (applied after this, by buildEnv), never from the shell.
+ * `EXPO_PUBLIC_*` in the shell (the e2e switch, the web preview switch, a Supabase URL or key) would otherwise reach the
+ * plain, seed and server-on bundles. Every such key is dropped, as .github/scripts/seam-guard.mjs does for the store
+ * profiles; each build sets what it needs from its own env in BUILDS (applied after this, by buildEnv), never from the shell.
  */
 export const inheritedEnv = <T extends Record<string, string | undefined>>(parent: T): T => {
-  const { EXPO_PUBLIC_E2E: _shell, ...rest } = parent;
-  return rest as T;
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(parent)) if (!k.startsWith('EXPO_PUBLIC_')) out[k] = v;
+  return out as T;
 };
