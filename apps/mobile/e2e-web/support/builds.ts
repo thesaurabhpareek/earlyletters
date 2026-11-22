@@ -4,6 +4,8 @@
  * compiled in only when EXPO_PUBLIC_E2E=1 and the app env is neither preview nor production. The `seam` build is the
  * ONLY one that sets it, with the development app env (B-9 refuses the flag anywhere else). Emulation evidence only.
  */
+import { MOCK_SUPABASE_URL } from './mock-server';
+
 export const BASE_ENV: Record<string, string> = { EXPO_PUBLIC_APP_ENV: 'preview', EXPO_PUBLIC_SERVER_FEATURES: 'off', CI: '1' };
 
 export type WebBuild = { name: 'plain' | 'seed' | 'server-on' | 'seam'; dir: string; env: Record<string, string> };
@@ -20,7 +22,7 @@ export const BUILDS: readonly WebBuild[] = [
       EXPO_PUBLIC_WEB_PREVIEW: '1',
       EXPO_PUBLIC_SERVER_FEATURES: 'on',
       EXPO_PUBLIC_ACCOUNT_DELETION: 'on',
-      EXPO_PUBLIC_SUPABASE_URL: 'https://127.0.0.1:54321', // = MOCK_SUPABASE_URL (support/mock-server.ts); a host nothing listens on,
+      EXPO_PUBLIC_SUPABASE_URL: MOCK_SUPABASE_URL, // a host nothing listens on (support/mock-server.ts),
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'e2e-web-publishable-key',
     },
   },
