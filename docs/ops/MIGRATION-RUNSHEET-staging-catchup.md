@@ -8,7 +8,7 @@ Labels: **[V]** read in this repo or run in the local test database on 21 Nov. *
 
 ## 0. Read this first
 
-**What counts: 36 files today, 37 once File 39 lands.** There is no File 28. Files 3 to 27 are 25 files, Files 29 to 38 are 10, and File 40 is one more, so the run applies 36 files on top of Files 1 and 2, and the `supabase/migrations` folder on `develop` holds 38 in all [V: `git ls-tree origin/develop supabase/migrations/`, 38 on 22 Nov]. **File 39 (`20261121030000_compliance_gates`, PR #1448) is not on `develop` yet**: it is open, so this sheet covers Files 3 to 38 plus File 40 only. APPLY.md File 40 says "apply after File 39" [V]. The file itself has no apply-time check for File 39 [V: read, no guard], but the CLI applies in filename order and records each file: if File 40 is applied first and File 39 merges later, File 39 sorts BEFORE an applied file, and both `supabase db push` (without `--include-all`) and the migration guard refuse it [U: not tried]. So the safe order is **do not run Part C until #1448 has merged**; then the run is 37 files, the folder holds 39, and every "36" below reads "37" and every "38" in A2 and row 1 reads "39". If you must run before, tell Karma first: that is his decision, not an operator step.
+**What counts: 36 files today, 37 once File 39 lands.** There is no File 28. Files 3 to 27 are 25 files, Files 29 to 38 are 10, and File 40 is one more, so the run applies 36 files on top of Files 1 and 2, and the `supabase/migrations` folder on `develop` holds 38 in all [V: `git ls-tree origin/develop supabase/migrations/`, 38 on 22 Nov]. **File 39 (`20261121030000_compliance_gates`, PR #1448) is not on `develop` yet**: it is open, so this sheet covers Files 3 to 38 plus File 40 only. APPLY.md File 40 says "apply after File 39" [V]. The file itself has no apply-time check for File 39 [V: read, no guard]. But the CLI applies in filename order and records each file, so if File 40 is applied first and File 39 merges later, File 39 sorts BEFORE an applied file and `supabase db push` refuses it without `--include-all` [U: not tried]. The migration guard (`.github/scripts/migration-guard.mjs`) compares against `.github/migrations-applied.txt`, not the hosted history: it holds only Files 1 and 2 today, so it would NOT refuse File 39 now, but once Part J records File 40 there, a new migration that sorts at or before File 40 fails the guard [V: read]. So the safe order is **do not run Part C until #1448 has merged**; then the run is 37 files, the folder holds 39, and every "36" below reads "37" and every "38" in A2 and row 1 reads "39". If you must run before, tell Karma first: that is his decision, not an operator step.
 
 **This run is not harmless to the app on the live project.** File 5 turns on the server consent gate. From the moment it applies, the app on `early-letters` answers `SCCON` for everyone, you included, until the policy versions are published and your acceptances are recorded (Part E, point 5). Decide that before you press Approve, not after. **If the app on that project is in real use (yours or anyone else's), do not approve.** [V: APPLY.md Step 8]
 
@@ -174,7 +174,7 @@ If you have no pepper yet for this project, make one. This writes it to a file o
 ( umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
-Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Read the value in plain Terminal with `cat "$HOME/el-secrets/consent-pepper-early-letters.txt"` (no editor or viewer, so no recent-file or swap copy), type or copy it into your password manager, then clear the screen with `clear` and close the Terminal tab. Save it in the password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
@@ -194,7 +194,7 @@ If you already have a pepper in your password manager, do not make a new one. Pu
    show log_min_duration_statement;
    ```
    Expect `none` and `-1`. The smoke accepts `ddl` for the first (`scripts/ops/lib/smoke.ts` line 423), but `ddl` would write the `alter database` statement, pepper included, into the Postgres logs. If `log_statement` is anything but `none` (`ddl`, `mod`, `all`), or the second is not `-1`, **stop**: do not run the pepper line. Turn logging off first (docs/ops/SECURITY.md section 4; ask Supabase support if the dashboard has no switch [U]), or tell the data architect.
-0a. **Before B1 and every copy below:** do the clipboard step at the start of B1 (clipboard managers and Universal Clipboard off).
+0a. Check that the clipboard step at the start of B1 (clipboard managers and Universal Clipboard off) is still true, because you copy again here.
 1. Get the value onto the clipboard once. Best: open it in your password manager and copy it there (a password manager clears the clipboard itself [U]; this skips `pbcopy`). Or, from the file:
    ```bash
    tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
@@ -317,7 +317,7 @@ Stop if: any row differs. Do not start Part G. Which test explains each row is i
 | 25 | 35 | `audit_writers_security_events.test.mjs` |
 | 26, 27 | 36 | `new_device_sign_in.test.mjs` |
 | 28 | 37, 38 | `new_device_sender.test.mjs`, `new_device_fill_rekey.test.mjs` |
-| 29 | 40 | `value_free_validation.test.mjs` |
+| 29 | 40 | `value_free_validation.test.mjs` (row 29 counts every trigger named `%_validate_limits`: if a later file adds a similar trigger on another table it reads 5 or more; that is not a failure, tell the data architect the number) |
 
 Row 16 lists three policies, not two as APPLY.md's File 33 check says: `entry_photos_no_anonymous` is also on the folder [V: local run]. The APPLY.md line is out of date on that one point; this sheet does not edit it. The File 18 and 19 tables (subscription status, backup) are covered by `subscription_status.test.mjs`, `audio_backup.test.mjs`, `audio_backup_escrow.test.mjs`, `audio_backup_purge.test.mjs`, `backup_role.test.mjs` in CI; no hosted check is added for them because both stay dark (guard in Part G).
 
