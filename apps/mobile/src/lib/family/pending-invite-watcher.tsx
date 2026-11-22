@@ -7,15 +7,20 @@
  */
 import { router, usePathname, useRootNavigationState } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { authUserId } from '../auth/machine.logic';
+import { getAuthSnapshot, subscribeAuth } from '../auth/auth-store';
 import { PLUS_ALPHA } from '../billing/alpha';
 import { serverFeaturesEnabled } from '../capabilities';
 import { inviteDestination } from './entry.logic';
-import { clearPendingInvite, readPendingInvite } from './pending-invite';
+import { clearPendingInvite, clearReadPendingInvite, readPendingInvite } from './pending-invite';
 
 export function PendingInviteWatcher() {
   const nav = useRootNavigationState();
   const pathname = usePathname();
   const checked = useRef(false);
+  const stopWaiting = useRef<(() => void) | null>(null);
+  const pathRef = useRef(pathname);
+  pathRef.current = pathname;
   const ready = !!nav?.key;
 
   useEffect(() => {
@@ -27,11 +32,28 @@ export function PendingInviteWatcher() {
       void clearPendingInvite();
       return;
     }
-    if (pathname.startsWith('/invite')) return;
-    void readPendingInvite().then((p) => {
-      if (p) router.push('/invite');
+    // CISO-2: whether a session exists is only known once it is no longer restoring. Reading earlier could
+    // drop (or mark) a token for the wrong reason, so wait for the settled state.
+    const open = () => {
+      const userId = authUserId(getAuthSnapshot());
+      if (!userId) void clearReadPendingInvite(); // a token a past session read does not outlive it
+      if (pathRef.current.startsWith('/invite')) return;
+      void readPendingInvite(Date.now(), userId).then((p) => {
+        if (p) router.push('/invite');
+      });
+    };
+    if (getAuthSnapshot().status !== 'restoring') return open();
+    // One subscriber for the life of the watcher (the `checked` guard); dropped on unmount or once settled.
+    const stop = subscribeAuth((s) => {
+      if (s.status === 'restoring') return;
+      stop();
+      stopWaiting.current = null;
+      open();
     });
+    stopWaiting.current = stop;
   }, [ready, pathname]);
+
+  useEffect(() => () => stopWaiting.current?.(), []);
 
   return null;
 }

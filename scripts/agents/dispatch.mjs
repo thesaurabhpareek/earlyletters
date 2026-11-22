@@ -20,7 +20,7 @@ import { join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
-  isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
+  isFounderComment, isFounderChangesRequest, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
 import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
@@ -130,7 +130,7 @@ function prFacts(pr) {
     (c) => isFounderComment(c, roster) && new Date(c.submitted_at ?? c.created_at) > headAt,
   );
   const changesRequested = reviews.some(
-    (r) => isFounderComment(r, roster) && r.state === "CHANGES_REQUESTED" && new Date(r.submitted_at) > headAt,
+    (r) => isFounderChangesRequest(r, roster) && new Date(r.submitted_at) > headAt,
   );
   const all = [...reviews, ...comments];
   const redTeam = all.find((c) => isTrusted(c, trust) && startsWithMarker(c.body, `<!-- red-team:${sha} -->`));

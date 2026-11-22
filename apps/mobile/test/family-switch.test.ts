@@ -231,7 +231,7 @@ describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites 
 
   it('the paused line is one neutral sentence pair that never names the child, on every screen', () => {
     const line = familyCopy.errors.paused;
-    expect(line).toBe('Invites are paused for now. Please try again a little later.');
+    expect(line).toBe('Invites are paused for now. Try again a little later.');
     expect(line).not.toMatch(/\{|\b(lost|lose|fail|error|sorry|problem|wrong)\b/i);
     expect(renderTemplate(line, { child: 'Asha' })).toBe(line);
     expect(joinErrorLine('paused')).toBe('paused');
