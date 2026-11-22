@@ -6,7 +6,8 @@
  *  - an identifier hash of a signed-in user id: ownerKey (auth/local-claim.ts) keeps the first 16 hex as the owner
  *    label on the Moments and days files, so the id itself is not written there.
  * It is NOT a security key hash and NOT for secrets: there is no salt, no stretching and no key, and the 16 hex is a
- * label, not a credential. Never pass it a password, token, key or private text and treat the result as protected.
+ * label, not a credential. The unsalted 16 hex truncation is guessable by anyone who holds candidate ids, so it is a
+ * label that hides nothing from someone who has the ids. Never pass it a password, token, key or private text and treat the result as protected.
  */
 
 const K = new Uint32Array([
