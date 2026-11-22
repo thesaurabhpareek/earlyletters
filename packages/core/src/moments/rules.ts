@@ -3,7 +3,7 @@
 // them by experiment; a change is a one-line diff here, a bump of MOMENTS_RULES_VERSION and
 // golden regeneration. All durations are in SECONDS unless the name says otherwise.
 
-export const MOMENTS_RULES_VERSION = 1;
+export const MOMENTS_RULES_VERSION = 2; // 2: busyHoursCount added (CPO-23)
 
 const HOUR = 3600;
 
@@ -13,6 +13,11 @@ export const WINDOW_DAYS = 90;
 export const BUSY_DAY = 5;
 /** The older predicate, kept behind the same rules field: 4 candidates within 3 hours. */
 export const BUSY_HOURS = { count: 4, withinSeconds: 3 * HOUR } as const;
+/**
+ * Candidates a day needs under the span predicate (CPO-23). PROPOSED: 4 matches the 7.2a golden
+ * (4 candidates in one session over 2 h 05 qualify). BUSY_DAY 5 is not used by the span predicate.
+ */
+export const BUSY_HOURS_COUNT = 4;
 /** Span rule: first to last candidate at least this long, or candidates in two sessions. Seconds. */
 export const MIN_SPAN = 2 * HOUR;
 /** Sessions inside a day split at this gap. Seconds. */
@@ -33,6 +38,7 @@ export interface MomentsRules {
   readonly version: number;
   readonly windowDays: number;
   readonly busyDay: number;
+  readonly busyHoursCount: number;
   readonly busyHours: { readonly count: number; readonly withinSeconds: number };
   readonly minSpan: number;
   readonly sessionGap: number;
@@ -47,6 +53,7 @@ export const MOMENTS_RULES: MomentsRules = Object.freeze({
   version: MOMENTS_RULES_VERSION,
   windowDays: WINDOW_DAYS,
   busyDay: BUSY_DAY,
+  busyHoursCount: BUSY_HOURS_COUNT,
   busyHours: BUSY_HOURS,
   minSpan: MIN_SPAN,
   sessionGap: SESSION_GAP,
