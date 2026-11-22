@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en, familyCopy } from '@scribe/content';
-import { bornPatch } from '@scribe/core';
+import { bornPatch, isBeforeBirth } from '@scribe/core';
 import { addChildBlock, addChildCta, addChildValues, ADD_BUTTON_MAX } from '../src/components/child/add-child-form.logic';
 import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hereRowShown, hereRowTitle, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
 import { peopleRows } from '../src/components/family/family-tab.logic';
@@ -125,6 +125,22 @@ describe('[BL-472] "{child} is here?" while the book is expecting', () => {
     expect(screen).toMatch(/showHere \? <ListRow[^\n]*onPress=\{\(\) => setEditing\('born'\)\}/);
     const r = bornPatch({ birthday: null, dueDate: '2026-12-01' }, '2026-10-05', TODAY);
     expect(r).toEqual({ ok: true, patch: { birthday: '2026-10-05', dueDate: null } });
+  });
+  it('[BL-1661] the screen passes the whole call to both rules: birthday, due date, today and the hidden-for date', () => {
+    const screen = code('app/settings/children/[id].tsx');
+    const args = String.raw`\{ birthday: child\.birthday, dueDate: child\.dueDate, today: todayISO\(\), hiddenFor \}`;
+    expect(screen).toMatch(new RegExp(String.raw`const showBorn = bornCardShown\(${args}\);`));
+    expect(screen).toMatch(new RegExp(String.raw`const showHere = hereRowShown\(${args}\);`));
+  });
+  it('[BL-1661] a letter dated before the new birthday is filed before birth, one on or after is not', () => {
+    const set = bornPatch({ birthday: null, dueDate: '2026-12-01' }, '2026-10-05', TODAY);
+    expect(set.ok).toBe(true);
+    const birthday = set.ok ? set.patch.birthday : null;
+    expect(birthday).toBe('2026-10-05');
+    expect(isBeforeBirth(null, '2026-10-04')).toBe(true); // while expecting, every letter is Before You
+    expect(isBeforeBirth(birthday, '2026-10-04')).toBe(true); // the day before the new birthday
+    expect(isBeforeBirth(birthday, '2026-10-05')).toBe(false); // the birthday itself
+    expect(isBeforeBirth(birthday, '2026-10-06')).toBe(false);
   });
   it('says nothing new about days, and adds no prompt', () => {
     expect(hereRowTitle('Asha')).not.toMatch(/\d|congrat|born\b/i);
