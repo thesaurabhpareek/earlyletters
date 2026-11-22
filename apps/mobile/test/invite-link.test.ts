@@ -396,7 +396,7 @@ describe('the join sheet asks before it joins (BL-322, F11-REQ-006)', () => {
     expect(joinErrorLine('rate_limited')).toBe('tryLater');
     expect(joinErrorLine('consent_needed')).toBe('needsSync');
     expect(joinErrorLine('expired')).toBe('expired');
-    expect(familyCopy.accept.tryLater).toBe('Please wait a little while, then try again.');
+    expect(familyCopy.accept.tryLater).toBe('Wait a little while, then try again.');
     expect(familyCopy.accept.tryLater).not.toMatch(/tomorrow|invites/i);
   });
 });

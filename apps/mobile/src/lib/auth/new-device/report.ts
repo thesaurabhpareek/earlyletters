@@ -20,23 +20,47 @@ export async function deviceIdOnce(): Promise<string | null> {
   }
 }
 
-/** One report in flight at a time: a second ask while one runs shares it (its first attempt may still be timing out). */
-let inFlight: Promise<void> | null = null;
+/**
+ * One report in flight per account: a second ask from the same account shares it (its first attempt may still be timing out).
+ * Another account never gets it. A run records the token it sent with; a later ask that finds a different session (the same
+ * account signed out and in again) or a run that had no token to send starts its own run instead of sharing.
+ */
+type Run = { promise: Promise<void>; token?: string | null };
+const inFlight = new Map<string, Run>();
 
-export function reportNewDeviceFor(sb: SupabaseLike): Promise<void> {
-  if (inFlight) return inFlight;
-  const run = reportOnce(sb).finally(() => {
-    if (inFlight === run) inFlight = null;
+function start(sb: SupabaseLike, userId: string): Promise<void> {
+  const run: Run = { promise: Promise.resolve() };
+  run.promise = reportOnce(sb, userId, (t) => (run.token = t)).finally(() => {
+    if (inFlight.get(userId) === run) inFlight.delete(userId);
   });
-  inFlight = run;
-  return run;
+  inFlight.set(userId, run);
+  return run.promise;
 }
 
-function reportOnce(sb: SupabaseLike): Promise<void> {
+export function reportNewDeviceFor(sb: SupabaseLike, userId: string): Promise<void> {
+  const shared = inFlight.get(userId);
+  if (!shared) return start(sb, userId);
+  if (shared.token === undefined) return shared.promise; // still reading the session: it will read the live one
+  const seen = shared;
+  return (async () => {
+    const now = (await sb.auth.getSession()).data.session?.access_token ?? null;
+    if (seen.token !== null && seen.token === now) return seen.promise;
+    return start(sb, userId);
+  })().catch(() => {});
+}
+
+function reportOnce(sb: SupabaseLike, userId: string, noteToken: (t: string | null) => void): Promise<void> {
   return reportNewDevice({
     enabled: newDeviceEmailEnabled,
     deviceId: deviceIdOnce,
-    accessToken: async () => (await sb.auth.getSession()).data.session?.access_token ?? null,
+    accessToken: async () => {
+      const session = (await sb.auth.getSession()).data.session;
+      // The session may have moved to another account since this report was asked for: send nothing for the starter then.
+      // A session with a token and no user id cannot be shown to be this account's: fail closed.
+      const token = session && session.user?.id === userId ? (session.access_token ?? null) : null;
+      noteToken(token);
+      return token;
+    },
     deviceClass: deviceClassOf(Platform.OS),
     send: async ({ token, body }) => {
       // A timed-out attempt is cancelled, so the retry never overlaps it.
