@@ -10,8 +10,10 @@ import {
   initialAuthState,
   isSignedIn,
   shouldFinishSignOut,
+  shouldRecheckGate,
   type AuthEvent,
   type AuthState,
+  type PendingUploads,
   type SyncGate,
 } from '../src/lib/auth/machine.logic';
 import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey, looksLikeEmail, normaliseCode } from '../src/lib/auth/errors.logic';
@@ -285,6 +287,62 @@ describe('auth state machine: signing out never loses a letter (PRD A F6.4, A-RE
     expect(s.status === 'signingOut' && s.waitingForUploads).toBe(true);
   });
 
+  describe('[A-REQ-033, BL-450] Apple revoked, noticed at launch before the consent gate is read', () => {
+    const launching = run([{ type: 'RESTORED', userId: U }]);
+    const revoke = (pendingUploads: PendingUploads | number) =>
+      authReducer(launching, { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads });
+
+    it('with letters queued it waits, and reads the gate before deciding', () => {
+      const s = revoke(2);
+      expect(s).toEqual({ status: 'signingOut', userId: U, reason: 'apple_revoked', waitingForUploads: true, sync: 'unknown' });
+      expect(shouldFinishSignOut(s)).toBe(false);
+      expect(shouldRecheckGate(s, false)).toBe(true);
+    });
+
+    it('a queue that could not be read waits too', () => {
+      expect(shouldFinishSignOut(revoke({ kind: 'unknown' }))).toBe(false);
+    });
+
+    it('with nothing queued it signs out at once', () => {
+      expect(shouldFinishSignOut(revoke(0))).toBe(true);
+    });
+
+    it('gate says sync is on: the letters upload, and only then does it sign out', () => {
+      const s = authReducer(revoke(2), { type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false });
+      expect(s).toEqual({ status: 'signingOut', userId: U, reason: 'apple_revoked', waitingForUploads: true, sync: 'on' });
+      expect(canSync(s)).toBe(true);
+      expect(shouldFinishSignOut(s)).toBe(false);
+      expect(shouldFinishSignOut(authReducer(s, { type: 'UPLOADS_DRAINED' }))).toBe(true);
+    });
+
+    it('gate says sync can never run: nothing can upload, so it signs out and the letters stay on the phone', () => {
+      const s = authReducer(revoke(2), { type: 'GATE_LOADED', gate: NEW_ACCOUNT, sensitiveDeclined: false });
+      expect(shouldFinishSignOut(s)).toBe(true);
+    });
+
+    it('gate unreadable (offline): it keeps waiting, it does not sign out', () => {
+      const s = authReducer(revoke(2), { type: 'GATE_UNAVAILABLE' });
+      expect(s).toEqual(revoke(2));
+      expect(shouldFinishSignOut(s)).toBe(false);
+    });
+
+    it('"Stay signed in" still cannot cancel a revocation', () => {
+      const s = revoke(2);
+      expect(authReducer(s, { type: 'SIGN_OUT_WAIT_CANCELLED' })).toBe(s);
+    });
+
+    it('a person-asked sign-out before the gate is read is unchanged (sync off, no wait)', () => {
+      const s = authReducer(launching, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+      expect(s).toEqual({ status: 'signingOut', userId: U, reason: 'user', waitingForUploads: false, sync: 'off' });
+    });
+
+    it('consent still to give (gate already read, sync cannot run): unchanged, no wait', () => {
+      const needs = authReducer(launching, { type: 'GATE_LOADED', gate: NEW_ACCOUNT, sensitiveDeclined: false });
+      const s = authReducer(needs, { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: 2 });
+      expect(shouldFinishSignOut(s)).toBe(true);
+    });
+  });
+
   it('when sync could never run (consent declined), there is nothing to wait for', () => {
     const local = { status: 'ready', userId: U, sync: 'off' } as const;
     const s = authReducer(local, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 9 });
@@ -345,7 +403,7 @@ describe('auth error kinds: a server that answered is not a connection that fail
       expect(authErrorKind(retryable(status), 'passkey'), String(status)).toBe('provider');
       for (const context of ['send', 'code', 'link'] as const) expect(authErrorKind(retryable(status), context), `${status} in ${context}`).toBe('unknown');
     }
-    // The words are the copy lane's (provider: "That sign-in did not finish.", unknown: "That did not go through."); here: the kinds' own lines.
+    // The words are the copy lane's (provider: "That sign-in didn't finish.", unknown: "That did not go through."); here: the kinds' own lines.
     for (const context of CONTEXTS) {
       const kind = authErrorKind(retryable(503), context);
       expect(authErrorMessage(kind)).toBe(authErrorMessage(context === 'provider' || context === 'passkey' ? 'provider' : 'unknown'));

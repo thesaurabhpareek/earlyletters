@@ -1,6 +1,6 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { expect, type Recorder } from './journey';
+import { canary, expect, type Recorder } from './journey';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
@@ -73,6 +73,7 @@ export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.ge
  * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
  */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
+  canary(page, text);
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();

@@ -43,7 +43,7 @@ const SHADCN: Record<string, ColorKey> = {
   ring: 'focus',
 };
 /** Our names with no shadcn equivalent. */
-const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution', 'controlBorder', 'editMark', 'onDestructive', 'scrim', 'mediaFrame'];
+const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution', 'controlBorder', 'editMark', 'onDestructive', 'scrim', 'highlight', 'glassFallback', 'mediaFrame'];
 
 export function colorVars(mode: Mode, highContrast = false): Record<string, string> {
   const c: Record<ColorKey, string> = { ...tokens[mode], ...(highContrast ? tokens.highContrast[mode] : {}) };
@@ -141,9 +141,16 @@ ${typeVars()}
 ${Object.entries(tokens.elevation)
   .map(([k, e]) => `  --shadow-e${k}: ${e.web};`)
   .join('\n')}
+  --gutter-compact: ${tokens.layout.gutter.compact}px;
+  --gutter-regular: ${tokens.layout.gutter.regular}px;
+  --section-gap-compact: ${tokens.layout.sectionGap.compact}px;
+  --section-gap-regular: ${tokens.layout.sectionGap.regular}px;
+  --list-row-min: ${tokens.layout.listRowMin}px;
+  --reading-measure: ${tokens.readingMeasure.maxWidth}px;
   --ease-standard: cubic-bezier(${tokens.motion.easing.join(', ')});
   --duration-fade: ${tokens.motion.fadeMs}ms;
   --duration-enter: ${tokens.motion.enter.durationMs}ms;
+  --duration-hero-enter: ${tokens.motion.heroEnter.durationMs}ms;
 }
 `;
 }

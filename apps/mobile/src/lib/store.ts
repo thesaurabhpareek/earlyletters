@@ -1147,8 +1147,22 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
     wipe.removeBook(c, id);
   });
   compactAfterErase(c);
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(id);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+const bookErasedHooks = new Set<(bookId: string) => void>();
+/** Device files keyed by book (the moments file, NS-53-R249) remove their rows when a book is erased for good. Never throws into the erase. */
+export function onBookErased(hook: (bookId: string) => void): () => void {
+  bookErasedHooks.add(hook);
+  return () => void bookErasedHooks.delete(hook);
 }
 
 // ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
@@ -1403,8 +1417,29 @@ export function beginDiscard(id: string): boolean {
   return done;
 }
 
-/** Let it go, last step: removes a draft already marked `discarding`, never any other. */
+/**
+ * Removes a draft's picture, the file first and then its row (photos/device.ts erasePictureOf). capture/erase.ts hands
+ * it in when it loads, which the launch sweep does at every start; until then nothing is erased here, and the photo
+ * sweep removes a gone draft's picture at the next launch.
+ */
+let eraseDraftPicture: (draftId: string) => void = () => {};
+export function setDraftPictureEraser(erase: (draftId: string) => void): void {
+  eraseDraftPicture = erase;
+}
+
+/**
+ * Let it go, last step: removes a draft already marked `discarding`, never any other. Its picture goes first, file then
+ * row (ADR 0028 D5); a picture file that will not go keeps the draft marked, off every list, for the launch sweep to
+ * finish, as a recording does (BL-924).
+ */
 export function finishDiscard(id: string): boolean {
+  if (ctx().db.get("SELECT 1 AS n FROM drafts WHERE id = ? AND state = 'discarding'", id)) {
+    try {
+      eraseDraftPicture(id);
+    } catch {
+      return false;
+    }
+  }
   const done = drafts.finishDiscard(ctx(), id);
   if (done) bus.emit('drafts');
   return done;
@@ -1417,6 +1452,12 @@ export function finishDiscard(id: string): boolean {
  * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
+  try {
+    eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5)
+  } catch {
+    // A picture file that will not go never blocks the draft going: the launch photo sweep removes a gone draft's picture
+    // (the row's owner is gone), so nothing here may throw uncaught into the screen that let the draft go.
+  }
   const c = ctx();
   let held = false;
   c.db.transaction(() => {

@@ -53,9 +53,30 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   if (!userId) throw Object.assign(new Error('apple_no_user'), { code: 'bad_oauth_callback' });
   // BL-330: in the background; sign-in is already done whatever this returns.
   if (credential.authorizationCode) void captureAppleToken(sb, credential.authorizationCode).catch(() => 'failed');
-  await secureStorage.setItem(APPLE_USER_KEY, credential.user).catch(() => {});
+  await keepAppleUser(credential.user);
   await clearPendingAppleName(); // O-8: no name is kept; drop one an older build left
   return userId;
+}
+
+/**
+ * BL-1505, fail quiet (handled here, visible to the revocation watch only). A failed write must not leave the previous person's id to be read as this one's: drop it,
+ * and if it cannot be dropped, mark the id unknown so the revocation watch skips (false) instead of asking Apple
+ * about the wrong person. Never signs anyone out, never logs the id. The mark is memory only.
+ */
+let appleIdUnknown = false;
+
+async function keepAppleUser(user: string): Promise<void> {
+  try {
+    await secureStorage.setItem(APPLE_USER_KEY, user);
+    appleIdUnknown = false;
+  } catch {
+    try {
+      await secureStorage.removeItem(APPLE_USER_KEY);
+      appleIdUnknown = false;
+    } catch {
+      appleIdUnknown = true;
+    }
+  }
 }
 
 export async function clearPendingAppleName(): Promise<void> {
@@ -70,6 +91,7 @@ export async function clearPendingAppleName(): Promise<void> {
  */
 export async function appleCredentialRevoked(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
+  if (appleIdUnknown) return false;
   const user = await secureStorage.getItem(APPLE_USER_KEY).catch(() => null);
   if (!user) return false;
   try {
@@ -91,7 +113,12 @@ export function watchAppleRevocation(onRevoked: () => void): () => void {
 }
 
 export async function forgetAppleUser(): Promise<void> {
-  await secureStorage.removeItem(APPLE_USER_KEY).catch(() => {});
+  try {
+    await secureStorage.removeItem(APPLE_USER_KEY);
+    appleIdUnknown = false;
+  } catch {
+    // keeps the mark: the id may still be there
+  }
 }
 
 /** The bundle id Apple issued the code to (production, preview or dev build); the function checks it against its list. */
