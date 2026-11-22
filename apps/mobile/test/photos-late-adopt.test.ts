@@ -81,4 +81,30 @@ describe('[BL-1535-2] words typed while a picture is being kept', () => {
     await adoptPending(p, () => d, 'e1', WORDS, true);
     expect(store.puts).toBe(1);
   });
+  it('[BL-1535-2] a different copy that took the entry meanwhile does not receive the words, and keeps what it had', async () => {
+    const f = files();
+    const p = new PendingPhoto(f);
+    await p.set({ uri: A });
+    p.setText('Asha at the park');
+    const { d, store } = deps();
+    const put = store.put.bind(store);
+    let swapped = false;
+    d.store.put = (photo) => {
+      put(photo);
+      if (!swapped) {
+        swapped = true;
+        put({ ...photo, mediaId: 'other', text: 'Another picture', place: null }); // another copy takes the entry
+      }
+    };
+    f.hold();
+    const adopting = adoptPending(p, () => d, 'e1', WORDS, true);
+    await flush();
+    p.setText('Words for the first picture');
+    f.release();
+    await adopting;
+    const row = store.rows.get('e1');
+    expect(row?.mediaId).toBe('other');
+    expect(row?.text).toBe('Another picture');
+    expect(JSON.stringify(row)).not.toContain('first picture');
+  });
 });
