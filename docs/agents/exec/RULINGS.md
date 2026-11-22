@@ -611,3 +611,52 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 - Way back: if develop goes red twice in one day because of a PR merged under this rule, I return to the strict rule and pause merging under this one.
 - Revisit when: `scripts/agents/merge-queue.mjs` implements it, or after 48 hours, whichever is first.
 - Signed: Karma (CTO)
+
+## Batch 4 (22 Nov, council)
+
+This section is a separate trailing block. Ids continue past the highest per seat on `develop` at the head this branch was cut from (CPO-25, CDO-21), checked by grep in `docs/`; not checked: other open PRs that touch this file. If a number collides at merge, renumber the later one. Each seat is a Claude role (COUNCIL section 1), none is counsel. Evidence: the spec `docs/product/prd/28-moments-tab.md` (PROPOSED; R24, R25, R253, 6.2 S6, section 7.3a), PR #1469 section 7.3b (errata E-4-2, E-4-4, E-4-5), the Moments Review A and B notes on PR #1447, and `packages/core/src/prompts.ts` (`kindFor`: `hardStretch` gives `hard`). No law or outside-world fact is relied on. Each ruling fixes a build default for the PROPOSED Moments tab behind its flag; none changes what a person is promised, scope or dates, so none is founder-only. The spec text is not edited here: the `product` agent writes the erratum lines quoted below (into 7.3b, replacing the "council pending" status of E-4-2, E-4-4 and E-4-5).
+
+### CPO-26 Q-R25 (E-4-2): in a hard stretch the Moments question takes Home's kind, `hard` (22 Nov 2026, CPO with CDesO, CCO and CPrivO)
+- Question: R25 says `gap` and `hard` can never be chosen as the question kind. R24 and 6.2 S6 say the question uses only the kind Home uses. In a hard stretch Home's kind is `hard` (`kindFor` returns `hard` when `hardStretch` is set). Which reading stands? The code (#1447) passes `hardStretch` on the hard state, matching Home.
+- Seats consulted: CDesO (two tabs asking two different things on the same hard day is the worse tone: a bright "what made you laugh" next to Home's gentle prompt reads as not listening), CCO (tone rules: no fear, guilt or loss language; the `hard` prompts already pass the content rules, as Home shows them), CPrivO (the kind is derived on the phone from a mark the parent made; nothing new is read or stored; the rule must not be recorded or counted, R253 pattern).
+- Verdict: RULED.
+- Ruling: R24 and 6.2 S6 win. The question uses Home's kind in every state. In a hard stretch that is `hard`; in a quiet book or the normal state it is `opening`. `gap` is never chosen (no `daysSinceLastEntry`, so the engine cannot reach it). `excludeKeys` still holds Home's key, so the two tabs never show the same prompt.
+- Reason: R25 was written for the normal state and the word "never" was too wide. Following Home keeps one tone per phone per day and needs no new rule. The harm to avoid is a cheerful prompt on a hard day, not a hard prompt on one.
+- Spec erratum, exact wording (replace the E-4-2 row's Reads and Status; edits R25 and 6.2 S6 "Never" cell): "R25 reads: the question is chosen with `selectPrompt` using the kind Home uses on this phone today. Outside a hard stretch that is `opening`; in a hard stretch it is `hard`, the same as Home. The kind `gap` is never chosen. A `hard` prompt is never chosen outside a hard stretch. Status: RULED (CPO-26), PROPOSED." The S6 "Never" cell reads "A `gap` prompt; a `hard` prompt outside a hard stretch".
+- Owed: #1447 adds one test that separates a quiet book (kind `opening`) from a hard stretch (kind `hard`); Review A found the mutant `hardStretch: input.state !== 'normal'` survives today.
+- Door: two-way. Way back: reword R25 back to "never `hard`" and pass `hardStretch: false` in the question call; no stored data depends on it.
+- Founder-only: no.
+- Signed: Chief Product Officer (Claude role)
+
+### CPO-27 Q-R24 (E-4-5): in a hard stretch or a quiet book no library pictures card shows; the door stays (22 Nov 2026, CPO with CDesO, CPrivO, CCO and CISO)
+- Question: R24 bars the look back (S4) and bright Today hits in a hard stretch or quiet book. The engine still builds a library pictures card (S7) and the question then. Is a pictures card wanted, or must it be suppressed?
+- Seats consulted: CPrivO (R253, already in the spec as P0, says a quiet, hidden, hard-stretch or expecting-only book, or any visible book on the phone that is, shows no library card, no Recent list, no place line, no year-ago card and no occasion collage; a picture card that appears when a parent has paused a book is the leak R253 exists to stop; and the rule must leave no trace in analytics, push or logs), CDesO (a parent in a hard stretch should meet an unchanged calm tab with the question and the door, not a collage of a child that day; a card that does not render needs no apology line, R14), CCO (tone: celebrating what exists is for a parent who chose it; a surprise picture on a hard day is not that), CISO (no new surface: suppress before the fetch, so no library read happens for a suppressed state; UNVERIFIED on a device).
+- Verdict: RULED.
+- Ruling: suppress. In a hard stretch or a quiet book the pictures slot shows no S7 card, no Recent list, no place line, no year-ago picture card and no occasion collage. The picker door ("Choose pictures" per R253's own reword) stays, since the parent chooses to use it. The question stays under CPO-26. R253 is the authority and the stricter whole-phone reading stands: the engine suppresses when any visible book on the phone is in such a state, and the engine must be given that flag by `buildMoments` (PR 9), because #1447 sees one book. Until PR 9 lands, #1447 suppresses for the book it is given and the whole-phone input is a named gap.
+- Reason: the spec already decided this in R253; E-4-5 asked because R24's text was narrower. R24 is read with R253. Showing is irreversible once seen; hiding costs one card on a day the parent did not want it.
+- Spec erratum, exact wording (replace the E-4-5 row's Reads and Status; edits R24): "R24 is read with R253. In a hard stretch or a quiet book, and on any phone where a visible book is in one, Moments shows no library pictures card and none of the library surfaces named in R253. The picker door stays. The question still shows, under R25. Status: RULED (CPO-27), PROPOSED; the whole-phone flag comes from `buildMoments` (PR 9)."
+- Owed: #1447 drops the S7 card when `hardStretch` or the book is quiet, with a test (a planted library day with the state hard: no pictures card; the door row remains) and one mutant; PR 9 passes the whole-phone flag and a test with two books.
+- Door: two-way. Way back: remove the suppression line and its test; nothing stored.
+- Founder-only: no. A founder who wants pictures shown on a hard day would be changing R253, a P0 privacy row, and that is his.
+- Signed: Chief Product Officer (Claude role)
+
+### CDO-22 Q-X (E-4-4): every candidate passes the exclude list before `momentsFor` (22 Nov 2026, CDO with CPrivO and CISO)
+- Question: ratify the `buildMoments` contract that every candidate (look back, picture, Today hit) passes the exclude list (Not this one, Hide this day, excluded days) before `momentsFor` sees it, as a build rule for PR 8 and PR 9.
+- Seats consulted: CPrivO (a hidden or excluded day must never surface through any source; R29 says a hidden day never leaks into any other surface), CISO (one gate, tested with a planted day, beats a check in each source; fail closed), CDO (the exclude list is local day keys and local letter ids only, cleared by Turn off, Erase and sign-out per R29).
+- Verdict: RULED.
+- Ruling: ratified as a build rule. `buildMoments` filters every candidate by the exclude list before calling `momentsFor`. `momentsFor` takes already-filtered candidates and still checks again any candidate that carries a date, by that date. A day is dropped by day, never by picture id (E-4-7). `pictures.source` is validated to S5 or S7 at run time. A candidate whose day cannot be worked out is dropped, not shown (ASSUMED, fail closed). The PR proves it with a planted hidden day and a planted excluded day, and one mutant that removes the filter.
+- Reason: two gates (before and inside) cost one comparison and mean a missed call in `buildMoments` cannot show a hidden day.
+- Spec erratum, exact wording (replace the E-4-4 row's Status): "RULED (CDO-22), PROPOSED: this is a build rule for PR 8 and PR 9. The text above stands, plus: a candidate whose day cannot be worked out is dropped."
+- Door: two-way. Way back: delete the second check in `momentsFor`; the first stays.
+- Founder-only: no.
+- Signed: Chief Data Officer (Claude role)
+
+### Hand-back table, batch 4
+
+| Q | Verdict | Next action | Unblocks |
+|---|---|---|---|
+| Q-R25 question kind in a hard stretch | RULED CPO-26 (Home's kind; `hard` only in a hard stretch; never `gap`) | product erratum R25 and S6; #1447 quiet-versus-hard test | #1447 |
+| Q-R24 pictures card in hard or quiet | RULED CPO-27 (suppress; door stays; R253 governs) | product erratum R24; #1447 suppression and test; PR 9 whole-phone flag | #1447, PR 9 |
+| Q-X exclude list before `momentsFor` | RULED CDO-22 (build rule, fail closed) | product erratum E-4-4; PR 8 and 9 tests | PR 8, PR 9 |
+
+Founder-only items in this batch: none. A reversal of CPO-27 would change R253 and is the founder's.
