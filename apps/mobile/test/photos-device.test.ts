@@ -390,20 +390,20 @@ const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
 const row = (entryId: string, mediaId: string, over: Partial<StoredPhoto> = {}): StoredPhoto => ({
   entryId, mediaId, ext: 'jpg', bytes: 10, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over,
 });
-const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string | null = null) =>
+const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string | null = null, raw = 'x') =>
   db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text, in_book, updated_at, deleted_at)
-     VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, 'x', '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
-    id, deleted,
+     VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, ?, '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
+    id, raw, deleted,
   );
 
 describe('[NS-01-R8] picture changes never touch words or recording', () => {
   it('[NS-01-R8] add, replace, Undo, remove and editing the words about the picture leave the letter\'s entries row as it was, against the real store', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
-    letter(db, 'e1');
+    letter(db, 'e1', null, 'she laughed um'); // raw seeded at insert: it is set once (BL-412)
     db.run(
-      "UPDATE entries SET capture_mode = 'spoken', raw_transcript = 'she laughed um', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
+      "UPDATE entries SET capture_mode = 'spoken', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
     );
     const row = () => db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', 'e1');
     const before = row();
@@ -421,11 +421,12 @@ describe('[NS-01-R8] picture changes never touch words or recording', () => {
 });
 
 describe('[ADR 0028 D1] entry_media: local migration 11', () => {
-  it('[D1] the migration adds the table and its three indexes only, and the newest version is 11', () => {
+  it('[D1] the migration adds the table and its three indexes only, and migration 11 is entry_media and the newest version is at least 11', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
-    expect(LATEST_VERSION).toBe(11);
-    expect(MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(LATEST_VERSION).toBeGreaterThanOrEqual(11);
+    expect(MIGRATIONS.map((m) => m.version).slice(0, 11)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(MIGRATIONS[10].name).toMatch(/^entry_media/);
     const cols = db.all<{ name: string }>('PRAGMA table_info(entry_media)').map((c) => c.name);
     expect(cols).toEqual(['id', 'entry_id', 'draft_id', 'kind', 'ext', 'bytes', 'sha256', 'width', 'height', 'photo_text', 'place', 'added_at']);
     expect(cols).not.toContain('deleted_at');
@@ -440,7 +441,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     const outboxBefore = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE name LIKE '%outbox%'").length;
     const countOutbox = () => (outboxBefore ? db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')?.n ?? 0 : 0);
     const before = countOutbox();
-    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(migrate(db, ctx, MIGRATIONS.slice(0, 11))).toMatchObject({ from: 10, to: 11 });
     expect(countOutbox()).toBe(before);
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id='e1'")?.final_text).toBe('She laughed.');
   });
@@ -456,7 +457,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     db.run("UPDATE entries SET occurred_on = '2026-03-03', captured_at = '2026-03-04T08:15:00Z', capture_mode = 'spoken', raw_transcript = 'um da da' WHERE id = 'e1'");
     const before = db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id');
     expect(before.length).toBe(3);
-    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(migrate(db, ctx, MIGRATIONS.slice(0, 11))).toMatchObject({ from: 10, to: 11 });
     expect(db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id')).toEqual(before);
   });
   it('[D1] the checks hold: photo only, jpg only, 140 and 60 characters, an owner that is either a letter or a draft, one picture per owner', () => {

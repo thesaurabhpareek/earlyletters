@@ -56,7 +56,7 @@ describe('[ADR 0028 D1] the store adds one empty table and writes nothing until 
     letter(db, 'e1');
     const schema = () => db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").map((r) => r.name);
     const before = schema();
-    migrate(db, ctx);
+    migrate(db, ctx, MIGRATIONS.slice(0, 11));
     expect(schema().filter((n) => !before.includes(n))).toEqual(['entry_media', 'entry_media_draft_idx', 'entry_media_entry_idx', 'entry_media_one_photo_idx']);
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000010'));
     const files = [...h.disk.files.keys()];

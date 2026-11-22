@@ -264,6 +264,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       const out = tx(() => applyPullPage(db, data, iso()));
       report.pulled += out.pulled;
+      report.rejected += out.refused;
       if (out.pulled > 0 || (data.gone?.length ?? 0) > 0 || (data.books ?? []).some((b) => b.meta)) changed();
       if (data.more) continue;
       if (out.wantIds && idsRounds < 1) {
