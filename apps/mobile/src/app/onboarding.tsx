@@ -69,7 +69,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, resumeBooks, runFinishOnce, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, resumeBooks, runFinishOnce, sameBookInput, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
@@ -287,7 +287,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
 
   // Twins: if the second addChild throws, the first is already made; a retry keeps it (BL-1658). Named addChild so finish reads as before.
   const madeBooks = useRef<{ arg: Parameters<typeof addChildToStore>[0]; book: ReturnType<typeof addChildToStore> }[]>([]);
-  const addChild = resumeBooks(madeBooks.current, addChildToStore, (a, b) => a.name === b.name && a.birthday === b.birthday && a.dueDate === b.dueDate && a.signsAs === b.signsAs, () => firstRunBookNames(names).length);
+  const addChild = resumeBooks(madeBooks.current, addChildToStore, sameBookInput, () => firstRunBookNames(names).length);
 
   const finish = () => {
     // Opened signed in, and the session is gone (one frame before the route puts the Welcome back): no book with no account (D-160).
