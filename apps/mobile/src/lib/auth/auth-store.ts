@@ -21,6 +21,8 @@
  * state, for the screens.
  */
 import { needsAccountClaim } from './account-claim.logic';
+import { bindNoticeOwner, familyNotice, joinedArrival } from '@/components/family/family-notice';
+import { bookHandoff } from '@/components/book/book.logic';
 import { clearPendingSignInMemory } from './pending-memory';
 import { joinWait } from '@/components/family/join-wait.logic';
 import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
@@ -49,6 +51,8 @@ export interface ClaimReaders {
 /** Until the provider registers the real readers: nobody owns the phone, and assume letters exist (ask first). */
 const ASK_FIRST: ClaimReaders = { owner: () => null, hasLocalData: () => true };
 let readers: ClaimReaders = ASK_FIRST;
+
+bindNoticeOwner(() => authUserId(snapshot));
 
 export function getAuthSnapshot(): AuthState {
   return snapshot;
@@ -123,12 +127,18 @@ export function publishAuth(next: AuthState): void {
   // A real sign-out (was signed in, now not) or a switch to another user. Never the 'restoring' state at launch:
   // that has no user either, and the invite a signed-in reader marked must survive a relaunch (CISO-2).
   const now = authUserId(next);
-  if (was && now !== was) {
+  // Same for the one-shot line a family sheet leaves (it can carry the child's name) and the arrival mark.
+  if (!now || (was && now !== was)) {
     joinWait.clear();
+    familyNotice.clear();
+    joinedArrival.clear();
+    bookHandoff.take(); // a deleted letter's text held for the Book (book.logic.ts)
+  }
+  if (was && now !== was) {
     // CISO-2: an invite token this account had read must not reach the next account.
     // Loaded on demand so the store stays free of the Keychain module for code that only reads auth state.
     void import('@/lib/family/pending-invite').then((m) => m.clearReadPendingInvite()).catch(() => {});
-  } else if (!now) joinWait.clear();
+  }
   // Cross-account audit F3: the typed address and a sign-in link hash end with the session or the account that held
   // them. A sign-in in progress (nobody signed in yet, `was` null) keeps them.
   if (was && authUserId(next) !== was) clearPendingSignInMemory();

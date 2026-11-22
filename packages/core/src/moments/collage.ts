@@ -8,14 +8,14 @@
  * near-duplicate group arrives already collapsed to ONE candidate whose time
  * range is its first to last frame (PR 2); this module never sees frames.
  *
- * PR 2 (#1421) owns `Candidate`. Until it lands this file cannot import it, so `toTileCandidate`
- * takes the same fields structurally (ids, startMs, endMs, video, favourite) and is the one place
- * that maps a grouped candidate onto a tile. Swap the structural type for `Candidate` once #1421 merges.
+ * PR 2 owns `Candidate` (`columns.ts`); `toTileCandidate` is the one place that maps a grouped candidate
+ * onto a tile (id is its first frame, kind comes from `video`).
  *
  * ASSUMED lines below are choices no spec line states; each is ruled in docs/agents/exec/RULINGS.md
  * (Batch 3) and may change at the G4 card sort or the PR 3b harness. `tiles` and `rotateK` are PROPOSED
  * rules fields (CPO-25).
  */
+import type { Candidate } from './columns';
 import type { MediaKind } from './domain';
 import { MOMENTS_RULES } from './rules';
 
@@ -52,17 +52,8 @@ export interface CollageOptions {
   readonly tiles?: number;
 }
 
-/** The fields of PR 2's `Candidate` a tile needs (structural until #1421 merges). */
-export interface TileSource {
-  readonly ids: readonly string[];
-  readonly startMs: number;
-  readonly endMs: number;
-  readonly video: boolean;
-  readonly favourite: boolean;
-}
-
 /** One grouped candidate onto a tile: id is its first frame, kind comes from `video`. */
-export function toTileCandidate(c: TileSource, session: number, attached: boolean): TileCandidate {
+export function toTileCandidate(c: Pick<Candidate, 'ids' | 'startMs' | 'endMs' | 'video' | 'favourite'>, session: number, attached: boolean): TileCandidate {
   return {
     id: c.ids[0],
     startMs: c.startMs,

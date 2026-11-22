@@ -463,10 +463,12 @@ export default function Book() {
             <PinnedActionLayout
               center
               insetBottom={false}
-              contentContainerClassName="items-center gap-8 px-5"
+              contentContainerClassName="gap-8 px-5"
               action={<Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />}>
-              <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
-              <EmptyState align="center" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+              <View className="items-center">
+                <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
+              </View>
+              <EmptyState align="start" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
             </PinnedActionLayout>
           </View>
         ) : (
