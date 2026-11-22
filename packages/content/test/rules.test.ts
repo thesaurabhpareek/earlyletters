@@ -592,6 +592,15 @@ describe('brand name and v1.0 claims', () => {
   // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
   // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
   // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
+  // BL-463: case-insensitive, so "read together" and "Free, always" are caught as well as the capitalised forms.
+  const RETIRED_CLAIMS = /Read together|more children|more books|free, always/i;
+
+  it('[BL-463] the retired-claims pattern ignores case', () => {
+    for (const bad of ['Read together', 'read together', 'READ TOGETHER', 'More children', 'more books', 'Free, always'])
+      expect(RETIRED_CLAIMS.test(bad), bad).toBe(true);
+    expect(RETIRED_CLAIMS.test('Keep adding letters')).toBe(false);
+  });
+
   it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
     // The Plan row's help line is scanned with the rest: it is where "keep adding letters" is said (settingsHome.planHelp).
     const plus = [
@@ -613,7 +622,7 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
     expect(promise).toMatch(/first two letters are free/);
     expect(en.settingsHome.planHelp).toMatch(/keep adding letters/);
-    for (const line of PROMISES) expect(line, line).not.toMatch(/Read together|more children|more books|free, always/);
+    for (const line of PROMISES) expect(line, line).not.toMatch(RETIRED_CLAIMS);
     // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
     expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
     // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
