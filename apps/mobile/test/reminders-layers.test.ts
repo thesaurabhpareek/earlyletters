@@ -150,11 +150,21 @@ describe('[NS-48-R27] newestMadeLetter is one query over the newest own letter',
     const f = fixture();
     insertBook(f.db, { id: 'child-asha', name: 'Asha', birthday: '2025-10-01' });
     for (let i = 0; i < 1200; i++) put(f, i, { capturedAt: new Date(Date.UTC(2026, 0, 1) + i * 3_600_000).toISOString() });
+    // get() runs through all() so the spy sees how many rows the statement itself returns: LIMIT 1 is behaviour, not text.
     const sql: string[] = [];
-    const db = { ...f.db, get: (q: string, ...p: never[]) => (sql.push(q), f.db.get(q, ...p)), all: (q: string) => (sql.push(q), []) } as never;
+    const returned: number[] = [];
+    const db = {
+      ...f.db,
+      get: (q: string, ...p: never[]) => {
+        const rows = f.db.all(q, ...p);
+        sql.push(q);
+        returned.push(rows.length);
+        return rows[0];
+      },
+    } as never;
     const r = entries.newestMadeLetter({ ...f.ctx, db }, ['child-asha'], null);
     expect(sql.length).toBe(1);
-    expect(sql[0]).toMatch(/ORDER BY captured_at DESC[^]*LIMIT 1\s*$/);
+    expect(returned).toEqual([1]);
     expect(r).toEqual({ capturedAt: new Date(Date.UTC(2026, 0, 1) + 1199 * 3_600_000).toISOString(), captureMode: 'spoken', kind: 'letter' });
     expect(r?.capturedAt).toBe(new Date(Date.UTC(2026, 0, 1) + 1199 * 3_600_000).toISOString());
   });
