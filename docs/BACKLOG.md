@@ -8536,19 +8536,19 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: rename the case to say it is the whole light read (or measure real paging once it exists) and rely on the source-pin tests for the proof.
 - Done when: the case name says what it measures.
 
-#### BL-1631 Book: page by chapter instead of loading every letter (BL-434 remainder)
-- Status: proposed (review of PR #1541). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+#### BL-1631 Pointer: the Book paging remainder is BL-434 (no second row)
+- Status: proposed (review of PR #1541). Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Medium. Gate: before the Book reaches a large family book.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review A and B on PR #1541: Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory, so the first-chapter timing is met only as a whole-book light read on the 2,000 fixture; J01-14 and J09-03 were not run; switch-child timing was not re-measured.
-- Scope: page the Book by chapter, re-measure switch-child timing, and run J01-14 and J09-03.
-- Done when: a test on the 2,000 fixture reads one chapter's rows only, and the journeys are recorded as run.
+- Problem and evidence: Review A and B on PR #1541: Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory; J01-14 and J09-03 were not run and switch-child timing was not re-measured. BL-434 is the live row for this remaining work.
+- Scope: no new build work here: when BL-434 is next edited by its owner, its status names the remainder (Book paging by chapter, J01-14 and J09-03, switch-child timing); this row only records the pointer and is closed then.
+- Done when: BL-434 names the three remaining items in its status and this row is superseded by BL-434.
 
 #### BL-1632 Baseline claim: name the files behind '9 files, 79 tests fail on clean develop', starting with the p5-critics [S6] case
 - Status: proposed (review of PR #1541). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review B on PR #1541: the [S6] test in p5-critics asserts the erase-failed toast and strings.en.ts holds exactly that text, so a copy drift looks unlikely; the baseline is stated but no run names the files.
+- Problem and evidence: Review B on PR #1541: the [S6] test in p5-critics asserts the erase-failed toast and strings.en.ts holds exactly that text, so a copy drift looks unlikely; the PR states a baseline of 9 files and 79 tests failing on clean develop. UNVERIFIED: no run names the files, and the reviewer could not confirm either way.
 - Scope: list the failing files and the cause from a clean develop run (probably missing modules) in the harness notes.
 - Done when: the list exists and each file is tagged environment or real.
 
@@ -8560,28 +8560,28 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: proposed: the CDO and the CPrivO decide whether to accept the residual, round, or publish weekly; the answer goes in the threat-model entry.
 - Done when: the decision is recorded in docs/agents/exec/RULINGS.md and the threat-model entry.
 
-#### BL-1634 Council batch 6: seven live rows depend on superseded or deferred ids, re-point their Depends-on
+#### BL-1634 Council batch 6: live rows whose Depends on names a superseded or deferred id (11 rows)
 - Status: proposed (review of PR #1545). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review of PR #1543 and the council record: BL-502, BL-504, BL-895, BL-853, BL-858, BL-874 and BL-880 name dependencies that are superseded, deferred or in progress (BL-485, BL-893, BL-877, BL-931, BL-848, BL-859).
-- Scope: for each of the seven rows, name the dependency that now holds (or none), citing the ruling, in a status edit PR.
-- Done when: none of the seven rows names a superseded id in Depends on, and check.mjs passes.
+- Problem and evidence: Derived from develop's BACKLOG.md after the status syncs: eleven live rows (not done, superseded or deferred) name a superseded or deferred id in Depends on: BL-502 (BL-485, superseded); BL-939 and BL-946 (BL-937, deferred); BL-291 (BL-577 and BL-579, deferred); BL-295 and BL-297 (BL-537, deferred); BL-1166 and BL-1167 (BL-577 and BL-579); BL-1339 and BL-1340 (BL-577); BL-1364 (BL-577). BL-504 says Depends on: none, and BL-853, BL-874, BL-880 and BL-895 are themselves superseded or deferred, so they are not in this list.
+- Scope: for each of the eleven rows, name the dependency that now holds (or none), or supersede or defer the row, citing the ruling, in a status edit PR; re-run the derivation at the time of the edit, because the set can change.
+- Done when: a scan of Depends on for live rows finds no superseded or deferred id, and check.mjs passes.
 
-#### BL-1635 Council batch 6: five rows stranded behind deferred or superseded dependencies (BL-939, BL-946, BL-881, BL-893, BL-895)
+#### BL-1635 Rows BL-939 and BL-946 stay held behind the deferred BL-937: decide the way out
 - Status: proposed (review of PR #1545). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review B on PR #1544: BL-939 and BL-946 wait on BL-937, BL-881 on BL-859 and BL-860, BL-893 on BL-892 and BL-895 on BL-893; the dispatcher holds them and nobody owns the way out.
-- Scope: per row, decide with Karma: supersede, re-point, or ready; record the ruling cite.
-- Done when: each of the five rows is ready, superseded or names a live dependency.
+- Problem and evidence: Review B on PR #1544 listed five stranded rows; on develop BL-881 and BL-893 are already superseded and BL-895 is deferred, so only BL-939 and BL-946 are live and held (both depend on the deferred BL-937; BL-946 also on BL-963). They are counted in the eleven of the row above; this row is the decision, not a second count.
+- Scope: decide with Karma, per row: re-point to a live dependency, defer with the ruling cite, or supersede.
+- Done when: BL-939 and BL-946 are each ready, deferred, superseded, or name a live dependency.
 
 #### BL-1636 Account-stop Edge Function (prerequisite of the /stop page, BL-511)
-- Status: proposed (review of PR #1545). Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: none.
+- Status: proposed (review of PR #1545). Mode: agent. Owner: data architect, sync owner. Milestone: M15. Size: M. Depends on: none.
 - Priority: High. Gate: before owner backup is switched on (D-121 item 2(c)).
 - Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Council batch 6 on BL-511: the `/stop#<token>` page has nothing to call because the account-stop Edge Function is not built; BL-511 stays blocked until this row is done.
-- Scope: build the function that takes the token and stops the account, with a test that the token never reaches a log; BL-511 then depends on this row.
+- Problem and evidence: Council batch 6 on BL-511 (owner: data architect with sync owner): the `/stop#<token>` page has nothing to call because the account-stop Edge Function is not built (`recovery-key.ts` has the schemas only); BL-511 stays blocked until this row is done.
+- Scope: build the function that takes the token and stops the account (shared with F02-REQ-017): the token never leaves the fragment and a GET never changes state, with a test that the token never reaches a log; BL-511 then depends on this row. Needs the counted security-lens review (supabase path).
 - Done when: the function and its test exist and BL-511 names this row in Depends on.
 
 #### BL-1637 Deletion coverage, phone half (a to c) of BL-1252, as its own ready row
@@ -8629,5 +8629,5 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Priority: Medium. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Council batch 6 marks BL-471 NEEDS-EVIDENCE: Erase now stays hidden in a build that syncs until the reach of the server erase is known to be complete.
-- Scope: read F17 section 8.4 against `entry.erase` and its server half, run the erase tests, and record whether the reach is complete; with a yes, BL-471 passes `serverErase: true`.
+- Scope: read F17 section 8.4 against `entry.erase` and its server half, run the erase tests, and record whether the reach is complete; with a yes, BL-471 passes `serverErase: true`. If the answer touches supabase, it needs the counted security-lens review.
 - Done when: the answer and the test output are recorded on BL-471, and its status follows.
