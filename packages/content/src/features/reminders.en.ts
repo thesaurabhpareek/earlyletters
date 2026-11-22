@@ -16,11 +16,11 @@ export const reminderCopy = {
     evening: [
       { title: 'A minute to write?', body: 'One thing about today is plenty. A sentence will do.' },
       { title: 'A letter tonight?', body: 'What made you smile today? Say it out loud and keep it.' },
-      { title: 'Dear little one,', body: 'Anything to tell your little one today? A line or two is enough.' },
-      { title: 'The house is quiet', body: 'A good moment for a few words to your little one.' },
+      { title: 'A minute for the book?', body: "Say whatever's on your mind. A line is plenty." },
+      { title: 'A few words tonight?', body: 'A line or two for the book.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
-      { title: 'Your voice, kept', body: 'Talk for a minute. One day it can be heard, just as you sounded.' },
-      { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
+      { title: 'Say a few words', body: 'Talk or type, whichever is easier.' },
+      { title: 'Before you sleep', body: 'A moment from today? Or tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
     // TODO(founder): PROPOSED, needs word approval (BL-966c; E45, E82, G-D21 default). With names off a month or birthday
@@ -58,7 +58,7 @@ export const reminderCopy = {
     // "Message", never "note", for what the app sends (BRAND.md glossary).
     monthNotesLabel: 'Month and birthday messages',
     monthNotesHelp: 'A short message on the day a new month begins in each book, and on birthdays.',
-    namesHelpOff: 'Notifications say "your little one" and show no names on the lock screen.',
+    namesHelpOff: 'Notifications leave child names off the lock screen.',
     namesHelpOn: 'Notifications can show names on the lock screen.',
     deniedTitle: 'Notifications are off',
     deniedBody: 'Turn them on in Settings to get these reminders.',
@@ -77,7 +77,7 @@ export const reminderCopy = {
     // Reminders on, iOS says no: the intent is kept, nothing is scheduled.
     notSendingYet: 'Not sending yet.',
     // rescheduleReminders could not schedule (it no longer swallows the error).
-    scheduleFailed: 'Could not set reminders just now.',
+    scheduleFailed: "Couldn't set your reminders.",
     // The month row while no included book has a birth date yet.
     birthDateNote: 'Starts once a birth date is added.',
     // iOS Provisional or Deliver Quietly: allowed, but not on the lock screen.
