@@ -225,6 +225,11 @@ export const authCopy = {
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
     provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
+    // BL-452. Placeholder words: each needs founder word approval (the PR body lists them). None names a result the app
+    // cannot know, and none is about email or signing in, because they show for a passkey and for Account actions.
+    passkey_expired: 'That took too long. Try the passkey again.',
+    passkey_not_added: "Nothing has changed. The passkey didn't finish. Try again in a moment.",
+    sign_out_others_failed: "Nothing has changed. Signing out the other devices didn't finish. Try again in a moment.",
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',

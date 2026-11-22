@@ -51,6 +51,12 @@ export type AuthErrorKind =
   | 'invalid_email'
   | 'not_available'
   | 'provider'
+  /** BL-452: a passkey's challenge timed out. Not an email link, so not `expired`. */
+  | 'passkey_expired'
+  /** BL-452: Add a passkey on Account did not finish. A signed-in action, so not the sign-in `provider` words. */
+  | 'passkey_not_added'
+  /** BL-452: Sign out other devices on Account did not finish. */
+  | 'sign_out_others_failed'
   | 'session_expired'
   | 'under_18'
   | 'consent_unavailable'

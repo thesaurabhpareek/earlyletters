@@ -362,6 +362,42 @@ describe('auth error kinds', () => {
     expect(authErrorKind({ error: 'UserCancelled', message: 'x' }, 'passkey')).toBe('cancelled');
   });
 
+  // BL-452 points 1 and 2: the email-link and sign-in words must not be shown for a passkey or for an Account action.
+  it('does not give a passkey the email-link words', () => {
+    expect(authErrorKind({ code: 'webauthn_challenge_expired' }, 'passkey')).toBe('passkey_expired');
+    expect(authErrorKind({ code: 'webauthn_challenge_expired' }, 'passkey_add')).toBe('passkey_expired');
+    expect(authErrorKind({ code: 'flow_state_expired' }, 'passkey')).toBe('passkey_expired');
+    // A provider sign-in has no link either; the email link keeps its words.
+    expect(authErrorKind({ code: 'flow_state_expired' }, 'provider')).toBe('provider');
+    expect(authErrorKind({ code: 'flow_state_expired' }, 'link')).toBe('expired');
+    expect(authErrorKind({ code: 'otp_expired', status: 403 }, 'link')).toBe('expired');
+  });
+
+  it('gives Add a passkey and Sign out other devices their own failure words, not the sign-in words', () => {
+    for (const code of ['bad_jwt', 'provider_disabled']) {
+      expect(authErrorKind({ code }, 'passkey_add')).toBe('passkey_not_added');
+      expect(authErrorKind({ code }, 'sign_out_others')).toBe('sign_out_others_failed');
+    }
+    expect(authErrorKind({ error: 'NotSupported' }, 'passkey_add')).toBe('passkey_not_added');
+    expect(authErrorKind({ message: 'boom' }, 'passkey_add')).toBe('passkey_not_added');
+    expect(authErrorKind({ message: 'boom' }, 'sign_out_others')).toBe('sign_out_others_failed');
+    // Sign-in with a passkey keeps the sign-in words, and cancels stay silent.
+    expect(authErrorKind({ message: 'boom' }, 'passkey')).toBe('provider');
+    expect(authErrorKind({ error: 'UserCancelled' }, 'passkey_add')).toBe('cancelled');
+    // A lost connection and a rate limit keep their own words.
+    expect(authErrorKind(new TypeError('Network request failed'), 'passkey_add')).toBe('network');
+    expect(authErrorKind({ status: 429 }, 'sign_out_others')).toBe('rate_limited');
+  });
+
+  it('says nothing about email, links or signing in on the lines an Account action can show', () => {
+    for (const kind of ['passkey_expired', 'passkey_not_added', 'sign_out_others_failed'] as const) {
+      const line = authErrorMessage(kind) ?? '';
+      expect(line.length, kind).toBeGreaterThan(0);
+      expect(line, kind).not.toMatch(/\b(email|link|sign-in|sign in|another way)\b/i);
+      expect(line, kind).not.toBe(authErrorMessage('expired'));
+    }
+  });
+
   it('maps Supabase Auth codes to messages the screens have', () => {
     expect(authErrorKind({ code: 'otp_expired', status: 403 }, 'code')).toBe('wrong_code');
     expect(authErrorKind({ code: 'otp_expired', status: 403 }, 'link')).toBe('expired');

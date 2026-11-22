@@ -152,7 +152,7 @@ function AccountSettings() {
       say(a.passkeyAdded);
       await loadPasskeys();
     } catch (e) {
-      const kind = authErrorKind(e, 'passkey');
+      const kind = authErrorKind(e, 'passkey_add');
       say(null, authErrorMessage(kind));
     } finally {
       setBusy(false);
