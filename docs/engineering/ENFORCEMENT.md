@@ -38,7 +38,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | API-R07 | MUST | idempotency key store | not yet | API-G2 |
 | API-R08 | MUST | device outbox with retry classes | not yet | MOB-02 (WS-09) |
 | API-R09 | MUST | split codes; typed registry plus unregistered-errcode test | split pending PR #32; registry test not yet | DB-09, API-G5 |
-| API-R10 | MUST NOT | value-free validation triggers | not yet | BL-244 |
+| API-R10 | MUST NOT | value-free validation triggers | `supabase/tests/value_free_validation.test.mjs` (VF-1 to VF-12); length limits #1453, children NOT NULL and shape CHECKs BL-1499 (the other NOT NULL, foreign key and enum paths are shown unreachable, VF-9 to VF-11) | BL-244, BL-1499 |
 | API-R11 | MUST | review; previous-release contract test | review only; test not yet | API-G3 |
 | API-R12 | MUST | build headers; `min_supported_build` refusal code | not yet | PDATA-08 (BL-022) |
 | API-R14 | MUST | request id header end to end | not yet | OBS-G1 |
@@ -240,3 +240,17 @@ Gap ids defined here:
 | AIE-R22 | MUST | `isFounderComment`; trusted-author and first-line marker checks (`isTrusted`, `startsWithMarker`) | on develop (#4, #39) | AIE-G7 |
 | AIE-R23 | MUST | `receipt.mjs`; weekly aggregation | on develop (#4, receipts); aggregation not yet | AIE-G8 |
 | AIE-R24 | MUST | founder approval of `agents/roster.json` (CODEOWNERS); review | on develop (#4) | none |
+| AIE-R32 | MUST | review; stale-review delta print proposed in #1149 (a patch under `docs/ops/proposed/`, not applied) | review only | none |
+| AIE-R33 | MUST | review | review only | none |
+| AIE-R34 | MUST | `merge-queue.mjs` is the reader of record; ad hoc scripts by review | not yet | AIE-G14 |
+| AIE-R35 | MUST | `securityLensHits` in `merge-queue.mjs` (#1081); review | on develop (#1081) for the check; planning review only | none |
+| AIE-R36 | MUST | review-gate skill; review | review only | none |
+| AIE-R37 | MUST | review | review only | none |
+| AIE-R38 | MUST | review | not yet | AIE-G15 |
+| AIE-R39 | MUST | weekly aggregation (AIE-R23) | not yet | AIE-G8 |
+| AIE-R40 | MUST | `merge-queue.mjs` NEEDS-UPDATE verdict (#1356); review | on `develop` since #1356; advisory output, not a blocking check | AIE-G16 |
+| AIE-R41 | MUST | review | not yet | AIE-G17 |
+| AIE-R42 | MUST | reviewer brief; review | review only | none |
+| AIE-R43 | MUST | review | not yet | AIE-G18 |
+
+Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in `09a-review-and-merge-practice.md`): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.

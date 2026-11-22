@@ -5,6 +5,28 @@ Owner: `privacy`. Written for the founder, `product`, `mobile`, `design` and cou
 Nothing here is legal advice; every legal or store reading is "counsel must confirm".
 Fictional family Asha only. The founder's reference screenshots are not in the repo and are described only in general terms: no names, places, faces or venues appear here.
 
+## Reconciliation at 22 Nov 2026 (read this first)
+
+Status of this file: PROPOSED, and partly superseded. This section was added on 22 Nov against `develop` (head `86eccfa0` for the original read; reconciled with `origin/develop` on 22 Nov). I decided nothing and invented no privacy position. Each row below only points at a ruling already on `develop`. Where the ruling and the body of this file differ, the ruling wins and the body text is history. Counsel has not read any of it, and nothing here is legal advice.
+
+| Part of this file | Now | Ruling and where it is |
+|---|---|---|
+| Section 0 line 6, section 11 and the tab-position talk (default, second, centre; "a fourth tab reverses IA-FINAL") | SUPERSEDED. Tab order is Home, Moments, Book, Me, and Home is the landing tab. The tab name is Moments (D-164, #1281). Council ruling, not the founder's words | D-165 item 3 (`docs/DECISIONS.md`); PRD 28 |
+| Section 6 rows on "the tab ships after 1.0" and "default tab asks on first screen" | SUPERSEDED on timing. The first release of Moments includes the library read (Route B). The K-02 point still holds: no ask before the first saved letter, and Home is the landing tab, so no library doorway is on the first screen | PRD 28 RV-17 and the founder's ruling quoted there; D-165 item 3 |
+| Sections 2 and 4, Route A as the way to learn from the screenshots | SUPERSEDED as the lead route. Route B ships first. Route A stays a later optional door, with only picture and video items kept and every other item type dropped at the boundary. My "Route B first" default for CQ-8 matches | PRD 28 RV-17, NS-53-R82, H-3 |
+| Sections 4 and 5, "no machine place, no map tile" and Never "a venue or street name from a lookup" | SUPERSEDED as a recommendation. Places and special occasions are in, through the place pipeline in PRD 28 section 7a.1, with release gate G8 on the data flow and no map tile unless the gated adapter ships. What I could not verify about Apple's geocoder (section 5) is still unverified and is exactly what G8 and counsel must settle. My coordinates-leave-the-phone concern is not withdrawn | PRD 28 RV-18, NS-53-R16, NS-53-R37, NS-53-R43 (the founder: "Places. Special occasions etc all are part of it.") |
+| Section 4, "no title from us" and "never a name" | STANDS. PRD 28 keeps no machine title, caption, person or scene on a card; a date label is a pure function of one timestamp | NS-53-R16, section 2.2 of PRD 28 |
+| Section 10, analytics ("opt-in analytics included") | Corrected in place. Analytics is for every user under D-163 and is off in production until its gates close. The point stands: no event or property may mark a nudge as moment-driven | D-163; CPrivO-15 (consent and id are per person) |
+| Section 3, label stays "Data Not Collected" for Photos or Videos | NARROWED. No whole-app "Data Not Collected" claim while Moments exists. A per-type "Photos or Videos: not collected" line is held until APPLY file 33 is applied and counsel reads it. While `EXPO_PUBLIC_PHOTOS` is off, every 1.0 surface says nothing about pictures | CPrivO-10, CPrivO-12 (`docs/agents/exec/RULINGS.md`) |
+| Sections 7 and 10, ask and notification permission placement | CONSISTENT. Ask on the parent's tap, after the first saved letter, with a no-permission fallback | D-165 item 5 ("Not now" on the card), PRD 28 permission rows; CPrivO-9 |
+| Section 10, the neutral local nudge wording | The lock-screen body for day, month-note and birthday reminders is the neutral "Whenever you have a minute." (PROPOSED wording, with names off by default). Nothing in a notification names a kind of day, a child, an age or a picture. My points 2 and 3 (no place, count or library identifier in a payload) fit this. My point 5 (identical-words form) is not ruled on | CPrivO-9 |
+| Section 6 and CQ-1, "reversal of BL-1305" | Pointed at conditions. Before `EXPO_PUBLIC_PHOTOS` is on in any store build, the twelve-row table must be green, including the closed bucket migration, deletion and export of pictures, and two lens reviews. Whether and when photos ship is the founder's | CR-146 |
+| Pending picture on an account switch (not in this file) | Add to the Never list: a chosen but unkept picture is discarded on every change of the signed-in person | CPrivO-11 |
+
+Still open and not decided by any ruling I read: CQ-2 to CQ-5 and CQ-8 to CQ-15 (counsel); whether showing a nudge whose timing comes from library metadata is acceptable (CQ-11, CQ-12; PRD 28 and NS-51-R11 carry the neutral form); the engagement claim (not measured). The value-prop pair in D-165 item 1 is unpublished until counsel answers packet Q130; this file does not use it.
+
+Proposed edit for the founder to own, not made here: if a reader needs one list of what is superseded, `product` can fold this table into PRD 28 section 6 (reversals). I did not edit PRD 28 (not my file).
+
 ## 0. What was asked, and the short answer
 
 The founder (20 Nov, verbatim): "Basically learn from this and do what this does in a smarter way and relevant to my usecase. This is really critical for me. Doesn't need to be a half sheet but this can be one new tab like explore etc or suitable word." And later: "The default tab can be showcasing value props nicely and if not given permission for your photos then get that permission. If you gave them show relevant things like screenshots I provided."
@@ -67,7 +89,7 @@ What Route A gives the founder: the look and spread of suggestions without any o
 
 ## 3. Route B: our own on-device read (PhotoKit, limited access honoured)
 
-What it is: NS-51 (Photo moments) and the memory-library rulings. Our code, after the parent taps "Turn on" and answers Apple's own sheet (limited or full), reads only each picture's creation date and a system identifier (NS-51-R5), builds at most 30 day-groups on the phone (R6, R7), shows the parent's own pictures as thumbnails with multi-select (R9), and nothing leaves the phone (R26). Limited access works the same way and is never nagged (R3, R18, R19). Thumbnails come from the system with network off (R21, UNVERIFIED that this yields a local thumbnail).
+What it is: NS-51 (the pictures feature) and the memory-library rulings. Our code, after the parent taps "Turn on" and answers Apple's own sheet (limited or full), reads only each picture's creation date and a system identifier (NS-51-R5), builds at most 30 day-groups on the phone (R6, R7), shows the parent's own pictures as thumbnails with multi-select (R9), and nothing leaves the phone (R26). Limited access works the same way and is never nagged (R3, R18, R19). Thumbnails come from the system with network off (R21, UNVERIFIED that this yields a local thumbnail).
 
 Permission and strings: needs `NSPhotoLibraryUsageDescription` (A8), which BL-1305 and NS-49-R25 forbid in any 1.x build. The picker-only path (`PHPickerViewController`) needs neither (A8) and is what the app uses today.
 
@@ -112,8 +134,8 @@ This list is my reading of the repo. None of these is changed by this PR. Each n
 | Earlier ruling | Where | What the new direction does to it |
 |---|---|---|
 | BL-1305: no photo-library usage string and no PhotoKit call in any 1.x build, and a build-config test that fails on either | `docs/BACKLOG.md` BL-1305; NS-49-R25; `g6-production-flags-off.test.ts`; `preflight-forbidden-native.test.ts` | A tab that asks for the library and shows days needs Route B in 1.x. Reversal. Route A also trips the g6 test (entitlement) |
-| Photo moments is drop C, after 1.0 is approved, spike first | Q-PM-7, CL-052 | A default tab means it ships with the landing experience. Reversal of timing |
-| NS-51-R1: no other screen, slip or onboarding step asks for library access; the ask is only on the Photo moments row after one sentence | `27-photo-moments-and-media.md` | A landing tab that asks puts a second doorway on the first screen a parent sees. Reversal unless the ask is the same sentence-then-tap pattern on this tab |
+| The pictures feature (NS-51) is drop C, after 1.0 is approved, spike first | Q-PM-7, CL-052 | A default tab means it ships with the landing experience. Reversal of timing |
+| NS-51-R1: no other screen, slip or onboarding step asks for library access; the ask is only on the Pictures row after one sentence | `27-photo-moments-and-media.md` | A landing tab that asks puts a second doorway on the first screen a parent sees. Reversal unless the ask is the same sentence-then-tap pattern on this tab |
 | NS-51-R8: the capture menu offers only the newest moment, never a list, a count or an older one | same | A "Recent, newest first" list of days is a list and shows older days. Reversal |
 | NS-51-R9 and "ML-6" (as the founder's brief states it): a moment card shows a date, never a place or a thumbnail; the sheet has no title, place or count. Written rule found: NX-39-R16 | `27` R9; `NX-39` R16 | Thumbnails on the tab and any place reverse it. My recommendation keeps "no place, no title" and reverses only "no thumbnail", and only inside the parent-opened tab |
 | Q-PM-5 and CL-050: place names off | `27` | Only reversed if the founder wants a place. Recommended: not reversed |
@@ -136,7 +158,7 @@ Proposed behaviour (all PROPOSED):
 3. Limited access works exactly like full (NS-51-R3, R18). Denied or restricted shows one calm line, "Open Settings" only when the parent looks at it, no second system ask (R19).
 4. The fallback is always there: "Choose a picture" through the system picker, which needs no permission (A8), and the existing start-from-a-picture flow. So the parent who declines loses nothing they had.
 5. Before the first saved letter the tab does not ask. Either it is not the default landing yet, or it shows the value page with no ask. That keeps K-02 for a new parent. After the first letter it can be the default. The founder decides whether to lift K-02; this keeps it.
-6. Route A needs no library permission, so none of steps 2 to 4 applies to it; the parent sees Apple's own once-per-device sheet (A3) on first open. If both routes ship, the tab should offer one clear button per route or choose one, so the parent is not shown two different consent moments back to back (counsel question CQ-8).
+6. Route A needs no library permission, so none of steps 2 to 4 applies to it; the parent sees Apple's own once-per-device sheet (A3) only after the parent taps, and only after the first saved letter. If both routes ship, the tab should offer one clear button per route or choose one, so the parent is not shown two different consent moments back to back (counsel question CQ-8).
 
 What the App Privacy label says:
 - Route A only: Photos or Videos and Location not collected, if only the picked pictures are stored on the phone. No usage string.
@@ -165,13 +187,13 @@ What the App Privacy label says:
 - `mobile`: nothing to build from this document. Any build starts only after the founder owns the reversals and each card row is amended in its own PR.
 - `analytics`: any event for the tab carries no date, count, place or picture property; I will review events when they exist.
 - `data-architect`: if a parent-typed place needs a column, it is theirs to place and class.
-- `security`: threat model for thumbnails in the app switcher and screenshots (NS-51-R25) applies to a default tab as it does to the Photo moments sheet.
+- `security`: threat model for thumbnails in the app switcher and screenshots (NS-51-R25) applies to a default tab as it does to the pictures sheet.
 
 Content-rule check on this file: no em or en dashes, curly quotes, ellipsis characters or emoji; no model names.
 
 ## 10. Nudges driven by library moments: push and email
 
-Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can be second tab or centre tab [cut] this is what would bring engagement... And this would influence email nudges and push notifications nudges not just this app feed."
+Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can be second tab or centre tab [cut] this is what would bring engagement [cut] And this would influence email nudges and push notifications nudges not just this app feed."
 
 Standing rulings this meets. The coordinator cites "ML-3: no push from library data". I did not find a row with that id; the text matches NX-39 ruling 3, "No notification is ever derived from the library", with its reason in the NX-39 decision table: "A notification that exists because of a library read discloses a derived fact by existing, whatever its words", and K1 ("No photo in a notification, widget, lock screen or analytics", extended to place, count and any library-derived notification at all). `product` should confirm the ML numbering. One newer row already cuts into this: NS-51-R11 (20 Nov, CL-053 closed Q-PM-8) lets a moment be a ranked source of the evening reminder with one neutral title and body, planned only while the app is open. So the position today is: a neutral local nudge is written into NS-51; NX-39's flat ban still stands in its own file. I treat the NX-39 ban as the standing ruling and NS-51-R11 as a narrow, already-proposed exception that the founder has not been shown as a reversal.
 
@@ -181,9 +203,9 @@ What a compliant on-device local notification would be (PROPOSED; all of it alre
 1. Scheduled by the phone itself, never by the server, and only while the app is open (no background mode; Q-PM-8). A weekend's pictures taken after the last open do not prompt.
 2. Fixed neutral title and body, the same words used for hidden previews. No thumbnail or attachment, no place, no count, no date range, no "your pictures". Words are `content`'s and `legal`'s; nothing here is final copy.
 3. Nothing about the moment in the notification payload: a tap opens the tab, never a particular day or picture id. The payload carries no identifier from the library (a library identifier in a payload is a leak into the notification system and any log of it).
-4. Counts inside the one-a-day budget with the other evening reminders (NS-32-R1), is skipped for a quiet or hidden book, silenced by a letter already made that day (NS-51-R13), off when Photo moments is off or paused (R15, R16).
+4. Counts inside the one-a-day budget with the other evening reminders (NS-32-R1), is skipped for a quiet or hidden book, silenced by a letter already made that day (NS-51-R13), off when pictures are off or paused (R15, R16).
 5. Stricter than NS-51-R11, proposed: the moment nudge may only take the slot of the ordinary evening reminder and use the ordinary reminder's exact words, so that its existence tells a lock-screen watcher nothing about pictures. This answers the NX-39 point that a notification discloses a fact by existing. It is not a guarantee: the parent could still infer from a pattern. Counsel and the founder decide whether the neutral-words version is enough or whether the identical-words version is the only acceptable one.
-6. No analytics event, property, bucket or insight may mark a nudge as moment-driven. A "moment nudge shown" event is a library-derived fact leaving the phone (opt-in analytics included). Count it as an ordinary evening nudge. This extends NS-51-R12.
+6. No analytics event, property, bucket or insight may mark a nudge as moment-driven. A "moment nudge shown" event is a library-derived fact leaving the phone (the D-163 analytics path included). Count it as an ordinary evening nudge. This extends NS-51-R12.
 7. The notification permission is the existing reminder ask, after the first saved letter (K-02). The library tab does not ask for it.
 
 App Review and label implications:

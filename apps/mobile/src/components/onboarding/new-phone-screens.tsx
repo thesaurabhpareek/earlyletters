@@ -17,6 +17,8 @@ import { capabilities } from '@/lib/capabilities';
 import { heldScreenModel } from '@/lib/first-run/held-screen.logic';
 import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
+import { RevocationWaitLine } from '@/lib/auth/revocation-wait-line';
+import { useAuth } from '@/lib/auth/session-provider';
 import { useArrival } from '@/lib/first-run/use-arrival';
 
 /**
@@ -51,9 +53,12 @@ function Arrives({ title, screen, children }: { title: string; screen: string; c
  */
 export function OpeningBookScreen({ lettersComing }: { lettersComing: boolean }) {
   const t = authCopy.newPhone;
+  // BL-1461: a revoked Apple sign-in noticed at launch waits for unsent letters; after a short delay the line says why.
+  const { state } = useAuth();
   return (
     <Arrives title={t.loading} screen="opening">
       <StateScreen kind="loading" title={t.loading} body={lettersComing ? t.loadingBody : undefined} />
+      <RevocationWaitLine state={state} />
     </Arrives>
   );
 }

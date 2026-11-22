@@ -244,6 +244,30 @@ describe('[B5-9] the signed-in account\'s old token rows move to the Keychain on
     for (const s of spies) s.mockRestore();
   });
 
+  it('sign-out, as the provider runs it: the account\'s file closes and goes, its Keychain tokens go, another account\'s stay; a switch is pruned by the settled sweep', async () => {
+    oldFileWithToken(FILE, null);
+    oldFileWithToken(AVI_FILE, null);
+    const { m, kc, files } = await run();
+    const tv = await import('../src/lib/backup/token-vault');
+    await tv.createTokenStore(ASHA, kc).set(ENTRY, 'asha-token');
+    await tv.createTokenStore(AVI, kc).set(ENTRY, 'avi-token');
+    const closed: (string | null)[] = [];
+    files.registerBackupHandleCloser((id) => void closed.push(id));
+    // the effect's two calls when `before` (Asha) is no longer the signed-in user
+    files.endBackupFileFor(ASHA);
+    await tv.removeBackupTokensFor(ASHA);
+    expect(closed).toEqual([ASHA]);
+    expect(h.disk.files.has(`${h.disk.documents}SQLite/${FILE}`)).toBe(false);
+    expect(h.disk.files.has(`${h.disk.documents}SQLite/${AVI_FILE}`)).toBe(true);
+    expect([await tv.createTokenStore(ASHA, kc).get(ENTRY), await tv.createTokenStore(AVI, kc).get(ENTRY)]).toEqual([null, 'avi-token']);
+    // a kill before the removal above: the next settled sweep, for Avi, prunes Asha's lingering token
+    await tv.createTokenStore(ASHA, kc).set(ENTRY, 'asha-token-again');
+    files.deleteBackupFilesExcept(AVI);
+    await m.settleBackupTokens(AVI);
+    expect(await tv.createTokenStore(ASHA, kc).get(ENTRY)).toBeNull();
+    expect(await tv.createTokenStore(AVI, kc).get(ENTRY)).toBe('avi-token');
+  });
+
   it('prune and move run from the settled sweep, after the file sweep; the gate no longer starts the move', () => {
     const provider = readFileSync(join(__dirname, '../src/lib/auth/session-provider.tsx'), 'utf8');
     expect(provider).toMatch(/deleteBackupFilesExcept\(sweep\.keep\);[^]*?void settleBackupTokens\(sweep\.keep\);/);

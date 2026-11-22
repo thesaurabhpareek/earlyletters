@@ -1,15 +1,18 @@
 /**
  * What the Keychain said about the stored session at launch, and what that allows the backup-file sweep to do (B5-5).
- * `none` is only a read that SUCCEEDED and found no session. A throw (a Keychain that is not readable yet, such as
- * before first unlock, or a transient error) and a build with no Supabase client are `unavailable`: they say nothing
- * about whether someone is signed in, so they must never delete a signed-in account's file.
+ * BL-1198 (CISO ruling, 21 Nov): a Keychain that has not unlocked yet may answer null instead of throwing, and a null
+ * cannot be told from a session that is really gone. So a null, an empty value and a throw are all `unavailable`
+ * (unknown, not signed out), as is a build with no Supabase client: they must never delete a signed-in account's file.
+ * The next settled run asks again (`backupSweepFor` returns `run: false` until then). The only positive signed-out
+ * signals are a sign-out seen live (`before` was a user) and, for now, a stored blob that parses with no string user id
+ * (`none`, which BL-1199 makes unknown too).
  */
 export type StoredSessionRead = { kind: 'found'; userId: string } | { kind: 'none' } | { kind: 'unavailable' };
 
 export async function readStoredSession(getItem: () => Promise<string | null>): Promise<StoredSessionRead> {
   try {
     const raw = await getItem();
-    if (!raw) return { kind: 'none' };
+    if (!raw) return { kind: 'unavailable' }; // null: locked or absent, unknown (BL-1198)
     const id = (JSON.parse(raw) as { user?: { id?: unknown } }).user?.id;
     return typeof id === 'string' ? { kind: 'found', userId: id } : { kind: 'none' };
   } catch {

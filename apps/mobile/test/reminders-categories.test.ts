@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { en } from '@scribe/content';
+import { en, features } from '@scribe/content';
 import { REMINDER_CATEGORY, REMINDER_INTERRUPTION_LEVEL, registerReminderCategory } from '../src/lib/reminders/categories';
 import { reminderContent } from '../src/lib/reminders/payload';
 import { DEFAULT_PREFS, planReminders, type PlannedNotification, type PlannerChild } from '../src/lib/reminders/planner';
@@ -110,7 +110,7 @@ describe('[NS-32-R12] lock screen stays plain', () => {
     const notes = plans(false).filter((n) => n.kind !== 'evening');
     for (const n of notes) {
       expect(n.title, n.id).toBe('Something for the book today');
-      expect(n.body, n.id).toBe('A day you chose to mark. A few words, if you like.');
+      expect(n.body, n.id).toBe('Whenever you have a minute.');
     }
   });
 
@@ -123,9 +123,27 @@ describe('[NS-32-R12] lock screen stays plain', () => {
 
 describe('[NS-13-R24] names off carries no age', () => {
   it('the lock-screen body key has no {child} and no number', () => {
-    const body = 'A day you chose to mark. A few words, if you like.';
+    const body = 'Whenever you have a minute.';
     expect(body).not.toMatch(/\{child\}|\d/);
     expect(plans(false).filter((n) => n.kind !== 'evening').every((n) => n.body === body)).toBe(true);
+  });
+});
+
+describe('[F-08d] the lock-screen body is neutral and fixed (21 Nov 2026, founder approved)', () => {
+  const FIXED = 'Whenever you have a minute.';
+  const KIND_OR_AGE = /\{|\d|asha|twin|sib|birthday|\bmonth\b|\byear\b|\bday\b|\bnote\b|letters?\b|week/i;
+  it('every names-off day, month and birthday body is exactly the fixed line, with no {child}, age or kind word', () => {
+    const notes = plans(false).filter((n) => n.kind !== 'evening');
+    expect(notes.length).toBeGreaterThan(0);
+    for (const n of notes) {
+      expect(n.body, n.id).toBe(FIXED);
+      expect(n.body, n.id).not.toMatch(KIND_OR_AGE);
+    }
+    const c = features.reminders.neutral;
+    for (const b of [c.lockBody, c.monthOpen.body, c.birthday.body, c.birthdays.body]) {
+      expect(b).toBe(FIXED);
+      expect(b).not.toMatch(KIND_OR_AGE);
+    }
   });
 });
 

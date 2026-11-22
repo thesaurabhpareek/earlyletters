@@ -232,10 +232,12 @@ describe('[B5-5] the sweep never runs on a Keychain read that failed or was unav
   const U = '3f2b8c1e-5d4a-4e7b-9c60-1a2b3c4d5e6f';
   const session = JSON.stringify({ user: { id: U } });
 
-  it('the read is typed: found, none (a successful read), unavailable (a throw)', async () => {
+  it('the read is typed: found, unavailable (a null, an empty value or a throw), none (a blob with no string user id)', async () => {
     const { readStoredSession } = await import('../src/lib/auth/stored-session.logic');
     expect(await readStoredSession(async () => session)).toEqual({ kind: 'found', userId: U });
-    expect(await readStoredSession(async () => null)).toEqual({ kind: 'none' });
+    expect(await readStoredSession(async () => null)).toEqual({ kind: 'unavailable' }); // BL-1198: a locked Keychain may answer null
+    expect(await readStoredSession(async () => '')).toEqual({ kind: 'unavailable' });
+    expect(await readStoredSession(async () => JSON.stringify({ user: {} }))).toEqual({ kind: 'none' });
     expect(await readStoredSession(async () => { throw new Error('keychain locked'); })).toEqual({ kind: 'unavailable' }); // before first unlock, transient error
   });
 
@@ -244,7 +246,11 @@ describe('[B5-5] the sweep never runs on a Keychain read that failed or was unav
     const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
     put(h.disk, at(FILE), 64);
     put(h.disk, at(`${FILE}-wal`), 64);
-    const reads = [await readStoredSession(async () => { throw new Error('locked'); }), { kind: 'unavailable' as const } /* no client */];
+    const reads = [
+      await readStoredSession(async () => { throw new Error('locked'); }),
+      await readStoredSession(async () => null), // BL-1198: a Keychain that answers null before first unlock
+      { kind: 'unavailable' as const } /* no client */,
+    ];
     for (const read of reads) {
       const plan = backupSweepFor(null, null, read);
       expect(plan).toEqual({ run: false });
@@ -253,7 +259,7 @@ describe('[B5-5] the sweep never runs on a Keychain read that failed or was unav
     }
   });
 
-  it('a successful read with no session sweeps, and a failed delete is retried at the next settled run', async () => {
+  it('a stored blob with no string user id (none) sweeps, and a failed delete is retried at the next settled run', async () => {
     const { backupSweepFor } = await import('../src/lib/auth/stored-session.logic');
     const { deleteBackupFilesExcept } = await import('../src/lib/backup/files');
     put(h.disk, at(FILE), 64);
@@ -270,6 +276,20 @@ describe('[B5-5] the sweep never runs on a Keychain read that failed or was unav
     const { backupSweepFor } = await import('../src/lib/auth/stored-session.logic');
     expect(backupSweepFor(U, null, { kind: 'unavailable' })).toEqual({ run: true, keep: U });
     expect(backupSweepFor(null, U, { kind: 'unavailable' })).toEqual({ run: true, keep: null });
+  });
+
+  it('BL-1198: a runtime session read that is null or throws only stops the service; the state file stays', async () => {
+    const { createAccountHost, sameAccountOnly, AccountChanged } = await import('../src/lib/backup/account');
+    put(h.disk, at(FILE), 64);
+    const host = createAccountHost<{ stop(): Promise<void> }>(() => ({ stop: async () => {} }));
+    await host.forAccount(U, U);
+    expect(await host.forAccount(null, U)).toBeNull(); // the session read said null (a locked Keychain looks like this)
+    expect(host.current()).toBeNull();
+    for (const read of [async () => null, async () => { throw new Error('locked'); }]) {
+      const api = sameAccountOnly({ ping: async () => 1 }, read, U);
+      await expect(api.ping()).rejects.toBeInstanceOf(AccountChanged); // a stop, not a sign-out
+    }
+    expect(h.disk.files.has(at(FILE))).toBe(true);
   });
 
   it('the restore effect stores the real read (not a constant) before it dispatches RESTORED (a source match: the provider is not rendered here)', () => {
