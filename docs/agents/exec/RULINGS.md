@@ -590,3 +590,24 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 - Way back: revert PR #1448. The migration file, its tests and File 39 go, and develop returns to the state before it.
 - Revisit when: any condition above is met, counsel answers Q57, or the blocked list changes.
 - Signed: Chief Compliance Officer (Claude role, not counsel)
+
+### CR-149 The merge queue's NEEDS-UPDATE rule is relaxed for PRs that share no files with develop (22 Nov 2026, Karma via the council; with ops, security and QA)
+- Question: develop moves faster than required CI finishes, so the strict NEEDS-UPDATE rule (#1356) keeps sending PRs back for a branch update that CI never lets them finish. Which PRs may merge without that update?
+- Tier and type: T1 process ruling; amends the merge gate of #1356 and CR-73 for this one rule; complicated
+- Options considered: keep the strict workspace rule; file-level overlap plus a clean `git merge-tree` for every PR; the same, but only for docs-only and test-only PRs, with CR-70 paths kept strict
+- Ruling: I relax the rule for a PR that meets all of these:
+  1. No file in common with the files changed on develop since the PR's merge base (a rename counts on both sides).
+  2. `git merge-tree --write-tree` against current develop is clean.
+  3. The required checks are green at the PR's head, and two counted reviews are on that head.
+  4. The PR touches no CR-70 path (auth, billing, the analytics allowlist, `supabase/**`, `.github/**`, `scripts/agents/**`, `.claude/**`, `agents/roster.json`, `docs/agents/**`, and also `apps/mobile/src/lib/db/**`, `packages/analytics/**`, `app.config.ts`, `eas.json` and `CODEOWNERS`, wherever they sit in the tree), no lockfile, no `package.json` dependency change, no native file and no migration. A native file is any path in `NATIVE_PATHS` of `scripts/agents/merge-queue.mjs` (CR-74): `apps/mobile/ios/**`, `apps/mobile/modules/**`, `apps/mobile/app.config.*`, `apps/mobile/eas.json` and the root `package-lock.json`.
+  5. The merge is sha-pinned, and I re-read the develop sha just before I merge and run the overlap and merge-tree checks again if it moved.
+  - A source PR (not test-only, not docs-only; I decide that from the changed paths, never from a label or a title) also needs its own tests and `tsc` to pass on the scratch merge.
+  - Any other PR keeps the strict workspace rule.
+  - I apply this by hand until a PR teaches `scripts/agents/merge-queue.mjs` to do it, behind a flag so the strict rule comes back by flipping the flag.
+- Why: measured on 22 Nov, develop took 46 commits in 3 hours (about one every 4 minutes), and required CI takes 35 minutes or more with 50 to 70 runs queued. The strict rule livelocked nine PRs that had two passes and green checks. Eight of the nine shared no files with develop's new commits, and all nine merged cleanly in `git merge-tree`. Council: ops recommended file-level overlap plus merge-tree; security (CISO lens) wanted CR-70 paths kept strict and only docs-only and test-only PRs relaxed; QA said test-only and docs-only are safe, and source PRs need a full-suite run on the merged result. Rule 4 keeps security's line, and the extra source-PR check is QA's.
+- Misses accepted: a semantic conflict between files that do not overlap, and whole-repo suites and end-to-end runs that only CI runs. Develop's own CI is the backstop.
+- First use: #1381 (`apps/mobile/test/asks-keep-book-store.test.ts`), #1384 (`apps/mobile/test/app-lock-cover-render.test.ts`), #1452 (`apps/mobile/e2e-web/j13-reminders.flow.ts`) and #1444 (`docs/ops/proposed/merge-queue-docs-file-overlap.md`), merged 22 Nov. Each was a test-only or docs-only proposal with zero overlap, a clean merge-tree and the required checks green.
+- Door: two-way
+- Way back: if develop goes red twice in one day because of a PR merged under this rule, I return to the strict rule and pause merging under this one.
+- Revisit when: `scripts/agents/merge-queue.mjs` implements it, or after 48 hours, whichever is first.
+- Signed: Karma (CTO)
