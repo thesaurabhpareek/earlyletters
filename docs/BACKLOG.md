@@ -8866,17 +8866,17 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Scope: move the comparison into `apps/mobile/src/lib/first-run/handoff.logic.ts`, import it in the screen and the test, and drop the extraction.
 - Done when: the test imports the real function and a mutant of it fails.
 
-## Follow-ups from the daily-asks ruling and CCO-17 (BL-1674 to BL-1675; filed by the product agent, docs only)
+## Follow-ups from the daily-asks ruling and CCO-17 (BL-1743 to BL-1744; filed by the product agent, docs only)
 
-#### BL-1674 Two setup asks a day: change `nextAsk` and its tests to the ruled limit
+#### BL-1743 Two setup asks a day: change `nextAsk` and its tests to the ruled limit
 - Status: ready. Mode: agent. Owner: mobile engineer (asks). Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: PRD-REQ-001 Rev (`docs/prd/v2/features/F02-account.md`, the PRD-REQ-001 row and 6.1), principle 10 (`docs/prd/v2/03-goals-and-principles.md`); ruling Q1 in `docs/design/proposed/settings-ia-and-daily-asks-2026-11-22.md` (Karma, on founder delegation, 22 Nov 2026).
 - Problem and evidence: `apps/mobile/src/lib/asks/next-ask.logic.ts:79` returns null when `askShownToday`, so the code holds one ask a day. The ruling is up to two setup asks a day, at most one per session, at most one OS-alert or consent ask a day, never during recording, Review or export.
-- Scope: replace the `askShownToday` flag with a count of asks shown today and a count of OS-alert or consent asks shown today (stored the same way, on the phone only); keep `askShownThisSession`; list which `NextAsk` values are OS-alert or consent asks in one constant. Update `test/next-ask.test.ts`. No new ask is added, and the order table is unchanged.
+- Scope: replace the `askShownToday` flag with a count of asks shown today and a count of OS-alert or consent asks shown today (stored the same way, on the phone only); keep `askShownThisSession`; list which `NextAsk` values are OS-alert or consent asks in one constant. PROPOSED list for the engineer to confirm against the code and the 6.1 table: OS-alert or consent asks are the reminder prime and its notification permission, Keep the book (sign-in with Terms, including the Apple sign-in sheet), sensitive-data consent, analytics consent, and, if they are built, the photo permission behind the Home picture card and any Apple Family Sharing prompt. Proposed as not counted against the OS-alert or consent limit: the microphone prompt (the person taps Speak) and the 18+ gate (first launch, before any letter); recording backup is a setup ask but not an OS alert. Confirm each, and record any change in this row. Update `test/next-ask.test.ts`. No new ask is added, and the order table is unchanged.
 - Done when: tests show a second ask the same day after a session change, no third ask, no second OS-alert or consent ask in a day, and still none in the same session.
 
-#### BL-1675 Age step "No" during the 24-hour closure: keep reading and Save a copy reachable, or record why not (CCO-17)
+#### BL-1744 Age step "No" during the 24-hour closure: keep reading and Save a copy reachable, or record why not (CCO-17)
 - Status: needs-decision (the QA finding in `docs/qa/run-sheets/BL-487-age-no-closure-reachability.md` is that read, play and Save a copy are unreachable during the closure; CCO-17 calls that the defect, and the fix touches LEGAL-REQ-002, which is counsel's). Mode: pair. Owner: mobile engineer, legal. Milestone: M15. Size: S. Depends on: BL-487.
 - Priority: Medium. Gate: counsel reads before any change to the stop screen.
 - Satisfies: Refines BL-487; cited: LEGAL-REQ-002 (`docs/legal/ENGINEERING_REQUIREMENTS.md:29-35`), CCO-17 in `docs/agents/exec/RULINGS.md`.

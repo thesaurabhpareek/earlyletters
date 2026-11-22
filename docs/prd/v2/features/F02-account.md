@@ -102,7 +102,7 @@ Re-offer rule: Keep the book never shows in the same session as another ask, nev
 - A session starts at a cold start, or at a return to the foreground after 30 minutes or more away [R].
 - At most one ask per session and two setup asks per calendar day, of which at most one is an OS-alert or consent ask; never during recording, Review or export (ruling 22 Nov 2026, replacing one per day).
 
-Daily limit (ruling 22 Nov 2026, proposed in `docs/design/proposed/settings-ia-and-daily-asks-2026-11-22.md`, Q1): the rows below share two setup asks a day, at most one per session, and at most one OS-alert or consent ask a day. Which rows are OS-alert or consent asks is for the sequencer task to list. The Home picture card counts inside the two until #1567 Q7 is answered.
+Daily limit (ruling 22 Nov 2026, proposed in `docs/design/proposed/settings-ia-and-daily-asks-2026-11-22.md`, Q1): the rows below share two setup asks a day, at most one per session, and at most one OS-alert or consent ask a day. Never during recording, Review or export. PROPOSED, for the engineer to confirm in BL-1743: the OS-alert or consent asks are the reminder prime and notification permission, Keep the book (including the Apple sign-in sheet), sensitive-data consent and analytics consent, plus the photo permission (if the Home picture card is built) and any Apple Family Sharing prompt; the microphone prompt follows the person's own tap on Speak and the 18+ gate comes before any letter, so both are proposed as outside the daily count. The Home picture card counts inside the two until #1567 Q7 is answered.
 
 | Ask | Earliest | Owner |
 |---|---|---|
