@@ -7,6 +7,7 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import { ScribeFiles } from '../../../modules/scribe-files';
+import { readBackFlag } from '../backup/readback';
 import { type MomentsFile, parseMoments, serializeMoments } from './store.logic';
 
 export const MOMENTS_FOLDER = 'moments';
@@ -41,13 +42,12 @@ export function sweepMomentsTemp(port: MomentsPort): void {
   }
 }
 
-export function readMoments(port: MomentsPort, owner: string): MomentsRead {
+export function readMoments(port: MomentsPort, owner: string, moment: 'open' | 'restore' = 'open'): MomentsRead {
   try {
     if (!port.exists(MOMENTS_FILE)) return { state: 'empty' };
-    if (!port.isExcluded(MOMENTS_FILE)) {
-      port.remove(MOMENTS_FILE);
-      return { state: 'unavailable' };
-    }
+    const flag = readBackFlag(port, MOMENTS_FILE, moment);
+    if ('cannotRead' in flag) return { state: 'unreadable' }; // kept: a read that threw is not a wrong flag
+    if (!flag.ok) return { state: 'unavailable' };
     const parsed = parseMoments(port.read(MOMENTS_FILE));
     if (parsed.kind === 'corrupt') {
       port.remove(MOMENTS_FILE); // the tab starts clean, no message (R221)
@@ -58,6 +58,11 @@ export function readMoments(port: MomentsPort, owner: string): MomentsRead {
   } catch {
     return { state: 'unreadable' };
   }
+}
+
+/** After a restore (R42, R43): the flag is read back first; a file that lost it came with the restore, is removed and never read. */
+export function readMomentsAfterRestore(port: MomentsPort, owner: string): MomentsRead {
+  return readMoments(port, owner, 'restore');
 }
 
 /** 'unavailable' means 0 sensitive bytes were left: after the rename a failure deletes the final file too. */
@@ -73,7 +78,7 @@ export async function writeMoments(port: MomentsPort, file: MomentsFile): Promis
     port.write(MOMENTS_TMP, serializeMoments(file));
     await port.rename(MOMENTS_TMP, MOMENTS_FILE);
     renamed = true;
-    if (port.isExcluded(MOMENTS_FILE)) return 'ok';
+    if (readBackFlag(port, MOMENTS_FILE, 'replace').ok) return 'ok';
     port.write(MOMENTS_FILE, '');
   } catch {
     // fall through: nothing sensitive may stay
