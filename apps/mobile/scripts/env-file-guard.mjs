@@ -12,7 +12,14 @@
  * value: the two alpha profiles leave it unset on purpose, so the EAS `preview` environment decides, and a file that filled
  * it in would show the row in a build meant to hide it. A drill gets the row by passing it to Metro in the shell
  * (docs/qa/run-sheets/AL-07-account-deletion.md "Needs first"), never through a file.
+ *
+ * Only plain `KEY=value` lines are parsed: `export KEY=value` is unparsable here (it is reported as a line number, and so is a FAIL).
+ * A FAIL line never carries text from the file except an `EXPO_PUBLIC_*` name of at most 64 characters; anything else is
+ * reported as `<unparsable line N>`, because a secret can sit in the name position (`sb_secret_...=1`).
  */
+
+/** The only shape of name that is ever printed: a public build switch, short, upper case. */
+const PRINTABLE_NAME = /^EXPO_PUBLIC_[A-Z0-9_]{1,64}$/;
 
 /** The `KEY=value` lines of an env file, without blanks and comments. */
 export function envFileLines(text) {
@@ -28,12 +35,20 @@ export function envFileLines(text) {
  */
 export function envFileProblems(file, text) {
   const bad = [];
-  for (const line of envFileLines(text)) {
-    const [k, ...v] = line.split('=');
-    if (k === 'EXPO_PUBLIC_APP_ENV') continue;
-    if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
-    if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
-    bad.push(`${file}: ${k}`);
-  }
+  String(text)
+    .split('\n')
+    .forEach((raw, i) => {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) return;
+      const eq = line.indexOf('=');
+      const k = eq === -1 ? '' : line.slice(0, eq).trim();
+      const v = eq === -1 ? '' : line.slice(eq + 1).trim();
+      // Never echo content from a line: a name is printed only when there is an "=" and it has the EXPO_PUBLIC_* shape.
+      const named = eq !== -1 && PRINTABLE_NAME.test(k);
+      if (named && k === 'EXPO_PUBLIC_APP_ENV') return;
+      if (named && k === 'EXPO_PUBLIC_SERVER_FEATURES' && v === 'off') return;
+      if (named && k === 'EXPO_PUBLIC_ANALYTICS' && v === 'off') return;
+      bad.push(`${file}: ${named ? k : `<unparsable line ${i + 1}>`}`);
+    });
   return bad;
 }
