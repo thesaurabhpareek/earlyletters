@@ -1,6 +1,6 @@
 # Early Letters (`scribe`) — System Architecture
 
-Status: Proposed, 1 October 2026; **updated 3 October 2026** (see the status box below). Owner: founder. Audience: founder, Claude Code sessions, future engineers.
+Status: Proposed, 1 October 2026; status box refreshed against develop (see below). Owner: founder. Audience: founder, Claude Code sessions, future engineers.
 Every factual claim about a model, library, licence, price or limit cites a page opened on 1 Oct 2026 (see Sources, numbered [S#]). Anything not backed by an opened page is marked **Unverified**. Prices change; re-check before committing money.
 
 > **Status update. Read this before anything below.** Later decisions win over this document where they differ (PRD.md 1.3, `docs/DECISIONS.md`, TDD 01 to 10). Agents must not rebuild what was removed. The rows below were checked against `develop` at `609ef3126`; sections 1 to 12 were not re-verified. A "Conflict" marks a place where two records disagree: it is stated, not resolved.
@@ -20,7 +20,7 @@ Every factual claim about a model, library, licence, price or limit cites a page
 > | AI gateway and cloud transcription (`AIC`, `OAI`, step 3 model pass) | **Not in v1.0.** On-device transcription and rules-only fixes. No AI gateway among `supabase/functions`. The alpha transcribes English only (`EXPO_PUBLIC_ENGLISH_ONLY`) | PRD section 3.0, D-111 item 4 |
 > | Analytics (`OBS`) | PostHog and Sentry, opt-in only, at launch. **Amended 20 Nov 2026 by the founder:** PostHog Cloud is the only vendor, for events and crash reports; no Sentry. Not yet a `DECISIONS.md` row; ADR 0036 (PROPOSED) records it. In-app analytics is off in every build until the founder turns it on (D-124) | D-003, D-124, `docs/analytics/instrumentation/posthog-standard.md:3`, ADR 0036 |
 > | Photos, seals, Find, notification budget, first run, days (new scope, NS-01 to NS-52) | Read `docs/tdd/new-scope/architecture.md` first, and its section 8 for what is built and what is still an open pull request. This document still draws PowerSync, server photos and an AI gateway | `docs/tdd/new-scope/architecture.md`, ADR 0028 to 0035 |
-> | Speech model in the app sandbox | Model in Application Support, excluded from backup (`apps/mobile/src/lib/packs/app-support.ts`); recordings stay in a backed-up directory. Models come only from the signed manifest on `packs.earlyletters.app`, checked against the public keys in `packages/api/src/keys.ts` | ADR 0001, D-033, D-097, D-115 |
+> | Speech model in the app sandbox | Model in Application Support, excluded from backup (`apps/mobile/src/lib/packs/app-support.ts`); recordings stay in a backed-up directory. A download is checked against the signed manifest (`apps/mobile/src/lib/packs/engine.ts`, keys in `packages/api/src/keys.ts`). Source: the default English models use upstream URLs and the other languages use `packs.earlyletters.app` (`apps/mobile/src/lib/models/catalog.ts`); which host serves each in a release build is UNVERIFIED. | ADR 0001, D-033, D-097, D-115 |
 > | Section 7 cost model | See TDD 06 section 4 and TDD 10 section 5.2 for the current estimates (model egress, PowerSync clients) | TDD 06, TDD 10 |
 
 ---
