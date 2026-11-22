@@ -210,7 +210,7 @@ The lifecycle is not a drip. Each row says why there is no email and what carrie
 
 | Stage | Why no email | Where the need is met |
 |---|---|---|
-| C. First letter kept | A congratulation email is a nudge and a promotion; "Onboarding drips" are on the never list | In-app: the saved chip ("Kept in Month 7", or "Kept private.") and the first-letter moment (01 rows 5.17, 13.1) |
+| C. First letter kept | A congratulation email is a nudge and a promotion; "Onboarding drips" are on the never list | In-app: "Kept." and the first-letter moment (01 rows 5.17, 13.1) |
 | D. First week | No day-1, day-3, day-7 tips, no "did you know" tours (CATALOG 12; PRD B F1: "never as nags") | The app teaches in place; local reminders under the budget (03) |
 | E. Habit | Streaks, "N letters this week", badges, progress bars are banned; "It has been a while" is guilt | Local reminders: one a day at most, back-off after 35 days, silence after (NS-13, NS-32; 03) |
 | The other parent wrote | E79: no push; E-5: no notice inside a family | An in-app line on next open (01 row 8.5) |
