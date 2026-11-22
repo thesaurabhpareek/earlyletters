@@ -571,3 +571,24 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 | C1 analytics per person | RULED CPrivO-15 | a row, gated on an SDK | none (latent) |
 | C2 invite token | RULED CISO-2 (mark stored in the Keychain item; cap stays, founder-only) | fix PR; test covers kill and relaunch | none; #1427 is docs |
 | C3 F8 to F11 | RULED CISO-3 (F11 recorded as accepted exposure) | F8 fix PR keyed by requested user and token user | #1428 and #1427 are not blocked |
+
+### CR-149 The merge queue's NEEDS-UPDATE rule is relaxed for PRs that share no files with develop (22 Nov 2026, Karma via the council; with ops, security and QA)
+- Question: develop moves faster than required CI finishes, so the strict NEEDS-UPDATE rule (#1356) keeps sending PRs back for a branch update that CI never lets them finish. Which PRs may merge without that update?
+- Tier and type: T1 process ruling; amends the merge gate of #1356 and CR-73 for this one rule; complicated
+- Options considered: keep the strict workspace rule; file-level overlap plus a clean `git merge-tree` for every PR; the same, but only for docs-only and test-only PRs, with CR-70 paths kept strict
+- Ruling: I relax the rule for a PR that meets all of these:
+  1. No file in common with the files changed on develop since the PR's merge base (a rename counts on both sides).
+  2. `git merge-tree --write-tree` against current develop is clean.
+  3. The required checks are green at the PR's head, and two counted reviews are on that head.
+  4. The PR touches no CR-70 path (auth, billing, the analytics allowlist, `supabase/**`, `.github/**`, `scripts/agents/**`, `.claude/**`, `agents/roster.json`, `docs/agents/**`), no lockfile, no native file and no migration.
+  5. The merge is sha-pinned.
+  - A source PR (not test-only, not docs-only) also needs its own tests and `tsc` to pass on the scratch merge.
+  - Any other PR keeps the strict workspace rule.
+  - I apply this by hand until a PR teaches `scripts/agents/merge-queue.mjs` to do it, behind a flag so the strict rule comes back by flipping the flag.
+- Why: measured on 22 Nov, develop took 46 commits in 3 hours (about one every 4 minutes), and required CI takes 35 minutes or more with 50 to 70 runs queued. The strict rule livelocked nine PRs that had two passes and green checks. Eight of the nine shared no files with develop's new commits, and all nine merged cleanly in `git merge-tree`. Council: ops recommended file-level overlap plus merge-tree; security (CISO lens) wanted CR-70 paths kept strict and only docs-only and test-only PRs relaxed; QA said test-only and docs-only are safe, and source PRs need a full-suite run on the merged result. Rule 4 keeps security's line, and the extra source-PR check is QA's.
+- Misses accepted: a semantic conflict between files that do not overlap, and whole-repo suites and end-to-end runs that only CI runs. Develop's own CI is the backstop.
+- First use: #1381, #1384, #1452 and #1444, merged 22 Nov. Each was a test-only or docs-only proposal with zero overlap, a clean merge-tree and the required checks green.
+- Door: two-way
+- Way back: if develop goes red twice in one day because of a PR merged under this rule, I return to the strict rule and pause merging under this one.
+- Revisit when: `scripts/agents/merge-queue.mjs` implements it, or after 48 hours, whichever is first.
+- Signed: Karma (CTO)
