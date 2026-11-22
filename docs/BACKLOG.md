@@ -7861,7 +7861,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: the values are read from the rules; the card sort result is recorded.
 
 #### BL-1524 Moments: a short burstId column and a non-finite rotateK must not break the day
-- Status: done (PR #1421: a short `burstId` column reads as no burst, `packages/core/test/moments/exclude-near.test.ts`; PR #1417: a non-finite `rotateK` falls back to the rules value rather than 1, `rank.test.ts`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1421: a short `burstId` column reads as no burst, `packages/core/test/moments/exclude-near.test.ts`; PR #1417: a non-finite `rotateK` falls back to the rules value, not 1, `rank.test.ts`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-53 (not re-read here).
 - Problem and evidence: review B on PR #1421 (note N1); reviews A and B on PR #1417 (`selectPicturesDay` throws on `rotateK: NaN`).
@@ -8473,7 +8473,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a test with a quoted-key button name finds the unnamed control or the name, and a mutant that drops the quote handling fails.
 
 #### BL-1623 AX5 strict job: its name and summary must not read as an AX5 pass
-- Status: done (PR #1596: the proposed job name and summary in `docs/ops/proposed/workflows/a11y-evidence.patch` say not AX5 conformance). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: partly done (PR #1596: the workflow name, job name, header comment of `docs/ops/proposed/workflows/a11y-evidence.patch` and the doc carry the sentence; the patch has no summary step, so a future summary should start with it). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review B on PR #1539: a green job named ax5 or a11y-evidence can read as AX5 conformance, but it only fails on unnamed controls and runs emulated screenshots.
@@ -8505,7 +8505,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the evidence file exists with one line per screen.
 
 #### BL-1627 Tonight reads: assert `EXPLAIN QUERY PLAN` uses entries_child for the three new queries
-- Status: done (PR #1589: three EXPLAIN QUERY PLAN assertions in the Tonight read test). Mode: agent. Owner: data architect. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1589: three EXPLAIN QUERY PLAN assertions in the Tonight read test; the mutant half of Done-when was not run). Mode: agent. Owner: data architect. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1541: the perf test is wall-clock only; nothing asserts the plan for `listOccurredBetween`, `latestOccurredOn` or `recentPromptKeys`; `recentPromptKeys` orders by `occurred_on, captured_at, id` and may use a partial sort.
@@ -8830,7 +8830,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Status: proposed (waits for PR #1594, BL-1599, to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: BL-1599.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-1599.
-- Problem and evidence: the unsalted 16-hex truncation that the header of `apps/mobile/src/lib/sha256.ts` describes can be guessed by anyone who holds candidate ids.
+- Problem and evidence: PR #1594's header already says the 16 hex is a label, not a credential; only the wording that the unsalted truncation is guessable by anyone holding candidate ids is missing.
 - Scope: add one sentence to the header saying so; no behaviour change.
 - Done when: the header says it.
 
