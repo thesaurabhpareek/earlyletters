@@ -1,3 +1,5 @@
+Superseded in part by D-165 and PR #1482 (Moments tab shell, merged to `develop`). The tab, its position (second of four) and Home as the landing tab are ruled (CPO-17, D-165 section 1 item 3) and the shell is built, dark behind `EXPO_PUBLIC_MOMENTS_TAB`. What is still open here: Route A (Apple picker) or Route B (our own PhotoKit read), the permission ask, iOS 17.0 or 17.2, and server nudges. Read the 21 Nov sections below with that in mind; where a section says "proposed" about the tab itself, it is history.
+
 Status: PROPOSED (docs only). Updated 22 Nov 2026 against `develop` (see "Update of 22 Nov 2026" below); the body is the 21 Nov text, with the lines that changed marked "Update 22 Nov".
 Date: 21 Nov 2026
 Author: `mobile` (engineering feasibility, for the founder, Karma and `product`)
@@ -20,7 +22,7 @@ Author of this update: a `principal-architect` run owning the PR for this wave. 
 | The tab shows value props or moments | The shell draws one heading and nothing else: no library read, no network call, no native call, no storage. Its label is a placeholder (`tabs.moments ?? tabs.book`) until `content` adds the key | `moments.tsx`; `moments-tab.ts` `momentsTabLabel`; the "placeholder reads no library" test in `moments-tab-shell.test.ts` |
 | A device store for moments is a proposal (section 2.4) | A device-only `moments.json` store has merged: one versioned file in Application Support, excluded from backup and read back, never in `scribe.db`, never exported, one write queue, cleared first on sign-out and Erase everything, a file of another owner never read or overwritten. It holds labels (L4) and logs nothing about them. Its own header marks as UNVERIFIED that a book deleted on another device may leave rows | `apps/mobile/src/lib/moments/store.ts` header, `store-file.ts` header; `apps/mobile/test/moments-store.test.ts` |
 | Route B library read | A TypeScript-only library surface (access, source, types) exists. I did not read its contents, so I make no claim about what it reads | `apps/mobile/src/lib/moments/library/` (PR 9a, #1477) |
-| C3 and C4 stand as collisions with NS-51 | The council ruling CPO-17 item 2 says the first Moments release reads the photo library in 1.0 (places and occasions in, faces and naming people out), with the G6 flags guard amended in the PR that adds the PHAsset use. Item 3: only the photo's own date and place are used. Item 5: no library-timed push and no Moments email in 1.0. This moves the NS-51 "no place, no title" lines this note treats as the baseline. I did not reconcile sections 1 to 2.7 and 9 with it; read them as the 21 Nov analysis, to be re-read against CPO-17 and `docs/product/prd/28-moments-tab.md` | `docs/agents/exec/RULINGS.md` CPO-17 |
+| C3 and C4 stand as collisions with NS-51 | The council ruling CPO-17 item 2 says the first Moments release reads the photo library in 1.0 (places and occasions in, faces and naming people out), with the G6 flags guard amended in the PR that adds the PHAsset use. Item 3: only the photo's own date and place are used. Item 5: no library-timed push and no Moments email in 1.0. This moves the NS-51 "no place, no title" lines this note treats as the baseline. I did not reconcile sections 1 to 2.7 and 9 with it; read them as the 21 Nov analysis, to be re-read against CPO-17 and `docs/product/prd/28-moments-tab.md`. For what 1.0 may say about pictures and what must hold before the photo flag is on, see CPrivO-12 and CR-146 in `docs/agents/exec/RULINGS.md` | `docs/agents/exec/RULINGS.md` CPO-17 |
 | Section 5.4 asks for a server nudge | CPO-17 item 5 agrees with the recommendation in section 5.4 (no library-timed push or email in 1.0) | `docs/agents/exec/RULINGS.md` CPO-17 |
 
 Not touched by the merges: `TONIGHT_HREF = '/'`, the first-run guard in Home (now `(tabs)/index.tsx:221`, was 215 in section 5.1) and `unstable_settings = { initialRouteName: '(tabs)' }` (`apps/mobile/src/app/_layout.tsx:51`). Still UNVERIFIED: that the bar draws in declaration order on a device (a test pins the declaration order, not the drawn order), and everything in sections 1.3, 1.5, 2.5, 2.6, 4 and 8 that needs a phone.
@@ -37,8 +39,8 @@ Five collisions with rulings already in the repo. Each needs a founder word befo
 
 | # | What the founder asked | What the repo says now | What a ruling would have to say |
 |---|---|---|---|
-| C1 (Update 22 Nov: ruled, see the update table) | A new tab | "Three tabs: Home (Say), Book (Read), Me (Look after). No Moments tab, no Family tab." [R docs/product/prd/README.md:125-126]; "tabs stay Home, Book, Me (D-161 draft)" [R docs/product/prd/12-parked-and-not-built.md:27]; NS-51 section 3: "no new tab" [R docs/product/prd/27-photo-moments-and-media.md:80] | A recorded reversal of the 11 Nov tab ruling and the D-161 draft, with the tab test it must pass |
-| C2 (Update 22 Nov: ruled, Home stays the landing) | It is the default landing tab | Home is the root, one verb: "Only Home starts a letter" [R docs/product/prd/00-product-frame.md:62]; `TONIGHT_HREF = '/'` [R apps/mobile/src/lib/resilience/not-found.logic.ts:5] | A ruling that landing is not Tonight, and for whom (first launch, every launch, or after a first letter) |
+| C1 (ruled: D-165, CPO-17; shell built, #1482) | A new tab | Decided: four tabs, Home, Moments, Book, Me, with Moments second (CPO-17; D-165 section 1 item 3; the name is D-164). The 11 Nov line "Three tabs: Home (Say), Book (Read), Me (Look after). No Moments tab, no Family tab." [R docs/product/prd/README.md:125-126] and NS-51 section 3 "no new tab" [R docs/product/prd/27-photo-moments-and-media.md:80] are the superseded text. `docs/product/prd/12-parked-and-not-built.md` line 27 is C-37 (a Share tab, refused) and line 28 is C-22 (co-parent "coming soon", dropped on the founder's answer of 19 Nov, "D-161 draft"); neither says tabs stay Home, Book, Me, so the earlier quote of that line was a mis-cite and is withdrawn | Nothing open. What remains is the tab test and `content`'s label (the shell uses a placeholder, `tabs.moments ?? tabs.book`) |
+| C2 (ruled: Home stays the landing, CPO-17) | It is the default landing tab | Home is the root, one verb: "Only Home starts a letter" [R docs/product/prd/00-product-frame.md:62]; `TONIGHT_HREF = '/'` [R apps/mobile/src/lib/resilience/not-found.logic.ts:5] | A ruling that landing is not Tonight, and for whom (first launch, every launch, or after a first letter) |
 | C3 | Ask for the photo permission on the tab | NS-51-R1: off until the parent taps "Turn on" on its own Me row; "no other screen, slip or onboarding step asks" [R 27-photo-moments-and-media.md, NS-51-R1]; NS-49-R25: no usage string, no PhotoKit authorisation call in the 1.x line [R 21-days-cultural-photos-home.md:909] | Reverse the "no other screen" clause for this tab, only on a tap, and state it in BL-1001's ruling |
 | C4 | Automatic title, place and map tile on each moment | NS-51-R10: nothing describes a picture, no title, no caption; Q-PM-5 CLOSED: no place is read (`asset.location` untouched) [R 27-photo-moments-and-media.md, Q-PM-5, NS-51-R9, R10] | Either keep it to a date line (Route B) or take Apple's title and place only after the parent chooses (Route A) |
 | C5 | Music and mood cards, Photo Memories highlight | NS-49-R10: v1 reads photo and live photo only [R 21-days-cultural-photos-home.md:894]; the picture-only product frame | Only Apple's own sheet can show these (section 1.4); our app cannot draw them from a library read |
@@ -84,7 +86,9 @@ A new local Swift module, not a JavaScript package. The `expo-native-module` ski
 
 Shape I propose [A]: a native Expo `View` that hosts the SwiftUI picker in a `UIHostingController`, sized to our own capsule label, and an `onSuggestion` event carrying a plain object (a copied file path in our Caches, a date, a title, a kind). The `scribe-photo` module stays permission-free [R apps/mobile/modules/scribe-photo/ios/ScribePhotoModule.swift header] and the new module is separate (NS-49-R31 already names the native file `journal-picker`) [R 21-days-cultural-photos-home.md:915]. Items to prove on a phone, all UNVERIFIED: that a SwiftUI picker button inside a hosted view inside a React Native view presents; the lifetime and location of the returned photo URL (NS-49 spike step 1); `#available(iOS 17.2, *)` weak linking through CocoaPods (the podspec now says `:ios => '16.4'` [R apps/mobile/modules/scribe-photo/ios/ScribePhoto.podspec]); and that the entitlement reaches the signed plist through the Expo config (the one entitlements block, `app.config.ts` lines 260-262 [R]). I did not check whether SDK 57 ships a SwiftUI hosting package; the skill says to read the installed source before choosing (AIE-R11).
 
-Existing design for this exact route: NS-49 level 2, `BL-298` (size L; split into BL-1300 to BL-1304 [R docs/BACKLOG.md:6207-6241]), Drop C [R docs/BACKLOG.md:4058].
+Existing design for this exact route: NS-49 level 2, `BL-298` (size L; split into BL-1300 to BL-1304, see the BACKLOG section "Split of the proposed group rows, batch 2"), Drop C (BL-298 "Refines" rows and the build table at "Which build carries what" in `docs/BACKLOG.md`).
+
+Spike D1 (section 8) gates Route A. Hosting a SwiftUI picker inside a React Native view is UNVERIFIED and is the largest single risk to Route A's estimate, so no Route A price, row or promise should be treated as firm until D1 has run on a signed device build.
 
 ### 1.6 What Route A gives the founder
 
@@ -92,7 +96,7 @@ The screenshots' experience, nearly whole, for the price of one button, and with
 
 ## 2. Route B: our own PhotoKit read, limited access honoured
 
-Existing design: NS-51 [R 27-photo-moments-and-media.md], BL-1019 (spike, module, index, nudge; size L; blocked on BL-1001, counsel and BL-961) [R docs/BACKLOG.md:4209], BL-877 (index store; size M), BL-853 (suggest days on open), BL-874 (chooser) and spikes BL-843, BL-871, BL-872.
+Existing design: NS-51 [R 27-photo-moments-and-media.md], BL-1019 (spike, module, index, nudge; size L; blocked on BL-1001, counsel and BL-961) [R docs/BACKLOG.md, row BL-1019], BL-877 (index store; size M), BL-853 (suggest days on open), BL-874 (chooser) and spikes BL-843, BL-871, BL-872.
 
 ### 2.1 What a read can and cannot do, verified
 
@@ -115,7 +119,7 @@ Do not send image bytes through the bridge. Proposed [A]: a native thumbnail `Vi
 
 ### 2.4 The moment index store (BL-877)
 
-BL-877 describes `memory-library.db` with no per-asset row, no finer-than-day time and no place finer than a city key [R docs/BACKLOG.md, BL-877]. NS-51-R6, the later locked card, allows up to 30 moments each with at most 6 identifiers, L4, in its own file in Application Support, excluded from backup (set and read back), per account, never synced [R 27-photo-moments-and-media.md, NS-51-R6]. The two disagree about identifiers. I recommend NS-51's shape on BL-877's mechanics (backup flag read back, protection class, rebuild, wipe, distrust of a restored index), and `data-architect` records the reconciliation. The index is a cache: if it is lost, a rebuild from the dates costs one fetch.
+BL-877 describes `memory-library.db` with no per-asset row, no finer-than-day time and no place finer than a city key [R docs/BACKLOG.md, BL-877]. NS-51-R6, the later locked card, allows up to 30 moments each with at most 6 identifiers, L4, in its own file in Application Support, excluded from backup (set and read back), per account, never synced [R 27-photo-moments-and-media.md, NS-51-R6]. The two disagree about identifiers. I recommend NS-51's shape on BL-877's mechanics (backup flag read back, protection class, rebuild, wipe, distrust of a restored index), and `data-architect` records the reconciliation. The index is a cache: if it is lost, a rebuild from the dates costs one fetch. `PHAsset.localIdentifier` is a stable key to a person's library, so it is stored in the index and passed to JS only for drawing a thumbnail, and it must never reach a log, a crash breadcrumb or an analytics event (OBS-R01 and OBS-R02 in `docs/engineering/10-logging-and-observability.md`; CLAUDE.md privacy rules). A test should scan the moments code for any logger or analytics call that takes an identifier.
 
 ### 2.5 Performance on a 20,000-photo library
 
@@ -152,7 +156,7 @@ PhotoKit reports five access states: not determined, restricted, denied, authori
 
 | State | What it means (Apple's comment) | Tab reaction (PROPOSED) |
 |---|---|---|
-| notDetermined | "The user hasn't yet authorized" | Value props and the section 3 blocks. One plain sentence and one button, "Allow access" (words by `content`). Only the tap calls `requestAuthorization(for: .readWrite)`. Where Route A is present, a no-permission "Recent days" capsule sits beside it |
+| notDetermined | "The user hasn't yet authorized" | Value props and the section 3 blocks. Before the first saved letter: no ask, only "Pick one picture" (system picker, no permission). After the first saved letter: one plain sentence and one button, "Show my pictures" (words by `content`). Only the tap calls `requestAuthorization(for: .readWrite)`. Where Route A is present, a no-permission "Recent days" capsule sits beside it |
 | limited | "The user authorized this app for limited Photos access" | Works on the selection. Moments from the selection; if it is small, the section 3 blocks fill the space and nothing says so. A quiet "Choose which pictures" control presents the limited picker. Never "limited is worse" (CL-046) |
 | authorized | "The user authorized this app to access Photos data" (full) | Same as limited, plus the album choice (NS-51-R14) |
 | denied | "The user explicitly denied" | Section 3 blocks; one calm line and an "Open Settings" control, inside the tab only. No second system ask (the system does not re-prompt, Apple: "the system remembers their choice and won't prompt them again") [V same article]. Nothing on Home |
@@ -170,12 +174,12 @@ Verified: `presentLimitedLibraryPicker(from:)` exists from iOS 14; it "does noth
 ### 5.1 What the app does today [R]
 
 - Root: `export const unstable_settings = { initialRouteName: '(tabs)' }` (`apps/mobile/src/app/_layout.tsx:51`). Editing the boot wiring in that file is outside this role's remit except in a task that owns it.
-- Tabs: JS tabs `index` (Home, "Tonight"), `book`, `you` (Me) in `apps/mobile/src/app/(tabs)/_layout.tsx`. Update 22 Nov: `moments` is now declared second, hidden with the flag off; `test/tab-bar.test.ts` pins `SCREENS` to `['index','moments','book','you']` and `visibleTabIds(MOMENTS_TAB_ON)` to the three visible ones when off.
-- First run: the first-run guard is inside Home: `if (room.family === null) return <Redirect href="/onboarding" />;` (`(tabs)/index.tsx:221` on 22 Nov; 215 when first written). Onboarding finishes with `router.replace('/')` (`onboarding.tsx:298, 684`).
+- Tabs (rewritten 22 Nov against `develop`): `apps/mobile/src/app/(tabs)/_layout.tsx` declares `index` (Home, "Tonight") at line 84, `moments` at line 86 and `book` at line 87, then `you`. `moments` is hidden with `EXPO_PUBLIC_MOMENTS_TAB` off, and `test/tab-bar.test.ts` lines 28 to 31 pin `SCREENS` to `['index','moments','book','you']` and `visibleTabIds(false)` to `['index','book','you']`. The bar is no longer three items in source; it is three on screen only while the flag is off.
+- First run: the first-run guard is inside Home: `if (room.family === null) return <Redirect href="/onboarding" />;` (`(tabs)/index.tsx:221`). Onboarding finishes with `router.replace('/')` (`onboarding.tsx:298, 689`).
 - Contracts: `TONIGHT_HREF = '/'` with the comment "always Tonight, the root of the app" (`lib/resilience/not-found.logic.ts`); `isCaptureRoute` matches `/listen`, `/review`, `/read-together` and nothing else; `test/resilience.test.ts` asserts `TONIGHT_HREF` is `'/'` (line 96) and that `'/'` is not a capture route (lines 91 to 94).
-- Sites that use `'/'` to mean Tonight: `read-together.tsx:108` (`dismissTo('/')`), `onboarding.tsx:298, 684`, `+not-found.tsx`, `+native-intent.tsx:49` (a capture link is sent to `TONIGHT_HREF`), `invite/new.tsx:73`, `(tabs)/book.tsx:427` (`navigate('/')`, the empty Book's "write" button), `lib/auth/ui.tsx:66`, `lib/resilience/recover-to-tonight.ts`.
+- Sites that use `'/'` to mean Tonight: `read-together.tsx:109` (`dismissTo('/')`), `onboarding.tsx:298, 689`, `+not-found.tsx`, `+native-intent.tsx:49` (a capture link is sent to `TONIGHT_HREF`), `invite/new.tsx:73`, `(tabs)/book.tsx:466` (`navigate('/')`, the empty Book's "write" button), `lib/auth/ui.tsx:66`, `lib/resilience/recover-to-tonight.ts`.
 
-### 5.2 Three ways, with cost
+### 5.2 Three ways, with cost (history: Home stays the landing, so only the first-run-guard and capture-link points below still bind)
 
 | Option | What changes | Cost | Risk |
 |---|---|---|---|
@@ -187,28 +191,19 @@ Whichever option: the first-run guard must run on the landing tab too, or a new 
 
 ### 5.3 Other costs of a fourth tab
 
-The tab bar was a single declared set with its comment "the bar is the same three items whatever the build" [R (tabs)/_layout.tsx]; Update 22 Nov: the comment remains and now holds only with the flag off, because the fourth route is declared and hidden by `momentsTabVisibility`. VoiceOver position text for the flag-off bar is built by `tabPositionOptions` in `moments-tab.ts`, because the library counts hidden routes. A fourth item needs: a Phosphor icon and a label from `packages/content` (`en.tabs`; `packages/content/test/tab-labels.test.ts` will need its list updated by `content`); the Large Content Viewer title; the `you` tab's `headerShown` pattern kept; `ReminderPrimeAsk` and `ask-sequencer.logic.ts` `isCalmSurface` (`segments[0] === '(tabs)'`) re-checked; screenshots, the store listing and the website's three-tab scenes (FUNCTION-TRACE NR-10) redrawn; NS-33 screen set and the IA audit updated by `design-systems` and `product`. The words: the founder offered "explore etc or suitable word". "Moments" is the name NX-42 used and the README struck; "Days" is already the NS-46 page name; "memories" and "best" are barred by NS-51. The final word is for `content` against the BRAND glossary, which I did not read for this note.
+The tab bar was a single declared set with its comment "the bar is the same three items whatever the build" [R (tabs)/_layout.tsx]; Update 22 Nov: the comment (`_layout.tsx:34`) remains but is now false beside line 86; it holds only for the visible bar with the flag off, because the fourth route is declared and hidden by `momentsTabVisibility`. It should be reworded by whoever owns that file. VoiceOver position text for the flag-off bar is built by `tabPositionOptions` in `moments-tab.ts`, because the library counts hidden routes. A fourth item needs: a Phosphor icon and a label from `packages/content` (`en.tabs`; `packages/content/test/tab-labels.test.ts` will need its list updated by `content`); the Large Content Viewer title; the `you` tab's `headerShown` pattern kept; `ReminderPrimeAsk` and `ask-sequencer.logic.ts` `isCalmSurface` (`segments[0] === '(tabs)'`) re-checked; screenshots, the store listing and the website's three-tab scenes (FUNCTION-TRACE NR-10) redrawn; NS-33 screen set and the IA audit updated by `design-systems` and `product`. The words: the founder offered "explore etc or suitable word". "Moments" is the name NX-42 used and the README struck; "Days" is already the NS-46 page name; "memories" and "best" are barred by NS-51. The final word is for `content` against the BRAND glossary, which I did not read for this note.
 
-### 5.4 Second addendum: the tab need not be the default, and the moment signal should drive nudges
+### 5.4 Second addendum: position is ruled; the nudge question stays open
 
-Founder, 20 Nov (as relayed): the tab need not be the default; second or centre is fine; and the moment signal should also drive push and email nudges. This removes most of the section 5.2 cost. If the tab is not the landing tab, `'/'`, `TONIGHT_HREF`, the first-run guard and `isCaptureRoute` do not change at all, and O1 and O3 collapse to "add one screen". The landing question (C2) falls away unless the founder re-opens it.
+Founder, 20 Nov (as relayed): the tab need not be the default; second or centre is fine; and the moment signal should also drive push and email nudges. Update 22 Nov: position and landing are ruled (CPO-17, D-165 section 1 item 3): Moments is second of four and Home stays the landing, so `'/'`, `TONIGHT_HREF`, the first-run guard and `isCaptureRoute` do not change. The 21 Nov table of position options (second, third, centre of five, raised centre button) is removed as answered. One thing stays open and is mine to flag, not to settle: the order is pinned in source by `tab-bar.test.ts`, but that the bar is drawn in declaration order on a device is UNVERIFIED, so spike D6 stays for order only.
 
-#### Tab position options
-
-Expo Router's JS tabs here are declared as ordered `<Tabs.Screen name=...>` children in `(tabs)/_layout.tsx`, and `test/tab-bar.test.ts` reads that order from source [R]. I assume bar order follows declaration order, the react-navigation default; I did not read Expo Router's source (UNVERIFIED), so spike D6 below is a ten-minute check. Update 22 Nov: the layout now declares `moments` second, and `moments-tab.ts` cites expo-router's `build/layouts/TabsClient.js` for why `href` is not used; neither proves the drawn order, so D6 stays open for order.
-
-| Position | Bar | Cost | Notes |
-|---|---|---|---|
-| Second of four | Home, Moments, Book, Me | One `Tabs.Screen` line, an icon, a label from `content`; edit `tab-bar.test.ts` SCREENS to `['index','moments','book','you']` and the Large Content Viewer loop; `you-tab-states.test.ts` and `transitions.test.ts` re-read; no route or `'/'` change | Home stays the first tab and the root, so first-run and the Say verb are untouched. Moments sits beside Home, which suits a surface that leads into Say. Recommended |
-| Third of four | Home, Book, Moments, Me | Same cost | Keeps Home and Book (Say and Read) adjacent; Moments is closer to Me. Equal on cost; a design call for `design-systems` |
-| Centre of five | needs a fifth tab | Not feasible with what exists: there are three tabs and the Moments candidate makes four. A fifth would be a surface the founder has refused (Family: never a tab; Share: refused as C-37 in `12-parked-and-not-built.md`) | Not recommended unless the founder names the fifth |
-| Raised centre button (Say) with Moments beside it | A custom centre action | Needs a custom tab button, which collides with "hand-roll a component a listed library already provides" and with "Only Home starts a letter", and a bar that is no longer a tab bar for VoiceOver, Large Content Viewer and the 44 pt checks | Not recommended |
+A tab-bar badge or dot for "a moment is waiting" is a count in disguise and is barred by NS-51-R8 and R12 (no count, no gap); I recommend none.
 
 A tab-bar badge or dot for "a moment is waiting" is a count in disguise and is barred by NS-51-R8 and R12 (no count, no gap); I recommend none.
 
 #### Nudges from a moment: what is possible
 
-Verified: iOS delivers a local notification the app scheduled earlier, by a calendar, time-interval or location trigger, and "If the delivery of the notification occurs when your app isn't running or in the background, the system interacts with the user for you"; a scheduled request stays "until its trigger condition is met, or you explicitly cancel it" [V https://developer.apple.com/documentation/usernotifications/scheduling-a-notification-locally-from-your-app.md]. That page does not say whether scheduling needs a background mode, and I found no document that says what iOS lets an app do in the background for a library change. I could not find an item labelled "ML-2" in the repo (only SEC-ML-2 in BL-843's cited list [R docs/BACKLOG.md:3191]); I treat all background behaviour as UNVERIFIED, as you instructed, and design so that none is needed.
+Verified: iOS delivers a local notification the app scheduled earlier, by a calendar, time-interval or location trigger, and "If the delivery of the notification occurs when your app isn't running or in the background, the system interacts with the user for you"; a scheduled request stays "until its trigger condition is met, or you explicitly cancel it" [V https://developer.apple.com/documentation/usernotifications/scheduling-a-notification-locally-from-your-app.md]. That page does not say whether scheduling needs a background mode, and I found no document that says what iOS lets an app do in the background for a library change. I could not find an item labelled "ML-2" in the repo (only SEC-ML-2 in BL-843's cited list [R docs/BACKLOG.md, BL-843 "Satisfies" line]); I treat all background behaviour as UNVERIFIED, as you instructed, and design so that none is needed.
 
 Design with no server and no background mode [A, consistent with NS-51-R11, ADR 0030 and the shipped scheduler]:
 
@@ -229,7 +224,7 @@ A push or an email is sent by a server. For the moment signal to drive one, the 
 
 | Id | What to learn | Maps to | Size |
 |---|---|---|---|
-| D6 | Tab order follows declaration order in this app's JS tabs; and, if a landing is ever wanted, whether `initialRouteName` opens a non-index tab on a cold launch with no link | section 5.2 O1 | S, simulator is enough, no iPhone needed |
+| D6 | The bar is drawn in declaration order in this app's JS tabs (the order itself is ruled and pinned by a test); a landing question is only live if the founder reopens it | section 5.4 | S, simulator is enough, no iPhone needed |
 
 ## 6. Effort, in rows and agent-days
 
@@ -240,10 +235,12 @@ Size convention [A]: no day conversion exists in the backlog, so I use S = 1, M 
 | T. Tab shell, landing, first-run guard, tests (O3) | NEW x3 (shell and route; guard and shared hook; tab tests and e2e flows) | 6 to 8; if the tab is second and not the landing (section 5.4), NEW x1 and 2 to 3 | Update 22 Nov: C1 and C2 are ruled (CPO-17) and the shell (PR 6) and `moments.json` store (PR 8) have merged, so the open part is the screen content, not the route. `design-systems` spec and art; `content` words |
 | T2. No-permission blocks (section 3) | NEW x2 plus NS-46 and BL-855 where they land | 4 to 6 | Rows exist for days and typed occasions; the tab only composes them |
 | V. Value-prop view and words | NEW x2 (design, content) | 3 to 4 | Claims map to code (PRINCIPLES 14); counsel reads any privacy sentence |
-| A. Route A: picker module, entitlement, scans | BL-298 split BL-1300 to BL-1304 (about L) plus NEW module PR | 8 to 11 | Device spike D1, `security-architect` read, counsel (DPLA 3.3.3(H)), entitlement in the signed plist |
+| A. Route A: picker module, entitlement, scans | BL-298 split BL-1300 to BL-1304 (about L) plus NEW module PR | 8 to 11, not firm until D1 has run | Device spike D1 (a hard gate before this is priced), `security-architect` read, counsel (DPLA 3.3.3(H)), entitlement in the signed plist |
 | B. Route B: library module, index, rule, chooser | BL-1019 (L), BL-877 (M), BL-859 (M), BL-860 (S), BL-861 (M), BL-845 (M, ready), BL-862 (M, ready), BL-864 (S, ready), BL-853 (M), BL-874 (M), BL-878 gate | 28 to 34 | BL-1001 ruling, counsel on 5.1.1 and the label, spikes D2 to D4, BL-961 |
 | N. Local moment nudge (section 5.4) | one planner source inside BL-1019 and BL-966's `budget.ts` | 2 to 3 | BL-966 merged; BL-1019's moment rule |
 | Spikes | BL-843 (S), BL-871 (S), BL-872 (M, 14 days elapsed, three phones, optional), D6 (S, simulator) | 2 of work; 14 days elapsed for BL-872 | A real iPhone for all of them |
+
+Elapsed time is not the sum of these days. Sections 9 and 10 serialise every native PR behind a macOS compile of about 75 minutes and the photo lane, so queueing, not build time, will dominate Route B's 28 to 34 days, and the sum carries no integration or review-cycle allowance. No analytics or logging row is priced here: any Moments event needs the `packages/analytics` allowlist (section 5.3).
 
 Route A and Route B share nothing in Swift and little in JavaScript; both share T, T2 and V. Route A is roughly a third of Route B.
 
@@ -269,7 +266,7 @@ I cannot run any of these; each is a `human` task for the founder's phone. D1 an
 
 ## 9. Recommended build order
 
-Principle: ship something real in the first public store build with no new permission string and no entitlement, then add each route behind its own ruling. "First public store build" I take to mean 1.0; Build 13 is Drop A (NS-48 phase 1 only) and carries none of this [R docs/BACKLOG.md:4058].
+Principle: ship something real in the first public store build with no new permission string and no entitlement, then add each route behind its own ruling. "First public store build" I take to mean 1.0; Build 13 is Drop A (NS-48 phase 1 only) and carries none of this [R docs/BACKLOG.md, "Which build carries what" and BL-1004].
 
 1. Rulings first (no code): C1 (tab), C2 (landing, and for whom), C3 (a permission ask on the tab, by tap), C4 and C5 (what the tab may show), deployment target. BL-1001 already records the level 3 reversal and can carry C3.
 2. Not in Build 13. See section 10.
@@ -277,9 +274,9 @@ Principle: ship something real in the first public store build with no new permi
 4. Next: Route A behind `EXPO_PUBLIC_SUGGESTIONS` and the entitlement: it adds the screenshots' experience with no photo permission and no new usage string. It is Drop C today (after 1.0 is approved) and needs D1, counsel and the security read first.
 5. Then: Route B behind its own flag and the usage string, in this order: spikes D2 to D4; BL-1019's module and moment rule; BL-877's index; the tab's ask and states (section 4); the chooser (BL-874). The background top-up (BL-875) waits for BL-872 and its own consent.
 
-What must wait, and for what: the "Allow access" button for the usage string and counsel on App Review 5.1.1 and the label (BL-1019 blocked on BL-1001, counsel, BL-961); Route A for the entitlement, D1 and counsel; titles and places on moments for a ruling on C4; a Recent list of our own for a ruling that lifts "no list, no count"; the photo shelf for the photo lane (#835 to #840); anything that needs a background mode.
+What must wait, and for what: the "Show my pictures" button for the usage string and counsel on App Review 5.1.1 and the label (BL-1019 blocked on BL-1001, counsel, BL-961); Route A for the entitlement, D1 and counsel; titles and places on moments for a ruling on C4; a Recent list of our own for a ruling that lifts "no list, no count"; the photo shelf for the photo lane (#835 to #840); anything that needs a background mode.
 
-Honest note on "ask for permission": the founder's addendum says to get the permission when it is missing. Apple's own guidance is to ask on a direct action and never at launch, and the "limited" answer must work as well as "full" (Q-PM-1, CL-046) [R 27-photo-moments-and-media.md]. A button on the landing tab, tapped by the parent, meets that. A prompt that appears by itself, or a landing screen that blocks the app until access is granted, does not, and App Review 5.1.1 is the guideline the repo cites for it; I did not read it, so counsel must confirm. Every other tab and the pre-permission view must stay fully usable with access denied.
+Honest note on "ask for permission": the founder's addendum says to get the permission when it is missing. Apple's own guidance is to ask on a direct action and never at launch, and the "limited" answer must work as well as "full" (Q-PM-1, CL-046) [R 27-photo-moments-and-media.md]. A button on Moments, shown only after the first saved letter and tapped by the parent, meets that. A prompt that appears by itself, or a landing screen that blocks the app until access is granted, does not, and App Review 5.1.1 is the guideline the repo cites for it; I did not read it, so counsel must confirm. Every other tab and the pre-permission view must stay fully usable with access denied.
 
 ## 10. Risks to the Build 13 critical path
 
@@ -294,16 +291,17 @@ Build 13's critical path is reminders (BL-966 then BL-943, then a device run wit
 | R5 | A landing change moves the first-run guard | A new install skips onboarding; the Build 13 first-run device rows (NS-39) fail | Section 5.2: one shared guard, one test, before any landing change |
 | R6 | Cold-start budget | A landing screen with PhotoKit work on the critical path can break p50 1.2 s or p90 2.0 s on an SE 3 | Paint static content first; library work after first paint; D3 measures it |
 | R7 | The founder's phone and hours are the device queue for the G4 runs | D1 to D4 compete with Build 13 device rows | Batch D1 to D4 into one session after the Build 13 cut |
-| R8 | Ruling churn: C1 to C5 reverse locked cards (NS-51 rev 2 was locked 20 Nov) | Rows and tests written against the old text become wrong | One errata batch (the E-row pattern in `18-errata-after-lock.md`) before any build row is set `ready` |
-| R9 | Store assets, website and Help say three tabs | A claim that no longer matches the app | A listing and website row in the same release as the tab |
-| R10 | Apple's picker may show workouts, songs and contacts to a parent inside our flow, and may not be restrictable | A brand and trust issue found late | D1 answers it before any Route A copy is written |
+## 11. What is still open for the founder
 
-## 11. What I recommend the founder is asked
+Ruled and removed from this list (22 Nov): one tab or none, position and landing (CPO-17, D-165 section 1 item 3).
 
-1. One tab or none: is a fourth tab, reversing the 11 Nov and D-161 draft ruling, wanted for the first public build?
-2. Position and landing: the founder said the tab need not be the default. Second of four (Home, Moments, Book, Me) with Home still the landing is my recommendation and removes the section 5.2 cost.
-3. Route: is "Apple's own picker behind a button" (Route A) acceptable as the screenshots' experience, given it cannot be restyled or embedded, or is a Recent shelf of our own (Route B) the point? Route B's shelf is limited to dates, pictures and the newest moment unless the founder lifts "no list, no count", "no title" and "no place".
-4. Ask: is a tap-only "Allow access" on the tab accepted in place of the Me-only row (NS-51-R1)?
+1. Route: is "Apple's own picker behind a button" (Route A) acceptable as the screenshots' experience, given it cannot be restyled or embedded, or is a Recent shelf of our own (Route B) the point? Spike D1 gates Route A before it is priced. CPO-17 item 2 already puts a library read in 1.0, which bears on Route B; this note does not reconcile that.
+2. Ask: is a tap-only "Show my pictures" on the tab, shown only after the first saved letter, accepted in place of the Me-only row (NS-51-R1)?
+3. Floor: stay at iOS 17.0 (recommended) or raise to 17.2.
+4. Nudges: CPO-17 item 5 agrees with local only, planned when the app is opened, and no library-timed push or email in 1.0. A server push or email driven by the moment would mean a library-derived signal leaving the phone and a label change (I recommend against), and stays a founder and counsel call.
+5. A Moments compose control: lands on Home with a payload, or a new reviewed `startCapture` source (section 5.3, NS-35).
+
+4. Ask: is a tap-only "Show my pictures" on the tab, shown only after the first saved letter, accepted in place of the Me-only row (NS-51-R1)?
 5. Floor: stay at iOS 17.0 (recommended) or raise to 17.2.
 6. Nudges: local only, planned when the app is opened (my recommendation), or a server push or email driven by the moment, which means a library-derived signal leaving the phone and a label change (I recommend against).
 
