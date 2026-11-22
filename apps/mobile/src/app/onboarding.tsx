@@ -340,7 +340,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
           <Text variant="body" className="text-center" accessibilityLiveRegion="polite">
             {joinLine}
           </Text>
-          {joining.retry ? <Button variant="quiet" size="sm" label={familyCopy.accept.tryAgain} onPress={joining.onRetry} testID="onboarding.joinWait.retry" /> : null}
+          {joining.retry ? <Button variant="quiet" size="sm" label={familyCopy.accept.tryAgain} loading={joining.retrying} onPress={joining.onRetry} testID="onboarding.joinWait.retry" /> : null}
         </View>
       ) : null}
       {showContinue ? (

@@ -9,14 +9,15 @@ import { isBeforeBirth, ageOn } from '../age';
 import { selectPrompt, type Prompt } from '../prompts';
 import { BRIGHT_REASONS, occasionsOn, type MarkedDay, type OccasionHit } from './occasions';
 import type { HolidayKey, HolidayRegion } from './holidays';
-import type { SourceId } from './registry';
+import { type Slot } from './domain';
+import type { RegistryId } from './registry';
 
-export const SLOT_ORDER = Object.freeze(['today', 'look_back', 'pictures', 'question'] as const);
-export type SlotName = (typeof SLOT_ORDER)[number];
+/** The four slots in order are the shared `SLOTS` of domain.ts (6.3). */
+export type SlotName = Slot;
 
 export type MomentCard =
   | { slot: 'today'; hits: OccasionHit[] }
-  | { slot: 'look_back'; source: 'S4'; ref: string; date: string }
+  | { slot: 'lookBack'; source: 'S4'; ref: string; date: string }
   | { slot: 'pictures'; source: 'S5' | 'S7'; ref: string }
   | { slot: 'question'; promptKey: string };
 
@@ -36,7 +37,7 @@ export interface MomentsInput {
   /** Library read allowed right now (Limited counts). Default false, so a library day never shows by accident. */
   libraryReadable?: boolean;
   /** Sources the parent switched off in Me. */
-  off?: readonly SourceId[];
+  off?: readonly RegistryId[];
   /** Slots the parent sent away with Not today; they stay away until the next local day. */
   notToday?: readonly SlotName[];
   /** The prompt key Home shows today; the question never repeats it while another exists. */
@@ -47,7 +48,7 @@ export interface MomentsInput {
 }
 
 export function momentsFor(input: MomentsInput): MomentCard[] {
-  const off = new Set<SourceId>(input.off ?? []);
+  const off = new Set<RegistryId>(input.off ?? []);
   const away = new Set<SlotName>(input.notToday ?? []);
   const calm = input.state !== 'normal';
   const cards: MomentCard[] = [];
@@ -56,7 +57,7 @@ export function momentsFor(input: MomentsInput): MomentCard[] {
   if (hits.length > 0 && !away.has('today')) cards.push({ slot: 'today', hits });
 
   const back = input.lookBack;
-  if (back && !calm && !off.has('S4') && !away.has('look_back')) cards.push({ slot: 'look_back', source: 'S4', ref: back.ref, date: back.date });
+  if (back && !calm && !off.has('S4') && !away.has('lookBack')) cards.push({ slot: 'lookBack', source: 'S4', ref: back.ref, date: back.date });
 
   const pic = input.pictures;
   if (pic && !off.has(pic.source) && (pic.source === 'S5' || input.libraryReadable === true) && !away.has('pictures')) {

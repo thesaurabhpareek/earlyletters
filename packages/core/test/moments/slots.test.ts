@@ -4,7 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { Prompt } from '../../src/prompts';
-import { momentsFor, SLOT_ORDER, type MomentsInput } from '../../src/moments/slots';
+import { SLOTS } from '../../src/moments/domain';
+import { momentsFor, type MomentsInput } from '../../src/moments/slots';
 
 const LIB: Prompt[] = [
   { key: 'o.any.1', text: 'What did {child} do today?', band: 'any', kind: 'opening' },
@@ -25,9 +26,9 @@ const picked = { source: 'S5' as const, ref: 'letter-2' };
 
 describe('[NS-53-R10] four slots in one order, an empty slot absent', () => {
   it('has the order today, look back, pictures, question', () => {
-    expect(SLOT_ORDER).toEqual(['today', 'look_back', 'pictures', 'question']);
+    expect(SLOTS).toEqual(['today', 'lookBack', 'pictures', 'question']);
     const marked = [{ kind: 'typed' as const, date: '2026-11-21', ref: 'n1' }];
-    expect(slots({ marked, lookBack: letter, pictures: lib, libraryReadable: true })).toEqual(['today', 'look_back', 'pictures', 'question']);
+    expect(slots({ marked, lookBack: letter, pictures: lib, libraryReadable: true })).toEqual(['today', 'lookBack', 'pictures', 'question']);
   });
   it('on a plain day holds the question alone, with no placeholder', () => {
     const out = momentsFor(base);
@@ -35,12 +36,12 @@ describe('[NS-53-R10] four slots in one order, an empty slot absent', () => {
     expect(out[0].slot).toBe('question');
   });
   it('drops a slot that has nothing and keeps the order of the rest', () => {
-    expect(slots({ lookBack: letter })).toEqual(['look_back', 'question']);
+    expect(slots({ lookBack: letter })).toEqual(['lookBack', 'question']);
     expect(slots({ pictures: picked })).toEqual(['pictures', 'question']);
   });
   it('lists no kept letter and no picture except the one candidate each slot was given', () => {
     const out = momentsFor({ ...base, lookBack: letter, pictures: lib, libraryReadable: true });
-    expect(out.find((c) => c.slot === 'look_back')).toEqual({ slot: 'look_back', source: 'S4', ref: 'letter-1', date: '2025-11-21' });
+    expect(out.find((c) => c.slot === 'lookBack')).toEqual({ slot: 'lookBack', source: 'S4', ref: 'letter-1', date: '2025-11-21' });
     expect(out.find((c) => c.slot === 'pictures')).toEqual({ slot: 'pictures', source: 'S7', ref: 'day-2026-11-15' });
   });
 });
@@ -113,7 +114,7 @@ describe('[NS-53-R24] a hard stretch or a quiet book', () => {
   ];
   it.each(['hard', 'quiet'] as const)('shows no look back and no bright Today hit in a %s state', (state) => {
     const out = momentsFor({ ...base, state, today: '2026-11-12', marked, lookBack: letter });
-    expect(out.map((c) => c.slot)).not.toContain('look_back');
+    expect(out.map((c) => c.slot)).not.toContain('lookBack');
     const today = out.find((c) => c.slot === 'today') as { hits: { reason: string }[] };
     expect(today.hits.map((h) => h.reason)).toEqual(['RSN-MARKED']);
   });
@@ -122,7 +123,7 @@ describe('[NS-53-R24] a hard stretch or a quiet book', () => {
     expect(slots({ state, today: '2026-07-04', holidayRegion: 'US' })).not.toContain('today');
   });
   it('keeps the same hits on a normal day', () => {
-    expect(slots({ today: '2026-11-12', lookBack: letter })).toEqual(['today', 'look_back', 'question']);
+    expect(slots({ today: '2026-11-12', lookBack: letter })).toEqual(['today', 'lookBack', 'question']);
   });
 });
 
@@ -138,10 +139,10 @@ describe('[NS-53-R30] [NS-53-R173] sources the parent turned off or cannot read'
   it('removes a turned-off source and nothing else', () => {
     const marked = [{ kind: 'typed' as const, date: '2026-11-21', ref: 'n1' }];
     const all = { marked, lookBack: letter, pictures: lib, libraryReadable: true };
-    expect(slots({ ...all, off: ['S1'] })).toEqual(['look_back', 'pictures', 'question']);
+    expect(slots({ ...all, off: ['S1'] })).toEqual(['lookBack', 'pictures', 'question']);
     expect(slots({ ...all, off: ['S4'] })).toEqual(['today', 'pictures', 'question']);
-    expect(slots({ ...all, off: ['S7'] })).toEqual(['today', 'look_back', 'question']);
-    expect(slots({ ...all, off: ['S6'] })).toEqual(['today', 'look_back', 'pictures']);
+    expect(slots({ ...all, off: ['S7'] })).toEqual(['today', 'lookBack', 'question']);
+    expect(slots({ ...all, off: ['S6'] })).toEqual(['today', 'lookBack', 'pictures']);
   });
   it('removes a single hit inside the Today card, not the card', () => {
     const marked = [{ kind: 'typed' as const, date: '2026-04-12', ref: 'n1' }];
@@ -155,8 +156,8 @@ describe('[NS-53-R30] [NS-53-R173] sources the parent turned off or cannot read'
 
 describe('[NS-53-R28] Not today', () => {
   it('leaves the named slot for the rest of the day and fills no gap', () => {
-    expect(slots({ lookBack: letter, pictures: picked, notToday: ['look_back'] })).toEqual(['pictures', 'question']);
-    expect(slots({ lookBack: letter, notToday: ['question', 'look_back'] })).toEqual([]);
+    expect(slots({ lookBack: letter, pictures: picked, notToday: ['lookBack'] })).toEqual(['pictures', 'question']);
+    expect(slots({ lookBack: letter, notToday: ['question', 'lookBack'] })).toEqual([]);
     expect(slots({ today: '2026-11-12', notToday: ['today'] })).toEqual(['question']);
     expect(slots({ pictures: picked, notToday: ['pictures'] })).toEqual(['question']);
   });
