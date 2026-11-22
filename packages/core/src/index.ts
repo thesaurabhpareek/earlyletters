@@ -1,5 +1,6 @@
 export * from './types';
 export * from './text';
+export * from './length';
 export * from './protect';
 export * from './rules';
 export * from './repeats';
