@@ -30,6 +30,7 @@
  * invites are paused and send nothing. `paused` is not a final error, so the token stays in the
  * Keychain and Try again goes on once the switch lifts.
  */
+import { SIGNS_AS_MAX, clampGraphemes } from '@scribe/core';
 import { brand } from '@scribe/brand';
 import { Redirect, router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -62,7 +63,6 @@ import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store';
 
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
-const SIGNS_AS_MAX = 30;
 
 /** Fixed per build (lib/capabilities.ts). Off: nothing is shown (the route sends the person Home), and no token is kept. */
 export default function JoinBookRoute() {
@@ -93,7 +93,7 @@ function JoinBook() {
   const started = useRef<'peek' | 'accept' | null>(null);
 
   useEffect(() => {
-    void readPendingInvite().then((p) => {
+    void readPendingInvite(Date.now(), authUserId(auth.state), auth.state.status !== 'restoring').then((p) => {
       if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setToken(p?.token ?? null);
       setLoaded(true);
@@ -374,12 +374,12 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     return () => clearTimeout(id);
   }, [waitingLine]);
   const saveSignature = () => {
-    const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
+    const s = clampGraphemes(signsAs.trim(), SIGNS_AS_MAX, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
   };
   const type = (v: string) => {
     edited.current = true;
-    setSignsAs(v.slice(0, SIGNS_AS_MAX));
+    setSignsAs(clampGraphemes(v, SIGNS_AS_MAX, SIGNS_AS_MAX));
   };
   const open = () => {
     saveSignature();
@@ -436,7 +436,6 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
                 value={signsAs}
                 onChangeText={type}
                 placeholder={a.signsAsPlaceholder}
-                maxLength={SIGNS_AS_MAX}
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="done"

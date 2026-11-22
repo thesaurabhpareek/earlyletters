@@ -81,4 +81,6 @@ I re-read each changed row against its finding. Closed: MF-1 to MF-9 and SF-1 to
 
 I approve rows B61 to B75, B78, B80 and B82 to B86 for the harness lane as T1 or T2, each built as its own draft PR the founder merges. Row B87 needs the founder. B76, B77 and B79 are cut or deferred. This is a role approval. It merges nothing and it does not replace the founder's merge.
 
+Note (21 Nov): CR-73 supersedes the founder merge named above. Karma approves and merges these PRs on two counted reviews. Row B87 and anything on the founder's reserved list in CR-73 still wait for him.
+
 Karma

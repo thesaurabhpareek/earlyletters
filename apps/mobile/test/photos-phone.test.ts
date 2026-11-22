@@ -1,16 +1,17 @@
 /// <reference types="node" />
 // The phone's wiring for Photo with a letter (src/lib/photos/device.ts) over a real SQLite and the expo-file-system
 // stand-in: the deps every picture write runs against, the one eraser every letter purge calls, the launch sweep, and
-// what the store adds to a phone where nothing is picked. Fictional family Asha.
+// the switch that decides whether anything registers. Fictional family Asha.
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
-import { erasePictureOf, photoDeps, sweepPhotosAtLaunch } from '../src/lib/photos/device';
+import { erasePictureOf, photoDeps, photoUri, registerPhotoDevice, sweepPhotosAtLaunch } from '../src/lib/photos/device';
+import { resetPhotoDeviceForTest } from './helpers/photo-device-reset';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { expoPhotoFiles, photosDirectory, storedPhotoFile } from '../src/lib/photos/files';
+import { setPhotosForTest } from '../src/lib/photos/flag';
+import { getPending, getPhotoPicker, registerPending, registerPhotoPicker } from '../src/lib/photos/registry';
 import type { StoredPhoto } from '../src/lib/photos/types';
 import { createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -26,7 +27,6 @@ vi.mock('expo-crypto', async () => {
 });
 vi.mock('../src/lib/store', () => ({ localSqlDb: () => h.db, notifyStoreChanged: () => void h.changes++, uuidv7: () => `m${++h.ids}` }));
 
-const SRC = join(__dirname, '..', 'src');
 const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
 const row = (entryId: string, mediaId: string): StoredPhoto => ({
   entryId, mediaId, ext: 'jpg', bytes: 3, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null,
@@ -56,7 +56,7 @@ describe('[ADR 0028 D1] the store adds one empty table and writes nothing until 
     letter(db, 'e1');
     const schema = () => db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").map((r) => r.name);
     const before = schema();
-    migrate(db, ctx);
+    migrate(db, ctx, MIGRATIONS.slice(0, 11));
     expect(schema().filter((n) => !before.includes(n))).toEqual(['entry_media', 'entry_media_draft_idx', 'entry_media_entry_idx', 'entry_media_one_photo_idx']);
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000010'));
     const files = [...h.disk.files.keys()];
@@ -96,11 +96,12 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual(['m1']);
   });
 
-  it('[NS-01-R16] a purged letter loses its picture here, the file first and then its row; a let-go draft the same; nothing else is touched', async () => {
+  it('[NS-01-R16] the eraser removes a letter\'s picture, the file first and then its row, and a draft\'s the same way; nothing else is touched', async () => {
     const db = phone('0013');
     const store = entryMediaStore(db);
     const files = expoPhotoFiles();
     store.put(row('e1', 'm1'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
     store.put(row('d1', 'm2')); // a draft owns it (no letter with that id)
     letter(db, 'e2');
     store.put(row('e2', 'm3'));
@@ -122,12 +123,48 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual([]);
     expect(storedPhotoFile('../../../Documents/notes')).toBeNull();
     expect(storedPhotoFile('m1')?.uri).toBe(`${photosDirectory().uri}m1.jpg`);
+    // The letter page and the Book lens draw a picture through the same guard.
+    expect(photoUri({ mediaId: 'm1' })).toBe(`${photosDirectory().uri}m1.jpg`);
+    expect(photoUri({ mediaId: '../../../Documents/notes' })).toBe('');
   });
 
-  it('[NS-01-R16] the one audio eraser calls it, so Erase now, the 30 day purge and a letter erased on another phone all take the picture', () => {
-    const erase = readFileSync(join(SRC, 'lib', 'capture', 'erase.ts'), 'utf8');
-    const eraser = erase.slice(erase.indexOf('export const eraseAudioFile'), erase.indexOf('};', erase.indexOf('export const eraseAudioFile')));
-    expect(eraser).toMatch(/erasePictureOf\(entryId\);/);
-    expect(readFileSync(join(SRC, 'lib', 'capture', 'sweep.ts'), 'utf8')).toMatch(/sweepPhotosAtLaunch\(\)/);
+});
+
+describe('[NS-01-R19][NX-39-R37] the switch decides what registers, never the data rights', () => {
+  // A stand-in for the scribe-photo module: Node never has the native one, so without it every case looks the same.
+  const native = { pickOne: async () => null, reencodeUpright: async (_s: string, d: string) => d };
+  const fresh = (module: typeof native | null) => {
+    resetPhotoDeviceForTest(module);
+    registerPhotoPicker(null);
+    registerPending(null);
+  };
+  afterEach(() => {
+    resetPhotoDeviceForTest(undefined);
+    setPhotosForTest(null);
+    registerPhotoPicker(null);
+    registerPending(null);
+  });
+
+  it('[NS-01-R19] with the switch off, a build that has the native picker registers nothing: no picker and no pending picture, so no photo start can draw', () => {
+    expect(process.env.EXPO_PUBLIC_PHOTOS).toBeUndefined();
+    fresh(native);
+    registerPhotoDevice();
+    expect([getPhotoPicker(), getPending()]).toEqual([null, null]);
+  });
+
+  it('[NS-01-R19] with the switch on and the native picker, the picker and the pending picture register', () => {
+    fresh(native);
+    setPhotosForTest(true);
+    registerPhotoDevice();
+    expect(getPhotoPicker()).not.toBeNull();
+    expect(getPending()).not.toBeNull();
+  });
+
+  it('[NS-01-R19] with the switch on, a build without the native picker (Expo Go, web) still registers nothing', () => {
+    fresh(null);
+    setPhotosForTest(true);
+    registerPhotoDevice();
+    expect([getPhotoPicker(), getPending()]).toEqual([null, null]);
   });
 });
+

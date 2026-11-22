@@ -42,7 +42,7 @@ describe('child name and signature checks (same rules as first run)', () => {
     expect(textLength('Asha 🌙')).toBe(6);
     expect(clampText('a'.repeat(59) + '🌙🌙', 60)).toBe('a'.repeat(59) + '🌙');
     const cut = clampText('x'.repeat(58) + '👩‍👧', 60);
-    expect(Array.from(cut).length).toBe(60);
+    expect(cut).toBe('x'.repeat(58)); // BL-957: the family would pass 60 code points (the server's limit), so it is dropped whole, never cut
     // no lone surrogate survives
     expect(() => encodeURIComponent(clampText('y'.repeat(59) + '😀😀', 60))).not.toThrow();
   });
