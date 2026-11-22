@@ -44,6 +44,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lamp } from '@/components/ui/lamp';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
@@ -459,13 +460,14 @@ export default function Book() {
             {/* S24: the closed cover the person named and signed in first run, 160 x 214, centred and still (the lamp is
                 the only light). Decorative to VoiceOver: the heading above already says "Asha's book", so the reader
                 hears the title, the body and the button, never the name twice. No count of what is missing. */}
-            <View className="flex-1 items-center justify-center gap-8 px-5">
+            <PinnedActionLayout
+              center
+              insetBottom={false}
+              contentContainerClassName="items-center gap-8 px-5"
+              action={<Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />}>
               <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
               <EmptyState align="center" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
-            </View>
-            <View className="px-5 pb-6">
-              <Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />
-            </View>
+            </PinnedActionLayout>
           </View>
         ) : (
           <>

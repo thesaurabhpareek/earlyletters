@@ -470,6 +470,35 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 12,
+    name: 'raw_transcript is set once on this phone: two triggers (BL-412, DATA-REQ-040, ADR 0025 section 9 row C)',
+    up(db) {
+      // The server refuses any change of a set raw_transcript (entries_guard_immutable); this is the phone's copy of
+      // that rule, for raw_transcript only (captured_at, author_id, child_id, engine_version have local writers).
+      // Empty (or NULL on a draft) to the first words stays allowed; naming the column with the same value passes.
+      // The one exception is a pulled own row taking the first keep's raw (merge.ts takeProvenance): it sets
+      // settings('raw_takeover') to that one entry id and deletes it in the same transaction, so the trigger lets
+      // that entry's raw change and no other. Drafts have no exception. The message holds no words.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON entries
+        WHEN OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'raw_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS drafts_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON drafts
+        WHEN OLD.raw_transcript IS NOT NULL AND OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
