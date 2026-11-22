@@ -20,7 +20,7 @@ describe('[BL-278] [COMPONENTS ErrorLine] the error line, rendered', () => {
     expect(renderMarkup(<ErrorLine message={null} />)).toBe('');
   });
 
-  it('never truncates the words, so at the largest text size the line grows', () => {
+  it('never sets a line limit on the words, so a larger text size is free to grow the line', () => {
     harness.fontScale = 3.12;
     const html = renderMarkup(<ErrorLine message="Asha's letter is still on this phone." />);
     // react-native-web writes numberOfLines as the textOverflow and whiteSpace atomic classes.
