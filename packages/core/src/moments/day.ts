@@ -19,6 +19,9 @@ function civil(z: number): [number, number, number] {
 
 /** Local ISO date (`YYYY-MM-DD`, no zone) of an instant. */
 export function dayKeyOf(ms: number, offsetAt: OffsetAt): string {
-  const [y, m, d] = civil(Math.floor((ms / 1000 + offsetAt(ms)) / 86400));
+  // ASSUMED: a non-finite offset reads as UTC, so the key is always a real date.
+  const raw = offsetAt(ms);
+  const off = Number.isFinite(raw) ? raw : 0;
+  const [y, m, d] = civil(Math.floor((ms / 1000 + off) / 86400));
   return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }

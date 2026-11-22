@@ -21,6 +21,14 @@ describe('[NS-53-R39] dayKeyOf: the local calendar day through offsetAt, no Intl
   });
 });
 
+describe('[NS-53-R39] a non-finite offset never makes a malformed day key', () => {
+  it('NaN and Infinity offsets fall back to UTC (ASSUMED) and still read as YYYY-MM-DD', () => {
+    for (const bad of [Number.NaN, Infinity, -Infinity]) {
+      expect(dayKeyOf(Date.UTC(2026, 10, 15, 7, 0), () => bad)).toBe('2026-11-15');
+    }
+  });
+});
+
 describe('[NS-53-R39] [NS-53-R223] a late night across midnight is two days; a clock-change day is one', () => {
   it('splits 23:50 and 00:10 into two days', () => {
     const d = groupByDay(columns([{ id: 'a', ms: la(2026, 11, 5, 23, 50) }, { id: 'b', ms: la(2026, 11, 6, 0, 10) }]), laOffsetAt, R);

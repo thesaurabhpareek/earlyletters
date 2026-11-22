@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { KIND_VIDEO } from '../../src/moments/columns';
 import { groupByDay } from '../../src/moments/group';
 import { qualifyDay, qualifies } from '../../src/moments/qualify';
-import type { GroupingRules } from '../../src/moments/rules-input';
+import type { MomentsRules } from '../../src/moments';
 import { ASHA_RULES_V1 as R, ashaLibV1, columns, la, laOffsetAt, type Row } from './asha-lib-v1';
 
 const D = (h: number, m: number) => la(2026, 11, 14, h, m);
-const day = (rows: Row[], rules: GroupingRules = R) => groupByDay(columns(rows), laOffsetAt, rules)[0];
+const day = (rows: Row[], rules: MomentsRules = R) => groupByDay(columns(rows), laOffsetAt, rules)[0];
 const frames = (...t: number[]): Row[] => t.map((ms, i) => ({ id: `q${i}`, ms }));
 
 describe('[NS-53-R281] span rule (default): busy only with two sessions or a span of MIN_SPAN', () => {
@@ -26,27 +26,41 @@ describe('[NS-53-R281] span rule (default): busy only with two sessions or a spa
   });
 
   it('4 candidates in two sessions qualify on sessions even inside a short span rule value', () => {
-    const g = day(frames(D(9, 0), D(9, 5), D(13, 0), D(13, 5)), { ...R, MIN_SPAN_SECONDS: 99 * 3600 });
-    expect(qualifyDay(g, { ...R, MIN_SPAN_SECONDS: 99 * 3600 })).toEqual(['sessions']);
+    const g = day(frames(D(9, 0), D(9, 5), D(13, 0), D(13, 5)), { ...R, minSpan: 99 * 3600 });
+    expect(qualifyDay(g, { ...R, minSpan: 99 * 3600 })).toEqual(['sessions']);
   });
 
   it('a burst of 5 pictures in ten minutes is one candidate and never busy; 5 spread frames at 10 minutes are not either', () => {
     expect(qualifies(day(frames(D(9, 0), D(9, 10), D(9, 20), D(9, 30), D(9, 40))), R)).toBe(false);
   });
 
-  it('under the span rule BUSY_DAY alone does not qualify, and 3 candidates over 6 hours do not', () => {
+  it('under the span rule busyDay alone does not qualify, and 3 candidates over 6 hours do not', () => {
     expect(qualifies(day(frames(D(9, 0), D(9, 10), D(9, 20), D(9, 30), D(9, 40))), R)).toBe(false);
     expect(qualifies(day(frames(D(8, 0), D(11, 0), D(14, 0))), R)).toBe(false);
   });
 });
 
-describe('[NS-53-R281] BUSY_HOURS rule (the other predicate, same rules field)', () => {
-  const H: GroupingRules = { ...R, BUSY_RULE: 'hours' };
+describe('[CPO-23] the span predicate gates on its own count field, busyHoursCount', () => {
+  it('the field is 4 and busyDay (5) does not gate the span predicate', () => {
+    expect(R.busyHoursCount).toBe(4);
+    expect(R.busyDay).toBe(5);
+  });
+  it('3 candidates over 2 h 05 do not qualify; busyHoursCount 5 turns the 4-candidate golden off', () => {
+    const four = frames(D(9, 0), D(9, 40), D(10, 20), D(11, 5));
+    expect(qualifies(day(frames(D(9, 0), D(10, 0), D(11, 5))), R)).toBe(false);
+    expect(qualifies(day(four), R)).toBe(true);
+    const five = { ...R, busyHoursCount: 5 };
+    expect(qualifies(day(four, five), five)).toBe(false);
+  });
+});
+
+describe('[NS-53-R281] busyHours rule (the other predicate, same rules field)', () => {
+  const H: MomentsRules = { ...R, spanPredicate: 'busyHours' };
   it('4 candidates within 3 hours qualify; 4 within 3 hours 1 minute do not', () => {
     expect(qualifyDay(day(frames(D(9, 0), D(10, 0), D(11, 0), D(12, 0)), H), H)).toEqual(['busy-hours']);
     expect(qualifyDay(day(frames(D(9, 0), D(10, 0), D(11, 0), D(12, 1)), H), H)).toEqual([]);
   });
-  it('5 candidates qualify on BUSY_DAY in any spread, 4 spread over a day do not', () => {
+  it('5 candidates qualify on busyDay in any spread, 4 spread over a day do not', () => {
     expect(qualifyDay(day(frames(D(8, 0), D(10, 59), D(14, 0), D(17, 0), D(20, 0)), H), H)).toEqual(['busy-day']);
     expect(qualifies(day(frames(D(8, 0), D(11, 1), D(14, 2), D(17, 3)), H), H)).toBe(false);
   });

@@ -1,6 +1,7 @@
 /** NS-53-R38 (exclude before grouping), R41 and R281(b) (burst and near-duplicate candidates), R107 (synthetic only). */
 import { describe, expect, it } from 'vitest';
-import { KIND_VIDEO, SUBTYPE } from '../../src/moments/columns';
+import { KIND_IMAGE, KIND_VIDEO, SUBTYPE } from '../../src/moments/columns';
+import { MEDIA_KINDS } from '../../src/moments';
 import { excludeAssets } from '../../src/moments/exclude';
 import { mergeNear } from '../../src/moments/near';
 import { ASHA_RULES_V1 as R, columns, la, laOffsetAt, type Row } from './asha-lib-v1';
@@ -10,19 +11,37 @@ const at = (s: number, extra: Partial<Row> = {}): Row => ({ id: `p${Math.round(s
 const cands = (rows: Row[]) => mergeNear(excludeAssets(columns(rows)), R, laOffsetAt);
 
 describe('[NS-53-R38] exclude: before grouping, leaving no trace', () => {
-  it('drops no-date, hidden, screenshot, screen recording, animation and non-user-library assets', () => {
+  it('drops no-date, screenshot, screen recording and animation assets', () => {
     const bad = [
       { id: 'nodate', ms: 0 },
       { id: 'nan', ms: Number.NaN },
-      { id: 'hid', ms: T0, flags: SUBTYPE.HIDDEN },
       { id: 'shot', ms: T0, flags: SUBTYPE.SCREENSHOT },
       { id: 'rec', ms: T0, flags: SUBTYPE.SCREEN_RECORDING, kind: KIND_VIDEO },
       { id: 'gif', ms: T0, flags: SUBTYPE.ANIMATED },
-      { id: 'shared', ms: T0, flags: SUBTYPE.NOT_USER_LIBRARY },
     ];
     expect(excludeAssets(columns([...bad, { id: 'keep', ms: T0 }])).map((i) => i.ids)).toEqual([['keep']]);
     // "No trace": a burst whose only frames are excluded leaves nothing, not an empty candidate.
     expect(excludeAssets(columns(bad.map((b) => ({ ...b, burst: 'b' }))))).toEqual([]);
+  });
+
+  it('[CDO-21] a missing date arrives as NaN; Infinity, negative and zero dates are dropped too', () => {
+    const bad = [Number.NaN, Infinity, -Infinity, -1, -86_400_000, 0].map((ms, i) => ({ id: `bad${i}`, ms }));
+    expect(excludeAssets(columns([...bad, { id: 'keep', ms: T0 }])).map((i) => i.ids)).toEqual([['keep']]);
+  });
+
+  it('[CPrivO-13] core keeps no HIDDEN or NOT_USER_LIBRARY bit: those are fetch options, not reads', () => {
+    expect(Object.keys(SUBTYPE).sort()).toEqual(['ANIMATED', 'LIVE', 'PANORAMA', 'SCREENSHOT', 'SCREEN_RECORDING']);
+  });
+
+  it('the kind values come from MEDIA_KINDS, one owner', () => {
+    expect(KIND_IMAGE).toBe(MEDIA_KINDS.indexOf('image'));
+    expect(KIND_VIDEO).toBe(MEDIA_KINDS.indexOf('video'));
+  });
+
+  it('a burstId column shorter than ids does not merge unrelated pictures', () => {
+    const w = columns([at(0), at(500), at(1000)]);
+    const short = { ...w, burstId: [null] as (string | null)[] };
+    expect(excludeAssets(short)).toHaveLength(3);
   });
 
   it('keeps Live, panorama and favourites as ordinary pictures (they change nothing)', () => {
@@ -84,5 +103,15 @@ describe('[NS-53-R281] near-duplicate rule: gap from the PREVIOUS frame, span ca
 
   it('never folds a video into a picture group', () => {
     expect(cands([at(0), at(2, { kind: KIND_VIDEO, durationMs: 5000 })])).toHaveLength(2);
+  });
+
+  it('[CPO-24] a burst id on a video is ignored: two videos sharing one are two candidates, a picture of that burst stays alone', () => {
+    const out = cands([at(0, { kind: KIND_VIDEO, burst: 'b' }), at(1, { kind: KIND_VIDEO, burst: 'b' }), at(2, { burst: 'b' })]);
+    expect(out.map((c) => [c.video, c.ids.length])).toEqual([[true, 1], [true, 1], [false, 1]]);
+  });
+
+  it('[CPO-24] a video between two near pictures does not split them, and stays its own candidate', () => {
+    const out = cands([at(0), at(4, { kind: KIND_VIDEO, durationMs: 3000 }), at(8)]);
+    expect(out.map((c) => [c.video, c.ids.length])).toEqual([[false, 2], [true, 1]]);
   });
 });

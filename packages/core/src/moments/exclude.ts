@@ -3,9 +3,10 @@
  * Excluded assets leave no trace: no count, no id, no empty candidate (NS-53-R38).
  * The parent's "leave out this picture" is dropped (R255, v3), so there is no per-picture exclusion.
  */
-import { KIND_VIDEO, SUBTYPE, type AssetColumns, type Candidate } from './columns';
+import { KIND_VIDEO, SUBTYPE, type Candidate } from './columns';
+import type { LibraryWindow } from './types';
 
-const EXCLUDED = SUBTYPE.SCREENSHOT | SUBTYPE.SCREEN_RECORDING | SUBTYPE.ANIMATED | SUBTYPE.HIDDEN | SUBTYPE.NOT_USER_LIBRARY;
+const EXCLUDED = SUBTYPE.SCREENSHOT | SUBTYPE.SCREEN_RECORDING | SUBTYPE.ANIMATED;
 
 interface Frame {
   id: string;
@@ -30,15 +31,17 @@ function toCandidate(fs: Frame[]): Candidate {
 }
 
 /** Candidates sorted by start time then id, so the result is the same in any input order. */
-export function excludeAssets(c: AssetColumns): Candidate[] {
+export function excludeAssets(c: LibraryWindow): Candidate[] {
   const loose: Frame[] = [];
   const bursts = new Map<string, Frame[]>();
   for (let i = 0; i < c.ids.length; i++) {
     const ms = c.creationMs[i];
+    // CDO-21: a missing date crosses the bridge as NaN; a reset camera clock gives 0 or less.
     if (!Number.isFinite(ms) || ms <= 0) continue;
     if (c.subtypeFlags[i] & EXCLUDED) continue;
     const video = c.kind[i] === KIND_VIDEO;
-    const burst = video ? null : c.burstId[i];
+    // CPO-24: a burst id on a video is ignored. A short burstId column reads as no burst.
+    const burst = video ? null : (c.burstId[i] ?? null);
     const f: Frame = { id: c.ids[i], ms, video, heart: c.favourite[i] === 1, burst, duration: c.durationMs[i] };
     if (burst === null) loose.push(f);
     else (bursts.get(burst) ?? bursts.set(burst, []).get(burst)!).push(f);

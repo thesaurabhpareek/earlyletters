@@ -4,20 +4,13 @@
  * real place, no real library. Test-only; never imported from src.
  * Phone zone: America/Los_Angeles. Clock for most cases: Sat 21 Nov 2026 18:00 local.
  */
-import { SUBTYPE, KIND_IMAGE, KIND_VIDEO, type AssetColumns } from '../../src/moments/columns';
-import type { GroupingRules } from '../../src/moments/rules-input';
+import { SUBTYPE, KIND_IMAGE, KIND_VIDEO } from '../../src/moments/columns';
+import { MOMENTS_RULES, type LibraryWindow, type MomentsRules } from '../../src/moments';
 
-/** The PROPOSED values of spec 7.2a (ASSUMED, nobody's measurement). PR 1's rules.ts owns the real ones. */
-export const ASHA_RULES_V1: GroupingRules = {
-  NEAR_SECONDS: 10,
-  NEAR_GROUP_MAX_SECONDS: 60,
-  SESSION_GAP_SECONDS: 3 * 3600,
-  MIN_SPAN_SECONDS: 2 * 3600,
-  BUSY_DAY: 5,
-  BUSY_HOURS_COUNT: 4,
-  BUSY_HOURS_WITHIN_SECONDS: 3 * 3600,
-  BUSY_RULE: 'span',
-};
+export { KIND_IMAGE, KIND_VIDEO, SUBTYPE };
+
+/** The rules under test: PR 1's data, never a copy (CODE-R13). */
+export const ASHA_RULES_V1: MomentsRules = MOMENTS_RULES;
 
 const nthSunday = (year: number, month0: number, n: number) => {
   const first = new Date(Date.UTC(year, month0, 1)).getUTCDay();
@@ -49,25 +42,29 @@ export interface Row {
   durationMs?: number;
 }
 
-export function columns(rows: readonly Row[]): AssetColumns {
+export function columns(rows: readonly Row[]): LibraryWindow {
   const n = rows.length;
-  const c: AssetColumns = {
+  const c = {
     ids: rows.map((r) => r.id),
     creationMs: new Float64Array(n),
+    utcOffsetSec: new Int32Array(n),
     kind: new Uint8Array(n),
     subtypeFlags: new Uint32Array(n),
     favourite: new Uint8Array(n),
     burstId: rows.map((r) => r.burst ?? null),
+    placeCell: rows.map(() => null),
     durationMs: new Float64Array(n),
+    truncated: false,
   };
   rows.forEach((r, i) => {
+    c.utcOffsetSec[i] = laOffsetAt(r.ms);
     c.creationMs[i] = r.ms;
     c.kind[i] = r.kind ?? KIND_IMAGE;
     c.subtypeFlags[i] = r.flags ?? 0;
     c.favourite[i] = r.heart ? 1 : 0;
     c.durationMs[i] = r.durationMs ?? 0;
   });
-  return c;
+  return c as LibraryWindow;
 }
 
 /** mulberry32: the seeded generator, so a re-run makes the same library. */
@@ -95,7 +92,7 @@ export interface AshaCase {
   qualifying: string[];
 }
 
-/** F01 to F06, F08 to F10, F13 and F14 of P6 section 6.9; the rest need PR 3, 4 or 5 or the native module. */
+/** F01 to F06, F08, F13 and F14 of P6 section 6.9 (F09 hidden and F10 shared album are fetch options now, CPrivO-13); the rest need PR 3, 4 or 5 or the native module. */
 export function ashaLibV1(): AshaCase[] {
   seq = 0;
   const rnd = seeded(20251112);
@@ -143,8 +140,6 @@ export function ashaLibV1(): AshaCase[] {
       qualifying: ['2026-11-01'],
     },
     { name: 'F08 no date', rows: [img('f08', 0), img('f08', Number.NaN)], days: {}, qualifying: [] },
-    { name: 'F09 hidden', rows: [img('f09', la(2026, 11, 9, 9), { flags: SUBTYPE.HIDDEN })], days: {}, qualifying: [] },
-    { name: 'F10 shared album', rows: [img('f10', la(2026, 11, 9, 9), { flags: SUBTYPE.NOT_USER_LIBRARY })], days: {}, qualifying: [] },
     {
       name: 'F13 three busy days',
       rows: f13,

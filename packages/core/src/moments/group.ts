@@ -4,11 +4,12 @@
  * reads a zone database (no Intl; NS-53-R223 scopes that rule to `moments/`). Because the day is
  * read off the local wall clock, the repeated hour of a clock change stays inside one day.
  */
-import type { AssetColumns, Candidate } from './columns';
+import type { Candidate } from './columns';
 import { dayKeyOf, type OffsetAt } from './day';
 import { excludeAssets } from './exclude';
 import { mergeNear } from './near';
-import type { GroupingRules } from './rules-input';
+import type { MomentsRules } from './rules';
+import type { LibraryWindow } from './types';
 
 export { dayKeyOf, type OffsetAt } from './day';
 
@@ -21,7 +22,7 @@ export interface DayGroup {
 }
 
 /** Exclude, collapse, merge near-duplicates, then group by local day, oldest day first. */
-export function groupByDay(c: AssetColumns, offsetAt: OffsetAt, rules: GroupingRules): DayGroup[] {
+export function groupByDay(c: LibraryWindow, offsetAt: OffsetAt, rules: MomentsRules): DayGroup[] {
   const byDay = new Map<string, Candidate[]>();
   for (const cand of mergeNear(excludeAssets(c), rules, offsetAt)) {
     const k = dayKeyOf(cand.startMs, offsetAt);
@@ -32,7 +33,7 @@ export function groupByDay(c: AssetColumns, offsetAt: OffsetAt, rules: GroupingR
     const sessions: Candidate[][] = [];
     let prevEnd = -Infinity;
     for (const cand of candidates) {
-      if (cand.startMs - prevEnd > rules.SESSION_GAP_SECONDS * 1000) sessions.push([]);
+      if (cand.startMs - prevEnd > rules.sessionGap * 1000) sessions.push([]);
       sessions[sessions.length - 1].push(cand);
       prevEnd = Math.max(prevEnd, cand.endMs);
     }
