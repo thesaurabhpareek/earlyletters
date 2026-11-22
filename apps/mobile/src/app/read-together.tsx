@@ -289,7 +289,7 @@ function EndOfBook({ onClose, onAgain }: { onClose: () => void; onAgain: () => v
       testID="readTogether.end">
       <View accessibilityLiveRegion="polite" className="gap-8">
         <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
-        <Text variant="title1" asHeading className="text-center">
+        <Text variant="title1" asHeading>
           {rt.endOfBook}
         </Text>
       </View>

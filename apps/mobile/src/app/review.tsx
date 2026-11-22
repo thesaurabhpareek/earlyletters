@@ -50,7 +50,7 @@ import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { File } from 'expo-file-system';
 import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
   describeEdit,
@@ -980,7 +980,10 @@ export default function Review() {
           )}
 
           {firstNote && phase === 'ready' && (
-            <Animated.View entering={motion.enter()} layout={motion.layout()}>
+            <Animated.View
+              entering={motion.enter()}
+              exiting={FadeOut.duration(motion.reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}
+              layout={motion.layout()}>
               {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
               <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
                 <View className="flex-row items-center justify-between gap-2">
