@@ -80,9 +80,14 @@ export function parseDays(text: string): ParsedDays {
 
 export const serializeDays = (file: DaysFile): string => JSON.stringify(file);
 
+/** Own-key test that works on every JS engine the app runs on. */
+const own = (obj: object, key: string): boolean => Object.prototype.hasOwnProperty.call(obj, key);
+
 /** An id that is not a slug is refused (null), never stored; so is a new id past the count limit. */
 export const tickDay = (file: DaysFile, id: string): DaysFile | null =>
-  DAY_ID.test(id) && (id in file.ticked || Object.keys(file.ticked).length < DAYS_MAX_TICKS) ? { ...file, ticked: { ...file.ticked, [id]: file.ticked[id] ?? {} } } : null;
+  DAY_ID.test(id) && (own(file.ticked, id) || Object.keys(file.ticked).length < DAYS_MAX_TICKS)
+    ? { ...file, ticked: { ...file.ticked, [id]: own(file.ticked, id) ? file.ticked[id]! : {} } }
+    : null;
 
 export function untickDay(file: DaysFile, id: string): DaysFile {
   const { [id]: _gone, ...rest } = file.ticked;
