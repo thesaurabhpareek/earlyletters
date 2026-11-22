@@ -21,7 +21,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SqlDb } from '../src/lib/db/sql';
+import type { SqlDb, SqlParam } from '../src/lib/db/sql';
 import type { SyncEngine } from '../src/lib/sync/engine';
 import type { SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
@@ -138,6 +138,21 @@ function editWords(p: Phone, id: string, text: string): void {
 }
 
 const ledgerCount = (p: Phone) => p.store.ledgerDb().counts();
+
+/**
+ * Simulates damaged local data (a bug that got past the raw_transcript trigger, BL-412) so the server's SCIMM refusal
+ * can be tested: the row is read, removed and inserted again with the differing raw (every other column as it was).
+ * A plain insert; the trigger and the takeover flag are not touched.
+ */
+function reseedRaw(db: SqlDb, id: string, raw: string): void {
+  const r = db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', id)!;
+  const cols = Object.keys(r);
+  db.run('DELETE FROM entries WHERE id = ?', id);
+  db.run(
+    `INSERT INTO entries (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+    ...cols.map((c) => (c === 'raw_transcript' ? raw : (r[c] as SqlParam))),
+  );
+}
 
 describe('two parents, three phones, one server (protocol v1)', () => {
   let mama: Phone;
@@ -1524,7 +1539,7 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     await P.sync();
     await Q.sync();
     // A client bug changes this phone's raw transcript of a letter the server holds (not the second-Keep window).
-    P.db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', 'changed by a bug', id);
+    reseedRaw(P.db, id, 'changed by a bug');
     editWords(P, id, 'You found a snail on the step and named it.');
     const w = watch();
     expect((await P.sync(w.s)).conflicts).toBe(1);
@@ -2109,7 +2124,7 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     const erased = writeLetter(P, BOOK, 'You ate a whole pear.');
     await P.sync();
     await Q.sync();
-    if (scimm) P.db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', 'changed by a bug', erased);
+    if (scimm) reseedRaw(P.db, erased, 'changed by a bug');
     editWords(P, erased, 'You ate a whole pear, and the core.'); // offline: op B
     const opB = queuedFor(P, erased)[0].op_id;
     queue();

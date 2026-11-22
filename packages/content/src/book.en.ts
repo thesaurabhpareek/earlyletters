@@ -11,7 +11,7 @@ export const book = {
   productName: `${brand.name}: Year {n}`,
   spine: `${brand.name}  |  {child}  |  Year {n}`,
   backCover:
-    "This book was spoken before it was written. Every letter inside comes from someone who loves {child}, said out loud on an ordinary day and kept in their own words. Some are long. Some are a single line. Read them slowly, read them together, and come back to them whenever you like.",
+    "Every letter in this book is from someone who loves {child}, said out loud or typed on an ordinary day. Some are long and some are a single line. Read them together, and come back to them whenever you like.",
   dedication: "For {child}, from everyone who talked to you this year.",
   /** Printed when the book has no name (NX-31-R3): "For your child, ... talked to you" would switch person. */
   dedicationNoName: "For you, from everyone who talked to you this year.",
