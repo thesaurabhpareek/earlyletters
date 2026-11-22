@@ -1,0 +1,33 @@
+# Proposal: refuse a release candidate tag unless develop launches green (BL-1480, CR-74)
+
+Status: proposal, 22 Nov 2026. This pull request changes nothing under `.github/`; the founder applies the patch. Door: two-way (delete the job and the `needs` line).
+
+## Why
+
+An `ios-v*-rc.<n>` tag never moves (ADR 0022), and it starts an EAS production build. CR-74 let app code merge without waiting for the macOS launch check, and made the post-merge launch check a manual run of `iOS compile` on `develop`. Nothing stops an RC tag when that run is red or has never happened. Evidence (22 Nov 2026, `gh api repos/<repo>/actions/workflows/ios-compile.yml/runs?branch=develop`): `ios-compile.yml` has no push trigger, so the only runs on `develop` are `workflow_dispatch` runs; the last three were on 22 Nov, and before them the last was 9 Nov (a failure). A tag cut between dispatches would see no run, or a stale one.
+
+## What changes
+
+`docs/ops/proposed/workflows/release-ios-launch-gate.patch` (one file, `release-ios.yml`):
+
+- New first job `launch-gate` ("launch gate (develop launches green)"), only on a push of a tag containing `-rc.`. Permissions `actions: read` and `contents: read` on the job; no secret, no write. Checkout with full history, then `node scripts/release/launch-gate.mjs --repo "$REPO" --sha "$GITHUB_SHA"`.
+- The API call (inside the script): `GET repos/<repo>/actions/workflows/ios-compile.yml/runs?branch=develop&per_page=30`. Pull request runs are ignored. The newest run (by `created_at`) is the one that counts.
+- `classify` gets `needs: launch-gate` and runs unless the gate failed. A failed gate skips `classify`, so `checks` and `build` (which need `classify`) never start. Final `ios-v<x.y.z>` tags skip the gate: they already require an RC tag on the same commit.
+- The script `scripts/release/launch-gate.mjs` (tested in `scripts/release/launch-gate.test.mjs`) passes only when the newest run has status `completed`, conclusion `success`, and a head commit that is the merge base of the tagged commit and `develop` or a descendant of it (`git merge-base --is-ancestor`). Anything else, and any read error, fails closed.
+
+Failure message (the first line also appears as a `::error::` annotation):
+
+`Release candidate tag refused: <reason>. Run the "iOS compile" workflow on develop (workflow_dispatch), wait for it to finish green, then push a new rc tag number (tags never move).`
+
+Reasons: `no iOS compile run on develop at or after the merge base <sha9>`, `run <id> on <sha9> is <status>, not finished`, `run <id> on <sha9> concluded <conclusion>`, and read failures.
+
+## Decisions for the founder (smallest reversible version chosen)
+
+1. What counts as the gate. Chosen: the whole `iOS compile` run concluding `success` (its `launch` job runs on every dispatch; `compile` is also part of the run). Alternative: read only the `store-profile Release launch` job. Stricter is the safe default for a one-way door.
+2. Does an unfinished run block. Chosen: yes (a queued macOS run can take hours, per ci-speed.md section 6, so dispatch early).
+3. Manual override. None is built in. The override is the founder's: the existing "by hand only as an exception, approved in writing" path in `docs/ops/RELEASE.md` 3.4, or deleting the job. An input or variable bypass would be a hole in a one-way-door check, so it is not proposed.
+4. "At or after the merge base of the tagged commit" is read as: the run's commit is the merge base of the tag and `develop`, or later on `develop`. `release/<x.y>` is cut from `main` and takes cherry-picks, so the tagged commit itself is never on `develop`; the merge base is the nearest shared point.
+
+## Side effect of the `NATIVE_PATHS` change (same PR, BL-1480 scope 1)
+
+The five new build paths now hold a PR on both macOS checks in `merge-queue.mjs`. The `changes` job in `ios-compile.yml` runs the `compile` job only for `modules/`, `app.config.ts`, `apps/mobile/package.json`, `ios/`, `package-lock.json` and the workflow file (and `eas.json` once `ios-compile-eas-json.patch` is applied). For a PR that touches only `metro.config.js`, `store.config.json`, `version.json`, `privacy-manifest.ts` or `permission-copy.ts`, `compile` is skipped, its conclusion is `skipped`, and the merge table reads that as not green (WAIT-CI). Two ways out, for Karma: add those paths to the `changes` pattern (same shape as `ios-compile-eas-json.patch`, costs a Debug compile on those PRs), or have the table accept `skipped` for the compile check when the launch check is green. Not done here: neither is in the row's scope.
