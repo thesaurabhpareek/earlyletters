@@ -510,7 +510,8 @@ describe('[S51] the launch lines say only what the code can back (S2)', () => {
     expect('DELETE FROM settings WHERE key = ?').not.toMatch(harmful);
     expect(migrations).not.toMatch(harmful);
     const deleted = [...migrations.matchAll(/\bDELETE\s+FROM\s+(\w+)/gi)].map((m) => m[1]);
-    expect(deleted).toEqual(['settings', 'settings']);
+    // Two in the update steps (v2, v3) and one in sweepTakeoverKeys (the boot sweep of the two guard-window keys), all `settings`.
+    expect(deleted).toEqual(['settings', 'settings', 'settings']);
     // Each step runs in its own transaction, with the version bump: a step that fails leaves the file as it was before that step.
     expect(migrations).toMatch(/db\.transaction\(\(\) => \{\s*m\.up\(db, ctx\);\s*db\.exec\(`PRAGMA user_version = \$\{m\.version\}`\);\s*\}\);/);
   });
