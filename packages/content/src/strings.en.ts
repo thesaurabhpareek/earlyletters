@@ -92,7 +92,7 @@ export const en = {
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
       privateNote: "Private by default. You choose what goes in the book.",
-      cta: "That sounds right",
+      cta: "Continue",
     },
 
     child: {
