@@ -37,11 +37,11 @@ describe('[BL-378] finish makes one book per name', () => {
   });
 
   it('twins: two books, not four, however many taps', () => {
-    const s = screen(['Asha', 'Mira']);
+    const s = screen(['Asha', 'Asha B']);
     s.tap();
     s.tap();
     s.tap();
-    expect(s.books).toEqual(['Asha', 'Mira']);
+    expect(s.books).toEqual(['Asha', 'Asha B']);
   });
 
   it('a blocked call makes nothing and does not latch: the next call can still make the book', () => {
