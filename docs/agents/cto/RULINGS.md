@@ -1066,3 +1066,14 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Way back: revert the workflow edits (#1530, #1568); the docs changes are text only.
 - Revisit when: the p90 wait in the 22 to 23 UTC and 05 UTC hours stays above 15 minutes for a week after the push discipline has been in force, measured with the saved baseline script; or the founder reopens the plan question.
 - Founder-only: no, apart from any future plan change (money).
+
+### CR-175 Stale founder-merge lines for docs/agents, and iOS build batching held (22 Nov 2026, Karma)
+- Question: which BACKLOG rows that say the founder merges `docs/agents/**` are stale, what is P01 (#846), and do we start iOS build batching (`ci-speed.md` change 3) now?
+- Tier and type: T1; clear for the first two, complicated for the third.
+- Options considered: for batching, (a) apply `ios-compile-batch.patch` now, (b) build the two missing safeguards first and then batch, (c) hold and re-measure.
+- Ruling: (1) Seven BACKLOG rows are stale. CR-73 moved `docs/agents/**` to Karma, and CR-144 item 3 says CR-73 "stands whole", so it does not bring the founder back. The CODEOWNERS line for `/docs/agents/` is a review request only: `require_code_owner_reviews` is false on `develop` (read through the API on 22 Nov 2026). The rows are reworded in this PR. Legal text under `docs/legal/**` stays the founder's (D-125), and those rows are untouched. (2) P01 is closed: #846 was closed as a draft and never merged, and BL-952 to BL-987 are on `develop`. (3) Option (c). Batching is held and `ios-compile-batch.patch` is not applied.
+- Why: on 22 Nov 2026 I read the 24 hour macOS jobs of `ios-compile.yml`: 120 finished jobs, queue wait median 0.0 min, p90 18.7, max 64.3, run time median 15.6 (231 workflow runs, 70 cancelled by newer pushes). The launch check is a watch item and not a required check (CR-73, CR-74), so a macOS queue does not hold a merge unless the PR touches `NATIVE_PATHS`. The tail is real but it does not block the merge path, and the patch moves a check's report to after merge and, per Reviewer B, needs a red-launch alert and a rule that store builds wait on a green launch of the exact commit. Risk beats return today. Not measured: how many native-path PRs waited, and the 5-job macOS cap as the cause (likely, not proven).
+- Door: two-way. Way back: revert this PR (text only).
+- Revisit when: native-path PRs wait more than 30 minutes for the macOS jobs on three separate days, or macOS p90 wait stays above 30 minutes for a week. Then build the red-launch alert and the store-build gate first, as their own PRs, and batch after them.
+- Founder-only: no.
+- Signed: Karma
