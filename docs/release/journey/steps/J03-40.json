@@ -1,0 +1,31 @@
+{
+  "id": "J03-40",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Hidden books",
+  "note": "Each book hidden on this phone, with \"Show this book again\". Nothing is deleted by hiding, and nothing here deletes.",
+  "from": "J03-07",
+  "shot": "screens/J03-40.png",
+  "route": "/settings/children/hidden",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Hidden books Avi Show this book again",
+  "lines": [
+    "Hidden books",
+    "Avi",
+    "Show this book again"
+  ]
+}

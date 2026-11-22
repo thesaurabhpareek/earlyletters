@@ -6,27 +6,38 @@
  *
  * Rules:
  * - Every letter on this phone, in book or private, in every book including
- *   hidden ones. Recently deleted letters are left out by design (D-085): a
- *   letter the person deleted is not part of their book, and they can Restore
- *   it from Recently deleted for 30 days. (`listDeleted` exists; export does
- *   not read it.)
+ *   hidden ones. Recently deleted letters are left out for now: whether they
+ *   belong in an export, always or only when ticked (spec 4.1), is BL-388's
+ *   to settle (CR-35). D-085 sets up the 30-day shelf; it does not decide
+ *   this. (`listDeleted` exists; export does not read it.) One exception: while an account-deletion
+ *   request is open, the snapshot also holds the books the server closed and the Recently deleted letters
+ *   (DATA-REQ-053, BL-446; scope.logic.ts). This planner does not care: it plans what it is given.
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
- * - Original recordings, byte for byte. A recording that is not on this
- *   phone is listed with `audio_missing`.
+ * - Original recordings, byte for byte, each named and labelled by its own
+ *   container (`.m4a`, `audio/mp4`; `.aac`, `audio/aac`; ADR 0027). A
+ *   recording that is not on this phone is listed with `audio_missing`.
  * - The printable book holds the letters in the book that have words. A quiet-day mark never prints
  *   (D-084), even if an old row says it is in the book.
  * - A quiet-day mark is exported as a row in entries.json with `final_text: ''` (the whole history
  *   stays complete) and a small letters/ file with the date and the label only. Old rows that hold
  *   the former template sentence export the same way: the sentence is not a person's words.
+ * - Other versions of the exporter's own words that the phone keeps and the letter does not show
+ *   (conflict copies, F16-REQ-023) go in data/other-versions.json, word for word, until the author picks.
+ * - Letters that are waiting (held at the Keep step, waiting to be read back, typed and not kept; PL-2,
+ *   F14-REQ-039, schema 1.6.0) go in waiting/ and data/waiting.json: the person's own words (typed, or
+ *   exactly as heard) and the original recording, byte for byte. Never a machine-tidied version: nothing
+ *   was kept, so there is no verified edit set. Free in every plan state, like the rest of the export.
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
-import { copy } from '../copy';
-import { provenanceKey } from '../provenance';
-import { dayDate, letterDateline } from '../dates';
-import type { Child, Entry } from '../store';
+import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
+import { childLabel, copy } from '../copy';
+import { pageProvenanceKey } from '../provenance';
+import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
+import { restorable, type ReviewSaved } from '../capture/review-persist.logic';
+import type { Child, Draft, Entry } from '../store';
 import { exportCopy } from './copy';
 import {
   EXPORT_FORMAT,
@@ -37,10 +48,21 @@ import {
   type EntriesFile,
   type ExportAudio,
   type ExportEntry,
+  type ExportConsentHistory,
+  type ExportProfile,
+  type ExportDictionaryTerm,
+  type ExportMachineEdit,
+  type OtherVersionsFile,
+  type ExportPhoneConsent,
+  type ExportWaitingLetter,
+  type WaitingFile,
+  type WaitingReason,
 } from './schema';
 
 export interface SnapshotChild extends Child {
   hidden: boolean;
+  /** The exporter's role in this book (the server's member list; a book only on this phone is theirs). */
+  role: 'parent' | 'contributor';
 }
 
 export interface SnapshotEntry extends Entry {
@@ -50,6 +72,30 @@ export interface SnapshotEntry extends Entry {
   audioOnPhone: boolean;
   /** Its size on disk, when known (progress and space checks). */
   audioSizeOnPhone: number | null;
+}
+
+/** A version of an own letter's words kept on this phone that the letter does not show (a conflict copy). */
+export interface SnapshotOtherVersion {
+  entryId: string;
+  finalText: string;
+  editLevel: string;
+  machineEdits: unknown[];
+  keptAt: string;
+}
+
+/** A letter that is waiting on this phone (a draft not being let go), with its file's state (1.6.0). */
+export interface SnapshotWaiting extends Draft {
+  /** The recording file exists on this phone. */
+  audioOnPhone: boolean;
+  /** Its size on disk, when known. */
+  audioSizeOnPhone: number | null;
+  /** The person's own words from Review's Change words, kept on the draft (v9, #522); null when they changed nothing. */
+  changedWords?: string | null;
+}
+
+/** The phone's consent choices for account.json (schema 1.1.0). */
+export function phoneConsent(ageConfirmed: boolean, usage: string | null | undefined): ExportPhoneConsent {
+  return { age_confirmed: ageConfirmed, usage_sharing: usage === 'granted' || usage === 'denied' ? usage : 'not_answered' };
 }
 
 export interface ExportSnapshot {
@@ -63,6 +109,23 @@ export interface ExportSnapshot {
   signedIn: boolean;
   children: SnapshotChild[];
   entries: SnapshotEntry[];
+  /** Letters that are waiting (1.6.0, PL-2). Absent or empty: no waiting/ folder and no waiting.json. */
+  waiting?: SnapshotWaiting[];
+  /** Conflict copies (F16-REQ-023). Absent or empty: no other-versions file. */
+  otherVersions?: SnapshotOtherVersion[];
+  /** For account.json: the consent choices this phone holds (never a server record). */
+  consent: ExportPhoneConsent;
+  /** For account.json (1.3.0): the server's consent record, or why it is not here. */
+  consentHistory: ExportConsentHistory;
+  /** For account.json (1.4.0): the person's own profile from the server, or why it is not here. */
+  profile: ExportProfile;
+  /** For account.json (1.3.0): the words spelled your way, as kept on this phone (each book's child name and your signature). */
+  dictionary: ExportDictionaryTerm[];
+}
+
+/** The exporter's role for the manifest: parent when they are a parent of any book here, or there are none. */
+export function exporterRole(children: readonly Pick<SnapshotChild, 'role'>[]): 'parent' | 'contributor' {
+  return children.length === 0 || children.some((c) => c.role === 'parent') ? 'parent' : 'contributor';
 }
 
 export interface TextFile {
@@ -75,6 +138,8 @@ export interface AudioJob {
   entryId: string;
   uri: string;
   path: string;
+  /** The recording's own media type (`audio/mp4` or `audio/aac`). */
+  mediaType: ExportAudio['media_type'];
   recordedSha256: string | null;
   durationMs: number | null;
   sizeHint: number | null;
@@ -94,10 +159,12 @@ export interface AudioResult {
 }
 
 export interface ExportPlan {
-  /** Written first: README, schema, letters, index.html. */
+  /** Written first: README, schema, letters, index.html, then waiting/ text files. */
   textFiles: TextFile[];
   books: BookJob[];
   audio: AudioJob[];
+  /** Recordings of waiting letters (1.6.0), under waiting/; `entryId` is the draft id. */
+  waitingAudio: AudioJob[];
 }
 
 export const MEDIA = {
@@ -105,10 +172,11 @@ export const MEDIA = {
   json: 'application/json',
   html: 'text/html; charset=utf-8',
   pdf: 'application/pdf',
-  m4a: 'audio/mp4',
 } as const;
 
-const fill = (text: string, values: Record<string, string | number>) => renderTemplate(text, { app: brand.name, ...values });
+// A book with no name reads "your child" (NX-31-R3); the stored name stays empty.
+const fill = (text: string, values: Record<string, string | number>) =>
+  renderTemplate(text, { app: brand.name, ...values, ...(typeof values.child === 'string' ? { child: childLabel(values.child) } : {}) });
 
 // ── Names and paths ──────────────────────────────────────────────────────
 
@@ -135,10 +203,22 @@ export function childFolders(children: Pick<Child, 'id' | 'name'>[]): Map<string
   return out;
 }
 
-export const audioPath = (entryId: string) => `audio/${entryId}.m4a`;
+/** A recording's extension and media type in the export, from its stored file name (ADR 0027). No name means M4A, as before. */
+export function recordingFileOf(audioUri: string | null | undefined): { extension: string; mimeType: ExportAudio['media_type'] } {
+  const { extension, mimeType } = RECORDING_FILES[containerOfRecording(audioUri)];
+  return { extension, mimeType };
+}
 
-export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn'>): string {
-  return `letters/${folder}/${e.occurredOn.slice(0, 7)}/${e.occurredOn.slice(0, 10)}_${e.id}.txt`;
+export const audioPath = (entryId: string, audioUri?: string | null) => `audio/${entryId}${recordingFileOf(audioUri).extension}`;
+
+/** A waiting letter's files (1.6.0). */
+export const waitingAudioPath = (draftId: string, audioUri?: string | null) => `waiting/${draftId}${recordingFileOf(audioUri).extension}`;
+export const waitingTextPath = (draftId: string) => `waiting/${draftId}.txt`;
+
+export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn' | 'occurredPrecision'>): string {
+  // A month-only letter's name carries no day: its stored day is only where its month of age starts (1.5.0).
+  const day = isMonthOnly(e) ? e.occurredOn.slice(0, 7) : e.occurredOn.slice(0, 10);
+  return `letters/${folder}/${e.occurredOn.slice(0, 7)}/${day}_${e.id}.txt`;
 }
 
 /** Oldest first, the way a book reads. */
@@ -159,9 +239,13 @@ const printable = (e: Entry) => e.inBook && !quiet(e) && !waiting(e) && e.finalT
 /** The words an exported row carries. A quiet-day mark has none, whatever an old row stored. */
 const wordsOf = (e: Entry) => (quiet(e) ? '' : e.finalText);
 
-/** The one rule for what a letter's words may be called (lib/provenance.ts, D-086). */
-function provenance(e: Entry): string {
-  return copy.book.provenance[provenanceKey(e)];
+/**
+ * The one rule for what a letter's words may be called (lib/provenance.ts, D-086), the letter page's rule: another
+ * person's letter has no raw words on this phone, so the file says only that it was spoken and never guesses at fixes
+ * (P5 critics' pass, S8).
+ */
+function provenance(e: SnapshotEntry): string {
+  return copy.book.provenance[pageProvenanceKey(e, { own: e.own })];
 }
 
 /** Month of age (0 = the first weeks), or null before birth or with no birthday ("Before You"). */
@@ -190,16 +274,16 @@ export function audioMissingReason(e: SnapshotEntry): 'not_on_this_device' | nul
 function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): string {
   const l = exportCopy.letterFile;
   // A quiet-day mark: the date and the label only. No author, no words, no signature (D-084).
-  if (quiet(e)) return `${l.date}: ${letterDateline(child, e.occurredOn, locale)}\n\n${copy.book.quietDay.label}\n`;
+  if (quiet(e)) return `${l.date}: ${entryLetterDateline(child, e, locale)}\n\n${copy.book.quietDay.label}\n`;
   const lines = [
-    `${l.to}: ${child.name}`,
+    `${l.to}: ${childLabel(child.name)}`,
     `${l.from}: ${signsAsOf(e, child)}`,
-    `${l.date}: ${letterDateline(child, e.occurredOn, locale)}`,
+    `${l.date}: ${entryLetterDateline(child, e, locale)}`,
   ];
   if (!waiting(e)) lines.push(`${l.how}: ${provenance(e)}`);
   if (spoken(e)) {
     // Own letter: the file here, or a note that it is not on this phone. No line when no recording was kept.
-    const where = !e.own ? l.recordingElsewhere : !e.audioUri ? null : e.audioOnPhone ? audioPath(e.id) : l.recordingElsewhere;
+    const where = !e.own ? l.recordingElsewhere : !e.audioUri ? null : e.audioOnPhone ? audioPath(e.id, e.audioUri) : l.recordingElsewhere;
     if (where) lines.push(`${l.recording}: ${where}`);
   }
   lines.push(`${l.inBook}: ${e.inBook ? l.yes : l.no}`);
@@ -209,6 +293,72 @@ function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): str
     text += `\n\n${l.exactlyHeard}:\n${e.rawTranscript}\n`;
   }
   return text;
+}
+
+// ── Waiting letters (1.6.0, PL-2) ────────────────────────────────────────
+
+const draftSpoken = (d: Pick<Draft, 'captureMode'>) => d.captureMode !== 'typed';
+const has = (s: string | null | undefined): s is string => typeof s === 'string' && s.trim().length > 0;
+
+/** Why a letter is waiting. A held letter is held whatever else is true of it. */
+export function waitingReason(d: SnapshotWaiting): WaitingReason {
+  if (d.held) return 'held_at_keep';
+  if (d.state === 'unrecoverable') return 'unrecoverable';
+  if (!draftSpoken(d)) return 'typed_draft';
+  return has(d.rawTranscript) ? 'not_read_back' : 'waiting_for_words';
+}
+
+/**
+ * The person's own Change words for a waiting letter, only when Review would still show them (#522): saved on the
+ * draft's current words. Review's own rule, `restorable` on the words Review opens with (typed text when there is
+ * any, else the raw transcript; review.tsx), so words changed later (more typing on Write, a new transcript) leave
+ * stale Change words out of the export, exactly as Review leaves them out.
+ */
+export function waitingChangedWords(saved: ReviewSaved | null, d: Pick<Draft, 'typedText' | 'rawTranscript'>): string | null {
+  const typed = d.typedText != null && d.typedText.trim().length > 0;
+  return restorable(saved, typed ? d.typedText! : (d.rawTranscript ?? ''))?.text ?? null;
+}
+
+/** The recording goes in when it is a spoken take with a file on this phone that is not known to be empty. */
+const waitingHasAudio = (d: SnapshotWaiting) => draftSpoken(d) && !!d.audioUri && d.audioOnPhone && d.state !== 'unrecoverable';
+
+function waitingAudioMissing(d: SnapshotWaiting): 'not_on_this_device' | 'empty' | null {
+  if (!draftSpoken(d) || waitingHasAudio(d)) return null;
+  if (d.state === 'unrecoverable') return 'empty';
+  return d.audioUri ? 'not_on_this_device' : null;
+}
+
+/** The waiting letters that belong to a book in this export, oldest first. A take being let go or still recording never. */
+export function waitingOf(snapshot: Pick<ExportSnapshot, 'waiting' | 'children'>): SnapshotWaiting[] {
+  const books = new Set(snapshot.children.map((c) => c.id));
+  return [...(snapshot.waiting ?? [])]
+    .filter((d) => books.has(d.childId) && d.state !== 'discarding' && d.state !== 'recording')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+}
+
+/**
+ * The day a waiting letter is about: the day the parent chose, else the phone's own local day of when it was made, the
+ * day Review gives it when it is kept (review.tsx `todayISO(new Date(draft.createdAt))`; `isoOf` is the same local-day
+ * rule). Never the UTC day: 8 pm in California is the next day in UTC.
+ */
+const waitingDay = (d: Pick<Draft, 'occurredOn' | 'createdAt'>) => d.occurredOn ?? isoOf(new Date(d.createdAt));
+
+/** waiting/<id>.txt: header lines, then the person's own words (typed, then exactly as heard). */
+function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): string {
+  const l = exportCopy.letterFile;
+  const w = exportCopy.waitingFile;
+  const lines = [
+    `${l.to}: ${childLabel(child.name)}`,
+    `${l.from}: ${child.signsAs}`,
+    `${l.date}: ${entryLetterDateline(child, { occurredOn: waitingDay(d), occurredPrecision: d.occurredPrecision ?? 'day' }, locale)}`,
+  ];
+  if (waitingHasAudio(d)) lines.push(`${l.recording}: ${waitingAudioPath(d.id, d.audioUri)}`);
+  lines.push(`${w.status}: ${w.reasons[waitingReason(d)]}`);
+  const parts: string[] = [];
+  if (has(d.changedWords)) parts.push(`${w.changed}:\n${d.changedWords}`);
+  if (has(d.typedText)) parts.push(draftSpoken(d) || has(d.changedWords) ? `${w.typed}:\n${d.typedText}` : d.typedText);
+  if (draftSpoken(d) && has(d.rawTranscript)) parts.push(`${l.exactlyHeard}:\n${d.rawTranscript}`);
+  return `${lines.join('\n')}\n${parts.length ? `\n${parts.join('\n\n')}\n` : ''}`;
 }
 
 // ── HTML helpers ─────────────────────────────────────────────────────────
@@ -257,20 +407,20 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
             .map((e) => {
               if (quiet(e)) {
                 return `<article class="mark">
-<p class="date">${escapeHtml(dayDate(e.occurredOn, snapshot.locale))} &middot; ${escapeHtml(copy.book.quietDay.label)}</p>
+<p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))} &middot; ${escapeHtml(copy.book.quietDay.label)}</p>
 <p class="file"><a href="${encodeURI(letterPath(folders.get(child.id)!, e))}">${escapeHtml(letterPath(folders.get(child.id)!, e))}</a></p>
 </article>`;
               }
               const missing = audioMissingReason(e);
               const audio =
                 spoken(e) && e.own && e.audioUri && e.audioOnPhone
-                  ? `<audio controls preload="none" src="${audioPath(e.id)}"></audio>`
+                  ? `<audio controls preload="none" src="${audioPath(e.id, e.audioUri)}"></audio>`
                   : missing
                     ? `<p class="note">${escapeHtml(r.recordingNotHere)}</p>`
                     : '';
               const body = waiting(e) ? `<p class="note">${escapeHtml(exportCopy.letterFile.waitingForWords)}</p>` : paragraphs(e.finalText);
               return `<article>
-<p class="date">${escapeHtml(dayDate(e.occurredOn, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
+<p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
 ${body}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
 ${audio}
@@ -280,7 +430,7 @@ ${audio}
             .join('\n')}`,
         )
         .join('\n');
-      return `<section>\n<h2 dir="auto">${escapeHtml(fill(r.title, { child: child.name }))}</h2>\n${chapters}\n</section>`;
+      return `<section>\n<h2 dir="auto">${escapeHtml(child.name.trim() ? fill(r.title, { child: child.name }) : bookWords.indexTitleNoName)}</h2>\n${chapters}\n</section>`;
     })
     .filter(Boolean)
     .join('\n');
@@ -327,8 +477,14 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
   const inBook = entries.filter(printable);
   const chapters = chaptersOf(child, inBook);
   const years = [...new Set(chapters.map((ch) => yearOf(ch.month)))];
-  const subtitle =
-    years.length === 1 ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] }) : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name });
+  const named = child.name.trim() !== '';
+  const subtitle = named
+    ? years.length === 1
+      ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] })
+      : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name })
+    : years.length === 1
+      ? fill(bookWords.coverSubtitleNoName, { n: years[0] })
+      : bookWords.coverSubtitleAllNoName;
   const about = bookWords.aboutThisBook;
   let lastYear = 0;
   const body = chapters
@@ -339,7 +495,7 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
       const letters = ch.entries
         .map(
           (e) => `<article>
-<p class="date">${escapeHtml(letterDateline(child, e.occurredOn, locale))}</p>
+<p class="date">${escapeHtml(entryLetterDateline(child, e, locale))}</p>
 ${paragraphs(e.finalText)}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
 </article>`,
@@ -376,11 +532,11 @@ article p{margin:0 0 8pt;orphans:3;widows:3}
 <div class="cover">
 <h1>${escapeHtml(brand.name)}</h1>
 <p class="sub" dir="auto">${escapeHtml(subtitle)}</p>
-<p class="ded" dir="auto">${escapeHtml(fill(bookWords.dedication, { child: child.name }))}</p>
+<p class="ded" dir="auto">${escapeHtml(named ? fill(bookWords.dedication, { child: child.name }) : bookWords.dedicationNoName)}</p>
 </div>
 <div class="about">
 <h2>${escapeHtml(about.title)}</h2>
-<p dir="auto">${escapeHtml(fill(about.body, { child: child.name }))}</p>
+<p dir="auto">${escapeHtml(named ? fill(about.body, { child: child.name }) : about.bodyNoName)}</p>
 </div>
 ${body}
 <p class="colophon">${escapeHtml(fill(bookWords.colophon, {}))}</p>
@@ -420,6 +576,10 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     textFiles.push({ path: letterPath(folders.get(child.id)!, e), text: letterText(e, child, snapshot.locale), mediaType: MEDIA.txt });
   }
   textFiles.push({ path: 'index.html', text: indexHtml({ ...snapshot, entries }, folders), mediaType: MEDIA.html });
+  const waitingLetters = waitingOf(snapshot);
+  for (const d of waitingLetters) {
+    textFiles.push({ path: waitingTextPath(d.id), text: waitingText(d, byChild.get(d.childId)!, snapshot.locale), mediaType: MEDIA.txt });
+  }
 
   const books: BookJob[] = [];
   for (const child of snapshot.children) {
@@ -433,13 +593,38 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     .map((e) => ({
       entryId: e.id,
       uri: e.audioUri!,
-      path: audioPath(e.id),
+      path: audioPath(e.id, e.audioUri),
+      mediaType: recordingFileOf(e.audioUri).mimeType,
       recordedSha256: e.audioSha256 ?? null,
       durationMs: e.audioDurationMs ?? null,
       sizeHint: e.audioSizeOnPhone ?? e.audioBytes ?? null,
     }));
 
-  return { textFiles, books, audio };
+  const waitingAudio: AudioJob[] = waitingLetters.filter(waitingHasAudio).map((d) => ({
+    entryId: d.id,
+    uri: d.audioUri!,
+    path: waitingAudioPath(d.id, d.audioUri),
+    mediaType: recordingFileOf(d.audioUri).mimeType,
+    recordedSha256: d.audioSha256 ?? null,
+    durationMs: d.audioDurationMs ?? null,
+    sizeHint: d.audioSizeOnPhone ?? d.audioBytes ?? null,
+  }));
+
+  return { textFiles, books, audio, waitingAudio };
+}
+
+/** One recording as a data file writes it, with the hash of the file actually exported. */
+function exportedAudio(job: AudioJob, result: AudioResult): ExportAudio {
+  return {
+    path: job.path,
+    sha256: result.sha256,
+    bytes: result.bytes,
+    duration_ms: job.durationMs,
+    codec: 'aac-lc',
+    media_type: job.mediaType,
+    integrity: !job.recordedSha256 ? 'unchecked' : job.recordedSha256 === result.sha256 ? 'ok' : 'mismatch',
+    recorded_sha256: job.recordedSha256,
+  };
 }
 
 /**
@@ -451,6 +636,8 @@ export async function dataFiles(
   plan: ExportPlan,
   audioResults: Map<string, AudioResult>,
   sha256Text: (text: string) => Promise<string>,
+  /** Recordings of waiting letters actually written, by draft id (1.6.0). */
+  waitingResults: Map<string, AudioResult> = new Map(),
 ): Promise<{ files: TextFile[]; audioMissing: number }> {
   const folders = childFolders(snapshot.children);
   const byChild = new Map(snapshot.children.map((c) => [c.id, c]));
@@ -463,19 +650,7 @@ export async function dataFiles(
     const child = byChild.get(e.childId!)!;
     const job = jobs.get(e.id);
     const result = audioResults.get(e.id);
-    let audio: ExportAudio | null = null;
-    if (job && result) {
-      audio = {
-        path: job.path,
-        sha256: result.sha256,
-        bytes: result.bytes,
-        duration_ms: job.durationMs,
-        codec: 'aac-lc',
-        media_type: 'audio/mp4',
-        integrity: !job.recordedSha256 ? 'unchecked' : job.recordedSha256 === result.sha256 ? 'ok' : 'mismatch',
-        recorded_sha256: job.recordedSha256,
-      };
-    }
+    const audio: ExportAudio | null = job && result ? exportedAudio(job, result) : null;
     // A planned recording that could not be read at packing time is "not on this device" too.
     const missing = audio ? null : job ? 'not_on_this_device' : audioMissingReason(e);
     const row: ExportEntry = {
@@ -484,6 +659,7 @@ export async function dataFiles(
       author: { signs_as: signsAsOf(e, child), is_exporter: e.own },
       kind: e.kind,
       occurred_on: e.occurredOn,
+      occurred_precision: isMonthOnly(e) ? 'month' : 'day',
       captured_at: e.capturedAt,
       capture_mode: e.captureMode,
       edit_level: e.editLevel,
@@ -537,15 +713,75 @@ export async function dataFiles(
     signed_in: snapshot.signedIn,
     plan: snapshot.plan,
     exported_from: 'phone',
-    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: c.role, signs_as: c.signsAs })),
+    consent_on_this_phone: snapshot.consent,
+    consent_history: snapshot.consentHistory,
+    profile: snapshot.profile,
+    dictionary: snapshot.dictionary,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
+  const files: TextFile[] = [
+    { path: 'data/children.json', text: json(childrenFile), mediaType: MEDIA.json },
+    { path: 'data/entries.json', text: json(entriesFile), mediaType: MEDIA.json },
+    { path: 'data/account.json', text: json(accountFile), mediaType: MEDIA.json },
+  ];
+  const others = snapshot.otherVersions ?? [];
+  if (others.length > 0) {
+    const otherFile: OtherVersionsFile = {
+      schema_version: EXPORT_SCHEMA_VERSION,
+      format: EXPORT_FORMAT,
+      versions: others.map((o) => ({
+        entry_id: o.entryId,
+        reason: 'conflict_copy',
+        final_text: o.finalText,
+        edit_level: o.editLevel,
+        machine_edits: o.machineEdits.map(exportEdit),
+        kept_at: o.keptAt,
+      })),
+    };
+    files.push({ path: 'data/other-versions.json', text: json(otherFile), mediaType: MEDIA.json });
+  }
+  const waitingLetters = waitingOf(snapshot);
+  if (waitingLetters.length > 0) {
+    const waitingJobs = new Map(plan.waitingAudio.map((j) => [j.entryId, j]));
+    const rows: ExportWaitingLetter[] = waitingLetters.map((d) => {
+      const job = waitingJobs.get(d.id);
+      const result = waitingResults.get(d.id);
+      const audio = job && result ? exportedAudio(job, result) : null;
+      // A planned recording that could not be read at packing time is "not on this device" too.
+      const missing = audio ? null : job ? 'not_on_this_device' : waitingAudioMissing(d);
+      return {
+        id: d.id,
+        child_id: d.childId,
+        reason: waitingReason(d),
+        kind: d.kind === 'note' ? 'note' : 'letter',
+        created_at: d.createdAt,
+        occurred_on: d.occurredOn ?? null,
+        occurred_precision: d.occurredPrecision === 'month' ? 'month' : 'day',
+        capture_mode: d.captureMode,
+        language: d.language ?? null,
+        typed_text: has(d.typedText) ? d.typedText : null,
+        raw_transcript: draftSpoken(d) && has(d.rawTranscript) ? d.rawTranscript : null,
+        // The person's own words from Review's Change words (#522), never a machine-tidied version.
+        changed_words: has(d.changedWords) ? d.changedWords : null,
+        text_file: waitingTextPath(d.id),
+        audio,
+        audio_missing: missing ? { reason: missing } : null,
+      };
+    });
+    const waitingFile: WaitingFile = { schema_version: EXPORT_SCHEMA_VERSION, format: EXPORT_FORMAT, waiting: rows };
+    files.push({ path: 'data/waiting.json', text: json(waitingFile), mediaType: MEDIA.json });
+  }
   return {
-    files: [
-      { path: 'data/children.json', text: json(childrenFile), mediaType: MEDIA.json },
-      { path: 'data/entries.json', text: json(entriesFile), mediaType: MEDIA.json },
-      { path: 'data/account.json', text: json(accountFile), mediaType: MEDIA.json },
-    ],
+    files,
     audioMissing: out.filter((e) => e.audio_missing).length,
   };
+}
+
+/** One machine edit as the export writes it; a malformed stored edit keeps what it has, never throws. */
+function exportEdit(m: unknown): ExportMachineEdit {
+  const o = (m && typeof m === 'object' ? m : {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  const int = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : 0);
+  return { type: str(o.type), start: int(o.start), end: int(o.end), original: str(o.original), replacement: str(o.replacement), source: str(o.source) };
 }

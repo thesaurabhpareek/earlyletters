@@ -1,0 +1,31 @@
+/* Owner: ACT3. Positions in the 400 x 220 box, as percentages. */
+.room {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 400 / 220;
+}
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* Lamp: 66 units wide, base sits on the nightstand top (y 128). */
+.lamp {
+  position: absolute;
+  left: 8%;
+  top: 13.2%;
+  width: 16.5%;
+  height: auto;
+  overflow: visible;
+}
+/* Shoes: 80 units wide, soles on the floor (y 210). */
+.shoes {
+  position: absolute;
+  left: 33%;
+  top: 80.6%;
+  width: 20%;
+  height: auto;
+  overflow: visible;
+}

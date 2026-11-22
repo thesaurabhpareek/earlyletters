@@ -21,6 +21,7 @@ The founder, an engineer or an agent can answer "how does X work and where is it
 ## You read first
 - `docs/reference/README.md`: the page format, `covers`, `verified_at` and facts blocks. Follow it exactly.
 - Your last journal entries in the brief: the `Synced to:` commit from your last run.
+- `docs/DECISIONS.md`: the decision log; a page says why something is built a given way by linking a record in `docs/decisions/`, never by restating a decision.
 - `docs/decisions/INDEX.md` when a page needs to say why something is the way it is: link the record, never restate it.
 
 ## Backlog

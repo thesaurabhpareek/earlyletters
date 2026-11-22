@@ -6,6 +6,10 @@
  * the fade), never a jump on content that carries meaning. Pure decoration simply does
  * not run. Reanimated's useReducedMotion() reads the value once at start, so we also
  * subscribe to AccessibilityInfo changes (MOTION 4, M15, M16).
+ *
+ * routeTransitions / useRouteTransitions(): the screen-transition table (lib/transitions.logic.ts,
+ * EXPERIENCE_PASS 5.8, MOTION 5l) as the root stack's options; useSheetMotion() for the Sheet. Tabs
+ * keep the native swap; the lamp carries the change between rooms (components/ui/lamp.tsx).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
@@ -15,18 +19,26 @@ import {
   FadeInDown,
   FadeOut,
   FadeOutDown,
+  Keyframe,
   LinearTransition,
   ReduceMotion,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { tokens, type MotionToken } from '@scribe/design-tokens';
+import { routeTransitions, sheetMotion, type RootRoute, type RouteOptions, type SheetMotion } from './transitions.logic';
 
 const M = tokens.motion;
 
 export const FADE_MS = M.fadeMs;
 export const EXIT_MS = M.exitMs;
 export const STANDARD_EASING = Easing.bezier(...M.easing);
+
+/** Words leaving a step: up 8 pt (enter.dy) as they fade, over exitMs. */
+const LEAVE = new Keyframe({
+  0: { opacity: 1, transform: [{ translateY: 0 }] },
+  100: { opacity: 0, transform: [{ translateY: -M.enter.dy }], easing: STANDARD_EASING },
+}).duration(M.exitMs);
 
 let current = false;
 const listeners = new Set<(v: boolean) => void>();
@@ -109,11 +121,16 @@ export function useMotion() {
         // setElementAnimation -> setElementPosition), so web keeps the stock preset.
         return Platform.OS === 'web' ? base : base.withInitialValues({ opacity: 0, transform: [{ translateY: M.enter.dy }] });
       },
-      /** Exit for transient UI (toast, inline card): quicker than the entry. */
+      /** Exit for transient UI (toast, inline card): quicker than the entry, down toward where it sits. */
       exit: () =>
         reduced
           ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
           : FadeOutDown.duration(M.exitMs).easing(STANDARD_EASING),
+      /**
+       * Content leaving a step (EXPERIENCE_PASS 5.5 "exit"): opacity to 0, y to -8, exitMs; the words go up and on.
+       * Reduce Motion, and the web preview (custom keyframes misbehave there, MOTION 9b): a fade of exitMs.
+       */
+      leave: () => (reduced || Platform.OS === 'web' ? FadeOut.duration(M.exitMs).reduceMotion(ReduceMotion.Never) : LEAVE),
       /** Layout reflow; undefined under Reduce Motion (an instant reflow beats a fake fade). */
       layout: (token: MotionToken = 'standard') => (reduced ? undefined : layoutSpring(token)),
     }),
@@ -122,3 +139,21 @@ export function useMotion() {
 }
 
 export type Motion = ReturnType<typeof useMotion>;
+
+/** The screen-transition table (EXPERIENCE_PASS 5.8, MOTION 5l): presentation and animation per root route. */
+export { routeTransitions, type RootRoute, type RouteOptions } from './transitions.logic';
+
+/**
+ * routeTransitions for the live Reduce Motion setting. The root layout spreads `routes[name]` into each
+ * Stack.Screen's options and types no presentation, animation or duration itself.
+ */
+export function useRouteTransitions(): Record<RootRoute, RouteOptions> {
+  const reduced = useReducedMotion();
+  return useMemo(() => routeTransitions(reduced), [reduced]);
+}
+
+/** The Sheet's open and close: the standard spring, or, under Reduce Motion, a fade with no travel. */
+export function useSheetMotion(): SheetMotion {
+  const reduced = useReducedMotion();
+  return useMemo(() => sheetMotion(reduced), [reduced]);
+}

@@ -1,0 +1,65 @@
+# E2E-17a  Export with listening copies on the phone: the ZIP carries the
+# originals only, byte for byte (PRD V2 07 section 2.6, new E2E-17).
+# Proves F15-REQ-001 (only originals are exported; nothing under
+# Application Support/listening is read) and F15-REQ-002 (each audio/<id>.m4a
+# equals the capture hash), with the player set to the clearer listening copy.
+# The seed `asha-recordings` (TESTID_REQUESTS.md section 3) gives Asha's book
+# three spoken letters with fixture recordings and a listening copy for each,
+# so the check does not depend on AUSoundIsolation running on a simulator.
+# After this flow the runner calls
+#   bin/inspect-export.sh --originals   (with REQUIRE_LISTENING=1)
+# which fails if the ZIP holds a listening copy, if any original's hash differs
+# from its recorded hash, or if the seed made no recordings (a check that
+# proves nothing must not pass). It saves the audio hashes for E2E-17b.
+appId: ${APP_ID}
+name: E2E-17a Export with listening copies, originals only
+tags:
+  - e2e
+  - E2E-17
+  - p0-nightly
+  - F15-REQ-001
+  - F15-REQ-002
+  - F08-REQ-003
+  - DATA-REQ-051
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha-recordings"
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.screen"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.screen"
+# The player is on the listening copy (the default when a copy exists).
+- assertVisible:
+    id: "player.source.listening"
+- assertVisible:
+    id: "player.original"
+- runFlow: ../subflows/go-back.yaml
+- tapOn:
+    id: "book.settings"
+- assertVisible:
+    id: "settings.screen"
+- tapOn:
+    id: "settings.export"
+- assertVisible:
+    id: "export.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "export.start"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "export.ready"
+    timeout: 120000
+- assertNotVisible:
+    id: "export.error"
+# Leave the ZIP in place for bin/inspect-export.sh --originals.
+- stopApp

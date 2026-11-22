@@ -11,7 +11,8 @@
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
-import type { ExportSnapshot, SnapshotEntry } from '../../src/lib/export/build.logic';
+import { phoneConsent, type ExportSnapshot, type SnapshotEntry } from '../../src/lib/export/build.logic';
+import { noConsentHistory, noProfile } from '../../src/lib/export/server-records.logic';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -89,8 +90,8 @@ export function ashaSnapshot(): ExportSnapshot {
     plan: 'free',
     signedIn: false,
     children: [
-      { id: ASHA, name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false },
-      { id: DEV, name: 'Dev', birthday: '2024-05-31', dueDate: null, signsAs: 'Mama', remindersOn: false, familyCanRead: false, hidden: true },
+      { id: ASHA, name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false, role: 'parent' },
+      { id: DEV, name: 'Dev', birthday: '2024-05-31', dueDate: null, signsAs: 'Mama', remindersOn: false, familyCanRead: false, hidden: true, role: 'parent' },
     ],
     entries: [
       entry({ id: 'e1', occurredOn: '2026-02-20', captureMode: 'typed', finalText: 'We painted your room yellow today.\n\nPapa says it looks like butter.', editLevel: 'verbatim' }),
@@ -112,6 +113,8 @@ export function ashaSnapshot(): ExportSnapshot {
       entry({ id: 'e6', occurredOn: '2026-07-01', rawTranscript: '', finalText: '', transcriptStatus: 'waiting', inBook: false, audioUri: 'file:///doc/audio/e6.m4a' }),
       // A family letter: not the exporter's, so no raw transcript, edits or recording.
       entry({ id: 'e7', occurredOn: '2026-08-10', authorId: 'user-nani', authorSignsAs: 'Nani', own: false, finalText: 'Your Nani made dal and nobody ate it.', rawTranscript: 'Your Nani made dal and uh nobody ate it.', machineEdits: [filler('Your Nani made dal and uh nobody ate it.', ' uh')] }),
+      // Dated to a month only (Month 4, F09-REQ-003): the stored day is where Month 4 starts, never a day Mama gave.
+      entry({ id: 'e11', occurredOn: '2026-07-08', occurredPrecision: 'month', captureMode: 'typed', editLevel: 'verbatim', finalText: 'Sometime this month you found your feet.' }),
       entry({ id: 'e8', occurredOn: '2026-09-01', finalText: 'आशा, आज तुमने पहली बार ताली बजाई।', audioUri: 'file:///doc/audio/e8.m4a' }),
       entry({ id: 'e10', occurredOn: '2026-12-24', finalText: 'آشا، أنتِ نورُ بيتنا.', authorSignsAs: 'Mama', audioUri: 'file:///doc/audio/e10.m4a', editLevel: 'verbatim' }),
       entry({ id: 'q1', occurredOn: '2026-10-02', kind: 'not_much', captureMode: 'typed', editLevel: 'verbatim', rawTranscript: '', finalText: '', inBook: false }),
@@ -127,6 +130,18 @@ export function ashaSnapshot(): ExportSnapshot {
       }),
       entry({ id: 'e9', occurredOn: '2027-03-10', captureMode: 'typed', finalText: 'One year and two days. You walked to the door and waved.', editLevel: 'verbatim' }),
       entry({ id: 'd1', childId: DEV, occurredOn: '2025-01-05', captureMode: 'typed', finalText: 'First snow.', editLevel: 'verbatim' }),
+    ],
+    // The 18+ gate was answered yes; v1.0 never asks about usage sharing.
+    consent: phoneConsent(true, null),
+    // Signed out: there is no server record (schema 1.3.0).
+    consentHistory: noConsentHistory('not_signed_in'),
+    profile: noProfile('not_signed_in'),
+    // What each book spells your way on this phone (store.dictionaryFor): the child's name and your signature.
+    dictionary: [
+      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
     ],
   };
 }

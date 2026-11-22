@@ -96,10 +96,14 @@ export const UPSTREAM = {
 export const WHISPER_CPP_BUILD = { version: 'v1.9.3', commit: '371b5a7561823ab2bb32142d2751e35e7534727b' } as const;
 
 /**
- * Base URL of our own model host (D-046: a zero-egress bucket, founder picks
- * the provider). Paths are versioned and immutable: a new file gets a new path.
+ * Base URL of our own model host: one hostname for language packs and speech
+ * models, `packs.earlyletters.app`, on Cloudflare R2 (D-097, 15 Oct 2026,
+ * delegated by founder; DEBATES Q-001 option b; D-046 zero-egress bucket).
+ * Paths are versioned and immutable: a new file gets a new path. Files stay
+ * `hosted: false` until the founder has uploaded them.
  */
-export const SELF_HOST_BASE = 'https://models.earlyletters.com/speech';
+export const PACKS_ORIGIN = 'https://packs.earlyletters.app';
+export const SELF_HOST_BASE = `${PACKS_ORIGIN}/speech`;
 
 const hf = (r: { repo: string; revision: string }, file: string) => `https://huggingface.co/${r.repo}/resolve/${r.revision}/${file}`;
 

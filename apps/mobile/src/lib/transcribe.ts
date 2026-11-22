@@ -19,7 +19,7 @@ import type { DictionaryTerm } from '@scribe/core';
 import type { SpeechLanguage, SpeechModelId } from './models/catalog';
 
 export interface TranscribeInput {
-  /** file:// URI of the recording (AAC M4A, ADR 0005). Never leaves the device. */
+  /** file:// URI of the recording (AAC, in M4A per ADR 0005 or ADTS per ADR 0027). Never leaves the device. */
   audioUri: string;
   durationMs: number | null;
   /** Names and words spelled the family's way; rendered into the prompt of every chunk. */
@@ -35,6 +35,11 @@ export interface TranscribeProgress {
   stage: 'preparing' | 'listening';
   done: number;
   total: number;
+  /**
+   * The whole run's share written down (0..1), when the recogniser reports within a part (whisper.rn's per-call
+   * onProgress, 0 to 100). Only ever rises. Absent: progress steps per part (done / total).
+   */
+  fraction?: number;
 }
 
 export interface Word {

@@ -2,7 +2,8 @@
 /**
  * Reading Size (DESIGN_LANGUAGE 12, Letter reading view): Standard, Large, Large print,
  * on top of Dynamic Type. Apple Books "Themes & Settings": a small sheet over the page,
- * each option previewed at its own size, the letter behind changing live.
+ * each option previewed at its own size (Literata at the letter's own sizes: Standard 20, Large 24, Large print 29,
+ * EXPERIENCE_PASS S29), the letter behind changing live.
  * Radio semantics and the selection haptic come from ChoiceGroup.
  */
 import { tokens } from '@scribe/design-tokens';
@@ -34,7 +35,7 @@ export function ReadingSizeSheet({ visible, value, onChange, onClose }: Props) {
           value: size,
           label: copy.reader.sizes[size],
           render: () => (
-            <Text variant="letterBody" scale={(18 / 20) * tokens.readingScale[size]}>
+            <Text variant="letterBody" scale={tokens.readingScale[size]}>
               {copy.reader.sizes[size]}
             </Text>
           ),

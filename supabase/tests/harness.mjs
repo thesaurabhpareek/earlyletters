@@ -9,11 +9,61 @@ import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 
+// The consent pepper fails closed since 20261015010000 (BL-334); tests run with a fixed test value.
+export const TEST_CONSENT_PEPPER = 'test-pepper-0123456789abcdef0123456789abcdef';
+
+// Which default privileges Supabase gives the objects a migration creates in public (lens A on #261,
+// comment 6378839652; GitHub discussion supabase 45329; Supabase CLI 2.119.0
+// RevokeDefaultDataApiPrivilegesSql, which matches what Studio runs at project creation):
+//   'none'    (the default) a project created since 30 May 2026, and every project for objects made after
+//             30 Oct 2026: no SELECT, INSERT, UPDATE or DELETE on new tables and no USAGE or SELECT on new
+//             sequences for anon, authenticated and service_role, which keep TRUNCATE, REFERENCES, TRIGGER and
+//             MAINTAIN on tables and UPDATE on sequences; no EXECUTE for them on new functions (PUBLIC keeps
+//             Postgres's own EXECUTE). A missing grant fails here, as it does on staging and production.
+//   'legacy'  SCRIBE_DEFAULT_GRANTS=legacy (the nightly): the old automatic grants, ALL on new tables,
+//             sequences and functions for the three roles (supabase/postgres
+//             migrations/db/init-scripts/00000000000000-initial-schema.sql), so a migration's own revoke (for
+//             example an internal function's revoke from service_role) is what the tests see.
+// createDb(files, { defaultGrants: 'legacy' }) overrides it for one database (a test of an old server).
+export const DEFAULT_GRANTS = process.env.SCRIBE_DEFAULT_GRANTS === 'legacy' ? 'legacy' : 'none';
+
+// What a table, a sequence and a function (revoked from PUBLIC) created in public give anon, authenticated and
+// service_role, read before any migration: the harness's own liveness check (#261 F4; access_matrix).
+const PROBE_PRIVS = { table: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'],
+  sequence: ['USAGE', 'SELECT', 'UPDATE'], function: ['EXECUTE'] };
+export const EXPECTED_PROBE = {
+  legacy: { table: PROBE_PRIVS.table, sequence: PROBE_PRIVS.sequence, function: ['EXECUTE'] },
+  none: { table: ['TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'], sequence: ['UPDATE'], function: [] },
+};
+async function probeDefaults(db) {
+  await db.exec('begin');
+  try {
+    await db.exec(`create table public.harness_probe (x int); create sequence public.harness_probe_seq;
+      create function public.harness_probe() returns int language sql as $$ select 1 $$;
+      revoke execute on function public.harness_probe() from public;`);
+    const out = {};
+    for (const role of ['anon', 'authenticated', 'service_role']) {
+      const held = (sql) => db.query(sql, [role]).then((r) => r.rows.filter((x) => x.ok).map((x) => x.p));
+      out[role] = {
+        table: await held(`select p, has_table_privilege($1, 'public.harness_probe', p) ok from unnest(array['${PROBE_PRIVS.table.join("','")}']) p`),
+        sequence: await held(`select p, has_sequence_privilege($1, 'public.harness_probe_seq', p) ok from unnest(array['${PROBE_PRIVS.sequence.join("','")}']) p`),
+        function: await held(`select 'EXECUTE' p, has_function_privilege($1, 'public.harness_probe()', 'execute') ok`),
+      };
+    }
+    return out;
+  } finally {
+    await db.exec('rollback');
+  }
+}
+
 export async function createDb(files, options = {}) {
-  const db = new PGlite(options);
+  const { defaultGrants = DEFAULT_GRANTS, ...pgliteOptions } = options;
+  if (!['none', 'legacy'].includes(defaultGrants)) throw new Error(`unknown defaultGrants: ${defaultGrants}`);
+  const db = new PGlite(pgliteOptions);
   await db.exec(`
     create role authenticated nologin; create role anon nologin; create role service_role nologin bypassrls;
     create schema auth; create table auth.users (id uuid primary key);
+    create table auth.sessions (id uuid primary key, user_id uuid not null, not_after timestamptz);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     grant usage on schema auth to authenticated, anon;
     create schema storage;
@@ -22,13 +72,29 @@ export async function createDb(files, options = {}) {
     create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'),1)-1] $$;
     alter table storage.objects enable row level security;
     grant usage on schema storage to authenticated, anon; grant all on storage.objects to authenticated, anon;
-    -- Mirror Supabase's default privileges (TDD 02 C18): every table and view a
-    -- migration creates is granted to both API roles at creation, so a
-    -- migration's own revoke (for example on book_entries) is what the tests see.
-    grant usage on schema public to authenticated, anon;
-    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
+    -- Supabase's default privileges (TDD 02 C18; DEFAULT_GRANTS above). The old automatic grants first, as
+    -- the init script makes them; then, in the 'none' world, the revoke Studio and the CLI run at project
+    -- creation, for the role the migrations run as (postgres here and on hosted).
+    grant usage on schema public to authenticated, anon, service_role;
+    alter default privileges in schema public grant all on tables to authenticated, anon, service_role;
+    alter default privileges in schema public grant all on sequences to authenticated, anon, service_role;
+    alter default privileges in schema public grant all on functions to authenticated, anon, service_role;
   `);
+  if (defaultGrants === 'none') {
+    await db.exec(`
+      alter default privileges for role postgres in schema public revoke select, insert, update, delete on tables from anon, authenticated, service_role;
+      alter default privileges for role postgres in schema public revoke usage, select on sequences from anon, authenticated, service_role;
+      alter default privileges for role postgres in schema public revoke execute on functions from anon, authenticated, service_role;
+    `);
+  }
+  const defaults = { mode: defaultGrants, probe: await probeDefaults(db) };
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
+  // Session settings the hosted project sets with `alter database` (supabase/APPLY.md):
+  // the consent pepper (step 6, BL-334), and family invites on, because the dormant
+  // contributor rules keep their tests (B-REQ-009 Rev); in production the setting
+  // is off (F11-REQ-003) and v1_gate_coparent.test.mjs proves the default.
+  await db.query(`select set_config('app.consent_pepper', $1, false), set_config('app.contributors_enabled', 'on', false)`,
+    [TEST_CONSENT_PEPPER]);
 
   let failures = 0;
   let passes = 0;
@@ -89,7 +155,7 @@ export async function createDb(files, options = {}) {
     await as(uid, `select public.accept_child_invite($1)`, [t]);
   };
 
-  return { db, check, as, asAnon, sys, one, fails, codeOf, done, files, signIn, signOut,
+  return { db, check, as, asAnon, sys, one, fails, codeOf, done, files, signIn, signOut, defaults,
            publishPolicies, consent, newChild, invite, join };
 }
 

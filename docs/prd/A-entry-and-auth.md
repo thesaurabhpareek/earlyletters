@@ -85,7 +85,7 @@ Order: iOS Apple, Google, Email; Android Google, Apple, Email. Equal button size
 5. New phone: book shows immediately, letters arrive; audio restore per ARCH §8 and ADR 0006; pending audio shows "Preparing voice" (DL §12).
 
 ### F7. "I was invited"
-1. Entry: invite link `https://<app domain>/i/<token>`, story 4 button, or code screen.
+1. Entry: invite link `https://<app domain>/j#t=<token>`, story 4 button, or code screen.
 2. Link token goes to secure storage before any UI; stories are skipped.
 3. Without a link: "Paste the invite link or type the code", with a **Paste** button (clipboard read only on that tap) and a code field.
 4. Not signed in → F4 titled "Sign in to join the family book" (child name only if Lead B approves Q5).
@@ -149,7 +149,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 - **A-REQ-021 (P1) Last method.** Given a prior sign-in on this install, then the sheet shows "Last time you used {method}." and no email is stored.
 
 **Links and limits**
-- **A-REQ-022 (P0) Universal and App Links.** Given the app is installed, when an auth or `/i/` link opens from Mail, Gmail, Outlook or Messages, then the app opens the right flow; AASA and `assetlinks.json` are served from the brand domain [A10].
+- **A-REQ-022 (P0) Universal and App Links.** Given the app is installed, when an auth or invite (`/j#t=<token>`) link opens from Mail, Gmail, Outlook or Messages, then the app opens the right flow; AASA and `assetlinks.json` are served from the brand domain [A10].
 - **A-REQ-023 (P0) Scanner-safe page.** Given a link opens in a browser, when the page loads, then no token is verified; Open in app and the code show.
 - **A-REQ-024 (P0) Expired link.** Given an expired or used token, then expiry copy and a one-tap resend show.
 - **A-REQ-025 (P0) Resend limits.** Given a sent email, then resend is disabled 60 s with "You can send another in a minute." (no ticking numbers); max 5 per address per hour.
@@ -182,7 +182,7 @@ Reference devices: iPhone SE (3rd gen) and a mid-tier 60 Hz Android (MO §7).
 - **A-NFR-009 Provider hygiene.** Hashed Apple nonce; Supabase verifies Google ID tokens; Apple `.p8` client secret rotated before its 6-month expiry, with a named owner [A5].
 - **A-NFR-010 Redirects.** Allowlist only the brand domain and app scheme. Scheme must change from scaffold `lumiraletters` (app.json) to one derived from `packages/brand`.
 - **A-NFR-011 Deletion.** Account deletion revokes Apple tokens via Apple's REST API [A7] (UI is C's).
-- **A-NFR-012 Analytics privacy.** No email, names, tokens or free text in events; random analytics id (ADR 0008); Sentry strips URLs containing `token_hash` or `/i/`.
+- **A-NFR-012 Analytics privacy.** No email, names, tokens or free text in events; random analytics id (ADR 0008); Sentry strips URLs containing `token_hash`, and invite links (`/j` with the token in the fragment as `t`: `/j#t=<token>`).
 - **A-NFR-013 Reliability.** Auth success (excluding cancels) ≥ 97% per method weekly; alert below 93%. A crash during sign-in never loses a local letter or invite token.
 - **A-NFR-014 Localization.** *Revised Oct 2 2026 per PRD.md conflict log K-24: en-US only at launch; the rest of this item is P2.* Entry strings in en-US, en-IN and Hindi (Devanagari), translated by a native speaker. Mukta covers both scripts (DL §3); layouts tolerate 40% longer strings; provider buttons use their own localized labels; code fields accept Devanagari digits.
 
@@ -263,7 +263,7 @@ Funnel by method (UR §2.3: no public benchmark).
 
 ## 12. Dependencies
 
-**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/i/<token>` format; Q5; notice placement consistent with §7.
+**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/j#t=<token>` format; Q5; notice placement consistent with §7.
 
 **Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet.
 

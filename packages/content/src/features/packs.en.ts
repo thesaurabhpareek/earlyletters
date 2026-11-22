@@ -5,7 +5,7 @@ import { languageNames } from './words.en';
 
 export const packsCopy = {
   title: 'Storage',
-  intro: 'Language packs and speech models download when you choose a language. You can remove them here to free up space.',
+  intro: 'Languages and speech models download when you choose a language. You can remove them here to free up space.',
   keepNote: 'Removing a download never touches your letters or recordings. It downloads again when you need it.',
   downloadedTitle: 'Downloaded',
   inProgressTitle: 'Downloading',
@@ -18,6 +18,17 @@ export const packsCopy = {
     prompts: 'Prompts',
   },
   languages: { ...languageNames, mul: 'All languages' } as Record<string, string>,
+  /**
+   * A row's name by pack id, where "{language}, {kind}" would not tell two packs apart: the detector and the speech
+   * model are both language "mul", so both read "All languages, Speech model" (founder, build 1). The speech models
+   * are named for English because 1.0 is English only (D-121); revisit when another language unlocks.
+   * Any other pack keeps "{language}, {kind}".
+   */
+  names: {
+    'speech-model.silero-vad-v6.2.0': 'Listening detector',
+    'speech-model.whisper-large-v3-turbo-q5_0': 'English speech model',
+    'speech-model.whisper-small-q5_1': 'English speech model',
+  } as Record<string, string>,
   phases: {
     queued: 'Waiting to start',
     waiting_for_wifi: 'Waiting for Wi-Fi',
@@ -28,16 +39,19 @@ export const packsCopy = {
     failed: 'Not downloaded yet',
   },
   failures: {
-    offline: 'Starts when you are back online.',
+    // Nothing is published for this phone yet: a tap cannot help, so the line does not ask for one.
+    no_manifest: 'Not available yet.',
+    not_in_manifest: 'Not available yet.',
+    offline: "Starts when you're back online.",
     no_space: 'Needs more free space on this phone.',
-    downloads_paused: 'Downloads are paused for now. Please try again later.',
+    downloads_paused: 'Downloads are paused for now. Try again later.',
     needs_app_update: 'Needs the latest version of {app}.',
-    hash_mismatch: 'That download did not check out. Please try again.',
-    download_failed: 'That download did not finish. Please try again.',
-    generic: 'Please try again in a moment.',
+    hash_mismatch: "That download didn't finish properly. Try again.",
+    download_failed: "That download didn't finish. Try again.",
+    generic: 'Try again in a moment.',
   } as Record<string, string>,
-  cellularTitle: 'Use mobile data',
-  cellularHelp: 'Large downloads wait for Wi-Fi unless this is on. Small language packs always download.',
+  cellularTitle: 'Use cellular data',
+  cellularHelp: 'Large downloads wait for Wi-Fi unless this is on. Small downloads always go through.',
   removeButton: 'Remove',
   removeA11y: 'Remove {name}',
   stopButton: 'Stop',

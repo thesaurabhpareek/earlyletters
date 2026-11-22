@@ -17,4 +17,12 @@ export {
   cancelDeletion, FORGET_PENDING_KEY, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
   type AnalyticsIds, type ApiOutcome, type DeletionClient, type FlagStore,
 } from './api';
+export {
+  CANCELLED_WAIT_MS, chooseScreen, countedNote, deletionView, liveNote, NOTE_GRACE_MS, noteAfterCancel, noteAfterRead,
+  noteExpiresAtMs, noteIsDead, noteIsStale, noteOfAccount, noteWithBook, OPEN_REQUEST_KEY,
+  openRequestOf, parseOpenRequest, readOpenRequest, writeOpenRequest,
+  type DeletionAction, type DeletionView, type OpenRequest, type PhoneScreen,
+} from './open-request';
+export { decideGate, type GateDecision, type GateInputs } from './first-run-gate.logic';
 export { useAccountDeletion } from './use-account-deletion';
+export { useFirstRunGate } from './use-first-run-gate';

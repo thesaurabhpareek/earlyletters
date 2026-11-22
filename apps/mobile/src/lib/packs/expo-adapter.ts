@@ -21,13 +21,27 @@ import * as Crypto from 'expo-crypto';
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Network from 'expo-network';
 import { createSha256 } from '@scribe/api';
+import { ScribeAudio } from '../../../modules/scribe-audio';
 import type { Connection, NetworkPort, PackFs, PackHttp } from './engine';
+import { startStallTimer } from './stall-timer';
 
 const SLICE_BYTES = 1024 * 1024;
 const NATIVE_DIGEST_MAX_BYTES = 32 * 1024 * 1024;
 
-/** Optional native streaming hash (requested from the ScribeFiles owner: CryptoKit, about 1 GB/s). Used when present. */
-const NativeHash = requireOptionalNativeModule<{ sha256File?: (uri: string) => Promise<string> }>('ScribeFiles');
+/**
+ * Native streaming SHA-256 (CryptoKit, 1 MB blocks, off the JavaScript
+ * thread). ScribeFiles may grow one; until then ScribeAudio's `sha256File`
+ * (the same streamed CryptoKit hash, already in every build with speech) is
+ * used, so a 574 MB speech model is never hashed slice by slice in
+ * JavaScript, which would take minutes on an SE 3 and stall the interface
+ * (F05 7.5; DEVICE_TEST_PLAN S1-15). The JavaScript path stays only for
+ * builds with neither module (Expo Go, web).
+ */
+const ScribeFilesHash = requireOptionalNativeModule<{ sha256File?: (uri: string) => Promise<string> }>('ScribeFiles');
+const nativeSha256File: ((uri: string) => Promise<string>) | null =
+  (ScribeFilesHash?.sha256File && ((uri: string) => ScribeFilesHash.sha256File!(uri))) ||
+  (ScribeAudio && ((uri: string) => ScribeAudio!.sha256File(uri))) ||
+  null;
 
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
@@ -136,7 +150,15 @@ export class ExpoPackFs implements PackFs {
   }
 
   async sha256(path: string, signal?: AbortSignal): Promise<string> {
-    if (NativeHash?.sha256File) return (await NativeHash.sha256File(path)).toLowerCase();
+    if (nativeSha256File) {
+      if (signal?.aborted) throw abortError();
+      const hex = await nativeSha256File(path).then(
+        (h) => (typeof h === 'string' && /^[0-9a-f]{64}$/i.test(h) ? h.toLowerCase() : null),
+        () => null, // a native refusal (an unexpected path form) falls back to the JavaScript hash below
+      );
+      if (signal?.aborted) throw abortError(); // the native hash cannot be stopped midway; its result is dropped
+      if (hex) return hex;
+    }
     const file = new File(path);
     const size = file.size;
     if (size <= NATIVE_DIGEST_MAX_BYTES) {
@@ -175,23 +197,26 @@ export class ExpoPackFs implements PackFs {
 export const expoPackHttp: PackHttp = {
   async downloadRange(url, dest, start, end, opts) {
     const file = new File(dest);
-    // A per-request timeout on top of the caller's cancel signal.
+    // A stall timer on top of the caller's cancel signal: only a request with no new bytes for `stallMs` stops.
     const ctrl = new AbortController();
     const onAbort = () => ctrl.abort();
     opts.signal.addEventListener('abort', onAbort, { once: true });
-    const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs);
+    const stall = startStallTimer(opts.stallMs, () => ctrl.abort());
     try {
       await File.downloadFileAsync(url, file, {
         headers: { Range: `bytes=${start}-${end}`, 'Accept-Encoding': 'identity' },
         idempotent: true,
         signal: ctrl.signal,
-        onProgress: (p) => opts.onBytes?.(p.bytesWritten),
+        onProgress: (p) => {
+          stall.progress(p.bytesWritten);
+          opts.onBytes?.(p.bytesWritten);
+        },
       });
     } catch (e) {
       if (opts.signal.aborted) throw abortError();
       throw e;
     } finally {
-      clearTimeout(timer);
+      stall.stop();
       opts.signal.removeEventListener('abort', onAbort);
     }
   },

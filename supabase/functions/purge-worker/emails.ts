@@ -1,95 +1,73 @@
 /**
- * Plain-text deletion emails (DATA-REQ-022, DATA-REQ-025, DATA-REQ-026) built from the words in
- * packages/content (src/emails/account.en.ts: account-deletion-scheduled, account-deletion-cancelled,
- * account-deleted) and the shared email chrome. The HTML twin rendered by packages/emails
- * (`renderForResend`) can replace `text` later; the words stay the same.
+ * The deletion emails (DATA-REQ-022, DATA-REQ-025, DATA-REQ-026): account-deletion-scheduled,
+ * account-deletion-cancelled and account-deleted, rendered by packages/emails at build time
+ * (`npm run export:resend -w @scribe/emails` writes packages/emails/generated/resend.ts, a self-contained
+ * module Deno can import). Each has HTML with the inline logo (two `cid:` attachments), a plain-text twin and
+ * a subject (TPL-02). The words live in packages/content src/emails/account.en.ts.
  *
  * Content-free by construction: the only values filled in are dates, the request reference (an L2 id)
  * and public links. Never a child's name, a letter or anything from a book.
+ *
+ * The founder alert stays plain text (internal, counts only). The contributor notice is not sent (TPL-05,
+ * see sendNotice in account.ts).
  */
 import { brand } from '../../../packages/brand/index.ts';
-import { accountEmails } from '../../../packages/content/src/emails/account.en.ts';
-import { emailChrome } from '../../../packages/content/src/emails/chrome.en.ts';
-import { emailLegal } from '../../../packages/content/src/emails/legal.en.ts';
-import type { EmailCopy } from '../../../packages/content/src/emails/types.ts';
+import { longDate, renderForResend, type InlineAttachment } from '../../../packages/emails/generated/resend.ts';
 import { ALERT_RUNBOOK, workerCopy } from './copy.ts';
 import type { AlertKind } from '../_shared/log/log.ts';
+
+export { longDate };
 
 export interface ComposedEmail {
   subject: string;
   text: string;
+  /** Present on the library emails: HTML that shows the logo from `attachments` by Content-ID. */
+  html?: string;
+  attachments?: InlineAttachment[];
 }
 
 const fill = (s: string, vars: Record<string, string>): string => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 
-/** Long date, US English, in UTC (the reader's zone is unknown on the server). */
-export function longDate(iso: string | Date): string {
-  const d = typeof iso === 'string' ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(d);
-}
-
 const DAY = 24 * 60 * 60 * 1000;
 
-/** Values every deletion email can use: public links only (packages/emails fixtures use the same shapes). */
-const base = (): Record<string, string> => ({
-  app: brand.name,
-  email: brand.support.email,
-  appUrl: `${brand.web.universalLinkBase}/open`,
-  helpUrl: `${brand.web.origin}/contact`,
-  privacyUrl: brand.web.privacy,
-});
+/** The Plus line of account-deleted (DATA-REQ-022). It starts this way in account.en.ts. */
+const PLUS = 'If you have Plus';
 
-/** The footer, as packages/emails renders it in plain text (chrome.en.ts, legal.en.ts). */
-const footer = (vars: Record<string, string>): string[] => {
-  const v = { ...vars, whyYouGotThis: emailLegal.whyYouGotThis.transactional };
-  return [
-    '',
-    ...emailChrome.footer.transactional.map((l) => fill(l, v)),
-    ...emailChrome.footer.links.transactional.map((l) => `${l.label}: ${fill(l.urlVar, v)}`),
-    emailChrome.footer.nameLine,
-  ];
-};
-
-/** One EmailCopy to plain text: heading, body, key facts, the action, the safety line, sign-off, footer. */
-function compose(copy: EmailCopy, vars: Record<string, string>, keep: (paragraph: string) => boolean = () => true): ComposedEmail {
-  const f = (t: string) => fill(t, vars);
-  const lines = [f(copy.heading), '', ...copy.body.filter(keep).flatMap((b) => [f(b), ''])];
-  if (copy.facts?.length) lines.push(...copy.facts.map((k) => `${f(k.label)}: ${f(k.value)}`), '');
-  if (copy.cta) lines.push(`${f(copy.cta.label)}: ${f(copy.cta.urlVar)}`, '');
-  if (copy.safety) lines.push(f(copy.safety), '');
-  lines.push(...emailChrome.signature.split('\n'), ...footer(vars));
-  return { subject: f(copy.subject), text: lines.join('\n') };
+/**
+ * Drops the Plus paragraph from a rendered email: one `<p>` in the HTML and one paragraph in the text.
+ * If the line is not found exactly once in each part, the email is returned unchanged: saying it costs
+ * nothing, a half-removed line would be a broken email.
+ */
+export function withoutPlusLine(mail: ComposedEmail): ComposedEmail {
+  const html = mail.html ?? '';
+  const htmlRe = new RegExp(`<p\\b[^>]*>${PLUS}\\b[^<]*</p>`, 'g');
+  const textRe = new RegExp(`(?<=^|\\n)${PLUS}\\b[^\\n]*\\n\\n`, 'g');
+  if ((html.match(htmlRe) ?? []).length !== 1 || (mail.text.match(textRe) ?? []).length !== 1) return mail;
+  return { ...mail, html: html.replace(htmlRe, ''), text: mail.text.replace(textRe, '') };
 }
 
-/** The Plus line (DATA-REQ-022). Every one starts this way in account.en.ts. */
-const isPlusLine = (p: string) => /^If you have Plus\b/.test(p);
-
 export function deletionRequestedEmail(args: { scheduledFor: string; reference: string; requestedAt?: string }): ComposedEmail {
-  const vars = {
-    ...base(),
+  return renderForResend('account-deletion-scheduled', {
     requestId: args.reference,
     deletionDate: longDate(args.scheduledFor),
     requestDate: longDate(args.requestedAt ?? new Date(new Date(args.scheduledFor).getTime() - 30 * DAY)),
-  };
-  return compose(accountEmails['account-deletion-scheduled'], vars);
+  });
 }
 
 export function deletionCancelledEmail(args: { reference: string }): ComposedEmail {
-  return compose(accountEmails['account-deletion-cancelled'], { ...base(), requestId: args.reference });
+  return renderForResend('account-deletion-cancelled', { requestId: args.reference });
 }
 
 export function deletionCompletedEmail(args: { completedAt: string; reference: string; hadSubscription: boolean | null }): ComposedEmail {
   const done = new Date(args.completedAt);
-  const vars = { ...base(), requestId: args.reference, completedDate: longDate(done), backupClearDate: longDate(new Date(done.getTime() + 7 * DAY)) };
+  const mail = renderForResend('account-deleted', {
+    requestId: args.reference,
+    completedDate: longDate(done),
+    backupClearDate: longDate(new Date(done.getTime() + 7 * DAY)),
+  });
   // DATA-REQ-022: repeat how to cancel with Apple when a subscription was active at request time
   // (unknown counts as active: saying it costs nothing, missing it costs money).
-  return compose(accountEmails['account-deleted'], vars, (p) => args.hadSubscription !== false || !isPlusLine(p));
-}
-
-export function contributorNoticeEmail(args: { scheduledFor: string }): ComposedEmail {
-  const t = workerCopy.contributorNotice;
-  const vars = { ...base(), date: longDate(args.scheduledFor) };
-  return { subject: fill(t.subject, vars), text: [...t.body.map((b) => fill(b, vars)), ...footer(vars)].join('\n') };
+  return args.hadSubscription === false ? withoutPlusLine(mail) : mail;
 }
 
 export function alertEmail(args: { conditions: { kind: AlertKind; count: number }[]; run: string; at: Date }): ComposedEmail {

@@ -12,6 +12,14 @@
     "invites": false,
     "photos": false,
     "packDownloads": false,
-    "serverContent": false
+    "serverContent": false,
+    "backupUploads": false,
+    "escrow": false,
+    "statusReport": false,
+    "photoMoments": false,
+    "videos": false,
+    "signIn": false,
+    "libraryDays": false,
+    "bookSearch": false
   }
 }

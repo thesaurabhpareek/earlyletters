@@ -7,9 +7,13 @@
 // an explicit role (no more editing child_invites.role by hand), and Terms, age
 // and sensitive-data consent recorded for every person before they write content.
 import { createDb, users } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
-const { check, as, sys, one, fails, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
+const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S, U } = users;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 check(`${process.argv.length - 2} migrations apply cleanly`, true);
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
 await publishPolicies();
@@ -38,8 +42,8 @@ check('raw_sha256 is immutable', await fails(() => as(A, `update entries set raw
 check('created_at is immutable', await fails(() => as(A, `update entries set created_at=now()-interval '1 year' where id='${e1}'`), 'SCIMM'));
 check('photo path in another family folder is refused', await fails(() => as(A, `update entries set photo_path='${SOLO}/${S}/x.jpg' where id='${e1}'`)));
 check('photo path must name its own entry', await fails(() => as(A, `update entries set photo_path='${CHILD}/${A}/other.jpg' where id='${e1}'`)));
-await as(A, `update entries set photo_path='${CHILD}/${A}/${e1}.jpg' where id='${e1}'`);
-check('photo path {child}/{author}/{entry}.jpg is accepted', (await sys(`select photo_path from entries where id='${e1}'`)).rows[0].photo_path.endsWith(`${e1}.jpg`));
+await legacyPhotoPath(sys, e1, `${CHILD}/${A}/${e1}.jpg`);
+check('photo path {child}/{author}/{entry}.jpg is accepted (legacy row)', (await sys(`select photo_path from entries where id='${e1}'`)).rows[0].photo_path.endsWith(`${e1}.jpg`));
 await as(A, `update entries set machine_edits='[]'::jsonb where id='${e1}'`);
 check('machine_edits change alone is versioned', (await sys(`select count(*)::int n from entry_versions where entry_id='${e1}' and machine_edits='[{"type":"filler"}]'::jsonb`)).rows[0].n === 1);
 check('version records who superseded it', (await sys(`select superseded_by from entry_versions where entry_id='${e1}'`)).rows[0].superseded_by === A);
@@ -70,13 +74,18 @@ check('versions purged with the entry', (await sys(`select 1 from entry_versions
 check('photo queued for Storage API deletion', (await sys(`select 1 from storage_purge_queue where object_path='${CHILD}/${A}/${e1}.jpg'`)).rows.length === 1);
 check('purge ledger keeps the id only', (await sys(`select 1 from purge_ledger where entity_type='entry' and entity_id='${e1}'`)).rows.length === 1);
 check('users cannot call purge_due', await fails(() => as(A, `select public.purge_due()`)));
-check('users cannot read legal holds', (await as(A, 'select * from legal_holds')).rows.length === 0);
-check('users cannot read the purge queue or ledger', (await as(A, 'select 1 from storage_purge_queue union all select 1 from purge_ledger')).rows.length === 0);
+// 20261023060000: no grant on these at all, so a read is refused rather than filtered.
+check('users cannot read legal holds', (await codeOf(() => as(A, 'select * from legal_holds'))) === '42501');
+check('users cannot read the purge queue or ledger', (await codeOf(() => as(A, 'select 1 from storage_purge_queue'))) === '42501'
+  && (await codeOf(() => as(A, 'select 1 from purge_ledger'))) === '42501');
 
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
-check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
+// 20261023060000: no client writes children directly (book_update and request_book_deletion are the paths).
+check('member cannot tombstone the book directly (42501)', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), '42501'));
 check('contributor cannot delete the book', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCDEL'));
-check('sole parent cannot simply leave', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), 'SCLPG'));
+// F11-REQ-011 (20261015020000): leaving goes through leave_child only; the direct delete is refused.
+check('sole parent cannot simply leave', await fails(() => as(S, `select public.leave_child(child_id) from child_members where profile_id='${S}'`), 'SCLPG'));
+check('[F11-REQ-011] a direct delete of the membership row is refused', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), '42501'));
 
 // ── K-09 Raw transcripts are author-only ──────────────────────────────────
 const aBook = await newEntry(A);
@@ -102,15 +111,15 @@ check('[B F9] parents see the pending family letter', (await one(B, `select appr
 check('author still sees own private letter in the view', (await as(A, `select 1 from book_entries where id='${await newEntry(A, CHILD, false)}'`)).rows.length === 1);
 check('book view search works for co-parents', (await as(B, `select id from book_entries where child_id='${CHILD}' and search @@ plainto_tsquery('simple', 'walked')`)).rows.length === 3);
 check('co-parent can read the in-book photo of another author', await (async () => {
-  await as(A, `update entries set photo_path='${CHILD}/${A}/${aBook}.jpg' where id='${aBook}'`);
-  await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${A}/${aBook}.jpg')`);
+  await legacyPhotoPath(sys, aBook, `${CHILD}/${A}/${aBook}.jpg`);
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${A}/${aBook}.jpg')`);
   return (await as(B, `select name from storage.objects`)).rows.length === 1;
 })());
 
 // ── PRD-REQ-014 Cross-child isolation ─────────────────────────────────────
 const sBook = await newEntry(S, SOLO);
-await as(S, `update entries set photo_path='${SOLO}/${S}/${sBook}.jpg' where id='${sBook}'`);
-await as(S, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${SOLO}/${S}/${sBook}.jpg')`);
+await legacyPhotoPath(sys, sBook, `${SOLO}/${S}/${sBook}.jpg`);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', '${SOLO}/${S}/${sBook}.jpg')`);
 const leak = async (uid) => (await as(uid, `
   select 'entry' from book_entries where child_id='${SOLO}'
   union all select 'raw' from entries where child_id='${SOLO}'
@@ -127,15 +136,16 @@ check('member sets own per-child prefs', (await one(B, `select signs_as from chi
 check('other members cannot read someone\'s prefs', (await as(A, `select 1 from child_member_prefs where profile_id='${B}'`)).rows.length === 0);
 check('cannot write prefs for someone else', await fails(() => as(A, `insert into child_member_prefs (child_id, profile_id) values ('${CHILD}', '${N}')`)));
 check('cannot write prefs for a book you do not belong to', await fails(() => as(B, `insert into child_member_prefs (child_id, profile_id) values ('${SOLO}', '${B}')`)));
-await as(B, `update children set family_can_read=true, nickname='Ashu', due_date=null where id='${CHILD}'`);
+await as(B, `select public.book_update($1, '{"family_can_read": true, "nickname": "Ashu", "due_date": null}'::jsonb)`, [CHILD]);
 check('parent changes shared book settings', (await sys(`select family_can_read from children where id='${CHILD}'`)).rows[0].family_can_read === true);
 check('[B-REQ-011] with "Family can read" on, a contributor reads in-book letters, never others\' private or pending ones',
   (await as(N, `select id from book_entries where child_id='${CHILD}' order by id`)).rows.map((r) => r.id).join() === [aBook, bBook, nBook].sort().join());
-check('contributor cannot change book settings', await fails(() => as(N, `update children set name='X' where id='${CHILD}'`), 'SCPAR'));
+check('contributor cannot change book settings', await fails(() => as(N, `select public.book_update($1, '{"name": "X"}'::jsonb)`, [CHILD]), 'SCPAR'));
 check('parent sets auto-add for a family member', (await one(A, `select public.set_member_auto_add('${CHILD}', '${N}', true) as ok`)).ok === true
   && (await sys(`select auto_add_letters from child_members where profile_id='${N}'`)).rows[0].auto_add_letters === true);
 check('contributor cannot set auto-add', await fails(() => as(N, `select public.set_member_auto_add('${CHILD}', '${N}', false)`), 'SCPAR'));
-check('child photo path must sit in the child folder', await fails(() => as(A, `update children set photo_path='${SOLO}/0192b000-0000-7000-8000-000000000999.jpg' where id='${CHILD}'`)));
+// Only ops_set_child_photo_path writes photo_path (definer); the rule holds for the owner too.
+check('child photo path must sit in the child folder', await fails(() => sys(`update children set photo_path='${SOLO}/0192b000-0000-7000-8000-000000000999.jpg' where id='${CHILD}'`)));
 
 // ── Policy acceptances (POLICY_VERSIONING.md 7.2) ─────────────────────────
 // terms 1.0.0 is published by the publishPolicies() fixture.
@@ -149,7 +159,7 @@ check('users cannot read others\' acceptances', (await as(B, `select 1 from poli
 check('clients cannot insert acceptances directly', await fails(() => as(A, `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values ('${A}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`)));
 check('acceptances are append-only, even for the service role', await fails(() => sys(`update policy_acceptances set action='decline' where id='${actA}'`)));
 check('unknown versions are refused', await fails(() => as(A, `select public.record_policy_act('terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`)));
-check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', 'public.record_policy_act(text,text,text,text,text,text,text,text,timestamptz,bytea,jsonb)', 'execute') ok`)).rows[0].ok);
+check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', p.oid, 'execute') ok from pg_proc p where p.proname = 'record_policy_act'`)).rows.some((r) => r.ok));
 
 // ── TC-08 Delete book with a co-parent = remove own letters and leave ─────
 const BOOK2 = await newChild(B);
@@ -202,7 +212,7 @@ check("contributor's deletion removes only their letters", !(await exists('entri
 
 // ── Sole parent book deletion ─────────────────────────────────────────────
 await join(C, 'contributor', SOLO, S);
-await as(S, `update children set family_can_read=true where id='${SOLO}'`);
+await as(S, `select public.book_update($1, '{"family_can_read": true}'::jsonb)`, [SOLO]);
 check('contributor reads the solo book while live', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 1);
 check('sole parent schedules book deletion', (await one(S, `select public.request_book_deletion('${SOLO}', 'ios') as m`)).m === 'book_scheduled');
 check('a book being deleted leaves members\' view', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 0);

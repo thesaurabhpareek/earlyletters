@@ -6,9 +6,12 @@
  * role key (least privilege: a leaked trigger secret can only start a run).
  * Deploy with --no-verify-jwt because this bearer is not a JWT.
  * Body (optional, at most 1 KB): {"task": "run" | "daily"}.
+ * GET /purge-worker/health needs no secret and starts nothing: 200 when the
+ * required secrets are set, 503 otherwise (RA-07-06; _shared/health).
  * Responses use the packages/api envelope and carry x-request-id.
  */
 import { failure, HEADER_REQUEST_ID, httpStatusFor, success, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
+import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
 import { createLogger, type LogSink } from '../_shared/log/log.ts';
 import { readConfig, type EnvGetter } from './config.ts';
 import { safeEqual, type FetchFn } from './lib/http.ts';
@@ -33,6 +36,11 @@ export function makeHandler(env: EnvGetter, opts: HandlerOptions = {}): (req: Re
       new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', [HEADER_REQUEST_ID]: log.reqId } });
     const fail = (code: ApiErrorCode, retryable: boolean, status = httpStatusFor(code)) => reply(status, failure({ code, retryable }, log.reqId));
 
+    // GET /purge-worker/health (RA-07-06): 200 when every required secret is set, 503 otherwise. Starts no work.
+    if (isHealthRequest(req, 'purge-worker')) {
+      log.info('request.done', { status: config ? 200 : 503, outcome: config ? 'ok' : 'server_error' });
+      return healthResponse(req, config !== null, log.reqId);
+    }
     if (req.method !== 'POST') {
       log.warn('request.refused', { code: 'method', status: 405 });
       return fail('bad_request', false, 405);

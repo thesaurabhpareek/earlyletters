@@ -11,9 +11,14 @@
  * - Every request carries an `x-request-id` and `x-app-version` (BRIEF 17,
  *   packages/api), never content. Write RPCs the contract marks with an
  *   `idempotency-key` set it per call (withIdempotencyKey).
+ * - Email links use PKCE (`flowType: 'pkce'`; BL-347, security review H1,
+ *   ADR 0023): the code verifier stays in this phone's Keychain, so a link
+ *   requested anywhere else cannot sign this phone in
+ *   (lib/auth/email-link.logic.ts).
  *
  * Created lazily on first use, never at import, so cold start does no
- * network or Keychain work before the first frame (A-NFR-002).
+ * network or Keychain work before the first frame (A-NFR-002). With server
+ * features off nothing here runs past the switch check.
  */
 import 'react-native-url-polyfill/auto';
 import { HEADER_APP_VERSION, HEADER_REQUEST_ID, newRequestId } from '@scribe/api';
@@ -50,6 +55,25 @@ export function isSupabaseConfigured(): boolean {
   return serverFeaturesEnabled() && readSupabaseEnv() !== null;
 }
 
+/**
+ * supabase-js makes the PKCE code verifier with `crypto.getRandomValues` and
+ * falls back to Math.random when it is missing. Where the runtime has no Web
+ * Crypto, install expo-crypto's getRandomValues (the platform's secure
+ * generator, SecRandomCopyBytes on iOS) as the standard global, once, just
+ * before the client is made. `crypto.subtle` is deliberately not installed:
+ * a partial WebCrypto would mislead other feature checks, and without it
+ * supabase-js sends the challenge with method `plain`. That is enough for H1:
+ * the challenge travels only from this phone to Supabase over TLS, and the
+ * attacker in H1 holds a different flow (ADR 0023 records the trade-off).
+ */
+export function ensureRandomValues(): void {
+  const g = globalThis as { crypto?: { getRandomValues?: unknown } };
+  if (typeof g.crypto?.getRandomValues === 'function') return;
+  const getRandomValues = <T extends ArrayBufferView | null>(array: T): T => Crypto.getRandomValues(array as never) as T;
+  if (g.crypto) (g.crypto as { getRandomValues?: unknown }).getRandomValues = getRandomValues;
+  else Object.defineProperty(globalThis, 'crypto', { value: { getRandomValues }, configurable: true, writable: true });
+}
+
 const APP_VERSION = (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32);
 
 /**
@@ -74,6 +98,7 @@ export function getSupabaseOrNull(): SupabaseClient | null {
   if (client) return client;
   const env = readSupabaseEnv();
   if (!env) return null;
+  ensureRandomValues();
   client = createClient(env.url, env.key, {
     auth: {
       storage: secureStorage,
@@ -82,6 +107,8 @@ export function getSupabaseOrNull(): SupabaseClient | null {
       persistSession: true,
       // Links are handled by the app (lib/auth/links.logic.ts), never by URL sniffing.
       detectSessionInUrl: false,
+      // BL-347: an email link can finish only on the phone holding this flow's verifier.
+      flowType: 'pkce',
     },
     global: { fetch: fetchWithRequestId },
   });

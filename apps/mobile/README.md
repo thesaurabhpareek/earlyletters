@@ -9,7 +9,7 @@ Read the repo root `CLAUDE.md` first: the constitution, content rules and privac
 From the repo root, once:
 
 ```bash
-nvm use                 # Node 22 (see .nvmrc); mobile tests need node:sqlite
+nvm use                 # Node 22.5 or later (.nvmrc, root package.json engines); mobile tests need node:sqlite
 npm ci
 ```
 
@@ -31,10 +31,11 @@ npm run typecheck -w @scribe/mobile
 | `src/app` | Screens and routes (Expo Router, file-based) |
 | `src/components` | UI components, grouped by feature |
 | `src/lib` | Device-side logic: local database, capture, transcription, dates, copy. See `src/lib/README.md` |
+| `src/generated` | Files a script writes and git keeps. `licences.json`: every bundled library's notice, read through `src/lib/licences.ts` by the Licenses page. Run `npm run licences:generate -w @scribe/mobile` after any dependency change; `test/licences.test.ts` fails while it is stale |
 | `modules/` | Local native modules (hand-written Swift lives in `modules/*/ios`) |
 | `test/` | Vitest unit tests for the pure parts of `src/lib` (run in Node, no React Native) |
 | `web-preview/` | Web-only Metro shims used by `metro.config.js` |
-| `assets/` | Icons, licensed photos and sounds. `assets/expo.icon` and `assets/images/icon.png` are placeholders until the brand icon exists |
+| `assets/` | App icon, splash, Android icons and favicon in `assets/brand`, read by `app.config.ts`. Nothing else is bundled: the licensed photo library and the sound synthesizer live in `docs/brand/archive/` until a screen uses them (`test/bundle-assets.test.ts` keeps them out) |
 
 ## Native folders
 

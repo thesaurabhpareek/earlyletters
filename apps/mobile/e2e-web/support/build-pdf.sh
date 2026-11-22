@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Builds docs/release/journey/Early-Letters-iOS-Journey.pdf from steps, screens and critiques.
+# The PDF is generated output (gitignored, like screens/): ship it with pack-journey.sh, never commit it.
+# Run after the flows with JOURNEY_SHOTS=1 (the screenshots must exist locally).
 # Needs: ImageMagick (convert), python3 with `markdown`, Chromium (CHROMIUM env or /opt/pw-browsers/chromium).
 set -euo pipefail
 J="$(cd "$(dirname "$0")/../../../.." && pwd)/docs/release/journey"

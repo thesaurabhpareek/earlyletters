@@ -9,9 +9,10 @@
  * held letter is never lost.
  */
 import { decideKeepLetter, freeLettersFrom, type KeepLetterDecision } from '@scribe/core';
-import { ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
+import { eraseEverythingPending, ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
 import { clearLedger, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
-import { getPlan } from './plan-store';
+import { hasWords } from './letter-ledger.logic';
+import { getPlan, planReadiness, type PlanReadiness } from './plan-store';
 import { isJoinedBook as joined, plusOn, type BookFacts } from './plan.logic';
 
 /**
@@ -67,19 +68,44 @@ export function freeLettersAllowance(): number {
   return freeLettersFrom(allowanceNow());
 }
 
+/**
+ * How long the Keep gate waits for the first StoreKit read of this process before it decides from the cached
+ * snapshot (RT-PLS-10). Short: after launch the read has almost always landed, and the wait only runs until it does.
+ */
+export const KEEP_PLAN_WAIT_MS = 1000;
+
+/**
+ * The Keep step's answer: packages/core's decision, or `hold` when keeping would need Plus but the phone does not
+ * know yet whether this person has it (no StoreKit read and no cached snapshot, RT-PLS-10). On `hold` the letter is
+ * held exactly as it is and no Plus sheet opens: a payer is never shown "needs Plus" before Apple has answered.
+ */
+export type KeepGateDecision = KeepLetterDecision | { kind: 'hold'; reason: 'plan_unread' };
+
 export interface KeepGate {
-  decision: KeepLetterDecision;
+  decision: KeepGateDecision;
   /** Letters ever kept on this account (the largest of Keychain, database and letters present). */
   lettersKept: number;
   allowance: number;
 }
 
+async function readiness(): Promise<PlanReadiness> {
+  try {
+    return await planReadiness(KEEP_PLAN_WAIT_MS);
+  } catch {
+    return 'none';
+  }
+}
+
 /**
- * The gate for the Keep buttons in Review (spoken, typed, or voice kept without
- * words). Call it after the recording is hashed and BEFORE saving. It also
- * heals the ledger (a reinstall or a backup restore). On `offer`, the caller
- * opens the Keep sheet and returns WITHOUT saving: the draft stays exactly
- * where it is. Never throws; an unreadable ledger counts as 0, the safe side.
+ * The decision under keepGateFor, which Review calls (M17: only with words on
+ * screen). Call it after the recording is hashed and BEFORE saving. It also
+ * heals the ledger (a reinstall or a backup restore). Only when the answer
+ * would be the Keep sheet does it wait, briefly, for the first StoreKit read
+ * (RT-PLS-10), then decide again; on timeout it decides from the cached
+ * snapshot. A free letter never waits. On `offer`, the caller opens the Keep sheet and returns
+ * WITHOUT saving: the draft stays exactly where it is. On `hold` (no read and
+ * no snapshot), the caller holds the letter and opens no sheet. Never throws;
+ * an unreadable ledger counts as 0, the safe side.
  */
 export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> {
   const allowance = freeLettersAllowance();
@@ -89,9 +115,36 @@ export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> 
   } catch {
     n = 0;
   }
-  const decision = decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
-  return { decision, lettersKept: n, allowance };
+  const decide = () => decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
+  const first = decide();
+  // Only an answer of "needs Plus" waits for StoreKit: a free letter, or Plus already known, keeps at once.
+  if (first.kind !== 'offer') return { decision: first, lettersKept: n, allowance };
+  const read = await readiness();
+  if (read === 'none') return { decision: { kind: 'hold', reason: 'plan_unread' }, lettersKept: n, allowance };
+  // The read may have landed while waiting (Plus on now): decide again from what StoreKit said.
+  return { decision: decide(), lettersKept: n, allowance };
 }
+
+/**
+ * The gate for one save from Review under M17 (D-103; F14-REQ-037, F14-REQ-038; WP-F14-20).
+ * A letter counts, and the Keep sheet can open, only at a save where the letter's words are
+ * on screen. Saving a recording with no words (the speech model is not on the phone yet,
+ * nobody spoke, or the words are still coming) or text of marks only ("...") never reads the
+ * ledger and never opens the sheet: it answers null, and the caller saves at once. The ledger
+ * (db/repos/ledger.ts: COUNTED_LETTERS_SQL, then the same hasWords rule) does not count that
+ * save either; the letter counts later, at the save where its words are first on screen.
+ *
+ * Call it after the recording is hashed and BEFORE saving. `wordsOnScreen` is the text the
+ * person sees in Review at that moment (`finalText`, typed or transcribed). No words means no
+ * letter or digit in any script (hasWords): empty, blank or marks only.
+ */
+export async function keepGateFor(save: { wordsOnScreen: string | null | undefined }, now: Date = new Date()): Promise<KeepGate | null> {
+  if (!hasWords(save.wordsOnScreen)) return null;
+  return keepLetterGate(now);
+}
+
+/** Words count as on screen when there is at least one letter or digit in any script (the ledger's rule too). */
+export { hasWords };
 
 /** Letters kept so far, for the Plan screen and analytics. 0 when the store cannot be read. */
 export async function lettersKeptNow(): Promise<number> {
@@ -126,6 +179,9 @@ export async function eraseLetterLedger(): Promise<void> {
 /** At launch: make the Keychain and the database mirror agree (a reinstall or a backup restore). Never throws. */
 export async function startLetterLedger(): Promise<void> {
   try {
+    // An Erase everything still finishing (lib/erase-everything.ts) clears the count itself; healing now could
+    // write the old count back from the Keychain before it is removed (D-083).
+    if (eraseEverythingPending()) return;
     await syncLedger(ledgerDb());
   } catch {
     // Store not open yet; the gate heals it before it decides.

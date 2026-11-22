@@ -1,0 +1,179 @@
+# SKETCH, NOT ENABLED (named .example on purpose). The workflow is S20's: RA-20-10a in
+# docs/release/AUTOMATION.md section 5 copies what it needs into .github/workflows/kill-harness.yml.
+# S19 owns the harness it calls (apps/mobile/e2e/kill/, RA-19-04) and the evidence it produces.
+#
+# What it needs before it can go green:
+#   - RA-20-18: the wiring line in apps/mobile/src/app/_layout.tsx, first line of Root():
+#       useE2eSeams(); // src/dev/e2e-seams.ts
+#     with `import { useE2eSeams } from '@/dev/e2e-seams';`, and B-8 (no seam string in the testflight or
+#     production bundle) landing with it.
+#   - AF-05: `develop` as the default branch, or the schedule below never fires.
+#   - A microphone on the runner for DL-01 [U]. If the simulator cannot record, the drill writes
+#     `record_failed` and the harness exits 3 (incomplete, never green); then DL-01 runs on the
+#     founder's Mac (AF-14), with a silent virtual input (apps/mobile/e2e/README.md section 9).
+#
+# The seam is compiled only into the development app env with EXPO_PUBLIC_E2E=1 (src/dev/e2e-seams.ts), so this
+# build uses EXPO_PUBLIC_APP_ENV=development: bundle id com.earlyletters.scribe.dev, release JavaScript (no dev
+# client, no Metro). It is never signed and never leaves the runner.
+#
+# Budget [E] until the first runs: DL-02 about 5 s a run, 500 random kills plus 50 at each of four crash points
+# (700 runs) about 1 h. DL-01 about 70 s a run (10 to 120 s of recording plus a launch), so 500 runs about 10 h:
+# four shards of 125, about 2.5 h each, merged by the last job. Nightly: 50 random kills a mode (DL-02 adds 5 at
+# each point; DL-01 one shard). Gate (B2-11): the full sizes on the freeze commit, Tue 27 Oct.
+# Actions are pinned to the commit SHAs the repository's other workflows use.
+
+name: Kill harness (DL-01, DL-02)
+
+on:
+  workflow_dispatch:
+    inputs:
+      gate:
+        description: Full gate sizes (500 random kills a mode); otherwise the nightly 50
+        type: boolean
+        default: true
+  schedule:
+    - cron: '41 9 * * *' # nightly sizes
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kill-harness-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  XCODE_VERSION: '26.6'
+  GATE: ${{ github.event_name == 'workflow_dispatch' && inputs.gate && '1' || '0' }}
+
+jobs:
+  build:
+    name: e2e simulator app (development app env, release JavaScript, seam on)
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select Xcode
+        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build env (development app env, servers off, e2e seam on)
+        run: |
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.development.env || {};
+            Object.assign(env, { EXPO_PUBLIC_APP_ENV: "development", EXPO_PUBLIC_SERVER_FEATURES: "off", EXPO_PUBLIC_E2E: "1" });
+            for (const [k, v] of Object.entries(env)) console.log(k + "=" + v);
+          ' >> "$GITHUB_ENV"
+      - name: Prebuild and pods
+        working-directory: apps/mobile
+        run: |
+          npx expo prebuild --platform ios --no-install --clean
+          (cd ios && pod install)
+      - name: xcodebuild Release for the simulator (no signing)
+        working-directory: apps/mobile/ios
+        run: |
+          name="$(basename *.xcodeproj .xcodeproj)"
+          xcodebuild -workspace "$name.xcworkspace" -scheme "$name" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          app="$(find "$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator" -maxdepth 1 -name '*.app' | head -n 1)"
+          # B-8 in reverse: this build must contain the seam, or every run times out.
+          grep -q e2eKillDrill "$app/main.jsbundle" || { echo "::error::the e2e seam is not in the bundle (RA-20-18 wiring line?)"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/kill-app" && ditto "$app" "$RUNNER_TEMP/kill-app/App.app"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (saves the app for the next jobs of this run)
+        with:
+          path: ${{ runner.temp }}/kill-app
+          key: kill-app-${{ github.run_id }}
+
+  harness:
+    name: ${{ matrix.mode }} ${{ matrix.shard }}
+    needs: build
+    runs-on: macos-26
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: dl02, shard: 1 }
+          - { mode: dl01, shard: 1 }
+          - { mode: dl01, shard: 2 }
+          - { mode: dl01, shard: 3 }
+          - { mode: dl01, shard: 4 }
+    steps:
+      - name: Nightly runs one DL-01 shard only
+        id: skip
+        run: echo "skip=${{ (github.event_name == 'schedule' && matrix.mode == 'dl01' && matrix.shard != 1) && '1' || '0' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.skip.outputs.skip == '0'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.skip.outputs.skip == '0'
+        with:
+          node-version: 22
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.skip.outputs.skip == '0'
+        with:
+          path: ${{ runner.temp }}/kill-app
+          key: kill-app-${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Simulator
+        if: steps.skip.outputs.skip == '0'
+        run: |
+          UDID="$(xcrun simctl create kill-se3 'iPhone SE (3rd generation)')"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+      - name: Kill harness (exit 0 only when every run kept its letter and the self-check caught every plant)
+        if: steps.skip.outputs.skip == '0'
+        # --mic-silent: a hosted runner has no room microphone. Never pass it on a Mac in a family room.
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          if [ "$MODE" = dl02 ]; then runs=$([ "$GATE" = 1 ] && echo 500 || echo 50); extra=""
+          else runs=$([ "$GATE" = 1 ] && echo 125 || echo 50); extra="--mic-silent"; fi
+          node apps/mobile/e2e/kill/run-kill-harness.mjs --mode "$MODE" --udid "$UDID" --app "$RUNNER_TEMP/kill-app/App.app" \
+            --runs "$runs" --out "$RUNNER_TEMP/kill" $extra
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (the shard report, for the merge job)
+        if: always() && steps.skip.outputs.skip == '0'
+        with:
+          path: ${{ runner.temp }}/kill
+          key: kill-report-${{ github.run_id }}-${{ matrix.mode }}-${{ matrix.shard }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.skip.outputs.skip == '0'
+        with:
+          name: kill-${{ matrix.mode }}-${{ matrix.shard }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/kill
+          retention-days: 30
+
+  merge-dl01:
+    name: dl01 merged (the gate verdict)
+    needs: harness
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/s1', key: 'kill-report-${{ github.run_id }}-dl01-1', fail-on-cache-miss: true }
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/s2', key: 'kill-report-${{ github.run_id }}-dl01-2', fail-on-cache-miss: true }
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/s3', key: 'kill-report-${{ github.run_id }}-dl01-3', fail-on-cache-miss: true }
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/s4', key: 'kill-report-${{ github.run_id }}-dl01-4', fail-on-cache-miss: true }
+      - name: Merge the four shards (refuses a duplicate shard or shards of another build)
+        run: |
+          node apps/mobile/e2e/kill/run-kill-harness.mjs --merge "$RUNNER_TEMP"/s1/report.json "$RUNNER_TEMP"/s2/report.json \
+            "$RUNNER_TEMP"/s3/report.json "$RUNNER_TEMP"/s4/report.json --out "$RUNNER_TEMP/merged"

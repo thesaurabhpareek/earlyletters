@@ -126,7 +126,7 @@ A 1 px `line` rule, 32 px below the signature, then 24 px, then the lines in thi
 | 3 | (none) | `{unsubscribe}` (L2 wording, one-click; plus `List-Unsubscribe` and `List-Unsubscribe-Post` headers) |
 | 4 | (none) | `{postalAddress}` (required by CAN-SPAM for commercial mail; L2 confirms; never a home address, D-004) |
 | 5 | Links: Help, Privacy | Links: Help, Privacy, Email preferences |
-| 6 | "Early Letters. Exactly as you said it." | Same |
+| 6 | "Early Letters. It stays in your words." | Same |
 
 **Not in the footer, on purpose:** social icons (we have no social channel worth sending a tired parent to, and each icon is a remote image or a link to a tracker-heavy site; revisit only if a channel exists and someone asks for it), app store badges, "view in browser", copyright line (adds nothing legally in the US and costs a line, **(opinion)**), the postal address on transactional mail (not required, L2 confirms), and an unsubscribe link on transactional mail (people cannot opt out of sign-in links; a fake unsubscribe would be a broken promise). If a transactional email ever carries promotional content it becomes commercial and gets the full commercial footer: the copy lanes must not mix them.
 
@@ -203,7 +203,7 @@ Mocks to check with the primary lockup: transactional light, dark with logo swap
 |  person reads every one.            |
 |  Help . Privacy                     |  underlined
 |                                     |  16
-|  Early Letters. Exactly as you said it.
+|  Early Letters. It stays in your words.
 +-------------------------------------+
 ```
 
@@ -216,7 +216,7 @@ Mocks to check with the primary lockup: transactional light, dark with logo swap
 |  Warmly, / Early Letters            |
 |  -----------------------------------|  #33302C
 |  why line, reply line, links        |  #B3AA9E
-|  Early Letters. Exactly as you said it.
+|  Early Letters. It stays in your words.
 +-------------------------------------+
 ```
 

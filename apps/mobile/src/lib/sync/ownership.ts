@@ -12,7 +12,9 @@ import {
   SYNC_SETTING,
   appendOp,
   enqueueEntryUpsert,
+  enqueueHeldDraft,
   enqueuePrefs,
+  prefsFields,
   readSetting,
   writeSetting,
   type EnqueueContext,
@@ -52,32 +54,67 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     const books = db.all<LocalChildRow>("SELECT * FROM children WHERE server_state = 'local' ORDER BY created_at, id");
     const ok = books.filter((c) => UUID7.test(c.id) && (c.birthday || c.due_date));
     const bad = books.filter((c) => !ok.includes(c));
-    for (const c of bad) db.run("UPDATE children SET server_state = 'refused', role = 'parent', created_by_me = 1 WHERE id = ?", c.id);
-    for (const c of ok) db.run("UPDATE children SET server_state = 'pending', role = 'parent', created_by_me = 1 WHERE id = ?", c.id);
+    const mine = "role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?)";
+    for (const c of bad) db.run(`UPDATE children SET server_state = 'refused', ${mine} WHERE id = ?`, userId, c.id);
+    for (const c of ok) db.run(`UPDATE children SET server_state = 'pending', ${mine} WHERE id = ?`, userId, c.id);
 
     const batch = ok.slice(0, FIRST_RUN_MAX);
     if (batch.length > 0) {
+      const batchId = ctx.newId();
       appendOp(db, {
         type: 'book.first_run',
-        id: ctx.newId(),
+        id: batchId,
         data: { children: batch.map((c) => ({ id: c.id, name: c.name, date_of_birth: c.birthday, due_date: c.due_date })) },
       }, ctx);
+      for (const c of batch) db.run('UPDATE children SET first_run_batch = ? WHERE id = ?', batchId, c.id);
     }
     for (const c of ok.slice(FIRST_RUN_MAX)) {
       appendOp(db, { type: 'book.create', id: c.id, data: { name: c.name, date_of_birth: c.birthday, due_date: c.due_date } }, ctx, { bookId: c.id });
     }
-    for (const c of ok) enqueuePrefs(db, c.id, { signs_as: c.signs_as, include_in_reminders: c.reminders_on === 1 }, ctx);
+    for (const c of ok) enqueuePrefs(db, c.id, prefsFields(db, c.id), ctx);
 
     // Letters deleted before they ever left the phone stay local (Recently deleted only).
     const letters = db.all<{ id: string }>(
       "SELECT id FROM entries WHERE author_id = ? AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
       userId,
     );
-    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx);
+    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx); // a waiting letter goes as its held row
+    // Letters the author held at the Keep gate before signing in (F14-REQ-039): author-only held rows.
+    for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE held_kind IS NOT NULL ORDER BY created_at, id')) {
+      enqueueHeldDraft(db, d.id, ctx);
+    }
     const queued = db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE type = 'entry.upsert'")!.n;
     result = { outcome: 'claimed', books: ok.length, letters: queued, localOnlyBooks: bad.length };
   });
   return result;
+}
+
+/**
+ * A phone with nothing on it has no owner to protect. `takeOwnership` writes `sync.ownerId` even when the phone holds no
+ * book (the first sign-in on an empty phone), and nothing cleared it at sign-out, so a second account that signed in on the
+ * same empty phone ("Use another account", "Try another way") met `AccountMismatchError`, and its sync stopped without
+ * a word. This clears the owner when, and only when, nothing on the phone could belong to that account:
+ *  - `holdsAnyRow(db)` is false: pass `phoneHoldsAnyRow` (lib/auth/account-claim.logic.ts, re-exported by auth-store.ts), the
+ *    claim screen's own question. It counts any row in `children` or `entries`, in any state (hidden, refused and deleted ones
+ *    too), and any draft held at the Keep gate, and errs towards "not empty". It is passed in, not imported, because that
+ *    module is read only by auth code (test/auth-kill-path.test.ts);
+ *  - nothing waits in `sync_outbox` (a queued erase can outlive its row, and must not go up under another account).
+ * In one transaction. The held-draft cursor goes with the owner: it is the first account's place in its own held drafts, and the
+ * next account's pull must not start there. A phone that holds anything keeps its owner (and the cursor), so another account
+ * still meets the mismatch and nothing moves between accounts. Deletes nothing else. Returns whether it released.
+ */
+export function releaseEmptyOwner(db: SqlDb, holdsAnyRow: (db: SqlDb) => boolean): boolean {
+  let released = false;
+  db.transaction(() => {
+    if (readSetting(db, SYNC_SETTING.owner) === null) return;
+    if (holdsAnyRow(db)) return;
+    const waiting = db.get<{ n: number }>('SELECT EXISTS (SELECT 1 FROM sync_outbox) AS n');
+    if (!waiting || Number(waiting.n) !== 0) return; // an unreadable answer is "not empty"
+    writeSetting(db, SYNC_SETTING.owner, null);
+    writeSetting(db, SYNC_SETTING.heldCursor, null);
+    released = true;
+  });
+  return released;
 }
 
 /** Plus bought later (or a fixed book): send a book the server refused again, with its letters. */

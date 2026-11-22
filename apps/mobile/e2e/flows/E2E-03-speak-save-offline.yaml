@@ -15,6 +15,7 @@ name: E2E-03 Speak, review, save offline
 tags:
   - e2e
   - E2E-03
+  - p0-nightly
   - A-REQ-012
   - A-REQ-013
   - A-REQ-014

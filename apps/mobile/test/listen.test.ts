@@ -1,0 +1,421 @@
+/// <reference types="node" />
+/**
+ * Listen (EXPERIENCE_PASS_2026-10 S11, S12, S13 and section 5.8 rows 1 to 4, package P4). The pure parts
+ * (components/capture/listen.logic.ts and mic-state.logic.ts) run here; Node cannot load React Native, so the
+ * screen's use of them is checked in its source. Fixtures: the fictional family Asha only (CLAUDE.md).
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { en, PROMPTS } from '@scribe/content';
+import { tokens } from '@scribe/design-tokens';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  afterForeground,
+  elapsedClock,
+  afterFinish,
+  finishWithin,
+  FINISH_TIMEOUT_MS,
+  isMicProblem,
+  listenRoom,
+  promptLine,
+  reviewParams,
+  startBlocker,
+  startFailure,
+  type MicProblem,
+  type RoomPhase,
+} from '../src/components/capture/listen.logic';
+import { MIC_ERROR_CODE, micStateView } from '../src/components/capture/mic-state.logic';
+
+const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
+const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const listen = src('app/listen.tsx');
+
+describe('three causes, three screens (S13)', () => {
+  it('a start failure with permission granted is "busy", never "denied"', () => {
+    expect(startFailure({ takeBegun: false, granted: true })).toBe('busy');
+  });
+
+  it('only a refused permission is "denied"; an unknown permission is busy (Try again can help, Settings may not)', () => {
+    expect(startFailure({ takeBegun: false, granted: false })).toBe('denied');
+    expect(startFailure({ takeBegun: false, granted: null })).toBe('busy');
+  });
+
+  it('a take that already began ends as an interruption and is kept, whatever the permission', () => {
+    for (const granted of [true, false, null]) expect(startFailure({ takeBegun: true, granted })).toBe('interrupted');
+  });
+
+  it('before the microphone goes live: permission off first, then a full phone, else go', () => {
+    expect(startBlocker({ granted: false, freeBytes: 10 })).toBe('denied');
+    expect(startBlocker({ granted: false, freeBytes: 9e9 })).toBe('denied');
+    expect(startBlocker({ granted: true, freeBytes: 49_999_999 })).toBe('full');
+    expect(startBlocker({ granted: true, freeBytes: 50_000_000 })).toBeNull();
+    expect(startBlocker({ granted: true, freeBytes: null })).toBeNull();
+  });
+
+  it('back in front with the microphone now on, "off" gives way to idle Listening; nothing else changes', () => {
+    expect(afterForeground('denied', true)).toBe('ready');
+    expect(afterForeground('denied', false)).toBe('denied');
+    for (const p of ['busy', 'full', 'recording', 'paused', 'ready'] as const) expect(afterForeground(p, true)).toBe(p);
+  });
+
+  it('three different titles, none says "we", and each has one primary and one quiet way on', () => {
+    const views = (['denied', 'busy', 'full'] as MicProblem[]).map((k) => micStateView(k));
+    expect(new Set(views.map((v) => v.title)).size).toBe(3);
+    for (const v of views) {
+      expect(`${v.title} ${v.body}`).not.toMatch(/\bwe\b|\bour\b|\bus\b/i);
+      expect(v.primary.action).not.toBe(v.quiet.action);
+    }
+  });
+
+  it('the words and the order of the doors, from packages/content', () => {
+    const e = en.errors;
+    expect(micStateView('denied')).toEqual({
+      glyph: 'microphoneSlash',
+      title: e.micDenied.title,
+      body: e.micDenied.body,
+      primary: { action: 'type', label: e.micDenied.typeButton },
+      quiet: { action: 'settings', label: e.micDenied.settingsButton },
+    });
+    expect(micStateView('busy')).toEqual({
+      glyph: 'microphoneSlash',
+      title: e.micBusy.title,
+      body: e.micBusy.body,
+      primary: { action: 'tryAgain', label: en.common.tryAgainButton },
+      quiet: { action: 'type', label: e.micDenied.typeButton },
+    });
+    expect(micStateView('full')).toEqual({
+      glyph: 'warningCircle',
+      title: e.phoneFull.title,
+      body: e.phoneFull.body,
+      primary: { action: 'type', label: e.micDenied.typeButton },
+      quiet: { action: 'tryAgain', label: en.common.tryAgainButton },
+    });
+  });
+
+  it('"The microphone is off" only for a microphone that is off (the held words are switched with this screen)', () => {
+    expect(en.errors.micDenied.title).toBe('The microphone is off');
+    expect(micStateView('busy').title).not.toBe(en.errors.micDenied.title);
+    expect(micStateView('full').title).not.toBe(en.errors.micDenied.title);
+  });
+
+  it('state titles carry no full stop (P0 rule)', () => {
+    for (const k of ['denied', 'busy', 'full'] as MicProblem[]) expect(micStateView(k).title).not.toMatch(/\.$/);
+  });
+
+  it('counts a shown state by a code from the catalog only, and a busy microphone counts nothing rather than a wrong code', () => {
+    expect(MIC_ERROR_CODE).toEqual({ denied: 'mic_denied', busy: null, full: 'storage_low' });
+  });
+
+  it('isMicProblem names exactly the three', () => {
+    expect((['denied', 'busy', 'full', 'ready', 'asking', 'recording', 'paused', 'finishing'] as const).filter(isMicProblem)).toEqual(['denied', 'busy', 'full']);
+  });
+});
+
+describe('one room, five moments (S11, S12)', () => {
+  const all: RoomPhase[] = ['ready', 'asking', 'recording', 'paused', 'finishing'];
+
+  it('ready: the red circle at rest is the start control, no aura, no clock, the hint, Close', () => {
+    expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', controls: false, discard: false });
+  });
+
+  it('asking: the same room while iOS asks and the take starts, with no second start control and no Close', () => {
+    expect(listenRoom('asking')).toMatchObject({ close: false, startControl: false, aura: 'ready', clock: false, controls: false });
+  });
+
+  it('[review B L2] the hint "Tap the red circle and talk." shows only when the circle can be tapped', () => {
+    expect(listenRoom('asking').line).toBe('none');
+    expect(all.filter((p) => listenRoom(p).line === 'readyHint')).toEqual(['ready']);
+    for (const p of all) expect(listenRoom(p).line === 'readyHint', p).toBe(listenRoom(p).startControl);
+  });
+
+  it('[review A L2] Close only at rest, so no take can begin behind a closed screen', () => {
+    expect(all.filter((p) => listenRoom(p).close)).toEqual(['ready']);
+  });
+
+  it('recording, paused and finishing: the aura follows the take, the clock shows, no Close', () => {
+    expect(listenRoom('recording')).toMatchObject({ close: false, aura: 'listening', clock: true, line: 'listening', controls: true, discard: true });
+    expect(listenRoom('paused')).toMatchObject({ close: false, aura: 'paused', clock: true, line: 'paused', controls: true, discard: true });
+    expect(listenRoom('finishing')).toMatchObject({ close: false, aura: 'processing', clock: true, controls: false });
+  });
+
+  it('only one moment offers the circle as a start: the microphone is untouched until it is tapped (S12)', () => {
+    expect(all.filter((p) => listenRoom(p).startControl)).toEqual(['ready']);
+  });
+
+  it('the clock rounds down, so it never runs ahead of the take', () => {
+    expect(elapsedClock(0)).toBe('0:00');
+    expect(elapsedClock(999)).toBe('0:00');
+    expect(elapsedClock(42_900)).toBe('0:42');
+    expect(elapsedClock(65_000)).toBe('1:05');
+    expect(elapsedClock(-5)).toBe('0:00');
+    expect(elapsedClock(Number.NaN)).toBe('0:00');
+  });
+
+  it('the prompt shows only when the take started from one that exists (S11)', () => {
+    const p = PROMPTS[0];
+    expect(promptLine(p.key, PROMPTS)).toBe(p.text);
+    expect(promptLine(null, PROMPTS)).toBeNull();
+    expect(promptLine(undefined, PROMPTS)).toBeNull();
+    expect(promptLine('', PROMPTS)).toBeNull();
+    expect(promptLine('not-a-prompt', PROMPTS)).toBeNull();
+  });
+
+  it('the idle breath is 7.5 s, from the token (8 breaths a minute, under 0.2 Hz)', () => {
+    expect(tokens.motion.breathIdleMs).toBe(7500);
+    expect(1000 / tokens.motion.breathIdleMs).toBeLessThan(0.2);
+    const aura = src('components/capture/listening-aura.tsx');
+    expect(aura).toMatch(/const BREATH_MS = tokens\.motion\.breathIdleMs/);
+    expect(aura).toMatch(/const B = tokens\.motion\.breath/);
+  });
+
+  it('the aura has a ready look with no glow and no ring (S12)', () => {
+    const aura = code(src('components/capture/listening-aura.tsx'));
+    expect(aura).toMatch(/'ready' \| 'idle' \| 'listening' \| 'paused' \| 'processing'/);
+    expect(aura).toMatch(/state === 'ready' \? null : reduced \?/);
+  });
+});
+
+describe('why a take stopped, for Review (S14)', () => {
+  it('leaving the app and a call or an alert are passed on; Finish and Close are not', () => {
+    expect(reviewParams('d1', 'background')).toEqual({ draftId: 'd1', stopped: 'background' });
+    expect(reviewParams('d1', 'interruption')).toEqual({ draftId: 'd1', stopped: 'interruption' });
+    expect(reviewParams('d1', 'user')).toEqual({ draftId: 'd1' });
+    expect(reviewParams('d1', 'dismiss')).toEqual({ draftId: 'd1' });
+  });
+});
+
+describe('the screen uses them (source)', () => {
+  const c = code(listen);
+
+  it('S13: begin() names a failed start through startFailure, not a blanket "denied"', () => {
+    expect(c).toMatch(/startFailure\(\{ takeBegun: takeId\.current !== null, granted: await grantedNow\(\) \}\)/);
+    expect(c).not.toMatch(/else setPhase\('denied'\)/);
+  });
+
+  it('S13: Settings is the quiet door for "off"; "Type instead" opens Write with the same prompt (5.8 row 3)', () => {
+    expect(c).toMatch(/settings: \(\) => void Linking\.openSettings\(\)/);
+    expect(c).toMatch(/router\.replace\(\{ pathname: '\/write', params: promptKey \? \{ promptKey \} : \{\} \}\)/);
+  });
+
+  it('S13: back in front from Settings with the microphone on lands on idle Listening', () => {
+    expect(c).toMatch(/next === 'active' && phaseRef\.current === 'denied'/);
+    expect(c).toMatch(/afterForeground\(now, true\)/);
+  });
+
+  it('S12: the start control is the circle, named "Start recording", and nothing records before it is tapped', () => {
+    expect(c).toMatch(/accessibilityLabel=\{p\.ready\.startA11y\}/);
+    expect(en.listen.ready.startA11y).toBe('Start recording');
+    expect(c).toMatch(/onPress=\{begin\}/);
+    // Opened without a tap, the first phase is ready and nothing calls begin().
+    expect(c).toMatch(/useState<ListenPhase>\(tapped\.current \? 'asking' : 'ready'\)/);
+    expect(c).toMatch(/if \(tapped\.current\) begin\(\)/);
+    // The old error-style page is gone.
+    expect(c).not.toMatch(/r\.startButton|ready\.title|ready\.body|art="envelope"/);
+  });
+
+  it('S11: the clock is headline, textMuted, tabular figures, with no 1.75x scale', () => {
+    expect(c).toMatch(/<Text variant="headline" tone="muted"[^>]*fontVariant: \['tabular-nums'\]/);
+    expect(c).not.toMatch(/scale=\{1\.75\}/);
+  });
+
+  it('S11: the prompt is the literary line in `prompt`, textMuted, and is shown whole at every text size (no line cap; P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen\.prompt">/);
+    expect(c).not.toMatch(/variant="prompt"[^>]*numberOfLines/);
+    expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
+  });
+
+  it('5.8 rows 1 and 2: Listen is an unlit room (the light underneath leaves and returns)', () => {
+    expect(c).toMatch(/\buseUnlitRoom\(\);/);
+    expect(c).not.toMatch(/<Lamp/);
+  });
+
+  it('5.8 row 2: the warning haptic plays only once Let it go is confirmed, after the session stops (iOS mutes it while recording)', () => {
+    const discard = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead'));
+    expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf("style: 'destructive'"));
+    expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf('await abandonTake(recorder, id)'));
+    expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf("await setAudioMode('idle')"));
+  });
+
+  it('[review A L2] a take that finishes starting after the screen has gone is kept, as any other exit', () => {
+    // The path is listen.logic `startTake` (behaviour in listen-voiceover.test.ts); the screen wires "gone" to keeping it.
+    const start = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
+    expect(start).toMatch(/alive: \(\) => mounted\.current,/);
+    expect(start).toMatch(/keepOrphan: \(draftId\) => \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draftId, 'dismiss', 0\);\s*\},/);
+    expect(start).toMatch(/if \(out\.kind === 'gone'\) return;\s*takeId\.current = out\.draftId;/);
+  });
+
+  it('5.8 rule 3: Pause and Finish are on screen in every moment of the room; Let it go keeps its slot', () => {
+    expect(c).toMatch(/disabled=\{!room\.controls\}/);
+  });
+
+  it('[review B L3] the kept slots hold the very control, invisible and inert, so nothing moves at any text size', () => {
+    // Let it go: the same quiet Button (48 pt at the default size, taller at large sizes), not a fixed 44 pt box.
+    expect(c).toMatch(/<View style=\{\{ opacity: 0 \}\} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="listen\.discardSlot">\s*<Button variant="quiet" disabled className="self-center">/);
+    expect(c).not.toMatch(/height: tokens\.target\.min/);
+    // The header: the same ModalHeader, invisible and inert, when Close is not offered.
+    expect(c).toMatch(/testID="listen\.headerSlot">\s*<ModalHeader onClose=\{close\} closeDisabled \/>/);
+  });
+
+  it('[review B B1] at accessibility sizes the room scrolls and Pause, Finish and Let it go stay pinned below it', () => {
+    const room = c.slice(c.indexOf('testID="listen.room"'), c.indexOf('</ScrollView>'));
+    expect(c).toMatch(/<ScrollView className="flex-1" contentContainerStyle=\{\{ flexGrow: 1 \}\}[^>]*testID="listen\.room">/);
+    // Inside the scroll: the audience block, the prompt, the circle, the hint, and the clock and line at default sizes.
+    for (const part of ['p.toChild', 'testID="listen.prompt"', '<ListeningAura', '{!large && clockAndLine}', 't.listeningHint']) expect(room, part).toContain(part);
+    // After it, outside the scroll: the controls.
+    const after = c.slice(c.indexOf('</ScrollView>'));
+    for (const part of ['onPress={togglePause}', 'onPress={finish}', 'onPress={discard}']) expect(after, part).toContain(part);
+  });
+
+  it('[P4 critics S5] at accessibility sizes the clock and "Listening." are pinned with Pause and Finish, so the screen always says it is recording', () => {
+    const block = c.slice(c.indexOf('const clockAndLine = ('), c.indexOf('return (', c.indexOf('const clockAndLine = (')));
+    // The line is a live region whenever VoiceOver may speak; while a take captures it is off (SR-C-02, listen-voiceover.test.ts).
+    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', "accessibilityLiveRegion={speakable ? 'polite' : 'none'}"]) expect(block, part).toContain(part);
+    const pinned = c.slice(c.indexOf('</ScrollView>'));
+    expect(pinned).toMatch(/<View className="gap-2 px-5 pb-4">\s*\{large && clockAndLine\}\s*<ButtonRow>/);
+    expect(c.match(/clockAndLine\}/g)).toHaveLength(2); // once in the room, once pinned: never both
+  });
+
+  it('[review B L5] Reduce Motion reaches the aura; the start circle is a 120 pt button; the clock and "Listening." are spoken; the start plays its haptic first', () => {
+    expect(c).toMatch(/<ListeningAura state=\{room\.aura\} db=\{db\} reduced=\{reduced\} size=\{AURA_SIZE\} \/>/);
+    expect(c).toMatch(/const reduced = useReducedMotion\(\);/);
+    expect(c).toMatch(/const AURA_SIZE = 240;/);
+    expect(c).toMatch(/const DISC = AURA_SIZE \/ 2;/);
+    const start = c.slice(c.indexOf('<Pressable\n                onPress={begin}'), c.indexOf('testID="listen.start"') + 200);
+    expect(start).toMatch(/accessibilityRole="button"/);
+    expect(start).toMatch(/style=\{\{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC \/ 2 \}\}/);
+    expect(c).toMatch(/<Text variant="headline" tone="muted" className="text-center" style=\{\{ fontVariant: \['tabular-nums'\] \}\} accessibilityLabel=\{elapsedA11y\}>/);
+    const begin = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
+    // "Listening." is offered to the gate, which drops it while the take is live (SR-C-02, B2-21): VoiceOver never
+    // speaks into a recording. The room's line and the red circle say it on screen.
+    expect(begin).toMatch(/announcer\.say\(t\.listening, \{ phase: 'recording', capturing: capturingNow\(\) \}\)/);
+    expect(begin).not.toMatch(/AccessibilityInfo/);
+    // The start haptic plays before the session activates (iOS mutes haptics while recording): the screen passes it to
+    // startTake, which calls it before setRecordingMode (order checked by behaviour in listen-voiceover.test.ts).
+    expect(begin).toMatch(/pressHaptic: \(\) => startTick\.press\(\(\) => haptic\('press'\)\),/); // one tick per take, counting Speak's (recording-haptics.test.ts)
+    expect(begin).toMatch(/setRecordingMode: \(\) => setAudioMode\('recording'\),/);
+    const logic = code(src('components/capture/listen.logic.ts'));
+    const path = logic.slice(logic.indexOf('export async function startTake'));
+    expect(path.indexOf('d.pressHaptic()')).toBeGreaterThan(-1);
+    expect(path.indexOf('d.pressHaptic()')).toBeLessThan(path.indexOf('await d.setRecordingMode()'));
+  });
+
+  it('[review B L1] when a take ends the glow releases from where the voice left it, over releaseMs', () => {
+    const aura = code(src('components/capture/listening-aura.tsx'));
+    // From what is on screen (the voice, or the idle breath when the person was quiet; #271 lens B note 1), over releaseMs.
+    expect(aura).toMatch(/if \(processing\.value\) \{\s*const k = Math\.exp\(-dt \/ B\.releaseMs\);\s*scale\.value = 1 \+ \(scale\.value - 1\) \* k;\s*opacity\.value = B\.opacityMin \+ \(opacity\.value - B\.opacityMin\) \* k;/);
+    expect(aura).toMatch(/s\.value \+= \(0 - s\.value\) \* \(1 - Math\.exp\(-dt \/ B\.releaseMs\)\)/);
+    expect(tokens.motion.breath.releaseMs).toBe(400);
+  });
+
+  it('the screen types no user-facing words (packages/content only)', () => {
+    const jsxText = [...c.matchAll(/>\s*([A-Za-z][^<>{}]*?)\s*</g)].map((m) => m[1]).filter((t) => /[a-z]{3,}/i.test(t));
+    expect(jsxText).toEqual([]);
+  });
+});
+
+describe('a long take does not grow memory (#480)', () => {
+  const c = code(listen);
+  const body = c.slice(c.indexOf('export default function Listen()'));
+  // The store functions this screen imports, read from its import line.
+  const storeFns = (c.match(/import \{([^}]*)\} from '@\/lib\/store';/)?.[1] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  it('reads the active child once on mount, not on every render', () => {
+    // useAudioRecorderState re-renders this screen every 50 ms while recording. The active child is three synchronous
+    // database reads, and on web each one allocates a 1 MB SharedArrayBuffer (expo-sqlite WorkerChannel), which ran
+    // J05e out of memory at about 65 s.
+    expect(storeFns).toContain('getActiveChild');
+    expect(body).toMatch(/const \[child\] = useState\(getActiveChild\);/);
+    expect(body).not.toMatch(/getActiveChild\(\)/);
+  });
+
+  it('calls no store read in the render body (a lazy initializer, an effect or a handler instead)', () => {
+    // The render body is the component's top level: lines indented one level (two spaces). Hook callbacks,
+    // handlers and JSX sit deeper.
+    const topLevel = body
+      .split('\n')
+      .filter((l) => /^ {2}\S/.test(l))
+      .join('\n');
+    const reads = storeFns.filter((f) => /^(get|list|count|find|read)/.test(f));
+    expect(reads.length).toBeGreaterThan(0);
+    for (const f of reads) expect(topLevel, f).not.toMatch(new RegExp(`\\b${f}\\(`));
+  });
+});
+
+describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+    const c = code(listen);
+    const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
+    // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
+    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });');
+    expect(c.match(/\bletItGo\(/g)).toHaveLength(1);
+    expect(c.match(/deleteIfPresent\(/g)).toHaveLength(1);
+    expect(c).not.toMatch(/\.delete\(\)|deleteDraft/);
+  });
+});
+
+describe('[BL-563] Listen never sticks on "finishing", and never offers Let it go there', () => {
+  it('finishing offers no discard: the only control left never deletes the take', () => {
+    expect(listenRoom('finishing').discard).toBe(false);
+    expect(listenRoom('recording').discard).toBe(true);
+    expect(listenRoom('paused').discard).toBe(true);
+  });
+
+  it('a save that throws (a full disk) resolves as failed instead of escaping', async () => {
+    const r = await finishWithin(Promise.reject(new Error('SQLITE_FULL')), 3000);
+    expect(r).toEqual({ ok: false, why: 'failed' });
+  });
+
+  it('a save that hangs lets the screen leave within 3 s', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = finishWithin(new Promise<never>(() => {}));
+      vi.advanceTimersByTime(FINISH_TIMEOUT_MS);
+      await expect(pending).resolves.toEqual({ ok: false, why: 'timeout' });
+      expect(FINISH_TIMEOUT_MS).toBeLessThanOrEqual(3000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a save that works passes the kept take through', async () => {
+    await expect(finishWithin(Promise.resolve({ id: 'd1' }))).resolves.toEqual({ ok: true, value: { id: 'd1' } });
+  });
+
+  it('the screen waits through finishWithin and never deletes the draft on that path', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
+    expect(end).not.toMatch(/deleteDraft|abandonTake/);
+  });
+
+  it('a slow save (timeout) still opens Review on the known draft id', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('a slow save keeps the honest reason line for background and interruption', () => {
+    expect(afterFinish('d1', 'background', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'background' } });
+    expect(afterFinish('d1', 'interruption', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'interruption' } });
+  });
+
+  it('a save that worked opens Review', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: { id: 'd1' } })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('only a save that threw leaves early', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'failed' })).toEqual({ to: 'leave' });
+  });
+
+  it('a save that finished with no row (the take was let go meanwhile) leaves, so Review never opens on a missing draft', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: null })).toEqual({ to: 'leave' });
+  });
+
+  it('the screen routes through afterFinish and does not read the draft from the wait', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/afterFinish\(id, reason, kept\)/);
+    expect(end).not.toMatch(/kept\.value/);
+  });
+});

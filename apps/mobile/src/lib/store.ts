@@ -23,10 +23,18 @@
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
+import { decideGate } from './age-gate.logic';
+import { bookVisibleTo } from './auth/account-scope.logic';
+import { getAuthSnapshot } from './auth/auth-store';
+import { authUserId } from './auth/machine.logic';
+import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
+import type { AgreementDocument, AgreementRow } from './agreements.logic';
+import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
 import {
+  agreements,
   children,
   createChangeBus,
   drafts,
@@ -36,13 +44,17 @@ import {
   orphans,
   settings,
   uuidv7From,
+  wipe,
+  type BaseDirection,
   type Child,
   type Draft,
+  type DraftKind,
   type DraftState,
   type Entry,
   type Family,
   type Member,
   type NewChild,
+  type OccurredPrecision,
   type OrphanAudio,
   type RepoContext,
   type Table,
@@ -50,46 +62,69 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
+import { findBuildEnabled, findSurface } from './find/flag';
+import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, setIndexableBooks, type EnsureResult } from './find/lifecycle';
+import { rebuildSearchIndex } from './find/rebuild';
+import { searchLetters, type FindResult } from './find/search';
+import { dropSearchView, SEARCH_VIEW } from './find/sources';
 import { SHELF_DAYS } from './shelf-days';
 import {
   SYNC_SETTING,
   enqueueBookCreate,
   enqueueBookUpdate,
   enqueueEntryDelete,
+  enqueueEntryErase,
   enqueueEntryRestore,
+  everSent,
+  heldEverSent,
+  getDraftRow,
+  getEntryRow,
+  syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
+  dropHeldConflictCopies,
+  dropQueuedHeldUpsert,
+  enqueueHeldDiscard,
+  enqueueHeldDraft,
+  listConflictCopies,
+  removeConflictCopy,
+  type ConflictCopy,
   type EnqueueContext,
 } from './sync/outbox';
 import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
 export type {
+  BaseDirection,
   CaptureMode,
   Child,
   Draft,
+  DraftKind,
   DraftState,
   Entry,
   EntryKind,
   Family,
   Member,
   NewChild,
+  OccurredPrecision,
   OrphanAudio,
   TranscriptStatus,
 } from './db/repos';
+export type { ConflictCopy } from './sync/outbox';
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
 export type { DeletedEntry } from './db/repos/entries';
+export type { DeletedBook } from './db/repos/wipe';
 
 // ── Connection ───────────────────────────────────────────────────────────
 export const DB_FILE_NAME = 'scribe.db';
 
 /** Opening failed before or during migration. Code only: SQLite text can quote values. */
 export class StoreOpenError extends Error {
-  constructor(cause: unknown) {
+  constructor() {
     super('local_db_open_failed');
-    this.cause = cause;
+    this.name = 'StoreOpenError';
   }
 }
 
@@ -139,7 +174,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   try {
     opened = (options.open ?? (() => openNativeDb(DB_FILE_NAME)))();
   } catch (e) {
-    return { ok: false, newer: false, error: new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: new StoreOpenError(), migration: null };
   }
   let migration: MigrationResult;
   try {
@@ -150,11 +185,109 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     } catch {
       // already failing; the migration error is the one to report
     }
-    return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
+  setIndexableBooks(() => (bookVisibleNow() ? null : []));
+  if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
+}
+
+// -- Find (NS-02; ADR 0028 D4) ------------------------------------------------------------
+/** Whether this file holds anything of Find: its index or its view. */
+const findObjectsExist = (db: SqlDb): boolean =>
+  db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name IN ('${SEARCH_TABLE}', '${SEARCH_VIEW}')`) !== null;
+
+/**
+ * The launch catch-up of Find's index (NS-02-R35, R43). With Find off in this build, what an earlier build made (the
+ * index, its map, its settings and the view) is dropped: derived data nobody can reach. With it on, the index is made
+ * or checked and caught up in batches of 200 letters, never while a take is recording, and merged at the end when a
+ * removal waits (lib/find/rebuild.ts). Never throws.
+ */
+export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
+  try {
+    const { db } = ctx();
+    // [X4-R1]: while another account is signed in over this owner's book, nothing is indexed, dropped or moved.
+    if (!bookVisibleNow()) return 'unavailable';
+    if (findBuildEnabled()) return await rebuildSearchIndex(db);
+    if (findObjectsExist(db)) {
+      dropSearchIndex(db);
+      dropSearchView(db);
+    }
+    return 'off';
+  } catch {
+    return 'unavailable'; // the scan still answers; the next launch tries again
+  }
+}
+
+let findCatchUpFor: unknown = null;
+
+/**
+ * Find's launch catch-up, once per open store, after the first frame (NS-02-R35, R43): the root layout calls it beside
+ * startPacks() and startRemote(), never on the path to the first frame. Returns at once; the work runs in batches.
+ * Does nothing with Find off and nothing of Find on the phone.
+ */
+export function startFindCatchUp(): void {
+  if (!conn?.result.ok || findCatchUpFor === conn) return;
+  if (!bookVisibleNow()) return; // [X4-R1]: not marked done, so a later call, once this book is shown again, still runs
+  findCatchUpFor = conn;
+  if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
+  void ensureFindIndex();
+}
+
+/**
+ * Account A returned (B signed out, or A signed in again): the seam skipped whatever was written into A's book meanwhile
+ * (NS-02-R24, [X4-R1]), so the once-per-store catch-up runs again now, not at the next launch. Find off: nothing.
+ */
+export function resumeFindCatchUp(): void {
+  findCatchUpFor = null;
+  startFindCatchUp();
+}
+
+/**
+ * The one gate of Find's screen (BL-952 slice 8): the build switch on, the remote pause off, a kept letter to find, and
+ * this phone's book shown to the signed-in account. False anywhere else: the Find action is absent, not greyed (R1).
+ */
+export function findAvailableNow(input: { paused: boolean; hasLetters: boolean }): boolean {
+  return bookVisibleNow() && findSurface({ build: findBuildEnabled(), paused: input.paused, hasLetters: input.hasLetters });
+}
+
+/** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
+export function findIndexReady(): boolean {
+  return searchIndexExists(ctx().db);
+}
+
+/** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
+export function findLetters(raw: string, childId: string): FindResult {
+  // Dark unless the build says 'on', and never another account's book ([X4-R1]): nothing asked, nothing found.
+  if (!findBuildEnabled() || !bookVisibleNow()) return { status: 'idle' };
+  return searchLetters(ctx().db, raw, childId);
+}
+
+/** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
+/** The 18+ stop record (age-gate.ts, D-026). Read here only so Erase everything keeps a stop still running. */
+const AGE_STOPPED_AT = 'ageGate.stoppedAt';
+
+export const SECURE_DELETE_VACUUM_SETTING = 'db.secureDeleteVacuumAt';
+
+/**
+ * Once, on the first open of a build with secure_delete (expo-adapter.ts OPEN_PRAGMAS), after the migrations and
+ * before any screen reads the store: VACUUM rebuilds the file, so words of letters erased by an earlier build no
+ * longer sit in free pages, then the WAL is truncated. The mark is written only after both, so a kill part way
+ * (VACUUM is atomic) simply runs it again at the next open. Erase everything removes the mark with every setting,
+ * so one more VACUUM runs on the next open; that is harmless. Never throws: a failure is retried next open.
+ */
+function vacuumOnceForSecureDelete(c: RepoContext): void {
+  try {
+    if (settings.getSetting(c, SECURE_DELETE_VACUUM_SETTING) !== null) return;
+    c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    settings.setSetting(c, SECURE_DELETE_VACUUM_SETTING, c.now());
+  } catch {
+    // Disk full or busy: the app runs as before, and the next open tries again.
+  }
 }
 
 /** Closes the connection; the next call opens again. For tests and a future "reset this phone". */
@@ -169,7 +302,7 @@ function ctx(): RepoContext {
   if (conn) return conn.ctx;
   const r = openStore();
   const c = conn as { ctx: RepoContext } | null; // openStore sets it on success
-  if (!c) throw r.error ?? new StoreOpenError(null);
+  if (!c) throw r.error ?? new StoreOpenError();
   return c.ctx;
 }
 
@@ -231,10 +364,33 @@ export function deleteSetting(key: string): void {
   bus.emit('settings');
 }
 
+// ── Agreements (Before you begin; lib/agreements.logic.ts) ───────────────
+/** True when this phone holds an accept of `document`. Never logged. */
+export function hasAgreement(document: AgreementDocument): boolean {
+  return agreements.hasAccepted(ctx(), document);
+}
+
+/**
+ * Records an accept made on Before you begin: the agreement rows, and with `passAge` the age boolean
+ * (`ageGate.passed`, D-026) in the same transaction, so a kill never leaves one without the other. Rows already
+ * recorded for the same document, version and action are kept as they were (written once).
+ */
+export function recordAgreement(rows: readonly AgreementRow[], passAge: boolean): void {
+  const c = ctx();
+  c.db.transaction(() => {
+    agreements.insertOnce(c, rows);
+    if (passAge) {
+      settings.setSetting(c, AGE_GATE_PASSED_KEY, '1');
+      settings.deleteSetting(c, AGE_GATE_STOPPED_KEY);
+    }
+  });
+  bus.emit('settings');
+}
+
 // ── Children ─────────────────────────────────────────────────────────────
 /** Visible children, oldest book first. */
 export function listChildren(): Child[] {
-  return children.listVisible(ctx());
+  return shown(() => children.listVisible(ctx()));
 }
 
 export function getChild(id: string): Child | null {
@@ -298,9 +454,22 @@ export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void
   signalOutbox();
 }
 
-/** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
+/**
+ * "Hide this book" for the person on this phone (PRD B F2.4; F12-REQ-005 Rev, per person since
+ * local schema v7): stops prompts for this child; restorable. The other parent sees no change.
+ * Stays on this phone until the server holds the per-person flag (S02, WP-F12-09).
+ */
 export function hideChild(id: string): void {
   children.hide(ctx(), id);
+  bus.emit('children');
+}
+
+/**
+ * "Quiet this book" for the person on this phone (F12-REQ-011): no prompts, reminders, month or
+ * birthday notes for this child; letters untouched; reversible. The planner reads `Child.quiet`.
+ */
+export function setChildQuiet(id: string, quiet: boolean): void {
+  children.setQuiet(ctx(), id, quiet);
   bus.emit('children');
 }
 
@@ -310,7 +479,7 @@ export function unhideChild(id: string): void {
 }
 
 export function listHiddenChildren(): Child[] {
-  return children.listHidden(ctx());
+  return shown(() => children.listHidden(ctx()));
 }
 
 // ── Family view of the active child (stable, single-child API) ───────────
@@ -345,6 +514,34 @@ export function currentUserId(): string | null {
   return getSetting(SYNC_SETTING.owner);
 }
 
+/**
+ * BL-961 (`[X4-R1]`, NS-10-R3; ADR 0031): may this phone's book be shown now? False only while another account is
+ * signed in on a phone that holds this owner's book (lib/auth/account-scope.logic.ts). The one check: the screen cover,
+ * the first-run gate and every read for display ask it. Reads the owner only while a session exists, so a signed-out
+ * phone and a build with server features off read nothing more than before. An owner that cannot be read hides the
+ * book (the safe side); nothing is deleted either way.
+ */
+export function bookVisibleNow(): boolean {
+  const sessionUser = authUserId(getAuthSnapshot());
+  if (!sessionUser) return true;
+  try {
+    return bookVisibleTo({ owner: currentUserId(), sessionUser });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every list of books, letters and drafts a screen, an export or a planner reads goes through here: empty while another
+ * account is signed in (`[X4-R1]`, security.md NSC-03), so no surface (Book, Home, Recently deleted, export, the
+ * reminder planner's books) can list the owner's book. Reads by id (getEntry, getDraft, getChild) stay open on purpose:
+ * the listening-copy sweep (audio-enhance) and the launch sweep must still find the owner's rows, or they would treat
+ * them as gone. Writes and sync are unchanged; nothing is deleted or moved.
+ */
+function shown<T>(rows: () => T[]): T[] {
+  return bookVisibleNow() ? rows() : [];
+}
+
 // Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
 // on this phone through the plan engine (ADR 0013). This file stays free of it.
 
@@ -359,6 +556,18 @@ export function listMembers(childId: string): Member[] {
       .map((m): Member => ({ id: m.profile_id, signsAs: m.signs_as ?? '', role: m.role === 'contributor' ? 'contributor' : 'parent', status: 'active' }));
   } catch {
     return [];
+  }
+}
+
+/** This phone user's role in a book, as the server last listed it (sync_books.members). A book only on this phone is theirs: parent. */
+export function myRoleIn(childId: string): 'parent' | 'contributor' {
+  const r = ctx().db.get<{ members: string | null }>('SELECT members FROM sync_books WHERE child_id = ?', childId);
+  if (!r?.members) return 'parent';
+  try {
+    const list = JSON.parse(r.members) as { role: string; is_me: boolean }[];
+    return list.find((m) => m.is_me)?.role === 'contributor' ? 'contributor' : 'parent';
+  } catch {
+    return 'parent';
   }
 }
 
@@ -402,11 +611,21 @@ export function saveEntry(e: Entry): void {
  */
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
   const c = ctx();
+  // A held draft (v8): its Keep names the held row's last version this phone knew ('0' when none came back),
+  // so the server compares the Keep with held words this phone never saw (review K blocking 1).
+  const held = drafts.isHeld(c, draftId) ? (getDraftRow(c.db, draftId)?.held_v ?? '0') : null;
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
+    if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
+    // The draft's picture (entry_media, ADR 0028) becomes the letter's in the same transaction: same id, new owner.
+    c.db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
-    // count are written together or not at all. A quiet-day mark is not a letter and never counts.
-    if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
+    // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
+    // A kept note counts like a letter (D-133); only a quiet-day mark is never asked.
+    if (e.kind !== 'not_much') ledger.recordKept(c, draftId, keychainFloor());
+    // A held draft kept at last (Keep after Plus): the letter replaces its held row on the server (same id).
+    dropQueuedHeldUpsert(c.db, draftId);
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
   });
   bus.emit('entries', 'drafts');
@@ -432,6 +651,8 @@ export function ledgerDb(): LedgerDb {
  * Keep a spoken letter without words (TDD 03 FM-9, TDD 01 3.6): the
  * recording is the true original; words are set once later
  * (setWordsForWaitingEntry). Saved private unless the parent chose the book.
+ * It never counts toward the free letters (M17, F14-REQ-037): it counts when
+ * its words are kept from Review (keepReviewedWords).
  */
 export function saveVoiceOnlyFromDraft(
   draft: Draft,
@@ -445,14 +666,16 @@ export function saveVoiceOnlyFromDraft(
 
 /** Spoken letters still waiting for their words, oldest first (the transcription queue reads this). */
 export function listWaitingForWords(childId: string): Entry[] {
-  return entries.listWaiting(ctx(), childId);
+  return shown(() => entries.listWaiting(ctx(), childId));
 }
 
 /**
  * Sets the words of a voice-only letter, once. raw_transcript is written
  * only while it is still '' and the letter is waiting: the first transcript
  * that exists becomes the immutable raw (TDD 03 FM-9). Returns false if the
- * letter already had words or was deleted.
+ * letter already had words or was deleted. The words wait for the author's
+ * review (Entry.wordsUnreviewed): the letter counts toward the free letters
+ * only when the author keeps them (keepReviewedWords, M17).
  */
 export function setWordsForWaitingEntry(
   id: string,
@@ -473,8 +696,12 @@ export function setWordsForWaitingEntry(
 }
 
 /**
- * "Write the words" on a letter still waiting for its words (D-086): the parent's typing becomes the words,
- * once. False when the letter already had words, was deleted or the text is empty.
+ * "Write the words" on a letter still waiting for its words (D-086), or on a spoken letter whose words came
+ * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once, kept
+ * and sent at once so they are never lost. It never counts (M17, F14-REQ-037): the words wait for the author's
+ * review, and the letter page hands the keep to Review, whose Keep step asks the gate and counts them
+ * (keepReviewedWords; F14 6.1 :129). False when the letter already had words, was deleted, is on the server,
+ * or the text is empty.
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
@@ -490,6 +717,89 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
   return done;
 }
 
+/**
+ * Whether "Write the words" can take words for this letter now: a letter still waiting, or a recording whose words
+ * came back empty and that the server does not have yet. Read only; the same rows `setTypedWordsForWaitingEntry` writes.
+ */
+export function canTypeWordsFor(id: string): boolean {
+  return entries.canTypeWords(ctx(), id);
+}
+
+/**
+ * The author kept words that arrived later (the machine's, or typed on the letter page), with them on screen in
+ * Review (M17: the counting moment, F14 6.2 B2). The review mark, the count and, when given, the place the
+ * author chose (`inBook`) are written in one transaction. The words are not changed here (an edit is a
+ * separate save). False when the letter has no words waiting for review. The Keep gate decision comes first,
+ * in Review (keepNeedsPlus, lib/billing/keep-step.ts keepSheetFor).
+ */
+export function keepReviewedWords(id: string, inBook?: boolean): boolean {
+  const c = ctx();
+  let done = false;
+  let moved = false;
+  c.db.transaction(() => {
+    done = entries.markWordsReviewed(c, id);
+    if (!done) return;
+    ledger.recordKept(c, id, keychainFloor());
+    if (inBook !== undefined) moved = entries.setInBook(c, id, inBook);
+    if (moved) enqueueEntryUpsert(c.db, id, IN_BOOK, enqueueContext(c));
+  });
+  if (done) bus.emit('entries');
+  if (moved) signalOutbox();
+  return done;
+}
+
+/** Letters whose machine-written words wait for the author's review, oldest first. */
+export function listWordsToReview(childId: string): Entry[] {
+  return shown(() => entries.listWordsToReview(ctx(), childId));
+}
+
+/** A quiet-day mark already exists for this book on this day (one per day, D-084). */
+export function hasNotMuchOn(childId: string, isoDate: string): boolean {
+  return entries.hasNotMuchOn(ctx(), childId, isoDate);
+}
+
+// ── Word conflicts (F16 6.2 E; WP-F16-15) ────────────────────────────────
+/**
+ * Letters whose words changed on the author's other phone while this phone had
+ * its own: the letter follows the other phone's words and this phone's version
+ * is kept here, never uploaded, until the author picks (F16-REQ-010). Newest
+ * first; for one letter when `entryId` is given. Empty in a build without sync.
+ */
+export function listConflicts(entryId?: string): ConflictCopy[] {
+  return shown(() => listConflictCopies(ctx().db, entryId));
+}
+
+/**
+ * The author's choice on the conflict note: 'mine' ("Use this phone's version")
+ * makes this phone's words the letter's words again and sends them (the server
+ * keeps the other words in entry_versions); 'theirs' ("Keep the other one")
+ * lets this phone's copy go. One transaction each. False when the copy is gone,
+ * or for 'mine' when the letter is deleted (restore it first). A held draft's copy
+ * (v8, `copy.draft`) works the same way on the draft's typed words.
+ */
+export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    const copy = listConflictCopies(c.db).find((x) => x.opId === opId);
+    if (!copy) return;
+    if (choice === 'mine' && copy.draft && drafts.isHeld(c, copy.entryId)) {
+      // A held draft's typed words (v8): they become the draft's again and its held row goes up.
+      drafts.setTyped(c, copy.entryId, copy.words.final_text);
+      enqueueHeldDraft(c.db, copy.entryId, enqueueContext(c));
+    } else if (choice === 'mine') {
+      if (!entries.replaceWords(c, copy.entryId, copy.words)) return;
+      enqueueEntryUpsert(c.db, copy.entryId, ['text'], enqueueContext(c));
+    }
+    done = removeConflictCopy(c.db, opId);
+  });
+  if (done) {
+    bus.emit('entries', 'drafts');
+    signalOutbox();
+  }
+  return done;
+}
+
 /** Entries for the active child (unchanged signature). */
 export function listEntries(): Entry[] {
   const id = getActiveChildId();
@@ -497,7 +807,15 @@ export function listEntries(): Entry[] {
 }
 
 export function listEntriesForChild(childId: string): Entry[] {
-  return entries.listForChild(ctx(), childId);
+  return shown(() => entries.listForChild(ctx(), childId));
+}
+
+/** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
+export function listClosedBooks(): Child[] {
+  return shown(() => children.listClosedByServer(ctx()));
+}
+export function listDeletedEntriesForChild(childId: string): Entry[] {
+  return shown(() => entries.listDeletedForChild(ctx(), childId));
 }
 
 export function getEntry(id: string): Entry | null {
@@ -513,6 +831,29 @@ export function setEntryInBook(id: string, inBook: boolean): boolean {
   c.db.transaction(() => {
     done = entries.setInBook(c, id, inBook);
     if (done) enqueueEntryUpsert(c.db, id, IN_BOOK, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
+const OCCURRED: FieldGroup[] = ['occurred_on'];
+
+/**
+ * Change the date of one's own letter (F09-REQ-004; F04-REQ-015 rules, components/book/date-change.logic.ts). One local
+ * transaction (F09-U03: the letter is in one chapter, never two or none): the date and its precision, and with sync on
+ * the `occurred_on` field group in the outbox, which also carries the precision (wire contract 20261015030000). The
+ * words, raw_transcript and the free-letter ledger are never touched. False for a missing, deleted or quiet-day row,
+ * or a letter someone else wrote.
+ */
+export function setEntryDate(id: string, occurredOn: string, precision: OccurredPrecision): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.setOccurred(c, id, occurredOn, precision, syncOwner(c.db));
+    if (done) enqueueEntryUpsert(c.db, id, OCCURRED, enqueueContext(c));
   });
   if (done) {
     bus.emit('entries');
@@ -569,7 +910,11 @@ export type AudioEraser = (uri: string | null, entryId: string) => void;
 
 /** The shelf: deleted letters of every book, newest deletion first. Each has `deletedAt`. */
 export function listDeleted(): entries.DeletedEntry[] {
-  return entries.listDeleted(ctx());
+  if (!bookVisibleNow()) return [];
+  const c = ctx();
+  // A deleted book's letters wait inside it (Restore the book brings them all back), not one by one.
+  const gone = new Set(wipe.deletedIds(c));
+  return entries.listDeleted(c).filter((e) => !e.childId || !gone.has(e.childId));
 }
 
 /** The ISO time after which a letter deleted at `deletedAt` is erased by the launch purge. */
@@ -584,47 +929,308 @@ export function erasesAt(deletedAt: string): string {
  * that is gone, and the next erase or purge finishes the job; the other order
  * would leave a file with no row, which the sweep re-attaches as a draft.
  * Only a deleted letter can be erased (a live letter is refused). Returns true
- * when the letter is gone, false when it was not on the shelf, the build syncs
- * (the server owns deletion then), or the file could not be removed.
+ * when the letter is gone, false when it was not on the shelf, it is another
+ * person's letter, or the file could not be removed.
+ *
+ * With sync on (WP-F16-13, F16-REQ-024): when the server may hold the letter,
+ * the row's removal and one `entry.erase` are one transaction; the server then
+ * erases its copy for good, and the author's other phones drop theirs after their
+ * next pull. The erase never carries words.
  */
 export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
-  if (capabilities.sync) return false;
   const c = ctx();
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
+  let serverMayHold = false;
+  let heldOnServer = false;
+  let bookId: string | null = null;
+  // Queueing is local, as every other upload is: a phone that signed in under a server-on build keeps
+  // its queue in an off build, so the erase goes when sync returns (final review A-M2).
+  const owner = syncOwner(c.db);
+  if (owner) {
+    const row = getEntryRow(c.db, id);
+    if (!row) return false;
+    if (row.author_id !== null && row.author_id !== owner) return false; // only the author erases
+    bookId = row.child_id;
+    serverMayHold = row.sync_state !== 'gone' && row.sync_state !== 'erased'
+      && (row.server_version !== null || everSent(c.db, id));
+    // A voice-only letter waiting for its words lives on the server as a held row (v8): that row goes too.
+    // Once let go there, only its marker is left, which this phone no longer tracks: a waiting letter always
+    // sends the erase (idempotent: the server answers missing when it holds nothing), so every phone erases it.
+    heldOnServer = row.held_v != null || heldEverSent(c.db, id) || row.transcript_status === 'waiting';
+  }
   try {
     eraseAudio(uri, id);
   } catch {
     return false; // keep the row; the file may still be there
   }
-  const done = entries.eraseRow(c, id);
+  let done = false;
+  c.db.transaction(() => {
+    // D-103: a deleted letter still counts. Raise the mirror to every letter that counts before this one's row goes.
+    ledger.raiseTo(c, ledger.countPresent(c));
+    done = entries.eraseRow(c, id);
+    // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
+    // holds, and the author's other phones erase their copy (never restorable there).
+    if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+  });
+  if (done) compactAfterErase(c);
   if (done) bus.emit('entries');
+  if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
 }
 
 /**
- * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when the build syncs (the server owns the clock, spec 2.2 step 7)
- * or when `nowMs` is earlier than the latest recorded launch (a phone clock
- * moved back). Returns how many letters were erased.
+ * Letters the server erased for good while they waited in Recently deleted here
+ * (Erase now on another phone of this author, or the purge; `sync_state` 'erased'):
+ * the file first, then the row, with nothing sent. Runs after every pull and at
+ * launch. Returns how many were erased.
+ */
+export function finishServerErased(eraseAudio: AudioEraser): number {
+  const c = ctx();
+  let n = 0;
+  ledger.raiseTo(c, ledger.countPresent(c)); // D-103: the rows below still counted; the count stays
+  for (const r of c.db.all<{ id: string; audio_uri: string | null }>(
+    "SELECT id, audio_uri FROM entries WHERE sync_state = 'erased' AND deleted_at IS NOT NULL ORDER BY id",
+  )) {
+    try {
+      eraseAudio(r.audio_uri, r.id);
+    } catch {
+      continue; // the next run tries again
+    }
+    if (entries.eraseRow(c, r.id)) n++;
+  }
+  if (n > 0) compactAfterErase(c);
+  if (n > 0) bus.emit('entries');
+  return n;
+}
+
+/**
+ * Launch purge: erases letters that have waited SHELF_DAYS or more. Deleting
+ * is a promise ("Kept here until <day>"), so the phone clock is never trusted
+ * further than it has been seen before (QE-05):
+ *
+ * - The purge counts time by the latest recorded launch, not by the clock now.
+ *   A clock that jumped ahead (a wrong date, a manual change, a restore onto
+ *   another phone) erases nothing more at that launch than the previous
+ *   launch would have; a letter is erased only once two launches agree it has
+ *   waited its 30 days. Failing toward keeping costs at most one launch of
+ *   delay.
+ * - With no readable record of an earlier launch (a first launch, or a damaged
+ *   setting) nothing is erased at that launch, because the clock has not been
+ *   seen before. The launch is recorded after the purge, so the next launch
+ *   purges as usual.
+ * - A clock earlier than the latest recorded launch (moved back) purges
+ *   nothing at that launch (DL-04). `recordLaunch` then stores that earlier
+ *   time, so a clock corrected after running ahead resumes purging at the next
+ *   launch instead of waiting for real time to pass the stored future date.
+ *
+ * When the build syncs, the server's clock rules every letter it holds (spec
+ * 2.2 step 7), so only letters it never held, or no longer holds, with nothing
+ * queued for them, are erased here, with nothing sent; otherwise they would
+ * wait in Recently deleted forever. Returns how many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
-  if (capabilities.sync) return 0;
-  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && nowMs < last) return 0;
   const c = ctx();
+  // A book erase a kill cut short is finished first, whatever the clock says and even with no readable launch stamp
+  // below: the person already asked for it, and it counts no days.
+  for (const id of wipe.erasingIds(c)) eraseBook(id, eraseAudio);
+  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
+  if (!Number.isFinite(last) || nowMs < last) return 0;
+  const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of entries.expiredIds(c, new Date(nowMs - SHELF_MS).toISOString())) {
+  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
+  // Deleted books whose 30 days are over (F17 6.2 D step 6), by the same guarded cutoff as letters (QE-05).
+  let books = 0;
+  for (const id of wipe.expiredIds(c, cutoff)) if (eraseBook(id, eraseAudio)) books += 1;
+  // After the 30-day erase, rebuild the file too (rare, and cheap at this size; PR #520 body has the numbers).
+  if (erased + books > 0) compactAfterErase(c, true);
   return erased;
 }
 
-/** Writes the launch time for the purge's clock guard. Never moves backwards. */
+/**
+ * Writes this launch's time for the purge's clock guard, after the purge. It
+ * follows the clock both ways: forward, so the next launch can confirm a jump;
+ * back, so a clock corrected after running ahead does not block the purge
+ * until real time catches up with a date it never reached (QE-05).
+ */
 export function recordLaunch(nowMs: number): void {
-  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && last >= nowMs) return;
+  if (!Number.isFinite(nowMs)) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
+// ── After a hard erase (BL-387; privacy Review A on #520) ────────────────
+/**
+ * After rows were erased for good: the WAL is checkpointed and truncated, so the old page images of the erased rows
+ * leave `scribe.db-wal` (secure_delete, set at open, has already zeroed them in the database's pages). `full` (Erase
+ * everything) also runs VACUUM, which rebuilds the file and drops free pages written before secure_delete was on.
+ * Outside any transaction. Never throws: the rows are already gone, and the next erase or launch tries again.
+ */
+function compactAfterErase(c: RepoContext, full = false): void {
+  try {
+    if (full) c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+  } catch {
+    // A reader holds the WAL (rare on one connection); the next erase or the next checkpoint finishes it.
+  }
+}
+
+// ── Delete a book (BL-387; F17 6.2 D; DATA-REQ-014, F17-REQ-080) ──────────
+/**
+ * Whether this phone may delete a book or erase everything by itself: only while it has never signed in. After a
+ * sign-in the server holds the books too, and deletion goes through the server (request_book_deletion, account
+ * deletion), which this build does not offer from here (F17-REQ-026).
+ */
+export function localDeletionAllowed(): boolean {
+  return syncOwner(ctx().db) === null;
+}
+
+/**
+ * "Delete this book" on a phone that never signed in (F17 6.2 D, sole parent): the book leaves every list, Tonight
+ * and Export at once and waits in Recently deleted for 30 days, restorable exactly as it was; then the launch purge
+ * erases it for good (eraseBook). Nothing is queued or sent. False when the book does not exist, is already deleted,
+ * or the phone has signed in.
+ */
+export function deleteBook(id: string): boolean {
+  const c = ctx();
+  if (!localDeletionAllowed()) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = wipe.markDeleted(c, id);
+    if (done && settings.getSetting(c, 'activeChildId') === id) {
+      const next = children.listVisible(c)[0]?.id;
+      if (next) settings.setSetting(c, 'activeChildId', next);
+      else settings.deleteSetting(c, 'activeChildId');
+    }
+  });
+  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  return done;
+}
+
+/** Restore the book from Recently deleted: every letter, draft and choice comes back as it was. */
+export function restoreBook(id: string): boolean {
+  const done = wipe.unmarkDeleted(ctx(), id);
+  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  return done;
+}
+
+/** Deleted books waiting in Recently deleted, newest deletion first. */
+export function listDeletedBooks(): wipe.DeletedBook[] {
+  return shown(() => wipe.listDeleted(ctx()));
+}
+
+/**
+ * Erase a deleted book for good: "Erase now" on the shelf, or the purge at day 30. The mark that the erase began is
+ * written first, then every recording file of the book goes (its letters, deleted ones too, and its drafts), then
+ * the rows in one transaction. A kill part way leaves the mark and rows whose files are gone; the next launch purge
+ * finishes it (purgeExpired). The sweep never sees a file without its row, so nothing comes back as a draft. A file
+ * that will not go stops the erase with the book still marked, for the next try. True when the book is gone.
+ */
+export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
+  const c = ctx();
+  if (!wipe.isDeleted(c, id)) return false;
+  wipe.markErasing(c, id);
+  for (const r of wipe.bookAudioRows(c, id)) {
+    try {
+      eraseAudio(r.audioUri, r.id);
+    } catch {
+      return false;
+    }
+  }
+  c.db.transaction(() => {
+    // D-103: the free-letter count never goes down, except on Erase everything. The book's letters are one of the
+    // ledger's three sources, so the mirror is first raised to every letter that counts now (ledger.countPresent,
+    // the same rule as the Keep gate, whichever kinds it counts), then the rows go. A mirror behind them (a backup
+    // restore before the launch heal, a note kept before notes counted) can no longer drop the count.
+    ledger.raiseTo(c, ledger.countPresent(c));
+    wipe.removeBook(c, id);
+  });
+  compactAfterErase(c);
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(id);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
+  bus.emit('children', 'entries', 'drafts', 'settings');
+  return true;
+}
+
+const bookErasedHooks = new Set<(bookId: string) => void>();
+/** Device files keyed by book (the moments file, NS-53-R249) remove their rows when a book is erased for good. Never throws into the erase. */
+export function onBookErased(hook: (bookId: string) => void): () => void {
+  bookErasedHooks.add(hook);
+  return () => void bookErasedHooks.delete(hook);
+}
+
+// ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
+/** Removes every recording file, listening copy, temporary copy and export left on this phone. Throws when one will not go. */
+export type DeviceFilesEraser = () => void;
+
+/** Whether an Erase everything began and has not finished (a kill, or a file that would not go). */
+export function eraseEverythingPending(): boolean {
+  return settings.getSetting(ctx(), wipe.ERASE_EVERYTHING_SETTING) !== null;
+}
+
+/**
+ * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
+ *  1. the pending mark, so a kill at any later point is finished at the next launch (a mark is only ever written on
+ *     a phone that had not signed in);
+ *  2. each letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
+ *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`);
+ *  4. every row of every table, settings included, in one transaction; the mark stays.
+ * The caller then clears the Keychain (the free-letter count goes after the rows, so a relaunch cannot raise it
+ * again from letters still present) and calls finishEraseEverything. Files go before rows, so the sweep never finds
+ * a recording without its row to bring back. Nothing is queued or sent.
+ * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go (the mark
+ * stays; a later try or the next launch finishes), 'erased' when the rows are gone.
+ */
+export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'signed_in' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!localDeletionAllowed()) return 'signed_in';
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+  }
+  try {
+    for (const r of wipe.allAudioRows(c)) eraseAudio(r.audioUri, r.id);
+    eraseFiles();
+  } catch {
+    return 'incomplete';
+  }
+  // LEGAL-REQ-002, D-026: an erase never ends the 24-hour age stop early. A stop still running is kept (it lives only
+  // in `settings`, never in the Keychain); an expired one goes with everything else.
+  const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
+  const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  // ADR 0028 D5 step 3: Find's index is dropped before the rows go; deleting the rows of an FTS5 table's shadow tables
+  // one by one would corrupt it. It is made again, empty, by the next launch's catch-up. Whatever the Find switch says.
+  dropSearchIndex(c.db);
+  c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
+  compactAfterErase(c, true);
+  bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
+  return 'erased';
+}
+
+/** The last step of Erase everything: removes the pending mark. The phone is now as on first run. */
+export function finishEraseEverything(): void {
+  const c = ctx();
+  settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SETTING);
+  compactAfterErase(c);
+  bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
+}
+
+/**
+ * The launch purge, then this launch's record, in that order. The purge reads
+ * the previous launch's stamp, so recording first would make every purge count
+ * time by the clock now and disable the QE-05 guard. `alsoErase` runs between
+ * the two (letters the server erased); its count is added. Returns how many
+ * letters were erased.
+ */
+export function purgeThenRecordLaunch(nowMs: number, eraseAudio: AudioEraser, alsoErase: () => number = () => 0): number {
+  const n = purgeExpired(nowMs, eraseAudio) + alsoErase();
+  recordLaunch(nowMs);
+  return n;
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────
@@ -674,26 +1280,197 @@ export function getDraft(id: string): Draft | null {
 
 /** Drafts waiting to be read back, newest first. A take still recording is not listed. */
 export function listDrafts(childId: string): Draft[] {
-  return drafts.listForChild(ctx(), childId);
+  return shown(() => drafts.listForChild(ctx(), childId));
+}
+
+/**
+ * A change to a draft, in one transaction with its upload when the draft is held
+ * (F16 6.2 I: a held draft of a signed-in author is an author-only row on the
+ * server). A draft that was never held queues nothing.
+ */
+function writeDraft<T>(id: string, write: (c: RepoContext) => T, changed: (out: T) => boolean = (out) => out !== false): T {
+  const c = ctx();
+  let out!: T;
+  let queued = false;
+  c.db.transaction(() => {
+    out = write(c);
+    if (changed(out) && drafts.isHeld(c, id)) {
+      enqueueHeldDraft(c.db, id, enqueueContext(c));
+      queued = true;
+    }
+  });
+  if (changed(out)) bus.emit('drafts');
+  if (queued) signalOutbox();
+  return out;
 }
 
 /** Sets the raw transcript once. Later calls are ignored: raw is immutable. */
 export function setDraftTranscript(id: string, raw: string): void {
-  drafts.setTranscriptOnce(ctx(), id, raw);
+  writeDraft(id, (c) => drafts.setTranscriptOnce(c, id, raw));
 }
 
 export function setDraftTyped(id: string, text: string): void {
-  drafts.setTyped(ctx(), id, text);
+  writeDraft(id, (c) => {
+    drafts.setTyped(c, id, text);
+    return true;
+  });
 }
 
 export function setDraftChild(id: string, childId: string): void {
-  drafts.setChild(ctx(), id, childId);
+  writeDraft(id, (c) => {
+    drafts.setChild(c, id, childId);
+    return true;
+  });
 }
 
-/** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */
+/** Note or letter, chosen in Review (F04-REQ-014). The saved entry takes it. False for a bad value. */
+export function setDraftKind(id: string, kind: DraftKind): boolean {
+  return writeDraft(id, (c) => drafts.setKind(c, id, kind));
+}
+
+/**
+ * The date the letter is about and how exactly it is known (F04 11.3). Null
+ * means the local date of the draft's creation. False for a malformed date.
+ */
+export function setDraftOccurred(id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
+  return writeDraft(id, (c) => drafts.setOccurred(c, id, occurredOn, precision));
+}
+
+/** The take's language as a BCP-47 tag; null for the author's default. False for a malformed tag. */
+export function setDraftLanguage(id: string, language: string | null): boolean {
+  return writeDraft(id, (c) => drafts.setLanguage(c, id, language));
+}
+
+/** Layout direction of the words (F04 11.3 rule for `base_direction`). */
+export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
+  return writeDraft(id, (c) => drafts.setBaseDirection(c, id, dir));
+}
+
+/**
+ * "Leave it waiting" at the Keep gate (F14 6.2 B step 2a; F14-REQ-039): the
+ * draft stays exactly as it is, marked held, with the destination the author
+ * chose. Signed in, the same transaction queues its author-only held row, so the
+ * letter survives a lost phone; signed out it stays on this phone only. The
+ * screen (review.tsx) calls this where the Keep sheet holds a letter. False for a
+ * missing draft or a take still recording.
+ */
+export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): boolean {
+  return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
+}
+
+/** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
+export function listWaitingForExport(): Draft[] {
+  return shown(() => drafts.listForExport(ctx()));
+}
+
+/**
+ * Review's own choices on this draft (v9; SR-C-06, CR-39): the fixes put back, the view, the person's words from
+ * Change words, and the fingerprint of the words they were made on. Null for a missing draft. Read on Review's mount
+ * (lib/capture/review-persist.logic `restorable`).
+ */
+export function getDraftReview(id: string): ReviewSaved | null {
+  const r = drafts.getReview(ctx(), id);
+  if (!r) return null;
+  return { putBack: parsePutBack(r.putBack), view: parseView(r.view), text: r.text, base: r.base };
+}
+
+/**
+ * Writes part of Review's choices on the draft, with `base` (wordsBase of the words Review shows). Local only: it
+ * never queues a sync op, never changes raw_transcript or typed_text, and emits nothing (no list shows these).
+ * Cleared at Keep (the draft row goes) and at Let it go (beginDiscard). False for a missing draft or one being let go.
+ */
+export function setDraftReview(id: string, base: string, patch: ReviewPatch): boolean {
+  return drafts.setReview(ctx(), id, base, {
+    putBack: patch.putBack === undefined ? undefined : JSON.stringify(patch.putBack),
+    view: patch.view,
+    text: patch.text,
+  });
+}
+
+/** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */
+export function listHeldDrafts(childId?: string): Draft[] {
+  return shown(() => drafts.listHeld(ctx(), childId));
+}
+
+/**
+ * Let it go, confirmed (F04-REQ-009): step 1 marks the draft `discarding`;
+ * the caller then deletes the file, then calls finishDiscard. A kill in
+ * between, or a file that will not delete, leaves the mark, and the launch
+ * sweep finishes it: the file if still there, then the row, never re-attaching
+ * the file (capture/sweep.ts, BL-923). A held draft queues its `held.discard`
+ * in the same transaction, which on the server removes the row and its backup.
+ */
+export function beginDiscard(id: string): boolean {
+  const c = ctx();
+  let done = false;
+  let held = false;
+  c.db.transaction(() => {
+    held = drafts.isHeld(c, id);
+    done = drafts.beginDiscard(c, id);
+    if (done && held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id); // letting it go lets every copy of its words go
+    }
+  });
+  if (done) bus.emit('drafts');
+  if (done && held) signalOutbox();
+  return done;
+}
+
+/**
+ * Removes a draft's picture, the file first and then its row (photos/device.ts erasePictureOf). capture/erase.ts hands
+ * it in when it loads, which the launch sweep does at every start; until then nothing is erased here, and the photo
+ * sweep removes a gone draft's picture at the next launch.
+ */
+let eraseDraftPicture: (draftId: string) => void = () => {};
+export function setDraftPictureEraser(erase: (draftId: string) => void): void {
+  eraseDraftPicture = erase;
+}
+
+/**
+ * Let it go, last step: removes a draft already marked `discarding`, never any other. Its picture goes first, file then
+ * row (ADR 0028 D5); a picture file that will not go keeps the draft marked, off every list, for the launch sweep to
+ * finish, as a recording does (BL-924).
+ */
+export function finishDiscard(id: string): boolean {
+  if (ctx().db.get("SELECT 1 AS n FROM drafts WHERE id = ? AND state = 'discarding'", id)) {
+    try {
+      eraseDraftPicture(id);
+    } catch {
+      return false;
+    }
+  }
+  const done = drafts.finishDiscard(ctx(), id);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/**
+ * Removes the row only. Audio files are deleted by a confirmed Let it go
+ * (Review, and Discard in Listen), by the launch sweep finishing one, and by
+ * erasing a deleted book (eraseBook) or everything (eraseEverythingLocal),
+ * never here. A held draft's server row goes with it (held.discard).
+ */
 export function deleteDraft(id: string): void {
-  drafts.remove(ctx(), id);
+  try {
+    eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5)
+  } catch {
+    // A picture file that will not go never blocks the draft going: the launch photo sweep removes a gone draft's picture
+    // (the row's owner is gone), so nothing here may throw uncaught into the screen that let the draft go.
+  }
+  const c = ctx();
+  let held = false;
+  c.db.transaction(() => {
+    held = drafts.isHeld(c, id);
+    // Before the row goes: the discard reads the server version the draft holds.
+    if (held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id);
+    }
+    drafts.remove(c, id);
+  });
   bus.emit('drafts');
+  if (held) signalOutbox();
 }
 
 // ── Launch sweep support (capture/sweep.ts) ──────────────────────────────

@@ -14,10 +14,10 @@ export const wordsCopy = {
     title: 'Your {name} words are on their way',
     body: 'Your voice is kept now. The words will follow as soon as this phone is ready for {name}.',
     progress: 'Getting ready, {n}%',
-    waitingForWifi: 'Getting ready when you are on Wi-Fi.',
+    waitingForWifi: "Getting ready when you're on Wi-Fi.",
     noSpace: 'This phone needs a little more free space first.',
     // Shown before any download starts, so the size and the Wi-Fi rule are known first (BL-375).
-    sizeLine: 'The download is about {size} MB and starts when you are on Wi-Fi.',
+    sizeLine: "The download is about {size} MB and starts when you're on Wi-Fi.",
     keepButton: 'Keep my voice',
     typeButton: 'Type it instead',
     keptToast: 'Your voice is kept. The words will follow.',
@@ -25,14 +25,19 @@ export const wordsCopy = {
     askTitle: 'Get your {name} words ready',
     askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
     askButton: 'Download on Wi-Fi',
-    // The Wi-Fi wait card: one time, this download only.
-    mobileDataButton: 'Use mobile data {size}',
-    // Review, after leaving the app ended the take.
-    stoppedInBackground: 'The recording stopped when you left the app. Everything up to then is kept.',
+    // The Wi-Fi wait card: one time, this download only. US term (D-087). The button names the size from this
+    // phone's plan (test/speech-consent.test.ts), and "Use cellular data {size}" is over the 22-character budget
+    // (rules.test.ts), so the size comes first: "Use 575 MB of cellular".
+    mobileDataButton: 'Use {size} of cellular',
+    // Review: why a take stopped early, above the sheet (S14).
+    stoppedInBackground: 'The recording stopped when you left the app. Everything before that is kept.',
+    stoppedInterruption: 'The recording stopped for a call or an alert. Everything before that is kept.',
+    stoppedClosed: 'The recording stopped when the app closed. Everything before that is kept.',
   },
   noSpeech: {
-    title: 'No talking in this one',
-    body: 'The recording is kept just as it is. You can add words by typing them.',
+    // Never says or implies that nobody spoke: the take may hold a laugh or a babble (D-086).
+    title: 'No words in this one',
+    body: 'The recording is kept just as it is.',
     // Nobody spoke: one action each, the recording itself is never touched (D-086).
     tryAgainButton: 'Try again',
     recordAgainButton: 'Record again',
@@ -49,7 +54,7 @@ export const wordsCopy = {
     readItBackButton: 'Read it back',
     readyBody: 'Words are ready. Read it back.',
     // Words arrived while the letter was closed: shown exactly as said, no fix proposed yet.
-    arrivedNote: 'These words are exactly as you said them. Nothing has been fixed.',
+    arrivedNote: 'These words are as they arrived. Nothing has been fixed.',
     // The sheet where a person writes the words for a letter whose recording has none.
     writeTitle: 'Write the words',
     writeLabel: 'Words for this recording',
@@ -57,7 +62,7 @@ export const wordsCopy = {
     cancelButton: 'Not now',
   },
   unavailable: {
-    title: 'Your voice is kept',
+    title: 'Recording kept',
     body: 'Words cannot be written down on this phone yet. Keep the recording now and the words can come later. You can also type it.',
   },
 };

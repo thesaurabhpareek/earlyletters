@@ -66,13 +66,18 @@ describe('RulePunctuationProvider: sentence case and terminal punctuation', () =
     expect(punctuationEdits(req('   '))).toEqual([]);
   });
 
-  it('emits only punctuation edits, and every one passes the verifier', () => {
+  it('emits only punctuation edits, and with the filler rules beside them every one passes the verifier', () => {
     const raw = 'um she walked. then, uh, Asia laughed. and she said "bau"';
     const edits = punctuationEdits(req(raw));
     expect(edits.length).toBeGreaterThan(0);
     expect(edits.every((e) => e.type === 'punctuation' && e.source === 'rule')).toBe(true);
+    // With the filler rules beside them, as in the pipeline, every one passes: "She" follows the removed "um".
+    const out = faithfulClean(raw, { level: 'clean', dictionary: DICT, ruleEdits: edits });
+    expect(out.rejected).toEqual([]);
+    expect(out.text).toMatch(/^She walked\. /);
+    // Alone, the capital lands past a kept "um": engine 8 refuses it (ruling on #262), and nothing else.
     const v = verifyEdits(edits, { raw, level: 'clean', dictionary: DICT, protectedSpans: [] });
-    expect(v.rejected).toEqual([]);
+    expect(v.rejected.map((r) => `${r.edit.original}:${r.reason}`)).toEqual(['s:case_change_not_sentence_start']);
   });
 
   it('is not a free pass: the pipeline re-verifies rule-provider edits', () => {
@@ -206,14 +211,16 @@ describe('JsonModelEditProvider: parses strict JSON and keeps only verified edit
       source: 'model',
       async propose(r) {
         const raw = r.raw;
-        const edits = ['walk', 'talk', 'run', 'eat', 'sing', 'jump'].map((w) => {
+        // Closed-table pairs (F06-REQ-007): each passes alone, so only the ceiling refuses them.
+        const pairs: Array<[string, string]> = [['have', 'has'], ['go', 'goes'], ['do', 'does'], ['is', 'are'], ['were', 'was'], ["don't", "doesn't"]];
+        const edits = pairs.map(([w, rep]) => {
           const start = raw.indexOf(w);
-          return { type: 'agreement' as const, start, end: start + w.length, original: w, replacement: `${w}s`, source: 'rule' as const };
+          return { type: 'agreement' as const, start, end: start + w.length, original: w, replacement: rep, source: 'rule' as const };
         });
         return { edits, flags: [], rejected: [], invalid: [] };
       },
     };
-    const raw = 'I walk. You talk. We run. They eat. She sing. He jump.';
+    const raw = "She have. She go. She do. They is. She were. She don't.";
     const out = await cleanWithProviders(req(raw), [liar]);
     // stamped as model, so the change ceiling throws them all out
     expect(out.applied).toEqual([]);

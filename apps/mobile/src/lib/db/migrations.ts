@@ -257,15 +257,307 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    name: 'draft kind, occurred date and precision, letter language and base direction (WP-F04-03, G-26)',
+    up(db) {
+      // PRD V2 F04 section 11.3, number fixed by 08-delivery.md section 4. Columns only: every
+      // existing row keeps its values and gains the defaults below (a letter, dated by its day,
+      // left to right, language unknown). Nothing is queued: no letter changes.
+      //   drafts.kind                note | letter (L2). Speak and Type start a letter; the widget a note.
+      //   drafts.occurred_on         YYYY-MM-DD the parent chose (L3); null means the local date of created_at.
+      //   drafts.occurred_precision  day | month (L2); entries.occurred_precision the same once saved.
+      //   drafts.language            BCP-47 tag of the take (L4, a person's language); null is the author's default.
+      //   entries.language           the letter's language (L4, G-26). Syncs as field group `language`, own
+      //                              letters only, mapped to the server's seven codes (sync/outbox.ts wireLanguage).
+      //   drafts/entries.base_direction  ltr | rtl (L2, layout only; never changes the words).
+      // drafts.state gains the value 'discarding' (Let it go confirmed, F04-REQ-009): a text value, no DDL.
+      addColumns(db, 'drafts', [
+        ['kind', "TEXT NOT NULL DEFAULT 'letter'"],
+        ['occurred_on', 'TEXT'],
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+      addColumns(db, 'entries', [
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+    },
+  },
+  {
+    version: 7,
+    name: "per-person book preferences move to child_member_prefs; the book's creator and first-run batch (WP-F12-02)",
+    up(db, ctx) {
+      // PRD V2 F12-REQ-004, number fixed by 08-delivery.md section 4. `children` keeps book-level
+      // columns only; what one person chooses for a book lives in `child_member_prefs`, one row per
+      // book for the person this phone belongs to (one account per install, F16 6.2 G):
+      //   signs_as       L3  what this child calls me (was children.signs_as)
+      //   reminders_on   L2  include this book in my reminders (was children.reminders_on)
+      //   hidden_at      L2  "Hide this book" for me only (was children.hidden_at, set only from this phone)
+      //   quiet_at       L2  "Quiet this book" for me only (F12-REQ-011), new
+      // children.hidden_at stays for the book-level support path (F12 6.2 D), empty on the phone.
+      //   children.created_by       L3  the account that started the book, when known
+      //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
+      // Values move in this one transaction; nothing is queued (nothing changed for the server).
+      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (one cut before #166; both planned builds are v8)
+      // reads them by name, and the "update the app" screen (MOB-09) does not exist yet, so dropping them would
+      // leave a tester who rolls back with a Book that cannot list its books. The app reads them from
+      // child_member_prefs only, and writes the prefs value into them as a mirror (db/repos/children.ts
+      // upsertPrefs), so the older build sees the current signature and reminder choice. The columns go in
+      // the first schema version after MOB-09 ships.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS child_member_prefs (
+          child_id TEXT PRIMARY KEY NOT NULL,
+          signs_as TEXT NOT NULL DEFAULT '',
+          reminders_on INTEGER NOT NULL DEFAULT 1,
+          hidden_at TEXT,
+          quiet_at TEXT,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      addColumns(db, 'children', [
+        ['created_by', 'TEXT'],
+        ['first_run_batch', 'TEXT'],
+      ]);
+      const have = columns(db, 'children');
+      if (have.has('signs_as')) {
+        db.run(
+          `INSERT OR IGNORE INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at)
+           SELECT id, COALESCE(signs_as, ''), COALESCE(reminders_on, 1), hidden_at, COALESCE(updated_at, ?) FROM children`,
+          ctx.now,
+        );
+        db.run('UPDATE children SET hidden_at = NULL WHERE hidden_at IS NOT NULL');
+      }
+      // Books started here belong to the account that owns this phone's letters (set at the first sign-in).
+      const owner = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'sync.ownerId'")?.value ?? null;
+      if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);
+    },
+  },
+  {
+    version: 8,
+    name: 'held drafts sync as author-only rows: held kind, the destination chosen, the server version (WP-F14-22)',
+    up(db, ctx) {
+      // PRD V2 F16 6.2 I and F14-REQ-039, number fixed by 08-delivery.md section 4. A letter held at
+      // the Keep gate, and a voice-only letter waiting for its words, of a signed-in author sync as
+      // an author-only held_drafts row on the server. A draft that was never held never gets one.
+      //   drafts.held_kind       L2  null (never held: stays on this phone) | held_letter | held_words
+      //   drafts.in_book_choice  L2  where the author chose to put it when held: 1 the book, 0 private, null not chosen
+      //   drafts.held_v          L2  server version of its held_drafts row; null = not on the server
+      //   drafts.held_typed      L4  the typed words as the server last had them (so only a real words change is sent as one)
+      //   entries.held_v         L2  the same for a voice-only letter waiting for its words (sent as waiting_letter)
+      // Existing drafts were never held, so none of them is queued.
+      addColumns(db, 'drafts', [
+        ['held_kind', 'TEXT'],
+        ['in_book_choice', 'INTEGER'],
+        ['held_v', 'TEXT'],
+        ['held_typed', 'TEXT'],
+      ]);
+      addColumns(db, 'entries', [['held_v', 'TEXT']]);
+      // A phone that already signed in: its voice-only letters waiting for words go up now as held rows
+      // (enqueueEntryUpsert sends a waiting letter as held.upsert), in this transaction, like any upload.
+      const waiting = db.all<{ id: string }>(
+        "SELECT id FROM entries WHERE transcript_status = 'waiting' AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
+      );
+      for (const { id } of waiting) enqueueEntryUpsert(db, id, ['text'], ctx);
+    },
+  },
+  {
+    version: 9,
+    name: "Review's own choices survive a kill: put-backs, the view, the person's typed words (SR-C-06, BL-377, WP-F06-08b)",
+    up(db) {
+      // CR-39. What the person chose in Review lives on the draft until Keep, so a reopened Review shows the
+      // same final text. Never synced and not in the app's export (Settings > Export); like typed_text, it is
+      // carried by the recovery export and the iOS device backup of the database. The synced machine_edits shape
+      // is unchanged (the letter still stores only the fixes in force at Keep). Kept until Keep (the draft row
+      // goes) or Let it go (cleared at step 1, then the row goes).
+      //   drafts.review_put_back  L4  JSON array of the machine fixes the person put back (each exactly as the
+      //                               engine proposed it). On reopen the fixes are proposed and verified again
+      //                               and only these are left out: the machine adds nothing from storage.
+      //   drafts.review_view      L2  fixes | exact; null = the Settings default
+      //   drafts.review_text      L4  the person's own words from Change words; null = not changed
+      //   drafts.review_base      L4  fingerprint (hash) of the person's words those choices were made on
+      //                               (review-persist.logic; DATA_CLASSIFICATION 1.1.2: a hash of words is L4);
+      //                               a mismatch (typed words changed since) means the choices no longer apply
+      // Existing drafts gain nulls: nothing chosen yet. Nothing is queued.
+      addColumns(db, 'drafts', [
+        ['review_put_back', 'TEXT'],
+        ['review_view', 'TEXT'],
+        ['review_text', 'TEXT'],
+        ['review_base', 'TEXT'],
+      ]);
+    },
+  },
+  {
+    version: 10,
+    name: 'agreements: the Terms and Privacy accept made at Before you begin, kept on this phone (F2, PR #597 L-A)',
+    up(db) {
+      // PR #597 docs/data/account-experience-schema.md 2.1 (step L-A). Number: v10, the next free one after
+      // #522 took v9 (coordinator, 8 Nov 2026; no gaps, append-only).
+      // Every column is L2. No age column, ever: the age answer stays settings.ageGate.passed (D-026).
+      // No backfill: an install that passed the old gate never saw the agreement, so it gets no row and the
+      // app shows the agreement once (legal-consent 3, counsel Q-C). A record is never made up from use.
+      //   id               L2  UUIDv7
+      //   document         L2  'terms' | 'privacy'
+      //   version          L2  document version shown (build constant)
+      //   action           L2  'accept' | 'acknowledge'
+      //   surface          L2  'first_run.before_you_begin' | 'update.agreement'
+      //   recorded_at      L2  device time of the tap
+      //   app_version      L2
+      //   rendered_sha256  L2  hex SHA-256 of the agreement sentence shown
+      //   uploaded_at      L2  when record_policy_act returned (1.1); null until then
+      //   server_act_id    L2  policy_acceptances.id (1.1)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agreements (
+          id TEXT PRIMARY KEY NOT NULL,
+          document TEXT NOT NULL,
+          version TEXT NOT NULL,
+          action TEXT NOT NULL,
+          surface TEXT NOT NULL,
+          recorded_at TEXT NOT NULL,
+          app_version TEXT NOT NULL,
+          rendered_sha256 TEXT NOT NULL,
+          uploaded_at TEXT,
+          server_act_id TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS agreements_once ON agreements (document, version, action);
+      `);
+    },
+  },
+  {
+    version: 11,
+    name: 'entry_media: the one picture kept with a letter, on this phone only (NS-01, ADR 0028 D1)',
+    up(db) {
+      // ADR 0028 D1. Number: the ADR proposed 10; agreements took 10 first, so this is 11 (append-only, no gaps).
+      // A table and indexes only: no existing row changes, and nothing is queued to the sync outbox. Pull and push
+      // never read or write this table; the push mapper sends photo_path null (NS-01-R15). The picture file is
+      // `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere; the media id, no entry id
+      // in the name); the row decides who owns it.
+      //   id          L2  media id (UUIDv7 made on the phone)
+      //   entry_id    L3  the kept letter (a letter id, as entries.id); null while only a draft owns it
+      //   draft_id    L3  the draft (as drafts.id); null once kept
+      //   kind, ext   L2  'photo' and 'jpg' only (no video in Build 13); enums, as entries.kind
+      //   bytes       L2  size of the stripped copy (as audio_bytes)
+      //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
+      //   width, height L2
+      //   photo_text  L4  the parent's own words about the picture: the app keeps at most 140 characters a person
+      //                   sees (grapheme clusters); the CHECK is only a ceiling in code points, 16 per grapheme, E84 (NS-01-R54)
+      //   place       L4  typed by the parent: at most 60 characters a person sees, ceiling 960 code points, 16 per grapheme, E84. Never
+      //                   read from the picture.
+      //   added_at    L2
+      // No deleted_at: the row is hidden while its letter's entries.deleted_at is set, by join (ADR 0028 D1).
+      // One picture per letter is the unique index, not the table shape (a later build drops that one index).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS entry_media (
+          id TEXT PRIMARY KEY NOT NULL,
+          entry_id TEXT,
+          draft_id TEXT,
+          kind TEXT NOT NULL CHECK (kind = 'photo'),
+          ext TEXT NOT NULL CHECK (ext = 'jpg'),
+          bytes INTEGER NOT NULL,
+          sha256 TEXT NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 2240),
+          place TEXT CHECK (place IS NULL OR length(place) <= 960),
+          added_at TEXT NOT NULL,
+          CHECK ((entry_id IS NULL) <> (draft_id IS NULL))
+        );
+        CREATE INDEX IF NOT EXISTS entry_media_entry_idx ON entry_media (entry_id) WHERE entry_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS entry_media_draft_idx ON entry_media (draft_id) WHERE draft_id IS NOT NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS entry_media_one_photo_idx ON entry_media (COALESCE(entry_id, draft_id));
+      `);
+    },
+  },
+  {
+    version: 12,
+    name: 'raw_transcript is set once on this phone: two triggers (BL-412, DATA-REQ-040, ADR 0025 section 9 row C)',
+    up(db) {
+      // The server refuses any change of a set raw_transcript (entries_guard_immutable); this is the phone's copy of
+      // that rule, for raw_transcript only (captured_at, author_id, child_id, engine_version have local writers).
+      // Empty (or NULL on a draft) to the first words stays allowed; naming the column with the same value passes.
+      // The one exception is a pulled own row taking the first keep's raw (merge.ts takeProvenance): it sets
+      // settings('raw_takeover') to that one entry id and deletes it in the same transaction, so the trigger lets
+      // that entry's raw change and no other. Drafts have no exception. The message holds no words.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON entries
+        WHEN OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'raw_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS drafts_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON drafts
+        WHEN OLD.raw_transcript IS NOT NULL AND OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+      `);
+    },
+  },
+  {
+    version: 13,
+    name: 'the other four entry columns get their own phone-side rules: four triggers (BL-1497, BL-412 follow-up)',
+    up(db) {
+      // One rule per column, each the phone's copy of what its only legitimate writers do. Triggers only; no data
+      // is read or changed, and no settings row is written here. Naming a column with its own value always passes.
+      //  - captured_at: changes only for the entry named in settings('provenance_takeover'), which takeProvenance
+      //    (merge.ts, a pulled own row after the first keep, ADR 0025 row C) sets and deletes in the same transaction.
+      //  - engine_version: the same scope, and also while the words have not arrived (raw_transcript is '': the one
+      //    setWordsOnce statement) or the version is still 0 or NULL.
+      //  - author_id: NULL to a value only (the first sign-in claim, ownership.ts; the server row for an own letter).
+      //  - child_id: only while the letter has never synced (synced_at IS NULL; entries.ts upsert).
+      // Messages hold no words, ids or names.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_captured_at_set_once
+        BEFORE UPDATE OF captured_at ON entries
+        WHEN NEW.captured_at IS NOT OLD.captured_at
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.captured_at is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_engine_version_set_once
+        BEFORE UPDATE OF engine_version ON entries
+        WHEN NEW.engine_version IS NOT OLD.engine_version
+          AND COALESCE(OLD.engine_version, 0) <> 0
+          AND OLD.raw_transcript <> ''
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.engine_version is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_author_id_set_once
+        BEFORE UPDATE OF author_id ON entries
+        WHEN OLD.author_id IS NOT NULL AND NEW.author_id IS NOT OLD.author_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.author_id is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_child_id_fixed_once_synced
+        BEFORE UPDATE OF child_id ON entries
+        WHEN OLD.synced_at IS NOT NULL AND NEW.child_id IS NOT OLD.child_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.child_id is fixed once synced (BL-1497)');
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
 export class MigrationError extends Error {
-  constructor(public version: number, cause: unknown) {
-    // Code and number only: SQLite messages can quote values (TDD 01 4.2 rule 2).
+  readonly code = 'local_db_migration_failed';
+  /**
+   * A fixed code and the step's version only (TDD 01 4.2 rule 2). The original error is deliberately not
+   * kept, not even as `cause`: SQLite messages can quote stored values (a name, a date), and an error with a
+   * `cause` is serialised whole by crash reporters and loggers.
+   */
+  constructor(public version: number) {
     super(`local_db_migration_failed:${version}`);
-    this.cause = cause;
+    this.name = 'MigrationError';
   }
 }
 
@@ -293,8 +585,8 @@ export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[
         m.up(db, ctx);
         db.exec(`PRAGMA user_version = ${m.version}`);
       });
-    } catch (e) {
-      throw new MigrationError(m.version, e);
+    } catch {
+      throw new MigrationError(m.version);
     }
     to = m.version;
   }

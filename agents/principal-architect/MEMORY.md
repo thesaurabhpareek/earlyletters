@@ -1,0 +1,49 @@
+# Memory: Principal Architect (principal-architect)
+
+Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever.
+
+Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33). Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+
+## Current focus
+- Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps (CODE-G*, API-G*, OBS-G*) are listed in `docs/engineering/ENFORCEMENT.md`.
+- (20 Nov) Your review paths match every photo slice and #798 (`packages/**`, `apps/mobile/src/lib/**`); a slice over CODE-R02 needs a `Size exception:` line (BL-931 Done when).
+
+## New scope (20 Nov 2026)
+Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
+- The new-scope pack is on `develop` at 697233d3 (#829): `docs/product/VISION.md`, `docs/product/prd/` 00 to 15 (cards NS-01 to NS-37), plan 13, test plan 14, the rank (`docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`), rows BL-923 to BL-949; rows from wave 2 on wait under a founder hold until the founder approves the requirements, and Karma releases them by one status-change PR (`docs/product/prd/13-engineering-plan.md` section 6) (verified 2026-11-20).
+- No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` lines 11 and 17); `AGENTS_ENABLED` not verified (verified 2026-11-20).
+- Only `startCapture({source})` starts a letter (`apps/mobile/src/lib/capture/start-capture.ts:24`; #828, 5f5dfaf4; NS-35); `apps/mobile/test/navigation-one-entry.test.ts` fails on any other push of `/listen` or `/write` (verified 2026-11-20).
+- ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is on `develop` (`docs/adr/0028-photo-seal-find-on-device-data.md`, #797 merged as e9dca86c); its status line still says Proposed and CR-62 is the acceptance record (verified 2026-11-20).
+- BL-931 is the nine-PR photo stack: #834 (merged), #841 (merged, 1513b265), #842, #835 to #840 (verified 2026-11-20).
+- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (CR-65 (#852); #833 comment 7026600796) (verified 2026-11-20).
+- A counted review has line 1 `## Review A|B at <40-hex head sha>: PASS`, or `: PASS WITH NOTES` with `Must fix: none` in the body; CHANGES, FAIL and BLOCKED do not count (CR-63). Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
+
+## Facts about this codebase (with paths)
+- (15 Oct) Workspaces: `apps/*`, `packages/*`, `experiments` (root `package.json`). Packages: analytics, api (21 files), brand, content, core, design-tokens, emails. No `packages/db-types`. `supabase/functions/` has `purge-worker`, `analytics-forget`, `config`, `content` and `_shared`.
+- Packages are consumed as raw TS: `main: src/index.ts`, no `exports` map except `design-tokens` (MONO-04).
+- `packages/core/tsconfig.json` has `types: []`; analytics, content and design-tokens have `types: ["node"]` (MONO-02).
+- No ESLint or Prettier config anywhere; only `apps/mobile` has a `lint` script (`expo lint`). PR #30 adds a CI lint job that skips until a root `lint` script exists.
+- (15 Oct) CI `required` job (`.github/workflows/ci.yml`) needs install, tests and content rules, `npm run test:db`, the Deno functions job and typecheck.
+- Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (582 on 15 Oct).
+- (24 Oct) `ENGINE_VERSION = 8` in `packages/core/src/pipeline.ts` (engine 8, PR #262, refusals only: words joined through an invisible character, a mark behind any quotation mark, a heard-as inside a hyphenated word or on a filler, a capital past a kept filler, a mark moved inside a quote); its golden corpus is `packages/core/test/golden/engine-v8.json`. Engine 7 was PR #249 (`engine-v7.json`).
+- Seeded fuzz pattern: `packages/core/test/verify.fuzz.test.ts`, env `SCRIBE_FUZZ_SEED`.
+- Typed errors exist: `MigrationError` (`apps/mobile/src/lib/db/migrations.ts`), `TranscriberUnavailable` (`apps/mobile/src/lib/transcribe.ts`), `AudioMissingError` (`store.ts`). Untyped: `packages/core/src/age.ts:15` puts the input date in the message (gap CODE-G2).
+- (15 Oct) Shared enums: `packages/core/src/domain.ts` is on `develop` (PR #31) with a test that parses migration CHECK constraints.
+- SQLSTATE registry: comment blocks in `supabase/migrations/20261002020000_data_governance.sql` and `20261003000000_security_and_family.sql`, full list in `supabase/APPLY.md` on PR #32. PR #32 adds SCACD, SCPRG, SCCFG, SCVER, uses 55000 for service-only states, removes SCPLS.
+- Idempotency today: device UUIDv7 ids checked by `public.is_valid_client_uuid7` (`20261003010000_children_and_entitlements.sql`); tests titled `[DATA-REQ-044]` in `supabase/tests/children_entitlements.test.mjs`.
+- (15 Oct) Rate limits: `create_child_invite` raises SCRAT; `20261005000000_family_cap_language_idempotency.sql` adds server-owned counters (pending, not applied).
+- (15 Oct) `supabase/functions/_shared/log` is the server logger, with a log canary in the Deno CI job; `20261004200000_ops_deletion_worker.sql` adds an ops schema. Re-check which of Sentry, a scrubber, `ops_health`, `app_config` and `ops_audit_log` exist before citing them. `audit_events` exists (`20261002020000_data_governance.sql:310`).
+
+## Decisions and constraints I must respect
+- BRIEF decision 17: p95 budget, auth check, idempotency key, rate limit, request ids, content-free logs, contracts in `packages/api`.
+- BRIEF decision 1: standard over custom. Decision 16: server-driven content is schema-validated blocks only.
+- D-021 two log clocks (24 vs 12 months). (15 Oct) D-023 outbox plus cursor pull, decided by the founder. D-035 `app_config` and kill switches. D-003 Sentry only after consent.
+- TDD 06 5.3 `OpsLog` schema is the logger allowlist; TDD 02 3.5 is the retry classification.
+
+## Open threads
+- Founder: one contract package name (`packages/api` vs `packages/db-types`), PR size ceiling, supported-build window.
+- MONO-04 module format ADR needed before the first Edge Function.
+
+## Lessons
+- WebFetch can be blocked by a permission prompt; `curl` through the proxy worked for google.github.io, stripe, w3.org, sre.google, supabase.com, postgresql.org. docs.postgrest.org returned 429 (Cloudflare challenge).
+- Open PR branches are shallow: use `git diff origin/develop origin/<branch>`, not `...`.

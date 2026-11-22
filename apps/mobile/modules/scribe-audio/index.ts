@@ -3,8 +3,9 @@
  * Optional: absent in Expo Go and on web, so every caller handles null.
  *
  * What it does (TDD 03 3.4, ADR 0015; LEGAL-REQ-018):
- * - `decodePcm16`: AAC M4A to 16 kHz mono PCM16 little-endian, in memory
- *   only, for the pieces of a chunk the planner chose (src/lib/transcribe-plan.ts).
+ * - `decodePcm16`: AAC in M4A or ADTS (ADR 0027) to 16 kHz mono PCM16
+ *   little-endian, in memory only, for the pieces of a chunk the planner
+ *   chose (src/lib/transcribe-plan.ts).
  *   Returns an ArrayBuffer that wraps native memory (no copy, no temp file)
  *   and goes straight to whisper.rn `transcribeData` / `detectSpeechData`.
  *   Inserted silence (a long pause shortened) is zeros.

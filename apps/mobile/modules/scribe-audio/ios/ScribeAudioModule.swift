@@ -147,7 +147,7 @@ public class ScribeAudioModule: Module {
     return hasher.finalize().map { String(format: "%02x", $0) }.joined()
   }
 
-  // MARK: - Decode (AAC M4A to 16 kHz mono PCM16 LE, memory only)
+  // MARK: - Decode (AAC in M4A or ADTS, ADR 0027, to 16 kHz mono PCM16 LE, memory only)
 
   /// Same rounding as `msToSamples` in src/lib/transcribe-plan.ts, so the
   /// buffer length always equals `chunkSampleCount` on the JavaScript side.

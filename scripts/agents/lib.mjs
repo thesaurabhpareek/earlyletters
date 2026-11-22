@@ -49,7 +49,9 @@ export function externalOwners(roster) {
 
 // ---------- backlog ----------
 
-const BL_RE = /\bBL-\d{3}\b/g;
+// Backlog ids have 3 or 4 digits (BL-001 to BL-9999), the same width id-collisions.mjs and hardening.mjs accept.
+// The trailing \b keeps a 5-digit number like BL-12345 from matching as BL-1234.
+const BL_RE = /\bBL-\d{3,4}\b/g;
 
 /** Parse docs/BACKLOG.md into task records. Unknown fields are left undefined. */
 export function parseBacklog(text) {
@@ -71,7 +73,7 @@ export function parseBacklog(text) {
       section = line.replace(/^## /, "").trim();
       continue;
     }
-    const h = line.match(/^#### (BL-\d{3})\s+(.*)$/);
+    const h = line.match(/^#### (BL-\d{3,4})\s+(.*)$/);
     if (h) {
       flush(i);
       cur = { id: h[1], title: h[2].trim(), section, start: i, line: i + 1 };
@@ -138,7 +140,7 @@ export function takenIds(openPRs) {
   const taken = new Set();
   for (const pr of openPRs) {
     for (const s of [pr.head?.ref ?? "", pr.title ?? ""]) {
-      for (const m of s.matchAll(/bl-(\d{3})/gi)) taken.add(`BL-${m[1]}`);
+      for (const m of s.matchAll(/bl-(\d{3,4})\b/gi)) taken.add(`BL-${m[1]}`);
     }
   }
   return taken;
@@ -169,8 +171,23 @@ export function readState(body) {
   }
 }
 
+// GitHub caps an issue body near 65,536 characters. The caches below can all be
+// rebuilt from GitHub, so they go first; claims, runs and standing are never dropped.
+export const STATE_LIMIT = 60000;
+const REBUILDABLE = ["verdicts", "reviewfp", "drift", "d041", "lanes"];
 export function writeState(state) {
-  return `<!-- agents-state:${Buffer.from(JSON.stringify(state)).toString("base64")} -->`;
+  const enc = (o) => `<!-- agents-state:${Buffer.from(JSON.stringify(o)).toString("base64")} -->`;
+  let out = enc(state);
+  if (out.length <= STATE_LIMIT) return out;
+  const slim = { ...state };
+  for (const k of REBUILDABLE) {
+    if (!(k in slim)) continue;
+    delete slim[k];
+    out = enc(slim);
+    if (out.length <= STATE_LIMIT) break;
+  }
+  if (out.length > STATE_LIMIT) console.error(`agents-state is ${out.length} characters even without caches; the board write may fail`);
+  return out;
 }
 
 // ---------- GitHub via the gh CLI (REST only) ----------
@@ -232,11 +249,71 @@ export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
+/**
+ * A founder instruction (BL-1529). Sessions and agents post from the founder's
+ * account too, so the account alone proves nothing. A comment is an instruction
+ * only when all of these hold:
+ * - it comes from the founder's account or the repository OWNER, as a person (not a bot);
+ * - its first non-blank line is exactly `<!-- founder -->`, which the founder types;
+ * - no GitHub App posted it on his behalf (performed_via_github_app is empty).
+ * Anything else from that account is "unverified author" (see trustLabel).
+ */
 export function isFounderComment(c, roster) {
-  // Machine posts (receipts, journal entries, reviews, board state) made from
-  // the founder's account in interactive sessions are not instructions.
-  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
-  return c?.user?.login === roster.founder || c?.author_association === "OWNER";
+  if (!isFounderAccount(c, roster?.founder)) return false;
+  if (c.performed_via_github_app) return false;
+  return hasFounderMarker(c.body);
+}
+
+/**
+ * A founder "Request changes" review holds a PR even with an empty body: it
+ * fails closed. Same person test as isFounderComment (founder login or OWNER,
+ * type User, no GitHub App) but no marker. The marker gates instructions only.
+ */
+export function isFounderChangesRequest(r, roster) {
+  return isFounderAccount(r, roster?.founder) && !r.performed_via_github_app && r.state === "CHANGES_REQUESTED";
+}
+
+export const FOUNDER_MARKER = "<!-- founder -->";
+const FOUNDER_LINE_RE = /^[ \t]*<!-- founder -->[ \t]*$/;
+
+/** True when the first non-blank line is the founder marker and nothing else. */
+export function hasFounderMarker(body) {
+  // No String.trim(): it strips NBSP and BOM, which must not prefix the marker.
+  const first = String(body ?? "").split(/\r?\n/).find((l) => !/^[ \t]*$/.test(l));
+  return first !== undefined && FOUNDER_LINE_RE.test(first);
+}
+
+function isFounderAccount(c, founder) {
+  const login = c?.user?.login ?? "";
+  if (!login || c.user.type !== "User") return false;
+  return (!!founder && login === founder) || c.author_association === "OWNER";
+}
+
+function isAgentIdentity(c, trust) {
+  if (c?.user?.type !== "Bot" || !c.user.login) return false;
+  const app = c.performed_via_github_app;
+  if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
+  return trust.bots.has(c.user.login);
+}
+
+/** "agent", "founder-account" or "outsider", from GitHub's fields, never the text. */
+export function authorKind(c, trust) {
+  if (isAgentIdentity(c, trust)) return "agent";
+  if (isFounderAccount(c, trust.founder)) return "founder-account";
+  return "outsider";
+}
+
+/**
+ * How far a comment can be believed about who wrote it: "agent" (the agents App
+ * or a trusted bot), "founder" (isFounderComment), "unverified author" (the
+ * founder's account without the marker: the founder or any session; show the
+ * label, never obey it), or "untrusted" (anyone else).
+ */
+export function trustLabel(c, trust) {
+  const kind = authorKind(c, trust);
+  if (kind === "agent") return "agent";
+  if (kind === "outsider") return "untrusted";
+  return isFounderComment(c, { founder: trust.founder }) ? "founder" : "unverified author";
 }
 
 /**

@@ -107,7 +107,7 @@ export function playSound(name: SoundName) {
 - **Record start sequence.** Tap, then `haptic('recordStart')` and `playSound('record_start')`, wait 140 ms, then switch to `recording` and start the recorder. Switching mid-sound can clip it or bleed it into the take. If the audio spike shows bleed or the 140 ms is felt, drop `record_start` and `record_stop` first.
 - **Android ringer guard.** expo-audio does not expose ringer mode. Ship a small Expo module reading `AudioManager.getRingerMode()`, or keep the setting hidden on Android. Also verify the stream and usage expo-audio sets (sonification is preferable to media).
 - **Preload.** Six players, about 170 KB, only while the setting is on.
-- **Regenerate**: `python3 apps/mobile/assets/sounds/synth.py` (numpy). Output is byte-identical across runs (seeded noise).
+- **Regenerate**: `python3 docs/brand/archive/sounds/synth.py` (numpy) writes the six WAVs next to the script; copy them into `apps/mobile/assets/sounds/` when the setting ships (nothing is bundled today, and the app references no sound file). Output is byte-identical across runs (seeded noise).
 
 ## 6. Test checklist
 

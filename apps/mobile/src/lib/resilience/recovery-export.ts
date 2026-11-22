@@ -7,6 +7,7 @@
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as SQLite from 'expo-sqlite';
+import { recordingFolders } from '../capture/recordings';
 import { copy } from '../copy';
 import { planRecoveryExport, writeRecoveryZip, type FoundFile } from './recovery-export.logic';
 
@@ -25,6 +26,7 @@ function listFiles(dir: Directory, source: FoundFile['source']): FoundFile[] {
   return out;
 }
 
+/** Recordings from both folders that hold them (the top of Documents and `Documents/ExpoAudio`), then the database. */
 function foundFiles(): FoundFile[] {
   let sqliteDir: Directory | null = null;
   try {
@@ -32,7 +34,13 @@ function foundFiles(): FoundFile[] {
   } catch {
     sqliteDir = null;
   }
-  return [...listFiles(Paths.document, 'documents'), ...(sqliteDir ? listFiles(sqliteDir, 'sqlite') : [])];
+  let recordings: FoundFile[] = [];
+  try {
+    recordings = recordingFolders().flatMap((dir) => listFiles(dir, 'documents'));
+  } catch {
+    // No folders to read here; the database may still be readable.
+  }
+  return [...recordings, ...(sqliteDir ? listFiles(sqliteDir, 'sqlite') : [])];
 }
 
 function removeQuietly(file: File | null): void {

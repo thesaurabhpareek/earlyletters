@@ -84,7 +84,7 @@ describe('the English pack reads exactly like the legacy tables', () => {
         expect(ENGLISH_RULES.soundsLike(a, b), `${a}/${b}`).toBe(soundsLike(a, b));
       }
     }
-  });
+  }, 60_000); // every word pair: past vitest's 5 s default on a loaded CI runner
 
   it('text measures agree: negations, numbers, mood marks, quotes, tokens, sentence starts', () => {
     for (const s of SENTENCES) {

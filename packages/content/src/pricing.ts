@@ -21,3 +21,18 @@ export const plusPriceLine = {
   monthly: `${PLUS_PRICE.monthly} a month, with ${PLUS_TRIAL.monthly}`,
   annual: `${PLUS_PRICE.yearly} a year, with ${PLUS_TRIAL.yearly}`,
 } as const;
+
+/**
+ * App Store Connect metadata for Plus: what the founder types into the subscription group and the two
+ * products (docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md steps 3 and 4), mirrored in
+ * apps/mobile/storekit/EarlyLetters.storekit (test: apps/mobile/test/billing-plan.test.ts). Display names
+ * per D-077. Apple's In-App Purchase limits (App Store Connect Help, In-App Purchase information, read
+ * 15 Oct 2026): display name 2 to 30 characters, description at most 45, reference name at most 64.
+ * Says only what v1.0 ships: Plus lets you keep adding letters (D-082). No price or trial here: Apple
+ * shows both from the product's own price and offer.
+ */
+export const APP_STORE_PLUS = {
+  group: { referenceName: 'Plus', displayName: 'Plus' },
+  monthly: { referenceName: 'Plus Monthly', displayName: 'Plus Monthly', description: 'Keep adding letters, billed monthly' },
+  annual: { referenceName: 'Plus Annual', displayName: 'Plus Annual', description: 'Keep adding letters, billed yearly' },
+} as const;

@@ -1,6 +1,6 @@
 {
   "appPolicies" : {
-    "eula" : "",
+    "eula" : "Terms of Service: https://earlyletters.com/terms. Plus is also covered by the Subscription Terms: https://earlyletters.com/subscription-terms.",
     "policies" : [
       {
         "locale" : "en_US",
@@ -18,7 +18,7 @@
   ],
   "settings" : {
     "_askToBuyEnabled" : false,
-    "_billingGracePeriodEnabled" : false,
+    "_billingGracePeriodEnabled" : true,
     "_billingIssuesEnabled" : false,
     "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
@@ -80,8 +80,8 @@
           ],
           "localizations" : [
             {
-              "description" : "Read together and more books, billed yearly",
-              "displayName" : "Plus Yearly",
+              "description" : "Keep adding letters, billed yearly",
+              "displayName" : "Plus Annual",
               "locale" : "en_US"
             }
           ],
@@ -108,7 +108,18 @@
             }
           ],
           "codeOffers" : [
-
+            {
+              "eligibility" : [
+                "new",
+                "existing",
+                "expired"
+              ],
+              "internalID" : "5B3E9A71",
+              "isStackable" : true,
+              "paymentMode" : "free",
+              "referenceName" : "Sandbox code: Plus Monthly, 1 month free",
+              "subscriptionPeriod" : "P1M"
+            }
           ],
           "displayPrice" : "4.99",
           "familyShareable" : true,
@@ -132,7 +143,7 @@
           ],
           "localizations" : [
             {
-              "description" : "Read together and more books, billed monthly",
+              "description" : "Keep adding letters, billed monthly",
               "displayName" : "Plus Monthly",
               "locale" : "en_US"
             }

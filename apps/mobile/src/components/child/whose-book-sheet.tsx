@@ -3,6 +3,7 @@ import { ChoiceGroup } from '@/components/ui/choice-group';
 import { Sheet } from '@/components/ui/sheet';
 import { copy, fill } from '@/lib/copy';
 import type { Child } from '@/lib/store';
+import { currentMonthLine } from './child-switcher';
 
 interface Props {
   visible: boolean;
@@ -17,7 +18,7 @@ interface Props {
  * A11Y-F12). Replaces the Alert.alert picker, which Android caps at three
  * buttons. Any number of books; changing it only moves the draft. The app's
  * one `Sheet` (focus, scrim, Close, Reduce Motion) with a radio list; a tap
- * chooses and closes.
+ * chooses and closes. Each row names the child's current month (EXPERIENCE_PASS S25).
  */
 export function WhoseBookSheet({ visible, books, selectedId, onSelect, onClose }: Props) {
   const title = copy.children.switcher.title;
@@ -28,7 +29,7 @@ export function WhoseBookSheet({ visible, books, selectedId, onSelect, onClose }
         layout="list"
         className="-mx-4"
         value={selectedId}
-        options={books.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }) }))}
+        options={books.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }), description: currentMonthLine(ch) }))}
         onChange={onSelect}
         onSelect={onClose}
       />

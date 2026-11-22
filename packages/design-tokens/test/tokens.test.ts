@@ -28,15 +28,19 @@ const palette = (mode: Mode, hc = false): Record<keyof C, string> => ({ ...token
 
 /** Text pairs: 4.5:1 (WCAG 1.4.3). */
 const TEXT_PAIRS: [keyof C, keyof C][] = [
-  ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
+  ['text', 'glassFallback'], ['textMuted', 'glassFallback'], ['accent', 'glassFallback'], ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
   ['textMuted', 'bg'], ['textMuted', 'surface'], ['textMuted', 'surfaceRaised'], ['textMuted', 'accentSoft'],
   ['accent', 'bg'], ['accent', 'surface'], ['accent', 'surfaceRaised'], ['accent', 'accentSoft'],
   ['onAccent', 'accent'], ['onDestructive', 'destructive'], ['bg', 'text'],
   ['destructive', 'bg'], ['destructive', 'surfaceRaised'],
   ['recording', 'bg'], ['success', 'bg'], ['caution', 'bg'], ['focus', 'bg'],
+  // Status words on every surface they can sit on (A11Y audit 20 Nov): a notice on surface, a selected row on accentSoft.
+  ...(['success', 'caution', 'recording', 'destructive', 'focus'] as (keyof C)[]).flatMap((f) =>
+    (['bg', 'surface', 'surfaceRaised', 'accentSoft', 'glassFallback'] as (keyof C)[]).map((b) => [f, b] as [keyof C, keyof C]),
+  ),
 ];
 /** Non-text pairs: 3:1 (WCAG 1.4.11): control boundaries, focus, edit marks, filled controls. */
-const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised'];
+const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised', 'glassFallback'];
 const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['controlBorder', s] as [keyof C, keyof C]),
   ['controlBorder', 'accentSoft'],
@@ -44,6 +48,8 @@ const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['editMark', s] as [keyof C, keyof C]),
   ['accent', 'bg'], ['recording', 'bg'], ['destructive', 'bg'],
 ];
+/** The picture frame (ruling 27, NS-01-R41) on the three page surfaces. In light it keeps `line` (see the mediaFrame tests). */
+const FRAME_PAIRS: [keyof C, keyof C][] = (['bg', 'surface', 'surfaceRaised'] as (keyof C)[]).map((s) => ['mediaFrame', s]);
 
 /**
  * Glyph pairs: every icon colour the app draws (tab bar, header, rows, the lock, the recording disc's
@@ -104,6 +110,13 @@ describe('design tokens: colour', () => {
         }
       });
     }
+    for (const hc of [false, true]) {
+      if (mode === 'light' && !hc) continue;
+      it(`${mode}${hc ? ' + Increase Contrast' : ''}: the picture frame mediaFrame passes 3:1 on bg, surface and surfaceRaised (ruling 27)`, () => {
+        const c = palette(mode, hc);
+        for (const [f, b] of FRAME_PAIRS) expect(ratio(c[f], c[b]), `${f} on ${b}`).toBeGreaterThanOrEqual(3);
+      });
+    }
     it(`${mode} + Increase Contrast: muted text and accent reach 7:1, control edges 4.5:1`, () => {
       const c = palette(mode, true);
       for (const s of SURFACES) {
@@ -133,6 +146,48 @@ describe('design tokens: colour', () => {
   }
 });
 
+describe('design tokens: picture frame and sizes (ruling 27, NS-01-R40 to R42, BL-956)', () => {
+  it('mediaFrame is dark #716A62; light keeps line (1.26:1 by the ruling: the frame there is the page edge, not a boundary)', () => {
+    expect(tokens.dark.mediaFrame).toBe('#716A62');
+    expect(tokens.light.mediaFrame).toBe(tokens.light.line);
+  });
+  it('under Increase Contrast the frame follows the hairline colour in both modes (D-S02 note)', () => {
+    for (const m of MODES) expect(tokens.highContrast[m].mediaFrame).toBe(tokens.highContrast[m].line);
+  });
+  it('mediaFrame reaches native and web CSS as --color-media-frame, in every block', () => {
+    expect(nativeCss()).toContain(`--color-media-frame: ${tokens.dark.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.light.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.highContrast.dark.mediaFrame};`);
+  });
+  it('the frame is one control-weight stroke, never the 0.5 pt decorative hairline (R41)', () => {
+    expect(tokens.stroke.control).toBe(1);
+  });
+  const p = tokens.picture;
+  it('the sizes design set are pinned: Ready thumbnail 160 pt, 88 pt from AX3 (A-S06), lens thumbnail 72 pt (B-S04)', () => {
+    expect([p.thumbMaxPt, p.thumbAxMaxPt, p.lensThumbPt]).toEqual([160, 88, 72]);
+  });
+  it('a picture is smaller at large text than at the default size, and no larger than the lens-free Ready thumbnail', () => {
+    expect(p.thumbAxMaxPt).toBeLessThan(p.thumbMaxPt);
+    expect(p.letterAxMaxPt).toBeLessThanOrEqual(p.thumbMaxPt);
+    expect(p.lensThumbPt).toBeLessThan(p.thumbMaxPt);
+  });
+  it('PROPOSED letter-page numbers use the existing 88 pt step, and the ratios are real fractions', () => {
+    expect(p.letterAxMaxPt).toBe(p.thumbAxMaxPt);
+    expect(p.letterColumnRatio).toBeGreaterThan(0);
+    expect(p.letterColumnRatio).toBeLessThan(1);
+    expect(p.letterWindowRatio).toBeGreaterThan(0);
+    expect(p.letterWindowRatio).toBeLessThan(p.letterColumnRatio);
+  });
+  it('Dynamic Type pair: at AX5 on an SE 3 (375 x 667) the letter picture leaves room for the dateline and a first line of words', () => {
+    const se3Height = 667;
+    const dateline = tokens.type.letterDateline.lineHeight * tokens.type.letterDateline.maxScale!;
+    expect(p.letterAxMaxPt + dateline + tokens.space[4]).toBeLessThan(se3Height * 0.4);
+  });
+  it('Dynamic Type pair: on Ready at AX3 and up the thumbnail plus Speak and Type (two 64 pt twins) leave the SE 3 screen to the prompt', () => {
+    expect(p.thumbAxMaxPt + 2 * tokens.target.capture).toBeLessThan(667 / 2);
+  });
+});
+
 describe('design tokens: type', () => {
   it(`no style is smaller than ${tokens.minFontSize} pt at the default size, and line height is at least the size`, () => {
     for (const [name, t] of Object.entries(tokens.type)) {
@@ -141,12 +196,25 @@ describe('design tokens: type', () => {
     }
   });
   it('reading and body text is never capped at accessibility sizes (DESIGN_LANGUAGE 3, TDD 09 C1)', () => {
-    for (const name of ['body', 'callout', 'label', 'labelSmall', 'letterBody', 'signature', 'prompt'] as const) {
+    for (const name of ['body', 'callout', 'label', 'labelSmall', 'letterBody', 'nameField', 'signature', 'prompt'] as const) {
       expect(tokens.type[name].maxScale, name).toBeNull();
     }
   });
-  it('capped display styles still reach at least 1.6x', () => {
-    for (const t of Object.values(tokens.type)) if (t.maxScale !== null) expect(t.maxScale).toBeGreaterThanOrEqual(1.6);
+  it('capped display styles still reach at least 1.6x, or are already larger at their cap than display is at its own', () => {
+    const displayCap = tokens.type.display.fontSize * tokens.type.display.maxScale!;
+    for (const [name, t] of Object.entries(tokens.type)) {
+      if (t.maxScale === null) continue;
+      // The month numeral is 64 pt: at 1.4x it is 90 pt, far past display's 54 pt cap.
+      expect(t.maxScale >= 1.6 || t.fontSize * t.maxScale >= displayCap, name).toBe(true);
+    }
+  });
+  it('the two literary lines of the experience pass: Tonight\'s prompt and the month numeral', () => {
+    expect(tokens.type.promptHero).toMatchObject({ fontFamily: tokens.fontFamily.serif, fontSize: 28, lineHeight: 36, letterSpacing: 0, dynamicTypeStyle: 'title1', maxScale: 1.8 });
+    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 96, letterSpacing: 1, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    expect(tokens.type.numeral.fontVariant).toEqual(['lining-nums', 'proportional-nums']);
+    // Tonight's prompt is larger than the old card prompt, and smaller than the first-run hero.
+    expect(tokens.type.promptHero.fontSize).toBeGreaterThan(tokens.type.prompt.fontSize);
+    expect(tokens.type.promptHero.fontSize).toBeLessThan(tokens.type.hero.fontSize);
   });
   it('every bundled face exists in fonts/ with its OFL licence', () => {
     const dir = join(__dirname, '..', 'fonts');
@@ -159,9 +227,48 @@ describe('design tokens: type', () => {
 describe('design tokens: motion and targets', () => {
   const m = tokens.motion;
   it('no timed motion exceeds the 2 s ceiling, and the content sequence fits under 900 ms', () => {
-    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
+    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
     expect(m.enter.durationMs + m.staggerMs * (m.staggerMax - 1)).toBeLessThanOrEqual(m.sequenceMaxMs);
     expect(m.reduceMotion.durationMs).toBe(m.fadeMs);
+  });
+  it('the saved moment files the letter in order, and inside the 900 ms sequence (MOTION 5e)', () => {
+    expect(0).toBeLessThan(m.file.chipAtMs);
+    expect(m.file.chipAtMs).toBeLessThan(m.file.moveAtMs);
+    expect(m.file.moveAtMs).toBeLessThan(m.sequenceMaxMs);
+    // The letter's words are never at partial opacity for longer than the 350 ms exit (EXPERIENCE_PASS S21).
+    expect(m.sequenceMaxMs - m.file.moveAtMs).toBeLessThanOrEqual(350);
+    expect(m.file.scale).toBeGreaterThan(0.8);
+    expect(m.file.scale).toBeLessThan(1);
+    expect(m.file.dy).toBeGreaterThan(0);
+  });
+  it('a page turn and the cover opening are small moves inside the sequence ceiling', () => {
+    expect(m.pageTurn.dx).toBe(24);
+    expect(m.cover.dx).toBeLessThanOrEqual(m.pageTurn.dx);
+    expect(m.cover.holdMs + m.enter.durationMs).toBeLessThanOrEqual(m.sequenceMaxMs);
+    expect(m.exitMs).toBeLessThan(m.enter.durationMs); // exits are quicker than entries
+  });
+  it('a card grows into its page with its content arriving late, after a short hold while the Book goes (MOTION 5f)', () => {
+    expect(m.cardToPage.contentFrom).toBeGreaterThan(0.5);
+    expect(m.cardToPage.contentFrom).toBeLessThan(1);
+    // The card holds while the Book's light leaves, and starts to grow before the light has quite gone.
+    expect(m.cardToPage.holdMs).toBeGreaterThan(0);
+    expect(m.cardToPage.holdMs).toBeLessThan(m.lamp.leaveMs);
+    // Short of the next card's words (a 12 pt gap and 16 pt of padding past a card's edge).
+    expect(m.cardToPage.clearPt).toBeGreaterThan(0);
+    expect(m.cardToPage.clearPt).toBeLessThan(28);
+  });
+  it('between rooms the light leaves as fast as an exit and comes back as fast as an entry; a dissolve fits the sequence', () => {
+    expect(m.lamp.leaveMs).toBe(m.exitMs);
+    expect(m.lamp.returnMs).toBe(m.enter.durationMs);
+    expect(m.lamp.leaveMs).toBeLessThan(m.lamp.returnMs);
+    expect(m.lamp.returnMs).toBeLessThan(m.lamp.arriveMs);
+    expect(m.route.dissolveMs).toBeLessThanOrEqual(m.sequenceMaxMs);
+    expect(m.swapMs).toBeLessThan(m.fadeMs);
+  });
+  it('the idle listening breath is 8 breaths a minute or slower, under HIG Motion\'s 0.2 Hz caution', () => {
+    expect(m.breathIdleMs).toBe(7500);
+    expect(60000 / m.breathIdleMs).toBeLessThanOrEqual(8);
+    expect(1000 / m.breathIdleMs).toBeLessThan(0.2);
   });
   it('springs are critically or near-critically damped (no bouncy UI)', () => {
     for (const k of ['snappy', 'standard', 'gentle'] as const) {

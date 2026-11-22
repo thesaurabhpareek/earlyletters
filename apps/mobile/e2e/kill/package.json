@@ -1,0 +1,8 @@
+{
+  "name": "@scribe/kill-harness",
+  "private": true,
+  "description": "The kill harness (apps/mobile/e2e/README.md section 9). Not a workspace: it runs from the repo root with node. It imports the app's TypeScript frame scanner (src/lib/capture/adts.ts) as it is, which needs Node 22.18 or later.",
+  "engines": {
+    "node": ">=22.18"
+  }
+}

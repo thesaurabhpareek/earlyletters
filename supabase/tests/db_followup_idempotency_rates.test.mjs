@@ -141,7 +141,9 @@ check('[M3] a person cannot reset their sync counter (update and delete: 42501)'
   (await codeOf(() => as(N, `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`))) === '42501'
   && (await codeOf(() => as(N, `delete from sync_rate_windows where profile_id = auth.uid()`))) === '42501'
   && (await codeOf(() => as(N, `insert into sync_rate_windows (profile_id, bucket, window_start, hits) values (auth.uid(), 'membership', now(), 0)`))) === '42501');
-check('but still reads their own counter', Number((await one(N, `select hits from sync_rate_windows where bucket='pull'`)).hits) === 3);
+// 20261023060000: no client reads sync_rate_windows either (rate_hit is the path); the counter is there for the owner.
+check('and the counter is unchanged, read by nobody but definer code', Number((await sys(`select hits from sync_rate_windows where bucket='pull' and profile_id=$1`, [N])).rows[0].hits) === 3
+  && (await codeOf(() => as(N, `select hits from sync_rate_windows`))) === '42501');
 await sys(`update sync_rate_windows set hits = 120 where profile_id = $1 and bucket = 'pull'`, [N]);
 check('sync_pull is still 120 a minute (SCRAT), now through rate_hit()', (await codeOf(() => as(N, `select public.sync_pull('{}'::jsonb, 10)`))) === 'SCRAT');
 await sys(`insert into sync_rate_windows (profile_id, bucket, window_start, hits) values ($1, 'push', now(), 60) on conflict (profile_id, bucket) do update set hits = 60, window_start = now()`, [N]);

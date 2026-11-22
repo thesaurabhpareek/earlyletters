@@ -6,7 +6,8 @@
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts"
   },
   "devDependencies": {
     "sharp": "^0.35.5",

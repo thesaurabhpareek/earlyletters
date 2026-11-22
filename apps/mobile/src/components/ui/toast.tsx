@@ -3,12 +3,16 @@
  * Toast (COMPONENTS 2.14): a quiet confirmation, usually with Undo, instead of a confirm
  * dialog (Airbnb wishlist undo, Apple Mail "Undo Send" bar).
  *
- * - One at a time; a new toast replaces the old one.
+ * - One at a time, for the whole app: a new show() replaces the toast on screen, whichever host
+ *   draws it (toast.logic.ts; EXPERIENCE_PASS principle 8, S38). In the same host the box stays and
+ *   the new words cross-fade over the old (swapMs, 5.8 row 11); the replaced toast's onDismiss runs, because its Undo
+ *   can no longer be pressed. A late timer or swipe on a replaced toast never closes the new one.
  * - With an action (Undo) it never times out: it stays until Undo, Close, a swipe down or
  *   the screen changes (WCAG 2.2.1, DESIGN_LANGUAGE 11.5). Without an action it leaves
  *   after `durationMs` (default 4 s), and never while a screen reader is running.
  * - Announced once (iOS announce(), Android polite live region). Focus is not moved.
- * - Undo and Close are 44 pt. Sits above the home indicator and any bottom bar (`bottomOffset`).
+ * - Undo and Close are 44 pt. Sits above the home indicator and any bottom bar (`bottomOffset`). From AX1 up the
+ *   words take the full width and Undo and Close sit under them, at the end (NS-33-R4, `toastLayout`).
  * Motion: enter y 8 to 0 + fade (280 ms), exit 160 ms; swipe down to dismiss (Gesture
  * Handler). Reduce Motion: fades only. Haptics: none on show; `tap` on Undo.
  */
@@ -16,15 +20,20 @@ import { XIcon } from 'phosphor-react-native/src/icons/X';
 import * as React from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { Button, IconButton } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { announce, useScreenReader, useTheme } from '@/lib/a11y';
+import { createToastStore, toastLayout } from '@/components/ui/toast.logic';
+import { announce, useFontScale, useScreenReader, useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
+
+/** A toast replacing the one on screen cross-fades in place (swapMs, EXPERIENCE_PASS 5.8 row 11); a fade is also the Reduce Motion form. */
+const SWAP_IN = FadeIn.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never);
+const SWAP_OUT = FadeOut.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never);
 
 export type ToastOptions = {
   message: string;
@@ -40,19 +49,26 @@ type ToastViewProps = ToastOptions & {
   bottomOffset?: number;
   /** Called when the toast should go away (Close, swipe, timeout, after the action). */
   onHide: () => void;
+  /** Set by ToastHost: which show() this is. A new key in the same box swaps the words in place. */
+  entryKey?: number;
 };
 
 /** Presentational toast. Render it last inside a full-screen container (or use ToastHost). */
-export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, onHide, onDismiss }: ToastViewProps) {
+export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, onHide, onDismiss, entryKey }: ToastViewProps) {
   const insets = useSafeAreaInsets();
   const { c } = useTheme();
   const motion = useMotion();
   const screenReader = useScreenReader();
+  // From AX1 up the words take the full width and Undo and Close go under them (NS-33-R4, toast.logic.ts).
+  const stacked = toastLayout(useFontScale()) === 'stacked';
   const dy = useSharedValue(0);
+  // The first show() of this box enters with the box; a replacement only fades its words in.
+  const firstKey = React.useRef(entryKey);
+  const swapped = entryKey !== firstKey.current;
 
   React.useEffect(() => {
     announce(action ? `${message} ${action.label}.` : message);
-  }, [message, action]);
+  }, [message, action, entryKey]);
 
   React.useEffect(() => {
     if (action || screenReader) return;
@@ -61,7 +77,7 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
       onHide();
     }, durationMs);
     return () => clearTimeout(id);
-  }, [action, screenReader, durationMs, onHide, onDismiss]);
+  }, [action, screenReader, durationMs, onHide, onDismiss, entryKey]);
 
   const dismiss = React.useCallback(() => {
     onDismiss?.();
@@ -84,6 +100,25 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
     });
   const drag = useAnimatedStyle(() => ({ transform: [{ translateY: dy.value }] }));
 
+  const controls = (
+    <>
+      {action ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          label={action.label}
+          testID={action.testID}
+          onPress={() => {
+            haptic('tap');
+            action.onPress();
+            onHide();
+          }}
+        />
+      ) : null}
+      <IconButton icon={XIcon} label={copy.common.closeButton} size="md" onPress={dismiss} color={c.bg} iconWeight="bold" />
+    </>
+  );
+
   return (
     <Animated.View
       entering={motion.enter(0)}
@@ -92,53 +127,53 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
       style={{ position: 'absolute', left: 12, right: 12, bottom: insets.bottom + 12 + bottomOffset }}>
       <GestureDetector gesture={pan}>
         <Animated.View style={drag}>
-          <View
+          <Animated.View
+            key={entryKey}
+            entering={swapped ? SWAP_IN : undefined}
+            exiting={entryKey !== undefined ? SWAP_OUT : undefined}
             accessibilityLiveRegion="polite"
-            className="min-h-14 flex-row items-center gap-2 rounded-lg bg-foreground py-2 pl-5 pr-2"
+            className={stacked ? 'min-h-14 gap-1 rounded-lg bg-foreground py-3 pl-5 pr-2' : 'min-h-14 flex-row items-center gap-2 rounded-lg bg-foreground py-2 pl-5 pr-2'}
             style={{ boxShadow: tokens.elevation[2].web }}>
-            <Text variant="callout" tone="inverse" className="flex-1 py-1">
+            <Text variant="callout" tone="inverse" className={stacked ? 'py-1' : 'flex-1 py-1'}>
               {message}
             </Text>
-            {action ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                label={action.label}
-                testID={action.testID}
-                onPress={() => {
-                  haptic('tap');
-                  action.onPress();
-                  onHide();
-                }}
-              />
-            ) : null}
-            <IconButton icon={XIcon} label={copy.common.closeButton} size="md" onPress={dismiss} color={c.bg} iconWeight="bold" />
-          </View>
+            {stacked ? <View className="flex-row flex-wrap items-center justify-end gap-2">{controls}</View> : controls}
+          </Animated.View>
         </Animated.View>
       </GestureDetector>
     </Animated.View>
   );
 }
 
+/** The app's one toast. Every ToastHost reads it and draws the entries shown from below it. */
+export const toastStore = createToastStore<ToastOptions>();
+
 type Ctx = { show: (o: ToastOptions) => void; hide: () => void };
 const ToastContext = React.createContext<Ctx | null>(null);
 
-/** Hosts one toast for everything below it. Mounted by UIProvider. */
+/**
+ * Hosts the toast for everything below it (UIProvider mounts one; the tabs layout one above the tab bar).
+ * A show() from below this host replaces the toast on screen in any host, and is drawn here.
+ */
 export function ToastHost({ children, bottomOffset = 0 }: { children: React.ReactNode; bottomOffset?: number }) {
-  const [current, setCurrent] = React.useState<{ key: number; options: ToastOptions } | null>(null);
-  const counter = React.useRef(0);
+  const host = React.useId();
+  const entry = React.useSyncExternalStore(toastStore.subscribe, toastStore.get, toastStore.get);
   const value = React.useMemo<Ctx>(
     () => ({
-      show: (o) => setCurrent({ key: ++counter.current, options: o }),
-      hide: () => setCurrent(null),
+      show: (o) => {
+        toastStore.show(host, o);
+      },
+      hide: () => toastStore.hide(),
     }),
-    [],
+    [host],
   );
-  const hide = React.useCallback(() => setCurrent(null), []);
+  const mine = entry && entry.host === host ? entry : null;
+  const key = mine?.key;
+  const hide = React.useCallback(() => toastStore.hide(key), [key]);
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {current ? <Toast key={current.key} {...current.options} bottomOffset={bottomOffset} onHide={hide} /> : null}
+      {mine ? <Toast key={mine.session} entryKey={mine.key} {...mine.options} bottomOffset={bottomOffset} onHide={hide} /> : null}
     </ToastContext.Provider>
   );
 }

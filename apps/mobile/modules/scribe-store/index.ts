@@ -9,6 +9,7 @@ import type {
   ManageOutcome,
   OfferCodeOutcome,
   NativeEntitlementSnapshot,
+  NativeStatusRef,
   RefundOutcome,
   StoreSheetOptions,
   StoreSheetOutcome,
@@ -31,6 +32,12 @@ declare class ScribeStoreNative extends NativeModule<Events> {
   sync(): Promise<SyncOutcome>;
   presentOfferCodeRedeemSheet(): Promise<OfferCodeOutcome>;
   beginRefundRequest(productIds: string[]): Promise<RefundOutcome>;
+  /**
+   * D-080 status report (WP-F14-15a): the person's own subscriptions with their `subRef` for this
+   * account's salt (base64url, 43 characters). Empty for a malformed salt or none of their own.
+   * Optional so a build whose native half predates it reads as "nothing to report".
+   */
+  statusReportRefs?(salt: string, productIds: string[]): Promise<NativeStatusRef[]>;
 }
 
 export const ScribeStore = requireOptionalNativeModule<ScribeStoreNative>('ScribeStore');

@@ -1,0 +1,6 @@
+{
+  "_readme": "Copy to device.local.json (git-ignored) and add one row per run on the iPhone (DEVICE_TEST_PLAN S1-17, protocol in F05 section 9: unplugged, room temperature, 2-minute cool-down). finishToTextSeconds: from tapping Finish to the words on Review. audioSeconds: the letter's length (the speed bar uses the 2-minute ones, 110 to 130 s). jetsam: true if the app was killed while writing the words down. Then: npm run gate -w @scribe/experiments -- --language en --device experiments/device.local.json",
+  "runs": [
+    { "language": "en", "tier": "full", "device": "iPhone SE (3rd generation)", "build": "1.0.0 (1)", "audioSeconds": 120, "finishToTextSeconds": 26.4, "jetsam": false, "peakMemoryMB": 1180, "batteryPercent": 1 }
+  ]
+}

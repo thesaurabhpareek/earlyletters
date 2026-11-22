@@ -11,8 +11,18 @@ function escapeClass(chars: string): string {
 }
 
 /**
+ * What may follow a sentence's end mark before a filler that is a sentence of
+ * its own: invisible characters only. The ellipsis character ends a sentence
+ * here as "..." does. A closing quote or bracket does not: the mark before it
+ * belongs to the quoted or bracketed words, and the sentence around them may
+ * still be open ('Did she say "no." um?' keeps its "?"; #249 review F1).
+ */
+const AFTER_END = `\\p{Default_Ignorable_Code_Point}\\p{Bidi_Control}`;
+
+/**
  * "So um she, uh, walked" -> "So she walked".
  * Removes the filler plus one adjacent comma/space so punctuation stays tidy.
+ * Never part of a word: "uh-uh" (no), "mm-hmm" (yes) and "uh uh" stay as said.
  * With `suggest`, returns the offered-only fillers instead ("mm" that may
  * mean yes), never applied by the engine.
  */
@@ -21,7 +31,9 @@ export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, s
   const ends = escapeClass(R.sentenceEndChars);
   const commas = escapeClass(R.commaChars);
   const openers = escapeClass(R.openers);
-  const sentenceStartRe = new RegExp(`(^|[${ends}]\\s*)$`);
+  // "um." after an invisible character or an ellipsis character that ends a sentence is a sentence of its
+  // own and goes with its end mark; engine 6 took "um" alone and left "waited...." (engine 7).
+  const sentenceStartRe = new RegExp(`(^|[${ends}\\u2026][${AFTER_END}]*\\s*)$`, 'u');
   const terminalRe = new RegExp(`^[${ends}]+`);
   const afterRe = new RegExp(`^[${commas}]?\\s*`);
   const beforeRe = new RegExp(`[${commas}]?\\s*$`);
@@ -30,6 +42,7 @@ export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, s
   for (const t of R.tokens(raw)) {
     if (suggest ? !R.isSuggestFiller(t.word) : !R.isFiller(t.word)) continue;
     if (!R.standsAlone(raw, t.start, t.end)) continue; // 呃逆 is "hiccup", not a filler
+    if (R.fillerIsPartOfWord(raw, t.start, t.end)) continue; // "uh-uh" and "uh uh" are a spoken no (R-01 D6)
     let start = t.start;
     let end = t.end;
     // Spanish: "¿eh?" carries its opening mark; it goes with the filler.

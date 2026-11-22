@@ -1,0 +1,661 @@
+{
+  "lens": "Quality and empathy for every unhappy path and edge state (permission denied, offline, speech model not downloaded, transcription failed or empty, nobody spoke, interrupted recording, low storage, export failed, delete and restore, Plus lapsed, kill and relaunch, launch recovery, not found, crash), plus loading, transitional moments and toasts.",
+  "coverage": "Read CLAUDE.md, packages/content/VOICE.md and BRAND.md, docs/brand/BRAND_SYSTEM.md (mark and gradient rules), docs/design (DESIGN_LANGUAGE, MOTION, BENCHMARK, COMPONENTS state and toast sections, CREATIVE drawing rules) and packages/design-tokens on origin/develop (4183844). Read the website on origin/main: Landing.tsx, the Aurora.tsx lamp aurora, NotFound.module.css (a night 404 with a 9% lamp radial), the hand-drawn drawings/*.tsx (Lamp, Window, Moon, Envelope, Page, Bed, ReadingLamp, Shoes), site.ts (the 'Filed in Month 9' chip) and ProofLetter. Main also carries tokens.atmosphere (lamp #F3C98B, lampGold, lampRose, lampDusk) from 6d9b382, which develop does not have yet. Journey record: origin/chore/journey-refresh (b7afe42) in /tmp/journey-refresh-qe. I read INDEX.md and all 147 steps/*.json, and looked at screenshots for every distinct screen group (about 75 PNGs, including the full captures J01-16, J03-03, J03-06, J06-01, J16-05 and J17-02). Copy sources read: strings.en.ts, and features/speech, language, packs, player, export, words, reminders and billing. Code read to see what each unhappy state really does: app/listen.tsx, app/review.tsx (WordsStatus, save failure, empty take), app/letter/[id].tsx (deleted, not found, WaitingCard), app/(tabs)/index.tsx (draft card), settings/recently-deleted.tsx, settings/export.tsx, settings/plus.tsx, components/child/plus-gate.tsx, components/resilience/*, app/+not-found.tsx, components/gate/age-gate-screen.tsx, ui/state-screen.logic.ts, ui/toast.tsx, ui/line-art.tsx, lib/capabilities.ts and app.config.ts. Not observed (native only, judged from code): phone-call and Siri interruptions, a kill mid-recording and the launch sweep, transcription failure, nobody spoke in Review, the language-pack wait, low storage before recording, Plus grace, retry and lapsed, and StoreKit restore success. Primary sources checked on 15 Oct 2026 from the developer.apple.com HIG JSON: Loading, Progress indicators, Privacy, Onboarding, Launching, Feedback, Alerts and Writing, plus the Declared Age Range framework page. support.apple.com and dayoneapp.com did not resolve from this sandbox, so Apple app behaviours (Voice Memos, Notes, Photos, Mail) and the Day One, Overcast, Calm and Headspace patterns are marked unverified (memory or a search summary). Stale captures: the journey branch predates #118, so the usage-sharing sheet (J04-04) and the Privacy usage switch (J16-02) no longer show on develop. Legal: the age question comes from LEGAL-REQ-002 (docs/legal/ENGINEERING_REQUIREMENTS.md) and PRD-REQ-019 (docs/prd/PRD.md, K-07, D-026). The journey INDEX's 'A-REQ-030' is wrong: A-REQ-030 is 'Offline entry' (PRD.md requirement table, A-entry-and-auth.md). Defects found while checking, each cited in the screens below:\n- Any failure to start recording shows the microphone-denied screen.\n- A phone-call interruption ends the take and nothing says why.\n- errors.storageLow is never used.\n- Add a child still fills in today's birthday and shows the placeholder 'Their name' in its helper line.\n- The twins signature error says 'Asha and Nila calls'.\n- Erase now has no confirmation, and the capture shows a stale 'Letter restored.' toast after the letter was erased.\n- The in-app 404 has no side gutter.\n- The Review empty-take state says the recording is safe when the file is empty.\n- Review's nobody-spoke title says 'No talking in this one', which the Book rule forbids.\n- Tonight lists only the first draft.",
+  "principles": [
+    "Say what happened, where it happened, and the one thing to do next: one primary action, at most one quiet escape, never a dead end (the under-18 stop screen is the only legal exception). Apple HIG Writing, 'display it as close to the problem as possible, avoid blame, and be clear about what someone can do to fix it' (verified, HIG JSON read 15 Oct 2026); HIG Alerts, 'only essential information and useful actions' (verified).",
+    "Name the real cause and never reuse a state for a different problem: microphone off, microphone busy, phone full and an empty take are four screens, not one. HIG Feedback, 'Show people when a command can't be carried out and help them understand why' (verified).",
+    "No explaining the buttons, no 'we' preambles, no reassurance padding: one true fact per screen, usually 'The recording is kept.', said once. HIG Alerts, 'If your alert text and button titles are clear, you don't need to explain what the buttons do' (verified); HIG Writing, 'Check each word to be sure it needs to be there' and interjections 'can sound insincere' (verified).",
+    "Waiting is never blank: show the thing being worked on (the take, its length, a play control), keep something alive, use determinate progress when the app has it, and let people leave without losing anything. HIG Loading, 'Show something as soon as possible' and 'Let people do other things while they wait' (verified); HIG Progress indicators, 'When possible, use a determinate progress indicator' and 'Keep progress indicators moving' (verified).",
+    "Undo for what can be undone, a confirm only for what cannot, with a specific verb. HIG Alerts, 'Avoid displaying alerts for common, undoable actions, even when they're destructive' and specific titles such as 'Erase' (verified); HIG Feedback, 'Warn people when they initiate a task that can cause data loss that's unexpected and irreversible' (verified); Day One Trash with Restore and an irreversible empty (unverified, dayoneapp.com guide seen only through a search summary).",
+    "A toast states the result that just happened, in that result's words, offers the next useful step (Undo, Open) and never outlives it or contradicts the screen. HIG Feedback, reserve confirmation for 'activities that are sufficiently important' (verified); Apple Mail's Undo bar (unverified, memory; already the reference in COMPONENTS 2.14).",
+    "After a kill, a crash or an interruption, put people back where they were and say plainly what was kept. HIG Launching, 'Restore the previous state when your app restarts so people can continue where they left off' (verified).",
+    "Unhappy states share the website's atmosphere instead of a generic icon in a beige disc: paper or night tone, one static lamp radial (the web 404's 9% lamp wash, tokens.atmosphere from main, pre-rendered per MOTION 7), one hand-drawn line drawing chosen for the moment (ported from apps/web drawings, drawn on over tokens.motion.drawMs), brand type from the embedded faces, controls opaque from frame 1, Reduce Motion as a 200 ms fade. Website 404 and hero on origin/main (verified in repo); Headspace and Calm, one living element in an empty screen (unverified, memory; also MOTION.md M11)."
+  ],
+  "screens": [
+    {
+      "step_ids": [
+        "J00-open",
+        "J01-01",
+        "J01-02",
+        "J02-01",
+        "J02-05"
+      ],
+      "screen": "Age question (first launch, and again after a mistaken No)",
+      "verdict": "redesign",
+      "problem": "The very first thing anyone sees is a bare legal question on blank paper: 'Are you 18 or older?' with the line 'We ask everyone the same question.' over two outline pills and a greyed 'Continue'. That line is the founder's example of an AI-sounding sentence: it explains why we ask, sounds defensive, and is a 'we' preamble. There is no brand, no drawing and no light, so the journey starts at a checkpoint rather than at a book.",
+      "proposal": "Option A (needs the PRD sentence amended, see legal note): Welcome comes first. 'Begin the book' opens the question as a medium-detent sheet over the welcome page (paper surface, grabber, no Close; answering is the only way on). Option B (no amendment): keep the gate as the first screen, but give it the welcome's atmosphere: a static open-envelope drawing above the title and the lamp radial wash behind. Both options: title 'Are you 18 or older?'; delete ageGate.body entirely (no body line); two equal pills 'Yes' and 'No', same style and width, nothing preselected. Keep 'Continue', disabled until one is chosen: one stray tap on No would stop a parent for 24 hours, and both answers pass through the same step, so it stays neutral. Invite links and any deep link still land here first: keep the gate in the root layout and render the welcome inside the gate component, not as a route. Motion: the sheet rises on motion.standard (about 0.40 s); Reduce Motion: 200 ms fade. Haptic: none until Continue (outcome only).",
+      "benchmark": "Apple HIG Onboarding: 'design a flow that's fast, fun, and optional' and 'Postpone nonessential setup flows' (verified). Apple Declared Age Range: the framework lets an app 'request that people share their age range' and returns a declaration (verified on the framework page; the page does not describe the system UI). Calm and Headspace open on a brand moment before any question (unverified, memory).",
+      "legal_or_constitution_note": "The requirement is LEGAL-REQ-002 (ENGINEERING_REQUIREMENTS.md: asked before first use, 'presented neutrally (no pre-selected answer, no hint that one answer is right)', store only a boolean, a stop screen, a 24-hour anti-retry, Declared Age Range where required) and PRD-REQ-019 (PRD.md, K-07, D-026). It is not A-REQ-030: that id is 'Offline entry', so the journey INDEX J00-open is wrong. Option A meets LEGAL-REQ-002 AC1 (the question appears when the person takes the first action). But PRD-REQ-019 says 'Before any first-run screen', so the founder amends that sentence and counsel confirms (register s.6 Q6 is the open neutral-screen question); until then, ship Option B. Removing the body line keeps the question neutral: it never hinted at the answer. Separate gap: no DeclaredAgeRange call exists in apps/mobile on develop, and LEGAL-REQ-002 needs one for Texas Apple Accounts."
+    },
+    {
+      "step_ids": [
+        "J02-02",
+        "J02-03",
+        "J02-04"
+      ],
+      "screen": "Under-18 stop screen (and the way back after 24 hours)",
+      "verdict": "polish",
+      "problem": "'Thank you for telling us.' / 'Early Letters is currently for adults 18 and over.' / 'Nothing you entered has been kept.' Thanking someone for saying they are under 18 is stiff and form-like. 'Nothing you entered' refers to nothing, since only a Yes or No was given. After 24 hours a grey 'I answered by mistake' appears. Blank paper, with the text block mid-screen.",
+      "proposal": "Title (serif, centered): '{app} is currently for adults 18 and over.' No body line. After 24 hours only, one quiet button: 'I answered by mistake'. Visual: paper tone and a closed Envelope line drawing, static (no draw-on, no breath, no lamp glow), so it reads as calm rather than inviting. No haptic, no timer, no 'come back tomorrow'. This is the one screen allowed no next action, by law.",
+      "benchmark": "HIG Writing: 'If you can use fewer words, do so' (verified). FTC neutral age screen practice of not inviting a retry (unverified, memory).",
+      "legal_or_constitution_note": "LEGAL-REQ-002 AC2 and AC3: a stop screen saying the app is currently for adults 18 and over, nothing stored except the gate state, closed for 24 hours. Keep 'currently' (PRD-REQ-019 wording). Dropping 'Nothing you entered has been kept' avoids a claim that is only partly true: the time of the No is stored (D-026)."
+    },
+    {
+      "step_ids": [
+        "J01-03",
+        "J17-04"
+      ],
+      "screen": "Welcome",
+      "verdict": "polish",
+      "problem": "The first brand moment is flat next to the website: a small open-envelope drawing in a beige disc, pushed left. The name is typed in Literata, although BRAND_SYSTEM says the wordmark is artwork and never retyped. There is no lamp light and no motion. For anyone who has just come back through 'I answered by mistake', this is their second impression too.",
+      "proposal": "Keep the copy: 'The baby memory book you fill by talking.', 'A few words at a time, in your own voice. Kept for your child to read and hear for years.', 'Your first two letters are free.', and the button 'Begin the book' (which opens the age sheet in Option A). Layout: the small-cut lockup from registry context app.header at the top instead of typed text. The website's Lamp drawing sits centered, drawn on over 1200 ms, then its glow goes from 0 to 1 (the web Lamp 'glow' prop), with one static amber radial behind (atmosphere.lamp at 10%). The button is opaque from frame 1. Reduce Motion: the lamp is shown lit, with a 200 ms fade.",
+      "benchmark": "Website hero and lamp aurora on origin/main (apps/web/src/components/landing/Aurora.tsx and Landing.tsx, verified in repo). HIG Launching: a splash 'at the beginning of your onboarding flow' that 'communicates succinctly' (verified).",
+      "legal_or_constitution_note": "BRAND_SYSTEM: the wordmark is never retyped, and a gradient never sits inside or behind the mark itself, so the lamp radial goes below the lockup, not around it."
+    },
+    {
+      "step_ids": [
+        "J01-04"
+      ],
+      "screen": "The promise",
+      "verdict": "polish",
+      "problem": "Mishearing causes most of the later unhappy moments, yet it is set up in a second card titled 'We can mishear': 'Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.' It repeats the first paragraph and leads with 'we' twice.",
+      "proposal": "Keep the title 'Exactly as you said it.', the Word for word paragraph, the voice card and 'That sounds right'. Replace the second card with the title 'Names can come out wrong' and the body 'Read each letter before you keep it.' Icon: the existing check-badge, or a small pencil. No other change.",
+      "benchmark": "HIG Writing: 'Choose words that are easily understood' and 'If you can use fewer words, do so' (verified).",
+      "legal_or_constitution_note": "Keeps the meaning of settings.help.mistakes (read before saving), which the in-app disclosures require; never says software improves words."
+    },
+    {
+      "step_ids": [
+        "J01-05",
+        "J01-06",
+        "J01-07",
+        "J01-08",
+        "J01-09",
+        "J01-10",
+        "J01-11",
+        "J01-12",
+        "J03-01"
+      ],
+      "screen": "First run: who is this book for (name, birthday, due date, twins)",
+      "verdict": "polish",
+      "problem": "Validation is right in spirit: the reason is given in words above a disabled Continue. Rough edges: a future birthday reads 'A birthday is a day that has already come. Choose today or earlier.', which lectures before it helps. The helper 'We sort letters by Asha's month of age.' is a 'we' explanation and, with a 60-character name, shows the whole name twice on screen (J01-06). 'Born today' is a quiet text link far from the date row.",
+      "proposal": "Future birthday: 'Choose today or an earlier day.' Helper under the date: 'Letters are filed by {child}'s month of age.', or just 'by month of age.' while the name is empty or over 24 characters. Keep 'Add a name to continue.', 'A name can have up to 60 characters.', 'Choose {child}'s birthday to continue.', 'Choose the due date to continue.', 'Choose a due date from today up to ten months ahead.' and 'Fill in or remove this name to continue.' State design: the reason line sits directly above Continue in caution tone with an icon, cross-fades over 150 ms when it changes, and never shakes. 'Born today' becomes a chip beside the date control.",
+      "benchmark": "HIG Writing: 'That password is too short isn't as helpful as Choose a password with at least 8 characters' (verified).",
+      "legal_or_constitution_note": "The no-default birthday (the INDEX J01-07 fix) must stay; never gender the child."
+    },
+    {
+      "step_ids": [
+        "J01-13",
+        "J01-14",
+        "J03-02"
+      ],
+      "screen": "First run: what does {child} call you",
+      "verdict": "polish",
+      "problem": "For twins the title is right ('What do Asha and Nila call you?') but the reason line is not: 'Add what Asha and Nila calls you to continue.' (J03-02). A grammar slip on the screen that names the person feels careless.",
+      "proposal": "Add onboarding.signsAs.needSignsAsMany: 'Add what {child} call you to continue.', and choose it with the same rule as titleMany. Nothing else changes.",
+      "benchmark": "HIG Writing: be clear (verified).",
+      "legal_or_constitution_note": "Copy rule: never gender the child; the plural follows the number of names, not pronouns."
+    },
+    {
+      "step_ids": [
+        "J01-15"
+      ],
+      "screen": "Choose a language sheet",
+      "verdict": "keep",
+      "problem": "Clear: the native name sits over the English name, Arabic runs right to left, and a check marks the chosen row. The no-match line 'No language matches that. These are the languages letters can be spoken in for now.' says what is possible.",
+      "proposal": "Keep. Only make sure that choosing a language whose speech model is not on the phone shows its size in the row ('Downloads when chosen, 575 MB', the existing languageCopy.status.absent).",
+      "benchmark": "Apple Settings language list, native name with the English name beneath (unverified, memory).",
+      "legal_or_constitution_note": "D-056: seven languages; never promise mixing them in one sentence."
+    },
+    {
+      "step_ids": [
+        "J01-16",
+        "J01-17",
+        "J03-03"
+      ],
+      "screen": "The book is open, with the one-time speech download",
+      "verdict": "redesign",
+      "problem": "The celebration page carries a 575 MB ask with its own filled 'Download on Wi-Fi' button stacked above the page's filled 'Write the first one', so two primaries fight (J01-16). After 'Not now' the card says 'Not now. Your voice is kept either way.' directly above 'You can do this later in Settings, Recordings. Your voice is always kept.', the same reassurance twice (J01-17). The drawing is the same generic page in a disc used for empty states.",
+      "proposal": "One primary: 'Write the first one' (56 pt, at the bottom). The download becomes a bordered card below the headline: title 'Get your words ready', body 'A one-time download of 575 MB, so your words are written down on this phone. It waits for Wi-Fi.' Inside the card: a bordered secondary 'Download on Wi-Fi' and a quiet 'Not now'. After a choice the card collapses (LinearTransition, 280 ms) to one line. Yes: 'Getting ready, 12%' with a thin determinate bar, or 'Waits for Wi-Fi'. Not now: 'Not now. It is in Settings, Recordings.' Low space: 'This phone needs 575 MB free first.', with no download button. Visual: the website Page drawing drawn on, with the Lamp switching on beside it, over the lamp radial. The size always comes from the phone's plan.",
+      "benchmark": "HIG Onboarding: 'Consider including enough media... to prevent people from having to wait for downloads' (verified). The app cannot bundle 575 MB, so the wait must never block the first letter. Overcast and Apple Podcasts show download state inline on the item (unverified, memory).",
+      "legal_or_constitution_note": "D-087: nothing downloads until the person taps; keep that. The voice is kept either way (true, D-086); say it once."
+    },
+    {
+      "step_ids": [
+        "J01-18",
+        "J04-01",
+        "J04-02",
+        "J04-03",
+        "J04-05",
+        "J06-12",
+        "J06-15",
+        "J07-05",
+        "J07-10",
+        "J08-01",
+        "J08-04",
+        "J18-02"
+      ],
+      "screen": "Tonight (home), including the waiting-letter card after a close, a kill or a held letter",
+      "verdict": "polish",
+      "problem": "Every unfinished thing shows the same card, 'A letter is waiting to be read back.' / 'Read it back': a typed letter closed mid-sentence (J07-05, 'You were so sleepy and then'), a letter held at the Plus gate that was already read back (J06-15, J07-10), and a spoken take. Tonight lists only the first draft (listDrafts(childId)[0] in app/(tabs)/index.tsx), so after a kill and relaunch a second kept take is invisible. Being offline changes nothing here, which is right.",
+      "proposal": "The card's copy depends on the state, with one action each:\n- Spoken, words ready: 'A recording is ready to read back.', action 'Read it back'.\n- Spoken, words still coming: 'Your recording is kept. Its words are on their way.', action 'Open'.\n- Typed draft: 'You were partway through a letter.', action 'Pick it up', with the first words shown in the letter serif.\n- Held for Plus: 'A letter is ready to keep.', action 'Keep it' (opens Review, then the gate).\n- Recovered by the launch sweep after the app closed: 'A recording was kept when the app closed.', action 'Read it back'.\nShow every draft as its own card, newest first, each with a dateline ('Tuesday evening, 0:42') and no totals. Cards enter with motion.enter at a 30 ms stagger; Speak and Type never move.",
+      "benchmark": "HIG Launching: 'Restore the previous state when your app restarts so people can continue where they left off' (verified). Apple Notes and Mail keep each draft as its own item (unverified, memory).",
+      "legal_or_constitution_note": "No counts of gaps or pending items: cards, not numbers. A held letter's copy never names a price (D-083)."
+    },
+    {
+      "step_ids": [
+        "J08-02"
+      ],
+      "screen": "Not much today, kept (inline confirmation)",
+      "verdict": "polish",
+      "problem": "'Kept. Rest well.' with Undo is shown under 'Good afternoon, Mama.' at 2 pm (J08-02). 'Rest well' assumes bedtime and reads like a scripted sign-off.",
+      "proposal": "'A quiet day, kept.' with 'Undo' beside it (this matches book.quietDay.a11y). It sits inline in place of the link, with a success check icon and ink text (not green), and stays until Undo or until the person leaves Tonight. On Undo the line fades out over 160 ms and the 'Not much today' link fades back.",
+      "benchmark": "HIG Feedback: confirm small actions quietly, in context ('status information can be displayed passively', verified).",
+      "legal_or_constitution_note": "D-084: a mark with no words; no guilt, no counting."
+    },
+    {
+      "step_ids": [
+        "J04-04"
+      ],
+      "screen": "Usage-sharing sheet (v1.1 only)",
+      "verdict": "keep",
+      "problem": "Stale capture: on develop the sheet never appears, because capabilities.analytics is off in every eas.json profile (#118) and consent-ask.tsx returns null; the journey branch predates that merge. When it returns, 'Help us make it better?' is an 'us' ask.",
+      "proposal": "v1.0: nothing to show; regenerate the journey so J04-04, J04-05 and J16-02 match develop. For v1.1: title 'Share usage and crash reports?', body 'Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.', equal buttons 'Don't share' and 'Share', and the footnote 'Change this any time in Settings, Privacy.'",
+      "benchmark": "HIG Privacy: request only when needed, no incentives (verified).",
+      "legal_or_constitution_note": "LEGAL-REQ-003: opt-in with equal choices; the privacy rules keep content out of analytics."
+    },
+    {
+      "step_ids": [
+        "J05-01",
+        "J05-02",
+        "J05-06",
+        "J05-09",
+        "J18-06"
+      ],
+      "screen": "Listening (recording, paused, offline, a long quiet stretch)",
+      "verdict": "polish",
+      "problem": "Offline, nothing changes, which is correct. 'Still here. Take your time.' after 8 s of quiet is kind. The gaps are in code. A phone call, Siri or an alarm ends the take through endTake('interruption'), and Review then says nothing about why. Only leaving the app gets a reason: 'The recording stopped when you left the app. Everything up to then is kept.' The one destructive control has a cute label, 'Let it go', with the alert 'Let this recording go? / It will be removed from this phone. / Keep it / Remove it'.",
+      "proposal": "Review gets one honest line for every stop reason:\n- Background: 'The recording stopped when you left the app. Everything before that is kept.'\n- Interruption: 'The recording stopped for a call or alert. Everything before that is kept.'\n- Swept after a close: 'The recording stopped when the app closed. Everything before that is kept.'\nDiscard: the link reads 'Discard'; the alert title is 'Discard this recording?', the body 'It is removed from this phone.', and the buttons 'Cancel' and a destructive 'Discard'. Transition to Review: the glow contracts (scale to 0.6, opacity to 0, motion.standard, 280 ms) while Review's card rises (y 8 to 0). The recordStop haptic still fires after the session ends, as now.",
+      "benchmark": "HIG Alerts: 'Always use Cancel to title a button that cancels the alert's action', and use specific verbs (verified). Voice Memos keeps the partial take after an interruption (unverified, memory).",
+      "legal_or_constitution_note": "Never records in the background (LEGAL-REQ-011); audio is deleted only on this confirmed discard."
+    },
+    {
+      "step_ids": [
+        "J05-04"
+      ],
+      "screen": "Microphone off (and the start failures that currently reuse it)",
+      "verdict": "redesign",
+      "problem": "'We can't hear you yet' / 'Allow the microphone in Settings to speak your letters. Or type instead.', with 'Type instead' and 'Open Settings' under a generic envelope. The body explains both buttons and opens with 'we'. Worse, in listen.tsx begin() any error from start() falls into setPhase('denied'). So a microphone held by a phone call, a refused audio session or a full phone all show 'allow the microphone in Settings', although permission is granted and Settings cannot help. errors.storageLow ('This phone is almost full') exists but is never used.",
+      "proposal": "Three states, one primary each, in the lamp state layout:\n- Permission denied: title 'The microphone is off', body 'Turn it on in Settings to speak your letters.', primary 'Type this one' (pencil; opens Write with the same prompt), quiet 'Open Settings'. When the person returns to the app with permission granted, go straight to Listening's idle state.\n- Microphone busy (start threw while permission is granted): title 'The microphone is in use', body 'Finish the call, then try again.', primary 'Try again', quiet 'Type this one'.\n- Phone full (free space below about 50 MB, checked before beginTake): title 'This phone is full', body 'Free some space to record.', primary 'Type this one', quiet 'Try again'. These strings replace errors.storageLow.\nDrawings: the website Page with its pencil line for denied and full, the Window for busy; drawn on over 1200 ms, with no breath on errors.",
+      "benchmark": "HIG Writing: 'be clear about what someone can do to fix it' (verified). HIG Privacy: ask when the feature is used; people change access in Settings (verified). HIG Feedback: 'help them understand why' (verified).",
+      "legal_or_constitution_note": "Equal doors (DESIGN_LANGUAGE principle 5): typing is an equal way to write, never a consolation."
+    },
+    {
+      "step_ids": [
+        "J19-02"
+      ],
+      "screen": "Listen opened without a tap (link or restored route)",
+      "verdict": "redesign",
+      "problem": "A separate error-style page: 'Ready when you are' / 'Nothing is recording yet. Tap Start when you want to speak.', with 'Start' and the same envelope as the error screens. The body explains the button, and the page does not look like the Listening room it is.",
+      "proposal": "Render Listening itself, idle: 'To {child}', the audience line 'Only you, until you add it to the book.', the red circle at rest with the 4 s idle breath (MOTION 5b), no clock, and one line under it: 'Tap the red circle and talk.' The circle is the start control (120 pt, accessibilityLabel 'Start recording'), with Close at the top right. The microphone is untouched until the tap.",
+      "benchmark": "HIG Writing: avoid explaining (verified). Voice Memos, where the idle screen is the record button itself (unverified, memory).",
+      "legal_or_constitution_note": "Glossary term from BRAND.md: 'the red circle' ('Tap the red circle and talk')."
+    },
+    {
+      "step_ids": [
+        "J05-03",
+        "J05-07",
+        "J05-08"
+      ],
+      "screen": "Review while words are being written down (also offline, and a take finished at once)",
+      "verdict": "redesign",
+      "problem": "A white card with a moon in a beige disc and 'Writing down what you said.', and nothing else: no length, no sense of time for a one-part letter, and no way on except Close. On web it never ends. A take ended a second after starting (J05-08) gets the same open-ended wait. Being offline changes nothing, which is correct.",
+      "proposal": "Show the take as an object: the dateline 'To Asha · Tuesday evening', the length '0:42' beside a play control (same as Hear it), and the website Lamp drawing, whose glow breathes from 0.6 to 1 over 4 s while it works (indeterminate), with the line 'Writing down what you said.' Multi-part letters keep the thin determinate bar with 'Part 2 of 3' (it exists). After 15 s with no progress, add one quiet button, 'Read it back later'. It closes Review while the queue carries on, and Tonight shows 'Your recording is kept. Its words are on their way.' Takes under 1.5 s go straight to the empty-take state. When words arrive, each finished part fades in (180 ms, MOTION 5c), never word by word and never with a cursor.",
+      "benchmark": "HIG Loading: 'Show something as soon as possible' and 'Let people do other things while they wait' (verified). HIG Progress indicators: 'When possible, use a determinate progress indicator' and 'If a process stalls... provide feedback' (verified).",
+      "legal_or_constitution_note": "MOTION 5c: motion never suggests the machine is writing, so no typewriter effect. Words that arrive later are shown exactly as said and never fixed unread (D-086)."
+    },
+    {
+      "step_ids": [],
+      "screen": "Review when words do not come (native only: transcription failed, empty take, no words in the recording)",
+      "verdict": "redesign",
+      "problem": "From review.tsx, three states:\n- Failed: 'We could not write this one down' / 'The recording is safe on this phone. You can try again or type it.', with Try again, Type instead and a footer 'Keep the recording'. That is three actions, and the body explains them.\n- Empty take (phase 'waiting', the file has no audio): the same 'The recording is safe on this phone' text, which is untrue.\n- No words: 'No talking in this one' / 'The recording is kept just as it is. You can add words by typing them.', with Try again, Record again, Type it instead and the footer Keep the recording. That is four actions, and the title says nobody spoke, which the Book's own rule forbids (the take may hold a laugh or babble).",
+      "proposal": "- Failed, retryable: title 'No words yet for this one', body 'The recording is kept.', primary 'Try again', quiet 'Keep the recording'.\n- Failed because the file is missing: title 'The recording did not save', primary 'Type it instead'.\n- Empty take: title 'Nothing was recorded', body 'The take ended before any sound came in.', primary 'Record again', quiet 'Type it instead'.\n- No words: title 'No words in this one', body 'The recording is kept just as it is.', primary 'Keep the recording', quiet 'Write the words'. Drop Try again (same audio, same result) and Record again (a new letter belongs on Tonight).\nRemove the duplicate footer whenever the state card carries the primary. Drawings: a closed Envelope (kept) for failed and no words, the Page for an empty take.",
+      "benchmark": "HIG Alerts: 'only essential information and useful actions' (verified). HIG Writing: never say what is not true, and be clear what to do (verified).",
+      "legal_or_constitution_note": "D-086 and VOICE 'The app's own words': the note never says nobody spoke, the recording is never touched, and the person, not the app, writes any words."
+    },
+    {
+      "step_ids": [],
+      "screen": "Review when the language is not on this phone yet (native only)",
+      "verdict": "polish",
+      "problem": "From WordsStatus: 'Your English words are on their way' / 'Your voice is kept now. The words will follow as soon as this phone is ready for English.', plus 'Getting ready when you are on Wi-Fi.', a quiet 'Use mobile data 575 MB', a quiet 'Type it instead' and the footer 'Keep my voice'. That is four controls, and two sentences that say the same thing.",
+      "proposal": "Not yet agreed to the download: title 'Get your English words ready', body 'A one-time download of 575 MB.', primary 'Download on Wi-Fi', quiet 'Keep the recording for now'. Downloading or waiting: title 'Your voice is kept', body 'The words follow once English is ready on this phone.', and one status line: 'Getting ready, 40%' with a determinate bar, 'Waits for Wi-Fi, 575 MB', or 'This phone needs 575 MB free first.' The footer primary is 'Keep the recording', with one quiet action only: 'Use mobile data' while waiting for Wi-Fi, otherwise 'Type it instead'. The Lamp drawing's glow tracks the real download fraction (determinate, not a loop).",
+      "benchmark": "HIG Progress indicators: determinate when known, with accurate pacing (verified). Overcast and Apple Podcasts show a 'waiting for Wi-Fi' download state (unverified, memory).",
+      "legal_or_constitution_note": "D-087: a one-time ask, with the size from the phone's plan; the Wi-Fi default stays, and mobile data is used only on a tap."
+    },
+    {
+      "step_ids": [
+        "J06-01",
+        "J06-02",
+        "J06-03",
+        "J06-04",
+        "J06-05",
+        "J06-06",
+        "J06-07",
+        "J06-08",
+        "J18-05"
+      ],
+      "screen": "Review with small fixes (marks, put back, Exactly as said, Change words)",
+      "verdict": "polish",
+      "problem": "Put back and Undo are in place and calm ('Put back.' Undo Close). Two things under this lens. The line under the title, 'We only fixed what got in the way of your words. Nothing added.', shows on every Review as a 'we' reassurance. And when a save throws, the only feedback is a caution line, 'Your words are safe. Please try again.', placed away from the button, which keeps its old label.",
+      "proposal": "Show the trust line only inside the first-time note; after 'Got it' the marks speak for themselves. Save failure: the footer primary is relabelled 'Try again' for that attempt, with one caution line directly above it, 'That did not save.' (icon plus words, announced politely). On success the normal saved moment plays.",
+      "benchmark": "HIG Writing: put the error 'as close to the problem as possible' (verified). Things 3 in-place expansion for the fix card (MOTION.md M13, unverified).",
+      "legal_or_constitution_note": "Constitution: every fix is marked and reversible; copy never says 'tidy', 'cleaned' or 'improved' (VOICE, Word for word)."
+    },
+    {
+      "step_ids": [
+        "J07-03"
+      ],
+      "screen": "Review of a typed letter",
+      "verdict": "keep",
+      "problem": "Typed words are kept exactly as typed, with no fix list, and the two destinations are clear. Nothing unhappy here beyond the shared save-failure state above.",
+      "proposal": "Keep. Use the same save-failure state as spoken Review ('That did not save.', with the primary relabelled 'Try again').",
+      "benchmark": "HIG Writing (verified).",
+      "legal_or_constitution_note": "Typed text is never fixed (constitution)."
+    },
+    {
+      "step_ids": [
+        "J06-09",
+        "J06-10",
+        "J06-11",
+        "J07-04",
+        "J07-07",
+        "J07-08"
+      ],
+      "screen": "Saved moment (added to the book, kept private, the second free letter)",
+      "verdict": "redesign",
+      "problem": "The high point of the journey reads as an empty screen. The letter card fades to near-invisible ink on blank paper with a green line, 'Added to Asha's book.' (J06-09) or 'Kept just for you.' (J07-07 shows the person's own words at about 20% ink). There is no month and no sense of where the letter went, and green text is a generic system signal.",
+      "proposal": "Run MOTION 5e as written, plus the lamp. Commit, play the success haptic, then scale the card from 1 to 0.92 and its radius from xl to md on motion.gentle. A chip, 'Filed in Month 7' (the website's s06 chip), fades in under it at 250 ms. One lamp bloom (atmosphere.lamp at 12% in light, 18% in dark, a pre-rendered radial PNG) rises behind the card over 600 ms and holds. At 550 ms the card moves down 24 pt and fades as Review dismisses at 900 ms; a tap skips ahead. The person's words stay at full ink.\nCopy:\n- In the book: 'Added to Asha's book.' with the chip 'Filed in Month 7'.\n- Private: a chip with a lock, 'Kept just for you'.\n- Recording only: 'Kept. The words will follow.'\n- The second free letter keeps 'That was your second free letter.', muted beneath.\nText in ink, not success green. In the Book the new card arrives with the accentSoft wash (newMarkMs 1.6 s). Reduce Motion: the chip and line fade over 200 ms, and the bloom is shown static.",
+      "benchmark": "Website book timeline with the 'Filed in Month 9' chip (origin/main apps/web/src/content/site.ts, verified in repo). HIG Feedback: confirm activities that are 'sufficiently important' (verified).",
+      "legal_or_constitution_note": "Quiet joy only: no confetti, counters or streaks (DESIGN_LANGUAGE principle 4). The D-082 second-free line appears once and stays."
+    },
+    {
+      "step_ids": [
+        "J06-13"
+      ],
+      "screen": "Review with no draft (stale link)",
+      "verdict": "redesign",
+      "problem": "'Something went wrong' / 'Your words are safe. Please try again.', with Close only, under the error envelope. The title is generic, there is an instruction to try again with nothing to try, and the safety claim may not be true (the draft was saved or let go).",
+      "proposal": "Use kind notFound with the Page drawing in the lamp state: title 'Nothing to read back here', body 'Letters you keep are in the book.', primary 'Go to the book'. Close stays in the modal header.",
+      "benchmark": "HIG Alerts: avoid titles like 'Error' (verified). HIG Writing: on blank screens, 'guide people on actions they can take' (verified).",
+      "legal_or_constitution_note": "No error text, code or route is ever shown (privacy rules)."
+    },
+    {
+      "step_ids": [
+        "J06-14",
+        "J07-09"
+      ],
+      "screen": "Keep needs Plus (the third letter; also lapsed and offline in code)",
+      "verdict": "polish",
+      "problem": "The bones are good: no price, no countdown, and the letter is held untouched. But the held letter is not shown, so 'This letter is safe on your phone. Come back to it once Plus is on.' is a claim without proof, and the visual is a small books icon in a disc over a long title. States in code: lapsed reads 'Plus has ended. Every letter stays yours to read, play and export. To add new ones, Plus can start again.'; offline reads 'Plus needs the internet to start. Your letter stays safe on your phone until then.'",
+      "proposal": "Put the held letter at the top as a paper card (dateline, first two lines in the letter serif, signature) with a small chip, 'Waiting here'. Title 'Keep adding to {child}'s book', body 'Your first two letters are kept, and always will be. To add more, join Plus.', primary 'See Plus', quiet 'Keep it here for now', and a text link 'Redeem a code'. Lapsed body: 'Plus has ended. Every letter you kept is still yours to read, play and export.' Offline: one line under See Plus, 'Plus needs a connection to start.'; the button stays and retries. Unsupported device: 'Plus is not available on this device yet.' The card enters with motion.enter; the buttons stay static.",
+      "benchmark": "Website ProofLetter, where the letter itself is the proof (origin/main apps/web/src/components/landing/ProofLetter.tsx, verified in repo). Apple's own subscription sheet shows the price and trial (the D-083 context).",
+      "legal_or_constitution_note": "D-082, D-083: no price, no 'free trial', no 'we will email you' and no count of letters left in app copy; App Review 3.1.2."
+    },
+    {
+      "step_ids": [
+        "J05-05",
+        "J07-01",
+        "J07-02",
+        "J07-06"
+      ],
+      "screen": "Write (typing a letter, autosave, picking a draft back up)",
+      "verdict": "keep",
+      "problem": "Autosave says 'Saved on this phone' with a check after a pause, and a reopened draft returns exactly as it was left. This is the right model. The only gap: no visible state if an autosave write fails.",
+      "proposal": "Keep. If an autosave write throws, replace the line in the same place with 'Not saved yet' in caution tone and retry on the next pause; on success it returns to 'Saved on this phone'.",
+      "benchmark": "Apple Notes and Bear save continuously without a Save step (unverified, memory).",
+      "legal_or_constitution_note": "Typed words are kept exactly as typed."
+    },
+    {
+      "step_ids": [
+        "J03-04",
+        "J09-01"
+      ],
+      "screen": "Book, empty",
+      "verdict": "polish",
+      "problem": "The copy is good: 'The first page is waiting.' / 'Say one true thing about Asha today. That is how every book begins.' / 'Write a letter'. The drawing is the same small page in a beige disc used for errors, pushed left.",
+      "proposal": "Keep the copy and the action. Visual: the website Lamp switched on over a blank Page, centered, with the lamp radial. Use the 8 s empty breath (MOTION 5j), only while the screen is focused.",
+      "benchmark": "HIG Writing: empty states 'showcase your app's voice' with a clear next step (verified).",
+      "legal_or_constitution_note": "Never count gaps or missing months."
+    },
+    {
+      "step_ids": [
+        "J03-05"
+      ],
+      "screen": "Whose book? switcher sheet",
+      "verdict": "keep",
+      "problem": "One list, the current book checked, and 'Add a child' at the end. Nothing unhappy.",
+      "proposal": "Keep.",
+      "benchmark": "HIG Sheets, medium detent with grabber (BENCHMARK H3; not re-checked in this pass).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J08-03",
+        "J08-05",
+        "J09-02",
+        "J09-03",
+        "J09-04",
+        "J09-05",
+        "J11-05",
+        "J11-06",
+        "J18-03"
+      ],
+      "screen": "Book with letters (months, quiet days, a recording waiting for words, a recording with no words)",
+      "verdict": "polish",
+      "problem": "The waiting card ('A recording, waiting for its words.') and the no-words card ('No words in this one. The recording is kept just as it is.') both carry an info (i) icon, which reads as a warning. The waiting card gives no reason and no progress, so the person cannot tell whether it is stuck.",
+      "proposal": "Both cards use a small microphone glyph instead of (i). The waiting card adds the live reason as a muted footnote, from the same strings as the letter's WaitingCard ('Getting ready, 40%', 'Waits for Wi-Fi' or 'Ready to read back'), next to its length, '0:54'. Keep the D-086 no-words line. Quiet-day rows are unchanged.",
+      "benchmark": "HIG Progress indicators: say what is happening and keep it moving (verified). Overcast shows per-episode download progress in the list (unverified, memory).",
+      "legal_or_constitution_note": "The app's own words stay small, muted and unsigned (VOICE)."
+    },
+    {
+      "step_ids": [
+        "J08-06"
+      ],
+      "screen": "Quiet-day mark removed, with Undo",
+      "verdict": "keep",
+      "problem": "'Removed.' with Undo and Close, staying until tapped: correct for a reversible action.",
+      "proposal": "Keep. Optionally say 'Mark removed.' so the toast names what went.",
+      "benchmark": "HIG Alerts: undo instead of a confirm for undoable actions (verified).",
+      "legal_or_constitution_note": "D-084."
+    },
+    {
+      "step_ids": [
+        "J10-01",
+        "J10-02",
+        "J10-05",
+        "J10-07",
+        "J10-09",
+        "J18-04"
+      ],
+      "screen": "A letter (page, exactly as said, make private, after Keep it and after Undo)",
+      "verdict": "polish",
+      "problem": "Calm and complete. Under this lens only the player's failure line is vague: 'This recording cannot play right now. It is still kept.'",
+      "proposal": "Player failure: 'This recording will not play here. The file is kept, and Export includes it.' Not on this phone: keep 'The recording for this letter is not on this phone.' The make-private toast keeps 'Kept just for you.', and moving it back keeps 'Added to {child}'s book.'",
+      "benchmark": "HIG Writing: say what the person can do (verified).",
+      "legal_or_constitution_note": "The original recording is never altered (D-058)."
+    },
+    {
+      "step_ids": [
+        "J10-03",
+        "J10-04"
+      ],
+      "screen": "Reading size sheet",
+      "verdict": "keep",
+      "problem": "A live preview behind the sheet, with a cross-fade rather than an animated size change. Nothing unhappy.",
+      "proposal": "Keep.",
+      "benchmark": "Apple Books in-reader text size (BENCHMARK S9; not re-checked in this pass).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J10-06"
+      ],
+      "screen": "Delete this letter? sheet",
+      "verdict": "polish",
+      "problem": "'Delete this letter?' / 'You can undo this for 30 days from Recently deleted.', with 'Keep it' (filled), 'Delete letter' (red) and a 'Close' in the sheet header. That is three ways out of one question, and 'undo' describes a restore that happens on another screen.",
+      "proposal": "Title 'Delete this letter?', body 'It stays in Recently deleted for 30 days.' Keep the D-085 order: 'Keep it' as primary and 'Delete letter' as a destructive quiet button. Remove the header Close; swipe down and Keep it cover that. Play the warning haptic only on the confirm.",
+      "benchmark": "HIG Alerts: 'If there's a destructive action, include a Cancel button', and avoid alerts for undoable actions (verified). D-085 chose a light confirm for letters, which stays.",
+      "legal_or_constitution_note": "D-085: Recently deleted for 30 days, then the purge."
+    },
+    {
+      "step_ids": [
+        "J10-08"
+      ],
+      "screen": "Letter deleted (blank page with Undo)",
+      "verdict": "redesign",
+      "problem": "The person is left on an empty page with a large 'Letter deleted.' and 'It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.', while a dark toast also says 'Letter deleted.' with Undo and X. The same news appears twice, the body explains the buttons, and there is nothing to look at.",
+      "proposal": "On confirm, return to the Book at once. This follows the person's own tap, not a timer, so TDD 09 A11Y-F03 holds. The card collapses out (height to 0, exitMs 160) and one toast sits above the tab bar: 'Letter deleted.' with 'Undo'. It stays until Undo, Close or leaving the Book; it has an action, so it does not time out. Undo puts the card back with the accentSoft wash (1.6 s). Remove the full-page deleted state.",
+      "benchmark": "Apple Mail's Undo after a delete, returning to the list (unverified, memory; COMPONENTS 2.14 already names it). HIG Alerts: prefer undo for undoable actions (verified).",
+      "legal_or_constitution_note": "No timed navigation, and no timed toast when it carries an action (DESIGN_LANGUAGE 11.5)."
+    },
+    {
+      "step_ids": [
+        "J10-10"
+      ],
+      "screen": "A letter whose recording has no words",
+      "verdict": "polish",
+      "problem": "'No words in this one. The recording is kept just as it is.', then a filled 'Record again', which starts a separate new letter and can meet the Plus gate. Review told the person 'You can add words by typing them.', but this page has no way to add words to this recording.",
+      "proposal": "Primary 'Write the words', which opens the existing WaitingCard sheet (label 'Words for this recording', buttons 'Save words' and 'Not now'). Remove 'Record again' from this page; keep 'Add to book' and 'Delete'. After saving, the provenance reads 'Typed' and the signature appears under the person's words.",
+      "benchmark": "HIG Writing: one clear next step (verified).",
+      "legal_or_constitution_note": "The person writes the words; the app never fills them in (constitution)."
+    },
+    {
+      "step_ids": [
+        "J10-11"
+      ],
+      "screen": "Letter not found",
+      "verdict": "polish",
+      "problem": "'This letter is not here anymore.' with 'Back to the book'. 'Anymore' implies it was taken away, and if the person deleted it, the way back to it is not offered.",
+      "proposal": "Title 'This letter is not in the book.' If a tombstone exists for that id: body 'It is in Recently deleted.', primary 'Open Recently deleted', quiet 'Back to the book'. Otherwise, no body and the primary 'Back to the book'. Use the Page drawing in the lamp state.",
+      "benchmark": "HIG Writing: guide people to the action that helps (verified).",
+      "legal_or_constitution_note": "Never show the id or route (privacy)."
+    },
+    {
+      "step_ids": [
+        "J10-12",
+        "J10-13",
+        "J10-14",
+        "J10-15"
+      ],
+      "screen": "Recently deleted (restore, erase now, empty)",
+      "verdict": "redesign",
+      "problem": "- Each card shows the first words in UI sans, cut mid-phrase ('...catch the drops on the'), then three stacked dates: 'August 13, 2026', 'Deleted October 13, 2026', 'Erased on November 12, 2026'. 'Erased on' with a future date reads as already done.\n- The empty state repeats the nav title as a large 'Recently deleted' heading (J10-13).\n- 'Letter restored.' offers no way to see the letter.\n- Erase now gives no confirmation at all. The capture still shows the earlier 'Letter restored.' toast after the letter was erased (J10-15): the wrong message at the most final moment.\n- The erase sheet body ends oddly: 'erased from this phone, at once.'",
+      "proposal": "- Card: the first words in the letter serif (two lines, clipped by numberOfLines), 'From Mama', and one muted line, 'Deleted October 13. Kept here until November 12.' Buttons: 'Restore' (secondary filled) and 'Erase now' (destructive quiet).\n- Restore: the card lifts out (160 ms), and a toast says 'Back in Asha's book.' with the action 'Open'.\n- Erase sheet: title 'Erase this letter now?', body 'The letter and its recording are erased from this phone. This has no undo.', buttons 'Keep it' and a destructive 'Erase'.\n- After erasing: a toast, 'Erased.' (no action, 4 s), replacing any earlier toast.\n- Empty: no repeated heading, the Page drawing, and the body 'Letters you delete wait here for 30 days.'",
+      "benchmark": "Apple Notes and Photos Recently Deleted, with Recover and Delete on each item (unverified, memory). Day One Trash: Restore, and emptying is irreversible (unverified, dayoneapp.com guide via search summary). HIG Alerts: specific titles such as 'Erase' (verified). HIG Feedback: warn on irreversible loss (verified).",
+      "legal_or_constitution_note": "D-085: dates, never a countdown of days left. On a phone the file is removed first, then the row."
+    },
+    {
+      "step_ids": [
+        "J11-01",
+        "J11-02",
+        "J11-03",
+        "J11-08"
+      ],
+      "screen": "Read together (reading, next, autoplay, skipping quiet days)",
+      "verdict": "polish",
+      "problem": "The dateline template produces 'Mama, The first weeks' (capital T mid-line) and 'Mama, Month 2'. The missing-recording lines in code are good ('The recording for this letter is not on this phone. Read this one aloud together.').",
+      "proposal": "Dateline 'From Mama · The first weeks' and 'From Mama · Month 2': readTogether.nowReading becomes 'From {signsAs} · {month label}'.",
+      "benchmark": "HIG Writing: consistent, readable labels (verified).",
+      "legal_or_constitution_note": "D-059: no word highlight is claimed."
+    },
+    {
+      "step_ids": [
+        "J11-04"
+      ],
+      "screen": "Read together, end of the book",
+      "verdict": "polish",
+      "problem": "'That is every letter so far. More are still being written.' with 'Close the book' and 'Read it again' is warm and right, but visually it is a blank page.",
+      "proposal": "Keep the copy and both buttons. Visual: the website Moon drawing drawn on above the line, while the lamp radial dims to the dusk tone (atmosphere.lampDusk at 8%) over 1.2 s, a bedtime close. Reduce Motion: static.",
+      "benchmark": "Website aurora moving from amber to dusk at the end of the page (origin/main Aurora.tsx, verified in repo).",
+      "legal_or_constitution_note": "Legacy rule: talk about time, never endings; 'More are still being written' stays."
+    },
+    {
+      "step_ids": [
+        "J11-07"
+      ],
+      "screen": "Read together with no letters (stale link)",
+      "verdict": "polish",
+      "problem": "'Read together' / 'Letters you add to the book will be here to read together.', with Close only: a dead end apart from leaving.",
+      "proposal": "Title 'Nothing to read together yet', body 'Add a letter to the book, then open it here.', primary 'Write a letter' (goes to Tonight), with Close in the header. Use the website ReadingLamp drawing in the lamp state.",
+      "benchmark": "HIG Writing: give a button for the next step on blank screens (verified).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J12-01",
+        "J12-02"
+      ],
+      "screen": "Plan (Plus off, restore, and in code grace, retry and lapsed)",
+      "verdict": "polish",
+      "problem": "'Your first two letters are free. Plus lets you keep adding.' appears in the card and again in the line beneath. 'Manage subscription' shows when there is no subscription. The restore failure, 'The App Store could not be reached. Please try again in a moment.', sits in ink between muted lines, apart from its row. In code, grace reads 'There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again.' and retry reads 'Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe.'",
+      "proposal": "- Plus off: the card once, then the primary 'See what Plus adds', and rows for 'Redeem a code' and 'Restore purchases'. 'Manage subscription' appears only when a subscription exists.\n- Restore: the result appears inline under its row, and the row shows a spinner with 'Checking with the App Store' while it works. None found: 'No Plus found for this Apple Account.' Failed: 'The App Store did not answer. Try again in a moment.' (the row stays the retry).\n- Grace: 'Apple could not take the last payment. Plus stays on while Apple tries again.', with the primary 'Manage subscription'.\n- Retry: 'Plus is paused until a payment goes through. Every letter you kept is still here.', with the primary 'Manage subscription'.",
+      "benchmark": "HIG Writing: put the error next to its cause, with a clear next step (verified). Apps send people to Apple's subscription screen during a billing grace period (unverified, memory).",
+      "legal_or_constitution_note": "D-083: no price or trial length typed. The labels 'Settings, Plan, Manage subscription' must match the Terms and the emails exactly."
+    },
+    {
+      "step_ids": [
+        "J13-01",
+        "J13-02",
+        "J13-03"
+      ],
+      "screen": "Reminders (off, on with notifications denied, every evening)",
+      "verdict": "polish",
+      "problem": "The denied card reads 'Notifications are off for this app' / 'Turn them on in your phone's Settings and your reminders start again.' 'Start again' is wrong when they never started, and 'this app' is impersonal.",
+      "proposal": "Title 'Notifications are off', body 'Turn them on in Settings to get these reminders.', primary 'Open Settings'. When the person returns with permission granted, the card collapses (280 ms) and a toast says 'Reminders are on.' (4 s). The iOS priming sheet keeps its single 'Continue'.",
+      "benchmark": "HIG Privacy: a pre-alert screen with one button titled 'Continue' (verified).",
+      "legal_or_constitution_note": "Never count days; stay quiet on a day already written (keep)."
+    },
+    {
+      "step_ids": [
+        "J14-01"
+      ],
+      "screen": "Recordings settings (speech model not on this phone)",
+      "verdict": "polish",
+      "problem": "'English, Not on this phone, 575 MB' is a status with nothing to tap. 'Kept on this phone' is followed by 'Your voice is saved with each letter, on this phone.', the same fact again.",
+      "proposal": "The language row gets a trailing action, 'Get ready', with the size. States: 'Waits for Wi-Fi, 575 MB' plus a quiet 'Use mobile data'; 'Getting ready, 40%' with a small determinate ring; 'On this phone, 575 MB' with 'Remove' (the existing confirm). Drop the repeated line under the card.",
+      "benchmark": "HIG Progress indicators (verified). VOICE: do not repeat the promise where nobody is wondering.",
+      "legal_or_constitution_note": "D-085: no backup of our own is claimed in v1.0 (keep the card text)."
+    },
+    {
+      "step_ids": [
+        "J15-01",
+        "J15-02",
+        "J15-03"
+      ],
+      "screen": "Export (ready, failed, empty book; in code too big and stopped)",
+      "verdict": "polish",
+      "problem": "The failure card is honest: 'The export did not finish' / 'This phone needs a little more free space to make the export. Free some space and try again.', with 'Export again'. Gaps:\n- Too big says 'This export is larger than one file can hold. Write to us and we will help you get every letter out.', but the only button is 'Export again', which fails again.\n- Stopped says 'Stopped. Nothing was kept.', which can read as letters not being kept.\n- With an empty book, 'Export everything' is greyed out with no reason (J15-03).",
+      "proposal": "- Low space: title 'Not enough space for the export', body 'It needs about {size} free on this phone.', primary 'Export again'.\n- Too big: title 'This book is too big for one file', primary 'Write to us' (mail, subject 'Export help'), quiet 'Export again'.\n- Other failure: title 'The export did not finish', body 'Your book on this phone is unchanged.', primary 'Export again'.\n- Stopped: 'Export stopped.'\n- Empty book: a muted line above the disabled button, 'Export opens once the book has a letter.'\nThe failure card carries a small closed Envelope drawing.",
+      "benchmark": "HIG Writing: be clear about what someone can do to fix it (verified). HIG Feedback (verified).",
+      "legal_or_constitution_note": "Export stays free and offline (the shutdown pledge); the privacy notice line stays with the share action."
+    },
+    {
+      "step_ids": [
+        "J03-06",
+        "J03-09",
+        "J16-01",
+        "J16-05",
+        "J16-06"
+      ],
+      "screen": "Settings home (with If you are struggling and Licences open in place)",
+      "verdict": "polish",
+      "problem": "The 'Early version' card ('...it can make mistakes. Some things may change. Export a copy of your letters now and then.') sits at the very top in a tinted card, the first thing on every visit, although VOICE puts it in Settings, About. 'Private by default. Never sold, never used for ads.' appears twice, under Your data and again in the About footer. The struggling resources open in place, which is right.",
+      "proposal": "Move the early-version note to About as a footnote: 'Early version. It can make mistakes. Export a copy now and then.' Show the short privacy line once, under Your data. Keep the struggling row exactly as it is.",
+      "benchmark": "VOICE 'How we talk about privacy': saying it too often sounds anxious. HIG Writing: fewer words (verified).",
+      "legal_or_constitution_note": "D-060: the in-app 'early version, can make mistakes' note must stay. The struggling resources are checked by the founder (FT-36) and are untouched here."
+    },
+    {
+      "step_ids": [
+        "J03-07",
+        "J03-20",
+        "J03-21",
+        "J03-22",
+        "J03-23",
+        "J03-24",
+        "J03-25",
+        "J03-26",
+        "J03-27",
+        "J03-30",
+        "J03-31",
+        "J03-32",
+        "J03-33"
+      ],
+      "screen": "One child's settings and its editors (name, birthday, signature, due date, born offer)",
+      "verdict": "polish",
+      "problem": "The editor errors are clear ('Add a name to save.', 'Add what Asha calls you to save.'). A future birthday lectures: 'A birthday is a day that has already come. Choose today or earlier.' The born offer, 'Your due date has come. Tell us the day and your letters find their place.' with the button 'Asha was born, set the birthday', opens with 'tell us', presumes the birth, and cannot be dismissed. That matters on the days when a passed due date is hard news.",
+      "proposal": "Future birthday: 'Choose today or an earlier day.' Born card: title '{child}'s birthday', body 'Add it when you are ready.', primary 'Set the birthday', and a small close control labelled 'Hide' that hides the card until the person opens the Due date row. It is never a notification and never appears on Tonight. Keep 'Letters written before this day stay in Before You.' in the picker.",
+      "benchmark": "HIG Writing: avoid blame, and say what to do (verified).",
+      "legal_or_constitution_note": "VOICE legacy rule and no-guilt rule: no pressure, no counting days since the due date."
+    },
+    {
+      "step_ids": [
+        "J03-08"
+      ],
+      "screen": "Add a child",
+      "verdict": "redesign",
+      "problem": "The birthday is filled in with today ('October 13, 2026'), the silent default that first run removed (INDEX J01-07), so a seven-month-old can be filed as a newborn. The helper shows the placeholder text as the name: 'We sort letters by Their name's month of age.'",
+      "proposal": "Reuse the first-run child step: an empty date ('Choose a date') with 'Born today' as a chip, and Continue disabled with the reason line ('Add a name to continue.', 'Choose {child}'s birthday to continue.'). The helper reads 'Letters are filed by month of age.' until a name is typed, then 'Letters are filed by {child}'s month of age.' The button is 'Add {child}'s book' (children.add.cta).",
+      "benchmark": "HIG Onboarding: use reasonable defaults only where a default is correct (verified); a birthday has no correct default.",
+      "legal_or_constitution_note": "D-082, D-083: another book is free; no gate here."
+    },
+    {
+      "step_ids": [
+        "J16-02"
+      ],
+      "screen": "Privacy settings",
+      "verdict": "keep",
+      "problem": "Stale capture: on develop the usage switch is hidden in v1.0 (privacy.tsx checks capabilities.analytics). The promise rows and policy links are plain and calm.",
+      "proposal": "Keep, and regenerate the capture.",
+      "benchmark": "VOICE privacy table (one line per place).",
+      "legal_or_constitution_note": "D-061: the promise text word for word; LEGAL-REQ-003."
+    },
+    {
+      "step_ids": [
+        "J16-03",
+        "J16-04",
+        "J18-01"
+      ],
+      "screen": "Appearance (theme, reading size)",
+      "verdict": "keep",
+      "problem": "A live sample line and three themes. Nothing unhappy.",
+      "proposal": "Keep.",
+      "benchmark": "HIG Dark Mode support (not checked in this pass).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J17-01",
+        "J17-02",
+        "J17-03"
+      ],
+      "screen": "Family: co-parent sharing coming soon",
+      "verdict": "keep",
+      "problem": "Held: scope decision pending (a co-parent surface), so not redesigned. Under this lens it already never dead-ends: 'Noted on this phone. When the update arrives, you will see it here.'",
+      "proposal": "No change until the scope decision.",
+      "benchmark": "Not assessed (held).",
+      "legal_or_constitution_note": "Held: sign-in, sync, co-parent and backup surfaces wait for the scope decision; v1.0 promises nothing early (VOICE)."
+    },
+    {
+      "step_ids": [
+        "J19-01"
+      ],
+      "screen": "Page not found (404)",
+      "verdict": "redesign",
+      "problem": "'We could not find that page' / 'The link may be old or mistyped. Your book is right where you left it.', with 'Back to Tonight'. In the capture the drawing, title, body and button sit flush against the left edge with no gutter, and the envelope is clipped: the px-5 on SafeAreaView does not reach the content. The envelope is the same drawing used for errors.",
+      "proposal": "Mirror the website 404: the lamp state in the current theme (night tone in dark, paper in light, the 9% lamp radial at 50% 42%), the Window drawing, title 'That page is not here.', body 'Your book is where you left it.', and the primary 'Back to Tonight'. Fix the gutter by padding the inner content View (20 pt), not the SafeAreaView className.",
+      "benchmark": "Website 404 on origin/main: 'We could not find that page.' and one link home, over a night background with a lamp radial (apps/web/src/app/not-found.tsx, NotFound.module.css, verified in repo).",
+      "legal_or_constitution_note": "Never show or log the address (privacy)."
+    },
+    {
+      "step_ids": [
+        "J20-01"
+      ],
+      "screen": "A screen crashed (root error boundary)",
+      "verdict": "polish",
+      "problem": "'Something went wrong on our side' / 'Your letters and recordings are safe on this phone. Nothing was removed.', with 'Try again' and 'Go to Tonight'. It is blameless and calm, but generic. It renders in Georgia and the system sans with 14 pt corners (PlainScreen), although Literata and Mukta are embedded at build time (app.config.ts expo-font plugin), so the brand faces are safe to use even here.",
+      "proposal": "Title 'This screen hit a problem.', body 'Your letters and recordings are safe on this phone.', primary 'Try again', quiet 'Go to Tonight'. PlainScreen uses fontFamily 'Literata-Medium' for the title and 'Mukta-Regular' for the body, pill buttons, and one static lamp radial as a plain Image; no providers, no motion.",
+      "benchmark": "HIG Alerts: avoid titles like 'Error' (verified). HIG Writing: avoid blame (verified).",
+      "legal_or_constitution_note": "Never show or log the error, its message or a stack (CLAUDE.md privacy rules). There is no crash reporter in v1.0, so no 'we have been told' line."
+    },
+    {
+      "step_ids": [
+        "J20-02"
+      ],
+      "screen": "The book could not be opened (launch recovery)",
+      "verdict": "polish",
+      "problem": "'We could not open your book just now' / 'Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.' / 'Trying again often works. If it does not, restarting the phone can help.' / 'Try again' / 'Export what's readable'. That is three sentences of reassurance, a 'we' title, a technical button label, and the same off-brand fonts as the crash screen.",
+      "proposal": "Title 'Your book did not open.', body 'Every letter and recording is still on this phone.', hint 'If Try again does not work, restart the phone.', primary 'Try again', quiet 'Save a copy of the files' (busy label 'Gathering your files'). Notes: nothing found, 'No files were found to copy.'; failed, 'The copy did not finish. Nothing was changed.' Use the brand faces and a static closed Envelope drawing, as on the crash screen.",
+      "benchmark": "HIG Alerts: 'Include informative text only if it adds value' (verified). HIG Launching: launch instantly, and restore state (verified).",
+      "legal_or_constitution_note": "No delete, reset or rebuild action may appear here (keep that); the recovery README stays factual."
+    }
+  ]
+}

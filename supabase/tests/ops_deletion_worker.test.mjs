@@ -2,8 +2,10 @@
 // the ops runbook scripts (20261004200000_ops_deletion_worker.sql).
 // Fictional family "Asha" only (CLAUDE.md). Run all DB tests: npm run test:db
 import { createDb, users } from './harness.mjs';
+import { allowLegacyPhotos } from './legacy_photo.mjs';
 
 const { check, as, asAnon, sys, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+await allowLegacyPhotos(sys); // BL-870: legacy rows carry a path; the guard is proved in photo_bucket_closed.test.mjs
 const { A, B, N, S, C } = users;
 // Supabase's storage.objects has owner (uuid, deprecated), owner_id (text) and created_at; the harness stub does not.
 await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now()`);
@@ -44,7 +46,23 @@ const SERVICE_ONLY = [
   `select public.ops_ledger_between(now(), now(), 10)`, `select public.ops_retention(now())`,
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
-  `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`,
+  `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
+  // 20261111010000 (CR-71 C3)
+  `select public.ops_support_access('op', 'T-1', 'test', 'profile', '${A}')`, `select public.ops_security_event_write('step_up_failed')`,
+  `select public.ops_security_events_check(now())`, `select public.ops_security_events_retention(now())`,
+  // 20261121000000 (NS-08-R21)
+  `select public.ops_end_session('${A}', '${A}')`, `select public.ops_new_device_sign_out(decode(repeat('00', 32), 'hex'))`,
+  `select public.ops_new_device_retention()`,
+  // 20261121010000 (NS-08-R21 sender)
+  `select public.ops_new_device_record('${A}', decode(repeat('00', 16), 'hex'), 'other')`, `select public.ops_new_device_pending_take()`,
+  `select public.ops_new_device_token_mint('${A}', '${A}', decode(repeat('00', 32), 'hex'))`,
+  // 20261121020000 (NDS-2 fill, NDS-5 re-key)
+  `select public.ops_new_device_pending_fill('${A}', '${A}', 'other', decode(repeat('00', 16), 'hex'))`,
+  `select public.ops_new_device_rekey('${A}', decode(repeat('00', 16), 'hex'), decode(repeat('01', 16), 'hex'))`,
+  // 20261121030000 (CR-26)
+  `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
+  `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
+  `select public.ops_compliance_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
@@ -220,8 +238,10 @@ const byBucket = await j(`select public.ops_incident_scope($1) v`, [JSON.stringi
 check('incident by bucket: photo owners listed with photo counts', byBucket.profiles.some((p) => p.profile_id === S2 && p.photos === 1)
   && byBucket.totals.photos >= 2);
 const all = await j(`select public.ops_incident_scope('{"all": true}') v`);
+// escrow_present follows the schema: true once the backup migration (S05) has created child_keys.
 check('incident "all": every remaining person, flags for audio and escrow', all.totals.profiles === (await sys(`select count(*)::int n from profiles`)).rows[0].n
-  && all.audio_on_server === false && all.escrow_present === false);
+  && all.audio_on_server === false
+  && all.escrow_present === (await sys(`select to_regclass('public.child_keys') is not null v`)).rows[0].v);
 check('incident output carries no content', !JSON.stringify(all).includes('Asha') && !JSON.stringify(all).includes('laughed'));
 check('incident scope rejects unknown tables', (await codeOf(() => sys(`select public.ops_incident_scope('{"tables": ["entries; drop table x"]}')`))) === '22023');
 

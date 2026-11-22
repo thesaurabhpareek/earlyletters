@@ -16,6 +16,8 @@ export const languageCopy = {
   othersFooter: 'Add up to two more languages you speak at home.',
   addLanguage: 'Add a language',
   addLanguageFull: 'Three languages chosen',
+  // PROPOSED (spec 11, SL-1, 21 Nov 2026): the full Add row is dimmed, not hidden, and says why when read aloud.
+  addLanguageFullA11yHint: 'You can choose up to three languages. Remove one to add another.',
   change: 'Change',
   removeA11y: 'Remove {name}',
   remove: 'Remove',
@@ -36,24 +38,34 @@ export const languageCopy = {
     absent: 'Downloads when chosen, {size}',
     absentNoSize: 'Downloads when chosen',
     waitingForWifi: 'Waiting for Wi-Fi, {size}',
-    offline: 'Downloads when you are back online',
+    offline: "Downloads when you're back online",
     noSpace: 'Needs {size} of free space',
     needsUpdate: 'Needs the latest version of the app',
     paused: 'Downloads are paused for now',
-    retry: 'Did not finish. Tap to try again.',
-    downloadNow: 'Download now on mobile data',
+    notReady: 'Not available yet',
+    retry: "Didn't finish. Tap to try again.",
+    downloadNow: 'Download now on cellular data',
   },
+  // PROPOSED (spec 11, SL-1, 21 Nov 2026): said once when a download starts and once when it ends, never per percent.
+  announceStarted: 'Downloading {name}',
+  announceFinished: '{name} is on this phone',
   // D-074: what the machine changes is a "small fix".
   safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.',
+  // D-111 item 4 (N2 on #247, round 2 on #260): in builds that offer English only, a recording whose language was
+  // set to another is not heard in English; it waits for its language, and Review and the letter page say so with
+  // this line. No date is promised.
+  waitingForLanguage: 'This recording is waiting for its language. Other languages are coming in a later update.',
 
   picker: {
     title: 'Choose a language',
     close: 'Close',
     searchLabel: 'Search languages',
-    searchPlaceholder: 'Language',
-    none: 'No language matches that. These are the languages letters can be spoken in for now.',
+    searchPlaceholder: 'Find a language',
+    none: 'No match. Letters can be spoken in these seven languages for now.',
     chosenA11y: 'Already chosen',
     selectedA11y: 'Selected',
     rowHint: 'Chooses this language',
+    // D-111 item 4: builds that offer English only show this under the list. No date is promised.
+    englishOnly: 'Other languages are coming in a later update.',
   },
 } as const;

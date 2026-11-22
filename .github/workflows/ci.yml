@@ -1,6 +1,8 @@
 # Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
 # end to end. Every job has a timeout; the longest path is install (4) plus
-# one check job (5). Branch protection requires only the `required` job.
+# the database rules (15, room for a slow runner's perf seed), or plus the
+# seam guard (15) when a change can reach the app bundle; the other check
+# jobs have 5. Branch protection requires only the `required` job.
 name: CI
 
 on:
@@ -25,15 +27,44 @@ jobs:
     name: install
     runs-on: ubuntu-latest
     timeout-minutes: 4
+    # `heavy` is false only for a pull request whose every file is on the inert list below (docs that no test,
+    # script or guard reads). The heavy jobs then skip and `required` accepts that. Any doubt (API error, a push,
+    # 3000 files or more, one file off the list) leaves heavy true. docs/ops/proposed/ci-speed.md, change 1.
+    # Readers of docs/ that the list was checked against: apps/mobile/test/qa-release-catalog.test.ts (reads every
+    # .md, .csv, .ts and .json under docs/ to find requirement ids; it passes with every listed file removed),
+    # scripts/trace.mjs (docs/prd, docs/backlog, docs/BACKLOG.md; none listed), apps/mobile/test/boundaries.test.ts
+    # and import-graph.test.ts (comments only), .github/scripts/seam-guard.test.mjs (a string), and
+    # scripts/agents/board-check.test.mjs (docs/agents/checkins/README.md, which is why the list names only the
+    # S<digit> files). The list must not be widened without checking each reader of each added path.
+    outputs:
+      heavy: ${{ steps.scope.outputs.heavy }}
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          heavy=true
+          if [ "$EVENT" = pull_request ] && files="$(gh api --paginate "repos/${REPO}/pulls/${PR}/files" --jq '.[].filename, (.[].previous_filename // empty)')" && [ -n "$files" ] && [ "$(wc -l <<< "$files")" -lt 3000 ]; then
+            if ! grep -qvE '^(docs/engineering/readiness-20nov/|docs/agents/checkins/S[0-9][^/]*\.md$|docs/product/instrumentation/|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md$|docs/content/lifecycle-playbook/|docs/qa/test-plan-b13/|docs/design/DESIGN-[^/]*\.md$)' <<< "$files"; then
+              heavy=false
+            fi
+          fi
+          echo "heavy=${heavy}" | tee -a "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             node_modules
@@ -44,26 +75,42 @@ jobs:
       - if: steps.modules.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
 
-  unit:
-    name: tests and content rules
+  content:
+    # Always runs, including on the inert-docs lane: the content rules and the real-family guard
+    # (packages/content/test/no-real-family-data.test.ts reads every tracked file).
+    name: content rules and family-data guard
     needs: install
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup
+      - run: npm test -w @scribe/content
+
+  unit:
+    name: tests and content rules
+    needs: install
+    if: needs.install.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # the engine step takes about 3m30s on a quiet runner and was cut off at 5m06s on loaded ones (runs 44882037339, 44894142294)
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./.github/actions/setup
       - name: Content rules (VOICE.md, BRAND.md)
         run: npm test -w @scribe/content
+      # Runs even when Content rules is red, so these suites and the privacy guard still report instead of being skipped.
       - name: Engine, verifier fuzz, entitlements, analytics, tokens, experiments
+        if: ${{ !cancelled() }}
         run: npm test
 
   db:
     name: database rules
     needs: install
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    if: needs.install.outputs.heavy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15 # perf.test.mjs seeds 100,000 entries on pull requests (the nightly seeds 400,000 with the budgets); a slow runner took 139 s for a 400,000 seed alone (run 39018739219)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./.github/actions/setup
       - name: Access rules, governance, classification, performance (PGlite)
         run: npm run test:db
@@ -71,10 +118,11 @@ jobs:
   functions:
     name: edge functions and ops scripts (Deno)
     needs: install
+    if: needs.install.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./.github/actions/setup
       - name: Purge worker, analytics-forget, logger and log canary, ops scripts
         run: npm run test:functions
@@ -82,10 +130,11 @@ jobs:
   typecheck:
     name: typecheck
     needs: install
+    if: needs.install.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./.github/actions/setup
       - name: Packages and experiments
         run: npm run typecheck -w packages -w experiments --if-present
@@ -93,18 +142,57 @@ jobs:
         working-directory: apps/mobile
         run: npx tsc --noEmit
 
+  seam-guard:
+    # Release check B-8 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): no e2e seam code in a bundle
+    # that can reach TestFlight or the App Store. It lives here, not in a path-filtered workflow, so
+    # that `required` can wait for it: a path-skipped workflow stays Pending and would block every
+    # merge (docs/release/AUTOMATION.md 2.1). The guard's own tests run on every pull request; the
+    # exports (about four minutes) run only when base...head touches a path that can reach the bundle
+    # or change this check (BUNDLE_PATHS in the script). A diff git cannot answer runs them, and a
+    # failing decision step fails the job. No secrets. testflight.yml runs the same script before EAS.
+    name: no e2e seam in store bundles (B-8)
+    needs: install
+    if: needs.install.outputs.heavy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Guard tests
+        run: node --test .github/scripts/seam-guard.test.mjs
+      - name: Can this change reach a store bundle, or change the check?
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node .github/scripts/seam-guard.mjs --changed-since "$BASE" "$HEAD" | tee decision.txt
+          grep '^run=' decision.txt >> "$GITHUB_OUTPUT"
+      # The positive control exports the e2e profile too and requires the seam once any app file
+      # imports the seams module (RA-20-18); until then it prints that it was skipped, and why.
+      - name: Export each store profile and search it, then the e2e control
+        if: steps.changed.outputs.run == 'true'
+        run: node .github/scripts/seam-guard.mjs --store-profiles --e2e-control
+
   required:
     name: required
     if: always()
-    needs: [install, unit, db, functions, typecheck]
+    needs: [install, content, unit, db, functions, typecheck, seam-guard]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
       - name: All checks passed
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          HEAVY: ${{ needs.install.outputs.heavy }}
         run: |
-          echo "results: $RESULTS"
+          echo "results: $RESULTS (heavy=$HEAVY)"
           for r in $RESULTS; do
-            if [ "$r" != "success" ]; then echo "A required check did not pass ($r)."; exit 1; fi
+            if [ "$r" = success ]; then continue; fi
+            # skipped is accepted only on the inert-docs lane, where install said heavy=false
+            if [ "$r" = skipped ] && [ "$HEAVY" = false ]; then continue; fi
+            echo "A required check did not pass ($r)."; exit 1
           done

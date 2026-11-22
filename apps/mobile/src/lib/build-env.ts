@@ -37,6 +37,31 @@ export function resolveAppEnv(raw: string | undefined | null): AppEnv | null {
   return (APP_ENVS as readonly string[]).includes(v) ? (v as AppEnv) : null;
 }
 
+/** The one eas.json profile that may carry `EXPO_PUBLIC_E2E=1`: a simulator build, never uploaded (B-1). */
+export const E2E_PROFILE = 'e2e';
+
+/**
+ * Release check B-9 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): the e2e
+ * seams (`EXPO_PUBLIC_E2E=1`) belong to the development app env and, on EAS,
+ * to the `e2e` profile only. Returns why a build must stop, or null.
+ * app.config.ts throws on it, so a build with the preview or production app
+ * env, or an EAS build of any other profile, fails at config time instead of
+ * relying on the bundle gate alone; preflight-testflight.mjs applies the same
+ * rule to the profile env and to the shell. Only the exact value `1` turns the
+ * seams on, so only `1` is refused.
+ */
+export function e2eRefusal(input: { e2e?: string | null; appEnv: AppEnv; easBuildProfile?: string | null }): string | null {
+  if ((input.e2e ?? '').trim() !== '1') return null;
+  if (input.appEnv !== 'development') {
+    return `EXPO_PUBLIC_E2E=1 with EXPO_PUBLIC_APP_ENV=${input.appEnv}: e2e seams never reach a ${input.appEnv} build (B-9). Unset EXPO_PUBLIC_E2E, or build the ${E2E_PROFILE} profile.`;
+  }
+  const profile = (input.easBuildProfile ?? '').trim();
+  if (profile !== '' && profile !== E2E_PROFILE) {
+    return `EXPO_PUBLIC_E2E=1 in an EAS build of the "${profile}" profile: only the ${E2E_PROFILE} profile carries e2e seams (B-9). Remove EXPO_PUBLIC_E2E from that profile and from its EAS environment.`;
+  }
+  return null;
+}
+
 // Literal `process.env.EXPO_PUBLIC_APP_ENV` so Metro inlines it at bundle time.
 export const APP_ENV: AppEnv = resolveAppEnv(process.env.EXPO_PUBLIC_APP_ENV) ?? DEFAULT_APP_ENV;
 

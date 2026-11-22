@@ -31,6 +31,8 @@ export interface SentEmail {
   to: string;
   subject: string;
   text: string;
+  html?: string;
+  attachments?: { filename: string; content: string; content_type: string; content_id: string }[];
   idempotencyKey: string | null;
 }
 
@@ -55,6 +57,12 @@ export class FakeWorld {
   alertState = new Map<string, number | null>();
   ledger: { t: string; id: string; at: string }[] = [];
   retentionCalls = 0;
+  /** escrow_unwraps rows as backup_svc_unwraps_between returns them (20261023000000). */
+  escrowLog: Record<string, unknown>[] = [];
+  backupSweepCalls = 0;
+  /** Arguments of each subscription_retention_purge call; null while S06's migration is absent (404). */
+  subscriptionRetentionCalls: string[] = [];
+  subscriptionRetentionMissing = false;
   finalized = new Map<string, Record<string, unknown>>();
   extraResidue: { table_schema: string; table_name: string; column_name: string }[] = [];
 
@@ -63,6 +71,8 @@ export class FakeWorld {
   appleResponse: { status: number; body?: unknown } = { status: 200 };
   emails: SentEmail[] = [];
   resendStatus = 200;
+  /** An RPC name that answers 503 (a transient database failure). */
+  failRpc: string | null = null;
   contactDeletes: string[] = [];
   /** Every request the worker made: url, method and body text (for the canary scan). */
   traffic: { url: string; method: string; body: string }[] = [];
@@ -115,7 +125,7 @@ export class FakeWorld {
     const body = typeof init.body === 'string' ? init.body : '';
     this.traffic.push({ url: input, method, body });
     const url = new URL(input);
-    if (url.origin === SUPA) return this.supabase(url, method, body);
+    if (url.origin === SUPA) return this.supabase(url, method, body, new Headers(init.headers));
     if (input === 'https://appleid.apple.com/auth/revoke') {
       this.appleCalls.push(new URLSearchParams(body));
       return json(this.appleResponse.status, this.appleResponse.body ?? null);
@@ -124,7 +134,7 @@ export class FakeWorld {
       if (this.resendStatus !== 200) return json(this.resendStatus, { name: 'error', message: 'fake failure for asha.parent@example.invalid' });
       const b = JSON.parse(body);
       const headers = new Headers(init.headers);
-      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, idempotencyKey: headers.get('Idempotency-Key') });
+      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, html: b.html, attachments: b.attachments, idempotencyKey: headers.get('Idempotency-Key') });
       return json(200, { id: 'email-1' });
     }
     if (input.startsWith('https://api.resend.com/contacts/')) {
@@ -134,12 +144,13 @@ export class FakeWorld {
     return json(599, null);
   };
 
-  private supabase(url: URL, method: string, body: string): Response {
+  private supabase(url: URL, method: string, body: string, headers: Headers = new Headers()): Response {
     const path = url.pathname;
     if (path.startsWith('/rest/v1/rpc/')) {
       const fn = path.slice('/rest/v1/rpc/'.length);
       const args = body ? JSON.parse(body) : {};
       this.rpcCalls.push({ fn, args });
+      if (fn === this.failRpc) return json(503, { code: 'PGRST000', message: 'unavailable' });
       try {
         return json(200, this.rpc(fn, args));
       } catch (e) {
@@ -180,6 +191,8 @@ export class FakeWorld {
     if (m && method === 'POST' && m[2]) {
       const bucket = decodeURIComponent(m[1]);
       const name = m[2].split('/').map(decodeURIComponent).join('/');
+      // Storage refuses to replace an object unless x-upsert is true (400 with statusCode 409).
+      if (headers.get('x-upsert') === 'false' && this.has(bucket, name)) return json(400, { statusCode: '409', error: 'Duplicate' });
       this.put(bucket, name, null);
       this.objects.get(bucket)!.get(name)!.body = body;
       return json(200, { Key: `${bucket}/${name}` });
@@ -311,6 +324,15 @@ export class FakeWorld {
       case 'ops_retention':
         this.retentionCalls++;
         return { audit_log: 0, forget_quota: 0 };
+      case 'backup_svc_unwraps_between':
+        return this.escrowLog.filter((r) => String(r.at) >= String(a.p_from) && String(r.at) < String(a.p_until));
+      case 'backup_svc_sweep':
+        this.backupSweepCalls++;
+        return { orphans: 1, stale_pending: 0, expired_requests: 0, old_requests: 0, old_notices: 0, old_log_rows: 0 };
+      case 'subscription_retention_purge':
+        if (this.subscriptionRetentionMissing) throw { status: 404, code: 'PGRST202' };
+        this.subscriptionRetentionCalls.push(String(a.p_now));
+        return 2;
       default:
         throw { status: 404, code: 'PGRST202' };
     }

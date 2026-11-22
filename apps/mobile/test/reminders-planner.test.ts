@@ -6,6 +6,7 @@ import {
   activeWeekdays,
   clampReminderTime,
   DEFAULT_PREFS,
+  DEFAULT_WEEKLY_DAY,
   DEFAULT_WINDOW,
   normalizeWindow,
   isQuietTime,
@@ -155,6 +156,15 @@ describe('default cadence (C-REQ-002)', () => {
     expect(week[1].month).toBe(7);
   });
 
+  it('weekly with no chosen day lands on Saturday, as F13 section 6 says (BL-530)', () => {
+    expect(DEFAULT_WEEKLY_DAY).toBe(6);
+    expect(DEFAULT_PREFS.weeklyDay).toBe(6);
+    const weekly = plan({ prefs: { cadence: 'weekly', weeklyDay: DEFAULT_PREFS.weeklyDay, monthNotes: false }, horizonDays: 21 });
+    expect(weekly).toHaveLength(3);
+    expect(weekly.every((n) => new Date(`${n.date}T12:00:00Z`).getUTCDay() === 6)).toBe(true);
+    expect(activeWeekdays({ cadence: 'weekly', days: [], weeklyDay: Number.NaN })).toEqual([6]);
+  });
+
   it('weekly uses its one evening; every evening uses all seven', () => {
     const weekly = plan({ prefs: { cadence: 'weekly', weeklyDay: 0, monthNotes: false }, horizonDays: 21 });
     expect(weekly.every((n) => new Date(`${n.date}T12:00:00Z`).getUTCDay() === 0)).toBe(true);
@@ -296,17 +306,18 @@ describe('month notes and birthdays (C-REQ-011)', () => {
     const twin = { ...asha, id: 'child-twin', name: 'Dev' };
     const p = plan({ children: [asha, twin], prefs: { cadence: 'off' }, monthHorizonDays: 40 });
     expect(p.map((n) => n.date)).toEqual(['2026-10-08', '2026-11-08']);
-    expect(p[0].title).toBe('Month 7 begins');
-    expect(p[0].body).toBe(reminderCopy.together.monthBodyNeutral);
+    // Names off: no month number on a lock screen (E82).
+    expect(p[0].title).toBe(reminderCopy.neutral.monthOpen.title);
+    expect(p[0].body).toBe(reminderCopy.neutral.lockBody);
     const named = plan({ children: [asha, twin], prefs: { cadence: 'off', namesOnLockScreen: true }, monthHorizonDays: 40 });
-    expect(named[0].body).toBe('New chapters for Asha and Dev are open.');
+    expect(named[0].body).toBe('A new month is open for Asha and Dev.');
   });
 });
 
 describe('names on the lock screen (C-REQ-009, D-025)', () => {
   const names = ['Asha', 'Dev'];
   const lots = (namesOnLockScreen: boolean) =>
-    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, maxNotifications: 200, now: at('2026-12-20', 12, 0) });
+    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, now: at('2026-12-20', 12, 0) });
 
   it('by default no notification names a child', () => {
     const p = lots(false);
@@ -315,7 +326,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('with names on, evening nudges name each included child in turn', () => {
-    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56, maxNotifications: 200 });
+    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56 });
     // Every variant but "Tonight's letter" names a child.
     const named = evenings.map((n) => names.find((name) => `${n.title} ${n.body}`.includes(name))).filter(Boolean);
     expect(named.length).toBe(evenings.length - evenings.filter((n) => n.variant === 1).length);
@@ -326,7 +337,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('never names a child left out of reminders', () => {
-    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400, maxNotifications: 200 });
+    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400 });
     for (const n of p) expect(`${n.title} ${n.body}`).not.toContain('Dev');
   });
 

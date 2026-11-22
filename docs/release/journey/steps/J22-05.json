@@ -1,0 +1,34 @@
+{
+  "id": "J22-05",
+  "journey": "sign-in",
+  "kind": "unhappy",
+  "title": "Offline",
+  "note": "The line says the letters are safe before anything else, then what to do (VOICE, the Error row).",
+  "from": "J22-04",
+  "shot": "screens/J22-05.png",
+  "route": "/sign-in/email",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Continue with email Email A link and a code arrive by email. No password to remember. Your letters are safe on this phone. Sign in once you are back online. Send link",
+  "lines": [
+    "Back",
+    "Continue with email",
+    "Email",
+    "A link and a code arrive by email. No password to remember.",
+    "Your letters are safe on this phone. Sign in once you are back online.",
+    "Send link"
+  ]
+}

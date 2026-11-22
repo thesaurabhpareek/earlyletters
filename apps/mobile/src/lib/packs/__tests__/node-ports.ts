@@ -3,6 +3,8 @@
  * Node implementations of the pack engine's ports, for tests only: a real
  * file system under a temp directory (with crash injection), real HTTP Range
  * requests through `fetch`, and a local Range-capable server with faults.
+ * The HTTP client can store its chunks on a MemoryDisk instead of the real
+ * disk (`memory-ports.ts`), so a test can use the real server without the disk.
  */
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -68,6 +70,8 @@ export class NodeFs implements PackFs {
 
 export class NodeHttp implements PackHttp {
   readonly requests: { url: string; range: string }[] = [];
+  /** `write` stores each chunk: on the real disk by default, or on a MemoryDisk (`memory-ports.ts`). */
+  constructor(private readonly write: (dest: string, bytes: Uint8Array) => void = (dest, bytes) => fs.writeFileSync(dest, bytes)) {}
   async downloadRange(url: string, dest: string, start: number, end: number, opts: { signal: AbortSignal; onBytes?: (n: number) => void }) {
     const range = `bytes=${start}-${end}`;
     this.requests.push({ url, range });
@@ -78,7 +82,7 @@ export class NodeHttp implements PackHttp {
     }
     const body = new Uint8Array(await res.arrayBuffer());
     opts.onBytes?.(body.length);
-    fs.writeFileSync(dest, body);
+    this.write(dest, body);
   }
 }
 
@@ -176,8 +180,11 @@ export async function startRangeServer(files: Record<string, ServedFile>) {
 
 /** Rewrites the https URLs from the manifest to the local server. */
 export class LocalHttp extends NodeHttp {
-  constructor(private readonly base: string) {
-    super();
+  constructor(
+    private readonly base: string,
+    write?: (dest: string, bytes: Uint8Array) => void,
+  ) {
+    super(write);
   }
   override downloadRange(url: string, dest: string, start: number, end: number, opts: { signal: AbortSignal; onBytes?: (n: number) => void }) {
     return super.downloadRange(url.replace(/^https:\/\/[^/]+/, this.base), dest, start, end, opts);

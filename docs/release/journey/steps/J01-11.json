@@ -5,6 +5,7 @@
   "title": "A due date too far ahead",
   "note": "A due date can be at most 305 days away, the same range the phone picker offers.",
   "from": "J01-10",
+  "shot": "screens/J01-11.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,18 +22,17 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Letters written before birth go into a part of the book called Before You. Choose a due date from today up to ten months ahead. Continue",
+  "text": "Back Who is this book for? Asha Name Add another child Birthday Not here yet Due date Letters written before the birth go in Before You. Choose a due date from today up to ten months ahead.",
   "lines": [
     "Back",
     "Who is this book for?",
-    "Their name",
-    "You can add a nickname later.",
+    "Asha",
+    "Name",
     "Add another child",
     "Birthday",
     "Not here yet",
     "Due date",
-    "Letters written before birth go into a part of the book called Before You.",
-    "Choose a due date from today up to ten months ahead.",
-    "Continue"
+    "Letters written before the birth go in Before You.",
+    "Choose a due date from today up to ten months ahead."
   ]
 }

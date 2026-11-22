@@ -55,13 +55,27 @@ export function fixture(): Fixture {
   };
 }
 
+/**
+ * Inserts a book row and this person's choices for it, as the current schema holds them (v7:
+ * book-level columns in `children`, the signature and reminders in `child_member_prefs`).
+ */
+export function insertBook(
+  db: SqlDb,
+  b: { id: string; name?: string; birthday?: string | null; dueDate?: string | null; signsAs?: string; serverState?: string; at?: string },
+): string {
+  const at = b.at ?? new Date(T0).toISOString();
+  // children.signs_as stays (NOT NULL, kept by v7 for a v6 build) and mirrors the prefs value, as the repo writes it.
+  db.run(
+    'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at, server_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    b.id, b.name ?? 'Asha', b.birthday === undefined ? '2026-03-01' : b.birthday, b.dueDate ?? null, b.signsAs ?? 'Mama', at, at, b.serverState ?? 'local',
+  );
+  db.run('INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, updated_at) VALUES (?, ?, 1, ?)', b.id, b.signsAs ?? 'Mama', at);
+  return b.id;
+}
+
 /** Inserts the Asha book directly, so entry tests do not depend on the children repository. */
 export function seedChild(db: SqlDb, id = 'child-asha', signsAs = 'Mama'): string {
-  db.run(
-    "INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, 'Asha', '2026-03-01', NULL, ?, ?, ?)",
-    id, signsAs, new Date(T0).toISOString(), new Date(T0).toISOString(),
-  );
-  return id;
+  return insertBook(db, { id, signsAs });
 }
 
 export function letter(over: Partial<Entry> = {}): Entry {

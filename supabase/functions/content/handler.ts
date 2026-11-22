@@ -1,6 +1,7 @@
 /**
  * `content` Edge Function routes (ADR 0016, ADR 0017):
  *   GET /content/v1/bundle?locale=en   signed ContentBundle for one locale
+ *   GET /content/health                200 when deployed (RA-07-06; _shared/health)
  * Public, read-only, cacheable; no user data in or out. The v1.0 interface is
  * English only (decision 6), so `en` is the only published locale for now.
  */

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "format": "early-letters-export",
+  "signed_in": false,
+  "plan": "free",
+  "exported_from": "phone",
+  "memberships": [
+    {
+      "child_id": "child-asha-0001",
+      "role": "parent",
+      "signs_as": "Mama"
+    },
+    {
+      "child_id": "child-dev-0002",
+      "role": "parent",
+      "signs_as": "Mama"
+    }
+  ]
+}

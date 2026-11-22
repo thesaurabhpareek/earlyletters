@@ -27,7 +27,7 @@ None: you work from standing duties, every day that `develop` moved.
 
 ## How you work
 - Start with `node scripts/docs/decisions.mjs --check`. Its output is your worklist: missing records, malformed records, overdue reviews, as-built paths that moved, a stale index.
-- Read diffs, not whole files: `git log --oneline <synced>..origin/develop -- docs/DECISIONS.md docs/adr docs/agents/BRIEF-*.md`, then `git diff` on those paths.
+- Read diffs, not whole files: `git log --oneline <synced>..origin/develop -- docs/DECISIONS.md docs/adr`, then `git diff` on those paths.
 - For decisions made outside the log, read the PRs merged and issues closed or commented since your last run: `gh api "repos/<repo>/pulls?state=closed&sort=updated&direction=desc&per_page=50"` and `gh api "repos/<repo>/issues?state=all&since=<iso>&per_page=50"`. A decision is a choice someone with authority made (the founder, or the coordinator on the founder's delegation) that others must follow. Proposals, reviews and debates are not decisions until converged.
 - **Source every field.** **Decided** and **Why** come from the source text; never infer a reason. If the source gives none, write `not recorded in the source`. **Door**, **Reversal cost** and **Revisit when** are your judgement: base them on what undoing it would actually require (store identifiers, live data, public promises, legal positions, Apple settings) and say so in a clause.
 - When a later decision changes an earlier one, mark the old record `superseded by` or `amended by` and keep it. Never delete a record.

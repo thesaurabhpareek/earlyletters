@@ -74,6 +74,106 @@ export function quoteMarkCount(text: string): number {
   return (text.match(QUOTE_RE) ?? []).length;
 }
 
+/* ---------- every quotation style (F06-REQ-006, R-01 D7) ---------- */
+
+/** Letters, marks and digits: what makes an apostrophe word-internal. */
+const WORDISH = /[\p{L}\p{M}\p{N}]/u;
+/** Marks that double as an apostrophe ("don’t", "Asha's"). Between two letters they are not quotation. */
+const APOSTROPHES = new Set(["'", '’', '‛', '＇']);
+
+/**
+ * True when the mark at `i` is an apostrophe inside a word (a letter, mark
+ * or digit on both sides). Such a mark opens or closes nothing.
+ */
+export function isWordApostrophe(text: string, i: number): boolean {
+  return APOSTROPHES.has(text[i]) && WORDISH.test(text[i - 1] ?? '') && WORDISH.test(text[i + 1] ?? '');
+}
+
+/**
+ * Every Unicode quotation mark (`\p{Quotation_Mark}`: " ' « » ‘ ’ ‚ ‛ “ ” „ ‟
+ * ‹ › 「 」 『 』 〝 〞 〟 ﹁ ﹂ ﹃ ﹄ ＂ ＇ ｢ ｣ ⹂), except an apostrophe inside a
+ * word. Compare it on the whole text before and after an edit, because
+ * whether a ’ is an apostrophe depends on its neighbours.
+ */
+export function quotationMarkCount(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) if (QUOTATION_MARK.test(text[i]) && !isWordApostrophe(text, i)) n++;
+  return n;
+}
+
+/**
+ * The quotation marks of a text in order, as one string. Two texts with the
+ * same count can still differ here: a swap of one mark for another (U+201C
+ * to U+00AB) changes the sequence, and no machine edit may restyle a quote
+ * (#179 tests-lens review, Note A, 23 Oct 2026).
+ */
+export function quotationMarks(text: string): string {
+  let out = '';
+  for (let i = 0; i < text.length; i++) if (QUOTATION_MARK.test(text[i]) && !isWordApostrophe(text, i)) out += text[i];
+  return out;
+}
+const QUOTATION_MARK = /\p{Quotation_Mark}/u;
+
+/* ---------- invisible characters (F06-REQ-003, R-01 D4) ---------- */
+
+/**
+ * Characters that change how a letter reads or joins without being seen:
+ * direction marks, embeddings, overrides and isolates (`Bidi_Control`), and
+ * every default-ignorable code point (ZWSP, ZWNJ, ZWJ, word joiner, BOM,
+ * soft hyphen, variation selectors). A machine edit never adds, removes or
+ * moves one.
+ */
+const INVISIBLE = /[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]/u;
+
+export function isInvisible(ch: string): boolean {
+  return INVISIBLE.test(ch);
+}
+
+/** The invisible characters of `text`, in order. */
+export function invisiblesOf(text: string): string {
+  let out = '';
+  for (const ch of text) if (INVISIBLE.test(ch)) out += ch;
+  return out;
+}
+
+/**
+ * Where each invisible character sits: its code point and how many visible
+ * characters come before it. Two texts with the same signature carry the
+ * same invisible characters in the same places.
+ */
+export function invisibleSignature(text: string): string {
+  const out: string[] = [];
+  let visible = 0;
+  for (const ch of text) {
+    if (INVISIBLE.test(ch)) out.push(`${visible}:${ch.codePointAt(0)!.toString(16)}`);
+    else visible++;
+  }
+  return out.join(',');
+}
+
+/* ---------- agreement: the closed table (F06-REQ-007, R-01 D9) ---------- */
+
+/**
+ * True when `a` -> `b` is a listed pair: both words in one group of the
+ * closed table. There is no generic -s, -es, -ies rule, so a noun's number
+ * ("daughters" -> "daughter", "dogs" -> "dog") never changes, and a kinship
+ * word is refused even if a table lists it.
+ */
+export function isClosedAgreementPair(
+  a: string,
+  b: string,
+  groups: ReadonlyArray<ReadonlyArray<string>>,
+  isKinship: (w: string) => boolean = (w) => KINSHIP.has(norm(w)),
+): boolean {
+  const x = norm(a);
+  const y = norm(b);
+  if (x === y || isKinship(x) || isKinship(y)) return false;
+  return groups.some((g) => {
+    const s = g.map((w) => norm(w));
+    return s.includes(x) && s.includes(y);
+  });
+}
+
 /** Words a similarity-based stt_fix may never replace. */
 export function isProtectedWord(word: string): boolean {
   const w = norm(word);

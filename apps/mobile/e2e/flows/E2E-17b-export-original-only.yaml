@@ -1,0 +1,69 @@
+# E2E-17b  Same install as E2E-17a (no clearState). Switch the player to the
+# original recording, export again: the ZIP's audio is the same set of
+# originals with the same hashes. "Export on and off copies" in PRD V2 07
+# section 2.6: what the player plays never changes what the export carries.
+# The export runs last because every app start removes temporary exports
+# (`cleanupExports()` in app/_layout.tsx), so a relaunch after it would leave
+# the inspector nothing to read.
+# After this flow the runner calls
+#   bin/inspect-export.sh --originals   (REQUIRE_LISTENING=1, COMPARE_WITH=<17a hashes>)
+# which also fails if any audio hash differs from E2E-17a's.
+appId: ${APP_ID}
+name: E2E-17b Export with the original switched on, same originals
+tags:
+  - e2e
+  - E2E-17
+  - p0-nightly
+  - F15-REQ-001
+  - F15-REQ-002
+  - F08-REQ-003
+---
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.screen"
+- assertVisible:
+    id: "player.source.listening"
+- tapOn:
+    id: "player.original"
+- assertVisible:
+    id: "player.source.original"
+# The choice is remembered on this phone (player.original, L2).
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "player.source.original"
+- runFlow: ../subflows/go-back.yaml
+- tapOn:
+    id: "book.settings"
+- tapOn:
+    id: "settings.export"
+- assertVisible:
+    id: "export.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "export.start"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "export.ready"
+    timeout: 120000
+- assertNotVisible:
+    id: "export.error"
+# Leave the ZIP in place for bin/inspect-export.sh --originals.
+- stopApp

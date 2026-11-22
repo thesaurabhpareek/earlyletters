@@ -1,0 +1,32 @@
+{
+  "id": "J21-10",
+  "journey": "co-parent-sharing",
+  "kind": "unhappy",
+  "title": "The book is full",
+  "note": "At most two parents per book (D-069). The server says SCCAP and the sheet says so in one calm line; the link is forgotten and nothing is retried (F11-REQ-026).",
+  "from": "J21-03",
+  "shot": "screens/J21-10.png",
+  "route": "/invite",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Join a book This book already has two parents. Ask the person who invited you. Paste another link",
+  "lines": [
+    "Close",
+    "Join a book",
+    "This book already has two parents. Ask the person who invited you.",
+    "Paste another link"
+  ]
+}

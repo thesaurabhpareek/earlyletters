@@ -20,6 +20,18 @@
  * No dependency: a small PRNG (mulberry32) with a fixed seed in CI. The
  * nightly job sets SCRIBE_FUZZ_SEED to a random value; a failure prints the
  * seed and the case so it can be replayed exactly.
+ *
+ * The nightly runs 100,000 cases. Each property is cut into `it` blocks of
+ * CHUNK cases (BL-443), which hands the worker back to vitest between blocks
+ * as verify.r01.fuzz.test.ts does with its yields: vitest's
+ * worker-to-main calls time out after a fixed 60 s ("Timeout calling
+ * onTaskUpdate"), not configurable in vitest 3.2, and the two loops ran
+ * back to back with no yield, about 46 to 52 s at 100,000 runs and failing
+ * at 140,000 although every case passed (#257 review A, section 3). The
+ * yield draws nothing from the PRNG, so every seed and run replays as
+ * before. With the yields the per-test timeout can fire, so it is now 600 s
+ * (100,000 runs took about 80 s here on 24 Oct). It is set on each test
+ * because vitest prefers that value to the nightly's --testTimeout.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -38,6 +50,16 @@ import {
 
 const SEED = Number(process.env.SCRIBE_FUZZ_SEED ?? 20261003);
 const RUNS = Number(process.env.SCRIBE_FUZZ_RUNS ?? 10000);
+/**
+ * BL-443: each property is cut into `it` blocks of CHUNK cases, so no single synchronous call blocks a worker
+ * (instrumented, one 10,000 run blocked it for 40 to 67 s and vitest's worker report timed out). The blocks of
+ * one property share one PRNG and run in file order, so every seed and run number replays exactly as when the
+ * property was a single test. Run the whole file, not one block, to replay a run. Their per-test timeout is
+ * for CHUNK cases, not for RUNS, so a long nightly no longer needs a long timeout.
+ */
+const CHUNK = 2000;
+const chunks = (runs: number): { from: number; to: number }[] =>
+  Array.from({ length: Math.ceil(runs / CHUNK) }, (_, i) => ({ from: i * CHUNK, to: Math.min(runs, (i + 1) * CHUNK) }));
 
 // Fictional family only.
 const DICT: DictionaryTerm[] = [
@@ -253,36 +275,41 @@ function fuzzEdits(raw: string, rnd: () => number): Edit[] {
 }
 
 describe('verifier property: random model edits never add or swap meaning', () => {
-  it(`holds for ${RUNS} generated edit lists (seed ${SEED})`, () => {
-    const rnd = mulberry32(SEED);
-    let proposed = 0;
-    let accepted = 0;
-    for (let run = 0; run < RUNS; run++) {
-      const raw = CORPUS[Math.floor(rnd() * CORPUS.length)];
-      const edits = fuzzEdits(raw, rnd);
-      proposed += edits.length;
-      const ctx = { raw, level: 'clean' as const, dictionary: DICT, protectedSpans: protectedSpans(raw, DICT) };
+  const rnd = mulberry32(SEED);
+  let proposed = 0;
+  let accepted = 0;
+  for (const { from, to } of chunks(RUNS)) {
+    it(`holds for generated edit lists ${from} to ${to - 1} of ${RUNS} (seed ${SEED})`, () => {
+      for (let run = from; run < to; run++) {
+        const raw = CORPUS[Math.floor(rnd() * CORPUS.length)];
+        const edits = fuzzEdits(raw, rnd);
+        proposed += edits.length;
+        const ctx = { raw, level: 'clean' as const, dictionary: DICT, protectedSpans: protectedSpans(raw, DICT) };
 
-      const v = verifyEdits(edits, ctx);
-      accepted += v.accepted.length;
-      for (const e of v.accepted) expect(checkEdit(e, ctx), `seed ${SEED} run ${run}`).toBeNull();
-      const text = applyEdits(raw, v.accepted);
-      const broke = checkInvariants(raw, text);
-      if (broke) {
-        throw new Error(`seed ${SEED} run ${run}: ${broke}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
-      }
+        const v = verifyEdits(edits, ctx);
+        accepted += v.accepted.length;
+        for (const e of v.accepted) expect(checkEdit(e, ctx), `seed ${SEED} run ${run}`).toBeNull();
+        const text = applyEdits(raw, v.accepted);
+        const broke = checkInvariants(raw, text);
+        if (broke) {
+          throw new Error(`seed ${SEED} run ${run}: ${broke}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
+        }
 
-      // The same edits through the full pipeline, with the deterministic rules.
-      const clean = faithfulClean(raw, { level: 'clean', dictionary: DICT, modelEdits: edits });
-      const broke2 = checkInvariants(raw, clean.text);
-      if (broke2) {
-        throw new Error(`seed ${SEED} run ${run} (pipeline): ${broke2}\nraw:  ${raw}\ntext: ${clean.text}\nedits: ${JSON.stringify(clean.applied)}`);
+        // The same edits through the full pipeline, with the deterministic rules.
+        const clean = faithfulClean(raw, { level: 'clean', dictionary: DICT, modelEdits: edits });
+        const broke2 = checkInvariants(raw, clean.text);
+        if (broke2) {
+          throw new Error(`seed ${SEED} run ${run} (pipeline): ${broke2}\nraw:  ${raw}\ntext: ${clean.text}\nedits: ${JSON.stringify(clean.applied)}`);
+        }
       }
-    }
+    }, 120_000); // 2000 cases: well past vitest's 5 s default on a loaded runner, far inside this.
+  }
+
+  it('was not vacuous: the generator proposed plenty and honest repairs got through', () => {
     // Not vacuous: the generator proposes plenty, and honest repairs get through.
     expect(proposed).toBeGreaterThan(RUNS * 2);
     expect(accepted).toBeGreaterThan(RUNS / 10);
-  }, 120_000); // 10k runs through the verifier and the full pipeline: well past vitest's 5 s default.
+  });
 
   it('the invariant itself catches the TDD 03 7.1 attacks (checker sanity)', () => {
     expect(checkInvariants('I can come.', 'I cannot come.')).toBe('added_or_swapped_word');
@@ -379,29 +406,34 @@ function unicodeEdits(raw: string, rnd: () => number): Edit[] {
 }
 
 describe('verifier property: Unicode edits never change a letter or its marks', () => {
-  it(`holds for ${RUNS} generated edit lists over Devanagari, Hinglish and NFD (seed ${SEED})`, () => {
-    const rnd = mulberry32(SEED ^ 0x5eed);
-    let proposed = 0;
-    for (let run = 0; run < RUNS; run++) {
-      const raw = UCORPUS[Math.floor(rnd() * UCORPUS.length)];
-      const edits = unicodeEdits(raw, rnd);
-      proposed += edits.length;
-      const ctx = { raw, level: 'clean' as const, dictionary: UDICT, protectedSpans: protectedSpans(raw, UDICT) };
-      const v = verifyEdits(edits, ctx);
-      for (const e of v.accepted) expect(checkEdit(e, ctx), `seed ${SEED} run ${run}`).toBeNull();
-      const text = applyEdits(raw, v.accepted);
-      const broke = checkInvariants(raw, text);
-      if (broke) {
-        throw new Error(`seed ${SEED} run ${run} (unicode): ${broke}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
+  const rnd = mulberry32(SEED ^ 0x5eed);
+  let proposed = 0;
+  for (const { from, to } of chunks(RUNS)) {
+    it(`holds for generated edit lists ${from} to ${to - 1} of ${RUNS} over Devanagari, Hinglish and NFD (seed ${SEED})`, () => {
+      for (let run = from; run < to; run++) {
+        const raw = UCORPUS[Math.floor(rnd() * UCORPUS.length)];
+        const edits = unicodeEdits(raw, rnd);
+        proposed += edits.length;
+        const ctx = { raw, level: 'clean' as const, dictionary: UDICT, protectedSpans: protectedSpans(raw, UDICT) };
+        const v = verifyEdits(edits, ctx);
+        for (const e of v.accepted) expect(checkEdit(e, ctx), `seed ${SEED} run ${run}`).toBeNull();
+        const text = applyEdits(raw, v.accepted);
+        const broke = checkInvariants(raw, text);
+        if (broke) {
+          throw new Error(`seed ${SEED} run ${run} (unicode): ${broke}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
+        }
+        const clean = faithfulClean(raw, { level: 'clean', dictionary: UDICT, modelEdits: edits });
+        const broke2 = checkInvariants(raw, clean.text);
+        if (broke2) {
+          throw new Error(`seed ${SEED} run ${run} (unicode pipeline): ${broke2}\nraw:  ${raw}\ntext: ${clean.text}\nedits: ${JSON.stringify(clean.applied)}`);
+        }
       }
-      const clean = faithfulClean(raw, { level: 'clean', dictionary: UDICT, modelEdits: edits });
-      const broke2 = checkInvariants(raw, clean.text);
-      if (broke2) {
-        throw new Error(`seed ${SEED} run ${run} (unicode pipeline): ${broke2}\nraw:  ${raw}\ntext: ${clean.text}\nedits: ${JSON.stringify(clean.applied)}`);
-      }
-    }
+    }, 120_000);
+  }
+
+  it('was not vacuous: the generator proposed plenty', () => {
     expect(proposed).toBeGreaterThan(RUNS * 2);
-  }, 120_000);
+  });
 
   it('the invariant catches the CORE-01 attacks (checker sanity)', () => {
     expect(checkInvariants('वह खुश है।', 'वह खुश हो।')).toBe('added_or_swapped_word');

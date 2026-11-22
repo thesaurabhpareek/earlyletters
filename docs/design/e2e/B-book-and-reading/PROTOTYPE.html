@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Area B: Book and reading. Clickable prototype (DRAFT, 20 Nov 2026)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Self-contained: no network, no framework, no external font. Token values copied from
+  packages/design-tokens/src/tokens.ts (light, dark, highContrast, space, radius, type, motion.fadeMs).
+  Fonts: Literata and Mukta are bundled in the app but not here; the page falls back to Georgia (serif)
+  and the system sans. Pictures are drawn shapes, never photos of people. Family: Asha (fictional).
+  Every visible word is placeholder intent; the words of record are in WORDS.md and need founder approval.
+  Materials follow docs/design/system/BRIEF.md section 3: glass only on controls and navigation,
+  content on paper, at most three glass surfaces, solid fallback under Reduce Transparency.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--surfaceRaised:#FFFFFF;--text:#2B2722;--textMuted:#6B645B;--accent:#8A5A3B;
+  --accentSoft:#F1E6DC;--onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--success:#3F7A55;--caution:#94661A;
+  --controlBorder:#8A8175;--destructive:#B5473A;--scrim:rgba(43,39,34,0.32);
+  --glass:rgba(255,255,255,0.56);--glassEdge:rgba(255,255,255,0.75);--glassShadow:0 6px 18px rgba(43,39,34,0.14);
+  --gold:#FFE2A8;--amber:#F3C98B;--dusk:#B881AF;
+  --s:1;--sd:1;
+  --serif:Georgia,"Times New Roman",serif;--sans:-apple-system,"Segoe UI",system-ui,Helvetica,Arial,sans-serif;
+}
+.dark{
+  --bg:#161412;--surface:#1B1917;--surfaceRaised:#201D1A;--text:#F2ECE4;--textMuted:#B3AA9E;--accent:#D9A47E;
+  --accentSoft:#3A2E25;--onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--success:#8CC9A0;--caution:#E3B866;
+  --controlBorder:#857C70;--destructive:#F08C7C;--scrim:rgba(0,0,0,0.55);
+  --glass:rgba(44,40,36,0.58);--glassEdge:rgba(255,255,255,0.14);--glassShadow:0 6px 18px rgba(0,0,0,0.4);
+  --gold:rgba(255,226,168,0.16);--amber:rgba(243,201,139,0.18);--dusk:#8076E2;
+}
+.ic{--textMuted:#524B43;--accent:#6E4529;--line:#6B645B;--controlBorder:#2B2722;}
+.dark.ic{--textMuted:#D6CEC3;--accent:#E8BC9A;--line:#B3AA9E;--controlBorder:#F2ECE4;}
+.ax5{--s:2.2;--sd:1.6;}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);background:#d9d4cc;color:#222;display:flex;gap:18px;padding:16px;min-height:100vh}
+body.pageDark{background:#0d0c0b;color:#ddd}
+#side{width:300px;flex:none;font-size:13px;line-height:1.4}
+#side h1{font-size:16px;margin:0 0 6px}
+#side h2{font-size:13px;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+#side button,#side select{font:inherit;margin:2px 0}
+.jl button{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:6px;padding:3px 6px;cursor:pointer;color:inherit}
+.jl button.on{border-color:#8A5A3B;background:rgba(138,90,59,.12)}
+.toggles label{display:block;margin:2px 0;cursor:pointer}
+#mid{flex:none;display:flex;flex-direction:column;align-items:center;gap:8px}
+#stage{flex:1;min-width:280px;font-size:13px;line-height:1.45}
+#stage h3{margin:0 0 4px;font-size:15px}
+#stage code{background:rgba(0,0,0,.07);padding:0 3px;border-radius:3px}
+.steps{display:flex;gap:6px;align-items:center}
+.steps button{font:inherit;padding:4px 10px}
+
+/* the phone */
+#phone{width:375px;height:812px;border-radius:44px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);
+  box-shadow:0 0 0 10px #1c1b1a,0 20px 50px rgba(0,0,0,.35);font-family:var(--sans)}
+#fold{position:absolute;left:0;right:0;top:667px;border-top:1px dashed rgba(200,60,60,.7);z-index:90;pointer-events:none}
+#fold span{position:absolute;right:6px;top:-15px;font:10px var(--sans);color:rgba(200,60,60,.9);background:rgba(255,255,255,.7);padding:0 3px}
+.status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:600;position:relative;z-index:5}
+.scroll{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden}
+.scroll.withTabs{bottom:0;padding-bottom:96px}
+.pad{padding:0 20px}
+.lamp{position:absolute;left:-60px;right:-60px;top:-120px;height:460px;pointer-events:none;
+  background:radial-gradient(ellipse at 35% 30%,var(--gold) 0%,var(--amber) 28%,transparent 70%);opacity:.75}
+.rt .lamp,.ic .lamp{display:none}
+
+/* type, scaled: UI scales by --s, display by --sd (cap), letters by --s */
+.display{font-family:var(--serif);font-size:calc(34px*var(--sd));line-height:1.2;font-weight:500;margin:0}
+.title2{font-family:var(--serif);font-size:calc(22px*var(--sd));line-height:1.27;font-weight:500;margin:0}
+.callout{font-size:calc(17px*var(--s));line-height:1.3}
+.body{font-size:calc(18px*var(--s));line-height:1.33}
+.foot{font-size:calc(14px*var(--s));line-height:1.36;color:var(--textMuted)}
+.cap{font-size:calc(13px*var(--s));line-height:1.3;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--textMuted)}
+.dateline{font-size:calc(14px*min(var(--s),2.2));line-height:1.3;font-weight:600;letter-spacing:.04em;color:var(--textMuted)}
+.letter{font-family:var(--serif);font-size:calc(20px*var(--s));line-height:1.6}
+.letterSm{font-family:var(--serif);font-size:calc(17px*var(--s));line-height:1.45}
+.sig{font-family:var(--serif);font-style:italic;font-size:calc(20px*var(--s));text-align:right}
+.label{font-size:calc(18px*var(--s));font-weight:500}
+.labelSm{font-size:calc(16px*var(--s));font-weight:500}
+.muted{color:var(--textMuted)}
+
+/* controls */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:calc(max(44px,44px*var(--s)*0.75));border-radius:999px;padding:6px 18px;
+  font:500 calc(18px*var(--s))/1.2 var(--sans);cursor:pointer;border:1px solid var(--controlBorder);background:transparent;color:var(--text);width:100%;text-align:center}
+.btn svg,.glassNo svg,.card svg{width:20px;height:20px;flex:none}
+.ax5 .btn svg{width:30px;height:30px}
+.btn.primary{background:var(--accent);color:var(--onAccent);border-color:var(--accent);min-height:56px}
+.btn.quiet{border-color:transparent;color:var(--accent);width:auto;padding:6px 10px}
+.btn.destr{color:var(--destructive);border-color:var(--controlBorder)}
+.btn.sm{font-size:calc(16px*var(--s));width:auto}
+.ibtn{width:44px;height:44px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text)}
+.ibtn svg{width:22px;height:22px}
+.ax5 .ibtn{width:64px;height:64px}.ax5 .ibtn svg{width:32px;height:32px}
+
+/* glass: control layer only. Regular; clear with 35% dim over pictures; solid under Reduce Transparency */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.7);backdrop-filter:blur(18px) saturate(1.7);
+  border:1px solid var(--glassEdge);box-shadow:var(--glassShadow),inset 0 1px 0 var(--glassEdge)}
+.glass.clear{background:rgba(0,0,0,0.35);color:#fff;border-color:rgba(255,255,255,.3)}
+.rt .glass{background:var(--surfaceRaised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--controlBorder);box-shadow:none}
+.rt .glass.clear{background:var(--surfaceRaised);color:var(--text)}
+.gcluster{display:inline-flex;align-items:center;border-radius:999px;padding:2px}
+
+
+/* cards and lists: content layer */
+.card{background:var(--surfaceRaised);border-radius:14px;padding:16px;margin:10px 0;cursor:pointer;box-shadow:0 2px 6px rgba(43,39,34,.06)}
+.dark .card,.ic .card{border:1px solid var(--line);box-shadow:none}
+.card.sealed{background:var(--surface);box-shadow:none;border:1px solid var(--controlBorder)}
+.card.rule{border-left:3px solid var(--accent)}
+.opener{display:flex;align-items:baseline;gap:12px;margin:26px 0 6px}
+.num{font-family:var(--serif);font-size:calc(46px*min(var(--s),1.4));font-weight:500;line-height:1}
+.fade{-webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent);mask-image:linear-gradient(to bottom,#000 60%,transparent)}
+.clamp2{max-height:2.9em;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent);mask-image:linear-gradient(to bottom,#000 55%,transparent)}
+.ax5 .clamp2{max-height:5.8em}
+/* excerpts end in a fade, never an ellipsis glyph (DESIGN_LANGUAGE 9) */
+.list{background:var(--surfaceRaised);border-radius:14px;overflow:hidden;margin:8px 0}
+.dark .list,.ic .list{border:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 16px;border-top:1px solid var(--line);cursor:pointer}
+.row:first-child{border-top:none}
+.row .t{flex:1}
+.row .v{color:var(--textMuted);font-size:calc(16px*var(--s))}
+.ax5 .row{flex-wrap:wrap}.ax5 .row .v{flex-basis:100%;padding-left:0}
+.row svg{width:22px;height:22px;flex:none}
+.h2{font-size:calc(13px*var(--s));font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--textMuted);margin:22px 4px 4px}
+.chips{display:flex;gap:6px;margin:14px 0 4px}
+.ax5 .chips{flex-direction:column}
+.chip{flex:1;min-height:44px;border-radius:999px;border:1px solid var(--controlBorder);display:flex;align-items:center;justify-content:center;gap:6px;
+  font:500 calc(16px*var(--s)) var(--sans);cursor:pointer;background:transparent;color:var(--text)}
+.chip.sel{background:var(--accentSoft);border:1.5px solid var(--accent);color:var(--accent)}
+.toggle{width:51px;height:31px;border-radius:999px;background:var(--line);position:relative;flex:none;border:1px solid var(--controlBorder)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on{background:var(--accent)}.toggle.on::after{left:22px}
+.field{border:1px solid var(--controlBorder);border-radius:8px;min-height:48px;padding:10px 12px;font:calc(18px*var(--s)) var(--sans);background:var(--surfaceRaised);color:var(--text)}
+.u{text-decoration:underline;text-underline-offset:3px;font-weight:600}
+
+/* tab bar (system native tabs, glass) */
+.tabs{position:absolute;left:12px;right:12px;bottom:22px;height:62px;border-radius:999px;display:flex;justify-content:space-around;align-items:center;z-index:40}
+.tab{display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;color:var(--textMuted);cursor:pointer;min-width:64px}
+.tab.on{color:var(--accent);font-weight:600}
+.tab svg{width:24px;height:24px}
+.ax5 .tab span{display:none}
+
+/* sheets, toast, overlays */
+.scrimL{position:absolute;inset:0;background:var(--scrim);z-index:60}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:34px;z-index:61;padding:10px 18px 24px;max-height:86%;overflow-y:auto}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--controlBorder);opacity:.5;margin:2px auto 10px}
+.sheet h4{margin:4px 0 12px;font-size:calc(18px*var(--s));font-weight:600}
+.sheet .btn{margin-top:10px}
+.sheet .btn.solid{background:var(--surfaceRaised)}
+.toast{position:absolute;left:16px;right:16px;bottom:100px;border-radius:22px;padding:10px 10px 10px 18px;display:flex;align-items:center;gap:10px;z-index:55;font-size:calc(16px*var(--s))}
+.ax5 .toast{flex-direction:column;align-items:stretch}
+.topbar{position:absolute;top:48px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:30}
+.topbar .gcluster{gap:0}
+.inline{position:absolute;top:0;left:0;right:0;z-index:30;padding:44px 16px 8px;border-radius:0 0 22px 22px;display:flex;align-items:center;gap:6px}
+.picture{border-radius:14px;overflow:hidden;border:1px solid transparent;position:relative}
+.dark .picture,.ic .picture{border-color:var(--line)}
+.blank{background:var(--surface)!important}
+.note{border:1px dashed var(--controlBorder);border-radius:8px;padding:6px 8px;margin:6px 0;font-size:12px;color:var(--textMuted)}
+.rtl{direction:rtl;text-align:right;unicode-bidi:isolate}
+.thumb{width:72px;height:72px;border-radius:8px;flex:none;overflow:hidden}
+.ax5 .thumb{width:100%;height:160px}
+.cardrow{display:flex;gap:12px}.ax5 .cardrow{flex-direction:column}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<div id="side">
+  <h1>Area B: Book and reading</h1>
+  <div class="muted">DRAFT prototype, 20 Nov 2026. Ids key to DESIGN.md, MOTION.md, WORDS.md. Words are placeholder intent.</div>
+  <h2>Show</h2>
+  <div class="toggles">
+    <label><input type="checkbox" id="tDark"> Dark</label>
+    <label><input type="checkbox" id="tAx5"> AX5 text (Bold), SE 3 width</label>
+    <label><input type="checkbox" id="tRt"> Reduce Transparency (solid glass)</label>
+    <label><input type="checkbox" id="tIc"> Increase Contrast</label>
+    <label><input type="checkbox" id="tFold" checked> SE 3 fold line (667 pt)</label>
+  </div>
+  <h2>Screen and state</h2>
+  <select id="selScreen" style="width:100%"></select>
+  <select id="selState" style="width:100%"></select>
+  <h2>Journeys</h2>
+  <div class="jl" id="journeys"></div>
+</div>
+<div id="mid">
+  <div id="phone" class=""><div id="fold"><span>SE 3 fold</span></div><div id="screen"></div></div>
+  <div class="steps"><button id="prev">Back a step</button><span id="stepLbl"></span><button id="next">Next step</button></div>
+</div>
+<div id="stage"><h3 id="sTitle"></h3><div id="sNote"></div></div>
+
+<script>
+/* ---------- icons (simple strokes, decorative) ---------- */
+var I={
+ find:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>',
+ dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+ back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11l8-7 8 7v9H4z"/></svg>',
+ book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h7a2 2 0 012 2v13a2 2 0 00-2-2H3zM21 5h-7a2 2 0 00-2 2v13a2 2 0 012-2h7z"/></svg>',
+ me:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+ pic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',
+ env:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+ who:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c1-3 3-4 6-4s5 1 6 4"/></svg>',
+ ver:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12a8 8 0 108-8M4 4v5h5"/></svg>',
+ mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+ share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"/></svg>',
+ moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14A8 8 0 019 3a8 8 0 1011 11z"/></svg>',
+ eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3l18 18M10 6a10 10 0 0111 6 10 10 0 01-3 4M6 8a10 10 0 00-3 4 10 10 0 0013 5"/></svg>',
+ play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+ open:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h7a2 2 0 012 2v12M21 6h-7a2 2 0 00-2 2"/></svg>',
+ chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;opacity:.5"><path d="M9 5l7 7-7 7"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:16px;height:16px"><path d="M5 12l5 5 9-10"/></svg>'
+};
+/* drawn picture, never a person: hills and a sun, or a boat */
+function pic(kind,h){
+  var sky='#E9D9C6',hill='#B89878',hill2='#9C7B5E',sun='#F3C98B';
+  if(kind==='boat'){return '<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" style="width:100%;height:'+h+'px;display:block;background:#CFE0E6"><rect y="190" width="400" height="110" fill="#8FB3C0"/><path d="M120 190h160l-30 40H150z" fill="#4E6E8E"/><path d="M200 70v118M200 80l60 90h-60z" fill="#F5EFE7" stroke="#6B645B"/></svg>'}
+  return '<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" style="width:100%;height:'+h+'px;display:block;background:'+sky+'"><circle cx="300" cy="90" r="40" fill="'+sun+'"/><path d="M0 220Q100 140 200 210T400 190V300H0z" fill="'+hill+'"/><path d="M0 260Q120 200 260 250T400 240V300H0z" fill="'+hill2+'"/></svg>'
+}
+
+/* ---------- fixture: the fictional Asha book ---------- */
+var L={
+ boat:{date:'TUESDAY 3 MARCH',month:'Month 4',words:'Today you found the blue boat in the bath and would not let it go. You held it up to show me every few minutes, as if it might have changed.',sig:'From Mama',pic:'boat'},
+ laugh:{date:'SUNDAY 15 FEBRUARY',month:'Month 3',words:'You laughed out loud for the first time while Papa was sneezing. Then you waited for him to do it again.',sig:'From Mama',first:'laughed out loud'},
+ rain:{date:'FRIDAY 6 FEBRUARY',month:'Month 3',words:'It rained all afternoon and we watched it from the window. You fell asleep before it stopped.',sig:'From Papa',pic:'hills'},
+ typed:{date:'MONDAY 2 FEBRUARY',month:'Month 3',words:'A short one tonight. You slept through, and so did we, almost.',sig:'From Mama'},
+ hidden:{date:'SATURDAY 14 MARCH',month:'Month 4',words:'This is for the day you start school.',sig:'From Mama',seal:'10 January 2030'}
+};
+
+/* ---------- shared pieces ---------- */
+function status(){return '<div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>'}
+function tabs(on){
+  return '<div class="tabs glass">'+
+   tab('home','Home',on==='home','A-S01')+tab('book','Book',on==='book','B-S01:default')+tab('me','Me',on==='me','B-S21:on')+'</div>';
+}
+function tab(ic,l,on,go){return '<div class="tab'+(on?' on':'')+'" data-go="'+go+'" role="tab" aria-label="'+l+'">'+I[ic]+'<span>'+l+'</span></div>'}
+function opener(n,label,range){return '<div class="opener" role="heading"><span class="num">'+n+'</span><span><div class="labelSm">'+label+'</div><div class="foot">'+range+'</div></span></div>'}
+function letterCard(k,opt){
+  opt=opt||{};var e=L[k];var go=opt.go||('B-S08:'+(k==='typed'?'ownTyped':k==='boat'?'withPicture':k==='laugh'?'firstMarked':'ownSpoken'));
+  var thumb=(e.pic&&!opt.noPic)?(opt.thumbMissing?'':'<div class="thumb'+(opt.bg?' blank':'')+'">'+(opt.bg?'':pic(e.pic,72*(document.body.dataset.ax5==='1'?2.2:1)))+'</div>'):'';
+  var firstLine=(opt.firstLabel&&e.first)?'<div class="label" style="margin-bottom:4px">'+e.first+'</div>':'';
+  return '<div class="card" data-go="'+go+'" role="button"><div class="cardrow">'+(opt.showThumb?thumb:'')+'<div style="flex:1">'+firstLine+
+   '<div class="dateline">'+e.date+'</div><div class="letterSm clamp2 fade" style="margin-top:6px">'+e.words+'</div><div class="foot" style="margin-top:6px">'+e.sig+'</div></div></div></div>';
+}
+function sealedCard(){
+  var e=L.hidden;
+  return '<div class="card sealed" data-go="B-S08:sealedAuthor" role="button" aria-label="Saturday 14 March. Hidden until 10 January 2030. Opens the letter."><div style="display:flex;gap:12px;align-items:flex-start"><span class="muted" aria-hidden="true">'+I.env+'</span><div><div class="dateline">'+e.date+'</div><div class="body" style="margin-top:4px">Hidden until '+e.seal+'</div></div></div></div>';
+}
+function toast(msg,undo){return '<div class="toast glass" role="status"><span style="flex:1">'+msg+'</span>'+(undo?'<button class="btn quiet sm" data-go="'+undo+'">Undo</button>':'')+'</div>'}
+function sheet(title,inner){return '<div class="scrimL" data-go="'+back()+'"></div><div class="sheet glass" role="dialog" aria-label="'+title+'"><div class="grab"></div><h4 role="heading">'+title+'</h4>'+inner+'</div>'}
+function back(){return cur.backTo||'B-S01:default'}
+
+/* ---------- B-S01 the Book ---------- */
+function headerCluster(opts){
+  var items='';
+  if(!opts.noFind)items+='<button class="ibtn" data-go="B-S06:idle" aria-label="Find">'+I.find+'</button>';
+  if(!opts.empty&&!opts.ax3)items+='<button class="btn quiet sm" data-go="B-S07:'+(opts.years?'withYears':'default')+'" style="min-height:44px">Go to a month</button>';
+  items+='<button class="ibtn" data-go="B-S02:'+(opts.menu||'default')+'" aria-label="More for this book">'+I.dots+'</button>';
+  return '<div class="gcluster glass">'+items+'</div>';
+}
+function book(st){
+  var ax=document.body.dataset.ax5==='1';
+  var o={noFind:st==='findOff'||st==='empty'||st==='hiddenReadOnly',empty:st==='empty',ax3:ax,menu:st==='quieted'?'quieted':st==='hiddenReadOnly'?'hiddenReadOnly':(ax?'ax3':'default'),years:true};
+  var lens=(st==='lensPhotos'||st==='lensBoth'||st==='default'&&false);
+  var h='<div class="lamp"></div>'+status()+'<div class="pad" style="position:relative">';
+  if(st==='scrolled'){
+    h='<div class="inline glass"><div class="label" style="flex:1">Asha&#39;s book</div>'+headerCluster(o).replace('gcluster glass','gcluster')+'</div>'+status()+'<div class="pad" style="padding-top:70px">';
+    h+='<div class="note">Inline bar after scroll: one glass navigation bar holding the same three controls (the band&#39;s cluster has left, so never glass on glass).</div>';
+    h+=opener(3,'Month 3','February')+letterCard('laugh')+letterCard('rain')+letterCard('typed')+'</div>'+tabs('book');
+    return h;
+  }
+  if(ax){
+    h+='<div style="padding-top:8px"><h1 class="display" role="heading" aria-level="1">Asha&#39;s book</h1><div class="callout" style="margin:4px 0 8px">4 months old</div>';
+    if(st==='twoBooks')h+='<button class="btn sm" style="margin:6px 0">For Asha</button>';
+    if(!o.empty)h+='<button class="btn" data-go="B-S19:default" style="margin:8px 0">'+I.open+' Read together</button>';
+    h+='<div style="display:flex;justify-content:flex-end;flex-wrap:wrap">'+headerCluster(o)+'</div></div>';
+  }else{
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-top:6px"><div><h1 class="display" role="heading" aria-level="1">Asha&#39;s book</h1><div class="callout" style="margin-top:2px">4 months old</div></div>'+headerCluster(o)+'</div>';
+    if(st==='twoBooks')h+='<button class="btn sm" style="margin:10px 0 0;width:auto">For Asha &#9662;</button>';
+    if(!o.empty)h+='<button class="btn" data-go="B-S19:default" style="margin-top:14px">'+I.open+' Read together</button>';
+  }
+  if(st==='empty'){
+    h+='<div class="center" style="margin-top:40px"><div style="width:160px;height:214px;margin:0 auto;background:var(--surfaceRaised);border-radius:14px;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center"><div class="title2">Asha</div><div class="sig" style="text-align:center;font-size:14px">From Mama</div></div>'+
+      '<div class="title2" style="margin-top:24px">The first page is waiting.</div><div class="body muted" style="margin-top:6px">Tell Asha one thing about today.</div></div>'+
+      '<button class="btn primary" data-go="A-S01" style="margin-top:28px">Write a letter</button>';
+    return h+'</div>'+tabs('book');
+  }
+  if(st==='hiddenReadOnly')h+='<div class="note">Opened from Me, Hidden books (C-S16). Read-only: no lens, no Find; More offers only Show this book again. Engineering gap E-05: no route today.</div>';
+  if(st==='newPhone')h+='<div class="callout muted" style="margin-top:12px">Your letters are here. Recordings and pictures stay on the phone that made them.</div><div class="note">Line content is C-S12 (area C); position is the built arrival line.</div>';
+  if(st==='quieted')h+='<div class="note">Quieted: the bar is unchanged; More offers Turn Quiet off (NS-22-R7). The toast below is the visible change.</div>';
+  var showLens=st==='lensPhotos'||st==='lensBoth'||st==='photosLens'||st==='firstsLens';
+  if(showLens){
+    var sel=st==='photosLens'?'Photos':st==='firstsLens'?'Firsts':'Months';
+    var opts=['Months','Photos'];if(st==='lensBoth'||st==='firstsLens'||st==='photosLens')opts.push('Firsts');
+    h+='<div class="chips" role="radiogroup" aria-label="Show letters by">'+opts.map(function(x){var g=x==='Months'?'B-S01:lensBoth':x==='Photos'?'B-S04:default':'B-S05:default';return '<button class="chip'+(x===sel?' sel':'')+'" role="radio" aria-checked="'+(x===sel)+'" data-go="'+g+'">'+(x===sel?I.check:'')+x+'</button>'}).join('')+'</div>';
+  }
+  var photosOff=st==='photosOff'||st==='newPhone';
+  h+=opener(4,'Month 4','March, so far');
+  if(st==='sealedCard')h+=sealedCard();
+  h+=letterCard('boat',{showThumb:!photosOff});
+  h+=opener(3,'Month 3','February');
+  h+=letterCard('laugh',{firstLabel:st==='lensBoth'||st==='sealedCard'})+letterCard('rain',{showThumb:!photosOff})+letterCard('typed');
+  h+='</div>';
+  if(st==='undoDeleted')h+=toast('Letter deleted.','B-S01:default');
+  if(st==='quieted')h+=toast('Asha&#39;s book is quiet for you.');
+  return h+tabs('book');
+}
+/* ---------- B-S02 More for this book ---------- */
+function menu(st){
+  cur.backTo='B-S01:'+(st==='quieted'?'quieted':st==='hiddenReadOnly'?'hiddenReadOnly':'default');
+  var rows='';
+  if(st==='ax3')rows+=row(I.cal,'Go to a month','', 'B-S07:withYears');
+  if(st==='hiddenReadOnly')rows+=row(I.eye,'Show this book again','','B-S01:default');
+  else{
+    rows+=row(I.moon,st==='quieted'?'Turn Quiet off':'Quiet this book',st==='quieted'?'':'Home and reminders stay quiet about Asha, for you. Your letters stay as they are.',st==='quieted'?'B-S01:default':'B-S01:quieted');
+    rows+=row(I.eye,'Hide this book','','C-S15');
+  }
+  var base=book(cur.backTo.split(':')[1]);
+  var t=st==='failed'?toast('That did not save. Asha&#39;s book is as it was.'):'';
+  return base+sheet('More for this book','<div class="list">'+rows+'</div><button class="btn solid" data-go="'+cur.backTo+'">Close</button>')+t;
+}
+function row(ic,t,sub,go,val,extra){
+  return '<div class="row" role="button" data-go="'+(go||'')+'"><span aria-hidden="true">'+(ic||'')+'</span><div class="t"><div class="label">'+t+'</div>'+(sub?'<div class="foot">'+sub+'</div>':'')+'</div>'+(val?'<div class="v">'+val+'</div>':'')+(extra||I.chev)+'</div>';
+}
+/* ---------- B-S04 Photos lens, B-S05 Firsts lens ---------- */
+function photosLens(st){
+  var bg=st==='backgrounded';
+  var h=book('photosLens');
+  // replace list: rebuild simply
+  var ax=document.body.dataset.ax5==='1';
+  var top=h.indexOf('<div class="opener"');
+  h=h.slice(0,top)+opener(4,'Month 4','March, so far')+letterCard('boat',{showThumb:true,thumbMissing:st==='thumbMissing',bg:bg})+opener(3,'Month 3','February')+letterCard('rain',{showThumb:true,bg:bg})+'</div>'+tabs('book');
+  if(bg)h+='<div class="note" style="position:absolute;top:300px;left:20px;right:20px;background:var(--bg);z-index:70">App inactive: every picture is an opaque box before the switcher snapshot (NS-01-R13a).</div>';
+  return h;
+}
+function firstsLens(st){
+  var h=book('firstsLens');var top=h.indexOf('<div class="opener"');
+  var c=st==='labelEmpty'?letterCard('rain'):letterCard('laugh',{firstLabel:true});
+  return h.slice(0,top)+opener(3,'Month 3','February')+c+'</div>'+tabs('book');
+}
+/* ---------- B-S06 Find ---------- */
+function find(st){
+  var q={idle:'',short:'bo',results:'boat',noMatch:'giraffe',failed:'boat',failedGettingReady:'boat',rtlRow:'boat',afterBack:'boat',cjk:'&#33337;'}[st];
+  var h=status()+'<div style="position:absolute;top:48px;left:12px;right:12px;z-index:30"><div class="glass" style="border-radius:26px;padding:6px;display:flex;'+(document.body.dataset.ax5==='1'?'flex-direction:column;align-items:stretch':'align-items:center')+';gap:6px">'+
+   '<div class="field" style="flex:1;border-radius:20px;display:flex;align-items:center;gap:8px" role="searchbox" aria-label="Find a letter"><span class="muted">'+I.find+'</span>'+(q?'<span>'+q+'</span>':'<span class="muted">Find in Asha&#39;s book</span>')+'<span style="border-left:2px solid var(--focus);height:1.1em"></span></div>'+
+   '<button class="btn quiet sm" data-go="B-S01:default">Cancel</button></div></div><div class="pad" style="padding-top:'+(document.body.dataset.ax5==='1'?220:120)+'px">';
+  if(st==='idle'||st==='short')h+='<div class="note">Nothing is drawn under the field. '+(st==='short'?'VoiceOver hint only: A few letters are enough to start looking (R23).':'')+'</div>';
+  if(st==='results'||st==='afterBack'||st==='rtlRow'||st==='cjk'){
+    h+='<div class="note">VoiceOver: "Letters found" once, no number (R11).</div>';
+    h+=frow('TUESDAY 3 MARCH','Today you found the blue <span class="u">boat</span> in the bath and would not let it go.');
+    if(st==='rtlRow')h+=frow('MONDAY 9 FEBRUARY','<span class="rtl">&#1575;&#1604;&#1602;&#1575;&#1585;&#1576; &#1575;&#1604;&#1571;&#1586;&#1585;&#1602;</span> and the <span class="u">boat</span> song again.');
+    h+=frow('SATURDAY 10 JANUARY','We read the <span class="u">boat</span> book twice before the lights went out.');
+  }
+  if(st==='noMatch')h+='<div class="body center muted" style="margin-top:30px" role="status">No letters with that word.</div>';
+  if(st==='failed'||st==='failedGettingReady')h+='<div class="center" style="margin-top:30px" role="alert"><div class="body">Find could not look just now.</div><button class="btn" data-go="B-S06:results" style="margin-top:14px">Try again</button>'+(st==='failedGettingReady'?'<div class="foot" style="margin-top:10px">Find is getting ready on this phone.</div>':'')+'</div>';
+  return h+'</div>'+tabs('book');
+}
+function frow(d,s){return '<div class="row" data-go="B-S08:withPicture" style="border-top:1px solid var(--line);padding-left:0;padding-right:0;display:block"><div class="dateline">'+d+'</div><div class="letterSm clamp2" style="margin-top:4px">'+s+'</div></div>'}
+/* ---------- B-S07 Go to a month ---------- */
+function months(st){
+  cur.backTo='B-S01:default';
+  var rows='';
+  if(st!=='default'){rows+='<div class="h2">Read a year together</div><div class="list">';
+    if(st==='withYears')rows+=row(I.open,'Asha&#39;s first year','','B-S19:year');
+    rows+=row(I.open,'Before You','','B-S19:year')+'</div>';}
+  if(st!=='expectingOnly')rows+='<div class="h2">Go to a month</div><div class="list">'+row('','Month 4','2 letters, from Mama','B-S01:default')+row('','Month 3','3 letters, from Mama and Papa','B-S01:default')+'</div>';
+  return book('default')+sheet('Go to a month',rows+(st==='withYears'?'<div class="note">Year rows carry no subtitle and no count (NS-24). Month rows as built (card gap G-07).</div>':''));
+}
+/* ---------- B-S08 letter page ---------- */
+function page(st){
+  var k=st==='ownTyped'?'typed':st==='otherParent'||st==='recordingElsewhere'?'rain':st==='firstMarked'?'laugh':st==='sealedAuthor'?'hidden':(st==='withPicture'||st==='photoMissing'||st==='backgrounded')?'boat':'boat';
+  var e=L[k];
+  if(st==='notFound'){return '<div class="topbar"><div class="gcluster glass"><button class="ibtn" data-go="B-S01:default" aria-label="Back">'+I.back+'</button></div></div>'+status()+
+    '<div class="pad center" style="padding-top:220px"><div class="title2">This letter is not in the book</div><div class="body muted" style="margin-top:8px">It is in Recently deleted.</div></div>'+
+    '<div class="pad" style="position:absolute;bottom:40px;left:0;right:0"><button class="btn primary" data-go="C-S17">Open Recently deleted</button><button class="btn quiet" data-go="B-S01:default" style="width:100%">Back to the book</button></div>'}
+  var own=st!=='otherParent'&&st!=='recordingElsewhere';
+  var showPic=(k==='boat'&&st!=='ownNoPicture'&&st!=='photoNotStored'&&st!=='oneRow'&&st!=='waiting'&&st!=='ownPrivate')||st==='otherParentPic';
+  var h='<div class="topbar"><div class="gcluster glass"><button class="ibtn" data-go="B-S01:default" aria-label="Back">'+I.back+'</button></div><div class="gcluster glass"><button class="ibtn" aria-label="Reading size" style="font-family:var(--serif);font-size:20px">Aa</button></div></div>';
+  h+=status()+'<div class="pad" style="padding-top:64px;padding-bottom:40px">';
+  h+='<h1 class="dateline" role="heading" aria-level="1" style="margin:0">'+e.date+' &middot; '+e.month.toUpperCase()+'</h1>';
+  if(st==='sealedAuthor')h+='<div class="foot" style="margin-top:8px">'+I.mic.replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' Only you can see this until 10 January 2030.</div>';
+  if(showPic){
+    if(st==='photoMissing')h+='<div class="picture" style="margin-top:16px;padding:22px;background:var(--surface);text-align:center"><div class="body">Not on this phone any more</div><button class="btn sm" style="margin:10px auto 0" data-go="B-S08:ownNoPicture">Remove</button></div>';
+    else h+='<div class="picture" style="margin-top:16px;cursor:zoom-in" data-go="B-S11:viewer" role="img" aria-label="Photo with this letter">'+(st==='backgrounded'?'<div class="blank" style="height:220px"></div>':pic(e.pic||'boat',220))+'</div><div class="foot" style="margin-top:6px">The bath, after dinner</div>';
+  }
+  h+='<p class="letter" style="margin:18px 0 6px">'+e.words+'</p><div class="sig">'+e.sig+'</div>';
+  if(st==='photoNotStored')h+='<div style="margin-top:14px" role="status"><div class="foot">The photo did not come along with this letter. Your words are kept, and you can add it again.</div><button class="btn sm" data-go="B-S08:withPicture" style="margin-top:8px">Add a photo</button></div>';
+  if(st==='waiting')h+='<div style="margin-top:14px"><div class="foot">'+'Getting ready, 40%'+'</div><button class="btn" style="margin-top:10px">Write the words</button></div>';
+  if(k!=='typed'&&st!=='recordingElsewhere'&&st!=='waiting')h+='<div class="glassNo" style="margin-top:18px;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;border:1px solid var(--controlBorder)"><span style="color:var(--accent)">'+I.play+'</span><span class="label">Hear '+e.sig.replace('From ','')+'</span><span class="foot" style="margin-left:auto">1:12</span></div>';
+  if(k==='typed')h+='<div class="foot" style="margin-top:14px">Typed</div>';
+  if(st!=='waiting')h+='<button class="btn" style="margin-top:28px" data-go="D-share">'+I.share+' Share</button>';
+  h+='<div class="h2" role="heading" aria-level="2">This letter</div><div class="list">';
+  var dayV=st==='ownSpoken'||st==='withPicture'?'':'';
+  h+=row(I.cal,'About 3 March','Said on 9 June',own?'B-S09:default':'',null,own?I.chev:'');
+  if(st!=='waiting'&&st!=='oneRow'){
+    if(own)h+=row(I.flag,'This was a first',(st==='firstMarked')?'laughed out loud':'','B-S12:'+(st==='firstMarked'?'undo':'labelSheet'),null,'<span class="toggle'+(st==='firstMarked'?' on':'')+'" role="switch" aria-checked="'+(st==='firstMarked')+'"></span>');
+    else if(st==='otherParentFirst')h+=row(I.flag,'A first','laughed out loud','',null,'');
+    if(own&&st!=='sealedAuthor')h+=row(I.pic,showPic?'Photo':'Add a photo','',showPic?'B-S11:actions':'B-S08:withPicture',showPic?'The bath, after dinner':null);
+    if(own)h+=row(I.env,st==='sealedAuthor'?'Hidden until 10 January 2030':'Hide until a day','',st==='sealedAuthor'?'B-S14:confirm':'B-S13:default');
+    if(own&&(st==='ownPrivate'||st==='twoAdults'))h+=row(I.who,'Who can read it','','B-S10:default','Only you');
+    if(own&&k!=='typed')h+=row(I.ver,'Earlier versions','','C-S13');
+  }
+  if(k!=='typed')h+=row(I.mic,st==='recordingElsewhere'?'Recording kept on Papa&#39;s phone':'Recording kept on this phone','','C-S09',null,'');
+  h+='</div>';
+  if(own&&st!=='waiting')h+='<button class="btn destr" style="margin-top:28px" data-go="B-S15:'+(st==='sealedAuthor'?'confirmSealed':'confirm')+'">'+I.trash+' Delete</button>';
+  if(st==='otherParent')h+='<div class="note">Other parent&#39;s letter: read-only facts; no Who can read it, Hidden until, Earlier versions or Delete (NS-21-R11).</div>';
+  return h+'</div>';
+}
+/* ---------- sheets on the letter page ---------- */
+function daySheet(st){cur.backTo='B-S08:ownSpoken';
+  return page('ownSpoken')+sheet('The day it is about','<div class="chips" role="radiogroup"><button class="chip sel">'+I.check+'A day</button><button class="chip">A month of age</button></div><div class="field" style="margin-top:12px">3 March 2026</div><button class="btn primary" data-go="B-S08:ownSpoken">Save</button><button class="btn quiet" data-go="B-S08:ownSpoken" style="width:100%">Cancel</button>')+(st==='failed'?toast('That did not change. Try again.'):'');}
+function whoSheet(st){cur.backTo='B-S08:ownPrivate';
+  return page('ownPrivate')+sheet('Who can read it','<div class="list" role="radiogroup">'+row('','Only you','Kept out of the book, for you alone.','B-S08:ownPrivate',null,'<span style="color:var(--accent)">'+I.check+'</span>')+row('','In the book','Everyone who reads Asha&#39;s book can read it.','B-S08:ownSpoken',null,'')+'</div>')+(st==='failed'?toast('That did not change. Try again.'):'');}
+function photoSheets(st){cur.backTo='B-S08:withPicture';
+  if(st==='undo')return page('ownNoPicture')+toast('Photo taken off.','B-S08:withPicture')+'<div class="note" style="position:absolute;bottom:170px;left:16px;right:16px;background:var(--bg)">Undo under the T4 window; the toast and its Undo leave together (NS-01-R38b).</div>';
+  if(st==='replaceConfirm')return page('withPicture')+sheet('Use this photo instead?','<div class="body muted">The first photo stays until you choose.</div><button class="btn primary" data-go="B-S08:withPicture">Keep the first</button><button class="btn solid" data-go="B-S11:undo">Use this one</button>');
+  if(st==='pickFailed'||st==='iCloudOffline')return page('ownNoPicture')+toast(st==='pickFailed'?'That photo could not be opened. Choose another.':'This photo is in iCloud and needs a connection.');
+  if(st==='iCloudDownloading')return page('ownNoPicture')+toast('Getting the photo from iCloud','B-S08:ownNoPicture').replace('>Undo<','>Cancel<')+'<div class="note" style="position:absolute;bottom:170px;left:16px;right:16px;background:var(--bg)">System progress trait with Cancel; Cancel ends the wait at once (NS-01-R17b). Not met in #837.</div>';
+  if(st==='viewer')return '<div style="position:absolute;inset:0;background:#000"></div><div style="position:absolute;left:0;right:0;top:200px">'+pic('boat',300)+'</div>'+
+   '<div style="position:absolute;top:50px;right:14px;z-index:30"><div class="gcluster glass clear"><button class="ibtn" style="color:inherit" data-go="B-S08:withPicture" aria-label="Close">&#10005;</button></div></div>'+
+   '<div class="glass clear" style="position:absolute;left:16px;right:16px;bottom:34px;border-radius:30px;padding:8px;display:flex;gap:8px;z-index:30"><button class="btn" style="color:inherit;border-color:rgba(255,255,255,.4)" data-go="B-S11:replaceConfirm">Change</button><button class="btn" style="color:inherit;border-color:rgba(255,255,255,.4)" data-go="B-S11:undo">Take the photo off</button></div>';
+  if(st==='words')return page('withPicture')+sheet('About this photo','<div class="foot">Words about this photo (optional)</div><div class="field" style="margin-top:6px">The bath, after dinner</div><div class="foot" style="margin-top:12px">Where was this? (optional)</div><div class="field" style="margin-top:6px"></div><button class="btn primary" data-go="B-S08:withPicture">Done</button>');
+  return page('withPicture')+sheet('Photo','<div class="list">'+row(I.pic,'Change photo','','B-S11:replaceConfirm')+row(I.pic,'Words about this photo','','B-S11:words')+row(I.trash,'Take the photo off','','B-S11:undo')+'</div>');
+}
+function firstSheets(st){cur.backTo='B-S08:ownSpoken';
+  if(st==='undo')return page('ownSpoken')+toast('No longer marked as a first.','B-S08:firstMarked');
+  var v=st==='atLimit'?'laughed out loud while Papa sneezed agai':'';
+  return page('firstMarked')+sheet('This was a first','<div class="foot">In your words, if you like</div><div class="field" style="margin-top:6px">'+v+'</div>'+(st==='atLimit'?'<div class="note">40 graphemes: the field stops and says nothing (A5).</div>':'')+'<button class="btn primary" data-go="B-S08:firstMarked">Done</button>');
+}
+function sealSheet(st){cur.backTo='B-S08:ownSpoken';
+  var sel=st==='daySelected';
+  var cal='<div class="field" style="margin-top:12px;text-align:center">'+(sel?'10 January 2030':'Choose a day')+'</div><div class="foot" style="margin-top:4px">From tomorrow to Asha&#39;s 25th birthday.</div>';
+  return page('ownSpoken')+sheet('Hide until a day','<div class="body">Only you can see it until that day.</div>'+cal+
+   '<div class="foot" style="margin-top:12px">It opens at the start of that day where you are now. West of here, that can be the evening before.</div><div class="foot" style="margin-top:4px">If this phone&#39;s clock is set ahead, it opens early on this phone.</div><div class="foot" style="margin-top:4px">Hiding keeps it out of sight. It is stored like every other letter.</div><div class="foot" style="margin-top:4px">It is never sent to anyone while it is hidden. (PROPOSED line, FR-LEG-06.)</div>'+
+   (sel?'<button class="btn primary" data-go="B-S08:sealedAuthor">Hide it</button>':'')+'<button class="btn quiet" style="width:100%" data-go="B-S08:ownSpoken">Not now</button>'+(sel?'':'<button class="btn sm" data-go="B-S13:daySelected" style="margin:8px auto 0">(prototype: pick 10 January 2030)</button>'));
+}
+function openNow(){cur.backTo='B-S08:sealedAuthor';
+  return page('sealedAuthor')+sheet('Open this letter now?','<div class="body muted">It cannot be hidden again.</div><button class="btn primary" data-go="B-S08:sealedAuthor">Cancel</button><button class="btn solid" data-go="B-S08:ownSpoken">Open now</button>');}
+function del(st){
+  if(st==='undo')return book('undoDeleted');
+  cur.backTo=st==='confirmSealed'?'B-S08:sealedAuthor':'B-S08:ownSpoken';
+  return page(st==='confirmSealed'?'sealedAuthor':'ownSpoken')+sheet('Delete this letter?','<div class="body muted">It waits in Recently deleted for 30 days.'+(st==='confirmSealed'?' It stays hidden there, with its day and no words.':'')+'</div><button class="btn primary" data-go="'+cur.backTo+'">Keep it</button><button class="btn destr solid" data-go="B-S15:undo">'+I.trash+' Delete letter</button>');
+}
+/* ---------- Home slips (A-S01 frame, B content) ---------- */
+function home(slip){
+  var ax=document.body.dataset.ax5==='1';
+  var h='<div class="lamp"></div>'+status()+'<div class="pad" style="position:relative;padding-top:14px"><div class="dateline">MONTH 4 &middot; TUESDAY</div><div class="title2" style="margin-top:10px;font-weight:400;font-size:calc(28px*var(--sd))">What made Asha laugh today?</div><button class="btn quiet sm" style="padding-left:0">Another thought</button>';
+  var cluster='<div class="glass" style="border-radius:32px;padding:10px;margin-top:10px"><div style="display:flex;gap:8px'+(ax?';flex-direction:column':'')+'"><button class="btn primary">Speak</button><button class="btn primary">Type</button></div><button class="btn quiet" style="width:100%;margin-top:4px">Not much today</button></div><div class="note">Capture cluster is area A&#39;s glass (A-S01).</div>';
+  if(ax)h+=cluster;
+  if(slip==='past')h+='<div class="card rule" style="margin-top:18px" data-go="B-S08:withPicture" role="button" aria-label="Tuesday 3 March 2025. Today you found the blue boat in the bath."><div class="cap">Tuesday 3 March 2025</div><div class="letterSm clamp2 fade" style="margin-top:6px">'+L.boat.words+'</div><div style="display:flex;justify-content:flex-end'+(ax?';display:block':'')+'"><button class="btn quiet sm" data-go="B-S17:dismissed">Not today</button></div></div>';
+  if(slip==='snap')h+='<div class="card rule" style="margin-top:18px"><div class="cap">Tuesday 3 March 2025</div><div class="blank" style="height:48px;margin-top:6px;border-radius:6px"></div></div><div class="note">App lock on: the switcher snapshot shows no fragment (NS-23-R11).</div>';
+  if(slip==='seal')h+='<div class="card rule" style="margin-top:18px" data-go="B-S08:ownSpoken" role="button"><div class="cap">Saturday 14 March 2026</div><div class="body" style="margin-top:6px">A letter you hid until today is open now.</div></div>';
+  if(slip==='day')h+='<div class="card" style="margin-top:18px;background:var(--surfaceRaised,var(--surface))" role="group" aria-label="Thanksgiving. Anything you would like Asha to hear about today?"><div class="body">Thanksgiving</div><div class="callout muted" style="margin-top:4px">Anything you would like Asha to hear about today?</div><div style="display:flex;justify-content:flex-end"><button class="btn quiet sm" data-go="B-S17:higherSlip">Not today</button></div></div><div class="note">Rank 2b. Non-interactive: it never opens the Book. The past letter (rank 4) is not shown while this is due.</div>';
+  if(slip==='none')h+='<div class="note" style="margin-top:18px">No slip: no match, dismissed until midnight, switch off, a higher slip is due, or the book is quieted or hidden. Nothing takes its place.</div>';
+  h+='</div>';
+  if(!ax)h+='<div style="position:absolute;left:16px;right:16px;bottom:96px">'+cluster.replace('<div class="note">Capture cluster is area A&#39;s glass (A-S01).</div>','')+'</div>';
+  return h+tabs('home');
+}
+/* ---------- Read together ---------- */
+function rt(st){
+  var e=st==='typed'?L.typed:st==='recordingElsewhere'?L.rain:L.laugh;
+  var title=st==='year'?'Asha&#39;s first year':'Read together';
+  var h='<div style="position:absolute;left:0;right:0;bottom:0;height:300px;background:radial-gradient(ellipse at 50% 100%,var(--dusk),transparent 70%);opacity:'+(document.getElementById('phone').classList.contains('dark')?'.35':'.25')+'"></div>'+status()+
+   '<div style="display:flex;align-items:center;padding:4px 12px;gap:8px;position:relative;z-index:3"><div class="gcluster glass"><button class="ibtn" data-go="B-S01:default" aria-label="Close">&#10005;</button></div><div class="label" style="flex:1;text-align:center">'+title+'</div><div style="width:48px"></div></div>'+
+   '<div style="height:2px;margin:6px 0"><div style="height:2px;width:35%;background:var(--accent);opacity:.4" role="img" aria-label="Letter 2 of 6"></div></div>'+
+   '<div class="pad" style="position:relative;padding-bottom:170px"><div class="dateline" style="margin-top:12px">'+e.month.toUpperCase()+' &middot; '+e.sig.toUpperCase()+'</div><p class="letter" style="font-size:calc(29px*var(--s));margin:14px 0">'+e.words+'</p><div class="sig" style="font-size:calc(29px*var(--s))">'+e.sig+'</div>';
+  if(st==='typed')h+='<div class="body muted" style="margin-top:12px">This one was typed. Read it aloud together.</div>';
+  else if(st==='recordingElsewhere')h+='<div class="body muted" style="margin-top:12px">Papa&#39;s voice is on their phone. Read this one aloud together.</div>';
+  else h+='<div style="margin-top:14px;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;border:1px solid var(--controlBorder)"><span style="color:var(--accent)">'+I.play+'</span><span class="label">'+(st==='interrupted'?'Paused':'Hear Mama')+'</span></div>';
+  if(st==='interrupted')h+='<div class="note">A call came in: playback paused; on return the same page shows (NS-24-R8).</div>';
+  h+='<button class="chip" style="flex:none;width:auto;padding:0 16px;margin-top:12px">Keep playing</button></div>';
+  var ax=document.body.dataset.ax5==='1';
+  h+='<div class="glass" style="position:absolute;left:12px;right:12px;bottom:26px;border-radius:32px;padding:8px;display:flex;gap:8px'+(ax?';flex-direction:column':'')+'"><button class="btn solid">Back one</button><button class="btn primary" data-go="B-S20:'+(st==='year'?'endOfYear':'endOfBook')+'">Next letter</button></div>';
+  return h;
+}
+function rtEnd(st){
+  return status()+'<div class="pad center" style="padding-top:200px"><svg viewBox="0 0 24 24" style="width:120px;height:120px;color:var(--textMuted)" fill="none" stroke="currentColor" stroke-width=".8"><path d="M20 14A8 8 0 019 3a8 8 0 1011 11z"/></svg>'+
+   '<div class="title2" style="margin-top:20px;font-size:calc(28px*var(--sd))">'+(st==='endOfYear'?'That was Asha&#39;s first year.':'That is every letter so far. More are still being written.')+'</div></div>'+
+   '<div class="pad" style="position:absolute;left:0;right:0;bottom:40px"><button class="btn primary" data-go="B-S01:default">Close the book</button><button class="btn" style="margin-top:10px" data-go="B-S19:'+(st==='endOfYear'?'year':'default')+'">Read it again</button></div>';
+}
+/* ---------- Me row, Recently deleted row ---------- */
+function me(st){
+  return status()+'<div class="pad"><h1 class="display" style="margin-top:8px">Me</h1><div class="h2">Home</div><div class="list">'+
+   '<div class="row" data-go="B-S21:'+(st==='on'?'off':'on')+'"><div class="t"><div class="label">Past letters on Home</div></div><span class="toggle'+(st==='on'?' on':'')+'" role="switch" aria-checked="'+(st==='on')+'"></span></div></div>'+
+   '<div class="foot" style="margin:6px 4px">When today&#39;s date matches a letter from an earlier month or year, Home can show it.</div><div class="note">Me is C-S01 (area C). This row and its footer are B-S21.</div></div>'+tabs('me');
+}
+function rdel(){
+  return status()+'<div class="pad"><div class="title2" style="margin-top:50px">Recently deleted</div><div class="list" style="margin-top:14px"><div class="row" style="display:block"><div class="dateline">SATURDAY 14 MARCH</div><div class="body" style="margin-top:4px">Hidden until 10 January 2030</div><div class="foot">Kept here until 19 April</div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm">Restore</button><button class="btn sm destr">Erase now</button></div></div></div><div class="note">C-S17 owns the screen; this row shows no words (NS-06-B25). Restore returns it hidden.</div></div>';
+}
+function notDrawn(){return status()+'<div class="pad" style="padding-top:120px"><div class="title2">Read-along (NS-29)</div><div class="body muted" style="margin-top:10px">Decision record only. Not drawn. Nothing in any build shows a highlight or a coming-soon line.</div></div>'}
+function crossArea(id){return status()+'<div class="pad" style="padding-top:140px"><div class="title2">'+id+'</div><div class="body muted" style="margin-top:10px">Another area owns this screen. See its DESIGN.md.</div><button class="btn" data-go="B-S01:default" style="margin-top:20px">Back to the Book</button></div>'}
+
+/* ---------- registry ---------- */
+var S={
+ 'B-S01':{t:'The Book',f:book,st:{dayToday:'A day the parent chose is today: identical to default. The Book never shows a day (DESIGN section 12a).',default:'Default: Months only. Header controls (Find, Months, More) are one glass container on the lit band; title, age, Read together and cards are content.',empty:'Empty book: title, age, closed cover, one button that switches to Home. No Find, lens, Read together, Go to a month (NS-22-R4). More stays (gap G-02).',lensPhotos:'A kept open letter has a picture: the lens choice appears (NS-01-R10a). Content-layer radio group (NS-33-R3).',lensBoth:'Photos and Firsts both exist; the first card shows its first label as its first line.',sealedCard:'A hidden letter: flat card, date and "Hidden until", no words (B-S16).',quieted:'Quieted book.',twoBooks:'Two books: the switcher under the title.',findOff:'Flag off or killSwitches.bookSearch: no magnifier.',photosOff:'Flag off or killSwitches.photos: no lens, no thumbnails.',newPhone:'New phone: words present; no picture slots; C-S12 line.',undoDeleted:'After Delete: "Letter deleted." with Undo by tap, no timer (built).',hiddenReadOnly:'A hidden book opened from Hidden books.',scrolled:'After scroll: the inline glass bar.'}},
+ 'B-S02':{t:'More for this book',f:menu,st:{default:'Glass sheet over the dimmed Book. Quiet and Hide in 2 taps (NS-22-R3).',quieted:'Turn Quiet off offered; no other change (R7).',hiddenReadOnly:'Only Show this book again.',ax3:'AX3 and above: Go to a month folds in here.',failed:'A failed Quiet write: old state kept, one line.'}},
+ 'B-S03':{t:'Lens choice',f:function(s){return book(s==='threeOptions'?'lensBoth':'lensPhotos')},st:{twoOptions:'Months and Photos.',threeOptions:'Months, Photos, Firsts. Selected by fill, edge and check, never colour alone.'}},
+ 'B-S04':{t:'Photos lens',f:photosLens,st:{default:'Letters with a picture, newest first, list copies, fit not crop. No count, no add.',thumbMissing:'List copy missing: the card shows without it; no error (NS-37-R3).',backgrounded:'App inactive: pictures blank.'}},
+ 'B-S05':{t:'Firsts lens',f:firstsLens,st:{default:'Firsts newest first; the label leads the card. No count.',labelEmpty:'Empty label: the letter&#39;s own first line leads.'}},
+ 'B-S06':{t:'Find',f:find,st:{idle:'Field focused; nothing drawn. The Find bar is glass; it replaces the header cluster.',short:'Under 3 characters: nothing changes.',results:'Rows: date line and the sentence holding the match, underlined and medium weight (R40).',noMatch:'One calm line, nothing else (R13, R39).',failed:'Even the scan failed: one line and Try again, announced once (R37).',failedGettingReady:'With the getting-ready line, only while true (R38).',rtlRow:'A right-to-left match keeps its order (R28).',afterBack:'Back from a letter: same query and place (R12).',cjk:'One Han character is enough (R3).'}},
+ 'B-S07':{t:'Go to a month',f:months,st:{default:'Built: months with letters.',withYears:'Read a year rows above the months (NS-24, PROPOSED placement).',expectingOnly:'Due date only: Before You only (R6).'}},
+ 'B-S08':{t:'The letter page',f:page,st:{ownSpoken:'Own spoken letter: dateline h1, words, Play, Share apart, This letter h2, rows in order, Delete last.',ownTyped:'Typed: no Play, no recording row, "Typed" footnote.',withPicture:'With a picture above the words (page copy, hairline in dark, ignores Smart Invert).',ownNoPicture:'No picture: row reads Add a photo.',firstMarked:'Marked as a first.',ownPrivate:'Private letter: Who can read it always shows (R9).',otherParent:'The other parent&#39;s letter: read-only.',recordingElsewhere:'Recording on another phone: no Play; the row says where.',waiting:'Words still being made: day and recording rows only (R10).',oneRow:'Only the day applies: still a titled list.',photoNotStored:'The picture could not be stored: said once (R58).',photoMissing:'File missing: one line and Remove (R56).',sealedAuthor:'Author, before the day: words shown with the Hidden until row (gap G-01).',notFound:'Deleted on another phone while open (built S37).',backgrounded:'App inactive: the picture blanks (R13a).'}},
+ 'B-S09':{t:'Day sheet',f:daySheet,st:{default:'Built DateSheet from the letter page (same as A-S08).',failed:'Failed write: old day kept.'}},
+ 'B-S10':{t:'Who can read it',f:whoSheet,st:{default:'Two choices, state in words.',failed:'Failed write: old value kept.'}},
+ 'B-S11':{t:'Picture on the letter page',f:photoSheets,st:{actions:'Change, words, take off.',replaceConfirm:'Keep the first is the safe default (R7).',undo:'Taken off, with Undo under T4.',words:'Optional words and place; writing tools off.',viewer:'Stored-copy viewer (v2 C4): clear glass controls over a 35 percent dim, local to the controls; the picture is content. Reduce Transparency: solid.',pickFailed:'The picked file could not be opened: one line, nothing written (R17a).',iCloudDownloading:'An iCloud-only picture downloading, with Cancel (R17b).',iCloudOffline:'iCloud-only and offline: one calm line; the letter is unchanged (R46).'}},
+ 'B-S12':{t:'Mark a first',f:firstSheets,st:{labelSheet:'Turned on: one empty field, no placeholder, no list.',atLimit:'At 40 graphemes.',undo:'Unmarked in one tap, Undo under T4.'}},
+ 'B-S13':{t:'Hide until a day',f:sealSheet,st:{default:'Bounded picker, the sentence, the honest limits. Hide it is absent until a day is chosen.',daySelected:'A day chosen: Hide it is absent until then (B G-12).'}},
+ 'B-S14':{t:'Open now',f:openNow,st:{confirm:'Cancel is the default (B3).'}},
+ 'B-S15':{t:'Delete and Undo',f:del,st:{confirm:'Keep it is the default (D-085).',confirmSealed:'A hidden letter: the extra line (B25).',undo:'Back on the Book: Letter deleted, Undo.'}},
+ 'B-S16':{t:'Hidden letter in the Book',f:function(s){return book(s==='afterOpening'?'default':'sealedCard')},st:{default:'Author&#39;s phones only. Other members get no row.',afterOpening:'After the instant: a normal card, no animation.'}},
+ 'B-S17':{t:'One past letter on Home',f:function(s){return home(s==='default'?'past':s==='appLockSnapshot'?'snap':s==='higherSlip'?'day':'none')},st:{higherSlip:'A higher rank is due (here a day the parent chose, 2b): the past letter is absent and keeps no space. Home only: the Book never shows a day.',default:'Slip rank 4, the last: the letter&#39;s own date, opening words, Not today.',dismissed:'Gone until local midnight.',switchOff:'Switch off in Me.',appLockSnapshot:'App switcher snapshot with App lock on.'}},
+ 'B-S18':{t:'Seal-opened line on Home',f:function(){return home('seal')},st:{default:'Slip 2, on the opening day only, once. No words until tapped.'}},
+ 'B-S19':{t:'Read together',f:rt,st:{default:'Whole book, Large print. Turn controls are one glass container; the page is content.',year:'One year (NS-24).',typed:'A typed letter.',recordingElsewhere:'Recording elsewhere.',interrupted:'A call mid-page.'}},
+ 'B-S20':{t:'End of reading',f:rtEnd,st:{endOfBook:'Built end of the book.',endOfYear:'End of a year (PROPOSED). No count, no summary.'}},
+ 'B-S21':{t:'Me: Past letters on Home',f:me,st:{on:'Default on.',off:'Off: no past letter on Home.'}},
+ 'B-S22':{t:'Recently deleted: hidden letter row',f:rdel,st:{default:'No words.'}},
+ 'B-S23':{t:'Read-along',f:notDrawn,st:{notDrawn:'NS-29 is parked.'}}
+};
+var J=[
+ ['B-J01 Read a letter',['B-S01:default','B-S08:withPicture','B-S01:default','B-S08:ownTyped','B-S08:otherParent','B-S08:waiting','B-S08:recordingElsewhere','B-S08:notFound']],
+ ['B-J02 Change the day',['B-S08:ownSpoken','B-S09:default','B-S08:ownSpoken','B-S09:failed']],
+ ['B-J03 Who can read it',['B-S08:ownPrivate','B-S10:default','B-S08:ownSpoken','B-S10:failed']],
+ ['B-J04 Delete, then Undo',['B-S08:ownSpoken','B-S15:confirm','B-S15:undo','B-S01:default']],
+ ['B-J05 Quiet, Turn Quiet off, Hide',['B-S01:default','B-S02:default','B-S01:quieted','B-S02:quieted','B-S02:failed','B-S01:hiddenReadOnly','B-S02:hiddenReadOnly']],
+ ['B-J06 Find',['B-S01:default','B-S06:idle','B-S06:short','B-S06:results','B-S08:withPicture','B-S06:afterBack','B-S06:noMatch','B-S06:failed','B-S06:failedGettingReady','B-S06:rtlRow','B-S06:cjk','B-S01:findOff']],
+ ['B-J07 Photos lens',['B-S01:default','B-S01:lensPhotos','B-S04:default','B-S08:withPicture','B-S04:thumbMissing','B-S04:backgrounded','B-S01:photosOff']],
+ ['B-J08 A picture on a letter',['B-S08:ownNoPicture','B-S08:withPicture','B-S11:viewer','B-S11:actions','B-S11:replaceConfirm','B-S11:undo','B-S11:words','B-S11:pickFailed','B-S11:iCloudDownloading','B-S11:iCloudOffline','B-S08:photoNotStored','B-S08:photoMissing','B-S08:backgrounded']],
+ ['B-J09 Mark a first',['B-S08:ownSpoken','B-S12:labelSheet','B-S12:atLimit','B-S08:firstMarked','B-S01:lensBoth','B-S05:default','B-S05:labelEmpty','B-S12:undo']],
+ ['B-J10 Hide until a day',['B-S08:ownSpoken','B-S13:default','B-S13:daySelected','B-S08:sealedAuthor','B-S01:sealedCard','B-S14:confirm','B-S16:afterOpening','B-S18:default','B-S15:confirmSealed','B-S22:default']],
+ ['B-J11 One past letter',['B-S17:default','B-S17:higherSlip','B-S08:withPicture','B-S17:dismissed','B-S21:off','B-S17:switchOff','B-S17:appLockSnapshot']],
+ ['B-J12 Read the year back',['B-S01:default','B-S07:withYears','B-S19:year','B-S19:interrupted','B-S20:endOfYear','B-S01:default','B-S07:expectingOnly']],
+ ['B-J13 Read together',['B-S01:default','B-S19:default','B-S19:typed','B-S19:recordingElsewhere','B-S20:endOfBook']],
+ ['B-J14 Go to a month',['B-S01:default','B-S07:default','B-S01:default']],
+ ['B-J15 Two books',['B-S01:twoBooks','B-S06:idle','B-S01:twoBooks']],
+ ['B-J16 System states',['B-S01:newPhone','B-S01:photosOff','B-S01:findOff','B-S01:scrolled','B-S01:empty','B-S23:notDrawn']]
+];
+var ALIAS={'B-S01.default':'B-S01.firstView, B-S01.arrived (motion moments of this state)','B-S01.undoDeleted':'B-S01.undoDelete','B-S01.hiddenReadOnly':'B-S01.hiddenBook','B-S02.ax3':'B-S02.ax','B-S03.twoOptions':'B-S03.withPhotos, B-S03.lensAppears','B-S03.threeOptions':'B-S03.withFirsts','B-S04.thumbMissing':'B-S04.thumbPending','B-S08.ownSpoken':'B-S08.default, B-S08.carried, B-S08.faded (card-to-page moments)','B-S08.waiting':'B-S08.wordsUnreviewed is B-S08.readItBack','B-S17.default':'B-S17.present','B-S18.default':'B-S18.present','B-S19.default':'B-S19.turning (page-turn moment)','B-S19.recordingElsewhere':'B-S19.newPhone','B-S20.endOfBook':'B-S20.end'};
+var cur={screen:'B-S01',state:'default',j:-1,i:0,backTo:null};
+function go(target){
+  if(!target)return;
+  var p=target.split(':');
+  if(!S[p[0]]){render(p[0]);return}
+  cur.screen=p[0];cur.state=p[1]||Object.keys(S[p[0]].st)[0];cur.backTo=null;render();
+}
+function render(cross){
+  var ph=document.getElementById('phone');
+  ph.className=[$('tDark').checked?'dark':'',$('tAx5').checked?'ax5':'',$('tRt').checked?'rt':'',$('tIc').checked?'ic':''].join(' ');
+  document.body.dataset.ax5=$('tAx5').checked?'1':'0';
+  document.body.classList.toggle('pageDark',$('tDark').checked);
+  $('fold').style.display=$('tFold').checked?'block':'none';
+  var html,title,note;
+  if(cross){html=crossArea(cross);title=cross;note='Cross-area hand-off.'}
+  else{var s=S[cur.screen];html=s.f(cur.state);title=cur.screen+'.'+cur.state+'  '+s.t;note=s.st[cur.state]||'';if(ALIAS[cur.screen+'.'+cur.state])note+='<p class="muted">Also named in MOTION.md or WORDS.md as: '+ALIAS[cur.screen+'.'+cur.state]+'</p>'}
+  var tabbed=/class="tabs/.test(html);
+  $('screen').innerHTML='<div class="scroll'+(tabbed?' withTabs':'')+'">'+html.replace(/<div class="tabs glass">[\s\S]*$/,'')+'</div>'+(tabbed?html.match(/<div class="tabs glass">[\s\S]*$/)[0]:'');
+  // move overlays (sheets, toasts, top bars) out of the scroller so they float
+  var sc=$('screen').querySelector('.scroll');
+  ['.scrimL','.sheet','.toast','.topbar','.inline','.tabs'].forEach(function(q){sc.querySelectorAll(q).forEach(function(n){$('screen').appendChild(n)})});
+  $('sTitle').textContent=title;
+  $('sNote').innerHTML=note+(cur.j>=0?'<p class="muted">Journey: '+J[cur.j][0]+', step '+(cur.i+1)+' of '+J[cur.j][1].length+'</p>':'')+
+    '<p class="muted">Glass surfaces on this screen follow DESIGN.md section 4a. Toggle Reduce Transparency to see the solid fallback.</p>';
+  syncSelects();
+  $('stepLbl').textContent=cur.j>=0?(cur.i+1)+' / '+J[cur.j][1].length:'free';
+}
+function $(id){return document.getElementById(id)}
+function syncSelects(){
+  var ss=$('selScreen');if(!ss.options.length){Object.keys(S).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k+' '+S[k].t.replace(/&#39;/g,"'");ss.appendChild(o)})}
+  ss.value=cur.screen;var st=$('selState');st.innerHTML='';
+  Object.keys(S[cur.screen].st).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k;st.appendChild(o)});st.value=cur.state;
+  document.querySelectorAll('.jl button').forEach(function(b,i){b.classList.toggle('on',i===cur.j)});
+}
+$('selScreen').onchange=function(){cur.j=-1;go(this.value)};
+$('selState').onchange=function(){cur.j=-1;go(cur.screen+':'+this.value)};
+['tDark','tAx5','tRt','tIc','tFold'].forEach(function(id){$(id).onchange=function(){render()}});
+var jl=$('journeys');J.forEach(function(j,i){var b=document.createElement('button');b.textContent=j[0];b.onclick=function(){cur.j=i;cur.i=0;go(j[1][0])};jl.appendChild(b)});
+$('next').onclick=function(){if(cur.j<0)return;if(cur.i<J[cur.j][1].length-1){cur.i++;go(J[cur.j][1][cur.i])}};
+$('prev').onclick=function(){if(cur.j<0)return;if(cur.i>0){cur.i--;go(J[cur.j][1][cur.i])}};
+$('phone').addEventListener('click',function(ev){var t=ev.target.closest('[data-go]');if(t&&t.dataset.go){ev.stopPropagation();var g=t.dataset.go;go(g)}});
+go('B-S01:default');
+</script>
+</body>
+</html>

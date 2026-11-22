@@ -10,6 +10,7 @@
  */
 import { AppState } from 'react-native';
 import { ScribeStore, type NativeEntitlementSnapshot, type StoreViewSupport } from '../../../modules/scribe-store';
+import { capabilities } from '../capabilities';
 import { getSetting, setSetting } from '../store';
 import { PLAN_CACHE_KEY, PLUS_PRODUCT_IDS } from './config';
 import { startPlanReminders } from './plan-reminders';
@@ -21,6 +22,8 @@ const CACHE_REFRESH_MS = 24 * 60 * 60 * 1000;
 let snapshot: NativeEntitlementSnapshot | null = null;
 let plan: PlanState = EMPTY_PLAN;
 let hydrated = false;
+/** A StoreKit read landed in this process (RT-PLS-10): the plan is Apple's answer, not only the cache. */
+let readLanded = false;
 let inflight: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
@@ -86,7 +89,10 @@ export function refreshPlan(): Promise<void> {
   inflight = (async () => {
     try {
       const next = sanitizeSnapshot(await store.currentEntitlements([...PLUS_PRODUCT_IDS]));
-      if (next) accept(next);
+      if (next) {
+        readLanded = true;
+        accept(next);
+      }
     } catch {
       // StoreKit unavailable for now: keep the last good plan (fail open for payers).
     } finally {
@@ -94,6 +100,37 @@ export function refreshPlan(): Promise<void> {
     }
   })();
   return inflight;
+}
+
+/**
+ * How much the plan in hand is worth to a gate (RT-PLS-10):
+ *   'read'      StoreKit answered in this process.
+ *   'cached'    no answer yet (slow, or it failed), but a snapshot from an earlier read is on this phone.
+ *   'none'      no answer and no snapshot: the phone does not know yet whether this person has Plus.
+ *   'no_store'  no StoreKit here (Expo Go, web, Android): there is never a read to wait for.
+ */
+export type PlanReadiness = 'read' | 'cached' | 'none' | 'no_store';
+
+/**
+ * Waits for the first StoreKit read of this process, at most `timeoutMs`, then says what the plan rests on. After the
+ * first read it answers at once. Never throws; a failed or slow read leaves the cached snapshot (fail open for payers).
+ */
+export async function planReadiness(timeoutMs: number): Promise<PlanReadiness> {
+  hydrate();
+  if (!ScribeStore) return 'no_store';
+  if (!readLanded) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, Math.max(0, timeoutMs));
+    });
+    try {
+      await Promise.race([refreshPlan(), timeout]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+  if (readLanded) return 'read';
+  return snapshot ? 'cached' : 'none';
 }
 
 let started = false;
@@ -126,11 +163,26 @@ export function startPlus(): () => void {
   } catch {
     // Notifications unavailable (web preview): the in-app note still works.
   }
+  // The D-080 status report (WP-F14-15a): only in a build with the statusReport flag, and
+  // loaded lazily so a build without it never evaluates the server contract.
+  let stopStatusReport: () => void = () => {};
+  let stopped = false;
+  if (capabilities.statusReport) {
+    void import('./status-report.app')
+      .then((m) => {
+        if (!stopped) stopStatusReport = m.startStatusReport();
+      })
+      .catch(() => {
+        // Not loadable (web preview): the phone reminders still work.
+      });
+  }
   void refreshPlan();
   return () => {
     changes?.remove();
     foreground.remove();
     stopReminders();
+    stopped = true;
+    stopStatusReport();
     started = false;
   };
 }

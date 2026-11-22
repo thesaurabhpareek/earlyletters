@@ -19,9 +19,14 @@ import type { EditProposal, EditProvider, EditRequest } from './edit-provider';
 import { FILLERS, tokens } from './text';
 import { dictionaryEdits, overlaps, protectedSpans } from './protect';
 
-/** Sentence enders, including the Devanagari danda. */
-const TERMINAL = /[.!?।॥]/;
-const BREAK_BEFORE = /[.!?।॥]["')\]]*\s+$/;
+/**
+ * Sentence enders in every script the engine knows: ASCII, the Devanagari
+ * danda, Chinese full-width marks and the Arabic question mark. A text that
+ * already ends in one of these gets no "." (found 3 Oct 2026: "." was added
+ * after 。 and ؟; F06-REQ-015). Same set as lang/engine.ts BASE_SENTENCE_END.
+ */
+const TERMINAL = /[.!?।॥。？！؟]/;
+const BREAK_BEFORE = /[.!?।॥。？！؟]["')\]]*\s+$/;
 
 export function punctuationEdits(req: EditRequest): Edit[] {
   const { raw, dictionary, locked = [] } = req;

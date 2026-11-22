@@ -1,10 +1,13 @@
 /**
  * Drafts: captures in progress. Written when recording starts, so a crash
  * or a closed sheet loses nothing (TDD 01 3.4). Rows only: audio files are
- * deleted by the explicit Discard in Listen, never here.
+ * deleted by a confirmed Let it go (Review, Listen), the launch sweep
+ * finishing one (capture/let-it-go.logic.ts, sweep.ts), erasing a deleted
+ * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
+ * never here.
  */
 import { changes, type RepoContext } from './context';
-import type { CaptureMode, Draft, DraftState } from './types';
+import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';
 
 interface DraftRow {
   id: string;
@@ -20,12 +23,21 @@ interface DraftRow {
   audio_sha256: string | null;
   audio_bytes: number | null;
   recovered_at: string | null;
+  kind: string;
+  occurred_on: string | null;
+  occurred_precision: string;
+  language: string | null;
+  base_direction: string;
+  held_kind: string | null;
+  in_book_choice: number | null;
 }
 
 const COLS = `id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, raw_transcript, typed_text,
-  state, audio_sha256, audio_bytes, recovered_at`;
+  state, audio_sha256, audio_bytes, recovered_at, kind, occurred_on, occurred_precision, language, base_direction,
+  held_kind, in_book_choice`;
 
-const draftState = (s: string): DraftState => (s === 'recording' || s === 'unrecoverable' ? s : 'ready');
+const draftState = (s: string): DraftState =>
+  s === 'recording' || s === 'unrecoverable' || s === 'discarding' ? s : 'ready';
 
 const fromRow = (r: DraftRow): Draft => ({
   id: r.id,
@@ -41,6 +53,13 @@ const fromRow = (r: DraftRow): Draft => ({
   audioSha256: r.audio_sha256,
   audioBytes: r.audio_bytes,
   recoveredAt: r.recovered_at,
+  kind: r.kind === 'note' ? 'note' : 'letter',
+  occurredOn: r.occurred_on,
+  occurredPrecision: r.occurred_precision === 'month' ? 'month' : 'day',
+  language: r.language,
+  baseDirection: r.base_direction === 'rtl' ? 'rtl' : 'ltr',
+  held: r.held_kind !== null && r.held_kind !== undefined,
+  inBookChoice: r.in_book_choice === null || r.in_book_choice === undefined ? null : r.in_book_choice === 1,
 });
 
 export type NewDraft = Pick<Draft, 'childId' | 'captureMode' | 'promptKey' | 'audioUri' | 'audioDurationMs'> & {
@@ -69,11 +88,112 @@ export function get({ db }: RepoContext, id: string): Draft | null {
   return r ? fromRow(r) : null;
 }
 
-/** Drafts waiting to be read back, newest first. A take still recording is not listed. */
+/** Drafts waiting to be read back, newest first. A take still recording, or being let go, is not listed. */
 export function listForChild({ db }: RepoContext, childId: string): Draft[] {
   return db
-    .all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE child_id = ? AND state != 'recording' ORDER BY created_at DESC, id DESC`, childId)
+    .all<DraftRow>(
+      `SELECT ${COLS} FROM drafts WHERE child_id = ? AND state NOT IN ('recording', 'discarding') ORDER BY created_at DESC, id DESC`,
+      childId,
+    )
     .map(fromRow);
+}
+
+// ── Review's choices (WP-F04-03; F04 section 11.3) ─────────────────────────
+const ISO_DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+/** A BCP-47 language tag as the speech and pack code writes them (`en`, `en-GB`, `zh-Hant`). */
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$/;
+
+/** Note or letter. False for an unknown kind or a missing draft. */
+export function setKind({ db }: RepoContext, id: string, kind: DraftKind): boolean {
+  if (kind !== 'note' && kind !== 'letter') return false;
+  db.run('UPDATE drafts SET kind = ? WHERE id = ?', kind, id);
+  return changes(db) === 1;
+}
+
+/**
+ * The date the letter is about, and how exactly it is known. A month-precision
+ * date is stored as the first of that month. Null clears it (the local date of
+ * the draft's creation is used at save). False for a malformed date or precision.
+ */
+export function setOccurred({ db }: RepoContext, id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
+  if (precision !== 'day' && precision !== 'month') return false;
+  if (occurredOn !== null && !ISO_DAY.test(occurredOn)) return false;
+  const day = occurredOn !== null && precision === 'month' ? `${occurredOn.slice(0, 8)}01` : occurredOn;
+  db.run('UPDATE drafts SET occurred_on = ?, occurred_precision = ? WHERE id = ?', day, precision, id);
+  return changes(db) === 1;
+}
+
+/** The take's language (a BCP-47 tag), or null for the author's default. False for a malformed tag. */
+export function setLanguage({ db }: RepoContext, id: string, language: string | null): boolean {
+  if (language !== null && !LANGUAGE_TAG.test(language)) return false;
+  db.run('UPDATE drafts SET language = ? WHERE id = ?', language, id);
+  return changes(db) === 1;
+}
+
+/** Layout direction of the words, decided at save (F04 11.3). */
+export function setBaseDirection({ db }: RepoContext, id: string, dir: BaseDirection): boolean {
+  if (dir !== 'ltr' && dir !== 'rtl') return false;
+  db.run('UPDATE drafts SET base_direction = ? WHERE id = ?', dir, id);
+  return changes(db) === 1;
+}
+
+/**
+ * Let it go, step 1 of 3 (F04-REQ-009): the row is marked first, so a kill
+ * after the file is deleted can never re-attach it. Then the caller deletes the
+ * file, then `finishDiscard` removes the row. False for a missing draft.
+ */
+export function beginDiscard({ db }: RepoContext, id: string): boolean {
+  // Review's choices go with it (v9): nothing of a let-go letter waits on the phone.
+  db.run(
+    "UPDATE drafts SET state = 'discarding', review_put_back = NULL, review_view = NULL, review_text = NULL, review_base = NULL WHERE id = ?",
+    id,
+  );
+  return changes(db) === 1;
+}
+
+/**
+ * The author held this draft at the Keep gate (F14 6.2 B "Leave it waiting"):
+ * it stays exactly as it is and is marked held. False for a missing draft, or a
+ * take still recording or being let go.
+ */
+export function markHeld({ db }: RepoContext, id: string, inBookChoice: boolean | null): boolean {
+  db.run(
+    "UPDATE drafts SET held_kind = 'held_letter', in_book_choice = ? WHERE id = ? AND state NOT IN ('recording', 'discarding')",
+    inBookChoice === null ? null : inBookChoice ? 1 : 0, id,
+  );
+  return changes(db) === 1;
+}
+
+/**
+ * Every letter waiting on this phone for the export (PL-2, schema 1.6.0): every draft, in every book, that is not
+ * still recording and not being let go. Oldest first, the way the export lists them.
+ */
+export function listForExport({ db }: RepoContext): Draft[] {
+  return db
+    .all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE state NOT IN ('recording', 'discarding') ORDER BY created_at, id`)
+    .map(fromRow);
+}
+
+/** Held drafts, newest first; for one book when `childId` is given (Tonight's one held row, F14-REQ-041). */
+export function listHeld({ db }: RepoContext, childId?: string): Draft[] {
+  const rows = childId === undefined
+    ? db.all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE held_kind IS NOT NULL AND state NOT IN ('recording', 'discarding') ORDER BY created_at DESC, id DESC`)
+    : db.all<DraftRow>(
+      `SELECT ${COLS} FROM drafts WHERE held_kind IS NOT NULL AND child_id = ? AND state NOT IN ('recording', 'discarding') ORDER BY created_at DESC, id DESC`,
+      childId,
+    );
+  return rows.map(fromRow);
+}
+
+/** Whether a draft is held (and so may be on the server as an author-only row). */
+export function isHeld({ db }: RepoContext, id: string): boolean {
+  return db.get<{ t: number }>('SELECT 1 AS t FROM drafts WHERE id = ? AND held_kind IS NOT NULL', id) !== null;
+}
+
+/** Let it go, step 3: removes a row already marked `discarding`, never any other. */
+export function finishDiscard({ db }: RepoContext, id: string): boolean {
+  db.run("DELETE FROM drafts WHERE id = ? AND state = 'discarding'", id);
+  return changes(db) === 1;
 }
 
 /** Elapsed time so far; only while the take is still recording. */
@@ -116,6 +236,56 @@ export function setTyped({ db }: RepoContext, id: string, text: string): void {
 
 export function setChild({ db }: RepoContext, id: string, childId: string): void {
   db.run('UPDATE drafts SET child_id = ? WHERE id = ?', childId, id);
+}
+
+// ── Review's own choices (v9; SR-C-06, CR-39) ──────────────────────────────
+/** Review's choices as stored: JSON and text, read by lib/capture/review-persist.logic. Null for a missing draft. */
+export interface DraftReviewRow {
+  putBack: string | null;
+  view: string | null;
+  text: string | null;
+  base: string | null;
+}
+
+export function getReview({ db }: RepoContext, id: string): DraftReviewRow | null {
+  const r = db.get<{ review_put_back: string | null; review_view: string | null; review_text: string | null; review_base: string | null }>(
+    'SELECT review_put_back, review_view, review_text, review_base FROM drafts WHERE id = ?',
+    id,
+  );
+  return r ? { putBack: r.review_put_back, view: r.review_view, text: r.review_text, base: r.review_base } : null;
+}
+
+/**
+ * Writes the named parts of Review's choices, with the fingerprint of the words they were made on. Choices made on
+ * other words (an older base) are cleared in the same statement, so old and new never mix. Only a draft still being
+ * read back takes them (not one recording or being let go). False for a missing draft, a bad view or a bad base.
+ * Never touches raw_transcript, typed_text or anything that syncs.
+ */
+export function setReview(
+  { db }: RepoContext,
+  id: string,
+  base: string,
+  patch: { putBack?: string; view?: 'fixes' | 'exact'; text?: string | null },
+): boolean {
+  if (!base) return false;
+  if (patch.view !== undefined && patch.view !== 'fixes' && patch.view !== 'exact') return false;
+  const same = 'review_base IS ?';
+  const sets: string[] = ['review_base = ?'];
+  const params: (string | null)[] = [base];
+  const part = (col: string, has: boolean, value: string | null) => {
+    if (has) {
+      sets.push(`${col} = ?`);
+      params.push(value);
+    } else {
+      sets.push(`${col} = CASE WHEN ${same} THEN ${col} ELSE NULL END`);
+      params.push(base);
+    }
+  };
+  part('review_put_back', patch.putBack !== undefined, patch.putBack ?? null);
+  part('review_view', patch.view !== undefined, patch.view ?? null);
+  part('review_text', patch.text !== undefined, patch.text ?? null);
+  db.run(`UPDATE drafts SET ${sets.join(', ')} WHERE id = ? AND state NOT IN ('recording', 'discarding')`, ...params, id);
+  return changes(db) === 1;
 }
 
 /** Removes the row only, never the file. */

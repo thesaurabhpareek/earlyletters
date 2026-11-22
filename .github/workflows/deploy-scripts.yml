@@ -1,0 +1,45 @@
+# Tests for .github/scripts/functions-deploy.mjs, which decides what
+# deploy-functions.yml deploys and checks that it landed (the plan, the
+# function-list check, the migrations check). Runs on pull requests that can
+# change what it decides: the script and its workflow, the Edge Functions, the
+# migrations, and the packages the functions import. With DENO_INFO_CHECK=1 the
+# tests also compare the plan's import closure with `deno info --json` for every
+# function folder, so an import the plan's parser misses fails here, before a
+# change to that file can skip a deploy.
+#
+# No secrets; read-only. Actions are pinned to commit SHAs (CI-06); the comment
+# names the tag. Path-filtered, so it needs an aggregator before it can be a
+# required check (AUTOMATION.md 2.1, RA-20-03b).
+name: deploy scripts
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/functions-deploy.mjs'
+      - '.github/scripts/functions-deploy.test.mjs'
+      - '.github/workflows/deploy-functions.yml'
+      - '.github/workflows/deploy-scripts.yml'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'packages/**'
+
+permissions: {}
+
+jobs:
+  test:
+    name: functions-deploy tests (with deno info)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: node --test .github/scripts/functions-deploy.test.mjs
+        env:
+          DENO_INFO_CHECK: '1'
+        run: node --test .github/scripts/functions-deploy.test.mjs

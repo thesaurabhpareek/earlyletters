@@ -217,10 +217,8 @@ describe('legitimate repairs are still accepted', () => {
     ["She don't want it.", "don't", "doesn't"],
     ["They isn't here.", "isn't", "aren't"],
     ['She go out.', 'go', 'goes'],
-    ['She walk to me.', 'walk', 'walks'],
-    ['She watch the birds.', 'watch', 'watches'],
-    ['She carry the bag.', 'carry', 'carries'],
-    ['We saw two dog.', 'dog', 'dogs'],
+    // walk -> walks, watch -> watches, carry -> carries and dog -> dogs left this list with
+    // R-01 D9: agreement is a closed table (F06-REQ-007, test/verify.r01.test.ts).
     ['She got a apple.', 'a', 'an'],
   ])('agreement "%s": %s -> %s', (raw, from, to) => {
     expect(verdict(raw, edit(raw, 'agreement', from, to))).toBeNull();

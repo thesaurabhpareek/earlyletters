@@ -49,6 +49,10 @@ Deno.test('an account deletion runs every step in order and finalizes with a cou
   assert.match(receipt.text, new RegExp(req.id));
   assert.match(receipt.text, /If you have Plus[^\n]*Subscriptions/);
   assert.equal(receipt.idempotencyKey, `deletion-completed:${req.id}`);
+  // TPL-02: HTML with the inline logo, sent as two cid: attachments in Resend's REST shape.
+  assert.match(receipt.html!, /src="cid:el-logo-light"/);
+  assert.deepEqual(receipt.attachments!.map((a) => a.content_id).sort(), ['el-logo-dark', 'el-logo-light']);
+  assert.ok(receipt.attachments!.every((a) => a.content_type === 'image/png' && a.content.length > 100));
   // Auth user deleted; co-parent untouched; receipt finalized with counts and step outcomes only.
   assert.equal(w.users.has(uid), false);
   assert.equal(w.users.has(co), true);
@@ -295,7 +299,9 @@ Deno.test('request and cancellation receipts use the content package words and a
   await run(w, testConfig());
   const requested = w.emails.find((e) => e.subject === 'Your account is set to be deleted')!;
   assert.match(requested.text, /December 5, 2026/);
-  assert.match(requested.text, /or to cancel the request\. Both are in Settings/);
+  assert.match(requested.text, /sign in and cancel the request in Settings, Delete account\./);
+  // No export after the request (DATA-REQ-053 is open) and no claim that the co-parent was told (#358).
+  assert.doesNotMatch(requested.text, /export a copy|export yours|let them know/i);
   assert.match(requested.text, /aaaaaaaa-0000-4000-8000-000000000001/);
   assert.equal(requested.idempotencyKey, 'deletion-requested:aaaaaaaa-0000-4000-8000-000000000001');
   const cancelled = w.emails.find((e) => e.subject === 'Your account is staying')!;
@@ -311,27 +317,26 @@ Deno.test('request and cancellation receipts use the content package words and a
   }
 });
 
-Deno.test('save-a-copy notices: none without family members, one per member otherwise', async () => {
+Deno.test('[TPL-05] save-a-copy step: not_applicable without family members; no off-catalog email, a failed step and an alert otherwise', async () => {
   const w = new FakeWorld();
   const mk = (id: string) => ({ id, profile_id: CANARY.profileId, status: 'scheduled' as const, requested_at: w.now.toISOString(), scheduled_for: new Date(w.now.getTime() + 30 * DAY).toISOString(), executing_at: '', cancelled_at: null, had_active_subscription: null, receipt: { request_email: 'sent' }, steps: [{ step: 'contributor_export_notice', status: 'pending' as const, attempts: 0, next_attempt_at: new Date(0).toISOString(), last_error_code: null }] });
   w.requests.push(mk('bbbbbbbb-0000-4000-8000-000000000001'), mk('bbbbbbbb-0000-4000-8000-000000000002'));
   w.users.set(CANARY.coParentId, { email: CANARY.coParentEmail, providers: ['email'] });
   w.contributors.set('bbbbbbbb-0000-4000-8000-000000000002', [CANARY.coParentId]);
-  await run(w, testConfig());
+  const { summary } = await run(w, testConfig());
   assert.equal(w.step('bbbbbbbb-0000-4000-8000-000000000001', 'contributor_export_notice')!.status, 'not_applicable');
-  assert.equal(w.step('bbbbbbbb-0000-4000-8000-000000000002', 'contributor_export_notice')!.status, 'done');
-  const notice = w.emails.find((e) => e.to === CANARY.coParentEmail)!;
-  assert.match(notice.text, /Export everything/);
-  assert.ok(notice.idempotencyKey && !notice.idempotencyKey.includes(CANARY.coParentId), 'idempotency key carries a hash, not the id');
+  const step = w.step('bbbbbbbb-0000-4000-8000-000000000002', 'contributor_export_notice')!;
+  assert.equal(step.status, 'failed');
+  assert.equal(step.last_error_code, 'config');
+  assert.ok(!w.emails.some((e) => e.to === CANARY.coParentEmail), 'family-book-closing is v1.1: nothing goes to the member');
+  assert.ok(summary.alerts.conditions >= 1, 'the founder hears about it');
 });
 
-Deno.test('repeated notice failures raise the retry alert after enough attempts', async () => {
+Deno.test('a failed contributor lookup stays pending and raises the retry alert after enough attempts', async () => {
   const w = new FakeWorld();
   w.requests.push({ id: 'cccccccc-0000-4000-8000-000000000001', profile_id: CANARY.profileId, status: 'scheduled', requested_at: w.now.toISOString(), scheduled_for: w.now.toISOString(), executing_at: '', cancelled_at: null, had_active_subscription: null, receipt: { request_email: 'sent' },
     steps: [{ step: 'contributor_export_notice', status: 'pending', attempts: ALERT_AFTER_ATTEMPTS - 1, next_attempt_at: new Date(0).toISOString(), last_error_code: 'http_503' }] });
-  w.users.set(CANARY.coParentId, { email: CANARY.coParentEmail, providers: ['email'] });
-  w.contributors.set('cccccccc-0000-4000-8000-000000000001', [CANARY.coParentId]);
-  w.resendStatus = 503;
+  w.failRpc = 'ops_deletion_contributors';
   const { summary } = await run(w, testConfig());
   assert.equal(summary.alerts.conditions >= 1, true);
   assert.equal(w.step('cccccccc-0000-4000-8000-000000000001', 'contributor_export_notice')!.status, 'pending');
@@ -355,6 +360,19 @@ Deno.test('daily: the ledger is copied to the ops-ledger bucket and old files ar
   assert.deepEqual(findCanaries(log.raw.join('\n')), []);
 });
 
+Deno.test('daily: D-081 consent records past their 3 years are purged once a day; a missing function is skipped quietly', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  const { log } = await run(w, testConfig(), 'daily');
+  assert.deepEqual(w.subscriptionRetentionCalls, ['2026-11-05T03:17:00.000Z']);
+  assert.ok(log.lines.some((l) => l.event === 'retention.done' && l.counts?.rows === 2));
+  const before = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  before.subscriptionRetentionMissing = true;
+  const r2 = await run(before, testConfig(), 'daily');
+  assert.ok(r2.log.lines.some((l) => l.event === 'retention.done' && l.outcome === 'skipped'));
+  assert.ok(!r2.log.lines.some((l) => l.event === 'retention.failed'));
+  assert.equal(before.retentionCalls, 1);
+});
+
 Deno.test('the run stops starting new work at its time budget', async () => {
   const { w } = await ashaWorld({ apple: false });
   let t = w.now.getTime();
@@ -368,4 +386,89 @@ Deno.test('the run stops starting new work at its time budget', async () => {
   const { summary } = await run(w, config);
   assert.equal(summary.budgetHit, true);
   assert.equal(w.finalized.size, 0);
+});
+
+// ── Recording backup (20261023000000_backup_server.sql; PRD V2 F08 6.5 D, F08-REQ-024, -042) ──
+
+const escrowRow = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
+  device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });
+
+Deno.test('[F08-REQ-042] daily: the recovery-key log is copied to a new ops-ledger/escrow/<date>.run-<stamp>.jsonl per day, ids only', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z'), escrowRow(2, '2026-11-04T11:00:00.000Z'), escrowRow(3, '2026-11-05T01:00:00.000Z'),
+    escrowRow(4, '2026-09-01T00:00:00.000Z')];
+  w.put('ops-ledger', 'escrow/2026-08-01.jsonl');
+  w.put('ops-ledger', 'escrow/2026-08-02.run-20260803T031700Z.jsonl');
+  w.put('ops-ledger', 'escrow/2026-10-01.jsonl');
+  for (const d of ['2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']) w.put('ops-ledger', `escrow/${d}.run-x.jsonl`);
+  const { log } = await run(w, testConfig(), 'daily');
+  const mine = w.names('ops-ledger').filter((n) => n.startsWith('escrow/2026-1') && !n.includes('.run-x.'));
+  assert.deepEqual(mine, ['escrow/2026-10-01.jsonl', 'escrow/2026-11-04.run-20261105T031700Z.jsonl', 'escrow/2026-11-05.run-20261105T031700Z.jsonl']);
+  assert.ok(!w.names('ops-ledger').some((n) => n.startsWith('escrow/2026-08-')), 'files past the 60-day keep window go, whatever their name');
+  const lines = w.objects.get('ops-ledger')!.get('escrow/2026-11-04.run-20261105T031700Z.jsonl')!.body!.trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(lines.length, 2, 'the same row count as the table for that day');
+  assert.deepEqual(Object.keys(lines[0]).sort(), ['at', 'child', 'device', 'ekv', 'id', 'kv', 'outcome', 'profile', 'reason', 'req', 'restore', 'subject']);
+  assert.deepEqual(findCanaries(log.raw.join('\n')), []);
+});
+
+Deno.test('[F08-REQ-042] daily: a later run never replaces an earlier copy, so rows a database restore dropped stay on file', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  for (const d of ['2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']) w.put('ops-ledger', `escrow/${d}.run-x.jsonl`);
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z'), escrowRow(2, '2026-11-04T11:00:00.000Z')];
+  await run(w, testConfig(), 'daily');
+  const first = 'escrow/2026-11-04.run-20261105T031700Z.jsonl';
+  const before = w.objects.get('ops-ledger')!.get(first)!.body;
+  // The database is restored to before row 2, and the worker runs again an hour later.
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z')];
+  w.now = new Date('2026-11-05T04:17:00Z');
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.objects.get('ops-ledger')!.get(first)!.body, before, 'the first copy still shows both uses of the key');
+  assert.ok(w.has('ops-ledger', 'escrow/2026-11-04.run-20261105T041700Z.jsonl'), 'the second run wrote its own file');
+  // Even a run with the very same stamp cannot replace a file: the upload never overwrites.
+  w.escrowLog = [];
+  w.escrowLog.push(escrowRow(9, '2026-11-04T12:00:00.000Z'));
+  w.now = new Date('2026-11-05T03:17:00Z');
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.objects.get('ops-ledger')!.get(first)!.body, before);
+});
+
+Deno.test('[F08-REQ-042] daily: a day of the week before with no copy (the worker was down) is backfilled; a day with one is not', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  w.escrowLog = [escrowRow(1, '2026-11-01T10:00:00.000Z'), escrowRow(2, '2026-11-02T10:00:00.000Z'), escrowRow(3, '2026-10-20T10:00:00.000Z')];
+  w.put('ops-ledger', 'escrow/2026-11-02.run-20261103T031700Z.jsonl');
+  await run(w, testConfig(), 'daily');
+  const names = w.names('ops-ledger').filter((n) => n.startsWith('escrow/'));
+  assert.ok(names.includes('escrow/2026-11-01.run-20261105T031700Z.jsonl'), 'the missing day is copied');
+  assert.ok(!names.includes('escrow/2026-11-02.run-20261105T031700Z.jsonl'), 'a day that has a copy is left alone');
+  assert.ok(!names.some((n) => n.startsWith('escrow/2026-10-20')), 'only the last week is backfilled');
+});
+
+Deno.test('[F08-REQ-043] daily: the backup sweep runs once, after the ledger copies', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.backupSweepCalls, 1);
+  const order = w.rpcCalls.map((c) => c.fn).filter((f) => ['ops_ledger_between', 'backup_svc_unwraps_between', 'backup_svc_sweep'].includes(f));
+  assert.deepEqual(order.slice(-1), ['backup_svc_sweep']);
+});
+
+Deno.test('[F08-REQ-024] an erased letter\'s backup is queued by its exact path in entry-audio and removed from that bucket alone', async () => {
+  const w = new FakeWorld();
+  w.buckets.add('entry-audio');
+  const path = `${CANARY.childId}/${CANARY.profileId}/${CANARY.entryId}.m4a.enc`;
+  w.put('entry-audio', path, CANARY.profileId);
+  w.put('entry-audio', `${CANARY.childId}/${CANARY.profileId}/0192e000-0000-7000-8000-00000000e009.m4a.enc`, CANARY.profileId);
+  w.put('entry-photos', `${CANARY.childId}/${CANARY.profileId}/${CANARY.entryId}.jpg`, CANARY.profileId);
+  w.enqueue('entry-audio', path, false);
+  await run(w, testConfig());
+  assert.equal(w.has('entry-audio', path), false);
+  assert.equal(w.names('entry-audio').length, 1, 'the other recording stays');
+  assert.equal(w.names('entry-photos').length, 1, 'nothing in another bucket is touched');
+});
+
+Deno.test('[F08-REQ-040] a whole person in a book reaches entry-audio by prefix once the bucket exists', async () => {
+  const { w, uid, child } = await ashaWorld({ apple: false });
+  w.buckets.add('entry-audio');
+  w.put('entry-audio', `${child}/${uid}/${CANARY.entryId}.m4a.enc`, uid);
+  await run(w, testConfig());
+  assert.deepEqual(w.names('entry-audio'), []);
 });

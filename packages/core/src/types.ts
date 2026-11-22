@@ -88,6 +88,7 @@ export type RejectReason =
   | 'changes_number' // 1,000 -> 1.000, two -> too
   | 'changes_sentence_type' // "it." -> "it?", "!" removed
   | 'changes_quotes' // quotation marks added, removed or moved
+  | 'changes_invisible' // a direction mark, joiner or other invisible character added, removed or moved (F06-REQ-003)
   | 'case_change_not_allowed' // case changed anywhere but a word's first letter, or a capital that was not positional
   | 'case_change_not_sentence_start' // a capital where no sentence starts (will -> Will)
   | 'removes_negation' // a "repeat" or "false start" that only removes a negation (not not -> not)

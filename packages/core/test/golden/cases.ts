@@ -35,7 +35,22 @@ export interface GoldenCase {
   level?: EditLevel;
   locked?: string[];
   model?: GoldenEdit[];
+  /** A dictionary for this case only (R-01 D10, D13 need names GOLDEN_DICT does not have). Default GOLDEN_DICT. */
+  dictionary?: DictionaryTerm[];
 }
+
+/** R-01 D10: names that are everyday words. Fictional family only. */
+const NAME_WORD_DICT: DictionaryTerm[] = [
+  { term: 'Hope', kind: 'child', heardAs: [] },
+  { term: 'Will', kind: 'nickname', heardAs: [] },
+];
+/** R-01 D13: a heard-as that is another family member's name. */
+const TWO_NAMES_DICT: DictionaryTerm[] = [
+  { term: 'Asha', kind: 'child', heardAs: ['Usha'] },
+  { term: 'Usha', kind: 'family', heardAs: [] },
+];
+/** Found 15 Oct: a taught heard-as that is a negation. */
+const NEGATION_HEARD_DICT: DictionaryTerm[] = [{ term: 'Noa', kind: 'child', heardAs: ['no'] }];
 
 const NFD_CAFE = 'café';
 const NFD_ZOE = 'Zoë';
@@ -168,5 +183,93 @@ export const GOLDEN_CASES: GoldenCase[] = [
     lang: 'nfd',
     raw: `${NFD_SENOR.toLowerCase()} Ashu waved`,
     model: [{ type: 'punctuation', original: 's', replacement: 'S' }],
+  },
+
+  // R-01 launch gate, engine 6 (F06 section 7.1). Added with engine 6; every case above is unchanged from engine 5.
+  { id: 'r01-d6-uh-uh', lang: 'en', raw: 'Did you want more? Uh-uh, she said.' },
+  { id: 'r01-d6-mm-hmm', lang: 'en', raw: 'Mm-hmm, Asha nodded and um smiled.' },
+  { id: 'r01-d6-uh-uh-spaced', lang: 'en', raw: 'Uh uh, not now, Asha.' },
+  { id: 'r01-d7-single-quotes', lang: 'en', raw: 'Asha said ‘um, up’ twice.' },
+  {
+    id: 'r01-d10-name-words',
+    lang: 'en',
+    raw: 'I hope you sleep well and we will see Hope tomorrow.',
+    dictionary: NAME_WORD_DICT,
+  },
+  { id: 'r01-d13-name-swap', lang: 'en', raw: 'Usha came over today and asha laughed.', dictionary: TWO_NAMES_DICT },
+  { id: 'r01-d13-heard-as-negation', lang: 'en', raw: 'No, she did not cry. I said no.', dictionary: NEGATION_HEARD_DICT },
+  { id: 'r01-number-range', lang: 'en', raw: 'Asha slept 2 – 3 hours.' },
+  {
+    id: 'r01-d4-model-direction-mark',
+    lang: 'en',
+    raw: 'Asha laughed at the duck.',
+    model: [{ type: 'punctuation', original: 'laughed', replacement: 'laughed\u200F' }],
+  },
+  {
+    id: 'r01-d9-model-noun-plural',
+    lang: 'en',
+    raw: 'We saw the dogs with Asha.',
+    model: [{ type: 'agreement', original: 'dogs', replacement: 'dog' }],
+  },
+
+  // Engine 7: no end mark next to one already said (#179 re-check Note E). Every case above is unchanged from engine 6.
+  {
+    id: 'e7-model-period-after-question',
+    lang: 'en',
+    raw: 'Asha slept. Was there more?',
+    model: [{ type: 'punctuation', original: 'more?', replacement: 'more?.' }],
+  },
+  {
+    id: 'e7-model-period-after-danda',
+    lang: 'hi',
+    raw: 'आशा आज बहुत हँसी।',
+    model: [{ type: 'punctuation', original: 'हँसी।', replacement: 'हँसी।.' }],
+  },
+
+  // Engine 8: refusals only (#257 reviews). Every case above reads the same as in engine 7.
+  {
+    // Seed 20261015 run 81642's shape in English: the space after U+200B deleted would read "Ashaslept".
+    id: 'e8-model-join-through-invisible',
+    lang: 'en',
+    raw: 'Asha\u200B slept well today.',
+    model: [{ type: 'paragraph', original: ' ', replacement: '' }],
+  },
+  {
+    // A "." behind U+2018, which closes on the speaker's own ".": engine 7 read U+2018 as a wall.
+    id: 'e8-model-period-behind-quote',
+    lang: 'en',
+    raw: 'Asha said \u201Ano.\u2018',
+    model: [{ type: 'punctuation', original: 'no.\u2018', replacement: 'no.\u2018.' }],
+  },
+  {
+    // Rules only: a taught heard-as "uh" turned "Uh-uh" (no) into "Usha-Usha" (seed 2 run 84272's shape).
+    id: 'e8-heard-as-inside-uh-uh',
+    lang: 'en',
+    raw: 'Did you want more? Uh-uh, she said.',
+    dictionary: [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }],
+  },
+  // Rulings on #262, the same release.
+  {
+    // A capital past a kept filler is a case change no removal forced: "Hope" would read as the child's name.
+    id: 'e8-model-capital-after-locked-filler',
+    lang: 'en',
+    raw: 'Um, hope is here.',
+    locked: ['Um'],
+    dictionary: [{ term: 'Hope', kind: 'child', heardAs: [] }],
+    model: [{ type: 'punctuation', original: 'hope', replacement: 'Hope' }],
+  },
+  {
+    // The later "." moved inside the quote, beside the "." said there (the house rule then straightens the quotes).
+    id: 'e8-model-mark-moved-into-quote',
+    lang: 'en',
+    raw: 'She said no.\u201D. Then she slept.',
+    model: [{ type: 'punctuation', original: '\u201D.', replacement: '.\u201D' }],
+  },
+  {
+    // A taught heard-as "uh" never turns the filler into a name; the filler rule removes it.
+    id: 'e8-heard-as-filler',
+    lang: 'en',
+    raw: 'Uh, she came over.',
+    dictionary: [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }],
   },
 ];

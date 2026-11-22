@@ -21,7 +21,7 @@ Date: 2026-10-03. Owner: the founder (individual publisher, see D-004).
 - Verify technical claims (client support, regulations, Supabase/Resend behaviour) against primary sources with WebSearch/WebFetch; mark anything unverified as UNVERIFIED. No invented citations.
 
 ## Decisions already taken (defaults; founder may override)
-- Domains: `earlyletters.com` primary. `earlyletters.app` 308-redirects to .com (at Vercel). Both verified for Resend sending (.app pending DNS).
+- Domains: `earlyletters.com` primary. `earlyletters.app` 308-redirects to .com (the website does it, Vercel serves it). Only `earlyletters.com` is a Resend domain: `.app` was removed from Resend on 31 Oct 2026 because it never sends.
 - Email provider: Resend (us-east-1). Supabase Auth sends through Resend (custom SMTP or Send Email Hook; L3 recommends which).
 - Sender: `Early Letters <hello@earlyletters.com>` for all transactional mail; replies go to the same human inbox. No `no-reply@`. Future marketing/newsletter mail on a separate subdomain (proposal: `news.earlyletters.com`), not built now.
 - Auth at v1.0 (D-044): Sign in with Apple + email sign-in link with a 6-digit code fallback (for when the link opens on another device). Google sign-in arrives in v1.1; the catalog includes its emails as "v1.1".

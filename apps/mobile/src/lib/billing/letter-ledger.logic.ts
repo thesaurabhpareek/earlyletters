@@ -2,8 +2,8 @@
  * The letter ledger, pure part (D-082, D-083; debate Q-013 section 3, option B).
  *
  * One never-decreasing whole number: how many letters this account has ever
- * kept. It is the only thing the free-letter limit looks at, so deleting a
- * letter, undoing a delete, restoring from Recently deleted, editing or moving
+ * kept. A kept note counts as a letter (D-133). It is the only thing the
+ * free-letter limit looks at, so deleting a letter, undoing a delete, restoring from Recently deleted, editing or moving
  * a letter between the Book and private never change it. No identifier, no
  * timestamp, no content, no device id (that would edge toward fingerprinting).
  *
@@ -12,14 +12,25 @@
  *      this-device-only, never in a backup);
  *   2. the database mirror, settings key `letters.keptEver` (comes back with an
  *      iCloud or device backup restore);
- *   3. the letters present in the database (a restored database still shows its
- *      letters even if both counters are gone).
+ *   3. the letters and notes present in the database (a restored database
+ *      still shows them even if both counters are gone).
  * Every way a source can be lost errs on the safe side: the person gets a
  * gift, never a lock-out. Apple does not guarantee Keychain items survive app
  * deletion; that is accepted (Q-013 section 3).
  *
  * No React Native here: unit-tested in test/billing-ledger.test.ts.
  */
+
+/**
+ * Words exist (M17, D-103 (b)): at least one letter or digit in any script. Marks alone
+ * ("...", "?!") are not words. The Keep gate (gates.ts keepGateFor) and the ledger query
+ * (db/repos/ledger.ts) share this one rule, so a save the gate does not ask about never counts.
+ * Accepted: text holding a digit counts even when it reads as a symbol (`<3`, a keycap one, a
+ * superscript two). `\p{N}` stays whole because some scripts write numbers as `No` (Ethiopic).
+ */
+export function hasWords(text: string | null | undefined): boolean {
+  return typeof text === 'string' && /[\p{L}\p{N}]/u.test(text);
+}
 
 /** Device settings key for the database mirror. */
 export const LEDGER_SETTING_KEY = 'letters.keptEver';

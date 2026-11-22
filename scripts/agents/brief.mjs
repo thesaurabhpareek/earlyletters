@@ -44,7 +44,7 @@ if (!journal) {
   journal = String(issues[0]?.number ?? "");
 }
 const comments = journal ? ghAll(`/repos/${repo}/issues/${journal}/comments`, { allowFail: true }) : [];
-const entries = comments.filter((c) => (c.body ?? "").includes("<!-- journal run:"));
+const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
 const founderNotes = comments.filter((c) => isFounderComment(c, roster) && new Date(c.created_at) > lastEntryAt);
 const recent = entries.slice(-3);
@@ -76,7 +76,7 @@ function assignmentSection() {
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${pr?.title ?? ""}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
+    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) ?? pr.user?.login ?? "unknown" : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
     lines.push("Follow section 6 of the operating model. Read the diff with `gh pr diff " + prNum + "`. Your review body must start with `<!-- red-team:" + (pr?.head?.sha ?? "<sha>") + " -->`.");
   } else if (mode === "handoff") {
     lines.push(...handoffSection(String(taskId).replace(/^#/, "")));
@@ -216,23 +216,20 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
+import { trustedJournalEntries, oneLine } from "./hardening.mjs";
+import * as memoryBrief from "./memory.mjs";
+import { claimsLines } from "./board-check.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
-// docs/agents/BOARD.md on develop. Their live claims are off limits.
+// docs/agents/CLAIMS.md on develop. Their live claims are off limits.
 function otherThreadsSection() {
-  // Read the board as it is on the base branch now (a local checkout may be stale).
-  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
+  // Read the claims as they are on the base branch now (a local checkout may be stale).
+  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/CLAIMS.md?ref=${roster.base_branch}`, { allowFail: true });
   let text = fromApi?.content ? Buffer.from(fromApi.content, "base64").toString("utf8") : undefined;
-  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { text = ""; } }
-  const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
-    .split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l) && !/\|\s*Agent\s*\|/.test(l))
-    .map((l) => l.split("|").map((c) => c.trim()))
-    .filter((c) => c.length > 5 && !/^done/i.test(c[5]) && !/merge only/i.test(c[3]));
+  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "CLAIMS.md")); } catch { text = undefined; } }
   const lines = ["## Other threads working in this repo", "",
-    "The founder's build thread and its agents claim files in `docs/agents/BOARD.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
-  lines.push("", rows.length
-    ? rows.map((c) => `- ${c[1]}: ${c[3]} (since ${c[4]})`).join("\n")
-    : "No live claims right now.", "");
+    "The founder's build thread and its agents claim files in `docs/agents/CLAIMS.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
+  lines.push("", ...claimsLines(text), "");
   // Work pushed in the last 24 hours that has no open PR yet (another session's branch).
   const since = Date.now() - 24 * 3600_000;
   const prRefs = new Set(openPRs.map((p) => p.head.ref));
@@ -280,12 +277,14 @@ const doc = [
   ...assignmentSection(),
   "",
   ...otherThreadsSection(),
+  ...memoryBrief.briefLines({ ROOT, handle, recent }),
   "## Finish the run",
   "",
   `1. Labels on every PR you open or update: \`agent:${handle}\` and \`from:agent\` (\`gh pr edit <n> --add-label agent:${handle},from:agent\`).`,
   `2. Commit messages end with \`Agent: ${handle}\`.`,
-  `3. Post exactly one journal entry: write it to a file and run \`gh issue comment ${journal || "<journal>"} --body-file <file>\`. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\` and it follows section 5 of the operating model.`,
-  "4. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
+  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Post with \`gh api -X POST repos/${repo}/issues/${journal || "<journal>"}/comments -F body=@<file>\` and complete it with \`gh api -X PATCH repos/${repo}/issues/comments/<id> -F body=@<file>\`.`,
+  "4. New BL, D or ADR numbers come from `node scripts/agents/next-id.mjs`, never from reading develop alone.",
+  "5. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
   "",
 ].join("\n");
 

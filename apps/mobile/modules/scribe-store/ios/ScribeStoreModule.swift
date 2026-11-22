@@ -1,6 +1,13 @@
+import CryptoKit
 import ExpoModulesCore
 import StoreKit
 import UIKit
+
+/// SwiftUI also declares `Transaction` and becomes visible with ExpoModulesCore, so a bare
+/// `Transaction` is ambiguous (Xcode 26.6, iOS compile check #188). Every `Transaction` in
+/// this module means StoreKit's. Internal, not fileprivate: it appears in internal
+/// signatures (`Entitlements.isLive`).
+typealias Transaction = StoreKit.Transaction
 
 /// Plus through Apple only (docs/adr/0013; founder decision 3, 3 Oct 2026).
 ///
@@ -72,7 +79,7 @@ public class ScribeStoreModule: Module {
       }
     }
 
-    /// Apple's offer code redemption sheet (D-081: codes come from Apple, never a code system of ours).
+    /// Apple's offer code redemption sheet (D-053 and ADR 0013, Apple only: codes come from Apple, never a code system of ours).
     /// "presented" | "unavailable" | "failed". It resolves when the sheet has been shown; a redeemed code
     /// arrives as a Transaction through the update listener above (onEntitlementsChanged), so the caller
     /// re-reads the entitlements afterwards. API read in Apple's documentation on 4 Oct 2026:
@@ -87,6 +94,15 @@ public class ScribeStoreModule: Module {
     /// Family Sharing one). "success" | "cancelled" | "none" | "unavailable" | "failed".
     AsyncFunction("beginRefundRequest") { (productIds: [String]) async -> String in
       return await ScribeStoreModule.beginRefundRequest(productIds: Set(productIds))
+    }
+
+    /// D-080 status report (WP-F14-15a; contract packages/api/src/server/subscription-status.ts).
+    /// The person's own Plus subscriptions (ownership purchased; Family Sharing never reports),
+    /// each with `subRef` = hex(SHA-256(salt bytes || UTF-8 original transaction id)). The id
+    /// itself never leaves Swift (F14-REQ-014). A malformed salt answers an empty list.
+    AsyncFunction("statusReportRefs") { (salt: String, productIds: [String]) async -> [[String: Any]] in
+      guard let saltBytes = StatusRef.decodeSalt(salt) else { return [] }
+      return await Entitlements.statusReportItems(productIds: Set(productIds), salt: saltBytes)
     }
   }
 
@@ -203,20 +219,60 @@ final class OnceResume: @unchecked Sendable {
 
 /// Finishes every verified transaction Apple delivers and reports a change.
 /// Unverified transactions are ignored and left unfinished (Apple's sample code).
+///
+/// At start it also walks Transaction.unfinished (RT-OFC-06, RT-SUB-13): a purchase,
+/// renewal or Ask to Buy approval that arrived while the app was closed, or one whose
+/// finish() never ran (the app was killed mid-purchase), stays unfinished until we finish
+/// it. Each verified one is finished; then one "update" event tells JavaScript to re-read
+/// Transaction.currentEntitlements (plan-store refreshPlan). Only that read grants Plus,
+/// and it reads verified transactions only, so an unverified one never grants anything
+/// and stays unfinished.
+///
+/// The two loops overlap on purpose. Apple's documentation for `Transaction.updates`
+/// says unfinished transactions are also delivered there once, right after launch
+/// (developer.apple.com/documentation/storekit/transaction/updates), and the walk is a
+/// belt for a listener that starts late. So each transaction id is finished at most once
+/// per process (`claim`): the walk skips an id the updates loop already took, and the
+/// updates loop skips the finish (never the change report) for an id the walk took. An
+/// update for an id seen before (a refund revokes the same transaction) still reports.
 final class TransactionListener: @unchecked Sendable {
   private let lock = NSLock()
   private var task: Task<Void, Never>?
+  private var unfinishedTask: Task<Void, Never>?
+  private var finishedIds = Set<UInt64>()
+
+  /// True the first time an id is claimed in this process: only that caller finishes it.
+  private func claim(_ id: UInt64) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return finishedIds.insert(id).inserted
+  }
 
   func start(onChange: @escaping (_ purchased: Bool) -> Void) {
     lock.lock()
     defer { lock.unlock() }
     guard task == nil else { return }
-    task = Task.detached(priority: .background) {
+    task = Task.detached(priority: .background) { [weak self] in
       for await result in Transaction.updates {
         guard case .verified(let transaction) = result else { continue }
-        await transaction.finish()
+        if self?.claim(transaction.id) ?? true { await transaction.finish() }
         onChange(Entitlements.isLive(transaction))
       }
+    }
+    // RT-PAY-17: a purchase left unfinished (Ask to Buy approved, an interrupted purchase, a kill mid-purchase) is
+    // finished here at start, once per id (claim), and only when verified. Device check: DEVICE_TEST_PLAN S1-132 (a) to (c).
+    unfinishedTask = Task.detached(priority: .background) { [weak self] in
+      var finishedAny = false
+      for await result in Transaction.unfinished {
+        if Task.isCancelled { return }
+        guard case .verified(let transaction) = result else { continue }
+        guard self?.claim(transaction.id) ?? true else { continue }
+        await transaction.finish()
+        finishedAny = true
+      }
+      // "update", never "purchase": nothing was bought on a sheet now open, so the store
+      // sheet is not closed. JavaScript re-reads the entitlements either way.
+      if finishedAny && !Task.isCancelled { onChange(false) }
     }
   }
 
@@ -225,6 +281,8 @@ final class TransactionListener: @unchecked Sendable {
     defer { lock.unlock() }
     task?.cancel()
     task = nil
+    unfinishedTask?.cancel()
+    unfinishedTask = nil
   }
 }
 
@@ -285,6 +343,39 @@ enum Entitlements {
     return ["entitlements": entitlements, "statuses": statuses, "checkedAt": iso.string(from: Date())]
   }
 
+  /// Own subscriptions with their salted reference, for the status report. One item per
+  /// original purchase; the newest status Apple lists for it.
+  static func statusReportItems(productIds: Set<String>, salt: Data) async -> [[String: Any]] {
+    var groupIds = Set<String>()
+    for await result in Transaction.currentEntitlements {
+      guard case .verified(let t) = result, productIds.contains(t.productID), let group = t.subscriptionGroupID else { continue }
+      groupIds.insert(group)
+    }
+    for id in productIds {
+      if let result = await Transaction.latest(for: id), case .verified(let t) = result, let group = t.subscriptionGroupID {
+        groupIds.insert(group)
+      }
+    }
+    var seen = Set<UInt64>()
+    var items: [[String: Any]] = []
+    for group in groupIds {
+      guard let list = try? await Product.SubscriptionInfo.status(for: group) else { continue }
+      for status in list {
+        guard case .verified(let t) = status.transaction, productIds.contains(t.productID),
+              t.ownershipType == .purchased, !seen.contains(t.originalID) else { continue }
+        seen.insert(t.originalID)
+        var item = describe(t)
+        item["state"] = stateName(status.state)
+        if case .verified(let renewal) = status.renewalInfo {
+          item["willAutoRenew"] = renewal.willAutoRenew
+        }
+        item["subRef"] = StatusRef.subRef(salt: salt, originalID: t.originalID)
+        items.append(item)
+      }
+    }
+    return items
+  }
+
   /// The person's own (not Family Sharing) current Plus purchase, for a refund request.
   static func ownPurchaseTransactionID(productIds: Set<String>) async -> UInt64? {
     var best: Transaction?
@@ -314,6 +405,8 @@ enum Entitlements {
       "environment": environmentName(t.environment),
       "isTrial": isFreeTrial(t),
       "isUpgraded": t.isUpgraded,
+      "offerType": offerTypeName(t),
+      "freePeriod": isFreePeriod(t),
     ]
     if let end = t.expirationDate { item["expiresAt"] = iso.string(from: end) }
     if let revoked = t.revocationDate { item["revokedAt"] = iso.string(from: revoked) }
@@ -326,6 +419,34 @@ enum Entitlements {
       return offer.type == .introductory && offer.paymentMode == .freeTrial
     }
     // Before iOS 17.2. Plus has no paid introductory offers, so introductory means free.
+    return t.offerType == .introductory
+  }
+
+  /// How the current period was offered. A win-back offer (iOS 18) is "win_back" (contract
+  /// OFFER_TYPES, S07 #138); a kind newer than this build reads as "other".
+  private static func offerTypeName(_ t: Transaction) -> String {
+    let type: Transaction.OfferType?
+    if #available(iOS 17.2, *) {
+      type = t.offer?.type
+    } else {
+      type = t.offerType
+    }
+    guard let type else { return "none" }
+    if type == .introductory { return "introductory" }
+    if type == .promotional { return "promotional" }
+    if type == .code { return "offer_code" }
+    if #available(iOS 18.0, *), type == .winBack { return "win_back" }
+    return "other"
+  }
+
+  /// The current period costs nothing: a free trial, or an offer code or promotional offer with a
+  /// free period. Before iOS 17.2 only the introductory offer is known to be free (Plus has no paid
+  /// introductory offers); an offer code's payment mode is not readable there, so it reads as paid.
+  private static func isFreePeriod(_ t: Transaction) -> Bool {
+    if #available(iOS 17.2, *) {
+      guard let offer = t.offer else { return false }
+      return offer.paymentMode == .freeTrial
+    }
     return t.offerType == .introductory
   }
 
@@ -344,5 +465,24 @@ enum Entitlements {
     case .revoked: return "revoked"
     default: return "unknown"
     }
+  }
+}
+
+/// `subRef` for the D-080 status report (R2 AR-13). Matches `subRefReference` in
+/// packages/api/src/server/subscription-status.ts byte for byte: SHA-256 over the 32 salt
+/// bytes followed by the UTF-8 decimal original transaction id, as lowercase hex.
+enum StatusRef {
+  /// base64url without padding, exactly 43 characters, 32 bytes. Anything else is nil.
+  static func decodeSalt(_ s: String) -> Data? {
+    guard s.count == 43, s.range(of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil else { return nil }
+    let b64 = s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/") + "="
+    guard let data = Data(base64Encoded: b64), data.count == 32 else { return nil }
+    return data
+  }
+
+  static func subRef(salt: Data, originalID: UInt64) -> String {
+    var input = salt
+    input.append(contentsOf: Array(String(originalID).utf8))
+    return SHA256.hash(data: input).map { String(format: "%02x", $0) }.joined()
   }
 }

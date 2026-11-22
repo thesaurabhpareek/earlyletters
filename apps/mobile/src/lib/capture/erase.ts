@@ -1,34 +1,72 @@
 /**
  * The device half of "Erase now" and the 30 day purge (D-085): removes a
- * deleted letter's recording and its listening copy. The store calls this
+ * deleted letter's recording, its listening copy, and any temporary copy of
+ * its whole frames a transcription run made (ADR 0027; capture/adts-file.ts),
+ * also while that run is still going: no copy of the voice outlives the
+ * erase. The store calls this
  * first and removes the row only after it returns (store.eraseEntry), so a
  * file never outlives its row where the sweep could re-attach it.
+ *
+ * The recording is removed where it is now, not only where the row says:
+ * after iOS moves the app's container the stored path names the old one,
+ * while the file sits in this container's `Documents/ExpoAudio`. The sweep
+ * pairs files with rows by name, so a file of that name left in a recording
+ * folder would come back as a draft at the next launch (recordings.ts).
+ *
+ * A file another draft or letter may own is never removed: one the other row
+ * names exactly, or a same-name file the sweep could pair with it
+ * (sweep.logic.ts belongsToAnotherRow). The letter's row still goes; the file
+ * stays with the row that has it.
  *
  * Idempotent: a file that is already gone is success. A file that exists and
  * cannot be removed throws, which keeps the row on the shelf for a retry.
  */
-import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { eraseEntry, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { erasePictureOf } from '../photos/device';
+import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, setDraftPictureEraser, type AudioEraser } from '../store';
+import { removeWholeFrameCopiesOf } from './adts-file';
+import { erasableFiles } from './recordings';
+
+// A draft let go (Review, Listen, the launch sweep) or deleted (Write) takes its picture at once (ADR 0028 D5).
+setDraftPictureEraser(erasePictureOf);
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.
   if (uri && Platform.OS !== 'web') {
-    const f = new File(uri);
-    if (f.exists) f.delete();
+    for (const f of erasableFiles(uri, otherAudioUris(entryId))) if (f.exists) f.delete();
+    removeWholeFrameCopiesOf(uri);
   }
   removeListeningCopy(entryId);
+  erasePictureOf(entryId); // the letter's picture goes with it (NS-01-R16); file first, then its row
 };
+
+/**
+ * Stored paths of every other draft and letter, deleted letters included (they can still be restored). The row
+ * being erased is left out whichever table holds it: a draft keeps its id when it becomes a letter, so one id is
+ * one recording, and a draft erased with its book (eraseBook) must not count as another owner of its own file.
+ */
+function otherAudioUris(id: string): string[] {
+  const { drafts, entries } = audioRows();
+  return [...drafts, ...entries].filter((r) => r.id !== id).flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+}
+
+/** Erase now on a deleted book, from the shelf (BL-387): every recording of the book, then its rows. */
+export function eraseDeletedBook(id: string): boolean {
+  return eraseBook(id, eraseAudioFile);
+}
 
 /** Erase now, from the shelf. True when the letter and its recording are gone. */
 export function eraseDeletedLetter(id: string): boolean {
   return eraseEntry(id, eraseAudioFile);
 }
 
+/** Letters the server erased for good: their files, then their rows (after every pull, and at launch). */
+export function finishErasedLetters(): number {
+  return finishServerErased(eraseAudioFile);
+}
+
 /** Launch purge, then record this launch for the clock guard. Returns how many letters were erased. */
 export function purgeShelfAtLaunch(nowMs = Date.now()): number {
-  const n = purgeExpired(nowMs, eraseAudioFile);
-  recordLaunch(nowMs);
-  return n;
+  return purgeThenRecordLaunch(nowMs, eraseAudioFile, () => finishServerErased(eraseAudioFile));
 }

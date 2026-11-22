@@ -88,8 +88,13 @@ await push(A, [edit2]);
 r = await push(A, [edit1]);
 check('a late retry of an older op never overwrites newer words (receipt)', r.results[0].dup === true && (await server(a1)).final_text === 'Newest words.');
 r = await push(A, [upsert(letter(a1, { text: 'Second phone words.' }), { changed: ['text'], base: v1 })]);
-check('[D-023] two phones: the later arrival wins and is flagged as a conflict; the earlier words stay in history',
-  r.results[0].applied && r.results[0].conflict === true && (await server(a1)).final_text === 'Second phone words.'
+// Protocol v1 (20261016000000, ADR 0025 section 5): words based on an older version are not applied.
+check('[F16-REQ-010] two phones: words based on an older version are refused; the answer carries conflict_groups and the current words',
+  r.results[0].applied && r.results[0].conflict === true && JSON.stringify(r.results[0].conflict_groups) === '["text"]'
+  && r.results[0].current?.final_text === 'Newest words.' && (await server(a1)).final_text === 'Newest words.');
+r = await push(A, [upsert(letter(a1, { text: 'Second phone words.' }), { changed: ['text'] })]);
+check('[D-023] with no base (an older app) the later arrival still wins; the earlier words stay in history',
+  r.results[0].applied && (await server(a1)).final_text === 'Second phone words.'
   && (await sys(`select 1 from entry_versions where entry_id=$1 and final_text='Newest words.'`, [a1])).rows.length === 1);
 
 r = await push(A, [upsert(letter(a1, { text: 'Second phone words.', raw: 'a different raw' })), upsert(letter(id7(), { text: 'After the bad one.' }))]);
@@ -292,7 +297,7 @@ check('[B-REQ-016] B leaves the book: own letters removed, membership gone',
   (await one(B, `select public.request_book_deletion($1, 'ios') r`, [CHILD])).r === 'left_and_removed_own_letters');
 r = await pull(B, bHead);
 const g = r.gone.find((x) => x.id === CHILD);
-check('a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
+check('[NS-25-R4] a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
   && g.rows.some((x) => x.id === b1 && x.deleted_at !== null && x.own === true) && g.rows.every((x) => x.own === true) && !r.books.some((x) => x.id === CHILD));
 r = await pull(A, { epoch: 1, books: { [SIB]: { cursor: null } } });
 check('a deleted book is reported gone as deleted', r.gone.find((x) => x.id === SIB)?.reason === 'deleted');

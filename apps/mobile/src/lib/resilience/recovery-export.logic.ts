@@ -16,7 +16,10 @@ export interface FoundFile {
   name: string;
   uri: string;
   bytes: number;
-  /** Where it was found: the documents folder holds recordings, the SQLite folder holds the database. */
+  /**
+   * Where it was found: 'documents' is a folder that holds recordings (the top of Documents or the
+   * recorder's `Documents/ExpoAudio`, capture/recordings.ts), 'sqlite' is the database folder.
+   */
   source: 'documents' | 'sqlite';
 }
 

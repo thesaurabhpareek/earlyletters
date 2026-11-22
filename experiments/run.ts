@@ -17,12 +17,17 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { faithfulClean, type DictionaryTerm } from '@scribe/core';
+import type { DictionaryTerm } from '@scribe/core';
+import { isSpeechLanguage } from '../apps/mobile/src/lib/models/catalog';
+import { cleanSpoken, spokenEditLevel } from '../apps/mobile/src/lib/transcription-queue/clean';
+import { loadPack } from './gate-lib';
 import { lowConfidenceWords, scorePhrase, transcriptText, type WhisperJson } from './score';
 
 interface Phrase {
   file: string;
   expected: string;
+  /** The letter language of this recording; defaults to the config's `language` (WP-F05-02). */
+  language?: string;
 }
 interface Config {
   childName: string;
@@ -59,6 +64,8 @@ for (const need of [whisperBin, vadModel]) {
   }
 }
 
+const packText = (language: string) => readFileSync(join(ROOT, '..', 'packs', 'text-rules', `${language}.json`), 'utf8');
+
 // Whisper's prompt biases spelling toward these words. Keep it short.
 const hint = [...new Set(config.dictionary.map((d) => d.term))].join(', ');
 
@@ -73,7 +80,7 @@ function toWav(file: string): string {
   return out;
 }
 
-function transcribe(model: string, wav: string): { json: WhisperJson; seconds: number } {
+function transcribe(model: string, wav: string, language: string): { json: WhisperJson; seconds: number } {
   const modelPath = join(modelsDir, `ggml-${model}.bin`);
   if (!existsSync(modelPath)) throw new Error(`Model not found: ${modelPath}. Run ./setup.sh.`);
   const outDir = join(resultsDir, model);
@@ -82,7 +89,7 @@ function transcribe(model: string, wav: string): { json: WhisperJson; seconds: n
   const started = Date.now();
   execFileSync(
     whisperBin,
-    ['-m', modelPath, '-f', wav, '-l', config.language, '--prompt', hint, '--vad', '-vm', vadModel, '-ojf', '-of', outBase, '-np'],
+    ['-m', modelPath, '-f', wav, '-l', language, '--prompt', hint, '--vad', '-vm', vadModel, '-ojf', '-of', outBase, '-np'],
     { stdio: ['ignore', 'ignore', 'pipe'] },
   );
   return { json: JSON.parse(readFileSync(`${outBase}.json`, 'utf8')), seconds: (Date.now() - started) / 1000 };
@@ -111,10 +118,14 @@ for (const p of config.phrases) wavs.set(p.file, toWav(p.file));
 for (const model of models) {
   for (const p of config.phrases) {
     process.stdout.write(`${model.padEnd(22)} ${p.file.padEnd(28)} `);
-    const { json, seconds } = transcribe(model, wavs.get(p.file)!);
+    const language = p.language ?? config.language;
+    const { json, seconds } = transcribe(model, wavs.get(p.file)!, language);
     const raw = transcriptText(json);
-    const cleaned = faithfulClean(raw, { level: 'clean', dictionary: config.dictionary });
-    const s = scorePhrase(p.expected, raw, cleaned.text, config.dictionary);
+    // Cleaned as the app cleans this language: English filler rules never run on Hindi or Mandarin.
+    const cleaned = isSpeechLanguage(language)
+      ? cleanSpoken(raw, config.dictionary, language, spokenEditLevel(language), { pack: loadPack(language, packText(language)).pack })
+      : cleanSpoken(raw, config.dictionary, 'en', 'verbatim');
+    const s = scorePhrase(p.expected, raw, cleaned.text, config.dictionary, language);
     rows.push({
       model,
       file: p.file,

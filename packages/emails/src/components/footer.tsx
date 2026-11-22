@@ -1,7 +1,8 @@
 import { emailChrome } from '@scribe/content/src/emails/chrome.en';
 import { emailLegal } from '@scribe/content/src/emails/legal.en';
 import { Fragment } from 'react';
-import { ASSET_ORIGIN, fonts, light, space, type } from '../tokens';
+import { DEFAULT_LINKS } from '../links';
+import { fonts, light, space, type, wrap } from '../tokens';
 import { cls } from './theme';
 
 export type EmailFooterProps = {
@@ -9,16 +10,16 @@ export type EmailFooterProps = {
   /** Replaces the default "why you got this" line for this email. */
   whyText?: string;
   /**
-   * Values for footer placeholders. `helpUrl` and `privacyUrl` default to the
-   * site's /contact and /privacy pages; anything else (for example
+   * Values for footer placeholders. `helpUrl` and `privacyUrl` default to `DEFAULT_LINKS` (src/links.ts: the
+   * support mailbox, since /contact is not built, and the published /privacy page); anything else (for example
    * `preferencesUrl`) stays a literal `{token}` for the sender to fill.
    */
   values?: Partial<Record<string, string>>;
 };
 
 const DEFAULT_VALUES: Record<string, string> = {
-  helpUrl: `${ASSET_ORIGIN}/contact`,
-  privacyUrl: `${ASSET_ORIGIN}/privacy`,
+  helpUrl: DEFAULT_LINKS.helpUrl,
+  privacyUrl: DEFAULT_LINKS.privacyUrl,
 };
 
 const fill = (s: string, v: Partial<Record<string, string>>) =>
@@ -45,6 +46,7 @@ export function EmailFooter({ kind, whyText, values = {} }: EmailFooterProps) {
     fontSize: type.footer.size,
     lineHeight: type.footer.line,
     color: light.inkMuted,
+    ...wrap,
   } as const;
 
   const link = (href: string, label: string) => (

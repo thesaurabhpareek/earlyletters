@@ -1,5 +1,8 @@
 # Early Letters: Launch PRD (integrated)
 
+> **Superseded.** D-105: PRD V2 (`docs/prd/v2/`) is the requirements of record since PR #124 merged (16 Oct 2026). Requirement IDs keep their meaning.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: lead PM. Version 1.3, 3 Oct 2026. Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
 Codename `scribe`. Public name and publisher identity from `packages/brand` only.
 
@@ -64,7 +67,7 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 |---|---|---|
 | Entry | Branded splash, one welcome screen (4-story intro in v1.1, D-043), first letter before account, Keep the book sheet, Sign in with Apple and email (Google in v1.1, D-044), magic link plus code, invites by link or code, offline entry | A |
 | Consent | Terms acceptance record, 18+ entry gate before first run (stop screen, no local-only mode), sensitive-data consent (enforced server-side, BL-114), analytics opt-in. AI-processing consent and the web contributor notice ship with their features in v1.1 | A, legal |
-| First run | Child name plus birthday or due date, signature, languages and Hindi script, goals, dictionary from names | B |
+| First run | Birthday or due date (child name optional), signature, languages and Hindi script, goals, dictionary from names | B |
 | Capture | Speak or type, on-device transcription, faithful edits with diff, one-time "it can make mistakes" card, save offline | ARCH, core, legal |
 | Family | Co-parent and Family roles **in the app**, invites by link or code (one child each), approvals, leave and remove with letter retention, visibility model, private by default; family-letter push without content. Web contribution page in v1.1 (K-35) | B |
 | Shared voice (pending D-032) | Recordings of letters in a shared book upload encrypted so every member can play them (Free); every recording for Plus. If not approved by 23 Oct, family letters are text-only in v1.0 (K-40) | PRD |
@@ -172,7 +175,7 @@ TDD 10 found about 150 PRD requirements, 50 P0 LEGAL-REQ and 55 DATA-REQ marked 
 ### 3.2 Section B: first run, family, privacy, personalization
 | ID | P | Area | Requirement | Rev |
 |---|---|---|---|---|
-| B-REQ-001 | P0 | First run | Only name and birthday or due date required | |
+| B-REQ-001 | P0 | First run | Only birthday or due date required; child name optional ("your child" when empty) | NX-31-R3, R28 (10 Nov 2026) |
 | B-REQ-002 | P0 | First run | Signature before the first letter | |
 | B-REQ-003 | P0 | First run | Languages and Hindi script drive transcription | |
 | B-REQ-004 | P0 | Children | Multiple children, switcher, "To {child}"; detailed by PRD-REQ-011 to 015 | K-12 |
@@ -638,11 +641,11 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Account creation writes one `policy_acceptances` row for `terms` before any other row syncs, then shows the sensitive-data consent; declining leaves zero uploaded entries (LEGAL-REQ-001, LEGAL-REQ-006).
 - [ ] [auto] Local letters, children and dictionary move to the new user id in one transaction; a forced failure changes nothing (A-REQ-015).
 - [ ] [auto] Email: one message with link and 6-digit code; either signs in; both expire in 1 hour; the browser page does not verify on load (A-REQ-018, A-REQ-023).
-- [ ] [manual] Auth and `/i/` links open the app from Mail, Gmail, Outlook and Messages (A-REQ-022).
+- [ ] [manual] Auth and invite (`/j#t=<token>`) links open the app from Mail, Gmail, Outlook and Messages (A-REQ-022).
 - [ ] [auto] Sign out or Apple revocation never discards an unsynced letter (A-REQ-033).
 
 ### 6.2 First run, family, privacy
-- [ ] [auto] Only name plus birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
+- [ ] [auto] Only a birthday or due date is required (the child name is optional); nothing asks for surname, gender, photo or contacts (B-REQ-001).
 - [ ] [auto] A Hindi plus Devanagari choice transcribes with Hindi enabled and renders Devanagari, untranslated (B-REQ-003).
 - [ ] [auto] A contributor calling invite creation is rejected; a parent invite carries an explicit role (B-REQ-007; `create_child_invite` fix, LEGAL-REQ-024).
 - [ ] [manual] (1.3) A grandparent invited as Family installs the app from the invite link, passes the 18+ gate, signs in, and saves a first letter to the named child's book; both parents see it as pending (B-REQ-007, B-REQ-009, K-35).
@@ -886,7 +889,7 @@ Added in version 1.1 (same day):
 | `children.switcher.*`, `children.add.*`, `children.settings.*`, `children.sharing.*` (new) | Switcher, add a child with Plus note and keep note, per-child settings, per-child sharing | K-12 |
 | `onboarding.child.addAnotherHelp` (new) | Twins line for first run | K-12 |
 | `analyticsConsent.*`, `settings.privacy.*` (new) | Opt-in consent sheet and Privacy rows | K-01, K-17 |
-| `plus.legal.*`, `plus.promise` (new) | Paywall disclosure from in-app-disclosures section 3 with `{price}` | K-11, K-31 |
+| `plus.legal.*`, `plus.promise` (new; replaced by `billingCopy.store.promise` and deleted in P7) | Paywall disclosure from in-app-disclosures section 3 with `{price}` | K-11, K-31 |
 | `web.firstNote.*`, `web.ageConfirm` (new) | Web page mistakes note and 18+ confirmation | K-07, K-14 |
 | `family.approval.settingLabel` | "on their own" to "automatically" | K-20 |
 | `store.description`, `store.promotionalTextBeta` | "A book for each child" section; optional beta promotional text | K-12, K-13 |

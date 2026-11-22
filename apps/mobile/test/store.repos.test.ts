@@ -117,17 +117,31 @@ describe('change bus (MOB-05)', () => {
     expect(any).toHaveBeenCalledTimes(2);
     bus.emit();
     expect(any).toHaveBeenCalledTimes(2);
+    // BL-442: the filter is on the round, and the listener is told the whole round's tables, in order.
+    bus.emit('drafts', 'settings');
+    expect(onEntries).toHaveBeenCalledTimes(1); // neither table is entries
+    bus.emit('settings', 'entries');
+    expect(onEntries).toHaveBeenCalledTimes(2);
+    expect(onEntries).toHaveBeenLastCalledWith(['settings', 'entries']);
+    // A listener on several tables fires once per round, not once per table.
+    const either = vi.fn();
+    bus.subscribeTo(['drafts', 'children'], either);
+    bus.emit('drafts', 'children');
+    expect(either).toHaveBeenCalledTimes(1);
+    expect(either).toHaveBeenCalledWith(['drafts', 'children']);
   });
 
   it('unsubscribing during a notification is safe and stops later calls', () => {
     const bus = createChangeBus();
+    const first = vi.fn();
     const second = vi.fn();
     let offSecond = () => {};
-    bus.subscribe(() => offSecond());
+    bus.subscribe(() => { first(); offSecond(); });
     offSecond = bus.subscribe(second);
     bus.emit('entries');
     bus.emit('entries');
     expect(second).not.toHaveBeenCalled();
+    expect(first).toHaveBeenCalledTimes(2); // BL-442: the listener that unsubscribed the other still fires, every round
   });
 });
 

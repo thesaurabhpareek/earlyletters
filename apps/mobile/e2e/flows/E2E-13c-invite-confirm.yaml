@@ -6,13 +6,18 @@ name: E2E-13c Co-parent invite, confirm (simulator A)
 tags:
   - e2e-coparent
   - E2E-13
+  - p0-nightly
   - B-REQ-007
   - needs-backend
 ---
 - launchApp:
     stopApp: true
+# With a co-parent joined the row's value is their signature and it opens the family page (a pushed page, no tab).
+- runFlow:
+    file: ../subflows/open-settings.yaml
+- tapOn: "Asha"
 - tapOn:
-    id: "tab.family"
+    id: "child.bookRow"
 - extendedWaitUntil:
     visible:
       id: "family.member"

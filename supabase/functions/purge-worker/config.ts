@@ -4,6 +4,7 @@
  * Every name below is listed, with who sets it, in docs/ops/SECURITY.md.
  */
 import { brand, bundleId } from '../../../packages/brand/index.ts';
+import { secretKeyOf } from '../_shared/keys/keys.ts';
 
 export interface AppleConfig {
   teamId: string;
@@ -41,11 +42,12 @@ export interface WorkerConfig {
 
 export type EnvGetter = (name: string) => string | undefined;
 
+/** `SUPABASE_SERVICE_ROLE_KEY` here means "a service key": the new `SUPABASE_SECRET_KEYS` satisfies it too (BL-594). */
 export const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'PURGE_WORKER_SECRET', 'RESEND_API_KEY'] as const;
 
 export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missing: string[] } {
   const v = (name: string) => (get(name) ?? '').trim();
-  const missing: string[] = REQUIRED_ENV.filter((n) => !v(n));
+  const missing: string[] = REQUIRED_ENV.filter((n) => (n === 'SUPABASE_SERVICE_ROLE_KEY' ? !secretKeyOf(get) : !v(n)));
 
   const tokenKeks: Record<number, string> = {};
   for (let n = 1; n <= 9; n++) {
@@ -57,6 +59,8 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
   const keyId = v('APPLE_SIGNIN_KEY_ID');
   const privateKeyPem = get('APPLE_SIGNIN_PRIVATE_KEY') ?? '';
   const extraClients = v('APPLE_SERVICES_ID');
+  // The same list apple-token captures for (its "same list" test, PR #139). APPLE_EXTRA_CLIENT_IDS is read by
+  // neither function until both change together (docs/ops/AUTH_SETUP.md 2.7).
   const apple: AppleConfig | null = teamId && keyId && privateKeyPem.trim()
     ? { teamId, keyId, privateKeyPem, clientIds: [bundleId(), ...(extraClients ? [extraClients] : [])] }
     : null;
@@ -68,7 +72,7 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
     missing,
     config: {
       supabaseUrl: v('SUPABASE_URL'),
-      serviceKey: v('SUPABASE_SERVICE_ROLE_KEY'),
+      serviceKey: secretKeyOf(get) ?? '',
       triggerSecret: v('PURGE_WORKER_SECRET'),
       resendApiKey: v('RESEND_API_KEY'),
       resendContacts: v('RESEND_CONTACTS') === 'on',

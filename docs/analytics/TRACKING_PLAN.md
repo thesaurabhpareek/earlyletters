@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+68 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -108,16 +108,14 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
+| `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
 | `auth_method_selected` | A sign-in method tapped (observed from the auth state) | `method` (enum: apple \| google \| email \| passkey) | PRD-REQ-016 |
 | `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_email_sent` | Email sign-in link or code sent (observed); attempt counts sends in this sign-in | `attempt` (int 1 to 10) | A-NFR-013 |
-| `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
+| `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
-| `coparent_soon_opened` | The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens) | `surface` (enum: tab \| sheet) | PRD-REQ-016 |
-| `coparent_soon_notify` | Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us) | (none) | PRD-REQ-016 |
 | `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
 
 #### children
@@ -141,7 +139,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `letter_saved` | A letter is saved (to the book or kept private). The core activation and north-star event on device | `mode` (enum: spoken \| typed \| mixed)<br>`destination` (enum: book \| private)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`words_bucket` (enum: lt_25 \| 25_99 \| 100_299 \| 300_plus)<br>`machine_edit_count` (int 0 to 500)<br>`edits_reverted_count` (int 0 to 500)<br>`edits_rejected_count`? (int 0 to 500)<br>`engine` (enum: on_device \| server \| none \| pending)<br>`from_notification_2h` (bool) | C-REQ-034, PRD-REQ-016, ADR-0008 |
 | `review_action` | An action on the Review screen | `action` (enum: show_exactly_said \| edit_text \| say_again \| play_back \| change_child \| change_destination \| undo_all_edits) | PRD-REQ-016, PRD-REQ-012 |
 | `machine_edit_reverted` | A user undoes one machine edit (type and source only). Fidelity health signal for the constitution | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model) | PRD-REQ-016 |
-| `machine_edit_rejected` | The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model)<br>`reason` (enum: original_mismatch \| out_of_bounds \| overlaps_protected \| overlaps_other_edit \| type_not_allowed_at_level \| removal_only \| not_a_filler \| not_a_repeat \| false_start_not_repeated \| stt_fix_not_dictionary \| punctuation_changed_letters \| agreement_not_single_word \| agreement_stem_mismatch \| agreement_limit_per_sentence \| paragraph_not_whitespace \| inserted_content_word \| change_ceiling_exceeded \| splits_word \| removal_adds_punctuation \| changes_negation \| changes_tense \| changes_modal \| changes_word \| changes_number \| changes_sentence_type \| changes_quotes \| case_change_not_allowed \| case_change_not_sentence_start \| removes_negation \| repeat_is_emphasis \| false_start_complete_phrase \| stt_fix_protected_word \| stt_fix_not_heard_as \| not_vetted_for_language)<br>`count` (int 1 to 500) | PRD-REQ-016, B-REQ-003 |
+| `machine_edit_rejected` | The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model)<br>`reason` (enum: original_mismatch \| changes_invisible \| out_of_bounds \| overlaps_protected \| overlaps_other_edit \| type_not_allowed_at_level \| removal_only \| not_a_filler \| not_a_repeat \| false_start_not_repeated \| stt_fix_not_dictionary \| punctuation_changed_letters \| agreement_not_single_word \| agreement_stem_mismatch \| agreement_limit_per_sentence \| paragraph_not_whitespace \| inserted_content_word \| change_ceiling_exceeded \| splits_word \| removal_adds_punctuation \| changes_negation \| changes_tense \| changes_modal \| changes_word \| changes_number \| changes_sentence_type \| changes_quotes \| case_change_not_allowed \| case_change_not_sentence_start \| removes_negation \| repeat_is_emphasis \| false_start_complete_phrase \| stt_fix_protected_word \| stt_fix_not_heard_as \| not_vetted_for_language)<br>`count` (int 1 to 500) | PRD-REQ-016, B-REQ-003 |
 | `letter_deleted` | Own letter deleted or restored within the undo window | `action` (enum: deleted \| restored)<br>`destination` (enum: book \| private) | PRD-REQ-016 |
 
 #### languages
@@ -176,7 +174,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `reminder_prime_shown` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter) | C-REQ-034, PRD-REQ-001 |
+| `reminder_prime_shown` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter \| first_letter \| first_month) | C-REQ-034, PRD-REQ-001 |
 | `reminder_prime_result` | Priming card answered | `choice` (enum: yes \| not_now) | C-REQ-034 |
 | `os_permission_result` | OS notification permission answered | `granted` (bool)<br>`platform` (enum: ios \| android) | C-REQ-034 |
 | `reminder_schedule_set` | Reminder cadence, time or pause saved (observed from the stored preferences) | `cadence` (enum: off \| weekly \| few_times \| every_evening)<br>`hour_bucket` (enum: morning \| afternoon \| evening \| late_evening)<br>`paused` (bool) | C-REQ-034 |
@@ -407,7 +405,6 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `auth_sheet_shown`, `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on show and on Later, with `getSignInTrigger()` | auth | to wire |
 | `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
-| `coparent_soon_opened`, `coparent_soon_notify` | `components/family/coparent-soon.tsx`: on focus (tab or sheet) and on the Tell me tap | family | wired |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
 | `member_removed`, `member_left`, `family_letter_reviewed` | family screens | family | to wire |
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |

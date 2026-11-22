@@ -205,6 +205,7 @@ describe('typed words for a waiting letter (D-086, "Write the words")', () => {
       captureMode: 'mixed',
       editLevel: 'verbatim',
       transcriptStatus: null,
+      wordsUnreviewed: true, // they wait for the author's review: they count only when kept from Review (#53)
     });
   });
 
@@ -220,6 +221,44 @@ describe('typed words for a waiting letter (D-086, "Write the words")', () => {
   it('never write into a deleted letter', () => {
     entries.tombstone(f.ctx, 'w1');
     expect(entries.setTypedWordsOnce(f.ctx, 'w1', 'words')).toBe(false);
+  });
+});
+
+describe('[P5 critics S3] the offer and the write agree: canTypeWords is exactly what setTypedWordsOnce would do', () => {
+  // One letter per case, in the state named; the letter page offers "Write the words" when the check says yes.
+  const noWords = { rawTranscript: '', finalText: '', transcriptStatus: null } as const;
+  const outbox = (id: string, cols: string, vals: string) =>
+    f.db.run(`INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at${cols}) VALUES ('op-' || ?, 1, 'entry.upsert', ?, '{}', ?${vals})`, id, id, f.ctx.now());
+  const cases: Array<[string, Partial<Parameters<typeof letter>[0]>, (id: string) => void, boolean]> = [
+    ['a letter waiting for its words', { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }, () => {}, true],
+    ['a recording whose words came back empty', noWords, () => {}, true],
+    ['a no-words recording queued but never sent (no attempt yet)', noWords, (id) => outbox(id, '', ''), true],
+    ['a no-words recording the server has (server_version set)', noWords, (id) => f.db.run("UPDATE entries SET server_version = '100' WHERE id = ?", id), false],
+    ['a no-words recording whose upload was sent (sent_at set)', noWords, (id) => outbox(id, ', sent_at', ", '2026-10-03T09:00:00.000Z'"), false],
+    ['a no-words recording with an upload attempted (attempts above 0)', noWords, (id) => outbox(id, ', attempts', ', 1'), false],
+    ['a deleted no-words recording', noWords, (id) => entries.tombstone(f.ctx, id), false],
+    ['a deleted letter that was waiting', { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }, (id) => entries.tombstone(f.ctx, id), false],
+    ['a letter with words', {}, () => {}, false],
+    ['a letter that already took typed words (waiting for review)', noWords, (id) => entries.setTypedWordsOnce(f.ctx, id, 'first'), false],
+    ['raw words with nothing kept', { rawTranscript: 'um', finalText: '', transcriptStatus: null }, () => {}, false],
+    ['a quiet-day mark with no words', { ...noWords, kind: 'not_much', captureMode: 'typed' }, () => {}, false],
+  ];
+
+  it.each(cases)('%s', (_name, over, prepare, expected) => {
+    const id = '0199a5b0-0000-7000-8000-0000000000aa';
+    entries.upsert(f.ctx, letter({ id, ...over }), defaults);
+    prepare(id);
+    const offered = entries.canTypeWords(f.ctx, id);
+    expect(offered).toBe(expected);
+    // The write answers the same: a check that says yes is a write that lands, and a no is a write that is refused, untouched.
+    const before = rawRow(f.db, id);
+    expect(entries.setTypedWordsOnce(f.ctx, id, 'You hummed the bath song.')).toBe(offered);
+    if (!offered) expect(rawRow(f.db, id)).toEqual(before);
+  });
+
+  it('a letter that is not there is not offered, and not written', () => {
+    expect(entries.canTypeWords(f.ctx, 'no-such-letter')).toBe(false);
+    expect(entries.setTypedWordsOnce(f.ctx, 'no-such-letter', 'words')).toBe(false);
   });
 });
 

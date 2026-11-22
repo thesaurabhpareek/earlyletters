@@ -11,27 +11,40 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 
 | Component | Import | Key props | Accessibility built in |
 |---|---|---|---|
-| `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale` | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis |
+| `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt, promptHero, nameField, numeral; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale`, `trim` (`figures`) | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis; figure features from the token (`fontVariant`); `trim="figures"` pulls the line box in to the figures' ink (`text-trim.logic.ts`, needs `tokens.fontMetrics` for the face) |
 | `Button` | same | `variant` primary, secondary, outline, quiet, destructive (old: default, ghost, link); `size` sm, md, lg, capture, icon; `label`, `icon` (Phosphor component), `loading`, `fullWidth`, `haptic` | min heights not fixed heights (grows at AX); label is the accessible name; busy and disabled states; press scale 0.97 |
 | `IconButton` | same | `icon`, `label` (required), `variant` plain, tinted, filled; `size` sm (hitSlop to 44), md, lg; `selected`, `color` | Large Content Viewer on iOS |
 | `ButtonRow` | same | children | side by side, stacks from xxxLarge text |
-| `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98 |
+| `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98; inside a `CardSource`, the page that opens from it holds the press through its hold (MOTION 5f) |
 | `TextField` | same | `label` (always the name), `labelHidden`, `helper`, `error`, `variant` field or letter, `trailing`, `scale` | 3:1 edge, 2 pt focus ring outside the edge, error = icon + words + announce |
 | `ChoiceGroup` | same | `label`, `options` ({value, label, description, render}), `value`, `onChange`, `layout` segmented or list | radiogroup + radio with `checked`; selected = fill + edge + check; stacks at large text; `tap` haptic |
 | `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress`, `role` button, radio, checkbox, `accessibilityLabel` | 36 pt visual, 44 pt with hitSlop; selected = fill + edge + check; radio and checkbox read as checked |
 | `Sheet` | same | `open`, `onClose`, `title`, `description`, `footer`, `hideClose`, `dismissible` | heading focus on open, modal for VoiceOver, escape gesture, visible Close; `dismissible={false}` for permission priming |
 | `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX; a pressable row always shows a chevron, a value then chevron, or its own control (`showsChevron`) |
-| `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close |
-| `EmptyState` | same | `art` (envelope, envelopeOpen, moon, page), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
-| `StateScreen`, `StateScreenView`, `InlineState` | same | `kind` empty, error, notFound, loading; `title`, `body`, `art`, `primary` ({label, onPress, icon}), `quiet` (list), `header` (StateScreen) | the one pattern for loading, empty, error and not-found (2.15a); heading first; live region polite; loading is `busy`; actions are buttons |
+| `SpeechRow` | `@/components/settings/speech-row` | `language`; also exports `languagesInUse()` and `packsShownAsLanguages()` | One `ListRow` per spoken language in Storage, from `speechRow(state)`: here (word Remove, which asks first), downloading (22 pt progress ring and the word Stop), waiting for Wi-Fi (Stop), no space and unknown (no action), absent (Download). The row is the button; the subtitle carries the state and the percent; the hint says what a tap does. The ring never spins. Departed at `6cd2223b` and fixed by PR #712 (merged 9 Nov 2026): the action word was hidden from VoiceOver and not in the row's label, so Voice Control could not say "Tap Stop" (WCAG 2.5.3), and at AX5 the node stayed beside the title instead of stacking under it. Now the word is in the label (`ListRow` `actionWord`) and the node stacks; S1-97b (e) checks it on a phone |
+| `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close; a new show() replaces the toast on screen in any host (2.14) |
+| `PlusLine` | `@/components/tonight/plus-line` | none; shown when `plusLineShows` is true | The one standing Plus line (F14-REQ-040): `footnote` in `textMuted`, centred, no count, no price, nothing to press, no entrance. One plain element; wraps at every size. Hosts: Tonight and Write (`screens/WRITE.md`). Position: above Speak and Type on Tonight; on Write it is where #668 put it, above the two buttons (F14-REQ-040 says "above Speak and on Write"; journey row 2b). Below the buttons is PROPOSED by the CDesO, for the CPO and the founder to decide (`screens/WRITE.md` section 3) |
+| `HelplineCard` | `@/components/settings/helpline-card` | `line` (a `Helpline`), `open(target)`, `callHint` | One crisis line on "If you are struggling" and "Lines in other countries": a `Card flat`, the name as a `headline` heading (level 3), the `how` line in `subhead` muted, and Call and Text in a `ButtonRow` (stacks from xxxLarge). Each button's name adds the line ("Call {name}"); a tap opens Phone or Messages and never dials, or shows the number to copy. Haptics none (`screens/STRUGGLING.md`). Departed at `6cd2223b` and fixed by PR #713 (merged 9 Nov 2026): the buttons were `secondary`, whose fill is 1.08 : 1 (light) and 1.33 : 1 (dark) against the card; they are now `outline`; S1-150 (g) checks it on a phone |
+| `EmptyState` | same | `art` (any LineArt name), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
+| `StateScreen`, `StateScreenView`, `InlineState` | same | `kind` empty, error, notFound, loading; `title`, `body`, `art`, `glyph` (Phosphor), `drawing` (StateScreen: any picture), `primary` ({label, onPress, icon}), `quiet` (list), `header` (StateScreen) | the one pattern for loading, empty, error and not-found (2.15a); 20 pt gutters, picture centred, heading and sentence start-aligned, action pinned below AX1 (PinnedActionLayout); heading first; live region polite; loading is `busy`; actions are buttons |
+| `Lamp`, `LampView`, `useUnlitRoom()` | `@/components/ui/lamp` | `scene`, `daypart`, `anchor`, `intensity` (a multiplier), `still`, `persistKey` (`firstRun`, `tabs`), `arrive`; `LampView` adds `focused` | decorative, no touches, hidden from VoiceOver; none under Increase Contrast or Reduce Transparency; still under Reduce Motion (2.16a) |
+| `BookCover` | `@/components/book/book-cover` | `name`, `signsAs`, `size` sm, thumb, md, lg; `state` closed, open; `openOnMount`, `behindName` (twins), `animate`, `accessibilityLabel` | decorative unless labelled; never an ellipsis glyph; type does not scale (artwork; the name is real text around it); a new name or signature cross-fades (2.24) |
+| `CoverBand` | `@/components/book/cover-band` | `title`, `age` (the prop allows null; the Book passes `coverAge`, which never returns null: it says "Before You" without a birthday), `switcher`, `readTogether` ({label, hint, onPress} or null), `months` ({label, hint, onPress} or null), `settings` ({label, onPress}) | The Book's one lit object (`screens/BOOK_PAGE.md`). `display` title as heading level 1, `callout` age, Read together as a full-width 48 pt `secondary` button with its icon; the Months button and the gear are placed over the space kept for them, and so is the switcher. VoiceOver order in the tree: title, age, switcher, Read together, Months, Settings (on a device iOS may order by position). A 1 pt amber edge at 40 percent and a still gold radial at the scheme's peak times 0.35; Increase Contrast or Reduce Transparency: a plain 1 pt `line` edge, no light. From AX1 it stacks in the same order and Read together grows with its label. Haptics none, nothing moves. Departs: Read together's fill is a tint with no edge on the band |
+| `MonthsSheet` | `@/components/book/months-sheet` | `open`, `rows` (`MonthRow[]` from `monthRows`), `onClose`, `onChoose` | A `Sheet` titled "Go to a month" (the title takes focus; modal; escape gesture; Close) over one `ListRow` per month that has letters, newest first: the month in words as the title, the spoken count line ("3 letters, from Mama and Papa") as the subtitle, a chevron. Scrolls inside the sheet, at most 60 percent of the window high. No haptic. Choosing a month is a fade, never an animated scroll. Departs: the same hint on every row |
+| `ExcerptFade`, `FadeEdge` | `@/components/motion/excerpt-fade` | `text`, `lines`, `variant`, `surface`, `scale` | the whole text stays in the element (VoiceOver reads it all); no ellipsis glyph |
+| `PageTurn` | `@/components/motion/page-turn` | `pageKey`, `direction`, `renderPage`, `onSwipe`, `canNext`, `canBack` | the leaving page is hidden (VoiceOver, TalkBack, and `aria-hidden` on web) and takes no touches; the screen keeps its buttons (MOTION 5m) |
+| `CardSource`, `CardText`, `CardToPage`, `PageOpening`, `useCardToPageClose()`, `useCardToPagePhase()`, `useHiddenBehindCardPage()` | `@/components/motion/card-transition` | `CardSource`: `id`; `CardText` (the card's dateline and excerpt): `lineHeight` (its body's, from `lineHeightFor`), `rtl`; `CardToPage`: `id`, `opening` (a function of `focus`: the page's dateline and whole letter, in the card's column, with `focus` on the dateline or heading), `onClosed`; `PageOpening`: `lineHeight`, places `opening` in the page; `useCardToPagePhase()`: `phase`, `carried`, `home` (the carried words are within 4 pt of their place), for the page to bring in the rest of itself; `useHiddenBehindCardPage()`: props for the Book's root | the card's words are carried, never redrawn; only the rest cross-fades in. The card's press (a `Card` inside the `CardSource`) is held through the hold, and the move starts from the card as pressed. Under Reduce Motion, with no measured card, or when the page's column or type size differs from the card's, nothing moves: inside one 200 ms fade the Book goes under the veil and the whole page fades in after it (a hand-off, both ways). Modal for screen readers (the Book hidden behind it); focus lands on `focus` once the page has arrived. The Book goes under a full-screen veil of the page's paper over the lamp's leaving time while the card holds, then the paper grows, so no edge cuts a legible line and nothing blinks; back, the veil lifts over the lamp's return time once the paper is home (MOTION 5f) |
+| `routeTransitions`, `useRouteTransitions()`, `useSheetMotion()` | `@/lib/motion` | the table of presentation and animation per root route (EXPERIENCE_PASS 5.8), read by `app/_layout.tsx`; the Sheet's spring | our moves a 200 ms cross-fade under Reduce Motion; the platform's follow the system (MOTION 5l) |
 | `ModalHeader`, `BackButton` | same | `ModalHeader`: `onClose`, `leading`, `title`, `closeHint`, `closeLabel`, `closeDisabled`; `BackButton`: `onPress`, `label` | the only two navigation controls a screen draws itself (2.1a); both 44 pt minimum |
-| `LineArt` | same | `name`, `width`, `wash`, `animate` | decorative |
+| `LineArt` | same | `name` (envelope, envelopeOpen, moon, page, together, lamp, window, readingLamp), `width`, `wash`, `animate`, `delayMs` | decorative; drawn stroke by stroke from a stroke table, complete under Reduce Motion |
 | `UIProvider` | same | `toastBottomOffset` | wraps GestureHandlerRootView, BottomSheetModalProvider, Increase Contrast variables, ToastHost, font loading |
 | `Toggle` | `@/components/platform/toggle` | `label`, `description`, `value`, `onValueChange` | SwiftUI Toggle on iOS, RN Switch with a 3:1 off track elsewhere |
 | `BlurSurface` | `@/components/platform/blur-surface` | `material` chrome or thin, `edge` | solid under Reduce Transparency |
 | `announce`, `useFocusOnMount`, `isAccessibilitySize`, `useIsAccessibilitySize`, `useIsLargeText`, `useContrastPreference`, `useTheme` | `@/lib/a11y` | | |
 | `useMotion`, `useReducedMotion`, `layoutSpring` | `@/lib/motion` | | |
 | `haptic` | `@/lib/haptics` | `tap`, `press`, `soft`, `success`, `warning` | |
+
+**Rows added 9 Nov 2026** (`CoverBand`, `MonthsSheet`, `SpeechRow`, `PlusLine`, `HelplineCard`), written from the code at develop `6cd2223b`; the screens that use them are in `screens/` (`BOOK_PAGE.md`, `WRITE.md`, `STRUGGLING.md`, `DELETE_THIS_BOOK.md`). Since PR #674 no screen uses the `numeral` type or `trim="figures"`; both remain in `Text`.
 
 **Changed from the specs below (Oct 3):** Button plays no haptic by default (MOTION 6 policy: outcomes only); the Sheet is @gorhom/bottom-sheet, not an Expo Router form sheet (COMPONENT_LIBRARY 0.1); SegmentedControl is served by `ChoiceGroup layout="segmented"` until a native segmented control is needed; AudioPlayer is owned by the player agent (`components/player/audio-player.tsx`).
 
@@ -109,7 +122,7 @@ Format per component: purpose · variants · props · states · accessibility ·
 
 ### 2.1 Button
 - **Purpose:** the main way to act. One `primary` per screen at most.
-- **Variants:** `primary` (accent fill, `onAccent` text), `secondary` (`surfaceRaised` fill, `text`), `quiet` (no fill, `accent` text, for "Not much today" or "Skip"), `destructive` (`caution` text on `surface`; fills only inside a confirm Dialog). Sizes: `md` (48pt), `lg` (56pt, CTAs).
+- **Variants:** `primary` (accent fill, `onAccent` text), `secondary` (`accentSoft` fill, `text` label, `accent` icon; a tint with no edge, so on a card or a lit host use `outline`: PROPOSED, `screens/STRUGGLING.md` section 6), `outline` (1 pt `controlBorder` edge, `text` label), `quiet` (no fill, `accent` text, for "Not much today" or "Skip"), `destructive` (no fill, `destructive`-tone label; the word carries the meaning). PROPOSED, not yet a rule (`screens/DELETE_THIS_BOOK.md` section 11, item 10; design-systems to decide): a destructive fill on a confirm page only, by a class from the caller. Today Delete this book draws an edge until the typed word matches, then a `destructive` fill with an `onDestructive` label from a class in the screen. Sizes: `sm` (44pt), `md` (48pt), `lg` (56pt, CTAs), `capture` (64pt, Speak and Type), `icon` (44 x 44). The built table above is the prop list; the block below is the original sketch.
 ```ts
 type ButtonProps = {
   variant?: 'primary' | 'secondary' | 'quiet' | 'destructive';
@@ -125,8 +138,8 @@ type ButtonProps = {
   testID?: string;
 };
 ```
-- **States:** default, pressed, disabled (40% opacity, still announced), loading (spinner replaces icon, label stays for VoiceOver, `aria-busy`), focus-visible.
-- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height 48 (above 44). Label wraps to 2 lines at large Dynamic Type sizes, never truncates.
+- **States:** default, pressed, disabled (still announced; built Oct 16: a filled button that is not ready drops its fill for a 1 pt `controlBorder` outline with the label in `textMuted`, never a pale fill or 40% opacity, EXPERIENCE_PASS S01), loading (spinner replaces icon, label stays for VoiceOver, `aria-busy`), focus-visible.
+- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height is the size's floor (`sm` 44, `md` 48, `lg` 56). Label wraps to 2 lines at large Dynamic Type sizes, never truncates.
 - **Haptics:** as above; fires on press-in, not release.
 - **Motion:** press scale on `snappy`; loading cross-fade on `standard`.
 - **Builds on:** RNR `button.tsx` (rewrite `group-active` to the Pressable `pressed` render prop). Web: shadcn `Button`, variants renamed `default→primary`, `ghost→quiet`.
@@ -161,10 +174,13 @@ type TextProps = RNTextProps & {
   weight?: 'regular' | 'medium' | 'semibold';  // only where the style allows
   asHeading?: 1 | 2 | 3;                       // sets role="header"
   selectable?: boolean;                        // true for letterBody
+  scale?: number;                              // Reading Size, letter styles only
+  trim?: 'figures';                            // line box trimmed to lining figures (numeral)
 };
 ```
 - **Mapping:** `display/title1/title2` → heading roles when `asHeading` is set. `letterBody` uses `font-letter` with a generous line height. `letterDateline` uses small caps-like tracking and the `textMuted` tone. `maxFontSizeMultiplier`: 2.0 for `letterBody`/`body`/`callout`, 1.5 for others, 1.3 for `display`.
 - **States:** none. **Haptics:** none. **Motion:** none.
+- **Figures:** a style that sets numbers carries its figure features in the token (`numeral`: lining, proportional) and never negative tracking (`packages/design-tokens/test/fonts.test.ts` measures the 1 and 8 of "18" in the bundled face). `trim="figures"` is text-box-trim for numerals: with the line at least as tall as the face, iOS and the web both centre the face, so the margins from `tokens.fontMetrics` (ascent, descent, figure height, figure side bearing) leave exactly the figures' ink, scaled with Dynamic Type up to the style's cap. The left margin removes the figure's side bearing so a large numeral starts on the same optical edge as the small text beside it.
 - **A11y:** never truncate `letterBody`; `numberOfLines` is allowed only for previews and must have a full-text `accessibilityLabel`.
 - **Builds on:** RNR `text.tsx` (`TextClassContext` kept; variants replaced with our 11 styles). Web: a `Text` component that renders `p`/`h1..h3`/`span` with the same variant classes.
 - **Android later:** same code. Bundle Mukta, Literata and Tiro as app fonts (no system fallback differences); check Devanagari matras and line height on Android, and the 1.08x Tiro factor.
@@ -214,7 +230,7 @@ type LetterCardProps = {
 
 ### 2.5b AppNote and QuietDayRow (the app's own words, D-084)
 The Book is a record of what people said. When the app must say something, it says it small and unsigned, and never in the letter's type.
-- **AppNote:** `components/book/app-note.tsx`. A small Info glyph and one line in the `footnote` style (sans, muted). Never serif, never italic, no "From ..." line under it. Used for a recording that is waiting for its words and for one with no words in it ("No words in this one. The recording is kept just as it is."), on the LetterCard, the letter page and Read together. Plain text for VoiceOver (the glyph is hidden). The Reading Size scale applies on the letter page and Read together.
+- **AppNote:** `components/book/app-note.tsx`. A small Microphone glyph (16 pt, EXPERIENCE_PASS S26; the Info glyph read as a warning) and one line in the `footnote` style (sans, muted). Never serif, never italic, no "From ..." line under it. Used for a recording that is waiting for its words and for one with no words in it ("No words in this one. The recording is kept just as it is."), on the LetterCard, the letter page and Read together. Plain text for VoiceOver (the glyph is hidden). The Reading Size scale applies on the letter page and Read together.
 - **QuietDayRow:** `components/book/quiet-day-row.tsx`. "Not much today" stores a mark with no words, so the Book shows a small row, not a card: a Moon glyph, the date and "A quiet day", muted sans, unsigned, no Private chip. Minimum height 44 pt, Dynamic Type uncapped. It is not a button into a letter page. VoiceOver reads "{date}. A quiet day, kept." Long-press, or the VoiceOver action "Remove this mark", removes it with an Undo toast ("Removed.", 2.14).
 - **Rules:** a mark is hidden on a day that also has a letter. It never enters a count, a chapter line, a streak or an insight; a chapter of only marks shows no count line. It is never printed, read aloud in Read together, or moved into the book. In the export it is a row with `final_text: ''` and a small file holding the date and the label.
 - **Android later:** same components.
@@ -243,10 +259,12 @@ type ChipGroupProps = { scroll?: boolean; multiple?: boolean; label: string; chi
 type TextFieldProps = Omit<TextInputProps, 'style'> & {
   label: string;                               // always visible, never placeholder-only
   helper?: string; error?: string;
+  face?: 'sans' | 'serif';                     // 'serif': what is typed in the letter face, 22 pt (nameField)
   leadingIcon?: IconName; clearable?: boolean;
 };
 ```
 - **States:** default, focused (`focus` 2pt ring), filled, error (`caution` text + icon + message), disabled.
+- **Face:** Mukta (`body`) by default. `face="serif"` sets what is typed in the letter face, Literata 22 pt (`nameField`, uncapped): the child's name on first run is the book's title (EXPERIENCE_PASS S05). The label, helper and error stay Mukta.
 - **A11y:** the label is linked (`accessibilityLabel={label}`, `aria-labelledby` on web); the error is announced via `AccessibilityInfo.announceForAccessibility`; height 48. Uses the correct `textContentType`/`autoComplete` (name, email).
 - **Haptics:** `warning` once on submit error only. **Motion:** ring fade on `snappy`.
 - **Builds on:** RNR `input.tsx` + `label.tsx`. Web: shadcn `Input` + `Label`.
@@ -300,7 +318,7 @@ type ToggleProps = { label: string; description?: string; value: boolean; onValu
 
 ### 2.11 ListRow
 - **Purpose:** settings, family members, and export options.
-- **Variants:** `navigation` (chevron), `toggle` (trailing Toggle), `value` (trailing muted value), `destructive` (`caution` label), `author` (leading Avatar).
+- **Variants:** `navigation` (chevron), `toggle` (trailing Toggle), `value` (trailing muted value), `destructive` (title in the `destructive` tone, no chevron, the words say the action; DESIGN_LANGUAGE 2 also asks for an icon, which no caller passes yet: `ListRow` has a `leading` slot), `author` (leading Avatar).
 ```ts
 type ListRowProps = {
   title: string; subtitle?: string;
@@ -368,7 +386,7 @@ type ToastOptions = {
 };
 function toast(opts: ToastOptions): void;      // from useToast()
 ```
-- **States:** entering, visible, action-pressed, leaving. One toast at a time; a new one replaces the old.
+- **States:** entering, visible, action-pressed, leaving. One toast at a time, for the whole app: a new show() replaces the toast on screen whichever `ToastHost` draws it (the root host and the tabs host share one store, `components/ui/toast.logic.ts`), so a stale toast never sits under a newer one or contradicts it (EXPERIENCE_PASS principle 8, S38). In the same host the box stays and the new words cross-fade over the old (`motion.swapMs`, 150 ms, EXPERIENCE_PASS 5.8 row 11); the replaced toast's `onDismiss` runs, because its Undo can no longer be pressed; a late timer or swipe on a replaced toast never closes the new one. Tested in `apps/mobile/test/toast.test.ts`.
 - **A11y:** announced via `announceForAccessibility` ("Letter deleted. Undo available."). With VoiceOver on, duration extends to 10s and the toast is focusable. It sits above CaptureBar and the safe area. The undo target is 44pt.
 - **Haptics:** none on show; `tap` on Undo.
 - **Motion:** `enter` (y 8→0 + fade) on `standard`; swipe-down to dismiss (Gesture Handler). Reduce Motion: 200ms fade only. Per DESIGN_LANGUAGE rule 11.5 (no time-boxed UI), an undo toast persists until dismissed or the screen changes; `durationMs` applies only to toasts without an action.
@@ -392,11 +410,12 @@ type EmptyStateProps = {
 
 ### 2.15a StateScreen and InlineState (loading, empty, error, not found)
 Added after the QA journey critique (J05-03, J05-04, J06-13, J10-11, J11-07 and the "_journey" entry found six treatments for one job). Built on `EmptyState`; the rules are data in `state-screen.logic.ts`.
-- **Shape:** a line drawing, a heading, one plain sentence, then the way forward as a full-width 56 pt button pinned at the bottom (thumb zone), with at most quiet 44 pt options beneath it. Never red, never a spinner, never a count of what is missing.
-- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off, a crash). Content scrolls, actions stay put, so nothing clips at AX5. A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
+- **Shape:** a picture, a heading, one plain sentence, then the way forward as a full-width 56 pt button at the bottom of the content (thumb zone), with at most quiet 44 pt options beneath it. RULE (PATH-05, `SCREEN-PATHS-20nov.md`; ruling 20 Nov 2026): below AX1 the button is pinned at the bottom; from AX1 up it scrolls with the content, last, and is not pinned. Built today: `state-screen.tsx` keeps the actions outside the `ScrollView` at every size (READ, lines 121 to 141), so it still pins at AX1 and up. That is a gap for `mobile`; this file states the rule, not the code. Never red, never a spinner, never a count of what is missing.
+- **Layout (Oct 16, EXPERIENCE_PASS S13, S23, S37, S49):** the block has 20 pt gutters and sits in the middle of the space above the action (`STATE_LAYOUT`); the picture is centred, the title and the sentence start on the reading edge (E4), the title in `title2`, the sentence in `body` `textMuted`. The picture is one of three slots: `art` (a line drawing, shown complete), `glyph` (a Phosphor icon, Light 40 pt in `textMuted`, in a 72 pt `accentSoft` circle: MicrophoneSlash, WarningCircle), or `drawing` (any picture the screen brings: the book cover, the held letter). The block arrives with one 200 ms fade; nothing else moves except a loading drawing's breath (`stateVisual`).
+- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off). A crash is `PlainScreen`'s, not this one's (see Root below). Content scrolls, so nothing clips at AX5; the actions stay put below AX1 and join the end of the scroll from AX1 (see Shape). A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
 - **`InlineState`:** the same words as a calm card for one region of a screen that has other content (Review while words are on their way, a failed transcription). `children` hold a progress line.
 - **`loading`:** the drawing breathes (the slowest loop we own, off under Reduce Motion) and the region is announced as busy. It never carries a primary action; a way out (Type instead) is quiet.
-- **Root:** `app/+not-found.tsx` and the root `ErrorBoundary` use it (`StateScreenView`, which reads nothing from navigation because the navigator is what crashed). The error text is never shown or logged.
+- **Root:** `app/+not-found.tsx` uses `StateScreen` with the window drawing (S49). The root `ErrorBoundary` and launch recovery use `PlainScreen` (`components/resilience/plain-screen.tsx`, S50, S51). It draws the same block without providers, motion or navigation, because those may be what failed. The error text is never shown or logged.
 - **Copy:** no new wording. Titles and bodies come from `errors.*`, `reader.*`, `wordsCopy`, `pendingCopy` as before.
 
 ### 2.1a ModalHeader and BackButton (one back/close idiom per context)
@@ -416,7 +435,8 @@ type SignatureProps = { author: Author; variant?: 'inline' | 'signoff'; showAvat
 - **Android later:** same code.
 
 ### 2.16a Lamp and QuotePair (calm brand)
-- **Lamp:** warm radial light behind a screen (`components/ui/lamp.tsx`, `<Lamp anchor="top" | "center" intensity? />`). First child of the screen root, outside any ScrollView. Welcome, Tonight and Book only. Colour and peak opacity from `tokens.atmosphere`, timing from `tokens.motion.lamp`. Decorative: no touches, hidden from VoiceOver and TalkBack. Off under Reduce Motion (still) and Increase Contrast (not drawn). Motion rules: MOTION 5k.
+- **Lamp:** warm radial light behind a screen (`components/ui/lamp.tsx`). First child of the screen root, outside any ScrollView. `<Lamp scene="tonight" daypart={greetingKey()} />`, `<Lamp scene="welcome" persistKey="firstRun" />`; `<LampView ... />` outside a navigator (the age gate). Scenes: `gate`, `welcome`, `form`, `finish`, `tonight` (tinted by the time of day), `write`, `book`, `family`, `readTogether` (night only, from below); anything else has no lamp (`apps/mobile/test/lamp.test.ts` keeps it off Listen, Review, the letter page, Settings, Plus, sheets and every state screen). `intensity` multiplies the scene (`tokens.motion.lamp.dimTo` for "Not much today"); `still` holds a breathing scene still; `persistKey` keeps one light across screens: `firstRun` (the gate and onboarding, slow rises) and `tabs` (Tonight, the Book, the Family tab: the arriving tab settles from the last one's light over `returnMs`). Only the session's first lit room arrives slowly; `arrive` asks for the slow arrival later (Read together's dusk pool, the second parent's first Book). Without a scene it is #99's warm pool. On paper the pool is large, round and soft, its core above or beside the text block, its dusk a warm mauve; in both schemes a faint film grain dithers it against rings (fainter on night paper); reading colours (`text`, `textMuted`, `accent`, `focus`) keep 4.5:1 anywhere on it, status colours (`success`, `caution`, `recording`, `destructive`) only outside the core (from 70 percent of the height down in a room lit from the top; never on the gate's or Read together's lit paper; in a card they are on its surface). In dark mode every text colour keeps 4.5:1 anywhere (`tokens.atmosphere.onLitPaper`, MOTION 5k).
+- **useUnlitRoom():** called while focused by a screen with no lamp that covers a lit one (Listen, Review, Read together, the letter page): every lamp underneath fades over `lamp.leaveMs` and comes back over `returnMs` when it leaves (EXPERIENCE_PASS 5.8 rule 1). Sheets do not call it; under a `Sheet` the room keeps its light and pauses its breath. Colours, peaks, scenes and dayparts from `tokens.atmosphere`, timing from `tokens.motion.lamp`. Decorative: no touches, hidden from VoiceOver and TalkBack. Reduce Motion: still, in its final state; Increase Contrast and Reduce Transparency: not drawn. Motion rules: MOTION 5k.
 - **QuotePair:** the opening quotation pair as the brand device (`components/ui/quote-pair.tsx`, `<QuotePair height? />`, registry context `app.brand-device`). Above the heading on welcome and, through `EmptyState device`, on the empty Book. 40 to 64 pt, accent on paper, reversed on dark, one per screen, a single `fadeMs` fade-in and then still. Decorative. The path is the registry file's path, checked by `apps/mobile/test/quote-pair.test.ts`.
 - **Android later:** same code (react-native-svg and Reanimated).
 
@@ -478,23 +498,25 @@ type EditUnderlineProps = {
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
 - **Android later:** same code. Check nested-`Text` press targets and the dotted underline (`textDecorationStyle` support on Android is **Unverified**; fall back to an SVG or border underline under the span).
 
-### 2.20 MonthChapterHeader
-- **Purpose:** the book is organised by month of age. Each month opens like a chapter.
+### 2.20 MonthOpener (was MonthChapterHeader; rewritten 9 Nov 2026 to match the code after PR #674)
+- **Purpose:** the book is organised by month of age. Each month opens like a chapter of a printed book, as a typographic heading and not a box (EXPERIENCE_PASS S26). Built: `components/book/month-opener.tsx`; the words come from `openerOf` in `components/book/chapters.ts`. Screen: `screens/BOOK_PAGE.md`.
 ```ts
-type MonthChapterHeaderProps = {
-  monthIndex: number;                           // 0 = birth month
-  label: string;                                // "Month 4"
-  dateRange: string;                            // "March 12 to April 11"
-  count: { notes: number; letters: number };
-  coverPhoto?: { uri: string; blurhash?: string };
-  sticky?: boolean;                             // compact sticky version in the list
+type Opener = {
+  kicker: string | null;     // "This month" on the current month only; caps by style
+  heading: string;           // "17 months", "1 month", "The first weeks", "Before You" (title1)
+  range: string | null;      // "October 12 to November 11"; null for Before You
+  a11yLabel: string;         // "This month, 17 months, October 12 to November 11"
+  current: boolean;          // the month the child is in today
+  lineSpoken: string;        // "3 letters, from Mama and Papa"; not drawn here, the Months sheet uses it
 };
 ```
-- **Variants:** `full` (large `title1`, cover photo, counts), `sticky` (one line, `headline`, blur background).
-- **A11y:** `role="header"`; label "Month 4, March 12 to April 11, 6 notes and 2 letters." Counts are words, not just numerals with icons.
-- **Haptics:** none. **Motion:** `full` → `sticky` cross-fade driven by scroll position (Reanimated `useAnimatedScrollHandler`). Reduce Motion means a hard switch.
-- **Builds on:** FlashList sticky headers + Text + PhotoFrame; `sticky` background via `platform/blur-surface`. First Book view per session: cover settles opacity 0.6→1, y 6→0 on `gentle` (MOTION 5a). Web: `<h2>` with `position: sticky`.
-- **Android later:** same code; sticky background is solid on Android.
+- **Type and rhythm:** kicker `letterDateline` caps (current month only), heading `title1`, dates `letterDateline` `textMuted`; `space.1` between lines; `px-5 pb-3 pt-6`. A hairline in `line` (`StyleSheet.hairlineWidth`) sits above every opener but the first, then `space.6`.
+- **Variants:** none. The current month differs only by its kicker. Build 1's numeral, its `trim="figures"` and its lit card (a `radius.lg` box with an amber edge and gold radial) were removed in PR #674: with one letter the frame outweighed the letter, and a bare "18" stood alone. The light now belongs to the cover band (`CoverBand`), and the count line lives in the Months sheet (`MonthsSheet`). A month is never boxed, counted or marked as empty.
+- **A11y:** one element per opener, `role="header"`, the composed label above (the separator is never spoken); the parts are not reachable on their own. `aria-level={2}` is set for the web; React Native 0.86.3 passes no heading level to iOS, so VoiceOver there sees a header without a level. Dynamic Type: kicker and dates cap at 2.4x, the heading at 1.8x, and every line wraps.
+- **Haptics:** none. **Motion:** none; the opener is still (the first Book view settles the cover band only, MOTION 5a).
+- **Not built, and not planned for v1.0:** a cover photo (no photos in v1.0, `docs/ops/RELEASE.md` section 6.1), sticky headers (`stickySectionHeadersEnabled={false}` in `(tabs)/book.tsx`), a `full` and `sticky` pair with a scroll cross-fade. The inline bar after scroll shows the month at the top of the list as its own line (`compactMonth`), outside this component.
+- **Status:** as built after PR #674. S1-151 has not been run on a phone. **OPEN (CPO):** `docs/prd/v2/features/F09-book.md` line 55 says "The current month's open card stays", and the build removed the lit month card; calling sticky headers and a cover photo "not planned for v1.0" is a scope statement that is the CPO's to make.
+- **Android later:** same code.
 
 ### 2.21 AudioPlayer
 - **Purpose:** play the original recording of a note or letter.
@@ -554,8 +576,48 @@ type PhotoFrameProps = {
 - **Motion:** image fade-in; pager dots on `snappy`.
 - **Builds on:** `expo-image` (already installed; `placeholder` blurhash, `contentFit`), horizontal paging ScrollView or FlashList horizontal. Web: `next/image` + CSS scroll-snap.
 - **Android later:** same code. Check that horizontal paging inside a vertical FlashList does not steal the card tap or vertical scroll on Android.
+- **Frame and sizes (21 Nov 2026, conformance F-12, F-19):** the frame is `stroke.control` (1 pt) in the colour token `mediaFrame` (ruling 27: dark `#716A62`, 3.15:1 or better on bg, surface and surfaceRaised; light keeps `line`; Increase Contrast uses the `line` override), never a raw width or `line`. Maximum boxes are `tokens.picture`: Ready thumbnail `thumbMaxPt` 160, `thumbAxMaxPt` 88 from AX3, lens list copy `lensThumbPt` 72 (long side), letter page `letterColumnRatio` 0.75 and `letterWindowRatio` 0.4, `letterAxMaxPt` 88 from AX3. The last three are PROPOSED [U] for design to confirm: no design file sets them; mobile drew 120 for the large-text cap, and 88 is the existing step. The picture is fitted, never cropped (R42).
+- **Radius (F-26, recommendation, no token change):** `radius.sm` for the 72 pt lens thumbnail (B-S04 draws it; `DESIGN_LANGUAGE` 4 says `sm` is for thumbnails and a 14 pt corner on a 72 pt box reads as a pill), `radius.md` for the letter page picture and Ready. Spec 01 says `md` for all, so it needs one line changed (design to confirm); mobile then adds a `radius` prop to `PhotoFrame`. Until then the code draws `md` everywhere.
+
+### 2.23a ErrorLine (built 21 Nov 2026, `components/ui/error-line.tsx`)
+- **Purpose:** one calm line for a failure the person can act on while the page keeps working: the error kind of `Notice` (DESIGN-SYSTEM-DELTA 2.3). Extracted from the sign-in `ErrorLine` with the same look and behaviour and none of its imports, so photo screens can use it.
+- **Look:** a 20 pt `WarningCircle` in `caution` and the words in `subhead` on the `secondary` chip, `rounded-2xl`, 16 x 12 padding. Words never truncate. Red is never used.
+- **A11y:** one element, the words are the label, glyph not read; a polite live region (Android) and `announce()` (iOS), so it is read once on each platform; never assertive. Rules and tests in `error-line.logic.ts`.
+- **Motion:** opacity fade over `motion.swapMs`, the same fade under Reduce Motion.
 
 ---
+
+### 2.24 BookCover (built Oct 16, EXPERIENCE_PASS 5.4)
+- **Purpose:** the journey's one object: the book the person names in first run (S05), signs (S06) and opens (S08), and finds waiting on the empty Book (S24), Add a child (S47) and the Export thumbnail (S43). It shows only the person's own words.
+- **Look:** a 3:4 paper card, `surfaceRaised`, `radius.md`, elevation 1 in light; dark mode and Increase Contrast draw a 1 pt `line` edge instead (solid under Reduce Transparency). At its head the registry's small-cut symbol (`logo.symbol.small.ink`, `.reversed`; 12 to 23 pt) as a book mark, as on the printed cover and spine. The name in Literata Medium, centred, at most three lines; "From Mama" in Literata Italic on the foot line. Open: the flyleaf, with the name small at the top, one hairline across the middle where the first letter will go, and "From Mama" at the foot.
+- **Sizes:** `sm` 88 x 116 (first run, Add a child, and beside a name on the Family card, the sign-in sheet and Account), `thumb` 96 x 128 (the Export screen), `md` 132 x 176 (the book opens, the invite and join sheets), `lg` 160 x 214 (the empty Book).
+- **Setting a name** (`book-cover.logic.ts`, tested in `apps/mobile/test/book-cover.test.ts` against the bundled font files): measured with Literata's own advance widths. The name sets like a book title: at its size (17 pt on `sm`) unless a word would break, then smaller, down to the 13 pt floor; it wraps at spaces; if it still does not fit, the last line runs to the edge and its last 40 percent fades into the paper. Never an ellipsis glyph, never a changed or reordered letter, and never a word broken in two: a word still wider than the cover at the floor ends the name in a fade on one line (#374; "Christophe" faded, never "Christophe" over a stranded "r"). A cut, where there is one, never splits a letter from its accent or a Devanagari matra. Where the cover sits (`cover-place.logic.ts`, one rule for first run's name and signature steps and Add a child): beside the heading, under it at accessibility text sizes, and hidden while the keyboard leaves under 480 pt of free height. The foot line fits itself between 14 pt (on `sm`) and the floor, then fades. Empty name: a blank cover.
+- **Twins:** `behindName` fans a second cover 10 pt behind, turned 3 degrees.
+- **Motion:** a new name cross-fades (`fadeMs`; first run debounces typing itself). A new signature cross-fades on the front's foot line on `snappy` (S06: a chip fills the field and the foot line together; a typed one arrives after first run's pause), and a removed one fades out. Opening: the front holds `motion.cover.holdMs` (300 ms), then cross-fades to the flyleaf with a `cover.dx` (8 pt) shift on `standard`, no 3D flip; `openOnMount` plays it on arrival. `animate={false}` jumps to the end (a tap that skips). Reduce Motion: no cross-fade, the open state at once.
+- **A11y:** decorative (hidden) unless given `accessibilityLabel`, then one image. Its type does not grow with Dynamic Type: it is artwork with a measured layout, like the app icon, and the same name is always real, scalable text on the screen around it.
+- **Android later:** same code.
+
+### 2.25 Notice (PROPOSED, 20 Nov 2026)
+An inline message for a condition the person can act on while the page stays usable (a sign-in code that ran out, notifications off, one choice that did not save). Kinds: info, caution, error, offline. Never red; the glyph carries the kind and the words stay in `text`; one polite live region; no auto-dismiss for error or offline; no count prop. Full spec and states table: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.3. Not built.
+
+### 2.26 PermissionPrimer (PROPOSED, 20 Nov 2026)
+One short note of ours before Apple's own permission alert, extracted from the microphone primer in `app/listen.tsx` when the Face ID line is built. No Allow or Don't allow buttons of ours; Continue is the only path to the iOS alert; shown once while the system has not asked. Spec and states: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.2. Not built.
+
+### 2.27 to 2.34 Moments components (PROPOSED, 21 Nov 2026; none built)
+Full specs, shared rules, token gaps and the conflicts between source texts: `docs/design/moments-tab/components/README.md`. Sources: `docs/design/moments-design-closure.md` (DC-1 to DC-8, G-01 to G-10) and `docs/product/prd/28-moments-tab.md`. Words are `packages/content` keys only; key names in the specs are placeholders for `content`. Each spec lists states, tokens, Dynamic Type through AX5, VoiceOver order and labels, Reduce Motion, targets and a test list. Nothing has been seen on a phone.
+
+| # | Component | One line | Spec |
+|---|---|---|---|
+| 2.27 | `UndoRow` | One row pinned above the tab bar after a set-aside; never times out; a second set-aside replaces it; stacks from AX1; reuses `Toast` rules, and if `Toast` can take a tab-scoped host the component is dropped | `01-undo-row.md` |
+| 2.28 | `MonthList` | The "Earlier" row after Recent's newest 14 days, then a plain screen of month and year rows, newest first, no counts; 56 pt rows at AX | `02-month-list.md` |
+| 2.29 | `EnlargeViewer` | One picture at full width with a 44 pt Close (own row from AX1); no swipe, pinch, pan or play; enlarging never selects; focus returns to the tile | `03-enlarge-close.md` |
+| 2.30 | `PrivacyCover` reuse | The existing cover (move to `components/ui/`) plus `MomentsCoverGate` and a Moments-owned focused-route signal; mounts on the tab and every Moments sheet when App lock is off; one cover only when the lock is on; also the paper cover over Apple's picker | `04-privacy-cover-moments.md` |
+| 2.31 | `PermissionAsk` | Ask card (equal yes and Not now, outline, stack from AX1, inline, no menu) and primer sheet (one sentence, link, one disclosure, equal buttons at the end of the scroll) | `05-ask-card.md` |
+| 2.32 | `MomentCard`, `DayCollage` | Lead tile, reason line, date heading, place or occasion, parent's label, letter row, Continue and Not now (equal), a visible menu with "Not this one", "Hide this place", "Name this day", each with Undo; four VoiceOver stops; no-picture variant | `06-day-card.md` |
+| 2.33 | `PICKER_BARS` and `PickHostSheet` frame | Constant with `none` (Layout C, buildable today, ships first), `bottom-hidden` (B, after DM-02 and DM-11), `both-hidden` (A, only on an explicit DM-02 pass); one route, two bodies, one tray and Start | `07-picker-bars.md` |
+| 2.34 | `DoorRow` | The quiet "Choose pictures" text row, one component for the tab, day sheet and capture Add; placement by access state (DC-1); distinct from the Limited-library manager row | `08-door-row.md` |
+
+Token gaps these specs surface (not changed here): `motion.carry` { ms: 320 } approved and not landed; no 48 pt action target; `layout.listRowMin` 52 against the specs' 56; the `sheetTitle` type role.
 
 ## 3. Build order (smallest set that ships the capture loop)
 

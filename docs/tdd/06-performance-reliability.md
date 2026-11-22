@@ -354,7 +354,7 @@ Computed by SQL views and read by `ops-health`; no person ids leave the query.
 | RB-1 | Deletion pipeline behind | Check cron, run `purge_due(p_limit)` loop by hand, check worker logs by `req_id`, check holds, record an audit row |
 | RB-2 | Replication slot or disk growth | Check PowerSync status; if PowerSync is down over 12 h, decide with TDD 02 FM5 whether to drop and recreate the slot (clients resync); never let disk fill |
 | RB-3 | API errors or outage | Check Supabase status page, recent migration or deploy, `top_queries`; roll back the function or migration; post the in-app status line (no promises of times) |
-| RB-4 | Crash spike | Halt phased release in App Store Connect; EAS Update rollback for JS-only regressions (TDD 01 OTA policy); never ship an update mid-recording |
+| RB-4 | Crash spike | Halt phased release in App Store Connect; EAS Update rollback for JS-only regressions (TDD 01 OTA policy); never ship an update mid-recording. v1.0 (ADR 0022): no OTA (D-091) and no phased release on a first version, so the response is a PATCH build from `release/1.0` with expedited review for an S0 |
 | RB-5 | Suspected data exposure | Kill switches (LEGAL-REQ-040), affected-user enumeration (LEGAL-REQ-039), counsel |
 | RB-6 | Entitlement lag | Run reconcile job; entitlement never gates core (LEGAL-REQ-050), so no user loses access to their book |
 | RB-7 | AI spend | Flip `ai_gateway_enabled` off; on-device path continues; audio waits locally |
