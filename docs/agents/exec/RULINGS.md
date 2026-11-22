@@ -735,13 +735,12 @@ Recorded from the council notes and review verdicts named in each entry. None of
 - Founder-only: extending the claim screen (new words). Nothing else.
 - Signed: Chief Product Officer (Claude role)
 
-### CPrivO-17 Q1 to Q3 (claim step, privacy): what the phone keeps and when it deletes (22 Nov 2026, CPrivO with CPO and CDO; not counsel)
-- Question: privacy read of CPO-30.
-- Verdict: RULED for the build default.
-- Ruling: the `local` file holds a parent's own marks (day labels, hidden days, the days store) and is L4, device only. It is deleted only by the first sign-in that is not a claim (E73), by Erase everything, or by an explicit parent action. Sign-out and "Not my account" leave it. Adoption happens only on an explicit Keep. A failed adoption confirms nothing and deletes nothing. No analytics, log or crash report records that a claim, adoption, decline or deletion happened. No new screen means no new promise: no copy may say a `local` file was "claimed" or "cleared" by sign-in beyond what E73 says.
-- Evidence: review B (privacy) of #1529 at 9a4b6d5f found that a failed adoption write still confirmed the claim and then deleted `local`; the fix is in the head named in CPO-30. The council note is outside the repository [UNVERIFIED wording].
-- Door: two-way until #1529 merges.
-- Founder-only: no, unless new words are added.
+### CPrivO-17 Q1 to Q3 (claim step, privacy): the council ruling on the claim step, privacy seat (22 Nov 2026, CPrivO; council round a727f25081a7a28a6; not counsel)
+- Question: the claim step of NS-47-R7 and E73 for the days and moments `local` files (Q1 to Q3 as in CPO-30).
+- Verdict: RULED for the build default, as recorded in CPO-30.
+- Ruling: exactly the council's rulings in CPO-30 items 1 to 3: no new claim screen for a days-only or moments-only phone; E73 as written (silent delete at the first sign-in that is not a claim) is the build default; "Not my account" does not delete the `local` file; the sign-out path skips clearing `local`; Moments follows E73 and that rule. Nothing is added here.
+- Evidence: the council note, outside the repository, quoted from Karma's work queue [UNVERIFIED wording]. Seat-specific wording by CPrivO is not in the visible source.
+- Founder-only: extending the claim screen (new words).
 - Signed: Chief Privacy Officer (Claude role, not counsel)
 
 ### CDO-24 Q1 to Q3 (claim step, data): owner key, adoption and the `local` file lifecycle (22 Nov 2026, CDO with CPO and CPrivO)
@@ -774,18 +773,18 @@ Recorded from the council notes and review verdicts named in each entry. None of
 - Founder-only: no.
 - Signed: Chief Product Officer (Claude role)
 
-### CDO-25 #1533 (Moments analytics): Karma's rulings on the five author questions, and two OPEN questions (22 Nov 2026, Karma (CTO) with CDO; T1, reversible, nothing wired, flag off)
+### CDO-25 #1533 (Moments analytics): Karma's rulings on the five author questions, with open questions (22 Nov 2026, Karma (CTO); T1, reversible, nothing wired, flag off)
 - Question: #1533 adds `moments_card_impressed` and `moments_card_tapped`, each with one closed property `slot` (`look_back` | `question`). Five questions from the author went to review.
-- Seats consulted: review A (analytics) and review B (privacy lens), both PASS WITH NOTES at d694ee06; Karma.
-- Verdict: RULED for items 1 to 5. OPEN for items 6 and 7. #1533 itself is open, not merged.
+- Seats consulted: review A (analytics) and review B (privacy lens), both PASS WITH NOTES at d694ee06. This is a Karma ruling; no CDO or CPrivO co-signature is claimed.
+- Verdict: RULED (Karma) for items 1 to 5. OPEN for items 6 and 7. #1533 itself is open, not merged.
 - Ruling:
   1. Event names stay snake_case. Product amends the spec 28 section 18 names to match the catalogue.
   2. The once-per-slot-per-day cap is a P0 test in the wiring PR, not in #1533.
   3. The registry test allows only the two exact `moments_` names. Whether `moment_shown`, which still exists in the catalogue, is kept is decided in that test's PR. [UNVERIFIED: not decided here.]
   4. The `ids.ts` and `registry.ts` rows land with the wiring PR; #1533's body says so.
   5. PRD-REQ-016 is accepted as the requirement.
-- OPEN 6 (CDO and CPrivO, before wiring): should `child_count_bucket` (including "none") ride on Moments impression events? Review B noted that it rides on every event today.
-- OPEN 7 (counsel and CPrivO): the App Store privacy label wording, Linked versus Not linked, and the policy wording for these events. Not decided by any seat in this log.
-- Evidence: reviews A and B on #1533 at d694ee06; the `^moment_` forbidden pattern does not match `moments_` (review B). Founder-only: the label wording is legal and store text, so counsel and the founder.
+- OPEN 6 (CDO and CPrivO input, before wiring): should `child_count_bucket` (including "none") ride on Moments impression events? Review B noted that it rides on every event today.
+- OPEN 7 (counsel and CPrivO): the App Store privacy label wording, Linked versus Not linked, and the policy wording for these events. Not decided in this log.
+- Evidence: reviews A and B on #1533 at d694ee06; the `^moment_` forbidden pattern does not match `moments_` (review B). Founder-only: the label wording is legal and store text.
 - Door: two-way. Way back: remove the two catalogue names.
-- Signed: Karma (CTO); Chief Data Officer (Claude role)
+- Signed: Karma (CTO)
