@@ -17,7 +17,7 @@ describe('the Moments tab shell', () => {
   it('[F1] the flag is off unless the build says on, so the bar is unchanged by default', () => {
     expect(MOMENTS_TAB_ON).toBe(false);
     expect(flag).toMatch(/parseServerFeatures\(process\.env\.EXPO_PUBLIC_MOMENTS_TAB\)/);
-    expect(momentsTabVisibility(false)).toEqual({ href: null });
+    expect(Object.keys(momentsTabVisibility(false)).sort()).toEqual(['tabBarButton', 'tabBarItemStyle']);
   });
 
   it('the placeholder reads no library, no network, no native module and no storage', () => {
@@ -39,5 +39,23 @@ describe('the Moments tab shell', () => {
   it('the label reads the proposed tabs.moments key when content adds it, else an existing key', () => {
     expect(momentsTabLabel({ book: 'Book' })).toBe('Book');
     expect(momentsTabLabel({ book: 'Book', moments: 'Moments' })).toBe('Moments');
+  });
+
+  it('no Moments options object carries both href and tabBarButton (expo-router throws on iOS), and the hidden one has no button', () => {
+    for (const on of [true, false]) {
+      const opts = { tabBarButton: () => 'ios button', ...momentsTabVisibility(on) } as Record<string, unknown>;
+      expect('href' in opts && 'tabBarButton' in opts).toBe(false);
+    }
+    expect((momentsTabVisibility(false).tabBarButton as () => null)()).toBeNull();
+    expect(momentsTabVisibility(false).tabBarItemStyle).toEqual({ display: 'none' });
+    expect(momentsTabVisibility(true)).toEqual({});
+    const layoutText = readFileSync(join(SRC, 'app/(tabs)/_layout.tsx'), 'utf8');
+    expect(layoutText.split("\n").find((l) => l.includes('name="moments"'))).not.toMatch(/\bhref\b/);
+    expect(layoutText).toMatch(/tabBarButton: button\(momentsLabel\), \.\.\.momentsTabVisibility/);
+  });
+
+  it('the installed expo-router still throws on href with tabBarButton (the reason for the rule above)', () => {
+    const src = readFileSync(join(require.resolve('expo-router/package.json'), '..', 'build/layouts/TabsClient.js'), 'utf8');
+    expect(src).toMatch(/Cannot use `href` and `tabBarButton` together/);
   });
 });

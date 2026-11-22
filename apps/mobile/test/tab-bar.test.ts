@@ -53,7 +53,7 @@ describe('the You tab', () => {
   });
 
   it('[NX-30a-R6] no tab is guarded and Family is not a tab: the bar is the same in every build, with the flag off', () => {
-    expect(momentsTabVisibility(MOMENTS_TAB_ON)).toEqual({ href: null });
+    expect(Object.keys(momentsTabVisibility(MOMENTS_TAB_ON)).sort()).toEqual(['tabBarButton', 'tabBarItemStyle']);
     expect(layout).not.toMatch(/Tabs\.Protected|FAMILY_TAB|name="family"/);
     expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('name="book"'));
   });

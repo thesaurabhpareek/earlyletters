@@ -3,7 +3,7 @@
  * the second of four tabs, Home stays the landing tab). Pure: no React Native, no library read, no network.
  *
  * Off (the default: unset, blank or anything but `on`) the bar is Home, Book, Me exactly as before. The route file exists
- * either way, so the layout hides it with `href: null` when the flag is off, and the screen sends anyone who reaches
+ * either way, so the layout hides it (no button, display none) when the flag is off, and the screen sends anyone who reaches
  * it by a link to Home.
  */
 import { parseServerFeatures } from '@/lib/capabilities';
@@ -16,9 +16,13 @@ export function visibleTabIds(momentsOn: boolean): readonly ('index' | 'moments'
   return momentsOn ? ['index', 'moments', 'book', 'you'] : ['index', 'book', 'you'];
 }
 
-/** The extra Tabs.Screen options: nothing when on, hidden from the bar when off. */
-export function momentsTabVisibility(momentsOn: boolean): { href?: null } {
-  return momentsOn ? {} : { href: null };
+/**
+ * The extra Tabs.Screen options: nothing when on; when off, no button and no room in the bar. Never `href`: expo-router's
+ * tabs throw "Cannot use `href` and `tabBarButton` together" (build/layouts/TabsClient.js), and the layout sets tabBarButton
+ * on iOS. This object is spread last, so its tabBarButton replaces the layout's.
+ */
+export function momentsTabVisibility(momentsOn: boolean): { tabBarButton?: () => null; tabBarItemStyle?: { display: 'none' } } {
+  return momentsOn ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none' } };
 }
 
 /**

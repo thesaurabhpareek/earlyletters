@@ -212,7 +212,7 @@ describe('the navigation test (design spec 06 section 10)', () => {
     expect(visibleTabIds(false)).toEqual(TAB_JOBS.map((t) => t.id));
     expect(visibleTabIds(true)).toEqual(tabJobs(true).map((t) => t.id));
     // Flag off the route is hidden from the bar and nothing else is added to the options; on, nothing hides it.
-    expect(momentsTabVisibility(false)).toEqual({ href: null });
+    expect(Object.keys(momentsTabVisibility(false)).sort()).toEqual(['tabBarButton', 'tabBarItemStyle']);
     expect(momentsTabVisibility(true)).toEqual({});
   });
 
