@@ -46,7 +46,7 @@ export const lifecycleEmails = {
     body: [
       "{parentName} invited you to keep the book together. You can write letters of your own and read every letter in the book.",
       "Your letters are yours, and {parentName}'s are theirs. Neither of you can change the other's words.",
-      "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
+      "It stays in your words. Every change is marked, so you can put it back. Each letter you speak keeps its original recording, unchanged. We never rewrite your words.",
       "When you have a minute, open the app and talk. A sentence is plenty.",
     ],
     cta: { label: "Open the book", urlVar: "{appUrl}" },
