@@ -572,6 +572,25 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 | C2 invite token | RULED CISO-2 (mark stored in the Keychain item; cap stays, founder-only) | fix PR; test covers kill and relaunch | none; #1427 is docs |
 | C3 F8 to F11 | RULED CISO-3 (F11 recorded as accepted exposure) | F8 fix PR keyed by requested user and token user | #1428 and #1427 are not blocked |
 
+### CCO-7 PR #1448 (compliance gates migration, a re-cut of #424) passes the compliance fence for merge into develop only (Sat 21 Nov 2026, CCO via Karma's session; not counsel)
+- Question: PR #1448 adds the sign-up compliance gates as files: migration `20261121030000_compliance_gates.sql` (`hook_before_user_created`, `ops.restricted_jurisdictions`, `geo_ip_ranges`, `compliance_check_counts`, `regulatory_watch`), their tests and grants, `supabase/APPLY.md` File 39 and the compliance scripts. Does it meet the CCO checklist in `compliance/README.md`, and for what?
+- Tier and type: T2 (database, a fenced path, a sign-up door); complicated.
+- Options considered: approve for merge into develop with the hook off and a list of conditions before anything is enabled or applied; hold the PR until every checklist line has its evidence; approve without conditions.
+- Ruling: approve the head of PR #1448 named on the `## CCO approval at <sha>` line, for merge into `develop` only. The hook stays off. Nothing is applied to a hosted project and the hook is not enabled until the conditions below hold. Checklist, line by line:
+  - Sign-up checks table: the hook is row 4 and the PR adds the door's code and tests. Cannot verify on a device or a local stack whether GoTrue rolls back the block count when the hook refuses a sign-up (File 39 step 4). This is a condition, not a finding.
+  - New personal data needs a DATA_CLASSIFICATION row: NOT MET, and I accept it as a condition before the hook is enabled, not before the files merge. The tables hold a day, a check, an outcome and, for a block, a country code; the IP is read in memory only; the tables stay empty until the hook is on. BL-555 adds the rows and the two-year retention entry before File 39 is applied.
+  - Legal and platform facts with a source and a date: met for the sanctions and export rows (`checked-facts.md`, read 31 Oct 2026, primary sources). The Syria rescission date is secondary-sourced.
+  - No promise change without the founder: met. No Terms, Privacy, listing or app copy is edited. The Privacy Policy line about IP use (D-136) is still unpublished, so the hook cannot be enabled before it is.
+  - No new door path without a row and a test: met. The web page stays deferred (D-055).
+  - DB-IP attribution link: NOT MET, and there is no screen for it yet (BL-553). A condition before the hook is enabled.
+  - Blocked places: KP, IR, CU, SY, RU and BY at country level, as the seed holds. D-131 (31 Oct 2026) records the founder's words and settles Iran and Cuba as blocked; only counsel's confirmation (Q57) is open. No name screening (CCO-5, D-137, a delegated default until counsel confirms). A change to the list stays the founder's.
+- Conditions, all before the hook is enabled or File 39 is applied to a hosted project: BL-553 (the app handles the 403 refusal and carries the DB-IP link), BL-554 (the regulatory watch is scheduled), BL-555 (DATA_CLASSIFICATION rows, register entry, claims rows), the local-stack check of the block count, the Privacy Policy IP disclosure approved by the founder, an ops alert on geo stale, unknown and error counts, and BL-552 (a suspend path) before any sign-in outside the family. Counsel's answer to Q57 is requested before the sign-up check is switched on.
+- Why: the files change no behaviour while the hook is off, and merging them keeps the work from drifting from `develop`. Evidence at the head: two counted reviews (Review A with the database lens, Review B with the tests lens, both PASS at this head), `npm run test:db` 55 files, `compliance/scripts` tests 9 of 9, and a mutation that moved one grant made `explicit_grants` fail. Evidence that is missing: counsel's answer, a device or local-stack run, and CI at the head before the approval is posted.
+- Door: two-way with cost. Merging is a revert away; applying File 39 to a hosted project and enabling the hook are the founder's steps and are not covered by this ruling.
+- Way back: revert PR #1448. The migration file, its tests and File 39 go, and develop returns to the state before it.
+- Revisit when: any condition above is met, counsel answers Q57, or the blocked list changes.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
+
 ### CR-149 The merge queue's NEEDS-UPDATE rule is relaxed for PRs that share no files with develop (22 Nov 2026, Karma via the council; with ops, security and QA)
 - Question: develop moves faster than required CI finishes, so the strict NEEDS-UPDATE rule (#1356) keeps sending PRs back for a branch update that CI never lets them finish. Which PRs may merge without that update?
 - Tier and type: T1 process ruling; amends the merge gate of #1356 and CR-73 for this one rule; complicated
@@ -580,14 +599,14 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
   1. No file in common with the files changed on develop since the PR's merge base (a rename counts on both sides).
   2. `git merge-tree --write-tree` against current develop is clean.
   3. The required checks are green at the PR's head, and two counted reviews are on that head.
-  4. The PR touches no CR-70 path (auth, billing, the analytics allowlist, `supabase/**`, `.github/**`, `scripts/agents/**`, `.claude/**`, `agents/roster.json`, `docs/agents/**`), no lockfile, no native file and no migration.
-  5. The merge is sha-pinned.
-  - A source PR (not test-only, not docs-only) also needs its own tests and `tsc` to pass on the scratch merge.
+  4. The PR touches no CR-70 path (auth, billing, the analytics allowlist, `supabase/**`, `.github/**`, `scripts/agents/**`, `.claude/**`, `agents/roster.json`, `docs/agents/**`, and also `apps/mobile/src/lib/db/**`, `packages/analytics/**`, `app.config.ts`, `eas.json` and `CODEOWNERS`, wherever they sit in the tree), no lockfile, no `package.json` dependency change, no native file and no migration. A native file is any path in `NATIVE_PATHS` of `scripts/agents/merge-queue.mjs` (CR-74): `apps/mobile/ios/**`, `apps/mobile/modules/**`, `apps/mobile/app.config.*`, `apps/mobile/eas.json` and the root `package-lock.json`.
+  5. The merge is sha-pinned, and I re-read the develop sha just before I merge and run the overlap and merge-tree checks again if it moved.
+  - A source PR (not test-only, not docs-only; I decide that from the changed paths, never from a label or a title) also needs its own tests and `tsc` to pass on the scratch merge.
   - Any other PR keeps the strict workspace rule.
   - I apply this by hand until a PR teaches `scripts/agents/merge-queue.mjs` to do it, behind a flag so the strict rule comes back by flipping the flag.
 - Why: measured on 22 Nov, develop took 46 commits in 3 hours (about one every 4 minutes), and required CI takes 35 minutes or more with 50 to 70 runs queued. The strict rule livelocked nine PRs that had two passes and green checks. Eight of the nine shared no files with develop's new commits, and all nine merged cleanly in `git merge-tree`. Council: ops recommended file-level overlap plus merge-tree; security (CISO lens) wanted CR-70 paths kept strict and only docs-only and test-only PRs relaxed; QA said test-only and docs-only are safe, and source PRs need a full-suite run on the merged result. Rule 4 keeps security's line, and the extra source-PR check is QA's.
 - Misses accepted: a semantic conflict between files that do not overlap, and whole-repo suites and end-to-end runs that only CI runs. Develop's own CI is the backstop.
-- First use: #1381, #1384, #1452 and #1444, merged 22 Nov. Each was a test-only or docs-only proposal with zero overlap, a clean merge-tree and the required checks green.
+- First use: #1381 (`apps/mobile/test/asks-keep-book-store.test.ts`), #1384 (`apps/mobile/test/app-lock-cover-render.test.ts`), #1452 (`apps/mobile/e2e-web/j13-reminders.flow.ts`) and #1444 (`docs/ops/proposed/merge-queue-docs-file-overlap.md`), merged 22 Nov. Each was a test-only or docs-only proposal with zero overlap, a clean merge-tree and the required checks green.
 - Door: two-way
 - Way back: if develop goes red twice in one day because of a PR merged under this rule, I return to the strict rule and pause merging under this one.
 - Revisit when: `scripts/agents/merge-queue.mjs` implements it, or after 48 hours, whichever is first.
