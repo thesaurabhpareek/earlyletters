@@ -41,7 +41,7 @@ The spec is freeze-ready in the sense that no BLOCKER is open without either an 
 | O-41 | Store screenshots: hide the tab bar or wait for trademark clearance | Hide the tab bar in every frame | Fri 27 Nov |
 | O-32 | Special occasions: dates we know, or also events recognised from pictures (K-SUG) | Dates we know; K-SUG NOT PLANNED | With G10 |
 | O-30 | Faces and naming people | OUT, not decided here | When the founder chooses |
-| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; counsel Q7 default) | Before G2 |
+| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; spec Q7 = packet Q129 default; the founder chose disclose on 21 Nov 2026) | Before G2 |
 | O-45 | Postal address for the lifecycle email | Decide with O-47; phase 2 only | With O-47 |
 | O-46 | Numbers for the measurable and the stop line (section 20.1) | Founder sets them | Before PR 16 |
 | O-42 | Sign RV-01 to RV-22 as four signatures, with H-10 (the machine-label boundary) in the third | Four signatures | With G10 |
@@ -124,7 +124,7 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 
 ### 1.4 Freeze exit checks
 
-- [ ] The founder has answered, or accepted the default for, O-37, O-38, O-39, O-40, O-41, O-42, O-44, O-47, and the v3 items O-48, O-49, O-50, O-52 and the hybrid decisions D1 to D14 (D10 and D11 are founder-visible).
+- [ ] The founder has answered, or accepted the default for, O-37, O-38, O-39, O-40, O-41, O-42, O-47, and the v3 items O-48, O-49, O-50, O-52 and the hybrid decisions D1 to D14 (D10 and D11 are founder-visible). O-44 is decided: the founder decided disclose (21 Nov 2026, O-44); G2 still waits on counsel's wording (packet Q129).
 - [ ] A challenger who is neither the author nor a reviewer has read the freeze copy (the CAIO's conflict-of-interest note: an AI session reviewing an AI-written spec), starting with EXH-ENG-1, EXH-ENG-4 and EXH-ENG-7.
 - [ ] The G1a-P simulator read-out is on file before 18b-1a is filed; the device read-out is on file before 18b-2 and 18c.
 - [ ] The door's legal set (label, policy, Terms, backup line, `docs/legal` lines 54, 117, 127 and policy line 45) is drafted for counsel before any production profile carries the door (R278).
@@ -209,7 +209,7 @@ Evidence goes in `docs/release/<x.y.z>.md` as one dated line with a commit. Ever
 | O-41 | Founder | Store screenshots and the tab bar | Answer, Fri 27 Nov | OPEN |
 | O-42 | Founder | RV-01 to RV-22 as four signatures | Answer with G10 | OPEN |
 | O-43 | Chief Design Officer | For you and Recent switch | Design ruling | OPEN |
-| O-44 | Founder with Privacy | Picture copies in iPhone backup | Answer before G2 | OPEN |
+| O-44 | Founder with Privacy | Picture copies in iPhone backup | Decided: disclose (founder, 21 Nov 2026, O-44). G2 still waits on counsel's wording (packet Q129) | DECIDED, WORDING OPEN |
 | O-45 | Founder | Postal address for lifecycle email | Answer with O-47; phase 2 | OPEN |
 | O-46 | Founder | Numbers of the measurable and the stop line | Answer before PR 16 | OPEN |
 | O-47 | Founder | Entity and individual publisher | Answer, Fri 27 Nov | OPEN |

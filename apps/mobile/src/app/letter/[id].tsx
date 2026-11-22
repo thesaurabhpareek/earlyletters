@@ -525,7 +525,6 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   );
 }
 
-/** Card to page only: the page's own Back and "Aa" (the native header is hidden). A swipe down on it goes back too. */
 /**
  * The Private chip's row, always laid out so Make private and Move to the book push nothing (BL-420, about 20 pt). The
  * chip fades on `fade`, which is 200 ms and is also the Reduce Motion form; hidden from VoiceOver while it is not shown.
@@ -549,6 +548,7 @@ function PrivateChipSlot({ shown, color }: { shown: boolean; color: string }) {
   );
 }
 
+/** Card to page only: the page's own Back and "Aa" (the native header is hidden). A swipe down on it goes back too. */
 function TopBar({ onBack, trailing, inset }: { onBack: () => void; trailing: ReactNode; inset: number }) {
   const { c } = useTheme();
   const swipe = Gesture.Pan()

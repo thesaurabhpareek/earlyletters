@@ -9,12 +9,22 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // The app's `@/` alias, for tests of pure modules that import their siblings through it.
-  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: {
-    // test/ for the store, capture and sync engines; src/**/*.test.ts for tests kept next to their module
-    // (packs, remote, language, account deletion). All run in Node: nothing here loads React Native.
-    include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
-    environment: 'node',
+    // Two projects, one `vitest run`: the Node suite (this file's settings) and the component suite
+    // (vitest.component.config.ts, BL-278). A file filter that matches only one of them still exits 0.
+    projects: [
+      {
+        // The app's `@/` alias, for tests of pure modules that import their siblings through it.
+        resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+        test: {
+          name: 'node',
+          // test/ for the store, capture and sync engines; src/**/*.test.ts for tests kept next to their module
+          // (packs, remote, language, account deletion). All run in Node: nothing here loads React Native.
+          include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
+      './vitest.component.config.ts',
+    ],
   },
 });
