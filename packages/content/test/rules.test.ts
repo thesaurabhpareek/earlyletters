@@ -1031,6 +1031,31 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
     expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
+
+  // Founder, 21 Nov 2026: "Change brand.md and I approve moments." Moments is the name of the fourth tab, a place. The
+  // glossary ban stays for what a person makes: a short piece is a note, a long one a letter. "In a moment" and "One moment"
+  // are ordinary English and pass. Until counsel clears the name (X1, Q-X1-12) it is in-app only, not in store text.
+  const MOMENT_MADE =
+    /\b(?:your|my|our|their|new|these|those|favou?rite|precious|special|captured|saved|shared|recent|best)\s+moments?\b|\bmoments?\s+(?:from|you|we|with|captured|saved)\b|\b\d+\s+moments\b|\b(?:capture|save|record|share|write|add|make|keep)\s+(?:a|the|this|that|every|each|your)?\s*(?:precious\s+)?moments?\b|\bphoto moments?\b/i;
+
+  it('[BRAND-MOMENTS-1] moment is a place, never a thing a person makes: a short piece stays a note', () => {
+    expect(offenders(COPY, MOMENT_MADE)).toEqual([]);
+  });
+
+  it('[BRAND-MOMENTS-1] the pattern catches the thing a person makes and lets the tab and ordinary English pass', () => {
+    for (const bad of ['Your moments', 'New moments are here', 'Capture every precious moment', 'Save a moment', 'Add a moment', '12 moments', 'Moments from the weekend', 'Photo moments', 'A moment you saved']) expect(MOMENT_MADE.test(bad), bad).toBe(true);
+    for (const ok of ['Moments', 'Open Moments', 'Try again in a moment.', 'One moment.', 'A good moment for a few words to {child}.', 'Give it a moment, then tap Keep again.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
+  });
+
+  it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
+    expect(offenders([...STORE, ...SITE], /\bmoments\b/i)).toEqual([]);
+  });
+
+  it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
+    const brand = DOCS.find((d) => d.path === 'BRAND.md')!.text;
+    expect(brand).toMatch(/\| The fourth tab and its place \| Moments /);
+    expect(brand).toMatch(/\| Short piece someone makes \| note \|[^\n]*moment \(as the name of a note/);
+  });
 });
 
 // ---------------------------------------------------------------------------
