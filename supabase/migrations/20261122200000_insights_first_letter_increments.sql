@@ -16,6 +16,10 @@
 -- A suppressed count stays suppressed in the increments too, so the increment
 -- columns never add a number that subtraction could not already reach.
 --
+-- Known residual, not closed here: successive daily snapshots of an unmatured
+-- cohort can still reveal a 1 to 9 change, and a null d7 beside a published d1
+-- signals that their gap is 1 to 9.
+--
 -- Only the view body changes (create or replace, two columns appended, same
 -- security_barrier option). No new table, view, sequence or function, so no
 -- new grant is needed: the existing select on the view and execute on the

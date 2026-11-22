@@ -70,7 +70,7 @@ const invites = [
 
 // BL-326 cohorts (weeks 6 to 9): accounts that write 2 hours, 3 days and 10 days after sign-up.
 // [week, accounts, within 1 day, in days 2 to 7, in days 8 to 30]
-const COHORTS = [[6, 40, 20, 3, 7], [7, 50, 20, 10, 4], [8, 50, 15, 10, 10], [9, 50, 20, 3, 4]];
+const COHORTS = [[6, 40, 20, 3, 7], [7, 50, 20, 10, 4], [8, 50, 15, 10, 10], [9, 50, 20, 3, 4], [10, 50, 20, 9, 0], [11, 50, 20, 10, 0]];
 const cohortUsers = [];
 const cohortLetters = [];
 COHORTS.forEach(([wk, n, a, b, c], ci) => {
@@ -193,7 +193,12 @@ check('[BL-326] every difference at least k: all three counts and both increment
   num(c8.first_letter_d1) === 15 && num(c8.first_letter_d7) === 25 && num(c8.first_letter_d30) === 35 && num(c8.first_letter_d2_7) === 10 && num(c8.first_letter_d8_30) === 10);
 check('[BL-326] d30 is withheld against d1 when d7 is hidden (d30 - d1 = 7)',
   num(c9.first_letter_d1) === 20 && c9.first_letter_d7 === null && c9.first_letter_d30 === null);
-check('[BL-326] a published increment of 0 is publishable (cohort of 12: d1 = d7)', f3.first_letter_d2_7 === null || Number(f3.first_letter_d2_7) === 0);
+const c10 = await at('first_letter_conversion', 'cohort_week', 10);
+const c11 = await at('first_letter_conversion', 'cohort_week', 11);
+check('[BL-326] edge 9: d7 - d1 = 9 is withheld, and d30 - d1 = 9 with it',
+  num(c10.first_letter_d1) === 20 && c10.first_letter_d7 === null && c10.first_letter_d30 === null && c10.first_letter_d2_7 === null);
+check('[BL-326] edge 10: d7 - d1 = 10 is published, increment 10, and a real 0 increment (d30 = d7) is 0, not null',
+  num(c11.first_letter_d7) === 30 && c11.first_letter_d2_7 !== null && Number(c11.first_letter_d2_7) === 10 && num(c11.first_letter_d30) === 30 && c11.first_letter_d8_30 !== null && Number(c11.first_letter_d8_30) === 0);
 const nested = [];
 for (const r of await rows('first_letter_conversion')) {
   const v = [r.first_letter_d1, r.first_letter_d7, r.first_letter_d30].map(num).filter((x) => x !== null);
