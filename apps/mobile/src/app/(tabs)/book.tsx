@@ -55,7 +55,7 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { deleteEntry, getSetting, listBookEntries, countBookLetters, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
@@ -98,7 +98,7 @@ export default function Book() {
   // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
   // these are, so the arrival waits for the right book.
-  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listEntriesForChild(active.id) : [] }));
+  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listBookEntries(active.id) : [] }));
   const entries = read.entries;
   const loaded = read.childId === (active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
@@ -144,7 +144,7 @@ export default function Book() {
     if (!active) return;
     // Subscribe, then read once more and keep that read only if it differs from the initialiser's: a change between the
     // initialiser's read and this subscribe is picked up at once (BL-1428).
-    return watchBook({ childId: active.id, read: listEntriesForChild, subscribe, set: setRead });
+    return watchBook({ childId: active.id, read: listBookEntries, subscribe, set: setRead });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
@@ -262,7 +262,7 @@ export default function Book() {
   useFocusEffect(
     useCallback(() => {
       if (!activeId) return;
-      const letters = listEntriesForChild(activeId).filter((e) => e.kind !== 'not_much').length;
+      const letters = countBookLetters(activeId);
       trackBookOpened({ childIndex: childIndexOf(activeId), letters, role: 'parent' });
     }, [activeId]),
   );
