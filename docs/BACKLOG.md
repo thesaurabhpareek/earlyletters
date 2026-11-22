@@ -7579,12 +7579,12 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Satisfies: the same ids as BL-272 and BL-269 (not copied); D-086 (the card never says nobody spoke).
 - Problem and evidence: `apps/mobile/test/words-state.test.ts` and `apps/mobile/test/p5-critics.test.ts` test the pure card (`wordsCard`, `wordsCardKind`). Nothing mounts `WordsStatus` in `apps/mobile/src/app/review.tsx` or the letter page card, so the stacked layout at AX5 and the spoken title that `WordsStatus` sends to VoiceOver on a change of state are not tested. BL-269 covers this but waits on BL-278.
 - Scope: when the harness exists, add one mounted test of the `noWords` card at default size and at AX5 (both actions visible and reachable, nothing clipped) and one that the card's title is announced once on arrival. Do not edit BL-269; cite it.
-- Done when: the two tests run in `npm test` and fail if the quiet action is removed.
+- Done when: the two tests run in `npm test`; the first fails if the quiet action is removed and the second fails if the title is not announced once on arrival.
 - Test: the component harness from BL-278.
 
 #### BL-1491 The spec says the home place is one value per book, but the moments file contract has a single homePlace
-- Status: proposed. Mode: decision. Owner: founder. Milestone: M15. Size: XS. Depends on: none. Drafted by: product (the roster has no backlog owner name for product, so the check needs a mapped owner).
-- Priority: Medium (the file shape is hard to change once shipped). Gate: none.
+- Status: proposed. Mode: decision. Owner: founder. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium (the file shape is hard to change once shipped). Gate: none. Note: drafted by the product agent; the owner is founder because the roster has no backlog owner name for product.
 - Satisfies: NS-53-R249 and R221 (17.1), not copied.
 - Problem and evidence: `docs/product/prd/28-moments-tab.md` R249 says "one value per book". The file contract in `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` (line 167 and the `MomentsFile` type, line 430) is `{v, owner, dayKeys[], labels{}, hiddenPlaces[], homePlace}` with one `homePlace` for the whole file. Whether a file holds one book or many is not stated in what was read.
 - Scope: state which is meant. If one file per book, say so in 17.1. If one file per person across books, change `homePlace` to a value per book id. Draft the wording in the PR body for the founder; do not edit the requirement here.
@@ -7601,11 +7601,11 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Test: none (docs).
 
 #### BL-1493 DATA-REQ-023's wipe list names no device files; add a test that no moments.json remains after deletion
-- Status: proposed. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none. Also: QA engineer.
+- Status: proposed. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1375. Also: QA engineer.
 - Priority: High (a file of the person's day choices could outlive a deleted account). Gate: none.
 - Satisfies: DATA-REQ-023 and DATA-REQ-024 (not copied).
 - Problem and evidence: DATA-REQ-023 in `docs/legal/DELETION_AND_EXPORT_SPEC.md` (line 254) wipes "the local database, audio, photos, Keychain items for that account and the analytics id". It names no device files, so the local moments file (R249 says the home place has "the same wipe rules") is not on the list. DATA-REQ-024 has the same gap for signed-out phones.
-- Scope: (1) data architect drafts the list wording for the founder and counsel (legal text is theirs; draft in the PR body only). (2) QA adds a test that after the wipe path of both requirements no `moments.json` remains, written against the file the code creates.
+- Scope: (1) data architect drafts the list wording for the founder and counsel (legal text is theirs; draft in the PR body only). (2) QA adds a test that after the wipe path of both requirements no `moments.json` remains, written against the file the code creates (BL-1375 builds the moment index; if the file does not exist yet, part (2) waits and part (1) can go ahead).
 - Done when: a drafted wording is in the PR body, and the test fails if the wipe skips the moments file.
 - Test: a wipe test next to the existing deletion tests.
 
