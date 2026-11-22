@@ -29,14 +29,30 @@
 name: iOS compile
 
 on:
+  # Batch lane (docs/ops/proposed/ci-speed.md, change 3; CR-175). A pull request starts a macOS run only when it
+  # changes a build path: the same list as NATIVE_PATHS in scripts/agents/merge-queue.mjs, plus this workflow and
+  # its crash-report script. Every other mobile change is launched once per merge into develop. On develop one run
+  # runs and one waits, and a newer waiting run replaces the older, so one run can cover several merges. That
+  # run's red or green opens or closes the `launch-red` issue (job `launch-alert`), and a release candidate tag is
+  # refused unless the newest run on develop is green (release-ios.yml, BL-1480). Neither check here is a required
+  # status check (branch protection requires `required`, `compliance-fence` and `applied migrations unchanged`).
   pull_request:
-    # Every mobile change for `launch` (the app's JavaScript is apps/mobile and the packages it bundles). `compile`
-    # keeps its native-only list through the `changes` job.
-    # Negated patterns drop files that cannot change the launched Release bundle: documentation, tests, the e2e
-    # and web-preview folders, and packages/emails (the app does not import it). A pull request that touches only
-    # these starts no run at all. Neither check here is a required status check (branch protection requires
-    # `required`, `compliance-fence` and `applied migrations unchanged`), so a run that never starts cannot hang
-    # a merge. docs/ops/proposed/ci-speed.md, change 2.
+    paths:
+      - apps/mobile/ios/**
+      - apps/mobile/modules/**
+      - apps/mobile/app.config.*
+      - apps/mobile/eas.json
+      - package-lock.json
+      - apps/mobile/metro.config.js
+      - apps/mobile/store.config.json
+      - apps/mobile/version.json
+      - apps/mobile/src/lib/privacy-manifest.ts
+      - apps/mobile/src/lib/permission-copy.ts
+      - apps/mobile/patches/**
+      - .github/workflows/ios-compile.yml
+      - .github/scripts/sim-crash-report.sh
+  push:
+    branches: [develop]
     paths:
       - apps/mobile/**
       - packages/**
@@ -61,7 +77,7 @@ permissions:
 
 concurrency:
   group: ios-compile-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: '1'
@@ -315,12 +331,12 @@ jobs:
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -uo pipefail
           native=true
-          if [ "$EVENT" = pull_request ] && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
+          if { [ "$EVENT" = pull_request ] || [ "$EVENT" = push ]; } && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
             if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.ts$|apps/mobile/package\.json$|apps/mobile/ios/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
               native=false
             fi
@@ -520,3 +536,77 @@ jobs:
             ${{ runner.temp }}/xcodebuild-release.log
           if-no-files-found: ignore
           retention-days: 14
+
+  # CR-175: the launch check runs on develop once per batch of merges, after the merge, so a red there has to be seen.
+  # Push runs only. A red `launch` opens one `launch-red` issue (or comments on the open one); a green one closes it.
+  # No checkout and no install: the script below is the whole job, run by the image's Node, and the job token holds
+  # issues: write and nothing else. It touches only open `launch-red` issues this job opened (github-actions[bot]),
+  # never a person's issue or a pull request. The text is the run link, the commit and the time: no content.
+  # A cancelled or skipped launch (a newer run replaced it) changes nothing. apps/mobile/test/launch-alert-issue.test.ts
+  # runs this exact script against a stand-in for the GitHub API.
+  launch-alert:
+    name: launch issue (opened on red, closed on green)
+    needs: [launch]
+    if: ${{ !cancelled() && github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the launch-red issue
+        id: launch-issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LAUNCH_RESULT: ${{ needs.launch.result }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node --input-type=module <<'JS'
+          const api = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}`;
+          const BOT = 'github-actions[bot]';
+          async function call(method, path, body, okStatuses = []) {
+            const res = await fetch(api + path, {
+              method,
+              headers: {
+                authorization: `Bearer ${process.env.GH_TOKEN}`,
+                accept: 'application/vnd.github+json',
+                'x-github-api-version': '2022-11-28',
+                'content-type': 'application/json',
+              },
+              body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            if (!res.ok && !okStatuses.includes(res.status)) throw new Error(`${method} ${path.split('?')[0]}: HTTP ${res.status}`);
+            return res.status === 204 || !res.ok ? null : res.json();
+          }
+          const result = process.env.LAUNCH_RESULT;
+          if (result !== 'failure' && result !== 'success') {
+            console.log(`launch result is ${result}: nothing to report`);
+            process.exit(0);
+          }
+          const sha = String(process.env.SHA).slice(0, 9);
+          const when = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+          // Oldest first; only issues this job opened, never a pull request.
+          const listed = await call('GET', '/issues?labels=launch-red&state=open&sort=created&direction=asc&per_page=100');
+          const open = listed.filter((i) => !i.pull_request && i.user?.login === BOT);
+          if (result === 'failure') {
+            const body = `The store-profile Release launch is red on develop at ${sha}, ${when}: ${process.env.RUN_URL}`;
+            if (open.length) {
+              await call('POST', `/issues/${open[0].number}/comments`, { body });
+              console.log(`red: commented on #${open[0].number}`);
+            } else {
+              // 422: the label exists already.
+              await call('POST', '/labels', { name: 'launch-red', color: 'd73a4a', description: 'A red launch check on develop (ios-compile.yml)' }, [422]);
+              const issue = await call('POST', '/issues', { title: 'The store launch check is red on develop', body: `${body}\n\nThe next green launch run on develop closes this issue. A release candidate tag is refused while the newest run is red.`, labels: ['launch-red'] });
+              // A label dropped on create would hide this issue from the next run and open a second one.
+              if (!issue.labels?.some((l) => (l.name ?? l) === 'launch-red')) await call('POST', `/issues/${issue.number}/labels`, { labels: ['launch-red'] });
+              console.log(`red: opened #${issue.number}`);
+            }
+          } else {
+            for (const i of open) {
+              await call('POST', `/issues/${i.number}/comments`, { body: `Green again at ${sha}, ${when}: ${process.env.RUN_URL}` });
+              await call('PATCH', `/issues/${i.number}`, { state: 'closed', state_reason: 'completed' });
+              console.log(`green: closed #${i.number}`);
+            }
+            if (!open.length) console.log('green: no launch-red issue open');
+          }
+          JS
