@@ -55,7 +55,7 @@ export const onboardingStories: readonly StoryCard[] = [
     id: 'story.private.v1',
     order: 4,
     headline: "Private to your family.",
-    line: "Only you and the people you invite can read these letters. We never sell them or use them for ads.",
+    line: "Your letters are yours, and you choose who else can read them. We never sell them and never use them for ads.",
     visual: 'two-hands',
   },
 ];
