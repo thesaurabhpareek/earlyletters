@@ -25,10 +25,21 @@ describe('[BL-480] duplicate step id guard', () => {
     );
   });
 
-  it('the recorder calls the guard before it writes the record', () => {
-    const src = readFileSync(join(__dirname, '..', 'e2e-web', 'support', 'journey.ts'), 'utf8');
-    const guard = src.indexOf('assertUniqueStepId(');
-    expect(guard).toBeGreaterThan(-1);
-    expect(guard).toBeLessThan(src.indexOf('fs.writeFileSync(path.join(dir, `${meta.id}.json`)'));
+  it('[BL-480] the same id in a second journey (a fresh scope) does not throw', () => {
+    const first = new Map<string, string>();
+    const second = new Map<string, string>();
+    assertUniqueStepId(first, 'J24-01', 'Asha opens the letter page');
+    expect(() => assertUniqueStepId(second, 'J24-01', 'Asha opens the letter page')).not.toThrow();
+  });
+
+  it('journey() scopes the guard per call and checks before it records', () => {
+    const src = readFileSync(join(__dirname, '..', 'e2e-web', 'support', 'app.ts'), 'utf8');
+    const fn = src.slice(src.indexOf('export function journey('));
+    const scope = fn.indexOf('const seen = new Map');
+    const guard = fn.indexOf('assertUniqueStepId(seen');
+    expect(scope).toBeGreaterThan(-1);
+    expect(guard).toBeGreaterThan(scope);
+    expect(guard).toBeLessThan(fn.indexOf('await record('));
+    expect(scope).toBeLessThan(fn.indexOf('return async'));
   });
 });

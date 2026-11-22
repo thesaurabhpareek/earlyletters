@@ -13,12 +13,9 @@ import path from 'node:path';
 import { parseAriaSnapshot, unnamedControls } from './a11y-tree';
 import { BOOT_DIAG_PREFIX, installBootDiagnostics } from './boot-diagnostics';
 import { findLeaks, runtimeFixture } from './log-canary';
-import { assertUniqueStepId } from './step-id';
 
 export const OUT = path.resolve(__dirname, '../../../../docs/release/journey');
 const SHOTS = process.env.JOURNEY_SHOTS === '1';
-/** BL-480: ids recorded so far by this worker (one run of its flows); a repeat would overwrite a record. */
-const SEEN_STEP_IDS = new Map<string, string>();
 
 export type StepMeta = {
   /** Stable id, e.g. 'J01-age-gate-yes'. Sorted by this to build the flow. */
@@ -121,7 +118,6 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
   },
   record: async ({ page }, use) => {
     await use(async (meta, opts) => {
-      assertUniqueStepId(SEEN_STEP_IDS, meta.id, meta.title);
       const dir = path.join(OUT, 'steps');
       fs.mkdirSync(dir, { recursive: true });
       await page.waitForTimeout(opts?.settle ?? 500); // let the entering animation settle

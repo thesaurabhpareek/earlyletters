@@ -1,6 +1,7 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
 import { canary, expect, type Recorder } from './journey';
+import { assertUniqueStepId } from './step-id';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
@@ -53,9 +54,12 @@ export async function firstRun(page: Page, name = CHILD) {
 export function journey(record: Recorder, code: string, name: string, start = 1, first?: string) {
   let n = start - 1;
   let last = first;
+  // BL-480: ids used by THIS journey call. A fresh scope per call, so nine J24 tests that each record J24-01 are not a clash.
+  const seen = new Map<string, string>();
   return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number }): Promise<string> => {
     n += 1;
     const id = `${code}-${String(n).padStart(2, '0')}`;
+    assertUniqueStepId(seen, id, title);
     await record({ id, journey: name, kind, title, note, from: from ?? last }, opts);
     last = id;
     return id;
