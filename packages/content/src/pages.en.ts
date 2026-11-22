@@ -149,7 +149,7 @@ export const pages = {
       {
         heading: "Said once. Heard for years.",
         paragraphs: [
-          "Talk to {child} today, in your own words and your own voice. One day {child} can read it, and hear how you sounded.",
+          "Talk to {child} today, in your own words and your own voice. One day {child} can read these words and hear how you sounded.",
         ],
       },
     ],
