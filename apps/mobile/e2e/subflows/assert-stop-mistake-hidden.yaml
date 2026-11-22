@@ -1,0 +1,14 @@
+# The 24-hour stop screen before the day has passed: "I answered by mistake" is mounted at opacity 0, out of the
+# accessibility tree and with touches off (BL-420), so it must not be seen and must do nothing when tapped.
+# The tap is optional (Maestro may not find a hidden node); the checks after it are what must hold.
+appId: ${APP_ID}
+---
+- assertNotVisible:
+    id: "gate.stop.mistake"
+- tapOn:
+    id: "gate.stop.mistake"
+    optional: true
+- assertVisible:
+    id: "gate.stop"
+- assertNotVisible:
+    id: "gate.screen"
