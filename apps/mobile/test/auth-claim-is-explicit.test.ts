@@ -10,9 +10,14 @@
  * assertion that needs the source text (who may call confirmAccountClaim, and
  * from where) is marked SOURCE; it is what turns a planted automatic claim red.
  *
+ * Covers (BL-1532, after B6a #1529): the explicit choice in the auth store, the owner-already-set case, and the
+ * call graph of the claim: keepLettersHere -> adoptDeviceOnlyLocal (local-claim.ts) -> confirmAccountClaim only after
+ * adopt resolves true, adoptLocal only from local-claim.ts, takeOwnership only from the sync wiring.
+ *
  * NOT covered (do not read this as the whole guarantee): an app restart with a session already stored (the
  * RESTORED path with consent done), native Apple and Google callbacks reaching the provider, and the rendered
- * provider and claim sheet (only their source is checked). Those need device or e2e tests.
+ * provider and claim sheet (only their source is checked), names built at run time (computed strings), and code
+ * outside apps/mobile/src. Those need device or e2e tests.
  *
  * Fictional family "Asha" only; the accounts are ids, never people.
  */
@@ -127,7 +132,9 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
     vi.resetModules();
     const store: Store = await import('../src/lib/auth/auth-store');
     const adopted: string[] = [];
+    const fired: string[] = [];
     store.onSignedIn((userId) => {
+      fired.push(userId);
       try {
         takeOwnership(db, userId, ctx);
         adopted.push(userId);
@@ -142,6 +149,7 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
       store.publishAuth(state);
     }
     store.confirmAccountClaim('0192f0aa-0000-7000-8000-0000000000d4'); // a tap for any other id does nothing
+    expect(fired).toEqual([PARENT]); // B's session was released and the engine tried: the refusal is real, not a silent no-show
     expect(adopted).toEqual([]);
     expect(owner(db)).toBe(A);
     expect(pendingCount(db)).toBe(queued);
@@ -155,7 +163,7 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
       for (const name of readdirSync(dir)) {
         const p = join(dir, name);
         if (statSync(p).isDirectory()) walk(p);
-        else if (/\.(ts|tsx)$/.test(name)) files.push(p);
+        else if (/\.(ts|tsx|js|jsx|mjs|cjs)$/.test(name)) files.push(p);
       }
     };
     walk(src);
@@ -173,13 +181,31 @@ describe('[BL-1532] a pending claim becomes a claim only when the person chooses
     };
     const provider = join('lib', 'auth', 'session-provider.tsx');
     const consent = join('app', '(auth)', 'sign-in', 'consent.tsx');
-    // (c) confirmAccountClaim: the provider's import and its one call, nothing else, in any form.
+    // (c) confirmAccountClaim: the provider's import and its one call, nothing else, in any form (string names included).
     expect(refs('confirmAccountClaim', [join('lib', 'auth', 'auth-store.ts')])).toEqual({ [provider]: 2 });
+    expect(refs('confirmAccountClaim')[join('lib', 'auth', 'auth-store.ts')]).toBe(1); // auth-store only defines it
+    expect(refs('takeOwnership')[join('lib', 'auth', 'auth-store.ts')]).toBeUndefined();
     const providerCode = code(join(src, provider));
-    const handler = providerCode.match(/keepLettersHere\(\) \{([\s\S]*?)\n {6}\},/);
-    expect(handler).not.toBeNull();
-    expect(handler![1]).toMatch(/confirmAccountClaim\(/);
-    expect(providerCode.replace(handler![0], '')).not.toMatch(/confirmAccountClaim\b(?!,)/);
+    // The body of keepLettersHere() found by matching braces, so indentation does not matter.
+    const open = providerCode.search(/keepLettersHere\(\)\s*\{/);
+    expect(open).toBeGreaterThan(-1);
+    let depth = 0;
+    let end = providerCode.indexOf('{', open);
+    for (let i = end; i < providerCode.length; i++) {
+      if (providerCode[i] === '{') depth++;
+      if (providerCode[i] === '}' && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    const handlerText = providerCode.slice(open, end + 1);
+    // Claim only after adopt resolves true: confirm sits in the .then of adoptDeviceOnlyLocal, guarded by its result.
+    expect(handlerText).toMatch(/adoptDeviceOnlyLocal\([^)]*\)\s*\.then\(\s*\(?(\w+)\)?\s*=>\s*\1\s*&&\s*confirmAccountClaim\(/);
+    expect(providerCode.replace(handlerText, '')).not.toMatch(/confirmAccountClaim\b(?!,)/);
+    // adoptDeviceOnlyLocal is used only by that handler (import + one call); adoptLocal only by local-claim.ts, on the two device-only stores.
+    expect(refs('adoptDeviceOnlyLocal', [join('lib', 'auth', 'local-claim.ts')])).toEqual({ [provider]: 2 });
+    expect(handlerText).toMatch(/adoptDeviceOnlyLocal\(/);
+    expect(refs('adoptLocal')).toEqual({ [join('lib', 'auth', 'local-claim.ts')]: 2, [join('lib', 'days', 'index.ts')]: 1, [join('lib', 'moments', 'store.ts')]: 1 });
     // (a) keepLettersHere: the interface line and the handler in the provider, one use in the claim sheet; no effect, alias or pass-through.
     expect(refs('keepLettersHere')).toEqual({ [provider]: 2, [consent]: 1 });
     expect(code(join(src, consent))).toMatch(/onPress=\{\(\) => \{\s*haptic\('tap'\);\s*auth\.keepLettersHere\(\);\s*\}\}/);
