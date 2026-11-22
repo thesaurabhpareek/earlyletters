@@ -256,7 +256,7 @@ describe('decide(): properties over every combination', () => {
 
   it('never offers Plus where it is already on (R-3)', () => {
     for (const i of all) {
-      const on = planActive(i.viewer.own, i.now) && i.viewer.roleInBook === 'parent';
+      const on = planActive(i.viewer.own, i.now) && (i.viewer.roleInBook === 'parent' || i.viewer.roleInBook === null);
       if (on) expect(decide(i).kind).toBe('allow');
     }
   });

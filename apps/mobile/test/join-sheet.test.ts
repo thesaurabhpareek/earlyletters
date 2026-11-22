@@ -246,11 +246,11 @@ describe('[S59] failures are said plainly, and the person can always go on', () 
     expect(sheet).not.toMatch(/invite-redeem|functions\/v1|normaliseInviteCode|isInviteCode/);
   });
 
-  it('a server that does not answer (a 503, no SQLSTATE) is not final: "That did not go through. Try again." and the link is kept', () => {
+  it('a server that does not answer (a 503, no SQLSTATE) is not final: the line says Try again and the link is kept', () => {
     const unavailable = { message: 'Service Unavailable', code: '', details: null, hint: null, status: 503 };
     expect(inviteErrorKind(unavailable)).toBe('unknown');
     expect(FINAL_INVITE_ERRORS).not.toContain('unknown');
-    expect(joinFailure('unknown')).toEqual({ line: 'That did not go through. Try again.', action: 'tryAgain' });
+    expect(joinFailure('unknown')).toEqual({ line: "That didn't go through. Try again.", action: 'tryAgain' });
     expect(joinPlan({ ...BASE, signedIn: true, error: 'unknown' })).toEqual({ view: 'failed', next: 'none' });
   });
 
@@ -258,7 +258,7 @@ describe('[S59] failures are said plainly, and the person can always go on', () 
     expect(joinFailure('network')).toEqual({ line: 'This phone is offline. Try again once it is back online.', action: 'tryAgain' });
     expect(joinFailure('paused').action).toBe('tryAgain');
     for (const k of ['expired', 'used', 'revoked', 'not_found', 'already_member', 'book_full'] as const) expect(joinFailure(k).action, k).toBe('pasteAnother');
-    expect(joinFailure('not_found').line).toBe('That link does not open an invite. Check it and try again.');
+    expect(joinFailure('not_found').line).toBe("That link doesn't open an invite. Check it and try again.");
     expect(joinFailure('consent_needed').line).toBe('To join, choose Agree and sync in Settings, Account.');
     expect(code(SHEET)).toMatch(/failure\.action === 'pasteAnother' \? \(\s*<QuietButton label=\{a\.pasteAnother\} onPress=\{pasteAnother\} \/>/);
   });

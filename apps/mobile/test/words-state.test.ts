@@ -170,7 +170,7 @@ describe('S15: the language is not on this phone yet', () => {
   it('yes given: "Your voice is kept", the real cause, the status line, Keep the recording first', () => {
     const c = card(EVERY.downloading);
     expect(c).toMatchObject({ state: 'downloading', title: en.review.waiting.title, body: en.review.waiting.body, primary: 'keep', quiet: 'type', still: true });
-    expect(c.body).toBe('Your words follow once the download is done.');
+    expect(c.body).toBe('Your words will appear once the download finishes.');
     expect(c.note).toBe('Getting ready, 40%');
     expect(c.bar).toBe(0.4);
   });

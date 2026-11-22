@@ -13,7 +13,9 @@
 import { serverFeaturesEnabled } from '../capabilities';
 import { secureStorage } from '../supabase/secure-storage';
 import { decodePendingRequest, encodePendingRequest, type PendingEmailRequest } from './email-link.logic';
-import type { EmailLinkType } from './links.logic';
+import { setPendingEmail } from './pending-memory';
+
+export { clearWrongCodes, getPendingEmail, noteWrongCode, setPendingAuthLink, setPendingEmail, takePendingAuthLink, wrongCodeTimes } from './pending-memory';
 
 export const PENDING_REQUEST_KEY = 'scribe.auth.pendingEmailRequest';
 
@@ -53,7 +55,7 @@ export async function sessionSavedOnPhone(sessionKey: string): Promise<boolean> 
  * sign-in, or a sign-out, the next sign-in starts with an empty field (S01).
  */
 export async function clearPendingEmailRequest(): Promise<void> {
-  pendingEmail = null;
+  setPendingEmail(null);
   if (!serverFeaturesEnabled()) return;
   await secureStorage.removeItem(PENDING_REQUEST_KEY).catch(() => {});
 }
@@ -66,30 +68,7 @@ export function asSignInTrigger(v: unknown): SignInTrigger {
   return typeof v === 'string' && (TRIGGERS as readonly string[]).includes(v) ? (v as SignInTrigger) : 'settings';
 }
 
-let pendingLink: { tokenHash: string; type: EmailLinkType } | null = null;
-let pendingEmail: string | null = null;
 let trigger: SignInTrigger = 'settings';
-const wrongCodes = new Map<string, number[]>();
-
-/** Called by +native-intent for an https sign-in link. */
-export function setPendingAuthLink(link: { tokenHash: string; type: EmailLinkType }): void {
-  pendingLink = link;
-}
-
-/** Read once by /verify; a second read gets null. */
-export function takePendingAuthLink(): { tokenHash: string; type: EmailLinkType } | null {
-  const l = pendingLink;
-  pendingLink = null;
-  return l;
-}
-
-export function setPendingEmail(email: string | null): void {
-  pendingEmail = email;
-}
-
-export function getPendingEmail(): string | null {
-  return pendingEmail;
-}
 
 export function setSignInTrigger(t: SignInTrigger): void {
   trigger = t;
@@ -97,18 +76,4 @@ export function setSignInTrigger(t: SignInTrigger): void {
 
 export function getSignInTrigger(): SignInTrigger {
   return trigger;
-}
-
-/** Wrong-code times per address, for the client pause (errors.logic codeEntryPause). Memory only. */
-export function wrongCodeTimes(email: string): number[] {
-  return wrongCodes.get(email.trim().toLowerCase()) ?? [];
-}
-
-export function noteWrongCode(email: string, at: number): void {
-  const k = email.trim().toLowerCase();
-  wrongCodes.set(k, [...(wrongCodes.get(k) ?? []), at].slice(-10));
-}
-
-export function clearWrongCodes(email: string): void {
-  wrongCodes.delete(email.trim().toLowerCase());
 }

@@ -169,6 +169,7 @@ export function createUploadQueue(d: QueueDeps) {
     const job = d.db.job(entryId);
     if (job) {
       discardTmp(job);
+      dropToken(entryId); // BL-1439: the upload token goes with the job (failure-tolerant, like the other sites)
       d.db.deleteJob(entryId);
     }
     return true;
@@ -509,6 +510,7 @@ export function createUploadQueue(d: QueueDeps) {
       for (const j of d.db.jobs()) {
         if (seen.has(j.entryId)) continue;
         discardTmp(j);
+        dropToken(j.entryId); // BL-1439
         d.db.deleteJob(j.entryId);
       }
       onServer = next;
