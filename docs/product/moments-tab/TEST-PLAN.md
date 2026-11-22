@@ -137,7 +137,7 @@ Also in PR 6: the `moments/pick` route is one row in `ROUTES` with a modal prese
 
 All report mode first: they print, they do not fail, until the founder decides to gate (TDD 07 question 8). I propose them; I have not changed `.github/workflows/`, which the Claude GitHub App cannot edit, so any CI step is a patch under `docs/ops/proposed/` for the founder to paste. I have not written those patches in this PR.
 
-1. NS-53 row to PR to test report. `scripts/trace.mjs` already lists the 203 P0 rows as untested. Add a PR-home column read from spec 26b (the logic is in `docs/product/moments-tab/row-homes.mjs`), so each Moments PR can print "rows owed by this PR: n, with a test: m". Owner `qa` (BL-002 follow-up).
+1. NS-53 row to PR to test report. `scripts/trace.mjs` already lists the open P0 rows as untested. Add a PR-home column read from spec 26b (the logic is in `docs/product/moments-tab/row-homes.mjs`), so each Moments PR can print "rows owed by this PR: n, with a test: m". Owner `qa` (BL-002 follow-up).
 2. Owed-by-this-PR check on every Moments PR: the PR body lists its row ids (19.4 says each PR carries them); the report prints any row id in the body with no matching bracketed test title and no device or paper tag. Report only.
 3. A scan for an `NS-53-R<n>` in a test title that the spec does not define (typos), matching what `trace.mjs` does for the other cards.
 4. A PR-size report line for Moments PRs. The 19.4 sizes are ASSUMED and 9, 10 and 18b-1a hit the 20-file limit first; report the measured size against the table so the assumption is replaced by a number. `docs/ops/proposed/pr-size.md` already exists for the gate.
