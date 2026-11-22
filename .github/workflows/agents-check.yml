@@ -22,7 +22,7 @@ permissions:
 
 # A newer head of the same pull request cancels the older run (not a required check). Push runs are never cancelled.
 concurrency:
-  group: agents-check-${{ github.event.pull_request.number || github.ref }}
+  group: agents-check-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
