@@ -99,8 +99,9 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
       if (!p) return;
       const r = readMoments(p, owner);
       if (r.state === 'foreign' && r.owner !== 'local') {
-        removeMoments(p);
+        const gone = removeMoments(p);
         tell();
+        if (!gone) throw new MomentsStoreError(); // a foreign file stays: the caller can report the code; the next launch retries
         return;
       }
       if (r.state !== 'ok' || !liveBooks) return; // a kept 'local' file reads foreign here: left alone
@@ -152,6 +153,12 @@ export const momentsStore = createMomentsStore(() => (real ??= expoMomentsPort()
 
 /** Sign-out on any path, or another account signing in. Synchronous, never throws. A 'local' file stays. */
 export const endMomentsSession = (): boolean => momentsStore.clearNow(true);
+
+/**
+ * Turn off (R246 item 2, R115): every field of the file goes now, before any await, a 'local' file too (Turn off keeps
+ * nothing, unlike sign-out). False when the file would not go. The Me control that calls this is a later PR.
+ */
+export const turnOffMoments = (): boolean => momentsStore.clearNow();
 
 /** CODE-R15: callers branch on `code`, never on the message. */
 export class MomentsStoreError extends Error {

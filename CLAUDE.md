@@ -60,7 +60,7 @@ Before you write or change any customer-facing line, read `packages/content/WRIT
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
 - Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
 - Approval: Karma (the CTO role) approves and merges every PR into `develop` once two counted reviews and the required checks hold (CR-70, CR-73). Do not ask the founder to approve, comment on or paste anything for a PR. What stays his is the list in CR-73 (money, accounts and secrets, hosted migrations, store builds and submission, what users are promised, scope and dates, one-way doors, legal text, `docs/DECISIONS.md` entries that are not his recorded words, and this constitution).
-- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+- Unattended harness agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`. That limit is theirs only. Merging into `develop` is Karma's (the approval rule above), done by an interactive session once the gates hold; no session waits for the founder to say "merge" or to name a PR or a sha.
 
 ## Saving work (every session, human or AI)
 - A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.

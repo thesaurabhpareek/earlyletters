@@ -40,7 +40,7 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { createMomentsStore, momentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError } = await import('../src/lib/moments/store');
+const { createMomentsStore, momentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError, turnOffMoments } = await import('../src/lib/moments/store');
 const { parseMoments, serializeMoments, emptyMoments } = await import('../src/lib/moments/store.logic');
 const { expoMomentsPort, readMoments, writeMoments, removeMoments, MOMENTS_FILE, MOMENTS_TMP } = await import('../src/lib/moments/store-file');
 
@@ -272,6 +272,34 @@ describe('[CDO-23] launch cleanup removes rows for a book the phone no longer li
     seed(JSON.stringify(file()));
     await fresh().cleanupAtLaunch(null);
     expect(onDisk().homePlace).toEqual({ [BOOK]: 'ext:place-2' });
+  });
+
+  it('[BL-1541] a foreign file that will not go makes the cleanup reject with the typed code, and the file stays for the next launch', async () => {
+    seed(JSON.stringify(file(B)));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    const s = fresh(A);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toThrow(MomentsStoreError);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toMatchObject({ code: 'moments_file_not_removed' });
+    expect(names()).toContain(MOMENTS_FILE); // positive control: it is still there
+    h.disk.undeletable.clear();
+    await fresh(A).cleanupAtLaunch([BOOK]); // the next launch removes it
+    expect(names()).toEqual([]);
+  });
+
+  it('[BL-1541] a kept local file that cannot be removed is not an error: it is left alone', async () => {
+    seed(JSON.stringify(file('local')));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    await expect(fresh(A).cleanupAtLaunch([BOOK])).resolves.toBeUndefined();
+  });
+});
+
+describe('[BL-1541] Turn off wipes the file (R246 item 2)', () => {
+  it('turnOffMoments deletes the file, a local one too, and temp, and says true', () => {
+    for (const o of [A, 'local']) {
+      seed(JSON.stringify(file(o)));
+      expect(turnOffMoments()).toBe(true);
+      expect(names()).toEqual([]);
+    }
   });
 });
 

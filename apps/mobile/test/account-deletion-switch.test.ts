@@ -24,12 +24,13 @@
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { execFile } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BUILDS, buildEnv as webBuildEnv } from '../e2e-web/support/builds';
 import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
-import { envFileLines, envFileProblems } from '../scripts/env-file-guard.mjs';
+import { envFileLines, envFileProblems, envFileProblemsAt } from '../scripts/env-file-guard.mjs';
 
 const APP = join(__dirname, '..');
 const SRC = join(APP, 'src');
@@ -293,11 +294,30 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
     expect(envFileProblems('.env', `export ${VAR}=on\n`)).toEqual(['.env: <unparsable line 1>']);
   });
 
+  it('[BL-1405] a value with "#" in it is a problem line like any other; only a line that starts with "#" is a comment', () => {
+    expect(envFileProblems('.env', 'SUPABASE_SERVICE_ROLE_KEY=abc#def\n')).toEqual(['.env: <unparsable line 1>']);
+    expect(envFileProblems('.env', `${VAR}=abc#def\n`)).toEqual([`.env: ${VAR}`]);
+    expect(envFileProblems('.env', '  # a note\n#KEY=1\n')).toEqual([]);
+  });
+
+  it('[BL-1405] a file that cannot be read is a problem, never an empty list, and the error text is not printed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bl1405-'));
+    try {
+      mkdirSync(join(dir, '.env.local'));
+      expect(envFileProblemsAt(dir, '.env.local')).toEqual(['.env.local: <unreadable>']);
+      expect(envFileProblemsAt(dir, '.env.missing')).toEqual(['.env.missing: <unreadable>']);
+      writeFileSync(join(dir, '.env'), `${VAR}=on\n`);
+      expect(envFileProblemsAt(dir, '.env')).toEqual([`.env: ${VAR}`]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
     const pre = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
-    expect(pre).toMatch(/import \{ envFileProblems \} from '\.\/env-file-guard\.mjs';/);
+    expect(pre).toMatch(/import \{ envFileProblemsAt \} from '\.\/env-file-guard\.mjs';/);
     expect(pre).toMatch(/const envFiles = readdirSync\(MOBILE\)\.filter\(\(f\) => f\.startsWith\('\.env'\)\);/);
-    expect(pre).toMatch(/const bad = envFiles\.flatMap\(\(f\) => envFileProblems\(f, read\(join\(MOBILE, f\)\)\)\);/);
+    expect(pre).toMatch(/const bad = envFiles\.flatMap\(\(f\) => envFileProblemsAt\(MOBILE, f\)\);/);
     expect(pre).toMatch(/check\(bad\.length === 0, /);
     expect(pre).toMatch(/EXPO_PUBLIC_ACCOUNT_DELETION is never set in a \.env file/);
     // The guard module allows nothing for the variable, in any spelling of the allow list.
