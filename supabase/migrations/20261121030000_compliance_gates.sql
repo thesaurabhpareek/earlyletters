@@ -75,23 +75,26 @@ create table if not exists ops.restricted_jurisdictions (
 comment on table ops.restricted_jurisdictions is
   'Places sign-up is refused from (Terms 2.4, register CR-121, CTO ruling CR-26). Status changes need a founder decision.';
 
+-- Every legal characterisation and source_url below is UNVERIFIED: counsel must confirm. The founder decision D-131 is
+-- the authority for the block; the program names and landing-page URLs are engineering readings, not read at the
+-- regulation itself in this PR (primary sites not reachable from the session on 22 Nov 2026).
 insert into ops.restricted_jurisdictions (code, name, program, scope, status, decided_by, source_url, checked_on, note) values
   ('KP', 'North Korea', 'North Korea Sanctions Regulations, 31 CFR 510', 'country', 'block', 'D-131',
-   'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', null),
+   'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'UNVERIFIED: counsel must confirm program and source'),
   ('IR', 'Iran', 'Iranian Transactions and Sanctions Regulations, 31 CFR 560', 'country', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
-   'Founder decision D-131: blocked regardless of GL D-2'),
+   'Founder decision D-131: blocked regardless of GL D-2 (UNVERIFIED: counsel must confirm what GL D-2 allows)'),
   ('CU', 'Cuba', 'Cuban Assets Control Regulations, 31 CFR 515', 'country', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
-   'Founder decision D-131: blocked regardless of 31 CFR 515.578'),
+   'Founder decision D-131: blocked regardless of 31 CFR 515.578 (UNVERIFIED: counsel must confirm what it allows)'),
   ('SY', 'Syria', 'EAR 15 CFR 746.9; Country Group E:1', 'country', 'block', 'D-131',
    'https://www.ecfr.gov/current/title-15/section-746.9', '2026-10-31',
-   'OFAC countrywide program ended 2025, but the EAR still needs a licence for our encrypted software'),
+   'UNVERIFIED: counsel must confirm. Reading: OFAC countrywide program ended 2025, but the EAR still needs a licence for our encrypted software'),
   ('RU', 'Russia', 'EAR 15 CFR 746.8; EO 14071', 'country', 'block', 'D-131',
    'https://www.ecfr.gov/current/title-15/section-746.8', '2026-10-31',
-   'Lean to block: License Exception CCD may apply but needs end-user screening we do not do'),
+   'UNVERIFIED: counsel must confirm. Reading: lean to block; License Exception CCD may apply but needs end-user screening we do not do'),
   ('BY', 'Belarus', 'EAR 15 CFR 746.8', 'country', 'block', 'D-131',
-   'https://www.ecfr.gov/current/title-15/section-746.8', '2026-10-31', 'As Russia'),
+   'https://www.ecfr.gov/current/title-15/section-746.8', '2026-10-31', 'As Russia (UNVERIFIED: counsel must confirm)'),
   ('UA-43', 'Crimea', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
   ('UA-40', 'Sevastopol', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'D-131',

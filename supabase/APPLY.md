@@ -1290,7 +1290,7 @@ What it changes: three service-only tables in schema `ops` (`account_sessions_se
 **Before the hook is turned on (CCO conditions, CR-27 review):**
 - An ops alert on the `geo_stale`, `geo_unknown` and `error` counts exists (not built yet).
 - Step 4 below is verified on a local stack, so we know whether `block` counts survive a refused sign-up.
-- `legal` has drafted, and the founder has approved, the Privacy Policy disclosure that the sign-up IP is used to work out a country. Today the policy says we do not collect location.
+- Privacy Policy 3.0.0 (`docs/legal/privacy-policy.md`, sections 2, 5 and 12) already discloses that the sign-up IP is used to work out a country and is not kept for it; the part about it takes effect when the check ships. Before the hook is on: the founder has approved 3.0.0 and its effective date is set (it reads TBD), and the policy's "we do not keep the IP address" wording is checked against the unverified Supabase Auth audit log point below (`legal`).
 - DATA_CLASSIFICATION rows exist for the five new tables, and the retention schedule lists two years for the counts (`legal` and `compliance-engineer`).
 - The refusal screen links to https://db-ip.com (DB-IP's CC BY 4.0 attribution).
 - BL-553: the app handles the 403 refusal (mobile, with copy from content; CCO review).
@@ -1315,3 +1315,8 @@ select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_cr
 ```
 
 **Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.
+
+
+## File 40: value-free validation triggers on the content tables (BL-244, API-R10, TDD 06 C-2, data-architect)
+
+`20261121040000_value_free_validation_triggers.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 39 (#1448, 20261121030000), which sorts before it. Adds four BEFORE INSERT OR UPDATE row triggers (`entries_validate_limits`, `held_drafts_validate_limits`, `children_validate_limits`, `dictionary_terms_validate_limits`) that test the same length and size limits as the existing CHECKs and raise 23514 with a fixed message (table and rule, no value, no DETAIL), so the CHECK never gets to echo the row. No table, column, CHECK or table grant changes; the four trigger functions are executable by no API role. **Check [U] (hosted, founder):** `select count(*) from pg_trigger where tgname like '%\_validate\_limits' and not tgisinternal;` is 4. **Rollback:** drop the four triggers and four functions.

@@ -53,7 +53,19 @@ check('no address text in the counts', !/192\.0\.2|2001:db8|198\.51/.test(dump))
 
 // 3. Region rows never block at the hook (country data cannot resolve them).
 await sys(`insert into ops.geo_ip_ranges values ('100.64.0.0', '100.64.0.255', 'UA')`);
-check('UA address: allowed (region rows are web-page only)', isAllow(await hook('100.64.0.5')));
+check('UA address: allowed (no country row for UA)', isAllow(await hook('100.64.0.5')));
+// The table CHECK keeps a region row from sharing a code with a country, so on real data the hook's
+// scope = 'country' test is a second wall. Prove the hook alone: drop the CHECK in this throwaway database,
+// add a block row coded 'UA' with scope 'region' (a code the hook's lookup does match), expect allow, restore.
+const scopeCheck = (await sys(`select conname from pg_constraint where conrelid = 'ops.restricted_jurisdictions'::regclass
+  and contype = 'c' and pg_get_constraintdef(oid) like '%scope%' and pg_get_constraintdef(oid) like '%code%~%'`)).rows[0].conname;
+const scopeCheckDef = (await sys(`select pg_get_constraintdef(oid) d from pg_constraint where conname = $1`, [scopeCheck])).rows[0].d;
+await sys(`alter table ops.restricted_jurisdictions drop constraint "${scopeCheck}"`);
+await sys(`insert into ops.restricted_jurisdictions (code, name, program, scope, status, decided_by, source_url, checked_on, note)
+  values ('UA', 'test region row', 'test', 'region', 'block', 'test', 'https://example.invalid', current_date, 'test fixture')`);
+check('a region-scoped row whose code matches the looked-up country never blocks', isAllow(await hook('100.64.0.6')));
+await sys(`delete from ops.restricted_jurisdictions where code = 'UA'`);
+await sys(`alter table ops.restricted_jurisdictions add ${scopeCheckDef}`);
 
 // 4. Allowing a country is data, not code.
 await sys(`update ops.restricted_jurisdictions set status = 'allow' where code = 'IR'`);

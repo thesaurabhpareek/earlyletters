@@ -50,7 +50,7 @@ A new sign-up path (a new identity provider, the web contribution page, an invit
 
 ## 4. Verifying a legal or platform fact
 
-The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 2026 sanctions blog said Syria was still comprehensively sanctioned; it was terminated by Executive Order 14312 on 30 June 2025, and OFAC removed 31 CFR part 542 in August 2025. Even so, Syria stays blocked: the export rules (EAR 746.9, Country Group E:1) still apply (D-131).
+The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 2026 sanctions blog said Syria was still comprehensively sanctioned; it was terminated by Executive Order 14312 on 30 June 2025, and OFAC removed 31 CFR part 542 in August 2025 (UNVERIFIED: counsel must confirm; these two dates come from secondary sources, and the primary pages at federalregister.gov and ofac.treasury.gov could not be reached on 22 Nov 2026). Even so, Syria stays blocked: the export rules (EAR 746.9, Country Group E:1) still apply (D-131).
 
 - Prefer primary sources: the statute or regulation, the regulator's site (ftc.gov, ofac.treasury.gov, federalregister.gov, oag.ca.gov, cppa.ca.gov, capitol.texas.gov), Apple's App Review Guidelines and developer docs.
 - Secondary sources (law firm alerts, trackers) are fine for dates and status, labelled as secondary.
