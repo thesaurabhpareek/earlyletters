@@ -143,6 +143,8 @@ const EVERY: Leaf[] = [...ALL, ...EMAIL, ...APP_COPY];
 const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
+/** The leaf lists the [BRAND-MOMENTS-2] scan reads; its self-check reads this same constant. */
+const BRAND_MOMENTS_SCAN_SOURCES: Leaf[][] = [STORE, SITE, PAGES];
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
 describe('characters', () => {
@@ -1048,13 +1050,15 @@ describe('glossary (BRAND.md)', () => {
   });
 
   it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
-    expect(offenders([...STORE, ...SITE, ...PAGES], /\bmoments\b/i)).toEqual([]);
+    expect(offenders(BRAND_MOMENTS_SCAN_SOURCES.flat(), /\bmoments\b/i)).toEqual([]);
   });
 
   it('[BRAND-MOMENTS-2] the scan reaches the pages leaves: a pages line that says Moments is an offender', () => {
     expect(PAGES.length).toBeGreaterThan(0);
+    // Derived from the same constant the scan uses: dropping PAGES there turns this red.
+    expect(BRAND_MOMENTS_SCAN_SOURCES).toContain(PAGES);
     const fixture: Leaf = { path: 'pages.fixture.line', text: 'Moments, a place for your photos.' };
-    expect(offenders([...STORE, ...SITE, ...PAGES, fixture], /\bmoments\b/i)).toEqual([`pages.fixture.line: ${fixture.text}`]);
+    expect(offenders([...BRAND_MOMENTS_SCAN_SOURCES.flat(), fixture], /\bmoments\b/i)).toEqual([`pages.fixture.line: ${fixture.text}`]);
   });
 
   it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
