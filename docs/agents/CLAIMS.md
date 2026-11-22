@@ -10,4 +10,3 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
-| content-guide-v1-3 | content | docs/content-guide-v1.3 | 1318 | `packages/content/WRITING-GUIDE.md`, `packages/content/VOICE.md` | 2026-11-21T16:50Z | 2026-11-24T16:50Z | draft PR; REST open check 16:50Z; rows for merged 836, 1215, 1251, 1285, 1308 retired; merge with develop re-read 4b8b467 |

@@ -72,7 +72,7 @@ import {
   type Entry,
   type OccurredPrecision,
 } from '@/lib/store';
-import { useReducedMotion } from '@/lib/motion';
+import { useMotion, useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
 import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
@@ -458,11 +458,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 {provenanceLine}
               </Text>
             </View>
-            {!entry.inBook && (
-              <View className="flex-row pt-1">
-                <PrivateChip color={c.text} />
-              </View>
-            )}
+            <PrivateChipSlot shown={!entry.inBook} color={c.text} />
             {canShowOriginal && (
               <Button
                 variant="quiet"
@@ -526,6 +522,29 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
 
       <ReadingSizeSheet visible={sizeOpen} value={size} onChange={onSize} onClose={() => setSizeOpen(false)} />
     </View>
+  );
+}
+
+/**
+ * The Private chip's row, always laid out so Make private and Move to the book push nothing (BL-420, about 20 pt). The
+ * chip fades on `fade`, which is 200 ms and is also the Reduce Motion form; hidden from VoiceOver while it is not shown.
+ */
+function PrivateChipSlot({ shown, color }: { shown: boolean; color: string }) {
+  const motion = useMotion();
+  const opacity = useSharedValue(shown ? 1 : 0);
+  useEffect(() => {
+    opacity.value = motion.fade(shown ? 1 : 0);
+  }, [shown, motion, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      className="flex-row pt-1"
+      style={style}
+      pointerEvents="none"
+      accessibilityElementsHidden={!shown}
+      importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}>
+      <PrivateChip color={color} />
+    </Animated.View>
   );
 }
 

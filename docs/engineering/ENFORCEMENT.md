@@ -38,7 +38,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | API-R07 | MUST | idempotency key store | not yet | API-G2 |
 | API-R08 | MUST | device outbox with retry classes | not yet | MOB-02 (WS-09) |
 | API-R09 | MUST | split codes; typed registry plus unregistered-errcode test | split pending PR #32; registry test not yet | DB-09, API-G5 |
-| API-R10 | MUST NOT | value-free validation triggers | not yet | BL-244 |
+| API-R10 | MUST NOT | value-free validation triggers | `supabase/tests/value_free_validation.test.mjs` (VF-1 to VF-12); length limits #1453, children NOT NULL and shape CHECKs BL-1499 (the other NOT NULL, foreign key and enum paths are shown unreachable, VF-9 to VF-11) | BL-244, BL-1499 |
 | API-R11 | MUST | review; previous-release contract test | review only; test not yet | API-G3 |
 | API-R12 | MUST | build headers; `min_supported_build` refusal code | not yet | PDATA-08 (BL-022) |
 | API-R14 | MUST | request id header end to end | not yet | OBS-G1 |
