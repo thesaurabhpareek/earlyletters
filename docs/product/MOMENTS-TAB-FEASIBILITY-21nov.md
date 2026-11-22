@@ -193,11 +193,13 @@ Whichever option: the first-run guard must run on the landing tab too, or a new 
 
 The tab bar was a single declared set with its comment "the bar is the same three items whatever the build" [R (tabs)/_layout.tsx]; Update 22 Nov: the comment (`_layout.tsx:34`) remains but is now false beside line 86; it holds only for the visible bar with the flag off, because the fourth route is declared and hidden by `momentsTabVisibility`. It should be reworded by whoever owns that file. VoiceOver position text for the flag-off bar is built by `tabPositionOptions` in `moments-tab.ts`, because the library counts hidden routes. A fourth item needs: a Phosphor icon and a label from `packages/content` (`en.tabs`; `packages/content/test/tab-labels.test.ts` will need its list updated by `content`); the Large Content Viewer title; the `you` tab's `headerShown` pattern kept; `ReminderPrimeAsk` and `ask-sequencer.logic.ts` `isCalmSurface` (`segments[0] === '(tabs)'`) re-checked; screenshots, the store listing and the website's three-tab scenes (FUNCTION-TRACE NR-10) redrawn; NS-33 screen set and the IA audit updated by `design-systems` and `product`. The words: the founder offered "explore etc or suitable word". "Moments" is the name NX-42 used and the README struck; "Days" is already the NS-46 page name; "memories" and "best" are barred by NS-51. The final word is for `content` against the BRAND glossary, which I did not read for this note.
 
+What a Moments control may do (NS-35 dependency). Under NS-35-R1 and R3 (`docs/product/prd/11-foundations.md` lines 538 and 540) no screen outside Home starts a letter, and the only way any letter or take begins is `startCapture({ source })` (`apps/mobile/src/lib/capture/start-capture.ts`) with a closed list of sources (`start-capture.logic.ts`); `apps/mobile/test/navigation-one-entry.test.ts` enforces it. So a Moments "write about this" or compose control has two shapes. (a) It sends the parent to Home, optionally with a payload, and the parent taps Home's own start: no change to the capture contract, no new source, about S (1 agent-day [A]) for the route params and a test that Moments itself never calls `startCapture`. (b) It starts a letter itself, which needs a new reviewed `source` value (for example a Moments one), a change to the closed list and to `navigation-one-entry.test.ts`, and a read by `product` because it relaxes NS-35-R1; about M (2.5 agent-days [A]) plus review. This note does not choose; it is open question 5 in section 11. Priced in section 6, row C.
+
+Analytics: any Moments event needs the allowlist in `packages/analytics`, and none may carry a count, a date or an identifier of a moment. That allowlist entry is not priced here; it belongs to whoever adds the first event.
+
 ### 5.4 Second addendum: position is ruled; the nudge question stays open
 
 Founder, 20 Nov (as relayed): the tab need not be the default; second or centre is fine; and the moment signal should also drive push and email nudges. Update 22 Nov: position and landing are ruled (CPO-17, D-165 section 1 item 3): Moments is second of four and Home stays the landing, so `'/'`, `TONIGHT_HREF`, the first-run guard and `isCaptureRoute` do not change. The 21 Nov table of position options (second, third, centre of five, raised centre button) is removed as answered. One thing stays open and is mine to flag, not to settle: the order is pinned in source by `tab-bar.test.ts`, but that the bar is drawn in declaration order on a device is UNVERIFIED, so spike D6 stays for order only.
-
-A tab-bar badge or dot for "a moment is waiting" is a count in disguise and is barred by NS-51-R8 and R12 (no count, no gap); I recommend none.
 
 A tab-bar badge or dot for "a moment is waiting" is a count in disguise and is barred by NS-51-R8 and R12 (no count, no gap); I recommend none.
 
@@ -237,10 +239,12 @@ Size convention [A]: no day conversion exists in the backlog, so I use S = 1, M 
 | V. Value-prop view and words | NEW x2 (design, content) | 3 to 4 | Claims map to code (PRINCIPLES 14); counsel reads any privacy sentence |
 | A. Route A: picker module, entitlement, scans | BL-298 split BL-1300 to BL-1304 (about L) plus NEW module PR | 8 to 11, not firm until D1 has run | Device spike D1 (a hard gate before this is priced), `security-architect` read, counsel (DPLA 3.3.3(H)), entitlement in the signed plist |
 | B. Route B: library module, index, rule, chooser | BL-1019 (L), BL-877 (M), BL-859 (M), BL-860 (S), BL-861 (M), BL-845 (M, ready), BL-862 (M, ready), BL-864 (S, ready), BL-853 (M), BL-874 (M), BL-878 gate | 28 to 34 | BL-1001 ruling, counsel on 5.1.1 and the label, spikes D2 to D4, BL-961 |
-| N. Local moment nudge (section 5.4) | one planner source inside BL-1019 and BL-966's `budget.ts` | 2 to 3 | BL-966 merged; BL-1019's moment rule |
+| N. Local moment nudge (section 5.4) | one planner source inside BL-1019 and BL-966's `budget.ts` | 2 to 3 (already inside the BL-1019 line of row B if Route B is built; add it only when the nudge is priced alone) | BL-966 merged; BL-1019's moment rule |
+| C. Compose control (section 5.3, NS-35) | NEW x1 | 1 (shape a, Home with a payload) or 2.5 (shape b, new `startCapture` source) | A ruling on which shape; `product` read for shape b |
+| I. Identifier scan test (section 2.4) | NEW x1, inside the library module PR of whichever Route lands | 1 | The library module exists; a source scan that no logger or analytics call takes a `localIdentifier` |
 | Spikes | BL-843 (S), BL-871 (S), BL-872 (M, 14 days elapsed, three phones, optional), D6 (S, simulator) | 2 of work; 14 days elapsed for BL-872 | A real iPhone for all of them |
 
-Elapsed time is not the sum of these days. Sections 9 and 10 serialise every native PR behind a macOS compile of about 75 minutes and the photo lane, so queueing, not build time, will dominate Route B's 28 to 34 days, and the sum carries no integration or review-cycle allowance. No analytics or logging row is priced here: any Moments event needs the `packages/analytics` allowlist (section 5.3).
+Do not add row N to row B: BL-1019 already carries the nudge ("spike, module, index, nudge"), so for Route B the total is row B alone; row N is the stand-alone price only. Rows C and I are not in row B or row A. Elapsed time is not the sum of these days. Sections 9 and 10 serialise every native PR behind a macOS compile of about 75 minutes and the photo lane, so queueing, not build time, will dominate Route B's 28 to 34 days, and the sum carries no integration or review-cycle allowance. The analytics allowlist is described in section 5.3 and is not priced here; the identifier scan test (row I) and the compose control (row C) are.
 
 Route A and Route B share nothing in Swift and little in JavaScript; both share T, T2 and V. Route A is roughly a third of Route B.
 
@@ -291,6 +295,10 @@ Build 13's critical path is reminders (BL-966 then BL-943, then a device run wit
 | R5 | A landing change moves the first-run guard | A new install skips onboarding; the Build 13 first-run device rows (NS-39) fail | Section 5.2: one shared guard, one test, before any landing change |
 | R6 | Cold-start budget | A landing screen with PhotoKit work on the critical path can break p50 1.2 s or p90 2.0 s on an SE 3 | Paint static content first; library work after first paint; D3 measures it |
 | R7 | The founder's phone and hours are the device queue for the G4 runs | D1 to D4 compete with Build 13 device rows | Batch D1 to D4 into one session after the Build 13 cut |
+| R8 | Ruling churn: C1 to C5 reverse locked cards (NS-51 rev 2 was locked 20 Nov) | Rows and tests written against the old text become wrong | One errata batch (the E-row pattern in `18-errata-after-lock.md`) before any build row is set `ready` |
+| R9 | Store assets, website and Help say three tabs | A claim that no longer matches the app | A listing and website row in the same release as the tab |
+| R10 | Apple's picker may show workouts, songs and contacts to a parent inside our flow, and may not be restrictable | A brand and trust issue found late | D1 answers it before any Route A copy is written |
+
 ## 11. What is still open for the founder
 
 Ruled and removed from this list (22 Nov): one tab or none, position and landing (CPO-17, D-165 section 1 item 3).
@@ -299,11 +307,7 @@ Ruled and removed from this list (22 Nov): one tab or none, position and landing
 2. Ask: is a tap-only "Show my pictures" on the tab, shown only after the first saved letter, accepted in place of the Me-only row (NS-51-R1)?
 3. Floor: stay at iOS 17.0 (recommended) or raise to 17.2.
 4. Nudges: CPO-17 item 5 agrees with local only, planned when the app is opened, and no library-timed push or email in 1.0. A server push or email driven by the moment would mean a library-derived signal leaving the phone and a label change (I recommend against), and stays a founder and counsel call.
-5. A Moments compose control: lands on Home with a payload, or a new reviewed `startCapture` source (section 5.3, NS-35).
-
-4. Ask: is a tap-only "Show my pictures" on the tab, shown only after the first saved letter, accepted in place of the Me-only row (NS-51-R1)?
-5. Floor: stay at iOS 17.0 (recommended) or raise to 17.2.
-6. Nudges: local only, planned when the app is opened (my recommendation), or a server push or email driven by the moment, which means a library-derived signal leaving the phone and a label change (I recommend against).
+5. A Moments compose control: lands on Home with a payload, or a new reviewed `startCapture` source (section 5.3, NS-35, priced as row C in section 6).
 
 ## 12. What I did not do
 
