@@ -788,7 +788,7 @@ export const en = {
     },
     firstReadTogether: {
       title: "You read it together.",
-      body: "The letters are there to read together any time.",
+      body: "The first of many times {child} will hear these letters.",
     },
     monthSummary: "{count} letters this month",
     monthSummaryFamily: "{count} letters from family this month", // v1.1
@@ -1206,7 +1206,7 @@ export const en = {
     },
     offline: {
       title: "You're offline",
-      body: "Keep talking. Recording doesn't need a connection.",
+      body: "Keep talking. Everything is saved on this phone.",
     },
     inviteExpired: {
       title: "This invite has expired",

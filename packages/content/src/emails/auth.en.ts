@@ -103,7 +103,7 @@ export const authEmails = {
     body: [
       "You are in. Open the app, tap the red circle and talk.",
       "A minute is plenty. A quiet day is fine too.",
-      "It stays in your words. Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",
+      "It stays in your words. Every change is marked, so you can put it back. Each letter you speak keeps its original recording, unchanged. We never rewrite your words.",
       // The privacy promise, word for word (D-061, VOICE.md "How we talk about privacy": the welcome email says it once).
       en.trust.promise,
       "Our staff look only in the rare cases our Privacy Policy describes.",
