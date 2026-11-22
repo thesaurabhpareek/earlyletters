@@ -20,7 +20,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { tokens } from '@scribe/design-tokens';
 import { loadFonts } from '@/components/ui/fonts';
-import { getSetting } from '@/lib/store';
+import { getSettingIfOpen } from '@/lib/store';
 import { PLAIN_LAYOUT, PLAIN_TYPE, plainArt, plainButton } from './plain-screen.styles';
 
 export type PlainAction = { label: string; onPress: () => void; kind?: 'primary' | 'quiet'; busy?: boolean };
@@ -28,7 +28,7 @@ export type PlainAction = { label: string; onPress: () => void; kind?: 'primary'
 export function useSchemeSafely(): 'light' | 'dark' {
   const system = useColorScheme() === 'dark' ? 'dark' : 'light';
   try {
-    const v = getSetting('appearance'); // the store may be the very thing that failed
+    const v = getSettingIfOpen('appearance'); // reads only; the store may be the very thing that failed, and a render must not open it
     if (v === 'light' || v === 'dark') return v;
   } catch {
     // fall back to the system scheme
