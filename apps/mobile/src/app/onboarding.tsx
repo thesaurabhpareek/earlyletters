@@ -70,6 +70,7 @@ import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, runFinishOnce, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
@@ -84,7 +85,7 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild, getActiveChildId, getSetting, listChildren, setActiveChildId, setSetting, subscribe, todayISO } from '@/lib/store';
+import { addChild, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -173,6 +174,9 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const spoken = useSpokenLanguage();
   const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
+  // BL-776: a deleted book waiting on this phone keeps its way back on the first screen (existing words, no new line).
+  const [deletedBookCount, setDeletedBookCount] = useState(() => listDeletedBooks().length);
+  useEffect(() => subscribeTo(['children', 'settings'], () => setDeletedBookCount(listDeletedBooks().length)), []);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
   const coverName = useSettled(names[0] ?? '', COVER_PAUSE_MS);
@@ -604,6 +608,16 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                 </Button>
               ) : null}
             </View>
+          )}
+          {recentlyDeletedRowShown({ step, deletedBookCount }) && (
+            <ListSection>
+              <ListRow
+                title={copy.settings.delete.recentlyDeleted}
+                subtitle={copy.settings.delete.shelfHelp}
+                trailing="chevron"
+                onPress={() => router.push(RECENTLY_DELETED_HREF as Href)}
+              />
+            </ListSection>
           )}
         </ScrollView>
         {/* "The book is open." pins its one primary below the scroll, so "Write the first one" is whole on an iPhone SE and
