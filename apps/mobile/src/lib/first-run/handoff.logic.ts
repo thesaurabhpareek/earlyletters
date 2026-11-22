@@ -109,6 +109,16 @@ export function finishMayMakeBook(input: { start: FirstRunStepId; hasSession: bo
 }
 
 /**
+ * The last step's button can be tapped (or called) twice before the route has changed. The first call that makes the
+ * books sets `latch.current`; a second call after that does nothing, so twins make two books once, never four (BL-378).
+ * A call that made nothing (blocked, or addChild threw) leaves the latch open so a retry still works.
+ */
+export function runFinishOnce(latch: { current: boolean }, finish: () => void): void {
+  if (latch.current) return;
+  finish();
+}
+
+/**
  * The account-first child step's name field says the name is optional (NX-31-R3); other builds keep "Name". Only for
  * one child: with more than one name on the step every name is needed (firstRunChildBlock), so the first row goes back
  * to "Name" the moment "Add another child" is tapped, never "Name, if you like" beside a Continue that waits for it.
