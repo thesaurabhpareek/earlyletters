@@ -25,6 +25,9 @@
  * [BL-1476] Four more text forms are decoded before the shingle scan: hex with space or colon separators (`89 50 4e`,
  * `89:50:4e`), hex with a `0x` prefix per byte (`0x89, 0x50`), percent-encoded bytes (`%89%50`, with plain characters
  * left in between), and base64 wrapped over lines (a raw or JSON-escaped line break between the lines).
+ * Wrapped base64 is matched in linear time (a 256 KB body takes well under a second; the first version backtracked
+ * quadratically). Known gap: base64 wrapped with spaces or tabs between the lines, or broken inside its first 20
+ * characters (or with a line under 4 characters in the middle), is not decoded, so a recording written that way passes the scan.
  */
 import { createHash } from 'node:crypto';
 
@@ -79,20 +82,62 @@ const B64_RUN = /[A-Za-z0-9+/_-]{22,}/g;
 const HEX_RUN = /[0-9a-fA-F]{32,}/g;
 /** [BL-1476] Hex bytes with a separator (space, colon or comma) and an optional 0x on each: 16 or more bytes. */
 const SEP_HEX_RUN = /(?:0x)?[0-9a-fA-F]{2}(?:[ :,]{1,2}(?:0x)?[0-9a-fA-F]{2}){15,}/g;
-/** [BL-1476] Base64 over lines: a first line of 20+ characters, then more lines of 4+ (raw CR/LF or JSON-escaped). */
-const WRAPPED_B64_RUN = /[A-Za-z0-9+/_-]{20,}(?:(?:\r\n|\n|\r|\\r\\n|\\n|\\r)[A-Za-z0-9+/_-]{4,}={0,2})+/g;
+/** [BL-1476] One line of a wrapped base64 text, or one line break (raw CR/LF or JSON-escaped). Every alternative is a plain run, so a scan with it is linear. */
+const B64_LINE_TOKEN = /([A-Za-z0-9+/_-]+)(={0,2})|\r\n|\n|\r|\\r\\n|\\n|\\r/g;
 const PERCENT_BYTE = /%([0-9a-fA-F]{2})/g;
 const LIST_RUN = /\d{1,3}(?:,\s?\d{1,3}){15,}/g;
+
+/**
+ * [BL-1476] Base64 over lines, found in one linear pass: a first line of 20+ characters, then more lines of 4+ characters
+ * (padding allowed at the end of a line), each after one line break. The line rules are applied here, in code: a regex that
+ * carries them backtracks quadratically on one long line (13 s at 50 KB, 44 s at 100 KB). Returns each run joined, no breaks.
+ */
+export function wrappedBase64Runs(text: string): string[] {
+  return wrappedBase64Spans(text).map((s) => s.flat);
+}
+
+/** The wrapped runs of `wrappedBase64Runs` with where each sits in `text` ([start, end)). */
+export function wrappedBase64Spans(text: string): Array<{ flat: string; start: number; end: number }> {
+  const out: Array<{ flat: string; start: number; end: number }> = [];
+  let parts: string[] | null = null; // the lines of the run being built
+  let start = 0;
+  let stop = 0; // where the last line of the run being built stopped
+  let pendingBreak = false;
+  let end = 0; // where the previous token stopped: anything between two tokens (a space, a tab) ends the run
+  const close = () => { if (parts && parts.length > 1) out.push({ flat: parts.join(''), start, end: stop }); parts = null; pendingBreak = false; };
+  for (const m of text.matchAll(B64_LINE_TOKEN)) {
+    if (m.index !== end) close();
+    end = m.index! + m[0].length;
+    if (m[1] === undefined) { // a line break
+      if (parts && !pendingBreak) pendingBreak = true; else close();
+      continue;
+    }
+    const line = m[1] + m[2];
+    if (parts && pendingBreak && m[1].length >= 4) { parts.push(line); pendingBreak = false; stop = end; }
+    else {
+      close();
+      if (m[1].length >= 20 && m[2] === '') { parts = [line]; start = m.index!; stop = end; }
+    }
+  }
+  close();
+  return out;
+}
 
 /** Every byte string hiding in `hay` as base64 (also wrapped), hex (also separated or 0x-prefixed), percent-encoding or a decimal list (one layer), as bytes. */
 export function decodedViews(hay: Uint8Array): Buffer[] {
   const text = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength).toString('latin1');
   const out: Buffer[] = [];
-  for (const m of text.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
+  // The lines of a wrapped run are decoded joined, below; decoding each line alone as well would only repeat the work 4 times per line.
+  const wrapped = wrappedBase64Spans(text);
+  const pieces: string[] = [];
+  let from = 0;
+  for (const w of wrapped) { pieces.push(text.slice(from, w.start), ' '.repeat(w.end - w.start)); from = w.end; }
+  pieces.push(text.slice(from));
+  const single = pieces.join('');
+  for (const m of single.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
   for (const m of text.matchAll(HEX_RUN)) for (let c = 0; c < 2; c++) out.push(Buffer.from(m[0].slice(c), 'hex'));
   for (const m of text.matchAll(SEP_HEX_RUN)) out.push(Buffer.from(m[0].replace(/0x|[ :,]/gi, ''), 'hex'));
-  for (const m of text.matchAll(WRAPPED_B64_RUN)) {
-    const flat = m[0].replace(/\\[rn]|[\r\n]/g, '');
+  for (const { flat } of wrapped) {
     for (let c = 0; c < 4; c++) out.push(Buffer.from(flat.slice(c), 'base64'));
   }
   if (text.includes('%')) {

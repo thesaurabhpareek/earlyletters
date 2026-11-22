@@ -5,8 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { SEGMENT_SIZE } from '../src/lib/backup/format';
 import { fakeM4a } from './helpers/backup-node';
-import { JOIN_WINDOW, SHINGLE, STRIDE, firstLeak, firstRawLeak, joinWindows, leakNote, scanRequests, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
+import { JOIN_WINDOW, SHINGLE, STRIDE, firstLeak, decodedViews, firstRawLeak, joinWindows, leakNote, scanRequests, wrappedBase64Runs, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
 import { createHash, randomBytes } from 'node:crypto';
+import vm from 'node:vm';
 
 const TAKE = 3 * SEGMENT_SIZE + 777;
 
@@ -247,6 +248,75 @@ describe('[BL-1476] a recording written as separated hex, 0x hex, percent-encode
     const xored = Buffer.from(piece.map((x) => x ^ 0x5a));
     expect(firstLeak(around(xored), plain), 'XOR-ed').toBeNull();
     expect(firstLeak(around(Buffer.from(plain.subarray(100, 115))), plain), '15 bytes').toBeNull();
+  });
+});
+
+describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
+  const plain = fakeM4a(TAKE);
+  const big = randomBytes(192 * 1024); // 256 KB as base64
+  const BIG_B64 = big.toString('base64');
+  /** The first version of the wrapped-base64 regex, kept only to prove the timing tests can fail. */
+  const OLD_WRAPPED = /[A-Za-z0-9+/_-]{20,}(?:(?:\r\n|\n|\r|\\r\\n|\\n|\\r)[A-Za-z0-9+/_-]{4,}={0,2})+/g;
+  const timed = <T>(fn: () => T): [T, number] => { const t = performance.now(); const r = fn(); return [r, performance.now() - t]; };
+
+  it('[BL-1476] a 256 KB single-line base64 body decodes in well under a second', () => {
+    expect(BIG_B64.length).toBeGreaterThanOrEqual(256 * 1024);
+    const body = Buffer.from(BIG_B64);
+    const [, decodeMs] = timed(() => decodedViews(body));
+    expect(decodeMs, 'decoding the views').toBeLessThan(250);
+    const [at, ms] = timed(() => firstLeak(body, plain));
+    expect(at).toBeNull();
+    expect(ms, 'the whole scan (the first regex took 68 s on 80 KB)').toBeLessThan(5000);
+  });
+
+  it('[BL-1476] a 256 KB wrapped base64 body decodes in well under a second, and a planted piece in it is still found', () => {
+    const planted = Buffer.concat([big.subarray(0, 90000), plain.subarray(100, 164), big.subarray(90000)]);
+    const body = Buffer.from(wrap(planted.toString('base64'), 76, '\r\n'));
+    const [, decodeMs] = timed(() => decodedViews(body));
+    expect(decodeMs, 'decoding the views').toBeLessThan(250);
+    const [at, ms] = timed(() => firstLeak(body, plain));
+    expect(at).not.toBeNull();
+    expect(ms, 'the whole scan').toBeLessThan(5000);
+    const clean = Buffer.from(wrap(BIG_B64, 76, '\n'));
+    const [, decodeMs2] = timed(() => decodedViews(clean));
+    expect(decodeMs2, 'decoding the views').toBeLessThan(250);
+    const [none, ms2] = timed(() => firstLeak(clean, plain));
+    expect(none).toBeNull();
+    expect(ms2, 'the whole scan').toBeLessThan(5000);
+  });
+
+  it('[BL-1476] a long single line followed by a short one and a long line of other characters stays fast', () => {
+    const text = `${BIG_B64}\nab\n${'x'.repeat(100000)}\n!!!${BIG_B64.slice(0, 100000)}`;
+    const [, ms] = timed(() => wrappedBase64Runs(text));
+    expect(ms).toBeLessThan(250);
+  });
+
+  it('[BL-1476] the line rules: 20+ on the first line, 4+ on the next, one break between, padding at a line end', () => {
+    const l20 = 'A'.repeat(20);
+    expect(wrappedBase64Runs(`${l20}\nBBBB`)).toEqual([`${l20}BBBB`]);
+    expect(wrappedBase64Runs(`${l20}\r\nBBBB==\r\nCCCC`)).toEqual([`${l20}BBBB==CCCC`]);
+    expect(wrappedBase64Runs(`${l20}\\nBBBB`)).toEqual([`${l20}BBBB`]);
+    expect(wrappedBase64Runs(`${'A'.repeat(19)}\nBBBB`), 'first line 19').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\nBBB`), 'next line 3').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\n\nBBBB`), 'two breaks').toEqual([]);
+    expect(wrappedBase64Runs(`${l20} BBBB`), 'a space, not a break').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\n\tBBBB`), 'a tab after the break').toEqual([]);
+    expect(wrappedBase64Runs(l20), 'one line').toEqual([]);
+  });
+
+  it('[BL-1476] mutant: the first regex does not finish a 256 KB line inside 250 ms, so the timing tests above can fail', () => {
+    const text = BIG_B64.slice(0, 120000);
+    const run = () => vm.runInNewContext('text.match(re)', { text, re: OLD_WRAPPED }, { timeout: 250 });
+    expect(run).toThrow(/timed out/i);
+    const [, ms] = timed(() => wrappedBase64Runs(text));
+    expect(ms).toBeLessThan(250);
+  });
+
+  it('[BL-1476] the named gap stays open: base64 wrapped with spaces or tabs, or broken inside the first 20 characters, is not found', () => {
+    const b64 = plain.subarray(100, 164).toString('base64');
+    expect(firstLeak(around(Buffer.from(wrap(b64, 20, ' '))), plain), 'spaces').toBeNull();
+    expect(firstLeak(around(Buffer.from(wrap(b64, 20, '\t'))), plain), 'tabs').toBeNull();
+    expect(firstLeak(around(Buffer.from(wrap(b64, 10, '\n'))), plain), 'break in the first 20').toBeNull();
   });
 });
 
