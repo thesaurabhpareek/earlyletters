@@ -35,6 +35,34 @@ describe('[BL-423] the finish step ends on Tonight and never starts capture', ()
     expect(body.match(/router\.\w+\(/g)).toEqual(['router.replace(']);
   });
 
+  it('[BL-1615] finish calls only the allowlisted functions: no helper that could open the recorder', () => {
+    const calls = new Set(
+      (finishBody().match(/(?:[\w$]+\.)*[\w$]+(?=\s*\()/g) ?? []).filter(
+        (c) => !['if', 'for', 'while', 'switch', 'function'].includes(c),
+      ),
+    );
+    const allowed = new Set([
+      'finishMayMakeBook',
+      'hasSessionState',
+      'addChild',
+      'firstRunBookNames',
+      'setActiveChildId',
+      'getActiveChildId',
+      'track',
+      'ordinalOf',
+      'router.replace',
+      'map',
+      'signsAs.trim',
+    ]);
+    expect([...calls].filter((c) => !allowed.has(c))).toEqual([]);
+  });
+
+  it('[BL-1615] first run imports no capture entry (a helper file could start one)', () => {
+    const froms = [...onboarding.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
+    expect(froms.length).toBeGreaterThan(10);
+    expect(froms.filter((f) => /capture|listen|write|photo-start/.test(f))).toEqual([]);
+  });
+
   it('the recorder is not opened for the person: no capture entry in first run', () => {
     expect(onboarding).not.toMatch(/startCapture|start-capture|\/listen|\/write/);
   });
@@ -43,7 +71,10 @@ describe('[BL-423] the finish step ends on Tonight and never starts capture', ()
 describe('[BL-423] Tonight, empty, shows Speak with no card in front', () => {
   it('Speak is labelled from the existing key and begins the one capture entry', () => {
     expect(en.tonight.speakButton).toBe('Speak');
-    expect(tonight).toMatch(/label=\{t\.speakButton\}.*?startCapture\(\{ source: 'speak'/);
+    // [BL-1617] Within one <Button>, across any line breaks, so a reflow passes and a swapped label fails.
+    expect(tonight).toMatch(
+      /<Button\b(?:(?!<Button\b)[\s\S])*?label=\{t\.speakButton\}(?:(?!<Button\b)[\s\S])*?startCapture\(\{ source: 'speak'/,
+    );
   });
 
   it('cards render only from drafts or a month-ago letter, both empty in a new book', () => {
@@ -60,7 +91,26 @@ describe('[BL-423] Tonight, empty, shows Speak with no card in front', () => {
     expect(tonight.indexOf('{inlineActions ? null : actions}')).toBeGreaterThan(cardsAt);
   });
 
-  it('no first-run card or sheet is mounted over Tonight', () => {
-    expect(tonight).not.toMatch(/Modal|BottomSheet|Primer|Welcome|BookIsOpen/);
+  it('[BL-1614] only the known components are mounted on Tonight: no card or sheet over it', () => {
+    const tags = new Set([...tonight.matchAll(/(?<![\w$])<([A-Z][\w.]*)/g)].map((m) => m[1]));
+    const allowed = new Set([
+      'Redirect',
+      'SafeAreaView',
+      'Lamp',
+      'ScrollView',
+      'View',
+      'Animated.View',
+      'Text',
+      'Button',
+      'ButtonRow',
+      'PlusLine',
+      'PhotoStartButton',
+      'QuietDayInline',
+      'HeldRow',
+      'DraftCard',
+      'CardSource',
+      'ResurfacedCard',
+    ]);
+    expect([...tags].filter((x) => !allowed.has(x))).toEqual([]);
   });
 });

@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resumeBooks, runFinishOnce } from '../src/lib/first-run/handoff.logic';
 
-type Arg = { name: string };
+type Arg = { name: string; birthday?: string | null; dueDate?: string | null; signsAs?: string };
 type Book = { id: number; name: string };
-const same = (x: Arg, y: Arg) => x.name === y.name;
+const same = (x: Arg, y: Arg) => x.name === y.name && x.birthday === y.birthday && x.dueDate === y.dueDate && x.signsAs === y.signsAs;
 
 const setup = (names: string[], failOn: string[] = []) => {
   const made: { arg: Arg; book: Book }[] = [];
@@ -90,4 +90,35 @@ describe('[BL-1658] a retry after a failed second book keeps the first', () => {
     expect(src).toMatch(/const madeBooks = useRef</);
     expect(src).toMatch(/const addChild = resumeBooks\(madeBooks\.current, addChildToStore,/);
   });
+
+  // The screen's own comparison (onboarding.tsx) must look at every field finish passes to addChild.
+  const screenSame = (() => {
+    const src = readFileSync(join(__dirname, '..', 'src', 'app', 'onboarding.tsx'), 'utf8');
+    const m = src.match(/resumeBooks\(madeBooks\.current, addChildToStore, (\(a, b\) => [^,]*?),\s*\(\) =>/);
+    expect(m).not.toBeNull();
+    return new Function(`return ${m![1]}`)() as (a: Arg, b: Arg) => boolean;
+  })();
+  const base: Arg = { name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' };
+  for (const [field, changed] of [['name', { name: 'Asha B' }], ['birthday', { birthday: '2026-03-02' }], ['dueDate', { dueDate: '2026-09-01' }], ['signsAs', { signsAs: 'Papa' }]] as const) {
+    it(`a changed ${field} between tries is not the same book: it is made again`, () => {
+      expect(screenSame(base, base)).toBe(true);
+      expect(screenSame(base, { ...base, ...changed })).toBe(false);
+      const made: { arg: Arg; book: Book }[] = [];
+      let n = 0;
+      let boom = true;
+      const make = (a: Arg) => {
+        if (a.name === 'Asha B' && boom) {
+          boom = false;
+          throw new Error('store');
+        }
+        return { id: ++n, name: a.name };
+      };
+      const add = resumeBooks(made, make, screenSame, () => 2);
+      add(base);
+      expect(() => add({ ...base, name: 'Asha B' })).toThrow();
+      // Back, edit one field of the first book, retry: the first is made again with the new value.
+      add({ ...base, ...changed });
+      expect(n).toBe(2);
+    });
+  }
 });

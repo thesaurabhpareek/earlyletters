@@ -6,6 +6,7 @@
  * Rule C1: a `<Pressable>` / `<TouchableOpacity>` / `<TouchableHighlight>` needs a name: an `accessibilityLabel` or
  *   `aria-label`, a prop spread, visible text inside it, or `accessible={false}` (a clear layer that is not a control).
  * Rule C2: a `<Button>` with an `icon` and no `label` needs an `accessibilityLabel`.
+ * C1 and C2 are a floor: they check a name exists, and nothing about state, label-in-name, clipped text or 44 pt targets.
  * The rendered names (roles, order) are exported by the journey run: e2e-web/support/a11y-tree.ts.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';

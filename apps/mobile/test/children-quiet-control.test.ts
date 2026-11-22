@@ -7,7 +7,7 @@
  * Home's prompt, the Save a copy slip and Read together do not. So the help line is not shown yet, and HELP_HOLD below fails
  * the day any screen mentions it before those three read Child.quiet (mirrors NOT_SHOWN_YET in packages/content/test/nameless-child.test.ts).
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
@@ -20,16 +20,14 @@ const allSrc = () => readdirSync(SRC, { recursive: true, encoding: 'utf8' }).fil
 
 /** Each behaviour the help line describes, and the source that must read Child.quiet before the line may show. */
 const HELP_NEEDS: Record<string, string> = {
-  'Home prompt skips a quiet child': 'components/tonight/prompt.logic.ts',
-  'Save a copy slip': 'components/book/save-copy.logic.ts',
-  'Read together suggestions': 'components/read-together/suggestions.logic.ts',
+  'Home prompt skips a quiet child': 'components/tonight/draft-card.logic.ts',
+  'Home resurfaced letters stay quiet': 'app/(tabs)/index.tsx',
+  'Read together ignores Child.quiet': 'app/read-together.tsx',
 };
+/** A wrong path fails loudly: no catch that turns a missing file into "behaviour not there yet". */
 const behaviourExists = (file: string) => {
-  try {
-    return /\.quiet\b/.test(code(file));
-  } catch {
-    return false;
-  }
+  expect(existsSync(join(SRC, file)), `HELP_NEEDS names a file that does not exist: ${file}`).toBe(true);
+  return /\.quiet\b/.test(code(file));
 };
 
 describe('[BL-985] Quiet this book, on the book page', () => {
@@ -60,7 +58,13 @@ describe('[BL-985] Quiet this book, on the book page', () => {
     if (missing.length > 0) {
       expect(mentions, `children.quiet.help is wired before: ${missing.map(([k]) => k).join(', ')}`).toEqual([]);
     }
-    // The other way: once all three exist, this pin is stale and must be replaced by a test that the line shows.
-    expect(missing.length, 'all three behaviours exist: show children.quiet.help and replace HELP_NEEDS with a render test').toBeGreaterThan(0);
+    // The other way: once every one exists, this pin is stale and must be replaced by a test that the line shows.
+    expect(missing.length, 'all behaviours exist: show children.quiet.help and replace HELP_NEEDS with a render test').toBeGreaterThan(0);
+  });
+
+  it('every HELP_NEEDS path is a real file, and a wrong one fails loudly', () => {
+    for (const file of Object.values(HELP_NEEDS)) expect(existsSync(join(SRC, file)), file).toBe(true);
+    expect(() => behaviourExists('components/read-together/suggestions.logic.ts')).toThrow(/does not exist/);
+    expect(Object.keys(HELP_NEEDS)).toHaveLength(3);
   });
 });

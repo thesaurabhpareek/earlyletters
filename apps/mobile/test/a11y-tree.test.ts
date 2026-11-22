@@ -43,4 +43,25 @@ describe('BL-409 accessibility tree export', () => {
     expect(parseAriaSnapshot('')).toEqual([]);
     expect(unnamedControls([])).toEqual([]);
   });
+
+  it('[BL-1622] reads a YAML single-quoted key: an apostrophe or a colon in the name, and an unnamed control', () => {
+    const snap = [
+      "- 'button \"Add to Asha''s book\"':",
+      "  - img",
+      "- 'link \"Asha B: letters\"':",
+      "  - /url: /letters",
+      "- 'button [disabled]':",
+      "- 'text: Asha''s book'",
+      "- button \"Plain\"",
+    ].join('\n');
+    const tree = parseAriaSnapshot(snap);
+    expect(tree.map((n) => `${n.role}:${n.name}`)).toEqual([
+      "button:Add to Asha's book",
+      'img:',
+      'link:Asha B: letters',
+      'button:',
+      'button:Plain',
+    ]);
+    expect(unnamedControls(tree)).toEqual([{ role: 'button', name: '', order: 3 }]);
+  });
 });
