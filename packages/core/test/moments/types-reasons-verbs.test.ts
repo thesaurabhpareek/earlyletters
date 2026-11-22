@@ -122,10 +122,10 @@ describe('NS-53 the Moment type (R59, R201)', () => {
 });
 
 describe('NS-53 the engine stays pure (CODE-R10, R43)', () => {
-  it('[NS-53-R43] moments imports only its own files: no react-native, expo, node, fs or network module', () => {
+  it('[NS-53-R43] moments imports only its own files and the pure core age and prompts modules: no react-native, expo, node, fs or network module', () => {
     for (const f of sources) {
       const specs = [...read(f).matchAll(/(?:import|export)[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
-      for (const s of specs) expect(s.startsWith('./'), `${f} imports ${s}`).toBe(true);
+      for (const s of specs) expect(s.startsWith('./') || ['../age', '../prompts'].includes(s), `${f} imports ${s}`).toBe(true);
       expect(read(f), f).not.toMatch(/\brequire\(|import\(/);
     }
   });

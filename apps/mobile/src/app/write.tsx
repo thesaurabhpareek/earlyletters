@@ -417,24 +417,24 @@ export default function Write() {
           {/* A taller or shorter prompt moves the page on the same transition as the prompt; Reduce Motion: no layout move,
               the prompt itself fades (BL-420). */}
           <Animated.View layout={promptLayout}>
-          <TextField
-            ref={field}
-            variant="letter"
-            label={pendingCopy.write.label}
-            labelHidden
-            // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
-            // undisturbed, and the person's words are never written back into the field. The field grows with the
-            // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
-            className="mt-3 flex-none"
-            inputClassName="flex-none"
-            defaultValue={initialText}
-            onChangeText={onChange}
-            onSelectionChange={(e) => {
-              selectionEnd.current = e.nativeEvent.selection.end;
-            }}
-            onContentSizeChange={onContentSizeChange}
-            scrollEnabled={false}
-            placeholder={copy.tonight.typing.placeholder}
+            <TextField
+              ref={field}
+              variant="letter"
+              label={pendingCopy.write.label}
+              labelHidden
+              // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
+              // undisturbed, and the person's words are never written back into the field. The field grows with the
+              // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
+              className="mt-3 flex-none"
+              inputClassName="flex-none"
+              defaultValue={initialText}
+              onChangeText={onChange}
+              onSelectionChange={(e) => {
+                selectionEnd.current = e.nativeEvent.selection.end;
+              }}
+              onContentSizeChange={onContentSizeChange}
+              scrollEnabled={false}
+              placeholder={copy.tonight.typing.placeholder}
           />
           </Animated.View>
           {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
