@@ -20,7 +20,7 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3457 / 4000)
+## Description (3454 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -39,7 +39,7 @@ READ TOGETHER AT BEDTIME
 Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
 
 A MINUTE IS PLENTY
-Some nights it is a sentence, some nights a long letter. Stuck for words? There is a question to begin with. If today was quiet, tap "Not much today" and that is enough. Nothing keeps score.
+Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap "Not much today" and that's enough. Nothing keeps score.
 
 A BOOK THAT GROWS BY MONTH
 Each letter goes into your child's month of age, so the book reads in order. Expecting? Start before the birth, in a part of the book called Before You. Twins or more each get their own book.
