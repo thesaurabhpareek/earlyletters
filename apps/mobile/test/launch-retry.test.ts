@@ -455,7 +455,7 @@ describe('[S51] the launch lines say only what the code can back (S2)', () => {
   const l = en.errors.launch;
 
   it('the body says what Export does and does not say the letters are safe; S50 keeps its own line', () => {
-    expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, as they are.');
+    expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, exactly as they are.');
     // On screen. (The README inside the ZIP says "somewhere safe" about where to keep the file, not about the letters.)
     const { readme: _readme, ...onScreen } = l;
     expect(JSON.stringify(onScreen)).not.toMatch(/\bsafe\b/i);

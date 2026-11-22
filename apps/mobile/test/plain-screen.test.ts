@@ -229,7 +229,7 @@ describe('launch recovery offers no way to delete (S51, D-085)', () => {
   it('the words are the S51 table with the 30 Oct rulings (S1, S2), and no title ends with a full stop', () => {
     const l = en.errors.launch;
     expect(l.title).toBe("The book couldn't open");
-    expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, as they are.');
+    expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, exactly as they are.');
     expect(l.hint).toBe('Try again, or restart the phone.');
     expect(l.tryingAgainButton).toBe('Trying again');
     expect(l.stillClosed).toBe("It didn't open this time either.");

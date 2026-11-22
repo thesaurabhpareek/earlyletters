@@ -14,7 +14,7 @@ export const SEARCH_TABLE = 'letter_search';
 export const SEARCH_ROWS_TABLE = 'letter_search_rows';
 /** Settings: when the first removal since the last optimize happened (ISO, L2). */
 export const FIND_DIRTY_SETTING = 'find.dirtyAt';
-/** Settings: whether the FTS5 secure-delete option was accepted at creation ('1' or '0', L1). */
+/** Settings: whether the FTS5 secure-delete option was accepted at creation ('1' or '0', L2). */
 export const FIND_SECURE_SETTING = 'find.secureDelete';
 
 /**

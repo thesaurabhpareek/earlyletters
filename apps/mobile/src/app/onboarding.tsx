@@ -60,6 +60,7 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { BackButton } from '@/components/ui/screen-header';
 import { Separator } from '@/components/ui/separator';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
@@ -456,9 +457,6 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                         }
                       />
                     ))}
-                    {names.length < MAX_FIRST_RUN_CHILDREN && (
-                      <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
-                    )}
                   </View>
                   {dateBlockShown({ dateShown, accountFirst }) ? (
                     <Animated.View entering={accountFirst ? undefined : motion.enter()} className="gap-4">
@@ -495,6 +493,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                       </View>
                     </Animated.View>
                   ) : null}
+                  {/* "Add another child" sits below the date block (BL-419): the names and the date read as one form first. */}
+                  {names.length < MAX_FIRST_RUN_CHILDREN && (
+                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
+                  )}
                   {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
                   {accountFirst && hasSessionState(authState) ? (
                     <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={startAgain} busy={useAnotherBusy({ pressing: leaving, authStatus: authState.status })} />
@@ -563,7 +565,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                   </View>
                   <Animated.View entering={enterAt(200)} className="gap-3">
                     <Text ref={heading} variant="hero" asHeading={1} className="text-center">
-                      {o.finish.title}
+                      {joinLastTwoWords(o.finish.title)}
                     </Text>
                     <Text variant="body" className="text-center">
                       {fill(o.finish.body, { child })}

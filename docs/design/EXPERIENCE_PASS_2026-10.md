@@ -620,7 +620,7 @@ Copy:
 | `review.edits.repeat.explain` | A word said twice in a row. One is kept. | CHG |
 | `review.edits.misheardName.explain` | A misheard name, spelled your way. | CHG |
 | `review.edits.punctuation.explain` | Commas and periods, where you paused. | CHG (US) |
-| `review.edits.grammarSlip.explain` | A slip of the tongue, like "a apple". Only that word changed. | CHG |
+| `review.edits.grammarSlip.explain` | A small slip, like "a apple". Only that word changed. | CHG |
 | `review.edits.paragraph.explain` | A long pause. A new paragraph starts here. | CHG |
 | `review.edits.script.explain` | The same word, in the script you chose. | CHG |
 | `review.edits.*.label` | Took out a sound / a restart / a repeat, Spelled your way, Punctuation, One word fixed, New paragraph, Your script | KEEP |

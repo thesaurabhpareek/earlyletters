@@ -92,7 +92,7 @@ export const en = {
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
       privateNote: "Private by default. You choose what goes in the book.",
-      cta: "That sounds right",
+      cta: "Continue",
     },
 
     child: {
@@ -473,7 +473,7 @@ export const en = {
       },
       grammarSlip: {
         label: "One word fixed",
-        explain: "A slip of the tongue, like \"a apple\". Only that word changed.",
+        explain: "A small slip, like \"a apple\". Only that word changed.",
       },
       paragraph: {
         label: "New paragraph",
@@ -1237,7 +1237,7 @@ export const en = {
     // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book couldn't open",
-      body: "Export saves a copy of the recordings and book files it can read, as they are.",
+      body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       // The Try again button's words while it opens the book again, and the line after an open that did not work.
@@ -1460,7 +1460,7 @@ export const en = {
     },
     footer: "Either way, we never rewrite your words.",
     // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
-    saveFailed: "That choice did not save. It is as it was.",
+    saveFailed: "That choice didn't save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a

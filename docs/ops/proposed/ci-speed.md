@@ -168,3 +168,6 @@ Ranked by measured effect, then risk. Patches: `docs/ops/proposed/workflows/`. E
 ## 9. Not changed
 
 Agents check, Migration guard, Web, Web e2e and the deploy workflows: no defect found in the window beyond Web and Web e2e being cancelled by supersession (46 and 53 runs, all superseded; Web e2e also had 2 failures, not looked at). Fence 110 failures are by design (finding in section 4).
+
+## Change 1 hardening (BL-1479, applied directly in the PR that carries this note)
+The scope step now (1) reads the list from `compare/<base sha>...<head sha>` using the two event shas, and stays heavy unless `pulls/<n>` still reports that head; (2) sets `heavy=false` only when grep exits 1, so a grep error (2) stays heavy; (3) matches `.md` or `.csv` only under each listed directory, so a `.ts`, `.json`, `.mjs` or extensionless file there is heavy. `.github/scripts/scope-step.test.mjs` runs the step's own block with a stubbed `gh` and `grep`, and carries one mutant per behaviour.
