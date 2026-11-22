@@ -203,3 +203,14 @@ Oct 24, 2026 (Linux, the ADTS kit of section 8): only the pure half ran. The tak
 - With ffmpeg standing in for Core Audio on the damaged files, both read past, shifted by one frame (it drops the damaged frame), at scores 0.957 and 0.999. The undamaged take has signal over both compared spans (rms about 2,200), so the readings are decided, not the false "stops silently" the first version of the take gave.
 
 Core Audio was not run: `adts-coreaudio.swift` and `adts-parity.ts` have not run on a Mac yet [U].
+
+## 9. Moments real-library harness (BL-1449, NS-53-R205, R281)
+Sets the thresholds of the Moments tab (`MIN_SPAN`, `NEAR_SECONDS`, `NEAR_GROUP_MAX`, `PLACE_RARE_SHARE`, and which busy-day rule) by experiment on your own phone export. Local only. It reads two files you give it, prints counts and rates to the screen, and writes nothing.
+
+1. Export, one JSON file: `{"rows": [{"t": <UTC ms>, "off": <seconds east of UTC>, "kind": "image" | "video", "fav": true, "burst": "<burst id>", "place": "<coarse place cell>", "durMs": 0, "sub": 0}]}`. Nothing else: no filename, no coordinate, no picture. `experiments/fixtures/moments-asha-library.json` is a made-up example (the fictional family Asha).
+2. Junk marks, one text file, one day key per line (`YYYY-MM-DD`): the days that, looking back, you would not have wanted Moments to show. Any other line is refused. See `fixtures/moments-asha-junk.txt`.
+3. Run: `npm run moments-harness -w @scribe/experiments -- path/to/export.json path/to/junk-days.txt`. Keep both files outside the repo (they hold your dates).
+
+It prints, for each cell of the 7.2a grid and for both busy-day rules (`span`, `busyHours`): days qualifying, qualifying days per 14, junk days, the share of qualifying days marked junk, the wrong-reason count (must be 0) and whether the cell is eligible, then the chosen cell. The bar and the decision rule are in `moments-bar.ts`, committed before the harness; they cannot move after a run. The window is the 90 days ending at the newest asset in the export, so the harness needs no clock.
+
+What it cannot do: one family, one phone, is not representative (G4, the five-parent card sort, confirms or sends it back). It does not see occasion days or kept-close days (they come from the decisions store), only the library reasons: place, heart, video, day. The "wrong reason" count is a property check that the reason shown is the strongest library reason whose predicate is true. Metadata cannot tell a dump of saved pictures from a day out (spec 7.2a, the residual). The chosen values go into `rules.ts` in one PR with `MOMENTS_RULES_VERSION` bumped. Share nothing from a real run except counts and rates.
