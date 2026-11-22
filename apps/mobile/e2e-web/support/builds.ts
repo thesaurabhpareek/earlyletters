@@ -31,3 +31,13 @@ export const BUILDS: readonly WebBuild[] = [
 ];
 
 export const buildEnv = (extra: Record<string, string>): Record<string, string> => ({ ...BASE_ENV, ...extra });
+
+/**
+ * BL-1576: the shell env a build inherits. global-setup spreads the parent environment into every build, so a stray
+ * `EXPO_PUBLIC_E2E` in the shell would otherwise reach the plain, seed and server-on bundles. Only the seam build
+ * may carry the e2e switch, and it gets it from its own env in BUILDS (applied after this, by buildEnv), never from the shell.
+ */
+export const inheritedEnv = <T extends Record<string, string | undefined>>(parent: T): T => {
+  const { EXPO_PUBLIC_E2E: _shell, ...rest } = parent;
+  return rest as T;
+};

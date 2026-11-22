@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseSupabaseEnv } from '../src/lib/supabase/env';
 import { MOCK_SUPABASE_URL } from '../e2e-web/support/mock-server';
-import { BUILDS, buildEnv } from '../e2e-web/support/builds';
+import { BUILDS, buildEnv, inheritedEnv } from '../e2e-web/support/builds';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -60,3 +60,30 @@ describe('[BL-600] the server-on web e2e build keeps its Supabase client', () =>
     expect(code('env: { ...process.env, ...buildEnv(b.env) }, // pass through')).toMatch(SPREAD);
   });
 });
+
+describe('[BL-1576] a shell EXPO_PUBLIC_E2E never reaches a non-seam web build', () => {
+  // What global-setup hands to `expo export` for a build: the inherited shell env, then the build's own env.
+  const exportEnv = (name: string, shell: Record<string, string | undefined>) =>
+    ({ ...inheritedEnv(shell), ...buildEnv(BUILDS.find((x) => x.name === name)!.env) }) as Record<string, string | undefined>;
+  const SHELL = { EXPO_PUBLIC_E2E: '1', PATH: '/usr/bin', HOME: '/home/asha' };
+
+  for (const name of ['plain', 'seed', 'server-on'])
+    it(`[BL-1576] ${name}: a shell EXPO_PUBLIC_E2E=1 is gone`, () => {
+      const env = exportEnv(name, SHELL);
+      expect(env.EXPO_PUBLIC_E2E).toBeUndefined();
+      expect(env.PATH).toBe('/usr/bin'); // the rest of the shell still passes through
+    });
+  it('[BL-1576] seam: keeps its own switch, and an empty shell does not remove it', () => {
+    expect(exportEnv('seam', SHELL).EXPO_PUBLIC_E2E).toBe('1');
+    expect(exportEnv('seam', {}).EXPO_PUBLIC_E2E).toBe('1');
+  });
+  it('[BL-1576] seam: a shell value other than 1 does not leak through either', () => {
+    expect(exportEnv('seam', { EXPO_PUBLIC_E2E: '0' }).EXPO_PUBLIC_E2E).toBe('1');
+  });
+  it('[BL-1576] global-setup passes the shell env only through inheritedEnv', () => {
+    const src = code(fs.readFileSync(path.join(__dirname, '../e2e-web/support/global-setup.ts'), 'utf8'));
+    expect(src).toMatch(/\.\.\.inheritedEnv\(process\.env\)/);
+    expect(src).not.toMatch(/\.\.\.process\.env/);
+  });
+});
+// Web-scan note (BL-1576): B-8 scans an iOS export only. If a web store bundle ever exists, scan it for the e2e seam too.

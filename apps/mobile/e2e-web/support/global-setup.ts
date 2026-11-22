@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { BUILDS, buildEnv, type WebBuild } from './builds';
+import { BUILDS, buildEnv, inheritedEnv, type WebBuild } from './builds';
 import { MOCK_SUPABASE_URL } from './mock-server';
 import { serve } from './server';
 
@@ -22,7 +22,7 @@ function build(b: WebBuild) {
   console.log(`[e2e-web] expo export --platform web -> ${path.basename(dist)} ...`);
   const r = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--clear', '--output-dir', dist], {
     cwd: ROOT,
-    env: { ...process.env, ...buildEnv(b.env) },
+    env: { ...inheritedEnv(process.env), ...buildEnv(b.env) },
     stdio: 'inherit',
   });
   if (r.status !== 0) throw new Error('expo export failed');
