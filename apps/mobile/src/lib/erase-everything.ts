@@ -57,7 +57,8 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 const CACHE_COPIES = ['exports', 'recovery-export', 'Print', PICKER_CACHE_FOLDER, BAKED_CACHE_FOLDER] as const; // the photo picker's originals and the re-encode's JPEGs
 
 /**
- * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.
+ * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase, and the
+ * device-only days and moments files (each held and thrown at the end, so the mark stays).
  * A recording that will not go throws, so the rows stay for the next try (the sweep would otherwise find the file
  * with no row and bring it back as a draft).
  */
