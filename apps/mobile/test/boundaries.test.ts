@@ -153,11 +153,12 @@ export function screenViolation(file: string, spec: string): boolean {
   return ['expo-sqlite', ...NATIVE_AUDIO_FILE].some((m) => spec === m || spec.startsWith(m + '/'));
 }
 
-function scan(): Record<string, string[]> {
+export function scan(root: string = ROOT): Record<string, string[]> {
+  const mobileSrc = join(root, 'apps', 'mobile', 'src');
   const found: Record<string, string[]> = { a: [], b: [], c: [], d: [], unresolved: [] };
-  const rel = (f: string) => relative(ROOT, f).split(sep).join('/');
-  const packagesDir = join(ROOT, 'packages');
-  for (const pkg of readdirSync(packagesDir)) {
+  const rel = (f: string) => relative(root, f).split(sep).join('/');
+  const packagesDir = join(root, 'packages');
+  for (const pkg of existsSync(packagesDir) ? readdirSync(packagesDir) : []) {
     for (const file of sourceFiles(join(packagesDir, pkg, 'src'))) {
       found.unresolved.push(...unresolvedCalls(readFileSync(file, 'utf8')).map((c) => `${rel(file)}::${c}`));
       for (const spec of importSpecifiers(readFileSync(file, 'utf8'))) {
@@ -166,7 +167,7 @@ function scan(): Record<string, string[]> {
     }
   }
   for (const dir of ['app', 'components']) {
-    for (const file of sourceFiles(join(MOBILE_SRC, dir))) {
+    for (const file of sourceFiles(join(mobileSrc, dir))) {
       found.unresolved.push(...unresolvedCalls(readFileSync(file, 'utf8')).map((c) => `${rel(file)}::${c}`));
       for (const spec of importSpecifiers(readFileSync(file, 'utf8'))) {
         if (screenViolation(file, spec)) found.b.push(`${rel(file)}::${spec}`);
@@ -270,6 +271,32 @@ describe('[G4] hardening, self-tests', () => {
   it('a "/*" inside a string or a regex does not hide a later import', () => {
     const src = "const g = 'src/*';\nconst r = /a\\/*/;\nimport a from 'expo-audio';\nconst h = \"x/*\";\nimport b from 'expo-av';";
     expect(importSpecifiers(src)).toEqual(['expo-audio', 'expo-av']);
+  });
+  it('a "/*" in JSX text does not hide a later import; a real JSX comment still does not count', () => {
+    expect(importSpecifiers("const a = <Text>packages/* are shared</Text>;\nimport a from 'expo-audio';\nconst c = 1; /* closes here */")).toEqual(['expo-audio']);
+    expect(importSpecifiers("const a = <Text>/* note</Text>;\nimport a from 'expo-av';")).toEqual(['expo-av']);
+    expect(importSpecifiers("const a = <View>{/* import x from 'expo-sqlite'; */}</View>;\nimport b from 'expo-av';")).toEqual(['expo-av']);
+    expect(importSpecifiers("const s='/*'; import a from 'expo-audio'; const t='*/';")).toEqual(['expo-audio']);
+  });
+  it('a require() with a backtick string is read; one with ${} is unresolved', () => {
+    expect(importSpecifiers('const a = require(`expo-audio`);\nconst b = require("expo-av");')).toEqual(['expo-audio', 'expo-av']);
+    expect(importSpecifiers('const a = require(`./x/${n}`);')).toEqual([]);
+    expect(unresolvedCalls('const a = require(`./x/${n}`);')).toEqual(['require(`./x/${n}`)']);
+  });
+  it('scan() reads a given root: a planted break under packages and components is found, and an unresolved call in each is listed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'g4-'));
+    try {
+      for (const d of [join(dir, 'packages', 'p', 'src'), join(dir, 'apps', 'mobile', 'src', 'components'), join(dir, 'apps', 'mobile', 'src', 'app')]) mkdirSync(d, { recursive: true });
+      writeFileSync(join(dir, 'packages', 'p', 'src', 'a.ts'), "import { Platform } from 'react-native';\nconst m = await import(name);\n");
+      writeFileSync(join(dir, 'apps', 'mobile', 'src', 'components', 'b.tsx'), "import { open } from 'expo-sqlite';\nconst m = await import(other);\n");
+      writeFileSync(join(dir, 'apps', 'mobile', 'src', 'app', 'c.tsx'), "import { open } from 'expo-audio';\n");
+      const got = scan(dir);
+      expect(got.a).toEqual(['packages/p/src/a.ts::react-native']);
+      expect(got.b).toEqual(['apps/mobile/src/app/c.tsx::expo-audio', 'apps/mobile/src/components/b.tsx::expo-sqlite']);
+      expect(got.unresolved).toEqual(['apps/mobile/src/components/b.tsx::import(other)', 'packages/p/src/a.ts::import(name)']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
   it('a regex literal after if(), while(), for() or return does not hide an import on the same line', () => {
     expect(importSpecifiers("if (x) /\\/\\//.test(s); import a from 'expo-audio';")).toEqual(['expo-audio']);
