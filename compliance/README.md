@@ -7,7 +7,7 @@ Code and data that keep Early Letters inside the law at the door: who may create
 |---|---|
 | `FENCE.json` | The fence: the two tiers of paths, content markers, assigned agents, the approval formats. |
 | `fence/` | The checker the `compliance-fence` CI check runs, and its tests. |
-| `scripts/` | The regulatory watch (Federal Register), the geo data loader, their tests and `watch-topics.json` (moving here from `scripts/compliance/` in PR #424). |
+| `scripts/` | The regulatory watch (Federal Register), the geo data loader, their tests and `watch-topics.json` (moved here from `scripts/compliance/` by the re-cut of #424). |
 
 Some compliance code cannot live in this folder, because its tools look elsewhere. `FENCE.json` protects it by name, and also catches any file under `supabase/` whose diff mentions a compliance table or function (`content_markers`), so a migration cannot dodge the fence by its name:
 - `supabase/migrations/*_compliance_*.sql`: the Supabase CLI only reads `supabase/migrations/`. Name new compliance migrations `*_compliance_*`; the content markers catch the rest.

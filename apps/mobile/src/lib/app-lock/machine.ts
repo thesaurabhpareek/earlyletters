@@ -5,11 +5,12 @@
  * the live take and the share sheet, and the root layout draws what it says.
  *
  * Rules:
- * - Off until the parent turns it on (CPO-2). Off, it never covers, never locks and never asks.
+ * - Off until the parent turns it on (CPO-2). Off, it never locks and never asks. It still covers while the app is not
+ *   in front (BL-1407), because the app switcher snapshot is not a lock question.
  * - Locks on a cold start, and on coming back after longer in the background than the grace ("Ask again after":
  *   Immediately, After 1 minute (default), After 5 minutes). `inactive` alone never locks (the Face ID sheet, a call,
  *   Control Center, the share sheet).
- * - The privacy cover is up whenever the lock is on and the app is not active, and whenever it is locked, so the app
+ * - The privacy cover is up whenever the app is not active (lock on or off), and whenever it is locked, so the app
  *   switcher snapshot never shows a letter or a name. It is drawn at once (no fade).
  * - Never during a take (paused included): a lock that falls due waits, and applies once the take is kept. The lock
  *   never stops or drops audio; it only covers. The same for the share sheet (Export).
@@ -131,9 +132,13 @@ export function reduce(s: LockState, e: LockEvent): LockState {
   }
 }
 
-/** The opaque cover (mark only): up while locked, and whenever the lock is on and the app is not in front. */
+/**
+ * The opaque cover (mark only): up while locked, and whenever the app is not in front, whatever App lock says (BL-1407
+ * option (a)): the app switcher snapshot must never show a letter's words, lock on or off. It only covers; the lock
+ * itself (locked, due, the grace, the prompt) is unchanged. `locked` implies `enabled`, so the lock-on cases read as before.
+ */
 export function coverShown(s: LockState): boolean {
-  return s.enabled && (s.locked || s.phase !== 'active');
+  return s.locked || s.phase !== 'active';
 }
 
 /** The lock screen asks on its own: once per lock, only in front, never while a system sheet is already up. */

@@ -1147,8 +1147,22 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
     wipe.removeBook(c, id);
   });
   compactAfterErase(c);
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(id);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+const bookErasedHooks = new Set<(bookId: string) => void>();
+/** Device files keyed by book (the moments file, NS-53-R249) remove their rows when a book is erased for good. Never throws into the erase. */
+export function onBookErased(hook: (bookId: string) => void): () => void {
+  bookErasedHooks.add(hook);
+  return () => void bookErasedHooks.delete(hook);
 }
 
 // ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
