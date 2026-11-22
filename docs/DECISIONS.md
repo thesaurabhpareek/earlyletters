@@ -669,6 +669,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-162 | A co-parent (Family) surface shows only when server features are on AND the build is an alpha: one join-door rule, `visibleCoParentDoors(coParent, alpha).joinButton`. No co-parent entry point in a store build until the co-parent work (BL-882 to BL-889) ships; shipped by #737 and #720 | Decided (founder, 11 Nov 2026) | Yes | 2026-11-11 |
 | D-163 | Analytics is translated into engineering-ready requirements, added to the backlog and implemented before the production-readiness app build. Supersedes D-095 and D-124 item 3 for the production build only. Second instruction: page-view, click and impression instrumentation is collected for every user, not behind an opt-in. The consent default, the LEGAL-REQ-043 test, the consent wording, the PostHog account and key, the region, counsel's view and the content ban are not decided here | Decided (founder: his instruction in chat, 20 Nov 2026); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes for the requirements and the build work; no production flip until the gates in the entry close | 2026-11-20 |
 | D-165 | Moments decisions locked on the council recommendations (O-48 value-prop pair unpublished until counsel answers; O-47 option C; tabs Home, Moments, Book, Me; DC-3 flight off until DM-11 and DM-12 pass; O-59 "Not now"; O-44 and cover on). Standing rules: exec review then lock for any open decision, founder-only items still go to him; at least 20 agents in parallel | Decided (founder, on the council recommendations); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1236,5 +1237,30 @@ Keep at least 20 agents running in parallel at all times, across product, design
 These carry out the fleet rule and were not said by him: a cap or a budget that blocks the rule is escalated to the founder, not worked around; estimated spend is reported in the daily digest.
 
 - **Not decided here, and not claimed as his approval:** any item beyond the two founder quotes above (the council rulings in section 1 are recorded, not his words); the final value-prop text; the tab name (D-164); the counsel answers (Q130, G2 Q1 and Q8); the accountant's and counsel's confirmation of O-47; anything in `docs/legal/**`.
+- **Amends:** none; earlier entries stand as written.
+- **Owner:** founder; Karma merges.
+
+### D-166 Founder approves the council recommendations on O-47 and O-48 (founder, 21 Nov 2026)
+- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to Karma's list of items needing his decision. His own words are only the two quotes under "Founder words". What he approved is the council recommendation on each item, as set out in D-165 section 1, and that text is labelled as a council recommendation below. Recorded by the Chief of Staff (Claude role) as a docs-only entry. I have not seen the chat itself; the quotes were passed to me by the agent that launched me, and the founder should confirm they read true. Merged by Karma under D-132.
+- **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his:**
+
+  ```text
+  I approve both. Align with executives and continue
+  ```
+
+  ```text
+  Approved for o 47 and o 48!
+  ```
+
+#### Council recommendations he approved (not his words; the text is D-165 section 1)
+1. **O-47, option C.** Stay an individual publisher under D-134 (no LLC now). The accountant and counsel must confirm. The dated line naming the reopening triggers is to be written by him, in his own words, by Fri 27 Nov 2026, and an accountant is engaged before the first payout. Nothing here is tax or legal advice.
+2. **O-48, the value-prop pair.** Line two is "{app} never adds a word to your letter". The fallback is "Your words finish it". Withdrawn and not to be used: "We never write a word for you."
+
+#### What this approval does not do
+- **(a) It does not supply the reopening-trigger wording.** That line stays his to write, in his own words, by Fri 27 Nov 2026. "I approve both" is not that line, and no agent drafts it for him.
+- **(b) O-48 stays UNPUBLISHED.** Approval of the lines does not publish them. Neither line goes to the store page, website, first-run screen or ads until counsel answers packet Q130 (G2 Q1 and Q8). What a user is promised stays his (CR-73), and counsel must confirm the wording.
+- **(c) Legal text is not touched.** Nothing under `docs/legal/**` changes in this entry.
+- **Not claimed as his approval:** the accountant's and counsel's confirmation of O-47, the counsel answers, the other D-165 items beyond O-47 and O-48, and the tab name.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-166 on `develop` (D-165 is #1433). No open PR patch to this file adds D-164 or later, so D-166 is free; re-check before merging.
 - **Amends:** none; earlier entries stand as written.
 - **Owner:** founder; Karma merges.
