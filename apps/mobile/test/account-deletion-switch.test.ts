@@ -175,7 +175,8 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     for (const name of ['development', 'e2e', 'production']) {
       const withServers = { ...buildEnv(name), EXPO_PUBLIC_SERVER_FEATURES: 'on' };
       expect((await readCapability(withServers)).row, name).toBe(true);
-      expect((await readCapability(buildEnv(name))).row, `${name} as written, servers off`).toBe(false);
+      // As written: production has servers on since build 12 (founder, 8 Nov 2026), so its row shows; development and e2e are servers off, so theirs does not.
+      expect((await readCapability(buildEnv(name))).row, `${name} as written`).toBe(name === 'production');
     }
   });
 
@@ -237,6 +238,55 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
       expect(envFileProblems(f, 'EXPO_PUBLIC_SERVER_FEATURES=on\n'), f).toEqual([`${f}: EXPO_PUBLIC_SERVER_FEATURES`]);
       expect(envFileProblems(f, 'EXPO_PUBLIC_BACKUP=on\n'), f).toEqual([`${f}: EXPO_PUBLIC_BACKUP`]);
     }
+  });
+
+  it('[BL-1404] never echoes a line: no "=", a ":" separator or spaces give the file and line number only', () => {
+    const secret = 'sb_secret_ashafictional0000';
+    for (const f of FILES) {
+      const cases = [secret, `SERVICE_ROLE_KEY: ${secret}`, `some words ${secret} here`];
+      for (const line of cases) {
+        const out = envFileProblems(f, `# note\n\n${line}\n`);
+        expect(out, `${f} ${line}`).toEqual([`${f}: <unparsable line 3>`]);
+        expect(out.join('\n')).not.toContain(secret);
+      }
+    }
+  });
+
+  it('[BL-1404] a secret-looking text before "=" is never printed as a name, whatever follows the "="', () => {
+    const f = '.env.local';
+    const names = ['sb_secret_ashafictional0000', 'ghp_ashafictional0000', 'sk_live_ashafictional0000', 'sb_secret_abc', 'abcDEF123456789==', 'export EXPO_PUBLIC_X', 'expo_public_lower', 'SUPABASE_SERVICE_ROLE_KEY'];
+    for (const n of names) {
+      for (const tail of ['1', '', ' ', 'abcDEF123456789==']) {
+        const out = envFileProblems(f, `${n}=${tail}\n`);
+        expect(out, `${n}=${tail}`).toEqual([`${f}: <unparsable line 1>`]);
+      }
+    }
+  });
+
+  it('[BL-1404] a padded-base64 value after a name is never printed', () => {
+    const out = envFileProblems('.env', 'EXPO_PUBLIC_SUPABASE_ANON_KEY=abcDEF123456789==\n');
+    expect(out).toEqual(['.env: EXPO_PUBLIC_SUPABASE_ANON_KEY']);
+    expect(out.join('\n')).not.toContain('abcDEF');
+  });
+
+  it('[BL-1404] a very long name is not echoed: 200,000 characters give the line number only', () => {
+    const long = `EXPO_PUBLIC_${'A'.repeat(200_000)}`;
+    for (const line of [`${long}=1`, `${'x'.repeat(200_000)}=1`]) {
+      const out = envFileProblems('.env', `\n${line}\n`);
+      expect(out).toEqual(['.env: <unparsable line 2>']);
+    }
+    expect(envFileProblems('.env', `EXPO_PUBLIC_${'A'.repeat(64)}=1\n`)[0].length).toBeLessThan(100);
+  });
+
+  it('[BL-1404] an EXPO_PUBLIC_* name still names the key and never the value', () => {
+    const f = '.env.local';
+    const out = envFileProblems(f, 'EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ashafictional0000\n');
+    expect(out).toEqual([`${f}: EXPO_PUBLIC_SUPABASE_ANON_KEY`]);
+    expect(out.join('\n')).not.toContain('sb_publishable');
+  });
+
+  it('[BL-1404] `export KEY=value` is unparsable: reported by line, still a problem', () => {
+    expect(envFileProblems('.env', `export ${VAR}=on\n`)).toEqual(['.env: <unparsable line 1>']);
   });
 
   it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
@@ -313,7 +363,7 @@ describe('the Settings row and the route honour it', () => {
     for (const [servers, deletion, signedIn] of states) {
       setServerFeaturesForTests(servers);
       setBuildFlagForTests('accountDeletion', deletion);
-      expect(run(rowCondition!, { capabilities, auth: { signedIn } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
+      expect(run(rowCondition!, { capabilities, auth: { signedIn }, you: { accountReady: true } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
     }
   });
 
@@ -330,7 +380,8 @@ describe('the Settings row and the route honour it', () => {
 
   it('nothing else opens the page: Settings home is the only screen that names the route, and the link allowlist never lets a link reach it', () => {
     const namers = walk(SRC).filter((f) => /['"`]\/settings\/delete-account['"`]/.test(code(readFileSync(f, 'utf8'))));
-    expect(namers.map((f) => relative(SRC, f))).toEqual(['app/settings/index.tsx']);
+    // BL-922a: the held screen's Delete account link (NS-10-R4a) names it in one pure file, shown only with the switch on (test/held-screen-routes.test.ts).
+    expect(namers.map((f) => relative(SRC, f)).sort()).toEqual(['app/settings/index.tsx', 'lib/first-run/held-screen.logic.ts']);
     // The row's tap is the only push to it.
     expect(home.match(/ROUTES\.deleteAccount/g)?.length).toBe(1);
     expect(src('lib/family/entry.logic.ts')).not.toMatch(/delete-account/);

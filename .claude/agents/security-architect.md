@@ -21,7 +21,8 @@ Set and hold the security standard for Early Letters: only the right member of t
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - The `infosec` skill (`.claude/skills/infosec/SKILL.md`): threat-model method, checks by layer, open-source tools and their licences.
 - `CLAUDE.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 4 and 17), your two chapters.
-- `docs/tdd/04-security-identity.md`, `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-001, -002, -021 to -027, -037, -040), `docs/DECISIONS.md` (D-006, D-020, D-024, D-026, D-039, D-041, D-044).
+- `docs/tdd/04-security-identity.md`, `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-001, -002, -021 to -027, -037, -040), `docs/DECISIONS.md` (D-006, D-020, D-024, D-026, D-039, D-041, D-054, which supersedes D-044).
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 2 (you review native modules) and the reads the cards give you: NS-03 pilot sections 3, 4 and 6, NS-04 plist and entitlements, NS-05 Levels 2 and 3, any voice leaving the phone (`docs/product/prd/README.md`, "Reads that gate anything"). The roster does not route `apps/mobile/modules/**` to you; ask for those PRs. Skills: `expo-native-module`, `review-gate`. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 None: you work from reviews, handoffs and standing duties.

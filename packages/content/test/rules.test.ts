@@ -24,6 +24,7 @@ import {
   en,
   familyEmails,
   features,
+  HELPLINES,
   lifecycleEmails,
   onboardingStories,
   pages,
@@ -35,6 +36,7 @@ import {
 } from '../src';
 import { alternateStories } from '../src/stories.en';
 import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
+import { NOTIFICATION_PATH } from './support/notification-scope';
 
 type Leaf = { path: string; text: string };
 
@@ -107,8 +109,16 @@ const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
   { path: `story.${c.id}.headline`, text: c.headline },
   { path: `story.${c.id}.line`, text: c.line },
 ]);
+/** The helplines' words (helplines.ts): the country, each line's name and how to reach it. Digits and sources are not copy. */
+const HELPLINE_LEAVES: Leaf[] = HELPLINES.flatMap((r) => [
+  { path: `helplines.${r.region}.country`, text: r.country },
+  ...r.lines.flatMap((l) => [
+    { path: `helplines.${l.id}.name`, text: l.name },
+    { path: `helplines.${l.id}.how`, text: l.how },
+  ]),
+]);
 const PROMPT_LEAVES: Leaf[] = PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text }));
-const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...APP_COPY];
+const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...HELPLINE_LEAVES, ...APP_COPY];
 
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
@@ -119,6 +129,7 @@ const ALL: Leaf[] = [
   ...leaves(features, 'features'),
   ...PAGES,
   ...STORIES,
+  ...HELPLINE_LEAVES,
   ...PROMPT_LEAVES,
 ];
 /** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
@@ -148,7 +159,7 @@ describe('characters', () => {
   // again and again, and VOICE.md allows at most one exclamation mark a month across all notifications.
   it('uses at most 3 exclamation marks across all product copy, within a budget per surface', () => {
     const count = (items: Leaf[]) => items.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
-    const isNotification = (l: Leaf) => /^(en\.notifications|features\.reminders\.(neutral|together))\./.test(l.path);
+    const isNotification = (l: Leaf) => NOTIFICATION_PATH.test(l.path);
     const surfaces = {
       notifications: IN_APP.filter(isNotification),
       inApp: IN_APP.filter((l) => !isNotification(l)),
@@ -224,12 +235,15 @@ describe('prompts', () => {
     // app: the public name, filled from packages/brand (never typed in in-app copy);
     // version, build: the app version row; date, reference, days, email: transactional emails;
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
-    // readme; cancelBy: trial end; coParent: deletion summary.
+    // readme; cancelBy: trial end; coParent: deletion summary; time: a reminder time ("8:30 PM");
+    // first, domain: the masked address as VoiceOver says it (onboarding.child.spokenAddress).
+    // place, holiday: the Moments reason lines (momentsTab.reason, spec 6.4a); year above is the same list.
+    // device, when: the new-device confirm page (newDevicePage, E83), the same two the new-device email fills.
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent',
+      'percent', 'format', 'cancelBy', 'coParent', 'time', 'first', 'domain', 'device', 'when', 'place', 'holiday',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
@@ -282,7 +296,7 @@ describe('no daily rhythm, streaks or gap counts', () => {
   // no rhythm for the parent. Everything the product says about itself is in scope.
   const RHYTHM_CHECKED = EVERY.filter((l) => !l.path.startsWith('prompt.'));
   // Anything that reminds, notifies or celebrates.
-  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path));
+  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path) || NOTIFICATION_PATH.test(l.path));
   const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
   // "one day" is left out on purpose: it means "someday", which VOICE.md's legacy rule asks for.
   const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;
@@ -618,6 +632,70 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
+    // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
+    // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
+    // in-app-disclosures.md (experience-pass.test.ts pins them word for word); nothing else may join them.
+    const REGISTERED_UNTIL_COUNSEL = new Set(['en.plus.legal.renewAnnual', 'en.plus.legal.renewMonthly']);
+    const PERIOD = String.raw`(day|week|month|year)s?`;
+    const COUNT = String.raw`(a|an|one|two|three|four|six|seven|twelve|fourteen|thirty|first|\d+)`;
+    const TRIAL_LENGTH = new RegExp(
+      [
+        // "Free for 2 months", "free for a month"
+        String.raw`\bfree for ${COUNT}[- ]?${PERIOD}\b`,
+        // "a month free", "the first month free", "2 months free", "first 2 months free", "your first month is free",
+        // "a free month", "two free months", "7-day free trial", "14 days free"
+        String.raw`\b${COUNT}(\s+\d+)?[- ]+(free\s+)?${PERIOD}('s)?\s+(is\s+|are\s+)?(free|trial)\b`,
+        String.raw`\b${COUNT}\s+free\s+${PERIOD}\b`,
+        // "a free month" said any way, "free months"
+        String.raw`\bfree\s+${PERIOD}\b`,
+        // "Free trial: 1 month", "trial of 30 days", "free for one month"
+        String.raw`\b(free\s+)?trial\b[^.]{0,12}?\b${COUNT}[- ]?${PERIOD}\b`,
+      ].join('|'),
+      'i',
+    );
+    // The phrases it must catch (review A on #641), and what it must leave alone.
+    for (const phrase of [
+      'Free for 2 months, then $49.99 a year.',
+      'Try a month free.',
+      'Get the first month free.',
+      'A free month for new members.',
+      'Two free months with Plus Annual.',
+      'The first 2 months free.',
+      '3 months free.',
+      'Your first month is free.',
+      'Free trial: 1 month.',
+      'A 7-day free trial.',
+      '14 days free.',
+      'Free for one month.',
+    ]) expect(phrase, phrase).toMatch(TRIAL_LENGTH);
+    for (const fine of [
+      'Your first two letters are free.',
+      'Reading, listening and your copy stay free.',
+      'Every letter and recording, free, any time.',
+      'Plus is on, free until {date}.',
+      'Asha is 3 months old.',
+    ]) expect(fine, fine).not.toMatch(TRIAL_LENGTH);
+    expect(offenders(IN_APP.filter((l) => !REGISTERED_UNTIL_COUNSEL.has(l.path)), TRIAL_LENGTH)).toEqual([]);
+    // The rule bites: the retired lines would fail it.
+    for (const k of REGISTERED_UNTIL_COUNSEL) expect(IN_APP.find((l) => l.path === k)?.text ?? '', k).toMatch(TRIAL_LENGTH);
+    // The dead line PL-8 retires stays gone.
+    expect((features.billing.keepGate as Record<string, unknown>).plusIsOn).toBeUndefined();
+    // F5: one setup line, word for word, at setup and on Plan.
+    const m = features.billing.membership;
+    expect(m.line).toBe('Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.');
+    expect(en.onboarding.welcome.freeLine).toBe(m.line);
+    expect(features.billing.keepGate.secondFreeNote).toBe('That was your second free letter. Whenever you are ready, Plus keeps the book growing.');
+    // No count, countdown, price or trial wording in any F5 line (CDesO-6: Free, Plus, Plus, shared).
+    const f5 = [...leaves(m, 'membership'), { path: 'keepGate.secondFreeNote', text: features.billing.keepGate.secondFreeNote }];
+    // Only the {date} placeholder itself is set aside (its value is a calendar date on Plan); a digit anywhere else,
+    // even in a line that also holds {date}, still fails.
+    const withoutDate = f5.map((l) => ({ ...l, text: l.text.split('{date}').join('') }));
+    expect(offenders(withoutDate, /\d|\$|\bprice\b|free trial|free months?|\b(left|remaining|until)\b|\{(?!date\})[^}]*\}/i)).toEqual([]);
+    expect(f5.filter((l) => l.text.includes('{date}')).map((l) => l.path)).toEqual(['membership.ended']);
+    expect(Object.values(m.status)).toEqual(['Free', 'Plus', 'Plus, shared']);
+  });
+
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
     // 2.2 covers "Demos, betas, and trial versions", so the listing also avoids the words that mean the same.
     // The in-app "early version" note is the likeliest one to be pasted in by mistake.
@@ -804,12 +882,16 @@ describe('English-only notices (D-111 item 4)', () => {
 });
 
 describe('support resources (D-034)', () => {
-  it('dials digits only and names each line', () => {
-    for (const r of en.struggling.resources) {
-      expect(r.tel).toMatch(/^\d{3,11}$/);
+  it('dials digits only and names each line (sources and dates: helplines.test.ts)', () => {
+    for (const r of HELPLINES.flatMap((h) => h.lines)) {
+      for (const n of [r.tel, r.sms]) if (n) expect(n).toMatch(/^\d{3,11}$/);
       expect(r.name.length).toBeGreaterThan(0);
-      expect(r.how).toContain(r.tel.length === 3 ? r.tel : r.tel.slice(-4));
+      expect(r.how.length).toBeGreaterThan(0);
     }
+  });
+
+  it('the helplines words are in-app copy, so every rule here reads them', () => {
+    expect(IN_APP.map((l) => l.path)).toContain('helplines.us.nmmh.how');
   });
 });
 
@@ -931,9 +1013,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
   });
 
+  // Deliberate rule change, founder decision D-139 (positioning A, 1 Nov 2026): the descriptor is now "letters to your
+  // child, in your own words and voice", and the old one ("the baby memory book you fill by talking") is retired.
   it('uses one descriptor', () => {
-    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
-    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}: letters to your child, in your own words and voice.`);
+    expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
+    expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
 });
 
@@ -1091,6 +1176,39 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
     // A row points at the copy it names.
     for (const s of SURFACES) expect(s.copy, s.name).toBe(features[s.feature]);
   });
+
+  // BL-462 point 2: the hand-kept button lists are pinned by size, so a label dropped from a list is a visible change.
+  it('pins the size of the auth, family and deletion button lists', () => {
+    const size = (f: string) => SURFACES.find((s) => s.feature === f)!.buttons.length;
+    expect(size('auth')).toBe(28);
+    expect(size('family')).toBe(17);
+    expect(size('accountDeletion')).toBe(8);
+    for (const s of SURFACES) expect(new Set(s.buttons).size, s.name).toBe(s.buttons.length);
+  });
+
+  // BL-462 point 3: a copy file in features/ that index.ts does not export is invisible to the key check above.
+  it('has every features/*.en.ts file exported by features/index.ts', () => {
+    const dir = join(__dirname, '..', 'src', 'features');
+    const index = readFileSync(join(dir, 'index.ts'), 'utf8');
+    const files = readdirSync(dir).filter((f) => f.endsWith('.en.ts'));
+    expect(files.length).toBeGreaterThan(10);
+    expect(files.filter((f) => !index.includes(`from './${f.replace(/\.ts$/, '')}'`))).toEqual([]);
+  });
+
+  // BL-462 point 4: where an opt-out file says "we", its reason names the line, so the exception is written down.
+  it('names the "we" lines of the backup and billing opt-outs in their reasons', () => {
+    for (const key of ['backup', 'billing'] as const) {
+      const weLines = leaves(features[key]).filter((l) => /\b(?:we|our|us)\b/i.test(l.text) && !/^\s*\*/.test(l.text));
+      expect(weLines.length, key).toBeGreaterThan(0);
+      const reason = SURFACE_OPT_OUT[key]!;
+      expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p)), key).toEqual([]);
+    }
+  });
+
+  // BL-462 point 5 (mutant B07): the deletion screen names the child where the book stays.
+  it('keeps {child} in the deletion "stays" line when no letters leave it', () => {
+    expect(features.accountDeletion.what.staysNone).toContain('{child}');
+  });
 });
 
 describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as const))('%s', (_title, surface) => {
@@ -1124,7 +1242,8 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
   it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
     expect(surface.buttons.length).toBeGreaterThan(0);
     // The list cannot fall behind the file: every leaf named ...Button or ...Cta is on it.
-    const named = ALL.filter((l) => /(?:button|cta)$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
+    // BL-462 point 1: the same pattern as the P0 test, so a ...CtaShort or ...Action leaf cannot bypass the list.
+    const named = ALL.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
     expect(named.filter((p) => !surface.buttons.includes(p))).toEqual([]);
     for (const key of surface.buttons) {
       const label = get(surface.copy, key);

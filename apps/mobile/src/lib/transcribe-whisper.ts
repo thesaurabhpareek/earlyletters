@@ -59,7 +59,7 @@ import {
 } from './transcribe';
 import { toWhisperLanguage } from './transcribe-language';
 import { planChunks } from './transcribe-plan';
-import { DECODE_OPTIONS, VAD_OPTIONS, findSpeech, openRecordingForRun, transcribeChunks, type ChunkDecoder } from './transcribe-run';
+import { DECODE_OPTIONS, VAD_OPTIONS, findSpeech, openRecordingForRun, runFraction, transcribeChunks, type ChunkDecoder } from './transcribe-run';
 import { chunkPrompt, DEFAULT_PROMPT_SEEDS, dictionaryPrompt } from './transcribe-prompt';
 
 // The run itself (voice detector settings, chunking, clean-up) is pure and shared with the Mac gate tool.
@@ -155,10 +155,21 @@ async function transcribeWithWhisper(
       const seed = (input.promptSeed ?? DEFAULT_PROMPT_SEEDS[input.language] ?? '').trim();
       const nameList = dictionaryPrompt(input.dictionary);
 
+      // Within a part, whisper.rn reports 0 to 100 per call: the run's share is (parts done + this part's share) / parts.
+      let part = { done: 0, total: plan.length };
       const decode: ChunkDecoder = async (chunk, temperature) => {
         const pcm = await run.decode(chunk.pieces);
         check();
-        const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature });
+        // The part this call belongs to, fixed at its start; one update per whole percent, not per callback.
+        const at = part;
+        let lastPct = -1;
+        const within = (pct: number) => {
+          const whole = Math.floor(pct);
+          if (!(whole > lastPct)) return;
+          lastPct = whole;
+          onProgress?.({ stage: 'listening', done: at.done, total: at.total, fraction: runFraction(at.done, at.total, whole) });
+        };
+        const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature, onProgress: within });
         const stop = () => void job.stop().catch(() => {});
         signal?.addEventListener('abort', stop);
         try {
@@ -173,7 +184,17 @@ async function transcribeWithWhisper(
       const { raw, words } = await transcribeChunks(
         plan,
         decode,
-        { seed, nameList, check, onProgress: (done, total) => onProgress?.({ stage: 'listening', done, total }) },
+        {
+          seed,
+          nameList,
+          check,
+          onProgress: (done, total) => {
+            part = { done, total };
+            // No fraction here: only whisper.rn's own callback gives one, so if it never fires the bar is not drawn
+            // stuck at the start (words-state.logic.ts falls back to the part words and per-part steps).
+            onProgress?.({ stage: 'listening', done, total });
+          },
+        },
         meta,
       );
       return result(raw, words);

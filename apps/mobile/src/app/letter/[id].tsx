@@ -4,7 +4,9 @@
  * - Apple Books: reader-owned "Aa" Reading Size in a small sheet, the page changing live
  *   behind it; text never animates its size, it cross-fades (MOTION 5i).
  * - Day One: the recording and its words in one entry; the voice comes first after the text.
- * - Apple Settings inset list for the few actions (Add to book, Make private, Delete).
+ * - Apple Settings inset list for the few actions (Add to book, Make private, Change the date, Delete).
+ * - Change the date (F09 6.2 step 6, F09-REQ-004): own letters only; the date sheet (a day, or a month of age), then the
+ *   letter is filed in its new chapter at once. The words are never touched.
  * - Delete asks first (D-085, "Keep it" is the default), then returns to the Book at once, where the card leaves
  *   its row and "Letter deleted." waits with Undo (S36; TDD 09 A11Y-F03: the person's tap, never a timer).
  *
@@ -21,6 +23,7 @@
  */
 import { Redirect, router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
+import { CalendarBlankIcon } from 'phosphor-react-native/src/icons/CalendarBlank';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
@@ -49,6 +52,7 @@ import { track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
 import {
@@ -57,22 +61,31 @@ import {
   getChild,
   getEntry,
   listDeleted,
+  setEntryDate,
   setEntryInBook,
+  todayISO,
   canTypeWordsFor,
   setTypedWordsForWaitingEntry,
   subscribeTo,
   undeleteEntry,
   type Child,
   type Entry,
+  type OccurredPrecision,
 } from '@/lib/store';
-import { useReducedMotion } from '@/lib/motion';
+import { useMotion, useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
 import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
+import { LetterPhoto, LetterPicture } from '@/components/photos/letter-photo';
+import { useLetterPhoto } from '@/lib/photos/hooks';
+import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
-import { provenanceOf, shortDateline } from '@/components/book/chapters';
+import { provenanceOf } from '@/components/book/chapters';
+import { entryDateline, movedToast } from '@/components/book/date-change.logic';
+import { DateSheet } from '@/components/book/date-sheet';
 import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
@@ -119,6 +132,8 @@ function Letter() {
   const [size, setSize] = useState<ReadingSize>(getReadingSize);
   const [showOriginal, setShowOriginal] = useState(false);
   const fontScale = useFontScale();
+  const screenWidth = useWindowDimensions().width;
+  const storedPhoto = useLetterPhoto(entry?.id);
   useUnlitRoom();
 
   // The page follows the store: words that arrive while it is open appear without leaving and reopening (J10-01).
@@ -148,10 +163,17 @@ function Letter() {
   const words = letterWords(entry);
   const text = showOriginal ? entry.rawTranscript : note ? excerpt : entry.finalText;
   const shownNote = note && !showOriginal;
-  const dateline = shortDateline(child, entry.occurredOn);
-  const spokenDateline = letterDateline(child, entry.occurredOn);
+  // A letter dated to a month shows the month only, on the card and here alike (F09-REQ-003).
+  const monthOnly = entry.occurredPrecision === 'month';
+  const dateline = entryDateline(child, entry);
+  const spokenDateline = monthOnly ? dateline : letterDateline(child, entry.occurredOn);
+  // The picture sits between the dateline and the words (ruling NS-01-C01-order). A letter with a picture hands off with
+  // the plain 200 ms fade (the carry moves dateline and words as one rigid block); a letter without one carries as before.
+  const hasPicture =
+    !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
+  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
   const openingFor: Opening = (focus) => (
-    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} />
+    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} />
   );
 
   const page = (
@@ -168,6 +190,7 @@ function Letter() {
         onToggleOriginal={() => setShowOriginal((v) => !v)}
         opening={openingFor}
         openingLineHeight={lineHeightFor(shownNote ? 'footnote' : 'letterBody', fontScale, scale)}
+        hasPicture={hasPicture}
         words={words}
         onEntry={setEntry}
       />
@@ -194,6 +217,7 @@ function OpeningBlock({
   note,
   scale,
   swapKey,
+  picture,
 }: {
   focusRef: RefObject<any> | null;
   dateline: string;
@@ -202,12 +226,16 @@ function OpeningBlock({
   note: boolean;
   scale: number;
   swapKey: string;
+  picture?: ReactNode;
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
-      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} testID={focusRef ? 'letter.dateline' : undefined}>
+      {/* NS-33-R1: the dateline is the page's level 1 heading, and its first. The carried copies stay hidden from VoiceOver. */}
+      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
+      {/* The picture, when the letter has one: second in order, after the one level 1 heading and before the words. */}
+      {picture}
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
       <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(150).reduceMotion(ReduceMotion.Never) : undefined}>
         {note ? (
@@ -231,11 +259,12 @@ type PageProps = {
   onToggleOriginal: () => void;
   opening: Opening;
   openingLineHeight: number;
+  hasPicture: boolean;
   words: ReturnType<typeof letterWords>;
   onEntry: (e: Entry) => void;
 };
 
-function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, words, onEntry }: PageProps) {
+function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, hasPicture, words, onEntry }: PageProps) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -254,7 +283,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     const pageY = insets.top + 60;
     const column = { x: CARD_TEXT_INSET, y: pageY, width: screen.width - 2 * CARD_TEXT_INSET, height: Number.MAX_SAFE_INTEGER, lineHeight: openingLineHeight };
     return pageRestPlan({
-      carried: !!r && !reduced && canCarry(r.text, column),
+      carried: !hasPicture && !!r && !reduced && canCarry(r.text, column),
       holdMs: tokens.motion.cardToPage.holdMs,
       measureMs: MEASURE_MS,
       spring: tokens.motion.standard,
@@ -297,6 +326,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   );
   const [sizeOpen, setSizeOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   // "Write the words" sheet: open state lives here, with the sheet, so it outlives the words card (below).
   const [writing, setWriting] = useState(false);
   // Words that arrived after the letter was saved and have not been read back yet (D-086).
@@ -312,7 +342,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
   // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
-  const provenanceLine = provenanceLineOf(entry, { own, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
+  const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
   const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
@@ -337,6 +367,16 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     haptic('tap');
     onEntry({ ...entry, inBook: next });
     toast.show({ message: next ? fill(copy.review.destination.addedToast, { child: child.name }) : copy.review.destination.privateToast });
+  };
+
+  // Change the date (F09-REQ-004): one local write (and, with sync on, one outbox op); the page follows the store, so
+  // its dateline changes in place and the Book behind files the letter in its new chapter.
+  const changeDate = (next: { occurredOn: string; precision: OccurredPrecision }) => {
+    setDateOpen(false);
+    if (!setEntryDate(entry.id, next.occurredOn, next.precision)) return toast.show({ message: copy.errors.generic.title });
+    haptic('tap');
+    onEntry({ ...entry, occurredOn: next.occurredOn, occurredPrecision: next.precision });
+    toast.show({ message: movedToast(child, next.occurredOn) });
   };
 
   // Delete (S35, S36): committed at once (the tombstone; with sync on, the outbox op), then back to the Book, where
@@ -377,7 +417,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
               {copy.review.originalLabel}
             </Text>
           ) : null}
-          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} /> : opening(ownOpening)}
+          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} carry={!hasPicture} /> : opening(ownOpening)}
           {showsSignature(words) || showOriginal ? (
             <Animated.View style={restSignature} className="self-end">
               <Text variant="signature" scale={tokens.readingScale[size]}>
@@ -389,6 +429,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
         {spoken && <AudioPlayer entryId={entry.id} />}
+        {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
+            opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
         {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
@@ -415,11 +458,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 {provenanceLine}
               </Text>
             </View>
-            {!entry.inBook && (
-              <View className="flex-row pt-1">
-                <PrivateChip color={c.text} />
-              </View>
-            )}
+            <PrivateChipSlot shown={!entry.inBook} color={c.text} />
             {canShowOriginal && (
               <Button
                 variant="quiet"
@@ -440,6 +479,12 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 title={entry.inBook ? copy.book.entryMenu.makePrivate : copy.book.entryMenu.moveToBook}
                 leading={entry.inBook ? <LockSimpleIcon size={20} color={c.text} /> : <BookOpenIcon size={20} color={c.text} />}
                 onPress={toggleInBook}
+              />
+              <ListRow
+                title={copy.book.entryMenu.changeDate}
+                leading={<CalendarBlankIcon size={20} color={c.text} />}
+                onPress={() => setDateOpen(true)}
+                testID="letter.changeDate"
               />
               <ListRow
                 title={copy.book.entryMenu.deleteButton}
@@ -471,8 +516,35 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         onConfirm={remove}
       />
 
+      {own && (
+        <DateSheet open={dateOpen} child={child} entry={entry} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDate} />
+      )}
+
       <ReadingSizeSheet visible={sizeOpen} value={size} onChange={onSize} onClose={() => setSizeOpen(false)} />
     </View>
+  );
+}
+
+/**
+ * The Private chip's row, always laid out so Make private and Move to the book push nothing (BL-420, about 20 pt). The
+ * chip fades on `fade`, which is 200 ms and is also the Reduce Motion form; hidden from VoiceOver while it is not shown.
+ */
+function PrivateChipSlot({ shown, color }: { shown: boolean; color: string }) {
+  const motion = useMotion();
+  const opacity = useSharedValue(shown ? 1 : 0);
+  useEffect(() => {
+    opacity.value = motion.fade(shown ? 1 : 0);
+  }, [shown, motion, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      className="flex-row pt-1"
+      style={style}
+      pointerEvents="none"
+      accessibilityElementsHidden={!shown}
+      importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}>
+      <PrivateChip color={color} />
+    </Animated.View>
   );
 }
 
@@ -553,7 +625,7 @@ function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKi
           : download.hold === 'no_space'
             ? wordsCopy.pack.noSpace
             : p !== null
-              ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+              ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
               : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
         : null;
 

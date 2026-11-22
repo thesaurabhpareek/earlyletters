@@ -3,12 +3,13 @@ import { HeaderBackButton } from 'expo-router/react-navigation';
 import { Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { licences } from '@scribe/content';
+import { appLockCopy } from '@/lib/app-lock/copy';
 import { copy } from '@/lib/copy';
 import { useTheme } from '@/lib/a11y';
 import { needsOuterBack, outerBackLabel } from '@/lib/navigation.logic';
 
 /** The tabs Settings can be opened from, by route name, for the back label (iOS names the screen it returns to). */
-const TAB_TITLES = { index: copy.tabs.tonight, book: copy.tabs.book, family: copy.tabs.family } as const;
+const TAB_TITLES = { index: copy.tabs.tonight, book: copy.tabs.book, you: copy.tabs.you } as const;
 
 /**
  * Settings stack (PRD C, C-REQ-016): every row at most 2 taps from Settings. Every page is a native push with the
@@ -39,12 +40,16 @@ export default function SettingsLayout() {
       <Stack.Screen name="index" options={{ title: copy.settings.title }} />
       <Stack.Screen name="appearance" options={{ title: copy.settingsMore.appearanceTitle }} />
       <Stack.Screen name="reminders" options={{ title: copy.settings.sections.reminders }} />
+      <Stack.Screen name="app-lock" options={{ title: appLockCopy.pageTitle }} />
       <Stack.Screen name="recently-deleted" options={{ title: copy.settings.delete.recentlyDeleted }} />
-      <Stack.Screen name="recordings" options={{ title: copy.settings.recordings.title }} />
+      <Stack.Screen name="where-letters-live" options={{ title: copy.whereLive.title }} />
+      <Stack.Screen name="your-words" options={{ title: copy.yourWords.title }} />
       <Stack.Screen name="children/new" options={{ title: copy.children.add.title }} />
       <Stack.Screen name="children/[id]" options={{ title: copy.children.settings.sectionTitle }} />
       <Stack.Screen name="struggling" options={{ title: copy.struggling.title }} />
+      <Stack.Screen name="struggling-elsewhere" options={{ title: copy.struggling.otherCountries }} />
       <Stack.Screen name="licenses" options={{ title: licences.title }} />
+      <Stack.Screen name="legal" options={{ title: copy.settingsHome.legalLabel }} />
     </Stack>
   );
 }

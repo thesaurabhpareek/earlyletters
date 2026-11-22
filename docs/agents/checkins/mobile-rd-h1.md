@@ -1,0 +1,1 @@
+19:04 (20 Nov) mobile | done: read plan, packs, catalogue, security, budgets; wrote 30 briefs and README in the worktree | next: open 11 docs PRs of at most 3 briefs; PATCH journal | blocked/needs: none

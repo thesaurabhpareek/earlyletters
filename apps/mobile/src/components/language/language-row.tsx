@@ -2,7 +2,7 @@
 /**
  * One chosen language in Settings, Spoken language: its own name (in its
  * own script and direction), its English name, and its text-rules pack
- * status ("On this phone, 7 KB", "Downloading, 40%"). The primary row opens
+ * status ("On this phone, 7 KB", "Downloading, 40%", or "Downloading" below 1%). The primary row opens
  * the picker; other rows have a visible Remove button that is its own
  * VoiceOver element (a ListRow would merge it into the row's label), and
  * both offer Remove and Try again as accessibility actions too.
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
 import { fill } from '@/lib/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { formatBytes } from '@/lib/language/spoken-language.logic';
 import type { TextRulesStatus } from '@/lib/language/packs';
 import { cn } from '@/lib/utils';
@@ -29,7 +30,7 @@ export function statusText(status: TextRulesStatus | undefined): string {
     case 'installed':
       return fill(s.installed, { size: formatBytes(status.bytes) });
     case 'downloading':
-      return fill(s.downloading, { percent: status.bytesTotal > 0 ? Math.min(99, Math.floor((status.bytesDone / status.bytesTotal) * 100)) : 0 });
+      return downloadingLine(status.bytesTotal > 0 ? status.bytesDone / status.bytesTotal : null, (percent) => fill(s.downloading, { percent }));
     case 'absent':
       return status.bytes ? fill(s.absent, { size: formatBytes(status.bytes) }) : s.absentNoSize;
     case 'waiting': {

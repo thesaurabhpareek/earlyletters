@@ -98,7 +98,7 @@ describe('[S03] the welcome never types the name (BRAND_SYSTEM 2a)', () => {
 
   it('the welcome\'s doors open the sign-in sheet with trigger sign_in and the invite route, and a book that arrives lands on the Book', () => {
     expect(welcome).toMatch(/router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'sign_in' \} \}\)/);
-    expect(welcome).toMatch(/router\.push\(inviteHref\('onboarding_join', capabilities\.coParent\) as Href\)/);
+    expect(welcome).toMatch(/router\.push\(inviteHref\('onboarding_join', capabilities\.coParent, PLUS_ALPHA\) as Href\)/);
     expect(welcome).toMatch(/if \(listChildren\(\)\.length > 0\) router\.replace\('\/book'\)/);
   });
 });

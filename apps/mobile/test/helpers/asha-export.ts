@@ -113,6 +113,8 @@ export function ashaSnapshot(): ExportSnapshot {
       entry({ id: 'e6', occurredOn: '2026-07-01', rawTranscript: '', finalText: '', transcriptStatus: 'waiting', inBook: false, audioUri: 'file:///doc/audio/e6.m4a' }),
       // A family letter: not the exporter's, so no raw transcript, edits or recording.
       entry({ id: 'e7', occurredOn: '2026-08-10', authorId: 'user-nani', authorSignsAs: 'Nani', own: false, finalText: 'Your Nani made dal and nobody ate it.', rawTranscript: 'Your Nani made dal and uh nobody ate it.', machineEdits: [filler('Your Nani made dal and uh nobody ate it.', ' uh')] }),
+      // Dated to a month only (Month 4, F09-REQ-003): the stored day is where Month 4 starts, never a day Mama gave.
+      entry({ id: 'e11', occurredOn: '2026-07-08', occurredPrecision: 'month', captureMode: 'typed', editLevel: 'verbatim', finalText: 'Sometime this month you found your feet.' }),
       entry({ id: 'e8', occurredOn: '2026-09-01', finalText: 'आशा, आज तुमने पहली बार ताली बजाई।', audioUri: 'file:///doc/audio/e8.m4a' }),
       entry({ id: 'e10', occurredOn: '2026-12-24', finalText: 'آشا، أنتِ نورُ بيتنا.', authorSignsAs: 'Mama', audioUri: 'file:///doc/audio/e10.m4a', editLevel: 'verbatim' }),
       entry({ id: 'q1', occurredOn: '2026-10-02', kind: 'not_much', captureMode: 'typed', editLevel: 'verbatim', rawTranscript: '', finalText: '', inBook: false }),

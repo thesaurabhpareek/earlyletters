@@ -30,6 +30,12 @@
 //   ASC_API_ISSUER_ID     the issuer id from the same page (a team key; an individual key has no issuer id)
 //   ASC_API_KEY_P8_PATH   path to the downloaded AuthKey_<id>.p8 file (the file stays on your computer)
 //
+// The EAS Update channel row (RS-07, D-091): a build profile that sets `channel` while expo-updates is not a
+// dependency of apps/mobile/package.json stops a non-interactive `eas build` (alpha build 1; #538). It shares its rule
+// and wording with the store preflight (preflight-lib.mjs). Every profile but production is a FAIL in every mode.
+// Production, which neither alpha build uses, is a WARN without --store (so the alpha doctor stays at 0 FAIL,
+// TESTFLIGHT.md step 5) and a FAIL with it.
+//
 // Scope: the two alpha builds (docs/release/TESTFLIGHT.md): the `.preview` app record and the `testflight` and
 // `preview` submit profiles. The production row is the store preflight (preflight-production.mjs, RT-REL-02,
 // RT-REL-13): without --store it is NOT NEEDED for the alpha and says how many of its checks fail and which; with
@@ -52,6 +58,7 @@ import { createPrivateKey, sign } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { updateChannelMessage, updateChannelProblems } from '../../apps/mobile/scripts/preflight-lib.mjs';
 
 export type Level = 'PASS' | 'FAIL' | 'WARN' | 'UNVERIFIED' | 'NOT NEEDED';
 export interface Finding {
@@ -126,7 +133,8 @@ export function productionFindings(results: PreflightResult[] | null, store: boo
   }
   const failed = results.filter((r) => r.level === 'FAIL');
   if (store) {
-    const out: Finding[] = results.filter((r) => r.level === 'FAIL' || r.level === 'UNVERIFIED' || r.level === 'WARN').map((r) => ({ level: r.level, area: 'store', message: r.msg }));
+    // update-channel is already its own repo row (updateChannelFindings, a FAIL with --store): not repeated here.
+    const out: Finding[] = results.filter((r) => r.id !== 'update-channel' && (r.level === 'FAIL' || r.level === 'UNVERIFIED' || r.level === 'WARN')).map((r) => ({ level: r.level, area: 'store', message: r.msg }));
     if (!failed.length) out.push({ level: 'PASS', area: 'store', message: `The store preflight (${SCRIPT}) passes every check of the production profile.` });
     return out;
   }
@@ -145,7 +153,7 @@ export function productionFindings(results: PreflightResult[] | null, store: boo
  * given (the store preflight's results), its row replaces the plain NOT NEEDED line for production.
  */
 export function repoFindings(
-  files: { appConfig: string; easJson: string; keysTs: string },
+  files: { appConfig: string; easJson: string; keysTs: string; mobilePackageJson?: string },
   live = false,
   production?: { results: PreflightResult[] | null; store: boolean },
 ): Finding[] {
@@ -160,12 +168,13 @@ export function repoFindings(
   const hasOwner = /\bowner\s*:\s*['"][^'"]+['"]/.test(files.appConfig);
   add(hasOwner ? 'PASS' : 'WARN', hasOwner ? 'app.config.ts names the Expo owner.' : 'app.config.ts has no `owner`. Optional for SDK 53 and later in eas-cli 24.10.0 (this app is SDK 57); if it is set, it must match the Expo account that owns the project.');
 
-  let eas: { submit?: Record<string, { ios?: { ascAppId?: unknown } }> } = {};
+  let eas: { build?: Record<string, { channel?: unknown }>; submit?: Record<string, { ios?: { ascAppId?: unknown } }> } = {};
   try {
     eas = JSON.parse(files.easJson);
   } catch {
     add('FAIL', 'apps/mobile/eas.json is not valid JSON.');
   }
+  out.push(...updateChannelFindings(eas, files.mobilePackageJson, production?.store ?? false));
   for (const profile of ['testflight', 'preview']) {
     const id = eas.submit?.[profile]?.ios?.ascAppId;
     if (id && /^\d+$/.test(String(id))) add('PASS', `eas.json submit.${profile} has ios.ascAppId.`);
@@ -184,6 +193,40 @@ export function repoFindings(
   else if (ids.length < 2) add('WARN', 'packages/api/src/keys.ts trusts one signing key; F19-REQ-002 asks for two, a primary and a cold backup. With one, losing it stops every new document until an app release.');
   else add('PASS', `packages/api/src/keys.ts lists ${ids.length} signing keys, each with its own id.`);
   return out;
+}
+
+/** The build profiles neither alpha build uses: a problem there is a WARN without --store, a FAIL with it. */
+export const STORE_ONLY_PROFILES = ['production'];
+
+/**
+ * RS-07, D-091: one line per eas.json build profile that sets an EAS Update `channel` while expo-updates is not a
+ * dependency of apps/mobile/package.json, or one PASS. Each line is a FAIL, except a store-only profile (production)
+ * without `store`, which is a WARN. `mobilePackageJson` is the file's text; missing or unreadable counts as no
+ * expo-updates, so the check fails closed.
+ */
+export function updateChannelFindings(eas: unknown, mobilePackageJson: string | undefined, store = false): Finding[] {
+  let pkg: unknown = null;
+  try {
+    pkg = JSON.parse(mobilePackageJson ?? '');
+  } catch {
+    pkg = null;
+  }
+  const { withChannel, profiles } = updateChannelProblems(eas, pkg) as { hasUpdates: boolean; withChannel: string[]; profiles: string[] };
+  const build = ((eas as { build?: Record<string, { channel?: unknown }> } | null)?.build ?? {}) as Record<string, { channel?: unknown }>;
+  if (profiles.length) {
+    return profiles.map((name): Finding => {
+      const message = updateChannelMessage(name, build[name]?.channel) as string;
+      if (store || !STORE_ONLY_PROFILES.includes(name)) return { level: 'FAIL', area: 'repo', message };
+      return { level: 'WARN', area: 'repo', message: `${message} Neither alpha build uses "${name}", so this is a WARN here; it is a FAIL with --store and in the store preflight (REL-06/RS-15).` };
+    });
+  }
+  return [
+    {
+      level: 'PASS',
+      area: 'repo',
+      message: withChannel.length ? `expo-updates is a dependency, so the EAS Update channel in ${withChannel.map((n) => `"${n}"`).join(', ')} can be configured (D-091).` : 'No eas.json build profile sets an EAS Update channel (D-091, #538).',
+    },
+  ];
 }
 
 export function render(findings: Finding[]): string {
@@ -279,7 +322,7 @@ async function main(argv: string[]) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const read = (p: string) => (existsSync(join(root, p)) ? readFileSync(join(root, p), 'utf8') : '');
   const env: Env = { EXPO_TOKEN: process.env.EXPO_TOKEN, ASC_API_KEY_ID: process.env.ASC_API_KEY_ID, ASC_API_ISSUER_ID: process.env.ASC_API_ISSUER_ID, ASC_API_KEY_P8_PATH: process.env.ASC_API_KEY_P8_PATH };
-  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts') }, live, { results: runProductionPreflight(root), store });
+  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts'), mobilePackageJson: read('apps/mobile/package.json') }, live, { results: runProductionPreflight(root), store });
 
   const ran = [env.EXPO_TOKEN ? 'Expo (EXPO_TOKEN is set)' : '', env.ASC_API_KEY_ID && env.ASC_API_ISSUER_ID && env.ASC_API_KEY_P8_PATH ? 'Apple (the ASC_* variables are set)' : ''].filter(Boolean);
   console.log(ran.length ? `Running live checks because their variables are set: ${ran.join(', ')}.\n` : 'No live check variables are set: static checks only.\n');

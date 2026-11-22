@@ -83,7 +83,126 @@ export function packManifestPublished(publishedSource) {
   return /\bexport\s+const\s+PACK_MANIFEST\s*(?::[^=]*)?=\s*(["'`])(?:\\.|(?!\1)[^\\])+\1/.test(code);
 }
 
+/**
+ * EAS Update channels without expo-updates (RS-07, D-091). A build profile that sets `channel` makes `eas build`
+ * configure EAS Update, and with expo-updates not installed a `--non-interactive` build stops: that is what broke
+ * alpha build 1, and #538 removed the channel from the alpha profiles. Read by preflight-production.mjs and by
+ * scripts/release/doctor.ts, so both say the same thing.
+ *
+ * - `eas`: apps/mobile/eas.json, parsed (null or {} when it could not be read)
+ * - `mobilePackage`: apps/mobile/package.json, parsed. Only `dependencies` counts: expo-updates is a native module
+ *   and must be in the app's runtime dependencies for the build to include it. Anything unreadable counts as absent.
+ *
+ * Returns whether expo-updates is a dependency and, when it is not, every build profile (sorted) that sets a channel.
+ */
+export function updateChannelProblems(eas, mobilePackage) {
+  const deps = mobilePackage && typeof mobilePackage === 'object' ? mobilePackage.dependencies : undefined;
+  const hasUpdates = Boolean(deps && typeof deps === 'object' && Object.prototype.hasOwnProperty.call(deps, 'expo-updates'));
+  const build = eas && typeof eas === 'object' && eas.build && typeof eas.build === 'object' ? eas.build : {};
+  const withChannel = Object.entries(build)
+    .filter(([, p]) => p && typeof p === 'object' && Object.prototype.hasOwnProperty.call(p, 'channel'))
+    .map(([name]) => name)
+    .sort();
+  return { hasUpdates, withChannel, profiles: hasUpdates ? [] : withChannel };
+}
+
+/** The FAIL text for one profile that sets a channel without expo-updates. */
+export function updateChannelMessage(profile, channel) {
+  return `eas.json build profile "${profile}" sets "channel": ${JSON.stringify(channel)}, but expo-updates is not a dependency of apps/mobile/package.json: \`eas build --profile ${profile} --non-interactive\` stops while configuring EAS Update. Remove the channel from that profile, or install expo-updates first (D-091; #538 removed it from the alpha profiles).`;
+}
+
 /** True when an evaluated ios.privacyManifests says tracking false and declares at least one required-reason category. */
 export function privacyManifestDeclared(pm) {
   return Boolean(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0);
+}
+
+/**
+ * The permissions a build may ask for (LEGAL-REQ-007; ENGINEERING_REQUIREMENTS 1.3.0 "Face ID only if the app lock
+ * ships"): the microphone, notifications (no Info.plist key on iOS; asked at the moment of use) and Face ID for the
+ * app lock (F1, CPO-2, CISO-1). Nothing else: every unused permission is a question App Review will ask.
+ */
+export const ALLOWED_PERMISSION_NAMES = Object.freeze([
+  'microphonePermission',
+  'notificationPermission',
+  'notificationsPermission',
+  'faceIDPermission',
+  'NSMicrophoneUsageDescription',
+  'NSFaceIDUsageDescription',
+]);
+
+/** The Info.plist usage strings a generated native project must hold, exactly: the microphone and Face ID. */
+export const REQUIRED_PLIST_USAGE = Object.freeze(['NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription']);
+
+/** Every permission a config names (plugin options or infoPlist keys), from its JSON text. */
+export function permissionNames(configText) {
+  const re = /(camera|photo|photos|location|contacts|faceID|microphone|bluetooth|calendars|reminders|motion|speechRecognition|userTracking|notifications?)Permission|NS[A-Za-z]+UsageDescription/g;
+  return [...new Set(String(configText).match(re) ?? [])];
+}
+
+/** Names in the config that are not on the allowed list (empty when the build asks only for the three). */
+export function extraPermissions(configText) {
+  return permissionNames(configText).filter((n) => !ALLOWED_PERMISSION_NAMES.includes(n));
+}
+
+/** Usage keys of a generated Info.plist against REQUIRED_PLIST_USAGE: which are missing, which are extra. */
+export function plistUsageProblems(usageKeys) {
+  const keys = [...new Set(usageKeys)];
+  return { missing: REQUIRED_PLIST_USAGE.filter((k) => !keys.includes(k)), extra: keys.filter((k) => !REQUIRED_PLIST_USAGE.includes(k)).sort() };
+}
+
+/** Null when a purpose string is real; otherwise why not (missing, a library default, or a placeholder left in). */
+export function purposeStringProblem(value) {
+  const v = String(value ?? '');
+  if (v.length <= 20) return 'missing or too short';
+  if (/\{app\}|TODO|example\.com|\$\(PRODUCT_NAME\)/.test(v)) return 'holds a placeholder or a library default';
+  return null;
+}
+
+const BG_MODES_KEY = /<key>UIBackgroundModes<\/key>/;
+const EXTENSION_PRODUCT = /productType\s*=\s*"?com\.apple\.product-type\.(?:app-extension|extensionkit-extension|watchkit2?-extension)[^";\s]*|com\.apple\.widgetkit-extension|com\.apple\.usernotifications\.service|com\.apple\.share-services/;
+
+/**
+ * BL-864 (NX-39-R4, R51): what the generated native project must not hold, from the text of its Info.plist,
+ * its entitlements file and its project.pbxproj. Returns one problem per broken rule, `{ id, text }`, empty when
+ * clean. `library` is `{ flagOn, content }`: the photo-library key is allowed only when its flag is on and its
+ * value equals the content string (a null `content` means no string is agreed yet, so the key is never allowed).
+ * Lines 575-576 era rule stays: any UIBackgroundModes, even an empty one, fails (R46: a founder ruling after counsel).
+ *
+ * @param {{ plist?: unknown, entitlements?: unknown, pbxproj?: unknown, library?: { flagOn: unknown, content: string | null } }} [inputs]
+ * @returns {{ id: string, text: string }[]}
+ */
+export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library = { flagOn: false, content: null } } = {}) {
+  const out = [];
+  const add = (id, text) => out.push({ id, text });
+  // Fail closed: an input that is missing, not text, empty or not the file it should be proves nothing.
+  const unreadable = [
+    ['plist', plist, '<dict', 'Info.plist'],
+    ['entitlements', entitlements, '<dict', 'entitlements file'],
+    ['pbxproj', pbxproj, 'PBXProject', 'project.pbxproj'],
+  ].filter(([, v, marker]) => typeof v !== 'string' || !v.includes(marker));
+  for (const [id, , , name] of unreadable) add(`missing-${id}`, `The generated ${name} is missing, unreadable or empty, so the lint proves nothing (BL-864).`);
+  if (typeof plist !== 'string') plist = '';
+  if (typeof entitlements !== 'string') entitlements = '';
+  if (typeof pbxproj !== 'string') pbxproj = '';
+  const keys = [...plist.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+  if (BG_MODES_KEY.test(plist)) add('background-modes', 'Info.plist declares UIBackgroundModes; LEGAL-REQ-011 says none until a recorded founder ruling.');
+  if (keys.includes('BGTaskSchedulerPermittedIdentifiers')) add('bg-task-identifiers', 'Info.plist declares BGTaskSchedulerPermittedIdentifiers; no background task runs until a recorded founder ruling.');
+  const loc = keys.filter((k) => /^NSLocation/.test(k));
+  if (loc.length) add('location', `Info.plist holds location keys (${loc.join(', ')}); the app never asks for location (NX-39-R4).`);
+  if (keys.includes('NSPhotoLibraryAddUsageDescription')) add('photo-add', 'Info.plist holds NSPhotoLibraryAddUsageDescription; the app never writes to the photo library (NX-39-R4).');
+  if (keys.includes('NSPhotoLibraryUsageDescription')) {
+    const value = new RegExp('<key>NSPhotoLibraryUsageDescription</key>\\s*<string>([\\s\\S]*?)</string>').exec(plist)?.[1];
+    const ok = library.flagOn === true && typeof library.content === 'string' && library.content !== '' && value === library.content;
+    if (!ok) add('photo-library', 'Info.plist holds NSPhotoLibraryUsageDescription, but only a build with its flag on and the content string verbatim may (NX-39-R4).');
+  }
+  const alertKey = 'PHPhotoLibraryPreventAutomaticLimitedAccessAlert';
+  if ((keys.includes(alertKey) || keys.includes('NSPhotoLibraryUsageDescription')) && plistBool(plist, alertKey) !== 'true') add('limited-alert', `${alertKey} must be true whenever it or the library key exists (NX-39-R4).`);
+  if (/com\.apple\.security\.application-groups/.test(entitlements)) add('app-group', 'Entitlements hold com.apple.security.application-groups; no app group exists (NX-39-R51).');
+  if (EXTENSION_PRODUCT.test(pbxproj)) add('extension-target', 'The native project has a widget, share, notification or other app-extension target (NX-39-R51).');
+  if (/CoreLocation/.test(pbxproj)) add('core-location', 'The native project links CoreLocation (NX-39-R4).');
+  return out.filter((p, i) => out.findIndex((q) => q.id === p.id) === i);
+}
+
+function plistBool(text, key) {
+  return new RegExp(`<key>${key}</key>\\s*<(true|false)\\s*/>`).exec(text)?.[1] ?? null;
 }

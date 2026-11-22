@@ -1,0 +1,113 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index ea7a1b559..71dce3b0b 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -27,7 +27,30 @@ jobs:
+     name: install
+     runs-on: ubuntu-latest
+     timeout-minutes: 4
++    # `heavy` is false only for a pull request whose every file is on the inert list below (docs that no test,
++    # script or guard reads). The heavy jobs then skip and `required` accepts that. Any doubt (API error, a push,
++    # 3000 files or more, one file off the list) leaves heavy true. docs/ops/proposed/ci-speed.md, change 2.
++    outputs:
++      heavy: ${{ steps.scope.outputs.heavy }}
++    permissions:
++      contents: read
++      pull-requests: read
+     steps:
++      - id: scope
++        env:
++          GH_TOKEN: ${{ github.token }}
++          REPO: ${{ github.repository }}
++          PR: ${{ github.event.pull_request.number }}
++          EVENT: ${{ github.event_name }}
++        run: |
++          set -uo pipefail
++          heavy=true
++          if [ "$EVENT" = pull_request ] && files="$(gh api --paginate "repos/${REPO}/pulls/${PR}/files" --jq '.[].filename, (.[].previous_filename // empty)')" && [ -n "$files" ] && [ "$(wc -l <<< "$files")" -lt 3000 ]; then
++            if ! grep -qvE '^(docs/engineering/readiness-20nov/|docs/agents/checkins/S[0-9][^/]*\.md$|docs/product/instrumentation/|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md$|docs/content/lifecycle-playbook/|docs/qa/test-plan-b13/|docs/design/DESIGN-[^/]*\.md$)' <<< "$files"; then
++              heavy=false
++            fi
++          fi
++          echo "heavy=${heavy}" | tee -a "$GITHUB_OUTPUT"
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+@@ -46,9 +69,22 @@ jobs:
+       - if: steps.modules.outputs.cache-hit != 'true'
+         run: npm ci --no-audit --no-fund
+ 
++  content:
++    # Always runs, including on the inert-docs lane: the content rules and the real-family guard
++    # (packages/content/test/no-real-family-data.test.ts reads every tracked file).
++    name: content rules and family-data guard
++    needs: install
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    steps:
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
++      - uses: ./.github/actions/setup
++      - run: npm test -w @scribe/content
++
+   unit:
+     name: tests and content rules
+     needs: install
++    if: needs.install.outputs.heavy == 'true'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10 # the engine step takes about 3m30s on a quiet runner and was cut off at 5m06s on loaded ones (runs 44882037339, 44894142294)
+     steps:
+@@ -64,6 +100,7 @@ jobs:
+   db:
+     name: database rules
+     needs: install
++    if: needs.install.outputs.heavy == 'true'
+     runs-on: ubuntu-24.04
+     timeout-minutes: 15 # perf.test.mjs seeds 100,000 entries on pull requests (the nightly seeds 400,000 with the budgets); a slow runner took 139 s for a 400,000 seed alone (run 39018739219)
+     steps:
+@@ -75,6 +112,7 @@ jobs:
+   functions:
+     name: edge functions and ops scripts (Deno)
+     needs: install
++    if: needs.install.outputs.heavy == 'true'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     steps:
+@@ -86,6 +124,7 @@ jobs:
+   typecheck:
+     name: typecheck
+     needs: install
++    if: needs.install.outputs.heavy == 'true'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     steps:
+@@ -107,6 +146,7 @@ jobs:
+     # failing decision step fails the job. No secrets. testflight.yml runs the same script before EAS.
+     name: no e2e seam in store bundles (B-8)
+     needs: install
++    if: needs.install.outputs.heavy == 'true'
+     runs-on: ubuntu-24.04
+     timeout-minutes: 15
+     steps:
+@@ -134,15 +174,19 @@ jobs:
+   required:
+     name: required
+     if: always()
+-    needs: [install, unit, db, functions, typecheck, seam-guard]
++    needs: [install, content, unit, db, functions, typecheck, seam-guard]
+     runs-on: ubuntu-latest
+     timeout-minutes: 1
+     steps:
+       - name: All checks passed
+         env:
+           RESULTS: ${{ join(needs.*.result, ' ') }}
++          HEAVY: ${{ needs.install.outputs.heavy }}
+         run: |
+-          echo "results: $RESULTS"
++          echo "results: $RESULTS (heavy=$HEAVY)"
+           for r in $RESULTS; do
+-            if [ "$r" != "success" ]; then echo "A required check did not pass ($r)."; exit 1; fi
++            if [ "$r" = success ]; then continue; fi
++            # skipped is accepted only on the inert-docs lane, where install said heavy=false
++            if [ "$r" = skipped ] && [ "$HEAVY" = false ]; then continue; fi
++            echo "A required check did not pass ($r)."; exit 1
+           done
