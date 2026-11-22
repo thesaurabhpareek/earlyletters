@@ -481,7 +481,6 @@ export const MIGRATIONS: Migration[] = [
       // settings('raw_takeover') to that one entry id and deletes it in the same transaction, so the trigger lets
       // that entry's raw change and no other. Drafts have no exception. The message holds no words.
       db.exec(`
-        DELETE FROM settings WHERE key = 'raw_takeover';
         CREATE TRIGGER IF NOT EXISTS entries_raw_transcript_set_once
         BEFORE UPDATE OF raw_transcript ON entries
         WHEN OLD.raw_transcript <> ''
