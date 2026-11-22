@@ -30,19 +30,30 @@ Note on the name "G5": PRD gate G5 (`docs/product/prd/14-test-plan.md`, `docs/pr
 
 Phased release is not available for a first release (`docs/ops/RELEASE.md` 7.1; CR-169). Version 1.0.0 goes to everyone at once, so there is nothing to pause in App Store Connect. For updates (1.0.1 and later) phased release is on and the App Store Connect pause applies (pauses can total 30 days, `docs/ops/RELEASE.md` 7.2).
 
-Proposal (no source in the repo): the minimum-sample line is 1000 sessions and 200 users at the time of the read. UNVERIFIED, founder or CPO to confirm or change. Until it is set, treat every rate as not decisive.
+Proposal (no source in the repo): the minimum-sample line is 1000 sessions and 200 users at the time of the read. UNVERIFIED, founder or CPO to confirm or change. Each rate has its own denominator: the session rate counts only when sessions meet 1000, the user rate only when users meet 200. A rate whose own minimum is met is decisive; a rate that is unread or below its minimum is skipped, and the other rate still decides. Until the founder or CPO sets the minimums, these two figures are the working proposal.
 
 ## 3. Recommendation rules
 
 Rules marked **Proposal (no source in the repo)** are ours, not rules; the founder or CPO confirms them. Only the thresholds in section 2 and "pause on any S0" come from `docs/ops/RELEASE.md` and CR-169.
 
-Applied in this order; the first that matches wins.
+Applied in this order; the first that matches wins. The S0 rule is first because it needs no rate.
 
-0. **Insufficient data: keep watching, do not pause or hotfix on a rate.** Applies when a number is `not read yet`, or sessions or users are below the minimum-sample line. Proposal (no source in the repo). It never overrides rule 1: an S0 or data-loss report is not a rate.
-1. Any open S0: **Pause** (pause on any S0 is sourced: `docs/ops/RELEASE.md` 1.3 and 7.2). Proposal (no source in the repo): also a data-loss report; a hotfix (`docs/ops/RELEASE.md` 1.4, expedited review for S0 only, 7.3); the founder told the same day.
-2. Crash-free sessions under 99.8 percent or users under 99.5 percent, with enough data: **Pause** for updates (`docs/ops/RELEASE.md` 7.2 states this). Proposal (no source in the repo): for 1.0.0, "pause" means stop promoting, stop inviting, turn off what a kill switch can (`docs/ops/RELEASE.md` section 9); and a hotfix if the cause is in our code.
-3. Open S1 and thresholds met. Proposal (no source in the repo): **Continue**, with the S1 named and an owner; the founder decides whether an S1 alone needs a hotfix.
-4. Thresholds met, no S0, no S1: **Continue**. Proposal (no source in the repo) as a stated outcome.
+1. Any open S0: **Pause** (pause on any S0 is sourced: `docs/ops/RELEASE.md` 1.3 and 7.2). Needs no rate. Proposal (no source in the repo): a data-loss report counts the same; a hotfix (`docs/ops/RELEASE.md` 1.4, expedited review for S0 only, 7.3); the founder told the same day.
+2. A rate that counts (its own minimum met, section 2) is under its threshold (sessions under 99.8 percent, or users under 99.5 percent): **Pause** for updates (`docs/ops/RELEASE.md` 7.2 states this). Proposal (no source in the repo): for 1.0.0, "pause" means stop promoting, stop inviting, turn off what a kill switch can (`docs/ops/RELEASE.md` section 9); and a hotfix if the cause is in our code.
+3. **Insufficient data: keep watching, do not pause or hotfix on a rate.** Applies when rules 1 and 2 did not match and at least one rate does not count (`not read yet`, or below its own minimum). Proposal (no source in the repo). An open S1, if any, is named and owned in the report.
+4. Both rates count and meet their thresholds, and an S1 is open. Proposal (no source in the repo): **Continue**, with the S1 named and an owner; the founder decides whether an S1 alone needs a hotfix.
+5. Both rates count and meet their thresholds, no S0, no S1: **Continue**. Proposal (no source in the repo) as a stated outcome.
+
+### Worked scenarios (examples, not data)
+
+Each row follows from the rules above and the proposed minimums (1000 sessions, 200 users; UNVERIFIED, founder to confirm). Where a row does not state a figure, it is not read.
+
+| Case | Inputs | Rule | Outcome |
+|---|---|---|---|
+| Day 1 | 40 sessions, 1 crash; users not read; no S0 | 3 (sessions under 1000, users unread) | Keep watching; no pause, no hotfix |
+| Day 2 | S0 data-loss report; no rates read | 1 | Pause; hotfix proposed; founder told |
+| Day 3 | 1500 sessions at 99.1 percent; 200 or more users; no S0 | 2 (sessions rate counts, under 99.8) | Pause (updates) or hold promotion (1.0.0); hotfix if the cause is ours |
+| Day 7 | 3000 sessions at 99.9 percent; users at or above 200 and at or above 99.5 percent; no S0, no S1 | 5 | Continue |
 
 Test failures go to their owner agent; security findings go to `security`. Hotfix steps are `docs/ops/RELEASE.md` 1.4. `ops` submits and deploys nothing: store accounts are the founder's.
 
@@ -75,7 +86,7 @@ Source: App Store Connect > <screen the founder read>
 4. Changes since the last report: <new build, kill switch change, fix merged, or none>
 
 5. Recommendation (SLO.md section 3): <Insufficient data, keep watching | Continue | Pause | Hotfix | Pause and hotfix>
-   Rule that applied: <0 | 1 | 2 | 3 | 4>
+   Rule that applied: <1 | 2 | 3 | 4 | 5>
    Why, in one line: ____
    Next report: day <3 | 7 | closing>
    Needs the founder: <yes, what | no>
