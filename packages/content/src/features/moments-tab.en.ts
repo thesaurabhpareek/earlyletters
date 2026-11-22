@@ -3,7 +3,8 @@
 // a word in the store or on the website until counsel clears it (spec section 16). Placeholders: {child}, {app},
 // {year}, {place}, {holiday}. The app names no scene, person, mood or count on any card (5.3).
 // Not here, on purpose (PR 12b): the door and host-sheet words, the ask card and primer, the value lines (O-48),
-// the set-aside word on the card face (O-59), the Me row and the empty-Recent action.
+// the set-aside word on the card face (O-59), the Me row, the empty-Recent action and the access-state lines
+// (limited, denied, restricted, Open Settings: not spec-verbatim, counsel to read).
 export const momentsTabCopy = {
   tab: {
     // The navigation label. The tab-bar test pins en.tabs to three tabs until the tab-shell PR changes it.
@@ -73,19 +74,5 @@ export const momentsTabCopy = {
     notThisOne: 'Not this one',
     // TODO(founder): PROPOSED, needs word approval
     hideDay: 'Hide this day',
-  },
-  // What the tab says about pictures in each state. Text only: the buttons that go with these lines are door strings.
-  state: {
-    // Limited access, few or no cards: one calm line, never a blank and never a count (R287).
-    // TODO(founder): PROPOSED, needs word approval; counsel to read, it says what the tab uses
-    limited: 'Days here come from the pictures you chose.',
-    // Denied: the one place a settings word is allowed on the tab. The button reads "Open Settings".
-    // TODO(founder): PROPOSED, needs word approval; counsel to read
-    denied: 'Pictures are turned off for {app}. You can change that in Settings.',
-    // TODO(founder): PROPOSED, needs word approval
-    openSettings: 'Open Settings',
-    // Restricted by a setting on the phone: one plain line, no button, no reason named.
-    // TODO(founder): PROPOSED, needs word approval; counsel to read
-    restricted: 'Pictures are switched off by a setting on this phone.',
   },
 } as const;
