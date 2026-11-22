@@ -8900,3 +8900,349 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Problem and evidence: CCO-17 keeps the 24-hour closure as built and says that if read, play and Save a copy are not reachable during it, that is the defect. The run sheet found by code reading that the root layout renders only the stop screen while the gate is not passed, so a parent who answers No by mistake cannot read or copy the book for a day. Not run on a device: UNVERIFIED.
 - Scope: counsel says whether read-only access and Save a copy may stay reachable while the closure runs. If yes, a route that skips the gate for those screens only, with a test that starts from a phone holding a book. If no, record that in the run sheet and close this row.
 - Done when: the answer is recorded here; with yes, a test shows read and Save a copy open during the closure and every other screen closed.
+
+## Design review tickets: ready now and held (BL-1700 to BL-1839; filed by the product agent, docs only)
+
+Source: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` (merged in #1621, #1622, #1628), as amended by the exec review of 22 Nov 2026 (the CTO with the CPO, CDesO, CLO, CCO, CPrivO, CBO and CMO). The ids are the design backlog's and are not renumbered; BL-1839 is the one new id (a trace the exec review asked for). The design backlog stays the home of every row not filed here (BL-1701, BL-1703, BL-1704, BL-1708, BL-1711 to BL-1715, BL-1718, BL-1719, BL-1721, BL-1724 to BL-1734, BL-1736 to BL-1741, BL-1743, BL-1745 to BL-1750, BL-1755 to BL-1783, BL-1795, BL-1797, BL-1799 to BL-1804, BL-1807 to BL-1815, BL-1817 to BL-1821, BL-1824, BL-1826, BL-1829, BL-1831 to BL-1837): each needs a founder ruling, counsel, a spec, a device run or an exec-review answer first, and the product agent files it here when that lands. Evidence limit that carries over: none of the nine design reviews ran a phone, so every device row below is a measurement still to be made.
+
+Queue order (the dispatcher takes the first `ready` row an agent owns, in file order): the week-one fixes a parent feels first, then the VoiceOver and large-text builds, then design-systems and test rows. Lanes map to owners as: mobile = `mobile engineer`; content = `content`; design-systems (tokens, motion and transitions; there is no separate motion agent) = `design systems`; devices = `qa engineer`. The exec review's drop order stands: BL-1716 goes first, BL-1790 is not droppable, BL-1709 stays ahead of BL-1723 and BL-1720.
+
+### Ready now (pick up now, or after the named check inside the row)
+
+#### BL-1787 Paused screen says the take ends when the phone locks; the stopped line has a lock case
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 for the cut line (exec review: agreed; words only). Gate: none. Lane: content.
+- Satisfies: PER1-001 (P1 if a device confirms), PER1-002 (same root); ruled rows PER1-001 and PER1-002 (D-087 stays as written).
+- Problem and evidence: the paused screen does not say a take ends when the phone auto-locks, and the stopped line says the take ended "when you left the app" even when the phone locked. A silent loss of a 2 a.m. take is the trust event. Read from code and text only; no device run yet (UNVERIFIED).
+- Scope: words in `packages/content` only: one line on the paused screen, and a lock case for the stopped line (illustrative, content decides: "The recording stopped when the phone locked. Everything before that is kept."). Locking is told once at the start of Listen. The rule for when the screen stays awake does not change (D-087). No amendment request here; that is BL-1807 and only if BL-1786 shows spoken words are lost.
+- Done when: the lines exist, pass `packages/content/test/rules.test.ts` and `npm run lint:copy`, and the stopped line has a lock case chosen by the stop reason.
+
+#### BL-1790 Back never spills over the first lines at the largest text (not droppable)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1; not droppable (exec review moved it out of the drop order). Gate: none. Lane: mobile.
+- Satisfies: PER3-009 (P1); sibling of BL-1702 (DSR-019) and BL-1721 (CDO-A-001), keep the three consistent.
+- Problem and evidence: the letter page's top bar is a fixed 52 pt; at accessibility sizes Back grows past it and overlaps the first lines. Back is a grandparent's only way out besides a swipe. The figure is arithmetic from tokens (estimate); the real screen is seen in BL-1786, which does not hold this up.
+- Scope: the top bar takes a minimum height that follows its buttons and the letter is pushed down by the same amount, or the native header is used at accessibility sizes. Test at AX1 and AX5 by the audit's arithmetic.
+- Done when: a test shows the bar height follows the largest Back button and the letter starts below it at AX5; the page is unchanged at default size.
+
+#### BL-1793 Review: the early stop and "Put back." are spoken, not left to a live region
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1. Gate: none. Lane: mobile.
+- Satisfies: PER4-006 (P1), PER4-007 (P1); feeds BL-1703 and BL-1828.
+- Problem and evidence: iOS VoiceOver ignores the live region for two Review changes: the line that says a take stopped early, and the result of Undo. A VoiceOver parent does not hear either. Read from code only (UNVERIFIED on a device).
+- Scope: say the early-stop line once after the screen settles; say "Put back." with Undo and the new count of small fixes. Use the existing `announce()` helper; no new words beyond what content already holds.
+- Done when: tests show each announcement fires once, after the settle for the first, and with the count for the second.
+
+#### BL-1722 Purchase-confirmed screen: focus on arrival, Done reachable, a plain line when Save a copy fails
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1. Gate: none. Lane: mobile.
+- Satisfies: CDO-A-003 (P1).
+- Problem and evidence: the confirmed screen does not move focus or announce on arrival, Done can fall below the fold at large text, and a failed Save a copy says nothing.
+- Scope: focus or announce on arrival; Done reachable at the bottom; one plain line when the share fails (words from `packages/content`, rules test applies). No change to what Plus says or costs.
+- Done when: tests cover the arrival announcement, Done in view at AX5 by the layout arithmetic, and the failed-share line.
+
+#### BL-1723 "Not much today" always answers
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 (stays behind BL-1709 in the drop order). Gate: none. Lane: mobile.
+- Satisfies: CDO-B-015 (P1).
+- Problem and evidence: the tap can do nothing when the mark cannot be saved, so a tired parent gets no answer.
+- Scope: a saved quiet-day mark, or a calm line when it cannot be saved. Never silent, never a count, never a gap.
+- Done when: a test shows the saved path and the failed-save path each show a response.
+
+#### BL-1720 Sign-in sheet frame, title and provider buttons: modal flag, role and label read once
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1. Gate: none. Lane: mobile.
+- Satisfies: CDO-A-018 (P1, the code part; the device check rides in BL-1700).
+- Problem and evidence: the shared sheet frame, title and provider buttons are not set once, so each sign-in screen may miss the modal flag, role or label for VoiceOver.
+- Scope: fix the shared frame, title and provider buttons once; every sign-in screen inherits them. Related: BL-1797 and BL-1754 (not filed here).
+- Done when: a test shows the frame carries the modal flag, the title has the header role and each provider button has a label.
+
+#### BL-1789 Large text: the Play pill sits under the dateline, or a Play bar is pinned
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: none. Lane: mobile (design systems writes the spec line).
+- Satisfies: PER3-008 (P1).
+- Problem and evidence: at accessibility sizes the person who came to hear the voice scrolls past the whole letter to reach Play. The length at AX5 is an estimate from tokens; BL-1786 re-checks it on the real screen and does not hold this up.
+- Scope: at accessibility sizes put the Play pill directly under the dateline on the letter page and in Read together, or pin a Play bar at the bottom. The order at default sizes does not change. Letter text stays uncapped (D-027).
+- Done when: a layout test shows Play reachable without scrolling at AX5 on the letter page and in Read together, and default size is unchanged.
+
+#### BL-1791 Read together at AX1 and above: page buttons at the end of the scroll or one pinned Next
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: none. Lane: mobile.
+- Satisfies: PER3-006 (P1).
+- Problem and evidence: from AX1 up, two stacked page buttons leave one or two lines of the letter. Audit rule 3 (a pinned primary takes under a quarter of the viewport) is the test. Arithmetic, re-checked at BL-1786.
+- Scope: put the page buttons at the end of the letter's scroll, or keep one pinned "Next letter" and move "Back one" into the scroll. Swiping stays as the second way. The Large print floor is BL-1798 and builds after this row.
+- Done when: a test shows a pinned primary under a quarter of the viewport at AX5 and the letter has room for several lines.
+
+#### BL-1823 Three small words for a reader new to apps: Size beside Aa, Done reading, Earlier letter
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none. Lane: content with a small mobile change.
+- Satisfies: PER3-014, PER3-015, PER3-017 (all P2); BL-1763 (CDO-B-053) caps the same button.
+- Problem and evidence: "Aa" alone means nothing to a first-time reader; "Close the book" does not say it is the end; "Back one" is unclear next to "Next letter".
+- Scope: "Size" beside "Aa" at accessibility sizes (or "Text size" in both places); swipe down to leave Read together and "Done reading" at the end; "Earlier letter" beside "Next letter". Words in `packages/content`; rules test applies.
+- Done when: the three changes are in, the content tests pass and the screens use the content keys.
+
+#### BL-1825 Review reuses the letter page's player so VoiceOver can move within the recording
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: P2. Gate: none. Lane: mobile.
+- Satisfies: PER4-010 (P2).
+- Problem and evidence: Review's player has no adjustable scrub, so a VoiceOver parent cannot move within the original recording.
+- Scope: reuse the letter page's player in Review, or give Review the same adjustable scrub. The recording is never trimmed or changed.
+- Done when: a test shows the Review player exposes the same adjustable value and increment actions as the letter page's player.
+
+#### BL-1827 Two spoken lines: Delete row hint states the result; ready line says what to double tap
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none. Lane: content.
+- Satisfies: PER4-014 (P2), PER4-019 (P2).
+- Problem and evidence: the Delete row hint repeats the label; with a screen reader on, the ready line names a red circle she cannot see.
+- Scope: the hint says the result (illustrative: "Asks first. It waits in Recently deleted for 30 days."); with a screen reader on, the ready line says "Double tap Start recording and talk." Words in `packages/content`; no deletion promise beyond what the build does today (the 30 days is checked against the code before it is written).
+- Done when: both lines exist, pass the rules test and are used by the screens.
+
+#### BL-1816 First-run answers are kept as she goes, so a relaunch resumes the step
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none. Lane: mobile.
+- Satisfies: PER1-010 (P2); rides with BL-1707 in one change if that is built.
+- Problem and evidence: name, date and step are not saved to the local store until the end, so a relaunch mid-way starts over.
+- Scope: write each answer to the local store when given and resume the same step on relaunch. The date of birth stays required and is never pre-set (D-087). Nothing leaves the phone.
+- Done when: a test shows a relaunch after each step resumes at that step with the answers kept.
+
+#### BL-1744 A tapped Moments link or notification opens the day it names (check the G-09 spec first)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1 (dark behind the Moments flag). Gate: read the G-09 spec first. Lane: mobile.
+- Satisfies: CDO-B-005 (P1); G-09, O-22.
+- Problem and evidence: a tapped link or notification lands on Home, not the day it names.
+- Scope: step one is to read the G-09 spec and write in this row whether it fits the code; if it contradicts the spec, stop and report. Then route the link to the named day with a fallback to Home when the day does not exist.
+- Done when: a test shows the route opens the named day and the missing-day fallback; the G-09 check is recorded here.
+
+#### BL-1753 A test fails when a component animates without the shared motion hook
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: M. Depends on: none.
+- Priority: P2. Gate: none. Lane: design-systems (test, motion).
+- Satisfies: DSR-013, DSR-014, CDO-A-027 (all P2).
+- Problem and evidence: nothing fails when a component animates without the shared Reduce Motion hook; Breathe has no stated Reduce Motion form, the two loops have no stop, and the Plan screen states no Reduce Motion position.
+- Scope: a test that fails on an animation outside the shared hook; a stated Reduce Motion form for Breathe and a stop for the two loops; one line for the Plan screen's position in `docs/design/MOTION.md`.
+- Done when: the test fails on a planted offender and passes on the tree; the three statements are in MOTION.md.
+
+#### BL-1754 No duration, delay, curve or translate typed in a component
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none. Lane: design-systems (tokens, motion).
+- Satisfies: DSR-003, DSR-004, DSR-005, CDO-A-015, CDO-A-012 (all P2).
+- Problem and evidence: the Review mark card and wash and the reminder card's slide type their own motion values.
+- Scope: move every typed duration, delay, curve and translate into `packages/design-tokens`; extend the token test to cover them; the reminder card follows the sheet motion rule.
+- Done when: the token test fails on a planted typed value and passes on the tree.
+
+#### BL-1828 Test: a screen that adds a live region with no `announce()` fails
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none. Lane: qa (the one piece that can be written now).
+- Satisfies: PER4-018 (P2); PER4-020 is a note for the Android device plan (BL-1782).
+- Problem and evidence: 62 live-region-only changes in 37 files at `6daf66267` (by grep) are not spoken by iOS VoiceOver.
+- Scope: only the test, with a shrink-only baseline of today's offenders. The sweep that adds `announce()` and the announcement table (BL-1703) come later and fold into this test.
+- Done when: the test fails on a planted screen with a live region and no `announce()`, and passes on the tree against the baseline.
+
+#### BL-1839 Trace: does Erase now remove the server copy on a signed-in phone?
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 (it decides BL-1805's wording). Gate: none. Lane: mobile with data. New id; the exec review's NEEDS EVIDENCE item.
+- Satisfies: PER5-004 (P1); exec review 22 Nov, NEEDS EVIDENCE ("whether Erase now removes the server copy on a signed-in phone").
+- Problem and evidence: "Erase now" says a letter and recording are erased "for good" while backups and saved exports keep a copy. Nobody has traced whether a signed-in phone's server copy goes too. Code reading only; UNVERIFIED on a device.
+- Scope: read the Erase now path from the screen to the database (`apps/mobile`, `supabase/migrations`, the sync rules) and write what it removes, what it leaves and for how long, in this row, with file and line. No code or copy change.
+- Done when: this row holds the trace with file and line for each claim, and BL-1805 is updated to cite it.
+
+### Held: needs a device, a spec, counsel or a founder decision first
+
+#### BL-1700 Device sitting one: SE 3 at the largest text, with VoiceOver, Bold Text and Voice Control
+- Status: needs-decision (the CTO and qa name who runs the sitting; the exec review found no operator named). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1 (becomes P0 if no pass exists by the gate date, DESIGN-BACKLOG section 9). Gate: before the store build. Lane: design-systems writes the pass; qa runs devices.
+- Satisfies: DSR-024, NEU-031, CDO-B-059, CDO-A-018 (device check only).
+- Problem and evidence: no device accessibility pass exists. Exec review tiering: Listen, Review and Keep gate the build; Settings routes and the remaining screens may trail (BL-1704). The 44 pt measurement can start in the simulator accessibility inspector.
+- Scope: one findings file, each failure its own ticket. Runs as two sittings: an SE 3 sitting, and a VoiceOver and Voice Control sitting. It also carries BL-1705's stopwatch and the BL-1786 persona script, and BL-1717 as a short interruptions script (a call, Siri, a lock, a route change, a kill, during a take and during Keep).
+- Done when: the findings file is committed, each id in BL-1786 is re-rated, and the 27 Nov gate question is answered with the file.
+
+#### BL-1705 First-letter stopwatch on an SE 3
+- Status: needs-decision (a person with a real iPhone SE 3 and a named operator; same sitting as BL-1700). Mode: human. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P0 (the 90 second promise, PS1). Gate: BL-1706. Lane: qa; product reads.
+- Satisfies: NEU-001 (P0).
+- Problem and evidence: nobody has timed a new parent from first open to the first recorded word.
+- Scope: measurement only, step by step, no build. No timing figure goes in store or site text until this is read (exec review).
+- Done when: the step-by-step times are filed and product has read them.
+
+#### BL-1706 First-run order and the public timing promise
+- Status: needs-founder (CR-73, scope and what users are promised; after BL-1705). Mode: human. Owner: founder. Milestone: M15. Size: S. Depends on: BL-1705.
+- Priority: P0. Gate: BL-1705. Lane: founder; product prepares.
+- Satisfies: NEU-001 (P0), NEU-005 (P1), NEU-025 (P2).
+- Problem and evidence: the exec review's plan of record is a wording change to speaking time, with the build (BL-1707) optional. Default if unanswered: steps stay, the promise is reworded to speaking-time wording, and store text keeps speaking-time wording.
+- Scope: the founder rules which steps move after the first letter and whether the finish is cut to one primary. The age gate stays; the date of birth stays required (D-087).
+- Done when: the ruling is recorded in `docs/DECISIONS.md` by the founder, and BL-1707 is set `ready` or `deferred`.
+
+#### BL-1707 First-letter path built as decided
+- Status: blocked (BL-1706). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1706.
+- Priority: P0 only if BL-1706 says build. Gate: BL-1706, a decision. Lane: mobile.
+- Satisfies: NEU-001, NEU-005, NEU-025; BL-1816 rides in this change if built.
+- Problem and evidence: the exec review's plan of record is a wording change; the build is optional. Lands before 1 Dec only if the stopwatch shows it is small.
+- Scope: as the founder rules in BL-1706. Nothing else.
+- Done when: the path matches the ruling and a test proves the steps and their order.
+
+#### BL-1786 Persona device script, added to the BL-1700 sittings
+- Status: needs-decision (a named operator and an iPhone SE 3; same sittings as BL-1700, no separate booking). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1700.
+- Priority: P1 (gates the rating of the rows it names). Gate: none beyond BL-1700. Lane: design-systems writes the script; qa runs it.
+- Satisfies: PER1-001, PER1-002, PER1-005, PER1-006, PER1-007, PER1-013, PER1-019; PER4-001, PER4-003, PER4-002, PER4-005, PER4-012, PER4-021, PER4-017; PER2-014; PER3-005 to PER3-011; PER5-018.
+- Problem and evidence: every persona finding was read from code and text; none ran a device. Nothing named rises to P1 on a reading alone.
+- Scope: lock and Pause, a side-button press mid-take, a whispered take at pillow distance, a long silent take, night brightness, Listen fit at default and one larger size, the primer; VoiceOver with and without headphones (start cue, Pause state, Review arrival and undo, sheet focus return, a Book row read); Voice Control stopping a take; the commute cases; AX5 on the letter page and Read together. Optional, not a default (exec review, for the CTO to see): at Review the "From Mama" line is tappable, defaults to the owner, takes a typed name and is fixed after Keep (founder and CDesO decide).
+- Done when: the findings file re-rates every id above, and the arrival check BL-1794 needs is answered.
+
+#### BL-1702 Child switcher, audio player and Listen to 44 pt; every first-run control has a role
+- Status: blocked (BL-1700). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1700.
+- Priority: P1. Gate: BL-1700. Lane: mobile.
+- Satisfies: DSR-019 (P1), DSR-020 (P1), DSR-021 (P2).
+- Problem and evidence: three small controls and unlabelled first-run and add-child controls; the sitting decides which fail.
+- Scope: built from what BL-1700 finds. Build BL-1822 with it.
+- Done when: each failing control reaches 44 pt and has a role, shown by a test.
+
+#### BL-1735 Spec: what "Read a year together" is (year rows in the Months sheet, end-of-year state)
+- Status: proposed (DESIGN-BACKLOG section 3; product writes the spec, then BL-1792 and BL-1736 unblock). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: none. Lane: product.
+- Satisfies: CDO-B-045 (P1).
+- Problem and evidence: a grandparent cannot read the first year as one sitting; the Months sheet has no year rows or end-of-year state specified.
+- Scope: one spec for the Months sheet entry that BL-1736 and BL-1792 share; check the list order first (the review assumed oldest first).
+- Done when: the spec is in `docs/design/` and BL-1736 and BL-1792 cite it.
+
+#### BL-1792 "Read from here": start Read together at a month or the letter in view
+- Status: blocked (BL-1735). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735.
+- Priority: P1. Gate: BL-1735 and a look at the list order. Lane: mobile.
+- Satisfies: PER3-007 (P1).
+- Problem and evidence: a later letter is eight taps away. The review assumed the list ends oldest first and did not read the list order.
+- Scope: "Read from here" from the Months sheet and from a letter page, per the BL-1735 spec; check the list order first.
+- Done when: a test starts Read together at a chosen month and at the letter in view.
+
+#### BL-1751 Three Moments token rulings added to tokens with tests
+- Status: proposed (DESIGN-BACKLOG section 5; the CDesO confirms the three rulings before this is set ready). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1. Gate: the CDesO's rulings. Lane: design-systems.
+- Satisfies: CDO-B-021 (P1), CDO-B-022 (P2).
+- Problem and evidence: target.action 48, list row 56 from the first accessibility size and the sheetTitle role are not in `tokens.ts`.
+- Scope: make the three rulings, add them to tokens with tests, and write why the capture-size principle does not apply to a browse card.
+- Done when: the tokens and tests exist and pass.
+
+#### BL-1752 Missing tokens exist and screens use them
+- Status: blocked (BL-1751). Mode: agent. Owner: design systems, mobile engineer. Milestone: M15. Size: M. Depends on: BL-1751.
+- Priority: P2. Gate: BL-1751. Lane: design-systems (tokens), mobile (swap).
+- Satisfies: DSR-006, DSR-007, DSR-008, DSR-026, DSR-027, CDO-B-003, CDO-B-048, CDO-B-051, CDO-A-016 (all P2).
+- Problem and evidence: no tokens for gutter, hairline, progress bar, icon sizes, scrim or press opacity.
+- Scope: add them and swap the screens; the web date field and the export phase line use the type ramp; the Read together progress line is strong enough to see.
+- Done when: the token test covers them and no screen types them.
+
+#### BL-1710 Spec: Review opens on a quiet default
+- Status: proposed (DESIGN-BACKLOG section 2; product writes the default, not pickable until then). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: spec. Lane: product, then mobile.
+- Satisfies: NEU-010 (P1).
+- Problem and evidence: Review opens loud; the exec review's NEEDS EVIDENCE asks whether every `verifyEdits` change is visibly marked in Review, and the spec must settle that before any line says "every".
+- Scope: the words, one Keep, one line that small fixes were marked, every control one tap away; nothing removed, only the default weight changes. Written together with BL-1788.
+- Done when: the spec is in `docs/design/` and names the evidence for "every".
+
+#### BL-1788 One line under Add to the book and Keep private that says what each changes
+- Status: blocked (BL-1710). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710.
+- Priority: P1. Gate: written with BL-1710 so Review is touched once. Lane: content (product checks it against the PRD privacy rows).
+- Satisfies: PER1-004 (P1).
+- Problem and evidence: she cannot tell what each button changes (who can read it, whether it is in the printed book).
+- Scope: one plain line per button. The two-parent audience line is BL-1819.
+- Done when: the lines pass the rules test and match the PRD privacy rows.
+
+#### BL-1794 Review reads in a sensible order with VoiceOver
+- Status: blocked (BL-1786). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1786.
+- Priority: P1. Gate: the arrival check from the BL-1786 sitting (a device; held). Lane: mobile (words from content).
+- Satisfies: PER4-008 (P1), PER4-009 (P2), PER4-005 (P2); BL-1719 for VoiceOver.
+- Problem and evidence: focus does not follow a fix to its card, and after the dissolve it goes to the play button.
+- Scope: opening a fix moves focus to its card and says what she said, then what it reads now; "N small fixes, listed below" before the letter; after the dissolve focus goes to the heading.
+- Done when: tests show the focus order, and BL-1786's arrival check is cited.
+
+#### BL-1822 Player at accessibility sizes: the Play circle grows, scrubbing is deliberate, the time reads in words
+- Status: blocked (BL-1702). Mode: agent. Owner: design systems, mobile engineer. Milestone: M15. Size: M. Depends on: BL-1702.
+- Priority: P2. Gate: BL-1702 (which waits on BL-1700); the scrub is checked on a device. Lane: design-systems, mobile.
+- Satisfies: PER3-010, PER3-011, PER3-012 (all P2).
+- Problem and evidence: the Play circle stays small, the line scrubs on a stray touch, the time reads as digits. Overlaps BL-1702; build together.
+- Scope: Play circle and icon grow with text (about 1.5 times); only a deliberate drag scrubs, 44 pt touch zone, vertical drags reach the page; the time reads in words or is dropped.
+- Done when: tests show the growth, the touch zone and the spoken time.
+
+#### BL-1796 VoiceOver parent hears "Listening" before the mic opens; Pause named for its state
+- Status: proposed (ruled by the CDesO and CPO on 22 Nov; the build is the first 1.0.x, or before submission if BL-1786 shows the start is broken). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1786.
+- Priority: P1. Gate: first 1.0.x unless the sitting says otherwise. Lane: product decided; mobile builds.
+- Satisfies: PER4-001 (P1), PER4-003 (P1), PER4-002 (P2); BL-1718.
+- Problem and evidence: a VoiceOver parent has no cue that a take began. A tone could itself be recorded, so nothing plays while the microphone is live.
+- Scope: a VoiceOver announcement "Listening" that finishes before the microphone opens, plus the existing haptic; no sound while the microphone is live (a tone stays a Paper sounds option); Pause named for its state with the length after "Paused."; focus moved quietly to Pause when the take starts. Magic Tap is BL-1836.
+- Done when: a test shows the announcement completes before the microphone starts and no audio plays into a take.
+
+#### BL-1836 Magic Tap pauses and resumes; no Voice Control claim until tested
+- Status: needs-decision (a device test in BL-1786; the capture change is the founder's with the CAIO and CPO). Mode: human. Owner: qa engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-1786.
+- Priority: P2. Gate: the BL-1786 device test. Lane: product runs the test; mobile builds Magic Tap with BL-1796.
+- Satisfies: PER4-004 (P2, to test; no loss cited).
+- Problem and evidence: ruled by the exec review: Magic Tap pauses and resumes (this resolves the conflict with BL-1796); Finish stays a visible button. A spoken "Tap Finish" could sit in `raw_transcript`, which is immutable, so no Voice Control claim until tested. "Long silence ends the take" is a new capture feature and needs its own decision.
+- Scope: test whether Voice Control commands reach the take; if they do, Review says she can remove stray words in Change words, and her audio is never trimmed on her behalf.
+- Done when: the test result is filed and any capture change has a founder ruling.
+
+#### BL-1798 Large print floor in Read together and on the letter page (CDesO ruled; build after BL-1791)
+- Status: blocked (BL-1791, BL-1786). Mode: agent. Owner: design systems, mobile engineer. Milestone: M15. Size: S. Depends on: BL-1791, BL-1786.
+- Priority: P1. Gate: BL-1791 first; the size is set at the sitting. Lane: design-systems, mobile.
+- Satisfies: PER3-005 (P1); D-027 untouched (a floor raises readable size and caps nothing); S30 and CDO-B-046 (BL-1772).
+- Problem and evidence: at AX5 the system size and Large print multiply to about 104 pt (an estimate). The exec review took this off the founder list.
+- Scope: the larger of the system size and Large print, never both, in Read together and on the letter page; offer the Aa sheet in Read together; size taken from the BL-1786 reading.
+- Done when: a test shows the floor and no cap on letter text, and the Aa sheet opens in Read together.
+
+#### BL-1805 Erase now: drop "for good"
+- Status: needs-decision (the founder's wording with counsel Q51; BL-1839 traces the server copy first; the CLO rules the hold). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: BL-1839.
+- Priority: P1. Gate: BL-1839, counsel. Lane: content.
+- Satisfies: PER5-004 (P1).
+- Problem and evidence: ruled: drop "for good"; use the Erase everything line, "Erased from this phone. Backups and exports you already saved are not changed." A wait-for-counsel default must cover live text; "for good" is live text today. Silence on 27 Nov leaves the status quo text, so name the date.
+- Scope: the founder merges the wording; content applies it once BL-1839 shows what the server copy does.
+- Done when: the live string is changed and the wording is recorded.
+
+#### BL-1806 One quiet factual line on the Delete confirm for a kept letter that is one of the free two
+- Status: needs-founder (wording is the founder's, counsel Q40; the rule is confirmed as intended first). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1. Gate: founder wording. Lane: content, mobile.
+- Satisfies: PER5-005 (P1); not NEU-033 (BL-1713).
+- Problem and evidence: deleting a kept letter does not give the free slot back (the count takes the largest of three sources). The exec review amended the default from "no line" to one quiet factual line; the CPO, CBO and CLO disagreed with "no line".
+- Scope: one factual line only when the kept letter is one of the free two; no price, no urgency.
+- Done when: the founder records the wording and the line shows only in that case, shown by a test.
+
+#### BL-1742 Photos primer: a swipe down persists nothing
+- Status: needs-founder (the founder confirms because it edits G-05 and R73; the CPO and CPrivO ruled the behaviour). Mode: human. Owner: founder, mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 (dark behind the photo flag). Gate: founder confirmation. Lane: mobile after the confirmation.
+- Satisfies: CDO-B-036 (P1); G-05, R73.
+- Problem and evidence: a swipe down records a decline today. Ruled: a swipe down persists nothing, never triggers Apple's alert and never returns unprompted; re-entry is a tap on the door row; only "Not now" records a decline.
+- Scope: the sheet's dismiss path returns to the unanswered state; G-05 and R73 are updated by the founder's record.
+- Done when: a test shows swipe-down writes no decline and shows no alert, and "Not now" writes one.
+
+#### BL-1830 Photo flag: five gates (Export fails closed)
+- Status: needs-decision (founder and counsel: the flag date, and the retention words). Mode: human. Owner: founder, mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: P2 (gate before the flag; not before 1 Dec). Gate: all five. Lane: mobile, content after.
+- Satisfies: PER5-007, PER5-008, PER5-018 (all P2); BL-1838.
+- Problem and evidence: the CPrivO's five gates for the photo flag: counsel-cleared primer lines; a network-egress test (no library data leaves the phone); photos out of sync and our backup; Export includes pictures or says it does not; device rows. Export writes photos as null today, so no photo flag while Export says "everything". Default if the gate date passes: the flag stays off and 1.0 ships with the library read off.
+- Scope: fail closed on Export; then each gate as its own row when its blocker clears; the exec review's NEEDS EVIDENCE asks whether the shipped build, Info.plist purpose strings, label, store text or policy mention photos while the flag is off.
+- Done when: all five gates are met and recorded, or the flag stays off by the founder's record.
+
+#### BL-1838 Photo words: the Never line and where-kept line, in counsel-cleared words
+- Status: needs-decision (founder and counsel; the flag date is the founder's). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2 (gate before the flag). Gate: counsel. Lane: content.
+- Satisfies: PER5-014, PER5-015, PER5-016, PER5-017 (all P2); PRIV-R21; NS-53-R192.
+- Problem and evidence: the primer needs the "never" side. No sentence may say "nothing leaves the phone" (the exec review asks whether reverse geocoding sends coordinates to Apple); say "we do not receive". The place word stays.
+- Scope: the Never line under the primer, the line after Turn off, the Limited access line, the where-kept line, each in counsel-cleared words.
+- Done when: counsel has cleared each line and the content tests pass.
+
+#### BL-1716 Review: offline or poor signal on a first letter (first to drop)
+- Status: deferred (first 1.0.x, by the exec review's drop order; goes first if time runs out). Mode: agent. Owner: design systems. Milestone: M15. Size: M. Depends on: none.
+- Priority: unrated. Gate: none. Lane: design-systems (review), product triages.
+- Satisfies: DESIGN-BACKLOG section 2.1 gap row (PER1-017 and PER5-020 touch the download card only).
+- Problem and evidence: nobody has reviewed a first letter with no signal: record, Review, Keep, the speech download, sign-in.
+- Scope: a review by reading plus one device session, filed as findings.
+- Done when: a findings file exists and product has triaged it.
+
+#### BL-1717 Review: interruptions as a short device script in the SE 3 sitting
+- Status: blocked (BL-1700). Mode: human. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-1700.
+- Priority: P1 if confirmed on a device (P2 until). Gate: BL-1700. Lane: qa.
+- Satisfies: DESIGN-BACKLOG section 2.1 gap row; PER1-001, PER1-002, PER2-014, PER4-006 cover part of it.
+- Problem and evidence: call, Siri, low storage, route change and kill during a take and during Keep are unreviewed. The exec review keeps this one, as a short script in the SE 3 sitting, not a separate review.
+- Scope: the device script only; what the parent sees and hears in each case; findings go in the BL-1700 file.
+- Done when: each case is recorded in the findings file.
+
+#### BL-1709 First letter with no speech model on the phone: a calm "words are on the way" state
+- Status: proposed (DESIGN-BACKLOG section 2; product picks the fallback, not pickable until then; the exec review keeps it ahead of BL-1723 and BL-1720 in the order). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: spec. Lane: product, then mobile.
+- Satisfies: NEU-003 (P1); D-087 (the speech model downloads only after an explicit choice).
+- Problem and evidence: if the model is not on the phone, a first session can end with nothing visible.
+- Scope: Review shows a calm state with the recording playable, and a decided fallback (smaller first model or a typed first letter), tested on an SE 3 on cellular.
+- Done when: the spec names the fallback and the mobile row is filed.
