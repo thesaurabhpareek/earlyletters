@@ -539,6 +539,20 @@ export const en = {
     // {a} and {b} are the first and last day, for example "September 13 to October 12".
     monthKicker: "Month",
     monthRange: "{a} to {b}",
+    // PROPOSED (BL-947, NS-24; B-S07): the "Read a year together" rows in Go to a month. Not shown until the feature is on.
+    // monthsHintWithYears replaces the Go to a month hint only when year rows exist; the current hint stays for every other book.
+    monthsHintWithYears: "Shows the months and years that have letters.",
+    years: {
+      sectionTitle: "Read a year together",
+      y1: "{child}'s first year",
+      y2: "{child}'s second year",
+      y3: "{child}'s third year",
+      y4: "{child}'s fourth year",
+      y5: "{child}'s fifth year",
+      yN: "{child}'s year {n}",
+      noName: "Year {n}",
+      rowA11y: "Opens Read together at the first letter of this year.",
+    },
     // v1.0 makes no notes (S26).
     chapterSubtitleOne: "1 letter",
     chapterLetters: "{count} letters",
@@ -650,6 +664,9 @@ export const en = {
     empty: "Letters you add to the book will be here to read together.",
     // The app adds no sentiment of its own; the letters carry the love (VOICE, the app's own words).
     endOfMonth: "That was Month {month}.",
+    // PROPOSED (BL-947, NS-24): {label} is the year row's filled name, "Asha's first year". Before You has its own line.
+    endOfYear: "That was {label}.",
+    endOfBefore: "That was every letter from Before You.",
     endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",

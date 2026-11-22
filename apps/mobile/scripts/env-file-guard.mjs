@@ -16,7 +16,14 @@
  * Only plain `KEY=value` lines are parsed: `export KEY=value` is unparsable here (it is reported as a line number, and so is a FAIL).
  * A FAIL line never carries text from the file except an `EXPO_PUBLIC_*` name of at most 64 characters; anything else is
  * reported as `<unparsable line N>`, because a secret can sit in the name position (`sb_secret_...=1`).
+ *
+ * A file that cannot be read (a directory named `.env.local`, a permission error) is a FAIL too, as "<file>: <unreadable>": the
+ * guard cannot say the file is harmless, and the error text is never printed (it can carry a path). `envFileProblemsAt` is the
+ * one place that reads a file, so a read error cannot turn into a pass or into a crash of the preflight.
+ * A `#` is a comment only at the start of a line: `KEY=abc#def` is a value, so it is checked like any other line.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /** The only shape of name that is ever printed: a public build switch, short, upper case. */
 const PRINTABLE_NAME = /^EXPO_PUBLIC_[A-Z0-9_]{1,64}$/;
@@ -51,4 +58,15 @@ export function envFileProblems(file, text) {
       bad.push(`${file}: ${named ? k : `<unparsable line ${i + 1}>`}`);
     });
   return bad;
+}
+
+/** `envFileProblems` for the file `dir/file`; a file that cannot be read gives "<file>: <unreadable>", never an empty list. */
+export function envFileProblemsAt(dir, file) {
+  let text;
+  try {
+    text = readFileSync(join(dir, file), 'utf8');
+  } catch {
+    return [`${file}: <unreadable>`];
+  }
+  return envFileProblems(file, text);
 }

@@ -37,6 +37,7 @@ import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
 import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
+import { adoptDeviceOnlyLocal, bindDeviceOnlyOwners } from './local-claim';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -189,6 +190,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       setClaimReaders(null);
     };
   }, [sb]);
+  // CPO-30: the days and moments files follow the signed-in person (sign-in sets the owner, sign-out puts it back to 'local').
+  useEffect(() => bindDeviceOnlyOwners(), []);
   useEffect(() => publishAuth(state), [state]);
   // BL-967 (NS-13-R14, R13, R15): one hook on the signed-in user id. When it goes (Sign out and account deletion finish
   // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end; and
@@ -429,7 +432,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       claimPending,
       keepLettersHere() {
         const cur = stateRef.current;
-        if (isSignedIn(cur)) confirmAccountClaim(cur.userId);
+        // CPO-30: the days and moments files that are still 'local' join the account first, then the claim is confirmed.
+        if (isSignedIn(cur)) void adoptDeviceOnlyLocal(cur.userId).then((ok) => ok && confirmAccountClaim(cur.userId)); // a failed adopt leaves the claim prompt up and the local files alone
       },
       async notMyAccount() {
         // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never
@@ -588,13 +592,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       },
 
       async signOutOtherDevices() {
-        if (!sb) return { ok: false, error: 'not_available' };
+        if (!sb) return { ok: false, error: 'sign_out_others_failed' };
         try {
           const { error } = await sb.auth.signOut({ scope: 'others' });
           if (error) throw error;
           return { ok: true };
         } catch (e) {
-          return { ok: false, error: authErrorKind(e, 'provider') };
+          return { ok: false, error: authErrorKind(e, 'sign_out_others') };
         }
       },
     }),
