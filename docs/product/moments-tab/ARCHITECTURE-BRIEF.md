@@ -328,7 +328,7 @@ Hard rules the function enforces by test (L0): `notDetermined` never calls `requ
    |                               picks held in tray until capture owns them -> chosen -> capture
    +-- inactive/background ------> paper cover over the sheet, picks held in memory, restored on active
    |                               (fallback if DM-09 shows the cover cannot hide Apple's view in the
-   |                                switcher snapshot: dismiss on background)       [EM 4.7 item 5]
+   |                                switcher snapshot: Layout C and the cover, no pick dropped)  [EM 4.7 item 5]
    +-- App lock engages/timeouts -> sheet closes; picks and temp copies discarded; nothing written;
    |                               a pick landing while locked is discarded with 0 files   [R102]
    +-- access revoked while open -> picker is plain and independent of access; our day body falls

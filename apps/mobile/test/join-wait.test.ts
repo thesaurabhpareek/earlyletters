@@ -16,6 +16,7 @@ import {
   createJoinWaitStore,
   JOIN_WAIT_MS,
   joinWaitEnds,
+  holdStalledWhileRetrying,
   joinWaitLine,
   retryRestartsWait,
   welcomeJoinView,
@@ -139,7 +140,7 @@ describe('[S2] the screens', () => {
     const first = code('app/onboarding.tsx');
     expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;[\s\S]*?const showContinue = continueMayShow\(\{\s*begin: joining\.begin,\s*onWelcome: step === 'welcome',/);
     expect(first).toMatch(/\{showContinue \? \(\s*<View>\s*<Button size="lg" fullWidth disabled=\{disabled\} label=\{cta\}/);
-    expect(first).toMatch(/\{joining\.retry \? <Button variant="quiet" size="sm" label=\{familyCopy\.accept\.tryAgain\} onPress=\{joining\.onRetry\}/);
+    expect(first).toMatch(/\{joining\.retry \? <Button variant="quiet" size="sm" label=\{familyCopy\.accept\.tryAgain\} loading=\{joining\.retrying\} onPress=\{joining\.onRetry\}/);
     // #374's controls: the line sits between the reason line and Continue, in the one controls block, and both stay
     // inside it (neither may cross its closing `</>`), so the finish step's pinned primary keeps its button.
     expect(first.match(/const controls = \(/g)).toHaveLength(1);
@@ -154,7 +155,7 @@ describe('[S2] the screens', () => {
     expect(hook).toMatch(/const ends = joinWaitEnds\(\{ onWelcome, signedIn, bookHere \}\);\s*useEffect\(\(\) => \{\s*if \(wait && ends\) joinWait\.clear\(\);\s*\}, \[wait, ends\]\);/);
     expect(hook).toMatch(/useEffect\(\(\) => \(\) => joinWait\.clear\(\), \[\]\);/);
     expect(hook).toMatch(/const readBookHere = \(\) => \(wait \? getChild\(wait\.childId\) !== null : false\);/);
-    expect(hook).toMatch(/const view = welcomeJoinView\(\{ wait, onWelcome, bookHere, syncOn, phase, now \}\);/);
+    expect(hook).toMatch(/welcomeJoinView\(\{ wait, onWelcome, bookHere, syncOn, phase, now \}\)/);
   });
 
   it('VoiceOver: the welcome speaks its line when it appears in front and when it changes (a live region is Android\'s only)', () => {
@@ -169,5 +170,27 @@ describe('[S2] the screens', () => {
     // One wake just after the wait runs out, cleared when the wait changes (Try again) or the welcome goes. J21j on the
     // web proves the wake itself; this pins its time and its cleanup, which the web cannot see.
     expect(hook).toMatch(/const id = setTimeout\(\(\) => setNow\(Date\.now\(\)\), left \+ 50\);\s*return \(\) => clearTimeout\(id\);\s*\}, \[wait\]\);/);
+  });
+});
+
+describe('[BL-460 p5] Try again while a retry is in flight', () => {
+  const H = { wait: WAIT, onWelcome: true, bookHere: false };
+  it('holds the stalled view over the quiet waiting view, with the same words', () => {
+    expect(holdStalledWhileRetrying(WAITING, { ...H, retrying: true })).toEqual(STALLED);
+    expect(holdStalledWhileRetrying(STALLED, { ...H, retrying: true })).toEqual(STALLED);
+  });
+  it('changes nothing when no retry runs, and never outlives the wait', () => {
+    expect(holdStalledWhileRetrying(WAITING, { ...H, retrying: false })).toBe(WAITING);
+    const none = { line: null, begin: true, retry: false };
+    expect(holdStalledWhileRetrying(none, { ...H, retrying: true, bookHere: true })).toBe(none);
+    expect(holdStalledWhileRetrying(none, { ...H, retrying: true, onWelcome: false })).toBe(none);
+    expect(holdStalledWhileRetrying(none, { ...H, retrying: true, wait: null })).toBe(none);
+  });
+  it('the hook holds it, guards a second press and clears busy when the sync answers; the button shows busy', () => {
+    const hook = code('components/family/join-wait.tsx');
+    expect(hook).toMatch(/if \(inFlight\.current\) return;\s*inFlight\.current = true;\s*setRetrying\(true\);/);
+    expect(hook).toMatch(/\.finally\(\(\) => \{\s*inFlight\.current = false;\s*setRetrying\(false\);/);
+    expect(hook).toMatch(/const view = holdStalledWhileRetrying\(welcomeJoinView\(\{ wait, onWelcome, bookHere, syncOn, phase, now \}\), \{ retrying, wait, onWelcome, bookHere \}\);/);
+    expect(hook).toMatch(/return \{ \.\.\.view, onRetry, retrying \};/);
   });
 });

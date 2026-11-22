@@ -35,9 +35,9 @@ const raw = {
   recordingLine: 'The lock waits until a recording ends.',
   noPasscode: 'This iPhone has no passcode. Set one in iPhone Settings, then turn on the lock here.',
   openSettings: 'Open Settings',
-  turnOnReason: 'Confirm it is you to turn on the lock',
-  turnOffReason: 'Confirm it is you to turn off the lock',
-  exportReason: 'Confirm it is you to export your book',
+  turnOnReason: "Confirm it's you to turn on the lock",
+  turnOffReason: "Confirm it's you to turn off the lock",
+  exportReason: "Confirm it's you to export your book",
   settingsHome: { appLock: 'App lock', appLockOn: 'On', appLockOff: 'Off' },
   // Privacy, Who can see it, while the lock is on (content.md 4.10; replaces "Only you, on this phone.", an absolute).
   // New privacy statements: they go into claims-registry.yaml before release (LEGAL-REQ-044).

@@ -61,6 +61,9 @@ export const SEAM_IDENTIFIERS = [
   // The drill's other launch-argument keys (DRILL_ARG in apps/mobile/e2e/kill/protocol.mjs; a test keeps them in sync).
   'e2eKillKind',
   'e2eKillPoint',
+  // The web presentation seam (council ruling E6, BL-410): apps/mobile/src/dev/e2e-web-seam.web.ts. The bare names appear in store bundles, so these are prefixed.
+  'e2eFontScale',
+  'e2eLang',
 ];
 
 /** The identifier the e2e bundle must carry for the positive control: the drill's mode key. */

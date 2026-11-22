@@ -279,7 +279,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: deferred (v1.1, CVL-20).
 
 #### BL-148 Author edits keep the version-replay invariant
-- Status: ready. Mode: agent. Owner: speech engineer. Scope unchanged (TDD 01 X-8).
+- Status: done (PR #1426, de9832a45). Mode: agent. Owner: speech engineer. Scope unchanged (TDD 01 X-8).
 
 #### BL-147 Golden-audio corpus v1
 - Status: deferred into FUTURE CVL-02 and CVL-05 (scripted recordings from paid native-speaker reviewers). The v1.0 part is BL-043 plus the per-language spot check in FT-27 and FT-34.
@@ -685,7 +685,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Status: blocked (website thread; D-042). `/delete-account` must be live before submission (FT-31).
 
 #### BL-244 Value-free validation for content tables [High]
-- Status: ready. Mode: agent (`approve-migration`). Verified: no such trigger yet.
+- Status: done (PR #1429, 3cef4c6cc: the ratchet test; PR #1453, 511be3f4b: the triggers on four content tables; the NOT NULL, foreign key and enum CHECK echo is BL-1499, filed as BL-244b). Mode: agent (`approve-migration`). The hosted apply is the founder's, from the run sheet.
 
 #### BL-245 Device data-protection assertions
 - Status: needs-founder (FT-22 device run).
@@ -739,7 +739,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 | BL-265 | Uncapped letter text with script runs [High] | ready (verify no `maxFontSizeMultiplier` on letter text, D-027) |
 | BL-266 | AX5 stacking pass on every P0 screen [High] | in-progress (mobile-polish), then device check FT-39 |
 | BL-267 | Motion rules | done (`src/lib/motion.ts`) |
-| BL-268 | Accessibility lint rules | ready |
+| BL-268 | Accessibility lint rules | in-progress (rules R1 to R6 as `apps/mobile/test/a11y-lint.test.ts`; touchable role and label, `numberOfLines` on letter text and layout-animation imports (M2) still need a syntax-aware rule) |
 | BL-269 | Component tests at default size and AX5 | blocked (BL-278) |
 | BL-270 | Native tabs | ready (cut first if late) |
 | BL-271 | Increase Contrast and Reduce Transparency variants | deferred (v1.1 or later; T5-20) |
@@ -1571,7 +1571,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 ## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
 
 #### BL-441 `decide()` honours own Plus on an account-level surface
-- Status: ready. Mode: agent (engine file: a founder merge under D-107; under D-117's operating rule the coordinator merges it after two independent passing reviews on the current head and green CI). Owner: payments engineer (the plan engine, `packages/core/src/plan.ts`). Size: S.
+- Status: done (PR #1371, 3a4b1f292). Mode: agent (engine file: a founder merge under D-107; under D-117's operating rule the coordinator merges it after two independent passing reviews on the current head and green CI). Owner: payments engineer (the plan engine, `packages/core/src/plan.ts`). Size: S.
 - Satisfies: D-036 and plan rule R-3 (no offer where Plus is already on).
 - Scope: `packages/core/src/plan.ts:203` allows own Plus only while `roleInBook === 'parent'`. With `roleInBook: null` and `book: null` (the documented account-level shape) a person whose Plus is on is offered Plus. Latent: no screen calls `decide()` with a null role yet.
 - Done when: own Plus is `allow` on an account-level surface; the `it.fails` "[BL-441] [R-3] own Plus on an account-level surface..." in `packages/core/test/plan.edges.test.ts` becomes `it` and passes; the property test "never offers Plus where it is already on" in `plan.test.ts` counts a null role as on.
@@ -5704,7 +5704,8 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: review of PR #1113, https://github.com/thesaurabhpareek/earlyletters/pull/1113.
 
 #### BL-1198 Backup: a locked Keychain that returns null reads as no session
-- Status: proposed (review of PR #1169, https://github.com/thesaurabhpareek/earlyletters/pull/1169; Karma or the founder sets it to ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Status: blocked (device result: whether a locked Keychain read returns null; the founder's device check gates the backup flag, the code half is ready). Mode: human. Owner: mobile engineer, security engineer. Milestone: M15. Size: S.
+- Council ruling (21 Nov 2026, CR-145): the rule is recorded: a null or an error from the Keychain means unknown, never signed out, and the state file is deleted only on a positive signed-out signal. The code half (the rule and its test) is ready to build with BL-1199; the device check stays the founder's, so the row stays blocked on that result for turning the flag on.
 - Satisfies: BRIEF B5, CR-71 B5.
 - Blocks: backup flag on (`EXPO_PUBLIC_BACKUP`); decide the rule before the flag goes on.
 - Scope: needs a device check: with the phone locked, does the Keychain read return null instead of throwing, so the backup code treats it as no session; decide the rule (retry, defer or treat as unknown) before the flag goes on, and test it.
@@ -5839,7 +5840,8 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: none; the device row D-4 stays the founder's.
 
 #### BL-1407 With App lock off, nothing covers a letter's words in the app switcher: cover them, or say so
-- Status: needs-founder (no FT id yet; the question is below; Karma may file it in `docs/FOUNDER_TASKS.md`). Mode: human (a decision, then agent work). Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145; no builder PR is open on 21 Nov, it becomes `in-review (PR #n)` when one opens). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): option (a), cover a letter's words in the app switcher whatever App lock says, with no new words (so no content or claims change). For: CPO, Design, Privacy, CISO, CLO. Scope is (a) only. Whether iOS snapshots the body with App lock off is UNVERIFIED and stays a device check for the founder (row D-1).
 - Satisfies: NX-39-R36. Cited: `docs/security/MEDIA_THREAT_MODEL.md` P6, gap G-2, device row D-1.
 - Question for the founder: when App lock is off, the app switcher snapshot can show a letter's words; do you want (a) the app to cover letter text in the switcher whatever App lock says, or (b) to leave it and say in the copy that App lock is what covers it? There is no default until you decide.
 - Evidence: the model says the cover (`PrivacyCover`) draws only while the lock is on (`apps/mobile/src/components/app-lock/app-lock-layer.tsx:10`, `privacy-cover.tsx:26`, `apps/mobile/src/lib/app-lock/controller.ts:55` to `:58`); those lines were not re-read here. Picture blanking is PR #838 (open).
@@ -7087,7 +7089,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test` auth and revocation tests. Unverified: how #1273 reshapes the probe; rebase on it if it has merged.
 
 #### BL-1426 A wiring test for the sign-out probe in `lib/sync/index.ts`
-- Status: in-review (PR #1344; was ready: PR #1273 merged as d9c392736, so the probe it pins is on `develop`; BL-1425 is done in PR #1319). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
+- Status: done (PR #1344, merged as 0fadb04b1). Mode: agent. Owner: sync owner. Milestone: M12. Size: XS. Depends on: BL-1425.
 - Priority: Medium. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: both lenses on #1273 found that reverting the sign-out probe registered in `apps/mobile/src/lib/sync/index.ts` to plain `pendingCount` turns no test red. On `develop` since #1273 the registration at `:266-274` is `registerUploadQueue({ pendingCount: () => { const userId = currentAuthUserId(); return userId ? pendingForAccount(localSqlDb(), userId) : pendingCount(localSqlDb()); }, ... })`, and `pendingForAccount` is in `apps/mobile/src/lib/sync/outbox.ts`.
@@ -7105,7 +7107,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: the web journey run (`docs/qa`), plus the existing `test/next-ask.test.ts`.
 
 #### BL-1428 BL-458 part 3: how the Book catches an `entries` event between its first read and its subscribe
-- Status: needs-decision (the mobile engineer picks between the two options; no D- or Q- id yet). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145: option B). Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted). Milestone: M4. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): option B, one extra read in the effect. CPO for B; the CDO preferred A. The row owner picks and Karma ruled B, so the mobile engineer builds B and records it here. A mount-time list read is the cost named in the options; the test must show an `entries` event between the initialiser read and the subscribe is picked up.
 - Priority: Low. Gate: none.
 - Satisfies: none given.
 - Problem and evidence: BL-458 point 3. The Book reads its letters in the `useState` initialiser and subscribes in an effect, so an `entries` event between the two is missed until the next event (BL-458 Problem (3); unverified on a device). BL-458 stays `partly done` after #1287 merges; this row is the open part.
@@ -7115,7 +7118,7 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `apps/mobile/test/p5-critics.test.ts` or a new Book test.
 
 #### BL-1429 The second reminder prime is tracked as `source: 'first_letter'`
-- Status: in-review (PR #1351; the data-map line is held for the founder as a proposed legal-file edit in `docs/ops/proposed/bl-1429-data-map-line.md`). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
+- Status: done (PR #1351, merged as 03314815c; the data-map line is still held for the founder in `docs/ops/proposed/bl-1429-data-map-line.md`). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low (cosmetic: the event's source label is wrong, nothing is shown wrongly). Gate: none.
 - Satisfies: none given.
 - Problem and evidence: Lens B on #1274 and its PR body note the second showing still sends `source: 'first_letter'`. Verified on `develop` after #1274 merged: `track('reminder_prime_shown', { source: 'first_letter' })` at `apps/mobile/src/components/asks/reminder-prime-ask.tsx:47` is sent for every showing, so the second showing (built at `next-ask.logic.ts:75`) is labelled `first_letter` too. #1274 did not touch that file.
@@ -7125,7 +7128,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `4801cb7f`. BL
 - Test: `packages/analytics` allowlist test and `apps/mobile/test/next-ask.test.ts`.
 
 #### BL-1430 If the second prime becomes eligible after Yes and then reminders off, is that intended
-- Status: needs-decision (founder or Karma). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
+- Status: ready (council ruling CR-145). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: none (PR #1274 has merged).
+- Council ruling (21 Nov 2026, CR-145): a person who ever said Yes to the reminder prime is never primed again, kept as a device-only boolean (layer L2, no server field, nothing in analytics). For: Privacy, Design. Against: CPO and CDO, who would keep the behaviour. Karma broke the tie. Subject to F13 6.2 B row 4c (`docs/prd/v2/features/F13*.md`): the spec wins, and if row 4c reads against this the builder stops and files the conflict instead of building. Scope becomes the rule plus a `test/next-ask.test.ts` case named for it; no D-### proposal is needed beyond CR-145.
 - Priority: Low. Gate: none.
 - Satisfies: none given (C-REQ-001 Rev allows at most two primes; read it before deciding).
 - Problem and evidence: Lens B on #1274. The second-prime rule now exists on `develop` (PR #1274): `apps/mobile/src/lib/asks/next-ask.logic.ts:75` returns `reminder_prime` when `!firstLetter && firstMonthDone && primesShown === 1 && primeAllowed(primesShown) && !remindersOn`, with the cap `MAX_REMINDER_PRIMES = 2` at `:20`. `primesShown` counts showings from any source and does not record whether the person said Yes, so someone who said Yes to the first and later turned reminders off in Settings becomes eligible once the first month is done. Whether that matches F13 6.2 B row 4c was not checked. Considerations, not a decision: it would be a second, single, dismissible ask inside the cap; a person who turned reminders off on purpose may read it as being asked again. The founder decides.
@@ -7223,7 +7227,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Test: a new file beside `apps/mobile/test/auth-machine.test.ts`.
 
 #### BL-1461 What the person sees while the Apple revocation wait runs (the busy screen gives no reason)
-- Status: needs-decision (founder: the words are his, per CR-73 and `packages/content/VOICE.md`; a copy question, nothing is written until he rules). Mode: agent. Owner: mobile engineer, content. Milestone: M5. Size: XS. Depends on: BL-450 (done).
+- Status: ready (council ruling CR-145; the words are council-locked under the founder's delegation and replaceable by him). Mode: agent. Owner: mobile engineer, content. Milestone: M5. Size: XS. Depends on: BL-450 (done).
+- Council ruling (21 Nov 2026, CR-145): show one line, after a short delay, only while `state.status === 'signingOut'` and `state.reason === 'apple_revoked'`. Words, locked by the council under the delegation: "Your newest letters are still on this phone. They're sent first, then this phone signs out." The founder can replace them, and they reach users only through a store build, which is his. Dissent recorded: CLO, CPO, Design and Privacy said the words are the founder's (CR-73); CCO said the line must be true, so the builder checks it against the BL-1462 behaviour (letters kept on the phone). Run the copy rules test and `npm run lint:copy`.
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: A-REQ-033, BL-451.
 - Problem and evidence: since PR #1332 a revocation noticed at launch can wait for unsent letters, and while it waits the person sees the busy screen with no reason. The waiting row that explains a sign-out the person asked for (`signOutWaiting` at `packages/content/src/features/auth.en.ts:315`, shown on the Account view) is not on screen at launch, and no line says why the app has not moved on. Not run on a device.
@@ -7232,7 +7237,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: the founder's words are recorded as a D-### or in this row, and the screen test passes.
 
 #### BL-1462 Offline at launch the Apple revocation wait has no time cap
-- Status: needs-decision (founder: a cap changes what the app promises about letters; any cap must keep the letters on the phone). Mode: agent. Owner: auth owner (S01), security engineer. Milestone: M5. Size: S. Depends on: BL-450 (done).
+- Status: superseded (by CR-145: no cap for 1.0, a revisit trigger is recorded; nothing is built from this row). Mode: agent. Owner: auth owner (S01), security engineer. Milestone: M5. Size: S. Depends on: BL-450 (done).
+- Council ruling (21 Nov 2026, CR-145): no time cap on the Apple revocation wait for 1.0, which is A-REQ-033 as written; Apple's sources set no deadline for it (CCO). For: CPO, CCO, CLO (recorded). Against: CISO, Design, Privacy, who wanted a cap with the letters kept. Revisit when device evidence shows how long the wait runs, or when the founder asks. Any cap must keep every letter on the phone; the CISO's 7 days was a picked number, not a derived one. The accepted risk matches `docs/ops/runbooks/sign-everyone-out.md:36` (a phone that is offline or has queued letters stays signed in until it is online and the queue has drained).
 - Priority: Medium. Gate: none.
 - Satisfies: none given. Related: A-REQ-033 (the row's words are "only after unsynced letters sync").
 - Problem and evidence: with PR #1332, offline at launch with the gate unreadable and letters queued, the person stays signed in with a revoked Apple credential until the phone is online or the queue is empty: the poll at `apps/mobile/src/lib/auth/session-provider.tsx:313-317` retries every 10 s and nothing ends the wait. That matches the requirement's words, and the #1332 body offers a draft line for a cap that the founder may want to rule on. A cap must never discard a letter: letters stay on the phone, sync off, as the `off` path already does.
@@ -7249,7 +7255,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: removing or inverting the `=== 'on'` guard makes the test fail.
 
 #### BL-1464 The Keep the book re-offer reports trigger `first_letter` because `third_letter` is not in the analytics allowlist
-- Status: proposed (Karma, PR #1346 comment 7067852509: it changes the analytics allowlist and the schema version, so it stays proposed until the data steward has seen it; Karma or the founder sets `ready`). Mode: agent. Owner: analytics engineer, mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Status: ready (council ruling CR-145, CDO ruling). Mode: agent. Owner: analytics engineer, mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Council ruling (21 Nov 2026, CR-145): ready. The data-map line for the new `third_letter` value goes to `docs/ops/proposed/` for the founder, as a proposed legal-file edit, not into `docs/legal/**` (DATA-REQ-001).
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: BL-519 (done in PR #1331).
 - Problem and evidence: the sign-in sheet is opened with `trigger: 'first_letter'` at `apps/mobile/src/app/review.tsx:528`, and the allowlist `SIGN_IN_TRIGGER` has `first_letter`, `invite`, `invite_create`, `sign_in` and `settings` only (`packages/analytics/src/catalog.ts:95`, `packages/analytics/src/values.ts:78`, `apps/mobile/src/lib/auth/pending.ts:61-63`). So the re-offer after the third letter reports as `first_letter`, and the insights loop cannot tell the first offer from the re-offer. Adding a value changes the schema, so the catalog's version header (`catalog.ts:209` onward lists each bump) takes a new line.
@@ -7257,7 +7264,8 @@ Written 21 Nov 2026 by the product agent, docs only, on `develop` `af0de7e7e`, m
 - Done when: the analytics catalog and values tests pass with the new value and the new version; a test shows the re-offer reports `third_letter` and the first offer still reports `first_letter`; the analytics allowlist test (no free text) still passes.
 
 #### BL-1465 Keep the book re-offer: the "Later" inference differs from a literal Later tap in two edges
-- Status: needs-decision (founder: what the person is promised, and whether either edge is worth an explicit dismissal record; a decision, not a build; no builder takes this row until it is ruled). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-519 (done).
+- Status: superseded (by CR-145: both edges accepted; nothing is built from this row). Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: XS. Depends on: BL-519 (done).
+- Council ruling (21 Nov 2026, CR-145): accept both edges as the behaviour of the Later inference. Dissent recorded: the CDO holds that edge (a), an offer the person never saw counting as a Later, is a real defect that is fixable by writing the flag when the sheet is shown; no row is filed for it, and the founder or Karma can file one XS row if device use shows it matters.
 - Priority: Low. Gate: none.
 - Satisfies: none given. Related: BL-519 (done in PR #1331), BL-1463.
 - Problem and evidence: BL-519 infers "Later" as offered before and still signed out, because the sheet records no explicit dismissal. By code reading it differs from a literal Later tap in two edges. (a) The flag is set when the ask is decided (`apps/mobile/src/lib/asks/index.ts:101-103`), not when the sheet is shown or closed, so an offer the person never saw (the sheet is pushed after a delay at `apps/mobile/src/app/review.tsx:528`) counts as a Later. (b) A person who took the offer, signed in, and later signed out before the third letter is signed out and offered-before, so they are asked again though they never tapped Later. Not run on a device.
@@ -7275,13 +7283,13 @@ Start-now set, exactly: PR 0b (PR 0 is done: merged as #1314), PRs 1 to 4, PR 5 
 Founder ruling of 21 Nov: the first Moments release ships with the photo library read (Route B). The release gates G1b to G11 apply before store submission, not before coding. Places and occasions are in scope; faces and naming people are out (O-30). Owners: the harness accepts only the Owner names of `agents/roster.json` `backlog_owner_names` (`scripts/agents/lib.test.mjs` fails on any other). `product` and `security-architect` have an empty `backlog_owner_names`, and the roster is not edited in this PR, so the workaround stands: BL-1448 (PR 0b, written by `product`) names `content` as Owner so the dispatcher can hand it out, and BL-1450 (written by `security-architect`) names `security engineer`, which the roster gives to the `security` handle, so the dispatcher would hand BL-1450 to `security` unless the Scope line is read; each row says so in its Status or Scope line. Founder item: add an owner name to each of those two handles in a separate change if the harness should assign this work.
 
 #### BL-1448 NS-53 Moments: the spec edit and the D14 sweep (PRs 0, 0b)
-- Status: ready (start-now set, Karma ruling 21 Nov. Dependency check: Depends on is none; the only spec dependency, PR 0, is merged as #1314, `d8654a215`, confirmed an ancestor of `origin/develop`. PR 0 merged after the `size:accepted` label for O-60 was applied; only PR 0b, the D14 sweep, remains). Mode: agent. Owner: content (`product` has no `backlog_owner_names`, so the row names `content`, which the roster accepts; PR 0b is a docs sweep that needs no founder account or secret). Milestone: M15. Size: M (docs). Depends on: none.
+- Status: in-progress (PR 0b open, branch docs/ns53-moments-spec-d14-sweep; was ready; start-now set, Karma ruling 21 Nov. Dependency check: Depends on is none; the only spec dependency, PR 0, is merged as #1314, `d8654a215`, confirmed an ancestor of `origin/develop`. PR 0 merged after the `size:accepted` label for O-60 was applied; only PR 0b, the D14 sweep, remains). Mode: agent. Owner: content (`product` has no `backlog_owner_names`, so the row names `content`, which the roster accepts; PR 0b is a docs sweep that needs no founder account or secret). Milestone: M15. Size: M (docs). Depends on: none.
 - Satisfies: NS-53-R216, R268, R286, R219, R243.
 - Scope: PR 0 is done: the spec edit merged as PR #1314 (`d8654a215`). What remains is PR 0b, the sweep of D14 (R286) as its own docs PR, section by section so each stays under about 380 changed lines (about 250 each, 1 to 2 files), row ids unchanged. PR 0b is in the start-now set; it is the row 0b of spec 19.4, whose owner there is `content` like this row; `product` reviews it.
 - Done when: PR 0b merged (PR 0 is already merged). Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 0: NS-53-R216, R219, R243; PR 0b: NS-53-R268, R286.
 
 #### BL-1432 NS-53 Moments: pure core engine (PRs 1 to 5)
-- Status: ready (start-now set, Karma ruling 21 Nov: PRs 1 to 4 and PR 5 with a synthetic table. Dependency check: its one Depends on, BL-1448, is itself in the start-now set and its only spec dependency, PR 0, is merged as #1314; inside the row PR 2 follows 1, PR 3 follows 2, PR 4 and PR 5 follow 1, one PR at a time in that order; no founder decision, account, device or secret needed; the real place table is BL-1451 and is not here). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L (five PRs). Depends on: BL-1448 (PR 0, the spec edit; spec 19.4 lists PR 0 as the dependency of PR 1; a spec dependency, not a code one; its founder label, O-60 `size:accepted`, was applied and PR 0 merged as #1314, `d8654a215`).
+- Status: partly done (22 Nov 2026: merged on develop: PR 1 #1435, PR 2 #1421, PR 3 #1417, PR 5 #1414 and PR 4a #1446; what remains is PR 4b if not yet merged, which product has not verified, so this row is not eligible for dispatch until product splits the remainder into a ready row; the original ready text was the start-now ruling of Karma, 21 Nov). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L (five PRs). Depends on: BL-1448 (PR 0, the spec edit; spec 19.4 lists PR 0 as the dependency of PR 1; a spec dependency, not a code one; its founder label, O-60 `size:accepted`, was applied and PR 0 merged as #1314, `d8654a215`).
 - Satisfies: NS-53-R5, R10, R12, R16 to R25, R27, R33, R34, R36 to R53, R58, R59, R61, R63, R64, R66, R107, R117, R130, R173, R176, R190, R199, R201 to R207, R223, R241, R249, R253, R254, R258, R267, R281, R286.
 - Scope: `packages/core/src/moments`, one PR each, in this order. PR 1 (about 300 lines, about 7 files; starts now): types, reasons without RSN-ALBUM, five verbs, `rules.ts` carrying the PROPOSED values of spec 7.2a for `NEAR_SECONDS`, `MIN_SPAN`, the place-share threshold and the junk bar with `MOMENTS_RULES_VERSION`, domain enums. PR 2 (380, about 8; AT THE LINE, split 2a `exclude`, `group`, `offsetAt` and 2b qualification with both span predicates, near-duplicate rule and the `asha-lib-v1` goldens; after PR 1): goldens include three frames 4 seconds apart, a restored duplicate, and 60/30 and 30/60 day place splits, in `packages/core/test/golden/`. PR 3 (350, about 7; after PR 2): rank, collage with tile 1 a heart else the middle session, property tests. PR 4 (380, about 9; AT THE LINE, split 4a `occasions` and `momentsFor` and 4b slots and the holidays table; after PR 1; starts now). PR 5 (300, about 6; starts now with a synthetic 10 row table): `place.ts` with an injected table, grid lookup, home-place rarity rule, goldens. The real place table is BL-1451, not here. The `Moment` type has no album member. No react-native, expo or fs import. There is no core handle: `principal-architect` reviews these PRs. Sizes are ASSUMED changed lines, not measured.
 - Done when: the goldens, property tests and the import-graph test pass, RSN-SUGGEST and RSN-ALBUM are absent from the enum, and the junk-rate bar of R281 is written before the harness (BL-1449) runs. Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 1: NS-53-R12, R42, R203, R267; PR 2: NS-53-R38 to R41, R59, R107, R176, R190, R223, R267, R281; PR 3: NS-53-R41, R44, R51, R190, R281; PR 4: NS-53-R5, R10, R16, R18 to R25, R27, R33, R34, R36, R46 to R48, R50, R58, R66, R130, R173, R199, R201, R202, R207, R253, R254, R258, R267; PR 5: NS-53-R58, R61, R63, R64, R117, R204, R241, R249, R267, R281.
@@ -7293,9 +7301,9 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Done when: the script, its test and the fixtures pass in the existing test commands, and the junk bar of R281 was written before the first run. Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 3b: NS-53-R40, R205, R281.
 
 #### BL-1433 NS-53 Moments: tab shell, decisions store and content (PRs 6, 6b, 8, 12)
-- Status: ready (start-now set, Karma ruling 21 Nov: PRs 6, 8 and 12. Dependency check: its Depends on, BL-1432 (PR 1) and BL-1448 (PR 0), are both in the start-now set, and PR 0 is merged as #1314; PR 12 depends on none; the dispatcher holds this row until BL-1432 and BL-1448 are done). Mode: agent. Owner: mobile engineer, design systems, content. Milestone: M15. Size: M (four PRs; PR 6b is not in the start-now set: it follows PR 6, wave B). Depends on: BL-1432 and BL-1448 (BL-1432 holds PR 1, which PRs 6, 8 and 13 follow, spec 19.4; BL-1448 holds PR 0, which PR 8 also follows, spec 19.4; a spec dependency, not a code one; its founder label, O-60 `size:accepted`, was applied and PR 0 merged as #1314, `d8654a215`). PR 12 depends on none.
+- Status: partly done (22 Nov 2026: merged on develop: PR 6 #1482, PR 8 #1481 and PR 12a #1479; what remains is PR 6b (wave B, after PR 6, which is now merged; it is not in the start-now set) and the rest of PR 12 after 12a, so this row is not eligible for dispatch until product splits the remainder into a ready row; the original ready text was the start-now ruling of Karma, 21 Nov). Mode: agent. Owner: mobile engineer, design systems, content. Milestone: M15. Size: M (four PRs; PR 6b is not in the start-now set: it follows PR 6, wave B). Depends on: BL-1432 and BL-1448 (BL-1432 holds PR 1, which PRs 6, 8 and 13 follow, spec 19.4; BL-1448 holds PR 0, which PR 8 also follows, spec 19.4; a spec dependency, not a code one; its founder label, O-60 `size:accepted`, was applied and PR 0 merged as #1314, `d8654a215`). PR 12 depends on none.
 - Satisfies: NS-53-R1 to R12, R25, R42, R52, R72, R84, R105, R113 to R116, R119, R139, R145, R159, R160, R162, R165, R166, R172, R180, R185, R187, R191, R192, R196, R198, R215, R221, R227, R235, R245 to R248, R250, R256, R260, R269, R270, R278, R285, R294, R300, R104, R216, R249, R80, R81, R193, NS-53-G01 (spec 22d).
-- Scope: PR 6 (about 290 lines, about 11 files; owner split: `mobile` for the shell, `tab-jobs`, `MOMENT_SOURCES` (R227), the `moments/pick` route row and the navigation tests, with a `design-systems` approval line; `design-systems` for the `glassFallback`, `highlight` and pill-alpha tokens through the normal route with the brand-parity test (R216)): the fourth tab behind F1. The PR body cites RV-01 (the three-tab reversal) as well as RV-02 (the one doorway) and lists the pinned tests it rewrites: `[IA-N1]`, `[IA-N2]`, `[IA-N4]`, `[IA-N6]`, `[NX-30a-R1]`, `[NX-30a-R8]`, `store-family-tab.test.ts:44-68` and `tab-jobs.ts`. `[IA-N3]` is not pinned here: PR 19 edits it and owns it. `[NX-30a-R1]` in `tab-bar.test.ts` asserts three tabs (`SCREENS` equals `index`, `book`, `you`); PR 6 edits it to the four tabs of DC-4 (Review B note N4). The `moment` capture source is not added here: it joins `CAPTURE_SOURCES` in PR 19 with its handler (NS-35-R5); `MOMENT_SOURCES` and `CAPTURE_SOURCES` are separate lists. PR 6b (NEW, about 200 lines, about 6 files; `mobile` with a `privacy` read; after PR 6; closure G-01, DC-5, Review B note N2): the scoped switcher cover for Moments, a focused-route signal for the Moments tab and its sheets, `shouldCoverMoments(route, appState, lockEnabled)` with its 18-row truth table, and the boot wiring beside `AppLockLayer` in `app/_layout.tsx` that reuses `PrivacyCover` so one cover is mounted and never two; sizes ASSUMED. PR 8 (250, about 9; `mobile`; after PR 0 and PR 1, because the store types come from core): the `moments.json` store of section 17.1 with no album and no picture members, clear, `eraseDeviceFiles` (edits `erase-everything.ts` and `erase-all.test.ts`), schema tests, the `DATA_CLASSIFICATION.md` 4.6 rows of R250 (one per field class) and the ADR 0032 amendment or a new ADR (the ADR is Proposed; `privacy` decides the wording). PR 12 (380, about 8; `content`; AT THE LINE, split 12a tab, reasons, states and 12b ask, primer, door and host strings): the primer names date, time and place with Shown, Records, Never, Decline lines; the door and host strings (one key family, a verb, no digit or count word, a heading that is not the tab name) wait about a day for the limits decision O-54; the value proposition text waits for the founder's O-48. Album chooser strings are out.
+- Scope: PR 6 (about 290 lines, about 11 files; owner split: `mobile` for the shell, `tab-jobs`, `MOMENT_SOURCES` (R227), the `moments/pick` route row and the navigation tests, with a `design-systems` approval line; `design-systems` for the `glassFallback`, `highlight` and pill-alpha tokens through the normal route with the brand-parity test (R216)): the fourth tab behind F1. The PR body cites RV-01 (the three-tab reversal) as well as RV-02 (the one doorway) and lists the pinned tests it rewrites: `[IA-N1]`, `[IA-N2]`, `[IA-N4]`, `[IA-N6]`, `[NX-30a-R1]`, `[NX-30a-R8]`, `store-family-tab.test.ts:44-68` and `tab-jobs.ts`. `[IA-N3]` is not pinned here: PR 19 edits it and owns it. `[NX-30a-R1]` in `tab-bar.test.ts` asserts three tabs (`SCREENS` equals `index`, `book`, `you`); PR 6 edits it to the four tabs of DC-4 (Review B note N4). The `moment` capture source is not added here: it joins `CAPTURE_SOURCES` in PR 19 with its handler (NS-35-R5); `MOMENT_SOURCES` and `CAPTURE_SOURCES` are separate lists. PR 6b (NEW, about 200 lines, about 6 files; `mobile` with a `privacy` read; after PR 6; closure G-01, DC-5, Review B note N2): the scoped switcher cover for Moments, a focused-route signal for the Moments tab and its sheets, `shouldCoverMoments(route, appState, lockEnabled)` with its 18-row truth table, and the boot wiring beside `AppLockLayer` in `app/_layout.tsx` that reuses `PrivacyCover` so one cover is mounted and never two, drawn in `FullWindowOverlay` from `react-native-screens` as the app lock layer is (a view in the ordinary tree sits beneath the sheet and the picker; the order of two `FullWindowOverlay` siblings is UNVERIFIED and is read at DM-09); sizes ASSUMED. PR 8 (250, about 9; `mobile`; after PR 0 and PR 1, because the store types come from core): the `moments.json` store of section 17.1 with no album and no picture members, clear, `eraseDeviceFiles` (edits `erase-everything.ts` and `erase-all.test.ts`), schema tests, the `DATA_CLASSIFICATION.md` 4.6 rows of R250 (one per field class) and the ADR 0032 amendment or a new ADR (the ADR is Proposed; `privacy` decides the wording). PR 12 (380, about 8; `content`; AT THE LINE, split 12a tab, reasons, states and 12b ask, primer, door and host strings): the primer names date, time and place with Shown, Records, Never, Decline lines; the door and host strings (one key family, a verb, no digit or count word, a heading that is not the tab name) wait about a day for the limits decision O-54; the value proposition text waits for the founder's O-48. Album chooser strings are out.
 - Done when: navigation tests, schema tests (corrupt, higher version, rename-write) and the content rules pass, including the mode-scoped claim test (R300). Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 6: NS-53-R1 to R4, R84, R119, R139, R145, R165, R172, R180, R185, R215, R216, R227, R269; PR 6b: NS-53-R102, R232 and NS-53-G01; PR 8: NS-53-R105, R113 to R116, R162, R166, R221, R245 to R250; PR 12: NS-53-R2, R8, R9, R11, R12, R25, R42, R52, R72, R80, R81, R104, R159, R160, R187, R191, R192, R193, R196, R198, R235, R256, R260, R278, R285, R294, R300 (R80, R81 and R193 are a read: PR 12 builds the in-app strings and primer words that the Notes for Review, label text and claims inventory quote or prove; those documents are built by the paperwork named in spec 26b, not by this PR).
 
 #### BL-1452 NS-53 Moments: the analytics decision (PR 7)
@@ -7305,7 +7313,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Done when: the registry and catalog tests pass with the decision recorded (a no-change note is a valid result). Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 7: NS-53-R83, R87, R167, R227, R251, R282, R284.
 
 #### BL-1434 NS-53 Moments: device spikes G1a-L (library) and G1a-P (picker)
-- Status: proposed (HARNESS-REPLAN-HYBRID.md and FREEZE-CHECKLIST.md 1.3; the simulator part of G1a-P moved to its own row, BL-1474, and G3-x to BL-1475; this row keeps the G1a-L spike and the device part of G1a-P, which are not in the start-now set and need the founder's phone). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: S to M (G1a-L is S; G1a-P is M in two sessions, a simulator one then a device one). Depends on: none.
+- Status: ready (21 Nov 2026: the library read in 1.0 and the picker door are decided by the council and approved by the founder, CPO-17 in docs/agents/exec/RULINGS.md and the dated lines in spec 23 and FREEZE-CHECKLIST 1.1, so nothing in this row waits on a decision; Mode is pair because the spike needs the founder's phone, as BL-1474 needs a Mac, and the dispatcher does not hand out pair rows; HARNESS-REPLAN-HYBRID.md and FREEZE-CHECKLIST.md 1.3; the simulator part of G1a-P moved to its own row, BL-1474, and G3-x to BL-1475; this row keeps the G1a-L spike and the device part of G1a-P). Not here: PR 9 still needs the G3-x spike and the founder's O-61 leg. Mode: pair. Owner: mobile engineer. Milestone: M15. Size: S to M (G1a-L is S; G1a-P is M in two sessions, a simulator one then a device one). Depends on: none.
 - Satisfies: NS-53-R204, R290 (the one home of R290, with BL-1474 feeding it), gates G1a-L and G1a-P. NS-53-R255 is dropped and closed by the hide-day check.
 - Scope: G1a-L, the five library unknowns plus whether a Favorites flag is readable under Limited; it unblocks PR 9 together with G3 and the G3-x exclusion spike (G3-x: prove that a per-profile autolinking exclusion removes `scribe-library` from the generated native project, pod list and plist, of a profile where F2 is off; it also needs the founder's second `ios-compile` leg, O-61). G1a-P, section 21 of the spec: the simulator part answers the hidden-bars matrix (a), (b), (d) and the host-in-a-sheet questions (i) to (j) with a script-made Asha library; the device part covers first-time text per access state, what the item provider gives for date and GPS, picks under Limited, per-type limits, VoiceOver and Switch Control task completion, iCloud and eight concurrent downloads, app lock and the switcher snapshot, theme override, a video pick under Expo defaults for SDK 57 (surprise permission prompt), and what a video container keeps for location. A throwaway branch, never merged; an Asha library built for the purpose (no real family library); read-outs hold timings, rates and yes or no only.
 - Done when: dated read-outs are filed in `docs/release/<x.y.z>.md`: the G1a-P simulator read-out (unblocks PR 18b-1a with `mobile`'s read of Apple's picker reference pages, EXH-ENG-17), the G1a-L read-out and G3-x read-out (unblock PR 9 and PR 11c), the G1a-P device read-out (unblocks PR 18b-2) and the video read-back (unblocks PR 18c).
@@ -7503,7 +7511,7 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Test: `apps/mobile/test/e2e-timing-summary.test.ts`.
 
 #### BL-1483 The photo lens card `missing` flag never resets while the row stays mounted
-- Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1388, c3c705bc8). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low (it fails closed: a replaced picture stays hidden, nothing wrong is shown). Gate: none.
 - Satisfies: the lens card code of #1365 and the photo wiring of #1340 (not re-read here).
 - Problem and evidence: the `missing` flag on the photo lens card is set on a load error and not cleared when the row's picture is replaced, so the new picture stays hidden until the row remounts. This is an inference from the #1365 reviews, not an observed run: review-B-1365 says the `missing` flag never resets while the row is mounted, and the reviews only say that a remount retries. Confirm it with a test first; if the flag does reset, close the row. It came from the #1340 and #1365 security review.
@@ -7512,7 +7520,7 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Test: a component test beside the lens card tests that sets missing, swaps the source and expects the picture.
 
 #### BL-1484 Spec 01 needs two edits: lens thumbnail radius `sm` and the `thumbMissing` card
-- Status: proposed. Mode: docs. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1390, edd1b1d57). Mode: docs. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: B-S04, CONFORMANCE F-26 and F-27 (`docs/design/CONFORMANCE-21nov.md`; not re-read in full).
 - Problem and evidence: `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` says radius `md` for the lens thumbnail (line 111) and draws a framed box where a thumbnail is missing. B-S04 draws `radius.sm` for the 72 pt thumbnail and `.thumbMissing` as a card without a thumbnail and no error (F-26, F-27). The spec changes two existing lines; it does not need a new section.
@@ -7557,10 +7565,334 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Test: the provider tests next to the BL-1460 test.
 
 #### BL-1489 A late adopt in #1340 can drop a fresh pick through the shared PendingPhoto; and a hardening choice for a dropped queued adopt
-- Status: proposed. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (part 1 merged in PR #1389, ba63b17bc; part 2 is optional and stays with the owner; not eligible for dispatch). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium for part 1 (a picked photo can be lost without a message), Low for part 2. Gate: none.
 - Satisfies: the pick and adopt behaviour of #1340 (not re-read here).
 - Problem and evidence: (1) an adopt that starts late reads the shared `PendingPhoto`, which a fresh pick may already have replaced, so the fresh pick is dropped (review-B-1340 RACE3; accurate). (2) A queued adopt that is dropped resolves `undefined`. review-A-1340 and review-D-1340 call that intended and good, so this is not a bug; it is a hardening choice only.
 - Scope: (1) capture the source at the start of the adopt, not at its end. (2) Optional, decided in the PR: resolve a named dropped outcome instead of `undefined`, only if a caller can then tell "dropped" from "nothing to do"; if the reviewers still prefer `undefined`, leave it and say so.
 - Done when: one named test for part 1 fails on the old code and passes on the new; part 2 is either done with its own test or recorded as left as is.
 - Test: a test beside the adopt code.
+
+## Follow-ups from the late reviews (BL-1497 to BL-1536; filed by the product agent, docs only)
+
+Each row below cites its PR or review. A row that waits for an open PR is `proposed` and becomes `ready` when that PR merges; Karma or the founder sets it. Nothing here changes a requirement or a ruling; the cited text is not copied.
+
+#### BL-1497 BL-412 follow-up: the other four entry columns (captured_at, author_id, child_id, engine_version) get their own phone-side rules
+- Status: ready. Mode: agent. Owner: mobile engineer, data architect. Milestone: M15. Size: M. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: BL-412 (not re-read here).
+- Problem and evidence: review B on PR #1449 (the raw_transcript triggers cover raw only); council D6 (BL-412).
+- Scope: one rule per column in the local triggers, each with a mutant, then a two-phone run that proves a pulled row cannot rewrite them.
+- Done when: each of the four columns is set-once or guarded per its own rule; one test and one mutant per column; the two-phone run result is filed.
+
+#### BL-1498 BL-412 follow-up: a separate counter for pulled rows the raw_transcript guard refused
+- Status: proposed (waits for PR #1449 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-412 (not re-read here).
+- Problem and evidence: review B on PR #1449, note 3.
+- Scope: count a refused pulled row separately from `report.rejected`, so the app cannot read it as a refused upload.
+- Done when: a pulled row the guard refuses raises the new counter and leaves `rejected` unchanged; one test.
+
+#### BL-1499 BL-244b: the NOT NULL, foreign key and enum CHECK errors still echo the row
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: BL-244 and API-R10 (value-free errors; not re-read here).
+- Problem and evidence: review B on PR #1453, note 2; review A on PR #1453 (gap BL-244b in the PR body).
+- Scope: find which of the NOT NULL, foreign key and enum CHECK paths on the four content tables can print `Failing row contains` with `final_text` or a name when the over-limit trigger does not fire; make each value-free or show it unreachable from the app. Add the NOT NULL and foreign key paths to the migration header, which says the enum and shape CHECKs are not covered and still echo.
+- Done when: a test per reachable path shows no row value in the error text; the header lists every path; a new migration carries any change, with grants. The hosted apply is the founder's, as for BL-244.
+
+#### BL-1500 The family notice and arrival mark capture the user before the await
+- Status: proposed (waits for PR #1428 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low-Medium (the audit grades F1 LOW-MEDIUM; the child name held in memory is real). Gate: none.
+- Satisfies: the cross-account stores audit (docs/engineering, ledger task 37; not re-read here).
+- Problem and evidence: review B on PR #1428 (LOW residual, reproduced).
+- Scope: capture the signed-in user before the await and pass it to `leave()`, so a continuation that resumes after another account has signed in cannot stamp the line with the new owner.
+- Done when: a test that signs A out and B in across the await shows B reads no line from A; it fails on the old code.
+
+#### BL-1501 Tests for the auth-store clears: A leaves, signs out, A signs in; and the joinedArrival owner check
+- Status: proposed (waits for PR #1428 to merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: the cross-account stores audit (not re-read here).
+- Problem and evidence: review A and review B on PR #1428 (mutants on `clear()`; note carried over).
+- Scope: add the sequence test (A leaves the book, signs out, A signs in, nothing carries over) so a mutant that drops a `clear()` dies, and a direct test of the `joinedArrival` owner check.
+- Done when: the two tests exist; removing each clear, and the owner check, fails one of them.
+
+#### BL-1502 The new-device report fails closed when a session has a token but no user id
+- Status: proposed (waits for PR #1455 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: CISO-3 (docs/agents/exec/RULINGS.md; not re-read here).
+- Problem and evidence: follow-up on PR #1455 (F8, CISO-3).
+- Scope: if the session has a token and no user id, send no report and do not share a promise; keep the old-format path working.
+- Done when: a test with a token and no user id sends nothing; it fails on the old code.
+
+#### BL-1503 A same-user sign-out and sign-in while a new-device report is in flight can miss the new sign-in's email
+- Status: proposed (waits for PR #1455 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CISO-3 (not re-read here).
+- Problem and evidence: follow-up on PR #1455 (share of a resolved no-token promise).
+- Scope: key the in-flight promise on the sign-in, not only the user, so a second sign-in by the same user is not served the first one's resolved no-token result.
+- Done when: a test sign-out then sign-in of one user in flight sends the new sign-in's report; it fails on the old code.
+
+#### BL-1504 Pin that the provider passes `state.userId`, and fix lib/README.md line 100
+- Status: proposed (waits for PR #1455 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CISO-3 (not re-read here).
+- Problem and evidence: follow-up on PR #1455.
+- Scope: add a provider test that the report call receives `state.userId`; change `apps/mobile/src/lib/README.md` line 100 from one report in flight to one per account.
+- Done when: the test fails when the argument is dropped; the README line says per account.
+
+#### BL-1505 signInWithApple swallows a failed Keychain write of the Apple user id
+- Status: proposed (waits for PR #1439 to merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: audit F2 and F3 (docs/engineering cross-account audit; not re-read here).
+- Problem and evidence: review B on PR #1439 (checked against review A's leftover id); PR #1441.
+- Scope: a failed write of the Apple user id is handled inside apple.ts (stale id removed, else marked unknown), visible to the revocation watch only, and fails quiet; a stale id cannot be left behind.
+- Done when: a test with a failing Keychain write shows the failure is surfaced; it fails on the old code.
+
+#### BL-1506 The wrong-code map keyed by typed addresses is never cleared
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: audit F3 (not re-read here).
+- Problem and evidence: follow-up on PRs #1439 and #1441 (low).
+- Scope: clear the wrong-code map at sign-out and on a user change, as the typed address and link hash are in PR #1441.
+- Done when: a test shows the map is empty after sign-out; it fails on the old code.
+
+#### BL-1507 Cold start: an email sign-in link that arrives before the session restore is lost if the refresh fails
+- Status: proposed (needs a decision on the intended behaviour; start from a failing test). Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: audit F3 (not re-read here).
+- Problem and evidence: follow-up on PRs #1439 and #1441.
+- Scope: reproduce the case in a test, then decide with `security` whether the link is held until restore settles or dropped; record the decision in the PR.
+- Done when: the decision is recorded and a test pins it.
+
+#### BL-1508 Hardening: run forgetAppleUser first in the SIGNED_OUT branch
+- Status: proposed (waits for PR #1439 to merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: audit F2 (not re-read here).
+- Problem and evidence: follow-up on PR #1439 (a sync throw from dispatch would skip it; not reachable now).
+- Scope: move the call to the start of the branch and loosen the source-scan pattern that pins its place.
+- Done when: a test where dispatch throws still forgets the Apple user; the scan test passes.
+
+#### BL-1509 Create the threat-model entry for the CISO-2 invite-token residual, a failed read-mark write plus a kill before sign-out
+- Status: proposed (waits for PR #1456 to merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CISO-2 (not re-read here).
+- Problem and evidence: the two residuals come from the PR #1456 body and the coordinator's queue notes, not from the saved review A or review B of #1456 (both PASS and confirm-only); CISO-2 in docs/agents/exec/RULINGS.md; the invite token is a single-use bearer not bound to a person (cross-account audit F6, `docs/engineering/audits/2026-11-21-cross-account-stores.md`), so another account could use it inside the 14 day window. `docs/security/threat-model.md` does not exist on develop (only `docs/security/MEDIA_THREAT_MODEL.md`).
+- Scope: after PR #1456 merges, check the two residuals against its body and code, then create the threat-model entry in a new file and say so in the PR: a failed Keychain mark write followed by a kill before the sign-out clear leaves the token unmarked, bounded by the 14 day cap (the cap stays the founder's); and a possible stuck-in-restoring state that never reads the token (no path seen).
+- Done when: both residuals are written down with the bound, the bearer point and the evidence they came from.
+
+#### BL-1510 E2E-01a: assertNotVisible on `gate.stop.mistake`, which is now always mounted at opacity 0
+- Status: proposed (waits for PR #1443 to merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-420 (not re-read here).
+- Problem and evidence: follow-up on PR #1443 (`E2E-01a-age-gate-no.yaml`).
+- Scope: check the flow when Maestro next runs and change the assertion to match what an opacity 0 element reports; do not weaken the check that the stop line is not shown.
+- Done when: the flow passes on a simulator and still fails when the stop line is shown.
+
+#### BL-1511 Tidy after BL-420: the orphaned TopBar comment and the write.tsx indent
+- Status: proposed (waits for PR #1443 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-420 (not re-read here).
+- Problem and evidence: follow-up on PR #1443.
+- Scope: delete the orphaned TopBar comment and fix the indent in `apps/mobile/src/app/write.tsx`; no behaviour change.
+- Done when: a diff of comments and whitespace only.
+
+#### BL-1512 The Write page field reflows instantly under Reduce Motion
+- Status: proposed (waits for PR #1443 to merge). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-420 and docs/design/MOTION.md (not re-read here).
+- Problem and evidence: follow-up on PR #1443.
+- Scope: decide whether an instant reflow is the right Reduce Motion behaviour for the field or needs a fade, and record it in the spec.
+- Done when: the decision is in the spec; a row only if the answer is a change.
+
+#### BL-1513 Device pass for BL-420: J04-02, J06, J10-05 and J02-04
+- Status: proposed (founder's device; waits for PR #1443 to merge). Mode: pair. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: BL-420 (not re-read here).
+- Problem and evidence: follow-up on PR #1443.
+- Scope: one pass on a phone of the four journeys named, with the result filed.
+- Done when: a written pass result is filed and any finding has a row.
+
+#### BL-1514 VoiceOver check when the join retry ends without restarting the wait
+- Status: proposed (founder's device; waits for PR #1438 to merge). Mode: pair. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-460 point 5 (not re-read here).
+- Problem and evidence: follow-up on PR #1438 (BL-460 point 5).
+- Scope: on a device with VoiceOver on, end a retry without a new wait and listen to what is announced.
+- Done when: a written result is filed; a row only for a finding.
+
+#### BL-1515 PinnedActionLayout: the render branches have no test
+- Status: proposed (waits for PR #1396 to merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-418 (not re-read here).
+- Problem and evidence: review A on PR #1396 (a mutant `!action || pinned` to `!action` survived).
+- Scope: test each render branch of `PinnedActionLayout`: no action, pinned, and not pinned.
+- Done when: the surviving mutant dies.
+
+#### BL-1516 Book empty: the footer bottom padding is 24 and should be 12
+- Status: proposed (waits for PR #1396 to merge). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-418 (not re-read here).
+- Problem and evidence: review A on PR #1396.
+- Scope: check the number against the spec and change it with a token if it is wrong.
+- Done when: the padding matches the spec; one test or snapshot line.
+
+#### BL-1517 The E3 ruling record `council-batch-2.md` is missing from the checkout
+- Status: proposed (needs the founder's merge: `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-418 (not re-read here).
+- Problem and evidence: review A on PR #1396 (ruling E3 unconfirmed).
+- Scope: confirm the E3 ruling text against the council record and cite its place in `docs/agents/exec/RULINGS.md`, or file the record.
+- Done when: the E3 ruling can be read from the repo.
+
+#### BL-1518 The Share notice sits below the fold on small screens when the action is pinned
+- Status: proposed (waits for PR #1396 to merge). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-418 (not re-read here).
+- Problem and evidence: review of PR #1396 (Export screen, pinned footer).
+- Scope: put the notice in the pinned footer so it is seen with the button.
+- Done when: on the smallest supported screen the notice is visible without scrolling; one layout test.
+
+#### BL-1519 End of book: the live region no longer wraps the buttons
+- Status: proposed (waits for PR #1396 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-418 (not re-read here).
+- Problem and evidence: review A on PR #1396.
+- Scope: restore the live region so the screen reader still announces the change; keep the buttons outside it if that reads better.
+- Done when: a test names the live region; a VoiceOver check is recorded.
+
+#### BL-1520 Moments rules notes from PR #1435: unit in constant names, freeze busyHours and junkBar, type tests gated by tsc, and the MEDIA_KIND_INDEX
+- Status: proposed (waits for PR #1435 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53 (docs/product/prd/28-moments-tab.md; not re-read here).
+- Problem and evidence: review A on PR #1435, notes N1, N2, N3, N4 and N6 (review B's notes on #1435 are different).
+- Scope: N1 put the unit in constant names; N2 freeze `busyHours` and `junkBar`; N3 make sure type tests are run by `tsc`, not only vitest; N4 reword test labels that overclaim R36, R205 and R267; N6 the `MEDIA_KIND_INDEX` note.
+- Done when: each note is done or recorded as left, with the line it points at.
+
+#### BL-1521 The commit trailer `Agent:` reads `sync` while the row owner is mobile
+- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: docs/agents/OPERATING_MODEL.md (not re-read here).
+- Problem and evidence: review A on PR #1435, note N5.
+- Scope: find why the trailer handle differs from the owner and either fix the mapping or document it.
+- Done when: trailer and owner agree for a Moments PR, or the doc says why not.
+
+#### BL-1522 Place module notes from PR #1414: the fixture moves under test/, WindowPlaces.home is never stored, and field separators are escaped
+- Status: proposed (waits for PR #1414 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: NS-53 and CPrivO-14 (not re-read here).
+- Problem and evidence: review B on PR #1414, notes N2, N3 and N4; ruling CPrivO-14 (fixture to test/).
+- Scope: move `place-fixture.ts` out of `src/` with an import-graph test; document in the Moments home notes that `WindowPlaces.home` is never stored, sent, logged or exported and stays off every Moment type; escape the `|` separator in `placeTableText`.
+- Done when: the import-graph test passes with the fixture under `test/`; the docs line and the escape test exist.
+
+#### BL-1523 Moments rank and collage: the ROTATE_K and tiles values come from the rules card sort
+- Status: proposed (waits for PR #1417 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53 and CPO-25 (not re-read here).
+- Problem and evidence: reviews A and B on PR #1417; ruling CPO-25 (ROTATE_K 5, tiles 4).
+- Scope: keep the two values in `MomentsRules` with a version bump, and let the 3b harness card sort confirm or change them.
+- Done when: the values are read from the rules; the card sort result is recorded.
+
+#### BL-1524 Moments: a short burstId column and a non-finite rotateK must not break the day
+- Status: proposed (waits for PR #1421 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53 (not re-read here).
+- Problem and evidence: review B on PR #1421 (note N1); reviews A and B on PR #1417 (`selectPicturesDay` throws on `rotateK: NaN`).
+- Scope: treat an undefined `burstId` as null and return no candidates on a column length mismatch; treat a non-finite `rotateK` as 1, as 0 already is.
+- Done when: two tests (short `burstId`, NaN `rotateK`) fail on the old code and pass on the new.
+
+#### BL-1525 Moments: SUBTYPE parity with the native module, and a video-plus-burst test
+- Status: proposed (waits for the native module row BL-1435). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53 (not re-read here).
+- Problem and evidence: reviews A and B on PRs #1417 and #1421.
+- Scope: a parity test that the TypeScript subtype list matches the native one; a test where a video sits in a burst and does not break the chain (CPO-24).
+- Done when: both tests exist and fail when a subtype or the rule changes on one side.
+
+#### BL-1526 Moments spec edits after the #1458 reviews: the stale tile order line, the E-B3-9 cite and the heading date
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53 spec errata (docs/product/prd/28-moments-tab.md; not re-read here).
+- Problem and evidence: reviews A and B on PR #1458.
+- Scope: the PR 3 row near line 1038 still says tile order (heart, else middle session): change it to the ruling; change the E-B3-9 cite from `7.2 says it has none` to `the spec gives no value` for ROTATE_K; remove the date from the heading.
+- Done when: the three lines are changed and `grep` finds no stale phrase.
+
+#### BL-1527 Moments spec: name the includeHiddenAssets proof duty, and check R38 against R56
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53-R37, R38 and R56 (not re-read here).
+- Problem and evidence: reviews A and B on PR #1458. This edits requirement text in the PROPOSED NS-53 spec, so the PR body presents it as a proposal for product and the founder, not a change to a locked requirement.
+- Scope: name the includeHiddenAssets and source-option proof duty in R37 or R38; check that R38 `left-out assets` agrees with R56 and record the reading.
+- Done when: the duty is named in one requirement and the R38 and R56 readings agree, or a question is raised.
+
+#### BL-1528 Hold the public line on hidden and shared pictures until G1a-L reports
+- Status: proposed (waits for gate G1a-L, BL-1434). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: NS-53 gate G1a-L (not re-read here).
+- Problem and evidence: reviews A and B on PR #1458.
+- Scope: keep every public sentence about hidden or shared pictures out of the store text and the website until the G1a-L read-out says what the library can see.
+- Done when: no such sentence is published; the sentence is written after the read-out, as proposed content.
+
+#### BL-1529 The founder-comment trust rule in scripts/agents/lib.mjs trusts any comment from the founder account
+- Status: ready. Mode: agent. Owner: platform, security engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: High. Gate: none.
+- Satisfies: docs/agents/OPERATING_MODEL.md (not re-read here).
+- Problem and evidence: E2 outcome (the stale harness PRs #346 to #354, #429, #430 closed; the fix is on the #349 branch).
+- Scope: `isFounderComment` trusts every comment from the founder account while agent sessions post as that account; trust a first-line `<!-- founder -->` marker, no `performed_via_github_app`, and split `authorKind` from `trustLabel`. Do this before any lane reads founder comments.
+- Done when: a test where an agent posts as the founder account is not trusted; the marker case is.
+
+#### BL-1530 The agent-PR path guard and the seeded pilot tasks: re-cut #429 and #430
+- Status: proposed (the workflow patch is a proposal under docs/ops/proposed/; the founder applies it). Mode: agent. Owner: platform, security engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: docs/agents/HARNESS.md (not re-read here).
+- Problem and evidence: E2 outcome: #429 (agent-pr-guard workflow, PR cap, post-run scripts out of reach) and #430 (seeded pilot tasks in `agents/evals`) closed with branches kept.
+- Scope: re-cut #429 as a patch in `docs/ops/proposed/` and #430 as a small PR to `agents/evals`. Founder only: the GitHub App and four variables, the provider key, AGENTS_ENABLED and branch protection (FOUNDER_QUEUE row 7).
+- Done when: the patch and the evals are on develop; the founder steps are listed in the PR body.
+
+#### BL-1531 CISO-3: the reason line says the other findings carry no person data, but the same ruling records F11 as an accepted exposure
+- Status: ready (needs the founder's merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CISO-3 (docs/agents/exec/RULINGS.md; not re-read here).
+- Problem and evidence: review B on PR #1454 (carry-over note); the CISO-3 Reason line says the others "carry no person data" while its own Ruling records F11 as an accepted exposure and the audit rates F11 INFO, by design (the claim screen, A-REQ-015).
+- Scope: reword the Reason line so it matches the Ruling on F11; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
+- Done when: the line no longer says F11 carries no person data.
+
+#### BL-1532 Claim screen (audit F11, INFO, by design): check that the claim is an explicit choice, never automatic
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CISO-3 and audit finding F11 (not re-read here).
+- Problem and evidence: ruling CISO-3 (F11 accepted: an unowned local book is offered to the first account that signs in, A-REQ-015; the check that the claim is explicit is owed). The audit grades F11 INFO and did not run the behaviour.
+- Scope: prove with a test that `accountClaimPending` leads to a claim only after the person chooses it.
+- Done when: a test fails when the claim happens without the choice.
+
+#### BL-1533 Rulings text fixes after #1454: cites drop the apps/mobile/src prefix
+- Status: ready (needs the founder's merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: docs/agents/exec/RULINGS.md (not re-read here).
+- Problem and evidence: review A on PR #1454. The note that `joinWait.clear` is at `auth-store.ts:122` was made against an older head: on develop it is at line 123 of `apps/mobile/src/lib/auth/auth-store.ts`, so that cite is right today.
+- Scope: give each path its full `apps/mobile/src/` prefix and check every line cite against develop; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
+- Done when: every cite resolves by path and line.
+
+#### BL-1534 Analytics consent per person, not per phone (CPrivO-15), for when an SDK is planned
+- Status: proposed (ready only when an analytics SDK is planned; no SDK is in the app today). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: Low. Gate: an analytics SDK is planned (none is in the bundle today).
+- Satisfies: CPrivO-15 (docs/agents/exec/RULINGS.md; not re-read here).
+- Problem and evidence: ruling CPrivO-15 and the council batch 3 call (latent).
+- Scope: store the analytics choice per person and read it before any event; a second person on the phone starts from the default; rotate the random analytics id at every user change (audit F5).
+- Done when: a test with two accounts shows the first person's opt-in does not apply to the second and that the id differs after a user change.
+
+#### BL-1535 A late adopt row: the order between dropQueuedAdopts and discard, and words typed during a commit
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: the pick and adopt behaviour of #1340 (not re-read here).
+- Problem and evidence: review notes on PR #1389 (pre-existing, not from the fix).
+- Scope: reproduce each case in a test: an adopt that lands between `dropQueuedAdopts` and discard, and words typed during a commit that are dropped; fix the second first.
+- Done when: a test per case fails on the old code and passes on the new.
+
+#### BL-1536 Docs sweep of the old lock-screen reminder string, starting at notification-catalogue.md line 190
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: F-08d (not re-read here).
+- Problem and evidence: review notes on PR #1391 (F-08d).
+- Scope: find every doc that still shows the old lock string and change it to the neutral body from #1391, citing the content key; no new copy. Line 190 of the catalogue carries a `{child}` variant, not the exact old string. Two quotes stay on purpose because they record history: `docs/agents/exec/RULINGS.md` line 197 and `docs/design/CONFORMANCE-21nov.md` line 120 (the audit row); the PR names any other hit it leaves.
+- Done when: `grep` for the old string finds only the named history quotes.

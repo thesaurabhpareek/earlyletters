@@ -253,7 +253,10 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
 describe('[NS-01-R18][NX-39-R58] pictures are never gated', () => {
   it('[NS-01-R18][NX-39-R58] the photo code never calls the plan or Keep gate, and GatedFeature stays two names', () => {
     for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
-      expect(importsOf(parse(f)).filter((m) => /billing|plan|keep-gate|@scribe\/core/.test(m)), rel(f)).toEqual([]);
+      // One reasoned exception (BL-957): lib/photos/text.ts takes the one grapheme helper from packages/core (length.ts, no
+      // plan or billing code). The guard is about gates, so any other photo file importing core stays a failure.
+      const allowCore = rel(f).endsWith('lib/photos/text.ts');
+      expect(importsOf(parse(f)).filter((m) => /billing|plan|keep-gate/.test(m) || (!allowCore && /@scribe\/core/.test(m))), rel(f)).toEqual([]);
     }
     const plan = readFileSync(join(ROOT, '..', '..', 'packages', 'core', 'src', 'plan.ts'), 'utf8');
     expect(plan).toMatch(/export type GatedFeature = 'keep_letter' \| 'theme_extra';/);

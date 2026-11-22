@@ -59,7 +59,7 @@ Applied means the finding shapes this spec and the section says where. Amended m
 | EXH-PRV-9 (Hide this day one tap, Undo) | Applied | 2.3 |
 | EXH-PRV-10 (People inside Apple's Albums) | Applied | 4.11. Albums stay on; search is off; we receive nothing from either |
 | EXH-PRV-11 (no absolute claim in our host strings) | Applied | 7.3 |
-| EXH-PRV-12 (close the sheet on every inactive event) | Rejected as the default | EXH-DES-7 asked for a cover that holds the picks, because a notification pull-down or a call would otherwise throw away a parent's choices. The privacy fall-back stands: if the device row shows the cover cannot hide Apple's view in the app switcher, the sheet dismisses on background and says so (4.7) |
+| EXH-PRV-12 (close the sheet on every inactive event) | Rejected as the default | EXH-DES-7 asked for a cover that holds the picks, because a notification pull-down or a call would otherwise throw away a parent's choices. The privacy fall-back stands: if the device row shows the cover cannot hide Apple's view in the app switcher, the host falls back to Layout C (Apple's picker as its own sheet, no inline host, no tray for Apple's picks) and the paper cover stays; no pick is dropped by a background event (O-57, G-01, DM-09) |
 | EXH-PRV-13 (synthetic Asha files in the spike) | Applied | 9.2 |
 | EXH-SEC-6 (opacity, lock, inactive, links) | Applied | 4.7 |
 
@@ -240,7 +240,7 @@ DECIDED-BY-REVIEW (EXH-SEC-6, EXH-DES-7, EXH-DES-10); the opacity statement is A
 2. It is never preloaded, never kept mounted behind our day body when not shown, and never started from a link or notification: the door opens only from a tap in the app (`scribe://moments` lands on the tab).
 3. It starts under a still paper cover (no spinner, no shimmer). The cover fades over 200 ms; the view never does.
 4. The cover goes on as a hard cut, with no fade, before anything moves, on: Not now, Start, the app going inactive, and dismissal by gesture.
-5. Inactive or background (a call, a notification pull-down, the app switcher): our paper cover over the sheet, picks held in memory, restored when the app is active. App lock engaging or timing out: the sheet closes, picks and temporary copies are discarded, nothing is written. If DM-09 shows the cover cannot hide Apple's view in the app switcher snapshot, the fall-back is to dismiss on background and say so in the spec (a leaked picture is the worse failure).
+5. Inactive or background (a call, a notification pull-down, the app switcher): our paper cover over the sheet, picks held in memory, restored when the app is active. App lock engaging or timing out: the sheet closes, picks and temporary copies are discarded, nothing is written. If DM-09 shows the cover cannot hide Apple's view in the app switcher snapshot, the fall-back is Layout C (Apple's picker as its own sheet, no inline host) together with the cover; no pick is dropped by a background event (O-57, G-01).
 6. The host sets Apple's interface style from our theme on presentation and on change; whether an out-of-process view honours it is UNVERIFIED (DM-06). If it does not, the frame is all we can do; we paint no scrim to hide a mismatch.
 
 ### 4.8 Layout A, B and C, and the rule that decides
@@ -426,7 +426,7 @@ None says "allow", "access", "settings" (outside the denied line and Me), "priva
 | 2 | Over the limit | Our body: the seventh tile is refused, the line shows, nothing already chosen is lost. Apple's body: Apple's own limit behaviour, plus our line whenever the tray is full | Kept | No digit anywhere in ours; what Apple draws is UNVERIFIED (DM-03) |
 | 3 | The picker fails to open or load | Our frame, one calm line, "Try again", and a text row "Tell {child} without a picture" | Kept | A letter never needs a picture. Talk and Write stay one tap away. A closed error code, no path or detail |
 | 4 | App lock engages with the sheet open | The sheet closes | Discarded, with temporary copies; nothing written | EM-11 |
-| 5 | Phone goes inactive (call, notification pull-down, app switcher) | Our paper cover over the sheet | Held in memory, restored when the app is active | EM-10. If DM-09 fails, dismiss on background (4.7) |
+| 5 | Phone goes inactive (call, notification pull-down, app switcher) | Our paper cover over the sheet | Held in memory, restored when the app is active | EM-10. If DM-09 fails, Layout C and the cover (4.7) |
 | 6 | Access is revoked or downgraded while the sheet is open | The sheet closes calmly; the tab redraws in its new state in under a second with no message (R77) | Library-based picks dropped; the door stays | PROPOSED; a device row is owed (G7) |
 | 7 | Offline | Our day body works (local thumbnails); iCloud-only items show a flat box | As row 1 | |
 | 8 | A picked file cannot be read | Dropped with one calm line in capture (R91) | The rest are kept | |
@@ -466,7 +466,7 @@ Each task is read as "x of n" with no percentage below a group of 20 (PRD sectio
 | DM-06 | Interface style override in light, dark and with app and system themes differing | The theme fall-back | Same |
 | DM-07 | iPhone SE 3, AX5, Bold Text: our frame versus the picker area; VoiceOver, Voice Control, Switch Control: choose, see, remove, Start | The AX bar; the accessibility claim (EXH-DES-4, EXH-DES-5) | Founder, device operator |
 | DM-08 | First-show panel and badge with and without our frame, in light, dark and at AX5; does a clip or inset crop either | The seam (4.2) | Same |
-| DM-09 | App switcher snapshot with the picker open; App lock return | Cover or dismiss-on-background (4.7) | Same |
+| DM-09 | App switcher snapshot with the picker open; App lock return | Cover, or Layout C and the cover (4.7) | Same |
 | DM-10 | Does the view ignore touches with an ancestor opacity below 1, or with a transform | The mount-after-settle rule (4.7) | Same |
 | DM-11 | Memory and time on an iPhone SE 3 with the inline view and the tray thumbnails; eight concurrent iCloud picks | Tray thumbnails or no thumbnails; Layout C | Same |
 | DM-12 | Frame time of EM-01, EM-07 and EM-12 on an iPhone SE 3 and a 120 Hz phone | The budget (no frame over 16.7 ms on the SE 3) | Same |
