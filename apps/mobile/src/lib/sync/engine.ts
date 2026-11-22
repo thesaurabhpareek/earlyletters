@@ -93,7 +93,7 @@ const FOREGROUND_MIN_GAP_MS = 5_000;
 const MAX_PUSH_ROUNDS = 40;
 const MAX_PULL_PAGES = 100;
 
-const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, reset: false, phase: 'idle' };
+const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, pulledRefused: 0, reset: false, phase: 'idle' };
 
 export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const { db, supabase, userId } = deps;
@@ -264,7 +264,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       const out = tx(() => applyPullPage(db, data, iso()));
       report.pulled += out.pulled;
-      report.rejected += out.refused;
+      report.pulledRefused += out.refused;
       if (out.pulled > 0 || (data.gone?.length ?? 0) > 0 || (data.books ?? []).some((b) => b.meta)) changed();
       if (data.more) continue;
       if (out.wantIds && idsRounds < 1) {

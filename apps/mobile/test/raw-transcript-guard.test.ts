@@ -244,7 +244,7 @@ describe('[DATA-REQ-040] source scan: takeProvenance is the only writer of the b
 });
 
 describe('[DATA-REQ-040] the engine: a refused row is reported, the cycle finishes, the next cycle is clean', () => {
-  it('report.rejected counts it, lastSyncedAt is written, no flag is left, and the next cycle does not throw', async () => {
+  it('report.pulledRefused counts it (BL-1498; report.rejected stays 0), lastSyncedAt is written, no flag is left, and the next cycle does not throw', async () => {
     const f = fixture();
     f.db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", ME);
     const server: SupabaseLike = {
@@ -256,16 +256,18 @@ describe('[DATA-REQ-040] the engine: a refused row is reported, the cycle finish
     });
     const first = await engine.sync();
     expect(first.rejected).toBe(0);
+    expect(first.pulledRefused).toBe(0);
     expect(rawOf(f, EL)).toBe('Asha laughed.');
     expect(flag(f)).toBeNull();
     f.db.exec(`CREATE TRIGGER t_hostile AFTER UPDATE OF synced_at ON entries WHEN NEW.id = '${EL}'
       BEGIN UPDATE entries SET raw_transcript = 'tampered' WHERE id = NEW.id; END`);
     const second = await engine.sync();
-    expect(second.rejected).toBe(1);
+    expect(second.pulledRefused).toBe(1);
+    expect(second.rejected).toBe(0); // a refused pulled row is not a refused upload (BL-1498)
     expect(second.pulled).toBe(1);
     expect(rawOf(f, EL)).toBe('Asha laughed.');
     expect(flag(f)).toBeNull(); // after every sync
-    await expect(engine.sync()).resolves.toMatchObject({ rejected: 1 });
+    await expect(engine.sync()).resolves.toMatchObject({ rejected: 0, pulledRefused: 1 });
     expect(flag(f)).toBeNull();
     engine.stop();
     f.close();
