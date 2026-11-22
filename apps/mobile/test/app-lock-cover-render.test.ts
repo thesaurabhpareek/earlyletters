@@ -1,9 +1,9 @@
 /**
- * [NX-39-R36] The app switcher snapshot is covered while App lock is on (BL-1423; MEDIA_THREAT_MODEL section 4, P6).
+ * [NX-39-R36] The app switcher snapshot is covered whether or not App lock is on (BL-1423, BL-1407; MEDIA_THREAT_MODEL section 4, P6).
  *
  * This renders the real AppLockLayer and PrivacyCover (react-dom/server, native primitives stubbed as plain tags),
  * with the real controller and machine driving it from the real AppState listener. It proves the app draws the cover
- * when it goes inactive with App lock on, and not when the lock is off. It cannot prove the pixels iOS captures for the
+ * when it goes inactive with App lock on or off (BL-1407), and takes it down when the app is active. It cannot prove the pixels iOS captures for the
  * switcher: that stays the device row D-1 in docs/qa/DEVICE_TEST_PLAN.md.
  */
 import { createElement as h, type ReactNode } from 'react';
@@ -82,7 +82,7 @@ const controller = await import('../src/lib/app-lock/controller');
 const { AppLockLayer } = await import('../src/components/app-lock/app-lock-layer');
 const draw = () => renderToStaticMarkup(h(AppLockLayer));
 
-describe('[NX-39-R36] the app switcher snapshot is covered while App lock is on', () => {
+describe('[NX-39-R36] the app switcher snapshot is covered, App lock on or off', () => {
   beforeAll(async () => {
     writeAppLock({ enabled: true });
     controller.startAppLock();
@@ -121,9 +121,16 @@ describe('[NX-39-R36] the app switcher snapshot is covered while App lock is on'
     expect(draw()).not.toContain(COVER);
   });
 
-  it('[NX-39-R36] with App lock off, going inactive draws no cover (the off case is BL-1407, not claimed here)', async () => {
+  it('[NX-39-R36] with App lock off, going inactive still draws the cover, and coming back to the front takes it down (BL-1407)', async () => {
     await controller.turnOff();
+    expect(controller.getAppLockState().enabled).toBe(false);
+    env.appState!('active');
+    expect(draw()).not.toContain(COVER);
     env.appState!('inactive');
+    expect(controller.getAppLockState().locked).toBe(false); // a cover, never a lock
+    expect(draw()).toContain(COVER);
+    expect(draw()).not.toContain('data-testid="appLock.unlock"');
+    env.appState!('active');
     expect(draw()).not.toContain(COVER);
   });
 });
