@@ -7,7 +7,7 @@
  * Words about the picture and its typed place live here too, until Keep.
  */
 import { commitPhoto, PhotoSession, type CommitResult } from './session';
-import { UNDO_WINDOW_MS, type PhotoDeps, type PickedAsset, type PickedFiles } from './types';
+import { UNDO_WINDOW_MS, type PhotoDeps, type PickedAsset, type PickedFiles, type StoredPhoto } from './types';
 
 type Listener = () => void;
 
@@ -111,15 +111,38 @@ export class PendingPhoto {
   async commit(deps: PhotoDeps, input: { entryId: string; finalText: string; requireWords?: boolean }): Promise<CommitResult | null> {
     const cur = this.session.source;
     if (!cur) return null;
+    // What is being kept is fixed now: a pick that lands while the original is read is a different picture (BL-1489).
+    const { text, place } = this.session;
     let result: CommitResult;
     try {
       const bytes = await this.files.read(cur.uri);
-      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text: this.session.text, place: this.session.place, sourceUri: cur.uri, requireWords: input.requireWords });
+      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text, place, sourceUri: cur.uri, requireWords: input.requireWords });
     } catch {
       result = { status: 'failed' };
     }
     if (result.status === 'needs_words') return result; // nothing was read into a copy; the picture stays pending
+    if (this.session.source !== cur) {
+      // Replaced while this ran: the new pick and its words stay; only this picture's original goes.
+      if (this.previous?.asset === cur) this.previous = null;
+      await this.files.remove(cur.uri);
+      return result;
+    }
+    // Words typed while the picture was read are the parent's too: the copy already made carries them (BL-1535).
+    if (result.status === 'stored' && (this.session.text !== text || this.session.place !== place)) {
+      result = { status: 'stored', photo: this.carryLateWords(deps, result.photo) };
+    }
     await this.discard();
     return result;
+  }
+  /** Writes the words now in the fields onto the stored copy. Never throws: the copy keeps what it had if this cannot. */
+  private carryLateWords(deps: PhotoDeps, photo: StoredPhoto): StoredPhoto {
+    try {
+      if (deps.store.get(photo.entryId)?.mediaId !== photo.mediaId) return photo; // another copy took its place meanwhile
+      const next = { ...photo, text: this.session.text, place: this.session.place };
+      deps.store.put(next);
+      return next;
+    } catch {
+      return photo;
+    }
   }
 }
