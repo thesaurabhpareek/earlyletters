@@ -74,6 +74,7 @@ import { photosPausedNow } from '@/lib/photos/pause';
 import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
+import { monthsHintFor, readTheYearOn, yearRows } from '@/components/book/read-year.logic';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
@@ -152,6 +153,8 @@ export default function Book() {
   const shown = useMemo(() => (active ? withLeaving(entries, leaving, active.id) : []), [entries, leaving, active]);
   const chapters = useMemo(() => (active ? bookChapters(shown, active, today) : []), [shown, active, today]);
   const rows = useMemo(() => monthRows(chapters), [chapters]);
+  // Read a year together (NS-24, BL-947): year rows in Go to a month, behind EXPO_PUBLIC_READ_THE_YEAR.
+  const years = useMemo(() => (active && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? yearRows(entries, active, today) : []), [entries, active, today]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -381,7 +384,7 @@ export default function Book() {
   // name differs from the lens option "Months" (Voice Control, NS-01-R20e): a PROPOSED key for the founder.
   const months =
     !showPhotos && showsMonthsButton(rows)
-      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) }
+      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: monthsHintFor(years.length > 0, bookCopy.monthsHint), onPress: () => setMonthsOpen(true) }
       : null;
   const openSettings = () => router.push('/settings');
   const header = (
@@ -518,7 +521,7 @@ export default function Book() {
             />
             </Animated.View>
             {topBar}
-            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} />
+            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} years={years} onChooseYear={(y) => { setMonthsOpen(false); router.push({ pathname: '/read-together', params: { childId: active.id, year: y.key } }); }} />
           </>
         )}
       </Animated.View>
