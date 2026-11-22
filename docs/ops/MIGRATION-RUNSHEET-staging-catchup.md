@@ -1,20 +1,20 @@
-# Run sheet: catch up the hosted database, Files 3 to 38 (staging first)
+# Run sheet: catch up the hosted database, Files 3 to 38 and 40 (staging first)
 
-For the founder. Written 21 Nov 2026 by the data architect. Docs only: this PR changes no migration and does not edit `supabase/APPLY.md`.
+For the founder. Written 21 Nov 2026 by the data architect; brought up to date with `develop` on 22 Nov 2026 (File 40 added). Docs only: this PR changes no migration and does not edit `supabase/APPLY.md`.
 
-**Status: nothing here has run.** Locked on 21 Nov 2026 (your decision, in principle): apply `supabase/APPLY.md` Files 3 to 38 to staging as one run, in filename order, with the consent pepper set first. Production gets a `db-v*` tag only after staging is green. The apply, the pepper and the choice of project stay in your hands; an agent never touches a hosted project.
+**Status: nothing here has run.** Locked on 21 Nov 2026 (your decision, in principle): apply `supabase/APPLY.md` Files 3 to 38 (and, as they land on `develop`, Files 39 and 40) to staging as one run, in filename order, with the consent pepper set first. Production gets a `db-v*` tag only after staging is green. The apply, the pepper and the choice of project stay in your hands; an agent never touches a hosted project.
 
 Labels: **[V]** read in this repo or run in the local test database on 21 Nov. **[U]** not checked: it needs the hosted project, the GitHub settings page or Supabase's own pages, which no agent can see. Every [U] has a stop line beside it.
 
 ## 0. Read this first
 
-**What counts: 35 files, not 36.** There is no File 28. Files 3 to 27 are 25 files and Files 29 to 38 are 10, so the run applies 35 files on top of Files 1 and 2, and the folder holds 37 in all [V: `git ls-tree origin/develop supabase/migrations/`, 37 on 21 Nov].
+**What counts: 36 files today, 37 once File 39 lands.** There is no File 28. Files 3 to 27 are 25 files, Files 29 to 38 are 10, and File 40 is one more, so the run applies 36 files on top of Files 1 and 2, and the `supabase/migrations` folder on `develop` holds 38 in all [V: `git ls-tree origin/develop supabase/migrations/`, 38 on 22 Nov]. **File 39 (`20261121030000_compliance_gates`, PR #1448) is not on `develop` yet**: it is open, so this sheet covers Files 3 to 38 plus File 40 only. APPLY.md File 40 says "apply after File 39" [V]. The file itself has no apply-time check for File 39 [V: read, no guard]. But the CLI applies in filename order and records each file, so if File 40 is applied first and File 39 merges later, File 39 sorts BEFORE an applied file and `supabase db push` refuses it without `--include-all` [U: not tried]. The migration guard (`.github/scripts/migration-guard.mjs`) compares against `.github/migrations-applied.txt`, not the hosted history: it holds only Files 1 and 2 today, so it would NOT refuse File 39 now, but once Part J records File 40 there, a new migration that sorts at or before File 40 fails the guard [V: read]. So the safe order is **do not run Part C until #1448 has merged**; then the run is 37 files, the folder holds 39, and every "36" below reads "37" and every "38" in A2 and row 1 reads "39". If you must run before, tell Karma first: that is his decision, not an operator step.
 
 **This run is not harmless to the app on the live project.** File 5 turns on the server consent gate. From the moment it applies, the app on `early-letters` answers `SCCON` for everyone, you included, until the policy versions are published and your acceptances are recorded (Part E, point 5). Decide that before you press Approve, not after. **If the app on that project is in real use (yours or anyone else's), do not approve.** [V: APPLY.md Step 8]
 
-**A run may already be waiting.** Every merge of a migration to `develop` starts a "deploy to staging" run that waits for approval (DEPLOY.md, "Tagging flow" steps 1 and 2); Files 36 to 38 merged recently, so GitHub is probably holding one now. Approving that one applies the same 35 files but skips the "manual run is on develop" job and could happen before Parts A and B are done. In GitHub > Actions > Deploy database, if a run shows "Waiting", leave it unapproved until Part B is finished, then approve exactly one run (either that one or a manual one from C1; if you start a manual one, cancel the waiting one). Never approve two. [U] whether one is waiting.
+**A run may already be waiting.** Every merge of a migration to `develop` starts a "deploy to staging" run that waits for approval (DEPLOY.md, "Tagging flow" steps 1 and 2); Files 36 to 38 merged recently, so GitHub is probably holding one now. Approving that one applies the same files but skips the "manual run is on develop" job and could happen before Parts A and B are done. In GitHub > Actions > Deploy database, if a run shows "Waiting", leave it unapproved until Part B is finished, then approve exactly one run (either that one or a manual one from C1; if you start a manual one, cancel the waiting one). Never approve two. [U] whether one is waiting.
 
-**The job has a 15 minute limit** (`timeout-minutes: 15`, covering the push and the smoke) [V: `deploy-db.yml` line 119]. If 35 files take longer, the run is cancelled mid-file: that file rolls back, earlier files stay applied. A run cancelled at about 15 minutes is not a failed migration; run Part C again.
+**The job has a 15 minute limit** (`timeout-minutes: 15`, covering the push and the smoke) [V: `deploy-db.yml` line 119]. If the files take longer, the run is cancelled mid-file: that file rolls back, earlier files stay applied. A run cancelled at about 15 minutes is not a failed migration; run Part C again.
 
 **You are told what to paste back.** Numbers, true or false, file names, and error codes only. Never a row, a letter, a name, an email, a key, a URL with a password in it, or the pepper. Take no screenshot of the Connect page or any secrets page. If a screen shows any of those, crop it out before you share it.
 
@@ -62,7 +62,7 @@ Only one hosted project exists today: `early-letters` (project ref `fpkxggtzwoum
 Paste back: "A1 done", the four secret names present (yes or no), whether `SUPABASE_DB_URL_PROD` is now gone (yes or no), whether `db-production` shows required reviewers (yes or no), and the project ref only if it is not `fpkxggtzwoumdghwzlsl`.
 Stop if: a name is missing, the ref differs, `SUPABASE_DB_URL_PROD` is still listed after you tried to delete it, or `db-production` has no required reviewers.
 
-### A2. The folder holds exactly 37 files
+### A2. The folder holds exactly 38 files (39 once #1448 merges)
 
 On your Mac, in the repo folder:
 
@@ -70,7 +70,7 @@ On your Mac, in the repo folder:
 git fetch origin develop && git ls-tree --name-only origin/develop supabase/migrations/ | wc -l
 ```
 
-Expect `37`. Paste back the number. Stop if it is higher: a migration newer than this sheet is on `develop` and the run would apply it too. Ask Karma to extend the sheet first.
+Expect `38` today, or `39` once #1448 (File 39) has merged. Paste back the number. Stop if it is any other number, and above all if it is higher: a migration newer than this sheet is on `develop` and the run would apply it too. Ask Karma to extend the sheet first.
 
 Also repeat this count right before you approve in C2: the job applies `develop`'s tip at the moment of approval (`deploy-db.yml` line 132), so a migration merged in between would be applied too.
 
@@ -156,7 +156,7 @@ Dashboard > Project Settings > Data API > **Exposed schemas**: `public` only (AP
 
 ### A8. The local suite is green
 
-On your Mac, on the same commit `develop` has: `npm install`, then `npm run test:db`. Expect every file to pass. Paste back the last line. Stop on any failure. (The suite builds all 37 files in an embedded Postgres, so it is the best dress rehearsal short of the hosted run; it does not see hosted-only things such as roles, the Auth hook or Storage's own policies.)
+On your Mac, on the same commit `develop` has: `npm install`, then `npm run test:db`. Expect every file to pass. Paste back the last line. Stop on any failure. (The suite builds every file in the folder in an embedded Postgres, so it is the best dress rehearsal short of the hosted run; it does not see hosted-only things such as roles, the Auth hook or Storage's own policies.)
 
 ## Part B. Set the consent pepper (once, before the run)
 
@@ -166,13 +166,21 @@ What the pepper guards, honestly: File 14 and File 30 do **not** refuse to apply
 
 ### B1. Make it, on your Mac (Terminal)
 
+**First, before anything is copied or made:** turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy, and B1 already asks you to copy the pepper into your password manager. If you forget and copied first, open each manager afterwards and delete the entry that holds the pepper.
+
 If you have no pepper yet for this project, make one. This writes it to a file only you can read, outside the repo, and shows nothing:
 
 ```bash
 ( umask 077; mkdir -p "$HOME/el-secrets" && openssl rand -hex 32 > "$HOME/el-secrets/consent-pepper-early-letters.txt" && wc -c "$HOME/el-secrets/consent-pepper-early-letters.txt" )
 ```
 
-Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Open the file yourself, copy the value into your password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
+Expect `65` (64 characters and a newline; on macOS the number may have spaces in front of it). Do not print the value on the screen at all: Terminal scrollback, screen recordings and screen sharing would keep it. Put it on the clipboard and paste it straight into your password manager:
+
+```bash
+tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
+```
+
+Paste it into the password manager, then clear the clipboard with `printf '' | pbcopy`, and, if Universal Clipboard was on, copy any harmless word on a nearby iPhone or iPad too. (The clipboard managers are already off from the first paragraph of B1.) If you really must read it, run `cat` on the file, then press Cmd+K, close the window, and confirm in the Terminal Edit menu that scrollback is cleared [U: not tried on a Mac]; never use `clear` alone, it leaves the scrollback readable. Save it in the password manager under "Early Letters consent pepper, early-letters project", and keep the file until B2 step 4 shows `true` (step 1 below may need it). Then delete it (`rm "$HOME/el-secrets/consent-pepper-early-letters.txt"`): a plain file is picked up by Time Machine and by any iCloud sync of its folder (not the case for `$HOME/el-secrets` by default [U]). If you keep it instead, you accept that risk.
 
 If you already have a pepper in your password manager, do not make a new one. Put it in the file without it appearing on screen:
 
@@ -192,7 +200,7 @@ If you already have a pepper in your password manager, do not make a new one. Pu
    show log_min_duration_statement;
    ```
    Expect `none` and `-1`. The smoke accepts `ddl` for the first (`scripts/ops/lib/smoke.ts` line 423), but `ddl` would write the `alter database` statement, pepper included, into the Postgres logs. If `log_statement` is anything but `none` (`ddl`, `mod`, `all`), or the second is not `-1`, **stop**: do not run the pepper line. Turn logging off first (docs/ops/SECURITY.md section 4; ask Supabase support if the dashboard has no switch [U]), or tell the data architect.
-0a. **Before you copy anything:** turn off any clipboard manager (Raycast, Alfred, Paste, Maccy and similar) and Universal Clipboard (System Settings > General > AirDrop & Handoff > untick Handoff), because they keep or sync what you copy. If you forget and copied first, open each manager afterwards and delete the entry that holds the pepper.
+0a. Check that the clipboard step at the start of B1 (clipboard managers and Universal Clipboard off) is still true, because you copy again here.
 1. Get the value onto the clipboard once. Best: open it in your password manager and copy it there (a password manager clears the clipboard itself [U]; this skips `pbcopy`). Or, from the file:
    ```bash
    tr -d '\n' < "$HOME/el-secrets/consent-pepper-early-letters.txt" | pbcopy
@@ -233,9 +241,9 @@ Repeat the A2 count first. **Last check: from the moment you approve, your own p
 
 Open "deploy to staging". The steps run in this order [V]: commit being deployed, set up CLI, check the secret exists, **Dry run**, **Push**, files to record, smoke secrets, psql, **Content-free smoke**.
 
-- Dry run: expect a list of the 35 files [U: the exact print format], in filename order, ending with `20261121020000_new_device_fill_rekey.sql`.
+- Dry run: expect a list of 36 files (37 with File 39) [U: the exact print format], in filename order, ending with `20261121040000_value_free_validation_triggers.sql`.
 - Push: expect each file applied with no error. This takes minutes; File 17, 22 and 23 may be the slowest.
-- The run page's Summary (top left, "Summary") ends with a box titled "staging: migrations not yet in .github/migrations-applied.txt": it lists all 35 file names, and no others.
+- The run page's Summary (top left, "Summary") ends with a box titled "staging: migrations not yet in .github/migrations-applied.txt": it lists all 36 file names (37 with File 39), and no others.
 
 Paste back: the colour of each step (green, red, skipped), the **first red step's name** and its error code only (a line like `ERROR: ... (SQLSTATE 55P03)`). Do not paste the full log if it quotes data; the guard messages carry counts and names only [V: APPLY.md file 22, 23], but check before you paste.
 
@@ -251,11 +259,11 @@ A red smoke fails the job after the push; the files are applied anyway [V: DEPLO
 
 ## Part D. Verify (read-only)
 
-Dashboard > SQL Editor > New query. Paste this whole box, run it, and read the `got` and `expect` columns side by side. It ran in PGlite (the repo's test harness) with all 37 files applied, a stub history table of 37 rows and a stub role `supabase_auth_admin` created after the files, with File 36's hook grant run by hand (the file grants it only `if exists` that role, `20261121000000` line 188): all 28 rows matched, row 27 included. Row 16 locally listed three policies. Only the hosted answer is [U], most of all row 27, because the real role and the real history table are Supabase's own [V].
+Dashboard > SQL Editor > New query. Paste this whole box, run it, and read the `got` and `expect` columns side by side. It ran in PGlite (the repo's test harness) with all 38 files applied (every migration on `develop` on 22 Nov), a stub history table of 38 rows and a stub role `supabase_auth_admin` created after the files, with File 36's hook grant run by hand (the file grants it only `if exists` that role, `20261121000000` line 188): all 29 rows matched, row 27 included. Row 16 locally listed three policies. Only the hosted answer is [U], most of all row 27, because the real role and the real history table are Supabase's own [V].
 
 ```sql
 select n, what, got, expect from (values
- (1,  'migrations recorded in history', (select count(*) from supabase_migrations.schema_migrations)::text, '37'),
+ (1,  'migrations recorded in history (39 once File 39 is in)', (select count(*) from supabase_migrations.schema_migrations)::text, '38'),
  (2,  'columns with no L1-L4 label', (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace join pg_attribute a on a.attrelid = c.oid where n.nspname = 'public' and c.relkind in ('r','v') and a.attnum > 0 and not a.attisdropped and coalesce(col_description(c.oid, a.attnum), '') !~ '^L[1-4]\M')::text, '0'),
  (3,  'public tables without row security', (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity)::text, '0'),
  (4,  'safety_events table gone', (to_regclass('public.safety_events') is null)::text, 'true'),
@@ -282,7 +290,8 @@ select n, what, got, expect from (values
  (25, 'legal_holds audit trigger and empty security_events (file 35)', ((select count(*) from pg_trigger where tgname = 'legal_holds_audit') || ' and ' || (select count(*) from ops.security_events))::text, '1 and 0'),
  (26, 'new-device tables empty (file 36)', (select count(*) from ops.account_sessions_seen)::text, '0'),
  (27, 'hook runnable by Auth only (file 36)', (has_function_privilege('supabase_auth_admin', 'public.hook_new_device_sign_in(jsonb)', 'execute') and not has_function_privilege('anon', 'public.hook_new_device_sign_in(jsonb)', 'execute') and not has_function_privilege('authenticated', 'public.hook_new_device_sign_in(jsonb)', 'execute'))::text, 'true'),
- (28, 'sender and fill functions: service only (files 37, 38)', (has_function_privilege('service_role', 'public.ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'execute') and has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute') and has_function_privilege('service_role', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute') and not has_function_privilege('anon', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute') and not has_function_privilege('authenticated', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute'))::text, 'true')
+ (28, 'sender and fill functions: service only (files 37, 38)', (has_function_privilege('service_role', 'public.ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'execute') and has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute') and has_function_privilege('service_role', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute') and not has_function_privilege('anon', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute') and not has_function_privilege('authenticated', 'public.ops_new_device_rekey(uuid,bytea,bytea)', 'execute'))::text, 'true'),
+ (29, 'value-free validation triggers (file 40)', (select count(*) from pg_trigger where tgname like '%\_validate\_limits' and not tgisinternal)::text, '4')
 ) as t(n, what, got, expect) order by n;
 ```
 
@@ -314,6 +323,7 @@ Stop if: any row differs. Do not start Part G. Which test explains each row is i
 | 25 | 35 | `audit_writers_security_events.test.mjs` |
 | 26, 27 | 36 | `new_device_sign_in.test.mjs` |
 | 28 | 37, 38 | `new_device_sender.test.mjs`, `new_device_fill_rekey.test.mjs` |
+| 29 | 40 | `value_free_validation.test.mjs` (row 29 counts every trigger named `%_validate_limits`: if a later file adds a similar trigger on another table it reads 5 or more; that is the one exception to the "Stop if: any row differs" rule below: it is not a failure, tell the data architect the number) |
 
 Row 16 lists three policies, not two as APPLY.md's File 33 check says: `entry_photos_no_anonymous` is also on the folder [V: local run]. The APPLY.md line is out of date on that one point; this sheet does not edit it. The File 18 and 19 tables (subscription status, backup) are covered by `subscription_status.test.mjs`, `audio_backup.test.mjs`, `audio_backup_escrow.test.mjs`, `audio_backup_purge.test.mjs`, `backup_role.test.mjs` in CI; no hosted check is added for them because both stay dark (guard in Part G).
 
@@ -384,11 +394,11 @@ All founder steps in the dashboard and SQL Editor; none is proved by the test su
 
 Not part of today. Written down so the order is not lost.
 
-1. Preconditions: Part D green on staging; Part E 6 green; the record PR (Part J) merged; Files 3 to 38 reached `main` (the tag job refuses a commit that is not on `main`) [U whether they have]; `SUPABASE_DB_URL_PROD` re-saved from the new production project (A1 point 3); a backup and the same Part A and B repeated for production, with a **different** pepper.
+1. Preconditions: Part D green on staging; Part E 6 green; the record PR (Part J) merged; Files 3 to 38 and 40 reached `main` (the tag job refuses a commit that is not on `main`) [U whether they have]; `SUPABASE_DB_URL_PROD` re-saved from the new production project (A1 point 3); a backup and the same Part A and B repeated for production, with a **different** pepper.
 2. Tag a commit on `main` and push it [V: DEPLOY.md "Tagging flow"]:
    ```bash
    git fetch origin
-   git tag -a db-v2026.11.21.1 -m "DB: catch-up, Files 3 to 38" <commit on origin/main>
+   git tag -a db-v2026.11.21.1 -m "DB: catch-up, Files 3 to 38 and 40" <commit on origin/main>
    git push origin db-v2026.11.21.1
    ```
    Only a tag push reaches production; a manual run never does. The tag name is a suggestion; anything starting with `db-v` works.
@@ -429,12 +439,14 @@ The honest rule: after a run, the only complete undo is restoring a backup (Part
 | 36 | Switch the hook **off first**, then forward-fix; refuses a second run | APPLY.md File 36 |
 | 37 | Drop the three functions | APPLY.md File 37 |
 | 38 | Drop the two functions | APPLY.md File 38 |
+| 39 | Not on `develop` yet (#1448); add its row here when it lands | APPLY.md File 39 [U] |
+| 40 | Forward-fix only: drop the four triggers and four functions; the CHECKs stay and keep refusing, with the row in the error detail | APPLY.md File 40 |
 
 Two things to remember. If the hook is on and a file under it is changed, a sign-in can be affected, which is why the hook goes off first. And once a migration is recorded in `.github/migrations-applied.txt` it can never be edited; a fix is always a new file after the newest one.
 
 ## Part J. After the run: record it
 
-After Part D is green, the data architect opens a PR that adds the 35 file names (the list in the run summary, C3) to `.github/migrations-applied.txt` [V: DEPLOY.md "After a deploy"]. Once merged, the migration guard blocks any edit of those files. Paste the run summary's file list to the data architect if they do not have it. Karma merges under CR-70 and CR-73; the label `approve-migration` is not a merge step.
+After Part D is green, the data architect opens a PR that adds the 36 file names (37 with File 39) (the list in the run summary, C3) to `.github/migrations-applied.txt` [V: DEPLOY.md "After a deploy"]. Once merged, the migration guard blocks any edit of those files. Paste the run summary's file list to the data architect if they do not have it. Karma merges under CR-70 and CR-73; the label `approve-migration` is not a merge step.
 
 ## Part K. Unverified, in one place
 
@@ -445,7 +457,7 @@ After Part D is green, the data architect opens a PR that adds the 35 file names
 - [U] Whether Supabase's SQL Editor keeps a copy of the pepper line in history (B2).
 - [U] Whether point in time recovery is on.
 - [U] The Custom Access Token hook's menu wording, `auth.sessions` DELETE on hosted (H1), and the A3 and A4 proofs.
-- [U] Whether Files 3 to 38 are on `main` yet (production tag).
+- [U] Whether Files 3 to 38 and 40 are on `main` yet (production tag).
 - [U] The purge-worker cron's Vault secrets and the `purge-worker` function's deploy state.
-- [V but local only] The two big read-only queries ran in PGlite (the repo harness), not against the hosted project. Locally row 1 of A6 answers 18, row 12 answers true and the index check shows only `objects_pkey`; Part D passes all 28 rows including row 27 with a stub `supabase_auth_admin` role. The hosted answers are [U].
+- [V but local only] The two big read-only queries ran in PGlite (the repo harness), not against the hosted project. Locally row 1 of A6 answers 18, row 12 answers true and the index check shows only `objects_pkey`; Part D passes all 29 rows including row 27 with a stub `supabase_auth_admin` role. The hosted answers are [U].
 - [U] That pooled connections pick up the pepper after a few minutes.
