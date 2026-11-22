@@ -205,6 +205,35 @@ export function countLetters({ db }: RepoContext, childId: string): number {
   );
 }
 
+/** What a reminder may know of the newest made letter: a date and two enums. */
+export interface MadeLetter {
+  capturedAt: string;
+  captureMode: CaptureMode;
+  kind: EntryKind;
+}
+
+/**
+ * The newest letter made by this phone's user across the given visible books, in one query (NS-48-R27): by
+ * `captured_at`, own author (the ledger's rule: with no account yet only rows with no author), quiet-day marks are not
+ * letters. Returns only the date and the two enums a reminder may know, never words.
+ */
+export function newestMadeLetter(
+  { db }: RepoContext,
+  childIds: readonly string[],
+  owner: string | null,
+): MadeLetter | null {
+  if (childIds.length === 0) return null;
+  const r = db.get<{ captured_at: string; capture_mode: CaptureMode; kind: EntryKind }>(
+    `SELECT captured_at, capture_mode, kind FROM entries
+     WHERE deleted_at IS NULL AND kind <> 'not_much' AND child_id IN (${childIds.map(() => '?').join(',')})
+       AND (author_id IS NULL OR author_id = ?)
+     ORDER BY captured_at DESC, id DESC LIMIT 1`,
+    ...childIds,
+    owner ?? '',
+  );
+  return r ? { capturedAt: r.captured_at, captureMode: r.capture_mode, kind: r.kind } : null;
+}
+
 /** The prompt keys of the newest `limit` letters that came from a prompt, newest first (BL-434: Tonight's draw). */
 export function recentPromptKeys({ db }: RepoContext, childId: string, limit: number): string[] {
   return db

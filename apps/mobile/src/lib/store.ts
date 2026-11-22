@@ -812,6 +812,11 @@ export function listEntriesForChild(childId: string): Entry[] {
   return shown(() => entries.listForChild(ctx(), childId));
 }
 
+/** The newest letter this phone's user made across the visible books: date and enums only (NS-48-R27, reminders). */
+export function newestMadeLetter(childIds: readonly string[], owner: string | null): entries.MadeLetter | null {
+  return bookVisibleNow() ? entries.newestMadeLetter(ctx(), childIds, owner) : null;
+}
+
 /** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
 export function listBookEntries(childId: string): Entry[] {
   return shown(() => entries.listForBook(ctx(), childId));
