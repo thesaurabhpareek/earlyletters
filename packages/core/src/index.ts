@@ -12,6 +12,7 @@ export * from './edit-provider';
 export * from './punctuation';
 export * from './model-edits';
 export * from './age';
+export * from './days';
 export * from './child';
 export * from './prompts';
 export * from './followups';
