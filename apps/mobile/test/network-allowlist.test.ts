@@ -21,6 +21,10 @@
  * Hosts built at run time (the Supabase project URL, the brand origin) come
  * from env or packages/brand and are covered by their own tests. A URL built
  * from pieces in app code must be listed in BUILT_URL_FILES below.
+ * Known gaps: a URL split across string concatenation after the host starts
+ * (for example 'https://a' + '.example.net') and fully dynamic URLs are not
+ * detected; `https://$host` Kotlin string templates are skipped (only the
+ * `${` form is flagged). BL-239 capture is the backstop.
  */
 /// <reference types="node" />
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -55,7 +59,7 @@ export const NEVER_CONTACTED: Record<string, string> = {
 /**
  * Hosts that library code calls with nobody writing them in app source,
  * with the package that owns each. Listed so a reviewer sees them; they are
- * not literals, so the scan never matches them. Confirmed by capture in BL-239.
+ * not literals, so the scan never matches them. Listed by owning package, not confirmed by network capture (BL-239 is the capture row).
  */
 export const SDK_DEFAULT_HOSTS: Record<string, { pkg: string; why: string }> = {
   'appleid.apple.com': { pkg: 'expo-apple-authentication', why: 'Apple sign-in, called by the system sheet' },
