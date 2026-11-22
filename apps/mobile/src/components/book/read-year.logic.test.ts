@@ -1,7 +1,8 @@
 /** Read the year back (NS-24, BL-947). Fictional family "Asha" only. */
 import { describe, expect, it } from 'vitest';
 import type { Entry } from '@/lib/store';
-import { copy } from '@/lib/copy';
+import { copy, fill } from '@/lib/copy';
+import { monthDay } from './shelf.logic';
 import { endOfYearLine, lettersInYear, monthsHintFor, readTheYearOn, yearKeyOf, yearLabel, yearRows } from './read-year.logic';
 
 const L = (id: string, occurredOn: string, extra: Record<string, unknown> = {}): Entry =>
@@ -37,8 +38,8 @@ describe('years offered [NS-24-R4] [NS-24-R6]', () => {
   });
   it('shows a closed year range and a year in progress ending today', () => {
     const rows = yearRows([L('a', '2025-04-01'), L('b', '2026-05-01')], asha, today);
-    expect(rows[1].line).toBe('March 10 to March 9');
-    expect(rows[0].line).toBe('March 10 to November 22');
+    expect(rows[1].line).toBe(fill(copy.book.monthRange, { a: monthDay('2025-03-10'), b: monthDay('2026-03-09') }));
+    expect(rows[0].line).toBe(fill(copy.book.monthRange, { a: monthDay('2025-03-10'), b: monthDay(today) }));
   });
 });
 
@@ -52,21 +53,22 @@ describe('year by about-day [NS-24-R7]', () => {
 describe('only their words, skips private and waiting [NS-24-R3]', () => {
   it('leaves out private, waiting and quiet-day marks, oldest first', () => {
     const entries = [L('b', '2025-06-01'), L('a', '2025-04-01'), L('p', '2025-05-01', { inBook: false }), L('w', '2025-05-02', { transcriptStatus: 'waiting' }), L('q', '2025-05-03', { kind: 'not_much' })];
-    expect(lettersInYear(entries, asha, 'y1').map((e) => e.id).sort()).toEqual(['a', 'b']);
+    // The order the screen relies on: input order kept (newest first), which its .reverse() turns oldest first.
+    expect(lettersInYear(entries, asha, 'y1').map((e) => e.id)).toEqual(['b', 'a']);
     expect(yearRows([L('p', '2025-05-01', { inBook: false })], asha, today)).toEqual([]);
   });
 });
 
 describe('year names, existing keys only (E-17)', () => {
   it('keys years 1 to 5, then year n, and Year n with no name', () => {
-    expect(yearLabel('y1', 'Asha')).toBe("Asha's first year");
-    expect(yearLabel('y5', 'Asha')).toBe("Asha's fifth year");
-    expect(yearLabel('y6', 'Asha')).toBe("Asha's year 6");
-    expect(yearLabel('y2', '')).toBe('Year 2');
+    expect(yearLabel('y1', 'Asha')).toBe(fill(copy.book.years.y1, { child: 'Asha' }));
+    expect(yearLabel('y5', 'Asha')).toBe(fill(copy.book.years.y5, { child: 'Asha' }));
+    expect(yearLabel('y6', 'Asha')).toBe(fill(copy.book.years.yN, { child: 'Asha', n: 6 }));
+    expect(yearLabel('y2', '')).toBe(fill(copy.book.years.noName, { n: 2 }));
     expect(yearLabel('before', 'Asha')).toBe(copy.book.beforeYouChapter);
   });
   it('ends a year on its own line', () => {
-    expect(endOfYearLine('y1', 'Asha')).toBe("That was Asha's first year.");
+    expect(endOfYearLine('y1', 'Asha')).toBe(fill(copy.readTogether.endOfYear, { label: fill(copy.book.years.y1, { child: 'Asha' }) }));
     expect(endOfYearLine('before', 'Asha')).toBe(copy.readTogether.endOfBefore);
   });
 });
