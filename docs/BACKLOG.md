@@ -7590,12 +7590,12 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Medium. Gate: none.
 - Satisfies: BL-244 and API-R10 (value-free errors; not re-read here).
 - Problem and evidence: review B on PR #1453, note 2; review A on PR #1453 (gap BL-244b in the PR body).
-- Scope: find which of the NOT NULL, foreign key and enum CHECK paths on the four content tables can print `Failing row contains` with `final_text` or a name when the over-limit trigger does not fire; make each value-free or show it unreachable from the app. Add the NOT NULL and foreign key paths to the migration header, which names only the enum and shape CHECKs.
-- Done when: a test per reachable path shows no row value in the error text; the header lists every path; a new migration carries any change, with grants.
+- Scope: find which of the NOT NULL, foreign key and enum CHECK paths on the four content tables can print `Failing row contains` with `final_text` or a name when the over-limit trigger does not fire; make each value-free or show it unreachable from the app. Add the NOT NULL and foreign key paths to the migration header, which says the enum and shape CHECKs are not covered and still echo.
+- Done when: a test per reachable path shows no row value in the error text; the header lists every path; a new migration carries any change, with grants. The hosted apply is the founder's, as for BL-244.
 
 #### BL-1500 The family notice and arrival mark capture the user before the await
 - Status: proposed (waits for PR #1428 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
-- Priority: Low. Gate: none.
+- Priority: Low-Medium (the audit grades F1 LOW-MEDIUM; the child name held in memory is real). Gate: none.
 - Satisfies: the cross-account stores audit (docs/engineering, ledger task 37; not re-read here).
 - Problem and evidence: review B on PR #1428 (LOW residual, reproduced).
 - Scope: capture the signed-in user before the await and pass it to `leave()`, so a continuation that resumes after another account has signed in cannot stamp the line with the new owner.
@@ -7665,13 +7665,13 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Scope: move the call to the start of the branch and loosen the source-scan pattern that pins its place.
 - Done when: a test where dispatch throws still forgets the Apple user; the scan test passes.
 
-#### BL-1509 Threat model: the CISO-2 invite-token residual, a failed read-mark write plus a kill before sign-out
+#### BL-1509 Create the threat-model entry for the CISO-2 invite-token residual, a failed read-mark write plus a kill before sign-out
 - Status: proposed (waits for PR #1456 to merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: CISO-2 (not re-read here).
-- Problem and evidence: review of PR #1456 (A PASS, B PASS); CISO-2 in docs/agents/exec/RULINGS.md.
-- Scope: record in `docs/security/threat-model.md`: a failed Keychain mark write followed by a kill before the sign-out clear leaves the token unmarked, bounded by the 14 day cap; and the possible stuck-in-restoring state never reads the token (no path seen).
-- Done when: both lines are in the threat model with the bound and the evidence.
+- Problem and evidence: the two residuals come from the PR #1456 body and the coordinator's queue notes, not from the saved review A or review B of #1456 (both PASS and confirm-only); CISO-2 in docs/agents/exec/RULINGS.md; the invite token is a single-use bearer not bound to a person (cross-account audit F6, `docs/engineering/audits/2026-11-21-cross-account-stores.md`), so another account could use it inside the 14 day window. `docs/security/threat-model.md` does not exist on develop (only `docs/security/MEDIA_THREAT_MODEL.md`).
+- Scope: after PR #1456 merges, check the two residuals against its body and code, then create the threat-model entry in a new file and say so in the PR: a failed Keychain mark write followed by a kill before the sign-out clear leaves the token unmarked, bounded by the 14 day cap (the cap stays the founder's); and a possible stuck-in-restoring state that never reads the token (no path seen).
+- Done when: both residuals are written down with the bound, the bearer point and the evidence they came from.
 
 #### BL-1510 E2E-01a: assertNotVisible on `gate.stop.mistake`, which is now always mounted at opacity 0
 - Status: proposed (waits for PR #1443 to merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -7730,7 +7730,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: the padding matches the spec; one test or snapshot line.
 
 #### BL-1517 The E3 ruling record `council-batch-2.md` is missing from the checkout
-- Status: proposed (docs/agents is a founder-merge path). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Status: proposed (needs the founder's merge: `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-418 (not re-read here).
 - Problem and evidence: review A on PR #1396 (ruling E3 unconfirmed).
@@ -7757,7 +7757,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Status: proposed (waits for PR #1435 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-53 (docs/product/prd/28-moments-tab.md; not re-read here).
-- Problem and evidence: review B on PR #1435, notes N1, N2, N3, N4 and N6.
+- Problem and evidence: review A on PR #1435, notes N1, N2, N3, N4 and N6 (review B's notes on #1435 are different).
 - Scope: N1 put the unit in constant names; N2 freeze `busyHours` and `junkBar`; N3 make sure type tests are run by `tsc`, not only vitest; N4 reword test labels that overclaim R36, R205 and R267; N6 the `MEDIA_KIND_INDEX` note.
 - Done when: each note is done or recorded as left, with the line it points at.
 
@@ -7765,7 +7765,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: docs/agents/OPERATING_MODEL.md (not re-read here).
-- Problem and evidence: review B on PR #1435, note N5.
+- Problem and evidence: review A on PR #1435, note N5.
 - Scope: find why the trailer handle differs from the owner and either fix the mapping or document it.
 - Done when: trailer and owner agree for a Moments PR, or the doc says why not.
 
@@ -7813,7 +7813,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-53-R37, R38 and R56 (not re-read here).
-- Problem and evidence: reviews A and B on PR #1458.
+- Problem and evidence: reviews A and B on PR #1458. This edits requirement text in the PROPOSED NS-53 spec, so the PR body presents it as a proposal for product and the founder, not a change to a locked requirement.
 - Scope: name the includeHiddenAssets and source-option proof duty in R37 or R38; check that R38 `left-out assets` agrees with R56 and record the reading.
 - Done when: the duty is named in one requirement and the R38 and R56 readings agree, or a question is raised.
 
@@ -7841,37 +7841,37 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Scope: re-cut #429 as a patch in `docs/ops/proposed/` and #430 as a small PR to `agents/evals`. Founder only: the GitHub App and four variables, the provider key, AGENTS_ENABLED and branch protection (FOUNDER_QUEUE row 7).
 - Done when: the patch and the evals are on develop; the founder steps are listed in the PR body.
 
-#### BL-1531 CISO-3: the ruling's reason line says F9 to F11 carry no person data, but F11 does
-- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+#### BL-1531 CISO-3: the reason line says the other findings carry no person data, but the same ruling records F11 as an accepted exposure
+- Status: ready (needs the founder's merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: CISO-3 (docs/agents/exec/RULINGS.md; not re-read here).
-- Problem and evidence: review B on PR #1454 (carry-over note); ruling CISO-3 and audit finding F11.
-- Scope: reword the reason line to say F11 needs an explicit-choice check; `docs/agents/**` is a founder-merge path.
+- Problem and evidence: review B on PR #1454 (carry-over note); the CISO-3 Reason line says the others "carry no person data" while its own Ruling records F11 as an accepted exposure and the audit rates F11 INFO, by design (the claim screen, A-REQ-015).
+- Scope: reword the Reason line so it matches the Ruling on F11; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
 - Done when: the line no longer says F11 carries no person data.
 
-#### BL-1532 Cross-account audit F11: check that the choice is explicit
+#### BL-1532 Claim screen (audit F11, INFO, by design): check that the claim is an explicit choice, never automatic
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: CISO-3 and audit finding F11 (not re-read here).
-- Problem and evidence: ruling CISO-3 (accept F9 to F11, F11 needs the explicit-choice check).
-- Scope: find where F11 keeps a value across accounts and prove with a test that it is kept only after an explicit choice.
-- Done when: a test fails when the value is kept without the choice.
+- Problem and evidence: ruling CISO-3 (F11 accepted: an unowned local book is offered to the first account that signs in, A-REQ-015; the check that the claim is explicit is owed). The audit grades F11 INFO and did not run the behaviour.
+- Scope: prove with a test that `accountClaimPending` leads to a claim only after the person chooses it.
+- Done when: a test fails when the claim happens without the choice.
 
-#### BL-1533 Rulings text fixes after #1454: cites drop the apps/mobile/src prefix, and `joinWait.clear` is auth-store.ts line 122
-- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+#### BL-1533 Rulings text fixes after #1454: cites drop the apps/mobile/src prefix
+- Status: ready (needs the founder's merge). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: docs/agents/exec/RULINGS.md (not re-read here).
-- Problem and evidence: review A on PR #1454.
-- Scope: give each path its full `apps/mobile/src/` prefix and change `auth-store.ts:123` to `:122`; `docs/agents/**` is a founder-merge path.
+- Problem and evidence: review A on PR #1454. The note that `joinWait.clear` is at `auth-store.ts:122` was made against an older head: on develop it is at line 123 of `apps/mobile/src/lib/auth/auth-store.ts`, so that cite is right today.
+- Scope: give each path its full `apps/mobile/src/` prefix and check every line cite against develop; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
 - Done when: every cite resolves by path and line.
 
 #### BL-1534 Analytics consent per person, not per phone (CPrivO-15), for when an SDK is planned
 - Status: proposed (ready only when an analytics SDK is planned; no SDK is in the app today). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: none.
-- Priority: Low. Gate: none.
+- Priority: Low. Gate: an analytics SDK is planned (none is in the bundle today).
 - Satisfies: CPrivO-15 (docs/agents/exec/RULINGS.md; not re-read here).
 - Problem and evidence: ruling CPrivO-15 and the council batch 3 call (latent).
-- Scope: store the analytics choice per person and read it before any event; a second person on the phone starts from the default.
-- Done when: a test with two accounts shows the first person's opt-in does not apply to the second.
+- Scope: store the analytics choice per person and read it before any event; a second person on the phone starts from the default; rotate the random analytics id at every user change (audit F5).
+- Done when: a test with two accounts shows the first person's opt-in does not apply to the second and that the id differs after a user change.
 
 #### BL-1535 A late adopt row: the order between dropQueuedAdopts and discard, and words typed during a commit
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
@@ -7886,5 +7886,5 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Low. Gate: none.
 - Satisfies: F-08d (not re-read here).
 - Problem and evidence: review notes on PR #1391 (F-08d).
-- Scope: find every doc that still shows the old lock string and change it to the neutral body from #1391, citing the content key; no new copy.
-- Done when: `grep` for the old string finds nothing in docs.
+- Scope: find every doc that still shows the old lock string and change it to the neutral body from #1391, citing the content key; no new copy. Line 190 of the catalogue carries a `{child}` variant, not the exact old string. Two quotes stay on purpose because they record history: `docs/agents/exec/RULINGS.md` line 197 and `docs/design/CONFORMANCE-21nov.md` line 120 (the audit row); the PR names any other hit it leaves.
+- Done when: `grep` for the old string finds only the named history quotes.
