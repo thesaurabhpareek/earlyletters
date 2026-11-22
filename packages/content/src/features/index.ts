@@ -12,6 +12,7 @@ export { familyCopy } from './family.en';
 export { findCopy } from './find.en';
 export { languageCopy } from './language.en';
 export { licences } from './licences.en';
+export { momentsTabCopy } from './moments-tab.en';
 export { newDevicePageCopy } from './new-device.en';
 export { packsCopy } from './packs.en';
 export { photosCopy } from './photos.en';
@@ -32,6 +33,7 @@ import { familyCopy } from './family.en';
 import { findCopy } from './find.en';
 import { languageCopy } from './language.en';
 import { licences } from './licences.en';
+import { momentsTabCopy } from './moments-tab.en';
 import { newDevicePageCopy } from './new-device.en';
 import { packsCopy } from './packs.en';
 import { photosCopy } from './photos.en';
@@ -54,6 +56,7 @@ export const features = {
   find: findCopy,
   language: languageCopy,
   licences,
+  momentsTab: momentsTabCopy,
   newDevicePage: newDevicePageCopy,
   packs: packsCopy,
   photos: photosCopy,

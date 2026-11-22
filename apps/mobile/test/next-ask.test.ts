@@ -26,6 +26,7 @@ const facts = (over: Partial<AskFacts> = {}): AskFacts => ({
   lettersSaved: 1,
   firstLetter: true,
   primesShown: 0,
+  primeAnsweredYes: false,
   remindersOn: false,
   signInOffered: true,
   keepBookOffered: false,
@@ -128,6 +129,21 @@ describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, a
   it('one ask per session and per day still hold', () => {
     expect(nextAsk(later({ askShownThisSession: true }))).toBeNull();
     expect(nextAsk(later({ askShownToday: true }))).toBeNull();
+  });
+
+  it('[BL-1430] a person who ever said Yes is never primed again, even with reminders turned off later', () => {
+    expect(nextAsk(later({ primeAnsweredYes: true, remindersOn: false }))).toBeNull();
+    expect(nextAsk(later({ primeAnsweredYes: false, remindersOn: false }))).toBe('reminder_prime');
+  });
+
+  it('[BL-1430] the Yes answer is its own device setting, set by the card and read by askAfterSave, not folded into primesShown', () => {
+    const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
+    expect(src('lib/asks/index.ts')).toMatch(/primeAnsweredYes: getSetting\(K\.primeYes\) === 'on'/);
+    expect(src('lib/asks/index.ts')).toMatch(/primeYes: 'asks\.reminderPrimeYes'/);
+    const card = src('components/asks/reminder-prime-ask.tsx');
+    const yes = card.slice(card.indexOf('const yes ='), card.indexOf('const none ='));
+    expect(yes).toMatch(/noteReminderPrimeYes\(\)/);
+    expect(card.slice(card.indexOf('const none ='), card.indexOf('return (', card.indexOf('const none =')))).not.toMatch(/noteReminderPrimeYes/);
   });
 
   it('the account sheet keeps its earlier slot when both are due', () => {
