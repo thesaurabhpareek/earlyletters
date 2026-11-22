@@ -29,7 +29,7 @@ import { getAuthSnapshot } from './auth/auth-store';
 import { authUserId } from './auth/machine.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, sweepTakeoverKeys, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
 import type { AgreementDocument, AgreementRow } from './agreements.logic';
 import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
@@ -188,6 +188,8 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
+  // Stale guard-window keys (BL-412, BL-1497) are cleared here: after migrations, before any pull can run. A newer file is left untouched.
+  if (!migration.newer) sweepTakeoverKeys(opened.db);
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
   setIndexableBooks(() => (bookVisibleNow() ? null : []));
