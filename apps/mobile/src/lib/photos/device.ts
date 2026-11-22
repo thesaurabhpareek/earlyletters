@@ -1,16 +1,20 @@
 /**
  * The phone's wiring for Photo with a letter: the entry_media store, the picture files, the hash, and the launch sweep.
- * Screens use this and nothing deeper. Nothing here reads the photos switch: the data rights (the sweep, Erase now,
- * Erase everything) work with the switch off (NS-01-R19).
+ * Screens use this and nothing deeper. Nothing here reads the photos switch except `registerPhotoDevice`: the data
+ * rights (the sweep, Erase now, Erase everything) work with the switch off (NS-01-R19).
  */
 import * as Crypto from 'expo-crypto';
 import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
-import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, storedPhotoFile } from './files';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, pickerDestination, storedPhotoFile } from './files';
+import { photosBuildEnabled } from './flag';
 import { sweepPhotos } from './housekeeping';
-import type { PhotoDeps, PickedFiles } from './types';
+import { PendingPhoto } from './pending';
+import { createPhotoPicker } from './picker';
+import { registerPending, registerPhotoPicker } from './registry';
+import type { PhotoDeps, PickedFiles, StoredPhoto } from './types';
 
 const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 
@@ -24,6 +28,7 @@ export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles())
  * it is unaffected.
  */
 function nativePhoto(): ScribePhotoNative | null {
+  if (deviceState.native !== undefined) return deviceState.native;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
@@ -43,6 +48,37 @@ export function photoDeps(): PhotoDeps {
     sha256: async (bytes) => hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as Uint8Array<ArrayBuffer>)),
   };
   return cached;
+}
+
+/**
+ * Where a stored picture can be drawn from, through the stored-name guard (review N3 on #841). An id that cannot make a
+ * stored name gives no uri, and the frame shows the picture as missing.
+ */
+export const photoUri = (p: Pick<StoredPhoto, 'mediaId'>): string => storedPhotoFile(p.mediaId)?.uri ?? '';
+
+/**
+ * Registers Apple's system picker (scribe-photo's pickOne) and the pending picture, only when the photos switch is on
+ * in this build and the native module is in it. Otherwise (switch off, Expo Go, web, Android) nothing registers, so
+ * Home draws no photo start.
+ */
+// Plain state, read here and set only by the test helper (test/helpers/photo-device-reset.ts), which nothing in the app
+// imports: no reset function ships in the bundle (privacy review B on #837).
+import { deviceState } from './device-state';
+
+export function registerPhotoDevice(): void {
+  if (deviceState.registered || !photosBuildEnabled()) return;
+  deviceState.registered = true;
+  const native = nativePhoto();
+  if (!native) return;
+  const picked = pickedFilesPort();
+  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7()), { discard: (uri) => picked.remove(uri), locked: appLocked }));
+  registerPending(new PendingPhoto(pickedFilesPort()));
+}
+
+/** The app lock is up. Read only when a pick lands, so this file loads no lock code before then. */
+function appLocked(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;
 }
 
 /** Launch: empties Caches/ImagePicker, removes strays, finishes interrupted purges. Never awaited by launch. */

@@ -327,7 +327,6 @@ describe('wiring: every announcement passes the gate', () => {
       'lib/a11y.ts': 'the gate itself',
       'components/resilience/plain-screen.tsx': 'replaces the whole app after a launch failure; it renders without the app, so no take exists',
       'components/gate/age-gate-screen.tsx': 'before onboarding: there is no child yet, so Listen cannot open',
-      'components/child/plus-gate.tsx': 'payments-owned; a note after a tap on that screen. Follow-up for payments: route it through announce()',
     };
     const files: string[] = [];
     const walk = (d: string) => {

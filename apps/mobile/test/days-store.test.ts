@@ -110,7 +110,7 @@ describe('[NS-47-R28] the store file is protected, versioned and fails closed', 
 describe('[NS-47-R15] sign-out clears and B sees nothing', () => {
   it('A signs out: the file is gone with nothing awaited, B reads nothing, and a file of A read as B is empty', async () => {
     await writeDays(expoDaysPort()!, file());
-    expect(readDays(expoDaysPort()!, B)).toEqual({ state: 'foreign' }); // the owner check, before any clear
+    expect(readDays(expoDaysPort()!, B)).toEqual({ state: 'foreign', owner: A }); // the owner check, before any clear
     expect(endDaysSession()).toBe(true);
     expect(names()).toEqual([]);
     expect(loadDays(B)).toEqual({ state: 'empty' });
@@ -216,10 +216,9 @@ describe('[NS-47-R11] one reader', () => {
 });
 
 const UNAVAILABLE = { ok: false, code: 'days_store_unavailable' };
+const DROPPED = { ok: false, code: 'days_write_dropped' };
 const fresh = (owner = A) => {
-  const s = createDaysStore(() => expoDaysPort());
-  s.setOwner(owner);
-  return s;
+  return createDaysStore(() => expoDaysPort(), owner); // already signed in as `owner`: no sign-in retry runs
 };
 const text = () => new TextDecoder().decode(h.disk.files.get(`${dir()}/${DAYS_FILE}`)!.data);
 
@@ -283,15 +282,44 @@ describe('[NS-47-R15] a file of another owner is never adopted, merged or overwr
     await s.tickDay(DAY);
     const queued = s.tickDay('family.synthetic-two');
     expect(s.clearNow()).toBe(true);
-    expect(await queued).toEqual(UNAVAILABLE);
+    expect(await queued).toEqual(DROPPED);
     let release = () => {};
     h.hold = new Promise<void>((r) => (release = r));
     const running = s.tickDay(DAY);
     await new Promise((r) => setTimeout(r, 5));
     s.clearNow();
     release();
-    expect(await running).toEqual(UNAVAILABLE);
+    expect(await running).toEqual(DROPPED);
     expect(names()).toEqual([]);
+  });
+});
+
+describe('[NS-47-R15] an owner change drops writes and retries a stale clear', () => {
+  it('a write queued under A never lands under B, and says it was dropped, not failed', async () => {
+    const s = fresh(A);
+    const queued = s.tickDay(DAY);
+    s.setOwner(B);
+    expect(await queued).toEqual({ ok: false, code: 'days_write_dropped' });
+    expect(names()).toEqual([]);
+    expect(await s.tickDay(DAY)).toEqual({ ok: true });
+    expect(JSON.parse(text()).owner).toBe(B);
+  });
+
+  it('sign-in retries a clear that was stuck: the next account is not blocked; a local file is left for the claim step', async () => {
+    const s = fresh(A);
+    await s.tickDay(DAY);
+    h.disk.undeletable.add(`${dir()}/${DAYS_FILE}`);
+    expect(s.clearNow()).toBe(false); // A's sign-out clear is stuck
+    h.disk.undeletable.clear();
+    expect(await fresh(B).tickDay(DAY)).toEqual(UNAVAILABLE); // still refused: nothing of A is overwritten
+    s.setOwner(B); // B signs in: the clear is retried
+    expect(names()).toEqual([]);
+    expect(await s.tickDay(DAY)).toEqual({ ok: true });
+    await s.clearNow();
+    await writeDays(expoDaysPort()!, file('local'));
+    const local = text();
+    s.setOwner(A);
+    expect(text()).toBe(local);
   });
 });
 

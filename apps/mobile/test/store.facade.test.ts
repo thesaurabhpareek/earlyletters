@@ -110,6 +110,7 @@ describe('facade behaviour', () => {
     store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
     store.saveEntry(letter({ childId: undefined }));
     expect(onEntries).toHaveBeenCalledTimes(1);
+    expect(onEntries).toHaveBeenCalledWith(['entries']); // the letter's write names its table, and only that one
     off();
   });
 
