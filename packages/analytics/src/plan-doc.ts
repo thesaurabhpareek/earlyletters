@@ -11,7 +11,7 @@ import { AREAS, ID_KINDS, ID_KIND_CAP, ID_ROWS, type IdRow } from './ids';
 export const PLAN_BEGIN = '<!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->';
 export const PLAN_END = '<!-- catalogue:end -->';
 
-const AREA_ORDER = ['app', 'consent', 'entry', 'children', 'capture', 'languages', 'book', 'family', 'reminders', 'celebrate', 'settings', 'plus', 'errors'];
+const AREA_ORDER = ['app', 'consent', 'entry', 'children', 'capture', 'languages', 'book', 'family', 'reminders', 'celebrate', 'moments', 'settings', 'plus', 'errors'];
 
 const esc = (s: string) => s.replace(/\|/g, '\\|');
 

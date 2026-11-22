@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-68 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -189,6 +189,13 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `moment_shown` | A quiet milestone card is shown. Month-chapter and Year One are excluded: they fire on dates set by the birthday | `type` (enum: first_letter \| letters_10 \| letters_50 \| letters_100 \| letters_365 \| first_family_letter \| first_read_together) | C-REQ-034, C-REQ-010 |
 | `resurface_shown` | An "On this day" card is shown | `kind` (enum: one_month \| one_year) | C-REQ-034, C-REQ-014 |
 | `resurface_opened` | An "On this day" card is opened | `kind` (enum: one_month \| one_year) | C-REQ-034 |
+
+#### moments
+
+| Event | Fires when | Properties (type: allowed values) | Serves |
+|---|---|---|---|
+| `moments_card_impressed` | A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+| `moments_card_tapped` | A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began | `slot` (enum: look_back \| question) | PRD-REQ-016 |
 
 #### settings
 
@@ -418,6 +425,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
 | `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
+| `moments_card_impressed`, `moments_card_tapped` | Moments tab, question and look-back slots only: `trackMomentsCard({ action, slot })` (NS-53 section 18, R251) | mobile | not wired: waits for the Moments flag |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
 
