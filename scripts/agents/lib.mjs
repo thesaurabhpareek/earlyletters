@@ -264,18 +264,28 @@ export function isFounderComment(c, roster) {
   return hasFounderMarker(c.body);
 }
 
+/**
+ * A founder "Request changes" review holds a PR even with an empty body: it
+ * fails closed. Same person test as isFounderComment (founder login or OWNER,
+ * type User, no GitHub App) but no marker. The marker gates instructions only.
+ */
+export function isFounderChangesRequest(r, roster) {
+  return isFounderAccount(r, roster?.founder) && !r.performed_via_github_app && r.state === "CHANGES_REQUESTED";
+}
+
 export const FOUNDER_MARKER = "<!-- founder -->";
-const FOUNDER_LINE_RE = /^<!--\s*founder\s*-->$/;
+const FOUNDER_LINE_RE = /^[ \t]*<!-- founder -->[ \t]*$/;
 
 /** True when the first non-blank line is the founder marker and nothing else. */
 export function hasFounderMarker(body) {
-  const first = String(body ?? "").split("\n").map((l) => l.trim()).find((l) => l !== "");
+  // No String.trim(): it strips NBSP and BOM, which must not prefix the marker.
+  const first = String(body ?? "").split(/\r?\n/).find((l) => !/^[ \t]*$/.test(l));
   return first !== undefined && FOUNDER_LINE_RE.test(first);
 }
 
 function isFounderAccount(c, founder) {
   const login = c?.user?.login ?? "";
-  if (!login || c.user.type === "Bot") return false;
+  if (!login || c.user.type !== "User") return false;
   return (!!founder && login === founder) || c.author_association === "OWNER";
 }
 
