@@ -1363,9 +1363,9 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 
 ### CLO-23 BL-1799 "Each letter signed" held out of the listing (22 Nov 2026, CLO via the exec review session; not counsel)
 - Verdict: RULED.
-- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The staged line 136 must not ship (the file is `docs/store/app-store-staged-1.0-proposal.md`; the review did not give the line's exact location beyond the number, so treat it as UNVERIFIED). Correct BRAND.md line 40, which also says co-parent "at v1.0", false for the first build. Counsel must confirm.
+- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The line at `docs/store/app-store.md:136` ("Both parents read every letter in the book, each one signed.", under WHAT A CO-PARENT SEES) must not ship. Correct BRAND.md line 40, which also says co-parent "at v1.0", false for the first build. Counsel must confirm.
 - Why: the CLO rules the hold (review). That the first build has no sharing is D-121 and D-126.
-- Evidence: `docs/store/app-store-staged-1.0-proposal.md`; `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Evidence: `docs/store/app-store.md:136`; `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
 - Way back: lift the hold in one line here (derived by Karma).
 - Revisit when: counsel answers or the 27 Nov 2026 gate passes (derived by Karma).
@@ -1414,7 +1414,7 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 ### CPrivO-31 Label wording: "we do not receive" (22 Nov 2026, CPrivO via the exec review session)
 - Verdict: RULED, conditional.
 - Ruling: no sentence says "nothing leaves the phone". The wording "we do not receive" is allowed only if the network-egress test (CPrivO-29 gate 2) and the geocoder check pass. NEEDS EVIDENCE: whether reverse geocoding for Moments places sends coordinates to Apple (CISO, mobile). Counsel must confirm.
-- Why: the CPrivO's wording rule (review). The host also sees the IP address (Q12).
+- Why: the CPrivO's wording rule (review); the CISO and mobile check on the geocoder is named in the review. Any other seat is proposed. The host also sees the IP address (Q12).
 - Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
 - Way back: revert the wording (derived by Karma).
@@ -1424,7 +1424,7 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 ### CCO-18 BL-1835 Age gate left as is (22 Nov 2026, CCO, CPrivO and CLO via the exec review session; not counsel)
 - Verdict: RULED.
 - Ruling: leave the age gate as built. No "Are you sure?" after No. The 24-hour stop stays (D-026; LEGAL-REQ-002, as in CCO-17). Local only; say so in the register. Counsel Q45 and Q46 decide.
-- Why: the CCO's, CPrivO's and CLO's call (review); consistent with CCO-17.
+- Why: the review names CPrivO, CLO and counsel for this item; the CCO seat is proposed, as is any other seat not in the source. Consistent with CCO-17 (Karma's note).
 - Evidence: `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-002); `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
 - Way back: counsel can add a confirm later (derived by Karma).
