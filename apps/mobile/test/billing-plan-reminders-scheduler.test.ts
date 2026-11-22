@@ -198,6 +198,19 @@ describe('[G-15] scheduling', () => {
     expect(phone.api.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
+  it('[BL-1190] a re-plan that throws leaves the signature unset, so the next call plans again', async () => {
+    // The first apply (queued by start) meets the failing re-plan; the second must plan again.
+    phone.replan.mockRejectedValueOnce(new Error('re-plan failed'));
+    stop = startPlanReminders(source);
+    await reschedulePlanReminders();
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(2);
+    expect(phone.replan).toHaveBeenCalledTimes(2);
+    expect(ours().length).toBeGreaterThan(0);
+    // Once a re-plan finishes, an unchanged plan touches nothing again.
+    await reschedulePlanReminders();
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(2);
+  });
+
   it('schedules nothing without permission and clears what was pending, leaving the evening reminders alone', async () => {
     phone.state.permissions = { status: 'denied', granted: false, canAskAgain: false };
     phone.state.pending = [EVENING, STALE_BY_ID];
