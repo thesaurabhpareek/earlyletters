@@ -66,7 +66,7 @@ Everything else about Supabase, Apple or any vendor that appears below is quoted
 | Signing keys | Ed25519 primary and a cold backup, the backup's secret in a separate password-manager entry and an offline copy elsewhere; `publish.ts` refuses a key file inside any repo | `PACKS_HOSTING.md:26, 49, 59-61` |
 | Mail aliases | `hello@`, `privacy@` (suggested), `security@` (suggested), `abuse@` (optional): receive-only aliases that forward to the founder's inbox | `DOMAINS.md:131-139` |
 | Support mailbox class | L4: "People may paste letters; handled as L4" | `DATA_CLASSIFICATION.md:770` |
-| Agent limits | Agents never merge; the founder approves; the `support` agent never contacts a user; no session with a mail or Supabase connector attached may run a data-request step | `HARNESS.md:109`; `data-requests-by-email.md` section 0; `CLAUDE.md` |
+| Agent limits | The harness agents never merge; Karma approves and merges (CR-73); the `support` agent never contacts a user; no session with a mail or Supabase connector attached may run a data-request step | `HARNESS.md:109`; `data-requests-by-email.md` section 0; `CLAUDE.md` |
 
 ### 2.2 What the cards and first-wave files already require (not repeated here)
 
