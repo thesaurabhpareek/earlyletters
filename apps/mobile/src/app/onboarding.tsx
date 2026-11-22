@@ -456,9 +456,6 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                         }
                       />
                     ))}
-                    {names.length < MAX_FIRST_RUN_CHILDREN && (
-                      <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
-                    )}
                   </View>
                   {dateBlockShown({ dateShown, accountFirst }) ? (
                     <Animated.View entering={accountFirst ? undefined : motion.enter()} className="gap-4">
@@ -495,6 +492,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                       </View>
                     </Animated.View>
                   ) : null}
+                  {/* "Add another child" sits below the date block (BL-419): the names and the date read as one form first. */}
+                  {names.length < MAX_FIRST_RUN_CHILDREN && (
+                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
+                  )}
                   {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
                   {accountFirst && hasSessionState(authState) ? (
                     <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={startAgain} busy={useAnotherBusy({ pressing: leaving, authStatus: authState.status })} />
