@@ -1268,7 +1268,7 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 
 ---
 
-### D-167 The founder confirms the website name exception for good in CLAUDE.md (founder, 21 Nov 2026)
+### D-167 The founder confirms the website name exception and it is written into CLAUDE.md (founder, 21 Nov 2026)
 - **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to a session that had flagged the name in the website copy. His own words are only the two lines under "Founder words". Recorded by claude-14 (the store and release session, a Claude role) on 22 Nov 2026 as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132.
 - **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his; the child's name is written `[name]` in the first line, as D-118 does, because the real-family guard keeps the name out of every file except `site.ts`:**
 
@@ -1277,6 +1277,7 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
   Yes so change that rule as my exception.
   ```
 
+- **Where the quotes come from:** the founder typed both lines in this session's chat on 21 Nov 2026 UTC. Claude session claude-14 copied them here; nothing was added or reworded. The chat itself is not stored in the repo.
 - **Context:** a session flagged the name in `apps/web/src/content/site.ts` as a breach of the real-family rule twice in one day, although D-118 already allows it, because `CLAUDE.md` did not mention the exception. The founder had to confirm it again.
 - **Decision:**
   1. D-118 stands as decided. The exception is now also written in `CLAUDE.md` under Privacy rules (PR #1519, merged as `ddc4b206`), so no session flags it or removes it.
