@@ -21,7 +21,7 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { familyNotice } from '@/components/family/family-notice';
+import { familyNotice, noticeOwner } from '@/components/family/family-notice';
 import { LeaveChoices } from '@/components/family/leave-sheet';
 import { leaveButton, leaveChoices, leaveSheetView, type LeaveChoice } from '@/components/family/leave-sheet.logic';
 import { Button } from '@/components/ui/button';
@@ -103,11 +103,12 @@ function LeaveBook() {
     haptic('warning');
     setBusy(true);
     setError(null);
+    const owner = noticeOwner(); // before the await: who left
     try {
       await leaveBook(auth.client, book.id, choice === 'keep');
       track('member_left', { role: 'parent', letters: choice });
       void syncNow(); // the other parent's letters leave this phone within one sync (F11-REQ-011)
-      familyNotice.leave(fill(l.done, { child }));
+      familyNotice.leave(fill(l.done, { child }), owner);
       close();
     } catch (e) {
       setError(inviteErrorKind(e));

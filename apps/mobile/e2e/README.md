@@ -198,7 +198,7 @@ cat ~/cold.log ~/record.log > ~/timing.log
 node apps/mobile/e2e/bin/timing-summary.mjs ~/timing.log
 ```
 
-The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text.
+The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text. Once the table is filed under BL-044, delete the raw Maestro log.
 
 ## Sources (opened 3 Oct 2026)
 

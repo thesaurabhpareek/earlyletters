@@ -227,7 +227,7 @@ describe('[S4] "Another thought" over the real library', () => {
   });
 
   it('the review\'s case: back after 5 or more days away, the gap pool of 7 repeated about one press in seven; now none does', () => {
-    expect(PROMPTS.filter((p) => p.kind === 'gap' && p.band === 'any')).toHaveLength(7);
+    expect(PROMPTS.filter((p) => !p.retired && p.kind === 'gap' && p.band === 'any')).toHaveLength(7);
     let total = 0;
     let before = 0;
     let after = 0;
