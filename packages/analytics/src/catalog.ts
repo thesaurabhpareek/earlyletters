@@ -42,6 +42,8 @@ export const AUTHOR_RELATION = oneOf('self', 'other_parent', 'family');
 export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
 /** packages/core PromptKind, plus `none` when no prompt was shown. */
 export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
+/** NS-53 R251: the only two card slots that may be reported (a slot is a position, never a source). */
+export const MOMENTS_SLOT = oneOf('look_back', 'question');
 export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
 export const WORDS_BUCKET = oneOf('lt_25', '25_99', '100_299', '300_plus');
 export const LETTERS_BUCKET = oneOf('0', '1', '2_4', '5_9', '10_49', '50_99', '100_364', '365_plus');
@@ -210,8 +212,9 @@ export const GLOBAL_PROPS = {
  * 8: `coparent_soon_opened` and `coparent_soon_notify` removed: there is no co-parent coming-soon screen any more (founder, 11 Nov 2026).
  * 9: `reminder_prime_shown.source` gains `first_month` (the second reminder card, after the first month chapter, BL-518, BL-1429).
  * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
+ * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Nothing is wired: the app sends neither until the Moments flag and a later PR.
  */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -226,6 +229,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   8: '281051b8507447394cd362e4198ccc667e35a3912cf9d7915e8cac7051b8c27d',
   9: '4022bb86210eee98e8a6c9d4a42a5710bccaeacdd76e58bf92fb1d141f491f44',
   10: '1bc7d06372de546ec176a3fcf3147727d28ac6c9a39bba035902980050f9165b',
+  11: 'd5086670df9e315dee3d38561bb79858605f4c247d260b20cc6cd96e44181711',
 });
 
 // ---------------------------------------------------------------------------
@@ -892,6 +896,26 @@ export const EVENTS = {
     reqs: ['C-REQ-034', 'C-NFR-003'],
     level: 'L2',
     props: { outcome: oneOf('restored', 'nothing', 'cancelled', 'failed', 'unavailable') },
+  },
+
+  // --- Moments (NS-53 section 18, R251) -------------------------------------------
+  // Slot is position (a card in the question or look-back place), never source: no card dated by a
+  // child, a typed day, a tick or the library has an event, because its presence would disclose the
+  // date. `look_back` is limited to letters. No ids, dates, counts, places, pictures or permission
+  // results. At most one impression per slot per local day is a wiring rule for the app PR.
+  moments_card_impressed: {
+    area: 'moments',
+    when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
+  },
+  moments_card_tapped: {
+    area: 'moments',
+    when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
   },
 
   // --- Errors ---------------------------------------------------------------------
