@@ -5,8 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { SEGMENT_SIZE } from '../src/lib/backup/format';
 import { fakeM4a } from './helpers/backup-node';
-import { JOIN_WINDOW, SHINGLE, STRIDE, firstLeak, firstRawLeak, joinWindows, leakNote, scanRequests, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
+import { JOIN_WINDOW, SHINGLE, STRIDE, firstLeak, decodedViews, firstRawLeak, joinWindows, leakNote, scanRequests, wrappedBase64Runs, shingleOffsets, type ScannedRequest } from './helpers/leak-scan';
 import { createHash, randomBytes } from 'node:crypto';
+import vm from 'node:vm';
 
 const TAKE = 3 * SEGMENT_SIZE + 777;
 
@@ -189,6 +190,159 @@ describe('[BL-1417] a recording written as base64, hex or a JSON byte list is fo
   it('[BL-1417] mutant: the scan without the encoded step passes every planted form (this is the gap the row closes)', () => {
     const rawOnly = (b: Buffer) => firstRawLeak(b, plain);
     for (const [name, enc] of FORMS) expect(rawOnly(around(enc(piece))), name).toBeNull();
+  });
+});
+
+// -- [BL-1476] separated hex, 0x hex, percent-encoding, wrapped base64
+const hexPairs = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0'));
+const wrap = (text: string, width: number, eol: string) => text.match(new RegExp(`.{1,${width}}`, 'g'))!.join(eol);
+const FORMS_1476: Array<[string, (b: Uint8Array) => Buffer]> = [
+  ['hex with space separators', (b) => Buffer.from(hexPairs(b).join(' '))],
+  ['hex with colon separators (upper case)', (b) => Buffer.from(hexPairs(b).join(':').toUpperCase())],
+  ['hex with a 0x prefix on each byte, comma and space', (b) => Buffer.from(hexPairs(b).map((h) => `0x${h}`).join(', '))],
+  ['percent-encoded bytes (every byte)', (b) => Buffer.from(hexPairs(b).map((h) => `%${h}`).join(''))],
+  ['percent-encoded bytes (plain characters left as they are, as a URL encoder writes them)', (b) => Buffer.from(Array.from(b, (x) => (/[A-Za-z0-9]/.test(String.fromCharCode(x)) ? String.fromCharCode(x) : `%${x.toString(16).padStart(2, '0')}`)).join(''))],
+  ['base64 wrapped at 76 characters with CRLF', (b) => Buffer.from(wrap(Buffer.from(b).toString('base64'), 76, '\r\n'))],
+  ['base64 wrapped at 64 characters with LF', (b) => Buffer.from(wrap(Buffer.from(b).toString('base64'), 64, '\n'))],
+  ['base64 wrapped at 20 characters, line breaks written as JSON escapes', (b) => Buffer.from(JSON.stringify({ blob: wrap(Buffer.from(b).toString('base64'), 20, '\n') }))],
+];
+
+describe('[BL-1476] a recording written as separated hex, 0x hex, percent-encoded or wrapped base64 is found', () => {
+  const plain = fakeM4a(TAKE);
+  const piece = plain.subarray(100, 164);
+
+  for (const [name, enc] of FORMS_1476) {
+    it(`[BL-1476] bytes 100..164 as ${name} turn the scan red, the raw-only scan stays blind`, () => {
+      const hay = around(enc(piece));
+      expect(firstRawLeak(hay, plain), 'the old scan').toBeNull();
+      expect(firstLeak(hay, plain)).not.toBeNull();
+    });
+
+    it(`[BL-1476] the failure note for ${name} prints an offset and never bytes or the encoded text`, () => {
+      const text = enc(piece);
+      const notes = scanRequests([{ kind: 'begin', body: around(text) }], [plain]);
+      expect(notes).toHaveLength(1);
+      expect(notes[0]).toMatch(/plaintext offset \d+\)$/);
+      expect(notes[0]).not.toContain(text.toString('latin1').slice(0, 20));
+      expect(notes[0]).not.toContain(piece.subarray(0, 16).toString('latin1'));
+    });
+  }
+
+  it('[BL-1476] the same forms in a request header and in an RPC argument are found', () => {
+    const text = FORMS_1476[0][1](piece).toString();
+    expect(scanRequests([{ kind: 'rpc', body: Buffer.alloc(0), headers: { 'x-note': text } }], [plain])).toHaveLength(1);
+    const b64 = wrap(piece.toString('base64'), 20, '\n');
+    expect(scanRequests([{ kind: 'rpc', body: Buffer.alloc(0), args: { note: b64 } }], [plain])).toHaveLength(1);
+  });
+
+  it('[BL-1476] random bytes written in the same forms are clean (decoding is not over-eager)', () => {
+    const noise = randomBytes(64);
+    const noisy = Buffer.concat(FORMS_1476.map(([, enc]) => Buffer.concat([enc(noise), Buffer.from('\n')])));
+    expect(firstLeak(around(noisy, 300, 16384), plain)).toBeNull();
+    expect(scanRequests([{ kind: 'begin', body: around(noisy, 300, 16384) }], [plain])).toEqual([]);
+  });
+
+  it('[BL-1476] ordinary percent text and line-broken prose are clean', () => {
+    const text = Buffer.from('https://example.test/a%20b%2Fc?x=1%262\nplain words on a line\nand another line of words here\n');
+    expect(firstLeak(around(text, 200, 4096), plain)).toBeNull();
+  });
+
+  it('[BL-1476] what stays open stays open: XOR-ed bytes and a piece under 16 bytes are not found (named in the header)', () => {
+    const xored = Buffer.from(piece.map((x) => x ^ 0x5a));
+    expect(firstLeak(around(xored), plain), 'XOR-ed').toBeNull();
+    expect(firstLeak(around(Buffer.from(plain.subarray(100, 115))), plain), '15 bytes').toBeNull();
+  });
+});
+
+describe('[BL-1476] wrapped base64 is scanned in linear time', () => {
+  const plain = fakeM4a(TAKE);
+  const big = randomBytes(192 * 1024); // 256 KB as base64
+  const BIG_B64 = big.toString('base64');
+  /** The first version of the wrapped-base64 regex, kept only to prove the timing tests can fail. */
+  const OLD_WRAPPED = /[A-Za-z0-9+/_-]{20,}(?:(?:\r\n|\n|\r|\\r\\n|\\n|\\r)[A-Za-z0-9+/_-]{4,}={0,2})+/g;
+  const timed = <T>(fn: () => T): [T, number] => { const t = performance.now(); const r = fn(); return [r, performance.now() - t]; };
+
+  /** Median of a few runs, so one slow moment on a loaded runner does not decide a test. */
+  const medianMs = (fn: () => unknown, runs = 5): number => {
+    const all = Array.from({ length: runs }, () => timed(fn)[1]).sort((x, y) => x - y);
+    return all[Math.floor(runs / 2)];
+  };
+  /**
+   * Time grows linearly: 16 times the bytes costs about 16 times as long (a quadratic scan costs 256 times). The small side is
+   * floored at 1 ms so timer noise on a tiny run cannot inflate the ratio. The factor of 40 sits between 16 and 256.
+   */
+  const expectLinear = (small: Buffer, large: Buffer, label: string) => {
+    expect(large.length / small.length).toBeGreaterThanOrEqual(16);
+    const ratio = medianMs(() => decodedViews(large)) / Math.max(medianMs(() => decodedViews(small)), 1);
+    expect(ratio, `${label}: time at ${large.length} bytes over time at ${small.length} bytes`).toBeLessThan(40);
+  };
+  const SMALL = randomBytes(12 * 1024).toString('base64'); // 16 KB as base64
+
+  // The cost of the whole firstLeak scan is the existing windowIndex, not the decoding: no wall-clock is asserted on it.
+  it('[BL-1476] a 256 KB single-line base64 body decodes in well under a second, in time linear in its size', () => {
+    expect(BIG_B64.length).toBeGreaterThanOrEqual(256 * 1024);
+    const body = Buffer.from(BIG_B64);
+    expect(medianMs(() => decodedViews(body), 3), 'decoding the views').toBeLessThan(250);
+    expectLinear(Buffer.from(SMALL), body, 'single line');
+    expect(firstLeak(body, plain)).toBeNull();
+  }, 60_000);
+
+  it('[BL-1476] a 256 KB wrapped base64 body decodes in well under a second, and a planted piece in it is still found', () => {
+    const planted = Buffer.concat([big.subarray(0, 90000), plain.subarray(100, 164), big.subarray(90000)]);
+    const body = Buffer.from(wrap(planted.toString('base64'), 76, '\r\n'));
+    expect(medianMs(() => decodedViews(body), 3), 'decoding the views').toBeLessThan(250);
+    expectLinear(Buffer.from(wrap(SMALL, 76, '\r\n')), body, 'wrapped');
+    expect(firstLeak(body, plain), 'the planted piece').not.toBeNull();
+    const clean = Buffer.from(wrap(BIG_B64, 76, '\n'));
+    expect(medianMs(() => decodedViews(clean), 3), 'decoding the views').toBeLessThan(250);
+    expect(firstLeak(clean, plain)).toBeNull();
+  }, 60_000);
+
+  it('[BL-1476] a long single line followed by a short one and a long line of other characters stays fast', () => {
+    const text = `${BIG_B64}\nab\n${'x'.repeat(100000)}\n!!!${BIG_B64.slice(0, 100000)}`;
+    const [, ms] = timed(() => wrappedBase64Runs(text));
+    expect(ms).toBeLessThan(250);
+  });
+
+  it('[BL-1476] the line rules: 20+ on the first line, 4+ on the next, one break between, padding at a line end', () => {
+    const l20 = 'A'.repeat(20);
+    expect(wrappedBase64Runs(`${l20}\nBBBB`)).toEqual([`${l20}BBBB`]);
+    expect(wrappedBase64Runs(`${l20}\r\nBBBB==\r\nCCCC`)).toEqual([`${l20}BBBB==CCCC`]);
+    expect(wrappedBase64Runs(`${l20}\\nBBBB`)).toEqual([`${l20}BBBB`]);
+    expect(wrappedBase64Runs(`${'A'.repeat(19)}\nBBBB`), 'first line 19').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\nBBB`), 'next line 3').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\n\nBBBB`), 'two breaks').toEqual([]);
+    expect(wrappedBase64Runs(`${l20} BBBB`), 'a space, not a break').toEqual([]);
+    expect(wrappedBase64Runs(`${l20}\n\tBBBB`), 'a tab after the break').toEqual([]);
+    expect(wrappedBase64Runs(l20), 'one line').toEqual([]);
+  });
+
+  it('[BL-1476] mutant: the first regex does not finish a 256 KB line inside 250 ms, so the timing tests above can fail', () => {
+    const text = BIG_B64.slice(0, 120000);
+    const run = () => vm.runInNewContext('text.match(re)', { text, re: OLD_WRAPPED }, { timeout: 250 });
+    expect(run).toThrow(/timed out/i);
+    const [, ms] = timed(() => wrappedBase64Runs(text));
+    expect(ms).toBeLessThan(250);
+  });
+
+  it('[BL-1476] padding in the middle: a 20+ line, a short padded line, then the leak line is still found (raw and JSON-escaped breaks)', () => {
+    const lead = 'A'.repeat(24);
+    const leak = plain.subarray(100, 164).toString('base64');
+    for (const [name, brk] of [['CRLF', '\r\n'], ['LF', '\n'], ['JSON-escaped', '\\n']] as const) {
+      const text = `${lead}${brk}abcd==${brk}${leak}`;
+      expect(firstLeak(Buffer.from(text), plain), name).not.toBeNull();
+      expect(firstLeak(Buffer.from(JSON.stringify({ k: text })), plain), `${name} in JSON`).not.toBeNull();
+    }
+    const wrapped = wrap(leak, 22, '\n');
+    expect(firstLeak(Buffer.from(`${lead}\nabcd==\n${wrapped}`), plain), 'leak wrapped after padding').not.toBeNull();
+    expect(firstLeak(Buffer.from(JSON.stringify(`${lead}\nabcd==\n${leak}`)), plain), 'JSON.stringify escapes').not.toBeNull();
+  });
+
+  it('[BL-1476] the named gap stays open: base64 wrapped with spaces or tabs, or broken inside the first 20 characters, is not found', () => {
+    const b64 = plain.subarray(100, 164).toString('base64');
+    expect(firstLeak(around(Buffer.from(wrap(b64, 20, ' '))), plain), 'spaces').toBeNull();
+    expect(firstLeak(around(Buffer.from(wrap(b64, 20, '\t'))), plain), 'tabs').toBeNull();
+    expect(firstLeak(around(Buffer.from(wrap(b64, 10, '\n'))), plain), 'break in the first 20').toBeNull();
   });
 });
 
