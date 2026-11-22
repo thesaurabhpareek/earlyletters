@@ -56,14 +56,15 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
   }
 
   return {
-    /** Sign-in or any owner change. Queued writes of the old owner are dropped and a file of another owner is removed (no adoption: ADR 0032 amendment). */
+    /** Sign-in or any owner change. Queued writes of the old owner are dropped and a file of another signed-in owner is removed; a 'local' file is kept, as the days store does (ADR 0032 amendment). */
     setOwner(key: string): void {
       if (key === owner) return;
       owner = key;
       generation += 1;
       try {
         const p = getPort();
-        if (p && readMoments(p, key).state === 'foreign') removeMoments(p);
+        const r = p ? readMoments(p, key) : null;
+        if (p && r?.state === 'foreign' && r.owner !== 'local') removeMoments(p); // a 'local' file is kept, as the days store keeps it for the late adopt
       } catch {
         // the next sign-in, sign-out, launch or Erase tries again
       }

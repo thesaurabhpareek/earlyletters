@@ -185,11 +185,18 @@ describe('[R221] the owner check fails closed', () => {
     expect(names()).toEqual([]);
   });
 
-  it('a new sign-in removes the earlier owner\'s file (no adoption)', async () => {
+  it('a new sign-in removes another signed-in owner\'s file, keeps a local file, and keeps the same owner\'s own', async () => {
     seed(JSON.stringify(file(A)));
-    const s = fresh(A);
-    s.setOwner(B);
+    fresh(A).setOwner(B);
     expect(names()).toEqual([]);
+    seed(JSON.stringify(file('local')));
+    fresh('local').setOwner(B);
+    expect(names()).toEqual([MOMENTS_FILE]);
+    expect(JSON.parse(text()).owner).toBe('local');
+    removeMoments(expoMomentsPort()!);
+    seed(JSON.stringify(file(B)));
+    fresh(A).setOwner(B);
+    expect(names()).toEqual([MOMENTS_FILE]);
   });
 });
 
