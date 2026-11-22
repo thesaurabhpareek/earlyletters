@@ -336,8 +336,8 @@ Added by `20261028010000_invite_redeem_by_code.sql`. Closed to every role; writt
 | `accepted_at` | L2 | server time of the act |
 | `client_recorded_at` | L2 | device time of the act |
 | `app_version` | L2 | app version |
-| `app_build` | L2 | EAS build number that drew the screen, digits and dots only (`supabase/migrations/20261108000000_consent_record_fields.sql:64`; CDO-2 as cited by Karma, not found in the rulings log, see the PR) |
-| `os_major` | L2 | Major OS version only, 1 to 999, never the minor (`20261108000000_consent_record_fields.sql:65`; same note) |
+| `app_build` | L2 | EAS build number that drew the screen, digits and dots only (`supabase/migrations/20261108000000_consent_record_fields.sql:64`; basis: the migration column comments and `docs/engineering/07-privacy-engineering.md` PRIV-R21) |
+| `os_major` | L2 | Major OS version only, 1 to 999, never the minor (`20261108000000_consent_record_fields.sql:65`; same basis) |
 | `platform` | L2 | enum |
 | `locale` | L3 | device locale (language proxy) |
 | `rendered_sha256` | L2 | hash of the consent text shown |
@@ -782,7 +782,7 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `activeChildId` | L3 | Book id |
 | `appearance`, `readingSize`, `review.firstNoteSeen`, `content.dismissed` | L2 | Device preferences and dismissed content-block ids (server content keys) |
 | `reminders.enabled`, `.paused`, `.cadence`, `.days`, `.weeklyDay`, `.time`, `.monthNotes` | L2 | Reminder preferences (C-REQ-001 to -011). The time is a local clock time, not linked to a child's dates |
-| `reminders.onSince` | L2 | When reminders were last turned on, as epoch milliseconds (`lib/reminders/prefs.ts:16, 159`; CDO-19; CDO-19 words it as a date, the code stores epoch ms, same class). Stays on the phone, never synced or exported. Clears with the other `reminders.*` settings when the session ends (`lib/reminders/prefs.ts:58`, `lib/reminders/session.ts:58`; NS-13-R14) |
+| `reminders.onSince` | L2 | When reminders were last turned on, as epoch milliseconds (`lib/reminders/prefs.ts:16, 159`; CDO-19). It stores epoch milliseconds, not a date as CDO-19 words it; same class, L2. Stays on the phone, never synced or exported. Clears with the other `reminders.*` settings when the session ends (`lib/reminders/prefs.ts:58`, `lib/reminders/session.ts:58`; NS-13-R14) |
 | `app.lastPlannedVersion` | L1 | The app version the reminder list was last planned by, a version string only (`lib/reminders/update.ts:8`; CDO-19). Stays on the phone, never synced or exported |
 | `notifications.lockScreenNames` | L2 | The setting only. When on, local notification text carries the child's name (L4) on the lock screen (section 6, item 4) |
 | `player.original` | L2 | Play the original recording instead of the listening copy |
