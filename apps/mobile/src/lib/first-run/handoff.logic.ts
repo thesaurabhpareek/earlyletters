@@ -119,6 +119,17 @@ export function runFinishOnce(latch: { current: boolean }, finish: () => void): 
 }
 
 /**
+ * Whether two book inputs from first run's finish are the same book: every field finish passes to the store counts, so
+ * a name, birthday, due date or "signs as" edited between tries is made again (resumeBooks `same`).
+ */
+export function sameBookInput(
+  a: { name: string; birthday?: string | null; dueDate?: string | null; signsAs?: string },
+  b: { name: string; birthday?: string | null; dueDate?: string | null; signsAs?: string },
+): boolean {
+  return a.name === b.name && a.birthday === b.birthday && a.dueDate === b.dueDate && a.signsAs === b.signsAs;
+}
+
+/**
  * Makes a book per call, remembering the ones already made so a retry after a throw keeps them (BL-1658). `finish` maps
  * one call per name in order; if the second throws, the first is already in the store, and the retry must not make it
  * again. A call at a position that already has a book of the same make (`same`) returns that book; a throw sends the next
