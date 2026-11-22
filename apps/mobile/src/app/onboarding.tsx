@@ -60,6 +60,7 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { BackButton } from '@/components/ui/screen-header';
 import { Separator } from '@/components/ui/separator';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
@@ -564,7 +565,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                   </View>
                   <Animated.View entering={enterAt(200)} className="gap-3">
                     <Text ref={heading} variant="hero" asHeading={1} className="text-center">
-                      {o.finish.title}
+                      {joinLastTwoWords(o.finish.title)}
                     </Text>
                     <Text variant="body" className="text-center">
                       {fill(o.finish.body, { child })}
