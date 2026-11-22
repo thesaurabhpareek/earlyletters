@@ -14,7 +14,8 @@
  * the tap; "Stay" is the sheet's one filled button and closes. Then `leave_child(child, keep_in_book)` and a sync,
  * so this phone drops the other parent's letters and keeps this person's own (lib/sync/merge.ts closeBook); the
  * sheet closes and the Family tab says `leave.done` as its toast. The only parent of a book sees `last_parent`
- * and no Leave.
+ * and no Leave. The sheet's header Close sits outside the sign-in gate, so a person who is not signed in can still
+ * close in the sheet when the gate replaces the two buttons (BL-469); it waits while a leave is in flight.
  *
  * Not reachable from an outside link: only `/` and `/invite` are (lib/family/entry.logic.ts).
  */
@@ -119,6 +120,8 @@ function LeaveBook() {
 
   return (
     <SheetFrame
+      closeLabel={familyCopy.accept.close}
+      closeDisabled={busy}
       footer={
         <AccountGate trigger="invite" signInBody={familyCopy.accept.signInBody}>
           <Button

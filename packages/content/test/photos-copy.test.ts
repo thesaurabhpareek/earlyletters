@@ -37,7 +37,7 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
     expect(photosCopy.capture.startButton.length).toBeLessThanOrEqual(22);
     expect(photosCopy.capture.startButton).toMatch(/photo/i);
   });
-  it('[NS-01-R9] the fixed label is exactly "Photo with this letter"', () => {
+  it('[NS-01-R9a] the fixed label is exactly "Photo with this letter"', () => {
     expect(photosCopy.book.photos.a11yCard).toBe('Photo with this letter');
   });
   it('[NS-01-R11] no lens string counts pictures or carries a digit', () => {
@@ -47,7 +47,7 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
   it('[NS-01-R22] no string offers the camera', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/take a photo now|camera/i);
   });
-  it('[NS-01-R17] the line for a photo that was not stored is calm: says the words are kept, offers a retry, no cause or blame', () => {
+  it('[NS-01-R58] the line for a photo that was not stored is calm: says the words are kept, offers a retry, no cause or blame', () => {
     const t = photosCopy.book.letter.notSaved;
     expect(t).toMatch(/words are kept/i);
     expect(t).toMatch(/add it again/i);
@@ -59,11 +59,11 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
     expect(monthsButton.toLowerCase()).not.toBe(months.toLowerCase());
     expect(monthsButton.toLowerCase()).not.toBe(photos.toLowerCase());
   });
-  it('[NS-01-R23] the lens has no "add" string; adding lives on the letter page only', () => {
+  it('[NS-01-R23b] the lens has no "add" string; adding lives on the letter page only', () => {
     for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\badd\b/i);
     expect(photosCopy.book.letter.addPhoto).toMatch(/this letter/);
   });
-  it('[NS-01-R17] on Review, before Keep, the not-stored line never says kept: offers a retry, no cause or blame (#839 review B)', () => {
+  it('[NS-01-R58] on Review, before Keep, the not-stored line never says kept: offers a retry, no cause or blame (#839 review B)', () => {
     const t = photosCopy.review.notStored;
     expect(t).not.toMatch(/\bke(pt|ep)/i);
     expect(t).toMatch(/add it again/i);

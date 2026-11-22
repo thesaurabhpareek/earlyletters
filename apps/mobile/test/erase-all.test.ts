@@ -1209,7 +1209,7 @@ describe('[BL-387][F17 6.2 F][DATA-REQ-024] the Erase everything row on Settings
 // ---- a picture goes with its letter, its book and everything (NS-01-R16, ADR 0028 D5) --------------------------------
 // Behavioural, against the real erase, sweep and store: these replace source scans that a commented-out call or a kept
 // folder could pass (#835 reviews A N3 and B note 2).
-describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file first and then its row', () => {
+describe('[NS-01-R16c][ADR 0028 D5] every erase path takes a picture, the file first and then its row', () => {
   const PHOTOS = () => photosDirectory().uri.replace(/\/$/, '');
   /** A stored picture for an owner, as commitPhoto leaves it: the file in photos/, then its row. */
   const picture = (owner: string, media: string) => {
@@ -1219,7 +1219,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
   };
   const mediaRows = () => db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id);
 
-  it('[NS-01-R16] Erase now on a letter, a letter erased on another phone and Erase now on a book take their pictures; the other book keeps its own; the launch sweep empties the picker cache', async () => {
+  it('[NS-01-R16c] Erase now on a letter, a letter erased on another phone and Erase now on a book take their pictures; the other book keeps its own; the launch sweep empties the picker cache', async () => {
     let app = await launch();
     const f = family(app);
     const a2 = picture(f.ids.a2, 'mA2');
@@ -1243,7 +1243,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect(fetches).toBe(0);
   });
 
-  it('[NS-01-R16] the 30 day purge takes a deleted letter\'s picture, and the day-30 book purge a deleted book\'s, in the purge itself; a live letter keeps its own (#836 reviews)', async () => {
+  it('[NS-01-R16c] the 30 day purge takes a deleted letter\'s picture, and the day-30 book purge a deleted book\'s, in the purge itself; a live letter keeps its own (#836 reviews)', async () => {
     let app = await launch();
     const f = family(app);
     const a2 = picture(f.ids.a2, 'mA2'); // in Recently deleted from T0
@@ -1259,7 +1259,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(a2), has(avi), has(a1), mediaRows()]).toEqual([false, false, true, ['mA1']]);
   });
 
-  it('[NS-01-R16] the eraser removes the file first and then the row: a picture file that will not go keeps its row and its letter for the next try (#836 review B Q2)', async () => {
+  it('[NS-01-R16c] the eraser removes the file first and then the row: a picture file that will not go keeps its row and its letter for the next try (#836 review B Q2)', async () => {
     const app = await launch();
     const f = family(app);
     const p = picture(f.ids.a2, 'mA2');
@@ -1271,7 +1271,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(p), mediaRows()]).toEqual([false, []]);
   });
 
-  it('[NS-01-R16][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {
+  it('[NS-01-R16c][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {
     const app = await launch();
     const f = family(app);
     const files = [picture(f.ids.a1, 'mA1'), picture(f.draftId, 'mD'), put(h.disk, `${PHOTOS()}/stray.jpg`, 10)];
@@ -1299,7 +1299,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(second), mediaRows()]).toEqual([false, []]);
   });
 
-  it('[NS-01-R16][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
+  it('[NS-01-R16c][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
     let app = await launch();
     const f = family(app);
     const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
