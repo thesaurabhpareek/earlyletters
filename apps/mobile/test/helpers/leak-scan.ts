@@ -19,8 +19,12 @@
  *
  * Not covered: a leak shorter than 64 bytes that falls between shingles; a piece that is split over bodies and wider
  * than 2 x JOIN_WINDOW; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
- * decimal list with other separators, or three or more layers of encoding). Known bypasses (BL-1476): hex with space or
- * colon separators, 0x-prefixed hex, percent-encoded bytes, base64 wrapped over lines, XOR, and pieces under 16 bytes.
+ * decimal list with other separators, or three or more layers of encoding). Known bypasses that stay open (BL-1476):
+ * XOR-ed bytes, and a piece under 16 bytes (the 2^-128 argument needs 16 bytes, so no shingle fits in it).
+ *
+ * [BL-1476] Four more text forms are decoded before the shingle scan: hex with space or colon separators (`89 50 4e`,
+ * `89:50:4e`), hex with a `0x` prefix per byte (`0x89, 0x50`), percent-encoded bytes (`%89%50`, with plain characters
+ * left in between), and base64 wrapped over lines (a raw or JSON-escaped line break between the lines).
  */
 import { createHash } from 'node:crypto';
 
@@ -73,14 +77,28 @@ export function firstRawLeak(hay: Uint8Array, plain: Uint8Array): number | null 
 
 const B64_RUN = /[A-Za-z0-9+/_-]{22,}/g;
 const HEX_RUN = /[0-9a-fA-F]{32,}/g;
+/** [BL-1476] Hex bytes with a separator (space, colon or comma) and an optional 0x on each: 16 or more bytes. */
+const SEP_HEX_RUN = /(?:0x)?[0-9a-fA-F]{2}(?:[ :,]{1,2}(?:0x)?[0-9a-fA-F]{2}){15,}/g;
+/** [BL-1476] Base64 over lines: a first line of 20+ characters, then more lines of 4+ (raw CR/LF or JSON-escaped). */
+const WRAPPED_B64_RUN = /[A-Za-z0-9+/_-]{20,}(?:(?:\r\n|\n|\r|\\r\\n|\\n|\\r)[A-Za-z0-9+/_-]{4,}={0,2})+/g;
+const PERCENT_BYTE = /%([0-9a-fA-F]{2})/g;
 const LIST_RUN = /\d{1,3}(?:,\s?\d{1,3}){15,}/g;
 
-/** Every byte string hiding in `hay` as base64, hex or a decimal list (one layer), as bytes. */
+/** Every byte string hiding in `hay` as base64 (also wrapped), hex (also separated or 0x-prefixed), percent-encoding or a decimal list (one layer), as bytes. */
 export function decodedViews(hay: Uint8Array): Buffer[] {
   const text = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength).toString('latin1');
   const out: Buffer[] = [];
   for (const m of text.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
   for (const m of text.matchAll(HEX_RUN)) for (let c = 0; c < 2; c++) out.push(Buffer.from(m[0].slice(c), 'hex'));
+  for (const m of text.matchAll(SEP_HEX_RUN)) out.push(Buffer.from(m[0].replace(/0x|[ :,]/gi, ''), 'hex'));
+  for (const m of text.matchAll(WRAPPED_B64_RUN)) {
+    const flat = m[0].replace(/\\[rn]|[\r\n]/g, '');
+    for (let c = 0; c < 4; c++) out.push(Buffer.from(flat.slice(c), 'base64'));
+  }
+  if (text.includes('%')) {
+    const plainText = text.replace(PERCENT_BYTE, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
+    if (plainText !== text) out.push(Buffer.from(plainText, 'latin1'));
+  }
   for (const m of text.matchAll(LIST_RUN)) {
     let chunk: number[] = [];
     const flush = () => { if (chunk.length) out.push(Buffer.from(chunk)); chunk = []; };

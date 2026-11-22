@@ -189,6 +189,67 @@ describe('[BL-1417] a recording written as base64, hex or a JSON byte list is fo
   });
 });
 
+// -- [BL-1476] separated hex, 0x hex, percent-encoding, wrapped base64
+const hexPairs = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0'));
+const wrap = (text: string, width: number, eol: string) => text.match(new RegExp(`.{1,${width}}`, 'g'))!.join(eol);
+const FORMS_1476: Array<[string, (b: Uint8Array) => Buffer]> = [
+  ['hex with space separators', (b) => Buffer.from(hexPairs(b).join(' '))],
+  ['hex with colon separators (upper case)', (b) => Buffer.from(hexPairs(b).join(':').toUpperCase())],
+  ['hex with a 0x prefix on each byte, comma and space', (b) => Buffer.from(hexPairs(b).map((h) => `0x${h}`).join(', '))],
+  ['percent-encoded bytes (every byte)', (b) => Buffer.from(hexPairs(b).map((h) => `%${h}`).join(''))],
+  ['percent-encoded bytes (plain characters left as they are, as a URL encoder writes them)', (b) => Buffer.from(Array.from(b, (x) => (/[A-Za-z0-9]/.test(String.fromCharCode(x)) ? String.fromCharCode(x) : `%${x.toString(16).padStart(2, '0')}`)).join(''))],
+  ['base64 wrapped at 76 characters with CRLF', (b) => Buffer.from(wrap(b.toString('base64'), 76, '\r\n'))],
+  ['base64 wrapped at 64 characters with LF', (b) => Buffer.from(wrap(b.toString('base64'), 64, '\n'))],
+  ['base64 wrapped at 20 characters, line breaks written as JSON escapes', (b) => Buffer.from(JSON.stringify({ blob: wrap(b.toString('base64'), 20, '\n') }))],
+];
+
+describe('[BL-1476] a recording written as separated hex, 0x hex, percent-encoded or wrapped base64 is found', () => {
+  const plain = fakeM4a(TAKE);
+  const piece = plain.subarray(100, 164);
+
+  for (const [name, enc] of FORMS_1476) {
+    it(`[BL-1476] bytes 100..164 as ${name} turn the scan red, the raw-only scan stays blind`, () => {
+      const hay = around(enc(piece));
+      expect(firstRawLeak(hay, plain), 'the old scan').toBeNull();
+      expect(firstLeak(hay, plain)).not.toBeNull();
+    });
+
+    it(`[BL-1476] the failure note for ${name} prints an offset and never bytes or the encoded text`, () => {
+      const text = enc(piece);
+      const notes = scanRequests([{ kind: 'begin', body: around(text) }], [plain]);
+      expect(notes).toHaveLength(1);
+      expect(notes[0]).toMatch(/plaintext offset \d+\)$/);
+      expect(notes[0]).not.toContain(text.toString('latin1').slice(0, 20));
+      expect(notes[0]).not.toContain(piece.subarray(0, 16).toString('latin1'));
+    });
+  }
+
+  it('[BL-1476] the same forms in a request header and in an RPC argument are found', () => {
+    const text = FORMS_1476[0][1](piece).toString();
+    expect(scanRequests([{ kind: 'rpc', body: Buffer.alloc(0), headers: { 'x-note': text } }], [plain])).toHaveLength(1);
+    const b64 = wrap(piece.toString('base64'), 20, '\n');
+    expect(scanRequests([{ kind: 'rpc', body: Buffer.alloc(0), args: { note: b64 } }], [plain])).toHaveLength(1);
+  });
+
+  it('[BL-1476] random bytes written in the same forms are clean (decoding is not over-eager)', () => {
+    const noise = randomBytes(64);
+    const noisy = Buffer.concat(FORMS_1476.map(([, enc]) => Buffer.concat([enc(noise), Buffer.from('\n')])));
+    expect(firstLeak(around(noisy, 300, 16384), plain)).toBeNull();
+    expect(scanRequests([{ kind: 'begin', body: around(noisy, 300, 16384) }], [plain])).toEqual([]);
+  });
+
+  it('[BL-1476] ordinary percent text and line-broken prose are clean', () => {
+    const text = Buffer.from('https://example.test/a%20b%2Fc?x=1%262\nplain words on a line\nand another line of words here\n');
+    expect(firstLeak(around(text, 200, 4096), plain)).toBeNull();
+  });
+
+  it('[BL-1476] what stays open stays open: XOR-ed bytes and a piece under 16 bytes are not found (named in the header)', () => {
+    const xored = Buffer.from(piece.map((x) => x ^ 0x5a));
+    expect(firstLeak(around(xored), plain), 'XOR-ed').toBeNull();
+    expect(firstLeak(around(Buffer.from(plain.subarray(100, 115))), plain), '15 bytes').toBeNull();
+  });
+});
+
 // -- [BL-1418] URL, headers, tus metadata, RPC arguments
 
 describe('[BL-1418] the URL, each header, the tus metadata and an RPC argument are scanned', () => {
