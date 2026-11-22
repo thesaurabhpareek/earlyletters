@@ -829,7 +829,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Scope: keep `docs/release/1.0.0.md` current twice a week until release; one record per later version; `apple.copyright` once the founder confirms the holder.
 
 #### BL-439 Release health watch (new, D-090)
-- Status: ready (RULED by council (batch 6): SLO.md and the report template now; the day 1, 3 and 7 reports run after the first store release and the founder reads the crash-free numbers in App Store Connect; see RULINGS batch 6). Mode: agent plus founder numbers. Owner: platform.
+- Status: partly done (PR #1550: `docs/ops/SLO.md`; the day 1, 3 and 7 reports run after the first store release). Mode: agent plus founder numbers. Owner: platform.
 - Scope: day 1, 3 and 7 health report on the release issue (crash-free sessions and users from App Store Connect, open S0 and S1, pause or hotfix recommendation); `docs/ops/SLO.md` with the G5 thresholds.
 
 ---
@@ -1105,7 +1105,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J06 (J06-08, J06-10); edit persistence in `apps/mobile/test/store.entries.test.ts`; `user_edited` in `apps/mobile/test/export-golden.test.ts`.
 
 #### BL-378 Typing, Finish and Save cannot lose or double a letter: autosave flush, in-flight guards, caught errors [High]
-- Status: partly done (PR #801 autosave flush; the first-run `finish()` guard and `test/onboarding-finish.test.ts` are missing). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M.
+- Status: partly done (PR #801 autosave flush; PR #1582 the first-run `finish()` guard and `apps/mobile/test/onboarding-finish.test.ts`; the calm retry card for a failing `addChild`, the failing `setDraftTyped` case and the 100k paste are not shown on develop; twin retry is BL-1658). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M.
 - Severity: major. Raised by: quality (3 findings). Steps: J01-13, J07-01, J07-02.
 - Satisfies: CLAUDE.md constitution (a person's words are never lost); PRD 7.4 durability.
 - Scope: Write autosave flushes on AppState background and has a 3 s maximum wait. `persist()` is wrapped in try/catch and shows "could not save, copy your text". First-run `finish()` is guarded by a ref and idempotent per first run; a failing `addChild` shows a calm retry card. The typed letter has a generous maxLength with a calm message.
@@ -1666,7 +1666,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: each of the three has a test in `account-view.logic` or the screen test; the button is absent when the reason is not `user` and when the view says closing.
 
 #### BL-452 Sign-in error words match the cause
-- Status: ready. Mode: agent. Owner: auth owner (S01: `errors.logic.ts`), content (the words, `VOICE.md`), qa engineer (the scan). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Status: partly done (PR #1518: points 1 and 2; point 3 is already pinned by `build12-untrue-copy.test.ts`; point 4 the close-sheet scan and point 5 the VOICE.md Error row remain). Mode: agent. Owner: auth owner (S01: `errors.logic.ts`), content (the words, `VOICE.md`), qa engineer (the scan). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Low.
 - Satisfies: none given.
 - Why and where (from the #360 reviews, the review reports and not the posted PR comments; #360 merged as 925a67f). Points 1 and 2 are true in code:
@@ -1874,7 +1874,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the plan has the check and a phone result is recorded; the threshold is decided and pinned in `a11y.logic.test.ts`.
 
 #### BL-469 The leave sheet has no way to close in the sheet when the sign-in gate replaces its buttons
-- Status: ready (RULED by council (batch 6): rebase onto BL-444 if it lands first). Mode: agent. Owner: family owner (S04). Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1552: the leave sheet keeps its own Close, `apps/mobile/test/leave-sheet-close.test.ts`). Mode: agent. Owner: family owner (S04). Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none. Latent today: `LEAVE_BOOK_OFFERED` is false (`apps/mobile/src/lib/family/entry.logic.ts:46`, D-113), so `/invite/leave` shows "coming soon" in every build. BL-444 turns the leave flow on before build 3 and touches the same screen, so do this with or after BL-444.
 - Satisfies: none given.
@@ -1906,7 +1906,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the answer is recorded here; with a yes, Erase now shows in a sync build and the two-phone check is recorded.
 
 #### BL-472 A baby born early can leave the before-birth state only after the due date passes
-- Status: ready. Mode: agent. Owner: mobile engineer (S13: children). Milestone: M4. Size: M. Depends on: none.
+- Status: done (PR #1511: the 'is here?' row and the birth date step; PR #1598 pins the call and the before and after letters). Mode: agent. Owner: mobile engineer (S13: children). Milestone: M4. Size: M. Depends on: none.
 - Priority: Medium. B-REQ-005 is P0 (`docs/prd/B-first-run-and-family.md:167`), so Medium is the floor; raise it to High if expecting books are in the alpha (unverified: I do not know that).
 - Gate: none.
 - Satisfies: B-REQ-005, as PRD V2 F12-U16 cites it (`docs/prd/v2/features/F12-children.md:159`: "{child} is here?" sets the birth date; PRD B F2 step 3 promises the same row at `docs/prd/B-first-run-and-family.md:64`).
@@ -1926,7 +1926,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: a before-birth book shows its name and "Before You" in the Family tab's dateline, and a test covers it.
 
 #### BL-474 Notification copy says "we will keep it": a "we" outside any sanctioned promise
-- Status: ready (RULED by council (batch 6): no "we" in notification copy; the two lines are already reworded; add the rules.test.ts guard and one VOICE.md line). Mode: agent. Owner: content. Milestone: M4. Size: S. Depends on: none.
+- Status: done (PR #1579: `packages/content/test/reminder-copy-no-we.test.ts` and a VOICE.md line; the two lines were already reworded). Mode: agent. Owner: content. Milestone: M4. Size: S. Depends on: none.
 - Priority: Medium.
 - Gate: none.
 - Satisfies: none given.
@@ -2106,7 +2106,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: the purge reading is confirmed or corrected by a test; the choice is recorded here and, as the founder decides, in `docs/DECISIONS.md`; with (a) each function refuses an open request on the real SQL and a reply that never arrives cannot drop a queued letter; with (b) the words say it.
 
 #### BL-487 The account age step's "No" closes the app for 24 hours, also for an account that already has a book
-- Status: ready (RULED by council (batch 6): option (a), keep as built; S55 acceptance records why an existing account holder is treated like a new install; QA records whether read and Save a copy stay reachable during the closure). Mode: agent. Owner: qa engineer, design systems. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1551: S55 acceptance and `docs/qa/run-sheets/BL-487-age-no-closure-reachability.md`). Mode: agent. Owner: qa engineer, design systems. Milestone: M5. Size: S. Depends on: none.
 - Priority: Medium. The step shows only for an account whose Terms are current without the age line, an older account (`apps/mobile/src/lib/auth/machine.logic.ts:94-99`); whether any build 2 account is one is unverified.
 - Gate: none stated.
 - Satisfies: none given. Cited: LEGAL-REQ-002 (P0, `docs/legal/ENGINEERING_REQUIREMENTS.md:29-35`; the 24-hour closure is `:33`) and the spec's S55 age step ("no explanatory line", `docs/design/EXPERIENCE_PASS_2026-10.md:134`).
@@ -2327,7 +2327,7 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Done when: a failing reducer test first, in `apps/mobile/test/auth-machine.test.ts`, with the sequence above and the same sequence for the age step; then the fix, with the existing cases still green (a decline answered in the same pass still gives `off`, and a pass where every step is accepted gives `on`).
 
 #### BL-504 useSensitiveDataStatus returns the `open` it read at render, so a mounted row can keep a stale one
-- Status: ready (RULED by council (batch 6): BL-485 option (a) is why it matters, not a prerequisite; done before any friend outside the family signs in). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1555: `privacy-sources.ts` keeps status and `open` together, `privacy-sensitive-row.test.ts`). Mode: agent. Owner: mobile engineer, qa engineer. Milestone: M5. Size: S. Depends on: none.
 - Priority: Low. No source registers an `open` today (#408 registers none and its test pins that), so nothing is wrong on screen now. It matters when BL-485 option (a) registers one.
 - Gate: with BL-485 option (a), before any friend outside the family signs in.
 - Satisfies: none given.
@@ -2910,7 +2910,7 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Extends: PR #520, BL-387, CCO-6, D-144.
 
 #### BL-776 A person with one book can reach Recently deleted after a cold start (CPO-10: onboarding shows the existing row)
-- Status: ready (RULED by council (batch 6): CDesO placement ruled: first screen of first run, below the primary action; existing key only; see RULINGS batch 6). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none. Severity: S2. Area: front. PR #520 (BL-387) is merged.
+- Status: partly done (PR #1584: the row shows on first run's first screen; the DEVICE_TEST_PLAN step is not added and the line at `docs/qa/DEVICE_TEST_PLAN.md` step (a) near line 914 saying first run has 'no way to Recently deleted' is stale; both are BL-1666). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none. Severity: S2. Area: front. PR #520 (BL-387) is merged.
 - Satisfies: DATA-REQ-014 and F17-REQ-080 (a sole parent's deleted book can be restored for 30 days), F17 6.2 D (Delete a book; 6.2 C step 8 still says its sole-parent shelf is not built, which #520 made stale: Restore the book exists), LEGAL-REQ-031 (the 30-day undo window). Also cited: D-085, CCO-6, CPO-10. Who must rule: nobody on the choice (CPO-10 rules option (a): onboarding shows the existing Recently deleted row while a deleted book waits, with no new line). Open: the CDesO places the row; if the placement needs a word that does not exist, that word goes to the founder before it is built (CPO-10, D-132, D-144).
 - Who: the CDesO places the row; `mobile` builds; review `design-systems`.
 - Problem: CCO-6 says a sole-book person cannot reach Recently deleted after a cold start until a new book exists. Read in code on `develop` (re-checked at d4b8f5f1, 9 Nov 2026), not run on a phone: `(tabs)/book.tsx:318` and `(tabs)/index.tsx:203` redirect to `/onboarding` when the phone has no visible book, and `onboarding.tsx` does not route to Settings. Recently deleted is reached from Settings (`settings/index.tsx:148`, `settings/privacy.tsx:138`) or from a letter (`letter/[id].tsx:549`). In #520, Delete this book on the only book leaves a book waiting for 30 days that the person has no way to Restore after the next cold start, unless they add a book first.
@@ -3256,7 +3256,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Plan: P0 to P2c; no install; no founder hours.
 
 #### BL-852 The sync payload carries no media and no derived field (NX-39-R33)
-- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #1578: the contract test and the outbox allowlist test; the second phone's photo line is BL-1660). Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none.
 - Who: `sync`, `qa`.
 - Satisfies: NX-39-R33. Also cited: NX-33-R16.
 - Scope: a contract test over every schema in `packages/api` for banned keys (library, local_id, asset, place, geohash, moment, occasion, taken_at, media) and an allowlist test on the outbox serializer; the second phone's "The photo is on the other phone." line.
@@ -3556,7 +3556,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Plan: no install; needs the founder's word approval.
 
 #### BL-926 Review says so when Let it go did not finish (N-07)
-- Status: ready (RULED by council (batch 6): builds on the PROPOSED key at strings.en.ts:390; the founder word approval gates the store build, not the code). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #1556: `review.tsx` reads the result and shows the line once with VoiceOver, `review-let-it-go-failed.test.ts`; the largest-text layout check is a device pass and is not filed). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: F04-REQ-009.
 - Problem: `apps/mobile/src/app/review.tsx` line 415 calls `letItGo` and ignores what it returns, so a failed delete is silent.
 - Scope: read the result; on failure show the BL-925 line once, announce it to VoiceOver, and leave Review usable.
@@ -3700,14 +3700,14 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: R1a to R8 pass, including the P0 row R8, and the switch label is approved by the founder.
 
 #### BL-947 Read the year back (NS-24)
-- Status: ready (words PROPOSED; BL-931 and Find slices 1 to 7 merged: #838, #881 to #885, #894, #895). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1565 keys and PR #1569 build: year rows in Go to a month and Read together from a year; R8 and R9 wait on BL-987). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-24-R1 to NS-24-R3.
 - Scope: from the Book, start Read together at the first letter of a chosen year of {child}'s life and end at its last; skip the other parent's private letters; no summary or count page.
 - Fails on old code: `[NS-24-R1]`.
 - Done when: R1 to R3 pass.
 
 #### BL-948 Speed and accessibility rows in the device run sheet for every new card (NS-33, NS-34)
-- Status: ready (RULED by council (batch 6): BL-929 is a separate sheet in a separate file). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1549: `DJ-N` rows in `docs/qa/DEVICE_TEST_PLAN.md` Part 5, each naming its NS card id). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: `docs/product/prd/14-test-plan.md` sections 4 and 5.
 - Scope: one device row per journey J-N1 to J-N27 that needs a phone (including the P0 device journeys J-N19, J-N21, J-N23, J-N24 and J-N27), P0 rows first, with the settings in section 5.
 - Done when: the rows exist in `docs/qa/DEVICE_TEST_PLAN.md` and each names its card id.
@@ -3742,7 +3742,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: R37a to R37c pass; the export golden fixture for Asha still matches.
 
 #### BL-954 Undo windows wait for VoiceOver and never leave a dead button (NS-01, NS-06, NS-33)
-- Status: ready (BL-931 stack merged: #837, #839, #840). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1581: the shared helper `apps/mobile/src/lib/photos/undo-window.ts` and the photos undo use it; the other undos, such as the book undo toast and quiet day, do not, so 'every undo uses the helper' is not met). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-01-R38a to R38c, NS-06-A2b, NS-33-R15; ruling T4.
 - Problem: the photo Undo toast never times out, but `undoPhotoChange` stops working after 10 seconds, so a dead Undo stays on screen.
 - Scope: one shared undo-window helper: open for its stated seconds, or until VoiceOver has finished reading the undo line plus that many seconds, whichever is later; with Switch Control on, until the parent moves on. The toast and the action expire together.
@@ -3750,7 +3750,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the three rows pass and every undo in the app uses the helper.
 
 #### BL-955 A picked picture survives the app closing before Review (NS-01)
-- Status: ready (BL-931 stack merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1585: `listen.tsx` stores the pick against the draft once it exists, at recording start; the literal Scope 'as soon as the pick returns' is not met and nothing is stored before a draft exists; follow-up is BL-1665). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-01-R43.
 - Problem: the picked picture is stored with the draft only once Review opens; a kill before that loses it.
 - Scope: write the stored copy and the `entry_media` row against the draft as soon as the pick returns; the photo sweep removes an orphan file after a kill between file and row (NS-01-R32 shape).
@@ -3957,7 +3957,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: unit rows pass and the device walk rows are in BL-948.
 
 #### BL-985 Quiet this book has a home (F12-REQ-011, NS-22)
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1577: the Quiet control is on the book page with a test; the device row for it is not in `docs/qa/DEVICE_TEST_PLAN.md`; `children.quiet.help` stays unshown until Home's prompt, Save a copy and Read together read `Child.quiet`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: F12-REQ-011 (P0); NS-22-R5 to R7.
 - Problem: `setChildQuiet` exists in `store.ts:390` with no UI. Hide lives in Me under the book's page.
 - Scope: the Quiet control beside Hide in Me under the book's page, using existing keys; no new words without `content`.
@@ -4126,7 +4126,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Source: `24-engineering-handoff.md` section 1.1 and step 2.4.
 
 #### BL-1008 Phone-only flag and pause pattern: libraryDays key, schema, parse test, scheduler subscribes (step 2.6, Drop B)
-- Status: ready (part of the key and schema already on develop; build the rest). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1557: `apps/mobile/src/lib/reminders/library-days.ts`, scheduler re-plans on a pause, `library-days-pause.test.ts`; key and schema were already on develop). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Refines: BL-295. Drop: B.
 - Satisfies: NS-46-R33, NS-46-R42.
 - Scope: `EXPO_PUBLIC_DAYS` flag and a `killSwitches.libraryDays` key in `packages/api` (additive; older configs parse it as off), pause read outside `mayRun` through an injected `RemoteConfigReader`, the scheduler subscribed to remote config so a pause cancels pending library notes within the debounce, the `kill-switches.ts` header corrected (E21). Reuse #894's files; do not duplicate.
@@ -4150,7 +4150,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Source: `24-engineering-handoff.md` section 1.5, ADR B and step 3.1.
 
 #### BL-1011 Calendar engine and oracle tables for 2026 to 2030, US days only (step 3.2, Drop B)
-- Status: ready (RULED by council (batch 6): computed rule dates only (DL-4); any copied-source row ships as n/r until counsel answers Q113; see RULINGS batch 6). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: none.
+- Status: done (PR #1559 calendar engine and one age function; PR #1560 US day rows and the 2026 to 2030 oracle; `[NS-46-R12]` in `packages/content/test/days.calendar.test.ts`). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: none.
 - Refines: BL-295. Drop: B.
 - Satisfies: NS-46-R1, NS-46-R12, NS-46-R23, NS-46-R24, FR-DAY-23.
 - Scope: rules in `packages/core` (`days.ts`: fixed, nth weekday, computus, astronomical instant to local date), data in `packages/content/src/days/` with an authority per row, a sourced and dated oracle for 2026 to 2030, `daysDueOn(rows, today)` with an injected today; one age function (ADR E). Fixtures are synthetic ids, never a real tradition beside Asha.
@@ -4190,7 +4190,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Source: `24-engineering-handoff.md` step 4.1; card 21 (Drop C).
 
 #### BL-1016 NS-48 recency and last-letter layers (step 4.2, Drop C)
-- Status: ready (RULED by council (batch 6): BL-537 is superseded by the built NS-13 back-off (PR #1248)). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-1004.
+- Status: partly done (PR #1576: the layers, `lastMadeLetter()` and the `[NS-48-R2]` invariant test are merged, logic only; the words wait for G3 (BL-965) and the indexed read and device timing are not verified). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-1004.
 - Refines: BL-297. Drop: C.
 - Satisfies: NS-48-R3, NS-48-R4, NS-48-R5, NS-48-R27, NS-48-R29, NS-48-R30.
 - Scope: `lastMadeLetter()` as one indexed query, then the recency and last-letter layers on the catalogue seam; words wait for G3.
@@ -5817,7 +5817,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 Written 21 Nov 2026 by the product agent, docs only. Sources: the counted reviews on PR #1216 (backup leak scan, merged), #1217 (`docs/security/MEDIA_THREAT_MODEL.md`, merged) and #1219 (planted `.env` test, merged as `c52582bf`), and `docs/backlog/STATUS-AUDIT-2026-11-21.md`. Facts were read on `origin/develop` at `86eccfa0`; where a row says "not verified" it was not run or not read.
 
 #### BL-1404 The .env guard prints a line with no "=" whole into the FAIL message, so a secret could reach the console and CI logs
-- Status: ready. Mode: agent. Owner: mobile engineer, security engineer. Milestone: M12. Size: S. Depends on: none.
+- Status: done (PR #1457: `apps/mobile/scripts/env-file-guard.mjs` prints `<file>: <unparsable line N>` and never the line; cases in `apps/mobile/test/account-deletion-switch.test.ts`). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M12. Size: S. Depends on: none.
 - Satisfies: none given. Cited: CLAUDE.md privacy rules (no secret in a log); Review B on #1219 (finding 2); BL-506 (the guard and its test).
 - Problem (read in `apps/mobile/scripts/env-file-guard.mjs` lines 32 to 36): `envFileProblems` does `line.split('=')` and pushes `${file}: ${k}`, where `k` is everything before the first `=`. A line with no `=` (a bare `sb_secret_...`) or one that uses `:` (`SERVICE_ROLE_KEY: sb_secret_...`) is therefore echoed whole. Review B on #1219 confirmed it by calling the guard; the pin is the `it.fails` "a line with no "=" does not put its text into the FAIL message" in `apps/mobile/test/preflight-planted-env.test.ts`. PR #1219 is merged (`c52582bf`), so the pin is on develop.
 - Scope: the FAIL message never echoes any content from a line, only the file name and a line number. Print a variable name only when the line contains `=` and the text before the first `=` is a variable name (letters, digits, underscore, starting with a letter or underscore); for every other line (no `=`, a `:` separator, spaces, anything else) print `<file>: <unparsable line N>` with the line number and nothing from the line. A bare token such as `sb_secret_...` matches the name pattern but has no `=`, so it is never printed. Same change flips the `it.fails` to a plain `it`.
@@ -5826,7 +5826,7 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: none. The pin goes red as an unexpected pass if the guard is fixed and the pin is not flipped, so both land in one PR.
 
 #### BL-1405 The planted .env test leaves two mutants alive: a guard that fails silently on an unreadable file, and a value with "#" in it
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-1404.
+- Status: done (PR #1517: a directory named `.env.local` and `abc#def` are cases in `apps/mobile/test/preflight-planted-env.test.ts`). Mode: agent. Owner: qa engineer. Milestone: M12. Size: S. Depends on: BL-1404.
 - Satisfies: none given. Cited: Review B on #1219 (findings 3 and M4, M5); BL-506.
 - Problem: Review B ran five mutants on the real script. M1 and M2 were killed by the second push of #1219. M4 (the guard wrapped in `try { } catch { return [] }`) and M5 (a `#` anywhere makes a line a comment, so `KEY=abc#def` is skipped) still survive, so no test turns red for either. Neither is a known bug today (the guard only skips a line that starts with `#`).
 - Scope: two cases in `apps/mobile/test/preflight-planted-env.test.ts`: (1) a `.env.local` that cannot be read as a file (a directory of that name, as Review B suggested) must give a FAIL, not a pass; (2) `SUPABASE_SERVICE_ROLE_KEY=abc#def` planted must be a FAIL naming the key. What the preflight does today on an unreadable `.env.local` is not verified: if it already fails, the case pins it, and if it does not, the guard fix is part of this row.
@@ -5835,7 +5835,7 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: waits on BL-1404 so the two PRs do not edit the same test file at once.
 
 #### BL-1406 A kill at any step of attaching a picture leaves no temporary file, and a test proves it
-- Status: ready (narrowed to the steps that existed when the row was written; PR #837, the picker, has since merged as `9cd39e783`, so the picker step can join the same test; the scope and done-when lines below still leave it out until product or Karma widens them). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1508: `apps/mobile/test/photos-attach-kill.test.ts`, one case per step; the pick step is not covered). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NX-39-R53. Cited: `docs/security/MEDIA_THREAT_MODEL.md` P2, gap G-1 and device row D-4.
 - Problem: the model lists G-1 as open on PR #835. Read on develop: #835 is merged, the launch call is wired (`apps/mobile/src/lib/capture/sweep.ts:69` runs `sweepPhotosAtLaunch`) and Erase everything names `ImagePicker`, `ScribePhoto` and the photos folder (`apps/mobile/src/lib/erase-everything.ts:55` and `:85` to `:91`). The model text is stale on those two halves. What is left is the proof: `apps/mobile/test/photos-device.test.ts` has `[NX-39-R53][C7]` tests for the sweep (line 46) and the native temporary JPEG (line 342); whether any of them stops the attach at each step and then runs the sweep is not verified. The picker path is PR #837 (open).
 - Scope: buildable now: a test that stops an attach after each step of D-4 that exists on develop today (copy, re-encode, store; the pick step is the picker path in PR #837 and is left out until it merges, then a follow-up row adds it), runs the launch sweep, and finds no file left in `Caches/ImagePicker`, `ScribePhoto` or a half-written file in the photos folder. Say in the PR which steps the existing tests already stop at.
@@ -5864,7 +5864,7 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: a native module change waits on the NSC-01 review.
 
 #### BL-1409 The backup flag and file class are read back at open, rebuild, replace and restore
-- Status: ready (RULED by council (batch 6): gate met: the days store and the Moments store (PRs #1175 and #1481) are the index; scope retargeted to replace, restore, rebuild-after-restore and the restored-picture strip pass; see RULINGS batch 6). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: done (PR #1558: `apps/mobile/src/lib/backup/readback.ts` wired into the days and Moments stores, `backup-readback.test.ts` with planted wrong flags and rebuild after restore). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
 - Satisfies: NX-39-R43, NX-39-R42. Cited: `docs/security/MEDIA_THREAT_MODEL.md` P9 and P10, gap G-4, device row D-3 and D-6.
 - Scope: read `isExcludedFromBackup` and the file class at open, after a rebuild, after a replace and after a restore; rebuild the index after a restore and never trust a restored one (R42); run the strip pass again before the first display of a restored picture.
 - Done when: each of the four moments has a test with a planted wrong flag that is reported; the rebuild-after-restore case passes.
@@ -5948,7 +5948,7 @@ Written 21 Nov 2026 by the product agent, docs only. Sources: the counted review
 - Gate: none.
 
 #### BL-1419 The backup scan covers a leak that straddles two request bodies, and the e2e loop is itself tested
-- Status: ready. Mode: agent. Owner: sync owner. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1321: split-body cases in `apps/mobile/test/backup-leak-scan.test.ts` and the e2e loop check in `backup-e2e.test.ts`). Mode: agent. Owner: sync owner. Milestone: M5. Size: S. Depends on: none.
 - Satisfies: same as BL-1417. Cited: Review A and Review B on #1216 (notes 2 and 5, and the stated gap).
 - Problem: the callers scan one body at a time, so a small leak split over two bodies is found only if a shingle lands inside one half (stated in the helper header). Review A also found a mutant that scans only the first request body in the e2e test survives (29 tests pass).
 - Scope: also scan the concatenation of consecutive bodies (or a window across each join); add a case with a planted piece split over two bodies; add a case that fails if the e2e loop scans only the first body.
@@ -7323,7 +7323,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Done when: dated read-outs are filed in `docs/release/<x.y.z>.md`: the G1a-P simulator read-out (unblocks PR 18b-1a with `mobile`'s read of Apple's picker reference pages, EXH-ENG-17), the G1a-L read-out and G3-x read-out (unblock PR 9 and PR 11c), the G1a-P device read-out (unblocks PR 18b-2) and the video read-back (unblocks PR 18c).
 
 #### BL-1450 NS-53 Moments: picker threat-model rows (PR 18b-0)
-- Status: ready (start-now set, Karma ruling 21 Nov; spec 19.4 PR 18b-0, CH-ENG-3, PRINCIPLES item 16. Dependency check: Depends on is none and spec 19.4 lists no dependency; docs only, no code; it gates PR 18b-1a of BL-1447. Owner `security engineer` is in `backlog_owner_names` of the `security` handle in `agents/roster.json`). Mode: agent. Owner: security engineer. Milestone: M15. Size: S (docs). Depends on: none.
+- Status: partly done (PR #1400: the picker rows are in `docs/security/MEDIA_THREAT_MODEL.md` section 3b; PR 18b-1a, which must cite them, is not built). Mode: agent. Owner: security engineer. Milestone: M15. Size: S (docs). Depends on: none.
 - Satisfies: NS-53-R237, R283.
 - Scope: PR 18b-0 (docs, about 80 lines, 1 to 2 files): the `MEDIA_THREAT_MODEL.md` rows for the picker (R283: temp files, date read, iCloud, a kill between pick and strip) as their own docs item before any picker code. The `security-architect` agent writes it; that handle has no accepted Owner name (empty `backlog_owner_names`, roster not edited), so `security engineer` is the Owner here; the roster gives that name to the `security` handle, so the `security-architect` agent is named in this Scope line and a human assigns it.
 - Done when: the rows are on `develop` and PR 18b-1a cites them. Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 18b-0: NS-53-R237, R283.
@@ -7452,7 +7452,7 @@ Written 21 Nov 2026 by the product agent, docs only. Six gaps that merged tests 
 - Test: `packages/analytics/test/catalog.test.ts`, `packages/analytics/test/allowlist-guards-narrow.test.ts`.
 
 #### BL-1476 The backup leak scan names its known bypasses, and closes the cheap ones
-- Status: ready. Mode: agent. Owner: qa engineer, sync owner, security engineer. Milestone: M5. Size: S. Depends on: none.
+- Status: done (PR #1516: `decodedViews` in `apps/mobile/test/helpers/leak-scan.ts` decodes the four forms; the header names XOR and pieces under 16 bytes as open). Mode: agent. Owner: qa engineer, sync owner, security engineer. Milestone: M5. Size: S. Depends on: none.
 - Satisfies: F08-REQ-018, F08-REQ-020 (as BL-1417; not re-read here). Cited: review follow-ups on #1321 and #1322 (21 Nov 2026).
 - Problem: `firstLeak` in `apps/mobile/test/helpers/leak-scan.ts` does not find a recording written as hex with space or colon separators, hex with a `0x` prefix, percent-encoded bytes, base64 wrapped over lines, XOR-ed bytes, or a piece shorter than 16 bytes. The helper header now lists them, and the comment in `apps/mobile/test/backup-queue.test.ts` says the scan is not a proof, but nothing yet proves the cheap ones red.
 - Scope: decode the four text forms (separated hex, `0x` hex, percent-encoding, wrapped base64) before the shingle scan, each with a planted-copy case and a mutant; leave XOR and pieces under 16 bytes as stated gaps (the 2^-128 argument needs 16 bytes) and keep them in the "Not covered" line.
@@ -7837,7 +7837,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: each note is done or recorded as left, with the line it points at.
 
 #### BL-1521 The commit trailer `Agent:` reads `sync` while the row owner is mobile
-- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1548: `docs/agents/OPERATING_MODEL.md` says the Agent trailer names the builder, not the row owner). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: docs/agents/OPERATING_MODEL.md (not re-read here).
 - Problem and evidence: review A on PR #1435, note N5.
@@ -7861,7 +7861,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: the values are read from the rules; the card sort result is recorded.
 
 #### BL-1524 Moments: a short burstId column and a non-finite rotateK must not break the day
-- Status: proposed (waits for PR #1421 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1421: a short `burstId` column reads as no burst, `packages/core/test/moments/exclude-near.test.ts`; PR #1417: a non-finite `rotateK` falls back to the rules value, not 1, `rank.test.ts`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-53 (not re-read here).
 - Problem and evidence: review B on PR #1421 (note N1); reviews A and B on PR #1417 (`selectPicturesDay` throws on `rotateK: NaN`).
@@ -7925,7 +7925,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: the line no longer says F11 carries no person data.
 
 #### BL-1532 Claim screen (audit F11, INFO, by design): check that the claim is an explicit choice, never automatic
-- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1553: `apps/mobile/test/auth-claim-is-explicit.test.ts`). Mode: agent. Owner: security engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: CISO-3 and audit finding F11 (not re-read here).
 - Problem and evidence: ruling CISO-3 (F11 accepted: an unowned local book is offered to the first account that signs in, A-REQ-015; the check that the claim is explicit is owed). The audit grades F11 INFO and did not run the behaviour.
@@ -8001,7 +8001,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a kept `local` moments file is claimed by the account that signs in, and is never read by another; a test per case.
 
 #### BL-1541 Moments store wiring: cleanupAtLaunch at boot with the owner key, and the wipe when Turn off lands
-- Status: proposed (the owner key part moves to BL-1559; review of PR #1481). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #1561: `cleanupAtLaunch` runs at boot with the owner key; the Turn off wipe exists in the store but nothing calls it until the Me toggle lands, and its test waits for that toggle). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: NS-53 PR 8 (docs/product/prd/28-moments-tab.md; not re-read here).
 - Problem and evidence: PR #1481 adds the store and wipes but nothing calls `cleanupAtLaunch` yet.
@@ -8197,7 +8197,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a test shows a non-seam build has no `EXPO_PUBLIC_E2E`; the web-scan note is recorded.
 
 #### BL-1577 PR #1500 notes: default-size cases and the subtitle, value and group-label mutants
-- Status: proposed (review of PR #1500). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1599: default-size cases and label-part pins in `apps/mobile/test/component/ax5-truncation-labels.test.tsx`). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-269 (not re-read here).
 - Problem and evidence: review notes on PR #1500 (ready for review at write time).
@@ -8239,7 +8239,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 ## Review follow-ups from PRs #1504, #1495, #1487, #1515, #1529, #1532 and #1533 (BL-1591 to BL-1607)
 
 #### BL-1591 supabase-env-https test: pass-through checks read raw source
-- Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1597: comments are stripped before the pass-through check in `supabase-env-https.test.ts`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review B notes on PR #1504: the pass-through regex checks in supabase-env-https.test.ts run on raw source, so a comment holding the spread would satisfy them; account-deletion-switch.test.ts strips comments first.
@@ -8369,7 +8369,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 ## Follow-ups from the reviews of PRs #1537 to #1546 and the council (BL-1610 to BL-1642; filed by the product agent, docs only)
 
 #### BL-1610 Import-graph walk: say in the test that unresolved dynamic import(x) and template-$ URLs are not followed
-- Status: proposed (review of PR #1537). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1593: first-run import-walk test names the non-literal import limit). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1537: the walk skips any specifier containing `$` and cannot resolve `import(x)`, so a computed import is silent; the test and the comments do not say so.
@@ -8377,7 +8377,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the comment and a named test exist; a fixture with `import(x)` and one with a `${}` template are asserted not followed.
 
 #### BL-1611 Import-graph walk: `export type A = 1` with no semicolon still swallows a following runtime import
-- Status: proposed (review of PR #1537). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1593: the type-only regex cannot cross a newline, with the fixture). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1537 (verified): `export type A = 1` then a newline and `import { ask } from './hidden'` becomes empty, because the `import type` regex spans newlines from the alias to the next `from '...'`.
@@ -8385,7 +8385,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the fixture is followed (the hidden import is found) and a mutant that restores the loose regex fails it.
 
 #### BL-1612 Import-graph walk: `{ m: typeof import(x) }` and the ternary form are dropped as types
-- Status: proposed (review of PR #1537). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1593: fixtures for `typeof import(x)` and the ternary form). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1537 (verified): the `:` look-behind treats an object-literal value and `c ? 1 : typeof import('./hidden')` as types and drops them.
@@ -8393,7 +8393,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a fixture for each form exists and asserts the chosen behaviour in a comment and a test.
 
 #### BL-1613 Import-graph walk: the require-literal guard passes on the old walk, say so
-- Status: proposed (review of PR #1537). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1593: the require-literal test is named a regression guard). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review B on PR #1537: develop already followed a bare `require('./x')`, so the gap 1 test passes on the old walk; the row text claims each gap test fails on the old walk.
@@ -8401,7 +8401,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the test name or comment says it is a guard; the PR record of which tests fail on the old walk lists only gaps 2 and 3.
 
 #### BL-1614 First-run Tonight test: the Modal check is a word denylist
-- Status: proposed (review of PR #1538). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1588: allowlist in the first-run Tonight test). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1538: the check fails only for Modal, BottomSheet, Primer, Welcome or BookIsOpen; a `FirstRunSheet`, `Overlay`, `Coach` or Dialog mounted over Tonight passes.
@@ -8409,7 +8409,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a mutant that mounts `<Overlay/>` over Tonight fails the test.
 
 #### BL-1615 First-run test: a helper called from finish() passes tests 2 and 3
-- Status: proposed (review of PR #1538). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1588: `finish()` is pinned to `router.replace('/')` and the import list). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1538: test 2 reads only the body of `finish()` and test 3 scans onboarding.tsx only; `finish()` could call a helper in another file that opens the recorder.
@@ -8425,7 +8425,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the behaviour test passes for an empty room and fails when a card is returned for it.
 
 #### BL-1617 First-run test 4: the one-line regex breaks when the Button is reflowed
-- Status: proposed (review of PR #1538). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1588: the Button regex allows newlines). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1538: test 4 needs the label and the `startCapture` call on one line, so a prettier reflow fails it with no real regression.
@@ -8457,7 +8457,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the answer is recorded; with a yes, the key changes in `packages/content` and the test pin is updated in the same PR.
 
 #### BL-1621 AX5 evidence doc: the cost estimate counts one Expo export, global-setup builds four
-- Status: proposed (review of PR #1539). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1596: `docs/ops/proposed/ax5-evidence.md` says four builds). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1539: `global-setup.ts` loops over all four BUILDS (plain, seed, server-on, seam) and exports each when missing, whatever flow is filtered; the doc says one export and two builds, and its 10 minute budget sentence is muddled. The doc also names `e2e-web.yml` where develop has `web-e2e.yml` for apps/web.
@@ -8465,7 +8465,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the doc says four builds and names the real workflow file.
 
 #### BL-1622 AX5 aria parser: names with a colon or an apostrophe may be skipped
-- Status: proposed (review of PR #1539). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1590: `apps/mobile/e2e-web/support/a11y-tree.ts` reads quoted keys, `a11y-tree.test.ts`). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A on PR #1539 (unverified): Playwright quotes a YAML key that holds a colon or apostrophe, for example `- 'button "Add to Asha's book"':`, and the `LINE` pattern needs `- [a-z]+` first, so such nodes are skipped silently.
@@ -8473,7 +8473,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a test with a quoted-key button name finds the unnamed control or the name, and a mutant that drops the quote handling fails.
 
 #### BL-1623 AX5 strict job: its name and summary must not read as an AX5 pass
-- Status: proposed (review of PR #1539). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: partly done (PR #1596: the workflow name, job name, header comment of `docs/ops/proposed/workflows/a11y-evidence.patch` and the doc carry the sentence; the patch has no summary step, so a future summary should start with it). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review B on PR #1539: a green job named ax5 or a11y-evidence can read as AX5 conformance, but it only fails on unnamed controls and runs emulated screenshots.
@@ -8481,7 +8481,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the proposed job name and summary carry that sentence.
 
 #### BL-1624 AX5 checks C1 and C2 are name-only: state it as a floor and list what they do not cover
-- Status: proposed (review of PR #1539). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: partly done (PR #1590: the header of `apps/mobile/test/a11y-controls.test.ts` says C1 and C2 are a floor; `docs/ops/proposed/ax5-evidence.md` does not yet list the gaps). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1539: C1 treats any Text in a control body as its name, the body ends at the first closing tag, wrapper components are not scanned, and value or state, label in name, duplicate labels and decorative icons are not checked.
@@ -8489,7 +8489,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the test header and the doc list the gaps.
 
 #### BL-1625 AX5 emulation: cite where the 3.571 font scale comes from
-- Status: proposed (review of PR #1539). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1596: `docs/ops/proposed/ax5-evidence.md` section 'Where 3.571 comes from'). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review B on PR #1539: the scale 3.571 is above the TDD 09 figure of about 3.1 for AX5 body; conservative, but the source is not cited.
@@ -8505,7 +8505,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the evidence file exists with one line per screen.
 
 #### BL-1627 Tonight reads: assert `EXPLAIN QUERY PLAN` uses entries_child for the three new queries
-- Status: proposed (review of PR #1541). Mode: agent. Owner: data architect. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1589: three EXPLAIN QUERY PLAN assertions in the Tonight read test; the mutant half of Done-when was not run). Mode: agent. Owner: data architect. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1541: the perf test is wall-clock only; nothing asserts the plan for `listOccurredBetween`, `latestOccurredOn` or `recentPromptKeys`; `recentPromptKeys` orders by `occurred_on, captured_at, id` and may use a partial sort.
@@ -8529,7 +8529,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a test counts the queries per focus and expects each once.
 
 #### BL-1630 Perf test: the 'first chapter' case times the whole light read, and the Tonight ratio can flake
-- Status: proposed (review of PR #1541). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1589: the light-read case is renamed to say what it measures). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review A and B on PR #1541: the case named first chapter calls `listForBook` for the whole book and slices; `p95(tonight) < p95(old)` is a timing ratio that can flake on a loaded CI box.
@@ -8609,7 +8609,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the decision is recorded; with a change, one key set is used and the content tests pass.
 
 #### BL-1640 Content guard BRAND-MOMENTS-2 scans STORE and SITE but not PAGES
-- Status: proposed (review of PR #1276). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1586: `packages/content/test/rules.test.ts` scans PAGES with a failing fixture; self-check weakness is BL-1669). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: Review of PR #1276: the test [BRAND-MOMENTS-2] checks store metadata and website copy but not the pages file (pages.en.ts), so 'Moments' could ship there before counsel clears the name.
@@ -8635,11 +8635,11 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 ## Follow-ups from the merged PRs #1511 and #1569 to #1582 (BL-1643 to BL-1664; filed by the product agent, docs only)
 
 #### BL-1643 J24 capture loop: nine tests record under three step ids
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1595: each J24 test has its own step ids, `apps/mobile/test/j24-step-ids.test.ts`). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-480 point 1 (PR #1580).
 - Problem and evidence: `apps/mobile/e2e-web/j24-capture-loop.flow.ts` runs three scale tests and six language tests, and all nine start the journey at J24 with the same three step ids, so their records overwrite each other in `steps/J24-0N.json`. The recorder now refuses a repeat id (#1580), so the nine collide on one run.
-- Scope: give each test a distinct journey id or file suffix; keep it in step with the capture matrix and `build-index.mjs` work (PR #1399).
+- Scope: give each test a distinct journey id or file suffix; keep it in step with the capture matrix and `build-index.mjs` work (PR #1399). Correction: the recorder's seen-map is per `journey()` call, so the nine J24 tests did not throw; they overwrote each other's files. Resolved by PR #1595.
 - Done when: each of the nine tests writes its own records and a run of all nine leaves no overwritten step.
 
 #### BL-1644 BL-480 points 2 and 5: run-day dates in a flow note and the index title period
@@ -8667,7 +8667,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the three records show the saved moment and the PNGs match.
 
 #### BL-1647 Children quiet guard: repoint HELP_NEEDS to the real files and fail loudly on a wrong path
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1592: HELP_NEEDS names the three real files and asserts `existsSync`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-985 (PR #1577).
 - Problem and evidence: `apps/mobile/test/children-quiet-control.test.ts` HELP_NEEDS names paths that are not the real ones, so the guard can pass on files that do not exist.
@@ -8683,7 +8683,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: `lastOwnSaveAt` passes the same tests as `lastMadeLetter`.
 
 #### BL-1649 lastMadeLetter tests that cannot fail: deleted row, statement count, null owner
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1587: `apps/mobile/test/reminders-layers.test.ts`; the LIMIT 1 pin is BL-1670). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-1016 (PR #1576).
 - Problem and evidence: The deleted-row test inserts no deleted row (dropping `deleted_at IS NULL` still passes); the 1,200-letter test counts statements only; a null owner with authored rows is untested.
@@ -8763,7 +8763,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a retry after a second failure makes one first book and the test calls the real code.
 
 #### BL-1659 Sync no-media walk: v.lazy getters and a path-scoped exemption
-- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1591: the sync no-media walk follows `v.lazy` and scopes its exemption to a path). Mode: agent. Owner: sync owner. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-852 (PR #1578).
 - Problem and evidence: The schema walk does not follow `v.lazy` getters, and the exemption `prompt_library_version` is an exact key, not scoped to its path.
@@ -8779,7 +8779,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the second phone shows the approved line and a test covers it.
 
 #### BL-1661 Born-early row: pin what the screen passes, and check letters across the new birthday
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M4. Size: XS. Depends on: none.
+- Status: partly done (PR #1598: the test slice only, in `apps/mobile/test/children-settings.test.ts`; the row-hint read-aloud check and the question to sync owner about contributors remain). Mode: agent. Owner: qa engineer. Milestone: M4. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-472 (PR #1511).
 - Problem and evidence: Review notes on #1511: the call in `[id].tsx` that decides the row (hiddenFor, today) is pinned by a regex on the line only, so one mutant survived; no test shows `isBeforeBirth` for a letter dated before and one after the new birthday; the row hint after a question label needs a read-aloud check; a contributor's change stays on the phone (hand to sync, unverified that Settings is reachable).
@@ -8807,5 +8807,61 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Priority: Low. Gate: none.
 - Satisfies: Process.
 - Problem and evidence: Reviewers cannot see pins in a PR whose tests job is not green at its head.
-- Scope: check `docs/agents` for a place that covers queueing; if one does, add the rule there (docs only, no edit to scripts/agents); otherwise ask Karma.
+- Scope: check `docs/agents` for a place that covers queueing, and propose the text: 'never queue an app PR before its tests job is green at its head and both reviews are at that exact head'. Karma lands it (docs under `docs/agents` are founder-merge); a matching check in the ready and queue scripts is a separate row for Karma.
 - Done when: the rule is written where queueing is described or Karma records that none exists.
+
+#### BL-1665 BL-955 follow-up: write the picked picture against a durable owner at pick time
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: Refines BL-955 (NS-01-R43; PR #1585).
+- Problem and evidence: PR #1585 stores the pick at recording start, when the draft exists, so a kill between the pick and the start loses it. The literal Scope of BL-955, 'as soon as the pick returns', is not met. Also missing: a test that keeps a draft, lets go and checks the picture goes too. The comment `// "The photo goes too": nothing of it was stored` at the discard site in `apps/mobile/src/app/listen.tsx` (near line 443) is now false.
+- Scope: write the picked picture against a durable owner before the draft exists (for example a pending-pick row the draft later adopts); add the draft-then-let-go test; correct the comment.
+- Done when: a kill right after the pick leaves the picture and the next launch finds it; the let-go test fails if the picture stays; the comment matches the code.
+
+#### BL-1666 BL-776 follow-up: the device step, and the stale 'no way to Recently deleted' line
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-776 (PR #1584).
+- Problem and evidence: PR #1584 did not add the device step. `docs/qa/DEVICE_TEST_PLAN.md` step (a) near line 914 still says first run has 'no way to Recently deleted until a new book exists', which the merged row now contradicts.
+- Scope: add the step (delete the only book, cold start, see the row below the primary action, Restore) and fix that line. Docs only.
+- Done when: the step exists with its card id and the stale line is gone.
+
+#### BL-1667 sha256.ts header: say the 16-hex truncation is guessable
+- Status: proposed (waits for PR #1594, BL-1599, to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: BL-1599.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1599.
+- Problem and evidence: PR #1594's header already says the 16 hex is a label, not a credential; only the wording that the unsalted truncation is guessable by anyone holding candidate ids is missing.
+- Scope: add one sentence to the header saying so; no behaviour change.
+- Done when: the header says it.
+
+#### BL-1668 J24 helper: a stale comment about nine tests and one step id
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1643 (PR #1595).
+- Problem and evidence: the comment near line 57 of `apps/mobile/e2e-web/support/app.ts` says nine J24 tests that each record J24-01 are not a clash; since PR #1595 each has its own ids.
+- Scope: correct the comment.
+- Done when: the comment matches the code.
+
+#### BL-1669 BRAND-MOMENTS-2 self-check: derive the leaf list from the constant the scan uses
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1640 (PR #1586).
+- Problem and evidence: in `packages/content/test/rules.test.ts` the self-check's fixture list is a hand copy, so it can pass while the scan covers something else.
+- Scope: build the self-check's leaf list from the same constant the scan reads.
+- Done when: adding a surface to the constant changes what the self-check covers, shown by a mutant.
+
+#### BL-1670 Newest-letter query: make LIMIT 1 observable through behaviour
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1649 (PR #1587).
+- Problem and evidence: `apps/mobile/test/reminders-layers.test.ts` pins `LIMIT 1` with a regex on the SQL text, a source-text pin.
+- Scope: run the query against rows and assert the number of statement rows read, or the single result, so a dropped LIMIT shows.
+- Done when: a mutant that drops `LIMIT 1` fails a test that does not read the SQL text.
+
+#### BL-1671 Add child twins: move the comparison into handoff.logic.ts so the test imports the real function
+- Status: proposed (waits for PR #1600, BL-1658, to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: BL-1658.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1658.
+- Problem and evidence: the test extracts the screen's comparison with a regex and `new Function`, so it runs a copy, not the code.
+- Scope: move the comparison into `apps/mobile/src/lib/first-run/handoff.logic.ts`, import it in the screen and the test, and drop the extraction.
+- Done when: the test imports the real function and a mutant of it fails.
