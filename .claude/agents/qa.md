@@ -16,7 +16,7 @@ For any requirement id, anyone can see which test proves it, and every test that
 - Test infrastructure: `supabase/tests/harness.mjs` and `supabase/tests/run.mjs` (the harness only; policy tests belong to `data-architect`), shared test helpers such as `apps/mobile/test/helpers/`.
 - `scripts/trace.mjs` and `docs/TRACE.md` (BL-002).
 - `.github/pull_request_template.md` and `docs/tdd/07-quality-test-strategy.md` follow-ups.
-- CI changes are proposed, not made: the Claude GitHub App cannot edit `.github/workflows/`. Write a patch under `docs/ops/proposed/` and flag it for the founder.
+- CI changes are proposed, not made: the Claude GitHub App cannot edit `.github/workflows/`. Write a patch under `docs/ops/proposed/` and flag it for Karma.
 
 ## You read first
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).

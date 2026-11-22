@@ -237,6 +237,54 @@ describe('design tokens: motion and targets', () => {
     expect(m.exitMs).toBeLessThanOrEqual(m.carry.ms);
     expect(m.carry.ms).toBeLessThanOrEqual(m.sequenceMaxMs);
   });
+  it('[BL-1495] the Moments flight, stepped ms by ms on three phones: starts at the source, lands exactly on the slot at carry.ms, never doubles back, never leaves the screen, never overshoots', () => {
+    // CSS-style cubic bezier through (0,0), (x1,y1), (x2,y2), (1,1), solved for y at time x by bisection.
+    const [x1, y1, x2, y2] = m.easing;
+    const axis = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s ** 2 * (1 - s) + s ** 3;
+    const progress = (t: number): number => {
+      const x = Math.min(1, Math.max(0, t / m.carry.ms));
+      let lo = 0;
+      let hi = 1;
+      for (let i = 0; i < 50; i++) {
+        const mid = (lo + hi) / 2;
+        if (axis(x1, x2, mid) < x) lo = mid;
+        else hi = mid;
+      }
+      return axis(y1, y2, (lo + hi) / 2);
+    };
+    const phones = [
+      { name: 'SE 3', w: 375, h: 667 },
+      { name: 'iPhone 16', w: 393, h: 852 },
+      { name: 'large', w: 430, h: 932 },
+    ];
+    for (const p of phones) {
+      // A 44 pt tray tile in the sheet's lower left, to a 160 pt lead slot in the upper part of capture.
+      const from = { x: 16, y: p.h - 120, size: 44 };
+      const to = { x: 16, y: 120, size: 160 };
+      let prev = -1;
+      for (let t = 0; t <= m.carry.ms + 20; t++) {
+        const pr = progress(t);
+        expect(pr, `${p.name} ${t} ms`).toBeGreaterThanOrEqual(prev);
+        expect(pr, `${p.name} ${t} ms`).toBeLessThanOrEqual(1);
+        prev = pr;
+        const size = from.size + (to.size - from.size) * pr;
+        const x = from.x + (to.x - from.x) * pr;
+        const y = from.y + (to.y - from.y) * pr;
+        expect(x, `${p.name} ${t} ms left`).toBeGreaterThanOrEqual(0);
+        expect(y, `${p.name} ${t} ms top`).toBeGreaterThanOrEqual(0);
+        expect(x + size, `${p.name} ${t} ms right`).toBeLessThanOrEqual(p.w);
+        expect(y + size, `${p.name} ${t} ms bottom`).toBeLessThanOrEqual(p.h);
+      }
+      expect(progress(0)).toBeCloseTo(0, 9);
+      expect(progress(m.carry.ms - 1)).toBeLessThan(1);
+      expect(progress(m.carry.ms)).toBeCloseTo(1, 9);
+      expect(progress(m.carry.ms + 20)).toBeCloseTo(1, 9);
+    }
+    // The 160 ms leave runs inside the flight, not after it; the whole hand-off is the flight and no more.
+    expect(m.exitMs).toBeLessThan(m.carry.ms);
+    // Moving fast early, settling late: at half the time more than half the distance is covered (no linear drift).
+    expect(progress(m.carry.ms / 2)).toBeGreaterThan(0.5);
+  });
   it('the saved moment files the letter in order, and inside the 900 ms sequence (MOTION 5e)', () => {
     expect(0).toBeLessThan(m.file.chipAtMs);
     expect(m.file.chipAtMs).toBeLessThan(m.file.moveAtMs);
