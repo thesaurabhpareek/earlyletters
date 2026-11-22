@@ -7,7 +7,7 @@
  * Words about the picture and its typed place live here too, until Keep.
  */
 import { commitPhoto, PhotoSession, type CommitResult } from './session';
-import { UNDO_WINDOW_MS, type PhotoDeps, type PickedAsset, type PickedFiles } from './types';
+import { UNDO_WINDOW_MS, type PhotoDeps, type PickedAsset, type PickedFiles, type StoredPhoto } from './types';
 
 type Listener = () => void;
 
@@ -127,7 +127,22 @@ export class PendingPhoto {
       await this.files.remove(cur.uri);
       return result;
     }
+    // Words typed while the picture was read are the parent's too: the copy already made carries them (BL-1535).
+    if (result.status === 'stored' && (this.session.text !== text || this.session.place !== place)) {
+      result = { status: 'stored', photo: this.carryLateWords(deps, result.photo) };
+    }
     await this.discard();
     return result;
+  }
+  /** Writes the words now in the fields onto the stored copy. Never throws: the copy keeps what it had if this cannot. */
+  private carryLateWords(deps: PhotoDeps, photo: StoredPhoto): StoredPhoto {
+    try {
+      if (deps.store.get(photo.entryId)?.mediaId !== photo.mediaId) return photo; // another copy took its place meanwhile
+      const next = { ...photo, text: this.session.text, place: this.session.place };
+      deps.store.put(next);
+      return next;
+    } catch {
+      return photo;
+    }
   }
 }

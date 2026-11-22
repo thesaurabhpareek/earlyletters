@@ -58,3 +58,13 @@ One more macOS job per native PR (macOS runners are free on this public reposito
 ## Who pastes
 
 A workflow edit is `.github/**`, which agents never edit: the founder, or Karma under CR-73, pastes it with two reviews (`security-architect` reads `.github/**`). It is a proposal until then.
+
+## Update, 21 Nov 2026: stale-risk note, job rename (O-61) and PR 9 review asks
+
+Source: `docs/agents/exec/proposed/moments-rulings-security-legal-money.md` section 6 (MR-5). Proposal only; nothing here edits `docs/agents/COORDINATION.md` or `.github/`.
+
+1. Stale-risk note for `docs/agents/COORDINATION.md:102` (section 11, the "Watch items, not required" line). When the O-61 patch merges, the job `iOS simulator build (no signing)` is renamed to two jobs, `iOS simulator build (no signing, F2 off)` and `iOS simulator build (no signing, F2 on)`. The line names the old exact job name, so after the merge it would point at a check that no longer exists. Proposed replacement of the first backticked name on that line: `iOS simulator build (no signing, F2 off)` and `iOS simulator build (no signing, F2 on)`, both watch items. The merge queue matches the prefix `^iOS simulator build` (`scripts/agents/merge-queue.mjs:94`), so it is unaffected. Edit the line in the same PR that pastes the workflow, not before: until then the old name is the true one. Re-read branch protection once after the paste; the rename only breaks a required check that uses the old exact name, and `required`, `compliance-fence` and `applied migrations unchanged` do not.
+2. PR 9 reviewer asks (`scribe-library`). Before counting PASS the reviewer confirms, and writes the result in the review:
+   - `EXPO_PUBLIC_PHOTO_MOMENTS` is actually read by `apps/mobile/app.config.ts` or by `apps/mobile/eas.json` (the name is spelled the same in the leg's env step and in the config; a typo makes both legs behave as F2 off and the "on" assertion is then the only thing that notices).
+   - The exact pod entry in `apps/mobile/ios/Podfile.lock` for the module (for example the line that begins `- scribe-library`). The scan step greps for the string `scribe-library`; it must equal the podspec name, or the PR 9 author changes the string. Quote the matching line.
+3. One deliberate-fail run before the F2 leg counts as a guard. A guard that has never gone red is not shown to work. On a throwaway branch (never merged), force the wrong value for each leg once, for example set `EXPO_PUBLIC_PHOTO_MOMENTS=on` in the "off" leg, and confirm the step "scribe-library is in the project exactly when F2 is on" fails with its `::error::` line. Link the red run in the PR that pastes the workflow. Until that red run exists, a green F2 leg is a watch item, not a guard, and PR 9 and PR 11c do not cite it as one.
