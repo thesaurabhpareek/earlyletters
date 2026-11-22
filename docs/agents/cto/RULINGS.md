@@ -1056,3 +1056,13 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Way back: revert the one PR.
 - Status the row takes: `Status: ready. Mode: agent. Depends on: none (BL-485 option (a) is why it matters, not a prerequisite); Gate: done before any friend outside the family signs in`
 - Founder-only: no.
+
+### CR-174 CI waits: cancel superseded PR runs, push discipline, stay on the free plan (22 Nov 2026, Karma)
+- Verdict: RULED (the plan question was the founder's: he said "No pro. Continue on free." on 22 Nov 2026).
+- Ruling: keep the repo on the GitHub Free plan and cut the load instead. `migration-guard.yml` and `agents-check.yml` cancel a superseded pull request run (#1530) and give every push run its own group so none is skipped (#1568). `docs/agents/COORDINATION.md` section 12 is the push discipline for sessions (#1531): batch commits, update from `develop` only for a conflict, a needed file or merge-queue NEEDS-UPDATE, ask again for reviews after any push at the head. A flaky random-byte test was pinned in #1563. The docs-only lane and path filters in `docs/ops/proposed/ci-speed.md` stand. iOS batching is not done.
+- Evidence: Project doc `infra/ci-runner-wait-baseline-2026-11-22.md` (1389 CI runs in 24 hours, 548 cancelled, runner wait median 0.3 min and p90 23.7 min, worst at 22 to 23 UTC and 05 UTC); concurrent-job caps on GitHub's usage limits page (Free 20, macOS 5). That the 20-job cap causes the burst-hour waits is likely and not proven.
+- Self-challenge: I wrote the push-run group in #1530 on `github.ref`, which let a newer push replace a queued one; #1568 fixed it with `github.run_id`. I should have tested that case before the first merge.
+- Door: two-way.
+- Way back: revert the workflow edits (#1530, #1568); the docs changes are text only.
+- Revisit when: the p90 wait in the 22 to 23 UTC and 05 UTC hours stays above 15 minutes for a week after the push discipline has been in force, measured with the saved baseline script; or the founder reopens the plan question.
+- Founder-only: no, apart from any future plan change (money).
