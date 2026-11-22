@@ -43,8 +43,13 @@ export function bindDeviceOnlyOwners(): () => void {
   };
 }
 
-/** "Keep in this account": both local files become the account's. Resolves when both are done; never rejects. */
-export async function adoptDeviceOnlyLocal(userId: string): Promise<void> {
+/**
+ * "Keep in this account": both local files become the account's. Resolves true when neither store failed, and false
+ * when either did (a write that would not land, a store that threw): the claim is then NOT confirmed and nothing is
+ * deleted, so the person stays on the claim prompt and can try again. Never rejects.
+ */
+export async function adoptDeviceOnlyLocal(userId: string): Promise<boolean> {
   const key = ownerKey(userId);
-  await Promise.allSettled([daysStore.adoptLocal(key), momentsStore.adoptLocal(key)]);
+  const done = await Promise.allSettled([daysStore.adoptLocal(key), momentsStore.adoptLocal(key)]);
+  return done.every((d) => d.status === 'fulfilled' && d.value !== 'failed');
 }

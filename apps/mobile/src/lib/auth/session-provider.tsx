@@ -433,7 +433,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       keepLettersHere() {
         const cur = stateRef.current;
         // CPO-30: the days and moments files that are still 'local' join the account first, then the claim is confirmed.
-        if (isSignedIn(cur)) void adoptDeviceOnlyLocal(cur.userId).then(() => confirmAccountClaim(cur.userId));
+        if (isSignedIn(cur)) void adoptDeviceOnlyLocal(cur.userId).then((ok) => ok && confirmAccountClaim(cur.userId)); // a failed adopt leaves the claim prompt up and the local files alone
       },
       async notMyAccount() {
         // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never

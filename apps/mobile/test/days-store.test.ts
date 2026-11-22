@@ -352,6 +352,18 @@ describe('[CPO-30] the claim step adopts a local file only on an explicit confir
     expect(names()).toEqual([]);
   });
 
+  it('a failed adopt write says failed, leaves the local file byte for byte, and a retry then adopts it', async () => {
+    seed(JSON.stringify(file('local')));
+    const before = text();
+    const s = fresh('local');
+    h.mode = 'ignore'; // the new temp file cannot be excluded from the backup, so nothing is written
+    expect(await s.adoptLocal(A)).toBe('failed');
+    expect(text()).toBe(before);
+    h.mode = 'stick';
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(JSON.parse(text()).owner).toBe(A);
+  });
+
   it('a local write still running when sign-out keeps the file is not deleted behind it', async () => {
     const s = createDaysStore(() => expoDaysPort(), 'local');
     let release!: () => void;

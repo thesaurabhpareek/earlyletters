@@ -95,8 +95,24 @@ describe('[CPO-30] Keep in this account adopts both local files first', () => {
       if (store === 'days') throw new Error('disk');
       return 'adopted';
     };
-    await expect(adoptDeviceOnlyLocal(ASHA)).resolves.toBeUndefined();
+    await expect(adoptDeviceOnlyLocal(ASHA)).resolves.toBe(false);
     expect(h.calls).toEqual([`days.adopt:${ownerKey(ASHA)}`, `moments.adopt:${ownerKey(ASHA)}`]);
+  });
+});
+
+describe('[CPO-30] a failed adopt holds the claim: not confirmed, nothing deleted, retry works', () => {
+  for (const failing of [['days'], ['moments'], ['days', 'moments']]) {
+    it(`adopt failed on ${failing.join(' and ')}: false; a retry with both working says true`, async () => {
+      h.adopt = async (store) => (failing.includes(store) ? 'failed' : 'adopted');
+      expect(await adoptDeviceOnlyLocal(ASHA)).toBe(false);
+      h.adopt = async () => 'adopted';
+      expect(await adoptDeviceOnlyLocal(ASHA)).toBe(true);
+    });
+  }
+
+  it('a nothing-to-adopt answer does not hold the claim', async () => {
+    h.adopt = async () => 'none';
+    expect(await adoptDeviceOnlyLocal(ASHA)).toBe(true);
   });
 });
 
@@ -105,7 +121,7 @@ describe('[CPO-30] session-provider wiring', () => {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const t = readFileSync(join(__dirname, '..', 'src/lib/auth/session-provider.tsx'), 'utf8');
-    expect(t).toMatch(/adoptDeviceOnlyLocal\(cur\.userId\)\.then\(\(\) => confirmAccountClaim\(cur\.userId\)\)/);
+    expect(t).toMatch(/adoptDeviceOnlyLocal\(cur\.userId\)\.then\(\(ok\) => ok && confirmAccountClaim\(cur\.userId\)\)/);
     expect(t).toMatch(/bindDeviceOnlyOwners\(\)/);
   });
 });

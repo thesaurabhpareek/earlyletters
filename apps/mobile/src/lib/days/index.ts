@@ -98,10 +98,10 @@ export function createDaysStore(getPort: () => DaysPort | null, initialOwner = L
       const run = queue.then(async (): Promise<'adopted' | 'none' | 'failed'> => {
         if (started !== generation) return 'failed';
         const p = port();
-        if (!p) return 'failed';
+        if (!p) return 'none'; // no disk here: nothing to adopt, and a claim must not wait on it forever
         const r = readDays(p, LOCAL_OWNER);
         if (r.state === 'empty' || r.state === 'foreign') return 'none';
-        if (r.state !== 'ok') return 'failed';
+        if (r.state !== 'ok') return 'none'; // unreadable, newer or unavailable: nothing this build can adopt, so the claim is not held up
         return (await writeDays(p, { ...r.file, owner: key })) === 'ok' ? 'adopted' : 'failed';
       });
       queue = run.catch(() => {});
