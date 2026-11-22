@@ -70,6 +70,7 @@ Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven lang
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
 - No exclamation marks in notifications (Q-NTC-7, CL-040).
+- No "we", "us" or "our" in a notification or reminder line (BL-474). Say what the parent can do, not what we will do; the rules test `reminder-copy-no-we.test.ts` holds the line.
 
 Good: "Anything to tell {child} today?" (only where the parent has turned names on for the lock screen)
 Good: "A minute before bed? {child}'s book is open." (same: names on only)
