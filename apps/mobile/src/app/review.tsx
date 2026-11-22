@@ -124,6 +124,7 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
+import { brand } from '@scribe/brand';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -227,6 +228,8 @@ export default function Review() {
   const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
   const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [letGoPending, setLetGoPending] = useState(false);
+  const letGoTold = useRef<string | null>(null);
   // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
   const [gate, setGate] = useState<KeepGate | null>(null);
   const toast = useToast();
@@ -414,7 +417,18 @@ export default function Review() {
         style: 'destructive',
         onPress: () => {
           haptic('warning');
-          letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          let gone = false;
+          try {
+            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          } catch {
+            gone = false; // any throw is the same as not removed yet
+          }
+          // Not removed yet (BL-926): stay on Review, say so once; the launch sweep tries again.
+          if (!gone) {
+            setLetGoPending(true);
+            return;
+          }
+          setLetGoPending(false);
           if (router.canGoBack()) router.back();
           else router.replace('/');
         },
@@ -725,6 +739,19 @@ export default function Review() {
     if (saveFailed) announce(r.saveFailed);
   }, [saveFailed, r.saveFailed]);
 
+  // BL-926: the line belongs to one recording; another recording on this Review starts clean.
+  useEffect(() => {
+    setLetGoPending(false);
+    letGoTold.current = null;
+  }, [draft?.id]);
+
+  // BL-926: a Let it go the phone would not finish is said aloud once for this recording (iOS VoiceOver ignores live regions).
+  useEffect(() => {
+    if (!letGoPending || letGoTold.current === draft?.id) return;
+    letGoTold.current = draft?.id ?? null;
+    announce(fill(r.letGoPending, { app: brand.name }));
+  }, [letGoPending, draft?.id, r.letGoPending]);
+
   const dismissFirstNote = () => {
     setSetting('review.firstNoteSeen', '1');
     setFirstNote(false);
@@ -1017,6 +1044,12 @@ export default function Review() {
           {saveFailed && phase !== 'ready' && (
             <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
               {r.saveFailed}
+            </Text>
+          )}
+
+          {letGoPending && (
+            <Text variant="subhead" tone="muted" className="text-center" testID="review.letGoPending">
+              {fill(r.letGoPending, { app: brand.name })}
             </Text>
           )}
 
