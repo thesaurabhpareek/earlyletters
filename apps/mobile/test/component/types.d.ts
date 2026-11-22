@@ -7,6 +7,7 @@ declare module 'react-native-web' {
   import type { ComponentType } from 'react';
   export const View: ComponentType<Record<string, unknown>>;
   export const Text: ComponentType<Record<string, unknown>>;
+  export const Pressable: ComponentType<Record<string, unknown>>;
 }
 
 declare module 'react-dom/server' {

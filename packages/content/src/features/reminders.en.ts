@@ -20,7 +20,7 @@ export const reminderCopy = {
       { title: 'A few words tonight?', body: 'A line or two for the book.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
       { title: 'Say a few words', body: 'Talk or type, whichever is easier.' },
-      { title: 'Before you sleep', body: 'A moment from today? Or tap Not much today.' },
+      { title: 'Before you sleep', body: 'A line from today? Or tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
     // TODO(founder): PROPOSED, needs word approval (BL-966c; E45, E82, G-D21 default). With names off a month or birthday

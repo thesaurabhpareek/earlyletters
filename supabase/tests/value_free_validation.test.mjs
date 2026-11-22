@@ -328,4 +328,70 @@ check('VF-12 insert path: a photo_path outside the book is refused the same way'
 const e5 = await refusal(`insert into children (id, name, created_by) values (gen_random_uuid(), $1, $2)`, [WORD, users.A]);
 check('VF-12 insert path: no birthday and no due date is refused the same way', e5?.code === '23514' && e5.constraint === 'children_has_date' && bare(e5, WORD));
 await sys('rollback');
+// ---- BL-1537 (BL-244c): a date or boolean that does not parse. The cast printed the client's own text ("invalid input syntax for
+// type date: ...") in the message of book_update and create_first_run_children (and, through them, of sync_push's book.update and
+// book.first_run). 20261122100000 parses with sync_private.safe_date and safe_bool: the same SQLSTATE, a fixed message.
+// sync_push's own book.create cast is caught by its per-op handler, which answers the SQLSTATE only (VF-15).
+const BAD = 'आशा-१९/१३/४५';   // not a date, not a boolean; Devanagari so a leak is found by the value
+const sqlstateOf = async (sql) => (await trap(() => sys(sql)))?.code;
+// VF-13 the helpers keep the cast's SQLSTATE, whatever the input, and answer a fixed message.
+const CASES = [['date', BAD], ['date', ''], ['date', '2025-02-30'], ['date', '2025-13-01'], ['date', '2025-04-12'], ['date', null],
+  ['boolean', BAD], ['boolean', ''], ['boolean', 'true'], ['boolean', 't'], ['boolean', null]];
+for (const [ty, v] of CASES) {
+  const lit = v === null ? 'null' : `'${v}'`;
+  const raw = await trap(() => sys(`select ${lit}::${ty}`));
+  const safe = await trap(() => sys(`select sync_private.safe_${ty === 'date' ? 'date' : 'bool'}(${lit}) x`));
+  const same = raw === null ? safe === null : safe?.code === raw.code && safe.detail === undefined && safe.hint === undefined
+    && (!v || !String(safe.message).includes(String(v).slice(0, 5))) && /^[a-z ]+$/.test(String(safe.message));
+  check(`VF-13 safe_${ty === 'date' ? 'date' : 'bool'}(${JSON.stringify(v)}): ${raw === null ? 'parses like the cast' : `same SQLSTATE ${raw.code}, fixed message, no value`}`, same);
+}
+check('VF-13 safe_date and safe_bool return what the cast returns',
+  (await sys(`select sync_private.safe_date('2025-04-12') = '2025-04-12'::date a, sync_private.safe_bool('yes') b, sync_private.safe_bool('f') = false c, sync_private.safe_date(null) is null d`)).rows
+    .every((r) => r.a && r.b && r.c && r.d));
+// VF-14 who may run them, from the catalog (invoker callers need EXECUTE; anon and PUBLIC never; pinned search_path; not definer).
+const hp = (await sys(`select p.proname, p.prosecdef, p.provolatile,
+    (select substr(c, 13) from unnest(coalesce(p.proconfig, '{}'::text[])) c where c like 'search_path=%' limit 1) sp,
+    has_function_privilege('authenticated', p.oid, 'execute') auth, has_function_privilege('anon', p.oid, 'execute') anon,
+    exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.privilege_type = 'EXECUTE' and a.grantee = 0) pub
+  from pg_proc p where p.pronamespace = 'sync_private'::regnamespace and p.proname in ('safe_date', 'safe_bool')`)).rows;
+check('VF-14 both helpers exist', hp.length === 2);
+for (const f of hp) {
+  check(`VF-14 ${f.proname}: SECURITY INVOKER, stable, search_path pinned pg_catalog first and pg_temp last`, f.prosecdef === false && f.provolatile === 's' && /^pg_catalog\b.*pg_temp$/.test(f.sp ?? ''));
+  check(`VF-14 ${f.proname}: executable by authenticated (sync_push and held writers are invokers), not by anon or PUBLIC`, f.auth && !f.anon && !f.pub);
+}
+// VF-15 the callers. The same bad text in each date field and the boolean, direct and through sync_push.
+const kid5 = await newChild(users.A, WORD, '2025-04-12');
+const noValue = (e) => e !== null && bare(e, BAD, BAD.slice(0, 5)) && !/invalid input syntax/.test(String(e.message));
+for (const [field, ty] of [['date_of_birth', '22007'], ['due_date', '22007'], ['family_can_read', '22P02']]) {
+  const e = await trap(() => bu(kid5, { [field]: BAD }));
+  check(`VF-15 book_update ${field}: refused ${ty} as before, fixed message, no value`, e?.code === ty && noValue(e));
+}
+const eFr = await trap(() => as(users.A, `select public.create_first_run_children($1::jsonb)`,
+  [JSON.stringify([{ id: uuid7(), name: WORD, date_of_birth: BAD }])]));
+check('VF-15 create_first_run_children date_of_birth: refused 22007 as before, fixed message, no value', eFr?.code === '22007' && noValue(eFr));
+const eFr2 = await trap(() => as(users.A, `select public.create_first_run_children($1::jsonb)`,
+  [JSON.stringify([{ id: uuid7(), name: WORD, due_date: BAD }])]));
+check('VF-15 create_first_run_children due_date: refused 22007 as before, fixed message, no value', eFr2?.code === '22007' && noValue(eFr2));
+for (const [name, o, code] of [
+  ['book.update date_of_birth', { op: id7(), type: 'book.update', id: kid5, data: { date_of_birth: BAD } }, '22007'],
+  ['book.update family_can_read', { op: id7(), type: 'book.update', id: kid5, data: { family_can_read: BAD } }, '22P02'],
+  ['book.first_run due_date', { op: id7(), type: 'book.first_run', id: id7(), data: { children: [{ id: id7(), name: WORD, due_date: BAD }] } }, '22007'],
+  ['book.create date_of_birth', { op: id7(), type: 'book.create', id: id7(), data: { name: WORD, date_of_birth: BAD } }, '22007'],
+]) {
+  const r = await push([o]);
+  const text = JSON.stringify(r);
+  check(`VF-15 sync_push ${name}: refused ${code} as before, the answer has no value`,
+    r.results[0].ok === false && r.results[0].code === code && !text.includes(BAD.slice(0, 5)) && !/invalid input/.test(text));
+}
+// VF-16 good values still go through, on every caller.
+check('VF-16 book_update: a date, a due date and a boolean written as text are accepted',
+  (await trap(() => bu(kid5, { date_of_birth: '2025-05-01', due_date: '2025-04-20', family_can_read: 'true' }))) === null);
+const okFr = await trap(() => as(users.A, `select public.create_first_run_children($1::jsonb)`,
+  [JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-06-01' }, { id: uuid7(), name: 'Ashu', due_date: '2027-01-01' }])]));
+check('VF-16 create_first_run_children: two books with a date each are accepted', okFr === null);
+check('VF-16 the birthday written by book_update is the one stored',
+  (await sys(`select date_of_birth::text d from children where id = $1`, [kid5])).rows[0].d === '2025-05-01');
+// VF-17 the callers use the helpers, from source: no raw date or boolean cast of a jsonb field is left in the two bodies.
+const src = (await sys(`select p.proname, p.prosrc from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('book_update', 'create_first_run_children')`)).rows;
+check('VF-17 book_update and create_first_run_children hold no raw ::date or ::boolean cast', src.length === 2 && src.every((f) => !/::\s*(date|boolean)\b|\sdate_of_birth date|\sdue_date date/.test(f.prosrc)));
 done();
