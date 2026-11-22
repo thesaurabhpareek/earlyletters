@@ -193,6 +193,25 @@ describe('a lock that falls due during a take waits for it (real controller)', (
   });
 });
 
+describe('the switcher cover with App lock off (BL-1407 option a, real controller)', () => {
+  it('covers while the app is not in front, never locks, and never asks', () => {
+    h.settings.clear(); // appLock.enabled unset: the lock is off
+    vi.spyOn(Date, 'now').mockImplementation(() => 5_000_000);
+    controller.reloadAppLock();
+    expect(controller.getAppLockState().enabled).toBe(false);
+    expect(controller.coverShown(controller.getAppLockState())).toBe(false);
+    h.appStateListener!('inactive'); // the app switcher snapshot is taken here
+    expect(controller.coverShown(controller.getAppLockState())).toBe(true);
+    h.appStateListener!('background');
+    expect(controller.coverShown(controller.getAppLockState())).toBe(true);
+    h.appStateListener!('active');
+    const s = controller.getAppLockState();
+    expect(controller.coverShown(s)).toBe(false);
+    expect(s).toMatchObject({ enabled: false, locked: false, promptArmed: false });
+    vi.restoreAllMocks();
+  });
+});
+
 describe('the lock layer stays mounted through the unlock fade (layer.logic.ts)', () => {
   it('unlocking while the system sheet still has the app inactive, then active: mounted until the fade ends', () => {
     let l = layerStep(LAYER_HIDDEN, { show: true, locked: true }); // locked, cover up
