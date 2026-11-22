@@ -87,3 +87,28 @@ describe('[BL-1576] a shell EXPO_PUBLIC_E2E never reaches a non-seam web build',
   });
 });
 // Web-scan note (BL-1576): B-8 scans an iOS export only. If a web store bundle ever exists, scan it for the e2e seam too.
+
+describe('[BL-1576] no shell EXPO_PUBLIC_* key reaches any web build except what the build sets itself', () => {
+  const POLLUTED = {
+    EXPO_PUBLIC_E2E: '1',
+    EXPO_PUBLIC_WEB_PREVIEW: '1',
+    EXPO_PUBLIC_SUPABASE_URL: 'https://shell.example',
+    EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'shell-key',
+    EXPO_PUBLIC_APP_ENV: 'production',
+    EXPO_PUBLIC_ANYTHING_NEW: 'x',
+    PATH: '/usr/bin',
+  };
+  for (const b of BUILDS)
+    it(`[BL-1576] ${b.name}: only the build's own EXPO_PUBLIC_* keys and values survive a polluted shell`, () => {
+      const env = { ...inheritedEnv(POLLUTED), ...buildEnv(b.env) } as Record<string, string | undefined>;
+      const own = buildEnv(b.env);
+      for (const [k, v] of Object.entries(env)) if (k.startsWith('EXPO_PUBLIC_')) expect(v, k).toBe(own[k]);
+      for (const k of Object.keys(POLLUTED)) if (k.startsWith('EXPO_PUBLIC_') && !(k in own)) expect(env[k], k).toBeUndefined();
+      expect(env.PATH).toBe('/usr/bin');
+    });
+  it('[BL-1576] the supabase https build keeps its own URL and key over a shell value', () => {
+    const env = { ...inheritedEnv(POLLUTED), ...buildEnv(BUILDS.find((x) => x.name === 'server-on')!.env) };
+    expect(env.EXPO_PUBLIC_SUPABASE_URL).toBe(MOCK_SUPABASE_URL);
+    expect(env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY).toBe('e2e-web-publishable-key');
+  });
+});
