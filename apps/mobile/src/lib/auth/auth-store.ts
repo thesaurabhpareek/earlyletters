@@ -21,6 +21,7 @@
  * state, for the screens.
  */
 import { needsAccountClaim } from './account-claim.logic';
+import { clearPendingSignInMemory } from './pending-memory';
 import { joinWait } from '@/components/family/join-wait.logic';
 import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
 
@@ -128,6 +129,9 @@ export function publishAuth(next: AuthState): void {
     // Loaded on demand so the store stays free of the Keychain module for code that only reads auth state.
     void import('@/lib/family/pending-invite').then((m) => m.clearReadPendingInvite()).catch(() => {});
   } else if (!now) joinWait.clear();
+  // Cross-account audit F3: the typed address and a sign-in link hash end with the session or the account that held
+  // them. A sign-in in progress (nobody signed in yet, `was` null) keeps them.
+  if (was && authUserId(next) !== was) clearPendingSignInMemory();
   listeners.forEach((l) => l(next));
   announce();
 }

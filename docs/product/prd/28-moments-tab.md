@@ -1347,6 +1347,15 @@ New rows R269 to R301 from the hybrid design (section 3.4) and the seven hybrid 
 
 Closed by founder rulings of 21 Nov, so no longer open: (1) the first release includes the library read (closes reconciliation decision 3 and the phase-order rows; see O-29 for the numbering question); (2) places and special occasions are in (reverses the no-place, no-title position, RV-18 and RV-19). Faces and naming people are not decided (O-30). Each has a recommended default. If the founder says nothing by the deadline, the default applies to docs and test builds only, never to public text. Dates are PROPOSED; the Build 13 freeze date was not read by any lead.
 
+Decided 21 Nov 2026 (six questions, decided by the executive council and approved by the founder). His words, as relayed to the filing session, verbatim: "Decide for all 10 with exec team. I approve their decision. Same for 6 moments questions." The rulings are `CPO-17` and `CPrivO-10` in `docs/agents/exec/RULINGS.md` (PR #1377, not merged when this line was written). Every line a parent reads stays PROPOSED and no new words are added here. Where an earlier row, default or status below says OPEN or gives a different default, this block wins and the older text is left as written.
+
+1. Tab position (O-01, RV-01, C-2). Moments is the second of four tabs: Home, Moments, Book, Me. Home stays the landing tab. This is the default of 4.1.
+2. Library read in the first release (O-37, O-39, O-52, RV-13, RV-17). The first Moments release ships with the photo-library read (Route B) in 1.0: places and occasions in, faces and naming people out (O-30 stays OUT). The G6 production-flags guard (`g6-production-flags-off`, `store-flags.mjs`) is amended in the PR that adds the PHAsset use and its usage strings, and not before. Gates G1 to G11 apply before store submission, not before coding starts (21). Which slips if a gate is still open (O-37) is not answered by this line.
+3. Places and H-10 (RV-18, RV-19, O-42). Only the person's own photo metadata (the date and the place the picture carries) is used. No machine-written scene, face or people label is shown or stored as the family's words: the machine may remove and repair, never add meaning. K-SUG stays NOT PLANNED (7a.4).
+4. Backup of picture copies (O-44, R235). Keep ADR 0028 D1: stored picture copies stay in the iPhone backup, and the policy and the deletion screen say so (disclosure; device row D-3). This is the default of R235.
+5. Email and library-timed push (O-02, O-03, O-50, RV-08, RV-09). No library-timed push in 1.0 and no Moments email in 1.0. Both are off.
+6. Label and policy claims (O-48 in part, RV-04). No whole-app "Data Not Collected" claim (CPrivO-10). A per-type line only, in the same build as the behaviour it describes (NS-53-R81). The value proposition text of 16.1 stays PROPOSED until the founder reads it (O-48 is not closed by this line).
+
 | Id | Question | Default | Deadline |
 |---|---|---|---|
 
@@ -1441,6 +1450,8 @@ Round 1 triage (EX-CPO-10): the founder-only set is O-01, O-02, O-03, O-05, O-07
 | Tab position (O-01) | Home landing, Moments second | 4.1 |
 | Spend of any kind | None | 21.2 |
 | H-10 machine-label boundary | Sign in the G10 entry | 3.1 |
+
+Decided 21 Nov 2026: the six items in the block at the top of section 23 (tab position, library read in 1.0, places and the H-10 boundary, picture copies in the backup, no library-timed push or Moments email, no whole-app "Data Not Collected" claim) are decided by the council and approved by the founder. The defaults in the rows O-01, O-44 and H-10 above stand as decided; the rows O-02, O-03, O-50 and O-37 take the answers in that block and are otherwise unchanged.
 
 ### 23.2 The CPO cut list and the flag split, recommendations only (O-39)
 
