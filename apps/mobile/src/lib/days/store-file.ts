@@ -6,6 +6,7 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import { ScribeFiles } from '../../../modules/scribe-files';
+import { readBackFlag } from '../backup/readback';
 import { type DaysFile, parseDays, serializeDays } from './store.logic';
 
 export const DAYS_FOLDER = 'days';
@@ -51,19 +52,21 @@ function excludedAfterSet(port: DaysPort, name: string): boolean {
 }
 
 /** `owner` is the current owner key; a file of another owner reads as empty (fail closed). */
-export function readDays(port: DaysPort, owner: string): DaysRead {
+export function readDays(port: DaysPort, owner: string, moment: 'open' | 'restore' = 'open'): DaysRead {
   try {
     if (!port.exists(DAYS_FILE)) return { state: 'empty' };
-    if (!port.isExcluded(DAYS_FILE)) {
-      port.remove(DAYS_FILE);
-      return { state: 'unavailable' };
-    }
+    if (!readBackFlag(port, DAYS_FILE, moment).ok) return { state: 'unavailable' };
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
     return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign', owner: parsed.file.owner };
   } catch {
     return { state: 'unreadable' };
   }
+}
+
+/** After a restore (R42, R43): the flag is read back first; a file that lost it came with the restore, is removed and never read. */
+export function readDaysAfterRestore(port: DaysPort, owner: string): DaysRead {
+  return readDays(port, owner, 'restore');
 }
 
 /** 'unavailable' means 0 bytes were written, or nothing is left: after the rename a failure deletes the final file too. */
@@ -78,7 +81,7 @@ export async function writeDays(port: DaysPort, file: DaysFile): Promise<'ok' | 
     port.write(DAYS_TMP, serializeDays(file));
     await port.rename(DAYS_TMP, DAYS_FILE);
     renamed = true;
-    if (port.isExcluded(DAYS_FILE)) return 'ok';
+    if (readBackFlag(port, DAYS_FILE, 'replace').ok) return 'ok';
     port.write(DAYS_FILE, '');
   } catch {
     // fall through: nothing sensitive may stay
