@@ -167,7 +167,7 @@ describe('S15: the language is not on this phone yet', () => {
     expect(c.note).toBe('This phone needs 1.6 GB of free space first.');
   });
 
-  it('yes given: "Your voice is kept", the real cause, the status line, Keep the recording first', () => {
+  it('yes given: "Recording kept", the real cause, the status line, Keep the recording first', () => {
     const c = card(EVERY.downloading);
     expect(c).toMatchObject({ state: 'downloading', title: en.review.waiting.title, body: en.review.waiting.body, primary: 'keep', quiet: 'type', still: true });
     expect(c.body).toBe('Your words will appear once the download finishes.');

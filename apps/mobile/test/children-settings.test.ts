@@ -252,7 +252,7 @@ describe('[11 Nov, lens A on #720, item 6] the invite confirmation reaches the p
     expect(family).toMatch(reads);
     expect(page).toMatch(/useFocusEffect\(\s*useCallback\(\(\) => \{\s*const note = familyNotice\.take\(\);/);
     // The sheet still leaves the same existing word, and nothing else, as it closes.
-    expect(code('app/invite/new.tsx')).toMatch(/familyNotice\.leave\(k\.done\);\s*close\(\);/);
+    expect(code('app/invite/new.tsx')).toMatch(/familyNotice\.leave\(k\.done, owner\);\s*close\(\);/);
     expect(familyCopy.create.done).toBe('The invite waits until they join.');
   });
 });

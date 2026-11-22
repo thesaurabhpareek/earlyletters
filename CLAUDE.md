@@ -60,7 +60,7 @@ Before you write or change any customer-facing line, read `packages/content/WRIT
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
 - Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
 - Approval: Karma (the CTO role) approves and merges every PR into `develop` once two counted reviews and the required checks hold (CR-70, CR-73). Do not ask the founder to approve, comment on or paste anything for a PR. What stays his is the list in CR-73 (money, accounts and secrets, hosted migrations, store builds and submission, what users are promised, scope and dates, one-way doors, legal text, `docs/DECISIONS.md` entries that are not his recorded words, and this constitution).
-- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+- Unattended harness agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`. That limit is theirs only. Merging into `develop` is Karma's (the approval rule above), done by an interactive session once the gates hold; no session waits for the founder to say "merge" or to name a PR or a sha.
 
 ## Saving work (every session, human or AI)
 - A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.
@@ -72,3 +72,11 @@ Before you write or change any customer-facing line, read `packages/content/WRIT
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
 - Every new table, view, sequence or function in `public` carries its own grants in its own migration (default privileges are reset since `20261023060000`), and its grant goes in `supabase/tests/grants.mjs`.
 - Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.
+
+## Pull requests (so a human, a tool and an agent can all find and read them)
+- Title: `type(scope): outcome in plain words (BL-123)`. Aim for 72 characters, never over 100 (the median merged title was about 110 on 28 Oct). Put the BL id in the title; the dispatcher reads it from there. Types: `feat fix perf refactor test docs chore`. Scope is the area and is free text.
+- Body follows `.github/pull_request_template.md`. "Not verified" is on every PR. "Risk and rollback" is required when the risk label is `med` or `high`, and always for migrations and workflows.
+- Labels: one `type:*` (from the title), one or more `area:*` (`core db harness mobile release web`; `core` covers `packages/*`), one `risk:*`. Risk floor by path: a migration is `risk:high`; `supabase/`, `.github/`, auth, payments, `eas.json`, `app.config.ts`, `packages/core/src/{plan,verify,pipeline,meaning,types}.ts` are at least `risk:med`; other code under `apps/` or `packages/` is `risk:med`; docs and tests only are `risk:low`. Agent labels stay as they are.
+- Comments say why, name the invariant and the failure mode. They never restate the next line. Tests name the requirement or rule they prove. A migration opens with its purpose, rollback and ordering.
+- A skill or Copilot run is advisory evidence: paste what it found. It does not count as one of the two independent reviews that D-107 requires; this section sets that rule.
+- Optimised means measured: a new query gets `EXPLAIN` or a perf test, a size change is read against `docs/ops/APP_SIZE.md`. If nothing was measured, the template says `not-measured`.

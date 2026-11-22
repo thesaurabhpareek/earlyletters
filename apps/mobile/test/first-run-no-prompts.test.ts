@@ -4,7 +4,7 @@
  * scans, as the design says (docs/tdd/new-scope/12-first-run-4.md section 14, FS-5, FS-8). The device half of R2 (no
  * iOS prompt through "The book is open.") is a human run on the Asha-only install; it is not claimed here.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -47,7 +47,13 @@ const read = (f: string) => strip(readFileSync(f, 'utf8'));
  * `from` is still followed.
  */
 export const withoutTypeOnly = (src: string) =>
-  src.replace(/typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown').replace(/^\s*(?:import|export)\s+type\b[^;]*;/gm, '');
+  src
+    // A type alias line: everything after `=` is a type, so `typeof import('x')` there loads nothing.
+    .replace(/^([ \t]*(?:export\s+)?(?:declare\s+)?type\s+[A-Za-z_$][\w$]*[^=\n]*=)[^;\n]*/gm, '$1 unknown')
+    // After `:` or `as` it is a type. In a value position (`const m = typeof import('x')`) it still names a real module.
+    .replace(/(?<=(?::|\bas)\s*)typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown')
+    // Anchored on the `from '...'` clause, so a missing `;` cannot run on into the next statement.
+    .replace(/^[ \t]*(?:import|export)\s+type\b[^'"]*?\bfrom\s*['"][^'"\n]+['"][ \t]*;?/gm, '');
 
 /** Every local file the entry reaches through `@/` or relative import, dynamic import or bare require(), itself included. */
 export function importGraph(entry: string, { requires = true }: { requires?: boolean } = {}): string[] {
@@ -57,7 +63,7 @@ export function importGraph(entry: string, { requires = true }: { requires?: boo
     const file = stack.pop()!;
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const m of withoutTypeOnly(read(file)).matchAll(requires ? /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"]([^'"]+)['"]/g : /(?:\bfrom|\bimport)\s*\(?\s*['"]([^'"]+)['"]/g)) {
+    for (const m of withoutTypeOnly(read(file)).matchAll(requires ? /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"`]([^'"`$\n]+)['"`]/g : /(?:\bfrom|\bimport)\s*\(?\s*['"`]([^'"`$\n]+)['"`]/g)) {
       const spec = m[1]!;
       const base = spec.startsWith('@/') ? join(SRC, spec.slice(2)) : spec.startsWith('.') ? resolve(dirname(file), spec) : null;
       if (!base) continue;
@@ -110,6 +116,65 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  /** Builds a throwaway tree, walks it from entry.ts and returns the reached file names. */
+  const reach = (files: Record<string, string>, requires = true) => {
+    const dir = mkdtempSync(join(tmpdir(), 'asha-walk-'));
+    try {
+      for (const [name, body] of Object.entries(files)) {
+        mkdirSync(dirname(join(dir, name)), { recursive: true });
+        writeFileSync(join(dir, name), body);
+      }
+      return importGraph(join(dir, 'entry.ts'), { requires }).map((f) => f.slice(dir.length + 1)).sort();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const ASKS = "import * as N from 'expo-notifications';\nexport const ask = () => N.requestPermissionsAsync();\n";
+
+  // BL-1478 gap 1: require('./x') with a string literal.
+  it('[BL-1478] gap 1: a hidden asking module behind require("./x") is reached', () => {
+    const got = reach({ 'entry.ts': "export const a = () => require('./hidden');\n", 'hidden.ts': ASKS });
+    expect(got).toContain('hidden.ts');
+  });
+
+  // BL-1478 gap 2: typeof import() is a type only after `:` or `as` or in a type alias.
+  it('[BL-1478] gap 2: typeof import() in a value position is followed; after ":", "as" or in a type alias it is not', () => {
+    expect(reach({ 'entry.ts': "export const m = typeof import('./hidden');\n", 'hidden.ts': ASKS })).toContain('hidden.ts');
+    expect(reach({ 'entry.ts': "export const m = [typeof import('./hidden')];\n", 'hidden.ts': ASKS })).toContain('hidden.ts');
+    expect(reach({ 'entry.ts': "export const m = f(typeof import('./hidden'));\n", 'hidden.ts': ASKS })).toContain('hidden.ts');
+    expect(reach({ 'entry.ts': "export let m: typeof import('./hidden');\n", 'hidden.ts': ASKS })).toEqual(['entry.ts']);
+    expect(reach({ 'entry.ts': "export const m = x as typeof import('./hidden');\n", 'hidden.ts': ASKS })).toEqual(['entry.ts']);
+    expect(reach({ 'entry.ts': "export type M = typeof import('./hidden');\n", 'hidden.ts': ASKS })).toEqual(['entry.ts']);
+    expect(reach({ 'entry.ts': "type M = typeof import('./hidden')\nexport const a = 1;\n", 'hidden.ts': ASKS })).toEqual(['entry.ts']);
+  });
+
+  // BL-1478 gap 3: an `import type` with no trailing semicolon must not swallow the next import.
+  it('[BL-1478] gap 3: an import type with no semicolon does not hide the import after it', () => {
+    const files = { 'a.ts': 'export type A = 1;\n', 'hidden.ts': ASKS };
+    expect(reach({ ...files, 'entry.ts': "import type { A } from './a'\nimport { ask } from './hidden'\nexport const x = ask;\n" })).toEqual(['entry.ts', 'hidden.ts']);
+    expect(reach({ ...files, 'entry.ts': "import type {\n  A,\n} from './a'\nexport * from './hidden'\n" })).toEqual(['entry.ts', 'hidden.ts']);
+    expect(reach({ ...files, 'entry.ts': "export type { A } from './a'\nexport { ask } from './hidden'\n" })).toEqual(['entry.ts', 'hidden.ts']);
+  });
+
+  // The rest of the ways a module can be pulled in. Each hides an asking module one hop away; the walk must reach it.
+  it('[BL-1478] a hidden asking module is reached through a dynamic import, a template import, a re-export and a barrel', () => {
+    const hidden = { 'hidden.ts': ASKS };
+    expect(reach({ ...hidden, 'entry.ts': "export const l = () => import('./hidden');\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': 'export const l = () => import(`./hidden`);\n' })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "export { ask } from './hidden';\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "export * from './hidden';\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "export * as h from './hidden';\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "import './hidden';\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "import { ask } from './lib';\n", 'lib/index.ts': "export * from '../hidden';\n" })).toContain('hidden.ts');
+    expect(reach({ ...hidden, 'entry.ts': "import { ask } from './lib';\n", 'lib/index.tsx': "export { ask } from '../hidden';\n" })).toContain('hidden.ts');
+  });
+
+  it('[BL-1478] a type-only import, export or typeof import() is not followed (no false alarm)', () => {
+    const hidden = { 'hidden.ts': ASKS };
+    expect(reach({ ...hidden, 'entry.ts': "import type { A } from './hidden';\nexport type { B } from './hidden';\nimport type * as H from './hidden';\n" })).toEqual(['entry.ts']);
+    expect(reach({ ...hidden, 'entry.ts': "import type A from './hidden'\nexport const x = 1;\n" })).toEqual(['entry.ts']);
   });
 
   it('[NS-39-R2] no first-run module asks for a permission or authenticates', () => {
@@ -177,40 +242,40 @@ export function lockRuleBreaks(raw: string): string[] {
 describe('[NS-39-R2] device.ts reaches the lock only through its lazy read', () => {
   const GOOD = "function appLocked(): boolean {\n  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;\n}\n";
 
-  it('[NS-39-R2-1] positive control: the lazy read passes, and an extra app-lock mention is counted', () => {
+  it('[NS-39-R2] positive control: the lazy read passes, and an extra app-lock mention is counted', () => {
     expect(lockRuleBreaks(GOOD)).toEqual([]);
     expect(lockRuleBreaks(GOOD + "import { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-1');
     expect(lockRuleBreaks(GOOD + "const m = await import('../app-lock/prefs');\n")).toContain('NS-39-R2-1');
   });
 
-  it('[NS-39-R2-1] device.ts holds exactly the expected number of app-lock matches', () => {
+  it('[NS-39-R2] device.ts holds exactly the expected number of app-lock matches', () => {
     const src = strip(readFileSync(DEVICE, 'utf8'));
     expect((src.match(/app-lock/g) ?? []).length).toBe(EXPECTED_APP_LOCK_MATCHES_IN_DEVICE);
     // After type-only references are erased, one runtime reference is left: the lazy require.
     expect((withoutTypeOnly(src).match(/app-lock/g) ?? []).length).toBe(1);
   });
 
-  it('[NS-39-R2-2] positive control: a re-export of the lock is caught', () => {
+  it('[NS-39-R2] positive control: a re-export of the lock is caught', () => {
     expect(lockRuleBreaks(GOOD + "export { getAppLockState } from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
     expect(lockRuleBreaks(GOOD + "export * from '../app-lock/controller';\n")).toContain('NS-39-R2-2');
     expect(lockRuleBreaks(GOOD + "export {\n  getAppLockState,\n} from \"../app-lock/controller\";\n")).toContain('NS-39-R2-2');
   });
 
-  it('[NS-39-R2-2] device.ts re-exports nothing from the lock', () => {
+  it('[NS-39-R2] device.ts re-exports nothing from the lock', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/\bexport\b[^;]*?\bfrom\s*['"][^'"]*app-lock/);
   });
 
-  it('[NS-39-R2-3] positive control: a top-level require of the lock is caught, an indented lazy one is not', () => {
+  it('[NS-39-R2] positive control: a top-level require of the lock is caught, an indented lazy one is not', () => {
     expect(lockRuleBreaks(GOOD + "const lock = require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
     expect(lockRuleBreaks(GOOD + "require('../app-lock/controller');\n")).toContain('NS-39-R2-3');
     expect(lockRuleBreaks(GOOD).includes('NS-39-R2-3')).toBe(false);
   });
 
-  it('[NS-39-R2-3] device.ts has no require of the lock at the top level of the file', () => {
+  it('[NS-39-R2] device.ts has no require of the lock at the top level of the file', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(/^(?=\S).*?\brequire\s*\(\s*['"][^'"]*app-lock/m);
   });
 
-  it('[NS-39-R2-4] positive control: the lock calls are flagged, a name that only looks similar is not', () => {
+  it('[NS-39-R2] positive control: the lock calls are flagged, a name that only looks similar is not', () => {
     for (const call of ['authenticateAsync(opts)', 'unlockApp()', 'turnOnAppLock()', 'turnOffLock()', 'confirmForExport()', 'whileSharing(fn)', 'startAppLock()', 'markPrompted()', 'readLockAbility()']) {
       expect(LOCK_CALL_PATTERN.test(call), call).toBe(true);
     }
@@ -218,11 +283,11 @@ describe('[NS-39-R2] device.ts reaches the lock only through its lazy read', () 
     expect(LOCK_CALL_PATTERN.test('const unlocked = false;')).toBe(false);
   });
 
-  it('[NS-39-R2-4] device.ts makes none of those calls', () => {
+  it('[NS-39-R2] device.ts makes none of those calls', () => {
     expect(strip(readFileSync(DEVICE, 'utf8'))).not.toMatch(LOCK_CALL_PATTERN);
   });
 
-  it('[NS-39-R2-4] the whole file keeps every rule (Asha photo path)', () => {
+  it('[NS-39-R2] the whole file keeps every rule (Asha photo path)', () => {
     expect(lockRuleBreaks(readFileSync(DEVICE, 'utf8'))).toEqual([]);
     // mutant in memory: each offending line added to the real source is caught by the rule it targets
     const real = readFileSync(DEVICE, 'utf8');

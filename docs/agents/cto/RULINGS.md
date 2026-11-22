@@ -851,3 +851,208 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Stale references fixed in the PR: the migration and File 39 no longer say File 28 or "do not merge before the 9 Nov go/no-go"; `config.toml` no longer cites CR-22 (the harness-freeze ruling) for the account checks. CR-26 and CR-27 stay cited for the original account-checks and fence rulings.
 - Door: two-way with cost. Way back: revert PR #1448.
 - Revisit when: a condition in CCO-7 is met, or the hook is to be enabled. Karma
+
+### Karma ruling on #1486: an agent edit to `.github/workflows` is accepted as T2 (Sun 22 Nov 2026, Karma; recorded by the product agent, no CR number taken)
+- Question: `docs/engineering/01` says agents cannot edit `.github/workflows` and the founder pastes them, and HARNESS section 12 says the agents App has no Workflows permission. #1486 (BL-1479, the scope step in `ci.yml`) edited it directly.
+- Ruling: for #1486 and #1347 only, and not a general right for agents to edit `.github/workflows`: #1486 is accepted as T2, on the same authority as #1347 (same step, merged): two independent reviews including the security lens, no change to a required check or to branch protection, and reversible by revert. Reconciling the chapter wording is left to a follow-up row.
+- Evidence: #1486 merged as 33c5abb8fb0ccaa2113a35cb74dd488cf0670383; #1347 merged as 49a9c884a0054cb8487b7823c1546966d9463086. The ruling text is quoted from Karma's work queue, not from a file in this repository. [UNVERIFIED: that the follow-up row exists.]
+- Founder-only: no.
+
+### Amended by BL-1480 (22 Nov 2026), under CR-74
+A build path is defined once, in docs/ops/RELEASE.md 3.4. NATIVE_PATHS in scripts/agents/merge-queue.mjs is now the original five entries plus apps/mobile/metro.config.js, apps/mobile/store.config.json, apps/mobile/version.json, apps/mobile/src/lib/privacy-manifest.ts, apps/mobile/src/lib/permission-copy.ts and apps/mobile/patches/ (the directory does not exist yet). The CR-74 sentence naming five paths is left as written because this log only grows. A release candidate tag also requires a green post-merge iOS compile run on develop once the founder applies docs/ops/proposed/release-ios-launch-gate.md.
+- Source: review A of #1495 (merged), part (c). Open and not decided here: review A also recommends accepting a skipped compile for these paths when launch is green, and correcting the proposal text from WAIT-CI to WATCH-RED; if either is taken, a later note amends this one.
+
+### Council batch 6 rulings on blocked rows, recorded as CR-150 to CR-173 (22 Nov 2026, Karma with the council; recorded by the product agent)
+Founder standing approval and hard limits are quoted in the Batch 6 section of `docs/agents/exec/RULINGS.md`. Each entry is the council block for one row, faithful to it; "CTO-n" ids of an earlier draft are these CR numbers.
+
+### CR-150 BL-470 No server edit path for a letter's first words (22 Nov 2026, CTO (sync, data), CDO, CPO)
+- Verdict: RULED.
+- Ruling: Part 1: no change. A letter with any attempt (`attempts > 0`) keeps the offer closed, because an attempt whose answer was lost may have reached the server and the server's first raw is fixed; if the outbox already records a definite refusal, the sync owner may reopen the offer for that case only, in one condition and one test. Part 2: no server edit path for a letter's first words. `raw_transcript` is immutable by trigger (CR-147 extends that to the phone); a set-once server path would be an exception to the constitution's immutability line, and CLAUDE.md is the founder's alone. A synced letter with no words keeps its recording and the existing line; no new words.
+- Evidence: `apps/mobile/src/lib/db/repos/entries.ts:261-295`; `apps/mobile/src/lib/store.ts:527-539`; `apps/mobile/src/app/letter/[id].tsx:317`; CR-147; CLAUDE.md constitution.
+- Way back: a later row can add a set-once path with the founder's constitution approval.
+- Status the row takes: `Status: done (council ruling: part 1 unchanged, part 2 no server edit path; raw_transcript stays immutable; the sync owner may narrow part 1 to a definite refusal in one test)`
+- Founder-only: no.
+
+### CR-151 BL-445 Typed invite codes: reopen under D-120's own condition (22 Nov 2026, CTO, CISO, CPrivO, CPO)
+- Verdict: RULED.
+- Ruling: D-120's reopen condition ("after the alpha") is met (D-157, build 12 in production). Item (2) is done (PR #306 merged); remove it. Remaining: (a) the code-registration Edge Function (device makes the 8-character code; server stores the HMAC under `INVITE_CODE_PEPPER`; CISO lens review); (b) the S04 client behind a flag OFF in production until (a) is deployed; (c) the F11-REQ-007 alert and runbook line. BL-524 words go first. Setting or confirming `INVITE_CODE_PEPPER` and the hosted deploy are founder hands and are not covered: one action when (a) merges, confirm the pepper and run the hosted deploy. Whether it ships in 1.0.0 or a 1.0.x is the dispatcher's order under D-121.
+- Evidence: D-120 (`docs/DECISIONS.md` lines 643, 876-894); PR #306; `supabase/migrations/20261028010000_invite_redeem_by_code.sql`; `supabase/functions/invite-redeem/handler.ts:140,166`; `docs/ops/SECURITY.md:30`; `docs/prd/v2/features/F11-co-parent.md:252`.
+- Way back: flag stays off; revert the three PRs.
+- Status the row takes: `Status: ready (D-120 reopen condition met: PR #306 merged, so item 2 is done; BL-524 words first; hosted deploy and INVITE_CODE_PEPPER check are founder hands). Mode: agent.`
+- Founder-only: no, except: founder hands (secret and hosted deploy) are outside this ruling.
+
+### CR-152 BL-521 APPLY.md step for the typed-code screen folds into BL-445 (22 Nov 2026, CTO, CDO, CISO)
+- Verdict: RULED.
+- Ruling: Do not dispatch on its own: the screen does not exist yet. Fold it into BL-445 as one more done-when line ("APPLY.md has the step and its expected result").
+- Evidence: `supabase/APPLY.md:33`; BL-445.
+- Way back: re-split when BL-445 starts.
+- Status the row takes: `Status: blocked (folded into BL-445's done-when; not dispatched alone). Depends on: BL-445.`
+- Founder-only: no.
+
+### CR-153 BL-525 A retry after success answers `limited`: decouple from BL-445 (22 Nov 2026, CTO, CDO, CISO)
+- Verdict: RULED.
+- Ruling: The function already exists on develop and the limit gate runs before the lookup, so the fix needs no client screen. Ship a new migration with `create or replace` (never edit an applied migration) and a test beside the idempotent-retry check. The hosted apply is the founder's and is not part of this row. The exact repro is [UNVERIFIED]; the named test is the check.
+- Evidence: `supabase/migrations/20261028010000_invite_redeem_by_code.sql:19,109-124`; `supabase/tests/invite_redeem_by_code.test.mjs:84,121-124`; `supabase/APPLY.md:33`.
+- Way back: a later migration.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: none (migration PR only; hosted apply waits for the founder's approve-migration).`
+- Founder-only: no, except: the hosted migration apply is the founder's.
+
+### CR-154 BL-511 Website /stop page waits on an unbuilt endpoint (22 Nov 2026, CTO, CISO, CMO, CPrivO)
+- Verdict: RULED.
+- Ruling: Keep blocked for a sharper reason: the `account-stop` Edge Function is not built (only schemas in `recovery-key.ts`; `backup_svc_stop` exists in SQL). File a new agent row for it (data architect with sync owner; token never leaves the fragment; a GET never changes state); BL-511 depends on it. D-121 item 2(c) stays a hard gate: owner backup stays off until both exist. Agents may build the page against the schema and a stub meanwhile.
+- Evidence: `packages/api/src/server/recovery-key.ts:300-306,352`; `supabase/migrations/20261023000000_backup_server.sql`; `supabase/functions/escrow/restore.ts:100`; `docs/prd/v2/features/F08-recordings.md:189,447`; D-121.
+- Way back: the page and function are additive; leave backup off.
+- Status the row takes: `Status: blocked (the account-stop Edge Function is not built: new row to be filed, then this page; owner backup stays off until both exist, D-121 item 2(c)). Mode: agent. Depends on: the new account-stop row.`
+- Founder-only: no.
+
+### CR-155 BL-513 Website /delete-account/confirm page can be built now (22 Nov 2026, CTO, CISO, CPrivO, CMO)
+- Verdict: RULED.
+- Ruling: The blocker is a deadline, not a dependency. Ready, with conditions: no analytics or third-party script (FR-MSG-36); the one-time link expires; words live in `packages/content` as PROPOSED; a new secret or migration lands as code on develop with the hosted apply and secret left to the founder. The `deletion-confirm` email stays Ops-only until the page ships (FR-MSG-35).
+- Evidence: `docs/emails/CATALOG.md:116,207`; `docs/emails/COMPLIANCE.md:117`; `docs/product/prd/functions/messaging-and-entry-points.md:181-182`; D-042.
+- Way back: remove the route.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: none. (The deletion-confirm email stays Ops-only until this ships; any hosted apply is the founder's.)`
+- Founder-only: no, except: hosted apply and any secret stay the founder's.
+
+### CR-156 BL-522 redeem.brake alert stays with BL-445 (22 Nov 2026, CTO, CPO, CISO)
+- Verdict: RULED.
+- Ruling: The alert watches the code-redemption route BL-445 builds, and no `redeem.brake` text exists yet. Typed codes belong with the co-parent bundle (D-162: no co-parent entry point in a store build until BL-882 to BL-889). Stays blocked on BL-445; build the alert in the same sequence as the route.
+- Evidence: BL-445; D-120, D-162; grep of develop for `redeem.brake` and `SCRAT` finds no alert.
+- Way back: move it with BL-445.
+- Status the row takes: `Status: blocked (BL-445; typed codes belong with the co-parent work, D-162). Mode: pair.`
+- Founder-only: no.
+
+### CR-157 BL-469 Leave sheet close affordance: drop the BL-444 dependency (22 Nov 2026, CTO, CDesO)
+- Verdict: RULED.
+- Ruling: Add a header close or a quiet "Not now" outside `AccountGate` using the `closeLabel` the other three SheetFrames pass; it does not need BL-444's logic. Whichever PR lands second rebases. The screen is latent (`LEAVE_BOOK_OFFERED` is false; D-161, D-162), so priority stays Low. Words go in `packages/content` under WRITING-GUIDE.
+- Evidence: `apps/mobile/src/app/invite/leave.tsx:120-133`; `apps/mobile/src/lib/family/entry.logic.ts:48`; D-161, D-162.
+- Way back: revert one small PR.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: none (rebase onto BL-444 if it lands first).`
+- Founder-only: no.
+
+### CR-158 BL-1475 G3-x exclusion spike is released (22 Nov 2026, CTO, CISO, mobile engineer, CPrivO)
+- Verdict: RULED.
+- Ruling: Release the spike. The read-out ("a per-profile autolinking exclusion removes `scribe-library` from the generated native project, pod list and plist where F2 is off, and keeps it where F2 is on") can be shown with a local prebuild and `expo-modules-autolinking resolve` per profile (mode pair with Karma). An EAS build is an Expo account action and is not needed. O-61 (the second `ios-compile` F2-on leg) is Karma's to paste under CR-73 with a security-architect read because it touches `.github/**`. Whether the prebuild runs in the Linux sandbox is [UNVERIFIED]; the macOS `ios-compile` job is the fallback runner.
+- Evidence: `docs/product/moments-tab/FREEZE-CHECKLIST.md:21,149,229`; `docs/product/prd/28-moments-tab.md:1494,276`; `.github/workflows/ios-compile.yml`; CR-73.
+- Way back: leave PR 9 and 11c unmerged.
+- Status the row takes: `Status: ready (local prebuild and autolinking read-out per profile; no EAS run needed; O-61 paste is Karma's under CR-73 with a security-architect read; the read-out is UNVERIFIED until run). Mode: pair. Depends on: none.`
+- Founder-only: no.
+
+### CR-159 BL-1437 Moments N test layer: carve out the Asha generator (22 Nov 2026, QA, CTO, CPrivO)
+- Verdict: RULED.
+- Ruling: The row stays blocked on real dependencies (PR 9, PR 14, PR 17 and PR 18b-1a, which wait on native read-outs that need a Mac and the founder's phone). One piece moves now: carve the Asha library generator (fictional family only; synthetic dates and coordinates that never leave `src`, CPrivO-14) into its own small `ready` row, QA owner, depends on BL-1432 PR 1 (merged as PR 1435); BL-1437 then depends on it.
+- Evidence: BL-1435, BL-1436, BL-1447, BL-1474, BL-1434; PR 1435; CPrivO-14.
+- Way back: delete the new row.
+- Status the row takes: `Status: blocked (PR 9 of BL-1435, PR 14 and PR 17 of BL-1436, PR 18b-1a of BL-1447; the Asha generator moves to its own ready row, which this row then depends on).`
+- Founder-only: no.
+
+### CR-160 BL-1453 Moments capture Add (PR 18d) stays blocked, unchanged (22 Nov 2026, CTO, CISO, CPrivO)
+- Verdict: RULED.
+- Ruling: Correct as written. It waits on BL-1447's PRs 18b-1a, 18b-1c and 19b, which wait on BL-1473, BL-1450, the simulator read-out BL-1474 (needs a Mac) and the Apple reference read. It edits the older `scribe-photo` module and the pins of three photo tests, so it must not start early. Founder hands exist upstream (BL-1434 device spike, BL-1475, the O-61 leg), not in this row.
+- Evidence: BL-1447, BL-1473, BL-1474, BL-1475.
+- Way back: not applicable.
+- Status the row takes: `Status: blocked (BL-1447: PR 18b-1a, 18b-1c and 19b; unchanged).`
+- Founder-only: no.
+
+### CR-161 BL-1409 Backup flag and file class read-back: gate met, scope retargeted (22 Nov 2026, CTO, CISO, CPrivO)
+- Verdict: RULED.
+- Ruling: The row's gate ("Karma sets ready when the index row lands") is met: the days store (#1175, #1226, #1239) and the Moments store `moments.v1.json` (#1481) are written excluded from backup and read back, with tests at open and write. Not yet covered: replace and restore, rebuild-after-restore, and the strip pass before the first display of a restored picture (pictures are in the iPhone backup, ADR 0028 D1). Scope retargeted to those two stores and the photo layer.
+- Evidence: `apps/mobile/src/lib/moments/store-file.ts:3-4,136`; `apps/mobile/src/lib/days/store-file.ts:46-82,141-142`; `apps/mobile/test/moments-store.test.ts:131-155`; `docs/security/MEDIA_THREAT_MODEL.md` P9, P10, G-4.
+- Way back: set blocked again.
+- Status the row takes: `Status: ready (gate met: the days store and the Moments store, PRs #1175 and #1481, are the index; scope retargeted to replace, restore, rebuild-after-restore and the restored-picture strip pass). Mode: agent. Depends on: none.`
+- Founder-only: no.
+
+### CR-162 BL-1416 Photo-path canary waits on the harness (22 Nov 2026, CTO, QA, CPrivO)
+- Verdict: RULED.
+- Ruling: Keep blocked on BL-862 (the harness, `ready`; PR #759 is an open draft). Nothing for the founder; the dispatcher should start BL-862. This row is ready when it lands.
+- Evidence: BL-862; PR #759; `apps/mobile/test/photos-device.test.ts:376-384`.
+- Way back: none.
+- Status the row takes: `Status: blocked (BL-862, the harness; ready, PR #759 is an open draft). Mode: agent. Depends on: BL-862.`
+- Founder-only: no.
+
+### CR-163 BL-1012 Planner feed for libraryDay stays blocked, trimmed (22 Nov 2026, CTO, CPO)
+- Verdict: RULED.
+- Ruling: Stays blocked on real code dependencies: BL-982, BL-1010, BL-1011, BL-1008 (BL-966 is done). Two are further along than their status lines say: BL-1008 needs only BL-1002 (done) and the Find pattern in PR 894 (merged), so Karma sets it ready; BL-1011 may go ready for computed dates only. Nothing here needs the founder.
+- Evidence: `docs/BACKLOG.md` BL-1008, BL-1011, BL-966, BL-1010; PRs 894, 1226, 1239, 1175; BL-1002 (PR 1029).
+- Way back: restore the old status lines.
+- Status the row takes: `Status: blocked (BL-982, BL-1010, BL-1011, BL-1008; BL-966 is done). Mode: agent. Depends on: BL-982, BL-1010, BL-1011, BL-1008.`
+- Founder-only: no.
+
+### CR-164 BL-1014 Day slip and blank-on-background: prerequisites corrected (22 Nov 2026, CTO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Keep blocked, correct the reasons: BL-963 (registry, ready but unbuilt), BL-1012, and the days store reader (BL-1010 partly done; `subscribeDays` exists). The "device run G4" is a Done-when snapshot row, not a start gate. Ready when BL-963 and BL-1012 merge.
+- Evidence: statuses of BL-963, BL-966, BL-982, BL-1008, BL-1010, BL-1011, BL-1012; PRs #1175, #1226, #1239.
+- Way back: restore the old status line.
+- Status the row takes: `Status: blocked (BL-963 and BL-1012; BL-1010 is partly done and its reader is merged; the G4 snapshot row is a Done-when item, the founder's phone). Mode: agent. Depends on: BL-963, BL-1012`
+- Founder-only: no.
+
+### CR-165 BL-1001 Record the level 3 and multi-media reversals and the CR-66 precedence (22 Nov 2026, CTO (Karma), CPO, CPrivO, CLO (consulted))
+- Verdict: RULED.
+- Ruling: Karma records the reversals as a locked CR entry in `docs/agents/cto/RULINGS.md` (not in this file), citing the founder's own words in `docs/product/prd/26-founder-direction-photos-library-and-media.md` section 1 and CPO-17 item 2, with the one-line reasons from GAP-LOG RV-18, RV-19, RV-20. The same entry amends CR-66's precedence list to name cards 19, 21, 26 and 27. It decides no Q-PM answer. Cite GAP-LOG's labels as "GAP-LOG RV-18" each time, since spec 28 reuses RV-04 to RV-18. A D-### entry is drafted PROPOSED in the PR body only; merging a DECISIONS.md entry stays the founder's unless it quotes his words verbatim (D-132).
+- Evidence: `docs/BACKLOG.md:4071-4078`; `docs/product/prd/26-founder-direction-photos-library-and-media.md` lines 9-30; `docs/product/prd/GAP-LOG.md:495-499`; CPO-17; CR-144; CR-66.
+- Way back: a new entry.
+- Status the row takes: `Status: ready. Mode: agent (Karma records it; the D-### stays PROPOSED in the PR body). Depends on: none`
+- Founder-only: no, except: any D-### entry stays the founder's.
+
+### CR-166 BL-969 Sealed letters stay blocked on BL-968 (22 Nov 2026, CTO, CDO, CPrivO, CLO (counsel Q107))
+- Verdict: RULED.
+- Ruling: Stays blocked; the chain is real. BL-959 is stale (PR #797 merged) so set it ready now. BL-968 is blocked (BL-939 and BL-981). The row adds a server column and read-path change: write the migration file and SQL tests when BL-968 lands; the hosted apply is the founder's, and counsel Q107 on the seal gates turning it on.
+- Evidence: BL-959, BL-968; `git log e9dca86cd` (#797); Q107.
+- Way back: n/a.
+- Status the row takes: `Status: blocked (BL-968; BL-959 is ready, PR #797 merged). Mode: agent. The hosted apply and counsel Q107 are the founder's.`
+- Founder-only: no, except: the hosted apply and counsel Q107 are not ruled here.
+
+### CR-167 BL-005 Founder setup for the workflow: mostly done (22 Nov 2026, CTO (Karma), CISO)
+- Verdict: RULED.
+- Ruling: Branch protection is done (develop requires `applied migrations unchanged`, `required` and `compliance-fence`; main requires the first two). Labels `S0` to `S3` and `beta` do not exist: Karma creates the five with `gh label create` (if the token lacks permission, the founder's single line is "run these five gh label create commands"). `approve-migration` is no longer a status in new rows (D-117); existing uses stay until a sweep, and HARNESS.md is not edited here. ADR 0011 is marked Accepted in a docs PR with a note that its harness mechanics are superseded by HARNESS.md and ADR 0018 and 0019.
+- Evidence: branch protection and labels read via `gh api`; `docs/adr/0011-requirements-and-agent-workflow.md:3`; D-117; `docs/agents/HARNESS.md:66`.
+- Way back: a new ADR status line.
+- Status the row takes: `Status: ready. Mode: agent. Scope: create labels S0 to S3 and beta; ADR 0011 status to Accepted with a superseded-in-part note. Branch protection: done.`
+- Founder-only: no.
+
+### CR-168 BL-1561 One workflow-edit wording in four places (22 Nov 2026, CTO (Karma), CISO)
+- Verdict: RULED.
+- Ruling: Adopt the row's wording in the CODE-R02 sentence of `docs/engineering/01-code-and-change.md`, the CODE-R02 and SEC-R10 rows of `docs/engineering/ENFORCEMENT.md`, HARNESS section 12, and the ruling: the agents GitHub App cannot push workflow files (no Workflows permission); a workflow change is a PR, or a proposal under `docs/ops/proposed/`, needing two independent counted reviews including the security lens; no required check or branch protection changes without the founder; a workflow change is reversible by revert. Remove "the founder pastes the workflow" and "agents cannot edit `.github/workflows/`" from the CODE-R02 sentence. No branch protection changes, so this is inside Karma's rights. The CR number goes in `docs/agents/cto/RULINGS.md`, with #1486 as the worked case and #1347 as the precedent.
+- Evidence: `docs/BACKLOG.md:8168`; `docs/agents/HARNESS.md:65,190,196-199`; PR #1486; `docs/agents/handoffs/MOMENTS-NS53-HARNESS-HANDOFF-21nov.md:36,67`.
+- Way back: revert the doc edits.
+- Status the row takes: `Status: ready (Karma's ruling: one wording in CODE-R02, ENFORCEMENT.md, HARNESS section 12 and the ruling; no branch protection change). Mode: agent. Owner: product manager, platform.`
+- Founder-only: no.
+
+### CR-169 BL-439 Release health watch: write the documents now (22 Nov 2026, CTO (ops lane), CPO (thresholds))
+- Verdict: RULED.
+- Ruling: Split the row. The documents half is ready now: `docs/ops/SLO.md` (the G5 numbers already in `docs/ops/RELEASE.md:60`: crash-free sessions 99.8 percent, users 99.5 percent, pause on any S0) and a report template for days 1, 3 and 7. The reports run after the first store release; the numbers come from App Store Connect, the founder's account (he reads or exports them; no key goes in chat). Phased release is not available for a first release, so the reads are a manual watch.
+- Evidence: `docs/release/1.0.0.md:104`; `docs/ops/RELEASE.md:60,249,253,335`; `docs/release/AUTOMATION.md:301`.
+- Way back: delete the two documents.
+- Status the row takes: `Status: ready (SLO.md and the report template now; the day 1, 3 and 7 reports run after the first store release, and the founder reads the crash-free numbers in App Store Connect). Mode: agent plus founder numbers.`
+- Founder-only: no, except: the App Store Connect read is the founder's account.
+
+### CR-170 BL-858 Phase switches, TestFlight text, review notes: code and text half is ready (22 Nov 2026, CTO, CCO (Notes for Review), CPO)
+- Verdict: RULED.
+- Ruling: BL-931's stack is merged, so the dependency is met; "Build 12 ships" is not a code blocker (switches are off in `production`; release branches are cut from `main`, ADR 0022). Ready for the code and text half: the phase switches in `eas.json` and `lib/capabilities.ts`, the What to Test text per phase, a draft of App Review notes naming every permission key in the built plist, and the test that the remote `photos` switch pauses but never starts. The kill-switch drill on a real TestFlight device is the founder's, one device step, not a dependency of the code. Store submission of the notes stays his (CR-146 row 12).
+- Evidence: `docs/product/prd/17-engineering-project-plan.md:251,480`; CR-146 rows 6 and 12; `packages/api/src/kill-switches.ts`.
+- Way back: revert the PR.
+- Status the row takes: `Status: ready (code, tests and text drafts; the kill-switch drill is a separate founder device step). Mode: agent. Depends on: BL-931 (merged).`
+- Founder-only: no, except: the TestFlight drill and store submission are the founder's.
+
+### CR-171 BL-481 Journey steps no web flow reaches: per group (22 Nov 2026, CTO (QA), CDesO)
+- Verdict: RULED.
+- Ruling: Group 1 (join wait J21i, J21j): add `record` to both tests. Group 2 (Delete account S64): add a signed-in flow against the mock server and record the S64 step ids; if the mock cannot reach S64 signed in [UNVERIFIED], it moves to phone-only. Groups 3 and 4 (Tonight at large text and the Keep sheet at the accessibility size; Account sign-out wait): phone-only, with a device-plan row. Groups 5 and 6 (Leave the book; Back up, new phone): no step while `LEAVE_BOOK_OFFERED` and `EXPO_PUBLIC_BACKUP` are off; record "not offered".
+- Evidence: `apps/mobile/e2e-web/j21-coparent.flow.ts:144,152`; `apps/mobile/src/lib/family/entry.logic.ts:46`; `apps/mobile/eas.json`; `docs/qa/DEVICE_TEST_PLAN.md:307`.
+- Way back: n/a.
+- Status the row takes: `Status: ready (council ruling per group: flows for 1 and 2; phone-only for 3 and 4; not offered for 5 and 6 until their features are on). Mode: agent. Owner: qa engineer, design systems.`
+- Founder-only: no.
+
+### CR-172 BL-948 Speed and accessibility rows in the device run sheet (22 Nov 2026, CTO, qa, CDesO)
+- Verdict: RULED.
+- Ruling: Unblock. The rows go into `docs/qa/DEVICE_TEST_PLAN.md` from sections 4 and 5 of `docs/product/prd/14-test-plan.md`; BL-929 writes a separate baseline sheet in another file and is not a prerequisite. P0 device journeys first (J-N19, J-N21, J-N23, J-N24, J-N27).
+- Evidence: `docs/BACKLOG.md:3708-3713,3571`; `docs/qa/DEVICE_TEST_PLAN.md` (no J-N rows yet); PR #1155.
+- Way back: revert the doc rows.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: none (BL-929 is a separate sheet in a separate file)`
+- Founder-only: no.
+
+### CR-173 BL-504 useSensitiveDataStatus: unblock the small hook fix (22 Nov 2026, CTO, CISO, CPrivO (consulted))
+- Verdict: RULED.
+- Ruling: Unblock now. Keep `{ status, open }` together in state and set both in `attach`, with a stand-in test that registers an `open` later. No screen changes today (no source registers an `open`; #408). The dependency on BL-485 is wrong: its option (a) is counsel-gated and may never come, while the stale-`open` hazard exists once any source adds one. The existing Gate line (before any friend outside the family signs in) is the deadline, not a blocker. Priority stays Low. Hook flaw is a code reading, not run.
+- Evidence: `docs/BACKLOG.md:2329-2337`; D-128; PR #408; `privacy-sources.ts:55-67`.
+- Way back: revert the one PR.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: none (BL-485 option (a) is why it matters, not a prerequisite); Gate: done before any friend outside the family signs in`
+- Founder-only: no.

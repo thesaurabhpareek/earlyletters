@@ -20,14 +20,16 @@
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
  * the store listeners reschedule with the new answer (scheduler.ts).
  */
+import { lastLetterKind } from '@scribe/core';
 import { appLockOn } from '../app-lock/prefs';
-import { currentUserId, getSetting, listChildren, listDrafts, listEntriesForChild, setSetting } from '../store';
+import { currentUserId, getSetting, listChildren, listDrafts, listEntriesForChild, newestMadeLetter, setSetting } from '../store';
 import {
   clampReminderTime,
   DEFAULT_DAYS,
   DEFAULT_TIME,
   DEFAULT_WEEKLY_DAY,
   type Cadence,
+  type LastLetter,
   type PlannerChild,
   type ReminderPrefs,
   type ReminderTime,
@@ -146,6 +148,18 @@ export function lastOwnSaveAt(): number | null {
     for (const d of listDrafts(child.id)) see(d.createdAt);
   }
   return newest;
+}
+
+/**
+ * The newest letter this phone's user made, as the planner's layers read it (NS-48-R27): `at` (epoch ms of
+ * `captured_at`) and the kind (`spoke` or `typed`; null when it cannot be told). One query, no entry text. Null when
+ * nothing is made yet.
+ */
+export function lastMadeLetter(): LastLetter | null {
+  const books = listChildren().map((c) => c.id);
+  const row = newestMadeLetter(books, currentUserId());
+  const at = row ? Date.parse(row.capturedAt) : NaN;
+  return row && Number.isFinite(at) ? { at, kind: lastLetterKind(row.captureMode, row.kind) } : null;
 }
 
 /** When reminders were last turned on (epoch ms), or null. */

@@ -124,7 +124,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
 
-- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save and a crash, where the words are on the phone). Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". A failed save and a crash say "still on this phone"; "safe" is not used for them. Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
 - **"That did not work this time".** Name what did not finish: "That didn't save", "That sign-in didn't finish", "That didn't go through".
 - **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
 - **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
@@ -154,8 +154,9 @@ A line that sounds automatic stops being heard. These earned their place once an
 
 `test/rules.test.ts` enforces these too. If one fails, change the words, not the test.
 
-- No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and moments never count days, runs or gaps.
-- Moments celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and the celebration strings (code namespace `en.moments`) never count days, runs or gaps.
+- The celebration strings (`en.moments`, not the Moments tab) celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- The tab is called Moments. It is a place, not a thing a person makes: nothing the parent writes or says is called a moment, and push and email never say "your moments", count them or put the word in a subject line (BRAND.md glossary).
 - The store and the website speak to adults. No "kids", no "for children", nothing that suggests a child uses the app alone. Adults doing things "on their own phone" is fine.
 - Digital only for now. No print, printed books, hard copies, photo books or ordering a copy. "Large print" as a reading size is fine.
 - No string says "beta" (D-060). The app keeps one quiet "early version, can make mistakes" note in Settings, About. The store listing also avoids "early version", "early access", "preview" and the like (App Review 2.2).

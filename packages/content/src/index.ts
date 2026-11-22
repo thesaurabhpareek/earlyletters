@@ -18,3 +18,5 @@ export { allHelplineSources, HELPLINE_DIRECTORY, helplineProblems, HELPLINE_MAX_
 export type { Helpline, HelplineRegion, HelplineSource, RegionHelplines, SourceCheck } from './helplines';
 export { CONSENT_LOCALE, CONSENT_SHOWN_IDS, consentShownText } from './consent-shown';
 export type { ConsentShownId } from './consent-shown';
+export { DAY_AUTHORITIES, DAY_AUTHORITY_IDS, US_DAY_ROWS } from './days';
+export type { DayAuthority } from './days';

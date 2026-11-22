@@ -15,7 +15,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { en } from '@scribe/content';
 import { showsChevron } from '../src/components/ui/list-row.logic';
 import { sensitiveStatusWords, setSensitiveDataSource, useSensitiveDataStatus, type SensitiveDataStatus } from '../src/lib/analytics/privacy-sources';
@@ -324,5 +324,35 @@ describe('[BL-485] source pins: who registers the row, and that it stays read-on
     expect(showsChevron({ pressable: false, disabled: false, destructive: false, hasTrailingNode: false, android: false })).toBe(false);
     // components/ui/list-row.tsx (design-systems): no `onPress` returns a View, with no Pressable and no pressed colour.
     expect(code('components/ui/list-row.tsx')).toMatch(/if \(!onPress\) \{\s*return \(\s*<View/);
+  });
+});
+
+// BL-504: the row follows a source that registers an `open` later with the same status. The hook used to keep only the
+// status in state and read `source.open` at render, so a mounted row never saw the new `open`.
+describe('[BL-504] the row follows a later open', () => {
+  afterEach(() => setSensitiveDataSource({ read: () => 'signed_out' }));
+
+  it('re-renders with the new open when the status is unchanged', () => {
+    setSensitiveDataSource({ read: () => 'on' });
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.open).toBeUndefined();
+    const open = vi.fn();
+    setSensitiveDataSource({ read: () => 'on', open });
+    expect(row.result.current.status).toBe('on');
+    expect(row.result.current.open).toBe(open);
+    row.unmount();
+  });
+
+  it('follows a source that notifies through its own subscribe', () => {
+    let status: 'on' | 'off' = 'on';
+    let notify = () => {};
+    const open = vi.fn();
+    setSensitiveDataSource({ read: () => status, subscribe: (l) => ((notify = l), () => {}), open });
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.open).toBe(open);
+    status = 'off';
+    notify();
+    expect(row.result.current.status).toBe('off');
+    row.unmount();
   });
 });

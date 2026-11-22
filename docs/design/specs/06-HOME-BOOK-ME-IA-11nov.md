@@ -16,7 +16,7 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 | Me | `/you` | Look after | I go to Me to look after my account and books. | Account, Plan, Children, Writing, Your letters, Privacy and security, Take the book with you, Help, About | A letter; a lamp; a count |
 
 Rules that hold:
-- Three tabs, in this order, always. The bar never gains a fourth tab for a feature. A tab needs the test in `03` section 8 (Share) or an equivalent written for it.
+- Three tabs today (Home, Book, Me), in this order. A fourth, Moments, sits second (Home, Moments, Book, Me, CPO-17 in `docs/agents/exec/RULINGS.md`) only when the Moments flag (`EXPO_PUBLIC_MOMENTS_TAB`) is on; it is off, so no build draws it yet. No other feature gains a tab. A tab needs the test in `03` section 8 (Share) or an equivalent written for it.
 - Labels: "Home" and "Me" are the founder's words. "Book" stays. Single words, from the glossary. Apple HIG tab-bar guidance (single-word labels) and the 13 pt label floor with Large Content Viewer in `_layout.tsx` are second-hand through NX-41 R14 and NX-30a: UNVERIFIED, I opened neither Apple nor the file this session.
 - Family is never a tab. Co-parent "coming soon" is at most one caption line in Me (section 5).
 - The Library is not a tab (spec 1). Share is not a tab (spec 3).
@@ -241,7 +241,7 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 
 | Id | Requirement | Proof |
 |---|---|---|
-| IA-R1 | Three tabs. Given any build, Then the bar has exactly Home, Book, Me, in that order, and no screen for Family, Library, Photos or Share | navigation test N1, N4 (each with its fixtures) |
+| IA-R1 | Three tabs today, four only with the Moments flag on. Given the flag off (today), Then the bar has exactly Home, Book, Me, in that order; Given the flag on, Then it has Home, Moments, Book, Me (CPO-17). In both, no screen for Family, Library, Photos or Share | navigation test N1, N4 (each with its fixtures) |
 | IA-R2 | One verb each. Given the job table, Then each tab declares one verb and no two are equal | navigation test N2 |
 | IA-R3 | One capture entry. Given the source, Then only Home's module and the allow-listed doorways call the capture start function, with a `source` from the list in 10.1 | navigation test N3 (needs the step 0 consolidation) |
 | IA-R4 | Book starts nothing. Given the Book's empty state, Then its button switches to Home and calls no capture function | navigation test N5 |
