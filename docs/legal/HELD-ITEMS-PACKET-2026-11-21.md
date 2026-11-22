@@ -3,7 +3,7 @@ title: Held items packet for counsel and the founder
 version: 0.1.0 (draft)
 status: draft-for-counsel
 date: 2026-11-21
-read_on: origin/develop 6e24e3bcb43b1acb8227bf70ae2763508e3d4e3c (refreshed 22 Nov 2026; first cut read at 4b8b467eebc2e4f20059da57c54898139f470fcf)
+read_on: origin/develop 1054a200dc31096d089b398d594a1593cdba4cdf (refreshed twice on 22 Nov 2026; line citations in the items were last re-read at 6e24e3bcb43b1acb8227bf70ae2763508e3d4e3c, and the commits after it touch no cited file; first cut read at 4b8b467eebc2e4f20059da57c54898139f470fcf)
 owner: founder
 ---
 
@@ -15,21 +15,25 @@ Drafts only. Prepared by a Claude role (Sonnet 5.5), which is not counsel and gi
 
 **Refresh, 22 Nov 2026.** Every `file:line` below is re-read at `origin/develop` `6e24e3bcb43b1acb8227bf70ae2763508e3d4e3c` (the sha in the header) unless a line names another sha. Several lines moved since the first cut (4b8b467eeb), and PR #1431 (c8c3d03e6, merged 22 Nov 00:01 UTC) closed the first-run title question in item 1b. Line numbers drift; re-grep before quoting.
 
+**Second refresh, 22 Nov 2026 (after the founder approved this PR, 21 Nov).** Merged into develop since the first cut, and now marked done in the index: #1431 (first-run promise line, item 1b), #1410 (Moments checked facts, `docs/legal/checked-facts-moments.md`) and #1387 (held Moments launch copy, `docs/marketing/moments-launch-drafts.md`; the copy stays HELD, only the draft file merged). New on develop and cited below, not invented: D-165 (`docs/DECISIONS.md:1209`, 21 Nov 2026) and the exec rulings CR-144 and CR-146 in `docs/agents/exec/RULINGS.md`. The three Project docs named in item 1 (`infra/exec-rulings-2026-11-21-...`) are not in this repo and I still could not read them. The index now names, for every item, the owner of the next step and the file the held text lives in on develop.
+
 **Who merges what.** `docs/legal/**` and every registered or counsel-locked line is the founder's merge (CLAUDE.md, CR-73; D-163 items 6 and 7). This PR is a draft and adds one new file only.
 
 ## Index
 
-| # | Item | Packet Q | Blocks |
-|---|---|---|---|
-| 1 | PR #1286: sign-in privacy line, story.private.v1, two HELD rows (the first-run title and story.exact were closed by #1431) | Q43, Q16 | #1286 merge |
-| 2 | Privacy Policy 3.0.0 | Q43, Q20, Q32, Q123(d), Q130, section 6 item 9 | Any build that links it |
-| 3 | App Privacy label rows | Q54, Q6, Q7, Q123 | Store submission |
-| 4 | Analytics consent sheet and Settings switch | Q6, Q7 (deferred) | Production analytics flip |
-| 5 | Delete-account line (`pages.en.ts:242`) | Q51, Q6, Q7 | Production analytics flip |
-| 6 | Moments library read, photo permission, usage string | Q119, Q122, Q123, Q126, Q128, Q129, Q130 | Photo flag in `production` |
-| 7 | The 90-day pledge | Q16, Q40 | None; change in all places together |
-| 8 | Engineering doc amendments for D-163 | none (not for counsel) | D-163 gate |
-| 9 | Store listing as submitted | Q43, Q127, Q37 | Any listing edit |
+| # | Item | Status on 22 Nov 2026 | Owner of the next step | Lives in, on develop | Packet Q | Blocks |
+|---|---|---|---|---|---|---|
+| 1a, 1c, 1d | PR #1286: sign-in privacy line, `story.private.v1`, two HELD rows | HELD. #1286 is open and draft (head `1df4631e18`). | Founder (merge, CR-73) after counsel | `packages/content/src/strings.en.ts`, `packages/content/src/stories.en.ts`, `packages/content/test/build12-untrue-copy.test.ts`, `docs/legal/in-app-disclosures.md` | Q43, Q16 | #1286 merge |
+| 1b | First-run title and `story.exact` | DONE, #1431 merged (22 Nov 00:01 UTC). Q-NEW-B withdrawn. | none | `packages/content/src/strings.en.ts:82`, `packages/content/src/stories.en.ts:39` | none | none |
+| 2 | Privacy Policy 3.0.0 | HELD. Still draft, effective date and legal name placeholders. | Founder (merge); counsel (Q-NEW-A, Q123(d), Q130) | `docs/legal/privacy-policy.md` | Q43, Q20, Q32, Q123(d), Q130, section 6 item 9 | Any build that links it |
+| 3 | App Privacy label rows | HELD. Label of record unchanged. | Founder (merge); counsel (Q54, Q123, Q-NEW-A) | `docs/legal/app-store-privacy-labels.md` | Q54, Q6, Q7, Q123 | Store submission |
+| 4 | Analytics consent sheet and Settings switch | HELD. D-163 (`DECISIONS.md:1188`) leaves wording, region and counsel's view open. | Founder (wording, with counsel); `content` drafts | `packages/content/src/strings.en.ts` (`analyticsConsent`, `settings.privacy`) | Q6, Q7 (deferred), Q-NEW-A | Production analytics flip |
+| 5 | Delete-account line | HELD. | Founder (merge); counsel (Q51, Q-NEW-A) | `packages/content/src/pages.en.ts:242`, `docs/legal/delete-account-page.md` | Q51, Q6, Q7 | Production analytics flip |
+| 6 | Moments library read, photo permission, usage string | HELD. D-165 item 6 records O-44 and the switcher cover as ON (founder, counsel confirms the wording); photos flag in a store build waits on CR-146. | Founder (what users are promised, O-48); counsel (Q119 to Q130) | `docs/legal/COUNSEL_PACKET.md` section 9; spec `docs/product/prd/28-moments-tab.md`; `docs/legal/ENGINEERING_REQUIREMENTS.md:573` | Q119, Q122, Q123, Q126, Q128, Q129, Q130 | Photo flag in `production` |
+| 7 | The 90-day pledge | HELD, no D-number found [U]. | Counsel (Q16, Q40); founder | `strings.en.ts:997`, `pages.en.ts:87`, `privacy-policy.md:159`, `terms-of-service.md:25` and `:156` | Q16, Q40 | None; change in all places together |
+| 8 | Engineering doc amendments for D-163 | HELD. Not in any merged PR. | Founder and the engineering stewards (not counsel); requirement docs are changed by PR | `docs/engineering/PRINCIPLES.md`, `07-privacy-engineering.md`, `10-logging-and-observability.md`, `docs/ARCHITECTURE.md` | none | D-163 gate |
+| 9 | Store listing as submitted | HELD. Submitted text not confirmed [U]. | Founder (store text); counsel (Q43, Q127, Q37) | `packages/content/src/store.en.ts` | Q43, Q127, Q37 | Any listing edit |
+| 10 | Moments launch copy, checked facts, value-prop pair | Draft file DONE, #1387 merged, copy still HELD. Checked facts DONE, #1410 merged. #1408 (Moments pictures privacy drafts, O-44, O-52) is open and not mine to edit. | Founder (O-48 approval, what users are promised); counsel (Q130, G2 Q1 and Q8); the O-47 dated line is the founder's own words, due Fri 27 Nov 2026 (D-165 item 2) | `docs/marketing/moments-launch-drafts.md`, `docs/legal/checked-facts-moments.md`, `docs/DECISIONS.md:1209` | Q123, Q130, Q132 | Any Moments line in store page, website, first run or ads |
 
 ## Cross-item facts counsel will want once
 
@@ -55,7 +59,7 @@ Drafts only. Prepared by a Claude role (Sonnet 5.5), which is not counsel and gi
 
 ### 1b. First-run promise title and story.exact: closed by #1431
 
-- **Current (read at 6e24e3bcb).** `strings.en.ts:82` (`en.onboarding.promise.title`): "It stays in your words." Body (`:86`, `body2`): "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you." The packaged first-run card is now `story.exact.v3` (`stories.en.ts:39`): headline "It stays in your words.", line "Every change is marked, and your original recording is kept unchanged. We never rewrite your words." The brand tagline in `packages/brand/index.ts:86` reads "It stays in your words." A `git grep` for "Exactly as you said it" over `packages/content/src`, `packages/brand/index.ts` and `apps/mobile/src` finds only a comment (`store.en.ts:17`).
+- **Current (read at 6e24e3bcb).** `strings.en.ts:82` (`en.onboarding.promise.title`): "It stays in your words." Body (`:86`, `body2`): "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you." The packaged first-run card is now `story.exact.v3` (`stories.en.ts:39`): headline "It stays in your words.", line "Every change is marked, and your original recording is kept unchanged. We never rewrite your words." The brand tagline in `packages/brand/index.ts:86` reads "It stays in your words." A case-insensitive `git grep -i "exactly as you said it"` over `packages/content/src`, `packages/brand/index.ts` and `apps/mobile/src` finds only a comment (`store.en.ts:17`, lowercase; a case-sensitive grep finds nothing there, which Review A noted). One more place carries the old line and is outside those paths: `packages/brand/assets/email/source/mock.html:63` ("Early Letters. Exactly as you said it."), an email design source file. I did not check whether anything sends it **[U]**; flagged for `content` and the founder.
 - **What closed it.** #1431 (`c8c3d03e6`, merged 22 Nov 00:01 UTC, "D-133 true promise line in first run and review") changed the title and `body2`, replaced `story.exact.v2` with `story.exact.v3` (ids are never reused), and removed the two `KNOWN_VIOLATIONS` rows for `en.onboarding.promise.title` and `stories.story.exact.v2.headline` (cap 16 to 14, `claims-capabilities.test.ts:337`).
 - **What #1286 still has to change.** Its current patch (head `1df4631e18`) no longer touches the title and has no `story.exact` hunk. It changes: `strings.en.ts` `trust.signIn.privacy` (1a); `stories.en.ts` `story.private.v1` headline and line (1c); in `build12-untrue-copy.test.ts` the two HELD rows and `HELD_CAP` 8 to 6 (1d); in `claims-capabilities.test.ts` the `story.private.v1` BL-557 row; and `j22-sign-in.flow.ts`, `experience-pass.test.ts`, `server-surfaces-auth.test.ts` (one line each). I did not run its tests. Its `mergeable_state` read "blocked" (draft).
 - **Why it was held, and what is left.** The hold was D-125 item 9 (`DECISIONS.md:955`: "Exactly as you said it." stays in the alpha, not in the listing, until counsel clears it at T30) against D-133 (`:1038`, `:1044`: the listing and the store build's first run use the true line). The build now follows D-133 and says "Every build uses it, the alpha included (founder, 31 Oct 2026)" in the `strings.en.ts` comment above `promise`. The first-run headline is therefore no longer a question for counsel. **[U]** whether T30 was ever answered; it no longer gates this line.
@@ -208,6 +212,16 @@ Not for counsel. Founder and engineering stewards. D-163's own "Effects" list (`
 
 ---
 
+## 10. Moments launch copy, checked facts and the D-165 rulings (added 22 Nov 2026)
+
+- **What merged.** #1387 added `docs/marketing/moments-launch-drafts.md` (owner `marketing`, status DRAFT, UNPUBLISHED, HELD; its section 0 lists three conditions before anything ships: the founder approves O-48, counsel answers Q130 and G2 Q1 with Q123, and `legal` confirms label, policy and Notes for Review match the build). #1410 added `docs/legal/checked-facts-moments.md` (owner `regulatory-affairs`; rows marked VERIFIED or UNVERIFIED; its 2.6 and several Apple rows stay UNVERIFIED). Neither file decides anything. I read the first 80 lines of the first and the first 40 of the second only; the rest is not read by me.
+- **What D-165 records** (`DECISIONS.md:1209` to `:1240`, founder words only the two quotes there; section 1 of the entry is council recommendations he approved as a set): the O-48 value-prop pair stays unpublished (store page, website, first-run screen, ads) until counsel answers Q130 and G2 Q1 and Q8 (item 1); O-47 option C with a dated line in the founder's own words by Fri 27 Nov 2026 and an accountant before the first payout, counsel and accountant to confirm (item 2); O-44 and the switcher cover ON, with the iPhone-backup disclosure in one plain policy line that counsel confirms (item 6). D-165 says it does not decide the final value-prop text, the tab name (D-164, #1281) or anything in `docs/legal/**`. I do not repeat the held lines here; read them in D-165 item 1 and the marketing file.
+- **What the exec rulings add.** CR-146 (`RULINGS.md:364`) is a twelve-row table that must be green before `EXPO_PUBLIC_PHOTOS` is on in any store build; rows 1, 4, 8, 9, 10 and 11 need the founder's hands or approval (the ruling's own words). CR-144 (`RULINGS.md:291`) says the founder's chat approval does not cover any future legal merge: `docs/legal/**` merges stay founder-only (CR-73, D-125). The exec rulings are Karma's with a council, not the founder's words, and not counsel's view.
+- **Still open for counsel.** Q130, Q123, G2 Q1 and Q8, Q132 (place dataset), in `COUNSEL_PACKET.md` section 9. Nothing in this item is a new question.
+- **Founder default.** Keep every Moments line unpublished; no label, policy or listing change in response to #1387 or #1410.
+
+---
+
 ## New questions this packet proposes (not yet in COUNSEL_PACKET.md)
 
 Numbers are not assigned; the repo's id check does not cover packet Q numbers, and open drafts claim Q58 to Q106 and Q107 and up per `COUNSEL_PACKET.md:211` and section 9. Counsel packet owner to number them.
@@ -219,5 +233,6 @@ Numbers are not assigned; the repo's id check does not cover packet Q numbers, a
 ## What I did and did not do
 
 - Read live: first cut at `origin/develop` 4b8b467eebc2e4f20059da57c54898139f470fcf; refreshed on 22 Nov 2026 at `origin/develop` 6e24e3bcb43b1acb8227bf70ae2763508e3d4e3c, with the #1431 diff (`git show c8c3d03e6`) and PR #1286 files and patches via `gh api` (head `1df4631e18`). Searched with `git grep`. Every cited line was re-read at the refresh sha; the few I did not re-read are `docs/store/readiness.md:204` (re-read, same) and the Apple or legal facts marked **[U]**.
+- Second refresh, 22 Nov 2026: fetched `origin/develop` (`1054a200dc31096d089b398d594a1593cdba4cdf`), merged it into this branch (clean, no conflicts; the commits after the packet's last re-read touch only `docs/design/**` files), re-checked PR states through the REST API (#1286 open draft; #1387, #1410, #1431 merged; #454 and #1408 open), and read D-165, CR-144, CR-146 and the two Moments files named in item 10. Cited lines in items 1 to 9 were not all re-read a third time; the commits since the last re-read touch no cited file. Fixed from Review A at 0f0757b4 (PASS WITH NOTES, no `Must fix: none` line in the form the gate counts): note 1 (grep wording, item 1b). Notes 3 and 4 are unverifiable by me or not load-bearing, and are left as stated; note 2 was already fixed.
 - Not read: Project docs (`infra/exec-rulings-...`), `wip/moments-prd-v3`, Apple pages, the app.config permission strings beyond the grep, full `terms-of-service.md`, full `COUNSEL_PACKET.md` (read sections 1, 5, 6 item 9, 7 index, 8.12, 8.15 and 9). No tests run (docs only). Refresh: a character scan of this file only (no non-ASCII, no dashes, curly quotes or ellipsis characters).
 - Line numbers drift: develop moves many times an hour; re-grep before quoting. Lines marked `~` are approximate.
