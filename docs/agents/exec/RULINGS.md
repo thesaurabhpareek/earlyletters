@@ -716,3 +716,76 @@ This section is a separate trailing block. Ids continue past the highest per sea
 | Q-9a PR 9a before G1a-L | RULED CPO-29 (yes for pure TS and `nullSource`; no native call; fixtureSource test-only) | product edits row 9 gate | PR 9a |
 
 Founder-only items in this batch: Q-LABELS-EXPORT (route A or B for typed labels in "Export everything"; the `docs/legal/data-policy.md` 4.4 device-store row is legal text and is recommended only). A reversal of CPO-27 would change R253 and is the founder's.
+
+## Batch 5: claim step, design council, analytics (22 Nov 2026, recorded by the product agent for Karma)
+
+Recorded from the council notes and review verdicts named in each entry. None of these entries is a founder decision, and `docs/DECISIONS.md` is not touched. Where a point could not be read in the repository it is marked [UNVERIFIED].
+
+### CPO-30 Q1 to Q3 (claim step): no new claim screen for a phone with only days or moments files; the first sign-in that is not a claim deletes `local` silently (22 Nov 2026, CPO with CPrivO and CDO; council round a727f25081a7a28a6)
+- Question: the claim step of NS-47-R7 and E73 was written for the letters files. (Q1) What happens on a phone that holds only a days or moments `local` file and no letters? (Q2) Does "Not my account" delete the `local` file? (Q3) Does Moments follow the same rule?
+- Seats consulted: CPO, CPrivO, CDO (council round of 22 Nov 2026; the council note is outside the repository, so its wording is quoted from the work queue of Karma's session, not from a file here).
+- Verdict: RULED for the build default. Extending the claim screen is the founder's, because it would be new words a parent reads.
+- Ruling:
+  1. Q1: no new claim screen for a days-only or moments-only phone. E73 as written stands: the first sign-in that is not a claim deletes the `local` file silently. That is the build default.
+  2. Q2: "Not my account" does NOT delete the `local` file. It declines the claim step and leaves the phone as it was. Sign-out must skip clearing `local`; this is a code change.
+  3. Q3: Moments follows E73 and item 2. `adoptLocal` runs only on an explicit "Keep in this account". A failed adoption leaves the claim unconfirmed and the `local` file untouched (as built at the head of #1529, c8935ddb; review notes on #1529 asked for this after a first head confirmed the claim and then deleted `local`).
+  4. ADR 0032 item 4 (the stale "kept, orphaned" wording) is edited by the builder in #1529, and NS-51 gets a mirror row NS-51-R43 of NS-47-R7. This supersedes the named gap in the errata under CDO-23 once #1529 merges.
+- Evidence: #1476 (merged; family notice keeps the user captured before the await, BL-1500 and BL-1501); #1523 (merged; boot sweep of stale takeover keys); #1529 (OPEN, not merged: it is queued, and every statement about its behaviour in this entry is a statement about its open head, not about develop). #1481 (merged) kept a `local` moments file at sign-in, which is the record this ruling replaces. Record against record: ADR 0032 item 4 and the days code keep `local`, while E73, A4 and CL-147 delete it; this ruling follows E73 for the first non-claim sign-in and keeps `local` on sign-out and on decline.
+- Door: two-way until #1529 merges. Way back: revert #1529. Deletion of a `local` file is device-only data and cannot be undone after the fact.
+- Founder-only: extending the claim screen (new words). Nothing else.
+- Signed: Chief Product Officer (Claude role)
+
+### CPrivO-17 Q1 to Q3 (claim step, privacy): what the phone keeps and when it deletes (22 Nov 2026, CPrivO with CPO and CDO; not counsel)
+- Question: privacy read of CPO-30.
+- Verdict: RULED for the build default.
+- Ruling: the `local` file holds a parent's own marks (day labels, hidden days, the days store) and is L4, device only. It is deleted only by the first sign-in that is not a claim (E73), by Erase everything, or by an explicit parent action. Sign-out and "Not my account" leave it. Adoption happens only on an explicit Keep. A failed adoption confirms nothing and deletes nothing. No analytics, log or crash report records that a claim, adoption, decline or deletion happened. No new screen means no new promise: no copy may say a `local` file was "claimed" or "cleared" by sign-in beyond what E73 says.
+- Evidence: review B (privacy) of #1529 at 9a4b6d5f found that a failed adoption write still confirmed the claim and then deleted `local`; the fix is in the head named in CPO-30. The council note is outside the repository [UNVERIFIED wording].
+- Door: two-way until #1529 merges.
+- Founder-only: no, unless new words are added.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CDO-24 Q1 to Q3 (claim step, data): owner key, adoption and the `local` file lifecycle (22 Nov 2026, CDO with CPO and CPrivO)
+- Question: data read of CPO-30.
+- Verdict: RULED for the build default.
+- Ruling: the owner key is the first 16 hex of the SHA-256 of the user id (as built in #1529, `local-claim.ts`; this entry does not restate the code). Sign-in sets the owner of both device-only stores; `setOwner` deletes a `local` file nobody adopted; `adoptLocal` rewrites `local` to the key on the write queue and runs only after an explicit Keep, before `confirmAccountClaim`. Sign-out puts the stores back to `local` and keeps a `local` file. A `local` write running at sign-out is not deleted behind it. A failed adoption leaves the claim unconfirmed and `local` untouched. `leave()` on the family notice takes the owner as a required argument, so a stale leave for user A cannot clear user B's waiting line.
+- Evidence: #1529 (open; head c8935ddb; 11 mutants each killed by a named test, per the PR body and later head note). Not verified here: a device run; the erase-all baseline failures (the PR body reports 9 files and 79 tests failing on clean develop).
+- Door: two-way until #1529 merges.
+- Founder-only: no.
+- Signed: Chief Data Officer (Claude role)
+
+### CDesO-13 Q1 and Q2 (BL-419, BL-423): the finale keeps `hero`, with a no-break space; the first-letter row stays "Write the first one" and does not open the recorder (22 Nov 2026, CDesO with CPO; council round a15d8150b380fc987, no conflicts)
+- Question: (Q1) BL-419: what does the finale display, and how is the single-word last line fixed? (Q2) BL-423: keep the row's words, and may the first tap open the recorder?
+- Verdict: RULED.
+- Ruling:
+  1. Q1: the BL-419 finale keeps the `hero` display. The row's "display" value is a mistake. The orphan (one word alone on the last line) is fixed at render time by a no-break space joining the last two words.
+  2. Q2: BL-423 keeps "Write the first one". Two taps are accepted. The recorder is NOT auto-opened, because that would skip the primer (NS-39-R10) and start capture without it, which is a scope and consent change. The row's Done-when becomes: "Tonight shows Speak as the first thing, with no card in front". "Tell {child} something" would be new parent-facing copy and needs founder or content approval; it is not adopted.
+- Evidence: the council round named above (note outside the repository; quoted from Karma's work queue) [UNVERIFIED wording]. N13 builds the finale orphan fix in its own PR. The BACKLOG rows for BL-419 and BL-423 are edited by the backlog PR, not here.
+- Door: two-way. Way back: a founder-approved line and a primer-aware recorder entry.
+- Founder-only: new copy only.
+- Signed: Chief Design Officer (Claude role)
+
+### CPO-31 Q3 (BL-891): retire BL-891 as superseded by NS-38 to NS-45; one banner line on NX-40 (22 Nov 2026, CPO with CDesO; same council round as CDesO-13)
+- Question: is BL-891 still needed?
+- Verdict: RULED for BL-891. OPEN for BL-892 to BL-897.
+- Ruling: BL-891 is retired as superseded by NS-38 to NS-45. NX-40 gets a one-line banner saying so, and the NX-40 file is kept, because BL-892 and BL-893 cite it.
+- OPEN: BL-892 to BL-897 may also be superseded. [UNVERIFIED] Nobody has checked; it is a separate check by the product agent.
+- Evidence: the council round named in CDesO-13. The docs PR for the banner is N13's (docs/nx-40-superseded-banner).
+- Door: two-way. Way back: reopen the row.
+- Founder-only: no.
+- Signed: Chief Product Officer (Claude role)
+
+### CDO-25 #1533 (Moments analytics): Karma's rulings on the five author questions, and two OPEN questions (22 Nov 2026, Karma (CTO) with CDO; T1, reversible, nothing wired, flag off)
+- Question: #1533 adds `moments_card_impressed` and `moments_card_tapped`, each with one closed property `slot` (`look_back` | `question`). Five questions from the author went to review.
+- Seats consulted: review A (analytics) and review B (privacy lens), both PASS WITH NOTES at d694ee06; Karma.
+- Verdict: RULED for items 1 to 5. OPEN for items 6 and 7. #1533 itself is open, not merged.
+- Ruling:
+  1. Event names stay snake_case. Product amends the spec 28 section 18 names to match the catalogue.
+  2. The once-per-slot-per-day cap is a P0 test in the wiring PR, not in #1533.
+  3. The registry test allows only the two exact `moments_` names. Whether `moment_shown`, which still exists in the catalogue, is kept is decided in that test's PR. [UNVERIFIED: not decided here.]
+  4. The `ids.ts` and `registry.ts` rows land with the wiring PR; #1533's body says so.
+  5. PRD-REQ-016 is accepted as the requirement.
+- OPEN 6 (CDO and CPrivO, before wiring): should `child_count_bucket` (including "none") ride on Moments impression events? Review B noted that it rides on every event today.
+- OPEN 7 (counsel and CPrivO): the App Store privacy label wording, Linked versus Not linked, and the policy wording for these events. Not decided by any seat in this log.
+- Evidence: reviews A and B on #1533 at d694ee06; the `^moment_` forbidden pattern does not match `moments_` (review B). Founder-only: the label wording is legal and store text, so counsel and the founder.
+- Door: two-way. Way back: remove the two catalogue names.
+- Signed: Karma (CTO); Chief Data Officer (Claude role)

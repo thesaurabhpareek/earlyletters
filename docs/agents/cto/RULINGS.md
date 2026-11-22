@@ -851,3 +851,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Stale references fixed in the PR: the migration and File 39 no longer say File 28 or "do not merge before the 9 Nov go/no-go"; `config.toml` no longer cites CR-22 (the harness-freeze ruling) for the account checks. CR-26 and CR-27 stay cited for the original account-checks and fence rulings.
 - Door: two-way with cost. Way back: revert PR #1448.
 - Revisit when: a condition in CCO-7 is met, or the hook is to be enabled. Karma
+
+### Karma ruling on #1486: an agent edit to `.github/workflows` is accepted as T2 (Sun 22 Nov 2026, Karma; recorded by the product agent, no CR number taken)
+- Question: `docs/engineering/01` says agents cannot edit `.github/workflows` and the founder pastes them, and HARNESS section 12 says the agents App has no Workflows permission. #1486 (BL-1479, the scope step in `ci.yml`) edited it directly.
+- Ruling: accepted as T2, on the same authority as #1347 (same step, merged): two independent reviews including the security lens, no change to a required check or to branch protection, and reversible by revert. Reconciling the chapter wording is left to a follow-up row.
+- Evidence: #1486 merged as 33c5abb8fb0ccaa2113a35cb74dd488cf0670383; #1347 merged as 49a9c884a0054cb8487b7823c1546966d9463086. The ruling text is quoted from Karma's work queue, not from a file in this repository. [UNVERIFIED: that the follow-up row exists.]
+- Founder-only: no.
+
+### Amended by BL-1480 (22 Nov 2026), under CR-74
+A build path is defined once, in docs/ops/RELEASE.md 3.4. NATIVE_PATHS in scripts/agents/merge-queue.mjs is now the original five entries plus apps/mobile/metro.config.js, apps/mobile/store.config.json, apps/mobile/version.json, apps/mobile/src/lib/privacy-manifest.ts, apps/mobile/src/lib/permission-copy.ts and apps/mobile/patches/ (the directory does not exist yet). The CR-74 sentence naming five paths is left as written because this log only grows. A release candidate tag also requires a green post-merge iOS compile run on develop once the founder applies docs/ops/proposed/release-ios-launch-gate.md.
+- Source: review A of #1495 (merged), part (c). Open and not decided here: review A also recommends accepting a skipped compile for these paths when launch is green, and correcting the proposal text from WAIT-CI to WATCH-RED; if either is taken, a later note amends this one.
