@@ -247,6 +247,7 @@ describe('[NS-53-R58] stays: consecutive away days of one place', () => {
   });
   it('a day that is not a real date is ignored (30 February, month 13, no zero padding)', () => {
     expect(stays([d('2026-02-30', LIS), d('2026-02-31', LIS), d('2026-13-01', LIS), d('2026-1-5', LIS)])).toEqual([]);
+    expect(stays([d('0050-01-01', LIS), d('0050-01-02', LIS)])).toEqual([]); // years 0 to 99 must not read as 19xx
     expect(stays([d('2028-02-29', LIS), d('2028-03-01', LIS)])).toHaveLength(1); // leap day is consecutive
     expect(stays([d('2027-02-28', LIS), d('2027-03-01', LIS)])).toHaveLength(1);
   });
