@@ -108,9 +108,11 @@ test('[BL-1479] a bad or missing sha, a push event or a gh failure is heavy', ()
   assert.equal(run(INERT, { event: 'push' }).heavy, 'heavy=true');
   assert.equal(run(INERT, { ghFails: true }).heavy, 'heavy=true');
 });
-test('[BL-1479] 3000 files or more is heavy', () => {
-  const many = Array.from({ length: 3000 }, (_, i) => ({ filename: `docs/agents/checkins/S1-${i}.md` }));
-  assert.equal(run(many).heavy, 'heavy=true');
+test('[BL-1479] compare caps at 300 files: 300 inert is heavy (maybe truncated), 299 inert is not', () => {
+  const n = (k) => Array.from({ length: k }, (_, i) => ({ filename: `docs/agents/checkins/S1-${i}.md` }));
+  assert.equal(run(n(300)).heavy, 'heavy=true');
+  assert.equal(run(n(3000)).heavy, 'heavy=true');
+  assert.equal(run(n(299)).heavy, 'heavy=false');
 });
 test('[BL-1479] a rename out of code (previous_filename) is heavy', () => {
   assert.equal(
@@ -143,6 +145,7 @@ const mutants = {
   'head not bound to the pull request': ['= "$HEAD_SHA" ]', '!= "" ]'],
   'live pulls files endpoint': ['compare/${BASE_SHA}...${HEAD_SHA}', 'pulls/${PR}/files'],
   'directory entries match any type': ['readiness-20nov/.*\\.(md|csv)', 'readiness-20nov/.*'],
+  'old 3000 limit (compare truncates at 300)': ['-lt 300 ]', '-lt 3000 ]'],
   'instrumentation any type': ['instrumentation/.*\\.(md|csv)', 'instrumentation/.*'],
 };
 for (const [name, [from, to]] of Object.entries(mutants)) {
@@ -155,6 +158,7 @@ for (const [name, [from, to]] of Object.entries(mutants)) {
       () => run(INERT, {}, m).calls.includes('/compare/'),
       () => run(f('docs/engineering/readiness-20nov/a.ts'), {}, m).heavy === 'heavy=true',
       () => run(f('docs/product/instrumentation/a.json'), {}, m).heavy === 'heavy=true',
+      () => run(Array.from({ length: 300 }, (_, i) => ({ filename: `docs/agents/checkins/S1-${i}.md` })), {}, m).heavy === 'heavy=true',
     ];
     assert.ok(cases.some((c) => !c()), 'mutant survived');
   });
