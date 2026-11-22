@@ -28,7 +28,6 @@ Labels used throughout: **F** fact (observed in the repo or by running it on 3 O
 | L0 static | node scripts, tsc, ESLint (new), gitleaks | n/a | every PR | traceability, data map completeness, SDK denylist, manifest lint, secrets, bundle size |
 | L1 unit | vitest | about 70% | every PR | `packages/core` (engine, verifier, age math, prompts, safety tiers, gate and ask logic, notice windows, Plus rules), `packages/analytics`, `packages/content`, `packages/design-tokens`, `apps/mobile/src/lib/*.logic.ts` |
 | L2 component | vitest plus `@testing-library/react-native` under jest-expo (**R**, new) | about 10% | every PR touching `apps/mobile` | AX5 rendering without truncation, accessibility labels, 44 pt targets, sheet focus order, string keys only from `packages/content` |
-
 | L3 database | PGlite harness (exists) | about 15% | every PR | RLS matrix, triggers, functions, purge with clock control, classification, plan-shape perf |
 | L4 service | Deno tests with fake vendors; Supabase CLI plus PowerSync Open Edition in Docker | about 3% | PRs touching `supabase/functions`; nightly integration | Edge Functions (gateway, purge worker, RevenueCat webhooks, notice scheduler), sync parity TC-15 |
 | L5 end to end | Maestro on iOS simulator, mitmproxy for network assertions; Playwright for the web contribution page once `apps/web` exists | about 2% (15 flows) | nightly and release candidate; device runs for gates | the 15 flows in section 3 |
