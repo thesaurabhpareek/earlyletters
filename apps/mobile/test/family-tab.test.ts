@@ -26,7 +26,7 @@ import {
   rowLine,
   signatureLine,
 } from '../src/components/family/family-tab.logic';
-import { familyNotice } from '../src/components/family/family-notice';
+import { familyNotice, noticeOwner } from '../src/components/family/family-notice';
 import { lampAllowed, resolveLamp } from '../src/components/ui/lamp.logic';
 import { HEADER_TARGET } from '../src/lib/navigation.logic';
 import { LEAVE_BOOK_OFFERED } from '../src/lib/family/entry.logic';
@@ -194,8 +194,8 @@ describe('[S57 Motion] the co-parent\'s row arrives once', () => {
 
   it('a sheet\'s closing line shows once: it is cleared as the tab reads it, and a newer line replaces an older one', () => {
     expect(familyNotice.take()).toBeNull();
-    familyNotice.leave('first');
-    familyNotice.leave(familyCopy.create.done);
+    familyNotice.leave('first', noticeOwner());
+    familyNotice.leave(familyCopy.create.done, noticeOwner());
     expect(familyNotice.take()).toBe(familyCopy.create.done);
     expect(familyNotice.take()).toBeNull();
   });
