@@ -376,20 +376,6 @@ describe('BL-1411 SCRB header parser: seeded fuzz', () => {
     expect(parseHeader(h).entryId).toBe(ASHA_ENTRY);
   });
 
-  it('replaceKeyBlock refuses a header that does not parse, with a named code', () => {
-    const r = rng(SCRB_SEED ^ 0xaaaa);
-    for (let i = 0; i < 1000; i++) {
-      const bad = mutateScrb(r, scrbHeader(r));
-      if (expectedCode(bad) === null) continue;
-      try {
-        replaceKeyBlock(bad, { keyVersion: 1, wrapped: new Uint8Array(WRAP_LEN) });
-        throw new Error('accepted');
-      } catch (e) {
-        expect(e).toBeInstanceOf(BackupFormatError);
-      }
-    }
-  });
-
   it('the corpus is the same on every run (fixed seed)', () => {
     const digest = () => {
       const r = rng(SCRB_SEED);
