@@ -1,4 +1,4 @@
-/** The moments store surface. Nothing on a reachable path reads it yet (EXPO_PUBLIC_MOMENTS_TAB is off); only the wipes are wired. */
+/** The moments store surface. Nothing on a reachable path reads it yet (the tab flag is off); only the wipes are wired. */
 import { onBookErased } from '../store';
 import { momentsStore } from './store';
 

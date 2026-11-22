@@ -185,6 +185,12 @@ describe('[R221] the owner check fails closed', () => {
     expect(names()).toEqual([]);
   });
 
+  it('launch cleanup keeps a local file (as sign-in does)', async () => {
+    seed(JSON.stringify(file('local')));
+    await fresh(B).cleanupAtLaunch([BOOK]);
+    expect(names()).toEqual([MOMENTS_FILE]);
+  });
+
   it('a new sign-in removes another signed-in owner\'s file, keeps a local file, and keeps the same owner\'s own', async () => {
     seed(JSON.stringify(file(A)));
     fresh(A).setOwner(B);

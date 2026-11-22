@@ -92,12 +92,12 @@ export function createMomentsStore(getPort: () => MomentsPort | null, initialOwn
       const p = port();
       if (!p) return;
       const r = readMoments(p, owner);
-      if (r.state === 'foreign') {
+      if (r.state === 'foreign' && r.owner !== 'local') {
         removeMoments(p);
         tell();
         return;
       }
-      if (r.state !== 'ok' || !liveBooks) return;
+      if (r.state !== 'ok' || !liveBooks) return; // a kept 'local' file reads foreign here: left alone
       const live = new Set(liveBooks);
       if (Object.keys(r.file.homePlace).every((b) => live.has(b))) return;
       await change((f) => L.pruneBooks(f, live));
