@@ -14,7 +14,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
-import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility } from '@/lib/nav/moments-tab';
+import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility, tabPositionOptions } from '@/lib/nav/moments-tab';
 import { youTabHint } from '@/components/settings/you-tab-hint';
 
 /**
@@ -48,6 +48,8 @@ export default function TabsLayout() {
     function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
       return <Glyph color={color as string} size={25} weight={focused ? 'fill' : 'regular'} />;
     };
+  // VoiceOver says "i of n" for the visible tabs only (the hidden Moments route would otherwise count; moments-tab.ts).
+  const position = (id: 'index' | 'book' | 'you', label: string) => tabPositionOptions(id, label, MOMENTS_TAB_ON, Platform.OS === 'ios');
   // iOS only: the default tab button plus Large Content Viewer. `href` is web-only.
   const button = (title: string) =>
     Platform.OS === 'ios'
@@ -79,10 +81,10 @@ export default function TabsLayout() {
               ...(fonts ? { fontFamily: tokens.fontFamily.sansMedium, fontWeight: 'normal' } : { fontWeight: '500' }),
             },
           }}>
-          <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
+          <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight), ...position('index', t.tonight) }} />
           {/* Moments (PRD 28, CPO-17): second of four, behind EXPO_PUBLIC_MOMENTS_TAB. Flag off, the route is hidden from the bar. */}
           <Tabs.Screen name="moments" options={{ title: momentsLabel, tabBarIcon: icon(ImagesIcon), tabBarButton: button(momentsLabel), ...momentsTabVisibility(MOMENTS_TAB_ON) }} />
-          <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
+          <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book), ...position('book', t.book) }} />
           {/* Me (NX-30a, founder 9 Nov; named Me on 11 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
               last in the bar. It has no lamp and no Back; the header carries the one title, the tab's own (NS-33-R2). Its rows push the Settings pages
               onto the root stack, which goes back to this tab ("Me"). */}
@@ -92,6 +94,7 @@ export default function TabsLayout() {
               title: t.you,
               tabBarIcon: icon(UserIcon),
               tabBarButton: button(t.you),
+              ...position('you', t.you),
               headerShown: true,
               headerStyle: { backgroundColor: c.bg },
               headerTitleStyle: { color: c.text },

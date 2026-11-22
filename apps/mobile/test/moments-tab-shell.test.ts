@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility } from '../src/lib/nav/moments-tab';
+import { MOMENTS_TAB_ON, momentsTabLabel, momentsTabVisibility, tabPositionLabel, tabPositionOptions } from '../src/lib/nav/moments-tab';
 
 const SRC = join(__dirname, '..', 'src');
 const code = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -57,5 +57,24 @@ describe('the Moments tab shell', () => {
   it('the installed expo-router still throws on href with tabBarButton (the reason for the rule above)', () => {
     const src = readFileSync(join(require.resolve('expo-router/package.json'), '..', 'build/layouts/TabsClient.js'), 'utf8');
     expect(src).toMatch(/Cannot use `href` and `tabBarButton` together/);
+  });
+
+  it('VoiceOver positions count the visible tabs: 1 to 3 of 3 with the flag off, the library default with it on', () => {
+    expect(tabPositionLabel('index', 'Home', false)).toBe('Home, tab, 1 of 3');
+    expect(tabPositionLabel('book', 'Book', false)).toBe('Book, tab, 2 of 3');
+    expect(tabPositionLabel('you', 'Me', false)).toBe('Me, tab, 3 of 3');
+    expect(tabPositionLabel('moments', 'Moments', false)).toBeUndefined();
+    for (const id of ['index', 'moments', 'book', 'you'] as const) expect(tabPositionLabel(id, 'X', true)).toBeUndefined();
+    // On is the library's own: index + 1 of 4 in the order Home, Moments, Book, Me, with nothing set here.
+    expect(tabPositionOptions('book', 'Book', true, true)).toEqual({});
+    expect(tabPositionOptions('book', 'Book', false, true)).toEqual({ tabBarAccessibilityLabel: 'Book, tab, 2 of 3' });
+    expect(tabPositionOptions('book', 'Book', false, false)).toEqual({});
+  });
+
+  it('the layout sets the position on the three tabs it always shows', () => {
+    const layoutText = readFileSync(join(SRC, 'app/(tabs)/_layout.tsx'), 'utf8');
+    for (const id of ['index', 'book', 'you']) expect(layoutText).toContain(`...position('${id}'`);
+    const lib = readFileSync(join(require.resolve('expo-router/package.json'), '..', 'build/react-navigation/bottom-tabs/views/BottomTabBar.js'), 'utf8');
+    expect(lib).toMatch(/\$\{label\}, tab, \$\{index \+ 1\} of \$\{routes\.length\}/);
   });
 });

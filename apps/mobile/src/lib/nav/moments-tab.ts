@@ -32,3 +32,21 @@ export function momentsTabVisibility(momentsOn: boolean): { tabBarButton?: () =>
 export function momentsTabLabel(tabs: Readonly<Record<string, string>>): string {
   return tabs.moments ?? tabs.book;
 }
+
+/**
+ * VoiceOver position for a tab. The library counts every route, hidden or not, so with the flag off it would read
+ * "Book, tab, 3 of 4" for three visible tabs. This builds the library's own iOS string ("<label>, tab, <i> of <n>") from the
+ * visible tabs, so no new words are made here. Flag on: undefined, and the library's default for four tabs stands.
+ */
+export function tabPositionLabel(id: 'index' | 'moments' | 'book' | 'you', label: string, momentsOn: boolean): string | undefined {
+  if (momentsOn) return undefined;
+  const ids = visibleTabIds(false);
+  const at = ids.indexOf(id);
+  return at < 0 ? undefined : `${label}, tab, ${at + 1} of ${ids.length}`;
+}
+
+/** The Tabs.Screen option for it: iOS only, where the library adds the position; elsewhere nothing is set. */
+export function tabPositionOptions(id: 'index' | 'moments' | 'book' | 'you', label: string, momentsOn: boolean, ios: boolean): { tabBarAccessibilityLabel?: string } {
+  const text = ios ? tabPositionLabel(id, label, momentsOn) : undefined;
+  return text === undefined ? {} : { tabBarAccessibilityLabel: text };
+}
