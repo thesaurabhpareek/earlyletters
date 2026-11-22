@@ -7646,7 +7646,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Low. Gate: none.
 - Satisfies: audit F2 and F3 (docs/engineering cross-account audit; not re-read here).
 - Problem and evidence: review B on PR #1439 (checked against review A's leftover id); PR #1441.
-- Scope: make a failed write of the Apple user id visible to the caller instead of swallowed, so a stale id cannot be left behind.
+- Scope: a failed write of the Apple user id is handled inside apple.ts (stale id removed, else marked unknown), visible to the revocation watch only, and fails quiet; a stale id cannot be left behind.
 - Done when: a test with a failing Keychain write shows the failure is surfaced; it fails on the old code.
 
 #### BL-1506 The wrong-code map keyed by typed addresses is never cleared
