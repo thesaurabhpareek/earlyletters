@@ -108,7 +108,7 @@ PRD NS-01-R11 (EVIDENCE, read at PR #795, merged as `6a11c808`): the lens "lists
 (The ellipsis above is the drawing's, not the card's: the card shows the letter's words per the Book's existing card rule, ExcerptFade allowed because the whole letter is one tap away.)
 
 - Order: newest first by the letter's date (the PRD's rule), under the Book's own month words (`MonthOpener` words, not a new label).
-- Each row is the Book's `LetterCard` with a leading thumbnail (`PhotoFrame inline`, about 72 pt, radius `md`, 1 pt `line` edge). The card opens its letter, not a viewer (ML-S9). Back returns to the lens.
+- Each row is the Book's `LetterCard` with a leading thumbnail (`PhotoFrame inline`, about 72 pt, radius `sm`, 1 pt `line` edge). The card opens its letter, not a viewer (ML-S9). Back returns to the lens.
 - No add button, no count, no "N photos this month".
 - The thumbnail never replaces the letter's date or the "From" line; both sit in the card as they do in Months.
 - At AX5 the thumbnail moves above the text (one column) and the card grows; the date and "From" line stay whole.
@@ -124,10 +124,12 @@ PRD NS-01-R11 (EVIDENCE, read at PR #795, merged as `6a11c808`): the lens "lists
 | First run, no photo ever | "Start from a photo" visible when the build switch is on; nothing else about photos | Add button only | Add action only | Lens absent |
 | Loading | Picker is the system's; thumbnail appears with a flat `surface` box, no blur animation | "Adding" label under the strip (ML-S5) | Flat `surface` until ready | Cards fill in, no skeleton |
 | Offline | Local photos work. iCloud-only items say so in the chooser (ML-S4) | Same | Same | Fully local |
-| Error | `ErrorLine` under the thumbnail: "That photo could not be opened. Choose another." (slot); Speak and Type still work | ML-S5 failed line | ML-S8 missing-file box | Missing-file box on the card thumbnail |
+| Error | `ErrorLine` under the thumbnail: "That photo could not be opened. Choose another." (slot); Speak and Type still work | ML-S5 failed line | ML-S8 missing-file box | A card with no thumbnail and no words (B-S04 `thumbMissing`); the box stays on the letter page only |
 | Photo access | Build 13: not applicable, the system picker needs none; the app never asks. Post-Build 13: unchanged button; system picker or chooser per ML 1.4; no mention of access | Same | Same | Lens never reads the camera roll |
-| Missing file | n/a | n/a | "Not on this phone any more" box with a quiet Remove | Same box |
+| Missing file | n/a | n/a | "Not on this phone any more" box with a quiet Remove | A card with no thumbnail and no words (B-S04 `thumbMissing`); the box stays on the letter page only |
 | Long letter | Words whole; thumbnail never covers text | Words never move | Words whole; media after | Cards only |
+
+Updated 21 Nov 2026 to match B-S04 and F-26/F-27 (BL-1484): lens thumbnail radius is `sm` (section 5.1); a missing lens thumbnail is a card with no thumbnail and no words (section 6). Open for the B motion owner (BL-1487): dropping the lens thumbnail on a load error changes the card height (B-M05, G3).
 
 ## 7. Motion (tokens only)
 

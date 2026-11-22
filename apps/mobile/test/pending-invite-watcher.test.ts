@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   saved: null as { token: string; receivedAt: number } | null,
   push: vi.fn(),
   clear: vi.fn(),
+  clearRead: vi.fn(),
   read: vi.fn(),
 }));
 
@@ -35,15 +36,21 @@ vi.mock('../src/lib/billing/alpha', () => ({
 vi.mock('../src/lib/family/pending-invite', () => ({
   readPendingInvite: (...a: unknown[]) => h.read(...a),
   clearPendingInvite: (...a: unknown[]) => h.clear(...a),
+  clearReadPendingInvite: (...a: unknown[]) => h.clearRead(...a),
 }));
 
 import { PendingInviteWatcher } from '../src/lib/family/pending-invite-watcher';
+import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
 import { renderHook } from './helpers/mini-react';
 
 const TOKEN = { token: 'a'.repeat(43), receivedAt: 1 };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 beforeEach(() => {
+  resetAuthStoreForTests();
+  publishAuth({ status: 'signedOut' }); // a settled session; the restoring cases set their own
+  h.clearRead.mockReset();
+  h.clearRead.mockResolvedValue(undefined);
   h.pathname = '/';
   h.navKey = 'root';
   h.serverFeatures = true;
@@ -113,5 +120,48 @@ describe('[A-REQ-028] the pending-invite watcher and the join-door rule', () => 
     run.rerender();
     await settle();
     expect(h.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('[CISO-2] while the session is restoring it reads nothing; it reads once the session settles, with the user id', async () => {
+    resetAuthStoreForTests(); // 'restoring', as at every cold launch
+    renderHook(() => PendingInviteWatcher());
+    await settle();
+    expect(h.read).not.toHaveBeenCalled();
+    expect(h.clearRead).not.toHaveBeenCalled();
+    publishAuth({ status: 'ready', userId: 'user-a', sync: 'on' });
+    await settle();
+    expect(h.read).toHaveBeenCalledWith(expect.any(Number), 'user-a');
+    expect(h.clearRead).not.toHaveBeenCalled();
+    expect(h.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('[CISO-2] settled signed out at launch: the read-mark clear runs, and the read is for no user', async () => {
+    renderHook(() => PendingInviteWatcher());
+    await settle();
+    expect(h.clearRead).toHaveBeenCalledTimes(1);
+    expect(h.read).toHaveBeenCalledWith(expect.any(Number), null);
+  });
+
+  it('[CISO-2] a pathname change while restoring does not add a second waiter: one push when the session settles', async () => {
+    resetAuthStoreForTests();
+    const run = renderHook(() => PendingInviteWatcher());
+    h.pathname = '/home';
+    run.rerender();
+    h.pathname = '/book';
+    run.rerender();
+    await settle();
+    publishAuth({ status: 'ready', userId: 'user-a', sync: 'on' });
+    await settle();
+    expect(h.read).toHaveBeenCalledTimes(1);
+    expect(h.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('[CISO-2] unmounting while restoring drops the waiter: nothing is read later', async () => {
+    resetAuthStoreForTests();
+    const run = renderHook(() => PendingInviteWatcher());
+    run.unmount();
+    publishAuth({ status: 'ready', userId: 'user-a', sync: 'on' });
+    await settle();
+    expect(h.read).not.toHaveBeenCalled();
   });
 });

@@ -27,6 +27,7 @@ import { PageTurn, type PageDirection } from '@/components/motion/page-turn';
 import { Button } from '@/components/ui/button';
 import { Lamp, useUnlitRoom } from '@/components/ui/lamp';
 import { LineArt } from '@/components/ui/line-art';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
@@ -275,15 +276,23 @@ function EndOfBook({ onClose, onAgain }: { onClose: () => void; onAgain: () => v
   const rt = copy.readTogether;
   const reduced = useReducedMotion();
   return (
-    <View className="flex-1 justify-center gap-8 px-5" accessibilityLiveRegion="polite" testID="readTogether.end">
-      <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
-      <Text variant="title1" asHeading className="text-center">
-        {rt.endOfBook}
-      </Text>
-      <View className="gap-3">
-        <Button size="lg" onPress={onClose} label={rt.finishButton} />
-        <Button variant="secondary" size="lg" onPress={onAgain} label={rt.againButton} />
+    <PinnedActionLayout
+      center
+      insetBottom={false}
+      contentContainerClassName="gap-8 px-5"
+      action={
+        <View className="gap-3">
+          <Button size="lg" fullWidth onPress={onClose} label={rt.finishButton} />
+          <Button variant="secondary" size="lg" fullWidth onPress={onAgain} label={rt.againButton} />
+        </View>
+      }
+      testID="readTogether.end">
+      <View accessibilityLiveRegion="polite" className="gap-8">
+        <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
+        <Text variant="title1" asHeading className="text-center">
+          {rt.endOfBook}
+        </Text>
       </View>
-    </View>
+    </PinnedActionLayout>
   );
 }
