@@ -25,7 +25,7 @@ Ownership of `scripts/agents/**`: the founder (`.github/CODEOWNERS:31`). Any "ow
 
 ## 1. What it is
 
-A team of 24 role agents (five engineering standards stewards, engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). Agents never merge: every change waits for the founder.
+A team of 24 role agents (five engineering standards stewards, engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). The harness agents never merge: every change waits for Karma, who approves and merges once two counted reviews and the required checks hold (CR-73). What stays the founder's is the CR-73 list.
 
 ```mermaid
 flowchart LR

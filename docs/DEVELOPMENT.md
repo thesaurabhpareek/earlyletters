@@ -37,4 +37,4 @@ A pull request merges only when all hold:
 | production | `com.earlyletters.scribe` | production | App Store. The id is permanent once created |
 
 ## Who does what
-The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. Two independent review agents pass a pull request before it merges (D-107). Agents never merge, never change founder decisions, and never touch secrets. Founder-only steps (Apple, Expo, Supabase, domains, keys) live in `docs/FOUNDER_TASKS.md`.
+The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. Two independent review agents pass a pull request before it merges (D-107). The harness agents never merge (Karma does, CR-73), never change founder decisions, and never touch secrets. Founder-only steps (Apple, Expo, Supabase, domains, keys) live in `docs/FOUNDER_TASKS.md`.
