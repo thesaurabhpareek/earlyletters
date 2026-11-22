@@ -825,3 +825,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Way back: one line from the founder, or Karma restoring the CR-73 wording, and `merge-queue.mjs` already behaves the old way for native paths.
 - Recorded with this ruling: an `Amended by CR-74` line under the CR-73 Ruling and under the CR-72 code-merge bullet (the log is append-only, so those lines are added and the original lines stand), and `docs/agents/COORDINATION.md` section 11 (watch items), edited in place.
 - Revisit when: a merged app-code PR is found to break the launch check after the merge, twice, or the founder says so. Karma
+
+### CR-148 PR #1448 (compliance gates migration) passes Karma's checklist for merge into develop (Sat 21 Nov 2026, Karma, with CCO-7)
+- Question: after CCO-7, does PR #1448 meet the engineering checklist in `compliance/README.md`?
+- Tier and type: T2; complicated.
+- Ruling: approve the head named on the `## Karma approval at <sha>` line, for merge into `develop` only, under CR-70 and CR-73 and on the founder's word of 21 Nov that the founder-only items go forward under Karma's recommendation. The label `karma:approved` follows the approval line. The approval is posted only after CI is green at that head. Any new push voids it and CCO-7.
+- Checked: new migration file, sorted after `20261121020000`, no applied migration edited; every new function has its grant in the migration and in `supabase/tests/grants.mjs`; the auth hook is revoked from every role except `supabase_auth_admin` and is not enabled in `supabase/config.toml`; no IP, birth date, name or entry text is stored; the blocked places match D-131, which holds the founder's words; two independent counted reviews at the head; `npm run test:db` and the compliance script tests pass.
+- Not approved here: applying File 39 to a hosted project, enabling the hook, and any change to the blocked list. Those are the founder's (CR-73) and wait for the conditions in CCO-7.
+- Stale references fixed in the PR: the migration and File 39 no longer say File 28 or "do not merge before the 9 Nov go/no-go"; `config.toml` no longer cites CR-22 (the harness-freeze ruling) for the account checks. CR-26 and CR-27 stay cited for the original account-checks and fence rulings.
+- Door: two-way with cost. Way back: revert PR #1448.
+- Revisit when: a condition in CCO-7 is met, or the hook is to be enabled. Karma

@@ -185,14 +185,14 @@ describe('[NS-08-R21] the install id', () => {
     setFlag(true);
     const invoke = vi.fn(async () => ({ data: { status: 'ok' }, error: null }));
     const sb = { auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN } } }) }, functions: { invoke } };
-    await reportNewDeviceFor(sb as never);
+    await reportNewDeviceFor(sb as never, 'u1');
     const [name, opts] = invoke.mock.calls[0] as unknown as [string, { method: string; body: Record<string, unknown>; headers: Record<string, string> }];
     expect(name).toBe('new-device-fill');
     expect(opts.headers).toEqual({ Authorization: `Bearer ${CANARY_TOKEN}` });
     expect(Object.keys(opts.body).sort()).toEqual(['class', 'device_id']);
     expect(opts.body.class).toBe('apple');
     setFlag(false);
-    await reportNewDeviceFor(sb as never);
+    await reportNewDeviceFor(sb as never, 'u1');
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 });
@@ -289,7 +289,7 @@ describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the 
       signals.push(o.signal);
       return signals.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
     });
-    const done = reportNewDeviceFor(client(invoke));
+    const done = reportNewDeviceFor(client(invoke), 'u1');
     await vi.advanceTimersByTimeAsync(8_001);
     await done;
     expect(invoke).toHaveBeenCalledTimes(2);
@@ -301,10 +301,64 @@ describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the 
     const { reportNewDeviceFor, flag } = await wire();
     const invoke = vi.fn(async () => ({ error: null }));
     const sb = client(invoke);
-    await Promise.all([reportNewDeviceFor(sb), reportNewDeviceFor(sb)]);
+    await Promise.all([reportNewDeviceFor(sb, 'u1'), reportNewDeviceFor(sb, 'u1')]);
     expect(invoke).toHaveBeenCalledTimes(1); // mutant: no cap -> 2
-    await reportNewDeviceFor(sb); // after it settled, the next sign-in may call again
+    await reportNewDeviceFor(sb, 'u1'); // after it settled, the next sign-in may call again
     expect(invoke).toHaveBeenCalledTimes(2);
+    flag.setNewDeviceEmailForTest(null);
+  });
+  // F8 (CISO-3): the in-flight report belongs to the account that started it.
+  const clientFor = (uid: string, invoke: unknown) =>
+    ({ auth: { getSession: async () => ({ data: { session: { access_token: `tok-${uid}`, user: { id: uid } } } }) }, functions: { invoke } }) as never;
+  it('[F8] A starts, A signs out, B signs in: B gets its own call, never A in-flight result', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const tokens: string[] = [];
+    const invoke = vi.fn((_n: string, o: { headers: { Authorization: string } }) => {
+      tokens.push(o.headers.Authorization);
+      return tokens.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
+    });
+    const a = reportNewDeviceFor(clientFor('A', invoke), 'A'); // still running when A signs out
+    await vi.advanceTimersByTimeAsync(10);
+    const b = reportNewDeviceFor(clientFor('B', invoke), 'B');
+    expect(b).not.toBe(a); // mutant: one shared slot -> same promise
+    await b;
+    expect(tokens).toContain('Bearer tok-B');
+    expect(tokens.filter((t) => t === 'Bearer tok-A')).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(20_000);
+    await a;
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] the same account asking twice at once still shares one promise', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    const sb = clientFor('A', invoke);
+    const p1 = reportNewDeviceFor(sb, 'A');
+    const p2 = reportNewDeviceFor(sb, 'A');
+    expect(p2).toBe(p1); // mutant: key by call, not user -> different promises
+    await p1;
+    expect(invoke).toHaveBeenCalledTimes(1);
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] a session that now belongs to another account sends nothing for the starter', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    await reportNewDeviceFor(clientFor('B', invoke), 'A'); // A asked, but B holds the session
+    expect(invoke).not.toHaveBeenCalled(); // mutant: no user check on the token -> 1
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] the slot clears per user: A finishing does not clear B', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    let releaseA: (v: unknown) => void = () => {};
+    const invokeA = vi.fn(() => new Promise((r) => (releaseA = r)));
+    const invokeB = vi.fn(() => new Promise(() => {}));
+    const a = reportNewDeviceFor(clientFor('A', invokeA), 'A');
+    const b = reportNewDeviceFor(clientFor('B', invokeB), 'B');
+    await vi.advanceTimersByTimeAsync(1);
+    releaseA({ error: null });
+    await a;
+    expect(reportNewDeviceFor(clientFor('B', invokeB), 'B')).toBe(b); // mutant: finally clears whole slot -> new promise
+    await vi.advanceTimersByTimeAsync(20_000);
+    await b;
     flag.setNewDeviceEmailForTest(null);
   });
 });

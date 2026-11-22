@@ -55,6 +55,14 @@ The spec is freeze-ready in the sense that no BLOCKER is open without either an 
 | Hybrid decisions D1 to D14, KM1 to KM5 | Karma's decisions (spec 3.4) that the founder confirms or overrides, including: picker in a sheet, never the tab body; door only after a No; R56 and R57 dropped; viewer reduced, not deferred; the library read stays in 1.0 | The decisions as written | With G10 |
 | Spend | Any spend at all (counsel, dataset licence, entity, insurance, builds, email allowance) | None unless the founder signs a row of section 21.2 | n/a |
 
+Decided 21 Nov 2026 (decided by the executive council, approved by the founder, who said as relayed: "Decide for all 10 with exec team. I approve their decision. Same for 6 moments questions."; rulings `CPO-17` and `CPrivO-10` in `docs/agents/exec/RULINGS.md`, PR #1377). The table above and the status words in 1.6 are left as written; for these six this note wins:
+1. O-01: Moments is the second of four tabs (Home, Moments, Book, Me); Home stays the landing tab.
+2. O-37, O-39, O-52, RV-13, RV-17: the first release ships with the photo-library read (Route B) in 1.0, places and occasions in, faces and naming people out. The G6 guard (`g6-production-flags-off`, `store-flags.mjs`) is amended in the PR that adds the PHAsset use and its usage strings. Gates G1 to G11 apply before store submission, not before coding. O-37 (which slips if a gate is open) is not answered here.
+3. RV-18, RV-19, O-42 (H-10): only the person's own photo metadata (date, place) is used; no machine-written scene, face or people label is shown or stored as the family's words.
+4. O-44: keep ADR 0028 D1 and disclose it (device row D-3 stays).
+5. O-02, O-03, O-50: no library-timed push and no Moments email in 1.0; both off.
+6. O-48 in part: no whole-app "Data Not Collected" claim (CPrivO-10). The value proposition text stays PROPOSED; O-48 itself stays OPEN.
+
 Items that are not the founder's (owner and default are in section 23): O-04, O-06, O-08, O-09, O-11, O-12, O-15, O-17, O-19, O-22 to O-28, O-34, O-43 (Chief Design Officer: keep the For you and Recent switch), O-51 (CPO: evaluate Apple Journaling Suggestions after the F2a read-out), O-53 (Chief Design Officer: Layout A or B for the host sheet, default B until the picker spike), O-54 (engineering lead with `content`: per-type limit approach, default one total cap).
 
 Closed by the hybrid edit: O-13 and O-14 (R56 and R57 dropped, D6).
