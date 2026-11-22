@@ -301,6 +301,13 @@ describe('[F19-REQ-011] remote kill switches can pause a build flag, never start
     expect(KILL_SWITCH_FLAG).toEqual({ backupUploads: 'backup', escrow: 'backup', statusReport: 'statusReport' });
   });
 
+  it('[NS-46-R28] [NS-41-R25] guard: libraryDays and signIn never join KILL_SWITCH_FLAG (CR-69 A5)', () => {
+    // libraryDays: gate is the days flag plus `killSwitches.libraryDays !== true`. signIn: the outage
+    // screen. Neither has a build flag of its own, so neither may sit in this map.
+    expect(Object.keys(KILL_SWITCH_FLAG)).not.toContain('libraryDays');
+    expect(Object.keys(KILL_SWITCH_FLAG)).not.toContain('signIn');
+  });
+
   it('with the build flag off, no config of any shape makes a feature run', () => {
     const configs = [
       null,
@@ -583,6 +590,43 @@ describe('boot with server features off', () => {
     expect(registerUploadQueue).not.toHaveBeenCalled();
     expect(createClient).not.toHaveBeenCalled();
     stop();
+  });
+
+  // BL-442: the line above checks that nothing was wired; this one checks the thing a person would notice.
+  // A save on a phone with the switch off queues nothing to upload, because no account ever owns the database.
+  it('starts no sync: a save on a phone leaves no sync_outbox row', async () => {
+    const sync = await import('../src/lib/sync');
+    const stop = sync.startSync();
+    // The real outbox and migrations: this file mocks the sync modules above for the wiring checks.
+    const outbox = await vi.importActual<typeof import('../src/lib/sync/outbox')>('../src/lib/sync/outbox');
+    const { migrate } = await vi.importActual<typeof import('../src/lib/db/migrations')>('../src/lib/db/migrations');
+    const { nodeDb } = await import('./helpers/node-db');
+    const { insertBook } = await import('./helpers/store-fixture');
+    const { db, close } = nodeDb();
+    try {
+      const at = '2026-10-03T09:00:00.000Z';
+      let n = 0;
+      const ctx = { now: at, newId: () => `0199a000-0000-7000-8000-${String(++n).padStart(12, '0')}` };
+      migrate(db, ctx);
+      insertBook(db, { id: 'child-asha', name: 'Asha', birthday: '2025-04-12', at });
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+           final_text, in_book, updated_at, child_id) VALUES ('l1', 'letter', '2026-09-29', ?, 'typed', 'verbatim', 2, 'She walked to me.', '[]', 'She walked to me.', 1, ?, 'child-asha')`,
+        at, at,
+      );
+      const queued = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+      outbox.enqueueEntryUpsert(db, 'l1', ['text'], ctx); // what a save asks of the outbox
+      expect(outbox.readSetting(db, 'sync.ownerId')).toBeNull();
+      expect(queued()).toBe(0);
+      // Control: the same call queues a row once an account owns the phone, so the zero above is not a broken helper.
+      outbox.writeSetting(db, 'sync.ownerId', '11111111-1111-1111-1111-111111111111');
+      db.run("UPDATE entries SET author_id = '11111111-1111-1111-1111-111111111111' WHERE id = 'l1'");
+      outbox.enqueueEntryUpsert(db, 'l1', ['text'], ctx);
+      expect(queued()).toBe(1);
+    } finally {
+      close();
+      stop();
+    }
   });
 
   it('with the switch on (v1.1 tests), the same build makes one client and wires sync', async () => {

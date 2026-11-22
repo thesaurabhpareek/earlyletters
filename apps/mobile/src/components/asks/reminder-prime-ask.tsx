@@ -25,7 +25,7 @@ import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
-import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
+import { noteReminderPrimeShown, noteReminderPrimeYes, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
 import { childLabel, copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { getActiveChild } from '@/lib/store';
@@ -43,8 +43,7 @@ export function ReminderPrimeAsk() {
   useEffect(() => {
     const take = () => {
       if (!takeReminderPrimeRequest()) return;
-      noteReminderPrimeShown();
-      track('reminder_prime_shown', { source: 'first_letter' });
+      track('reminder_prime_shown', { source: noteReminderPrimeShown() });
       setOpen(true);
     };
     take();
@@ -67,6 +66,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const yes = (chosen?: ReminderTime) => {
     haptic('tap');
     if (chosen) writePrefs({ time: chosen });
+    noteReminderPrimeYes();
     track('reminder_prime_result', { choice: 'yes' });
     onClose();
     // The choice is saved either way; then one line says what came of it (reminders-settings.md 3).

@@ -46,7 +46,7 @@ Runbook (bottom-up; one slice at a time; each step has a stop):
 6. Post on the PR: `Delta since <old head>: git diff <old> <new> --stat` and the verdict that needs redoing. Reviews at the old head are stale (`review-gate` section 5).
 7. After the last slice merges: delete the stack branches (founder or Karma; agents never delete another's branch).
 
-Proposed script (exact design, not written): `scripts/agents/stack-status.mjs`, read-only: for each open PR whose base is not `develop`, print base PR number and state, whether the base merged, `mergeable_state`, and the `git merge-base` distance. It would have listed all of today's stack states in one table. Owner: ops proposes, founder reviews (path `scripts/agents/**` is `security-architect` review territory and the founder's).
+Proposed script (exact design, not written): `scripts/agents/stack-status.mjs` (planned), read-only: for each open PR whose base is not `develop`, print base PR number and state, whether the base merged, `mergeable_state`, and the `git merge-base` distance. It would have listed all of today's stack states in one table. Owner: ops proposes, founder reviews (path `scripts/agents/**` is `security-architect` review territory and the founder's).
 
 Pitfall: a lower slice that changes after a higher slice is reviewed forces a merge of the lower branch into every slice above, so six slices become six new heads and six pairs of reviews. Hold the lower slice's edits until the stack is reviewed, or batch them (H4).
 

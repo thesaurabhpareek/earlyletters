@@ -17,7 +17,7 @@ import { tokens, type ColorScheme } from '@scribe/design-tokens';
 export const COVER_SIZES = {
   /** First run, beside the heading (S05, S06). */
   sm: { width: 88, height: 116 },
-  /** Add a child (S47) and the Export thumbnail (S43). */
+  /** The Export thumbnail (S43). Add a child (S47) uses `sm`. */
   thumb: { width: 96, height: 128 },
   /** "The book is open." (S08). */
   md: { width: 132, height: 176 },

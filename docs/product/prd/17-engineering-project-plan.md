@@ -2,6 +2,11 @@
 
 Status: v5, pinned 20 Nov 2026 to develop `55574906c`: errata E1 to E83, closures CL-001 to CL-158, next free E84 (v5 was pinned to `dcbf70fc8`, E82; v4 was pinned to `4d33978f`; v3 synced at about 21:15 UTC to `f0cf1c7a`; v2 at 18:20 UTC at `458fae46`; v1 at `774d3e13`). CR-71 (`docs/agents/cto/RULINGS.md:760`, merged) and the executive decisions record (`docs/engineering/readiness-20nov/DECISIONS-20nov.md`, merged) are on develop and are used below; the founder's 20 Nov answers in its section 8 are in 5.5. `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md` answers the 37 questions (P1 to P37) and, in its section 4, P38 to P48; it is the index used below. Docs only. Author: Karma (CTO role). The requirements are now rev 2: #934 merged into develop at 20:37 UTC as `88f3a975` (120 files) and #846, the draft this plan was keyed to at `450bcb4a`, is closed unmerged [V gh]. Errata E1 to E83 and closures CL-001 to CL-158 are on develop at the pin (E62 to E68 and CL-136 to CL-142 came in with #993, merged) [V]. CR-66 and CR-69 (develop, `RULINGS.md` CR-69 at :694-710) hold the engineering rulings. The rows for NS-38 to NS-52 (first-run, days, media) are in `17b-engineering-plan-new-scope.md`; this file keeps the NS-01 to NS-37 rows. State lines (PR heads, reviews, CI) are as of 18:20 UTC, and heads were re-read at 21:00 UTC and had not moved [V], and have not been re-read since (for example #871 has merged on develop); they go stale, and the re-sync rule in section 1 refreshes them.
 
+**Live status: see the one canonical block at the top of `docs/engineering/readiness-20nov/PROGRESS.md` ("Canonical live status"). It is not repeated here, so it cannot drift. Older status text below, if any, is superseded by it.**
+
+**Delivery plan: see `docs/engineering/readiness-20nov/DELIVERY-PLAN.md` (why delivery is slow, dependency map and critical path, lanes, founder pack).**
+
+
 Line numbers: `file:line` cites to the cards, 13, 14 and README are at `450bcb4a` (rev 1) unless another commit is named; rev 2 changed 100 files under `docs/product/prd`, so those lines may have moved and were not re-checked one by one [U]: read the id, not the line. Cites to `docs/BACKLOG.md`, RULINGS, ROADMAP and VISION are to develop. The conflict this plan once expected at `13:3` was resolved by the merge of develop into this branch (both lines kept).
 
 What it is: one level below `docs/product/prd/13-engineering-plan.md`. One row per backlog row and per in-flight PR, the order they merge in, who builds and reviews each, and what each waits for.
@@ -785,7 +790,7 @@ From the table in `docs/tdd/new-scope/README.md`, read against develop `16e61549
 | Sign-out leaves reminders planned | NS-13-R14 | Fails | Closed: #904. Account gone and the upgrade path: handoff #910 |
 | The reminder never-list has no test | NS-13-R5, R6a, R6b | Untested | Closed: #905 |
 | Sign out never removes a recording has no test | NS-08-R6 | Untested | Closed: #874 |
-| Caption and place ceilings count characters, not code points | NS-01 caps, BL-957 | Mismatch | Not closed: #835's head has 2240 and 960 code points, 16 per character (`apps/mobile/src/lib/db/migrations.ts:462-463`), while E11 and `data-and-sync.md` say database ceilings of 1,120 (photo words) and 480 (place) code points and app limits of 140 and 60 graphemes; E10 sets the unit per field (From name counts code points, 30) and E12 sets NS-06-A23 at 320. Which is intended is Karma's to settle before #835 merges [U] |
+| Caption and place ceilings count characters, not code points | NS-01 caps, BL-957 | Mismatch | Closed 21 Nov by E84 (CL-159): the ceilings are 2,240 and 960 code points, as #835's head has them. Was: #835's head has 2240 and 960 code points, 16 per character (`apps/mobile/src/lib/db/migrations.ts:462-463`), while E11 and `data-and-sync.md` say database ceilings of 1,120 (photo words) and 480 (place) code points and app limits of 140 and 60 graphemes; E10 sets the unit per field (From name counts code points, 30) and E12 sets NS-06-A23 at 320. Which is intended is Karma's to settle before #835 merges [U] |
 | No switch for the system writing tools on a text field | ruling D2 | Open | CR-67 AX-1: one native setting once, under ADR 0039; flags for new letter-word fields stay off in `production` until it lands. Open; reported to the founder, not decided |
 
 ---
@@ -862,5 +867,5 @@ What changed with rev 2 (#934 merged at `88f3a975`; #846 closed):
 - Counsel turnaround and the founder's hours, which this plan does not estimate.
 - That the mermaid graph renders.
 - Rev 2: the id diff against `450bcb4a` (100 files), the cites in this file to card lines (rev 1 lines), the founder hold on the 13 held rows on develop, whether #843 is redundant, and the states of #843, #866 and #870 (heads only were re-read at 21:00 UTC).
-- Which of #835's ceilings (2240 and 960, or E11's 1,120 and 480 code points) is intended, and the NX-39 F6 cap number.
+- Closed by E84 (CL-159): #835's ceilings are 2,240 and 960 code points. Still open: the NX-39 F6 cap number.
 - Hosted settings, plan limits and device behaviour (the decisions record's own Not-verified list); the D-entry for the founder's answers is not yet pasted, so the allowance per phone is not final (5.5).

@@ -54,7 +54,8 @@ export function actionLayout(kind: StateKind, primary?: StateAction, others: rea
 /** The screen-level layout every state shares (S13, S49): centred, 20 pt gutters, the title in title2. */
 export const STATE_LAYOUT = {
   gutter: tokens.space[5],
-  align: 'center',
+  /** E4: the picture is centred; the heading and the sentence start on the reading edge (RTL-correct). */
+  align: { picture: 'center', text: 'start' },
   title: 'title2',
   body: 'body',
   /** A Phosphor glyph sits in a soft circle: Light weight, textMuted on accentSoft. */

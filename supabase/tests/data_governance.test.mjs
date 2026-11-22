@@ -7,6 +7,7 @@
 // an explicit role (no more editing child_invites.role by hand), and Terms, age
 // and sensitive-data consent recorded for every person before they write content.
 import { createDb, users } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S, U } = users;
@@ -41,8 +42,8 @@ check('raw_sha256 is immutable', await fails(() => as(A, `update entries set raw
 check('created_at is immutable', await fails(() => as(A, `update entries set created_at=now()-interval '1 year' where id='${e1}'`), 'SCIMM'));
 check('photo path in another family folder is refused', await fails(() => as(A, `update entries set photo_path='${SOLO}/${S}/x.jpg' where id='${e1}'`)));
 check('photo path must name its own entry', await fails(() => as(A, `update entries set photo_path='${CHILD}/${A}/other.jpg' where id='${e1}'`)));
-await as(A, `update entries set photo_path='${CHILD}/${A}/${e1}.jpg' where id='${e1}'`);
-check('photo path {child}/{author}/{entry}.jpg is accepted', (await sys(`select photo_path from entries where id='${e1}'`)).rows[0].photo_path.endsWith(`${e1}.jpg`));
+await legacyPhotoPath(sys, e1, `${CHILD}/${A}/${e1}.jpg`);
+check('photo path {child}/{author}/{entry}.jpg is accepted (legacy row)', (await sys(`select photo_path from entries where id='${e1}'`)).rows[0].photo_path.endsWith(`${e1}.jpg`));
 await as(A, `update entries set machine_edits='[]'::jsonb where id='${e1}'`);
 check('machine_edits change alone is versioned', (await sys(`select count(*)::int n from entry_versions where entry_id='${e1}' and machine_edits='[{"type":"filler"}]'::jsonb`)).rows[0].n === 1);
 check('version records who superseded it', (await sys(`select superseded_by from entry_versions where entry_id='${e1}'`)).rows[0].superseded_by === A);
@@ -110,15 +111,15 @@ check('[B F9] parents see the pending family letter', (await one(B, `select appr
 check('author still sees own private letter in the view', (await as(A, `select 1 from book_entries where id='${await newEntry(A, CHILD, false)}'`)).rows.length === 1);
 check('book view search works for co-parents', (await as(B, `select id from book_entries where child_id='${CHILD}' and search @@ plainto_tsquery('simple', 'walked')`)).rows.length === 3);
 check('co-parent can read the in-book photo of another author', await (async () => {
-  await as(A, `update entries set photo_path='${CHILD}/${A}/${aBook}.jpg' where id='${aBook}'`);
-  await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${A}/${aBook}.jpg')`);
+  await legacyPhotoPath(sys, aBook, `${CHILD}/${A}/${aBook}.jpg`);
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${A}/${aBook}.jpg')`);
   return (await as(B, `select name from storage.objects`)).rows.length === 1;
 })());
 
 // ── PRD-REQ-014 Cross-child isolation ─────────────────────────────────────
 const sBook = await newEntry(S, SOLO);
-await as(S, `update entries set photo_path='${SOLO}/${S}/${sBook}.jpg' where id='${sBook}'`);
-await as(S, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${SOLO}/${S}/${sBook}.jpg')`);
+await legacyPhotoPath(sys, sBook, `${SOLO}/${S}/${sBook}.jpg`);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', '${SOLO}/${S}/${sBook}.jpg')`);
 const leak = async (uid) => (await as(uid, `
   select 'entry' from book_entries where child_id='${SOLO}'
   union all select 'raw' from entries where child_id='${SOLO}'

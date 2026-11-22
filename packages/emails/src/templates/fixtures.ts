@@ -27,6 +27,7 @@ export const previewValues: EmailValues = {
   code: '482913',
   signInUrl: `${SITE}/auth/callback#token_hash=preview-not-a-real-token&type=email`,
   verifyUrl: `${SITE}/auth/callback#token_hash=preview-not-a-real-token&type=email`,
+  notYouUrl: `${SITE}/not-you#token=preview-not-a-real-token`, // new-device-sign-in (E83): opens a page that acts only on a button press
   confirmUrl: `${SITE}/auth/callback#token_hash=preview-not-a-real-token&type=email_change`,
   expiresIn: '15 minutes',
   device: 'an iPhone',
