@@ -7,7 +7,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { ScribeFiles } from '../../../modules/scribe-files';
 import { readBackFlag } from '../backup/readback';
-import { type DaysFile, parseDays, serializeDays } from './store.logic';
+import { DAYS_MAX_BYTES, type DaysFile, parseDays, serializeDays } from './store.logic';
 
 export const DAYS_FOLDER = 'days';
 export const DAYS_FILE = 'days.v1.json';
@@ -19,6 +19,7 @@ export interface DaysPort {
   createEmpty(name: string): void;
   write(name: string, text: string): void;
   read(name: string): string;
+  size?(name: string): number; // bytes; a port that cannot say leaves the cap to the text length
   rename(from: string, to: string): Promise<void>;
   remove(name: string): void; // throws when it cannot; absent is fine
   list(): string[];
@@ -58,6 +59,7 @@ export function readDays(port: DaysPort, owner: string, moment: 'open' | 'restor
     const flag = readBackFlag(port, DAYS_FILE, moment);
     if ('cannotRead' in flag) return { state: 'unreadable' }; // kept: a read that threw is not a wrong flag
     if (!flag.ok) return { state: 'unavailable' };
+    if ((port.size?.(DAYS_FILE) ?? 0) > DAYS_MAX_BYTES) return { state: 'unreadable' }; // over the cap: kept, never read
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
     return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign', owner: parsed.file.owner };
@@ -140,6 +142,7 @@ export function expoDaysPort(): DaysPort | null {
     createEmpty: (n) => f(n).create({ overwrite: true }),
     write: (n, t) => f(n).write(t),
     read: (n) => f(n).textSync(),
+    size: (n) => f(n).size,
     rename: (a, b) => f(a).move(f(b), { overwrite: true }),
     remove: (n) => f(n).exists && f(n).delete(),
     list: () => dir.list().filter((i): i is File => i instanceof File).map((i) => i.name),

@@ -41,7 +41,7 @@ vi.mock('../modules/scribe-files', () => ({
 }));
 
 const { createDaysStore, daysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
-const { parseDays } = await import('../src/lib/days/store.logic');
+const { parseDays, tickDay, DAYS_MAX_BYTES, DAYS_MAX_TICKS } = await import('../src/lib/days/store.logic');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
 
 const A = '1a2b3c4d5e6f7a8b';
@@ -385,6 +385,57 @@ describe('[NS-47-R6] a failure after the rename deletes the final file too', () 
     expect(names()).toEqual([]);
     const lostThenWriteThrows = { ...real, isExcluded: (n: string) => n !== DAYS_FILE && real.isExcluded(n), write: (n: string, t: string) => { if (n === DAYS_FILE) throw new Error('x'); real.write(n, t); } };
     expect(await writeDays(lostThenWriteThrows, file())).toBe('unavailable');
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[NS-47-R6] BL-1200: a file that is too big or too crowded reads as unreadable and is kept', () => {
+  const many = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`seasonal.synthetic-${i}`, {}]));
+  const text = (ticked: unknown) => JSON.stringify({ v: 1, owner: A, ticked });
+
+  it('a file over the byte cap is unreadable and kept, and its text is never read', () => {
+    const big = JSON.stringify(file()) + ' '.repeat(DAYS_MAX_BYTES);
+    const port = seed(big);
+    const read = vi.fn(port.read);
+    expect(readDays({ ...port, read }, A)).toEqual({ state: 'unreadable' });
+    expect(read).not.toHaveBeenCalled();
+    expect(names()).toEqual([DAYS_FILE]);
+    expect(port.read(DAYS_FILE)).toBe(big);
+  });
+
+  it('text over the cap is corrupt even when a port cannot say a size, and a file at the cap still reads', () => {
+    const pad = (n: number) => JSON.stringify(file()) + ' '.repeat(n - JSON.stringify(file()).length);
+    expect(parseDays(pad(DAYS_MAX_BYTES + 1)).kind).toBe('corrupt');
+    expect(parseDays(pad(DAYS_MAX_BYTES)).kind).toBe('ok');
+  });
+
+  it('more ticks than the limit is corrupt and kept; exactly the limit reads; a tick past it is refused', () => {
+    expect(parseDays(text(many(DAYS_MAX_TICKS))).kind).toBe('ok');
+    const port = seed(text(many(DAYS_MAX_TICKS + 1)));
+    expect(readDays(port, A)).toEqual({ state: 'unreadable' });
+    expect(names()).toEqual([DAYS_FILE]);
+    expect(tickDay({ v: 1, owner: A, ticked: many(DAYS_MAX_TICKS) }, 'seasonal.one-more')).toBeNull();
+    expect(tickDay({ v: 1, owner: A, ticked: many(DAYS_MAX_TICKS) }, 'seasonal.synthetic-0')).not.toBeNull(); // already ticked: no growth
+  });
+
+  it('an id that is not a slug is corrupt, in a current or a newer file', () => {
+    for (const id of ['Asha birthday', 'UPPER', '', '.dot', 'a'.repeat(65), 'seasonal/day', '__proto__x']) {
+      for (const v of [1, 2]) expect(parseDays(JSON.stringify({ v, owner: A, ticked: { [id]: {} } })).kind).toBe('corrupt');
+    }
+  });
+
+  it('a duplicate id in the file text is corrupt, and a repeated off-year is corrupt', () => {
+    expect(parseDays(`{"v":1,"owner":"${A}","ticked":{"${DAY}":{},"${DAY}":{"authority":"src-a"}}}`).kind).toBe('corrupt');
+    expect(parseDays(text({ [DAY]: { offYear: [2027, 2027] } })).kind).toBe('corrupt');
+    expect(parseDays(text({ [DAY]: { offYear: [2027, 2028] } })).kind).toBe('ok');
+  });
+});
+
+describe('[NS-47-R6] BL-1269: a rename that drops the exclusion flag leaves nothing', () => {
+  it('the final file reads not excluded after the rename: unavailable, no file, no temp', async () => {
+    const real = expoDaysPort()!;
+    const dropsOnRename = { ...real, rename: async (a: string, b: string) => { await real.rename(a, b); h.excluded.delete(`${dir()}/${b}`); } };
+    expect(await writeDays(dropsOnRename, file())).toBe('unavailable');
     expect(names()).toEqual([]);
   });
 });
