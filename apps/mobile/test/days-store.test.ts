@@ -439,3 +439,31 @@ describe('[NS-47-R6] BL-1269: a rename that drops the exclusion flag leaves noth
     expect(names()).toEqual([]);
   });
 });
+
+describe('[NS-47-R28] a day id that is an Object.prototype name is not ticked unless it is an own key', () => {
+  const full = () => {
+    const ticked: Record<string, object> = {};
+    for (let i = 0; i < DAYS_MAX_TICKS; i++) ticked[`d${i}`] = {};
+    return { v: 1, owner: A, ticked };
+  };
+  it.each(['constructor', 'toString', 'hasOwnProperty'])('%s on a full file is refused, not counted as already ticked', (id) => {
+    const parsed = parseDays(JSON.stringify(full()));
+    if (parsed.kind !== 'ok') throw new Error('arrange');
+    expect(tickDay(parsed.file, id)).toBeNull();
+    expect(tickDay(parsed.file, 'd7')).not.toBeNull(); // a real repeat still passes
+  });
+  it('constructor ticked on a roomy file stores an empty tick, not the inherited function', () => {
+    const next = tickDay({ v: 1, owner: A, ticked: {} }, 'constructor');
+    expect(next && Object.prototype.hasOwnProperty.call(next.ticked, 'constructor')).toBe(true);
+    expect(next?.ticked.constructor).toEqual({});
+    expect(JSON.parse(JSON.stringify(next)).ticked).toEqual({ constructor: {} });
+  });
+});
+
+describe('[NS-47-R15] sign-out with a local file that cannot be read', () => {
+  it('removes it: only an ok or newer local file stays (facts for the PR; no change made)', () => {
+    seed('{not json');
+    expect(createDaysStore(() => expoDaysPort()).clearNow(true)).toBe(true);
+    expect(names()).toEqual([]);
+  });
+});
