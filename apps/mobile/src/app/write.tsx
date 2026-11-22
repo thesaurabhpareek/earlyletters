@@ -64,6 +64,7 @@ import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
 import { useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
@@ -322,8 +323,8 @@ export default function Write() {
     anotherOpacity.value = motion.reduced ? (offerAnother ? 1 : 0) : withTiming(offerAnother ? 1 : 0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
   }, [offerAnother, motion.reduced, anotherOpacity]);
   const anotherStyle = useAnimatedStyle(() => ({ opacity: anotherOpacity.value }));
-  const promptOut = motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
-  const promptIn = motion.reduced ? undefined : FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
+  const promptOut = FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
+  const promptIn = FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
   const promptLayout = motion.reduced ? undefined : LinearTransition.duration(tokens.motion.enter.durationMs);
 
   if (!child) return null;
@@ -397,6 +398,8 @@ export default function Write() {
               {dateline.text}
             </Text>
           ) : null}
+          {/* A picture chosen on Home sits above the field (NS-01-R3); absent otherwise. */}
+          <PendingPhotoThumb />
           {prompt && (
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
             <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>
@@ -411,25 +414,29 @@ export default function Write() {
               <Button variant="quiet" size="sm" icon={ArrowsClockwiseIcon} label={copy.tonight.newPromptButton} className="-ml-4 self-start" onPress={swapPrompt} testID="write.anotherThought" />
             </Animated.View>
           ) : null}
-          <TextField
-            ref={field}
-            variant="letter"
-            label={pendingCopy.write.label}
-            labelHidden
-            // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
-            // undisturbed, and the person's words are never written back into the field. The field grows with the
-            // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
-            className="mt-3 flex-none"
-            inputClassName="flex-none"
-            defaultValue={initialText}
-            onChangeText={onChange}
-            onSelectionChange={(e) => {
-              selectionEnd.current = e.nativeEvent.selection.end;
-            }}
-            onContentSizeChange={onContentSizeChange}
-            scrollEnabled={false}
-            placeholder={copy.tonight.typing.placeholder}
+          {/* A taller or shorter prompt moves the page on the same transition as the prompt; Reduce Motion: no layout move,
+              the prompt itself fades (BL-420). */}
+          <Animated.View layout={promptLayout}>
+            <TextField
+              ref={field}
+              variant="letter"
+              label={pendingCopy.write.label}
+              labelHidden
+              // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
+              // undisturbed, and the person's words are never written back into the field. The field grows with the
+              // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
+              className="mt-3 flex-none"
+              inputClassName="flex-none"
+              defaultValue={initialText}
+              onChangeText={onChange}
+              onSelectionChange={(e) => {
+                selectionEnd.current = e.nativeEvent.selection.end;
+              }}
+              onContentSizeChange={onContentSizeChange}
+              scrollEnabled={false}
+              placeholder={copy.tonight.typing.placeholder}
           />
+          </Animated.View>
           {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
               above the keyboard and push "Add to the book" off the screen. */}
           {inlineFooter ? footer : null}

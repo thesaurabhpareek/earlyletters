@@ -44,6 +44,8 @@ Love from everyone, pressure from no one.
 
 ## Contrast lines
 
+Website and store only, never in the app, an email or a push. Owner: CMO. Open for the CMO (`WRITING-GUIDE.md` section 1): these lines use "not X, Y" and "Just talk", which the writing guide lists as tells, and "Every sentence is one you actually said" was found false under D-133 by the council review. Not edited here.
+
 **Versus fill-in-the-blank baby books:** "No blanks to fill. Just talk, and the page is yours."
 "Not 'First word: ____'. The whole story of the first word, told by the person who heard it."
 

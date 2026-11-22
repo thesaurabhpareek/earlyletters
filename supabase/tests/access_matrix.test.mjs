@@ -18,6 +18,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7, EXPECTED_PROBE } from './harness.mjs';
 import { GRANTS, COLUMNS, grantRows } from './grants.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { db, check, as, sys, one, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -52,8 +53,8 @@ const aHeld = '0192f000-0000-7000-8000-0000000000aa';
 await as(A, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
   values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', 'You smiled.')`, [aHeld, A, CHILD]);
 await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'discarded')`, ['0192f000-0000-7000-8000-0000000000ab', A, CHILD]);
-await as(A, `update entries set photo_path=$1 where id=$2`, [photo, aBook]);
-await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
+await legacyPhotoPath(sys, aBook, photo);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
 // No app path writes dictionary_terms today (20261023060000 grants it to nobody), so the fixture row is the owner's insert.
 await sys(`insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, CHILD]);
 for (const u of [A, B, N]) await as(u, `insert into child_member_prefs (child_id, profile_id, signs_as) values ($1, $2, 'Papa')`, [CHILD, u]);
@@ -230,7 +231,7 @@ const WRITES = [
   ['policy_documents: add a document', `insert into policy_documents (key, title, needs_affirmative_act) values ('matrix-doc', 'x', false)`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['policy_documents: delete a document', `delete from policy_documents where key = 'matrix-doc'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  ['storage: upload to own folder', null,                                             ['42501', '42501', '42501', '42501', '42501', '42501']],
   // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
   ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -257,6 +258,8 @@ const WRITES = [
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-04-12"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261111010000 (CR-71 C3): a person's own export row; the sixth call a day writes nothing.
+  ['record_export_created', `select public.record_export_created(1, 10, '${'ab'.repeat(32)}')`,  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   // D-069 (20261005000000): the book already has two parents, so a further co-parent invite is SCCAP.
   ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['SCCAP', 'SCCAP', 'SCPAR', 'SCPAR', 'SCANO', '42501']],

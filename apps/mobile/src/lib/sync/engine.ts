@@ -11,6 +11,7 @@
  * one follow-up cycle.
  */
 import type { SqlDb } from '../db/sql';
+import { reconcileSearch } from '../find/lifecycle';
 import { backoffMs, classifyCallError, type CallFailure } from './errors';
 import {
   applyPullPage,
@@ -92,7 +93,7 @@ const FOREGROUND_MIN_GAP_MS = 5_000;
 const MAX_PUSH_ROUNDS = 40;
 const MAX_PULL_PAGES = 100;
 
-const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, reset: false, phase: 'idle' };
+const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, pulledRefused: 0, reset: false, phase: 'idle' };
 
 export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const { db, supabase, userId } = deps;
@@ -117,6 +118,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let out!: T;
     db.transaction(() => {
       out = fn();
+      // Every sync write commits here. A pulled letter, a delete or restore from the other parent, a conflict choice
+      // or a held letter coming back moves the Find index in the same transaction (find/lifecycle.ts); with no index
+      // this is one cheap check.
+      reconcileSearch(db);
     });
     return out;
   };
@@ -259,6 +264,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       const out = tx(() => applyPullPage(db, data, iso()));
       report.pulled += out.pulled;
+      report.pulledRefused += out.refused;
       if (out.pulled > 0 || (data.gone?.length ?? 0) > 0 || (data.books ?? []).some((b) => b.meta)) changed();
       if (data.more) continue;
       if (out.wantIds && idsRounds < 1) {

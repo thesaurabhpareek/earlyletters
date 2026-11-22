@@ -156,6 +156,11 @@ export const authCopy = {
     slowBody: 'Check your connection, then try again.',
     // State D. Its sentence reuses offline.body.
     offlineTitle: 'Opening your book needs a connection.',
+    // BL-922a, NS-10-R0 and R4b: the held screen for an account with consent still to give. PROPOSED (words packet 20 Nov rows
+    // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
+    // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
+    consentBody: 'Finish setting up to open your book here.',
+    nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
   },
 
   verify: {
@@ -194,6 +199,15 @@ export const authCopy = {
     keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 
+  // FP-6 (NS-40-R9, R14), PROPOSED, HOLD for counsel and the founder: the refused-region screen (system.region.*). No reason is
+  // given, and nothing here says where the person is or why. Terms and Get in touch are its two quiet actions (not "Contact us": rules.test.ts allows "us" only in registered disclosures).
+  region: {
+    title: "{app} can't be set up from here.",
+    body: 'If you think this is wrong, get in touch.',
+    terms: 'Terms',
+    contact: 'Get in touch',
+  },
+
   errors: {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
@@ -214,6 +228,8 @@ export const authCopy = {
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',
+    // FP-6, PROPOSED (E-S04.refused-region; the full screen is `region` below). Never names a reason, a place or a rule.
+    region_refused: "{app} can't be set up from here.",
     unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
@@ -297,6 +313,9 @@ export const authCopy = {
     signOutBody: 'Your letters stay on this phone. Sign in again any time.',
     // Shown while the outbox drains (F16, A-REQ-033): sign-out never drops a queued letter.
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
+    // BL-1461: while the wait runs after Apple revoked the sign-in at launch (A-REQ-033). Shown after a short delay.
+    // COUNCIL-LOCKED under the founder's delegation (21 Nov), replaceable by the founder; not founder-approved.
+    signOutRevokedWaiting: "Your newest letters are still on this phone. They're sent first, then this phone signs out.",
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).

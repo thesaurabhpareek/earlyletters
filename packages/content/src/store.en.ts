@@ -13,7 +13,7 @@
 // - English only (D-121 item 1); the other six languages return one by one as each passes its gate (D-125 item 2);
 // - no co-parent sharing promised in the listing (D-126, D-161, D-162): no store build has an invite door. Sign-in is
 //   required (D-160) and servers are on (D-157), so every line must be true of that build: the privacy paragraph
-//   claims nothing about the servers and nothing about life without an account (#672 claim 3);
+//   claims nothing about the servers; "Without an account, your book stays on your phone." is held for the founder (req-question:FP-1, store-listing.test.ts PENDING_WORDS) (#672 claim 3);
 // - "exactly as you said it" is held from the listing until counsel clears it at T30 (D-125 item 9);
 // - recordings: no backup of our own (backup flag off); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
@@ -73,7 +73,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.

@@ -92,7 +92,7 @@ export const REJECT_REASON = oneOf(
 /** Sign-in methods (apps/mobile src/lib/auth AuthMethod). Passkeys are behind a flag at v1.0. */
 export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
 /** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
-export const SIGN_IN_TRIGGER = oneOf('first_letter', 'invite', 'invite_create', 'sign_in', 'settings');
+export const SIGN_IN_TRIGGER = oneOf('first_letter', 'third_letter', 'invite', 'invite_create', 'sign_in', 'settings');
 /** packages/core OfferTrigger. */
 export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
 export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');
@@ -208,8 +208,10 @@ export const GLOBAL_PROPS = {
  * 6: verifier reason `changes_invisible` (WP-F06-02, R-01 D4).
  * 7: `reminder_prime_shown.source` gains `first_letter` (the reminder card after the first letter, SET-02).
  * 8: `coparent_soon_opened` and `coparent_soon_notify` removed: there is no co-parent coming-soon screen any more (founder, 11 Nov 2026).
+ * 9: `reminder_prime_shown.source` gains `first_month` (the second reminder card, after the first month chapter, BL-518, BL-1429).
+ * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 10;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -222,6 +224,8 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   6: '71c854663d0ac45e4014e9b99ea799eef7224f66102b4abe4eadae84698f9853',
   7: 'e9a036799e00d28ef83c1b5468c7348fbbaa6e0b2dc5e10559570ee8fc2ff5e0',
   8: '281051b8507447394cd362e4198ccc667e35a3912cf9d7915e8cac7051b8c27d',
+  9: '4022bb86210eee98e8a6c9d4a42a5710bccaeacdd76e58bf92fb1d141f491f44',
+  10: '1bc7d06372de546ec176a3fcf3147727d28ac6c9a39bba035902980050f9165b',
 });
 
 // ---------------------------------------------------------------------------
@@ -677,7 +681,7 @@ export const EVENTS = {
     when: 'Reminder priming card shown',
     reqs: ['C-REQ-034', 'PRD-REQ-001'],
     level: 'L2',
-    props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter') },
+    props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter', 'first_month') },
   },
   reminder_prime_result: {
     area: 'reminders',

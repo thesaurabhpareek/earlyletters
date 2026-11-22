@@ -127,9 +127,9 @@ describe('[BL-E1] Write uses it as the spec says', () => {
     expect(write).toMatch(/\{prompt && !existing \? \(/);
   });
 
-  it('motion: old line out over exitMs, new in over fadeMs, the field slides; Reduce Motion swaps at once', () => {
-    expect(write).toMatch(/const promptOut = motion\.reduced \? undefined : FadeOut\.duration\(tokens\.motion\.exitMs\)/);
-    expect(write).toMatch(/const promptIn = motion\.reduced \? undefined : FadeIn\.duration\(tokens\.motion\.fadeMs\)\.delay\(Math\.round\(tokens\.motion\.exitMs \/ 2\)\)/);
+  it('motion: old line out over exitMs, new in over fadeMs, the field slides; Reduce Motion still fades (BL-420)', () => {
+    expect(write).toMatch(/const promptOut = FadeOut\.duration\(tokens\.motion\.exitMs\)\.reduceMotion\(ReduceMotion\.Never\)/);
+    expect(write).toMatch(/const promptIn = FadeIn\.duration\(tokens\.motion\.fadeMs\)\.delay\(Math\.round\(tokens\.motion\.exitMs \/ 2\)\)\.reduceMotion\(ReduceMotion\.Never\)/);
     expect(write).toMatch(/const promptLayout = motion\.reduced \? undefined : LinearTransition/);
     expect(write).toMatch(/<Animated\.View key=\{prompt\.key\} entering=\{presses\.current === 0 \? undefined : promptIn\} exiting=\{promptOut\} layout=\{promptLayout\}>/);
   });

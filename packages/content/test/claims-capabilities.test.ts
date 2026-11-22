@@ -309,9 +309,6 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
-  // "Exactly as you said it" in the store build's first run (D-133 decision 2). The first-run headline is held for founder and counsel
-  // (D-133, D-125 item 9), so this row stays; the packaged card headline (stories) is fixed and its row is gone.
-  { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
 
   // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
   // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
@@ -334,10 +331,10 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
 /**
  * Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. It was 17 before
  * PR #698. Servers on made the sign-in and sync rows true (the authConfirm row went); the co-parent rows stay because the store
- * build hides the join door. Two are exactWords, true in no profile.
+ * build hides the join door. PR #502 removed the two exactWords rows (D-133).
  * STORE_BUILD_CLAIMS below says which claims the store build may make and why.
  */
-const KNOWN_VIOLATIONS_CAP = 16;
+const KNOWN_VIOLATIONS_CAP = 14;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 

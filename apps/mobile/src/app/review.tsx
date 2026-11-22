@@ -50,7 +50,7 @@ import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { File } from 'expo-file-system';
 import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
   describeEdit,
@@ -127,6 +127,8 @@ import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recor
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
 import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
@@ -632,6 +634,9 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The picture chosen with this letter (NS-01), stored now that the letter exists. A picture that cannot be stored
+      // never un-keeps the letter (NS-01-R17); with the photos switch off nothing is pending.
+      await commitPendingPhoto(draft.id, finalText);
       // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
       if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
@@ -963,7 +968,6 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">
               <Text variant="subhead" tone="caution">
@@ -976,7 +980,10 @@ export default function Review() {
           )}
 
           {firstNote && phase === 'ready' && (
-            <Animated.View entering={motion.enter()} layout={motion.layout()}>
+            <Animated.View
+              entering={motion.enter()}
+              exiting={FadeOut.duration(motion.reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}
+              layout={motion.layout()}>
               {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
               <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
                 <View className="flex-row items-center justify-between gap-2">
@@ -1134,10 +1141,16 @@ export default function Review() {
                 </Button>
               )}
 
-              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
-              {inlineFooter ? footer : null}
             </>
           )}
+          {/* The picture chosen with this letter (NS-01-R7): add, change, take off, with Undo. It comes after the parent's
+              words and their small fixes and before Let it go and Keep (spec 01 section 4), so it never leads the words, and
+              when it is stored after Review opens nothing above it moves. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
+
+          {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. The footer is
+              null until the words are ready. */}
+          {inlineFooter ? footer : null}
           {inlineFooter ? keepFooter : null}
         </ScrollView>
 
