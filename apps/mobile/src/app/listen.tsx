@@ -34,7 +34,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
-import { discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
+import { adoptPendingPhoto, discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -300,6 +300,8 @@ export default function Listen() {
     if (out.kind === 'gone') return;
     takeId.current = out.draftId;
     setPhase('recording');
+    // A picture chosen before recording goes with the draft now, so a kill during recording keeps it (NS-01-R43).
+    void adoptPendingPhoto(out.draftId, '', false);
     // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
     announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
   };
