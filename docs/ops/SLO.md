@@ -1,6 +1,6 @@
 # Release health SLO and the day 1, 3 and 7 report (BL-439)
 
-Owner: `ops`. Ruling: CR-169 in `docs/agents/cto/RULINGS.md`. Row: BL-439 in `docs/BACKLOG.md`. Runbook: `docs/ops/RELEASE.md` (G5 row in 1.3, sections 7.1 and 7.2). Record: `docs/release/1.0.0.md` (the row "Health report days 1, 3 and 7").
+Owner: `ops` (the BACKLOG row's Owner is `platform`, the backlog name for the `ops` seat, `agents/roster.json` `backlog_owner_names`). Ruling: CR-169 in `docs/agents/cto/RULINGS.md`. Row: BL-439 in `docs/BACKLOG.md`. Runbook: `docs/ops/RELEASE.md` (G5 row in 1.3, sections 7.1 and 7.2). Record: `docs/release/1.0.0.md` (the row "Health report days 1, 3 and 7").
 
 Labels: **Sourced** means the number is written in a file named beside it. **UNVERIFIED** means no file in the repo states it; the founder or the CPO sets it.
 
@@ -25,19 +25,24 @@ Note on the name "G5": PRD gate G5 (`docs/product/prd/14-test-plan.md`, `docs/pr
 | S1 definition | not stated in the repo; severities run S0 to S3 (TDD 07 11.3) | `docs/qa/DEVICE_TEST_PLAN.md` line 16 | UNVERIFIED |
 | Early release to all (phased updates only) | G5 holds for 3 days | `docs/ops/RELEASE.md` 7.2 (marked "A: our rule") | Sourced, an assumption of ours |
 | Watch window | days 1 to 7 | `docs/ops/RELEASE.md` 1.3 and the release PR template | Sourced |
-| Minimum sessions or users before a rate counts | not stated | none | UNVERIFIED |
+| Minimum sessions or users before a rate counts | not stated; proposed 1000 sessions and 200 users | none | UNVERIFIED (proposal) |
 | Hotfix trigger beyond S0 (for example a rate under threshold with no single cause) | not stated | none | UNVERIFIED |
 
-Phased release is not available for a first release (`docs/ops/RELEASE.md` 7.1; CR-169). Version 1.0.0 goes to everyone at once, so there is nothing to pause in App Store Connect. For 1.0.0, "pause" means: stop promoting, stop inviting, turn off what a kill switch can turn off (`docs/ops/RELEASE.md` section 9), and prepare a hotfix. For updates (1.0.1 and later) phased release is on, and "pause" means the App Store Connect pause (pauses can total 30 days, `docs/ops/RELEASE.md` 7.2).
+Phased release is not available for a first release (`docs/ops/RELEASE.md` 7.1; CR-169). Version 1.0.0 goes to everyone at once, so there is nothing to pause in App Store Connect. For updates (1.0.1 and later) phased release is on and the App Store Connect pause applies (pauses can total 30 days, `docs/ops/RELEASE.md` 7.2).
+
+Proposal (no source in the repo): the minimum-sample line is 1000 sessions and 200 users at the time of the read. UNVERIFIED, founder or CPO to confirm or change. Until it is set, treat every rate as not decisive.
 
 ## 3. Recommendation rules
 
+Rules marked **Proposal (no source in the repo)** are ours, not rules; the founder or CPO confirms them. Only the thresholds in section 2 and "pause on any S0" come from `docs/ops/RELEASE.md` and CR-169.
+
 Applied in this order; the first that matches wins.
 
-1. Any open S0, or any data-loss report: **Pause** and **hotfix** (`docs/ops/RELEASE.md` 1.4; expedited review for S0 only, 7.3). The founder is told the same day.
-2. Crash-free sessions under 99.8 percent or users under 99.5 percent: **Pause** (updates) or **hold promotion** (1.0.0), then find the cause from the crash list in App Store Connect. A hotfix follows if the cause is in our code. This follows `docs/ops/RELEASE.md` 7.2 ("a crash-free rate under the G5 numbers").
-3. Open S1 and thresholds met: **Continue**, with the S1 named and an owner. Whether an S1 alone justifies a hotfix is UNVERIFIED; the founder decides until a ruling exists.
-4. Thresholds met, no S0, no S1: **Continue**.
+0. **Insufficient data: keep watching, do not pause or hotfix on a rate.** Applies when a number is `not read yet`, or sessions or users are below the minimum-sample line. Proposal (no source in the repo). It never overrides rule 1: an S0 or data-loss report is not a rate.
+1. Any open S0: **Pause** (pause on any S0 is sourced: `docs/ops/RELEASE.md` 1.3 and 7.2). Proposal (no source in the repo): also a data-loss report; a hotfix (`docs/ops/RELEASE.md` 1.4, expedited review for S0 only, 7.3); the founder told the same day.
+2. Crash-free sessions under 99.8 percent or users under 99.5 percent, with enough data: **Pause** for updates (`docs/ops/RELEASE.md` 7.2 states this). Proposal (no source in the repo): for 1.0.0, "pause" means stop promoting, stop inviting, turn off what a kill switch can (`docs/ops/RELEASE.md` section 9); and a hotfix if the cause is in our code.
+3. Open S1 and thresholds met. Proposal (no source in the repo): **Continue**, with the S1 named and an owner; the founder decides whether an S1 alone needs a hotfix.
+4. Thresholds met, no S0, no S1: **Continue**. Proposal (no source in the repo) as a stated outcome.
 
 Test failures go to their owner agent; security findings go to `security`. Hotfix steps are `docs/ops/RELEASE.md` 1.4. `ops` submits and deploys nothing: store accounts are the founder's.
 
@@ -69,8 +74,8 @@ Source: App Store Connect > <screen the founder read>
 
 4. Changes since the last report: <new build, kill switch change, fix merged, or none>
 
-5. Recommendation (SLO.md section 3): <Continue | Pause | Hotfix | Pause and hotfix>
-   Rule that applied: <1 | 2 | 3 | 4>
+5. Recommendation (SLO.md section 3): <Insufficient data, keep watching | Continue | Pause | Hotfix | Pause and hotfix>
+   Rule that applied: <0 | 1 | 2 | 3 | 4>
    Why, in one line: ____
    Next report: day <3 | 7 | closing>
    Needs the founder: <yes, what | no>
@@ -96,6 +101,9 @@ Source: App Store Connect > <screen the founder read>
 
 ## 6. Open questions for the founder or the CPO
 
-1. The definition of S1, and whether an open S1 alone triggers a hotfix after release.
-2. The smallest number of sessions or users at which a crash-free rate counts.
-3. Whether the day 1 read happens at a fixed hour, so the three reports compare like with like.
+1. What does S1 mean, in one line?
+2. Does an open S1 alone trigger a hotfix after release, yes or no?
+3. Is 1000 sessions and 200 users the right minimum-sample line, or what number?
+4. Is a data-loss report a pause on its own, yes or no?
+5. For 1.0.0, is "stop promoting and stop inviting" the right meaning of pause, yes or no?
+6. Is the day 1 read at a fixed hour, and which?
