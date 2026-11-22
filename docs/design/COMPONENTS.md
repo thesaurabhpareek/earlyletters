@@ -603,6 +603,22 @@ An inline message for a condition the person can act on while the page stays usa
 ### 2.26 PermissionPrimer (PROPOSED, 20 Nov 2026)
 One short note of ours before Apple's own permission alert, extracted from the microphone primer in `app/listen.tsx` when the Face ID line is built. No Allow or Don't allow buttons of ours; Continue is the only path to the iOS alert; shown once while the system has not asked. Spec and states: `docs/design/DESIGN-SYSTEM-DELTA-20nov.md` section 2.2. Not built.
 
+### 2.27 to 2.34 Moments components (PROPOSED, 21 Nov 2026; none built)
+Full specs, shared rules, token gaps and the conflicts between source texts: `docs/design/moments-tab/components/README.md`. Sources: `docs/design/moments-design-closure.md` (DC-1 to DC-8, G-01 to G-10) and `docs/product/prd/28-moments-tab.md`. Words are `packages/content` keys only; key names in the specs are placeholders for `content`. Each spec lists states, tokens, Dynamic Type through AX5, VoiceOver order and labels, Reduce Motion, targets and a test list. Nothing has been seen on a phone.
+
+| # | Component | One line | Spec |
+|---|---|---|---|
+| 2.27 | `UndoRow` | One row pinned above the tab bar after a set-aside; never times out; a second set-aside replaces it; stacks from AX1; reuses `Toast` rules, and if `Toast` can take a tab-scoped host the component is dropped | `01-undo-row.md` |
+| 2.28 | `MonthList` | The "Earlier" row after Recent's newest 14 days, then a plain screen of month and year rows, newest first, no counts; 56 pt rows at AX | `02-month-list.md` |
+| 2.29 | `EnlargeViewer` | One picture at full width with a 44 pt Close (own row from AX1); no swipe, pinch, pan or play; enlarging never selects; focus returns to the tile | `03-enlarge-close.md` |
+| 2.30 | `PrivacyCover` reuse | The existing cover (move to `components/ui/`) plus `MomentsCoverGate` and a Moments-owned focused-route signal; mounts on the tab and every Moments sheet when App lock is off; one cover only when the lock is on; also the paper cover over Apple's picker | `04-privacy-cover-moments.md` |
+| 2.31 | `PermissionAsk` | Ask card (equal yes and Not now, outline, stack from AX1, inline, no menu) and primer sheet (one sentence, link, one disclosure, equal buttons at the end of the scroll) | `05-ask-card.md` |
+| 2.32 | `MomentCard`, `DayCollage` | Lead tile, reason line, date heading, place or occasion, parent's label, letter row, Continue and Not now (equal), a visible menu with "Not this one", "Hide this place", "Name this day", each with Undo; four VoiceOver stops; no-picture variant | `06-day-card.md` |
+| 2.33 | `PICKER_BARS` and `PickHostSheet` frame | Constant with `none` (Layout C, buildable today, ships first), `bottom-hidden` (B, after DM-02 and DM-11), `both-hidden` (A, only on an explicit DM-02 pass); one route, two bodies, one tray and Start | `07-picker-bars.md` |
+| 2.34 | `DoorRow` | The quiet "Choose pictures" text row, one component for the tab, day sheet and capture Add; placement by access state (DC-1); distinct from the Limited-library manager row | `08-door-row.md` |
+
+Token gaps these specs surface (not changed here): `motion.carry` { ms: 320 } approved and not landed; no 48 pt action target; `layout.listRowMin` 52 against the specs' 56; the `sheetTitle` type role.
+
 ## 3. Build order (smallest set that ships the capture loop)
 
 1. Text, Button, IconButton, Card (foundation; edit RNR copies to spec).

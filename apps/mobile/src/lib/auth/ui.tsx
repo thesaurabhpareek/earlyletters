@@ -39,6 +39,7 @@ import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
 import { useAuth } from './session-provider';
+import { RevocationWaitLine } from './revocation-wait-line';
 
 const tryAgainLabel = copy.common.tryAgainButton;
 
@@ -329,7 +330,14 @@ export function AccountGate({
     );
   }
 
-  if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
+  if (s.status === 'checkingConsent' || s.status === 'signingOut') {
+    return (
+      <>
+        <Busy label={authCopy.consent.settingUp} />
+        <RevocationWaitLine state={s} />
+      </>
+    );
+  }
 
   // Consent still missing, or (BL-347) the claim screen was never answered: one way back to it.
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
