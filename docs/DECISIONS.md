@@ -670,6 +670,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-163 | Analytics is translated into engineering-ready requirements, added to the backlog and implemented before the production-readiness app build. Supersedes D-095 and D-124 item 3 for the production build only. Second instruction: page-view, click and impression instrumentation is collected for every user, not behind an opt-in. The consent default, the LEGAL-REQ-043 test, the consent wording, the PostHog account and key, the region, counsel's view and the content ban are not decided here | Decided (founder: his instruction in chat, 20 Nov 2026); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes for the requirements and the build work; no production flip until the gates in the entry close | 2026-11-20 |
 | D-165 | Moments decisions locked on the council recommendations (O-48 value-prop pair unpublished until counsel answers; O-47 option C; tabs Home, Moments, Book, Me; DC-3 flight off until DM-11 and DM-12 pass; O-59 "Not now"; O-44 and cover on). Standing rules: exec review then lock for any open decision, founder-only items still go to him; at least 20 agents in parallel | Decided (founder, on the council recommendations); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-167 | The founder confirms D-118 (the website copy names his child, `apps/web/src/content/site.ts` only) and makes it a standing exception in `CLAUDE.md`, so sessions stop flagging it. D-118's "for now" and its review point are not withdrawn | Decided (founder); recorded by claude-14 (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1263,4 +1264,25 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Not claimed as his approval:** the accountant's and counsel's confirmation of O-47, the counsel answers, the other D-165 items beyond O-47 and O-48, and the tab name.
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-166 on `develop` (D-165 is #1433). No open PR patch to this file adds D-164 or later, so D-166 is free; re-check before merging.
 - **Amends:** none; earlier entries stand as written.
+- **Owner:** founder; Karma merges.
+
+---
+
+### D-167 The founder confirms the website name exception for good in CLAUDE.md (founder, 21 Nov 2026)
+- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to a session that had flagged the name in the website copy. His own words are only the two lines under "Founder words". Recorded by claude-14 (the store and release session, a Claude role) on 22 Nov 2026 as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132.
+- **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his; the child's name is written `[name]` in the first line, as D-118 does, because the real-family guard keeps the name out of every file except `site.ts`:**
+
+  ```text
+  I am fine with [name].
+  Yes so change that rule as my exception.
+  ```
+
+- **Context:** a session flagged the name in `apps/web/src/content/site.ts` as a breach of the real-family rule twice in one day, although D-118 already allows it, because `CLAUDE.md` did not mention the exception. The founder had to confirm it again.
+- **Decision:**
+  1. D-118 stands as decided. The exception is now also written in `CLAUDE.md` under Privacy rules (PR #1519, merged as `ddc4b206`), so no session flags it or removes it.
+  2. The scope is unchanged: that file only, one spelling, enforced by `packages/content/test/no-real-family-data.test.ts`. Every other file says `[child]` or uses the fictional family "Asha".
+- **Not withdrawn by this entry:** D-118's "for now" and its review point (look at it again before the site is promoted or the alpha link goes public). The founder's words above do not address either, and the `CLAUDE.md` line is shorter than D-118 on both. Both reviewers of #1519 noted this.
+- **Not claimed:** any change to the guard, to the website copy, or to any other file's rule.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-167 on `develop` (D-166 is the last entry). Re-check before merging.
+- **Amends:** none; D-118 stands as written.
 - **Owner:** founder; Karma merges.
