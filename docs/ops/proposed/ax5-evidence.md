@@ -5,7 +5,15 @@ Security lens: this proposal targets `.github/workflows/` (it adds one workflow 
 
 ## What it adds
 
-`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5`, path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the four AX5 screenshots (Review, a letter, Settings, the Plus gate), their step JSON and the traces.
+`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5` (its name reads "Unnamed-control check and emulation screenshots; not AX5 conformance"), path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal (`docs/ops/proposed/workflows/e2e-web.patch`). It is a separate file from `.github/workflows/web-e2e.yml`, which on develop runs the site checks for `apps/web` and is not related. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the four AX5 screenshots (Review, a letter, Settings, the Plus gate), their step JSON and the traces.
+
+## What a green run means
+
+A green job means: no control in the four recorded steps lacks an accessible name, and four emulated screenshots exist. It does not mean AX5 conformance: a browser accessibility tree is not VoiceOver (no rotor, focus order, traits or grouping) and web scaling is not iOS Dynamic Type. The workflow name and the job name carry the sentence "unnamed-control check and emulation screenshots; not AX5 conformance". The patch adds no summary step (that would change its hunk size); when one is added, it starts with the same sentence.
+
+## Where 3.571 comes from
+
+The emulated font scale 3.571 is React Native's iOS AX5 multiplier, `FONT_SCALE.ax5` in `apps/mobile/src/lib/a11y.logic.ts`. The "about 3.1" in `docs/tdd/09-accessibility-design-system.md` is a type-size ratio (53/17 pt for H1), a different quantity. The two are not meant to match.
 
 ## What already runs in `npm test` (no workflow change)
 
@@ -16,7 +24,7 @@ Every step JSON written by `e2e-web/support/journey.ts` now carries `a11y.tree` 
 
 ## Cost
 
-One `npm ci`, a Chromium install and four short flows on the seam build. Estimate 6 to 9 minutes (the seam build is one Expo web export; the existing journey run took 6 to 8 minutes for two builds and 55 flows). Unmeasured. Timeout 15 minutes, inside the 10 minute budget only if it stays a parallel, non-required job; it adds no time to the required path.
+One `npm ci`, a Chromium install and four short flows. `apps/mobile/e2e-web/support/global-setup.ts` loops over all four builds (plain, seed, server-on, seam) and exports each one that is missing, whatever flow is filtered, so a cold run does four Expo web exports, not one. Time: unmeasured; no run has happened. Timeout 15 minutes. That is above the 10 minute CI budget, so the job stays parallel and non-required and adds no time to the required path; if the first run is slower than the budget allows, split it rather than raise the timeout.
 
 ## How to verify
 
