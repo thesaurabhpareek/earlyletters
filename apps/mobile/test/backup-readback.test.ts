@@ -47,14 +47,15 @@ describe('[BL-1409] the flag is read back at each moment', () => {
       expect(d.files.has('x')).toBe(false);
     });
   }
-  it('a right flag and an absent file pass; a throwing read counts as wrong', () => {
+  it('a right flag and an absent file pass; a throwing read is cannot-read and keeps the file', () => {
     const d = disk();
     expect(readBackFlag(d.port, 'none', 'open')).toEqual({ ok: true });
     d.files.set('x', 'a');
     d.excluded.add('x');
     expect(readBackFlag(d.port, 'x', 'open')).toEqual({ ok: true });
     const bad = { ...d.port, isExcluded: () => { throw new Error('native'); } };
-    expect(readBackFlag(bad, 'x', 'open').ok).toBe(false);
+    expect(readBackFlag(bad, 'x', 'open')).toEqual({ ok: false, moment: 'open', cannotRead: true });
+    expect(d.files.has('x')).toBe(true); // a read that threw keeps the file
   });
 });
 
@@ -90,6 +91,17 @@ describe('[BL-1409] days and moments stores wire the read-back', () => {
     expect(readDaysAfterRestore(d.port, A).state).toBe('ok');
     await writeMoments(d.port, moments as never);
     expect(readMomentsAfterRestore(d.port, A).state).toBe('ok');
+  });
+  it('open: a flag read that throws keeps the days and moments files and reads unreadable', () => {
+    const d = disk();
+    d.files.set(DAYS_FILE, JSON.stringify(days));
+    d.files.set(MOMENTS_FILE, JSON.stringify(moments));
+    d.port.isExcluded = () => {
+      throw new Error('native');
+    };
+    expect(readDays(d.port, A)).toEqual({ state: 'unreadable' });
+    expect(readMoments(d.port, A)).toEqual({ state: 'unreadable' });
+    expect(d.files.has(DAYS_FILE) && d.files.has(MOMENTS_FILE)).toBe(true);
   });
   it('write tmp is excluded before any byte: a flag that will not stick writes nothing', async () => {
     const d = disk(false);

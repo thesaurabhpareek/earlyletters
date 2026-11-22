@@ -3,7 +3,11 @@
  * P10, G-4): open, replace (a rename over the old file), restore (a device restore brought the file) and rebuild (a
  * derived file written again). Pure over a small port so Node tests plant a wrong flag. A file that reads not excluded
  * is removed and never read. Absent is fine. A throw reads as wrong (fail closed). Nothing here logs a name or contents.
- * The file CLASS (NX-39-R43) is not read here: no native getter exists yet (BL-1408, NSC-01 gate).
+ *
+ * PARTIAL for NX-39-R42 and R43. Live: open and replace (days and moments stores). NO callers yet: the restore read
+ * (`read*AfterRestore`), `indexAfterRestore` and `stripBeforeDisplay`. The strip runs at display on bytes in memory,
+ * not on disk. The file CLASS is not read: no native getter (BL-1408, NSC-01 gate). Device rows D-3 and D-6 not run.
+ * The verdict is returned to the caller; the stores do not report it (nothing is logged here).
  */
 import { carriesMetadata, stripJpeg } from '../photos/strip';
 
@@ -15,14 +19,18 @@ export interface FlagPort {
   remove(name: string): void;
 }
 
-export type FlagVerdict = { ok: true } | { ok: false; moment: ReadBackMoment; removed: boolean };
+/** `cannot_read`: the flag could not be read (a native throw); the file is KEPT, as on develop, and the store reports unreadable. */
+export type FlagVerdict = { ok: true } | { ok: false; moment: ReadBackMoment; removed: boolean } | { ok: false; moment: ReadBackMoment; cannotRead: true };
 
 export function readBackFlag(port: FlagPort, name: string, moment: ReadBackMoment): FlagVerdict {
+  let excluded: boolean;
   try {
-    if (!port.exists(name) || port.isExcluded(name) === true) return { ok: true };
+    if (!port.exists(name)) return { ok: true };
+    excluded = port.isExcluded(name) === true;
   } catch {
-    // fall through: a flag we cannot read is a wrong flag
+    return { ok: false, moment, cannotRead: true };
   }
+  if (excluded) return { ok: true };
   let removed = false;
   try {
     port.remove(name);

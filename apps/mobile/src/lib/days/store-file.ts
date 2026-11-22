@@ -55,7 +55,9 @@ function excludedAfterSet(port: DaysPort, name: string): boolean {
 export function readDays(port: DaysPort, owner: string, moment: 'open' | 'restore' = 'open'): DaysRead {
   try {
     if (!port.exists(DAYS_FILE)) return { state: 'empty' };
-    if (!readBackFlag(port, DAYS_FILE, moment).ok) return { state: 'unavailable' };
+    const flag = readBackFlag(port, DAYS_FILE, moment);
+    if ('cannotRead' in flag) return { state: 'unreadable' }; // kept: a read that threw is not a wrong flag
+    if (!flag.ok) return { state: 'unavailable' };
     const parsed = parseDays(port.read(DAYS_FILE));
     if (parsed.kind === 'corrupt') return { state: 'unreadable' };
     return parsed.file.owner === owner ? { state: parsed.kind, file: parsed.file } : { state: 'foreign', owner: parsed.file.owner };

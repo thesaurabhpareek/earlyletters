@@ -45,7 +45,9 @@ export function sweepMomentsTemp(port: MomentsPort): void {
 export function readMoments(port: MomentsPort, owner: string, moment: 'open' | 'restore' = 'open'): MomentsRead {
   try {
     if (!port.exists(MOMENTS_FILE)) return { state: 'empty' };
-    if (!readBackFlag(port, MOMENTS_FILE, moment).ok) return { state: 'unavailable' };
+    const flag = readBackFlag(port, MOMENTS_FILE, moment);
+    if ('cannotRead' in flag) return { state: 'unreadable' }; // kept: a read that threw is not a wrong flag
+    if (!flag.ok) return { state: 'unavailable' };
     const parsed = parseMoments(port.read(MOMENTS_FILE));
     if (parsed.kind === 'corrupt') {
       port.remove(MOMENTS_FILE); // the tab starts clean, no message (R221)
