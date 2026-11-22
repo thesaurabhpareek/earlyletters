@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { entries } from '../src/lib/db/repos';
 import { DEFAULT_PREFS, planReminders, type LastLetter, type PlanInput, type PlannedNotification } from '../src/lib/reminders/planner';
 import { parseIsoDate, zonedToEpoch } from '../src/lib/reminders/tz';
-import { fixture, insertBook, letter } from './helpers/store-fixture';
+import { fixture, insertBook, letter, rawRow } from './helpers/store-fixture';
 
 const LA = 'America/Los_Angeles';
 const asha = { id: 'child-asha', name: 'Asha', birthday: '2026-03-08', included: true };
@@ -116,6 +116,28 @@ describe('[NS-48-R27] newestMadeLetter is one query over the newest own letter',
     expect(entries.newestMadeLetter(f.ctx, [], null)).toBeNull();
   });
 
+  it('a deleted letter newer than the live one is not the last letter', () => {
+    const f = fixture();
+    insertBook(f.db, { id: 'child-asha', name: 'Asha', birthday: '2025-10-01' });
+    put(f, 1, { capturedAt: '2026-10-01T08:00:00.000Z', captureMode: 'typed' });
+    put(f, 2, { capturedAt: '2026-10-06T08:00:00.000Z', captureMode: 'spoken' });
+    f.db.run('UPDATE entries SET deleted_at = ? WHERE id = ?', '2026-10-07T08:00:00.000Z', id(2));
+    expect(rawRow(f.db, id(2))?.deleted_at).toBe('2026-10-07T08:00:00.000Z');
+    expect(entries.newestMadeLetter(f.ctx, ['child-asha'], null)).toEqual({ capturedAt: '2026-10-01T08:00:00.000Z', captureMode: 'typed', kind: 'letter' });
+  });
+
+  it('with no account yet only letters with no author count, even when an authored one is newer', () => {
+    const f = fixture();
+    insertBook(f.db, { id: 'child-asha', name: 'Asha', birthday: '2025-10-01' });
+    put(f, 1, { capturedAt: '2026-10-01T08:00:00.000Z' });
+    put(f, 2, { capturedAt: '2026-10-06T08:00:00.000Z' }, 'child-asha', ME);
+    expect(entries.newestMadeLetter(f.ctx, ['child-asha'], null)?.capturedAt).toBe('2026-10-01T08:00:00.000Z');
+    const g = fixture();
+    insertBook(g.db, { id: 'child-asha', name: 'Asha', birthday: '2025-10-01' });
+    put(g, 3, { capturedAt: '2026-10-06T08:00:00.000Z' }, 'child-asha', ME);
+    expect(entries.newestMadeLetter(g.ctx, ['child-asha'], null)).toBeNull();
+  });
+
   it('only the phone user own letters count: another author is not the last letter', () => {
     const f = fixture();
     insertBook(f.db, { id: 'child-asha', name: 'Asha', birthday: '2025-10-01' });
@@ -132,6 +154,8 @@ describe('[NS-48-R27] newestMadeLetter is one query over the newest own letter',
     const db = { ...f.db, get: (q: string, ...p: never[]) => (sql.push(q), f.db.get(q, ...p)), all: (q: string) => (sql.push(q), []) } as never;
     const r = entries.newestMadeLetter({ ...f.ctx, db }, ['child-asha'], null);
     expect(sql.length).toBe(1);
+    expect(sql[0]).toMatch(/ORDER BY captured_at DESC[^]*LIMIT 1\s*$/);
+    expect(r).toEqual({ capturedAt: new Date(Date.UTC(2026, 0, 1) + 1199 * 3_600_000).toISOString(), captureMode: 'spoken', kind: 'letter' });
     expect(r?.capturedAt).toBe(new Date(Date.UTC(2026, 0, 1) + 1199 * 3_600_000).toISOString());
   });
 });
