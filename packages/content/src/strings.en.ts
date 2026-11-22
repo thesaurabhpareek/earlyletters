@@ -1143,6 +1143,20 @@ export const en = {
       hiddenTitle: "Hidden books",
       hiddenEmpty: "No hidden books.",
     },
+    // TODO(founder): PROPOSED, needs word approval (BL-985, BL-965; NS-22-R3, R7; F12-REQ-011). Words verbatim from
+    // docs/design/e2e/B-book-and-reading/WORDS.md section 2 (B-S02, B-J05). Nothing reads these keys until BL-985 lands.
+    // What the code does today (22 Nov): setChildQuiet stores Child.quiet; the reminders planner skips a quiet book
+    // (no month or birthday note, no evening nudge when every book is quiet); Home's past letter is not shown.
+    // Not yet true in code: Home's prompt, the Save a copy slip and Read together suggestions do not read Child.quiet.
+    // `help` says "Home and reminders stay quiet" as the design words it: show it only when BL-985 makes that so.
+    quiet: {
+      label: "Quiet this book",
+      help: "Home and reminders stay quiet about {child}, for you. Your letters stay as they are.",
+      offLabel: "Turn Quiet off",
+      quietedToast: "{child}'s book is quiet for you.",
+      offToast: "Quiet is off for {child}'s book.",
+      saveFailed: "That did not save. {child}'s book is as it was.",
+    },
     sharing: {
       pickerTitle: "Which books?",
       oneBookNote: "This invite is for {child}'s book only.",
