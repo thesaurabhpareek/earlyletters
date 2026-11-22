@@ -5,7 +5,7 @@
  */
 import { clearPhotoNotSaved, markPhotoNotSaved } from './failures';
 import type { PendingPhoto } from './pending';
-import type { PhotoDeps } from './types';
+import type { PhotoDeps, PickedAsset } from './types';
 
 /**
  * One adopt at a time, in the order asked (BL-1444 gap 2). A second adopt waits for the first and then looks at the
@@ -24,8 +24,9 @@ export function dropQueuedAdopts(): void {
 /** Resolves when no adopt is running or waiting (the ones asked before this call). Never rejects. */
 export const adoptsIdle = (): Promise<void> => tail;
 
-async function adoptNow(pending: PendingPhoto | null, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
-  if (!pending?.source) return;
+async function adoptNow(pending: PendingPhoto | null, source: PickedAsset, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
+  // The picture this adopt was asked for. If another was picked while it waited, that one belongs to its own Keep.
+  if (!pending || pending.source !== source) return;
   try {
     const r = await pending.commit(deps(), { entryId: ownerId, finalText, requireWords });
     if (r === null || r.status === 'needs_words') return;
@@ -37,9 +38,10 @@ async function adoptNow(pending: PendingPhoto | null, deps: () => PhotoDeps, own
 }
 
 export function adoptPending(pending: PendingPhoto | null, deps: () => PhotoDeps, ownerId: string, finalText: string, requireWords: boolean): Promise<void> {
-  if (!pending?.source) return Promise.resolve();
+  const source = pending?.source;
+  if (!source) return Promise.resolve();
   const asked = epoch;
-  const run = tail.then(() => (asked === epoch ? adoptNow(pending, deps, ownerId, finalText, requireWords) : undefined));
+  const run = tail.then(() => (asked === epoch ? adoptNow(pending, source, deps, ownerId, finalText, requireWords) : undefined));
   tail = run.catch(() => undefined);
   return run;
 }

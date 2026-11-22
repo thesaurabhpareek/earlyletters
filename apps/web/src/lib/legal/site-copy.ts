@@ -11,7 +11,7 @@ export const siteCopy = {
   },
   notFound: {
     title: 'Page not found',
-    line: 'We could not find that page.',
+    line: "That page isn't here.",
     home: `Back to ${brand.name}`,
   },
 } as const;
