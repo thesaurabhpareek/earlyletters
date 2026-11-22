@@ -65,7 +65,7 @@ const EVERY: Record<string, Partial<WordsInput>> = {
 describe('S14: while the words are being written down', () => {
   it('the moon breathes over "Writing down what you said.", with no action at first', () => {
     expect(card()).toMatchObject({ state: 'writing', kind: 'loading', art: 'moon', still: false, title: wordsCopy.preparing, primary: null, quiet: null });
-    expect(card().body).toBeUndefined();
+    expect(card().body).toBe(en.review.waitingBody);
   });
 
   it('a long take shows its parts with a determinate bar', () => {
@@ -75,13 +75,24 @@ describe('S14: while the words are being written down', () => {
     expect(card({ job: job({ phase: 'running', progress: { done: 0, total: 1 } }) }).bar).toBeUndefined();
   });
 
-  it('after 8 s: "Long recordings take a little more time."; after 15 s with no progress: "Read it back later", quiet', () => {
+  it('BL-399: the waiting card says it is working, the voice is kept and Review can be closed; after 15 s with no progress it says it is taking longer and offers Keep or Type', () => {
     expect(WAITING_LONG_MS).toBe(8000);
     expect(LATER_AFTER_MS).toBe(15000);
-    expect(card({ hints: { long: true, later: false } }).body).toBe(en.review.waitingLong);
-    const later = card({ hints: { long: true, later: true } });
-    expect(later.quiet).toBe('later');
-    expect(later.primary).toBeNull();
+    for (const long of [false, true]) {
+      const c = card({ hints: { long, later: false } });
+      expect(c.body).toBe(en.review.waitingBody);
+      expect(c.primary).toBeNull();
+      expect(c.quiet).toBeNull();
+    }
+    expect(en.review.waitingBody).toMatch(/Listening back to what you said/);
+    expect(en.review.waitingBody).toMatch(/Your voice is kept/);
+    expect(en.review.waitingBody).toMatch(/You can close this, it will be waiting on Tonight/);
+    const slow = card({ hints: { long: true, later: true } });
+    expect(slow.body).toBe(en.review.waitingSlow);
+    expect(slow.body).toMatch(/taking longer than usual/);
+    expect(slow.primary).toBe('keep');
+    expect(slow.quiet).toBe('type');
+    expect(slow.still).toBe(false);
     expect(wordsActionLabel('later')).toBe('Read it back later');
   });
 
@@ -106,7 +117,7 @@ describe('S14: while the words are being written down', () => {
   });
 
   it('nothing suggests software is writing the letter: "writing" only as "writing down", no cursor or typing words', () => {
-    for (const t of [wordsCopy.preparing, wordsCopy.listening, en.review.waitingLong, en.review.laterButton]) {
+    for (const t of [wordsCopy.preparing, wordsCopy.listening, en.review.waitingBody, en.review.waitingSlow, en.review.laterButton]) {
       expect(t.replace(/writing down/gi, '')).not.toMatch(/\bwrit(e|es|ing)\b|typing|cursor/i);
     }
   });
@@ -308,14 +319,14 @@ describe('Review uses the card (source)', () => {
     expect(review).toMatch(/: hasSound \? \(/);
   });
 
-  it('[review B L4] a change of card is said aloud (VoiceOver ignores live regions on iOS): the title, then "Read it back later" when it appears', () => {
+  it('[review B L4] a change of card is said aloud (VoiceOver ignores live regions on iOS): the title, then the longer-than-usual line when it appears', () => {
     const status = review.slice(review.indexOf('function WordsStatus('), review.indexOf('const action = (a: WordsAction | null)'));
     // The first card is said once Review has dissolved in (focus lands on "Hear it", not on the card), with the
     // newest title; it is cleared on unmount, and replaced at once by a change of state (#271 lens B final note).
     expect(status).toMatch(/if \(!before\) \{\s*first\.current = setTimeout\(\(\) => \{\s*first\.current = null;\s*announce\(title\.current\);\s*\}, tokens\.motion\.route\.dissolveMs\);\s*return;\s*\}/);
     expect(status).toMatch(/title\.current = card\.title;/);
     expect(status).toMatch(/\(\) => \(\) => \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*\}/);
-    expect(status).toMatch(/if \(before\.state !== now\.state\) \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*first\.current = null;\s*announce\(card\.title\);\s*\} else if \(!before\.later && now\.later\) announce\(wordsActionLabel\('later'\)\);/);
+    expect(status).toMatch(/if \(before\.state !== now\.state\) \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*first\.current = null;\s*announce\(card\.title\);\s*\} else if \(!before\.later && now\.later\) announce\(card\.body \?\? card\.title\);/);
     expect(review).toMatch(/import \{ announce, useIsAccessibilitySize, useScreenReader, useTheme \} from '@\/lib\/a11y';/);
   });
 
