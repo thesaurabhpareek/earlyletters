@@ -1241,7 +1241,7 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Owner:** founder; Karma merges.
 
 ### D-166 Founder approves the council recommendations on O-47 and O-48 (founder, 21 Nov 2026)
-- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to Karma's list of items needing his decision. His own words are only the two quotes under "Founder words". What he approved is the council recommendation on each item, as set out in D-165 section 1, and that text is labelled as a council recommendation below. Recorded by the Chief of Staff (Claude role) as a docs-only entry. I have not seen the chat itself; the quotes were passed to me by the agent that launched me, and the founder should confirm they read true. Merged by Karma under D-132.
+- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to Karma's list of items needing his decision. His own words are only the two quotes under "Founder words". What he approved is the council recommendation on each item, as set out in D-165 section 1, and that text is labelled as a council recommendation below. Recorded by the Chief of Staff (Claude role) as a docs-only entry. I have not seen the chat itself; the quotes were passed to me by the agent that launched me, and the founder should confirm they read true. Antecedent: his "I approve both" replied to Karma's list of items needing his decision, which carried exactly O-47 and O-48; his second quote names them. Merged by Karma under D-132.
 - **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his:**
 
   ```text
@@ -1254,7 +1254,7 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 
 #### Council recommendations he approved (not his words; the text is D-165 section 1)
 1. **O-47, option C.** Stay an individual publisher under D-134 (no LLC now). The accountant and counsel must confirm. The dated line naming the reopening triggers is to be written by him, in his own words, by Fri 27 Nov 2026, and an accountant is engaged before the first payout. Nothing here is tax or legal advice.
-2. **O-48, the value-prop pair.** Line two is "{app} never adds a word to your letter". The fallback is "Your words finish it". Withdrawn and not to be used: "We never write a word for you."
+2. **O-48, the value-prop pair.** Line one: "Pictures start the story. Your voice finishes it." Its fallback, if it is not cleared, is "Your words finish it". Line two: "{app} never adds a word to your letter". Withdrawn and not to be used: "We never write a word for you."
 
 #### What this approval does not do
 - **(a) It does not supply the reopening-trigger wording.** That line stays his to write, in his own words, by Fri 27 Nov 2026. "I approve both" is not that line, and no agent drafts it for him.
