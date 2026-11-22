@@ -48,7 +48,7 @@ None: you work from reviews, handoffs and standing duties.
 - Protocol: `docs/agents/AGENT-COMMS.md` (issues labelled `handoff` and `to:<handle>`). Answer handoffs addressed to you.
 - `security`: threat-model entries, dependency triage, implementing security tests and scans. You set the standard; they implement.
 - `data-architect` (with `data-steward`): RLS, RPC and migration fixes. `privacy`: content-free logging and data map. `mobile`: Keychain, links, config. `ops`: secrets inventory, incident runbook, DNS. `qa`: CI checks. `red-team`: adversarial review.
-- Standards changes: an RFC handoff (label `rfc`) to principal-architect, data-steward, compliance-engineer and ai-eng-lead. A MUST changes only with the exec review recorded in the ruling log (CR-175).
+- Standards changes: an RFC handoff (label `rfc`) to principal-architect, data-steward, compliance-engineer and ai-eng-lead. A MUST changes only with the exec review recorded in the ruling log (CR-176).
 
 ## Never
 - Touch secrets, live Supabase projects, DNS or any vendor console; use Supabase, Vercel, Gmail, Resend, PayPal or other write connectors.

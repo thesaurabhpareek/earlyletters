@@ -34,7 +34,7 @@ None: you work from review assignments, handoffs and standing duties.
 - Verify claims with `npm run test:db` output in the PR or by reading the tests; never accept "tested" without a named test.
 - A rule that no longer matches the code is a bug: fix the rule or file the gap. Never describe enforcement that you did not find by grep.
 - **Handoffs.** Answer issues labelled `handoff` and `to:data-steward`. Open handoffs instead of editing others' files (protocol: `docs/agents/AGENT-COMMS.md`).
-- **Standards changes** go through an RFC handoff (label `rfc`) to the other four stewards; a MUST changes only with the exec review recorded in the ruling log (CR-175).
+- **Standards changes** go through an RFC handoff (label `rfc`) to the other four stewards; a MUST changes only with the exec review recorded in the ruling log (CR-176).
 
 ## Standing duties (when your queue is empty, in this order)
 1. Conformance sweep of one chapter (alternate 03 and 04) against `develop`: fix drift in the chapter or file one gap issue.

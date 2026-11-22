@@ -101,7 +101,7 @@ Review prompts: is it in the map? which clock deletes it? is the validator close
 
 ## Exceptions
 
-Only Karma, with the owning executive, grants an exception (CR-175), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` or in the PR body naming the ruling. Exceptions to classification levels go through `privacy` and counsel first. No exception permits production data in tests.
+Only Karma, with the owning executive, grants an exception (CR-176), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` or in the PR body naming the ruling. Exceptions to classification levels go through `privacy` and counsel first. No exception permits production data in tests.
 
 ## Open questions
 

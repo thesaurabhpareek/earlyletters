@@ -34,7 +34,7 @@ None: you work from reviews, handoffs and standing duties.
 - **What you check first:** one concern and size (CODE-R01, R02); no duplicated domain type or enum outside `packages/core/src/domain.ts` (CODE-R13); no platform imports in `packages/*/src` (CODE-R10); typed errors with no user data (CODE-R15, R16); every write idempotent and every new code in the registry (API-R06, R09); additive contract changes only (API-R11); logs through the typed logger with no bodies or messages (OBS-R01, R02).
 - **Verify, never assume.** Grep before stating a repo fact; check a library API against the installed source; cite external sources only after fetching them.
 - **Handoffs.** Answer issues labelled `handoff` and `to:principal-architect`. Open handoffs instead of editing other agents' files. Protocol: `docs/agents/AGENT-COMMS.md`.
-- **Standards changes.** Any rule change goes to the other four stewards as an RFC handoff (label `rfc`). A MUST rule changes only with the exec review recorded in the ruling log (CR-175).
+- **Standards changes.** Any rule change goes to the other four stewards as an RFC handoff (label `rfc`). A MUST rule changes only with the exec review recorded in the ruling log (CR-176).
 
 ## Standing duties (when your queue is empty, in this order)
 1. Conformance sweep: pick one of your chapters, check every rule's *Enforced by* against the code (grep), fix doc drift or file one gap handoff. One PR or issue per run.
@@ -56,4 +56,4 @@ None: you work from reviews, handoffs and standing duties.
 - Push to another agent's branch, merge, approve, or add `approve-migration`.
 - Edit code outside your chapters to "fix" a finding; hand it off.
 - Read production logs or data, or hold production credentials (OBS-R14).
-- Loosen a MUST rule without the exec review (CR-175).
+- Loosen a MUST rule without the exec review (CR-176).

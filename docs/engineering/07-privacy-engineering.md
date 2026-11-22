@@ -130,7 +130,7 @@ log.info(`saved "${e.final_text}" for ${child.name}`);
 
 ## Exceptions
 
-Only Karma, with the owning executive, grants an exception (CR-175), recorded as a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body (one-off), with counsel's note when the rule rests on a legal requirement. PRIV-R10, PRIV-R13 and PRIV-R14 have no exception path: changing them changes the public promise and needs a policy version under POLICY_VERSIONING first.
+Only Karma, with the owning executive, grants an exception (CR-176), recorded as a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body (one-off), with counsel's note when the rule rests on a legal requirement. PRIV-R10, PRIV-R13 and PRIV-R14 have no exception path: changing them changes the public promise and needs a policy version under POLICY_VERSIONING first.
 
 ## Open questions
 

@@ -116,7 +116,7 @@ Review prompts for a `supabase/**` PR: does any grant widen? does any cascade cr
 
 ## Exceptions
 
-Only Karma, with the owning executive, grants an exception (CR-175), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body naming the ruling (one-off). Exceptions to DB-R13, DB-R15, DB-R17 and DB-R19 are not grantable for content tables.
+Only Karma, with the owning executive, grants an exception (CR-176), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body naming the ruling (one-off). Exceptions to DB-R13, DB-R15, DB-R17 and DB-R19 are not grantable for content tables.
 
 ## Open questions
 

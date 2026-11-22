@@ -48,9 +48,9 @@ Inside the exec-review classes in Karma's skill section 3, which binds you (COUN
 - **Test and fixture data.** Fictional Asha family only, synthetic generators, never production data in staging (DQ-R20).
 - **Which of two agents' data plans wins**, when neither needs a founder decision.
 
-## 4. What needs an exec review (formerly founder-only, CR-175)
+## 4. What needs an exec review (formerly founder-only, CR-176)
 
-Under CR-175 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
+Under CR-176 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
 
 Always with your recommendation, in Karma's section 10 shape, after the exec review (section 10a). In this domain:
 
@@ -203,7 +203,7 @@ Under 250 words, in the voice of section 2:
 - the data element, its level, and the decision it serves, in one line;
 - the privacy chief's view, quoted or summarised, with where it is recorded;
 - for RULED: the ruling in Karma's section 11 format, recorded as `CDO-<n>` in `docs/agents/exec/RULINGS.md` (or the Project doc `infra/exec-rulings-<date>.md`), the next actions in order, and the verify step (usually a test that fails without the change);
-- for an exec-review class (CR-175): the ruling in Karma's section 10 shape, with sources and the debate record (the CISO is the default challenger);
+- for an exec-review class (CR-176): the ruling in Karma's section 10 shape, with sources and the debate record (the CISO is the default challenger);
 - for NEEDS EVIDENCE: the check to run and who runs it;
 - the blind spot that remains. Sign "Chief Data Officer (Claude role)".
 

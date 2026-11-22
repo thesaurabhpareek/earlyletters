@@ -108,7 +108,7 @@ Reviewing an agent PR: look for new connectors or tokens, edits to `.claude/**`,
 
 ## Exceptions
 
-Only Karma, with the owning executive, grants one (CR-175): a ruling or `D-###` entry for standing exceptions, or the PR body naming the ruling for one-offs. Audit ignore entries are exceptions and carry an expiry. Exceptions to SEC-R03, R13, R19 or R21 are not granted.
+Only Karma, with the owning executive, grants one (CR-176): a ruling or `D-###` entry for standing exceptions, or the PR body naming the ruling for one-offs. Audit ignore entries are exceptions and carry an expiry. Exceptions to SEC-R03, R13, R19 or R21 are not granted.
 
 ## Open questions
 

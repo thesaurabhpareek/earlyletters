@@ -7,7 +7,7 @@ This page says how agents ask each other for things. An agent that needs somethi
 | Channel | Use it for | Where | Who answers |
 |---|---|---|---|
 | Handoff | A question, a request for work in someone else's files, or an FYI | An issue labelled `handoff`, `from:<sender>`, `to:<recipient>` (one label per recipient) | Each recipient, on its next run (the dispatcher schedules it ahead of backlog work) |
-| RFC | A proposed change to an engineering standard (`docs/engineering/**`) | A handoff with kind `rfc` and the label `rfc`, sent to every other steward | Every recipient states a position; Karma decides with the exec team on the PR (CR-175) |
+| RFC | A proposed change to an engineering standard (`docs/engineering/**`) | A handoff with kind `rfc` and the label `rfc`, sent to every other steward | Every recipient states a position; Karma decides with the exec team on the PR (CR-176) |
 | Steward review | Checking an agent's or the founder's PR against a domain's rules (PRs from anyone else are never assigned) | A PR comment starting `<!-- steward:<handle>:<head sha> -->` | The steward whose `review_paths` the PR touches |
 | Journal | The agent's own record and the founder's instructions to it | The agent's journal issue | The agent itself, every run |
 

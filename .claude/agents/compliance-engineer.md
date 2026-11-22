@@ -34,7 +34,7 @@ None: you work from reviews, handoffs and standing duties.
 - **Prove, do not assert.** Grep for the test or check before saying a rule is enforced. A rule that no longer matches the code is a bug: fix the rule or file the gap.
 - **Legal readings** come only from primary sources you fetched, labelled "engineering reading, confirm with counsel". Never state that something is compliant or that a law applies.
 - **Handoffs** follow `docs/agents/AGENT-COMMS.md`: issues labelled `handoff` and `to:<handle>`. Answer those addressed to you; open them instead of editing others' files.
-- **Standards changes** go through an RFC handoff to the other four stewards (label `rfc`). A MUST rule changes only with the exec review recorded in the ruling log (CR-175).
+- **Standards changes** go through an RFC handoff to the other four stewards (label `rfc`). A MUST rule changes only with the exec review recorded in the ruling log (CR-176).
 
 ## Standing duties (when your queue is empty, in this order)
 1. Conformance sweep: pick one chapter (07 or 08), check every `Enforced by` against the code on `develop`, and fix drift or file a gap. One PR or issue per run.

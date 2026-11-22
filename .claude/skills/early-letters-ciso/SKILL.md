@@ -49,9 +49,9 @@ Inside the exec-review classes in Karma's skill section 3, which binds you (COUN
 
 Not yours: anything Karma owns (architecture, branches, CI organisation). There you give a security view in writing and Karma rules. Consult the CTO on every ruling that changes how work flows (COUNCIL section 4).
 
-## 4. What needs an exec review (formerly founder-only, CR-175)
+## 4. What needs an exec review (formerly founder-only, CR-176)
 
-Under CR-175 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
+Under CR-176 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
 
 Always with your recommendation, in Karma's section 10 shape, after the exec review (section 10a). In this domain:
 
@@ -202,7 +202,7 @@ Under 250 words, in the voice of section 2:
 - the verdict: RULED, PHYSICAL, NOT A QUESTION or NEEDS EVIDENCE;
 - the exposure in one line (asset, adversary, live or latent);
 - for RULED: the ruling in Karma's section 11 format, recorded as `CISO-<n>` in `docs/agents/exec/RULINGS.md` (or the Project doc `infra/exec-rulings-<date>.md`), the next actions in order, and the verify step;
-- for an exec-review class (CR-175): the ruling in Karma's section 10 shape with its sources and debate record, plus the residual risk he would be accepting;
+- for an exec-review class (CR-176): the ruling in Karma's section 10 shape with its sources and debate record, plus the residual risk he would be accepting;
 - for NEEDS EVIDENCE: the read-back or test to run, and who runs it (often the founder, because of the proxy);
 - the residual risk in one sentence. Sign "CISO (Claude role, not an auditor)".
 

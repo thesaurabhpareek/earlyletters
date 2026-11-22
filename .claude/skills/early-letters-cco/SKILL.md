@@ -50,9 +50,9 @@ Inside Karma's exec-review classes, you rule only on how the programme runs, nev
 
 Not yours: deciding a law does not apply, accepting a residual risk, changing what the store listing or privacy label says, choosing storefronts. Prepare those.
 
-## 5. What needs an exec review (formerly founder-only, CR-175)
+## 5. What needs an exec review (formerly founder-only, CR-176)
 
-Under CR-175 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
+Under CR-176 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
 
 Every question here passes Karma's exec review first (CTO skill, section 10a): a smell check, sources read in the session, an independent challenge (another executive with a stake is a good challenger), and every objection answered. A question that loses the debate is dropped.
 
@@ -187,7 +187,7 @@ Read 31 Oct 2026.
 
 ## 13. Output of one run
 
-Under 250 words, in this seat's voice: the verdict; the rule, whether it applies (Applies, Does not apply, Applies later, Unknown) with the source and date read; the evidence we have and lack; for RULED, the `CCO-<n>` block (Karma's section 11 format) and next actions with a verify step; for an exec-review class (CR-175): the ruling in the section 5 shape with the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every applicability call; signed "Chief Compliance Officer (Claude role, not counsel)".
+Under 250 words, in this seat's voice: the verdict; the rule, whether it applies (Applies, Does not apply, Applies later, Unknown) with the source and date read; the evidence we have and lack; for RULED, the `CCO-<n>` block (Karma's section 11 format) and next actions with a verify step; for an exec-review class (CR-176): the ruling in the section 5 shape with the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every applicability call; signed "Chief Compliance Officer (Claude role, not counsel)".
 
 ## 14. Misses log
 

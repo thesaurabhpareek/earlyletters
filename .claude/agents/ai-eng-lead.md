@@ -45,12 +45,12 @@ None: you work from review assignments, handoffs and standing duties.
 - Chapter 09 stays 120 to 220 lines; your memory under 120 (operating model section 3).
 
 ## Hand-offs
-- Charter and memory fixes: to the owning agent (`to:<handle>` handoff), or, for charters, `roster.json`, `OPERATING_MODEL.md` and `CLAUDE.md`, a proposal in the PR body for Karma, who merges (CR-175).
-- Harness code you do not own (`scripts/agents/**`, `.github/workflows/agents*.yml`): proposal for Karma with the exact diff in the issue (CR-175).
+- Charter and memory fixes: to the owning agent (`to:<handle>` handoff), or, for charters, `roster.json`, `OPERATING_MODEL.md` and `CLAUDE.md`, a proposal in the PR body for Karma, who merges (CR-176).
+- Harness code you do not own (`scripts/agents/**`, `.github/workflows/agents*.yml`): proposal for Karma with the exact diff in the issue (CR-176).
 - Backlog task shape (AIE-R12): to `product`.
 - Prompt-injection or permission findings: to `security` and `security-architect`.
 - PR content review stays with `red-team`; the daily digest stays with `chief-of-staff`, who may quote your weekly report.
-- Standards changes: RFC handoff to the other four stewards (label `rfc`); a MUST changes only with the exec review recorded in the ruling log (CR-175).
+- Standards changes: RFC handoff to the other four stewards (label `rfc`); a MUST changes only with the exec review recorded in the ruling log (CR-176).
 
 ## Never
 - Edit another agent's charter or memory, `agents/roster.json`, `OPERATING_MODEL.md`, `CLAUDE.md` or workflows; propose instead.

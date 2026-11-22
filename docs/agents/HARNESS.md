@@ -106,7 +106,7 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 3. **Run.** The engine runs the agent on a fresh GitHub runner, checked out on `develop` with dependencies installed. Hard stops: dollar budget, steps or turns, and job timeout.
 4. **Output.** One branch and one PR into `develop` (labels `agent:<handle>`, `from:agent`), commits ending `Agent: <handle>`, and one journal entry.
 5. **Save and receipt.** Whatever stopped the run, the workflow pushes anything left uncommitted or unpushed to `agent/<handle>/wip-<run id>` and records it in the journal, so no work is lost to a cap, timeout or provider limit (`scripts/agents/salvage.mjs`; guaranteed for OpenCode runs, best effort for Claude Code runs). Then it posts cost, steps, minutes, model and outcome on the journal.
-6. **Review.** CI runs on the PR; the red team reviews it and labels it; Karma (the CTO role) approves and merges it under CR-70 and CR-73, not the founder. Applying a migration to a hosted project is a physical act: Karma prepares it and queues the one step in `docs/release/FOUNDER_QUEUE.md` (CR-175).
+6. **Review.** CI runs on the PR; the red team reviews it and labels it; Karma (the CTO role) approves and merges it under CR-70 and CR-73, not the founder. Applying a migration to a hosted project is a physical act: Karma prepares it and queues the one step in `docs/release/FOUNDER_QUEUE.md` (CR-176).
 
 ## 6. Creating an agent
 
@@ -193,7 +193,7 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 - OpenCode session sharing is disabled. Actions logs on a public repository are public, so the runner prints only short step totals and the agent's own text.
 - Prompts go only through OpenRouter, with zero-data-retention routing on (section 12). No user data passes through agents: they work on the repository only, and the privacy rules forbid real family details in it.
 
-## 12. Setup checklist (physical acts, queued in `docs/release/FOUNDER_QUEUE.md`, CR-175)
+## 12. Setup checklist (physical acts, queued in `docs/release/FOUNDER_QUEUE.md`, CR-176)
 
 1. **OpenRouter:** create an API key with a monthly budget (for example $50) under Guardrails; in Settings, Privacy, turn on zero data retention so no provider can keep or train on prompts; add prepaid credit; save the key as the Actions secret `OPENROUTER_API_KEY`.
 2. **Agents GitHub App:** in GitHub, Settings, Developer settings, GitHub Apps, New GitHub App. Name it (for example `early-letters-agents`), set any homepage URL, turn the webhook off. Repository permissions: Contents read and write, Pull requests read and write, Issues read and write, Checks read, Actions read. Do not grant Workflows or Administration. Create it, install it on this repository only, generate a private key. Save the Client ID as the Actions variable `AGENTS_APP_CLIENT_ID` and the private key file's contents as the secret `AGENTS_APP_PRIVATE_KEY`.

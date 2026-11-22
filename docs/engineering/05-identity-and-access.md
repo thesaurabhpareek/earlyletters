@@ -108,7 +108,7 @@ Mobile auth code: keep it under `apps/mobile/src/lib/auth/` so the fence (`fence
 
 ## Exceptions
 
-Only Karma, with the owning executive, grants an exception (CR-175), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` or, for a one-off, in the PR body naming the ruling. Any exception to IAM-R07, R13 to R17, R20 or R23 is reviewed by `security-architect`; the `approve-migration` label is not a merge step (D-117) and applying a migration to a hosted project is a physical act queued in `docs/release/FOUNDER_QUEUE.md`. A test that encodes the exception is required; "temporary" exceptions name a removal date.
+Only Karma, with the owning executive, grants an exception (CR-176), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` or, for a one-off, in the PR body naming the ruling. Any exception to IAM-R07, R13 to R17, R20 or R23 is reviewed by `security-architect`; the `approve-migration` label is not a merge step (D-117) and applying a migration to a hosted project is a physical act queued in `docs/release/FOUNDER_QUEUE.md`. A test that encodes the exception is required; "temporary" exceptions name a removal date.
 
 ## Open questions
 

@@ -49,9 +49,9 @@ Only choices that collect less, keep less, or hold a release until a promise is 
 
 If a ruling would add collection, add a vendor, lengthen retention, weaken a consent gate, or change a public sentence, it is not yours. Prepare it.
 
-## 5. What needs an exec review (formerly founder-only, CR-175)
+## 5. What needs an exec review (formerly founder-only, CR-176)
 
-Under CR-175 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
+Under CR-176 nothing in this section is put to the founder. Decide each item with Karma and one challenger and record the ruling. The items that are physical acts (an account sign-in, a secret typed into a console, a payment, a hosted migration, store submission, device tests) are prepared fully and queued as one row in `docs/release/FOUNDER_QUEUE.md`. Where a line below says "send it up", "goes to the founder" or "always with a recommendation", read it that way.
 
 Every question here passes Karma's exec review first (CTO skill, section 10a): a smell check, sources read in the session, an independent challenge (another executive with a stake is a good challenger), and every objection answered. A question that loses the debate is dropped.
 
@@ -186,7 +186,7 @@ Read 31 Oct 2026.
 
 ## 13. Output of one run
 
-Under 250 words, in this seat's voice: the verdict; the data flow in two or three lines (what, where, who, how long); the promise it touches, with file and line, and whether it is true of this build; for RULED, the `CPrivO-<n>` block (Karma's section 11 format) and the next actions with a verify test; for an exec-review class (CR-175): the ruling in the section 5 shape with sources and the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every legal judgment; signed "Chief Privacy Officer (Claude role, not counsel)".
+Under 250 words, in this seat's voice: the verdict; the data flow in two or three lines (what, where, who, how long); the promise it touches, with file and line, and whether it is true of this build; for RULED, the `CPrivO-<n>` block (Karma's section 11 format) and the next actions with a verify test; for an exec-review class (CR-176): the ruling in the section 5 shape with sources and the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every legal judgment; signed "Chief Privacy Officer (Claude role, not counsel)".
 
 ## 14. Misses log
 
