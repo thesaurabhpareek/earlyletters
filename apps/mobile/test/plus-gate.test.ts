@@ -151,22 +151,21 @@ describe('[RT-PAY-09, RT-OFC-06] See Plus and Redeem a code offline, or when the
   });
 });
 
-describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B on #370)', () => {
-  it('at accessibility sizes the footer holds the two buttons and nothing else; every line of text is in the scroll', () => {
+describe('[S22][BL-418] the way on: pinned below AX1, last in the scroll from AX1 (E3, rule 3)', () => {
+  it('at accessibility sizes nothing is pinned: the two buttons are the last of the scroll, so large type never covers the sheet', () => {
     const ax = keepSheetLayout(true);
-    // Exactly the two buttons: no text in the footer, so it can never grow taller than the sheet (the 96-character
-    // offline note at AX5 on an SE made it about 865 pt in a 667 pt screen).
-    expect(ax.pinned).toEqual(['seePlus', 'hold']);
-    expect(ax.scroll).toEqual(['words', 'card', 'redeem']);
+    expect(ax.pinned).toEqual([]);
+    expect(ax.scroll).toEqual(['words', 'card', 'redeem', 'seePlus', 'hold']);
+    // The primary and the way out are the last things, in this order.
+    expect(ax.scroll.slice(-2)).toEqual(['seePlus', 'hold']);
     // The line that says the letter is safe comes right after the title, before the offer's note and the body.
     expect(ax.words).toEqual(['title', 'heldNote', 'note', 'body']);
     // At the default size: the card on top, then the title, the body and the held note; every button and its note
     // in the footer, as before.
     expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
     for (const l of [keepSheetLayout(true), keepSheetLayout(false)]) {
-      // "Keep it here for now" is in the footer at every size, so it is on the first screen at AX3 and AX5.
-      expect(l.pinned).toContain('hold');
-      expect(l.scroll).not.toContain('hold');
+      // "Keep it here for now" is on the sheet at every size: pinned below AX1, the last of the scroll from AX1.
+      expect([...l.pinned, ...l.scroll]).toContain('hold');
       // Every part once, the note either a line of the words or in the footer, never both.
       const parts = [...l.scroll.filter((b) => b !== 'words'), ...l.words, ...l.pinned];
       expect([...parts].sort()).toEqual(['body', 'card', 'heldNote', 'hold', 'note', 'redeem', 'seePlus', 'title']);
@@ -174,6 +173,7 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
       expect(l.scroll).toContain('words');
       expect(l.words).toContain('heldNote');
     }
+    expect(keepSheetLayout(false).scroll).not.toContain('hold');
     // At accessibility sizes the words come before the card, so the card no longer pushes them down.
     expect(ax.scroll.indexOf('words')).toBeLessThan(ax.scroll.indexOf('card'));
   });
@@ -183,7 +183,7 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
     expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
     expect(gate).toMatch(/<View key="words" [^\n]*style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
     expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
-    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
+    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?\{layout\.pinned\.length > 0 \? \(\s*<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
     // The footer's note is drawn only where the layout puts it, so it is never in the footer and the words at once.
     expect(gate).toMatch(/note: layout\.pinned\.includes\('note'\) \? line\.note : null,/);
     expect(gate).not.toMatch(/footerPlacement/);
@@ -191,12 +191,23 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
 
   it('a note that arrives after See Plus is scrolled into view and announced, its static words only (#370 delta)', () => {
     const gate = code('components/child/plus-gate.tsx');
-    const effect = gate.slice(gate.indexOf('const openingNote = React.useRef(view.note);'), gate.indexOf('}, [view.note]);'));
+    const from = gate.indexOf('const openingNote = React.useRef(view.note);');
+    const to = gate.indexOf('}, [view.note]);');
+    // A missing anchor makes indexOf return -1, which would slice to almost the whole file and let every match pass (BL-457).
+    expect(from).toBeGreaterThanOrEqual(0);
+    expect(to).toBeGreaterThan(from);
+    const effect = gate.slice(from, to);
     expect(effect.length).toBeGreaterThan(0);
+    // The effect re-runs on a new note only: the dependency array is exactly [view.note].
+    expect(gate).toMatch(/\}, \[view\.note\]\);/);
+    expect(gate.match(/\}, \[view\.note\]\);/g)).toHaveLength(1);
+    // The note goes through the repo's announce(), not AccessibilityInfo directly (a no-op on Android, where the live region reads it).
+    expect(gate).toMatch(/import \{ announce, [^}]*\} from '@\/lib\/a11y';/);
+    expect(gate).not.toMatch(/AccessibilityInfo/);
     // A new note only (one already there when the sheet opens is read in order), after layout, with no animation.
     expect(effect).toMatch(/if \(!note \|\| note === openingNote\.current\) return;/);
     expect(effect).toMatch(
-      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/,
+      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*announce\(note\);\s*\} catch/,
     );
     expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
     expect(gate).toMatch(/<ScrollView ref=\{scroll\}/);

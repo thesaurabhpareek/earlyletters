@@ -253,7 +253,7 @@ describe('[S54] Check your email', () => {
 
   it('[P8a lens B2] S01\'s side: only a wrong code adds to the list and only a code sign-in clears it, per address; a link never reads it', () => {
     const provider = read('lib', 'auth', 'session-provider.tsx');
-    const pending = read('lib', 'auth', 'pending.ts');
+    const pending = read('lib', 'auth', 'pending-memory.ts');
     expect(between(provider, 'async sendEmailLink(email)', 'async verifyEmailCode(')).not.toMatch(/WrongCode|codeEntryPause/);
     const byCode = between(provider, 'async verifyEmailCode(', 'async verifyEmailLink(');
     expect(byCode).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(email\), Date\.now\(\)\);\s*if \(pause\.paused\) \{/);
