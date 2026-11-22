@@ -1297,13 +1297,13 @@ The standing approval does not reach secrets and credentials, account actions (A
 
 **Design backlog exec review, 22 Nov 2026**
 
-Source: Karma's exec review of the design backlog recommendations, recorded in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged; #1621 and persona fold-in #1628 are the inputs). Every legal judgment below is a role's view, not advice: counsel must confirm. In every entry below the Door, Way back and Revisit when lines are derived by Karma, because the review did not state them (copy text and gates are two-way before release). Why lines are Karma's reasoning from the review unless they cite a source. Any default that says "derived by Karma" is Karma's, not the review's. Founder items are listed as FOUNDER and are not rulings. Cross-cutting rule from the review: defaults that edit legal-adjacent text need a founder merge (D-125 item 5), and silence means the status quo text ships.
+Source: Karma's exec review of the design backlog recommendations, recorded in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged; #1621 and persona fold-in #1628 are the inputs). Every legal judgment below is a role's view, not advice: counsel must confirm. In every entry below the Door, Way back and Revisit when lines are derived by Karma, because the review did not state them (copy text and gates are two-way before release). Why lines are Karma's reasoning from the review unless they cite a source. Any default that says "derived by Karma" is Karma's, not the review's. Founder items are listed as FOUNDER and are not rulings. Latest spec: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 and the design ticket section of `docs/BACKLOG.md`. Cross-cutting rule from the review: defaults that edit legal-adjacent text need a founder merge (D-125 item 5), and silence means the status quo text ships.
 
 Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1767, BL-1787, the BL-1730, BL-1731 and BL-1829 defaults, BL-1807 routing, device gate tiering (BL-1700), and the NEEDS EVIDENCE rows.
 
 ### CPO-64 BL-1724 Home Plus line: the plain version (22 Nov 2026, CPO and CBO via the exec review session)
 - Verdict: RULED.
-- Ruling: BL-1724 uses the shortest line already true: the letter waits, nothing is lost. No price, no link, no urgency. This replaces the earlier default "content rewords to a quiet pointer". Counsel must confirm that "nothing is lost" is true (Q40); the evidence is UNVERIFIED here.
+- Ruling: BL-1724 uses the shortest line already true: the letter waits, nothing is lost. No price, no link, no urgency. This replaces the earlier default "content rewords to a quiet pointer". Counsel must confirm that "nothing is lost" is true; no question number is assigned for BL-1724 (Q40 belongs to BL-1806, the free-slot Delete line). The evidence is UNVERIFIED here.
 - Why: the CPO and CBO ruled the plain version (review). That a pointer naming Plus or linking is a different line is Karma's summary.
 - Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged). Source for "nothing is lost": UNVERIFIED.
 - Door: two-way (derived by Karma)
@@ -1363,7 +1363,7 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 
 ### CLO-23 BL-1799 "Each letter signed" held out of the listing (22 Nov 2026, CLO via the exec review session; not counsel)
 - Verdict: RULED.
-- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The line at `docs/store/app-store.md:136` ("Both parents read every letter in the book, each one signed.", under WHAT A CO-PARENT SEES) must not ship. Correct BRAND.md line 40, which also says co-parent "at v1.0", false for the first build. Counsel must confirm.
+- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The line at `docs/store/app-store.md:136` ("Both parents read every letter in the book, each one signed.", under WHAT A CO-PARENT SEES) must not ship. Correct `packages/content/BRAND.md` line 40, which also says co-parent "at v1.0", false for the first build; counsel must confirm that it is false for the first build.
 - Why: the CLO rules the hold (review). That the first build has no sharing is D-121 and D-126.
 - Evidence: `docs/store/app-store.md:136`; `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
@@ -1383,7 +1383,7 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 
 ### CPrivO-28 BL-1742 Photos primer swipe-down (22 Nov 2026, CPO and CPrivO via the exec review session)
 - Verdict: RULED, pending founder confirmation.
-- Ruling: swipe-down persists nothing, never triggers Apple's alert, and never returns unprompted. Re-entry is a tap on the door row. Only "Not now" records a decline.
+- Ruling: swipe-down persists nothing, never triggers Apple's alert, and never returns unprompted. Re-entry is a tap on the door row. Only "Not now" records a decline. Counsel must confirm.
 - Why: CPO and CPrivO ruled it (review). It edits NS-53-G05 and NS-53-R73, so the founder confirms.
 - Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
@@ -1403,7 +1403,7 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 
 ### CPrivO-30 BL-1830 Export writes photos as null: fail closed (22 Nov 2026, CPrivO via the exec review session)
 - Verdict: RULED.
-- Ruling: no photo flag while Export says "everything" and writes photos as null.
+- Ruling: no photo flag while Export says "everything" and writes photos as null. Counsel must confirm.
 - Why: the CPrivO's rule (review); it is also gate 4 of CPrivO-29.
 - Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
@@ -1421,9 +1421,9 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 - Revisit when: the egress test and geocoder check return, or counsel answers (derived by Karma).
 - Founder-only: no.
 
-### CCO-18 BL-1835 Age gate left as is (22 Nov 2026, CCO, CPrivO and CLO via the exec review session; not counsel)
+### CCO-18 BL-1835 Age gate left as is (22 Nov 2026, CPrivO and CLO via the exec review session, CCO seat proposed; not counsel)
 - Verdict: RULED.
-- Ruling: leave the age gate as built. No "Are you sure?" after No. The 24-hour stop stays (D-026; LEGAL-REQ-002, as in CCO-17). Local only; say so in the register. Counsel Q45 and Q46 decide.
+- Ruling: leave the age gate as built. No "Are you sure?" after No. The 24-hour stop stays (D-026; LEGAL-REQ-002, as in CCO-17). Fact about the build (D-026): the age stop is local only, so reinstalling the app clears it. This goes into the register, and counsel Q45 and Q46 decide whether that is acceptable; this is not a ruling. Counsel must confirm the ruling.
 - Why: the review names CPrivO, CLO and counsel for this item; the CCO seat is proposed, as is any other seat not in the source. Consistent with CCO-17 (Karma's note).
 - Evidence: `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-002); `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
 - Door: two-way (derived by Karma)
