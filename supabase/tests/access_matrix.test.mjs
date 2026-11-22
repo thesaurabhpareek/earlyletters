@@ -655,7 +655,7 @@ check('[K-08] every RPC starts with require_user() or checks is_anonymous()', un
 // helpers sync_push and sync_pull call as the caller.
 const SYNC_PRIVATE_FOR_SIGNED_IN = ['dup_answer(uuid)', 'dup_outcome(uuid,uuid)', 'erase_entry(uuid)', 'erase_held(uuid)',
   'held_discard(uuid,xid8)', 'held_dup(uuid,uuid)', 'held_id_taken(uuid)', 'held_on_hold(uuid)', 'held_state(uuid,boolean)',
-  'held_upsert(uuid,uuid,jsonb)', 'keep_check(uuid,uuid,text,xid8)', 'lock_letter_id(uuid)', 'note_answer(uuid,jsonb)',
+  'held_upsert(uuid,uuid,jsonb)', 'keep_check(uuid,uuid,text,xid8)', 'lock_letter_id(uuid)', 'note_answer(uuid,jsonb)', 'safe_bool(text)', 'safe_date(text)',
   'note_applied(uuid,uuid,boolean,boolean)', 'note_held(uuid,uuid,boolean)'];
 const sp = (await sys(`select p.proname || '(' || coalesce((select string_agg(format_type(t, null), ',' order by i)
       from unnest(p.proargtypes::oid[]) with ordinality u(t, i)), '') || ')' sig,

@@ -189,7 +189,8 @@ Each row is a pattern now in the app, the product it comes from and the evidence
 ### Tab bar (`src/app/(tabs)/_layout.tsx`)
 | Pattern | Source | Evidence |
 |---|---|---|
-| Three single-word tabs, always visible, navigation only, no haptic | HIG Tab bars | H4 |
+| Three single-word tabs today, always visible, navigation only, no haptic; a fourth (Moments, second) only when its flag is on, which it is not | HIG Tab bars | H4 |
+| VoiceOver position: with the flag off iOS says "X, tab, i of 3". The label is set per visible tab (`tabBarAccessibilityLabel`, `moments-tab.ts`) because the library counts the hidden Moments route and would say "of 4". A device VoiceOver check with four tabs is still owed (UNVERIFIED) | HIG Tab bars; A11Y | H4 |
 | Labels do not scale; long press shows the Large Content Viewer on iOS | HIG Typography (truncation) and Accessibility | H1, H2 |
 | Paper bar with a hairline (not Liquid Glass yet) | HIG Materials: no glass in the content layer; NativeTabs deferred to a device spike | H5, COMPONENT_LIBRARY 0.1 |
 

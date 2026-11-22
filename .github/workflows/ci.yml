@@ -48,11 +48,23 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
           EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -uo pipefail
           heavy=true
-          if [ "$EVENT" = pull_request ] && files="$(gh api --paginate "repos/${REPO}/pulls/${PR}/files" --jq '.[].filename, (.[].previous_filename // empty)')" && [ -n "$files" ] && [ "$(wc -l <<< "$files")" -lt 3000 ]; then
-            if ! grep -qvE '^(docs/engineering/readiness-20nov/|docs/agents/checkins/S[0-9][^/]*\.md$|docs/product/instrumentation/|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md$|docs/content/lifecycle-playbook/|docs/qa/test-plan-b13/|docs/design/DESIGN-[^/]*\.md$)' <<< "$files"; then
+          # Bound to the head (BL-1479): the PR must still be at the sha this run started for, and the list is
+          # the compare of the two event shas, never the live pulls/<n>/files. rc 1 from grep is the only path to
+          # heavy=false: rc 0 (a line off the list) and rc 2 (grep error) both stay heavy. Closed list: a
+          # directory entry matches only .md or .csv below it. Tested by .github/scripts/scope-step.test.mjs,
+          # which runs this very block. compare returns at most 300 files in total (no later page has more), so a
+          # list of 300 or more lines may be truncated and stays heavy.
+          if [ "$EVENT" = pull_request ] && [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            && [ "$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)" = "$HEAD_SHA" ] \
+            && files="$(gh api --paginate "repos/${REPO}/compare/${BASE_SHA}...${HEAD_SHA}" --jq '.files[] | .filename, (.previous_filename // empty)')" \
+            && [ -n "$files" ] && [ "$(wc -l <<< "$files")" -lt 300 ]; then
+            grep -qvE '^(docs/engineering/readiness-20nov/.*\.(md|csv)|docs/agents/checkins/S[0-9][^/]*\.md|docs/product/instrumentation/.*\.(md|csv)|docs/product/(P0-|READINESS-|PERMISSIONS-)[^/]*\.md|docs/content/lifecycle-playbook/.*\.(md|csv)|docs/qa/test-plan-b13/.*\.(md|csv)|docs/design/DESIGN-[^/]*\.md)$' <<< "$files"; rc=$?
+            if [ "$rc" -eq 1 ]; then
               heavy=false
             fi
           fi
@@ -162,7 +174,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Guard tests
-        run: node --test .github/scripts/seam-guard.test.mjs
+        run: node --test .github/scripts/seam-guard.test.mjs .github/scripts/scope-step.test.mjs
       - name: Can this change reach a store bundle, or change the check?
         id: changed
         env:
