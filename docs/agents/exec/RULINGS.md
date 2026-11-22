@@ -614,7 +614,7 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 
 ## Batch 4 (22 Nov, council)
 
-This section is a separate trailing block. Ids continue past the highest per seat on `develop` at the head this branch was cut from (CPO-25, CDO-21), checked by grep in `docs/`; not checked: other open PRs that touch this file. If a number collides at merge, renumber the later one. Each seat is a Claude role (COUNCIL section 1), none is counsel. Evidence: the spec `docs/product/prd/28-moments-tab.md` (PROPOSED; R24, R25, R253, 6.2 S6, section 7.3a), PR #1469 section 7.3b (errata E-4-2, E-4-4, E-4-5), the Moments Review A and B notes on PR #1447, and `packages/core/src/prompts.ts` (`kindFor`: `hardStretch` gives `hard`). No law or outside-world fact is relied on. Each ruling fixes a build default for the PROPOSED Moments tab behind its flag; none changes what a person is promised, scope or dates, so none is founder-only. The spec text is not edited here: the `product` agent writes the erratum lines quoted below (into 7.3b, replacing the "council pending" status of E-4-2, E-4-4 and E-4-5).
+This section is a separate trailing block. Ids continue past the highest per seat on `develop` at the head this branch was cut from (CPO-25, CDO-21), checked by grep in `docs/`; not checked: other open PRs that touch this file. If a number collides at merge, renumber the later one. Each seat is a Claude role (COUNCIL section 1), none is counsel. The council ruled on Q-R25, Q-R24 and Q-X first (CPO-26, CPO-27, CDO-22) and then, in the same batch, on Q-3c, Q-PR8 and Q-9a (CPO-28, CDO-23, CPrivO-16, CPO-29). Evidence: the spec `docs/product/prd/28-moments-tab.md` (PROPOSED; R24, R25, R253, 6.2 S6, section 7.3a), PR #1469 section 7.3b (errata E-4-2, E-4-4, E-4-5), the Moments Review A and B notes on PR #1447, and `packages/core/src/prompts.ts` (`kindFor`: `hardStretch` gives `hard`). No law or outside-world fact is relied on. Each ruling fixes a build default for the PROPOSED Moments tab behind its flag; none changes what a person is promised, scope or dates, so none is founder-only. The spec text is not edited here: the `product` agent writes the erratum lines quoted below (into 7.3b, replacing the "council pending" status of E-4-2, E-4-4 and E-4-5).
 
 ### CPO-26 Q-R25 (E-4-2): in a hard stretch the Moments question takes Home's kind, `hard` (22 Nov 2026, CPO with CDesO, CCO and CPrivO)
 - Question: R25 says `gap` and `hard` can never be chosen as the question kind. R24 and 6.2 S6 say the question uses only the kind Home uses. In a hard stretch Home's kind is `hard` (`kindFor` returns `hard` when `hardStretch` is set). Which reading stands? The code (#1447) passes `hardStretch` on the hard state, matching Home.
@@ -651,6 +651,54 @@ This section is a separate trailing block. Ids continue past the highest per sea
 - Founder-only: no.
 - Signed: Chief Data Officer (Claude role)
 
+### CPO-28 Q-3c: add a pure row 3c for `buildMoments`, so PR 15 is not oversized (22 Nov 2026, CPO with Karma (CTO) and CDO)
+- Question: the 19.4 table has no row for `buildMoments` and `signalForDay` (`plan.ts`; `BuildInput` per `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` section 5.1). Its contract items (every candidate passes the exclude list first, a `placeId` run-time allow-list, the `lookBack` to `look_back` mapping test) would otherwise land in PR 15 (`use-moments`, 350 lines, already about 9 files). Add a row?
+- Seats consulted: Karma (a pure function with golden tests reviews well alone; PR 15 has hooks, kill switches and ACC state and cannot carry it), CDO (the exclude-list rule of CDO-22 needs a home with its planted-day test).
+- Verdict: RULED.
+- Ruling: add a new row `3c` to 19.4. What: `buildMoments` and `signalForDay` in `packages/core/src/moments/plan.ts`, pure, total and deterministic for a seed; the CDO-22 exclude filter first; a run-time allow-list for `placeId` (a place id not in the injected table is dropped, never shown); `pictures.source` validated to S5 or S7; the one mapping function `lookBack` to `look_back` with its both-ways test; the whole-phone calm flag input of CPO-27; goldens on `asha-lib-v1`. Owner `mobile`. Size about 300 changed lines. Depends on 2, 3, 5 and 4a and 4b, so it merges after #1446 and #1447. PR 15 then depends on 3c, 4, 8 and 9 (3c replaces 3 and 2 in its list). It is one new item, so the count of 41 becomes 42.
+- Reason: one concern per PR and a ten-minute review. The function is pure, so it can be built before the store and the native module exist.
+- Spec erratum, exact wording (a new row in 19.4 after row 3b, and an edit to row 15's last column): "3c | `buildMoments`, `signalForDay` (`plan.ts`): exclude list first, `placeId` allow-list, source check, slot-name mapping test, goldens | `mobile` | 300 | about 6 | 2, 3, 5, 4a, 4b" and row 15 "Depends on: 3c, 4, 8, 9". Status: RULED (CPO-28), PROPOSED.
+- Door: two-way. Way back: fold 3c back into PR 15 (and mark it `size:accepted`), or split further.
+- Founder-only: no (a plan row, no scope or date change).
+- Signed: Chief Product Officer (Claude role)
+
+### CDO-23 Q-PR8 (data): what the `moments.json` store holds, where it is erased, how long it lives (22 Nov 2026, CDO with CPrivO, CISO and Karma)
+- Question: PR 8 (`moments.json`, clear, `eraseDeviceFiles`, schema tests, `DATA_CLASSIFICATION.md` 4.6 rows, the ADR 0032 amendment; R221, R250) needs data rulings before a builder starts.
+- Seats consulted: CPrivO (see CPrivO-16 for the label class and the export choice), CISO (store is a file, excluded from backup, no member that can name a picture or an album, R247), Karma (the plain write rule of R221).
+- Verdict: RULED for the build; the export route is FOUNDER (see CPrivO-16).
+- Ruling:
+  1. Contents are exactly the R221 members: a day key (local ISO date, no zone), typed day labels, hidden place keys, the home-place correction, an opaque local owner id, and `v`. No picture, album or asset identifier, no coordinate, no place name the engine computed.
+  2. Retention: kept until the parent removes it in Me, or Turn off Moments, Erase everything or sign-out wipes it (R29, R65, R249). No time limit, because it is the parent's own mark and a timer would silently drop their choice.
+  3. Erase paths: Erase everything and sign-out delete the file through `eraseDeviceFiles`, with a test for each. Deleting a book removes that book's rows (the home-place correction is one value per book) in the same step, with a test. Backup: the file is excluded from backup and the exclusion is read back in a test (the precedent in ADR 0032).
+  4. A book deleted from another device: moments.json is not synced, so the phone may keep rows for a book that no longer exists. Default: on launch, rows whose book is gone are removed, and the owner id check of R221 drops the file for a different account. UNVERIFIED: whether the sync pull on this phone reliably shows a deleted book; PR 8 records it as a named gap with a test on what the code can see, and the founder-visible plain sentence must not claim more than that.
+  5. Rows in `DATA_CLASSIFICATION.md` 4.6 and the ADR 0032 amendment (status stays Proposed) ship in the PR 8 diff, with a deletion test per field, as R250 requires. The device-store row in `docs/legal/data-policy.md` 4.4 is legal text: recommended, not written here (CPrivO-16).
+  6. A higher `v` than the app knows reads as empty and writes nothing; a corrupt file is deleted without a message (R221). No analytics, log or crash report records a label, a key or that a clear happened.
+- Reason: every item is already in R221, R249, R250 and the R29 and R65 wipe rules; this ruling fixes the gaps (retention, book deletion, other-device deletion) with the safe default of deleting on the phone.
+- Door: two-way until PR 8 ships; after it, a retention change is a migration of a small file. Way back: bump `v` and rewrite the file.
+- Founder-only: the export route only.
+- Signed: Chief Data Officer (Claude role)
+
+### CPrivO-16 Q-PR8 (privacy): typed labels are L4 and stay on the phone; export route A is the default, route B is the founder's (22 Nov 2026, CPrivO with CDO, CLO and CCO; not counsel)
+- Question: are typed day and place labels L4 device-only, and are they in "Export everything" (route A: no, said plainly; route B: yes, as a labelled section)?
+- Seats consulted: CDO (the data is small, local, parent-typed, never synced), CLO (the "export everything" promise reads as every entry the parent authored, with audio and photos, per `docs/legal/ENGINEERING_REQUIREMENTS.md` section on export; whether a typed label is within a portability right is UNVERIFIED and is a counsel question), CCO (the same, UNVERIFIED; no new claim may say "all your data" while route A holds).
+- Verdict: RULED for the class; FOUNDER for the export route, with a default.
+- Ruling: typed day labels and typed place labels are L4, device only, never synced, never in a backup, never in analytics, logs or crash reports, as reviewed on #1393 (not re-read in this session). The export route is a promise about what a person gets back, so it is the founder's. Recommendation and default: route A. Until the founder answers, PR 8 builds route A: no export, and the plain sentence of R250 says the labels stay on this phone. Reason: a label is a parent's own typed words about a day, which argues for route B on fairness; but route B adds a new section to the export file, a new test of the export contract and a claim, and a person who loses the phone loses the label either way. Route B is cheap to add later (a section in the ZIP), route A is cheap to start, so the default is the way that is easy to reverse and holds nothing back from a person who asks.
+- Owed: no copy anywhere may say "everything" about the export while route A holds without the labels exception being read by `content` and the CLO seat (UNVERIFIED claim risk).
+- Door: two-way (route B can be added). Way back: add a labelled section to the export ZIP and its test.
+- Founder question: Q-LABELS-EXPORT. Route A (default) or route B. Founder-only: yes.
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPO-29 Q-9a: PR 9a may start its pure TypeScript surface before the G1a-L read-out, with limits (22 Nov 2026, CPO with Karma (CTO) and CISO)
+- Question: the spec gates PR 9 on the G1a-L device read-out; the planner recommends 9a not start before it. May 9a (access status, request, TS surface, `nullSource`, and `fixtureSource`) start now?
+- Seats consulted: Karma (the TS interface and `nullSource` call no native code and are small; a rewrite after the read-out costs a few lines), CISO (the risk is a native read of the library before the unknowns are known, and 9a has none of that), CPO (the header ruling of 21 Nov says the gates are release gates, not gates on starting code; the table's last column for row 9 is the gate for merging the native fetch).
+- Verdict: RULED.
+- Ruling: yes, with limits. 9a may start now and may merge to develop. It holds: the `MomentsSource` interface and access-state types per R220's closed list of functions, `nullSource`, the mapping from the native access status to the app's access states (no prompt, no request wired), and `fixtureSource` only as a test helper outside `src` (a fixture that holds a coordinate stays out of `src`, CPrivO-14). It must not hold: any call to the native module, the columnar fetch, a native module file, a permission string, or anything that reads a library; those are 9b and wait for the G1a-L read-out. The flag stays off and nothing imports 9a on a code path a person reaches. If G1a-L changes a shape (for example whether location is readable under Limited), 9a is revised in the same PR as the change.
+- Reason: no bridge is touched and no data is read, so there is no privacy risk to wait out; waiting would idle the mobile agent for a week.
+- Spec erratum, exact wording (row 9 of 19.4, last column): "9a: none (pure TS, no native call); 9b: G1a-L read-out; G3 and G3-x to merge". Status: RULED (CPO-29), PROPOSED.
+- Door: two-way. Way back: revert 9a; nothing depends on it until 9b and PR 15.
+- Founder-only: no.
+- Signed: Chief Product Officer (Claude role)
+
 ### Hand-back table, batch 4
 
 | Q | Verdict | Next action | Unblocks |
@@ -659,4 +707,9 @@ This section is a separate trailing block. Ids continue past the highest per sea
 | Q-R24 pictures card in hard or quiet | RULED CPO-27 (suppress; door stays; R253 governs) | product erratum R24; #1447 suppression and test; PR 9 whole-phone flag | #1447, PR 9 |
 | Q-X exclude list before `momentsFor` | RULED CDO-22 (build rule, fail closed) | product erratum E-4-4; PR 8 and 9 tests | PR 8, PR 9 |
 
-Founder-only items in this batch: none. A reversal of CPO-27 would change R253 and is the founder's.
+| Q-3c row for `buildMoments` | RULED CPO-28 (new pure row 3c, mobile, about 300 lines, after #1446 and #1447; PR 15 depends on 3c) | product adds row 3c and edits row 15 | PR 15 |
+| Q-PR8 store, erase, retention | RULED CDO-23 (R221 members only; kept until removed; erase, book delete and sign-out wipe; other-device deletion UNVERIFIED, named gap); class RULED CPrivO-16 | builder starts PR 8; DATA_CLASSIFICATION 4.6 rows and ADR 0032 amendment in the diff | PR 8 |
+| Q-LABELS-EXPORT labels in export | FOUNDER, recommend route A (no export, said plainly), default route A | founder picks A or B | none (PR 8 builds A) |
+| Q-9a PR 9a before G1a-L | RULED CPO-29 (yes for pure TS and `nullSource`; no native call; fixtureSource test-only) | product edits row 9 gate | PR 9a |
+
+Founder-only items in this batch: Q-LABELS-EXPORT (route A or B for typed labels in "Export everything"; the `docs/legal/data-policy.md` 4.4 device-store row is legal text and is recommended only). A reversal of CPO-27 would change R253 and is the founder's.
