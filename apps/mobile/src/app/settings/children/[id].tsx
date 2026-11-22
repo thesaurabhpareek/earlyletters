@@ -13,7 +13,7 @@ import { haptic } from '@/lib/haptics';
 import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
 import { familyNotice } from '@/components/family/family-notice';
-import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, childRowTitle, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
+import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, childRowTitle, coParentOf, hereRowShown, hereRowTitle, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -94,6 +94,7 @@ export default function ChildSettings() {
   };
   const born = bornCard(name);
   const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
+  const showHere = hereRowShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
   const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id), pendingInvites });
 
   /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */
@@ -151,6 +152,7 @@ export default function ChildSettings() {
       <ListSection title={s.detailsLabel}>
         <ListRow title={x.edit.nameLabel} trailing={childLabel(name)} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
         <ListRow title={dateRow.title} trailing={dateRow.value} onPress={openDate} accessibilityHint={x.edit.rowHint} />
+        {showHere ? <ListRow title={hereRowTitle(name)} trailing="chevron" onPress={() => setEditing('born')} accessibilityHint={x.edit.rowHint} testID="child.hereRow" /> : null}
         <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>
       {editing === 'name' ? <NameEditor child={child} onSave={save('display_name')} onCancel={() => setEditing(null)} /> : null}

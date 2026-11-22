@@ -9,8 +9,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en, familyCopy } from '@scribe/content';
+import { bornPatch } from '@scribe/core';
 import { addChildBlock, addChildCta, addChildValues, ADD_BUTTON_MAX } from '../src/components/child/add-child-form.logic';
-import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
+import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hereRowShown, hereRowTitle, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
 import { peopleRows } from '../src/components/family/family-tab.logic';
 import { inviteHref } from '../src/lib/family/entry.logic';
 
@@ -100,6 +101,33 @@ describe('[S46] the due-date card: never presumes a birth, can be hidden', () =>
     // "Hide" puts it away; opening the Due date row brings it back.
     expect(screen).toMatch(/const openDate = \(\) => \{[\s\S]*writeHidden\(child\.id, null\)[\s\S]*setEditing\('date'\)/);
     expect(screen).toMatch(/onPress=\{openDate\}/);
+  });
+});
+
+describe('[BL-472] "{child} is here?" while the book is expecting', () => {
+  const base = { birthday: null, dueDate: '2026-12-01', today: TODAY, hiddenFor: null };
+  it('shows before the due date, so a baby born early can say so', () => {
+    expect(bornCardShown(base)).toBe(false);
+    expect(hereRowShown(base)).toBe(true);
+    expect(hereRowTitle('Asha')).toBe('Asha is here?');
+  });
+  it('is absent once there is a birthday or when there is no due date', () => {
+    expect(hereRowShown({ ...base, birthday: '2026-11-01' })).toBe(false);
+    expect(hereRowShown({ ...base, dueDate: null })).toBe(false);
+  });
+  it('leaves the card to lead after the due date, and returns when the card is hidden', () => {
+    const late = { ...base, dueDate: '2026-10-01' };
+    expect(hereRowShown(late)).toBe(false);
+    expect(hereRowShown({ ...late, hiddenFor: '2026-10-01' })).toBe(true);
+  });
+  it('opens the birthday step the card uses, and a birth before the due date turns the book into a born one', () => {
+    const screen = code('app/settings/children/[id].tsx');
+    expect(screen).toMatch(/showHere \? <ListRow[^\n]*onPress=\{\(\) => setEditing\('born'\)\}/);
+    const r = bornPatch({ birthday: null, dueDate: '2026-12-01' }, '2026-10-05', TODAY);
+    expect(r).toEqual({ ok: true, patch: { birthday: '2026-10-05', dueDate: null } });
+  });
+  it('says nothing new about days, and adds no prompt', () => {
+    expect(hereRowTitle('Asha')).not.toMatch(/\d|congrat|born\b/i);
   });
 });
 
