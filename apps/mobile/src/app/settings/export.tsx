@@ -168,7 +168,7 @@ export default function ExportScreen() {
 
   // The waiting line stays in the content, above the pinned button that answers it (S43).
   const emptyNote = empty ? (
-    <Text variant="subhead" className="text-center" testID="export.empty">
+    <Text variant="subhead" testID="export.empty">
       {s.emptyNote}
     </Text>
   ) : null;
