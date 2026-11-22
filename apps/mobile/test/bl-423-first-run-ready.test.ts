@@ -48,7 +48,8 @@ describe('[BL-423] Tonight, empty, shows Speak with no card in front', () => {
 
   it('cards render only from drafts or a month-ago letter, both empty in a new book', () => {
     expect(tonight).toMatch(/cards\.length > 0 \? \([\s\S]*?\) : monthAgo \? \(/);
-    expect(tonight).toContain("resurfaced(room?.entries ?? [], today, cards.length");
+    // Named by shape, not by field: #1541 moved the read from room.entries to room.window.
+    expect(tonight).toMatch(/resurfaced\(room\?\.\w+ \?\? \[\], today, cards\.length/);
   });
 
   it('nothing between the prompt and Speak: no card sits above the actions', () => {
