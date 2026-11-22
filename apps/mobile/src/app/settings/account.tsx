@@ -154,6 +154,7 @@ function AccountSettings() {
     } catch (e) {
       const kind = authErrorKind(e, 'passkey_add');
       say(null, authErrorMessage(kind));
+      void loadPasskeys(); // the passkey may have been added before the error: show the list as it is
     } finally {
       setBusy(false);
     }

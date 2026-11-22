@@ -374,11 +374,18 @@ describe('auth error kinds', () => {
   });
 
   it('gives Add a passkey and Sign out other devices their own failure words, not the sign-in words', () => {
+    expect(authErrorKind({ code: 'bad_jwt' }, 'passkey_add')).toBe('passkey_not_added');
     for (const code of ['bad_jwt', 'provider_disabled']) {
-      expect(authErrorKind({ code }, 'passkey_add')).toBe('passkey_not_added');
       expect(authErrorKind({ code }, 'sign_out_others')).toBe('sign_out_others_failed');
     }
-    expect(authErrorKind({ error: 'NotSupported' }, 'passkey_add')).toBe('passkey_not_added');
+    // A phone that cannot make a passkey, or a project with passkeys off, gets a line that is true (not "try again").
+    for (const error of ['NotSupported', 'BadConfiguration', 'NoCreateOption']) {
+      expect(authErrorKind({ error }, 'passkey_add')).toBe('passkey_unavailable');
+    }
+    for (const code of ['provider_disabled', 'email_provider_disabled', 'signup_disabled', 'anonymous_provider_disabled']) {
+      expect(authErrorKind({ code }, 'passkey_add')).toBe('passkey_unavailable');
+    }
+    expect(authErrorKind({ error: 'NotSupported' }, 'passkey')).toBe('not_available');
     expect(authErrorKind({ message: 'boom' }, 'passkey_add')).toBe('passkey_not_added');
     expect(authErrorKind({ message: 'boom' }, 'sign_out_others')).toBe('sign_out_others_failed');
     // Sign-in with a passkey keeps the sign-in words, and cancels stay silent.
@@ -390,10 +397,11 @@ describe('auth error kinds', () => {
   });
 
   it('says nothing about email, links or signing in on the lines an Account action can show', () => {
-    for (const kind of ['passkey_expired', 'passkey_not_added', 'sign_out_others_failed'] as const) {
+    for (const kind of ['passkey_expired', 'passkey_not_added', 'passkey_unavailable', 'sign_out_others_failed'] as const) {
       const line = authErrorMessage(kind) ?? '';
       expect(line.length, kind).toBeGreaterThan(0);
-      expect(line, kind).not.toMatch(/\b(email|link|sign-in|sign in|another way)\b/i);
+      // passkey_not_added may point to another way to sign in (it is a passkey, so that is the other way); none names email or a link.
+      expect(line, kind).not.toMatch(kind === 'passkey_not_added' ? /\b(email|link)\b/i : /\b(email|link|sign-in|sign in|another way)\b/i);
       expect(line, kind).not.toBe(authErrorMessage('expired'));
     }
   });

@@ -28,10 +28,12 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
   const kind = baseKind(e, context);
   // A signed-in action has no "sign-in" to try again or another way to try: the provider and not-available lines are about
   // signing in, so these two contexts get their own (a cancel stays silent, a network or rate limit keeps its own words).
-  if (kind === 'provider' || kind === 'not_available') {
-    if (context === 'passkey_add') return 'passkey_not_added';
-    if (context === 'sign_out_others') return 'sign_out_others_failed';
+  if (context === 'passkey_add') {
+    // No support, no setup or passkeys switched off: trying again will not help, so it gets its own true line.
+    if (kind === 'not_available') return 'passkey_unavailable';
+    if (kind === 'provider') return 'passkey_not_added';
   }
+  if (context === 'sign_out_others' && (kind === 'provider' || kind === 'not_available')) return 'sign_out_others_failed';
   return kind;
 }
 

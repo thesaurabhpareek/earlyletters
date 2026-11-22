@@ -271,10 +271,12 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // session_expired follows a sign-out the person did not ask for, and consent_unavailable can follow a successful sign-in,
     // so "Nothing has changed." would not be true of either: each says what happened instead.
     const SAYS_WHAT_HAPPENED: Record<string, string> = { session_expired: 'You were signed out.', consent_unavailable: 'Setting up your account did not finish.' };
-    const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused', 'passkey_not_added', 'sign_out_others_failed']; // the last two: BL-452, Account's own failures
+    const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
     const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
-    const INPUT = ['wrong_code', 'expired', 'invalid_email', 'passkey_expired']; // passkey_expired (BL-452): fixed by trying the passkey again
+    // BL-452 (placeholder words, locked under delegation): passkey_expired is fixed by trying the passkey again; the other three
+    // say what did not happen without "Nothing has changed.", which the app cannot know for a passkey or another device.
+    const INPUT = ['wrong_code', 'expired', 'invalid_email', 'passkey_expired', 'passkey_not_added', 'passkey_unavailable', 'sign_out_others_failed'];
     const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in', 'region_refused'];
     const errors = authCopy.errors as Record<string, string>;
     expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
