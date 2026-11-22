@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
+import { MOMENTS_TAB_ON, visibleTabIds } from '../src/lib/nav/moments-tab';
 import { isAlphaBuild } from '../src/lib/billing/alpha';
 import { resolveAppEnv } from '../src/lib/build-env';
 import { parseServerFeatures } from '../src/lib/capabilities';
@@ -38,7 +39,9 @@ function bar(): string[] {
   const layout = read('src/app/(tabs)/_layout.tsx')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
-  return [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) => m[1]);
+  const declared = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) => m[1]);
+  // Moments (PRD 28) is declared second and hidden from the bar unless EXPO_PUBLIC_MOMENTS_TAB is on; no eas.json profile sets it.
+  return declared.filter((n) => (visibleTabIds(MOMENTS_TAB_ON) as readonly string[]).includes(n));
 }
 
 describe('[11 Nov] three tabs in every build, Family is never one', () => {
@@ -46,6 +49,7 @@ describe('[11 Nov] three tabs in every build, Family is never one', () => {
 
   it('the bar is index, book, you, and the labels are Home, Book, Me', () => {
     expect(bar()).toEqual(['index', 'book', 'you']);
+    for (const [name, p] of Object.entries(eas.build)) expect(p.env?.EXPO_PUBLIC_MOMENTS_TAB, `${name} leaves the Moments tab off`).toBeUndefined();
     expect([en.tabs.tonight, en.tabs.book, en.tabs.you]).toEqual(['Home', 'Book', 'Me']);
   });
 

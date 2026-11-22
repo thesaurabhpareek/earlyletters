@@ -33,6 +33,8 @@ export interface AskFacts {
   firstLetter: boolean;
   /** Times the reminder prime has been shown, from any source. */
   primesShown: number;
+  /** The person once said Yes to the reminder prime (BL-1430): never primed again, even if reminders were turned off later. */
+  primeAnsweredYes: boolean;
   /** Reminders already on (the person turned them on in Settings): nothing to prime. */
   remindersOn: boolean;
   /** Build 2 and signed out: the account sheet can be offered at all. */
@@ -83,7 +85,8 @@ export function nextAsk(f: AskFacts): NextAsk {
     if (f.lettersSaved >= 2 || laterSession) return 'keep_book';
   }
   // 3. The second and last prime, once, after the first month chapter (cap of 2; the first has its own slot above).
-  if (!f.firstLetter && f.firstMonthDone && f.primesShown === 1 && primeAllowed(f.primesShown) && !f.remindersOn) return 'reminder_prime';
+  //    Never for a person who ever said Yes, even if they turned reminders off since (BL-1430). Row 4c is the No path only.
+  if (!f.firstLetter && f.firstMonthDone && f.primesShown === 1 && primeAllowed(f.primesShown) && !f.remindersOn && !f.primeAnsweredYes) return 'reminder_prime';
   // 4. Keep the book, once more: offered before, still signed out (so Later), from the third letter on, never twice (F02 6.1, BL-519).
   if (f.signInOffered && f.keepBookOffered && !f.keepBookReoffered && !f.firstLetter && f.lettersSaved >= 3) return 'keep_book';
   return null;
