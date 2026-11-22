@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -257,6 +258,8 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
           overflow: 'hidden',
           ...(scheme === 'dark' ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line } : null),
         }}>
+        {/* A visible way out in the header (ruling E3): the shared Close, back to the letter with nothing changed. */}
+        {onDismiss ? <ModalHeader onClose={onDismiss} /> : null}
         <ScrollView ref={scroll} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
           {layout.scroll.map((b) => part[b])}
         </ScrollView>
