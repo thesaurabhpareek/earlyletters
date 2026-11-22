@@ -18,6 +18,8 @@ const os = vi.hoisted(() => ({
   presented: new Map<string, { identifier: string; content: { data?: unknown } }>(),
 }));
 
+vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
+vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
@@ -141,7 +143,7 @@ describe('[NS-13-R14] one hook on the user id ends reminders on every path a ses
     // Only once the Keychain has answered (not while restoring), so a launch never mistakes "not read yet" for "signed out".
     expect(provider).toMatch(/const authSettled = state\.status !== 'restoring';/);
     expect(provider).toMatch(
-      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*\}, \[sessionUser, authSettled\]\);/,
+      /useEffect\(\(\) => \{\s*if \(!authSettled\) return;\s*const before = lastSessionUser\.current;\s*lastSessionUser\.current = sessionUser;\s*void settleReminderSession\(before, sessionUser\);\s*if \(before && before !== sessionUser\) \{\s*endBackupFileFor\(before\);\s*void removeBackupTokensFor\(before\);\s*\}\s*const sweep = backupSweepFor\(sessionUser, before, storedRead\.current\);\s*if \(sweep\.run\) \{\s*deleteBackupFilesExcept\(sweep\.keep\);\s*void settleBackupTokens\(sweep\.keep\);\s*\}\s*}, \[sessionUser, authSettled\]\);/,
     );
     expect(provider.match(/settleReminderSession\(/g)).toHaveLength(1);
     expect(provider).not.toMatch(/endReminderSession\(/);
@@ -197,6 +199,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
       'reminders.days',
       'reminders.enabled',
       'reminders.monthNotes',
+      'reminders.onSince',
       'reminders.paused',
       'reminders.session',
       'reminders.time',

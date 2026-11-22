@@ -9,10 +9,32 @@
  * needs `announce()`; StateScreen's live region is Android-only). Cannot be checked on a device from here.
  */
 import { useRef, type ReactNode } from 'react';
+import { router } from 'expo-router';
 import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { copy as appCopy } from '@/lib/copy';
+import { capabilities } from '@/lib/capabilities';
+import { heldScreenModel } from '@/lib/first-run/held-screen.logic';
 import { StateScreen } from '@/components/ui/state-screen';
 import { authCopy } from '@/lib/auth/copy';
+import { RevocationWaitLine } from '@/lib/auth/revocation-wait-line';
+import { useAuth } from '@/lib/auth/session-provider';
 import { useArrival } from '@/lib/first-run/use-arrival';
+
+/**
+ * R12: the sign-in method (never the address) as its OWN line above the screen, in the header slot, so VoiceOver reads it
+ * first and as its own element (C-S10 wrong-account; F-05). Shown on No book here yet only, until design adds more screens.
+ */
+function MethodLead({ method }: { method: string | null }) {
+  if (!method) return null;
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, alignItems: 'center' }}>
+      <Text variant="footnote" tone="muted" style={{ textAlign: 'center' }} testID="newPhone.method">
+        {method}
+      </Text>
+    </View>
+  );
+}
 
 function Arrives({ title, screen, children }: { title: string; screen: string; children: ReactNode }) {
   const block = useRef<View>(null);
@@ -31,9 +53,12 @@ function Arrives({ title, screen, children }: { title: string; screen: string; c
  */
 export function OpeningBookScreen({ lettersComing }: { lettersComing: boolean }) {
   const t = authCopy.newPhone;
+  // BL-1461: a revoked Apple sign-in noticed at launch waits for unsent letters; after a short delay the line says why.
+  const { state } = useAuth();
   return (
     <Arrives title={t.loading} screen="opening">
       <StateScreen kind="loading" title={t.loading} body={lettersComing ? t.loadingBody : undefined} />
+      <RevocationWaitLine state={state} />
     </Arrives>
   );
 }
@@ -69,7 +94,7 @@ export function OfflineBookScreen({ onTryAgain, onTryAnother }: { onTryAgain: ()
 }
 
 /** "No book here yet" for a returning account with no book (or an unreadable answer), the same words as the consent sheet's. */
-export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: () => void; onTryAnother: () => void }) {
+export function NoBookHereScreen({ onStartBook, onTryAnother, method = null }: { onStartBook: () => void; onTryAnother: () => void; method?: string | null }) {
   const n = authCopy.consent.noBook;
   return (
     <Arrives title={n.title} screen="noBookHere">
@@ -77,8 +102,36 @@ export function NoBookHereScreen({ onStartBook, onTryAnother }: { onStartBook: (
         kind="empty"
         title={n.title}
         body={n.body}
+        header={<MethodLead method={method} />}
         primary={{ label: n.startBook, onPress: onStartBook, testID: 'newPhone.startBook' }}
         quiet={[{ label: n.tryAnother, onPress: onTryAnother, testID: 'newPhone.tryAnother' }]}
+      />
+    </Arrives>
+  );
+}
+
+/**
+ * Consent still to give, no book on this phone (BL-922a, NS-10-R0): one held screen with a way forward, never the child
+ * step. Finish setting up opens the consent sheet, as Settings > Account does. Try another way signs out. Delete account and
+ * the export are quiet and never ask for Terms (R4a, R4b). Decided from auth state alone: no network, no wait. The title
+ * reuses state A's heading; the body and the export line are PROPOSED keys (auth.newPhone.consentBody and .nothingToCopy).
+ */
+export function HeldScreen({ onTryAnother }: { onTryAnother: () => void }) {
+  const t = authCopy.newPhone;
+  const m = heldScreenModel({ accountDeletion: capabilities.accountDeletion, hasLocalBook: false });
+  const quiet = [
+    { label: authCopy.consent.noBook.tryAnother, onPress: onTryAnother, testID: 'held.tryAnother' },
+    ...(m.deleteAccount ? [{ label: appCopy.settingsHome.deleteAccountLabel, onPress: () => router.push(m.deleteAccount!.route), testID: 'held.deleteAccount' }] : []),
+    { label: appCopy.settingsHome.exportLabel, onPress: () => router.push(m.exportCopy.route), testID: 'held.export' },
+  ];
+  return (
+    <Arrives title={t.loading} screen="finishSetup">
+      <StateScreen
+        kind="empty"
+        title={t.loading}
+        body={m.exportCopy.nothingToCopy ? `${t.consentBody} ${t.nothingToCopy}` : t.consentBody}
+        primary={{ label: authCopy.account.finishSetup, onPress: () => router.push(m.finishSetup.route), testID: 'held.finishSetup' }}
+        quiet={quiet}
       />
     </Arrives>
   );

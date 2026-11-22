@@ -161,8 +161,8 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
       expect(screen).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{\s*arrivalTimer\.current = null;\s*arrivalGate\.finish\(\);/);
     });
 
-    it('reads the letters once at mount: the effect rereads only for another book, then on every store change', () => {
-      expect(screen).toMatch(/if \(read\.childId !== active\.id\) reread\(\);\s*return subscribe\(reread\);/);
+    it('follows the store through watchBook: subscribe, then one catch-up read, then a reread on every change (BL-1428)', () => {
+      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listEntriesForChild, subscribe, set: setRead \}\);/);
       expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });

@@ -37,4 +37,12 @@ export const licences = {
   licenceUnknown: 'License not stated',
   /** For an entry published without a license text (none today; the generator flags it for review). */
   noText: 'No license text was published with this one.',
+  // PROPOSED (spec 08, L2, 21 Nov 2026; words read by nobody yet). ST-INLINE with the common Try again button.
+  loadFailed: 'The list of licenses did not open.',
+  // A still line in the list area, only if the first read takes longer than a moment. Never a spinner alone.
+  loading: 'The list is on its way.',
+  // VoiceOver for a row, so the open or closed state is spoken in words. {label} is the package name then its license
+  // name, the authors' own words ("React Native, MIT License"), joined by the app.
+  rowCollapsedA11y: '{label}, collapsed',
+  rowExpandedA11y: '{label}, expanded',
 } as const;
