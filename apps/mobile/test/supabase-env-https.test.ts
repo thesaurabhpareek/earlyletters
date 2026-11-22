@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseSupabaseEnv } from '../src/lib/supabase/env';
 import { MOCK_SUPABASE_URL } from '../e2e-web/support/mock-server';
+import { BUILDS, buildEnv } from '../e2e-web/support/builds';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -41,9 +42,12 @@ describe('[BL-600] the server-on web e2e build keeps its Supabase client', () =>
   it('[BL-600] the mocked server URL parses in a preview build (http would give null and silently drop every server-on flow)', () => {
     expect(parseSupabaseEnv(MOCK_SUPABASE_URL, 'e2e-web-publishable-key', 'preview')).not.toBeNull();
   });
-  it('[BL-600] global-setup builds server-on as preview and hands it that URL', () => {
+  it('[BL-600] the server-on build is made as preview and handed that URL (builds.ts; global-setup passes the env through)', () => {
+    const on = BUILDS.find((x) => x.name === 'server-on')!;
+    const env = buildEnv(on.env);
+    expect(env.EXPO_PUBLIC_APP_ENV).toBe('preview');
+    expect(env.EXPO_PUBLIC_SUPABASE_URL).toBe(MOCK_SUPABASE_URL);
     const src = fs.readFileSync(path.join(__dirname, '../e2e-web/support/global-setup.ts'), 'utf8');
-    expect(src).toContain("EXPO_PUBLIC_APP_ENV: 'preview'");
-    expect(src).toContain('EXPO_PUBLIC_SUPABASE_URL: MOCK_SUPABASE_URL');
+    expect(src).toMatch(/\.\.\.buildEnv\(b\.env\)/);
   });
 });
