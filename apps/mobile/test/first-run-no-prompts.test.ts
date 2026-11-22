@@ -45,6 +45,10 @@ const read = (f: string) => strip(readFileSync(f, 'utf8'));
  * Type-only references are erased by the compiler and load nothing: `import type ... from '...'` and a type written
  * `typeof import('...')`. The walk drops them so it follows only what the bundle can evaluate. A runtime `import` or
  * `from` is still followed.
+ *
+ * Not followed: a non-literal import, `import(x)` or a `${}` template, because there is no path to read; the device run
+ * covers those. Also not followed: `typeof import('x')` after `:` in an object value or a ternary, which cannot be told
+ * from a type annotation without a parser (BL-1610, BL-1612).
  */
 export const withoutTypeOnly = (src: string) =>
   src
@@ -53,9 +57,10 @@ export const withoutTypeOnly = (src: string) =>
     // After `:` or `as` it is a type. In a value position (`const m = typeof import('x')`) it still names a real module.
     .replace(/(?<=(?::|\bas)\s*)typeof\s+import\s*\(\s*['"][^'"]+['"]\s*\)/g, 'unknown')
     // Anchored on the `from '...'` clause, so a missing `;` cannot run on into the next statement.
-    .replace(/^[ \t]*(?:import|export)\s+type\b[^'"]*?\bfrom\s*['"][^'"\n]+['"][ \t]*;?/gm, '');
+    // The text before `from` may span lines only inside `{ }`, so `export type A = 1` cannot run on into the next import.
+    .replace(/^[ \t]*(?:import|export)\s+type\b(?:[^'"\n{}]|\{[^{}'"]*\})*?\bfrom\s*['"][^'"\n]+['"][ \t]*;?/gm, '');
 
-/** Every local file the entry reaches through `@/` or relative import, dynamic import or bare require(), itself included. */
+/** Not followed: `import(x)` and `${}` template specifiers (see `withoutTypeOnly`). Every local file the entry reaches through `@/` or relative import, dynamic import or bare require(), itself included. */
 export function importGraph(entry: string, { requires = true }: { requires?: boolean } = {}): string[] {
   const seen = new Set<string>();
   const stack = [entry];
@@ -133,8 +138,9 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
   };
   const ASKS = "import * as N from 'expo-notifications';\nexport const ask = () => N.requestPermissionsAsync();\n";
 
-  // BL-1478 gap 1: require('./x') with a string literal.
-  it('[BL-1478] gap 1: a hidden asking module behind require("./x") is reached', () => {
+  // BL-1478 gap 1: require('./x') with a string literal. A regression guard, not a failing-first test: develop already
+  // followed a bare require('./x'), so it passes on the old walk too (BL-1613). The failing-first tests are gaps 2 and 3.
+  it('[BL-1613] regression guard (gap 1): a hidden asking module behind require("./x") is reached', () => {
     const got = reach({ 'entry.ts': "export const a = () => require('./hidden');\n", 'hidden.ts': ASKS });
     expect(got).toContain('hidden.ts');
   });
@@ -156,6 +162,41 @@ describe('[NS-39-R2] no permission prompt in first run', () => {
     expect(reach({ ...files, 'entry.ts': "import type { A } from './a'\nimport { ask } from './hidden'\nexport const x = ask;\n" })).toEqual(['entry.ts', 'hidden.ts']);
     expect(reach({ ...files, 'entry.ts': "import type {\n  A,\n} from './a'\nexport * from './hidden'\n" })).toEqual(['entry.ts', 'hidden.ts']);
     expect(reach({ ...files, 'entry.ts': "export type { A } from './a'\nexport { ask } from './hidden'\n" })).toEqual(['entry.ts', 'hidden.ts']);
+  });
+
+  // BL-1611: `export type A = 1` with no semicolon, then a runtime import on the next line. The type-import regex must
+  // not cross a newline outside braces, or the alias line swallows the import.
+  it('[BL-1611] a type alias with no semicolon does not hide the runtime import on the next line', () => {
+    const hidden = { 'hidden.ts': ASKS };
+    expect(reach({ ...hidden, 'entry.ts': "export type A = 1\nimport { ask } from './hidden'\nexport const x = ask;\n" })).toEqual(['entry.ts', 'hidden.ts']);
+    expect(reach({ ...hidden, 'entry.ts': "export type Asha = 'Asha B'\nexport * from './hidden'\n" })).toEqual(['entry.ts', 'hidden.ts']);
+    expect(withoutTypeOnly("export type A = 1\nimport { ask } from './hidden'")).toMatch(/from '\.\/hidden'/);
+  });
+
+  // BL-1610: a non-literal import is NOT followed. A computed `import(x)` and a `${}` template have no path to read, so
+  // the walk cannot reach what they load. They are covered only by the device run (D13), not by this scan.
+  it('[BL-1610] import(x) and a ${} template are not followed (named limit, covered by the device run only)', () => {
+    const hidden = { 'hidden.ts': ASKS };
+    expect(reach({ ...hidden, 'entry.ts': "const x = './hidden';\nexport const l = () => import(x);\n" })).toEqual(['entry.ts']);
+    expect(reach({ ...hidden, 'entry.ts': 'const n = "hidden";\nexport const l = () => import(`./${n}`);\n' })).toEqual(['entry.ts']);
+    expect(reach({ ...hidden, 'entry.ts': 'const n = "hidden";\nexport const l = () => require(`./${n}`);\n' })).toEqual(['entry.ts']);
+  });
+
+  // BL-1612: the walk reads a `typeof import(...)` after `:` as a type. An object-literal value and the false arm of a
+  // ternary also sit after `:`, so they are dropped too. A named limit, not a fix: a type annotation and these two cannot
+  // be told apart without a parser. Asserted so a change either way is a decision, not an accident.
+  it('[BL-1612] known limit: typeof import() after ":" in an object value or a ternary is read as a type and not followed', () => {
+    const hidden = { 'hidden.ts': ASKS };
+    expect(reach({ ...hidden, 'entry.ts': "export const o = { m: typeof import('./hidden') };\n" })).toEqual(['entry.ts']);
+    expect(reach({ ...hidden, 'entry.ts': "export const t = c ? 1 : typeof import('./hidden');\n" })).toEqual(['entry.ts']);
+  });
+
+  // The two comments above and the guard name are load-bearing (BL-1610, BL-1613): this fails if one is renamed away.
+  it('[BL-1613] the require guard keeps its name and the walk doc comment still names what it does not follow', () => {
+    const self = readFileSync(__filename, 'utf8');
+    // Patterns are written so this test's own text cannot satisfy them.
+    expect(self).toMatch(/it\('\[BL-1613\] regression guard \(gap 1\):/);
+    expect(self).toMatch(/\* Not followed: a non-literal import, `import\(x\)` or a `\$\{\}` template[\s\S]*?\*\/\s*export const withoutTypeOnly/);
   });
 
   // The rest of the ways a module can be pulled in. Each hides an asking module one hop away; the walk must reach it.
