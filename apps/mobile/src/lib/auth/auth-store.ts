@@ -23,6 +23,7 @@
 import { needsAccountClaim } from './account-claim.logic';
 import { bindNoticeOwner, familyNotice, joinedArrival } from '@/components/family/family-notice';
 import { bookHandoff } from '@/components/book/book.logic';
+import { clearPendingSignInMemory } from './pending-memory';
 import { joinWait } from '@/components/family/join-wait.logic';
 import { authUserId, canSync, initialAuthState, type AuthState, type PendingUploads } from './machine.logic';
 
@@ -130,6 +131,9 @@ export function publishAuth(next: AuthState): void {
     joinedArrival.clear();
     bookHandoff.take(); // a deleted letter's text held for the Book (book.logic.ts)
   }
+  // Cross-account audit F3: the typed address and a sign-in link hash end with the session or the account that held
+  // them. A sign-in in progress (nobody signed in yet, `was` null) keeps them.
+  if (was && authUserId(next) !== was) clearPendingSignInMemory();
   listeners.forEach((l) => l(next));
   announce();
 }
