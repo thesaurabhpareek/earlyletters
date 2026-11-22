@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * PR 10, real order (Review A on #1561): the real auth store, the real owner bind (local-claim.ts) and the real moments
+ * BL-1541, real order (Review A on #1561): the real auth store, the real owner bind (local-claim.ts) and the real moments
  * store on the phone-shaped disk. A restored session whose account owns the file keeps it; another account signing in
  * over it loses it after the bind; a signed-out phone keeps a local file. Fictional family Asha only.
  */
@@ -38,7 +38,7 @@ beforeEach(() => {
   auth.setClaimReaders({ owner: () => null, hasLocalData: () => false });
 });
 
-describe('[PR10] the launch cleanup runs after the owner is bound (real auth store, real bind, real store)', () => {
+describe('[BL-1541] the launch cleanup runs after the owner is bound (real auth store, real bind, real store)', () => {
   it('a restored session whose account owns the file keeps the file', async () => {
     seed(ownerKey(ASHA));
     const off = bindDeviceOnlyOwners();

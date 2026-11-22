@@ -273,9 +273,27 @@ describe('[CDO-23] launch cleanup removes rows for a book the phone no longer li
     await fresh().cleanupAtLaunch(null);
     expect(onDisk().homePlace).toEqual({ [BOOK]: 'ext:place-2' });
   });
+
+  it('[BL-1541] a foreign file that will not go makes the cleanup reject with the typed code, and the file stays for the next launch', async () => {
+    seed(JSON.stringify(file(B)));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    const s = fresh(A);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toThrow(MomentsStoreError);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toMatchObject({ code: 'moments_file_not_removed' });
+    expect(names()).toContain(MOMENTS_FILE); // positive control: it is still there
+    h.disk.undeletable.clear();
+    await fresh(A).cleanupAtLaunch([BOOK]); // the next launch removes it
+    expect(names()).toEqual([]);
+  });
+
+  it('[BL-1541] a kept local file that cannot be removed is not an error: it is left alone', async () => {
+    seed(JSON.stringify(file('local')));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    await expect(fresh(A).cleanupAtLaunch([BOOK])).resolves.toBeUndefined();
+  });
 });
 
-describe('[PR10] Turn off wipes the file (R246 item 2)', () => {
+describe('[BL-1541] Turn off wipes the file (R246 item 2)', () => {
   it('turnOffMoments deletes the file, a local one too, and temp, and says true', () => {
     for (const o of [A, 'local']) {
       seed(JSON.stringify(file(o)));

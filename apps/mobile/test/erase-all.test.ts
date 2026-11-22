@@ -519,6 +519,22 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(next.moments.momentsStore.load()).toEqual({ state: 'empty' });
   });
 
+  it('[CDO-23] a moments.v1.json that will not go leaves Erase everything incomplete with the mark kept, and the next launch finishes it', async () => {
+    h.exclusionSticks = true;
+    const { app } = await filled();
+    expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+    const key = [...h.disk.files.keys()].find((u) => u.endsWith('/moments.v1.json'))!;
+    expect(key).toBeDefined(); // positive control: the file is there
+    h.disk.undeletable.add(key);
+    expect(await app.all.eraseEverything()).toBe('incomplete');
+    expect(h.disk.files.has(key)).toBe(true);
+    expect(app.store.eraseEverythingPending()).toBe(true);
+    h.disk.undeletable.clear();
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(h.disk.files.has(key)).toBe(false);
+  });
+
   it('[DATA-REQ-024] a whole-book PDF left in Caches/Print by a kill during an export render is removed by Erase everything (Review A on #520 at 79bc4456, note 3)', async () => {
     const { app, printPdf } = await filled();
     const other = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00E.pdf`, 3_000); // a second one: the whole folder goes

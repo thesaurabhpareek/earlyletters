@@ -1,5 +1,5 @@
 /**
- * PRD 28 PR 10 (BL-1541): the moments launch cleanup is wired at boot, flag off is no call, and Turn off wipes the file.
+ * NS-53 PR 8 follow-up (BL-1541) (BL-1541): the moments launch cleanup is wired at boot, flag off is no call, and Turn off wipes the file.
  * The store rules (a local file kept, another owner's deleted) are in moments-store.test.ts; here is the timing.
  */
 import { readFileSync } from 'node:fs';
@@ -24,7 +24,7 @@ function rig(over: { user?: string | null; signedOut?: boolean; on?: boolean; bo
   return { st, cleanup, stop, subs, ins, fire: () => [...subs, ...ins].forEach((l) => l()) };
 }
 
-describe('[PR10] the launch cleanup runs once the owner is settled', () => {
+describe('[BL-1541] the launch cleanup runs once the owner is settled', () => {
   it('flag off: nothing is called, read or subscribed', () => {
     const r = rig({ on: false, signedOut: true, user: 'u' });
     expect(r.cleanup).not.toHaveBeenCalled();
@@ -53,21 +53,37 @@ describe('[PR10] the launch cleanup runs once the owner is settled', () => {
     expect(r.cleanup).toHaveBeenCalledTimes(1);
   });
 
-  it('an unreadable book list passes null; a cleanup that rejects never throws', async () => {
+  it('an unreadable book list passes null', () => {
     const r = rig({ signedOut: true, books: () => { throw new Error('x'); } });
     expect(r.cleanup).toHaveBeenCalledWith(null);
-    const bad = startMomentsLaunchCleanup({ on: true, auth: { userId: () => 'a', settledSignedOut: () => false, subscribe: () => () => {}, onSignedIn: () => () => {} }, cleanup: () => Promise.reject(new Error('x')), liveBooks: () => [] });
-    await Promise.resolve();
-    bad();
+  });
+
+  it('a cleanup that rejects never throws, and its error code (only) goes to failed()', async () => {
+    const failed = vi.fn();
+    const auth: LaunchAuthPort = { userId: () => 'a', settledSignedOut: () => false, subscribe: () => () => {}, onSignedIn: () => () => {} };
+    let stop: () => void = () => {};
+    expect(() => {
+      stop = startMomentsLaunchCleanup({ on: true, auth, cleanup: () => Promise.reject(Object.assign(new Error('path /secret'), { code: 'moments_file_not_removed' })), failed, liveBooks: () => [] });
+    }).not.toThrow();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(failed).toHaveBeenCalledTimes(1);
+    expect(failed).toHaveBeenCalledWith('moments_file_not_removed'); // the code, never the message
+    stop();
+    const noHook = startMomentsLaunchCleanup({ on: true, auth, cleanup: () => Promise.reject(new Error('x')), liveBooks: () => [] });
+    await new Promise((r) => setTimeout(r, 0)); // no failed(): still no unhandled rejection (vitest fails the run on one)
+    noHook();
   });
 });
 
-describe('[PR10] boot wiring (source)', () => {
+describe('[BL-1541] boot wiring (source)', () => {
   it('startServices calls it through safely, and the wiring is gated by the flag', () => {
     expect(src('app/_layout.tsx')).toMatch(/safely\(startMomentsCleanup\)/);
     const w = src('lib/moments/launch.ts');
     expect(w).toMatch(/on: boolean = MOMENTS_TAB_ON/);
     expect(src('lib/moments/launch.logic.ts')).toMatch(/if \(!d\.on\) return/);
+  });
+  it('the boot wiring reports a failed cleanup by code', () => {
+    expect(src('lib/moments/launch.ts')).toMatch(/failed: report/);
   });
   it('the pure part imports nothing', () => {
     expect(src('lib/moments/launch.logic.ts')).not.toMatch(/^import /m);

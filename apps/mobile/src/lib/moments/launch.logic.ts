@@ -1,5 +1,5 @@
 /**
- * Launch cleanup of the device-only moments file (PRD 28 PR 10, BL-1541; CPO-30, CDO-23, CDO-24). Pure: every reader is
+ * Launch cleanup of the device-only moments file (NS-53 PR 8 follow-up, BL-1541; CPO-30, CDO-23, CDO-24). Pure: every reader is
  * passed in, so nothing here imports React Native, the store or the auth module. The flag off means no call at all.
  *
  * The cleanup runs ONCE per process, and only when the owner is bound. ORDER (auth-store.ts): `publishAuth` calls the
@@ -22,7 +22,7 @@ export interface LaunchDeps {
   on: boolean;
   auth: LaunchAuthPort;
   cleanup(liveBooks: readonly string[] | null): Promise<void>;
-  /** Called with the error code when the cleanup could not remove a file it had to. No data. Nothing in this PR sets it. */
+  /** Called with the error code when the cleanup could not remove a file it had to. No data. launch.ts holds the code in memory; nothing is logged or sent. */
   failed?(code: string): void;
   /** The books this phone lists, or null when the list cannot be read (books are then left alone). */
   liveBooks(): readonly string[] | null;
