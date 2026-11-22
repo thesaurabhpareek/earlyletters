@@ -179,7 +179,7 @@ export const authCopy = {
   claim: {
     title: 'Keep your letters in this account?',
     body: 'Your letters on this phone will be kept in the account {email}.',
-    noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
+    noEmail: 'Your letters on this phone will be kept in the account you signed in to.',
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
     // BL-488: 'Keep them here' read as this phone; the choice is this account. Names it, 20 characters (a button may have 22).
     keep: 'Keep in this account',
@@ -212,7 +212,7 @@ export const authCopy = {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: 'Nothing has changed. Sign in once you are back online.',
+    network: "Nothing has changed. Sign in once you're back online.",
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
@@ -220,7 +220,7 @@ export const authCopy = {
     // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
     // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
     // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
-    email_wait: "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    email_wait: "Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",
     rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",

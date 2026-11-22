@@ -174,9 +174,9 @@ export type SavedKind = 'book' | 'private' | 'voice';
 /**
  * The saved moment's chip and line (S21, MOTION 5e). In the book: the chip names the real month ("Kept in Month 7",
  * "Kept in the first weeks", "Kept in Before You") and the line says "Added to Asha's book." with a check. Kept
- * private: the chip "Kept just for you." with the lock, no line. A recording kept before its words: the lock chip
+ * private: the chip "Kept private." with the lock, no line. A recording kept before its words: the lock chip
  * "Recording kept on this phone." (true at this moment: a backup upload, when backup is on, comes after the save),
- * or, when its words are on their way, "Your voice is kept. The words will follow."
+ * or, when its words are on their way, "Recording kept. The words will follow."
  */
 export function savedMoment(input: { kind: SavedKind; childName: string; month: number | null; keptForWords?: boolean }): {
   chip: string;

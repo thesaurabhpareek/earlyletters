@@ -120,12 +120,12 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await app.getByLabel('Email', { exact: true }).fill(EMAIL);
   await expect(app.getByText("That email doesn't look quite right.")).toHaveCount(0);
   await btn(app, 'Send link').click();
-  await expect(app.getByText(`${SAFE} Sign in once you are back online.`)).toBeVisible();
+  await expect(app.getByText(`${SAFE} Sign in once you're back online.`)).toBeVisible();
   await step('unhappy', 'Offline', 'The line says nothing has changed before anything else, then what to do (VOICE, the Error row).');
 
   m.auth('otp', () => ({ status: 429, body: { code: 'over_email_send_rate_limit', error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' } }));
   await btn(app, 'Send link').click();
-  await expect(app.getByText("Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.")).toBeVisible();
+  await expect(app.getByText("Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.")).toBeVisible();
   await step('unhappy', 'Too many emails', 'Nothing has changed first, then the cause and a way forward, in the person\'s words, not the system\'s. It names no length the app cannot know and no provider the build may not offer (SIGN-01).');
 
   m.auth('otp', () => null);

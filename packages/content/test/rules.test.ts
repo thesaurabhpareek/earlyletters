@@ -1363,3 +1363,19 @@ describe('claims that must be true of what the first build does', () => {
     expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
   });
 });
+
+describe('push and saved-moment wording (wave 2)', () => {
+  it('"plenty" is not the closing word of every push: at most three of the evening and gentle-return lines use it', () => {
+    const lines = [...en.notifications.evening.map((v) => v.body), en.notifications.gentleReturn.body];
+    expect(lines.length).toBe(9);
+    expect(lines.filter((b) => /\bplenty\b/i.test(b)).length).toBeLessThanOrEqual(3);
+  });
+
+  it('the Tonight saved card has no title: a private letter reaches it too, so "the book" would be false for it', () => {
+    expect(Object.keys(en.tonight.afterSave)).not.toContain('title');
+  });
+
+  it('the welcome body names what is kept, so "It" never stands alone', () => {
+    expect(en.onboarding.welcome.body).not.toMatch(/(^|\. )It('s| is)? /);
+  });
+});

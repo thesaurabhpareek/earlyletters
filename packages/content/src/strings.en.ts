@@ -69,7 +69,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
-      body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
+      body: "Talk for a minute, or type a few lines. Each letter is there for {child} to read, and to hear if you spoke it.",
       // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
       // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
       freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
@@ -136,7 +136,7 @@ export const en = {
       spokenAddress: "{first}, hidden, at {domain}",
       spokenAddressNoFirst: "hidden, at {domain}",
       useAnother: "Use another account",
-      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
+      useAnotherHint: "Signs out and goes back to the start. Your book isn't made yet.",
       cta: "Continue",
     },
 
@@ -158,7 +158,7 @@ export const en = {
 
     dictionary: {
       title: "Your words, spelled your way",
-      body: "Add names and home words you use often. We will spell them the way you do.",
+      body: "Add names and home words you use often. They'll be spelled the way you write them.",
       examples: "Like Nani, chhotu, or the name of a stuffed rabbit.",
       addPlaceholder: "Add a word or name",
       addButton: "Add word",
@@ -171,7 +171,7 @@ export const en = {
       body: "So we hear it the way you say it.",
       countLabel: "{count} of 3",
       listeningLabel: "Listening",
-      heardLabel: "We heard:",
+      heardLabel: "Heard:",
       correctPrompt: "Is that how you spell it?",
       yesButton: "Yes, that's it",
       fixButton: "Let me spell it",
@@ -279,8 +279,9 @@ export const en = {
       kicker: "A month ago",
       a11y: "A letter from {date}. Opens the letter.",
     },
+    // No title here: a private letter reaches this moment too, so a line saying "the book" would be false for it.
+    // The saved moment's own line is review.destination.* (rules.test.ts pins that this card has no title).
     afterSave: {
-      title: "Kept.",
       body: "One more page for {child}.",
       reviewButton: "Read it back",
       doneButton: "Done for tonight",
@@ -502,7 +503,7 @@ export const en = {
       filedChip: "Kept in Month {month}",
       filedChipNewborn: "Kept in the first weeks",
       filedChipBefore: "Kept in Before You",
-      privateToast: "Kept just for you.",
+      privateToast: "Kept private.",
       voiceOnlyToast: "Recording kept on this phone.",
     },
     addWordToDictionary: "Add \"{name}\" to your words",
@@ -680,14 +681,14 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in your own words. Get the free app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We're making a book of letters for {child}. Will you add yours? You just talk, in your own words. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the red circle and talk, in the language you speak.",
+      howStep1: "Tap the red circle and talk.",
       howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
@@ -722,7 +723,7 @@ export const en = {
     // one line iOS shows for a reminder when previews are hidden. No name, count, day or brand.
     previewPlaceholder: "Something for the book, whenever you have a minute.",
     evening: [
-      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
+      { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence will do." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
       { title: "A minute for {child}'s book?", body: "Say whatever's on your mind. A line is plenty." },
       { title: "A few words tonight?", body: "A line or two for {child}'s book." },
@@ -733,7 +734,7 @@ export const en = {
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
-      body: "Whenever you like, there is a page for today. Just talk.",
+      body: "Open it whenever you like. A few words are enough.",
     },
     // v1.1: familyLetter and familyAdded.
     familyLetter: {

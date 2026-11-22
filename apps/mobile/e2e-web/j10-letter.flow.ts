@@ -37,11 +37,11 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
   await app.getByRole('button', { name: 'Close' }).first().click({ force: true });
 
   await app.getByText('Make private', { exact: true }).click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
+  await expect(app.getByText(/Kept private/)).toBeVisible();
   await step('happy', 'Make private', 'The letter leaves the book; a "Private" mark and a toast confirm it. Moving it back is one tap.');
 
-  await app.getByText(/Kept just for you/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
-  await expect(app.getByText(/Kept just for you/)).toBeHidden();
+  await app.getByText(/Kept private/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
+  await expect(app.getByText(/Kept private/)).toBeHidden();
   await app.getByText(/^Delete$/).last().click();
   await expect(app.getByText('Delete this letter?')).toBeVisible();
   await expect(app.getByText('It waits in Recently deleted for 30 days.')).toBeVisible();
