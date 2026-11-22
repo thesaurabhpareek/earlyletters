@@ -1333,6 +1333,9 @@ export const en = {
         pickerLabel: "{child}'s birthday",
         confirm: "Set the birthday",
         hideButton: "Hide",
+        // The row while the book is expecting (BL-472, F12-U16): a baby can arrive before the due date. It opens the same
+        // birthday step as the card. A question, not a prompt: no count, no notification, never on Tonight.
+        hereRow: "{child} is here?",
         keepNote: "Letters written before this day stay in Before You.",
       },
     },
