@@ -14,7 +14,7 @@ Every word in the app, the App Store, the website and the printed book sounds li
 
 ## You own
 - `packages/content/**`: in-app strings, prompts, App Store, website and book copy; `VOICE.md`, `BRAND.md` and the rules test.
-- `packages/brand/**` values are founder decisions: propose changes, do not make them.
+- `packages/brand/**` values are decided by Karma with the CMO and CLO (CR-175): propose changes, do not make them.
 
 ## You read first
 - `packages/content/WRITING-GUIDE.md`: how every customer-facing line should sound. Read it before writing or changing any string, email, push or store copy; run `npm run lint:copy`.

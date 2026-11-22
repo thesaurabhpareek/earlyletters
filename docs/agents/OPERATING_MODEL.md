@@ -26,7 +26,7 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 
 **Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/CLAIMS.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
-Priority order the dispatcher uses: fix your open PRs first, then answer handoffs, then reviews, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
+Priority order the dispatcher uses: fix your open PRs first, then answer handoffs, then reviews, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting for Karma's merge queue. The board issue shows which.
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
 
@@ -55,9 +55,9 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - **The trailer names who made the commit, not who owns the row.** `<handle>` is the handle of the agent that ran (the one `scripts/agents/brief.mjs` writes into the brief, and the one in the `agent:<handle>` label). A backlog row's `Owner:` names are mapped to a handle by `agents/roster.json` (`backlog_owner_names`, first listed name that matches wins, `primaryOwner` in `scripts/agents/lib.mjs`) and only decide who is dispatched the task. When another agent builds part of the row (for example the sync agent writing the core types for a Moments PR whose row owner is mobile), the trailer and label read the builder's handle and the row owner stays as written. The two are expected to differ then; this is not a mapping fault (BL-1521, PR #1435 note N5).
-- PR title: `type(scope): outcome (BL-###)` (CLAUDE.md "Pull requests"); the id stays in the title for backlog work. The `agent:<handle>` label says who made it. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
+- PR title: `type(scope): outcome (BL-###)` (CLAUDE.md "Pull requests"); the id stays in the title for backlog work. The `agent:<handle>` label says who made it. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` only when a physical act (a secret typed into a console, an account sign-in, paying, a hosted migration, store submission, device tests) blocks the PR and its row is in `docs/release/FOUNDER_QUEUE.md` (CR-175); a decision never gets that label, ask Karma by handoff; and `approve-migration` is never yours to add.
 - Any PR or issue comment you post starts with the line `<!-- agent:<handle> -->`, so it is never mistaken for the founder's words when a session posts from his account.
-- PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the founder should look at first (the template's "Review notes").
+- PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the reviewer should look at first (the template's "Review notes"). Never write "founder review needed" or ask for his approval (CR-175).
 - One concern per PR. Keep PRs small enough to review in ten minutes. If the work is bigger, split it (backlog rule 5).
 - Run `npm test`, `npm run typecheck` and, if you touched `supabase/`, `npm run test:db` before every push. Never weaken, skip or delete a test to make it pass.
 - Open the PR as a draft only if it is blocked; otherwise ready for review.
@@ -76,7 +76,7 @@ The full entry has this shape, with no other headings:
 **PRs:** #n (opened or updated), or none.
 **Next:** what you would do on your next run.
 **Learned:** anything durable (also put it in MEMORY.md), or none.
-**Founder:** the one thing you need from the founder, or none.
+**Physical act queued:** the `docs/release/FOUNDER_QUEUE.md` row you added, or none. Never a question to the founder (CR-175).
 ```
 
 ## 6. Red-team reviews
@@ -87,7 +87,7 @@ Two board facts are not reviews and do not change how you review. A line under "
 
 ## 7. The founder digest
 
-The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for Karma (oldest first, with the red-team verdict), and the few acts only the founder can do (CR-73), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
+The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for Karma (oldest first, with the red-team verdict), and the few physical acts in `docs/release/FOUNDER_QUEUE.md` (CR-73, CR-175), decisions Karma and the exec team still owe (from `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
 
 ## 8. Hard limits (every agent, every run)
 

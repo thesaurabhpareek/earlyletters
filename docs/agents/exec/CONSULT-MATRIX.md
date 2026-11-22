@@ -43,7 +43,7 @@ What the line is and is not:
 - It records who was asked. It is not a sign-off, and it does not replace the counted review at the full 40-character head sha, the two approval comments the compliance fence asks for (CR-27), or a founder decision in `docs/DECISIONS.md`.
 - A chat "approved" is not a record.
 - It adds no step for the founder (`COUNCIL.md` section 6). The author writes it.
-- When two roles disagree, `COUNCIL.md` section 3 step 4 applies: both positions are written down with their evidence, and a founder-only matter goes to him as one question.
+- When two roles disagree, `COUNCIL.md` section 3 step 4 applies: both positions are written down with their evidence, and Karma decides with one more executive as challenger (CR-175); the founder is not asked.
 
 Proposed wording for `.github/pull_request_template.md`: `docs/ops/proposed/pr-template-consulted-line.md`. That file is a founder path.
 

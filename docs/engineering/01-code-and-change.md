@@ -107,7 +107,7 @@ Tests, in order of preference: a unit test of a pure function; a property test w
 
 ## Exceptions
 
-Only the founder grants an exception. A one-off (an oversized PR, a temporary duplicate type) is recorded in the PR body as `Exception: CODE-Rnn, <reason>, <removal date>`. A standing exception is a `D-###` in `docs/DECISIONS.md`.
+Only Karma, with the owning executive, grants an exception (CR-175). A one-off (an oversized PR, a temporary duplicate type) is recorded in the PR body as `Exception: CODE-Rnn, <reason>, <removal date>`. A standing exception is a `D-###` in `docs/DECISIONS.md`.
 
 ## Open questions
 

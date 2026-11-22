@@ -52,7 +52,7 @@ Status on 2026-10-03 (not recounted since; see the drift note at the top of `ENF
 
 1. Anyone (agent or human) who thinks a rule is wrong says so: an agent opens an `rfc` handoff to the chapter's owner and the other four stewards (`node scripts/agents/handoff.mjs open --kind rfc`).
 2. The owner drafts the change in a PR that edits the chapter, `ENFORCEMENT.md` and, if needed, `PRINCIPLES.md`. Every other steward replies with a position on the RFC.
-3. A new or changed MUST rule merges only with the founder's approval. SHOULD and wording changes follow normal review.
+3. A new or changed MUST rule merges only with the exec review recorded in the ruling log (CR-175). SHOULD and wording changes follow normal review.
 4. Rule ids are permanent. A retired rule keeps its id, marked `(RETIRED: reason)`; its number is never reused.
 5. Exceptions to a MUST rule are granted only by the founder: a `D-###` for a standing exception, or an `Exception:` line in the PR body for a one-off.
 

@@ -671,6 +671,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-165 | Moments decisions locked on the council recommendations (O-48 value-prop pair unpublished until counsel answers; O-47 option C; tabs Home, Moments, Book, Me; DC-3 flight off until DM-11 and DM-12 pass; O-59 "Not now"; O-44 and cover on). Standing rules: exec review then lock for any open decision, founder-only items still go to him; at least 20 agents in parallel | Decided (founder, on the council recommendations); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-167 | The founder confirms D-118 (the website copy names his child, `apps/web/src/content/site.ts` only) and makes it a standing exception in `CLAUDE.md`, so sessions stop flagging it. D-118's "for now" and its review point are not withdrawn | Decided (founder); recorded by claude-14 (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-168 | Standing delegation: Karma and the exec team decide and merge everything, including decisions that carry his name; nobody asks him to approve, comment, merge or paste; only physical acts reach him, listed once in `docs/release/FOUNDER_QUEUE.md`. The constitution and privacy rules are unchanged. Recorded by a Claude role; merged by Karma under D-132 and CR-175 | Decided (founder) | Yes | 2026-11-22 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1286,4 +1287,28 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Not claimed:** any change to the guard, to the website copy, or to any other file's rule.
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-167 on `develop` (D-166 is the last entry). Re-check before merging.
 - **Amends:** none; D-118 stands as written.
+- **Owner:** founder; Karma merges.
+
+---
+
+### D-168 Standing delegation: Karma and the exec team decide and merge everything (founder, 22 Nov 2026)
+- **Status:** Decided by the founder in chat on 22 Nov 2026 (UTC). His own words are only the lines under "Founder words". Recorded by a Claude role as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132. CR-175 in `docs/agents/cto/RULINGS.md` turns it into rules.
+- **Founder words, verbatim (chat, 22 Nov 2026 UTC), all his:**
+
+  ```text
+  Anything pending on me is approved. I keep saying don't bring these merge request to me but CTO and exec team why do you keep doing it. Update all rules and policies so it doesn't happen again.
+  ```
+
+- **Earlier standing orders, his words as already recorded elsewhere or relayed in chat, not new here:** "Do all waiting for me. I approve." / "Whatever their recommendation is I approve" / "Just ask CTO and CPO and make decisions and keep work going" / "Don't ask me to do such things you can find a way yourself with CTO approval."
+- **Where the quotes come from:** typed by the founder in a Claude session's chat. A session copied them here; nothing was added or reworded. The chat itself is not stored in the repo.
+- **Context:** CR-70 and CR-73 moved PR merges to Karma but left founder-only lists, a FOUNDER verdict, a founder gate, `needs:founder` and "the founder decides" lines in the skills, the council protocol and the charters, so merge requests and approvals kept reaching him.
+- **Decision:**
+  1. Karma (CTO) and the exec team decide every question that was founder-only, and Karma merges every PR, by an exec review recorded in the ruling log (CR-175).
+  2. Nobody asks him to approve, comment on, merge or paste anything for a PR, or puts a decision question to him in a PR, comment, handoff, digest or chat.
+  3. Only physical acts reach him (secrets typed into a vendor console, Apple, Expo, Vercel and domain sign-ins, paying, applying a hosted migration, store submission, device tests), listed once in `docs/release/FOUNDER_QUEUE.md`, never as a chat question. Karma prepares each one fully.
+  4. Counsel must still see legal text before it publishes. That is a legal fact about review by a professional, not a request for his approval.
+  5. The faithful-edit constitution and the privacy rules in `CLAUDE.md` are unchanged and cannot be weakened under this delegation.
+- **Not claimed:** any change to the three required checks, to CODEOWNERS or to branch protection (guards are Karma's with the exec team, CR-175 item 5); any approval of a specific spend, submission or legal text.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-168 on `develop` (D-167 is the last entry). Re-check before merging.
+- **Amends:** none by text. It is the standing basis for replacing earlier founder decisions through new entries under CR-175; no earlier entry is edited.
 - **Owner:** founder; Karma merges.
