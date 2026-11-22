@@ -26,7 +26,7 @@ describe('NS-53 rules as data (7.2a)', () => {
   });
 
   it('[NS-53-R267] [NS-53-R205] the rules object is versioned, frozen, and each value is defined once', () => {
-    expect(rules.MOMENTS_RULES_VERSION).toBe(3);
+    expect(rules.MOMENTS_RULES_VERSION).toBe(4);
     expect(MOMENTS_RULES.version).toBe(rules.MOMENTS_RULES_VERSION);
     expect(Object.isFrozen(MOMENTS_RULES)).toBe(true);
     expect(MOMENTS_RULES).toMatchObject({

@@ -3,7 +3,7 @@
 // them by experiment; a change is a one-line diff here, a bump of MOMENTS_RULES_VERSION and
 // golden regeneration. All durations are in SECONDS unless the name says otherwise.
 
-export const MOMENTS_RULES_VERSION = 3; // 3: busyHoursCount (2) then tiles and rotateK (3), CPO-23 and CPO-25
+export const MOMENTS_RULES_VERSION = 4; // 4: place defaults added (CPO-25); 3: tiles and rotateK; 2: busyHoursCount
 
 const HOUR = 3600;
 
@@ -28,6 +28,16 @@ export const NEAR_SECONDS = 10;
 export const NEAR_GROUP_MAX = 60;
 /** A place line shows only when not home and its share of the window's candidates is below this. */
 export const PLACE_RARE_SHARE = 0.15;
+/**
+ * Place defaults, all PROPOSED (CPO-25), every one leaning to show less when unsure (R204). The G4 card
+ * sort and the PR 3b harness may change any of them.
+ * A day's place needs a share of the day's placed pictures strictly above this.
+ */
+export const MAJORITY_SHARE = 0.5;
+/** A day's place needs at least this many pictures at it. 3 matches the Asha golden of 3 and 3. */
+export const MIN_PICTURES_AT_PLACE = 3;
+/** A stay longer than this many days is dropped whole, no theme card (R58). */
+export const MAX_RUN = 7;
 /**
  * Tiles on a day card. PROPOSED (CPO-25): 4 matches the 2 by 2 layout of 7.3. No spec source gives
  * the number; the G4 card sort sets it.
@@ -57,6 +67,9 @@ export interface MomentsRules {
   readonly placeRareShare: number;
   readonly tiles: number;
   readonly rotateK: number;
+  readonly majorityShare: number;
+  readonly minPicturesAtPlace: number;
+  readonly maxRun: number;
   readonly junkBar: { readonly beforeNotThisOne: number; readonly afterNotThisOne: number };
   readonly spanPredicate: SpanPredicate;
 }
@@ -74,6 +87,9 @@ export const MOMENTS_RULES: MomentsRules = Object.freeze({
   placeRareShare: PLACE_RARE_SHARE,
   tiles: TILES,
   rotateK: ROTATE_K,
+  majorityShare: MAJORITY_SHARE,
+  minPicturesAtPlace: MIN_PICTURES_AT_PLACE,
+  maxRun: MAX_RUN,
   junkBar: JUNK_BAR,
   spanPredicate: 'span',
 });
