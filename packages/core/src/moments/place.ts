@@ -8,10 +8,29 @@
  * checksum, an unknown cell, a tie, a low share or a hidden place all give null, which the card
  * shows as a plain date.
  *
+ * Every threshold comes from `MomentsRules` (PROPOSED values, CPO-25), never defaulted here. ASSUMED
+ * choices, each ruled in Batch 3: a tie for home gives no home; the share denominator counts placed
+ * candidates only; a stay needs 2 or more days with a gap of 0 days.
+ *
  * Place keys are the table's stable external ids (R229, R248), never a readable name.
  * Nothing here is persisted or logged. The home place is computed in memory and never named.
  */
-import { addDaysISO, isIsoDate } from '../child';
+import type { MomentsRules } from './rules';
+
+// Local day helpers: moments/ imports only its own files (CODE-R10, R43), so no `../child` here.
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Days since 1970-01-01 of a real calendar day written YYYY-MM-DD, or null. */
+function dayNumber(iso: string): number | null {
+  const m = ISO_DAY.exec(iso);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return null;
+  return t.getTime() / 86_400_000;
+}
 
 export type PlaceId = string;
 export type PlaceKind = 'city' | 'region' | 'country';
@@ -28,18 +47,6 @@ export interface PlaceIndex {
   readonly checksum: string;
   readonly places: Readonly<Record<PlaceId, PlaceEntry>>;
   readonly cells: Readonly<Record<string, PlaceId>>;
-}
-
-/** Data for `rules.ts` (PR 1). Passed in, never defaulted here (CODE-R13: one definition). */
-export interface PlaceRules {
-  /** PROPOSED 0.15 (7.2a): a line shows only when the place's share of the window is below this. */
-  readonly rareShare: number;
-  /** A day's place needs a share of the day's placed pictures above this (R204). */
-  readonly majorityShare: number;
-  /** A day's place needs at least this many pictures at it (R254). */
-  readonly minPicturesAtPlace: number;
-  /** A stay longer than this many days gives no theme card (R58). */
-  readonly maxRun: number;
 }
 
 export type PlaceHash = (text: string) => string;
@@ -104,7 +111,7 @@ function soleLeader(m: Map<PlaceId, number>): { id: PlaceId; n: number } | null 
 }
 
 /** A day's place: the majority place of its pictures; a tie, a low share or a thin count gives null (R63, R204). */
-export function dayPlace(pictures: readonly (PlaceId | null)[], rules: PlaceRules): PlaceId | null {
+export function dayPlace(pictures: readonly (PlaceId | null)[], rules: MomentsRules): PlaceId | null {
   const m = counts(pictures);
   const lead = soleLeader(m);
   if (!lead) return null;
@@ -139,7 +146,7 @@ export interface PlaceLineInput {
   /** The parent's "This is where we live" correction (R249), an external id; wins over the computed home. */
   readonly homeCorrection?: PlaceId | null;
   readonly hidden: ReadonlySet<PlaceId>;
-  readonly rules: PlaceRules;
+  readonly rules: MomentsRules;
   /** The child's date of birth, or a day with a birth occasion reason: no place line (R254). */
   readonly isBirthDay: boolean;
   /** Kill switch K5 `machineLabels` (R202): false hides every place line. */
@@ -153,7 +160,7 @@ export function placeLine(i: PlaceLineInput): { id: PlaceId; name: string } | nu
   const home = i.homeCorrection ?? i.window.home;
   if (home === null || home === i.placeId) return null;
   const share = i.window.share.get(i.placeId);
-  if (share === undefined || !(share < i.rules.rareShare)) return null;
+  if (share === undefined || !(share < i.rules.placeRareShare)) return null;
   const name = placeName(i.table, i.placeId);
   return name === null ? null : { id: i.placeId, name };
 }
@@ -182,7 +189,7 @@ export function placeStays(
   const maxRun = guard.rules.maxRun;
   type Day = { dayKey: string; placeId: PlaceId };
   const sorted = days
-    .filter((d) => isIsoDate(d.dayKey) && placeLine({ ...guard, placeId: d.placeId, isBirthDay: d.isBirthDay }) !== null)
+    .filter((d) => dayNumber(d.dayKey) !== null && placeLine({ ...guard, placeId: d.placeId, isBirthDay: d.isBirthDay }) !== null)
     .map((d): Day => ({ dayKey: d.dayKey, placeId: d.placeId as PlaceId }))
     .sort((a, b) => (a.dayKey < b.dayKey ? -1 : a.dayKey > b.dayKey ? 1 : 0));
   const out: PlaceStay[] = [];
@@ -196,7 +203,7 @@ export function placeStays(
   for (const d of sorted) {
     const last = run[run.length - 1];
     if (last && last.dayKey === d.dayKey) continue;
-    if (last && !(last.placeId === d.placeId && addDaysISO(last.dayKey, 1) === d.dayKey)) flush();
+    if (last && !(last.placeId === d.placeId && dayNumber(last.dayKey)! + 1 === dayNumber(d.dayKey))) flush();
     run.push(d);
   }
   flush();

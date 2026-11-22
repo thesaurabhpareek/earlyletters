@@ -2,7 +2,10 @@
  * NS-53 PR 5: the place resolver on an injected synthetic table. Row ids are in the test names.
  * Asha is the fictional family; the library's most frequent place is Seattle, the trip is Lisbon.
  */
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { MOMENTS_RULES, type MomentsRules } from '../../src/moments';
 import {
   dayPlace,
   openPlaceTable,
@@ -15,11 +18,10 @@ import {
   windowPlaces,
   type PlaceIndex,
   type PlaceLineInput,
-  type PlaceRules,
 } from '../../src/moments/place';
-import { FIXTURE_CITIES, buildSyntheticTable, fixtureCellFor, fnv1a32Hex } from '../../src/moments/place-fixture';
+import { FIXTURE_CITIES, buildSyntheticTable, fixtureCellFor, fnv1a32Hex } from './place-fixture';
 
-const RULES: PlaceRules = { rareShare: 0.15, majorityShare: 0.5, minPicturesAtPlace: 3, maxRun: 7 };
+const RULES: MomentsRules = MOMENTS_RULES;
 const T = buildSyntheticTable();
 const SEA = 'syn:seattle';
 const POR = 'syn:portland';
@@ -101,6 +103,40 @@ describe('[NS-53-R63] a day has the majority place of its pictures', () => {
     expect(dayPlace([...rep(LIS, 4), ...rep(SEA, 2), ...rep(POR, 1)], { ...RULES, majorityShare: 0.5 })).toBe(LIS);
   });
   it('no pictures: none', () => expect(dayPlace([], RULES)).toBeNull());
+});
+
+describe('[CPO-25] place defaults are PROPOSED rules fields, read from MomentsRules', () => {
+  it('(a) to (f): the values the council set, strict majority, and a version past 2', () => {
+    expect(RULES.placeRareShare).toBe(0.15);
+    expect(RULES.majorityShare).toBe(0.5);
+    expect(RULES.minPicturesAtPlace).toBe(3);
+    expect(RULES.maxRun).toBe(7);
+    expect(RULES.version).toBeGreaterThanOrEqual(4);
+  });
+  it('placeRareShare is read from the rules, not a constant: a wider bar gives the line, a narrower one drops it', () => {
+    const w = windowPlaces([...rep(SEA, 17), ...rep(LIS, 3)]); // share 0.15
+    expect(line({ placeId: LIS, window: w })).toBeNull();
+    expect(line({ placeId: LIS, window: w, rules: { ...RULES, placeRareShare: 0.2 } })).not.toBeNull();
+  });
+  it('(b) the share denominator counts placed candidates only: unplaced pictures never make a place rarer', () => {
+    const plain = windowPlaces([...rep(SEA, 17), ...rep(LIS, 3)]);
+    const withNone = windowPlaces([...rep(SEA, 17), ...rep(LIS, 3), ...rep(null, 500)]);
+    expect(withNone.share.get(LIS)).toBe(plain.share.get(LIS));
+    expect(dayPlace([...rep(LIS, 3), ...rep(SEA, 2), ...rep(null, 100)], RULES)).toBe(LIS);
+  });
+  it('(a) a tie for home gives no home and so no place line, however rare the place is', () => {
+    const w = windowPlaces([...rep(SEA, 7), ...rep(POR, 7), ...rep(LIS, 1)]);
+    expect(w.home).toBeNull();
+    expect(line({ placeId: LIS, window: w })).toBeNull();
+  });
+  it('(c) a stay needs 2 days with a gap of 0 days: two consecutive days are a stay, two days one apart are not', () => {
+    const W2 = windowPlaces([...rep(SEA, 60), ...rep(LIS, 5)]);
+    const g = { table: T, window: W2, hidden: new Set<string>(), rules: RULES, machineLabels: true };
+    const d = (dayKey: string) => ({ dayKey, placeId: LIS, isBirthDay: false });
+    expect(placeStays([d('2026-10-24'), d('2026-10-25')], g)).toHaveLength(1);
+    expect(placeStays([d('2026-10-24'), d('2026-10-26')], g)).toEqual([]);
+    expect(placeStays([d('2026-10-24')], g)).toEqual([]);
+  });
 });
 
 describe('[NS-53-R281] the home-place rarity rule (7.2a PLACE_RARE_SHARE 0.15)', () => {
@@ -200,6 +236,11 @@ describe('[NS-53-R58] stays: consecutive away days of one place', () => {
       { placeId: LIS, from: '2026-12-31', to: '2027-01-01', days: 2 },
     ]);
   });
+  it('a day that is not a real date is ignored (30 February, month 13, no zero padding)', () => {
+    expect(stays([d('2026-02-30', LIS), d('2026-02-31', LIS), d('2026-13-01', LIS), d('2026-1-5', LIS)])).toEqual([]);
+    expect(stays([d('2028-02-29', LIS), d('2028-03-01', LIS)])).toHaveLength(1); // leap day is consecutive
+    expect(stays([d('2027-02-28', LIS), d('2027-03-01', LIS)])).toHaveLength(1);
+  });
   it('a malformed day key is ignored, never thrown', () => {
     expect(stays([d('nope', LIS), d('2026-10-24', LIS)])).toEqual([]);
   });
@@ -238,6 +279,40 @@ describe('prototype keys are not places', () => {
   });
 });
 
+function srcFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? srcFiles(p) : p.endsWith('.ts') ? [p] : [];
+  });
+}
+
+describe('[CPrivO-14] [NS-53-R61] the fixture that holds a coordinate stays under test/', () => {
+  const SRC = join(__dirname, '../../src');
+  it('import graph: no file in src imports place-fixture or anything under test', () => {
+    const files = srcFiles(SRC);
+    expect(files.length).toBeGreaterThan(5);
+    for (const f of files) {
+      const text = readFileSync(f, 'utf8');
+      expect(text, f).not.toMatch(/place-fixture/);
+      expect(text, f).not.toMatch(/from\s+['"][^'"]*\/test\//);
+    }
+  });
+  it('the fixture file is not in src, and nothing in src/moments names a coordinate field', () => {
+    expect(() => statSync(join(SRC, 'moments/place-fixture.ts'))).toThrow();
+    for (const f of srcFiles(join(SRC, 'moments'))) {
+      expect(readFileSync(f, 'utf8'), f).not.toMatch(/\b(lat|lon|latitude|longitude)\b/i);
+    }
+  });
+  it('one hash: the fixture checksum is the shared FNV-1a as 8 hex digits', () => {
+    expect(fnv1a32Hex('')).toBe('811c9dc5');
+    expect(fnv1a32Hex('a')).toBe('e40c292c');
+  });
+  it('PR 1 keeps no second table type: PlaceIndex is the one shape', async () => {
+    const text = readFileSync(join(SRC, 'moments/types.ts'), 'utf8');
+    expect(text).not.toMatch(/\bPlaceTable\b/);
+  });
+});
+
 describe('[NS-53-R117] [NS-53-R61] no coordinate in the resolver', () => {
   it('place.ts exports no function that takes a coordinate; only the fixture does', async () => {
     const place = await import('../../src/moments/place');
@@ -245,7 +320,7 @@ describe('[NS-53-R117] [NS-53-R61] no coordinate in the resolver', () => {
     expect(names).toEqual(
       ['dayPlace', 'openPlaceTable', 'placeForCell', 'placeLine', 'placeName', 'placeStays', 'placeTableText', 'windowPlaces'].sort(),
     );
-    expect(Object.keys(await import('../../src/moments/place-fixture'))).toContain('fixtureCellFor');
+    expect(Object.keys(await import('./place-fixture'))).toContain('fixtureCellFor');
   });
   it('a PlaceLineInput, a PlaceIndex and a day output have no coordinate field (type test)', () => {
     // @ts-expect-error a coordinate is not part of a place line input

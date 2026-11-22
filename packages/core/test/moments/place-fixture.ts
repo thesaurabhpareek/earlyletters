@@ -1,9 +1,11 @@
 /**
- * FIXTURE ONLY (R228): the TypeScript reference of the grid lookup that the native layer does, and
- * the 10-row synthetic table of PR 5. It is the only file in `moments/` that takes a coordinate, it
- * is never imported by `place.ts` or by app code, and a test pins that. The real table is PR 5b.
+ * FIXTURE ONLY (R228, CPrivO-14): the TypeScript reference of the grid lookup that the native layer
+ * does, and the 10-row synthetic table of PR 5. It holds coordinates, so it lives under `test/` and
+ * nothing in `src` imports it; `place.test.ts` pins that with an import-graph assertion. The real
+ * table is PR 5b.
  */
-import { placeTableText, type PlaceIndex, type PlaceKind } from './place';
+import { fixedHash } from '../../src/moments/hash';
+import { placeTableText, type PlaceIndex, type PlaceKind } from '../../src/moments/place';
 
 export const FIXTURE_CELL_DEG = 0.5;
 export const FIXTURE_EDGE_MARGIN_DEG = 0.02;
@@ -20,14 +22,9 @@ export function fixtureCellFor(lat: number, lon: number): string | null {
   return `${Math.floor(y)}:${Math.floor(x)}`;
 }
 
-/** A small fixed hash for the fixture checksum only (FNV-1a, 32 bit). Not security. */
+/** The table checksum text: the shared FNV-1a (`hash.ts`) as 8 hex digits. Not security. */
 export function fnv1a32Hex(text: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
+  return fixedHash(text).toString(16).padStart(8, '0');
 }
 
 /** City-centre points of the fixture table (public geography, no family's own place). */

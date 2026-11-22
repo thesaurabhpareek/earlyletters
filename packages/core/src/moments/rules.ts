@@ -3,7 +3,7 @@
 // them by experiment; a change is a one-line diff here, a bump of MOMENTS_RULES_VERSION and
 // golden regeneration. All durations are in SECONDS unless the name says otherwise.
 
-export const MOMENTS_RULES_VERSION = 1;
+export const MOMENTS_RULES_VERSION = 4; // 4: majorityShare, minPicturesAtPlace, maxRun added (CPO-25)
 
 const HOUR = 3600;
 
@@ -23,6 +23,16 @@ export const NEAR_SECONDS = 10;
 export const NEAR_GROUP_MAX = 60;
 /** A place line shows only when not home and its share of the window's candidates is below this. */
 export const PLACE_RARE_SHARE = 0.15;
+/**
+ * Place defaults, all PROPOSED (CPO-25), every one leaning to show less when unsure (R204). The G4 card
+ * sort and the PR 3b harness may change any of them.
+ * A day's place needs a share of the day's placed pictures strictly above this.
+ */
+export const MAJORITY_SHARE = 0.5;
+/** A day's place needs at least this many pictures at it. 3 matches the Asha golden of 3 and 3. */
+export const MIN_PICTURES_AT_PLACE = 3;
+/** A stay longer than this many days is dropped whole, no theme card (R58). */
+export const MAX_RUN = 7;
 /** The parent's own junk marks, as a share of days (R281 e, R60). */
 export const JUNK_BAR = { beforeNotThisOne: 3 / 10, afterNotThisOne: 2 / 10 } as const;
 
@@ -39,6 +49,9 @@ export interface MomentsRules {
   readonly nearSeconds: number;
   readonly nearGroupMax: number;
   readonly placeRareShare: number;
+  readonly majorityShare: number;
+  readonly minPicturesAtPlace: number;
+  readonly maxRun: number;
   readonly junkBar: { readonly beforeNotThisOne: number; readonly afterNotThisOne: number };
   readonly spanPredicate: SpanPredicate;
 }
@@ -53,6 +66,9 @@ export const MOMENTS_RULES: MomentsRules = Object.freeze({
   nearSeconds: NEAR_SECONDS,
   nearGroupMax: NEAR_GROUP_MAX,
   placeRareShare: PLACE_RARE_SHARE,
+  majorityShare: MAJORITY_SHARE,
+  minPicturesAtPlace: MIN_PICTURES_AT_PLACE,
+  maxRun: MAX_RUN,
   junkBar: JUNK_BAR,
   spanPredicate: 'span',
 });

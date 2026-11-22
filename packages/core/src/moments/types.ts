@@ -53,11 +53,5 @@ export interface LibraryWindow {
   readonly truncated: boolean;
 }
 
-/** Injected; core never loads it (R229). Null at the call site means date-only cards. */
-export interface PlaceTable {
-  readonly version: number;
-  readonly checksum: string;
-}
-
 export type { MomentsRules } from './rules';
 
