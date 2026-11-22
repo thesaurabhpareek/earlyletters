@@ -7665,7 +7665,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: a test per reachable path shows no row value in the error text; the header lists every path; a new migration carries any change, with grants. The hosted apply is the founder's, as for BL-244.
 
 #### BL-1500 The family notice and arrival mark capture the user before the await
-- Status: proposed (waits for PR #1428 to merge). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: in review (PR for branch fix/mobile-family-notice-owner; PR #1428 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low-Medium (the audit grades F1 LOW-MEDIUM; the child name held in memory is real). Gate: none.
 - Satisfies: the cross-account stores audit (docs/engineering, ledger task 37; not re-read here).
 - Problem and evidence: review B on PR #1428 (LOW residual, reproduced).
@@ -7673,7 +7673,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: a test that signs A out and B in across the await shows B reads no line from A; it fails on the old code.
 
 #### BL-1501 Tests for the auth-store clears: A leaves, signs out, A signs in; and the joinedArrival owner check
-- Status: proposed (waits for PR #1428 to merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: in review (PR for branch fix/mobile-family-notice-owner; PR #1428 merged). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: the cross-account stores audit (not re-read here).
 - Problem and evidence: review A and review B on PR #1428 (mutants on `clear()`; note carried over).

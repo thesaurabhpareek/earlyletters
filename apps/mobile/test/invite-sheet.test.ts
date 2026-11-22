@@ -71,7 +71,7 @@ describe('[S58] a share sheet dismissed without sending (critics\' pass S1)', ()
   it('shared: one tick, the sheet closes and the tab says the invite waits; dismissed: the sheet stays, no tick, no toast', () => {
     expect(afterShare('shared')).toEqual({ close: true, tick: true, notice: true, keepDraft: false });
     expect(afterShare('dismissed')).toEqual({ close: false, tick: false, notice: false, keepDraft: true });
-    expect(code(SHEET)).toMatch(/const after = afterShare\(shared\);\s*if \(!after\.close\) return;\s*haptic\('success'\);\s*draft\.current = null;\s*familyNotice\.leave\(k\.done\);\s*close\(\);/);
+    expect(code(SHEET)).toMatch(/const after = afterShare\(shared\);\s*if \(!after\.close\) return;\s*haptic\('success'\);\s*draft\.current = null;\s*familyNotice\.leave\(k\.done, owner\);\s*close\(\);/);
     // The share sheet's answer is the one that tells the two apart.
     expect(code('lib/family/share.ts')).toMatch(/return res\?\.action === Share\.dismissedAction \? 'dismissed' : 'shared';/);
   });
@@ -154,7 +154,7 @@ describe('[S58] states', () => {
 
   it('when the share sheet closes, this sheet closes and the page under it (the family page or the book\'s settings) says the invite waits', () => {
     const sheet = code(SHEET);
-    expect(sheet).toMatch(/familyNotice\.leave\(k\.done\);\s*close\(\);/);
+    expect(sheet).toMatch(/familyNotice\.leave\(k\.done, owner\);\s*close\(\);/);
     expect(familyCopy.create.done).toBe('The invite waits until they join.');
   });
 });
