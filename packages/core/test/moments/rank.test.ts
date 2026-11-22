@@ -3,6 +3,8 @@
  * No score, heart count, tap, dwell, clock or random source.
  */
 import { describe, expect, it } from 'vitest';
+import { fixedHash as sharedHash } from '../../src/moments/hash';
+import { MOMENTS_RULES } from '../../src/moments';
 import { fixedHash, selectPicturesDay, type RankDay } from '../../src/moments/rank';
 
 const day = (dayKey: string, flags: Partial<RankDay> = {}): RankDay => ({
@@ -153,5 +155,34 @@ describe('stable day key and teaching', () => {
   it('[NS-53-R51] a non-positive rotateK is treated as 1 (newest only)', () => {
     const days = [day('2026-11-10', { busy: true }), day('2026-11-09', { busy: true })];
     expect(selectPicturesDay(days, { ...ctx, rotateK: 0 })?.dayKey).toBe('2026-11-10');
+  });
+});
+
+describe('[CPO-25] rotation defaults and the shared contract', () => {
+  const heartDays = ['2026-11-20', '2026-11-19', '2026-11-18', '2026-11-17', '2026-11-16', '2026-11-15', '2026-11-14']
+    .map((k) => day(k, { heart: true }));
+
+  it('rotateK is a PROPOSED rules field (5) and the rotation reads it when the context gives none', () => {
+    expect(MOMENTS_RULES.rotateK).toBe(5);
+    const noK = { bookId: ctx.bookId, localDate: ctx.localDate };
+    expect(selectPicturesDay(heartDays, noK)).toEqual(selectPicturesDay(heartDays, ctx));
+  });
+
+  it('a NaN or infinite rotateK never throws and falls back to the rules value', () => {
+    for (const k of [Number.NaN, Infinity, -Infinity]) {
+      expect(() => selectPicturesDay(heartDays, { ...ctx, rotateK: k })).not.toThrow();
+      expect(selectPicturesDay(heartDays, { ...ctx, rotateK: k })).toEqual(selectPicturesDay(heartDays, ctx));
+    }
+  });
+
+  it('the rotation text is localDate|bookId: varying bookId varies the day, and the hash is the shared one', () => {
+    expect(fixedHash).toBe(sharedHash);
+    const picks = new Set<string>();
+    for (const book of ['book-a', 'book-b', 'book-c', 'book-d', 'book-e', 'book-f']) {
+      const r = selectPicturesDay(heartDays, { ...ctx, bookId: book })!;
+      expect(r.dayKey).toBe(heartDays[fixedHash(`${ctx.localDate}|${book}`) % 5].dayKey);
+      picks.add(r.dayKey);
+    }
+    expect(picks.size).toBeGreaterThan(1);
   });
 });

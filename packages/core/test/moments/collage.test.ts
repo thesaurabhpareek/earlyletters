@@ -4,7 +4,8 @@
  * Asha fixture: a Saturday in October 2026, phone in America/Los_Angeles.
  */
 import { describe, expect, it } from 'vitest';
-import { chooseTiles, collageLayout, type TileCandidate } from '../../src/moments/collage';
+import { chooseTiles, collageLayout, toTileCandidate, type TileCandidate } from '../../src/moments/collage';
+import { MOMENTS_RULES } from '../../src/moments';
 
 const H = 3_600_000;
 const T0 = Date.UTC(2026, 9, 24, 16, 0, 0); // 09:00 local on the day
@@ -17,7 +18,7 @@ function pic(id: string, hours: number, session: number, extra: Partial<TileCand
     endMs: T0 + hours * H,
     kind: 'image',
     session,
-    heart: false,
+    favourite: false,
     attached: false,
     panorama: false,
     ...extra,
@@ -63,7 +64,7 @@ describe('tile choice', () => {
     const c = chooseTiles(
       [
         pic('rest1', 0, 0),
-        pic('heart1', 1, 0, { heart: true }),
+        pic('heart1', 1, 0, { favourite: true }),
         pic('att1', 2, 0, { attached: true }),
         pic('rest2', 3, 0),
       ],
@@ -76,14 +77,14 @@ describe('tile choice', () => {
 
   it('[NS-53-R41] a hearted picture is the lead tile when nothing is attached', () => {
     const c = chooseTiles(
-      [pic('a', 0, 0), pic('b', 1, 0), pic('c', 2, 0, { heart: true }), pic('d', 3, 0)],
+      [pic('a', 0, 0), pic('b', 1, 0), pic('c', 2, 0, { favourite: true }), pic('d', 3, 0)],
       OPTS,
     );
     expect(c.tiles[0]).toBe('c');
   });
 
   it('[MT-P6-R14] hearts are taken by capture time and capped at the tile count', () => {
-    const hearts = ['h1', 'h2', 'h3', 'h4', 'h5'].map((id, i) => pic(id, i, 0, { heart: true }));
+    const hearts = ['h1', 'h2', 'h3', 'h4', 'h5'].map((id, i) => pic(id, i, 0, { favourite: true }));
     const c = chooseTiles([...hearts, pic('plain', 6, 0)], OPTS);
     expect(c.tiles.slice().sort()).toEqual(['h1', 'h2', 'h3', 'h4']);
     expect(c.tiles[0]).toBe('h1');
@@ -137,8 +138,8 @@ describe('tile choice', () => {
   it('[NS-53-R41] at most one video tile, and a panorama is never a tile', () => {
     const cs = [
       pic('v1', 0, 0, { kind: 'video' }),
-      pic('v2', 1, 0, { kind: 'video', heart: true }),
-      pic('pano', 2, 0, { panorama: true, heart: true }),
+      pic('v2', 1, 0, { kind: 'video', favourite: true }),
+      pic('pano', 2, 0, { panorama: true, favourite: true }),
       pic('i1', 3, 0),
       pic('i2', 4, 0),
       pic('i3', 5, 0),
@@ -153,8 +154,8 @@ describe('tile choice', () => {
 
   it('[NS-53-R41] two hearted videos still give one video tile', () => {
     const cs = [
-      pic('v1', 0, 0, { kind: 'video', heart: true }),
-      pic('v2', 1, 0, { kind: 'video', heart: true }),
+      pic('v1', 0, 0, { kind: 'video', favourite: true }),
+      pic('v2', 1, 0, { kind: 'video', favourite: true }),
       pic('i1', 2, 0),
     ];
     const c = chooseTiles(cs, OPTS);
@@ -164,7 +165,7 @@ describe('tile choice', () => {
 
   it('[MT-P6-R15] a session that already holds a hearted tile does not get a second one before others', () => {
     const cs = [
-      pic('h', 0, 0, { heart: true }), pic('x1', 5, 0), pic('x2', 6, 0), pic('x3', 7, 0),
+      pic('h', 0, 0, { favourite: true }), pic('x1', 5, 0), pic('x2', 6, 0), pic('x3', 7, 0),
       pic('y', 20, 1),
     ];
     expect(chooseTiles(cs, { tiles: 2 }).tiles.slice().sort()).toEqual(['h', 'y']);
@@ -185,7 +186,7 @@ describe('tile choice', () => {
   });
 
   it('[NS-53-R44] the lead tile is first and the others follow in time order', () => {
-    const cs = [pic('a', 0, 0), pic('b', 1, 0), pic('c', 2, 0, { heart: true }), pic('d', 3, 0)];
+    const cs = [pic('a', 0, 0), pic('b', 1, 0), pic('c', 2, 0, { favourite: true }), pic('d', 3, 0)];
     const c = chooseTiles(cs, OPTS);
     expect(c.tiles[0]).toBe('c');
     expect(c.tiles.slice(1)).toEqual(['a', 'b', 'd']);
@@ -202,9 +203,9 @@ describe('tile choice', () => {
 
 describe('order independence and hearts', () => {
   const lib: TileCandidate[] = [
-    pic('a', 0, 0), pic('b', 0.3, 0), pic('c', 1, 0, { heart: true }),
+    pic('a', 0, 0), pic('b', 0.3, 0), pic('c', 1, 0, { favourite: true }),
     pic('d', 6, 1), pic('e', 7, 1), pic('f', 8, 1, { kind: 'video' }),
-    pic('g', 12, 2), pic('h', 12.4, 2), pic('i', 13, 2, { heart: true }),
+    pic('g', 12, 2), pic('h', 12.4, 2), pic('i', 13, 2, { favourite: true }),
     pic('j', 20, 3),
   ];
 
@@ -226,7 +227,7 @@ describe('order independence and hearts', () => {
     expect(base.tiles).toContain('c');
     expect(base.tiles).toContain('i');
     const without = chooseTiles(
-      lib.map((x) => (x.id === 'c' ? { ...x, heart: false } : x)),
+      lib.map((x) => (x.id === 'c' ? { ...x, favourite: false } : x)),
       OPTS,
     );
     expect(without.tiles).toContain('i');
@@ -234,10 +235,10 @@ describe('order independence and hearts', () => {
   });
 
   it('[MT-P6-R18] adding a heart makes that picture the lead and leaves other hearts in', () => {
-    const plain = lib.map((x) => ({ ...x, heart: false }));
+    const plain = lib.map((x) => ({ ...x, favourite: false }));
     for (const target of ['a', 'd', 'g', 'j']) {
       const c = chooseTiles(
-        plain.map((x) => (x.id === target ? { ...x, heart: true } : x)),
+        plain.map((x) => (x.id === target ? { ...x, favourite: true } : x)),
         OPTS,
       );
       expect(c.tiles[0]).toBe(target);
@@ -263,5 +264,79 @@ describe('order independence and hearts', () => {
     const copy = JSON.stringify(lib);
     chooseTiles(lib, OPTS);
     expect(JSON.stringify(lib)).toBe(copy);
+  });
+});
+
+describe('[CPO-19] [CPO-20] [CPO-21] [CPO-22] council rulings, goldens', () => {
+  it('[CPO-19] four sessions: the earlier middle session leads, and inside it the candidate nearest its middle', () => {
+    const cs = [pic('a', 0, 0), pic('b1', 5, 1), pic('b2', 5.9, 1), pic('b3', 6.2, 1), pic('c', 10, 2), pic('d', 15, 3)];
+    // sessions 0..3, n=4: index floor((4-1)/2)=1 is the earlier middle. Session 1 spans 5..6.2, middle 5.6: b2 (0.3) beats b1 (0.6) and b3 (0.6).
+    expect(chooseTiles(cs, OPTS).tiles[0]).toBe('b2');
+  });
+
+  it('[CPO-20] never two videos: two videos in two sessions give one video among tiles and fallbacks together', () => {
+    const cs = [
+      pic('v1', 0, 0, { kind: 'video' }), pic('i1', 1, 0),
+      pic('v2', 8, 1, { kind: 'video' }), pic('i2', 9, 1),
+      pic('i3', 16, 2), pic('i4', 17, 2), pic('i5', 18, 2),
+    ];
+    for (const tiles of [1, 2, 3, 4]) {
+      const c = chooseTiles(cs, { tiles });
+      expect([...c.tiles, ...c.fallbacks].filter((id) => id.startsWith('v'))).toHaveLength(1);
+    }
+  });
+
+  it('[CPO-20] only videos left: the card has fewer tiles, never a second video', () => {
+    const c = chooseTiles([pic('v1', 0, 0, { kind: 'video' }), pic('v2', 1, 0, { kind: 'video' }), pic('v3', 2, 1, { kind: 'video' })], OPTS);
+    expect(c.tiles).toEqual(['v1']);
+    expect(c.fallbacks).toEqual([]);
+  });
+
+  it('[CPO-21] golden: the longest gap is an edge (the day end), so a far last picture is a tile', () => {
+    // one session 0..12h; tile 1 nearest 6h is p3. Gaps: 0..3 (3h, start edge) and 3..12 (9h, end edge). The end edge is longest.
+    const cs = [0, 1, 2, 3, 12].map((h) => pic(`p${h}`, h, 0));
+    expect(chooseTiles(cs, { tiles: 2 }).tiles).toEqual(['p3', 'p12']);
+  });
+
+  it('[CPO-21] golden: the longest gap is the start edge, and the first picture of the day is a tile', () => {
+    const cs = [0, 9, 10, 11, 12].map((h) => pic(`p${h}`, h, 0));
+    // tile 1 nearest 6h is p9. Gaps: 0..9 (9h, start edge), 9..12 (3h).
+    expect(chooseTiles(cs, { tiles: 2 }).tiles).toEqual(['p9', 'p0']);
+  });
+
+  it('[CPO-21] the edge gap measures from the day start, not midnight: the pick is the one nearest that gap middle', () => {
+    const cs = [0, 3, 6, 11, 12].map((h) => pic(`p${h}`, h, 0));
+    // session middle 6h: p6. Gaps: 0..6 (start edge) and 6..12. Equal, earlier first: nearest 3h is p3.
+    expect(chooseTiles(cs, { tiles: 2 }).tiles).toEqual(['p6', 'p3']);
+    // the same day shifted far from midnight still picks p3 (distances are from the first candidate, not 0)
+    const late = [0, 3, 6, 11, 12].map((h) => pic(`q${h}`, h + 40, 0));
+    expect(chooseTiles(late, { tiles: 2 }).tiles).toEqual(['q6', 'q3']);
+  });
+
+  it('[CPO-21] golden: two equal gaps, the earlier gap is taken first (then the lower id)', () => {
+    const cs = [0, 1, 3, 4, 5, 7, 8].map((h) => pic(`p${h}`, h, 0));
+    // tile 1: nearest 4h is p4. Gaps 0..4 and 4..8 are equal. Earlier gap: middle 2h, p1 and p3 tie, earlier is p1.
+    expect(chooseTiles(cs, { tiles: 2 }).tiles).toEqual(['p4', 'p1']);
+  });
+
+  it('[CPO-22] an attached picture leads over a hearted one, whatever the times', () => {
+    const cs = [pic('heartEarly', 0, 0, { favourite: true }), pic('attLate', 9, 0, { attached: true }), pic('x', 4, 0)];
+    expect(chooseTiles(cs, OPTS).tiles).toEqual(['attLate', 'heartEarly', 'x']);
+  });
+
+  it('[CPO-25] tiles and ROTATE_K are PROPOSED rules fields; the collage reads tiles when no option is given', () => {
+    expect(MOMENTS_RULES.tiles).toBe(4);
+    const cs = [0, 1, 2, 3, 4, 5].map((h) => pic(`p${h}`, h, 0));
+    expect(chooseTiles(cs).tiles).toHaveLength(MOMENTS_RULES.tiles);
+    expect(chooseTiles(cs, { tiles: Number.NaN }).tiles).toHaveLength(MOMENTS_RULES.tiles);
+    expect(chooseTiles(cs, { tiles: 2 }).tiles).toHaveLength(2);
+  });
+
+  it('toTileCandidate maps a PR 2 candidate: kind from video, heart from favourite, id from its first frame', () => {
+    const base = { ids: ['x', 'y'], startMs: 1, endMs: 5, favourite: true };
+    expect(toTileCandidate({ ...base, video: false }, 2, true)).toEqual({
+      id: 'x', startMs: 1, endMs: 5, kind: 'image', session: 2, favourite: true, attached: true,
+    });
+    expect(toTileCandidate({ ...base, video: true }, 0, false).kind).toBe('video');
   });
 });

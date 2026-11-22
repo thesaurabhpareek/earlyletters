@@ -8,10 +8,16 @@
  * near-duplicate group arrives already collapsed to ONE candidate whose time
  * range is its first to last frame (PR 2); this module never sees frames.
  *
- * Input shape is structural on purpose: PR 1 (`types.ts`) and PR 2 (`group.ts`)
- * own the engine's own types; whoever wires `buildMoments` maps a grouped day
- * onto `TileCandidate` in one place.
+ * PR 2 (#1421) owns `Candidate`. Until it lands this file cannot import it, so `toTileCandidate`
+ * takes the same fields structurally (ids, startMs, endMs, video, favourite) and is the one place
+ * that maps a grouped candidate onto a tile. Swap the structural type for `Candidate` once #1421 merges.
+ *
+ * ASSUMED lines below are choices no spec line states; each is ruled in docs/agents/exec/RULINGS.md
+ * (Batch 3) and may change at the G4 card sort or the PR 3b harness. `tiles` and `rotateK` are PROPOSED
+ * rules fields (CPO-25).
  */
+import type { MediaKind } from './domain';
+import { MOMENTS_RULES } from './rules';
 
 export interface TileCandidate {
   /** Opaque local identifier. Memory only; never stored (R247). */
@@ -20,11 +26,11 @@ export interface TileCandidate {
   readonly startMs: number;
   /** Last frame, UTC ms (equal to `startMs` for a single picture). */
   readonly endMs: number;
-  readonly kind: 'image' | 'video';
+  readonly kind: MediaKind;
   /** Session index inside the day (sessions split at SESSION_GAP, PR 2). */
   readonly session: number;
-  /** The parent's own heart (`isFavorite`). */
-  readonly heart: boolean;
+  /** The parent's own heart (`isFavorite`); the name PR 2's `Candidate` uses. */
+  readonly favourite: boolean;
   /** The parent already attached it to a letter for this day. */
   readonly attached: boolean;
   /** Panoramas are never tiles. */
@@ -42,8 +48,30 @@ export interface Collage {
 }
 
 export interface CollageOptions {
-  /** TILES from `rules.ts` (4 in v1). Injected so there is one definition (CODE-R13). */
-  readonly tiles: number;
+  /** Defaults to `MOMENTS_RULES.tiles` (PROPOSED 4, CPO-25), so there is one definition (CODE-R13). */
+  readonly tiles?: number;
+}
+
+/** The fields of PR 2's `Candidate` a tile needs (structural until #1421 merges). */
+export interface TileSource {
+  readonly ids: readonly string[];
+  readonly startMs: number;
+  readonly endMs: number;
+  readonly video: boolean;
+  readonly favourite: boolean;
+}
+
+/** One grouped candidate onto a tile: id is its first frame, kind comes from `video`. */
+export function toTileCandidate(c: TileSource, session: number, attached: boolean): TileCandidate {
+  return {
+    id: c.ids[0],
+    startMs: c.startMs,
+    endMs: c.endMs,
+    kind: c.video ? 'video' : 'image',
+    session,
+    favourite: c.favourite,
+    attached,
+  };
 }
 
 /** 1 picture 4:3; 2 two squares; 3 one tall plus two; 4 or more a fixed 2 by 2. */
@@ -96,7 +124,8 @@ function precedence(input: readonly TileCandidate[]): TileCandidate[] {
   let hasVideo = false;
   const take = (c: TileCandidate | undefined): boolean => {
     if (!c || taken.has(c.id)) return false;
-    if (c.kind === 'video' && hasVideo) return false; // at most one video tile
+    // ASSUMED (CPO-20): never two videos on a card, fallbacks included; if only videos remain the card has fewer tiles.
+    if (c.kind === 'video' && hasVideo) return false;
     taken.add(c.id);
     if (c.kind === 'video') hasVideo = true;
     order.push(c);
@@ -105,14 +134,16 @@ function precedence(input: readonly TileCandidate[]): TileCandidate[] {
   const remaining = (): TileCandidate[] =>
     all.filter((c) => !taken.has(c.id) && !(c.kind === 'video' && hasVideo));
 
-  // (1) attached to a letter, (2) hearted, both by capture time.
+  // (1) attached to a letter, (2) hearted, both by capture time. ASSUMED (CPO-22): attached leads over
+  // hearted (the order of 7.3); R281(c) reads as "among pictures not already attached".
   for (const c of all) if (c.attached) take(c);
-  for (const c of all) if (c.heart) take(c);
+  for (const c of all) if (c.favourite) take(c);
 
   // (3) the rest by the spread. Tile 1 (when nothing is chosen yet) is the
   // candidate nearest the middle of the day's middle session.
   if (order.length === 0 && all.length > 0) {
     const sessions = groupBySession(all);
+    // ASSUMED (CPO-19): an even number of sessions has two middle ones; take the earlier. A pure function of the input.
     const middle = sessions[Math.floor((sessions.length - 1) / 2)];
     take(nearest(middle, middleOf(middle)));
   }
@@ -123,7 +154,9 @@ function precedence(input: readonly TileCandidate[]): TileCandidate[] {
     take(nearest(session.filter((c) => !(c.kind === 'video' && hasVideo)), middleOf(session)));
   }
 
-  // Then the candidate at the middle of the longest remaining gap, repeating.
+  // Then the candidate at the middle of the longest remaining gap, repeating. ASSUMED (CPO-21): the edges
+  // of the first and last gap are the day's earliest candidate start and latest candidate end (never
+  // midnight), so a one-session day still gets a spread tile. Ties: longer gap, earlier time, lower id.
   const dayStart = all.length ? Math.min(...all.map((c) => c.startMs)) : 0;
   const dayEnd = all.length ? Math.max(...all.map((c) => c.endMs)) : 0;
   for (;;) {
@@ -168,8 +201,10 @@ function groupBySession(all: readonly TileCandidate[]): TileCandidate[][] {
   return [...map.values()].sort((a, b) => byTimeThenId(a[0], b[0]));
 }
 
-export function chooseTiles(candidates: readonly TileCandidate[], opts: CollageOptions): Collage {
-  const n = Math.max(0, Math.floor(opts.tiles));
+export function chooseTiles(candidates: readonly TileCandidate[], opts: CollageOptions = {}): Collage {
+  // A missing or non-finite count reads as the rules value, so a bad input never silently empties the card.
+  const want = Number.isFinite(opts.tiles) ? (opts.tiles as number) : MOMENTS_RULES.tiles;
+  const n = Math.max(0, Math.floor(want));
   const order = precedence(candidates);
   const head = order.slice(0, n);
   const tiles = head.length ? [head[0].id, ...head.slice(1).sort(byTimeThenId).map((c) => c.id)] : [];

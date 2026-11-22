@@ -8,6 +8,9 @@
  * day on every open and on two phones.
  */
 
+import { fixedHash } from './hash';
+import { MOMENTS_RULES } from './rules';
+
 export interface RankDay {
   /** Stable local day key, `YYYY-MM-DD`. */
   readonly dayKey: string;
@@ -28,8 +31,8 @@ export interface RankContext {
   readonly bookId: string;
   /** The phone's local date, `YYYY-MM-DD`. */
   readonly localDate: string;
-  /** ROTATE_K from `rules.ts`: the newest days the rotation draws from. */
-  readonly rotateK: number;
+  /** The newest days the rotation draws from. Defaults to `MOMENTS_RULES.rotateK` (PROPOSED, CPO-25). */
+  readonly rotateK?: number;
   /** Day keys under "Not this one" or "Hide this day". */
   readonly excludeDayKeys?: readonly string[];
 }
@@ -39,15 +42,7 @@ export interface PicturesPick {
   readonly class: PicturesClass;
 }
 
-/** FNV-1a, 32 bit, over UTF-16 code units. Fixed so two phones agree. */
-export function fixedHash(text: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
+export { fixedHash } from './hash';
 
 export function selectPicturesDay(days: readonly RankDay[], ctx: RankContext): PicturesPick | null {
   const excluded = new Set(ctx.excludeDayKeys ?? []);
@@ -70,8 +65,10 @@ export function selectPicturesDay(days: readonly RankDay[], ctx: RankContext): P
     // Inside a class: newer first, then lower day key (keys are unique, so newer decides).
     const eligible = pool.filter((d) => d[cls]).sort((a, b) => (a.dayKey < b.dayKey ? 1 : a.dayKey > b.dayKey ? -1 : 0));
     if (eligible.length === 0) continue;
-    const k = Math.max(1, Math.floor(ctx.rotateK));
+    // A non-finite rotateK reads as the rules value, so a bad input never throws (an empty set has no index).
+    const k = Math.max(1, Math.floor(Number.isFinite(ctx.rotateK) ? (ctx.rotateK as number) : MOMENTS_RULES.rotateK));
     const set = eligible.slice(0, k);
+    // Contract two phones share: the text is `localDate|bookId` (CPO-25). Do not reorder it.
     const index = fixedHash(`${ctx.localDate}|${ctx.bookId}`) % set.length;
     return { dayKey: set[index].dayKey, class: cls };
   }
