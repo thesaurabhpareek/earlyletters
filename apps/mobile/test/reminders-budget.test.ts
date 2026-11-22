@@ -55,6 +55,13 @@ describe('[NS-32-R3] priority decides', () => {
     ]);
     expect(got.map((g) => g.id)).toEqual(['a', 'evening.2026-12-09']);
   });
+  it('counts 2026-12-8 and 2026-12-08 as one day, and keeps the date as given', () => {
+    const got = chooseOnePerDay([note('evening', '2026-12-8', 'short'), note('birthday', '2026-12-08', 'padded'), note('monthAge', '2026-12-9', 'next')]);
+    expect(got.map((g) => g.id)).toEqual(['padded', 'next']);
+    expect(chooseOnePerDay([note('evening', '2026-12-8', 'x')])[0]?.date).toBe('2026-12-8');
+    // Sorted by the padded key: 2026-12-10 comes after 2026-12-9.
+    expect(chooseOnePerDay([note('evening', '2026-12-10', 'ten'), note('evening', '2026-12-9', 'nine')]).map((g) => g.id)).toEqual(['nine', 'ten']);
+  });
   it('ranks libraryDay inside the typedDay class, not as a class of its own', () => {
     expect(SOURCE_RANK).toEqual({ typedDay: 1, birthday: 2, libraryDay: 3, monthAge: 4, evening: 5 });
     expect(classOfSource('libraryDay')).toBe('typedDay');
