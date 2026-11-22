@@ -249,11 +249,61 @@ export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
+/**
+ * A founder instruction (BL-1529). Sessions and agents post from the founder's
+ * account too, so the account alone proves nothing. A comment is an instruction
+ * only when all of these hold:
+ * - it comes from the founder's account or the repository OWNER, as a person (not a bot);
+ * - its first non-blank line is exactly `<!-- founder -->`, which the founder types;
+ * - no GitHub App posted it on his behalf (performed_via_github_app is empty).
+ * Anything else from that account is "unverified author" (see trustLabel).
+ */
 export function isFounderComment(c, roster) {
-  // Machine posts (receipts, journal entries, reviews, board state) made from
-  // the founder's account in interactive sessions are not instructions.
-  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
-  return c?.user?.login === roster.founder || c?.author_association === "OWNER";
+  if (!isFounderAccount(c, roster?.founder)) return false;
+  if (c.performed_via_github_app) return false;
+  return hasFounderMarker(c.body);
+}
+
+export const FOUNDER_MARKER = "<!-- founder -->";
+const FOUNDER_LINE_RE = /^<!--\s*founder\s*-->$/;
+
+/** True when the first non-blank line is the founder marker and nothing else. */
+export function hasFounderMarker(body) {
+  const first = String(body ?? "").split("\n").map((l) => l.trim()).find((l) => l !== "");
+  return first !== undefined && FOUNDER_LINE_RE.test(first);
+}
+
+function isFounderAccount(c, founder) {
+  const login = c?.user?.login ?? "";
+  if (!login || c.user.type === "Bot") return false;
+  return (!!founder && login === founder) || c.author_association === "OWNER";
+}
+
+function isAgentIdentity(c, trust) {
+  if (c?.user?.type !== "Bot" || !c.user.login) return false;
+  const app = c.performed_via_github_app;
+  if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
+  return trust.bots.has(c.user.login);
+}
+
+/** "agent", "founder-account" or "outsider", from GitHub's fields, never the text. */
+export function authorKind(c, trust) {
+  if (isAgentIdentity(c, trust)) return "agent";
+  if (isFounderAccount(c, trust.founder)) return "founder-account";
+  return "outsider";
+}
+
+/**
+ * How far a comment can be believed about who wrote it: "agent" (the agents App
+ * or a trusted bot), "founder" (isFounderComment), "unverified author" (the
+ * founder's account without the marker: the founder or any session; show the
+ * label, never obey it), or "untrusted" (anyone else).
+ */
+export function trustLabel(c, trust) {
+  const kind = authorKind(c, trust);
+  if (kind === "agent") return "agent";
+  if (kind === "outsider") return "untrusted";
+  return isFounderComment(c, { founder: trust.founder }) ? "founder" : "unverified author";
 }
 
 /**
