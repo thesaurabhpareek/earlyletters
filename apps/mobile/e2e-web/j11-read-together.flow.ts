@@ -42,7 +42,7 @@ test('[J11] Read together: pages turn, no limit, every time it opens', async ({ 
   for (let i = 0; i < 3; i++) await btn(app, 'Next letter').click();
   await btn(app, 'Next letter').click();
   await expect(app.getByText(/Next letter/)).toHaveCount(0);
-  await expect(app.getByText('That is every letter so far. More are still being written.')).toBeVisible();
+  await expect(app.getByText("That's every letter so far.")).toBeVisible();
   await step('happy', 'The end of the book', 'After the last letter: the moon draws on once above the line, then nothing moves; "Close the book" and "Read it again".');
   await btn(app, /Read it again/).first().click();
   await expect(at(app, 1)).toBeAttached();

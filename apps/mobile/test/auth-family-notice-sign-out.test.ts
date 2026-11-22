@@ -8,8 +8,8 @@
  * Fictional family "Asha" only.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
-import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SignOutReason } from '../src/lib/auth/machine.logic';
+import { getAuthSnapshot, publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
+import { authReducer, authUserId, initialAuthState, type AuthEvent, type AuthState, type SignOutReason } from '../src/lib/auth/machine.logic';
 import { familyNotice, joinedArrival } from '../src/components/family/family-notice';
 import { bookHandoff } from '../src/components/book/book.logic';
 import type { Entry } from '../src/lib/store';
@@ -101,5 +101,39 @@ describe('[X-ACCT-1] sign-out ends the family notice and the arrival mark', () =
     resetAuthStoreForTests();
     run(initialAuthState, signedInAs('user-b'));
     expect(familyNotice.take()).toBeNull();
+  });
+  it('[BL-1500] a sheet that resumes after A signed out and B signed in leaves nothing for B (owner captured before the await)', () => {
+    let s = run(initialAuthState, signedInAs('user-a'));
+    const owner = authUserId(getAuthSnapshot()); // read before the await, as the sheet does
+    s = run(s, [{ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: { kind: 'count', n: 0 } }, { type: 'SIGNED_OUT' }]);
+    run(s, signedInAs('user-b'));
+    familyNotice.leave('Asha left the book', owner); // the continuation resumes now
+    expect(familyNotice.take()).toBeNull();
+  });
+
+  it('[BL-1500] a line left with the owner that is still signed in is kept', () => {
+    run(initialAuthState, signedInAs('user-a'));
+    familyNotice.leave('Invite is waiting', authUserId(getAuthSnapshot()));
+    expect(familyNotice.take()).toBe('Invite is waiting');
+  });
+
+  it('[BL-1501] A leaves a line and an arrival, signs out, A signs in again: both are gone (the clears, not the owner check)', () => {
+    let s = run(initialAuthState, signedInAs('user-a'));
+    familyNotice.leave('Asha left the book');
+    joinedArrival.leave();
+    s = run(s, [{ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: { kind: 'count', n: 0 } }, { type: 'SIGNED_OUT' }]);
+    run(s, signedInAs('user-a'));
+    expect(familyNotice.take()).toBeNull();
+    expect(joinedArrival.waiting()).toBe(false);
+    expect(joinedArrival.take()).toBe(false);
+  });
+
+  it('[BL-1501] an arrival A left is not read by B, with no clear in between (owner check)', () => {
+    run(initialAuthState, signedInAs('user-a'));
+    joinedArrival.leave();
+    resetAuthStoreForTests();
+    run(initialAuthState, signedInAs('user-b'));
+    expect(joinedArrival.waiting()).toBe(false);
+    expect(joinedArrival.take()).toBe(false);
   });
 });

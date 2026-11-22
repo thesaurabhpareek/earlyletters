@@ -459,18 +459,18 @@ describe('[S51] the launch lines say only what the code can back (S2)', () => {
     // On screen. (The README inside the ZIP says "somewhere safe" about where to keep the file, not about the letters.)
     const { readme: _readme, ...onScreen } = l;
     expect(JSON.stringify(onScreen)).not.toMatch(/\bsafe\b/i);
-    expect(en.errors.crash.body).toBe('Your letters and recordings are safe on this phone.');
+    expect(en.errors.crash.body).toBe('Your letters and recordings are still on this phone.');
   });
 
   it('no line promises the book will open, a backup, or that nothing changed (review B6: no padding)', () => {
     for (const s of Object.values(l)) {
       expect(s).not.toMatch(/will open|backed up|back up|nothing (?:was|has been|is) (?:changed|deleted|removed)|nothing changed/i);
     }
-    expect(l.exportFailed).toBe('That export did not work. Your files are still on this phone.');
+    expect(l.exportFailed).toBe("The export didn't finish. Your files are still on this phone.");
   });
 
   it('the Export empty line says what Export does, with no loss, no gap and no count', () => {
-    expect(l.exportNothing).toBe('Export has nothing to put in a file right now.');
+    expect(l.exportNothing).toBe("There's nothing to export right now.");
     expect(l.exportNothing).not.toMatch(/\bno (?:recordings?|files?|letters?)\b|\blost\b|\bmissing\b|\bgone\b|\bempty\b|\d/i);
   });
 
@@ -510,7 +510,8 @@ describe('[S51] the launch lines say only what the code can back (S2)', () => {
     expect('DELETE FROM settings WHERE key = ?').not.toMatch(harmful);
     expect(migrations).not.toMatch(harmful);
     const deleted = [...migrations.matchAll(/\bDELETE\s+FROM\s+(\w+)/gi)].map((m) => m[1]);
-    expect(deleted).toEqual(['settings', 'settings']);
+    // Two in the update steps (v2, v3) and one in sweepTakeoverKeys (the boot sweep of the two guard-window keys), all `settings`.
+    expect(deleted).toEqual(['settings', 'settings', 'settings']);
     // Each step runs in its own transaction, with the version bump: a step that fails leaves the file as it was before that step.
     expect(migrations).toMatch(/db\.transaction\(\(\) => \{\s*m\.up\(db, ctx\);\s*db\.exec\(`PRAGMA user_version = \$\{m\.version\}`\);\s*\}\);/);
   });
