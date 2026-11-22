@@ -122,7 +122,7 @@ describe('NS-53 the Moment type (R59, R201)', () => {
 });
 
 /** The only imports from outside moments/, each file named: the pure age and prompt modules, which import nothing. */
-const OUTSIDE: Record<string, string[]> = { 'holidays.ts': ['../age'], 'occasions.ts': ['../age'], 'slots.ts': ['../age', '../prompts'] };
+const OUTSIDE: Record<string, string[]> = { 'holidays.ts': ['../age'], 'occasions.ts': ['../age'], 'slots.ts': ['../age', '../prompts'], 'plan.ts': ['../age'] };
 
 describe('NS-53 the engine stays pure (CODE-R10, R43)', () => {
   it('[NS-53-R43] age.ts and prompts.ts, the two modules moments may import, import nothing themselves', () => {
