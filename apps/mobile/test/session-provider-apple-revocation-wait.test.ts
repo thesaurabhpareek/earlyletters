@@ -107,6 +107,7 @@ vi.mock('../src/lib/auth/sensitive-row-hook', () => ({ useRegisterSensitiveDataR
 vi.mock('../src/lib/auth/new-device/report', () => ({ reportNewDeviceFor: async () => {} }));
 vi.mock('../src/lib/remote', () => ({ useRemoteConfig: () => ({ forceReauthEpoch: 0 }) }));
 vi.mock('../src/lib/reminders/session', () => ({ settleReminderSession: async () => {} }));
+vi.mock('../src/lib/auth/local-claim', () => ({ bindDeviceOnlyOwners: () => () => {}, adoptDeviceOnlyLocal: async () => true })); // the device-only files (days, moments) need the phone's file system: test/local-claim.test.ts
 vi.mock('../src/lib/photos/leaving', () => ({ discardPendingPhotoOnLeaving: async () => {} }));
 vi.mock('../src/lib/backup/files', () => ({ deleteBackupFilesExcept: () => {}, endBackupFileFor: () => {} }));
 vi.mock('../src/lib/backup/launch-migrate', () => ({ settleBackupTokens: async () => {} }));
