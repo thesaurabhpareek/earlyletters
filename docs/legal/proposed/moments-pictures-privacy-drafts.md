@@ -1,7 +1,7 @@
 # Moments pictures: privacy engineering drafts and the legal-set checklist
 
 Status: DRAFT for `legal`, counsel and the founder. Written by `compliance-engineer` (an AI engineering role, not a lawyer). Not legal advice. Nothing here is applied: no policy, Terms, label, string, data-policy row or classification row is edited by this file. Every legal reading is an engineering reading, counsel must confirm.
-Date: 21 Nov 2026. Read against `origin/develop` `f59e000def85b0a5d561b6588b6669bf173cb12c`. Line numbers drift; each was read on that commit and must be re-checked before use.
+Date: 21 Nov 2026. Revised 22 Nov 2026 (section 9: review notes and the locks since). Read against `origin/develop` `f59e000def85b0a5d561b6588b6669bf173cb12c`. Line numbers drift; each was read on that commit and must be re-checked before use.
 Convention: `docs/legal/` has no `proposed/` folder yet, so this file starts one, beside the `docs/agents/exec/proposed/` and `docs/ops/proposed/` precedent. `docs/legal/*` drafts are founder-merged (D-125 item 5).
 
 Inputs read: `docs/agents/exec/proposed/moments-rulings-security-legal-money.md` (MR-1, O-44 DECIDED by the founder: disclose in one plain line, do not exclude the folder); `docs/legal/COUNSEL_PACKET.md` section 9 (Q123 to Q132) and Q43, Q45, Q48, Q51, Q54; `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md` (C-1 to C-11); `docs/product/moments-tab/ALIGNMENT-data.md`; `docs/product/moments-tab/FREEZE-CHECKLIST.md`; `docs/product/prd/28-moments-tab.md` rows R72, R81, R97, R162, R166, R235, R240, R250, R266, R278; `docs/ops/LABEL_GUARD.md`; `docs/reviews/2026-10-claims-inventory.md`.
@@ -60,8 +60,10 @@ Draft for `eraseNowBody` when the letter has a picture (R97 also wants one plain
 
 > The letter, its recording and its picture are erased from this phone. The picture in your Photos library is not touched. A backup of this phone that was made earlier may still hold them.
 
+Scope (review note, section 9): this line is true as written only for a letter that was never shared or synced. For a synced book, the letter itself goes by the sync and purge rules and a co-parent's phone keeps its own picture copy until that phone applies the change; `legal` and `content` must say which words the sheet shows for a synced letter. No picture was ever uploaded (NS-01-R15), so the server holds none to erase. Recently deleted (30 days) also holds the picture; its Shown line must name it, and the picture is gone from the phone only at the 30 day purge or Erase now.
+
 Shown, Records, Never, Decline (PRIV-R21 form; this line asks no agreement, so it records nothing):
-- Shown: the line above, on the Erase now sheet and Recently deleted, only when the letter has a picture.
+- Shown: the line above, on the Erase now sheet and on Recently deleted (where the picture stays for 30 days), only when the letter has a picture.
 - Records: nothing.
 - Never: wording that says a backup was erased, or that a copy "cannot exist".
 - Decline: the person taps Cancel; nothing is erased.
@@ -86,7 +88,7 @@ Effect by feature, label of record `app-store-privacy-labels.md` 2.2.0 (`:50` Lo
 
 Things that would break label consistency and must fail loud:
 1. A build where F1 or F2 is on and the label still says "No photo feature" in its Why column. Fix text, not answer (C-4).
-2. "Data Not Collected" for the whole app. Never written: five types are answered Yes (C-4).
+2. A whole-app "nothing collected" label or store claim. Never written: five types are answered Yes (C-4). Locked as CPrivO-10 and CPrivO-12 (section 9).
 3. A usage string present in a profile where F2 is off (R72, G11(a)). `scripts/release/label-effect.mjs` flags a new usage string in `app.config.ts` (G11-3) and added lines that call the network and name a picture (G11-1a). It never decides the label and does not read on-device code (`docs/ops/LABEL_GUARD.md`), so the sync test above is the real control, owner `mobile` with `privacy`.
 4. The record: the PR that flips either flag names a D-id on the base branch whose section names the label, and `app-store-privacy-labels.md` changes in the same PR (`LABEL_GUARD.md` record rule). That means label 2.3.0 is merged before or with the flip, not after.
 
@@ -171,9 +173,10 @@ Not on this list because they gate F2 places or later features only: Q124 (pictu
 ## 7. Order of work, and what I would not accept
 
 1. Door ships only with rows 1 to 8, 14, 17 and 22 merged or dated. A door with the policy still saying "no photo feature" is the contradiction EXH-PRV-1 calls a blocker.
-2. Rows 9 and 10 wait on the restore drill (D-3, G7); until it is on record the backup line stays recordings-only in the app, but the policy line (row 2) must lead, because a stored picture is in the backup the day the flag flips.
-3. Silence from counsel is not a pass: F2 stays dark, the door waits (packet defaults).
-4. I would not approve weakening any of these to ship the door sooner (my charter: never weaken a consent gate or a deletion guarantee).
+2. Rows 2 and 14 are hard preconditions, not nice-to-haves: `data-policy.md:172` says "no parent-facing line says so yet", which is a live gap the day the flag flips. Row 2 must not merge before the D-3 read-back is at least scheduled (review note).
+3. Rows 9 and 10 wait on the restore drill (D-3, G7); until it is on record the backup line stays recordings-only in the app, but the policy line (row 2) must lead, because a stored picture is in the backup the day the flag flips.
+4. Silence from counsel is not a pass: F2 stays dark, the door waits (packet defaults).
+5. I would not approve weakening any of these to ship the door sooner (my charter: never weaken a consent gate or a deletion guarantee).
 
 ## 8. What I did not verify
 
@@ -182,3 +185,44 @@ Not on this list because they gate F2 places or later features only: Q124 (pictu
 - Whether `erase-all.test.ts` and `export-device-cleanup.test.ts` have a picture case: not opened.
 - Apple's wording in App Review 5.1.1, 5.1.2 and the Developer Program License Agreement 3.3.3(F): not read by me; only the App Privacy Details definitions in section 3 were fetched (21 Nov 2026).
 - Whether any proposed text is accurate or lawful: counsel must confirm.
+
+## 9. Revision of 22 Nov 2026: review notes and the locks since
+
+Still a DRAFT. No decision below is rewritten; where a draft line meets a lock, it is marked CONFLICT and the lock wins until a new entry supersedes it.
+
+### 9.1 Why the required check failed at `d5b5005a7`
+
+`packages/content/test/legal-docs.test.ts` ([LEGAL-REQ-064]) scans `docs/legal/**`, `proposed/` included, and allows the phrase for a whole-app no-data claim only in the history of the label doc. Section 3 item 2 used the phrase. Reworded (item 2 above). Run on the merged tree: `packages/content` vitest, the one failing test was this one.
+
+### 9.2 Review notes, each answered
+
+Review A (red-team), at `d5b5005a7`:
+1. Sequencing (policy line says pictures are in the backup while the in-app lines stay recordings-only): fixed in section 7, rows 2 and 14 are hard preconditions and row 2 waits for a scheduled D-3 read-back.
+2. M1 rests on a sync test named in ADR 0028 and not verified: stands, M1 stays "unverified until test merges". CR-146 row 6 and NS-01-R19 are the owners of the proof.
+3. `moments.json` rows rest on ADR 0032 (Proposed) and an unproven exclusion: stands. Now also see 9.3 on Apple's own wording: the flag is guidance, so no line may say "never in a backup".
+4. M9 true on current code: stands as a claim to confirm by a test run when the register is built.
+5. New `docs/legal/proposed/` folder: for the founder to accept at merge. Unchanged.
+
+Review B (privacy), at `d5b5005a7`:
+1. Account deletion for picture files: added. M4 and row 11 gain a claim test owed: executing account deletion removes the stripped copy, the `-512` and `-1280` copies and the `entry_media` rows on the phone (DATA-REQ-023 wipes the local database; the files need their own proof). Until that test exists, the delete-account page may only say what is proven. `data-policy.md:155` lists no account-deletion path for pictures: a gap for `privacy` to close in code or in text.
+2. Classification vocabulary: partly not a mismatch. `DATA_CLASSIFICATION.md` (line 31) is the authoritative definition of L1 to L4 and maps the older C, S, A, T classes of `data-policy.md` in its section 1; section 4 here uses the authoritative levels. The real open point stands: for `moments.json`, highest class wins, and `labels{}` can hold a child's name, so `data-architect` must say in PR 8 whether the file is L4 (a child's words) and how `data-policy.md` 4.4 shows it in its older class.
+3. Backup lines: covered in section 7.
+4. Erase now for a synced book, and Recently deleted: added in section 2.
+5. Children's data (row 24): kept as a must-ask before the door ships.
+6. In-flight originals: the sweep test owed under row G11c and D-4 must assert zero location-bearing files remain in `Caches/ImagePicker` after the launch sweep. Added to the "Temporary located original" row of section 4 as its deletion test.
+7. Apple replacement behaviour: stays UNVERIFIED (9.3); no published sentence before counsel or `legal` reads Apple's page.
+
+### 9.3 Reconciliation with what is locked since
+
+| Lock | What it says | Effect on this draft |
+|---|---|---|
+| D-165 | O-44 and cover on; O-47 option C; tabs Home, Moments, Book, Me; O-48 value-prop pair unpublished until counsel answers | Consistent with section 0 (disclose, not exclude). Row 12 (store copy) is bound by O-48: nothing published. |
+| CPrivO-10 | No whole-app no-data label claim. A per-type "Photos or Videos: not collected" only while no picture leaves the phone and APPLY file 33 is applied | CONFLICT with section 3 first table row, which says Photos or Videos "stays No" and the 2.3.0 label doc row 7. Read it as: the per-type answer is held until APPLY file 33 is applied and counsel reads Q1, Q8 and Q43. This draft does not decide it. |
+| CPrivO-11 | A pending (chosen, not yet kept) photo is discarded on every change of the session user, an account switch included | Not in the draft. Add to M4: the in-flight picture is gone on sign-out, account switch and Erase everything, with the PR #1340 test as the proof. A claim about "pictures removed on switch" is held until that test is named here. |
+| CPrivO-12 | While `EXPO_PUBLIC_PHOTOS` is off, listing, screenshots, website, email and in-app strings say nothing about pictures. Held in every build: "never leave your phone", "private", "secure", "encrypted", "we never see" for pictures; any backup claim for pictures beyond the policy line; the bare policy sentence "We do not collect ... photos" once the flag is on | CONFLICT to watch: row 9 (in-app `iphoneBackup` strings) is a backup claim beyond the policy line, so it is held by CPrivO-12 regardless of the restore drill. Rows 2, 3 and 11 (policy and delete-account page text) are for the build that carries the flag. M11 ("Private by default") sits beside a held word for pictures: re-read it before the flag flips. "We do not receive them" (M1) is not on the held list but is close to "we never see": counsel reads Q43 and Q130 before it is used. Row 3 agrees with the held policy sentence. |
+| CR-146 | Twelve conditions before the flag is on in any store build; each needs a dated line under `docs/release/<x.y.z>.md`; "whether and when photos ship is the founder's" | Section 6 is a legal-text subset of it. Map: row 1 and 2 here to CR-146 rows 9 and 10; row 13 here to CR-146 row 4 (BL-868 then BL-933); rows 14 and 15 here to CR-146 row 5; row 22 here to CR-146 rows 9 and 12; D-3 and G7 to CR-146 row 3. Not covered here and owned elsewhere: CR-146 rows 1, 2, 6, 7, 8. Section 7 step 1 (rows 1 to 8, 14, 17, 22) is therefore not the full gate. |
+| `checked-facts-moments.md` (on `develop`, #1410) | 1.1 Documents and Application Support are in the backup by default (archive guide); 1.2 `Library/Caches` and `tmp` are excluded from iCloud Backup, which settles `Caches/ImagePicker` for iCloud; 1.5 `isExcludedFromBackup` is guidance, not a guarantee; 1.7 Finder (computer) backups unverified | Supports M2 on the archive guide (legacy page, per its own caveat). Adds: no line, test or claim may say a file is "never in a backup"; the `moments.json` read-back proves our flag only. Neither file records what Apple does when a newer iCloud backup replaces an older one, so M3 and section 1.2 stay UNVERIFIED. Section 3 here cites the same App Privacy Details definition; that file section 4 is the fuller read. |
+
+### 9.4 Still open for the founder and counsel
+
+Everything in sections 0 and 8, plus the three marked CONFLICT rows above. Nothing in this file is published, applied or counsel-approved.
