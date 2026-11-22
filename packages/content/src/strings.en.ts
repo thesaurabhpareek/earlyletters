@@ -1459,7 +1459,7 @@ export const en = {
     },
     footer: "Either way, we never rewrite your words.",
     // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
-    saveFailed: "That choice did not save. It is as it was.",
+    saveFailed: "That choice didn't save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a

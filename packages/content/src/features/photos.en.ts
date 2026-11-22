@@ -11,7 +11,7 @@ export const photosCopy = {
     // TODO(founder): PROPOSED, needs word approval
     change: 'Change',
     // TODO(founder): PROPOSED, needs word approval
-    openFailed: 'That photo could not be opened. Choose another.',
+    openFailed: "That photo couldn't be opened. Choose another.",
     // Ready with a picture: the quiet Type beside Speak (NS-01-R20b). Its own key, not the microphone-off screen's.
     // TODO(founder): PROPOSED, needs word approval
     typeButton: 'Type',
@@ -76,7 +76,7 @@ export const photosCopy = {
       // Shown on the letter page when a photo chosen for this letter could not be stored (NS-01-R17). The letter and its
       // words are kept; the line names no cause and asks for nothing. Never describes the picture.
       // TODO(founder): PROPOSED, needs word approval
-      notSaved: 'The photo did not come along with this letter. Your words are kept, and you can add it again.',
+      notSaved: "The photo didn't come along with this letter. Your words are kept, and you can add it again.",
       // The heading over the letter page's quiet add rows (spec 06 section 4a, `book.letter.addGroup`; a level 2 heading).
       // TODO(founder): PROPOSED, needs word approval
       addGroup: 'Add to this letter',
@@ -96,7 +96,7 @@ export const photosCopy = {
     // Shown on Review when the photo chosen for this draft could not be stored (NS-01-R17; #839 review B). Nothing is kept
     // yet on Review, so unlike book.letter.notSaved it never says the words are kept. Names no cause, asks for nothing.
     // TODO(founder): PROPOSED, needs word approval
-    notStored: 'That photo did not come along. You can add it again.',
+    notStored: "That photo didn't come along. You can add it again.",
   },
   a11y: {
     // The hint on Home's photo start.
