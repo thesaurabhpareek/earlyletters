@@ -1066,3 +1066,15 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Way back: revert the workflow edits (#1530, #1568); the docs changes are text only.
 - Revisit when: the p90 wait in the 22 to 23 UTC and 05 UTC hours stays above 15 minutes for a week after the push discipline has been in force, measured with the saved baseline script; or the founder reopens the plan question.
 - Founder-only: no, apart from any future plan change (money).
+
+### CR-175 Stale founder-merge lines for docs/agents, and the order for iOS build batching (22 Nov 2026, Karma)
+- Question: which BACKLOG rows that say the founder merges `docs/agents/**` are stale, what is P01 (#846), and do we start iOS build batching (`ci-speed.md` change 3) now?
+- Tier and type: T1; clear for the first two, complicated for the third.
+- Options considered: for batching, (a) apply `ios-compile-batch.patch` now, (b) build the two missing safeguards first and then batch, (c) hold and re-measure.
+- Ruling: (1) Seven BACKLOG rows are stale. CR-73 moved `docs/agents/**` to Karma, and CR-144 item 3 says CR-73 "stands whole", so it does not bring the founder back. The CODEOWNERS line for `/docs/agents/` is a review request only: `require_code_owner_reviews` is false on `develop` (read through the API on 22 Nov 2026). The rows are reworded in this PR. Legal text under `docs/legal/**` stays the founder's (D-125), and those rows are untouched. (2) P01 is closed: #846 was closed as a draft and never merged, and BL-952 to BL-987 are on `develop`. (3) Option (b). The patch is not applied today. Two PRs come first, each its own T2 change with two reviews: a red-launch alert on `develop`, and a rule that `testflight.yml` waits on a green launch of the exact commit. Batching follows them.
+- Why: macOS jobs of `ios-compile.yml`, 24 hours to 22:06 UTC on 22 Nov 2026, read from the Actions API: 171 finished jobs, queue wait median 17.7 min, p90 102.8, max 198.0, run time median 20.7 (231 workflow runs, 70 cancelled by newer pushes). That is a real queue and the launch runs on nearly every mobile change, so batching is worth doing. It is still not safe as written: the launch is a watch item and not a required check (CR-73, CR-74), and moving it to after merge needs the alert and the store-build gate first (Reviewer B, `ci-speed.md`). Not measured: how many native-path PRs, which the merge queue holds on the macOS result, waited, and whether the 5-job macOS cap is the cause (likely, not proven).
+- Self-challenge: my first draft of this entry said the wait was median 0.0 and p90 18.7, and held batching on that. I had read only the 60 newest runs, which fell in a quiet window. Review B re-derived the full window and caught it. I now read every run in the window before quoting a figure.
+- Door: two-way. Way back: revert this PR (text only).
+- Revisit when: the two safeguard PRs have merged (then batch), or macOS p90 wait falls under 20 minutes for a week without batching.
+- Founder-only: no.
+- Signed: Karma

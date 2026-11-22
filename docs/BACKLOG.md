@@ -7805,7 +7805,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Done when: the padding matches the spec; one test or snapshot line.
 
 #### BL-1517 The E3 ruling record `council-batch-2.md` is missing from the checkout
-- Status: proposed (needs the founder's merge: `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Status: proposed (`docs/agents/**` is Karma's to merge under CR-73; CR-144 keeps CR-73 whole; the CODEOWNERS line is a review request, since branch protection does not require code owner review). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: BL-418 (not re-read here).
 - Problem and evidence: review A on PR #1396 (ruling E3 unconfirmed).
@@ -7921,7 +7921,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Low. Gate: none.
 - Satisfies: CISO-3 (docs/agents/exec/RULINGS.md; not re-read here).
 - Problem and evidence: review B on PR #1454 (carry-over note); the CISO-3 Reason line says the others "carry no person data" while its own Ruling records F11 as an accepted exposure and the audit rates F11 INFO, by design (the claim screen, A-REQ-015).
-- Scope: reword the Reason line so it matches the Ruling on F11; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
+- Scope: reword the Reason line so it matches the Ruling on F11; `docs/agents/**` is Karma's to merge under CR-73 (CR-144 keeps CR-73 whole): the agent opens the PR and Karma merges it on two counted reviews and green required checks.
 - Done when: the line no longer says F11 carries no person data.
 
 #### BL-1532 Claim screen (audit F11, INFO, by design): check that the claim is an explicit choice, never automatic
@@ -7937,7 +7937,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Priority: Low. Gate: none.
 - Satisfies: docs/agents/exec/RULINGS.md (not re-read here).
 - Problem and evidence: review A on PR #1454. The note that `joinWait.clear` is at `auth-store.ts:122` was made against an older head: on develop it is at line 123 of `apps/mobile/src/lib/auth/auth-store.ts`, so that cite is right today.
-- Scope: give each path its full `apps/mobile/src/` prefix and check every line cite against develop; `docs/agents/**` is a founder-merge path (CODEOWNERS, CR-73 and CR-144): the agent opens the PR and the founder merges it.
+- Scope: give each path its full `apps/mobile/src/` prefix and check every line cite against develop; `docs/agents/**` is Karma's to merge under CR-73 (CR-144 keeps CR-73 whole): the agent opens the PR and Karma merges it on two counted reviews and green required checks.
 - Done when: every cite resolves by path and line.
 
 #### BL-1534 Analytics consent per person, not per phone (CPrivO-15), for when an SDK is planned
@@ -7985,7 +7985,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the proposal exists with the exact text for each file and a test or dry-run line for the `isTrusted` case; the founder applies it or says no.
 
 #### BL-1539 Notes from the #1471 council batch: the export duty file, two cites, a split table, one estimate and the S5 case in a hard stretch
-- Status: proposed (review of PR #1471; `docs/agents/**` is a founder-merge path: the agent opens the PR and the founder merges it). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
+- Status: proposed (review of PR #1471; `docs/agents/**` is Karma's to merge under CR-73: the agent opens the PR and Karma merges it). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: NS-53 (docs/product/prd/28-moments-tab.md; not re-read here).
 - Problem and evidence: review notes on PR #1471 (`docs/agents/exec/RULINGS.md`, CPrivO-16, CPO-27, CPO-29).
@@ -8791,7 +8791,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Priority: Low. Gate: none.
 - Satisfies: Process.
 - Problem and evidence: A CI re-run reuses the old merge commit, so a fix that landed on the base never reaches it.
-- Scope: name it in the merge runbook as: update the branch, do not re-run. Docs under `docs/agents` are founder-merge, so Karma lands the text.
+- Scope: name it in the merge runbook as: update the branch, do not re-run. Docs under `docs/agents` are Karma's to merge (CR-73), so Karma lands the text.
 - Done when: the runbook says it.
 
 #### BL-1663 Harness lesson: the compliance-fence 'expected' block
@@ -8799,7 +8799,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Priority: Low. Gate: none.
 - Satisfies: Process.
 - Problem and evidence: The merge shows the compliance-fence check as 'expected' when the highest-id fence run for a head is a cancelled sibling.
-- Scope: write the fix as: rerun that run. Docs under `docs/agents` are founder-merge, so Karma lands the text.
+- Scope: write the fix as: rerun that run. Docs under `docs/agents` are Karma's to merge (CR-73), so Karma lands the text.
 - Done when: the runbook says it.
 
 #### BL-1664 Harness lesson: never queue an app PR before its tests job is green at head
@@ -8807,7 +8807,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Priority: Low. Gate: none.
 - Satisfies: Process.
 - Problem and evidence: Reviewers cannot see pins in a PR whose tests job is not green at its head.
-- Scope: check `docs/agents` for a place that covers queueing, and propose the text: 'never queue an app PR before its tests job is green at its head and both reviews are at that exact head'. Karma lands it (docs under `docs/agents` are founder-merge); a matching check in the ready and queue scripts is a separate row for Karma.
+- Scope: check `docs/agents` for a place that covers queueing, and propose the text: 'never queue an app PR before its tests job is green at its head and both reviews are at that exact head'. Karma lands it (docs under `docs/agents` are Karma's to merge, CR-73); a matching check in the ready and queue scripts is a separate row for Karma.
 - Done when: the rule is written where queueing is described or Karma records that none exists.
 
 #### BL-1665 BL-955 follow-up: write the picked picture against a durable owner at pick time
