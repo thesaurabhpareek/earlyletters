@@ -89,11 +89,11 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. It stays in your words. Every change is marked, and your original recording is kept unchanged. You can undo any fix, or choose Exactly as said to keep every word as it came.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "That is fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
+      a: "That's fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
     },
     {
       q: "Which languages can I use?",
@@ -116,8 +116,8 @@ export const site = {
   waitlist: {
     label: "Your email",
     button: "Join the waitlist",
-    success: `Thank you. We will write when ${brand.name} is ready for you.`,
-    error: "That did not go through. Please check your email address and try again.",
+    success: `Thank you. We'll write when ${brand.name} is ready for you.`,
+    error: "That didn't go through. Check your email address and try again.",
   },
 } as const;
 
@@ -127,7 +127,7 @@ export const site = {
  */
 const v1_1 = {
   familyBenefit: {
-    title: "The whole family, signed",
+    title: "Letters from the whole family",
     body: "Invite grandparents and close family to add letters of their own. Each one is signed, From Papa, From Nani, and you approve what goes in the book.",
   },
   family: {
