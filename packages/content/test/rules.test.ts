@@ -1048,7 +1048,13 @@ describe('glossary (BRAND.md)', () => {
   });
 
   it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
-    expect(offenders([...STORE, ...SITE], /\bmoments\b/i)).toEqual([]);
+    expect(offenders([...STORE, ...SITE, ...PAGES], /\bmoments\b/i)).toEqual([]);
+  });
+
+  it('[BRAND-MOMENTS-2] the scan reaches the pages leaves: a pages line that says Moments is an offender', () => {
+    expect(PAGES.length).toBeGreaterThan(0);
+    const fixture: Leaf = { path: 'pages.fixture.line', text: 'Moments, a place for your photos.' };
+    expect(offenders([...STORE, ...SITE, ...PAGES, fixture], /\bmoments\b/i)).toEqual([`pages.fixture.line: ${fixture.text}`]);
   });
 
   it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
