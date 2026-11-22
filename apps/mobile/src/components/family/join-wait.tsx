@@ -7,21 +7,21 @@
  * the welcome offers Try again and "Begin the book" again). The wait also ends once the welcome is no longer the
  * step showing, and when first run leaves.
  */
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { announce } from '@/lib/a11y';
 import { getAuthSnapshot, subscribeAuth, syncAllowed } from '@/lib/auth/auth-store';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { getChild, subscribe } from '@/lib/store';
 import { getSyncStatus, subscribeSyncStatus, syncNow } from '@/lib/sync';
 import type { SyncPhase } from '@/lib/sync/types';
-import { JOIN_WAIT_MS, joinWait, joinWaitEnds, retryRestartsWait, welcomeJoinView, type WelcomeJoinView } from './join-wait.logic';
+import { holdStalledWhileRetrying, JOIN_WAIT_MS, joinWait, joinWaitEnds, retryRestartsWait, welcomeJoinView, type WelcomeJoinView } from './join-wait.logic';
 
 export function useWelcomeJoinWait(where: {
   /** First run's welcome is the step showing (under a sheet or not). */
   onWelcome: boolean;
   /** The welcome itself is in front (no sheet over it): only then is its line spoken. */
   inFront: boolean;
-}): WelcomeJoinView & { onRetry: () => void } {
+}): WelcomeJoinView & { onRetry: () => void; retrying: boolean } {
   const { onWelcome, inFront } = where;
   const wait = useSyncExternalStore(joinWait.subscribe, joinWait.get, joinWait.get);
   const auth = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getAuthSnapshot);
@@ -52,15 +52,25 @@ export function useWelcomeJoinWait(where: {
   }, [wait]);
 
   // A sync that ran starts the quiet wait over; with no sync running (it resolves null) nothing changes.
+  // While it is in flight the stalled view is held and Try again shows busy (BL-460 point 5).
+  const [retrying, setRetrying] = useState(false);
+  const inFlight = useRef(false);
   const onRetry = useCallback(() => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setRetrying(true);
     void syncNow()
       .then((report) => {
         if (retryRestartsWait(report)) joinWait.restart();
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        inFlight.current = false;
+        setRetrying(false);
+      });
   }, []);
 
-  const view = welcomeJoinView({ wait, onWelcome, bookHere, syncOn, phase, now });
+  const view = holdStalledWhileRetrying(welcomeJoinView({ wait, onWelcome, bookHere, syncOn, phase, now }), { retrying, wait, onWelcome, bookHere });
   // VoiceOver: the line is spoken when it appears in front (the sheet over the welcome closed), and again when it
   // changes to "has not reached this phone yet" and back; a live region is Android's only. As the reason line is.
   const spoken = inFront ? view.line : null;
@@ -68,5 +78,5 @@ export function useWelcomeJoinWait(where: {
     if (spoken) announce(spoken, { queue: true });
   }, [spoken]);
 
-  return { ...view, onRetry };
+  return { ...view, onRetry, retrying };
 }

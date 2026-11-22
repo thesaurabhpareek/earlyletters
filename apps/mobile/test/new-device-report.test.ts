@@ -184,15 +184,15 @@ describe('[NS-08-R21] the install id', () => {
     const { reportNewDeviceFor, setFlag } = await wire();
     setFlag(true);
     const invoke = vi.fn(async () => ({ data: { status: 'ok' }, error: null }));
-    const sb = { auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN } } }) }, functions: { invoke } };
-    await reportNewDeviceFor(sb as never);
+    const sb = { auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN, user: { id: 'u1' } } } }) }, functions: { invoke } };
+    await reportNewDeviceFor(sb as never, 'u1');
     const [name, opts] = invoke.mock.calls[0] as unknown as [string, { method: string; body: Record<string, unknown>; headers: Record<string, string> }];
     expect(name).toBe('new-device-fill');
     expect(opts.headers).toEqual({ Authorization: `Bearer ${CANARY_TOKEN}` });
     expect(Object.keys(opts.body).sort()).toEqual(['class', 'device_id']);
     expect(opts.body.class).toBe('apple');
     setFlag(false);
-    await reportNewDeviceFor(sb as never);
+    await reportNewDeviceFor(sb as never, 'u1');
     expect(invoke).toHaveBeenCalledTimes(1);
   });
 });
@@ -280,7 +280,7 @@ describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the 
     flag.setNewDeviceEmailForTest(true);
     return { ...(await import('../src/lib/auth/new-device/report')), flag };
   };
-  const client = (invoke: unknown) => ({ auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN } } }) }, functions: { invoke } }) as never;
+  const client = (invoke: unknown) => ({ auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN, user: { id: 'u1' } } } }) }, functions: { invoke } }) as never;
 
   it('aborts the first attempt at the cap, then retries once', async () => {
     const { reportNewDeviceFor, flag } = await wire();
@@ -289,7 +289,7 @@ describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the 
       signals.push(o.signal);
       return signals.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
     });
-    const done = reportNewDeviceFor(client(invoke));
+    const done = reportNewDeviceFor(client(invoke), 'u1');
     await vi.advanceTimersByTimeAsync(8_001);
     await done;
     expect(invoke).toHaveBeenCalledTimes(2);
@@ -301,10 +301,113 @@ describe('[NDA-1] a timed-out first attempt is cancelled and never overlaps the 
     const { reportNewDeviceFor, flag } = await wire();
     const invoke = vi.fn(async () => ({ error: null }));
     const sb = client(invoke);
-    await Promise.all([reportNewDeviceFor(sb), reportNewDeviceFor(sb)]);
+    await Promise.all([reportNewDeviceFor(sb, 'u1'), reportNewDeviceFor(sb, 'u1')]);
     expect(invoke).toHaveBeenCalledTimes(1); // mutant: no cap -> 2
-    await reportNewDeviceFor(sb); // after it settled, the next sign-in may call again
+    await reportNewDeviceFor(sb, 'u1'); // after it settled, the next sign-in may call again
     expect(invoke).toHaveBeenCalledTimes(2);
     flag.setNewDeviceEmailForTest(null);
+  });
+  // F8 (CISO-3): the in-flight report belongs to the account that started it.
+  const clientFor = (uid: string, invoke: unknown) =>
+    ({ auth: { getSession: async () => ({ data: { session: { access_token: `tok-${uid}`, user: { id: uid } } } }) }, functions: { invoke } }) as never;
+  it('[F8] A starts, A signs out, B signs in: B gets its own call, never A in-flight result', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const tokens: string[] = [];
+    const invoke = vi.fn((_n: string, o: { headers: { Authorization: string } }) => {
+      tokens.push(o.headers.Authorization);
+      return tokens.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
+    });
+    const a = reportNewDeviceFor(clientFor('A', invoke), 'A'); // still running when A signs out
+    await vi.advanceTimersByTimeAsync(10);
+    const b = reportNewDeviceFor(clientFor('B', invoke), 'B');
+    expect(b).not.toBe(a); // mutant: one shared slot -> same promise
+    await b;
+    expect(tokens).toContain('Bearer tok-B');
+    expect(tokens.filter((t) => t === 'Bearer tok-A')).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(20_000);
+    await a;
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] the same account asking twice at once still shares one promise', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    const sb = clientFor('A', invoke);
+    const p1 = reportNewDeviceFor(sb, 'A');
+    const p2 = reportNewDeviceFor(sb, 'A');
+    expect(p2).toBe(p1); // mutant: key by call, not user -> different promises
+    await p1;
+    expect(invoke).toHaveBeenCalledTimes(1);
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] a session that now belongs to another account sends nothing for the starter', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    await reportNewDeviceFor(clientFor('B', invoke), 'A'); // A asked, but B holds the session
+    expect(invoke).not.toHaveBeenCalled(); // mutant: no user check on the token -> 1
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[BL-1502] a session with a token and no user id sends nothing and shares nothing', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    const invoke = vi.fn(async () => ({ error: null }));
+    const noId = { auth: { getSession: async () => ({ data: { session: { access_token: CANARY_TOKEN } } }) }, functions: { invoke } } as never;
+    await reportNewDeviceFor(noId, 'A');
+    expect(invoke).not.toHaveBeenCalled(); // mutant: pass a token when the user id is missing -> 1
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[BL-1503] the same account signs out and in while a report is in flight: the new sign-in sends its own', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    let session: { access_token: string; user: { id: string } } | null = { access_token: 'tok-1', user: { id: 'A' } };
+    const sent: string[] = [];
+    const invoke = vi.fn((_n: string, o: { headers: { Authorization: string } }) => {
+      sent.push(o.headers.Authorization);
+      return sent.length === 1 ? new Promise(() => {}) : Promise.resolve({ error: null });
+    });
+    const sb = { auth: { getSession: async () => ({ data: { session } }) }, functions: { invoke } } as never;
+    const first = reportNewDeviceFor(sb, 'A');
+    await vi.advanceTimersByTimeAsync(10); // the first run has read tok-1 and is waiting on the network
+    session = null;
+    session = { access_token: 'tok-2', user: { id: 'A' } }; // signed out, then in again
+    await reportNewDeviceFor(sb, 'A');
+    expect(sent).toContain('Bearer tok-2'); // mutant: always share the in-flight promise -> only tok-1
+    await vi.advanceTimersByTimeAsync(20_000);
+    await first;
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[BL-1503] a first run that found no token is not shared with a later sign-in of the same account', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    let session: { access_token: string; user: { id: string } } | null = null;
+    const invoke = vi.fn(async () => ({ error: null }));
+    const sb = { auth: { getSession: async () => ({ data: { session } }) }, functions: { invoke } } as never;
+    const first = reportNewDeviceFor(sb, 'A');
+    await vi.advanceTimersByTimeAsync(0); // read no token
+    session = { access_token: 'tok-2', user: { id: 'A' } };
+    const second = reportNewDeviceFor(sb, 'A');
+    await Promise.all([first, second]);
+    expect(invoke).toHaveBeenCalledTimes(1); // mutant: share the resolved no-token promise -> 0
+    flag.setNewDeviceEmailForTest(null);
+  });
+  it('[F8] the slot clears per user: A finishing does not clear B', async () => {
+    const { reportNewDeviceFor, flag } = await wire();
+    let releaseA: (v: unknown) => void = () => {};
+    const invokeA = vi.fn(() => new Promise((r) => (releaseA = r)));
+    const invokeB = vi.fn(() => new Promise(() => {}));
+    const a = reportNewDeviceFor(clientFor('A', invokeA), 'A');
+    const b = reportNewDeviceFor(clientFor('B', invokeB), 'B');
+    await vi.advanceTimersByTimeAsync(1);
+    releaseA({ error: null });
+    await a;
+    void reportNewDeviceFor(clientFor('B', invokeB), 'B');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(invokeB).toHaveBeenCalledTimes(1); // mutant: finally clears whole slot -> a second call
+    await vi.advanceTimersByTimeAsync(20_000);
+    await b;
+    flag.setNewDeviceEmailForTest(null);
+  });
+});
+
+describe('[BL-1504] the provider hands the live user id to the report', () => {
+  it('reportNewDeviceFor is called with state.userId, guarded by the ready state', () => {
+    const src = readFileSync(join(SRC, 'lib/auth/session-provider.tsx'), 'utf8');
+    expect(src).toMatch(/state\.status === 'ready'\) void reportNewDeviceFor\(sb, state\.userId\)/); // mutant: drop the argument
   });
 });

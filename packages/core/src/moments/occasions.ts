@@ -6,10 +6,11 @@
  * keeps 28 Feb in a common year), so the tab and the reminder agree on the day.
  */
 import { ageOn, parseIsoDate } from '../age';
+import { reasonRank, type Reason } from './reasons';
 import { holidaysOn, type HolidayKey, type HolidayRegion } from './holidays';
 
-/** The occasion reasons of the closed list (6.4a). PR 1 owns the whole list; these five are the ones this file can give. */
-export type OccasionReason = 'RSN-MARKED' | 'RSN-FIRST' | 'RSN-BIRTHDAY' | 'RSN-MONTHDAY' | 'RSN-HOLIDAY';
+/** The occasion reasons this file can give, all members of the shared closed list (reasons.ts, 6.4a). */
+export type OccasionReason = Extract<Reason, 'RSN-MARKED' | 'RSN-FIRST' | 'RSN-BIRTHDAY' | 'RSN-MONTHDAY' | 'RSN-HOLIDAY'>;
 /** S1 typed day, S2 ticked day, S3 birth dates, H the shipped holiday table (no S number in the spec yet). */
 export type OccasionSource = 'S1' | 'S2' | 'S3' | 'H';
 
@@ -90,12 +91,11 @@ export function occasionsOn(day: string, ctx: OccasionContext): OccasionHit[] {
   return [...typed, ...birthday, ...chosen, ...monthDay, ...holidays];
 }
 
-/** Precedence when several reasons apply to one date (6.4a): marked, first, birthday, month day, holiday. */
-const PRECEDENCE: readonly OccasionReason[] = ['RSN-MARKED', 'RSN-FIRST', 'RSN-BIRTHDAY', 'RSN-MONTHDAY', 'RSN-HOLIDAY'];
-
-/** The one reason a card shows; the others are not shown and nothing says "and more". */
+/** The one reason a card shows, by the shared precedence of reasons.ts (6.4a); the others are not shown and nothing says "and more". */
 export function reasonFor(reasons: readonly OccasionReason[]): OccasionReason | null {
-  return PRECEDENCE.find((r) => reasons.includes(r)) ?? null;
+  let best: OccasionReason | null = null;
+  for (const r of reasons) if (best === null || (reasonRank(r) ?? Infinity) < (reasonRank(best) ?? Infinity)) best = r;
+  return best;
 }
 
 /** Reasons that read as bright; a hard stretch or a quiet book shows none of them (NS-53-R24). */
