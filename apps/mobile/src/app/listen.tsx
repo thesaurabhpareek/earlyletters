@@ -45,6 +45,7 @@ import {
   finishWithin,
   isMicProblem,
   listenRoom,
+  longTakeNotice,
   maySpeak,
   startTake,
   promptLine,
@@ -508,6 +509,11 @@ export default function Listen() {
           {elapsedClock(status.durationMillis)}
         </Text>
       )}
+      {longTakeNotice(phase, status.durationMillis) ? (
+        <Text variant="footnote" tone="muted" className="px-8 text-center" testID="listen.longTake">
+          {t.longTake}
+        </Text>
+      ) : null}
       <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
           <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
