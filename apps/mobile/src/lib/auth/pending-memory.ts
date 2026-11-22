@@ -6,6 +6,21 @@ import type { EmailLinkType } from './links.logic';
 
 let pendingLink: { tokenHash: string; type: EmailLinkType } | null = null;
 let pendingEmail: string | null = null;
+const wrongCodes = new Map<string, number[]>();
+
+/** Wrong-code times per address, for the client pause (errors.logic codeEntryPause). Memory only. */
+export function wrongCodeTimes(email: string): number[] {
+  return wrongCodes.get(email.trim().toLowerCase()) ?? [];
+}
+
+export function noteWrongCode(email: string, at: number): void {
+  const k = email.trim().toLowerCase();
+  wrongCodes.set(k, [...(wrongCodes.get(k) ?? []), at].slice(-10));
+}
+
+export function clearWrongCodes(email: string): void {
+  wrongCodes.delete(email.trim().toLowerCase());
+}
 
 /** Called by +native-intent for an https sign-in link. */
 export function setPendingAuthLink(link: { tokenHash: string; type: EmailLinkType }): void {
@@ -29,10 +44,10 @@ export function getPendingEmail(): string | null {
 
 /**
  * Cross-account audit F3: both end with the session that was running and with a change of account. Not the Keychain
- * request time (the provider paths clear it), not the wrong-code pause (a rate limit keeps the safe side), and not the
- * saved invite link (it survives sign-out on purpose, A-REQ-028).
+ * request time (the provider paths clear it) and not the saved invite link (it survives sign-out on purpose, A-REQ-028).
  */
 export function clearPendingSignInMemory(): void {
   pendingEmail = null;
   pendingLink = null;
+  wrongCodes.clear();
 }

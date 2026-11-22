@@ -30,6 +30,7 @@ const os = vi.hoisted(() => ({
 }));
 
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
+vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
@@ -211,7 +212,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     const failed = await reminders.rescheduleReminders();
     expect(failed).toEqual({ ok: false });
     expect(reminders.lastScheduleResult()).toEqual({ ok: false });
-    expect(logic.turnOnOutcome({ permission: 'granted', scheduled: failed }, null)).toEqual({ message: 'Could not set reminders just now.', action: 'tryAgain' });
+    expect(logic.turnOnOutcome({ permission: 'granted', scheduled: failed }, null)).toEqual({ message: "Couldn't set your reminders.", action: 'tryAgain' });
     os.failSchedule = false;
     // The signature was not recorded on failure, so the same plan is tried in full again.
     expect(await reminders.rescheduleReminders()).toEqual({ ok: true });

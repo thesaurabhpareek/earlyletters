@@ -9,6 +9,7 @@
  * | Key | Value |
  * |---|---|
  * | `asks.reminderPrimes` | times the reminder prime was shown, from any source (cap MAX_REMINDER_PRIMES) |
+ * | `asks.reminderPrimeYes` | `on` once the person said Yes to the reminder prime; they are never primed again (BL-1430). Device only, L2, no text or names; the erase-all path clears every settings row |
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
  * | `asks.keepBookReoffered` | `on` once the one re-offer of Keep the book was made (after the third letter, BL-519) |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
@@ -31,6 +32,7 @@ export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk
 
 const K = {
   primes: 'asks.reminderPrimes',
+  primeYes: 'asks.reminderPrimeYes',
   keepBook: 'asks.keepBookOffered',
   keepBookReoffer: 'asks.keepBookReoffered',
   firstLetterSession: 'asks.firstLetterSession',
@@ -81,6 +83,11 @@ export function noteReminderPrimeShown(): ReminderPrimeSource {
   return source;
 }
 
+/** The person said Yes to the reminder prime (either Yes button): it never shows again, even if they turn reminders off later (BL-1430). */
+export function noteReminderPrimeYes(): void {
+  setSetting(K.primeYes, 'on');
+}
+
 /**
  * Call once right after a letter is kept, with `firstLetter` true when the phone had no letter before it.
  * Returns the one ask due, and records it as shown when it is the account sheet (the card records itself when it appears).
@@ -95,6 +102,7 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       lettersSaved: lettersOnPhone(),
       firstLetter: input.firstLetter,
       primesShown: count(K.primes),
+      primeAnsweredYes: getSetting(K.primeYes) === 'on',
       remindersOn: readPrefs().enabled,
       signInOffered: input.signInOffered,
       keepBookOffered: getSetting(K.keepBook) === 'on',

@@ -58,7 +58,7 @@ import { isReadItBack } from '@/lib/read-it-back';
 import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { bookHandoff, createArrivalGate, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
+import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -142,10 +142,9 @@ export default function Book() {
 
   useEffect(() => {
     if (!active) return;
-    const reread = () => setRead({ childId: active.id, entries: listEntriesForChild(active.id) });
-    // The initialiser has just read this book: read again only for another book, or on a change (no second read at mount).
-    if (read.childId !== active.id) reread();
-    return subscribe(reread);
+    // Subscribe, then read once more and keep that read only if it differs from the initialiser's: a change between the
+    // initialiser's read and this subscribe is picked up at once (BL-1428).
+    return watchBook({ childId: active.id, read: listEntriesForChild, subscribe, set: setRead });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
@@ -463,10 +462,12 @@ export default function Book() {
             <PinnedActionLayout
               center
               insetBottom={false}
-              contentContainerClassName="items-center gap-8 px-5"
+              contentContainerClassName="gap-8 px-5"
               action={<Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />}>
-              <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
-              <EmptyState align="center" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+              <View className="items-center">
+                <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
+              </View>
+              <EmptyState align="start" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
             </PinnedActionLayout>
           </View>
         ) : (

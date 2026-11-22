@@ -287,9 +287,11 @@ function EndOfBook({ onClose, onAgain }: { onClose: () => void; onAgain: () => v
         </View>
       }
       testID="readTogether.end">
-      <View accessibilityLiveRegion="polite" className="gap-8">
+      {/* The live region is the moon and the line, which is what changes. The buttons stay outside it: hearing their
+          labels read out again on every change is noise (BL-1519). */}
+      <View accessibilityLiveRegion="polite" className="gap-8" testID="readTogether.end.live">
         <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
-        <Text variant="title1" asHeading className="text-center">
+        <Text variant="title1" asHeading>
           {rt.endOfBook}
         </Text>
       </View>

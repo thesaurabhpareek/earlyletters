@@ -168,7 +168,7 @@ export default function ExportScreen() {
 
   // The waiting line stays in the content, above the pinned button that answers it (S43).
   const emptyNote = empty ? (
-    <Text variant="subhead" className="text-center" testID="export.empty">
+    <Text variant="subhead" testID="export.empty">
       {s.emptyNote}
     </Text>
   ) : null;
@@ -177,9 +177,16 @@ export default function ExportScreen() {
   const tooBig = state.kind === 'failed' && exportFailure(state.reason).action === 'writeToUs';
   const primary =
     state.kind === 'ready' ? (
-      <Button size="lg" fullWidth onPress={() => void share(state.result)}>
-        <Text>{s.shareButton}</Text>
-      </Button>
+      // The not-encrypted notice is in the footer with the Share button, so it is seen where the person decides (BL-1518).
+      <View className="gap-3">
+        <View className="flex-row gap-2" testID="export.privacyNotice">
+          <LockSimpleIcon size={18} color={c.textMuted} />
+          <Text className="flex-1 text-sm leading-5 text-muted-foreground">{s.privacyNotice}</Text>
+        </View>
+        <Button size="lg" fullWidth onPress={() => void share(state.result)}>
+          <Text>{s.shareButton}</Text>
+        </Button>
+      </View>
     ) : state.kind === 'idle' || state.kind === 'cancelled' || state.kind === 'shared' || state.kind === 'failed' ? (
       tooBig ? (
         // Too big: exporting again would fail the same way, so the way on is to write to us (S43).
@@ -262,10 +269,6 @@ export default function ExportScreen() {
             </Text>
           </View>
           {state.result.mismatched > 0 && <Text className="text-sm leading-5 text-muted-foreground">{s.integrityNote}</Text>}
-          <View className="flex-row gap-2">
-            <LockSimpleIcon size={18} color={c.textMuted} />
-            <Text className="flex-1 text-sm leading-5 text-muted-foreground">{s.privacyNotice}</Text>
-          </View>
         </View>
       )}
       {help.sheet}
